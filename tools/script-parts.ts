@@ -5,14 +5,14 @@
  * `fieldia.filters.js`, `fieldia.date.js`, `fieldia.list.js`, `fieldia.cards.js`, `fieldia.columns.js`,
  * `fieldia.import.js`, `fieldia.lines.js`, `fieldia.files.js`, `fieldia.evidence.js`, `fieldia.business.js`, `fieldia.survey.js`,
  * `fieldia.phone.js`, `fieldia.slots.js`, `fieldia.relations.js`, `fieldia.duplicates.js`, `fieldia.answers.js`, `fieldia.limits.js`,
- * `fieldia.print.js`, `fieldia.themes.js`, `fieldia.quiet.js`
+ * `fieldia.print.js`, `fieldia.themes.js`, `fieldia.quiet.js`, `fieldia.memory.js`, `fieldia.functions.js`, `fieldia.options.js`, `fieldia.mapchecks.js`
  * (tools/script-bundle.mjs). The first time a page asks for a part, the main
  * script adds the part's tag, from the folder it came from itself; the part
  * runs, hands over its code, and the page draws from it.
  *
  * A part is built against the main script of its own version: what it shares
  * with it — the icons, the words, the helpers — it takes from the main
- * script's modules (`SHARED`, in an order both are built with), never a copy of
+ * script's modules (`SHARED()`, in an order both are built with), never a copy of
  * its own. A part of another version is refused with a warning, and the page
  * draws plainly what it would have drawn from it.
  *
@@ -65,7 +65,7 @@ function take([name, version, make, words]: PartEntry) {
     return;
   }
   if (words) fillWords(words);
-  const exports = make(SHARED);
+  const exports = make(SHARED());
   made.set(name, exports);
   settle(name, { exports });
 }

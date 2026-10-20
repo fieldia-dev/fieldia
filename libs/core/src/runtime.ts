@@ -6,7 +6,7 @@
 export type { JsonValue } from './lib/format/json';
 export { FIELD_NAME, FIELD_TYPES, type FieldType } from './lib/format/names';
 export type { Field, Fields, LineField, LinkedField, LineKinds, Option, SelectionOption, OptionsFrom, OptionsFromList, OptionsFromField, DefinitionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen, MoneyLook, Period } from './lib/format/field';
-export { choiceOptions, optionsField, optionsList, withCarriedOptions } from './lib/format/choice-options';
+export { changesOptions, choiceOptions, hasOptionRules, optionRulesPart, optionsField, optionsList, withCarriedOptions, type OptionRulesPart } from './lib/format/choice-options';
 export type { Shrink } from './lib/format/field';
 export type {
   Modifier,
@@ -295,7 +295,14 @@ export {
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
-export { limitInstant, takingWords, whenWords, type FormLimits, type Seats, type TakingState } from './lib/record/taking';
+export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
+// (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
 export { fieldPattern } from './lib/format/pattern';
+// Code a page loads the first time it uses it (a part): the loader the widgets' and the viewer's parts are made with.
+export { lazyPart, partWith, partsOf, partsComeByScriptTag, settleParts, type Part } from './lib/parts';
+// The bodies of Fieldia's functions beyond the plain ones, loaded before a page that calls one is drawn.
+export { callsPartFunctions, functionsPart, type FunctionsPart } from './lib/expression/functions';
+// The checks a page owes a part of the one-tag script (`PageValidation.later`): a map's come in a part of their own.
+export { mapChecksPart } from './lib/format/later-checks';

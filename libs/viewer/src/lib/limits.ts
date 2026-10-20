@@ -1,4 +1,4 @@
-import { takingWords, type Form, type FormState, type Messages, type Page, type SavedDraft } from '@fieldia/core';
+import { formLimitsPart, type Form, type FormState, type Messages, type Page, type SavedDraft } from '@fieldia/core';
 import { setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
 import { installLimitsStyles } from './limits-styles';
@@ -79,7 +79,8 @@ export function drawLimits(ctx: LimitsContext): LimitsKit {
     later: later?.box ?? null,
     update(state) {
       const limits = state.limits;
-      const why = takingWords(page, limits, ctx.messages);
+      // In words by the form's limits, which came with the page's parts.
+      const why = formLimitsPart.loaded?.takingWords(page, limits, ctx.messages) ?? null;
       const asking = limits?.state === 'asking';
       const typed = state.dirty.length > 0 || Object.keys(state.unread).length > 0;
       const quiet = ctx.done() || !!later?.open();

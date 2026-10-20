@@ -54,7 +54,8 @@ test.describe('the list screen in a part of its own', () => {
     const problems = watch(page);
     const requested: string[] = [];
     page.on('request', (request) => requested.push(new URL(request.url()).pathname));
-    const scripts = () => requested.filter((path) => /\/fieldia(\.\w+)?\.js$/.test(path)).sort();
+    // The demo's memory source's members come in a part of their own as it is first asked (script.spec): the source's.
+    const scripts = () => requested.filter((path) => /\/fieldia(\.\w+)?\.js$/.test(path) && !path.endsWith('/fieldia.memory.js')).sort();
     await page.goto('/script/');
     await expect(page.locator('.fd-form')).toBeVisible();
     await page.waitForLoadState('networkidle');

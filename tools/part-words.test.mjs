@@ -85,7 +85,12 @@ test('the check refuses a word no table has, a word named twice, a part or a tab
   ]);
 });
 
-/** The script bundle's modules: the main script's, from its entry by its static imports, and each part's, from its module the same way, less the main script's. */
+/**
+ * The script bundle's modules: the main script's — those its entry's code is made of, as the bundle's build keeps them
+ * (a module only a part's code uses is left out of it whole: the packages' memory source) — and each part's, from its
+ * modules by their static imports, less the main script's. A part may have a module in each package (the limits part:
+ * the form's in @fieldia/core, what draws it in the viewer), as the bundle's build joins them in one script.
+ */
 async function scriptModules() {
   const { metafile } = await build({
     entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
@@ -111,22 +116,26 @@ async function scriptModules() {
       },
     ],
   });
-  const reach = (from) => {
-    const seen = new Set();
-    const next = [from];
-    while (next.length) {
-      const file = next.pop();
-      if (seen.has(file) || !metafile.inputs[file]) continue;
-      seen.add(file);
-      for (const one of metafile.inputs[file].imports) if (one.kind !== 'dynamic-import' && !one.external) next.push(one.path);
+  // An output and every chunk it imports, but those already counted: what a script is made of, as the build keeps it.
+  const outputs = metafile.outputs;
+  const madeOf = (first, counted = new Set()) => {
+    const made = new Set();
+    for (const chunks = [first]; chunks.length; ) {
+      const out = chunks.pop();
+      if (!out || made.has(out) || counted.has(out)) continue;
+      made.add(out);
+      for (const one of outputs[out].imports) if (one.kind === 'import-statement') chunks.push(one.path);
     }
-    return seen;
+    return made;
   };
-  const main = reach('tools/script-entry.ts');
+  const mainChunks = madeOf(Object.keys(outputs).find((out) => outputs[out].entryPoint === 'tools/script-entry.ts'));
+  const main = new Set([...mainChunks].flatMap((out) => Object.keys(outputs[out].inputs)));
   const parts = {};
-  for (const file of Object.keys(metafile.inputs)) {
-    const part = /^libs\/(?:widgets|viewer)\/src\/lib\/([a-z]+)-part\.ts$/.exec(file)?.[1];
-    if (part) parts[part] = [...reach(file)].filter((one) => !main.has(one));
+  for (const [out, { entryPoint }] of Object.entries(outputs)) {
+    const part = entryPoint && /^libs\/(?:core|widgets|viewer)\/src\/lib\/(?:[a-z]+\/)?([a-z]+)-part\.ts$/.exec(entryPoint)?.[1];
+    if (!part) continue;
+    const files = [...madeOf(out, mainChunks)].flatMap((chunk) => Object.keys(outputs[chunk].inputs)).filter((one) => !main.has(one));
+    parts[part] = [...new Set([...(parts[part] ?? []), ...files])];
   }
   return { main: [...main], parts };
 }

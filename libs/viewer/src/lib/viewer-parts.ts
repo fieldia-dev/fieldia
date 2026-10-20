@@ -1,4 +1,4 @@
-import { signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -88,7 +88,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -128,7 +128,13 @@ const markdownAlone = (node: SectionNode) => {
  * then writes its numbers as people read them: both ask for the phone part.
  *
  * A page with `limits` or `continueLater` asks for the limits part: a closed form's words stand in place of its
- * questions as it opens, and Continue later sits among its buttons.
+ * questions as it opens, and Continue later sits among its buttons. A page with `limits`, or options with `seats`, asks
+ * for its form's too, @fieldia/core's (`formLimitsPart`): when it takes answers and each choice's places, worked out —
+ * in the one-tag script, the same script.
+ *
+ * A page whose formulas call one of Fieldia's functions beyond the plain ones (`age`, `addMonths`, `contains`, `join`,
+ * `average`, …) asks for @fieldia/core's functions part, their bodies (`callsPartFunctions`); one whose choices' options
+ * show by a condition, or are carried from an earlier question, its options part (`hasOptionRules`).
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
@@ -206,9 +212,21 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (showsAnswers(page)) found.add(answersPart);
   // A page's opening, closing and limits, and Continue later: said before its questions, so in before it is drawn.
   if (page.limits || page.continueLater) found.add(limitsPart);
+  if (hasLimits(page)) found.add(formLimitsPart);
+  if (callsPartFunctions(page)) found.add(functionsPart);
+  if (hasOptionRules(page)) found.add(optionRulesPart);
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
+}
+
+/**
+ * The parts whose checks a page's check owes (`PageValidation.later`, in the one-tag script alone: they come with the
+ * part that draws what they check): asked for with the page's own, the check run again once they came.
+ */
+export function owedParts(later: readonly string[] | undefined): Part[] {
+  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart };
+  return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 
 /** A list's columns whose numbers it writes as people read them: those it shows as a phone (`cells.<field>.widget`), where its page or the cell's options say so. */

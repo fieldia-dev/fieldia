@@ -1,4 +1,6 @@
 export * from './runtime';
+// Why a page takes no answers now, in words: the limits part's (`formLimitsPart`), whole here.
+export { takingWords, whenWords } from './lib/record/form-limits';
 // A memory source's free times from booking schedules: for demos and tests, outside the one-tag script.
 export { scheduleSlots, type MemorySchedule } from './lib/record/memory-schedules';
 // A memory source's records like the one typed, for its `duplicates`: for demos and tests, outside the one-tag script.

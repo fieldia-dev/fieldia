@@ -1,5 +1,4 @@
-import { Asking, FUNCTIONS, type ExpressionFunction, type FunctionTable } from './functions';
-import { tidy } from './operations';
+import { FUNCTIONS, functionsPart, partComing, type ExpressionFunction, type FunctionTable } from './functions';
 import { CONSTANTS } from './tokenizer';
 
 /**
@@ -60,11 +59,6 @@ const UNKNOWN: ExpressionFunction = { takes: [0, Infinity], call: () => null };
  */
 export const ANY_FUNCTION = { get: (name: string) => (FUNCTIONS.has(name) ? undefined : UNKNOWN), keys: () => [][Symbol.iterator]() } as unknown as FunctionTable;
 
-/** What an app's function gives, as Fieldia's own arithmetic gives numbers: 110, never 110.00000000000001; nothing for no number. */
-const tidied = (value: unknown): unknown => (value === undefined ? null : typeof value === 'number' ? tidy(value) : value);
-
-const isThenable = (value: unknown): value is PromiseLike<unknown> => value !== null && (typeof value === 'object' || typeof value === 'function') && typeof (value as { then?: unknown }).then === 'function';
-
 const tables = new WeakMap<object, FunctionTable>();
 
 /**
@@ -91,42 +85,11 @@ export function functionInfo(entry: FunctionInfo | AppFunction | ((...values: ne
   return typeof entry === 'function' ? {} : entry;
 }
 
+/**
+ * One of the app's functions as the page's expressions call it: what it takes known at once, its call made by the
+ * functions part (more-functions.ts, `appCall`) — a value worked out from it waiting for the part, as for an answer, until
+ * it has come.
+ */
 function appFunction(name: string, entry: FunctionInfo | AppFunction | ((...values: never[]) => unknown)): ExpressionFunction {
-  const info = functionInfo(entry);
-  const run = typeof entry === 'function' ? entry : 'call' in entry && typeof entry.call === 'function' ? entry.call.bind(entry) : null;
-  /** Whether it asks: said, or found out at a call that gave a promise. */
-  let asks = info.asks === true;
-  return {
-    takes: info.takes ?? [0, Infinity],
-    call({ args, value, env }) {
-      if (!run) return null;
-      const values = args.map(value);
-      const key = `${name}(${JSON.stringify(values)})`;
-      if (asks) {
-        const kept = env.answer?.(key);
-        if (kept === 'asking') throw new Asking();
-        if (kept) return tidied(kept.value);
-        // Where nothing can wait for an answer (a list's row), it is not asked.
-        if (!env.answer) return null;
-      }
-      let result: unknown;
-      try {
-        result = (run as (...values: unknown[]) => unknown)(...values);
-      } catch (error) {
-        // Told to the console, as a part that throws is: the value is empty, the form goes on.
-        (globalThis as unknown as { console?: { error(...what: unknown[]): void } }).console?.error(`Fieldia: the app's function ${name}() failed`, error);
-        return null;
-      }
-      if (!isThenable(result)) return tidied(result);
-      asks = true;
-      const now = env.answer?.(key, result);
-      if (!now) {
-        // Nothing waits for it: its answer, or its failure, goes unheard.
-        result.then(undefined, () => undefined);
-        return null;
-      }
-      if (now === 'asking') throw new Asking();
-      return tidied(now.value);
-    },
-  };
+  return { takes: functionInfo(entry).takes ?? [0, Infinity], call: (call) => (functionsPart.loaded ? functionsPart.loaded.appCall(name, entry)(call) : partComing(call)) };
 }

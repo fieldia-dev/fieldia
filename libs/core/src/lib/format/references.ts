@@ -1,7 +1,7 @@
 import type { ActionStep, PageEvents } from './actions';
-import type { Field, Fields, FilterItem, LineField, LineKinds, SelectionOption } from './field';
-import { optionsField, optionsList } from './choice-options';
-import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListCard, ListNode, MapCard, MapNode, Pin, RelatedNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
+import type { Field, Fields, FilterItem, LineField } from './field';
+import { changesOptions, optionsList } from './choice-options';
+import type { ButtonNode, FieldNode, FormNode, LayoutNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
 import type { Page } from './page';
 import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
@@ -14,13 +14,21 @@ import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
 import { checkButtonParts, checkHead } from './head-checks';
 import { checkSectionTracks } from './section-checks';
 import { fieldPattern } from './pattern';
-import { BULK_KINDS, bulkSettable } from './bulk-edit';
 import { DUPLICATE_KINDS } from './duplicate-kinds';
-import { IMPORT_KINDS, importable } from './import-fields';
 import { isTimeZone } from '../record/zones';
 import { fill, MESSAGES } from '../record/messages';
 import { autofillGroupProblem } from './autofill-group';
-import { checkLimits, checkSeats } from './limits-checks';
+import { checkLimits } from './limits-checks';
+import { checkSeats } from './seats-checks';
+import { checkList, checkRelated, type ListTools } from './list-checks';
+import type { FieldTools } from './part-checks';
+import { checkSlots } from './slots-checks';
+import { checkSignature } from './signature-checks';
+import { checkEndings } from './endings-checks';
+import { checkAddressSearch, checkMap, checkPlace, type MapTools } from './map-checks';
+import { checkLineKinds, checkTable, type TableTools } from './table-checks';
+import { checkStatusbar } from './statusbar-checks';
+import { checkOptionRules } from './option-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -30,34 +38,19 @@ export interface PageIssue {
 
 /**
  * What a check found. `warnings`, where pages are made (`validatePage`): what does not stop a page — a value of a kind
- * a function does not take, which gives nothing there — said beside it; left out when there are none.
+ * a function does not take, which gives nothing there — said beside it; left out when there are none. `later`, in the
+ * one-tag script alone: the parts whose checks of what they draw (a list page's settings) were not run, not come yet —
+ * the viewer runs the check again once they have; the packages' checks run them all at once.
  */
-export type PageValidation = { ok: true; page: Page; warnings?: PageIssue[] } | { ok: false; issues: PageIssue[]; warnings?: PageIssue[] };
+export type PageValidation = { ok: true; page: Page; warnings?: PageIssue[]; later?: string[] } | { ok: false; issues: PageIssue[]; warnings?: PageIssue[]; later?: string[] };
 
 const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
 
 /** The kinds of field an expression can give a value to: the rest hold records, lines or files. */
 const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'json']);
 const EXPRESSIBLE_WORDS = 'text, numbers, yes or no, dates, choices and json can';
-/** The kinds of field a list's filter bar can list the values of. */
-const LISTS_ITS_VALUES = new Set(['selection', 'many2one', 'many2many', 'boolean', 'char', 'integer']);
-/** The kinds of field a list's filter bar filters by their range, From and To: a whole number where the page says so. */
-const HAS_A_RANGE: ReadonlySet<string> = new Set(['integer', 'float', 'monetary', 'date', 'datetime']);
-/** The kinds whose range is all a filter can take of them: no list of their values. */
-const RANGE_ONLY: ReadonlySet<string> = new Set(['float', 'monetary', 'date', 'datetime']);
-/** Kinds of field a list's card shows as its picture: a picture held, or text holding a picture's address. */
-const PICTURES: ReadonlySet<string> = new Set(['image', 'binary', 'char']);
-/** What a calendar's start and end can be: a day, or a day and a time. */
-const CALENDAR_TIMES: ReadonlySet<string> = new Set(['date', 'datetime']);
-/** What a record's words on a calendar can be. */
-const CALENDAR_WORDS: ReadonlySet<string> = new Set(['char', 'text', 'selection', 'many2one', 'integer', 'float', 'monetary', 'date', 'datetime']);
-/** What a calendar's columns come from: a value that repeats. */
-const CALENDAR_COLUMNS: ReadonlySet<string> = new Set(['many2one', 'selection', 'char', 'integer']);
-/** What a record's colour comes from. */
-const CALENDAR_COLOURS: ReadonlySet<string> = new Set(['many2one', 'selection', 'char', 'integer', 'boolean']);
-
 /** Where an expression's names are looked up: the page's fields, or the fields of one one2many's lines. */
-interface Scope {
+export interface Scope {
   fields: Record<string, Field | LineField>;
   /** The one2many whose lines these are; none for the page's own fields. */
   lines?: string;
@@ -100,6 +93,8 @@ export class ReferenceCheck {
   private readonly issues: PageIssue[] = [];
   /** What does not stop the page, said beside it: the kinds an expression hands its functions (`CheckOptions.kinds`). */
   readonly warnings: PageIssue[] = [];
+  /** The parts whose checks are owed, not come yet (the one-tag script's: later-checks.ts): run once they have. */
+  readonly later = new Set<string>();
   private readonly ids = new Map<string, string>();
   /** Where the answers of each saved form placed here go, by name: the path of the part that took it first. */
   private readonly formNames = new Map<string, string>();
@@ -140,13 +135,19 @@ export class ReferenceCheck {
       checkPress: (button, path) => this.checkPress(button, path, true),
       isPart: (id) => this.ids.has(id),
       isPlace: (id) => this.places.has(id),
+      owe: (part) => this.later.add(part),
     });
     if (this.page.on) this.checkEvents(this.page.on, 'on');
     if (this.page.botCheck !== undefined && !this.line) this.checkBotCheck(this.page);
     if (this.page.duplicates !== undefined && !this.line) this.checkDuplicates(this.page);
     if (this.page.records !== undefined && !this.line) this.checkRecords(this.page.records);
-    if (this.page.endings !== undefined && !this.line) this.checkEndings(this.page);
-    if (!this.line) checkLimits(this.page, (path, message) => this.report(path, message));
+    if (this.page.endings !== undefined && !this.line) {
+      if (this.page.data.kind !== 'responses') this.report('endings', 'endings are for a page of responses, shown once it is sent');
+      // Each ending: in the one-tag script, its checks come with the answers part, which a page with any asks for.
+      if (Array.isArray(this.page.endings) && this.page.endings.length) checkEndings(this.page, { ...this.fieldTools(), checkModifiers: (owner, path, keys) => this.checkModifiers(owner, path, keys), checkWords: (owner, path, keys, sent) => this.checkWords(owner, path, keys, sent) });
+    }
+    // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
+    if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
     this.checkGoingTo();
     return this.issues;
   }
@@ -181,23 +182,6 @@ export class ReferenceCheck {
     if (!said(words['one'])) this.report('records.one', 'the word for one record, as a sentence says it: "customer"');
     if (!said(words['other'])) this.report('records.other', 'the word for more than one record: "customers"');
     if (words['a'] !== undefined && !said(words['a'])) this.report('records.a', 'the word for one record with its article: "a customer", "an invoice"');
-  }
-
-  /**
-   * What a page of responses shows once it is sent: each ending's condition reads the answers (and `id`, the response's),
-   * its words name fields of the page (or `id`), it says something, and none follows one that is always shown.
-   */
-  private checkEndings(page: Page) {
-    if (page.data.kind !== 'responses') this.report('endings', 'endings are for a page of responses, shown once it is sent');
-    let always = '';
-    (Array.isArray(page.endings) ? page.endings : []).forEach((ending, i) => {
-      const at = `endings[${i}]`;
-      if (always) this.report(at, `never shown: ${always} has no when and comes first`);
-      this.checkModifiers(ending, at, ['when']);
-      if (ending.when === undefined || ending.when === true) always ||= at;
-      if (typeof ending.title !== 'string' && typeof ending.text !== 'string') this.report(at, 'an ending needs a title or text');
-      this.checkWords(ending, at, ['title', 'text'], true);
-    });
   }
 
   /** A time zone the browser knows, by its IANA name: a page's dates and times are never drawn on a clock it cannot read. */
@@ -498,26 +482,10 @@ export class ReferenceCheck {
    * this one — and never for a line, whose choices are its own or one of the app's lists.
    */
   private checkChoices(name: string, def: Extract<Field | LineField, { type: 'selection' }>, path: string, fields: Record<string, Field | LineField>, scope: Scope) {
-    (def.options as SelectionOption[]).forEach((option, i) => this.checkModifiers(option, `${path}.options[${i}]`, ['invisible'], scope));
     optionsList(def.optionsFrom)?.dependsOn?.forEach((other, i) => this.checkDependsOn(name, other, `${path}.optionsFrom.dependsOn[${i}]`, fields, scope.lines, scope.parent));
-    const carried = optionsField(def.optionsFrom);
-    if (!carried) return;
-    const at = `${path}.optionsFrom.field`;
-    if (scope.lines !== undefined) return this.report(at, `"${name}": a line's choice carries no options from a question — its own, or one of the app's lists`);
-    if (carried.field === name) return this.report(at, `"${name}" cannot carry its options from itself`);
-    const from = this.need(carried.field, at, fields);
-    if (!from) return;
-    if (from.type !== 'selection') return this.report(at, `"${carried.field}" is a ${from.type}; options are carried from a choice`);
-    // Through the choices each carries from, never back to this one: a circle elsewhere is said at its own fields.
-    const seen = [name];
-    for (let next: Field | LineField | undefined = from, field = carried.field; next?.type === 'selection'; next = fields[field]) {
-      if (field === name) return this.report(at, `${listed(seen)} carry their options from each other`);
-      if (seen.includes(field)) return;
-      seen.push(field);
-      const further = optionsField(next.optionsFrom);
-      if (!further) return;
-      field = further.field;
-    }
+    // Options by condition, or carried from an earlier question: in the one-tag script, checked by the options part a
+    // page with any asks for.
+    if (changesOptions(def)) checkOptionRules(name, def, path, fields, scope, { ...this.fieldTools(), checkModifiers: (owner, at, keys, inside) => this.checkModifiers(owner, at, keys, inside) });
   }
 
   private checkFields(fields: Fields | Record<string, LineField>, base: string, lines?: string, parent?: Record<string, Field | LineField>) {
@@ -574,7 +542,7 @@ export class ReferenceCheck {
       if (def.type === 'one2many') {
         // Its lines read the record they are on — on a line, that line — as parent.
         this.checkFields(def.fields, `${path}.fields`, name, fields);
-        if ('lineKinds' in def && def.lineKinds) this.checkLineKinds(name, def.lineKinds, def.fields, `${path}.lineKinds`);
+        if ('lineKinds' in def && def.lineKinds) checkLineKinds(name, def.lineKinds, def.fields, `${path}.lineKinds`, this.fieldTools());
         if (def.sequenceField !== undefined) {
           const sequence = def.fields[def.sequenceField];
           if (!sequence) this.report(`${path}.sequenceField`, `"${def.sequenceField}" is not a field of the lines of "${name}"`);
@@ -611,22 +579,52 @@ export class ReferenceCheck {
     }
   }
 
-  private checkLineKinds(field: string, kinds: LineKinds, lineFields: Record<string, LineField>, path: string) {
-    const kindField = lineFields[kinds.field];
-    if (!kindField) this.report(`${path}.field`, `"${kinds.field}" is not a field of the lines of "${field}"`);
-    else if (kindField.type !== 'selection' && kindField.type !== 'char') {
-      this.report(`${path}.field`, `"${kinds.field}" is a ${kindField.type}; the field that says what a line is must be a selection or char`);
-    } else if (kindField.type === 'selection') {
-      for (const which of ['section', 'note'] as const) {
-        const value = kinds[which] ?? which;
-        if (!kindField.options.some((o) => o.value === value)) this.report(`${path}.${which}`, `"${kinds.field}" has no option "${value}"`);
-      }
-    }
-    const text = lineFields[kinds.text];
-    if (!text) this.report(`${path}.text`, `"${kinds.text}" is not a field of the lines of "${field}"`);
-    else if (text.type !== 'char' && text.type !== 'text') {
-      this.report(`${path}.text`, `"${kinds.text}" is a ${text.type}; a section's or note's text must be a char or text field`);
-    }
+
+  /** The tools a table of lines' checks are handed (table-checks.ts). */
+  private tableTools(): TableTools {
+    return {
+      ...this.fieldTools(),
+      claim: (id, path) => this.claim(id, path),
+      checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
+      checkPress: (button, path) => this.checkPress(button, path),
+    };
+  }
+
+  /** The tools a part's checks of a field are handed (part-checks.ts). */
+  private fieldTools(): FieldTools {
+    return { page: this.page, need: (name, path, scope) => this.need(name, path, scope), report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) };
+  }
+
+  /** The tools a map's checks are handed (map-checks.ts). */
+  private mapTools(): MapTools {
+    return {
+      page: this.page,
+      need: (name, path, scope) => this.need(name, path, scope),
+      report: (path, message) => this.report(path, message),
+      checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
+      checkSteps: (steps, path) => this.checkSteps(steps, path),
+      here: () => this.here(),
+      owe: (part) => this.later.add(part),
+    };
+  }
+
+  /** The tools a list page's own checks are handed (list-checks.ts). */
+  private listTools(): ListTools {
+    return {
+      page: this.page,
+      need: (name, path, scope) => this.need(name, path, scope),
+      report: (path, message) => this.report(path, message),
+      claim: (id, path) => this.claim(id, path),
+      checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
+      checkPress: (button, path) => this.checkPress(button, path),
+      checkPlace: (at, path, scope, pin, card) => checkPlace(at, path, scope, pin, card, this.mapTools()),
+      here: () => this.here(),
+      onLine: !!this.line,
+      checkCurrency: (name, path, fields, lines, parent) => this.checkCurrency(name, path, fields, lines, parent),
+      checkZone: (zone, path) => this.checkZone(zone, path),
+      checkFilterItem: (item, at, scope) => this.checkFilterItem(item, at, scope),
+      owe: (part) => this.later.add(part),
+    };
   }
 
   /** A page's own buttons at its foot: buttons as any. */
@@ -644,7 +642,7 @@ export class ReferenceCheck {
     if (root.type === 'sheet' || root.type === 'sections') this.walkFooter(root.footer, path);
     if (root.type === 'sheet') return this.walkSheet(root, path);
     if (root.type === 'sections') return this.walkChildren(root.children, path);
-    if (root.type === 'list') return this.walkList(root, path);
+    if (root.type === 'list') return checkList(root, path, this.listTools());
     // A wizard's own buttons' words, and each step's title and words, may show the answers given: "Your visit to {branch}".
     this.checkWords(root, path, ['nextLabel', 'backLabel', 'finishLabel']);
     root.children.forEach((step, i) => {
@@ -657,352 +655,7 @@ export class ReferenceCheck {
     });
   }
 
-  private walkList(list: ListNode, path: string) {
-    if (this.page.data.kind !== 'record') this.report('data', 'a list shows records: its data needs kind "record" and a model');
-    this.checkListed(list, this.page.fields, path);
-    list.groupBy?.forEach((name, i) => this.need(name, `${path}.groupBy[${i}]`));
-    // A list's filters are about its own records: their fields are the page's, and there is no record to take a value from.
-    const walk = (item: FilterItem, at: string): void => {
-      if ('any' in item) return item.any.forEach((inner, i) => walk(inner, `${at}.any[${i}]`));
-      if ('all' in item) return item.all.forEach((inner, i) => walk(inner, `${at}.all[${i}]`));
-      this.need(item.field, `${at}.field`);
-      if (item.valueFrom !== undefined) this.report(`${at}.valueFrom`, "a list's filter compares with values, not with another field");
-    };
-    const named = new Set<string>();
-    list.filters?.forEach((filter, i) => {
-      this.claim(filter.id, `${path}.filters[${i}]`);
-      named.add(filter.id);
-      filter.filter?.forEach((item, j) => walk(item, `${path}.filters[${i}].filter[${j}]`));
-      // A period is of a date, or a date and time.
-      const dated = filter.period ? this.need(filter.period.field, `${path}.filters[${i}].period.field`) : undefined;
-      if (dated && dated.type !== 'date' && dated.type !== 'datetime') this.report(`${path}.filters[${i}].period.field`, `"${filter.period?.field}" is a ${dated.type}; a period is of a date, or a date and time`);
-    });
-    list.defaultFilters?.forEach((id, i) => {
-      if (!named.has(id)) this.report(`${path}.defaultFilters[${i}]`, `no filter "${id}" in this list`);
-    });
-    list.actions?.forEach((button, i) => {
-      this.claim(button.id, `${path}.actions[${i}]`);
-      this.checkPress(button, `${path}.actions[${i}]`);
-    });
-    if (list.map) this.walkListMap(list.map, `${path}.map`);
-    if (list.calendar) this.walkListCalendar(list, `${path}.calendar`);
-    this.checkListCells(list, path);
-    this.checkListRows(list, path);
-  }
 
-  /**
-   * A list's cards, gallery, columns people choose and rows' own rules: a
-   * card's fields the page's, its picture one that can hold a picture; the
-   * optional columns among the columns; a row's tones, bold and buttons
-   * reading the list's record (its fields, `id`, `user`); and the list
-   * opening on one thing.
-   */
-  private checkListRows(list: ListNode, path: string) {
-    if (list.card) this.checkListCard(list.card, `${path}.card`, this.page.fields);
-    for (const column of Object.keys(list.optionalColumns ?? {})) {
-      if (!list.columns.includes(column)) this.report(`${path}.optionalColumns.${column}`, `"${column}" is no column of this list: a person shows or hides its columns`);
-    }
-    // A column a person may hide, every one hidden at first: the list would open with no column but its own.
-    if (list.optionalColumns && list.columns.every((column) => list.optionalColumns?.[column] === 'hide')) this.report(`${path}.optionalColumns`, 'every column starts hidden: show one at least, as the list opens');
-    if (list.gallery?.opens === 'gallery') {
-      if (list.map?.view && list.map.view !== 'list') this.report(`${path}.gallery.opens`, 'the list opens on its map (map.view) and on its gallery: say one');
-      if (list.calendar?.opens === 'calendar') this.report(`${path}.gallery.opens`, 'the list opens on its calendar and on its gallery: say one');
-    }
-    list.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when']));
-    this.checkModifiers(list, path, ['rowBold']);
-    list.rowButtons?.forEach((button, i) => {
-      this.claim(button.id, `${path}.rowButtons[${i}]`);
-      this.checkPress(button, `${path}.rowButtons[${i}]`);
-      // Shown by a condition on each row's record.
-      this.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible']);
-    });
-  }
-
-  /**
-   * What a list's card shows — a list page's, or a related list's of its own records' fields: its title, subtitle,
-   * status and lines each a field, its picture one that can hold a picture.
-   */
-  private checkListCard(card: ListCard, at: string, fields: Record<string, Field | LineField>) {
-    for (const key of ['title', 'subtitle', 'status'] as const) if (card[key] !== undefined) this.need(card[key] as string, `${at}.${key}`, fields);
-    if (card.image !== undefined) {
-      const def = this.need(card.image, `${at}.image`, fields);
-      if (def && !PICTURES.has(def.type)) this.report(`${at}.image`, `"${card.image}" is a ${def.type}; a card's picture is an image or binary field, or text holding a picture's address`);
-    }
-    card.fields?.forEach((line, i) =>
-      (Array.isArray(line) ? line : [line]).forEach((part, j) => this.need(typeof part === 'string' ? part : part.field, `${at}.fields[${i}]${Array.isArray(line) ? `[${j}]` : ''}${typeof part === 'string' ? '' : '.field'}`, fields))
-    );
-  }
-
-  /**
-   * A list's calendar: when each record starts (a date, or a date and time)
-   * and ends (the same kind), its words, its colour and its columns, each
-   * from a field that can; the view it opens on is one it offers, its hours
-   * run forward, and the list opens on one thing.
-   */
-  private walkListCalendar(list: ListNode, path: string) {
-    const calendar = list.calendar as NonNullable<ListNode['calendar']>;
-    const typed = (name: string | undefined, key: string, ok: ReadonlySet<string>, says: string) => {
-      if (name === undefined) return undefined;
-      const def = this.need(name, `${path}.${key}`);
-      if (def && !ok.has(def.type)) this.report(`${path}.${key}`, `"${name}" is a ${def.type}; ${says}`);
-      return def;
-    };
-    const start = typed(calendar.start, 'start', CALENDAR_TIMES, "a calendar's start is a date, or a date and time");
-    const end = typed(calendar.end, 'end', CALENDAR_TIMES, "a calendar's end is a date, or a date and time");
-    if (start && end && CALENDAR_TIMES.has(start.type) && CALENDAR_TIMES.has(end.type) && start.type !== end.type) {
-      this.report(`${path}.end`, `"${calendar.end}" is a ${end.type}; an end is the same kind of field as its start, a ${start.type}`);
-    }
-    typed(calendar.title, 'title', CALENDAR_WORDS, "a record's words on a calendar are a field that can be said");
-    typed(calendar.colour, 'colour', CALENDAR_COLOURS, 'a colour comes from a link, a choice, text, a whole number or a yes or no');
-    typed(calendar.resource, 'resource', CALENDAR_COLUMNS, 'a column for each comes from a link, a choice, text or a whole number');
-    const views = calendar.views ?? ['day', 'week', 'month', 'agenda'];
-    views.forEach((view, i) => {
-      if (views.indexOf(view) !== i) this.report(`${path}.views[${i}]`, `"${view}" is offered twice`);
-    });
-    if (calendar.view && !views.includes(calendar.view)) this.report(`${path}.view`, `"${calendar.view}" is not one of its views (${views.join(', ')})`);
-    if (calendar.hours && calendar.hours.end <= calendar.hours.start) this.report(`${path}.hours`, `the hours end at ${calendar.hours.end}, before they start at ${calendar.hours.start}`);
-    if (calendar.opens === 'calendar' && list.map?.view && list.map.view !== 'list') this.report(`${path}.opens`, 'the list opens on its map (map.view) and on its calendar: say one');
-  }
-
-  /**
-   * A list drawn as a backlog: each column's cells are a column's, a lead's
-   * icon is by a field's values; the filter bar's fields can list their
-   * values; rows nest under a link to the list's own records; and buttons for
-   * the rows chosen need a box to choose one.
-   */
-  private checkListCells(list: ListNode, path: string) {
-    if (list.filterFields && list.search !== 'fields') this.report(`${path}.filterFields`, 'the filter fields are for the "fields" search: add "search": "fields"');
-    list.filterFields?.forEach((name, i) => {
-      const def = this.need(name, `${path}.filterFields[${i}]`);
-      if (def && !LISTS_ITS_VALUES.has(def.type) && !RANGE_ONLY.has(def.type)) {
-        this.report(`${path}.filterFields[${i}]`, `"${name}" is a ${def.type}; a filter lists the values of a choice, a link, links, a yes or no, text or a whole number, or takes the range of a number or a date`);
-      }
-    });
-    // A filter's own name is for a filter the bar offers.
-    for (const name of Object.keys(list.filterLabels ?? {})) {
-      if (!list.filterFields?.includes(name)) this.report(`${path}.filterLabels.${name}`, `"${name}" is no field of filterFields: its name is for a filter the bar offers`);
-    }
-    // A range is a number's or a date's the bar offers; the presses for its least values are a number's, in order.
-    for (const [name, range] of Object.entries(list.filterRanges ?? {})) {
-      const at = `${path}.filterRanges.${name}`;
-      if (!list.filterFields?.includes(name)) {
-        this.report(at, `"${name}" is no field of filterFields: a range is for a filter the bar offers`);
-        continue;
-      }
-      const def = this.page.fields[name];
-      if (!def) continue;
-      if (!HAS_A_RANGE.has(def.type)) {
-        this.report(at, `"${name}" is a ${def.type}; a range is a number's or a date's`);
-        continue;
-      }
-      const least = range.atLeast ?? [];
-      if (least.length && (def.type === 'date' || def.type === 'datetime')) this.report(`${at}.atLeast`, `"${name}" is a ${def.type}; the presses for a least value are a number's`);
-      else if (def.type === 'integer' && least.some((n) => !Number.isInteger(n))) this.report(`${at}.atLeast`, `"${name}" holds whole numbers: each least value is one`);
-      else if (least.some((n, i) => i > 0 && n <= least[i - 1])) this.report(`${at}.atLeast`, 'the least values go from the smallest to the largest, each once');
-    }
-    if (list.filterSheet && list.search !== 'fields') this.report(`${path}.filterSheet`, 'the filter sheet is the filter bar\'s on a phone: add "search": "fields"');
-    if (list.parentField !== undefined) {
-      const def = this.need(list.parentField, `${path}.parentField`);
-      const model = this.page.data.kind === 'record' ? this.page.data.model : '';
-      if (def && (def.type !== 'many2one' || def.relation !== model)) {
-        this.report(`${path}.parentField`, `"${list.parentField}" ${def.type === 'many2one' ? `links to ${def.relation}` : `is a ${def.type}`}; a parent is a many2one to the list’s own model, ${model}`);
-      }
-    }
-    if (list.choose === false && list.actions?.length) this.report(`${path}.actions`, 'a list’s buttons act on the rows chosen: with "choose": false there is no way to choose one');
-    this.checkBulkEdit(list, path);
-    this.checkImport(list, path);
-  }
-
-  /**
-   * What a list shows of its records — a list page's, or a related list's of its own records' fields: its columns, its
-   * order and the fields its search looks in, each a field; each column's cells for a column of it, a sum, an average,
-   * the lowest and the highest of a number column (any column's count), a lead's icon by a field's values.
-   */
-  private checkListed(list: Pick<ListNode, 'columns' | 'sort' | 'searchFields' | 'cells'>, fields: Record<string, Field | LineField>, path: string) {
-    list.columns.forEach((name, i) => this.need(name, `${path}.columns[${i}]`, fields));
-    list.sort?.forEach((order, i) => this.need(order.field, `${path}.sort[${i}].field`, fields));
-    list.searchFields?.forEach((name, i) => this.need(name, `${path}.searchFields[${i}]`, fields));
-    for (const [column, cell] of Object.entries(list.cells ?? {})) {
-      const at = `${path}.cells.${column}`;
-      if (!list.columns.includes(column)) {
-        this.report(at, `"${column}" is no column of this list: its cells are for its columns`);
-        continue;
-      }
-      const kind = has(fields, column) ? fields[column].type : undefined;
-      if (cell.total && cell.total !== 'count' && kind && kind !== 'integer' && kind !== 'float' && kind !== 'monetary') {
-        this.report(`${at}.total`, `"${column}" is a ${kind}; its total "${cell.total}" is of numbers — an integer, a float or an amount — and any column's is "count"`);
-      }
-      if (!cell.lead) continue;
-      const def = this.need(cell.lead.field, `${at}.lead.field`, fields);
-      if (def?.type !== 'selection') continue;
-      const values = new Set(def.options.map((option) => String(option.value)));
-      for (const value of Object.keys(cell.lead.looks)) if (!values.has(value)) this.report(`${at}.lead.looks.${value}`, `"${value}" is no value of "${cell.lead.field}"`);
-    }
-  }
-
-  /** A list's Edit: each field it names one value can set in many records, and rows to choose to set it on. */
-  private checkBulkEdit(list: ListNode, path: string) {
-    if (!list.bulkEdit) return;
-    if (list.choose === false) this.report(`${path}.bulkEdit`, 'Edit changes the rows chosen: with "choose": false there is no way to choose one');
-    if (list.bulkEdit === true) {
-      if (!list.columns.some((name) => bulkSettable(this.page.fields[name]))) this.report(`${path}.bulkEdit`, 'Edit offers the columns one value can set, and none of these can: name the fields it offers');
-      return;
-    }
-    const named = list.bulkEdit;
-    named.forEach((name, i) => {
-      const at = `${path}.bulkEdit[${i}]`;
-      if (named.indexOf(name) !== i) this.report(at, `"${name}" is offered twice`);
-      const def = this.need(name, at);
-      if (!def) return;
-      if (!BULK_KINDS.has(def.type)) this.report(at, `"${name}" is a ${def.type}; one value set in many records is words, a number, money, a yes or no, a date, a choice or a link`);
-      else if (def.readonly === true || def.compute) this.report(at, `"${name}" is ${def.compute ? 'worked out from other fields' : 'read-only'}; Edit sets a field people can change`);
-    });
-  }
-
-  /** A list's Import: each field it names one a file's cell can fill, and at least one such field on the page. */
-  private checkImport(list: ListNode, path: string) {
-    if (!list.import) return;
-    if (list.import === true) {
-      if (!Object.values(this.page.fields).some((def) => importable(def))) this.report(`${path}.import`, 'Import fills the fields a file’s cell can, and this page has none: words, a number, money, yes or no, a date, a choice or a link people can change');
-      return;
-    }
-    const named = list.import;
-    named.forEach((name, i) => {
-      const at = `${path}.import[${i}]`;
-      if (named.indexOf(name) !== i) this.report(at, `"${name}" is offered twice`);
-      const def = this.need(name, at);
-      if (!def) return;
-      if (!IMPORT_KINDS.has(def.type)) this.report(at, `"${name}" is a ${def.type}; a file's cell fills words, a number, money, a yes or no, a date, a choice, or a link or links by name`);
-      else if (def.readonly === true || def.compute) this.report(at, `"${name}" is ${def.compute ? 'worked out from other fields' : 'read-only'}; Import fills a field people can change`);
-    });
-  }
-
-  /** A list's map: where each record is, and the fields its pin and its card show, each of a type that can. */
-  private walkListMap(map: NonNullable<ListNode['map']>, path: string) {
-    const pair = map.latitude !== undefined || map.longitude !== undefined;
-    if (map.point !== undefined && pair) this.report(path, 'a map takes point, or latitude and longitude, not both');
-    else if (map.point === undefined && (map.latitude === undefined || map.longitude === undefined)) this.report(path, 'a map needs where each record is: point, or latitude and longitude');
-    this.checkPlace(map, path, this.here(), map.pin, map.card);
-    if (map.regions) this.need(map.regions.field, `${path}.regions.field`);
-    if (typeof map.heat === 'object' && map.heat.weight !== undefined) {
-      const def = this.need(map.heat.weight, `${path}.heat.weight`);
-      if (def && def.type !== 'float' && def.type !== 'integer' && def.type !== 'monetary') this.report(`${path}.heat.weight`, `"${map.heat.weight}" is a ${def.type}; a weight is a number field`);
-    }
-  }
-
-  /**
-   * Where a place is kept, and the fields its pin and its card show, each of a
-   * type that can: a page's fields, or a line's when the place is a line's.
-   */
-  private checkPlace(at: { point?: string; latitude?: string; longitude?: string }, path: string, scope: Scope, pin?: Pin, card?: MapCard) {
-    const typed = (name: string | undefined, where: string, ok: (type: string) => boolean, says: string) => {
-      if (name === undefined) return;
-      const def = this.need(name, where, scope.fields);
-      if (def && !ok(def.type)) this.report(where, `"${name}" is a ${def.type}; ${says}`);
-    };
-    const number = (type: string) => type === 'float' || type === 'integer';
-    const picture = (type: string) => type === 'image' || type === 'binary';
-    typed(at.point, `${path}.point`, (type) => type === 'json', 'a point is kept in a json field');
-    typed(at.latitude, `${path}.latitude`, number, 'a latitude is a number field (float or integer)');
-    typed(at.longitude, `${path}.longitude`, number, 'a longitude is a number field (float or integer)');
-    if (pin) {
-      typed(pin.image, `${path}.pin.image`, picture, "a pin's photo is an image or binary field");
-      typed(pin.turn, `${path}.pin.turn`, number, 'a turn is a number field, in degrees');
-      if (pin.iconField !== undefined) this.need(pin.iconField, `${path}.pin.iconField`, scope.fields);
-      if (pin.label !== undefined) this.need(pin.label, `${path}.pin.label`, scope.fields);
-      pin.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.pin.tones[${i}]`, ['when'], scope));
-      pin.money?.per?.forEach((item, i) => this.checkModifiers(item, `${path}.pin.money.per[${i}]`, ['when'], scope));
-    }
-    if (card) {
-      if (card.title !== undefined) this.need(card.title, `${path}.card.title`, scope.fields);
-      typed(card.image, `${path}.card.image`, picture, "a card's picture is an image or binary field");
-      // A line is a part, or several on one line; a part a field's name, or a field with its words.
-      card.fields?.forEach((line, i) =>
-        (Array.isArray(line) ? line : [line]).forEach((part, j) => {
-          const at = `${path}.card.fields[${i}]${Array.isArray(line) ? `[${j}]` : ''}${typeof part === 'string' ? '' : '.field'}`;
-          this.need(typeof part === 'string' ? part : part.field, at, scope.fields);
-        })
-      );
-      typed(card.href, `${path}.card.href`, (type) => type === 'char' || type === 'text', "a card's link is a text field holding a web address");
-    }
-  }
-
-  /**
-   * A form's map: each layer one kind — the record's place, a place for each
-   * of its lines, a route between layers, or the reader's own place — its
-   * fields where that kind keeps them, and a route's ends layers it can join.
-   */
-  private walkMap(node: MapNode, path: string) {
-    const layers = new Map<string, { lines: boolean; place: boolean }>();
-    node.layers.forEach((layer, i) => {
-      const at = `${path}.layers[${i}]`;
-      if (layers.has(layer.id)) this.report(`${at}.id`, `two layers are called "${layer.id}"`);
-      const pair = layer.latitude !== undefined || layer.longitude !== undefined;
-      const placed = layer.point !== undefined || pair;
-      const kinds = [placed, !!layer.route, !!layer.myLocation, !!layer.regions, !!layer.reachable].filter(Boolean).length;
-      if (kinds !== 1) this.report(at, 'a layer is one of: a place (point, or latitude and longitude, for the record or for each of its lines), a route, myLocation, regions, or reachable');
-      if (layer.regions?.choose !== undefined) this.need(layer.regions.choose, `${at}.regions.choose`);
-      if (layer.point !== undefined && pair) this.report(at, 'a layer takes point, or latitude and longitude, not both');
-      else if (layer.point === undefined && pair && (layer.latitude === undefined || layer.longitude === undefined)) this.report(at, 'a layer needs both latitude and longitude');
-      if (layer.lines !== undefined && !placed) this.report(`${at}.lines`, "a layer of lines needs where each line is: point, or latitude and longitude, of the line's fields");
-      if (layer.live && (!placed || layer.lines !== undefined)) this.report(`${at}.live`, "live is for a layer of the record's own place: it moves as its fields change");
-      this.checkModifiers(layer, at, ['invisible']);
-      layers.set(layer.id, { lines: layer.lines !== undefined, place: placed || !!layer.myLocation });
-      if (!placed) return;
-      if (layer.lines === undefined) return this.checkPlace(layer, at, this.here(), layer.pin, layer.card);
-      const def = this.need(layer.lines, `${at}.lines`);
-      if (!def) return;
-      if (def.type !== 'one2many') return this.report(`${at}.lines`, `"${layer.lines}" is a ${def.type}; a layer of lines is a one2many field`);
-      this.checkPlace(layer, at, { fields: def.fields as Record<string, LineField>, lines: layer.lines, parent: this.page.fields }, layer.pin, layer.card);
-    });
-    node.layers.forEach((layer, i) => {
-      const route = layer.route;
-      if (!route) return;
-      const at = `${path}.layers[${i}].route`;
-      const end = (id: string | undefined, key: 'from' | 'to') => {
-        if (id === undefined) return;
-        const found = layers.get(id);
-        if (!found) this.report(`${at}.${key}`, `no layer "${id}" on this map`);
-        else if (!found.place || found.lines) this.report(`${at}.${key}`, `a route's ${key} is a layer of one place, or the reader's own; "${id}" is not`);
-      };
-      end(route.from, 'from');
-      end(route.to, 'to');
-      if (route.through !== undefined) {
-        const found = layers.get(route.through);
-        if (!found) this.report(`${at}.through`, `no layer "${route.through}" on this map`);
-        else if (!found.lines) this.report(`${at}.through`, `a route goes through a layer of lines; "${route.through}" is not one`);
-      }
-      if (route.to === undefined && route.through === undefined) this.report(at, 'a route needs where it goes: to, or through');
-      const written = (name: string | undefined, key: string, ok: (type: string) => boolean, says: string) => {
-        if (name === undefined) return;
-        const def = this.need(name, `${at}.write.${key}`);
-        if (def && !ok(def.type)) this.report(`${at}.write.${key}`, `"${name}" is a ${def.type}; ${says}`);
-      };
-      const number = (type: string) => type === 'float' || type === 'integer';
-      written(route.write?.seconds, 'seconds', number, 'seconds are a number field');
-      written(route.write?.metres, 'metres', number, 'metres are a number field');
-      written(route.write?.line, 'line', (type) => type === 'json', 'a line is kept in a json field');
-    });
-    node.layers.forEach((layer, i) => {
-      if (!layer.reachable) return;
-      const found = layers.get(layer.reachable.from);
-      const at = `${path}.layers[${i}].reachable.from`;
-      if (!found) this.report(at, `no layer "${layer.reachable.from}" on this map`);
-      else if (!found.place || found.lines) this.report(at, `a reachable area is worked out from a layer of one place, or the reader's own; "${layer.reachable.from}" is not`);
-    });
-    node.fences?.forEach((fence, i) => {
-      const at = `${path}.fences[${i}]`;
-      const watched = node.layers.find((layer) => layer.id === fence.layer);
-      if (!watched) this.report(`${at}.layer`, `no layer "${fence.layer}" on this map`);
-      else if (!watched.live && !watched.myLocation) this.report(`${at}.layer`, `a fence watches a place that moves: a live layer, or the reader's own; "${fence.layer}" is not`);
-      if (fence.area !== undefined) {
-        const def = this.need(fence.area, `${at}.area`);
-        if (def && def.type !== 'json') this.report(`${at}.area`, `"${fence.area}" is a ${def.type}; an area is kept in a json field`);
-      }
-      if (fence.within !== undefined && !node.layers.some((layer) => layer.id === fence.within && layer.reachable)) this.report(`${at}.within`, `a fence is within a reachable area of this map; "${fence.within}" is not one`);
-      this.checkSteps(fence.steps, `${at}.steps`);
-    });
-  }
 
   private walkChildren(children: LayoutNode[], path: string) {
     children.forEach((child, i) => this.walkNode(child, `${path}.children[${i}]`));
@@ -1035,9 +688,9 @@ export class ReferenceCheck {
       case 'text':
         return this.checkValuesIn(node.text, `${path}.text`);
       case 'map':
-        return this.walkMap(node, path);
+        return checkMap(node, path, this.mapTools());
       case 'related':
-        return this.checkRelated(node, path);
+        return checkRelated(node, path, this.listTools());
       case 'slot':
         this.slots.add(node.name);
         return;
@@ -1059,44 +712,6 @@ export class ReferenceCheck {
     } else this.formNames.set(node.name, path);
   }
 
-  /**
-   * A related list: on a record's page, its columns, order, search, cells, card and rows' rules of its own records'
-   * fields, its link to this record a link of theirs to this model where its fields name it, and its filter's
-   * `valueFrom` this record's.
-   */
-  private checkRelated(node: RelatedNode, path: string) {
-    // The quick check reads no shapes: a part with nothing to go by is said here.
-    if (typeof node.model !== 'string' || typeof node.field !== 'string' || !Array.isArray(node.columns) || !node.fields || typeof node.fields !== 'object') {
-      return this.report(path, 'a related list needs the model of its records, their link to this record (field), their fields and its columns');
-    }
-    const model = this.page.data.kind === 'record' ? this.page.data.model : null;
-    if (!model || this.line) this.report(path, 'a related list shows the records that point at a record: it belongs on a record’s page');
-    const fields = node.fields as Record<string, Field | LineField>;
-    this.checkListed(node, fields, path);
-    // On a phone its rows are cards, as a list's: of its own records' fields.
-    if (node.card) this.checkListCard(node.card, `${path}.card`, fields);
-    // Its rows' own rules, as a list's, each read on the row's record: its own fields, its id, the person, the context.
-    const row: Scope = { fields };
-    node.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when'], row));
-    this.checkModifiers(node, path, ['rowBold'], row);
-    node.rowButtons?.forEach((button, i) => {
-      this.claim(button.id, `${path}.rowButtons[${i}]`);
-      this.checkPress(button, `${path}.rowButtons[${i}]`);
-      this.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible'], row);
-    });
-    const link = has(fields, node.field) ? fields[node.field] : undefined;
-    if (link && model && (link.type !== 'many2one' || link.relation !== model)) {
-      this.report(`${path}.field`, `"${node.field}" ${link.type === 'many2one' ? `links to ${link.relation}` : `is a ${link.type}`}; the records listed point at this one by a many2one to ${model}`);
-    }
-    for (const [name, def] of Object.entries(fields)) {
-      if (def.type === 'monetary' && def.currencyField !== undefined) this.checkCurrency(def.currencyField, `${path}.fields.${name}.currencyField`, fields, undefined, fields);
-      if (def.type === 'datetime' && def.timeZone !== undefined) this.checkZone(def.timeZone, `${path}.fields.${name}.timeZone`);
-    }
-    // Its filter is about its records, by their fields; what it compares with may be read from this record.
-    node.filter?.forEach((item, i) => this.checkFilterItem(item, `${path}.filter[${i}]`, this.here()));
-    if (node.viewAll && node.viewAll.page === this.page.id) this.report(`${path}.viewAll.page`, 'View all opens a list of the records related: this page is the record they point at');
-  }
-
   private walkTabs(node: TabsNode, path: string) {
     node.children.forEach((tab, i) => {
       const tabPath = `${path}.children[${i}]`;
@@ -1114,29 +729,8 @@ export class ReferenceCheck {
       if (sheet.title.avatarField !== undefined) this.need(sheet.title.avatarField, `${path}.title.avatarField`);
       sheet.title.placeholderWhen?.forEach((item, i) => this.checkModifiers(item, `${path}.title.placeholderWhen[${i}]`, ['when']));
     }
-    if (sheet.statusbar) {
-      const { field, visibleStates, durationsField, fold, saves, clickable } = sheet.statusbar;
-      const at = `${path}.statusbar`;
-      this.checkModifiers(sheet.statusbar, at);
-      if (durationsField !== undefined) {
-        const times = this.need(durationsField, `${at}.durationsField`);
-        if (times && times.type !== 'json') this.report(`${at}.durationsField`, `"${durationsField}" is a ${times.type}; time per step comes from a json field`);
-      }
-      if (saves && !clickable) this.report(`${at}.saves`, 'a click saves only where a step can be clicked (clickable)');
-      const def = this.need(field, `${path}.statusbar.field`);
-      if (fold && def && def.type !== 'many2one') this.report(`${at}.fold`, 'steps fold by their record (a stage), so only a link’s steps fold; a choice keeps the steps it shows with visibleStates');
-      if (def && def.type !== 'selection' && def.type !== 'many2one') {
-        this.report(`${path}.statusbar.field`, `"${field}" is a ${def.type}; a statusbar needs a selection or many2one`);
-      }
-      if (def?.type === 'selection' && visibleStates) {
-        const values = new Set(def.options.map((o) => o.value));
-        visibleStates.forEach((state, i) => {
-          if (!values.has(state)) {
-            this.report(`${path}.statusbar.visibleStates[${i}]`, `"${state}" is not an option of "${field}"`);
-          }
-        });
-      }
-    }
+    // A statusbar, drawn by the business part, whose checks come with it in the one-tag script.
+    if (sheet.statusbar) checkStatusbar(sheet.statusbar, path, { ...this.fieldTools(), checkModifiers: (owner, at, keys) => this.checkModifiers(owner, at, keys) });
     sheet.buttons?.forEach((button, i) => {
       this.claim(button.id, `${path}.buttons[${i}]`);
       this.checkModifiers(button, `${path}.buttons[${i}]`);
@@ -1199,60 +793,6 @@ export class ReferenceCheck {
     }
   }
 
-  /** An address with suggestions: a char field, its place kept as a place field keeps one, its parts in a json field. */
-  private checkAddressSearch(node: FieldNode, def: Field | LineField | undefined, path: string) {
-    const options = node.options ?? {};
-    const kind = (key: string) => {
-      const name = options[key];
-      return typeof name === 'string' && has(this.page.fields, name) ? this.page.fields[name].type : undefined;
-    };
-    if (def && def.type !== 'char') this.report(`${path}.widget`, `address-search is for a char field; "${node.field}" is a ${def.type}`);
-    const place = kind('placeField');
-    if (place && place !== 'json' && place !== 'float') this.report(`${path}.options.placeField`, `"${options['placeField']}" is a ${place}; a place is kept in a json field, or in a float field (its latitude) with longitudeField`);
-    if (place === 'float' && options['longitudeField'] === undefined) this.report(`${path}.options.placeField`, `"${options['placeField']}" keeps a latitude: name the float field for its longitude in longitudeField`);
-    if (options['longitudeField'] !== undefined && place !== 'float') this.report(`${path}.options.longitudeField`, 'longitudeField goes with a placeField that is a float field, its latitude');
-    const longitude = kind('longitudeField');
-    if (longitude && longitude !== 'float') this.report(`${path}.options.longitudeField`, `"${options['longitudeField']}" is a ${longitude}; a longitude is kept in a float field`);
-    const parts = kind('partsField');
-    if (parts && parts !== 'json') this.report(`${path}.options.partsField`, `"${options['partsField']}" is a ${parts}; an address's parts are kept in a json field`);
-  }
-
-  /** Booking slots: on a date and time, its end written in another, asked again as the fields it depends on change. */
-  private checkSlots(node: FieldNode, def: Field | LineField | undefined, path: string) {
-    const options = node.options ?? {};
-    if (def && def.type !== 'datetime') this.report(`${path}.widget`, `slots is for a datetime field; "${node.field}" is a ${def.type}`);
-    const end = options['endField'];
-    if (typeof end === 'string' && has(this.page.fields, end)) {
-      const type = this.page.fields[end].type;
-      if (end === node.field) this.report(`${path}.options.endField`, 'a booking ends in another field than the one it starts in');
-      else if (type !== 'datetime') this.report(`${path}.options.endField`, `"${end}" is a ${type}; a booking's end is kept in a datetime field`);
-    }
-    const on = options['dependsOn'];
-    if (Array.isArray(on)) on.forEach((name, i) => typeof name === 'string' && this.need(name, `${path}.options.dependsOn[${i}]`));
-  }
-
-  /**
-   * A signature that signs answers: on a binary field, the answers it signs fields of this page — never itself — and
-   * the signer's name in a field that holds words (a text, or a link's name).
-   */
-  private checkSignature(node: FieldNode, def: Field | LineField | undefined, path: string) {
-    const options = node.options ?? {};
-    if (def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
-    const signs = options['signs'];
-    if (Array.isArray(signs)) {
-      signs.forEach((name, i) => {
-        if (typeof name !== 'string') return;
-        if (name === node.field) this.report(`${path}.options.signs[${i}]`, 'a signature signs other answers than its own');
-        else this.need(name, `${path}.options.signs[${i}]`);
-      });
-    }
-    const signer = options['signerField'];
-    if (typeof signer === 'string' && has(this.page.fields, signer)) {
-      const type = this.page.fields[signer].type;
-      if (type !== 'char' && type !== 'many2one') this.report(`${path}.options.signerField`, `"${signer}" is a ${type}; the signer's name is kept in a char field, or is a many2one's record`);
-    }
-    if (signer !== undefined && signs === undefined) this.report(`${path}.options.signerField`, 'signerField names who signs the answers in signs: say which it signs');
-  }
 
   /** A picker's own settings, on the kind of field each is for: a path on a link, Fieldia's own list on a choice, a button adding tags, a colour for each state. */
   private checkPicker(node: FieldNode, def: Field | LineField, path: string) {
@@ -1299,32 +839,22 @@ export class ReferenceCheck {
       const problem = autofillGroupProblem(node.autocomplete, node.widget === 'address');
       if (problem) this.report(`${path}.autocomplete`, problem);
     }
-    if (def && node.totals) {
-      if (def.type !== 'one2many') {
-        this.report(`${path}.totals`, `totals only apply to one2many fields; "${node.field}" is a ${def.type}`);
-      } else {
-        node.totals.forEach((column, i) => {
-          const sub = has(def.fields, column) ? def.fields[column] : undefined;
-          if (!sub) this.report(`${path}.totals[${i}]`, `"${column}" is not a field of the lines of "${node.field}"`);
-          else if (!['integer', 'float', 'monetary'].includes(sub.type)) {
-            this.report(`${path}.totals[${i}]`, `"${column}" is a ${sub.type}; only integer, float and monetary columns add up`);
-          }
-        });
-      }
-    }
+    if (def && node.totals && def.type !== 'one2many') this.report(`${path}.totals`, `totals only apply to one2many fields; "${node.field}" is a ${def.type}`);
     // Options that point at another field: by convention their names end in "Field".
     for (const [key, value] of Object.entries(node.options ?? {})) {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
     }
-    if (node.widget === 'address-search') this.checkAddressSearch(node, def, path);
-    if (node.widget === 'slots') this.checkSlots(node, def, path);
-    if (node.widget === 'signature') this.checkSignature(node, def, path);
+    // An address with suggestions, drawn by the app's maps: its checks come with a map's in the one-tag script.
+    if (node.widget === 'address-search') checkAddressSearch(node, def, path, this.mapTools());
+    // Booking slots on a date and time, a signature on a file: drawn by their parts, whose checks of their settings come
+    // with them in the one-tag script.
+    if (node.widget === 'slots' && def && def.type !== 'datetime') this.report(`${path}.widget`, `slots is for a datetime field; "${node.field}" is a ${def.type}`);
+    else if (node.widget === 'slots') checkSlots(node, path, this.fieldTools());
+    if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
+    else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
     if (def) this.checkPicker(node, def, path);
     // The order lines load in: fields of its lines.
-    if (def && node.order) {
-      if (def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);
-      else node.order.forEach((item, i) => !has(def.fields, item.field) && this.report(`${path}.order[${i}].field`, `"${item.field}" is not a field of the lines of "${node.field}"`));
-    }
+    if (def && node.order && def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);
     // A line's own form: its parts read the line's fields, the record as parent.
     if (def && node.lineForm) {
       if (def.type !== 'one2many') this.report(`${path}.lineForm`, `lineForm only applies to one2many fields; "${node.field}" is a ${def.type}`);
@@ -1338,34 +868,7 @@ export class ReferenceCheck {
     }
     // A table's own rules: a cell's read on its line (with parent), a column's `hidden` on the record.
     if (def && node.lineDelete !== undefined && def.type !== 'one2many') this.report(`${path}.lineDelete`, `lineDelete only applies to one2many fields; "${node.field}" is a ${def.type}`);
-    if (def && (node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons || node.lineDelete !== undefined)) {
-      if (def.type !== 'one2many') {
-        if (node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons) this.report(path, `cells, rowTones, rowBold and rowButtons only apply to one2many fields; "${node.field}" is a ${def.type}`);
-      }
-      else {
-        const line: Scope = { fields: def.fields, lines: node.field };
-        for (const [column, rules] of Object.entries(node.cells ?? {})) {
-          if (!has(def.fields, column)) {
-            this.report(`${path}.cells.${column}`, `"${column}" is not a field of the lines of "${node.field}"`);
-            continue;
-          }
-          this.checkModifiers(rules, `${path}.cells.${column}`, ['invisible', 'readonly', 'required', 'bold'], line);
-          this.checkModifiers(rules, `${path}.cells.${column}`, ['hidden']);
-          rules.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.cells.${column}.tones[${i}]`, ['when'], line));
-          // Its widget's options that point at a field: one of the line's.
-          for (const [key, value] of Object.entries(rules.options ?? {})) {
-            if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.cells.${column}.options.${key}`, def.fields);
-          }
-        }
-        node.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when'], line));
-        this.checkModifiers(node, path, ['rowBold', 'lineDelete'], line);
-        node.rowButtons?.forEach((button, i) => {
-          this.claim(button.id, `${path}.rowButtons[${i}]`);
-          this.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible'], line);
-          this.checkPress(button, `${path}.rowButtons[${i}]`);
-        });
-      }
-    }
+    if (def && def.type !== 'one2many' && (node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons)) this.report(path, `cells, rowTones, rowBold and rowButtons only apply to one2many fields; "${node.field}" is a ${def.type}`);
     // Buttons for the chosen lines and in the control row: buttons of the record, as any.
     for (const key of ['selectedButtons', 'controlButtons'] as const) {
       if (!node[key]) continue;
@@ -1376,27 +879,11 @@ export class ReferenceCheck {
         this.checkPress(button, `${path}.${key}[${i}]`);
       });
     }
-    if (def && node.optionalColumns) {
-      if (def.type !== 'one2many') {
-        this.report(`${path}.optionalColumns`, `optional columns only apply to one2many fields; "${node.field}" is a ${def.type}`);
-      } else {
-        // The columns the table shows: those named, or every line field but the structural ones.
-        const shown = node.columns ?? Object.keys(def.fields).filter((c) => c !== ('lineKinds' in def ? def.lineKinds?.field : undefined) && c !== def.sequenceField);
-        for (const column of Object.keys(node.optionalColumns)) {
-          if (!shown.includes(column)) this.report(`${path}.optionalColumns.${column}`, `"${column}" is not a column of "${node.field}"`);
-        }
-      }
-    }
+    if (def && node.optionalColumns && def.type !== 'one2many') this.report(`${path}.optionalColumns`, `optional columns only apply to one2many fields; "${node.field}" is a ${def.type}`);
+    // A table of lines' own settings, drawn by the lines part: its columns, totals, order, cells and rows' rules.
+    if (def?.type === 'one2many') return checkTable(node, def, path, this.tableTools());
     if (!def || !node.columns) return;
-    if (def.type === 'one2many') {
-      node.columns.forEach((column, i) => {
-        if (!has(def.fields, column)) {
-          this.report(`${path}.columns[${i}]`, `"${column}" is not a field of the lines of "${node.field}"`);
-        } else if (def.fields[column].type === 'one2many') {
-          this.report(`${path}.columns[${i}]`, `"${column}" holds lines of its own: they are edited in the line's form (lineForm), not drawn in its row`);
-        }
-      });
-    } else if (def.type === 'many2many') {
+    if (def.type === 'many2many') {
       // A table of the records linked: its columns are fields of those records.
       node.columns.forEach((column, i) => {
         if (!def.fields || !has(def.fields, column)) this.report(`${path}.columns[${i}]`, `"${column}" is not a field of the records of "${node.field}"`);

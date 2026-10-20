@@ -1,6 +1,7 @@
 import type { ActionStep } from '../format/actions';
-import type { DefinitionsFrom, Field, Fields, LineField, Option, PropertyDefinition, SelectionOption } from '../format/field';
-import { choiceOptions, optionsField, optionsList } from '../format/choice-options';
+import type { DefinitionsFrom, Field, Fields, LineField, Option, PropertyDefinition } from '../format/field';
+import { changesOptions, hasOptionRules, optionRulesPart, optionsField, optionsList, type OptionRulesPart } from '../format/choice-options';
+import type { OptionRules } from './option-rules';
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { PageEnding } from '../format/endings';
@@ -9,7 +10,7 @@ import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
 import { zonedPage } from '../format/zoned';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
-import type { Answered, ExpressionEnv, FunctionTable } from '../expression/functions';
+import { callsPartFunctions, functionsPart, type Answered, type ExpressionEnv, type FunctionTable } from '../expression/functions';
 import { functionTable, type AppFunctions } from '../expression/app-functions';
 import { dayIn, ownZone } from './zones';
 import { checkProperties, checkValue } from './check';
@@ -22,7 +23,7 @@ import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
 import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
-import { fill, fillMessage, MESSAGES, type Messages } from './messages';
+import { fillMessage, MESSAGES, type Messages } from './messages';
 import { recordSentence } from './record-words';
 import { askKey, cellOf, listedColumns, notOffered, type ListedColumn } from './line-choices';
 import {
@@ -42,11 +43,11 @@ import {
   type UploadFile,
   type DuplicateMatch,
   type MergeResult,
-  type LimitsResult,
   type SavedDraft,
   type StoredDraft,
 } from './data-source';
-import { countsAsked, fullChosen, limitsNow, seatedFields, takingWords, type FormLimits } from './taking';
+import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
+import type { Limits } from './form-limits';
 import { draftRead, resumeStep } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
@@ -941,6 +942,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let answers = new Map<string, Answered | 'asking'>();
   /** Those on their way: a save waits for them. */
   const asking = new Set<Promise<unknown>>();
+  /** Everything the form waits on (`track`): there before the form's first values are worked out, which may ask. */
+  const pending = new Set<Promise<unknown>>();
   function answer(key: string, asked?: PromiseLike<unknown>): Answered | 'asking' | undefined {
     const kept = answers.get(key);
     if (kept !== undefined || !asked) return kept;
@@ -960,8 +963,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     track(going);
     return 'asking';
   }
-  /** What every expression of the form is handed of the app's. */
-  const app: AppReads = table ? { functions: table, answer } : {};
+  /**
+   * What every expression of the form is handed of the app's — and, on a page calling Fieldia's functions whose bodies
+   * come in the functions part before it has come, the answers they wait for it with, as an app's function that asks.
+   */
+  const app: AppReads = table ? { functions: table, answer } : !functionsPart.loaded && callsPartFunctions(page) ? { answer } : {};
   const index = indexLayout(page.layout, table);
   /** Each field node's answer rules, read once. */
   const nodeRules = new Map<string, CompiledRule[]>();
@@ -1178,7 +1184,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     sent: null,
     asked: Object.fromEntries(askedNow),
     takenOut: {},
-    // Worked out once the form has its state (`showLimits`, as it is made).
+    // Worked out once the form has its state, as the limits part comes (`limitsCode`).
     limits: null,
     resume: null,
   };
@@ -1350,7 +1356,6 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let onchangeSeq = 0;
   let draftTimer: unknown = null;
   let autosaveTimer: unknown = null;
-  const pending = new Set<Promise<unknown>>();
   const listeners = new Set<(state: FormState) => void>();
   /** The app's listeners, by event. */
   const events = new Map<keyof FormEvents, Set<(event: never) => void>>();
@@ -1644,7 +1649,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           if (lost.length) clearChoices(cell ? cell.table : name, cell, lost, namedChoices(lost, shown, loaded));
           put({ options: loaded });
           // Options of the app's list with places, never counted yet: how many took each is asked.
-          if (!cell && loaded.some((option) => option.seats !== undefined) && !counted?.perChoice?.[name]) void track(askLimits());
+          if (!cell && loaded.some((option) => option.seats !== undefined) && (!limitsKit || limitsKit.uncounted(name))) void track(limitsCode().then((kit) => kit?.ask()));
         },
         (error) => put({ options: shown, error: (error as Error).message ?? String(error) })
       )
@@ -1735,57 +1740,39 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return [...((fromList(name) && state.choices[name]?.options) || def.options)];
   }
 
-  /** Each choice's options that show or hide by a condition, read once: by the field, by each option's value. */
-  const optionRules = new Map<string, Map<Option['value'], CompiledModifier>>();
-  for (const [name, def] of Object.entries(page.fields)) {
-    if (def.type !== 'selection') continue;
-    const rules = new Map<Option['value'], CompiledModifier>();
-    for (const option of def.options as SelectionOption[]) if (option.invisible !== undefined && option.invisible !== false) rules.set(option.value, compileModifier(option.invisible, table));
-    if (rules.size) optionRules.set(name, rules);
-  }
-  /** The choices whose options change with the record's answers. */
-  const changing = Object.keys(page.fields).filter((name) => optionRules.has(name) || (page.fields[name].type === 'selection' && !!optionsField((page.fields[name] as Extract<Field, { type: 'selection' }>).optionsFrom)));
+  // ---- options by condition, and carried from an earlier question (the options part: option-rules.ts) -----------
+
+  /** The options' rules made for this form from the options part, once it came: none before, nor on a page with none. */
+  let optionKit: OptionRules | null = null;
   /**
-   * A table line's choices whose options show or hide by a condition on the line's values (and `parent.` the record's),
-   * read once: by the table, its column, each option's value.
+   * The options' rules, made from their part as it comes — at once where it has come — or null on a page with none, or
+   * where the part could not come. Values written before they came are judged as they come: a chosen option the values
+   * no longer offer, since the form was made, is taken out and said.
    */
-  const lineOptionRules = new Map<string, Map<string, Map<Option['value'], CompiledModifier>>>();
-  for (const [lines, def] of Object.entries(page.fields)) {
-    if (def.type !== 'one2many') continue;
-    for (const [column, sub] of Object.entries(def.fields)) {
-      if (sub.type !== 'selection') continue;
-      const rules = new Map<Option['value'], CompiledModifier>();
-      for (const option of sub.options as SelectionOption[]) if (option.invisible !== undefined && option.invisible !== false) rules.set(option.value, compileModifier(option.invisible, table));
-      if (!rules.size) continue;
-      if (!lineOptionRules.has(lines)) lineOptionRules.set(lines, new Map());
-      lineOptionRules.get(lines)?.set(column, rules);
-    }
+  function optionsCode(): Promise<OptionRules | null> {
+    if (optionKit || !hasOptionRules(page)) return Promise.resolve(optionKit);
+    if (optionRulesPart.loaded) return Promise.resolve(optionsMade(optionRulesPart.loaded));
+    const from = state.values;
+    return optionRulesPart.load().then(
+      (part) => {
+        const kit = optionsMade(part);
+        if (kit && !disposed && state.values !== from) writeValues(state.values as Values, {}, false, {}, from);
+        return kit;
+      },
+      () => null
+    );
   }
+  function optionsMade(part: OptionRulesPart): OptionRules | null {
+    optionKit ??= part.optionRules({ page, table, app, state: () => state, today, about, reading, settle, words: (labels) => takenOutWords(labels) });
+    return optionKit;
+  }
+  if (hasOptionRules(page)) void track(optionsCode());
 
-  /** A table line's choice's options as they are offered on that line, its conditions read on it and `record` its record's context. */
+  /** A table line's choice's options as they are offered on that line: its list's once loaded, or its own, by their conditions once they came. */
   function lineOffered(lines: string, line: Line, column: string, record: Record<string, unknown>): Option[] {
+    if (optionKit) return optionKit.lineOffered(lines, line, column, record);
     const sub = (page.fields[lines] as Extract<Field, { type: 'one2many' }>).fields[column] as Extract<LineField, { type: 'selection' }>;
-    const options = (optionsList(sub.optionsFrom) && state.choices[`${lines}.${line.key}.${column}`]?.options) || sub.options;
-    const rules = lineOptionRules.get(lines)?.get(column);
-    if (!rules) return [...options];
-    const context = lineContext(line.values, (page.fields[lines] as Extract<Field, { type: 'one2many' }>).fields as Record<string, LineField>, record, line.id ?? null);
-    const env = { ...app, today };
-    return options.filter((o) => !rules.get(o.value)?.evaluate(context, env));
-  }
-
-  /** A choice's options as they are offered for these values, read with `read`: see `Form.offered`. */
-  function offeredIn(name: string, values: Readonly<Values>, read: { context: Record<string, unknown>; env: ExpressionEnv }, seen: readonly string[] = []): Option[] {
-    const def = page.fields[name] as Extract<Field, { type: 'selection' }>;
-    const carried = optionsField(def.optionsFrom);
-    let options: readonly Option[];
-    if (carried && page.fields[carried.field]?.type === 'selection' && !seen.includes(carried.field)) {
-      const picked = new Set([values[carried.field]].flat().filter((value) => value !== null && value !== undefined));
-      // A "None of these" goes alone: it is no choice to carry.
-      const from = offeredIn(carried.field, values, read, [...seen, name]).filter((o) => !o.exclusive && picked.has(o.value) === (carried.picked !== false));
-      options = [...from.map(({ invisible: _, ...option }: SelectionOption) => option), ...def.options];
-    } else options = (fromList(name) && state.choices[name]?.options) || def.options;
-    const rules = optionRules.get(name);
-    return rules ? options.filter((o) => !rules.get(o.value)?.evaluate(read.context, read.env)) : [...options];
+    return [...((optionsList(sub.optionsFrom) && state.choices[`${lines}.${line.key}.${column}`]?.options) || sub.options)];
   }
 
   /** Options in words, as a sentence joins them: "Garden and Pool". */
@@ -1803,60 +1790,6 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    */
   const takenOutWords = (labels: string[]) =>
     fillMessage(messages, labels.length > 1 ? messages.notOfferedNowMany : messages.notOfferedNow, { name: listedLabels(labels.map((label) => (label.includes('{') ? wordsNow(label) : label))) });
-
-  /**
-   * The chosen options a write no longer offers — hidden by their condition, or no longer picked where they are
-   * carried from — taken out of their answers, with what is said: those offered before it and not after, so a record
-   * opened holding one keeps it, and says so. A table line's alike, by its cell's path, its conditions read on the line
-   * as it was and as it is. Again while one taken out takes another's away. Null when none goes.
-   */
-  function takeOut(before: Readonly<Values>, after: Values): { values: Values; said: Record<string, string> } | null {
-    if (!changing.length && !lineOptionRules.size) return null;
-    const was = before === state.values ? reading() : { context: recordContext(before as Values, page.fields, about()), env: expressionEnv(before as Values, page.fields, today, app) };
-    const said: Record<string, string> = {};
-    let values = after;
-    for (let round = 0; round < 4; round++) {
-      const now = { context: recordContext(values, page.fields, about()), env: expressionEnv(values, page.fields, today, app) };
-      let next = values;
-      for (const name of changing) {
-        const chosen: unknown[] = [values[name]].flat().filter((value) => value !== null && value !== undefined);
-        if (!chosen.length) continue;
-        const offeredBefore = new Map(offeredIn(name, before, was).map((o) => [o.value, o.label]));
-        const offeredNow = new Set(offeredIn(name, values, now).map((o) => o.value));
-        const gone = chosen.filter((value) => offeredBefore.has(value as Option['value']) && !offeredNow.has(value as Option['value']));
-        if (!gone.length) continue;
-        const held = values[name];
-        next = { ...next, [name]: Array.isArray(held) ? ((held as unknown[]).filter((value) => !gone.includes(value)) as Value) : null };
-        said[name] = takenOutWords(gone.map((value) => offeredBefore.get(value as Option['value']) ?? String(value)));
-      }
-      // A line's choice its line's change hides: only a line that was there, and what it offered then.
-      for (const [lines, columns] of lineOptionRules) {
-        const rows = (values[lines] as Line[] | null) ?? [];
-        const rowsBefore = (before[lines] as Line[] | null) ?? [];
-        let written: Line[] | null = null;
-        rows.forEach((line, i) => {
-          const old = rowsBefore.find((one) => one.key === line.key);
-          if (!old) return;
-          for (const column of columns.keys()) {
-            const held = (written?.[i] ?? line).values[column];
-            const chosen: unknown[] = [held].flat().filter((value) => value !== null && value !== undefined);
-            if (!chosen.length) continue;
-            const offeredBefore = new Map(lineOffered(lines, old, column, was.context).map((o) => [o.value, o.label]));
-            const offeredNow = new Set(lineOffered(lines, written?.[i] ?? line, column, now.context).map((o) => o.value));
-            const gone = chosen.filter((value) => offeredBefore.has(value as Option['value']) && !offeredNow.has(value as Option['value']));
-            if (!gone.length) continue;
-            written ??= [...rows];
-            written[i] = { ...written[i], values: { ...written[i].values, [column]: (Array.isArray(held) ? (held as unknown[]).filter((value) => !gone.includes(value)) : null) as Value } };
-            said[`${lines}.${line.key}.${column}`] = takenOutWords(gone.map((value) => offeredBefore.get(value as Option['value']) ?? String(value)));
-          }
-        });
-        if (written) next = { ...next, [lines]: written };
-      }
-      if (next === values) break;
-      values = settle(next);
-    }
-    return Object.keys(said).length ? { values, said } : null;
-  }
 
   /** A line's field as its value is checked: its choices from the app's list, those loaded for its line. */
   function checkedLine(path: string, def: LineField): LineField {
@@ -2131,10 +2064,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       errors[path] = found.failed === undefined ? fillMessage(messages, messages.stillWorkedOut, { label }) : fillMessage(messages, messages.notWorkedOut, { label, problem: found.failed });
     }
     // A choice held whose places filled up since it was picked: never sent, said under it.
-    for (const [name, places] of Object.entries(state.limits?.seats ?? {})) {
-      const full = seen.has(name) && !errors[name] ? fullChosen(page.fields[name], places, state.values[name]) : [];
-      if (full.length) errors[name] = fill(messages.choiceFilled, { option: full.map((option) => option.label).join(', ') });
-    }
+    if (limitsKit) Object.assign(errors, limitsKit.fullErrors(seen, errors));
     // A saved form placed here answers for its fields by its own page's rules.
     for (const node of visibleFieldNodes(root, 'form')) {
       const part = attached.get(node.id);
@@ -2283,14 +2213,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /**
    * Write values someone or something changed. `fresh` values are a starting point instead (a restored draft). `said`:
-   * options taken out of an answer by the write, by path, with their words (`FormState.takenOut`).
+   * options taken out of an answer by the write, by path, with their words (`FormState.takenOut`); `from`, the values
+   * those the write no longer offers were offered in (the form's now, unless said).
    */
-  function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false, said: Record<string, string> = {}) {
+  function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false, said: Record<string, string> = {}, from: Readonly<Values> = state.values) {
     let settled = fresh ? startFrom(written) : settle(written);
     // A choice written again says no more what was taken out of it — a line's, nor once its line is gone; options a
     // change no longer offers are taken out now.
     let takenOut: Record<string, string> = fresh ? {} : { ...Object.fromEntries(Object.entries(state.takenOut).filter(([path]) => sameAt(written, state.values, path))), ...said };
-    const out = fresh ? null : takeOut(state.values, settled);
+    const out = fresh || !optionKit ? null : optionKit.takeOut(from, settled);
     if (out) {
       settled = out.values;
       takenOut = { ...takenOut, ...out.said };
@@ -2500,94 +2431,68 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     );
   }
 
-  /** The source's last answer to `limits`: null until it told. */
-  let counted: LimitsResult | null = null;
-  let limitsTimer: unknown = null;
-  /** The choice fields whose own options have places. */
-  const seated = seatedFields(page);
-  /** A choice's options as shown: its own, or its app's list's once loaded. */
-  const optionsOf = (name: string): readonly Option[] => {
-    const def = page.fields[name];
-    if (def?.type !== 'selection') return [];
-    if (optionsList(def.optionsFrom)) return (started ? state.choices[name]?.options : null) ?? [];
-    // Carried from an earlier question: its options, and the choice's own after them.
-    return optionsField(def.optionsFrom) ? choiceOptions(page.fields, name) : (def.options ?? []);
-  };
-  /** The choice fields with places now: those of the page's own, and of the app's lists whose options loaded with them. */
-  const seatedNow = () => [...seated, ...Object.keys(started ? state.choices : {}).filter((name) => !seated.includes(name) && optionsOf(name).some((option) => option.seats !== undefined))];
-  /** Whether the form asks the source for counts: the page shown (never a saved form placed in it), a source that tells them, and something to count. */
-  const asksLimits = () => !outer && !!options.dataSource?.limits && (countsAsked(page) || seatedNow().length > 0);
-  /** The page's counts asked as it opens and not told yet: nothing is typed meanwhile. */
-  let askingFirst = asksLimits() && countsAsked(page);
-  /** The limits as they are now: none for a saved form placed in another, which takes answers as its record does. */
-  const limitsHere = (): FormLimits | null => (outer ? null : limitsNow(page, clock(), counted, askingFirst, optionsOf));
+  // ---- when the page takes answers, and each choice's places (the limits part: form-limits.ts) --------------------
 
-  /** The limits shown as they are now, and the next moment they change of themselves — the page opening, closing — awaited. */
-  function showLimits() {
-    const limits = limitsHere();
-    if (JSON.stringify(limits) !== JSON.stringify(state.limits ?? null)) set({ limits });
-    if (limitsTimer !== null) scheduler.clearTimeout(limitsTimer);
-    limitsTimer = null;
-    const next = [limits?.opens, limits?.closes].map((at) => (at ? Date.parse(at) - clock() : -1)).filter((ms) => ms > 0).sort((a, b) => a - b)[0];
-    // Within the longest wait a timer keeps (24 days), while something listens: a page left open as it opens or closes
-    // says so then. (A form no one listens to keeps no timer that would hold a process open.)
-    if (next !== undefined && next < 2 ** 31 - 1 && !disposed && listeners.size) limitsTimer = scheduler.setTimeout(showLimits, next + 50);
+  /** The limits made for this form from the limits part, once it came: none before, nor on a page with neither limits nor places. */
+  let limitsKit: Limits | null = null;
+  /** Whether the record shown was loaded once: its counts are asked then, its own choices not counted against it. */
+  let loadedOnce = false;
+  /** Whether the form keeps limits: a page with them or with places of its own, or a list's choices that came with places. */
+  const keepsLimits = () => !outer && (hasLimits(page) || Object.values(state.choices).some((choices) => choices.options?.some((option) => option.seats !== undefined)));
+  /**
+   * The limits, made from their part as it comes — at once where it has come — shown, and asked of the source as the
+   * form opens (or once its record is loaded); null where the form keeps none, or the part could not come: the source's
+   * submit decides then.
+   */
+  function limitsCode(): Promise<Limits | null> {
+    if (limitsKit || !keepsLimits()) return Promise.resolve(limitsKit);
+    if (formLimitsPart.loaded) return Promise.resolve(limitsMade(formLimitsPart.loaded));
+    return formLimitsPart.load().then(limitsMade, () => null);
   }
-
-  /** Ask the source's `limits` again and show what it tells, on the record it was asked for; without it, the dates alone. */
-  async function askLimits(): Promise<void> {
-    const source = options.dataSource;
-    if (!asksLimits() || !source?.limits) return showLimits();
-    const shown = shownNow();
-    const user = options.user ? { user: { id: options.user.id, ...(options.user.name ? { name: options.user.name } : {}) } } : {};
-    // A source that never answers keeps no one from the questions for long: past 10 seconds they show, and its submit decides.
-    const waited = askingFirst
-      ? scheduler.setTimeout(() => {
-          if (!askingFirst || !shown()) return;
-          askingFirst = false;
-          showLimits();
-        }, 10000)
-      : null;
-    try {
-      const told = await source.limits({ pageId: page.id, model: page.data.kind === 'record' ? page.data.model : '', recordId: state.recordId, fields: seatedNow(), ...user });
-      if (!shown()) return;
-      counted = told ?? {};
-    } catch {
-      // Not told: the page keeps to its dates alone, and the source's submit refuses as it would.
-      if (!shown()) return;
-    } finally {
-      if (waited !== null) scheduler.clearTimeout(waited);
-    }
-    askingFirst = false;
-    showLimits();
+  function limitsMade(part: FormLimitsPart): Limits | null {
+    if (limitsKit || disposed) return limitsKit;
+    const kit = part.formLimits({
+      page,
+      dataSource: options.dataSource,
+      user: options.user,
+      messages,
+      scheduler,
+      state: () => state,
+      set,
+      clock,
+      started: () => started,
+      shownNow,
+      generation: () => generation,
+      replaced: () => named(messages.recordReplacedNoun, messages.recordReplaced),
+      listened: () => listeners.size > 0,
+      disposed: () => disposed,
+      refuse(name, message) {
+        // Said until the field changes from what it holds, as a refused save's words are.
+        serverErrors[name] = { message, value: JSON.stringify(state.values[name] ?? null) };
+        set({ errors: { ...state.errors, [name]: message } });
+      },
+    });
+    limitsKit = kit;
+    kit.show();
+    if (kit.asks() && (state.recordId == null || loadedOnce)) void track(kit.ask());
+    return kit;
   }
+  /** Ask the source's `limits` again and show what it tells; without the limits part, nothing to ask. */
+  const askLimits = (): Promise<void> => (limitsKit ? limitsKit.ask() : Promise.resolve());
+  /** Whether the form asks the source for counts. */
+  const asksLimits = () => !!limitsKit?.asks();
 
   /**
-   * Whether the page takes these answers now, asked of the source again just before they go: why not, as a save's
-   * problem, or null. A choice that filled up meanwhile is the check's to say, under its field.
+   * Whether the page takes these answers now, asked of the source again just before they go — the limits part waited
+   * for where the form keeps limits: why not, as a save's problem, or null.
    */
   async function stillTaking(asked: number): Promise<Stopped | null> {
-    if (outer || (!page.limits && !seatedNow().length)) return null;
-    await askLimits();
-    if (asked !== generation) return { reason: 'save', message: named(messages.recordReplacedNoun, messages.recordReplaced) };
-    const limits = limitsHere();
-    const why = limits && limits.state !== 'open' && limits.state !== 'asking' ? takingWords(page, limits, messages) : null;
-    if (!why) return null;
-    const problem: SaveProblem = { kind: 'rule', message: why };
-    set({ status: 'error', error: why, saveProblem: problem, conflict: null, limits });
-    return { reason: 'save', message: why };
+    const kit = await limitsCode();
+    return kit ? kit.stillTaking(asked) : null;
   }
 
   /** A choice of a full option, picked by the person, refused under its field: the field keeps what it held. */
-  function refusedFull(name: string, value: Value): boolean {
-    const full = fullChosen(page.fields[name], state.limits?.seats[name], value, state.values[name]);
-    if (!full.length) return false;
-    const message = fill(messages.choiceFull, { option: full.map((option) => option.label).join(', ') });
-    // Said until the field changes from what it holds, as a refused save's words are.
-    serverErrors[name] = { message, value: JSON.stringify(state.values[name] ?? null) };
-    set({ errors: { ...state.errors, [name]: message } });
-    return true;
-  }
+  const refusedFull = (name: string, value: Value): boolean => !!limitsKit?.refusedFull(name, value);
 
   function scheduleAutosave() {
     const autosave = options.autosave;
@@ -2730,6 +2635,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const waiting = readTyped();
     if (waiting) await waiting;
     if (asked !== generation) return elsewhere();
+    // Options by condition waited for where they have not come: what is saved never holds one they would take out.
+    if (!optionKit && hasOptionRules(page)) {
+      await optionsCode();
+      if (asked !== generation) return elsewhere();
+    }
     // Values the app's functions are asked for are waited for — those that failed asked again — so what is saved is worked out.
     if (asking.size || Object.values(state.asked).some((found) => found.failed !== undefined)) {
       set({ status: 'saving', error: null, saveProblem: null });
@@ -3097,6 +3007,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {}, takenOut: {} });
       // Each choice's places, for this record: its own choices are its own.
+      loadedOnce = true;
       if (asksLimits()) void track(askLimits());
       if (again) return;
       offerDraft();
@@ -3494,12 +3405,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     subscribe(listener) {
       listeners.add(listener);
       // Listened to: the page opening or closing is said as it comes.
-      if (listeners.size === 1 && limitsTimer === null && (state.limits?.opens || state.limits?.closes)) showLimits();
+      if (listeners.size === 1) limitsKit?.heard(true);
       return () => {
         listeners.delete(listener);
-        if (listeners.size || limitsTimer === null) return;
-        scheduler.clearTimeout(limitsTimer);
-        limitsTimer = null;
+        if (!listeners.size) limitsKit?.heard(false);
       };
     },
 
@@ -3560,14 +3469,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     offered(name) {
       const cell = cellOf(name);
-      if (!cell) return page.fields[name]?.type === 'selection' ? offeredIn(name, state.values, reading()) : null;
+      if (!cell) return page.fields[name]?.type === 'selection' ? (optionKit ? optionKit.offered(name, state.values, reading()) : everyOption(name)) : null;
       const lines = page.fields[cell.table];
       const line = lineAt(cell.table, cell.key);
       return lines?.type === 'one2many' && lines.fields[cell.column]?.type === 'selection' && line ? lineOffered(cell.table, line, cell.column, reading().context) : null;
     },
     offersChange(name) {
       const cell = cellOf(name);
-      return cell ? !!lineOptionRules.get(cell.table)?.has(cell.column) : changing.includes(name);
+      const lines = cell ? page.fields[cell.table] : undefined;
+      return changesOptions(cell ? (lines?.type === 'one2many' ? lines.fields[cell.column] : undefined) : page.fields[name]);
     },
 
     waitsFor(name) {
@@ -4173,7 +4083,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       clearFiles();
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
       if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
-      if (limitsTimer !== null) scheduler.clearTimeout(limitsTimer);
+      limitsKit?.dispose();
       listeners.clear();
       events.clear();
       for (const part of attached.values()) part.inner.form.dispose();
@@ -4182,10 +4092,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   // A record's starting values may already break a warning rule; nothing listens yet.
   state = { ...state, warnings: collectWarnings() };
-  // When the page takes answers, at once; its counts and each choice's places as the source tells them.
-  showLimits();
-  // A record's own counts are asked once it is loaded: its own choices are not counted against it.
-  if (asksLimits() && state.recordId == null) void track(askLimits());
+  // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
+  // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
+  if (keepsLimits()) void track(limitsCode());
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

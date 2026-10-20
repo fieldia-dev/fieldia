@@ -5,8 +5,8 @@
  * (tools/script-language.ts). What a page uses only now and then — a list
  * screen, a table of lines, files and a signature, the business and survey
  * kinds, a work item's head, its text editor, a path picker, a filter bar, a
- * date's box, a theme, the quiet look — comes in parts loaded the first time
- * a page uses them (tools/script-parts.ts).
+ * date's box, a theme, the quiet look, a memory source's members — comes in
+ * parts loaded the first time a page uses them (tools/script-parts.ts).
  */
 import { addLanguage } from '@fieldia/viewer';
 import { partsComeByScriptTag } from '@fieldia/widgets';
@@ -16,6 +16,9 @@ import { startParts } from './script-parts';
 
 // The runtime alone: the format's schemas and validation library stay out of a page with no build step.
 export * from '../libs/core/src/runtime';
+// A memory source's members in a part of their own (fieldia.memory.js), loaded the first time a page makes one: an app
+// that gives its own data source never downloads them. Its source is handed over at once, as ever.
+export { createMemoryDataSource, memoryPart, type MemoryPart } from '../libs/core/src/lib/record/memory-later';
 export * from '@fieldia/widgets';
 export * from '@fieldia/viewer';
 

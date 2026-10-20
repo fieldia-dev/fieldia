@@ -1,14 +1,13 @@
-import type { Field, Option } from '../format/field';
 import type { Page } from '../format/page';
-import type { LimitsResult } from './data-source';
-import { fill, type Messages } from './messages';
-import type { Value } from './values';
-import { instantsAt, isOwnZone, wallOf, zoneOffset } from './zones';
+import { lazyPart, type Part } from '../parts';
+import type * as LimitsModule from './limits-part';
+import { instantsAt, wallOf, zoneOffset } from './zones';
 
 /**
  * When a page takes answers, and each choice's places (`limits` on a page, `seats` on an option): worked out from the
- * page, the form's clock and the data source's last answer to `limits`. The form keeps it in its state
- * (`FormState.limits`); a viewer shows a closed form's words in place of its questions, and each choice's places.
+ * page, the form's clock and the data source's last answer to `limits` (form-limits.ts, the limits part). The form
+ * keeps it in its state (`FormState.limits`); a viewer shows a closed form's words in place of its questions, and each
+ * choice's places.
  */
 
 /**
@@ -78,109 +77,21 @@ export function seatedFields(page: Page): string[] {
     .map(([name]) => name);
 }
 
+/** The limits part's form code (form-limits.ts). */
+export type FormLimitsPart = typeof LimitsModule;
+
+/**
+ * A form's limits — what it tells of them, its counts asked of the source, a full choice refused — loaded before a page
+ * with `limits` or options with `seats` is drawn (`hasLimits`), and by a form whose app's list gave options with seats:
+ * in the one-tag script, one script with the viewer's limits part (fieldia.limits.js).
+ */
+export const formLimitsPart: Part<FormLimitsPart> = lazyPart('limits', () => import('./limits-part'));
+
+/** Whether a page has limits, or choices of its own with places: its form's limits come in the limits part. */
+export const hasLimits = (page: Page): boolean => !!page.limits || seatedFields(page).length > 0;
+
 /** Whether a page's limits ask the source for counts: its most responses, one from each person — a page of responses only. */
 export function countsAsked(page: Page): boolean {
   const limits = page.data.kind === 'responses' ? page.limits : undefined;
   return !!limits && (limits.maxResponses !== undefined || limits.onePerPerson === true);
-}
-
-/** What a form tells of its limits now: from the page, the clock, the options it shows and the source's last answer. */
-export function limitsNow(
-  page: Page,
-  now: number,
-  told: LimitsResult | null,
-  asking: boolean,
-  optionsOf: (field: string) => readonly Option[]
-): FormLimits | null {
-  const limits = page.data.kind === 'responses' ? page.limits : undefined;
-  const seats: Record<string, Record<string, Seats>> = {};
-  for (const [field, counted] of Object.entries(told?.perChoice ?? {})) {
-    const places: Record<string, Seats> = {};
-    for (const option of optionsOf(field)) {
-      if (option.seats === undefined) continue;
-      const taken = Math.max(0, Number(counted?.[String(option.value)] ?? 0) || 0);
-      places[String(option.value)] = { seats: option.seats, taken, left: Math.max(0, option.seats - taken) };
-    }
-    if (Object.keys(places).length) seats[field] = places;
-  }
-  if (!limits && !Object.keys(seats).length) return null;
-  const opens = limits?.opens ? limitInstant(limits.opens, page.timeZone) : null;
-  const closes = limits?.closes ? limitInstant(limits.closes, page.timeZone, true) : null;
-  const max = limits?.maxResponses;
-  const responses = told?.responses;
-  const left = max !== undefined && typeof responses === 'number' ? Math.max(0, max - responses) : undefined;
-  const state: TakingState =
-    opens !== null && now < opens ? 'soon'
-    : closes !== null && now >= closes ? 'closed'
-    : asking ? 'asking'
-    : left === 0 ? 'full'
-    : limits?.onePerPerson && (told?.mine ?? 0) >= 1 ? 'sent'
-    : 'open';
-  return {
-    state,
-    ...(opens !== null ? { opens: new Date(opens).toISOString() } : {}),
-    ...(closes !== null ? { closes: new Date(closes).toISOString() } : {}),
-    ...(limits?.message ? { message: limits.message } : {}),
-    ...(left !== undefined ? { left } : {}),
-    seats,
-  };
-}
-
-/** The values a choice holds: one, several (a choice of many), or none. */
-const chosenOf = (value: Value | undefined): unknown[] => (Array.isArray(value) ? value : value === null || value === undefined ? [] : [value]);
-
-/**
- * The options of a choice's value that are full now, in the order they are held: those `before` held too left out
- * when given — a choice made now, not one held already.
- */
-export function fullChosen(field: Field | undefined, places: Readonly<Record<string, Seats>> | undefined, value: Value | undefined, before?: Value | undefined): Option[] {
-  if (!places || field?.type !== 'selection') return [];
-  const held = new Set(chosenOf(before).map(String));
-  return chosenOf(value)
-    .filter((one) => !(before !== undefined && held.has(String(one))) && places[String(one)]?.left === 0)
-    .map((one) => (field.options ?? []).find((option) => String(option.value) === String(one)) ?? { value: String(one), label: String(one) });
-}
-
-/**
- * A day or a day and a time in words, in the messages' language, on the page's clock: "20 November 2026", "1 November
- * 2026 at 09:00" — with the zone's short name where it is not the browser's own ("09:00 GMT+2").
- */
-export function whenWords(written: string, at: number, messages: Messages, zone?: string): string {
-  if (dayAlone(written)) {
-    const [y, m, d] = written.split('-').map(Number);
-    return new Intl.DateTimeFormat(messages.locale, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC', numberingSystem: 'latn' }).format(Date.UTC(y, m - 1, d));
-  }
-  const elsewhere = !!zone && !isOwnZone(zone);
-  return new Intl.DateTimeFormat(messages.locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-    numberingSystem: 'latn',
-    ...(zone ? { timeZone: zone } : {}),
-    ...(elsewhere ? { timeZoneName: 'short' as const } : {}),
-  }).format(at);
-}
-
-/**
- * Why a page takes no answers now, in the messages' words — "This form opens on 1 November 2026 at 09:00.", "This form
- * closed on 20 November 2026.", "This form has all the responses it takes.", "You have sent your answers to this form
- * already." — or null while it takes them (or still asks).
- */
-export function takingWords(page: Page, limits: FormLimits | null | undefined, messages: Messages): string | null {
-  const written = page.limits;
-  switch (limits?.state) {
-    case 'soon':
-      return written?.opens && limits.opens ? fill(messages.formOpens, { when: whenWords(written.opens, Date.parse(limits.opens), messages, page.timeZone) }) : null;
-    case 'closed':
-      return written?.closes && limits.closes ? fill(messages.formClosed, { when: whenWords(written.closes, Date.parse(limits.closes), messages, page.timeZone) }) : null;
-    case 'full':
-      return messages.formFull;
-    case 'sent':
-      return messages.formSent;
-    default:
-      return null;
-  }
 }

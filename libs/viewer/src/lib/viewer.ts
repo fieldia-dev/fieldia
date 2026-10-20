@@ -1,6 +1,8 @@
 import {
   createForm,
+  callsPartFunctions,
   checkPage,
+  functionsPart,
   isRightToLeft,
   localizePage,
   translatePage,
@@ -76,7 +78,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, duplicatesPart, headPart, limitsPart, listPart, partsFor, type HeadPart } from './viewer-parts';
+import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, type HeadPart } from './viewer-parts';
 import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
@@ -296,7 +298,8 @@ export interface ViewerHandle {
    * Settled once the page is drawn: at once, unless it draws from a part not loaded yet (a record's head, a filter bar, a
    * work item's text, a path picker, its own look's theme: parts.ts), which it waits for — its element empty and busy
    * meanwhile. A theme or the quiet skin given by the app is worn as its part comes, the page drawn at once: settled
-   * once that has come too.
+   * once that has come too. In the one-tag script, a list page's own settings are checked once its part has come: a
+   * mistake there rejects this with what the mount throws for the rest, and nothing is drawn.
    */
   readonly drawn: Promise<void>;
   destroy(): void;
@@ -370,10 +373,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const doc = host.ownerDocument;
   // The quick check of names and conditions: the full one, with its validation library, belongs where pages are made.
   // A line's own form reads the record the line is on as parent.
-  const checked = checkPage(options.page, { ...(options.parent ? { parent: options.parent.fields } : {}), ...(options.functions ? { functions: options.functions } : {}) });
-  if (!checked.ok) {
-    throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
-  }
+  const checks = { ...(options.parent ? { parent: options.parent.fields } : {}), ...(options.functions ? { functions: options.functions } : {}) };
+  const checked = checkPage(options.page, checks);
+  if (!checked.ok) throw unshown(checked);
   // The page's own words in its language first; the app's translator over what is left.
   const tag = options.locale ?? checked.page.language;
   const localized = tag ? localizePage(checked.page, tag) : checked.page;
@@ -2461,15 +2463,36 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     return { onNewRecord: (values) => dialogs.openRecord(model, { values, title: sentence(labels.newRecordNoun, labels.newRecord) }) };
   }
   let pageDrawn = false;
+  /**
+   * The one-tag script's checks of what a part draws (a list page's settings, a map's) came with it: run now, before the
+   * page is drawn — and those they owe in turn asked for, each once. Where they find a mistake, nothing is drawn, and what
+   * is drawn settles with it, as the mount would have thrown it.
+   */
+  async function checkedWhole(): Promise<void> {
+    const asked = new Set<Part>(awaited);
+    for (let now = checkPage(options.page, checks); ; now = checkPage(options.page, checks)) {
+      if (!now.ok) {
+        root.remove();
+        throw unshown(now);
+      }
+      const owed = owedParts(now.later).filter((part) => !asked.has(part));
+      if (!owed.length || gone) return;
+      for (const part of owed) asked.add(part);
+      await settleParts(owed);
+    }
+  }
   /** What needs the page drawn — a list's rows to open or ask for again — at once when it is, else once it is. */
   const afterDrawing = <T>(then: () => Promise<T>): Promise<T> => (pageDrawn ? then() : drawn.then(then));
   // A draft opened by its key (`resume`) may name none: the limits part says so.
-  const awaited = [...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : [])].filter((part) => !part.loaded);
+  // The parts its check owes (the one-tag script's), with the page's own: the check runs again once they came.
+  // The app's own functions are called through the functions part: a page whose formulas call one waits for it.
+  const appCalls = options.functions && callsPartFunctions(page, Object.keys(options.functions)) ? [functionsPart] : [];
+  const awaited = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded);
   let drawn: Promise<void> = Promise.resolve();
   if (!awaited.length) drawPage();
   else {
     root.setAttribute('aria-busy', 'true');
-    drawn = settleParts(awaited).then(() => {
+    const drawWaited = () => {
       if (gone) return;
       drawPage();
       // Drawn after the status took its place in a corner or across the top: the page's Save took it back beside itself.
@@ -2478,7 +2501,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       render(form.getState());
       // A record that opened meanwhile: its focused field takes the focus now, as it would have then.
       if (opened) focusAsOpened(true);
-    });
+    };
+    drawn = settleParts(awaited).then(() => (checked.later?.length ? checkedWhole().then(drawWaited) : drawWaited()));
   }
   // A theme or the quiet skin the app gives, not the page, is worn as its part comes, the page drawn meanwhile
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.
@@ -2928,4 +2952,9 @@ export function onelineRuns(children: readonly LayoutNode[]): LayoutNode[][] {
     runs.push(run);
   }
   return runs;
+}
+
+/** Why a page cannot be shown, as the viewer throws it: each problem its check found, by its path. */
+function unshown(checked: { issues: readonly { path: string; message: string }[] }): Error {
+  return new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
 }

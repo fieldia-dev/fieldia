@@ -23,6 +23,9 @@ test('a page with no build step fills in and sends a form', async ({ page }) => 
   await page.getByLabel('Phone').fill('+20 100 555 0101');
   await page.getByLabel('Afternoon').check();
   await screen(page, 'script-filled');
+  // Its memory source's members come in a part of their own, the first time the form asks it — what it keeps there at once.
+  expect(await page.evaluate(() => (window as any).fieldiaDemo.dataSource.responses.length)).toBe(0);
+  expect(requested.filter((path) => path.endsWith('/fieldia.memory.js'))).toEqual([]);
   await page.getByRole('button', { name: 'Submit' }).click();
   await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.dataSource.responses.length)).toBe(1);
   expect(await page.evaluate(() => (window as any).fieldiaDemo.dataSource.responses[0].values)).toMatchObject({
@@ -30,6 +33,7 @@ test('a page with no build step fills in and sends a form', async ({ page }) => 
     phone: '+20 100 555 0101',
     when: 'afternoon',
   });
+  expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path))).toEqual(['/script/fieldia.js', '/script/fieldia.memory.js']);
   expect(problems).toEqual([]);
 });
 

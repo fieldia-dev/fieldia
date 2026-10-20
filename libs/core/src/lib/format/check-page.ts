@@ -53,8 +53,11 @@ export function checkPage(given: unknown, options: { parent?: Record<string, Fie
   const page = input as unknown as Page;
   try {
     // A line's own form reads the record the line is on as parent.
-    const found = new ReferenceCheck(page, options.parent ? { name: page.id, parent: options.parent } : undefined, { functions: options.functions }).run();
-    return found.length ? { ok: false, issues: found } : { ok: true, page };
+    const check = new ReferenceCheck(page, options.parent ? { name: page.id, parent: options.parent } : undefined, { functions: options.functions });
+    const found = check.run();
+    // The one-tag script's checks that come with a part not come yet: the viewer runs this again once it has.
+    const later = check.later.size ? { later: [...check.later] } : {};
+    return found.length ? { ok: false, issues: found, ...later } : { ok: true, page, ...later };
   } catch (error) {
     return { ok: false, issues: [{ path: '(page)', message: `a part of this page cannot be read: ${(error as Error).message}` }] };
   }
