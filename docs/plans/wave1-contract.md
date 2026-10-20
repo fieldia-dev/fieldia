@@ -914,3 +914,103 @@ In plain words:
   `limits` option's starting counts, a record page's model's records but the one edited; `saveDraft` keys drafts
   `draft-1`, `draft-2`… (`drafts` shows them, with `later`), with `draftLink(key)`'s link on "Continue later";
   `loadDraft` finds them, and the `drafts` option's. Tests: `libs/core/src/lib/record/taking.spec.ts`, `drafts.spec.ts`.
+
+## 19. Approvals on a record (Wave 5, lane w5-approvals)
+
+Two more members, each optional as everything here: without `approvals` nothing is asked and nothing shows — no band,
+no lock; without `decide` the band says where a record stands, and no Approve or Reject shows (hidden, never disabled).
+A page asks for them with `approval` (page format, record pages only): `{ "open": ["notes"] }` names the fields that
+stay open while a record waits, `{ "lock": false }` locks none.
+
+```ts
+approvals?(request: ApprovalsRequest): Promise<Approvals>;
+decide?(request: DecideRequest): Promise<Approvals | void>;
+
+interface ApprovalsRequest {
+  model: string;
+  recordId: RecordId;                              // the record shown, saved: a new one is never asked
+  user?: { id: RecordId | null; name?: string };   // as the app told the form; a server knows its own sign-in first
+}
+interface Approvals {
+  levels: ApprovalLevel[];      // in their order; none — the record needs no approval, nothing shows
+  together?: boolean;           // the levels asked all at once (words alone: Fieldia never works out the routing)
+  history?: ApprovalEntry[];    // oldest first
+  mine?: string[];              // the level ids this person may decide now
+  why?: string;                 // the source's own words: "Orders over EGP 150,000 go to Finance, then the CFO."
+}
+interface ApprovalLevel {
+  id: string;
+  name: string;                 // "Finance"
+  approvers: Approver[];        // { id?, name, decision?: 'approved' | 'rejected', at? } — in the round asked now
+  needs?: 'any' | 'all';        // one of them is enough (the default), or every one must
+  state: 'waiting' | 'later' | 'approved' | 'rejected' | 'skipped';
+}
+interface ApprovalEntry {
+  decision: 'approved' | 'rejected' | 'requested';   // `requested`: sent for approval — each round starts with one
+  level?: string;               // the level's id; none for `requested`
+  levelName?: string;           // its name, where it is no longer among the levels
+  by: string;                   // who, by name
+  at: string;                   // ISO
+  reason?: string;              // always with a rejection
+}
+interface DecideRequest {
+  model: string;
+  recordId: RecordId;
+  level: string;                // one of `mine`
+  decision: 'approved' | 'rejected';
+  reason?: string;              // always given with a rejection, trimmed
+  user?: { id: RecordId | null; name?: string };
+}
+// FormState gains approval?: FormApproval | null — { state: 'asking' | 'told' | 'failed', status: 'none' | 'needed' |
+// 'waiting' | 'approved' | 'rejected', levels, together, history, mine, why?, deciding?, error? }.
+// Form gains refreshApprovals(), decide(level, decision, reason?) and approvalLock(name).
+```
+
+In plain words:
+
+- **Fieldia says and asks; the app decides the routing.** Who is asked, in what order, how many must agree and what a
+  decision does to the record are the source's — the app's own rules, or an approval engine behind it. Each level comes
+  with its state; Fieldia never works one out. `status` is read from the states: a level rejected, rejected; one
+  waiting, waiting; every level not skipped approved, approved; none asked yet, needed; no levels, none.
+- **When they are asked.** As a saved record is shown (its load), after each save — a save may send it for approval, or
+  move it on — and after each decision. Asked again, the last answer stays meanwhile (`state: 'asking'`), so what waits
+  stays locked; an answer for a record no longer shown (`form.recordShown()`), or older than the latest ask, is laid on
+  none. A source that throws: `state: 'failed'` with why, nothing locked by it, and Retry.
+- **`mine`** is kept to the levels waiting, and only where the source has `decide`: a level not waiting is never
+  offered. `form.decide` refuses one not in it ("Finance is not yours to decide now"), and a rejection with no reason
+  ("Say why it is rejected") — no source is asked.
+- **A decision is on the record as saved**: what is typed is read and the person's changes saved first (a field left
+  open, typed in); a refused save stops it, said. Then `decide`; its answer, where it gives one, is laid at once; and
+  the record is loaded again — the decision may have moved it on (its state, its `can`) — its approvals asked with it.
+  Refused with `saveRefused({ kind: 'rule', message })`, nothing is decided and the words are said. One decision at a
+  time: a second press while one is on its way is the same press.
+- **Locked while it waits**: while `status` is `waiting`, every field and saved form placed on the page is read-only but
+  those `approval.open` names (`form.node(id).readonly`, `form.fieldReadonly`), each lock saying "Locked while it waits
+  for approval" (`form.approvalLock`). The app's own `setValues` is never refused, nor a step's: a source that must
+  refuse a change while a record waits refuses it in `save`, as it refuses any rule. Rejected or approved, nothing is
+  locked by it — an approved record the app keeps as it is with its own `readonly` or `can`.
+- **The history** is shown beside the record — folded under "Approval history (n)": who asked, who decided at which
+  level, when (as the page's date boxes write a day, on its clock), and why — and in the chatter (`chatterSlot`), among
+  its messages by when each happened, as events never posted to the chatter's source; `chatterSlot({ approvals: false })`
+  where the app's server posts each decision in the conversation itself.
+
+**An approval engine behind the members** — Flowyard's approval step, say (a separate engine Fieldia does not depend
+on): a record's run is the route; each approval step on its way is a level (its step's id, its label as the name, the
+people it asks as approvers). `approvals` reads the run: a step not reached is `later`, one waiting for its people
+`waiting`, one gone on by its Approved way `approved`, by its Declined way `rejected` (the engine's "declined" is
+Fieldia's "rejected"), a step on a branch the run did not take `skipped`; steps on parallel branches are asked
+`together`; one step for every person who must agree, or a step that waits for all of them, is `needs: 'all'`. `mine` is
+the waiting steps whose people include the person signed in. `decide` answers the waiting step for that person — its
+Approved or Declined way — with the reason kept with the run (its note, the item it passes on), and the engine moves the
+record on as its next steps say; `history` is the run's steps as they went: started (`requested`), and each answer with
+who, when and why. A timed-out step is the engine's to say: a `rejected` with its words, or a step on to another level.
+
+- The memory source: `approvals` answers from its `approvals` option, by model — `(values, id) => MemoryApprovalRoute |
+  null`: the levels, who may approve each, any one or all, in turn or `together`, whether the record is sent for approval
+  now (`asked`), `why`, and the values the record takes once every level approved it (`approved`) or one rejected it
+  (`rejected`) — keeping each decision as an engine would: a round of asking starts each time the record is sent again
+  (`requested`, by the person asking), a level waits in turn unless together, is met by one approver or by all, and a
+  rejection ends the round. `decide` refuses a level not waiting, someone not its approver or who decided already, and a
+  rejection with no reason; the person is the request's `user`, by id, else by name. `approvalHistory` (by `model:id`)
+  is what it starts from. Tests: `libs/core/src/lib/record/approvals.spec.ts`, `form-approvals-lazy.spec.ts`,
+  `libs/viewer/src/lib/approvals.spec.ts`, `libs/chatter/src/lib/approvals.spec.ts`, `e2e/approvals.spec.ts`.
