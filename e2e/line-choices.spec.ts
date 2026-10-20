@@ -140,8 +140,21 @@ test.describe('what starts the agent, in the grid', () => {
     await page.keyboard.press('Enter');
     await expect(grid(page).locator('.fd-grid-editor')).toHaveCount(0);
     await expect(cell(page, 0, 'connection_id')).toHaveText('HubSpot — Sales');
-    await expect(cell(page, 0, 'event')).toHaveText('');
+    // Seen under the cell, as a plain table's cell shows it — and said aloud.
+    const note = cell(page, 0, 'event').locator('.fd-grid-taken-out');
+    await expect(note).toBeVisible();
+    await expect(note).toHaveText('A new email arrives is no longer offered, so it was taken out');
+    await expect(cell(page, 0, 'event').locator('.fd-grid-choice-value')).toHaveCount(0);
     await expect(grid(page).locator('.fd-sr-only[role="status"]', { hasText: 'Line 1:' })).toHaveText('Line 1: A new email arrives is no longer offered, so it was taken out');
+    // The row grows to show all of it: nothing of the note is cut.
+    const fits = await note.evaluate((box) => {
+      const row = box.closest('.ag-row') as HTMLElement;
+      const at = box.getBoundingClientRect();
+      const rowAt = row.getBoundingClientRect();
+      return at.top >= rowAt.top && at.bottom <= rowAt.bottom && box.scrollWidth <= box.clientWidth + 1;
+    });
+    expect(fits).toBe(true);
+    await screen(page, 'line-choices-grid-taken-out', { viewport: true });
     // The event chosen again, among HubSpot's.
     await cell(page, 0, 'event').click();
     const events = grid(page).locator('.fd-grid-editor select');
@@ -149,6 +162,7 @@ test.describe('what starts the agent, in the grid', () => {
     await events.selectOption({ label: 'A deal changes stage' });
     await page.keyboard.press('Enter');
     await expect(cell(page, 0, 'event')).toHaveText('A deal changes stage');
+    await expect(note).toHaveCount(0);
     await screen(page, 'line-choices-grid', { viewport: true });
     expect(problems).toEqual([]);
   });

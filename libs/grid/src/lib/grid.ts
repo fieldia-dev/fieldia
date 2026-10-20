@@ -358,6 +358,38 @@ class TotalRenderer implements ICellRendererComp<Line> {
   }
 }
 
+/**
+ * A choice's cell whose line's change took an option out of it: its value, and under it, seen as a plain table's cell
+ * shows it, what was taken out ("A new email arrives is no longer offered, so it was taken out") — said aloud as well
+ * by the grid's voice. Its row grows to show the words while they are said, and is as tall as any once they go.
+ */
+class TakenOutRenderer implements ICellRendererComp<Line> {
+  private box!: HTMLElement;
+  init(params: ICellRendererParams<Line> & { takenOut(): string | undefined }) {
+    this.box = document.createElement('div');
+    this.box.className = 'fd-grid-choice';
+    this.refresh(params);
+  }
+  getGui() {
+    return this.box;
+  }
+  refresh(params: ICellRendererParams<Line> & { takenOut(): string | undefined }) {
+    const words = params.takenOut();
+    const value = document.createElement('span');
+    value.className = 'fd-grid-choice-value';
+    value.textContent = params.valueFormatted ?? String(params.value ?? '');
+    if (!words) {
+      this.box.replaceChildren(value);
+      return true;
+    }
+    const note = document.createElement('div');
+    note.className = 'fd-warning fd-grid-taken-out';
+    note.textContent = words;
+    this.box.replaceChildren(...(value.textContent ? [value] : []), note);
+    return true;
+  }
+}
+
 /** The delete button at the end of each line: hidden on a line the table keeps (`lineDelete`). */
 class DeleteRenderer implements ICellRendererComp<Line> {
   private button!: HTMLButtonElement;
@@ -1176,6 +1208,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
   };
 
+  /** The columns whose choices a line's change may take out of it: its list's, or its options' conditions. */
+  const changingColumns = columns.filter((column) => { const sub = def.fields[column]; return sub.type === 'selection' && (!!optionsList(sub.optionsFrom) || (sub.options as SelectionOption[]).some((option) => option.invisible !== undefined && option.invisible !== false)); });
   const columnDefs: ColDef<Line>[] = columns.map((column) => {
     const sub = def.fields[column];
     const room = roomOf(column);
@@ -1312,6 +1346,14 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       return {
         ...base,
         cellRendererSelector: (p) => (kindOf(p.data) || p.node.rowPinned ? undefined : { component: BadgeRenderer, params: { toneOf: (line: Line | undefined) => ruleOf(line, column)?.tone ?? null } }),
+      };
+    }
+    if (changingColumns.includes(column)) {
+      return {
+        ...base,
+        // What a line's change took out of it is seen under its value, its row as tall as the words need.
+        cellRendererSelector: (p) => (kindOf(p.data) || p.node.rowPinned ? undefined : { component: TakenOutRenderer, params: { takenOut: () => clearedAt(p.data, column) } }),
+        autoHeight: true,
       };
     }
     if (sub.type === 'boolean') {
@@ -1925,7 +1967,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const current = lines();
     const hidden = new Set(columns.filter((column) => ruleHidden.has(column) || api.getColumn(column)?.isVisible() === false));
     const shownColumns = columns.filter((column) => !hidden.has(column));
-    const signature = JSON.stringify([current, [...lineStates], shownColumns, readonly, form.getState().values, form.getState().unread ?? {}, [...choicesShown.values()].map((choices) => choices.options)]);
+    const signature = JSON.stringify([current, [...lineStates], shownColumns, readonly, form.getState().values, form.getState().unread ?? {}, [...choicesShown.values()].map((choices) => choices.options), form.getState().takenOut ?? {}]);
     if (signature === cardsDrawn) return;
     cardsDrawn = signature;
     const parent = form.getState().values;
@@ -1959,6 +2001,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         dt.textContent = def.fields[column].label;
         const dd = document.createElement('dd');
         dd.textContent = text(column);
+        // What its line's change took out of it, under its value, as on a plain table's card.
+        const taken = clearedAt(line, column);
+        if (taken) dd.append(Object.assign(document.createElement('div'), { className: 'fd-warning fd-grid-taken-out', textContent: taken }));
         const tone = state?.cells[column]?.tone;
         if (tone) dd.dataset['tone'] = tone;
         list.append(dt, dd);
@@ -2187,8 +2232,6 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const choicesShown = new Map<string, Choices>();
   const takenShown = new Map<string, string>();
   const listedColumns = columns.filter((column) => { const sub = def.fields[column]; return sub.type === 'selection' && !!optionsList(sub.optionsFrom); });
-  /** The columns whose choices a line's change may take out of it: its list's, or its options' conditions. */
-  const changingColumns = columns.filter((column) => { const sub = def.fields[column]; return sub.type === 'selection' && (!!optionsList(sub.optionsFrom) || (sub.options as SelectionOption[]).some((option) => option.invisible !== undefined && option.invisible !== false)); });
   let listedSized = false;
   function followChoices(current: readonly Line[]) {
     if (!changingColumns.length) return;
