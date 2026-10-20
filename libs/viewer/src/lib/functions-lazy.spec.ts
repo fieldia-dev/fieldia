@@ -29,7 +29,8 @@ afterEach(() => {
 const mount = (shown: Page) => {
   const host = document.createElement('div');
   document.body.append(host);
-  handle = mountViewer(host, { page: shown, dataSource: createMemoryDataSource(), values: { birth: '1990-10-20' }, now: () => new Date('2026-10-20T12:00:00Z') });
+  // The app's own function, which these pages call not: given to every page, it asks for nothing on one calling none.
+  handle = mountViewer(host, { page: shown, dataSource: createMemoryDataSource(), values: { birth: '1990-10-20' }, now: () => new Date('2026-10-20T12:00:00Z'), functions: { vatRate: () => 0.14 } });
   return host;
 };
 async function until(ready: () => unknown) {
@@ -44,7 +45,7 @@ describe("the form's functions part", () => {
     expect(partsFor(page('age(birth)'))).toContain(functionsPart);
   });
 
-  it('a page calling none never loads it', async () => {
+  it('a page calling none never loads it, whatever functions of its own the app gives', async () => {
     const host = mount(page('36'));
     await until(() => host.querySelector('[data-node="f-age"]'));
     await new Promise((done) => setTimeout(done, 30));

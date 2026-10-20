@@ -192,15 +192,19 @@ function averageCheck(args: readonly ASTNode[]): string | undefined {
   return conditionAt(args, 2, 'average', `average(lines, 'price', "qty > 0")`);
 }
 
-/** A call of a function whose body is in the functions part. */
-const CALLS_IN_PART = new RegExp(`\\b(${IN_PART.map(([name]) => name).join('|')})\\s*\\(`);
+/** A call of one of these functions. */
+const callOf = (names: readonly string[]) => new RegExp(`\\b(${names.join('|')})\\s*\\(`);
+const CALLS_IN_PART = callOf(IN_PART.map(([name]) => name));
 
 /**
- * Whether a page (or any part of one) calls a function whose body is in the functions part: its formulas name one. Read
- * over the whole page, so words that look like a call ("Your age (in years)") ask for the part too, which is no harm;
- * one never missed.
+ * Whether a page (or any part of one) calls a function the functions part works out — one of Fieldia's beyond the
+ * plain ones, or one of the app's own named in `app` — its formulas name one. Read over the whole page, so words that
+ * look like a call ("Your age (in years)") ask for the part too, which is no harm; one never missed.
  */
-export const callsPartFunctions = (page: unknown): boolean => CALLS_IN_PART.test(JSON.stringify(page) ?? '');
+export function callsPartFunctions(page: unknown, app: readonly string[] = []): boolean {
+  const words = JSON.stringify(page) ?? '';
+  return CALLS_IN_PART.test(words) || (app.length > 0 && callOf(app).test(words));
+}
 
 export const FUNCTIONS: ReadonlyMap<string, ExpressionFunction> = new Map<string, ExpressionFunction>([
   [

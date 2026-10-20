@@ -1001,9 +1001,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (fieldia.mapchecks.js, 5.76), asked for by the viewer as the check owes them, 511.39 after; a table of lines' own
 // settings in the lines part, 509.75 after; the app's own functions' calls in the functions part, which a viewer given
 // some waits for — their names and what each takes known at once — 509.19 after; a sheet's statusbar's checks in the
-// business part, a table's line kinds' in the lines part and an address with suggestions' with a map's, 506.85 after,
-// to 506.9.
-const BUDGET_KB = 506.9;
+// business part, a table's line kinds' in the lines part and an address with suggestions' with a map's, 506.85 after;
+// the functions part waited for only by a page whose formulas call the app's own (the demos give theirs to every page),
+// 506.96 after, to 507.0.
+const BUDGET_KB = 507.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time

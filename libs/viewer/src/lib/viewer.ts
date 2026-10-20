@@ -1,5 +1,6 @@
 import {
   createForm,
+  callsPartFunctions,
   checkPage,
   functionsPart,
   isRightToLeft,
@@ -2484,8 +2485,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const afterDrawing = <T>(then: () => Promise<T>): Promise<T> => (pageDrawn ? then() : drawn.then(then));
   // A draft opened by its key (`resume`) may name none: the limits part says so.
   // The parts its check owes (the one-tag script's), with the page's own: the check runs again once they came.
-  // The app's own functions are called through the functions part: an app that gives some waits for it.
-  const awaited = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...(options.functions ? [functionsPart] : []), ...owedParts(checked.later)])].filter((part) => !part.loaded);
+  // The app's own functions are called through the functions part: a page whose formulas call one waits for it.
+  const appCalls = options.functions && callsPartFunctions(page, Object.keys(options.functions)) ? [functionsPart] : [];
+  const awaited = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded);
   let drawn: Promise<void> = Promise.resolve();
   if (!awaited.length) drawPage();
   else {
