@@ -1,7 +1,7 @@
 import type { Option } from '@fieldia/core';
 import { layOut, limiter, withAlone } from './choice-rules';
 import { clearSelection, describeState, fillIn, maker, rightToLeft, wordsFor } from './kind-parts';
-import { seatMarks } from './seats';
+import { seatMarks, seatWords } from './seats';
 import { shownOptions } from './shuffle';
 import { installSurveyStyles } from './styles-survey';
 import type { WidgetFactory } from './widgets';
@@ -96,7 +96,13 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
       // "Up to 3" once full: a card more says why when pressed.
       limit?.full(Array.isArray(state.value) ? state.value.length : 0);
       seats.update();
+      // A card whose words are out of sight is named with its places too: "Morning, 3 left".
+      const places = bare ? form.getState().limits?.seats?.[name] : undefined;
       cards.forEach((card, i) => {
+        if (places) {
+          const left = seatWords(places[String(options[i].value)], words);
+          card.setAttribute('aria-label', left ? `${options[i].label}, ${left}` : options[i].label);
+        }
         const on = chosen.has(options[i].value);
         card.setAttribute('aria-checked', String(on));
         card.tabIndex = multiple || i === stop ? 0 : -1;

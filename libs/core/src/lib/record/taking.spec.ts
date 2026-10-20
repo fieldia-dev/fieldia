@@ -179,6 +179,18 @@ describe('the most responses, one per person: counted by the source', () => {
     expect(form.getState().limits?.left).toBeUndefined();
   });
 
+  it('shows its questions after 10 seconds where the source never answers', () => {
+    const time = open();
+    const source = createMemoryDataSource();
+    source.limits = () => new Promise(() => undefined);
+    const form = createForm({ page: signup(), dataSource: source, now: time.now, scheduler: time });
+    expect(form.getState().limits?.state).toBe('asking');
+    time.advance(9000);
+    expect(form.getState().limits?.state).toBe('asking');
+    time.advance(1000);
+    expect(form.getState().limits?.state).toBe('open');
+  });
+
   it('opens where the source fails to say: its submit refuses as it would', async () => {
     const time = open();
     const source = createMemoryDataSource();

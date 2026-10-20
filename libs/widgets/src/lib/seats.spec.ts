@@ -29,8 +29,8 @@ const page = (multiple = false): Page =>
 
 const counted = () => createMemoryDataSource({ limits: { 'event-signup': { perChoice: { session: { am: 29, pm: 20 } } } } });
 
-async function draw(widget: string | undefined, form: Form) {
-  const node: FieldNode = { type: 'field', id: 'n', field: 'session', ...(widget ? { widget } : {}) };
+async function draw(widget: string | undefined, form: Form, options?: FieldNode['options']) {
+  const node: FieldNode = { type: 'field', id: 'n', field: 'session', ...(widget ? { widget } : {}), ...(options ? { options } : {}) };
   const made = createWidget({ form, name: 'session', field: form.page.fields['session'], node, id: 'fd-session', document });
   document.body.replaceChildren(made.element);
   const refresh = () => made.update({ value: form.getState().values['session'], values: form.getState().values, readonly: false, required: false, invalid: !!form.getState().errors['session'] });
@@ -63,6 +63,9 @@ describe('a choice’s places, drawn', () => {
     const list = await draw(undefined, createForm({ page: page(), dataSource: counted() }));
     expect([...list.querySelectorAll('option')].map((option) => option.textContent)).toEqual(['', 'Morning workshop (1 left)', 'Afternoon workshop (Full)', 'Evening talk']);
     expect(marks(await draw('image-choice', createForm({ page: page(), dataSource: counted() })))).toEqual(['1 left', 'Full!', '']);
+    // Cards whose words are out of sight are named with their places.
+    const bare = await draw('image-choice', createForm({ page: page(), dataSource: counted() }), { showLabels: false });
+    expect([...bare.querySelectorAll('.fd-image-card')].map((card) => card.getAttribute('aria-label'))).toEqual(['Morning workshop, 1 left', 'Afternoon workshop, Full', 'Evening talk']);
   });
 
   it('shows nothing where the source tells no counts, as before', async () => {

@@ -1980,6 +1980,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (!asksLimits() || !source?.limits) return showLimits();
     const shown = shownNow();
     const user = options.user ? { user: { id: options.user.id, ...(options.user.name ? { name: options.user.name } : {}) } } : {};
+    // A source that never answers keeps no one from the questions for long: past 10 seconds they show, and its submit decides.
+    const waited = askingFirst
+      ? scheduler.setTimeout(() => {
+          if (!askingFirst || !shown()) return;
+          askingFirst = false;
+          showLimits();
+        }, 10000)
+      : null;
     try {
       const told = await source.limits({ pageId: page.id, model: page.data.kind === 'record' ? page.data.model : '', recordId: state.recordId, fields: seatedNow(), ...user });
       if (!shown()) return;
@@ -1987,6 +1995,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     } catch {
       // Not told: the page keeps to its dates alone, and the source's submit refuses as it would.
       if (!shown()) return;
+    } finally {
+      if (waited !== null) scheduler.clearTimeout(waited);
     }
     askingFirst = false;
     showLimits();
