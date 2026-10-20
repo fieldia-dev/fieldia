@@ -88,7 +88,10 @@ export type { PageDuplicates } from './lib/format/duplicates';
 export type { PageLimits } from './lib/format/limits';
 export type { PageRecords } from './lib/format/records';
 export type { PageEnding } from './lib/format/endings';
-export { labelAt, recordSentence } from './lib/record/record-words';
+// `quotedLabel` here, not in index.ts alone: the widgets' messages read it, and a package's module taking a name only
+// index.ts gives makes a bundler's split build carry index.ts's re-exports — the limits part's form code — in the main
+// chunk (tools/part-words.test.mjs).
+export { labelAt, quotedLabel, recordSentence } from './lib/record/record-words';
 export { wideColumns } from './lib/format/columns';
 export { relatedInTab } from './lib/format/head-checks';
 export { BULK_KINDS, bulkEditFields, bulkSettable } from './lib/format/bulk-edit';
