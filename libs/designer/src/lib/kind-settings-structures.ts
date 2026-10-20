@@ -49,7 +49,10 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
   const widget = (patch: Record<string, string | number | boolean | null>) => designer.setWidgetOptions(id, patch);
   const option = (node: FieldNode, key: string) => node.options?.[key];
 
-  /** A signature's pen — its ink and width — the words on the pad and under it, and whether a picture may be uploaded. */
+  /**
+   * A signature's pen — its ink and width — the words on the pad and under it, whether a picture may be uploaded, and
+   * the answers it signs (`signs`: every answer, or those chosen) with the field naming who signs (`signerField`).
+   */
   function signature(): StructurePart {
     const inks = PEN_COLOURS.map(([colour], i) => {
       const name = w.pens[colour];
@@ -64,15 +67,61 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
     const under = textBox(w.wordsUnder, w.agree);
     under.addEventListener('input', () => widget({ footerLabel: under.value }));
     const upload = toggle(w.uploadSignature, (on) => widget({ upload: on || null }));
+    // The answers it signs: none, every answer, or those chosen — each field a chip — and who signs, by a field of words.
+    let answers: [string, string][] = [];
+    let chosen: string[] = [];
+    const signs = select(w.signs, [['', w.signsNothing], ['form', w.signsForm], ['chosen', w.signsChosen]]);
+    signs.addEventListener('change', () => designer.setWidgetOptions(id, { signs: signs.value === 'form' ? 'form' : signs.value === 'chosen' ? answers.map(([name]) => name) : null, ...(signs.value ? {} : { signerField: null }) }));
+    const chips = el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.answersSigned });
+    const signer = select(w.signerName, [['', w.signerTyped]]);
+    signer.addEventListener('change', () => widget({ signerField: signer.value || null }));
+    const signsHelp = el('span', { class: 'fd-kind-hint' }, w.signsHelp);
+    const signerRow = word(w.signerName, signer);
     return {
       element: el(
         'div',
         { class: 'fd-kind-block' },
         row(el('span', {}, w.ink), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.ink }, ...inks.map((i) => i.chip)), word(w.penWidth, width)),
         row(word(w.wordsOnPad, pad), word(w.wordsUnder, under)),
-        upload.element
+        upload.element,
+        word(w.signs, signs),
+        chips,
+        signerRow,
+        signsHelp
       ),
-      refresh(_page, node) {
+      refresh(page, node) {
+        // Every other answer of the page, never a signature: what it may sign, by name and label.
+        const signatures = new Set<string>();
+        const walk = (part: unknown) => {
+          if (Array.isArray(part)) return part.forEach(walk);
+          if (!part || typeof part !== 'object') return;
+          const one = part as Partial<FieldNode>;
+          if (one.type === 'field' && one.widget === 'signature' && typeof one.field === 'string') signatures.add(one.field);
+          Object.values(part).forEach(walk);
+        };
+        walk(page.layout);
+        answers = Object.entries(page.fields)
+          .filter(([name]) => name !== node.field && !signatures.has(name))
+          .map(([name, def]) => [name, def.label || name]);
+        const asked = option(node, 'signs');
+        chosen = Array.isArray(asked) ? asked.filter((name): name is string => typeof name === 'string') : [];
+        if (!focused(signs)) signs.value = asked === 'form' ? 'form' : chosen.length ? 'chosen' : '';
+        chips.replaceChildren(
+          ...answers.map(([name, label]) => {
+            const chip = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': String(chosen.includes(name)), 'data-answer': name }, label) as HTMLButtonElement;
+            chip.addEventListener('click', () => {
+              const next = chosen.includes(name) ? chosen.filter((one) => one !== name) : answers.map(([one]) => one).filter((one) => one === name || chosen.includes(one));
+              designer.setWidgetOptions(id, { signs: next.length ? next : null, ...(next.length ? {} : { signerField: null }) });
+            });
+            return chip;
+          })
+        );
+        chips.hidden = !chosen.length;
+        // Who signs: a field that holds a name — words, or a link's record.
+        const names = Object.entries(page.fields).filter(([name, def]) => name !== node.field && (def.type === 'char' || def.type === 'many2one'));
+        signer.replaceChildren(el('option', { value: '' }, w.signerTyped), ...names.map(([name, def]) => el('option', { value: name }, def.label || name)));
+        signer.value = String(option(node, 'signerField') ?? '');
+        signerRow.hidden = signsHelp.hidden = asked === undefined;
         const colour = option(node, 'color') ?? PEN_COLOURS[0][0];
         for (const ink of inks) ink.chip.setAttribute('aria-pressed', String(ink.colour === colour));
         width.value = String(option(node, 'penWidth') ?? 3);

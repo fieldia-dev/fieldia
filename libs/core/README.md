@@ -254,6 +254,74 @@ import { alikeRecords, createMemoryDataSource } from '@fieldia/core';
 const dataSource = createMemoryDataSource({ records, duplicates: alikeRecords() });
 ```
 
+## A signature that signs the answers
+
+A signature (`"widget": "signature"` on a binary field) may sign answers: `signs`
+names them — `"form"`, every answer shown on the page, or the fields by name —
+and `signerField` the field holding the signer's name (a text, or a link's
+record; left out, the name typed on the pad, else the form's `user`):
+
+```json
+{ "type": "field", "id": "f-signature", "field": "signature", "widget": "signature",
+  "options": { "signs": ["patient", "treatment", "areas", "risks_read"], "signerField": "patient" } }
+```
+
+Signed, it keeps beside its picture who, when and a fingerprint of the answers
+(`FileValue.signed`, a `SignatureEvidence`), once what is typed in them is read
+— an answer still to give, or text that does not read, is said, and nothing is
+signed:
+
+```json
+{ "name": "signature.png", "type": "image/png", "size": 5120, "data": "iVBOR…",
+  "signed": { "format": "fieldia-signature/1", "by": "Mona Adel", "at": "2026-10-19T08:42:00.000Z",
+              "fields": ["patient", "treatment", "areas", "risks_read"],
+              "sha256": "2e3b5fa2ca4b2012eeb1fe7895af5c05dda2c3f5a76246b78fff3b530dbae16d" } }
+```
+
+While a signature with evidence is kept, the form locks the answers it names —
+whatever the page's conditions say (`form.node(id).readonly`,
+`form.fieldReadonly(name)`) — until the person takes it away with Change
+answers, asked first, and signs again. `signedBy(fields, values)` says which
+signature locks which answer; `evidenceOf(value)` reads one. The evidence
+travels in the value: a store that keeps a signature as bytes keeps `signed`
+beside them (a save storing the picture keeps it, as it keeps a typed name's
+`text`). `form.now()`, `form.user()` and `form.shownFields()` are what a
+signature reads — the clock, the person, the answers shown.
+
+**The canonical form, `fieldia-signature/1`.** The fingerprint is the SHA-256,
+in small hexadecimal letters, of the UTF-8 bytes of this JSON, written as
+RFC 8785 (JCS) writes JSON — no spaces, each object's keys in the order of their
+UTF-16 code units, numbers as JavaScript writes them:
+
+```json
+{"answers":{"areas":["forehead"],"patient":"Mona Adel","risks_read":true,"treatment":"botox"},"at":"2026-10-19T08:42:00.000Z","by":"Mona Adel","field":"signature","format":"fieldia-signature/1","page":"clinic-consent"}
+```
+
+— the text of the evidence above, whose SHA-256 is its `sha256`.
+
+`answers` holds each field the evidence names, as the person saw it as they
+signed: nothing (null, an empty text, no choice) is `null`; yes and no `true`
+and `false`; a number itself; a text, a choice's value, a date and a time their
+text as kept; a date and time kept with its zone, its instant in UTC with
+milliseconds; a link its record's id (several, their ids in order); a reference
+`{ "id", "model" }`; a file `{ "name", "size", "type" }`; a table's lines an
+array of each line's own fields; anything else its JSON by these rules. `by` is
+left out when no one is named; `page` is the page's id and `field` the
+signature's. So an app checks a record it keeps in any language — or with the
+files part's own functions, in a browser or on a server:
+
+```ts
+import { filesPart } from '@fieldia/widgets';
+
+const { answersMatch, signatureText, sha256Hex } = await filesPart.load();
+const same = await answersMatch(record.signature.signed, page, 'signature', record);   // true while no signed answer changed
+```
+
+`checkPage` and `validatePage` refuse `signs` that is neither `"form"` nor a
+list of the page's fields, a signature signing itself, and a `signerField` that
+holds no name. Two people signing in turn is the app's (a flow's) to order: each
+signature signs its answers.
+
 ## What a page's records are called
 
 A page may say what its records are, so Fieldia's own sentences name them as

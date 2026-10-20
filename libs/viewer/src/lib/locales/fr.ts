@@ -325,6 +325,7 @@ export const fr: ViewerLabels = {
   nowIs: 'maintenant {value}',
   readOnlyRecord: 'Vous pouvez lire cet enregistrement, mais pas le modifier.',
   fieldNotYours: 'Vous pouvez voir ce champ, mais pas le modifier.',
+  signedAnswer: 'Signé. Pour le modifier, appuyez sur « Modifier les réponses » sous la signature.',
   notOffered: 'Non disponible pour vous ici : {actions}.',
   duplicateWith: 'Déjà existant, avec la même valeur pour {fields} : {name}',
   duplicateWithNoun: '{aRecord} avec la même valeur pour {fields} existe déjà : {name}',

@@ -1,11 +1,13 @@
-import { fileProblem, MESSAGES, type FileValue } from '@fieldia/core';
+import { evidenceOf, fileProblem, labelAt, MESSAGES, type FileValue, type Value, type Values } from '@fieldia/core';
 import { readFile } from './files';
-import { whileShown } from './shown';
+import { stillShown, whileShown } from './shown';
 import { goingList } from './files-going';
 import { shrinkFor, shrinkPhoto } from './shrink';
-import { describeState, maker, setHidden, setText, wordsFor } from './kind-parts';
+import { describeState, fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 import { installFilesStyles } from './styles-files';
+import { restingText, zoneOf } from './date-text';
+import { answersToSign, canonicalJson, sha256Hex, signAnswers, signatureText, signedAnswers, SIGNATURE_FORMAT } from './signature-evidence';
 
 /**
  * A signature on a file field (`binary.signature`): drawn on a pad with a
@@ -20,6 +22,18 @@ import { installFilesStyles } from './styles-files';
  * uploaded as a third way — checked as a file field checks one: a picture
  * (or the kinds the field takes), no larger than its `maxSize`. A file
  * refused keeps the signature there was, and says which and why.
+ *
+ * `options.signs` makes it sign answers — `"form"`, every answer shown, or
+ * the fields by name — and `options.signerField` names the field holding the
+ * signer's name. Signed, it keeps who (that field's name, else the name typed,
+ * else the person using the form), when (the form's clock) and the answers'
+ * fingerprint beside its picture (`FileValue.signed`, signature-evidence.ts),
+ * once what was typed in them is read: an answer that does not read, or is
+ * still to be given, is said, and nothing is signed. Under it: "Signed by Mona
+ * Adel, 19 Oct 2026, 10:42", whether the answers are still as signed — the
+ * fingerprint made again from them — and Change answers, which asks, then
+ * takes the signature away: the form locks the answers it signed while it is
+ * kept (core's signed.ts).
  *
  * It comes in the files part (files-part.ts), with a file field's uploads.
  */
@@ -46,6 +60,9 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   const penWidth = options['penWidth'];
   const width = typeof penWidth === 'number' && penWidth > 0 ? penWidth : 3;
   const footerWords = options['footerLabel'];
+  const signs = options['signs'];
+  /** Whether it signs answers: who, when and their fingerprint kept with it, and those answers locked while it is. */
+  const evidencing = signs === 'form' || (Array.isArray(signs) && signs.length > 0);
   const canvas = make('canvas', { class: 'fd-signature-pad', width: String(WIDTH), height: String(HEIGHT), role: 'img', 'aria-label': words.signaturePad });
   const hint = make('span', { class: 'fd-signature-hint', 'aria-hidden': 'true' }, node.placeholder || words.signHere);
   const image = make('img', { class: 'fd-signature-image', alt: field.label, hidden: '' });
@@ -63,19 +80,31 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   const going = goingList(make, words, form, name);
   file.addEventListener('change', (event) => {
     const chosen = file.files?.[0];
-    if (!chosen || !form.canUpload()) return;
+    // A picture that signs answers is read into the record with its evidence first: the save stores it, the evidence kept.
+    if (!chosen || !form.canUpload() || evidencing) return;
     event.stopImmediatePropagation();
     file.value = '';
     const shrink = shrinkFor({ ...field, type: 'image' } as typeof field, true);
     form.upload(name, [chosen], shrink ? { prepare: (picked) => shrinkPhoto(picked as File, shrink, document) } : {});
   });
-  // Why a picture uploaded was not taken: said politely, under the pad's tools.
+  // Why a picture uploaded was not taken, or answers not signed: said politely, under the pad's tools.
   const refused = make('div', { class: 'fd-help fd-file-note fd-signature-note', role: 'status', hidden: '' });
+  // Who signed and when, whether the answers are as signed, and the way to change them: asked first, in place.
+  const signedWho = make('span', { class: 'fd-signature-who' });
+  const signedMark = make('span', { 'aria-hidden': 'true' });
+  const signedWords = make('span');
+  const signedState = make('span', { class: 'fd-signature-state', role: 'status' }, signedMark, signedWords);
+  const change = make('button', { type: 'button', class: 'fd-button fd-button-link fd-signature-change', hidden: '' }, words.changeAnswers);
+  const yes = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.changeAnswers);
+  const no = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.keep);
+  const question = make('div', { class: 'fd-file-confirm fd-signature-ask', hidden: '' }, make('span', {}, words.changeAnswersAsk), yes, no);
+  const evidenceBox = make('div', { class: 'fd-signature-evidence', hidden: '' }, signedWho, signedState, change, question);
   const element = make(
     'div',
     { id, class: 'fd-signature', role: 'group' },
     make('div', { class: 'fd-signature-box' }, canvas, image, hint),
     ...(typeof footerWords === 'string' && footerWords ? [make('span', { class: 'fd-signature-footer' }, footerWords)] : []),
+    evidenceBox,
     make('div', { class: 'fd-signature-tools' }, typed, undo, ...(upload ? [upload, file] : []), clear),
     refused
   );
@@ -133,6 +162,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     hint.hidden = !blank();
     if (blank()) {
       mine = null;
+      turn++;
       return form.setValue(name, null);
     }
     let url: string | undefined;
@@ -143,9 +173,171 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     }
     if (!url) return;
     const data = url.slice(url.indexOf(',') + 1);
+    const was = form.getState().values[name];
+    const own = was && typeof was === 'object' && keyOf(was as FileValue) === mine;
     mine = data;
-    form.setValue(name, { name: 'signature.png', type: 'image/png', size: bytesOf(data), data, ...(typedName && !strokes.length ? { text: typedName } : {}) });
+    const picture: FileValue = { name: 'signature.png', type: 'image/png', size: bytesOf(data), data, ...(typedName && !strokes.length ? { text: typedName } : {}) };
+    // Signed again — a stroke more, a letter of the name — it keeps the answers signed until the new signing is done.
+    const before = own ? evidenceOf(was) : null;
+    form.setValue(name, before ? { ...picture, signed: before } : picture);
+    if (evidencing) sign(picture);
   }
+
+  // ---- signing answers (`options.signs`) ----
+
+  /** The signing on its way, which a save waits for (`settling`), and the turn of the latest: an older one lays nothing. */
+  let signing: Promise<void> | null = null;
+  let turn = 0;
+  /** True while a signing reads what is typed itself: it does not wait for itself. */
+  let reading = false;
+  const unsettle = evidencing ? form.settling(() => (reading ? undefined : (signing ?? undefined)), () => signing !== null) : null;
+
+  /** Who signs: the field the page names for the signer, the name typed on the pad, or the person using the form. */
+  function signer(typedText: string | undefined): string | undefined {
+    const from = options['signerField'];
+    const named = typeof from === 'string' ? form.getState().values[from] : null;
+    const text = typeof named === 'string' ? named : named && typeof named === 'object' && !Array.isArray(named) && 'label' in named ? String(named.label) : '';
+    return text.trim() || typedText?.trim() || form.user()?.name?.trim() || undefined;
+  }
+
+  /**
+   * The answers signed with this picture, once what is typed in them is read: who, when, which and their fingerprint
+   * kept with it. Laid only while the record is the one shown, the picture still the field's, and this the latest
+   * signing; an answer that changed while its fingerprint was made is read again.
+   */
+  function sign(picture: FileValue) {
+    const ours = ++turn;
+    const shown = stillShown(form);
+    const current = () => ours === turn && shown() && keyOf((form.getState().values[name] ?? {}) as FileValue) === picture.data;
+    const run = async () => {
+      for (let tries = 0; tries < 3; tries++) {
+        reading = true;
+        let read: Promise<void>;
+        try {
+          read = form.settle();
+        } finally {
+          reading = false;
+        }
+        await read;
+        if (!current()) return;
+        const fields = answersToSign(form.page, node, form.shownFields());
+        const unread = Object.keys(form.getState().unread);
+        const wrong = fields.filter((field) => form.problem(field) !== null || unread.some((path) => path.startsWith(`${field}.`)));
+        if (wrong.length) return refuse(wrong);
+        const values = form.getState().values;
+        const signed = await signAnswers({ page: form.page, field: name, values, fields, by: signer(picture.text), at: form.now() });
+        if (!current()) return;
+        const now = form.getState().values;
+        if (tries < 2 && now !== values && canonicalJson(signedAnswers(form.page, now, fields)) !== canonicalJson(signedAnswers(form.page, values, fields))) continue;
+        setHidden(refused, true);
+        form.setValue(name, { ...picture, signed });
+        return;
+      }
+    };
+    const going: Promise<void> = run()
+      .catch(() => undefined)
+      .finally(() => {
+        if (signing === going) signing = null;
+      });
+    signing = going;
+  }
+
+  /** Not signed: the answers to put right named, each saying its own problem, and the signature not kept. */
+  function refuse(wrong: string[]) {
+    mine = null;
+    form.setValue(name, null);
+    for (const field of wrong) form.boxLeft(field);
+    const asLabel = labelAt(words.notSignedYet, 'fields', form.page.lowerLabels, locale);
+    const labelsOf = wrong.map((field) => asLabel(form.page.fields[field]?.label ?? field));
+    let list: string;
+    try {
+      list = new Intl.ListFormat(locale ?? 'en', { type: 'conjunction' }).format(labelsOf);
+    } catch {
+      list = labelsOf.join(', ');
+    }
+    say(fillIn(words.notSignedYet, { fields: list }));
+  }
+
+  /** Said under the pad, politely: why nothing was signed, or (`news`) what was done. */
+  function say(text: string, news = false) {
+    // Said again only when it changes: a name typed letter by letter is not refused aloud at each.
+    if (text && !refused.hidden && refused.textContent === text) return;
+    setText(refused, '');
+    setText(refused, text);
+    setAttr(refused, 'data-news', news ? '' : null);
+    setHidden(refused, !text);
+  }
+
+  /** The evidence's fingerprint last made again from the answers, and whether it matched. */
+  let checked: { key: string; matches: boolean | null } | null = null;
+
+  /** Who signed and when, and whether the answers are still as signed: their fingerprint made again from them now. */
+  function showEvidence(value: Value | undefined, values: Readonly<Values>) {
+    const evidence = evidenceOf(value);
+    setHidden(evidenceBox, !evidence);
+    if (!evidence) {
+      checked = null;
+      return setHidden(question, true);
+    }
+    // Its day and time kept together on one line, wherever the words wrap.
+    const [before, after = ''] = fillIn(evidence.by ? words.signedByName : words.signedAt, { name: evidence.by ?? '' }).split('{when}');
+    const when = restingText(evidence.at, 'datetime', locale ?? 'en', zoneOf(form));
+    if (signedWho.textContent !== before + when + after) signedWho.replaceChildren(before, make('span', { class: 'fd-signature-when' }, when), after);
+    // A fingerprint in a form this Fieldia does not write is not said either way.
+    const text = evidence.format === SIGNATURE_FORMAT ? signatureText({ page: form.page.id, field: name, at: evidence.at, ...(evidence.by ? { by: evidence.by } : {}), answers: signedAnswers(form.page, values, evidence.fields) }) : null;
+    const key = `${evidence.sha256} ${text}`;
+    if (text !== null && checked?.key !== key) {
+      // Said only while the evidence and the answers are those it was made from — whatever record shows them: it
+      // writes nothing on the record, so a record shown again meanwhile is told it as well.
+      const asked: { key: string; matches: boolean | null } = (checked = { key, matches: null });
+      void sha256Hex(text).then((hash) => {
+        if (checked !== asked) return;
+        asked.matches = hash === evidence.sha256;
+        drawMatch();
+      });
+    }
+    if (text === null) checked = null;
+    drawMatch();
+  }
+
+  function drawMatch() {
+    const matches = checked?.matches;
+    setHidden(signedState, matches === null || matches === undefined);
+    setAttr(signedState, 'data-changed', matches === false ? '' : null);
+    setText(signedMark, matches ? '✓' : '⚠');
+    setText(signedWords, matches ? words.answersAsSigned : words.answersChanged);
+  }
+
+  // Asked in place, its own button out of sight meanwhile: one Change answers at a time.
+  change.addEventListener('click', () => {
+    setHidden(question, false);
+    setHidden(change, true);
+    no.focus();
+  });
+  const keepIt = () => {
+    setHidden(question, true);
+    setHidden(change, false);
+    change.focus();
+  };
+  no.addEventListener('click', keepIt);
+  question.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    keepIt();
+  });
+  // Taken away: the answers it signed can be changed, and signed again.
+  yes.addEventListener('click', () => {
+    setHidden(question, true);
+    turn++;
+    wipe();
+    mine = null;
+    typed.value = '';
+    showPad();
+    form.setValue(name, null);
+    say(words.signatureTakenAway, true);
+    typed.focus();
+  });
   /** The pad's point under the pointer: the pad is drawn smaller or larger than its own size. */
   function at(event: PointerEvent) {
     const box = canvas.getBoundingClientRect();
@@ -178,7 +370,8 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
 
   // A name typed is drawn in a hand's script, in place of whatever was drawn.
   typed.addEventListener('input', () => {
-    setHidden(refused, true);
+    // Signing answers, what comes of the signing says its own words.
+    if (!evidencing) setHidden(refused, true);
     showPad();
     strokes = [];
     typedName = typed.value.trim() || null;
@@ -200,11 +393,15 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     // A picture, as the field takes one, no larger than it allows: else the signature there was stays, and it says why.
     const own = field.type === 'binary' ? field : null;
     const problem = fileProblem({ type: 'binary', label: field.label, accept: own?.accept ?? ['image/*'], ...(own?.maxSize !== undefined ? { maxSize: own.maxSize } : {}) }, chosen, MESSAGES[locale ?? 'en'] ?? MESSAGES.en);
-    setText(refused, '');
-    setText(refused, problem ?? '');
-    setHidden(refused, !problem);
-    // Read once another record is shown: laid on no record.
-    if (!problem) void readFile(chosen).then(whileShown(form, (value: FileValue) => form.setValue(name, value)));
+    say(problem ?? '');
+    // Read once another record is shown: laid on no record. One that signs answers is signed as it lands.
+    if (!problem)
+      void readFile(chosen).then(
+        whileShown(form, (value: FileValue) => {
+          form.setValue(name, value);
+          if (evidencing) sign(value);
+        })
+      );
   });
 
   clear.addEventListener('click', () => {
@@ -227,6 +424,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   return {
     element,
     focus: () => (typed.hidden ? clear : typed).focus(),
+    destroy: () => unsettle?.(),
     update(state) {
       readonly = state.readonly;
       const value = state.value && typeof state.value === 'object' && !Array.isArray(state.value) ? (state.value as FileValue) : null;
@@ -252,7 +450,12 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
       hint.hidden = readonly || !blank() || !image.hidden;
       typed.hidden = readonly;
       typed.readOnly = readonly;
-      clear.hidden = readonly || !value;
+      // Signed, its answers change by Change answers, asked first; one not signed yet keeps its strokes to clear.
+      const signedNow = !!evidenceOf(value);
+      clear.hidden = readonly || signedNow || (!value && (!evidencing || blank()));
+      if (readonly || !signedNow) setHidden(question, true);
+      setHidden(change, readonly || !signedNow || !question.hidden);
+      showEvidence(value, state.values);
       undo.hidden = readonly || !strokes.length || !image.hidden;
       if (upload) upload.hidden = readonly;
       canvas.classList.toggle('fd-signature-locked', readonly);

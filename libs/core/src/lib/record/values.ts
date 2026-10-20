@@ -51,6 +51,27 @@ export interface FileValue {
    * would read as a link wherever a value is taken by its shape.
    */
   fileId?: RecordId;
+  /** A signature that signs answers (its node's `options.signs`): when, by whom and the fingerprint of what it signed. */
+  signed?: SignatureEvidence;
+}
+
+/**
+ * What a signature that signs answers keeps beside its picture: who signed, when, which answers, and the SHA-256 of
+ * those answers and of who and when, written in the canonical form `format` names (`signatureText` in
+ * @fieldia/core, documented in its README), so an app can work the fingerprint out again from the record it keeps.
+ * While it is kept, the answers it names are locked; taken away, they can be changed and signed again.
+ */
+export interface SignatureEvidence {
+  /** The canonical form the fingerprint was made in: "fieldia-signature/1". */
+  format: string;
+  /** Who signed, as named: the field the page names for the signer, the name typed on the pad, or the person signed in. */
+  by?: string;
+  /** When, as an instant in ISO 8601 (UTC), by the form's clock: "2026-10-19T08:42:00.000Z". */
+  at: string;
+  /** The answers signed, by field name, in the page's order: those its `signs` names that were shown as it was signed. */
+  fields: string[];
+  /** The fingerprint: SHA-256 of the canonical text, in small hexadecimal letters. */
+  sha256: string;
 }
 
 /**

@@ -297,6 +297,7 @@ export const ar: ViewerLabels = {
   nowIs: 'الآن {value}',
   readOnlyRecord: 'يمكنك قراءة هذا السجل، لكن لا يمكنك تغييره.',
   fieldNotYours: 'يمكنك رؤية هذا الحقل، لكن لا يمكنك تغييره.',
+  signedAnswer: 'موقَّع. لتغييره، اضغط «تغيير الإجابات» تحت التوقيع.',
   notOffered: 'غير متاح لك هنا: {actions}.',
   duplicateWith: 'يوجد سجل بنفس {fields}: {name}',
   duplicateNamed: 'يوجد سجل باسم قريب من هذا: {name}',

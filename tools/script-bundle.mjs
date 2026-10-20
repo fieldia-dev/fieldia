@@ -857,7 +857,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // with the printout's parts kept off the screen, 1.17 of the main sheet. The main script keeps the printout's head and
 // footer, made as a form is drawn (the screen's every element as it was), and Ctrl+P's and intent's watch (print.ts,
 // 2.17): 515.51 measured before, 503.40 after — 12.1 less, to 503.5.
-const BUDGET_KB = 503.5;
+// A signature that signs answers (0.27, w4-signature): what every page with a form needs of it stays here — the answers
+// a signature kept locked, read from its value (core's signed.ts, `evidenceOf`, `signedBy`), the form's `now`, `user`
+// and `shownFields`, a signed answer's lock saying how to change it (one word), and the names the files part takes from
+// the main script's modules for it (the day's words, a label in a sentence, the late answers' test); the canonical form,
+// the fingerprint and the signature's evidence are the files part's: 503.41 measured before, 505.26 after — 1.85 more,
+// to 505.3.
+const BUDGET_KB = 505.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1051,7 +1057,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.15 and 0.55 added up — to 166.0.
 // Print on intent (listed with the raw budget above): 165.90 measured before, 162.94 after — 3.0 less, to 163.0. A
 // page that prints takes 5.22 more in fieldia.print.js.
-const GZIP_BUDGET_KB = 163.0;
+// A signature that signs answers (0.27, w4-signature; listed with the raw budget above): 162.94 measured before, 163.51
+// after — 0.6 more, to 163.6.
+const GZIP_BUDGET_KB = 163.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1198,7 +1206,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // words for its records, two words in Arabic, four in German and French: Arabic's 68.25 and 11.82 measured before,
 // 68.38 and 11.83 after, its raw to 68.4; German's 31.91 and 10.42 to 32.03 and 10.44, to 32.1; French's 32.24 and
 // 10.41 to 32.37 and 10.43, to 32.4.
-const ADD_ON_BUDGET_KB = { ar: [68.4, 11.9], de: [32.1, 10.5], fr: [32.4, 10.5] };
+// A signature that signs answers (0.27, w4-signature): who signed and when, whether the answers are as signed, Change
+// answers and its question, the signature taken away, the answers to put right first, and a signed answer's lock — nine
+// sentences in each: Arabic's 68.38 and 11.83 measured before, 69.92 and 12.08 after, to 70.0 and 12.1; German's 32.03
+// and 10.44 to 32.70 and 10.64, to 32.8 and 10.7; French's 32.37 and 10.43 to 33.06 and 10.66, to 33.1 and 10.7.
+const ADD_ON_BUDGET_KB = { ar: [70.0, 12.1], de: [32.8, 10.7], fr: [33.1, 10.7] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1497,7 +1509,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // count in words and its sums ("Cairo, 12 invoices, EGP 4.3M", their English with it), the arrows crossing a heading,
 // Right and Left opening and closing it — list 109.78 and 35.19 measured before, 110.61 and 35.49 after, to 110.7
 // and 35.5.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
+// A signature that signs answers (0.27, w4-signature), in the files part: its evidence — who, when, which answers and
+// their fingerprint kept with it once what is typed in them is read, the answers to put right said, "Signed by … , …"
+// and whether the answers are as signed under it, Change answers asked in place — and the canonical form and its
+// SHA-256 an app works out again (signature-evidence.ts: 3.99 raw and 1.95 gzipped alone, the browser's SubtleCrypto
+// first, worked out here where a page is served without https), its words and its sheet's lines: files 33.46 and 12.32
+// measured before, 42.04 and 15.64 after, to 42.1 and 15.7.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [42.1, 15.7], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1514,7 +1532,7 @@ const PART_GIVES = {
   quiet: ['installQuietStyles'],
   lines: ['linesWidget', 'linksTableWidget', 'cardsWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget', 'copyWidget', 'timerWidget'],
-  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
+  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles', 'signAnswers', 'answersMatch', 'signatureText', 'sha256Hex'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],

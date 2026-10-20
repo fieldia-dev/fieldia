@@ -41,6 +41,7 @@ import {
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
+import { signedBy, type SignedBy } from './signed';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
@@ -347,7 +348,10 @@ export interface Form {
   node(id: string): NodeState;
   /** Whether the record is being edited, as conditions read `editing`: a view that locks it to be read says false, and parts follow. */
   setEditing(editing: boolean): void;
-  /** Whether a field is read-only whatever the conditions say: by its definition, or for this person by what the record's source said (`can`). */
+  /**
+   * Whether a field is read-only whatever the conditions say: by its definition, for this person by what the record's
+   * source said (`can`), or signed by a signature kept (`FileValue.signed`).
+   */
   fieldReadonly(name: string): boolean;
   /** What a field would be told if the form were checked now, or null when it passes. Nothing is shown. */
   problem(field: string): string | null;
@@ -563,6 +567,16 @@ export interface Form {
   canUpload(): boolean;
   /** Today, as 2026-10-15, on the clock of the page's time zone — the browser's own where it names none — by the form's clock (`now`). */
   today(): string;
+  /** Now, by the form's clock (`now`): the computer's own where the app gave none. A signature's when. */
+  now(): Date;
+  /** The person using the form, as the app named them (`user`); null where it named none. */
+  user(): FormUser | null;
+  /**
+   * The answers shown now, by field, in the page's order: a field placed on the page — or a saved form's answers, by its
+   * name — not hidden by its condition, its roles or the record's source, nor in a step passed over with Skip. What a
+   * signature that signs every answer signs.
+   */
+  shownFields(): string[];
   /**
    * A record of the page's model as conditions read it, the form's own way: its values (a link as its id), its `id`,
    * the person using the form (`user`), the app's `context`, and `editing` false — for what reads conditions on records
@@ -1437,12 +1451,27 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if ((node.field !== undefined && can.hiddenFields?.includes(node.field)) || node.does?.some((right) => can[right] === false)) invisible = true;
       if ((node.kind === 'field' || node.kind === 'form') && (can.edit === false || (node.field !== undefined && can.readonlyFields?.includes(node.field) === true))) readonly = true;
     }
+    // An answer a signature kept signed: locked until the signature is taken away and signed again.
+    const answer = answerOf(node);
+    if (answer !== undefined && signedNow().has(answer)) readonly = true;
     return {
       invisible,
       readonly: readonly || (def !== undefined && lockedField(def)),
       required: node.required.evaluate(ctx, env) || def?.required === true,
       ...(node.pressed ? { pressed: node.pressed.evaluate(ctx, env) } : {}),
     };
+  }
+
+  /** The answer a field node shows, by its field — or a saved form placed on the page, by the name its answers are kept under. */
+  function answerOf(node: IndexedNode): string | undefined {
+    return node.kind === 'field' ? node.field : node.kind === 'form' ? (node.source as FormNode).name : undefined;
+  }
+
+  /** The answers signatures signed, as the values hold them now: worked out once for each change of the values. */
+  let signedCache: { values: Values; answers: SignedBy } | null = null;
+  function signedNow(): SignedBy {
+    if (signedCache?.values !== state.values) signedCache = { values: state.values as Values, answers: signedBy(fields, state.values) };
+    return signedCache.answers;
   }
 
   /** Field nodes — or saved forms placed on the page — inside `root` (or the whole page), visible right now; `field`'s alone, when named. */
@@ -2681,7 +2710,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       set({});
     },
 
-    fieldReadonly: (name) => lockedField(fieldDef(name)) || state.can?.edit === false || state.can?.readonlyFields?.includes(name) === true,
+    fieldReadonly: (name) => lockedField(fieldDef(name)) || state.can?.edit === false || state.can?.readonlyFields?.includes(name) === true || signedNow().has(name),
 
     loadChoices,
     loadDefinitions,
@@ -2765,6 +2794,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     canUpload: () => typeof options.dataSource?.upload === 'function',
     today,
+    now: () => options.now?.() ?? new Date(),
+    user: () => options.user ?? null,
+    shownFields: () => [...new Set([...visibleFieldNodes(), ...visibleFieldNodes(undefined, 'form')].map((node) => answerOf(node)).filter((name): name is string => !!name))],
     recordReads: (id, values, fields) => recordContext(values, fields ?? page.fields, { recordId: id, user: options.user, editing: false, context: options.context }),
     canFindSlots: () => typeof options.dataSource?.slots === 'function',
     findSlots(field, ask) {
