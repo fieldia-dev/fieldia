@@ -139,6 +139,8 @@ export const ar: WidgetLabels = {
   notSignedNoPart: 'لم يُوقَّع بعد: تعذّر تحميل التوقيع.',
   signingNoPart: 'تعذّر تحميل التوقيع: لا يظهر من وقّع ومتى، ولا يمكن تغيير الإجابات.',
   signingRetry: 'حاول مرة أخرى',
+  notSignedReload: 'لم يُوقَّع بعد: تعذّر تحميل التوقيع. أعد تحميل الصفحة لتوقّع.',
+  signingNoPartReload: 'تعذّر تحميل التوقيع: لا يظهر من وقّع ومتى، ولا يمكن تغيير الإجابات. أعد تحميل الصفحة لرؤيتها.',
   uploading: 'جارٍ الرفع…',
   uploadPercent: '{n}%',
   uploadWaiting: 'في الانتظار…',

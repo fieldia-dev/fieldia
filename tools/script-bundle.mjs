@@ -863,8 +863,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // word), the evidence part's holder and its place in `partsFor`, and the names the parts take from the main script's
 // modules for it (the day's words, a label in a sentence, the late answers' test); the canonical form, the fingerprint
 // and the signature's evidence are the evidence part's, fieldia.evidence.js: 503.41 measured before, 505.87 after —
-// 2.5 more, to 505.9.
-const BUDGET_KB = 505.9;
+// 2.5 more, to 505.9. Whether a part asked for again once it failed can come (`Part.asksAgain`: the one-tag script's
+// tags can, an app's modules cannot — the browser keeps them failed), so nothing offers a Try again that cannot work:
+// 505.87 to 506.09, to 506.1.
+const BUDGET_KB = 506.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1059,8 +1061,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Print on intent (listed with the raw budget above): 165.90 measured before, 162.94 after — 3.0 less, to 163.0. A
 // page that prints takes 5.22 more in fieldia.print.js.
 // A signature that signs answers (0.27, w4-signature; listed with the raw budget above): 162.94 measured before, 163.68
-// after — 0.75 more, to 163.7. A page whose signature signs answers takes 4.20 more in fieldia.evidence.js.
-const GZIP_BUDGET_KB = 163.7;
+// after — 0.75 more, to 163.7. A page whose signature signs answers takes 4.20 more in fieldia.evidence.js. Whether a
+// part asked for again can come: 163.68 to 163.80, to 163.9.
+const GZIP_BUDGET_KB = 163.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1209,11 +1212,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 10.41 to 32.37 and 10.43, to 32.4.
 // A signature that signs answers (0.27, w4-signature): who signed and when, whether the answers are as signed, Change
 // answers and its question, the signature taken away, the answers to put right first, and a signed answer's lock — nine
-// sentences in each, and three more for its part that could not come (not signed for want of it, a signature kept whose
-// evidence it cannot show, Try again): Arabic's 68.38 and 11.83 measured before, 70.54 and 12.14 after, to 70.6 and
-// 12.2; German's 32.03 and 10.44 to 32.98 and 10.71, to 33.0 and 10.8; French's 32.37 and 10.43 to 33.32 and 10.73, to
-// 33.4 and 10.8.
-const ADD_ON_BUDGET_KB = { ar: [70.6, 12.2], de: [33.0, 10.8], fr: [33.4, 10.8] };
+// sentences in each, and five more for its part that could not come (not signed for want of it, a signature kept whose
+// evidence it cannot show — each with Try again, or with a reload where asking again cannot bring it — and Try again):
+// Arabic's 68.38 and 11.83 measured before, 71.34 and 12.21 after, to 71.4 and 12.3; German's 32.03 and 10.44 to 33.33
+// and 10.75, to 33.4 and 10.8; French's 32.37 and 10.43 to 33.63 and 10.77, to 33.7 and 10.8.
+const ADD_ON_BUDGET_KB = { ar: [71.4, 12.3], de: [33.4, 10.8], fr: [33.7, 10.8] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1520,10 +1523,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // signed under it, Change answers asked in place (signature-signing.ts), its words and its sheet — to 9.2 and 4.3. The
 // files part keeps the pad drawing and the picture kept whether or not it has come, and what waits for it: a signing,
 // and a save for the signing; and, where it cannot come (offline, its script blocked), never a picture kept unsigned
-// in silence — "Not signed yet: the signing could not load." with Try again, which asks for it again, and every save
-// refusing the picture with those words — files 33.46 and 12.32 measured before, 35.73 and 13.14 after, to 35.8 and
-// 13.2.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [35.8, 13.2], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
+// in silence — "Not signed yet: the signing could not load." with Try again, which asks for it again, where asking
+// again can bring it (the one-tag script), else "… Reload the page to sign." and no button, and every save refusing the
+// picture with those words — files 33.46 and 12.32 measured before, 36.15 and 13.26 after, to 36.2 and 13.3.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1890,6 +1893,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
   hasIn('a consent signed, its evidence', 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
   if (!(await until(() => host.querySelector('.fd-signature-state:not([hidden])')?.textContent === '✓The answers are as they were signed.')) || !host.querySelector('.fd-signature-who')?.textContent.startsWith('Signed by Mona Adel, 14 Oct 2026')) throw new Error(`in a page, a consent's evidence is not said under its signature: ${host.querySelector('.fd-signature-evidence')?.textContent ?? 'none'}`);
   if (!host.querySelector('[data-node="f-treatment"] select')?.disabled) throw new Error("in a page, a consent's signed answer is not locked");
+  // Its parts come by script tags of their own, asked for anew once one failed: what offers to try again may.
+  if (inPage.evidencePart.asksAgain !== true || inPage.filesPart.asksAgain !== true) throw new Error("in a page, the one-tag script's parts do not say they may be asked for again");
   consent.destroy();
   gone('consent');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own

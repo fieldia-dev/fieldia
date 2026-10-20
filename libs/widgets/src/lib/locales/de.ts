@@ -139,6 +139,8 @@ export const de: WidgetLabels = {
   notSignedNoPart: 'Noch nicht unterschrieben: Das Unterschreiben konnte nicht geladen werden.',
   signingNoPart: 'Das Unterschreiben konnte nicht geladen werden: Wer wann unterschrieben hat, wird nicht angezeigt, und die Antworten lassen sich nicht ändern.',
   signingRetry: 'Erneut versuchen',
+  notSignedReload: 'Noch nicht unterschrieben: Das Unterschreiben konnte nicht geladen werden. Laden Sie die Seite neu, um zu unterschreiben.',
+  signingNoPartReload: 'Das Unterschreiben konnte nicht geladen werden: Wer wann unterschrieben hat, wird nicht angezeigt, und die Antworten lassen sich nicht ändern. Laden Sie die Seite neu, um es zu sehen.',
   uploading: 'Wird hochgeladen…',
   uploadPercent: '{n} %',
   uploadWaiting: 'Wartet…',

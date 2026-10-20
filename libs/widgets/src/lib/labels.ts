@@ -188,6 +188,9 @@ export interface WidgetLabels {
   notSignedNoPart: string;
   signingNoPart: string;
   signingRetry: string;
+  /** The same where asking again cannot bring it (an app's modules, kept failed by the browser): a reload can. */
+  notSignedReload: string;
+  signingNoPartReload: string;
   /**
    * A file on its way to the app's store, where the data source stores files:
    * the words under its name as it waits, is made smaller, goes (`{n}` per
@@ -594,6 +597,8 @@ const en: WidgetLabels = {
   notSignedNoPart: 'Not signed yet: the signing could not load.',
   signingNoPart: 'The signing could not load: who signed and when are not shown, and the answers cannot be changed.',
   signingRetry: 'Try again',
+  notSignedReload: 'Not signed yet: the signing could not load. Reload the page to sign.',
+  signingNoPartReload: 'The signing could not load: who signed and when are not shown, and the answers cannot be changed. Reload the page to see them.',
   uploading: 'Uploading…',
   uploadPercent: '{n}%',
   uploadWaiting: 'Waiting…',

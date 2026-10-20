@@ -91,6 +91,8 @@ describe('the evidence part', () => {
   });
 
   it('that cannot come never keeps the picture unsigned in silence: said, with Try again; a save refuses it until signed', async () => {
+    // Parts that come by a script tag of their own (the one-tag script): asked for again, they can come.
+    const again = jest.spyOn(evidencePart, 'asksAgain', 'get').mockReturnValue(true);
     const asked = jest.spyOn(evidencePart, 'load').mockRejectedValueOnce(new Error('offline'));
     const { form, draw, sign, value, saved } = consent({ signs: ['patient'], signerField: 'patient' }, true);
     await form.load();
@@ -121,6 +123,27 @@ describe('the evidence part', () => {
     expect(await form.save()).toBe(true);
     expect(saved[0]?.signed?.by).toBe('Mona Adel');
     asked.mockRestore();
+    again.mockRestore();
+  });
+
+  it('that cannot come where asking again cannot bring it (an app’s modules): a reload said, no Try again, a save refused', async () => {
+    expect(evidencePart.asksAgain).toBe(false);
+    const asked = jest.spyOn(evidencePart, 'load').mockRejectedValue(new Error('offline'));
+    const { form, draw, sign, value, saved } = consent({ signs: ['patient'], signerField: 'patient' }, true);
+    await form.load();
+    const signature = draw('signature');
+    sign(signature);
+    await form.settle();
+    await tick();
+    const note = signature.querySelector('.fd-signature-unloaded') as HTMLElement;
+    expect(note.hidden).toBe(false);
+    expect(note.textContent).toBe('Not signed yet: the signing could not load. Reload the page to sign.');
+    expect(note.querySelector('button')).toBeNull();
+    expect(value()?.signed).toBeUndefined();
+    expect(await form.save()).toBe(false);
+    expect(saved).toEqual([]);
+    expect(form.getState().errors['signature']).toBe('Not signed yet: the signing could not load. Reload the page to sign.');
+    asked.mockRestore();
   });
 
   it('that cannot come lets a picture taken away go with its refusal: Clear leaves nothing to refuse', async () => {
@@ -130,7 +153,7 @@ describe('the evidence part', () => {
     sign(signature);
     await form.settle();
     await tick();
-    expect(form.getState().unread['signature']?.message).toBe('Not signed yet: the signing could not load.');
+    expect(form.getState().unread['signature']?.message).toBe('Not signed yet: the signing could not load. Reload the page to sign.');
     (signature.querySelector('.fd-signature-clear') as HTMLButtonElement).click();
     expect(form.getState().unread['signature']).toBeUndefined();
     expect((signature.querySelector('.fd-signature-unloaded') as HTMLElement).hidden).toBe(true);

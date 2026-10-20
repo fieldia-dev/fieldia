@@ -49,7 +49,7 @@ export type { FormattedText, FormattedTextOptions, TextEditor, TextReference, Te
 export type { MenuChoice, TextMenu } from './lib/text-menu';
 export { linkedWords } from './lib/linked-words';
 export { TEXT_TOOLS, RICH_TOOLS, MARKDOWN_TOOLS, type TextTool } from './lib/text-tool-names';
-export { lazyPart, partWith, partsOf, settleParts, type Part } from './lib/parts';
+export { lazyPart, partWith, partsOf, partsComeByScriptTag, settleParts, type Part } from './lib/parts';
 // Fieldia's own date box, its calendar and a range of dates come in the date part, loaded the first time a page shows
 // one: `(await datePart.load()).withCalendar(…)`. Their types are here; their code is not. The reader they type with is.
 export type { CalendarOptions } from './lib/calendar';

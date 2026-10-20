@@ -139,6 +139,8 @@ export const fr: WidgetLabels = {
   notSignedNoPart: 'Pas encore signé : la signature n’a pas pu se charger.',
   signingNoPart: 'La signature n’a pas pu se charger : qui a signé et quand ne s’affichent pas, et les réponses ne peuvent pas être modifiées.',
   signingRetry: 'Réessayer',
+  notSignedReload: 'Pas encore signé : la signature n’a pas pu se charger. Rechargez la page pour signer.',
+  signingNoPartReload: 'La signature n’a pas pu se charger : qui a signé et quand ne s’affichent pas, et les réponses ne peuvent pas être modifiées. Rechargez la page pour les voir.',
   uploading: 'Envoi…',
   uploadPercent: '{n} %',
   uploadWaiting: 'En attente…',

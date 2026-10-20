@@ -86,6 +86,10 @@ export const evidencePart: Part<EvidencePart> = lazyPart('evidence', () => impor
 export function loadEvidencePart(): Promise<EvidencePart> {
   return evidencePart.load();
 }
+/** Whether asking for the evidence part again, once it failed, can bring it (`Part.asksAgain`): a function, as above. */
+export function evidencePartAsksAgain(): boolean {
+  return evidencePart.asksAgain === true;
+}
 
 /**
  * A photo made smaller, as `ShrinkOptions` say, or the file itself when it is small already, cannot be read, or would

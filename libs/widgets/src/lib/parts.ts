@@ -19,6 +19,20 @@ export interface Part<M = unknown> {
   readonly loaded: M | undefined;
   /** Its code: asked for the first time, then the same answer — unless that failed, when it is asked for again. */
   load(): Promise<M>;
+  /**
+   * Whether asking again once it failed can bring it: true where parts come by a script tag of their own (the one-tag
+   * script, `partsComeByScriptTag`), which is asked for anew; false where they come by `import()` — an app's bundler —
+   * whose module the browser keeps failed for the page's life, so only a reload brings it. What offers to try again
+   * offers it only where it can work.
+   */
+  readonly asksAgain?: boolean;
+}
+
+/** Whether this page's parts come by script tags of their own (the one-tag script) rather than by import(). */
+let byScriptTag = false;
+/** Said by the one-tag script as it starts: its parts come by script tags, each asked for anew after a failure. */
+export function partsComeByScriptTag(): void {
+  byScriptTag = true;
 }
 
 /** A part, asked for by `load` (a dynamic import of the part's module) the first time something needs it. */
@@ -29,6 +43,9 @@ export function lazyPart<M>(name: string, load: () => Promise<M>): Part<M> {
     name,
     get loaded() {
       return loaded;
+    },
+    get asksAgain() {
+      return byScriptTag;
     },
     load() {
       return (pending ??= load().then(
@@ -61,6 +78,9 @@ export function partWith<M>(part: Part<M>, ...others: readonly Part[]): Part<M> 
     parts: [part, ...others],
     get loaded() {
       return others.every((other) => other.loaded) ? part.loaded : undefined;
+    },
+    get asksAgain() {
+      return part.asksAgain === true && others.every((other) => other.asksAgain === true);
     },
     load: () => Promise.all([part.load(), ...others.map((other) => other.load())]).then(([module]) => module),
   };

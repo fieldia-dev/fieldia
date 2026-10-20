@@ -6,7 +6,7 @@ import { shrinkFor, shrinkPhoto } from './shrink';
 import { describeState, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import type { WidgetFactory, WidgetState } from './widgets';
 import { installFilesStyles } from './styles-files';
-import { loadEvidencePart } from './widget-parts';
+import { evidencePartAsksAgain, loadEvidencePart } from './widget-parts';
 import type { Signing } from './signature-signing';
 
 /**
@@ -84,10 +84,12 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   });
   // Why a picture uploaded was not taken, or answers not signed: said politely, under the pad's tools.
   const refused = make('div', { class: 'fd-help fd-file-note fd-signature-note', role: 'status', hidden: '' });
-  // The signing's part that could not come (offline, a script blocked): said, with Try again, which asks for it again.
+  // The signing's part that could not come (offline, a script blocked): said, with Try again where asking again can bring
+  // it (`Part.asksAgain`: the one-tag script's tags); where it cannot (an app's modules), a reload is said instead.
   const retry = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.signingRetry);
   const unloadedWords = make('span');
-  const unloaded = make('div', { class: 'fd-help fd-file-note fd-signature-unloaded', role: 'alert', hidden: '' }, unloadedWords, ' ', retry);
+  const retryBox = make('span', {}, ' ', retry);
+  const unloaded = make('div', { class: 'fd-help fd-file-note fd-signature-unloaded', role: 'alert', hidden: '' }, unloadedWords);
   const tools = make('div', { class: 'fd-signature-tools' }, typed, undo, ...(upload ? [upload, file] : []), clear);
   const element = make(
     'div',
@@ -208,9 +210,13 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
    * Its part not come: never a picture kept unsigned in silence. Said under the signature, with Try again; the picture
    * to sign kept on the pad and in the field, and every save, check and step forward refusing it with the same words —
    * the form's own refusal of what does not read (`setUnread`) — until it is signed, or taken away. A signature kept
-   * signed (its evidence in its value) says the part did not come too: its answers stay locked until it does.
+   * signed (its evidence in its value) says the part did not come too: its answers stay locked until it does. Try again
+   * only where asking again can bring the part; else the words say to reload the page (hide, never a button that cannot
+   * work).
    */
   let unsigned: string | null = null;
+  /** Its words where the part could not come: Try again's, or a reload's where asking again cannot bring it. */
+  const notSigned = () => (evidencePartAsksAgain() ? words.notSignedNoPart : words.notSignedReload);
   const valueNow = () => {
     const value = form.getState().values[name];
     return value && typeof value === 'object' && !Array.isArray(value) ? (value as FileValue) : null;
@@ -220,14 +226,18 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     unsigned = key;
     const kept = form.getState().unread[name];
     if (key) {
-      if (kept?.message !== words.notSignedNoPart) form.setUnread(name, { text: '', message: words.notSignedNoPart });
-    } else if (kept?.message === words.notSignedNoPart) form.setUnread(name, null);
+      if (kept?.message !== notSigned()) form.setUnread(name, { text: '', message: notSigned() });
+    } else if (kept && (kept.message === words.notSignedNoPart || kept.message === words.notSignedReload)) form.setUnread(name, null);
     drawUnloaded();
   }
   function drawUnloaded() {
     const value = valueNow();
     const pending = !!value && unsigned !== null && keyOf(value) === unsigned && !evidenceOf(value);
-    const said = !failed ? null : pending ? words.notSignedNoPart : evidenceOf(value ?? undefined) ? words.signingNoPart : null;
+    const again = evidencePartAsksAgain();
+    const said = !failed ? null : pending ? notSigned() : evidenceOf(value ?? undefined) ? (again ? words.signingNoPart : words.signingNoPartReload) : null;
+    // Try again in its words only where it can work; else none at all.
+    if (again && retryBox.parentNode !== unloaded) unloaded.append(retryBox);
+    else if (!again) retryBox.remove();
     if (unloadedWords.textContent !== (said ?? '')) setText(unloadedWords, said ?? '');
     setHidden(unloaded, !said);
   }
