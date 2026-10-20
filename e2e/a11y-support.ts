@@ -34,10 +34,15 @@ const allowed = (rule: string, where: string) => ALLOWED.some((a) => a.rule === 
 /** Wait two frames, so a transition caught half way does not read as low contrast. */
 export const settle = (page: Page) => page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
 
-/** What axe finds on the page now, one line each; empty when the page passes. */
-export async function axeFindings(page: Page, state: string): Promise<string[]> {
+/**
+ * What axe finds on the page now, one line each; empty when the page passes. `within`: only what a popover open over
+ * the page holds — a target it covers for the moment it is open (a list's sort under a filter's menu) is no target too
+ * small, and the page under it is swept closed.
+ */
+export async function axeFindings(page: Page, state: string, within?: string): Promise<string[]> {
   await settle(page);
-  const { violations } = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  const builder = new AxeBuilder({ page }).withTags(WCAG_TAGS);
+  const { violations } = await (within ? builder.include(within) : builder).analyze();
   return violations.flatMap((v) =>
     v.nodes
       .filter((n) => !allowed(v.id, `${n.target.join(' ')} ${n.html}`))

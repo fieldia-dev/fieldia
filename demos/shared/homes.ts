@@ -60,10 +60,25 @@ function picture(kind: string, hue: number): FileValue {
   return { name: `${kind}.svg`, type: 'image/svg+xml', size: svg.length, url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` };
 }
 
+/** What a home has besides its rooms, as a buyer filters by it: the records its amenities link to. */
+export const AMENITIES: Record<number, string> = { 1: 'Garden', 2: 'Pool', 3: 'Parking', 4: 'Nile view', 5: 'Security' };
+const NILE: ReadonlySet<string> = new Set(['zamalek', 'garden_city', 'maadi']);
+/** A home's amenities, from what it is and where — never from the seed, so every other value stays as it was. */
+function amenitiesOf(i: number, kind: string, district: string) {
+  const ids = [
+    ...(kind === 'villa' || i % 5 === 0 ? [1] : []),
+    ...(kind === 'villa' && i % 2 === 0 ? [2] : []),
+    ...(kind !== 'flat' || i % 3 !== 0 ? [3] : []),
+    ...(NILE.has(district) && i % 2 === 1 ? [4] : []),
+    ...(i % 4 === 0 ? [5] : []),
+  ];
+  return ids.map((id) => ({ id, label: AMENITIES[id] }));
+}
+
 /**
  * Sixty-four homes: most with their place, two without one yet. Priced in
  * pounds, but for villas and the dearest homes in Zamalek and New Cairo,
- * whose owners ask in dollars, as some do.
+ * whose owners ask in dollars, as some do. Each with its amenities.
  */
 export function sampleHomes(): Record<number, Values> {
   const random = seeded(2026);
@@ -95,6 +110,7 @@ export function sampleHomes(): Record<number, Values> {
       lng: placed ? Math.round((lng + (random() - 0.5) * spread * 2) * 1e6) / 1e6 : null,
       photo: picture(kind, Math.floor(random() * 360)),
       listed_on: `2026-${String(1 + (i % 9)).padStart(2, '0')}-${String(1 + ((i * 7) % 27)).padStart(2, '0')}`,
+      amenities: amenitiesOf(i, kind, district),
     };
   }
   return homes;
