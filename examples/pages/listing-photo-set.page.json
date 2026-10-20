@@ -103,6 +103,24 @@
     "children": [
       {
         "type": "section",
+        "id": "s-photos",
+        "title": "Photos",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-photos",
+            "field": "photos",
+            "widget": "photos",
+            "options": {
+              "captions": true,
+              "aspect": "4:3",
+              "camera": true
+            }
+          }
+        ]
+      },
+      {
+        "type": "section",
         "id": "s-home",
         "title": "The home",
         "columns": 2,
@@ -133,24 +151,6 @@
             "type": "field",
             "id": "f-bedrooms",
             "field": "bedrooms"
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "id": "s-photos",
-        "title": "Photos",
-        "children": [
-          {
-            "type": "field",
-            "id": "f-photos",
-            "field": "photos",
-            "widget": "photos",
-            "options": {
-              "captions": true,
-              "aspect": "4:3",
-              "camera": true
-            }
           }
         ]
       }
