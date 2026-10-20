@@ -48,7 +48,8 @@ test.describe('the inputs’ details in the viewer', () => {
     await send(page);
     await expect(errorOf(page, 'q-move-day')).toHaveText('“Which day shall we move your things?” can’t be on a Friday or Saturday');
     await day.fill(dayFrom(90, 1));
-    await expect(errorOf(page, 'q-move-day')).toContainText('“Which day shall we move your things?” can’t be after ');
+    // The day it names written as the box writes one (the site lane's walk of 0.27: "October 20, 2026" beside "20 Oct 2026").
+    await expect(errorOf(page, 'q-move-day')).toHaveText(/^“Which day shall we move your things\?” can’t be after \d{1,2} [A-Z][a-z]{2} \d{4}$/);
     await day.fill(dayFrom(1, 0));
     await expect(errorOf(page, 'q-move-day')).toBeHidden();
     await node(page, 'q-move-day').scrollIntoViewIfNeeded();
