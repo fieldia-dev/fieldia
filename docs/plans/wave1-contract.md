@@ -632,3 +632,63 @@ In plain words:
   away, and moves every link to them (by id and name) to the one kept, refusing as
   a backend would where the person may not change the kept one or take one away.
   Tests: `libs/core/src/lib/record/duplicates.spec.ts`.
+
+## 13. "It's someone new" kept on the app's server (0.27, lane loose-0262)
+
+Two more members, a pair, each optional as everything here: with both, what a
+person lets be on a possible duplicate is kept by the app's server; without
+both, in the person's browser (the viewer's `preferences`, `duplicates.<model>`),
+as in 0.26.
+
+```ts
+notDuplicates?(request: NotDuplicatesRequest): Promise<RecordId[]>;
+markNotDuplicate?(request: MarkNotDuplicateRequest): Promise<void>;
+
+interface NotDuplicatesRequest {
+  model: string;
+  recordId: RecordId;          // the record shown, saved
+}
+interface MarkNotDuplicateRequest {
+  model: string;
+  recordId: RecordId;          // the record shown, saved
+  matchId: RecordId;           // the record found like it, which is someone else
+}
+```
+
+**Why a pair of its own, and not the ids let be handed in `duplicates`.** What
+was let be lives somewhere: in a browser it never reaches another device, so
+handing the browser's list in the `duplicates` request would only hand a second
+device's empty one. The server has to keep it — and the app's duplicate finder (a
+search index, a matching service) need not be what keeps it, nor be changed to
+leave those out: the pair is a small store of the app's own (a table of two ids),
+read once as a record is shown, and the browser leaves out what it lists. A server
+whose `duplicates` already leaves them out loses nothing by it.
+
+In plain words:
+
+- **When they are asked.** `notDuplicates` as a saved record is shown, before its
+  possible duplicates are said: the first matches wait for it, so a match let be
+  on another device is never said here, even for a moment. Asked once for the
+  record shown (`form.recordShown()`); an answer for one no longer shown is laid
+  on none. `markNotDuplicate` as the person presses "It's someone new" on a saved
+  record; on a new record, once it is saved with its id — once for each match let
+  be while it was new.
+- **A pair.** Nile Traders is someone else for Nile Traders Co. as much as the
+  other way round: a source may answer from either side (the memory source does).
+  `form.notDuplicates()` leaves out the record itself and anything that is no id.
+- **Failing.** `notDuplicates` that throws: the matches are said as found, but
+  those this browser kept (0.26's, or refused below). `markNotDuplicate` that
+  throws: the browser keeps it, as without the pair; nothing is said.
+- **The browser's store** is still read where the source has the pair, so what
+  was let be in 0.26 (by the record's id, or 0.25's `id|field=…`) stays let be.
+- **The form**: `form.keepsNotDuplicates()` (both members there),
+  `form.notDuplicates()` (the record shown's, none while it is new),
+  `form.markNotDuplicate(matchId)` (refused while it is new).
+- **The memory source** implements both over `notDuplicatePairs` (by model, each
+  pair `[recordId, matchId]` as kept, once whichever side said it, never a record
+  and itself; a record it does not keep refused), and starts from the option of the
+  same name. The demos keep its pairs in the tab, as they keep records
+  (demos/shared/kept.ts), so a page the demo opens — another device, its
+  browser's store empty — reads them from the same "server". Tests:
+  `libs/core/src/lib/record/duplicates.spec.ts`,
+  `libs/viewer/src/lib/duplicates.spec.ts`, `e2e/duplicates.spec.ts`.

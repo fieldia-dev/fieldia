@@ -15,8 +15,10 @@ import { nameFieldOf } from './name-field';
  * - **Open it**: the record found, in this form's place, once the one check let what is typed here go
  *   (`form.leave({ changes: true })`: asked about, every change not saved counting);
  * - **It's someone new**: this match's record let be for this record, whatever field matches it next — a name typed
- *   after the email that found it — remembered for this record (a new one's until it is saved, then by its id, in the
- *   viewer's preferences);
+ *   after the email that found it — remembered for this record (a new one's until it is saved, then by its id): on the
+ *   app's server where the source keeps it (`notDuplicates` and `markNotDuplicate`, asked as a saved record is shown,
+ *   before its matches are said), so another device lets it be too; else, or where the source refuses to keep one, in
+ *   the viewer's preferences, as before;
  * - **Merge…**, on a saved record where the source has `merge`: the two side by side (merge-screen.ts).
  *
  * Typing on in a field named leaves an answer on its way unheard; an answer for a record no longer shown
@@ -37,7 +39,7 @@ export interface DuplicatesContext {
   /** The page's language tag, for the marks a list of words is joined with. */
   tag?: string;
   icons?: IconSet;
-  /** Where a match let be is remembered, by record: the viewer's preferences. */
+  /** Where a match let be is remembered, by record, where the source keeps none: the viewer's preferences. */
   preferences: PreferenceStore;
   fill(template: string, values: Record<string, string | number>): string;
   /** Words said in a toast: a merge done, a record that could not be read. */
@@ -90,8 +92,12 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
   /** The matches shown now, and the notes they are in, by the field each is under ('' over the page). */
   let shown: DuplicateMatch[] = [];
   const notes = new Map<string, { note: HTMLElement; keys: string }>();
-  /** The new record's matches let be, until it is saved and has an id to remember them by. */
-  let fresh = new Set<string>();
+  /** The new record's matches let be, by their ids as strings, until it is saved and has an id to remember them by. */
+  let fresh = new Map<string, RecordId>();
+  /** Whether the source keeps what is let be, on the app's server: else the browser does, in the viewer's preferences. */
+  const onServer = form.keepsNotDuplicates();
+  /** What the source keeps as let be for the record shown, asked once as it is shown, with what is let be here since. */
+  let apart: { id: string; ids: Set<string>; asked: Promise<void> } | null = null;
   /** A match is said once as it comes, politely: never over what the person is typing. */
   const said = el('div', { class: 'fd-sr-only fd-duplicates-said', role: 'status', 'aria-live': 'polite' });
   root.append(said);
@@ -108,8 +114,10 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
     stop();
     const mine = asking;
     const still = form.recordShown();
-    form.findDuplicates().then(
-      (matches) => {
+    const { recordId } = form.getState();
+    // The matches wait for what the source keeps as let be for this record: none said that another device let be.
+    Promise.all([form.findDuplicates(), recordId !== null && onServer ? apartFrom(recordId).asked : null]).then(
+      ([matches]) => {
         if (!gone && mine === asking && still()) draw(matches);
       },
       // A source that failed says nothing here: the record is typed and saved as ever.
@@ -127,7 +135,36 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
     const all = context.preferences.get(KEY);
     return Array.isArray(all) ? (all.filter((one) => Array.isArray(one) && typeof one[0] === 'string' && Array.isArray(one[1])) as [string, string[]][]) : [];
   };
-  const letBeFor = (id: RecordId | null): Set<string> => (id === null ? fresh : new Set(kept().find(([record]) => record === String(id))?.[1] ?? []));
+  /**
+   * What the source keeps as let be for a saved record: asked of it the first time, once for the record shown. Its
+   * answer lost (the source failed) leaves what the browser kept, and what is let be here.
+   */
+  const apartFrom = (id: RecordId) => {
+    if (apart?.id !== String(id)) {
+      const ids = new Set<string>();
+      const asked = form.notDuplicates().then(
+        (found) => found.forEach((one) => ids.add(String(one))),
+        () => undefined
+      );
+      apart = { id: String(id), ids, asked };
+    }
+    return apart;
+  };
+  /** What is let be for a record: a new one's until it is saved; a saved one's as the browser kept it, and as the source keeps it. */
+  const letBeFor = (id: RecordId | null): Set<string> => {
+    if (id === null) return new Set(fresh.keys());
+    const own = kept().find(([record]) => record === String(id))?.[1] ?? [];
+    return new Set([...own, ...(onServer ? apartFrom(id).ids : [])]);
+  };
+  /** A saved record's match let be: kept by the source where it keeps them — the browser keeping it should it refuse — else by the browser. */
+  const keepApart = (id: RecordId, matches: Iterable<[string, RecordId]>) => {
+    if (!onServer) return remember(id, [...matches].map(([mark]) => mark));
+    const here = apartFrom(id).ids;
+    for (const [mark, match] of matches) {
+      here.add(mark);
+      form.markNotDuplicate(match).catch(() => remember(id, [mark]));
+    }
+  };
   const remember = (id: RecordId, signatures: Iterable<string>) => {
     const all = kept();
     const own = all.find(([record]) => record === String(id))?.[1] ?? [];
@@ -251,8 +288,8 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
   function letBe(match: DuplicateMatch, pressed: HTMLElement) {
     const { recordId } = form.getState();
     const mark = String(match.id);
-    if (recordId === null) fresh.add(mark);
-    else remember(recordId, [mark]);
+    if (recordId === null) fresh.set(mark, match.id);
+    else keepApart(recordId, [[mark, match.id]]);
     const item = pressed.closest('.fd-duplicate');
     const next = (item?.nextElementSibling ?? item?.previousElementSibling)?.getAttribute('data-record');
     const field = item?.closest<HTMLElement>('.fd-duplicates')?.getAttribute('data-duplicates-of') ?? '';
@@ -318,13 +355,14 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
     form.on('open', () => {
       stop();
       clear();
-      fresh = new Set();
+      fresh = new Map();
+      apart = null;
       if (asTyped) ask();
     }),
     // Saved: what was let be while it was new is remembered by its id; and it is asked of again.
     form.on('save', ({ recordId }) => {
-      if (recordId !== null && fresh.size) remember(recordId, fresh);
-      fresh = new Set();
+      if (recordId !== null && fresh.size) keepApart(recordId, fresh);
+      fresh = new Map();
       ask();
     }),
   ];

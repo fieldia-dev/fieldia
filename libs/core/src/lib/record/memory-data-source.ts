@@ -42,6 +42,8 @@ import type {
   DuplicatesRequest,
   DuplicatesResult,
   MergeRequest,
+  NotDuplicatesRequest,
+  MarkNotDuplicateRequest,
 } from './data-source';
 import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
@@ -122,6 +124,11 @@ export interface MemoryDataSourceOptions {
    * `merge` keeps one record with the values picked and takes the others away, links to them moved to it, either way.
    */
   duplicates?: (request: DuplicatesRequest, records: Readonly<Record<string, Record<string, Values>>>) => DuplicatesResult | Promise<DuplicatesResult>;
+  /**
+   * The records already said to be someone else for one another ("It's someone new"), by model: each pair of ids, as
+   * `notDuplicatePairs` keeps them — `{ partner: [['41', '1']] }` — to start from what an earlier visit kept.
+   */
+  notDuplicatePairs?: Record<string, [RecordId, RecordId][]>;
 }
 
 /**
@@ -132,6 +139,11 @@ export interface MemoryDataSourceOptions {
  */
 export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords' | 'importRecords'>>, Pick<DataSource, 'exportRecords' | 'importRecords'> {
   readonly records: Record<string, Record<string, Values>>;
+  /**
+   * The records said to be someone else for one another, by model: each pair of ids, in the order kept, through
+   * `markNotDuplicate` (the record's, then the one found like it). `notDuplicates` answers from either side of a pair.
+   */
+  readonly notDuplicatePairs: Record<string, [RecordId, RecordId][]>;
   readonly responses: SubmitRequest[];
   readonly calls: { method: keyof DataSource; request: unknown }[];
   /**
@@ -149,6 +161,7 @@ export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecor
  */
 export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): MemoryDataSource {
   const records = structuredCopy(options.records ?? {});
+  const notDuplicatePairs = structuredCopy(options.notDuplicatePairs ?? {});
   const responses: SubmitRequest[] = [];
   const calls: MemoryDataSource['calls'] = [];
   /** Properties added in place, by the list and the definitions the app gave for the record they were added to. */
@@ -280,6 +293,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
 
   return {
     records,
+    notDuplicatePairs,
     responses,
     calls,
 
@@ -425,6 +439,25 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       calls.push({ method: 'duplicates', request });
       await pause();
       return options.duplicates ? options.duplicates(request, records) : { matches: [] };
+    },
+
+    async notDuplicates(request: NotDuplicatesRequest): Promise<RecordId[]> {
+      calls.push({ method: 'notDuplicates', request });
+      await pause();
+      const id = String(request.recordId);
+      // A pair either way round: each is someone else for the other.
+      return (notDuplicatePairs[request.model] ?? []).flatMap(([a, b]) => (String(a) === id ? [b] : String(b) === id ? [a] : []));
+    },
+
+    async markNotDuplicate(request: MarkNotDuplicateRequest): Promise<void> {
+      calls.push({ method: 'markNotDuplicate', request });
+      await pause();
+      const { recordId, matchId } = request;
+      if (!table(request.model)[String(recordId)]) throw new Error(`No ${request.model} record with id ${recordId}`);
+      const pairs = (notDuplicatePairs[request.model] ??= []);
+      const same = (x: RecordId, y: RecordId) => String(x) === String(y);
+      // Never a record and itself, and a pair kept once, whichever side said it.
+      if (!same(recordId, matchId) && !pairs.some(([x, y]) => (same(x, recordId) && same(y, matchId)) || (same(x, matchId) && same(y, recordId)))) pairs.push([recordId, matchId]);
     },
 
     async merge(request: MergeRequest): Promise<void> {

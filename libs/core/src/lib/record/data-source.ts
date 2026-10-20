@@ -127,6 +127,35 @@ export interface DataSource {
    * with why) and nothing changes. Without it, possible duplicates offer no Merge.
    */
   merge?(request: MergeRequest): Promise<MergeResult | void>;
+  /**
+   * The records a person said are someone else for this one ("It's someone new"), by id: asked as a saved record is
+   * shown, before its possible duplicates are said, so one let be on another device stays let be here. A pair: answer
+   * from either side where you keep them so. With `markNotDuplicate`, these are kept on your server; without both,
+   * in the person's browser (the viewer's `preferences`), as before. To fail, throw: what the browser kept is read.
+   */
+  notDuplicates?(request: NotDuplicatesRequest): Promise<RecordId[]>;
+  /**
+   * Keep that a record found is someone else for this one: the person pressed "It's someone new" on a saved record,
+   * or saved a new one after pressing it (once for each). Never said as its duplicate again, on any device. Refused
+   * (thrown), the browser keeps it instead, as without this.
+   */
+  markNotDuplicate?(request: MarkNotDuplicateRequest): Promise<void>;
+}
+
+/** Whose possible duplicates were let be: what `notDuplicates` is asked. */
+export interface NotDuplicatesRequest {
+  model: string;
+  /** The record shown, saved. */
+  recordId: RecordId;
+}
+
+/** A record found, said to be someone else for this one: what `markNotDuplicate` is asked. */
+export interface MarkNotDuplicateRequest {
+  model: string;
+  /** The record shown, saved. */
+  recordId: RecordId;
+  /** The record found like it, which is someone else. */
+  matchId: RecordId;
 }
 
 /** Many records made at once, each with its own values: a list's Import. */

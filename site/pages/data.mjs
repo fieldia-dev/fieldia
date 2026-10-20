@@ -35,6 +35,8 @@ interface DataSource {
   slots?(request: SlotsRequest): Promise<SlotsResult>;        // the times free to book, day by day
   duplicates?(request: DuplicatesRequest): Promise<DuplicatesResult>; // records like the one typed
   merge?(request: MergeRequest): Promise<MergeResult | void>; // two records into one
+  notDuplicates?(request: NotDuplicatesRequest): Promise<RecordId[]>; // those said to be someone new
+  markNotDuplicate?(request: MarkNotDuplicateRequest): Promise<void>; // one said to be someone new
 }`
 )}
 
@@ -63,6 +65,7 @@ interface DataSource {
     <tr><td>${c('slots')}</td><td>A date and time drawn as booking slots shows a month, a field it depends on changes, or someone picks a time</td><td>Booking a time from those free — see <a href="#slots">booking slots</a></td></tr>
     <tr><td>${c('duplicates')}</td><td>Someone stops typing in a field the page's ${c('duplicates')} names, a saved record opens, or a record is saved</td><td>Saying which records it may duplicate, under the field they matched on — see <a href="#duplicates">possible duplicates</a></td></tr>
     <tr><td>${c('merge')}</td><td>Someone merges a record with one like it, a value picked for each field</td><td>Merge, beside a possible duplicate — without it, none is offered</td></tr>
+    <tr><td>${c('notDuplicates')} · ${c('markNotDuplicate')}</td><td>A saved record with possible duplicates is shown; someone presses <em>It's someone new</em></td><td>What was let be kept on your server, so every device lets it be — without both, the person's browser keeps it. See <a href="#duplicates">possible duplicates</a></td></tr>
   </tbody>
 </table>
 </div>
@@ -217,7 +220,8 @@ ${code(
 <ul>
   <li>${c('duplicates({ model, recordId, values, fields })')} — ${c('fields')} are those the page names that hold a value now (none: nothing is asked), ${c('values')} every value of the form (a phone as E.164 where the page reads phones the world over), ${c('recordId')} the record typed (null while new) — never its own duplicate. Answer ${c("{ matches: [{ id, name, why: ['phone', 'email'], score? }] }")}: ${c('why')} names the fields it matched on — the note goes under the first of them in sight, and a name field in it is said as <em>“a name like this”</em> where the names are not the same — and ${c('score')}, from 0 to 1, puts the likest first. To fail, throw: nothing is said.</li>
   <li>${c('on')}: ${c("'type'")} (the default) asks as the fields are typed in, as a saved record opens and as it is saved; ${c("'save'")} only as it is saved. Typing on leaves an answer on its way unheard; an answer for a record no longer shown is laid nowhere. Nothing is in Save's way: a duplicate is said, and Save saves — unless your ${c('save')} refuses it.</li>
-  <li><strong>Open it</strong> shows the record found in the form's place, once the person said Discard to what they typed (every change counts, as a panel's Escape counts it). <strong>It's someone new</strong> lets the record found be for this record, whatever field matches it next — a name typed after the email that found it — remembered for the record (in the viewer's ${c('preferences')}, by its id once saved).</li>
+  <li><strong>Open it</strong> shows the record found in the form's place, once the person said Discard to what they typed (every change counts, as a panel's Escape counts it). <strong>It's someone new</strong> lets the record found be for this record, whatever field matches it next — a name typed after the email that found it — remembered for the record, by its id once saved: on your server where your source has ${c('notDuplicates')} and ${c('markNotDuplicate')}, else in the person's browser (the viewer's ${c('preferences')}).</li>
+  <li><strong>Kept on your server.</strong> ${c('notDuplicates({ model, recordId })')} is asked as a saved record is shown, before its possible duplicates are said — answer with the ids of the records said to be someone else for it — and ${c('markNotDuplicate({ model, recordId, matchId })')} as the person presses <em>It's someone new</em> on a saved record, or saves a new one after pressing it (once for each). Keep them as pairs: Nile Traders is someone else for Nile Traders Co. as much as the other way round. A second device, a phone after the laptop, then never says a match let be on the first. Your ${c('duplicates')} need not leave them out: the page does. Throw from ${c('notDuplicates')}, and the matches are said as found; throw from ${c('markNotDuplicate')}, and the browser keeps that one instead. What a browser kept before your source had them is still read.</li>
   <li>On a page that names its records (${c('"records": { "one": "customer", "other": "customers", "a": "a customer" }')}, see <a href="/pages/#page-width">the page</a>), each match says them — <em>A customer with this phone already exists: Nile Traders</em>, <em>It's a new customer</em>, <em>Merge two customers</em> — its field's label small inside the sentence where the page says so (${c('"lowerLabels": true')}).</li>
   <li><strong>Merge…</strong> saves what is typed first, reads the record found (${c('load')}), and shows the two side by side: the record kept picked over its column (the one found, unless the person picks this one), and a radio for each field they hold apart, the kept record's value picked — or the other's where the kept one holds nothing. What will happen is said before Merge. Then ${c('merge({ model, keepId, mergeIds, values, fields })')}: keep ${c('keepId')} with ${c('values')}, the value picked for each field, and take ${c('mergeIds')} away. Moving what was theirs — messages, activities, the records linking to them — is your source's work. Refuse with ${c("saveRefused({ kind: 'rule', message })")}: it is said in the screen, which stays. Merged, the record kept is shown, and ${c('{ message }')} answered is said with it.</li>
 </ul>
@@ -235,9 +239,16 @@ const dataSource = {
     if (answer.status === 403) throw saveRefused({ kind: 'rule', message: await answer.text() });
     return answer.json();   // { message: '4 messages and 2 orders moved' }
   },
+  async notDuplicates({ model, recordId }) {
+    const answer = await fetch(\`/api/\${model}/\${recordId}/not-duplicates\`);
+    return answer.json();   // [3, 17]
+  },
+  async markNotDuplicate({ model, recordId, matchId }) {
+    await fetch(\`/api/\${model}/\${recordId}/not-duplicates\`, { method: 'POST', body: JSON.stringify({ matchId }) });
+  },
 };`
 )}
-<p>${c('form.findDuplicates()')} asks it for a screen of your own, and ${c('form.merge({ keepId, mergeIds, values })')} merges; ${c('form.canFindDuplicates()')} and ${c('form.canMerge()')} say whether the page and its source can. For demos and tests, ${c('alikeRecords()')} answers from the <a href="#memory">memory data source</a>'s records.</p>
+<p>${c('form.findDuplicates()')} asks it for a screen of your own, and ${c('form.merge({ keepId, mergeIds, values })')} merges; ${c('form.canFindDuplicates()')} and ${c('form.canMerge()')} say whether the page and its source can; ${c('form.notDuplicates()')} and ${c('form.markNotDuplicate(matchId)')} read and keep what was let be for the record shown, where ${c('form.keepsNotDuplicates()')} says the source has both. For demos and tests, ${c('alikeRecords()')} answers from the <a href="#memory">memory data source</a>'s records.</p>
 
 <h2 id="changes">What a save sends</h2>
 <p>${c('changes.values')} has the plain fields that changed. Tables of lines and many2many links come as operations, named the way Odoo names its x2many commands, so an Odoo or Flectra adapter maps them one to one:</p>
@@ -413,7 +424,7 @@ const dataSource = createMemoryDataSource({
   }),
 });`
 )}
-<p>Its ${c('duplicates')} answers with ${c('alikeRecords()')}: each record of the model holding the same value in a field asked as people write them apart — a phone's spaces and dashes, an email in any case, a link by its record — or, in its name field, a name close enough. Its ${c('merge')} keeps one record with the values picked, takes the others away, and moves the links to them to it:</p>
+<p>Its ${c('duplicates')} answers with ${c('alikeRecords()')}: each record of the model holding the same value in a field asked as people write them apart — a phone's spaces and dashes, an email in any case, a link by its record — or, in its name field, a name close enough. Its ${c('merge')} keeps one record with the values picked, takes the others away, and moves the links to them to it; its ${c('notDuplicates')} and ${c('markNotDuplicate')} keep what was let be as pairs (${c('notDuplicatePairs')}, by model, read from either side), starting from the option of that name:</p>
 ${code(
   'ts',
   `

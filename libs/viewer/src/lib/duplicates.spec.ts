@@ -185,11 +185,17 @@ describe('possible duplicates, as a record is typed', () => {
   });
 });
 
+/** A source that keeps nothing of what is let be (no `notDuplicates`, no `markNotDuplicate`): the browser keeps it. */
+const browserKept = (ds: MemoryDataSource): DataSource => {
+  const { notDuplicates: _read, markNotDuplicate: _write, ...rest } = ds;
+  return rest;
+};
+
 describe('its ways: It’s someone new, Open it', () => {
   it('lets a match’s record be for this record, whatever matches it next, remembered for the record once it is saved', async () => {
     const ds = source();
     const preferences = memoryPreferences();
-    const viewer = await mount({ dataSource: ds, preferences });
+    const viewer = await mount({ dataSource: browserKept(ds), preferences });
     await type('email', 'orders@niletraders.example', 2);
     await pass(DUPLICATES_WAIT_MS);
     expect(words('email')).toHaveLength(2);
@@ -212,7 +218,7 @@ describe('its ways: It’s someone new, Open it', () => {
     // Opened again later, what was let be stays let be.
     handle?.destroy();
     document.body.replaceChildren();
-    const again = await mount({ dataSource: ds, preferences, recordId: 4 }, page({ duplicates: { fields: ['email'] } }));
+    const again = await mount({ dataSource: browserKept(ds), preferences, recordId: 4 }, page({ duplicates: { fields: ['email'] } }));
     await pass(0);
     expect(again.form.getState().recordId).toBe(4);
     expect(notes()).toEqual([]);
@@ -239,6 +245,104 @@ describe('its ways: It’s someone new, Open it', () => {
     await pass(0);
     expect(viewer.form.getState().recordId).toBe(1);
     expect(box('name').value).toBe('Nile Traders');
+  });
+});
+
+describe('It’s someone new kept on the app’s server (notDuplicates, markNotDuplicate)', () => {
+  /** Another device: its own viewer, its own browser's preferences (none kept), the same server. */
+  async function elsewhere(ds: DataSource, recordId: number, shown = page()) {
+    handle?.destroy();
+    document.body.replaceChildren();
+    const preferences = memoryPreferences();
+    const viewer = await mount({ dataSource: ds, preferences, recordId }, shown);
+    await pass(0);
+    return { viewer, preferences };
+  }
+
+  it('keeps what a new record let be on the server once it is saved, and another device lets it be too', async () => {
+    const ds = source();
+    const preferences = memoryPreferences();
+    const viewer = await mount({ dataSource: ds, preferences });
+    await type('email', 'orders@niletraders.example', 2);
+    await pass(DUPLICATES_WAIT_MS);
+    way('email', 'It’s someone new').click();
+    way('email', 'It’s someone new').click();
+    expect(notes()).toEqual([]);
+    // New, nothing is kept yet: it has no id to keep it by.
+    expect(ds.calls.filter((call) => call.method === 'markNotDuplicate')).toEqual([]);
+    expect(await viewer.save()).toBe(true);
+    await pass(0);
+    expect(notes()).toEqual([]);
+    expect(ds.notDuplicatePairs).toEqual({ partner: [[4, 1], [4, 3]] });
+    // The server keeps them: the browser, nothing.
+    expect(preferences.kept.has('duplicates.partner')).toBe(false);
+    const { preferences: theirs } = await elsewhere(ds, 4, page({ duplicates: { fields: ['email'] } }));
+    expect(notes()).toEqual([]);
+    expect(theirs.kept.size).toBe(0);
+    // A pair: on Nile Traders Co., the customer saved since is someone else too.
+    await elsewhere(ds, 3, page({ duplicates: { fields: ['email'] } }));
+    expect(words('email')).toEqual(['A record with this Email already exists: Nile Traders']);
+  });
+
+  it('keeps a saved record’s at once, and says the matches only once the server has said what it keeps', async () => {
+    const ds = source();
+    await mount({ dataSource: ds, recordId: 3 }, page({ duplicates: { fields: ['email'] } }));
+    await pass(0);
+    expect(words('email')).toEqual(['A record with this Email already exists: Nile Traders']);
+    way('email', 'It’s someone new').click();
+    expect(notes()).toEqual([]);
+    expect(ds.calls.find((call) => call.method === 'markNotDuplicate')?.request).toEqual({ model: 'partner', recordId: 3, matchId: 1 });
+    // Another device, the server slow to say what it keeps: nothing is said meanwhile, and the one let be never.
+    let answer: (ids: string[]) => void = () => undefined;
+    const slow: DataSource = { ...ds, notDuplicates: () => new Promise((done) => (answer = done)) };
+    await elsewhere(slow, 3, page({ duplicates: { fields: ['email'] } }));
+    await pass(1000);
+    expect(notes()).toEqual([]);
+    answer(['1']);
+    await pass(0);
+    expect(notes()).toEqual([]);
+  });
+
+  it('keeps one the server refuses in the browser, and says the matches as found where it cannot say what it keeps', async () => {
+    const ds = source();
+    const refusing: DataSource = { ...ds, markNotDuplicate: async () => Promise.reject(new Error('The server is away')) };
+    const preferences = memoryPreferences();
+    await mount({ dataSource: refusing, preferences, recordId: 3 }, page({ duplicates: { fields: ['email'] } }));
+    await pass(0);
+    way('email', 'It’s someone new').click();
+    await pass(0);
+    expect(notes()).toEqual([]);
+    expect(preferences.kept.get('duplicates.partner')).toEqual([['3', ['1']]]);
+    // A server that cannot say what it keeps: the matches as found, what this browser kept still let be.
+    handle?.destroy();
+    document.body.replaceChildren();
+    const failing: DataSource = { ...ds, notDuplicates: async () => Promise.reject(new Error('The server is away')) };
+    await mount({ dataSource: failing, preferences, recordId: 3 }, page({ duplicates: { fields: ['email'] } }));
+    await pass(0);
+    expect(notes()).toEqual([]);
+    await elsewhere(failing, 3, page({ duplicates: { fields: ['email'] } }));
+    expect(words('email')).toEqual(['A record with this Email already exists: Nile Traders']);
+  });
+
+  it('lays what the server keeps for a record no longer shown on none', async () => {
+    // Mona Adel (4) found like every customer, by a source of the app's own.
+    const ds = source({ duplicates: () => ({ matches: [{ id: 4, name: 'Mona Adel', why: ['email'] }] }) });
+    let answer: (ids: string[]) => void = () => undefined;
+    // What the server keeps for Nile Traders Co. (3) comes late: Mona Adel let be for it.
+    const slow: DataSource = { ...ds, notDuplicates: (request) => (String(request.recordId) === '3' ? new Promise((done) => (answer = done)) : ds.notDuplicates(request)) };
+    const viewer = await mount({ dataSource: slow, recordId: 3 }, page({ duplicates: { fields: ['email'] } }));
+    await pass(0);
+    // Nile Traders (1) shown before the server's answer for Nile Traders Co. (3) comes: its own matches, nothing let be.
+    await viewer.form.openRecord(1);
+    await pass(0);
+    answer(['4']);
+    await pass(0);
+    expect(viewer.form.getState().recordId).toBe(1);
+    expect(words('email')).toEqual(['A record with this Email already exists: Mona Adel']);
+    // Asked again as Nile Traders is typed in: still said for it.
+    await type('email', '.eg', 2);
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('email')).toEqual(['A record with this Email already exists: Mona Adel']);
   });
 });
 

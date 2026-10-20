@@ -59,7 +59,7 @@ import { showroom, testDriveDemo, testDriveRecords } from './test-drive';
 import { emptyGridsPage, emptyGridsRecords } from './empty-grids';
 import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings, searchFromQuery } from './related-lists';
 import { customerCardPage, duplicateCustomers } from './duplicates';
-import { keepWrites, keptOver } from './kept';
+import { keepWrites, keptApart, keptOver } from './kept';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -672,7 +672,7 @@ export function sampleDataSource() {
   // What this tab saved in the demos, in place of the samples (shared/kept.ts) — the customer typed twice's second Nile
   // Traders, someone else's, to find and merge (shared/duplicates.ts), back unless it was merged away.
   const extra: Record<string, Record<string, Values>> = params.get('page') === 'customer-card' ? { partner: duplicateCustomers() } : {};
-  const source = createMemoryDataSource({ ...options, records: keptOver(options?.records ?? {}, extra) });
+  const source = createMemoryDataSource({ ...options, records: keptOver(options?.records ?? {}, extra), notDuplicatePairs: keptApart() });
   // `?store=http`: the listing's photos to a real endpoint, through uploadTo, for the browser tests.
   const upload = listingUpload(params);
   if (upload) source.upload = upload;
