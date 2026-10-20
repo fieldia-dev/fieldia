@@ -14,6 +14,7 @@ export const options: DesignerWords['options'] = {
   grip: 'اسحب للنقل · Alt+↑ أو ↓ ينقله أيضًا',
   alone: 'يُختار وحده',
   showWhen: 'اعرضه عندما…',
+  shownWhen: 'يظهر عندما',
   showOptionWhen: 'اعرض هذا الخيار',
   whenOptionShows: 'متى يظهر هذا الخيار',
 };

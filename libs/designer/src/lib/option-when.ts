@@ -30,7 +30,7 @@ export function optionWhen(el: ElementFactory, designer: Designer): OptionWhen {
   let at: { nodeId: string; index: number } | null = null;
   let seen: { page: Page; others: FieldNode[]; invisible: SelectionOption['invisible'] } | null = null;
   const save = (invisible: string | null) => !!at && designer.setOptionDetails(at.nodeId, at.index, { invisible });
-  const box = el('div', { class: 'fd-q-option-when-box', hidden: '' });
+  const box = el('div', { class: 'fd-q-option-when-box', hidden: '' }, el('span', { class: 'fd-q-option-when-lead' }, w.shownWhen));
   let editor: ReturnType<typeof conditionEditor> | null = null;
   /** The rules' editor, made the first time it is needed. */
   const rules = () => {

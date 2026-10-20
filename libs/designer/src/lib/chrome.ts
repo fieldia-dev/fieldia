@@ -401,7 +401,7 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
         // Shown by another question's answer: "Garden" only for a villa.
         const when = optionWhen(el, designer);
         whens.set(input, when);
-        list.append(el('li', { class: 'fd-q-option' }, grip, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }, multiple ? '☐' : '◯'), input, alone, when.button, remove, when.box));
+        list.append(el('li', { class: 'fd-q-option' }, grip, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }, multiple ? '☐' : '◯'), input, alone, remove, when.button, when.box));
       }
       choices.forEach((option, i) => {
         const row = list.children[i] as HTMLElement;

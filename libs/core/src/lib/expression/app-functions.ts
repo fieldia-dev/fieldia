@@ -57,18 +57,7 @@ const UNKNOWN: ExpressionFunction = { takes: [0, Infinity], call: () => null };
  * amount's look reads, a designer's outline — where the app's functions are not at hand. A call of one gives
  * nothing there; the page's checks, given the app's functions, say which are not.
  */
-export const ANY_FUNCTION: FunctionTable = {
-  get: (name: string) => (FUNCTIONS.has(name) ? undefined : UNKNOWN),
-  has: (name: string) => !FUNCTIONS.has(name),
-  get size() {
-    return 0;
-  },
-  keys: () => [][Symbol.iterator](),
-  values: () => [][Symbol.iterator](),
-  entries: () => [][Symbol.iterator](),
-  forEach: () => undefined,
-  [Symbol.iterator]: () => [][Symbol.iterator](),
-} as unknown as FunctionTable;
+export const ANY_FUNCTION = { get: (name: string) => (FUNCTIONS.has(name) ? undefined : UNKNOWN), keys: () => [][Symbol.iterator]() } as unknown as FunctionTable;
 
 const isThenable = (value: unknown): value is PromiseLike<unknown> => value !== null && (typeof value === 'object' || typeof value === 'function') && typeof (value as { then?: unknown }).then === 'function';
 
