@@ -1813,14 +1813,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // by condition and carried checked — options 3.93 and 1.80 to 4.97 and 2.25, to 5.0 and 2.3; Copy title's word in the
 // head part (36.50 and 10.80, to 36.6 and 10.9), Export's in the list part (128.97 and 41.43, under its own).
 // The owner's walk of 0.27 mended (0.27.1), each part's own: a list under a filter bar saying how many records it finds
-// — list 128.97 and 41.43 to 129.37 and 41.55, to 129.4 and 41.6 — a card's line giving each field its label beside its
+// — list 128.97 and 41.43 to 129.50 and 41.60, in the filter bar's own row, to 129.5 and 41.7 — a card's line giving each field its label beside its
 // value — cards 11.85 and 3.77 to 12.31 and 3.83, to 12.4 and 3.9 — a refused signature's note following the answers,
 // with Sign now — evidence 9.17 and 4.20 to 9.79 and 4.38, to 9.8 and 4.4; files 36.95 and 13.59 to 36.99 and 13.62,
 // to 37.0 and 13.7 — an unanswered slider's ring and "Not answered" — survey 36.61 and 12.75 to 37.88 and 13.00, to
 // 37.9 and 13.1 — the day and time a form opens written as the date boxes write it — limits 11.50 and 4.93 to 11.63 and
 // 5.01, to 11.7 and 5.1 — and the options a note of them taken out names, kept to judge it — options 4.97 and 2.25 to
 // 5.02 and 2.28, to 5.1 and 2.3.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.4, 41.6], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
