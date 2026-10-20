@@ -131,6 +131,9 @@
 /* The business line in the stage's own ink; the developers' a step quieter and smaller. */
 .lede-business { color: var(--h-stage-ink); font-size: clamp(17px, 1.6vw, 20px); line-height: 1.5; }
 .lede-dev { font-size: 15px; line-height: 1.55; }
+/* Neither line ends on a word alone ("language." under the rest): wrapped as prose is set where the engine can; where it
+   cannot, its lines evened out (balance), and where it can do neither, wrapped as before. */
+:is(.lede-business, .lede-dev) { text-wrap: balance; text-wrap: pretty; }
 .home-opening .opening-actions { margin-top: 6px; }
 
 /* The stage: its tabs, then the tab's panel — a bar, then the JSON and what it draws. */
