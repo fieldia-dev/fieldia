@@ -25,7 +25,7 @@ export default featurePage({
       no: 'A list on a map',
       title: 'The records beside their map',
       body: 'A list’s records on a map: a price, a name, a car or a face on each pin, a card for each, crowded pins as one bubble; a pin lights its row and a row its pin; Search this area, or draw one. A price is short on its pin, its home currency unsaid and “/month” on a rent; a card’s lines can be bare, its title a link to the record’s page. Or the map alone, in a page of your own beside your own list.',
-      ticks: ['Pins drawn by the page: words, an icon turned the way it goes, a photo, a colour by condition', 'The same search and the same records chosen as the table', 'Search this area, saying how many are in view, or an area drawn to search in', 'In your own page: filling its column, taking every gesture, its view kept in your address'],
+      ticks: ['Pins drawn by the page: words, an icon turned the way it goes, a photo, a colour by condition', 'The same search and the same records chosen as the table', 'Search this area, saying how many are in view, or an area drawn to search in', 'Thousands of records as bubbles your server counts: every one on the map, none loaded', 'In your own page: filling its column, taking every gesture, its view kept in your address'],
       shot: 'list.jpg', alt: 'Homes in Cairo as a list beside their map: a price on each pin, a bubble of homes, the first row lit on the map', width: 1280, height: 700,
       tryIt: ['Try the homes', demo('page=map-homes&skin=underline')], docs: ['A map in a page of your own, in the docs', '/maps/#own-page'],
     },

@@ -333,6 +333,20 @@ the span a value falls in as the list counts it, and `dayIn` and `dayStarts`
 a day in a time zone; `createMemoryDataSource` does it all. See
 [lists that add up](https://fieldia.dev/lists/#totals).
 
+## A map's records counted where they crowd
+
+A list's map (@fieldia/map) asks its source's optional `clusters({ model,
+filter, field, longitude?, bbox, zoom, radius, fields, weight?, signal })` for
+the view's bubbles — `{ clusters: [{ lat, lng, count, bbox?, weight? }],
+points?: [{ id, values }], unplaced? }` — instead of loading at most 500 records
+and gathering them itself: every record a search finds, however many, a record
+standing alone with its values for its pin and its card. Answer `false` to let
+the map load the search's records, as it does without the member. The memory
+source has it where its `clusters` option says how it answers:
+`createMemoryDataSource({ records, clusters: gridClusters({ models: ['home'] }) })`
+gathers its records by a grid of squares fixed to the world, as a server does.
+See [lists on a map](https://fieldia.dev/lists/#map).
+
 ## Time zones and booking slots
 
 A page may name the time zone its dates and times are in, by its IANA name —

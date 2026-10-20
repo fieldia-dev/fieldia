@@ -40,6 +40,7 @@ interface DataSource {
   limits?(request: LimitsRequest): Promise<LimitsResult>;    // responses taken, this person's, each choice's takers
   saveDraft?(request: SaveDraftRequest): Promise<SavedDraft>; // keep the answers so far, to continue later
   loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>; // a draft, by its key
+  clusters?(request: ClustersRequest): Promise<ClustersResult | false>; // a list's map: the view's bubbles, counted
 }`
 )}
 
@@ -72,6 +73,7 @@ interface DataSource {
     <tr><td>${c('notDuplicates')} · ${c('markNotDuplicate')}</td><td>A saved record with possible duplicates is shown; someone presses <em>It's someone new</em></td><td>What was let be kept on your server, so every device lets it be — without both, the person's browser keeps it. See <a href="#duplicates">possible duplicates</a></td></tr>
     <tr><td>${c('limits')}</td><td>A page with ${c('limits')} or options with ${c('seats')} opens, and again just before its answers go and after</td><td>The most responses, one from each person, each choice's places left — see <a href="#limits">opening, closing and limiting a form</a>; without it, a page keeps to its dates alone</td></tr>
     <tr><td>${c('saveDraft')} · ${c('loadDraft')}</td><td>Someone types on a page with ${c('continueLater')}, enters a wizard's step, or presses Continue later; a page opens with a draft's key</td><td>Answers kept on your server, continued on any device — see <a href="#drafts">save and resume</a>; without them, no Continue later shows</td></tr>
+    <tr><td>${c('clusters')}</td><td>A list's map shows a search, and again a moment after it stops moving</td><td>Every record a search finds on the map, however many, as bubbles your server counts — see <a href="/lists/#map-clusters">thousands on a map</a>; without it, or answered ${c('false')}, the map loads at most 500 and gathers them itself</td></tr>
   </tbody>
 </table>
 </div>
