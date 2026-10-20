@@ -317,6 +317,16 @@ your words and offers no Retry; any other error offers Retry. Stop with an
 one. Without `upload`, files travel inside the record as base64, as before.
 See [files stored as they are picked](https://fieldia.dev/data/#upload).
 
+A photo set (`"widget": "photos"`, @fieldia/widgets' README) keeps everything in
+the field's value, so any source that keeps a file value keeps it: the photos in
+the order a person put them (the first the cover), a photo's `caption`, and for a
+photo cropped or turned the photo as it was (`original`, a file value of its
+own) and what was done to it (`edit`: `{ turn: 90, crop: { x, y, width, height }
+}`, fractions of the turned original). A photo cropped is stored at once —
+`form.upload(field, [file], { replaces })`: its link takes the place of the
+bytes the field holds for it, with whatever stands beside them by then (a
+caption typed meanwhile).
+
 ## Lists that add up, and filter by time
 
 A list asks its source's optional `totals({ model, filter, totals, groupBy?,

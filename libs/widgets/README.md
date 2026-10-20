@@ -180,6 +180,36 @@ answers: a page with uploads or a plain signature never asks for it. Until it
 comes, the files part's pad draws and keeps the picture, and its signing waits
 for it — a save waits for that signing: `(await evidencePart.load()).answersMatch(…)`.
 
+A picture field of several photos drawn as `"widget": "photos"` is a **photo
+set**: its photos as tiles, in the order a person puts them — dragged with the
+mouse, a finger resting on one a moment first on a phone (a swipe still
+scrolls), or moved with Alt and an arrow key (Home and End to either end, the
+arrows mirrored right to left), each move said aloud, Escape putting a drag
+back. The first is the cover, marked so and what a list's card and a map's pin
+show (`options.cover: false` marks none: a clinic's before and after); each
+other has **Make cover**. Each photo has **Crop and turn**: a dialog drawing it
+on a canvas, the part kept dragged, sized by a corner or moved by the arrow keys
+(Shift and an arrow to size it), kept to `options.aspect` ("4:3") or a shape
+the person picks where it names none, turned a quarter at a time. Applied, the
+picture made takes the photo's place — stored at once where the data source
+stores files (the form's `upload` with `replaces`, its bar on the tile) — and
+the photo as it was is kept beside it (`FileValue.original`, with what was done,
+`FileValue.edit`), so a crop again starts from it and **Put back the original**
+brings it back; `options.keepOriginal: false` keeps none. `options.captions:
+true` puts a caption's box under each photo (`FileValue.caption`), read as the
+box is left, the photo named by it everywhere — its tools, its dialog's title.
+Photos are added as a picture field adds them, made smaller first, up to the
+field's `maxFiles`, each on its way a tile with its bar.
+
+```json
+{ "type": "field", "id": "f-photos", "field": "photos", "widget": "photos", "options": { "captions": true, "aspect": "4:3", "camera": true } }
+```
+
+It comes in `photosPart` (`fieldia.photos.js`) with the files part, whose
+taking of photos, files on their way and dialog it draws with; a plain picture
+field never asks for it. The crop's geometry is there for an app's own:
+`(await photosPart.load()).drawEdited(document, picture, { turn: 90, crop })`.
+
 A line's choice from the app's lists (`optionsFrom` on a line's selection, its
 `dependsOn` naming a column of the line or `parent.` and a field of the record)
 draws each line's own choices: the cell's form (`lineForm`) gives the line's
