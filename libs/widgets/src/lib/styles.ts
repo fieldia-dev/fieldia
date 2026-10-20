@@ -775,6 +775,10 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
   background: var(--fd-info-soft); border: 1px solid #a9c8ef; border-radius: var(--fd-control-radius); }
 .fd-done { padding: 40px 0; text-align: center; display: grid; gap: 12px; justify-items: center; }
 .fd-done-title { font-size: 20px; font-weight: 650; margin: 0; }
+/* An ending's words under its title; it takes the focus as it shows, so its words are read out: no ring for that. */
+.fd-done-text { display: grid; gap: 8px; max-width: 60ch; }
+.fd-done-words { margin: 0; }
+.fd-done-title:focus, .fd-done-words:focus { outline: none; }
 .fd-dialog-backdrop { position: fixed; inset: 0; background: rgba(15, 20, 25, 0.45); display: grid; place-items: center; z-index: 1000; padding: 16px; }
 .fd-dialog {
   background: var(--fd-surface); color: var(--fd-text); border-radius: max(var(--fd-radius), 6px); max-width: 420px; width: 100%;

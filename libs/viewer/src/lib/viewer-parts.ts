@@ -2,6 +2,7 @@ import type { ButtonNode, Field, FieldNode, Page, SectionNode, SheetTitle } from
 import { businessPart, choicePart, datePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
+import type * as AnswersModule from './answers-part';
 import type * as CardsModule from './cards-part';
 import type * as ColumnsModule from './columns-part';
 import type * as DuplicatesModule from './duplicates-part';
@@ -25,6 +26,8 @@ export type ColumnsPart = typeof ColumnsModule;
 export type ImportPart = typeof ImportModule;
 /** The duplicates part: possible duplicates said under the fields they matched on, and the merge's screen. */
 export type DuplicatesPart = typeof DuplicatesModule;
+/** The answers part: a page's own words that show the answers given, as a sentence says them, and a page of responses' ending. */
+export type AnswersPart = typeof AnswersModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -43,6 +46,20 @@ export const importPart: Part<ImportPart> = lazyPart('import', () => import('./i
  * a source that has `duplicates` — never waited for: what it says comes with the source's answer.
  */
 export const duplicatesPart: Part<DuplicatesPart> = lazyPart('duplicates', () => import('./duplicates-part'));
+/**
+ * What a page says of the answers given — a `{field}` in a label, a help, a choice, a step's title or a button, as a
+ * sentence says it — and the ending a page of responses shows once they are sent: loaded before a page that has any
+ * is drawn (`showsAnswers`).
+ */
+export const answersPart: Part<AnswersPart> = lazyPart('answers', () => import('./answers-part'));
+
+/**
+ * Whether a page says the answers given in its own words — a `{field}` in a label, a help, a choice, a step's title,
+ * a button — or shows an ending once it is sent: what the answers part draws. A text's and an alert's own `{field}`s
+ * are drawn without it, as before (on a page with the part, as a sentence says them).
+ */
+const showsAnswers = (page: Page): boolean =>
+  !!page.endings?.length || /\{[A-Za-z_]\w*\}/.test(JSON.stringify([page.fields, page.layout], (key, value) => (key === 'text' || key === 'message' ? undefined : value)));
 
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
@@ -62,7 +79,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -171,6 +188,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     }
   };
   visit(page.layout);
+  if (showsAnswers(page)) found.add(answersPart);
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];

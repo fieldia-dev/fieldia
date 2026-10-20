@@ -1,12 +1,16 @@
 import { splitValues, type Fields, type LineField, type Locale, type Value, type Values } from '@fieldia/core';
 import { displayValue } from '@fieldia/widgets';
 
+/** How a value is written inside words: `displayValue`'s way, or another's (a sentence's, the answers part's). */
+export type ValueWriter = (def: LineField, value: Value | undefined, values: Record<string, Value>) => string;
+
 /**
  * Words that hold fields' values — "Entries before {lock_date} cannot be
  * posted." — drawn as text with each value in a span of its own, written as
- * the field shows it, and brought up to date as the record changes.
+ * the field shows it (or as `write` writes it: a sentence's way), and brought
+ * up to date as the record changes.
  */
-export function valueWords(doc: Document, fields: Fields, text: string, locale: Locale): { nodes: (Node | string)[]; update(values: Readonly<Values>): void } {
+export function valueWords(doc: Document, fields: Fields, text: string, locale: Locale, write?: ValueWriter): { nodes: (Node | string)[]; update(values: Readonly<Values>): void } {
   const parts = splitValues(text);
   if (!parts.some((part) => part.field)) return { nodes: [text], update: () => undefined };
   const values: { field: string; span: HTMLElement }[] = [];
@@ -24,7 +28,8 @@ export function valueWords(doc: Document, fields: Fields, text: string, locale: 
     update(record) {
       for (const { field, span } of values) {
         const def = fields[field];
-        const words = def ? displayValue(def as LineField, record[field] as Value | undefined, record as Record<string, Value>, locale) : '';
+        const value = record[field] as Value | undefined;
+        const words = !def ? '' : write ? write(def as LineField, value, record as Record<string, Value>) : displayValue(def as LineField, value, record as Record<string, Value>, locale);
         if (span.textContent !== words) span.textContent = words;
       }
     },
