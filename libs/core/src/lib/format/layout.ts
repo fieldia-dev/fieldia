@@ -1315,6 +1315,33 @@ export interface ListNode {
    * that record alone, as a button for the rows chosen runs with them.
    */
   rowButtons?: ButtonNode[];
+  /**
+   * Its cells changed in place, as a price list or a week's hours are kept:
+   * a press on a cell, or Enter, opens it in its field's own box with its
+   * rules; Tab and Shift+Tab go from cell to cell, Escape puts back what it
+   * held; each row is saved through the data source as it is left, and one
+   * refused says why under it, the person's typing kept; a row is added at
+   * the end. `true`: every column a cell can change — of a kind a box in a
+   * cell takes, not read-only, not worked out; `fields`, those columns alone;
+   * `add: false`, no row added; `open: true`, an Open button on each row. A
+   * row whose source says this person may not change it (`can`) stays as it
+   * is. Off unless given.
+   */
+  editable?: boolean | ListEditable;
+}
+
+/** What a list changes in place (`ListNode.editable`). */
+export interface ListEditable {
+  /** The columns changed in place: every column a cell can change unless said. */
+  fields?: string[];
+  /** A row added at the end of the list, saved once it is left; unless false. */
+  add?: boolean;
+  /**
+   * An Open button at each row's end, where the app opens records (`onOpenRecord`), as Flectra's `open_form_view`:
+   * a press on a cell it changes edits that cell, so a row whose every cell changes is opened by it. Off unless true;
+   * a press on a cell it does not change opens the record as before.
+   */
+  open?: boolean;
 }
 
 /**
@@ -1890,6 +1917,14 @@ export const ListGallerySchema = z
   })
   .meta({ id: 'ListGallery' });
 
+export const ListEditableSchema = z
+  .strictObject({
+    fields: z.array(fieldName).min(1).optional(),
+    add: z.boolean().optional(),
+    open: z.boolean().optional(),
+  })
+  .meta({ id: 'ListEditable' });
+
 /**
  * A related list: another model's records whose link (`field`) is this record, a page at a time, in a record's page.
  * Its columns are fields of its own `fields`.
@@ -2270,6 +2305,7 @@ export const ListNodeSchema = z.strictObject({
   rowBold: ModifierSchema.optional(),
   rowBoldLabel: z.string().min(1).optional(),
   rowButtons: z.array(ButtonNodeSchema).min(1).optional(),
+  editable: z.union([z.boolean(), ListEditableSchema]).optional(),
 }).meta({ id: 'ListNode' });
 
 export const RootLayoutSchema = z

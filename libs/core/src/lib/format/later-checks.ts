@@ -3,7 +3,8 @@ import type * as MapChecksModule from './mapchecks-part';
 
 /**
  * The checks of a page the one-tag script carries in the part that draws what they check, rather than in its main
- * script — a list page's own settings and a related list's in the list part (list-checks.ts), a record's head in the
+ * script — a list page's own settings and a related list's in the list part (list-checks.ts), a list's cells changed in
+ * place in the editable part (editable-checks.ts), a record's head in the
  * head part (sheet-head-checks.ts), a page's limits and Continue later in the limits part (limits-checks.ts), booking
  * slots' in the slots part, a signature's in the files part, a page's endings in the answers part, a table of lines' in
  * the lines part (table-checks.ts), a sheet's statusbar in the business part, options by condition and carried in the

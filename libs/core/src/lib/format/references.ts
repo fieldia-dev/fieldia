@@ -21,6 +21,7 @@ import { autofillGroupProblem } from './autofill-group';
 import { checkLimits } from './limits-checks';
 import { checkSeats } from './seats-checks';
 import { checkList, checkRelated, type ListTools } from './list-checks';
+import { checkEditable } from './editable-checks';
 import type { FieldTools } from './part-checks';
 import { checkSlots } from './slots-checks';
 import { checkSignature } from './signature-checks';
@@ -642,7 +643,11 @@ export class ReferenceCheck {
     if (root.type === 'sheet' || root.type === 'sections') this.walkFooter(root.footer, path);
     if (root.type === 'sheet') return this.walkSheet(root, path);
     if (root.type === 'sections') return this.walkChildren(root.children, path);
-    if (root.type === 'list') return checkList(root, path, this.listTools());
+    if (root.type === 'list') {
+      // Its cells changed in place: checked with the part that changes them.
+      if (root.editable) checkEditable(root, path, this.fieldTools());
+      return checkList(root, path, this.listTools());
+    }
     // A wizard's own buttons' words, and each step's title and words, may show the answers given: "Your visit to {branch}".
     this.checkWords(root, path, ['nextLabel', 'backLabel', 'finishLabel']);
     root.children.forEach((step, i) => {
