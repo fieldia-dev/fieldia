@@ -30,45 +30,11 @@
         }
       ]
     },
-    "date": {
-      "type": "date",
-      "label": "Day",
-      "required": true
-    },
-    "time": {
-      "type": "selection",
-      "label": "Time",
+    "when": {
+      "type": "datetime",
+      "label": "Day and time",
       "required": true,
-      "options": [
-        {
-          "value": "09:00",
-          "label": "09:00"
-        },
-        {
-          "value": "10:00",
-          "label": "10:00"
-        },
-        {
-          "value": "11:00",
-          "label": "11:00"
-        },
-        {
-          "value": "12:00",
-          "label": "12:00"
-        },
-        {
-          "value": "14:00",
-          "label": "14:00"
-        },
-        {
-          "value": "15:00",
-          "label": "15:00"
-        },
-        {
-          "value": "16:00",
-          "label": "16:00"
-        }
-      ]
+      "min": "today"
     },
     "visit": {
       "type": "selection",
@@ -137,13 +103,16 @@
           },
           {
             "type": "field",
-            "id": "f-date",
-            "field": "date"
-          },
-          {
-            "type": "field",
-            "id": "f-time",
-            "field": "time"
+            "id": "f-when",
+            "field": "when",
+            "widget": "slots",
+            "colspan": 2,
+            "options": {
+              "schedule": "appointments",
+              "dependsOn": [
+                "service"
+              ]
+            }
           },
           {
             "type": "field",
@@ -203,12 +172,12 @@
     {
       "when": "visit == 'video'",
       "title": "You are booked, {name}",
-      "text": "Your booking is {id}: {service} on {date} at {time}, by video call.\nThe link to join comes to {email} an hour before.",
+      "text": "Your booking is {id}: {service}, by video call.\nWe call you on {when}: the link to join comes to {email} an hour before.",
       "again": "Book another"
     },
     {
       "title": "You are booked, {name}",
-      "text": "Your booking is {id}: {service} on {date} at {time}.\nWe have sent the details to {email}.",
+      "text": "Your booking is {id}: {service}.\nSee you on {when}. We have sent the details to {email}.",
       "again": "Book another"
     }
   ]

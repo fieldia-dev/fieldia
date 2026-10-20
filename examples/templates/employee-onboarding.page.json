@@ -29,7 +29,8 @@
     },
     "birthday": {
       "type": "date",
-      "label": "Date of birth"
+      "label": "Date of birth",
+      "max": "today"
     },
     "address": {
       "type": "text",

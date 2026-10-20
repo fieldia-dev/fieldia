@@ -25,7 +25,7 @@
     "name": "Event registration",
     "group": "forms",
     "theme": "material",
-    "blurb": "Who is coming, which ticket and sessions, food and access needs, with the ticket's price worked out as they choose."
+    "blurb": "Who is coming, which ticket and sessions, food and access needs, with the ticket's price worked out as they choose, and an ending naming the ticket and where it goes."
   },
   {
     "id": "job-application",

@@ -102,8 +102,10 @@ never the clock it was written with (`12:30Z` is 15:30 to a person in Cairo).
 whose days are shaded by how they are booked (free times left, fully booked,
 closed, a holiday by its name), beside the chosen day's free times as chips,
 asked of the data source's `slots` — a month at a time, again when a field in
-`options.dependsOn` changes, and once more for the day of a time picked, so a
-time someone else booked meanwhile is said and never booked. The arrows move
+`options.dependsOn` changes or a page of responses sends one (the next booking
+is never offered the time the last one took), and once more for the day of a
+time picked, so a time someone else booked meanwhile is said and never booked.
+The arrows move
 across the days, the day's times following, and among the times; Enter books
 one. `options.endField` takes the booking's end. It comes in a part of its own,
 `fieldia.slots.js` (`slotsPart`), with the date part; without `slots` in the

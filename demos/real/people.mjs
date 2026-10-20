@@ -25,7 +25,7 @@ export default [
     howTo: [
       'Press Approve: Paid Time Off needs two approvals, so it waits in Second Approval; press Validate to approve it.',
       'Change the end date: the duration in days and hours follows, counting Sunday to Thursday.',
-      'Open record 4172 (Compensatory Days, in hours) and tick Half Day: the end date and the day count go, one date and Morning or Afternoon take their place, and the duration reads 4 Hours.',
+      '[Open Omar Said’s request](?record=4172) (Compensatory Days, in hours) and tick Half Day: the end date and the day count go, one date and Morning or Afternoon take their place, and the duration reads 4 Hours.',
       'Tick Custom Hours instead and pick From and To: the hours follow.',
       'Pick Sick Time Off: Supporting Document appears, to attach the doctor’s note.',
     ],

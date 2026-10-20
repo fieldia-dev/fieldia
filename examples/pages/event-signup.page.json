@@ -65,5 +65,16 @@
         ]
       }
     ]
-  }
+  },
+  "endings": [
+    {
+      "when": "len(extras) > 0",
+      "title": "You are signed up, {full_name}",
+      "text": "Your place is kept for {session}.\nAdded to your ticket: {extras}.\nYour ticket goes to {email}. Show it at the door, on your phone or printed."
+    },
+    {
+      "title": "You are signed up, {full_name}",
+      "text": "Your place is kept for {session}.\nYour ticket goes to {email}. Show it at the door, on your phone or printed."
+    }
+  ]
 }

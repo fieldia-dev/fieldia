@@ -65,6 +65,7 @@ import { sampleInvoices } from './invoices';
 import { listingHandover } from './listing-handover';
 import { contactPage, contactPermissions, contactsAsAsked, OWNERS, sampleContacts } from './contacts';
 import { showroom, testDriveDemo, testDriveRecords } from './test-drive';
+import { appointmentRecords, appointmentSlots, keepAppointment } from './appointments';
 import { emptyGridsPage, emptyGridsRecords } from './empty-grids';
 import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings, searchFromQuery } from './related-lists';
 import { customerCardPage, duplicateCustomers } from './duplicates';
@@ -325,9 +326,9 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),
     // `drafts=1`: what is typed is kept in the browser as a draft, offered again when the page opens.
     ...(params.get('drafts') === '1' ? { drafts: { store: localStorage } } : {}),
-    // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are; so is a consent's
-    // signing.
-    ...(params.get('page') === 'test-drive' || params.get('page') === 'clinic-consent' ? { now: demoNow } : {}),
+    // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are, and the booking
+    // template's; so is a consent's signing.
+    ...(['test-drive', 'template-appointment-booking', 'clinic-consent'].includes(params.get('page') ?? '') ? { now: demoNow } : {}),
     // The consents round the one shown: the pager over it moves to the next.
     ...(params.get('page') === 'clinic-consent' ? { records: [1, 2] } : {}),
     // The customers round the one with its invoices and quotations, and the homes round the one with its viewings: the
@@ -473,15 +474,22 @@ function quietHeader(page: Page): Page {
 /** A customer to edit, and the records its relations point to. Sample data. */
 export function sampleDataSource() {
   const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
+  const showroomSlots = scheduleSlots({ showroom: showroom() }, { now: demoNow });
   const options = withReal({
     // The listing's photos go to a store as slow as a phone's upload, one of them failing once (shared/listing-photos.ts).
     ...(params.get('page') === 'listing-photos' ? { storage: LISTING_STORAGE } : {}),
     lists: { ...appLists, ...agentLists },
-    // A booking answered as a clinic's server answers it: with its reference, which the page's ending says ("Your
-    // booking is B-1043"); every other response with its number.
-    submitted: (request, count) => ({ id: request.pageId === 'appointment-booking' ? `B-${1042 + count}` : count }),
-    // A test drive's free times, from the showroom's schedule, on the demos' clock (shared/test-drive.ts).
-    slots: scheduleSlots({ showroom: showroom() }, { now: demoNow }),
+    // A booking answered as a clinic's server answers it: kept with its bookings, so its time is no one else's now
+    // (shared/appointments.ts), and with its reference, which the page's ending says ("Your booking is B-1043"); every
+    // other response with its number.
+    submitted: (request, count) => {
+      if (request.pageId !== 'appointment-booking') return { id: count };
+      keepAppointment(source.records, request.values);
+      return { id: `B-${1042 + count}` };
+    },
+    // Free times: a test drive's, from the showroom's schedule (shared/test-drive.ts); the booking template's, from its
+    // clinic's (shared/appointments.ts) — each on the demos' clock.
+    slots: (request, records) => (request.schedule === 'appointments' ? appointmentSlots(request, records) : showroomSlots(request, records)),
     // Records like the one typed — the same phone, email or tax id, a name close enough — for a page with `duplicates`.
     duplicates: alikeRecords(),
     // The sign-ups already counted, as the server's limits answer (shared/event-signup.ts).
@@ -529,6 +537,8 @@ export function sampleDataSource() {
       ...agentRecords,
       // The showroom's cars and test drives, made round now (shared/test-drive.ts).
       ...testDriveRecords(),
+      // The booking template's clinic: its bookings round now (shared/appointments.ts).
+      ...appointmentRecords(),
       // Two consents signed, one changed in the clinic's system after (shared/consents.ts).
       'clinic.consent': sampleConsents(),
       'work.item': {

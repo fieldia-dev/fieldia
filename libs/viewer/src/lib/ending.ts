@@ -51,7 +51,8 @@ export function drawEnding(context: EndingContext): HTMLElement | null {
   );
   words.hidden = !lines.length;
   again.textContent = typeof ending?.again === 'string' ? form.endingWords(ending.again) : context.another;
-  again.hidden = ending?.again === false;
+  // None where the ending says none, or where the page takes one response from each person, as its thanks offers none.
+  again.hidden = ending?.again === false || !!page.limits?.onePerPerson;
   const first = (title.hidden ? words.firstElementChild : title) as HTMLElement | null;
   first?.setAttribute('tabindex', '-1');
   return first;

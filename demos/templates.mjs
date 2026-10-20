@@ -45,10 +45,11 @@ export default [
     name: 'Event registration',
     category: 'templates',
     query: 'page=template-event-registration&theme=material',
-    blurb: "Who is coming, which ticket and sessions, food and access needs, with the ticket's price worked out as they choose.",
+    blurb: "Who is coming, which ticket and sessions, food and access needs, with the ticket's price worked out as they choose, and an ending naming the ticket and where it goes.",
     howTo: [
       "Choose VIP: the price changes to $250. Choose Student: Student card number appears, required.",
       "Tick two workshops, then pick a food need.",
+      "Fill in your name and email and press Submit: the page names your ticket, its price and your workshops, and the email the ticket goes to.",
     ],
   },
   {
@@ -80,9 +81,10 @@ export default [
     query: 'page=template-appointment-booking&theme=apple',
     blurb: "A service, a day and a free time, then who is coming and a reminder: a booking in one screen, ending with its reference.",
     howTo: [
-      "Pick a service, a day and a time, then who is coming.",
+      "Pick a service, then a day and one of its free times, then who is coming: a day gone by is never offered, nor a time already booked.",
       "Turn the reminder off and on: a switch, not a box to tick.",
       "Book it: the page says your booking's reference, B-1043, with the service, the day and the time you chose. Choose a video call first: it says the link comes by email.",
+      "Press Book another and pick the same service and day: the time you just booked is gone from its times.",
     ],
   },
   {

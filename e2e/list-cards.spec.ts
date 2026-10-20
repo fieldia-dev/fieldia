@@ -175,7 +175,7 @@ test.describe('homes as a gallery', () => {
     await page.getByRole('button', { name: 'Share with a buyer' }).click();
     await expect.poll(() => demo<{ action: string; recordIds?: unknown[] }[]>('requests').then((requests) => requests.at(-1)?.recordIds)).toEqual(ids.map(Number));
     const homes = await Promise.all([0, 2].map((i) => cards(page).nth(i).locator('.fd-list-card-title').textContent()));
-    await expect(page.locator('.fd-say')).toHaveText([`The app was asked to share with a buyer for ${homes[0]} and ${homes[1]}.×`]);
+    await expect(page.locator('.fd-say')).toHaveText([`The app was asked to share 2 properties with a buyer: ${homes[0]} and ${homes[1]}.×`]);
     // The keys: along the line, and to the card under.
     await cards(page).nth(0).focus();
     await page.keyboard.press('ArrowRight');
@@ -184,6 +184,27 @@ test.describe('homes as a gallery', () => {
     await expect(cards(page).nth(5)).toBeFocused();
     await page.keyboard.press('ArrowUp');
     await expect(cards(page).nth(1)).toBeFocused();
+    expect(problems).toEqual([]);
+  });
+
+  test('says what the app was asked as a person says it: one home, or several counted by the page’s word for them', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const { problems } = await open(page, 'plain', 'page=homes-gallery&skin=underline');
+    await expect(cards(page)).toHaveCount(12);
+    const said = page.locator('.fd-say');
+    const title = (i: number) => cards(page).nth(i).locator('.fd-list-card-title').textContent();
+    // One home: named where the button's words put it — shared with a buyer, never "share with a buyer for …".
+    await cards(page).nth(0).getByRole('checkbox').check();
+    await page.getByRole('button', { name: 'Share with a buyer' }).click();
+    await expect(said).toHaveText([`The app was asked to share ${await title(0)} with a buyer.×`]);
+    await said.getByRole('button', { name: 'Dismiss' }).click();
+    await expect(said).toHaveCount(0);
+    // Every home on the page: counted in the page's own word for them, two named and the rest counted.
+    await page.getByText('Select all', { exact: true }).click();
+    await expect(page.locator('.fd-list-count')).toHaveText('12 selected');
+    await page.getByRole('button', { name: 'Share with a buyer' }).click();
+    await expect(said).toHaveText([`The app was asked to share 12 properties with a buyer: ${await title(0)}, ${await title(1)} and 10 more.×`]);
+    await screen(page, 'list-gallery-shared-many', { viewport: true });
     expect(problems).toEqual([]);
   });
 

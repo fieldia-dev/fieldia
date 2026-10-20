@@ -70,6 +70,29 @@ test.describe('what the templates’ cards say to try', () => {
     await expect(box(page, 'f-email')).toHaveAttribute('aria-required', 'true');
   });
 
+  test('a day asked that can only be ahead refuses one gone by, a birth date one to come, as it is typed', async ({ page }) => {
+    const DAY = String.raw`(\d{1,2} [A-Z][a-z]+|[A-Z][a-z]+ \d{1,2},) \d{4}`;
+    for (const [id, field, typed, said] of [
+      ['appointment-booking', 'f-when', '', ''],
+      ['property-enquiry', 'f-move', '2020-01-01', `Move in by can’t be before ${DAY}`],
+      ['job-application', 'f-start', '2020-01-01', `Earliest start date can’t be before ${DAY}`],
+      ['quote-request', 'f-deadline', '2020-01-01', `Needed by can’t be before ${DAY}`],
+      ['patient-intake', 'f-birth', '2099-01-01', `Date of birth can’t be after ${DAY}`],
+      ['employee-onboarding', 'f-birthday', '2099-01-01', `Date of birth can’t be after ${DAY}`],
+    ] as const) {
+      const page_ = JSON.parse(readFileSync(join(TEMPLATES, `${id}.page.json`), 'utf8'));
+      const node_ = JSON.stringify(page_.layout).match(new RegExp(`"id":"${field}","field":"(\\w+)"`))!;
+      const def = page_.fields[node_[1]];
+      // The booking's time is booked from the times free, which are never gone by; its box, without them, from today too.
+      expect([id, def.min ?? def.max], id).toEqual([id, 'today']);
+      if (!typed) continue;
+      await open(page, 'plain', query(id));
+      await box(page, field).fill(typed);
+      await box(page, field).press('Tab');
+      await expect(node(page, field).locator('.fd-error'), id).toHaveText(new RegExp(`^${said}$`));
+    }
+  });
+
   test('event registration: the ticket sets the price, and a student is asked for the card', async ({ page }) => {
     await open(page, 'plain', query('event-registration'));
     await expect(box(page, 'f-price')).toHaveValue('120.00');

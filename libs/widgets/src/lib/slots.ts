@@ -13,9 +13,10 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  * free times as chips, each a booking's length long. All of it is asked of the
  * app, through the data source's `slots` (`form.findSlots`): a month at a
  * time, again when a field it depends on changes (`options.dependsOn`: the
- * doctor, the car), and once more for the day of a time picked, so a time
- * someone else booked meanwhile is said and the day's times drawn again,
- * never booked over. The time picked is the field's instant; with
+ * doctor, the car) and once a page of responses sends one (the next booking
+ * never offered the time the last one took), and once more for the day of a
+ * time picked, so a time someone else booked meanwhile is said and the day's
+ * times drawn again, never booked over. The time picked is the field's instant; with
  * `options.endField`, the booking's end goes there too.
  *
  * On the field's time zone's clock — its own, its page's, or the browser's —
@@ -138,6 +139,8 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
   const months = new Map<string, Month | 'asking' | 'failed'>();
   let depends = JSON.stringify(dependsOn.map((other) => keyed(form.getState().values[other])));
   const keyFor = (first: Date) => `${keyOf(first)}|${depends}`;
+  /** The response a page of responses last sent, or none: once one is sent, the times it booked are no one else's. */
+  let sentAs = form.getState().sent;
   /** A booking's length, in minutes: the source's, else the page's, else 30. */
   let length = pageLength ?? 30;
   let readonly = false;
@@ -444,11 +447,16 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
     focus: () => dayButton()?.focus(),
     update(state) {
       const lock = state.readonly;
-      // The fields it depends on changed: their free times are other ones, asked again.
+      // The fields it depends on changed: their free times are other ones. Or a response was sent, or the next one
+      // started ("Book another"): the time it booked is taken now, others may have gone meanwhile. Either way, every
+      // month asked again, never the free times known before.
       const now = JSON.stringify(dependsOn.map((other) => keyed(state.values[other])));
-      const moved = now !== depends;
+      const sent = form.getState().sent;
+      const moved = now !== depends || sent !== sentAs;
       if (moved) {
         depends = now;
+        sentAs = sent;
+        months.clear();
         said = null;
         load(month);
       }

@@ -52,9 +52,28 @@ for (const variant of ['plain', 'react']) {
       // Another session: sent, Thank you, and no other response offered — one from each person.
       await choice(page, /Evening talk/).check();
       await page.getByRole('button', { name: 'Submit', exact: true }).click();
-      await expect(page.locator('.fd-done')).toContainText('Thank you');
+      // Its ending names the session kept and where the ticket goes.
+      await expect(page.locator('.fd-done-title')).toHaveText('You are signed up, Mona Adel');
+      await expect(page.locator('.fd-done-words')).toHaveText(['Your place is kept for Evening talk and dinner (19:00).', 'Your ticket goes to mona.adel@example.com. Show it at the door, on your phone or printed.']);
       expect(await sent(page)).toBe(1);
       await expect(page.getByRole('button', { name: 'Submit another response' })).toBeHidden();
+    });
+
+    test('ends by naming the session, what was added to the ticket, and the email the ticket goes to', async ({ page }) => {
+      await node(page, 'f-name').locator('input').fill('Karim Nabil');
+      await node(page, 'f-email').locator('input').fill('karim@example.com');
+      await choice(page, /Morning workshop/).check();
+      await node(page, 'f-extras').getByRole('checkbox', { name: /Lunch/ }).check();
+      await node(page, 'f-extras').getByRole('checkbox', { name: /headset/ }).check();
+      await page.getByRole('button', { name: 'Submit', exact: true }).click();
+      await expect(page.locator('.fd-done-title')).toHaveText('You are signed up, Karim Nabil');
+      await expect(page.locator('.fd-done-words')).toHaveText([
+        'Your place is kept for Morning workshop: pricing a launch (10:00).',
+        'Added to your ticket: Lunch, An Arabic–English headset.',
+        'Your ticket goes to karim@example.com. Show it at the door, on your phone or printed.',
+      ]);
+      await expect(page.locator('.fd-done-title')).toBeFocused();
+      if (variant === 'plain') await screen(page, 'limits-signed-up');
     });
   });
 }

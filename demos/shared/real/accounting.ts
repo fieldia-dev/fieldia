@@ -4,6 +4,7 @@ import invoice from '../../../examples/pages/real-invoice.page.json';
 import registerPayment from '../../../examples/pages/real-register-payment.page.json';
 import type { RealLane } from './lane';
 import { onePagePdf, type PdfLine } from '../invoice-pdf';
+import { dayWords } from '../day-words';
 
 /**
  * Accounting: Sherkety ERP's invoice (account.move), its Register Payment
@@ -803,7 +804,7 @@ function createPayments(values: Values): ActionResult {
   const found = JOURNALS[Number(idOf(values['journal_id']))];
   const name = `P${found?.code ?? 'BNK1'}/2026/${String(paymentNumber++).padStart(5, '0')}`;
   const amount = money(num(values['amount']), String(codeOf(values['currency_id']) ?? 'EGP'));
-  const check = values['is_postdated_check'] ? `, check ${values['bill_no']} due ${values['due_date']}` : '';
+  const check = values['is_postdated_check'] ? `, check ${values['bill_no']} due ${dayWords(values['due_date'])}` : '';
   return { say: { message: `Payment ${name} of ${amount} posted${check}`, tone: 'success' } };
 }
 

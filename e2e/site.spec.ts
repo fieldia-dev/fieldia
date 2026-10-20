@@ -235,6 +235,49 @@ test('the gallery opens in a business owner’s words, a demo is found by what i
   expect(problems).toEqual([]);
 });
 
+test('the gallery finds a demo by the words an owner types, whole words before near ones', async ({ page }) => {
+  const problems = watch(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(SITE + '/demos/');
+  const find = page.getByRole('searchbox', { name: 'Find a demo' });
+  const shown = page.locator('.gallery-body a.demo-card:visible');
+  const names = page.locator('.gallery-body a.demo-card:visible .demo-name');
+  /** The business areas of the demos a search shows. */
+  const areasShown = () => shown.evaluateAll((cards) => [...new Set(cards.map((card) => (card as HTMLElement).dataset['area']))].sort());
+  // As the walk typed them, a word at a time: each finds the demos of its business, and says how many.
+  for (const [typed, demo, areas] of [
+    ['dentist', 'A clinic’s appointments', ['clinic']],
+    ['tenant', 'A property and its viewings', ['real-estate']],
+    ['lease', 'Homes for sale, as a gallery', ['real-estate']],
+    ['whatsapp', 'Contacts to bring in, take away, change in bulk and shape', null],
+    ['payroll', 'New employee', ['people']],
+    ['gym', 'An event’s sign-up, with places and a closing date', null],
+    ['membership', 'An event’s sign-up, with places and a closing date', null],
+    ['hotel', 'The booking desk’s week', null],
+  ] as const) {
+    await find.fill(typed);
+    await expect(names.filter({ hasText: demo }), typed).toHaveCount(1);
+    await expect(page.locator('#gallery-said'), typed).toHaveText(/^\d+ demos? match(es)?\.$/);
+    if (areas) expect(await areasShown(), typed).toEqual(areas);
+  }
+  // A word that holds in some demos never brings those one letter off it: "lease" is not "leave", time off stays out.
+  await find.fill('lease');
+  await expect(names.filter({ hasText: 'Time off, to approve' })).toHaveCount(0);
+  // A word is found at its start, never inside another: "dent" is not in "dependent".
+  await find.fill('dent');
+  await expect(names.filter({ hasText: 'An AI agent’s tools' })).toHaveCount(0);
+  await expect(names.filter({ hasText: 'A clinic’s appointments' })).toHaveCount(1);
+  // Typed as it goes: the start of a word already finds it.
+  await find.fill('whats');
+  await expect(names.filter({ hasText: 'Contacts to bring in, take away, change in bulk and shape' })).toHaveCount(1);
+  await screen(page, 'gallery-search-owner-words', { viewport: true });
+  // A slip of the keys still finds, where nothing holds the word as typed.
+  await find.fill('dentsit');
+  await expect(names.filter({ hasText: 'A clinic’s appointments' })).toHaveCount(1);
+  await expect(page.locator('#gallery-said')).toContainText('words close to them');
+  expect(problems).toEqual([]);
+});
+
 test('the gallery on a phone: a compact list, each demo its name and one line', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(SITE + '/demos/');
@@ -268,8 +311,8 @@ const keepWhatIsSaid = (page: Page) =>
     }).observe(document, { subtree: true, childList: true, characterData: true });
   });
 /** One turn of the stage's screen between being made and made: the pane busy or not, the wait it shows, whether a line of the JSON is being typed, the bar's words. */
-type Wait = { busy: string | null; kind?: string; typing: boolean; words: string };
-/** Each turn, as it comes, kept in `heroWaits`. */
+type Wait = { busy: string | null; kind?: string; typing: boolean; words: string; at: number };
+/** Each turn, as it comes, kept in `heroWaits`, with when it came. */
 const keepTheWaits = (page: Page) =>
   page.addInitScript(() => {
     const waits: Wait[] = [];
@@ -277,7 +320,7 @@ const keepTheWaits = (page: Page) =>
     new MutationObserver(() => {
       const form = document.getElementById('stage-form');
       if (!form) return;
-      const now = { busy: form.getAttribute('aria-busy'), kind: document.getElementById('stage-wait')?.dataset['kind'], typing: !!document.querySelector('#stage-json .caret'), words: document.getElementById('stage-step')?.textContent ?? '' };
+      const now = { busy: form.getAttribute('aria-busy'), kind: document.getElementById('stage-wait')?.dataset['kind'], typing: !!document.querySelector('#stage-json .caret'), words: document.getElementById('stage-step')?.textContent ?? '', at: performance.now() };
       const last = waits[waits.length - 1] ?? { busy: 'false', typing: false };
       if (now.busy !== last.busy || now.typing !== last.typing) waits.push(now);
     }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['aria-busy', 'data-kind'] });
@@ -475,14 +518,17 @@ test('untouched, the stage plays each tab in turn: every step’s words, then it
   // Each tab's steps in order, then someone using it, the tabs one after another.
   const said: string[] = await page.evaluate(() => (window as any).heroSaid);
   expect(said.slice(said.indexOf(`Writing ${RECORD.file}`))).toEqual(TABS.flatMap((tab) => [`Writing ${tab.file}`, ...tab.steps.map((step) => step.words), ...tab.used]));
-  // The screen being made for exactly as long as each step's lines are typed: busy while a line is written, and not
-  // once the step is drawn; a tab's first step sketched, each later one under a veil; never while a tab is used or at rest.
+  // The screen being made only while a step's lines are typed, and never once it is drawn, while a tab is used or at
+  // rest: each tab's first step sketched from its first letter; a later one under a veil only where its typing is long
+  // enough to read as work — a few a tour, where the walk counted six or seven a tab — and never a flash.
   const waits = await waitsKept(page);
-  for (const wait of waits) expect(wait.busy, JSON.stringify(wait)).toBe(String(wait.typing));
-  expect(waits.filter((wait) => wait.busy === 'true').map((wait) => [wait.kind, wait.words])).toEqual(
-    TABS.flatMap((tab) => tab.steps.map((step, i) => (i ? ['update', tab.steps[i - 1].words] : ['first', `Writing ${tab.file}`]))),
-  );
-  expect(waits.filter((wait) => wait.busy === 'false').map((wait) => wait.words)).toEqual(TABS.flatMap((tab) => tab.steps.map((step) => step.words)));
+  for (const wait of waits) if (wait.busy === 'true') expect(wait.typing, JSON.stringify(wait)).toBe(true);
+  const turns = waits.flatMap((wait, i) => (wait.busy === 'true' ? [{ ...wait, lasted: (waits.slice(i + 1).find((next) => next.busy === 'false')?.at ?? Infinity) - wait.at }] : []));
+  expect(turns.filter((turn) => turn.kind === 'first').map((turn) => turn.words)).toEqual(TABS.map((tab) => `Writing ${tab.file}`));
+  const veils = turns.filter((turn) => turn.kind === 'update');
+  expect(veils.length, JSON.stringify(veils)).toBeGreaterThanOrEqual(1);
+  expect(veils.length, JSON.stringify(veils)).toBeLessThanOrEqual(3);
+  for (const veil of veils) expect(veil.lasted, JSON.stringify(veil)).toBeGreaterThanOrEqual(300);
   // And after the last, it rests there: nothing goes round again.
   await page.waitForTimeout(4000);
   expect(await shownTab(page)).toBe(BOOKING.id);
@@ -725,7 +771,8 @@ test('while a step is written its screen shows it is being made: a tab’s first
   const form = page.locator('#stage-form');
   const screen = page.locator('#stage-form > *');
   const sketch = page.locator('#stage-wait .stage-sketch');
-  const chip = page.locator('#stage-wait .stage-busy');
+  // The chip in the stage's bar, never over the screen it speaks of.
+  const chip = page.locator('.stage-bar #stage-busy');
   // The first step typed: the empty pane busy, a screen sketched in it and said to be drawn. The chip is not read out:
   // the bar's words are the stage's one live region.
   await expect(form).toHaveAttribute('aria-busy', 'true', { timeout: 20000 });
@@ -742,14 +789,18 @@ test('while a step is written its screen shows it is being made: a tab’s first
   await expect(form.locator('[data-field="name"]')).toBeVisible();
   await expect(sketch).toBeHidden();
   await expect(chip).toBeHidden();
-  // A later step typed (their invoices, the longest): the record stays, dimmed under a veil, the chip saying it is updating.
+  // A later step typed (their invoices, the longest): the record stays, a little lighter under a veil, the chip in the
+  // bar saying it is updating — over nothing of the record's.
   await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[4].words, { timeout: 30000 });
   await expect(form).toHaveAttribute('aria-busy', 'true', { timeout: 10000 });
   await expect(chip).toBeVisible();
   await expect(chip).toHaveText('Updating…');
   await expect(sketch).toBeHidden();
   await expect(form.locator('.fd-statusbar')).toBeVisible();
-  await expect.poll(() => screen.evaluate((el) => Number(getComputedStyle(el).opacity))).toBeLessThan(0.6);
+  await expect.poll(() => screen.evaluate((el) => Number(getComputedStyle(el).opacity))).toBeLessThan(0.8);
+  expect(await screen.evaluate((el) => Number(getComputedStyle(el).opacity))).toBeGreaterThanOrEqual(0.6);
+  const [chipBox, formBox] = [(await chip.boundingBox())!, (await form.boundingBox())!];
+  expect(chipBox.y + chipBox.height, 'the chip above the record').toBeLessThanOrEqual(formBox.y);
   // Drawn: the veil lifted, and what the step adds marked as just drawn.
   await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[5].words);
   await expect(form).toHaveAttribute('aria-busy', 'false');
@@ -809,14 +860,99 @@ test('the screen being made is never left behind: not by Skip, not by a tab chan
   await expect(page.locator('#stage-form .fd-map-box')).toBeVisible();
   // The first the pane was busy after the press: the map's own first step, sketched.
   expect((await busySince(switched.from)).slice(0, 1).map((wait) => [wait.kind, wait.words])).toEqual([['first', `Writing ${MAP.file}`]]);
-  // Skip as a later step of the map is typed: the veil lifted at once, and the map finished.
+  // The map's steps are short: drawn without a veil. Back on the record, Skip as a long step of it is typed under the
+  // veil: the veil lifted at once, and the record finished.
+  await expect(page.locator('#stage-step')).toHaveText(finished(MAP), { timeout: 30000 });
+  await tabOf(page, RECORD).click();
   const finishedNow = await pressUnderTheVeil('stage-skip');
   expect(finishedNow.busy).toBe('false');
   await none();
-  await expect(page.locator('#stage-step')).toHaveText(finished(MAP));
-  await expect(page.locator('#stage-form > *')).toHaveCSS('opacity', '1');
+  await expect(page.locator('#stage-step')).toHaveText(finished(RECORD));
+  await expect(page.locator('#stage-form > *').first()).toHaveCSS('opacity', '1');
   await page.waitForTimeout(1000);
   expect(await busySince(finishedNow.from)).toEqual([]);
+});
+
+test('a finished tab rests long enough to try it before the next plays; scrolled out of view, the stage waits', async ({ page }) => {
+  test.setTimeout(150000);
+  await keepWhatIsSaid(page);
+  await page.addInitScript(() => {
+    // When the bar said each thing, by the page's clock.
+    const at: Record<string, number> = {};
+    (window as any).heroSaidAt = at;
+    new MutationObserver(() => {
+      const words = document.getElementById('stage-step')?.textContent ?? '';
+      if (words && !(words in at)) at[words] = performance.now();
+    }).observe(document, { subtree: true, childList: true, characterData: true });
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(SITE + '/');
+  const step = page.locator('#stage-step');
+  // The record finished: it rests, its words saying to try it, for 8 seconds or more before the list is written.
+  await expect(step).toHaveText(finished(RECORD), { timeout: 60000 });
+  await expect(step).toHaveText(`Writing ${LIST.file}`, { timeout: 20000 });
+  const at: Record<string, number> = await page.evaluate(() => (window as any).heroSaidAt);
+  const rested = at[`Writing ${LIST.file}`] - at[finished(RECORD)];
+  expect(rested, 'the finished record rests').toBeGreaterThanOrEqual(8000);
+  expect(rested, 'and not much longer').toBeLessThan(11000);
+  // The list being written, the reader scrolls on: the stage waits where it is, its JSON as it stood, for as long as it is away.
+  await expect(step).toHaveText(LIST.steps[0].words, { timeout: 20000 });
+  const awayFromIt = () => page.evaluate(() => document.getElementById('question')!.scrollIntoView({ block: 'start' }));
+  await awayFromIt();
+  await expect(page.locator('.home-opening .stage')).not.toBeInViewport({ ratio: 0.2 });
+  await page.waitForTimeout(400);
+  const away = { words: await step.textContent(), json: await page.locator('#stage-json').textContent() };
+  await page.waitForTimeout(6000);
+  expect({ words: await step.textContent(), json: await page.locator('#stage-json').textContent() }, 'nothing played while it was away').toEqual(away);
+  // Back in view, it goes on from where it was, and finishes.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(step).toHaveText(finished(LIST), { timeout: 60000 });
+  const said: string[] = await page.evaluate(() => (window as any).heroSaid);
+  expect(said.slice(said.indexOf(`Writing ${LIST.file}`))).toEqual([`Writing ${LIST.file}`, ...LIST.steps.map((s) => s.words), ...LIST.used]);
+  // The list finished, the reader scrolls away before its rest is over: the map waits for the stage to be seen again.
+  await awayFromIt();
+  await page.waitForTimeout(11000);
+  expect(await shownTab(page)).toBe(LIST.id);
+  await expect(step).toHaveText(finished(LIST));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(step).toHaveText(`Writing ${MAP.file}`, { timeout: 10000 });
+});
+
+test('on a phone the stage keeps one height while it plays, every tab, so the page under it never moves', async ({ page }) => {
+  test.setTimeout(240000);
+  await page.addInitScript(() => {
+    // Every height the stage takes, and every place the first chapter's heading is at on the page, as the tour goes.
+    const heights = new Set<number>();
+    const places = new Set<number>();
+    (window as any).heroHeights = heights;
+    (window as any).heroPlaces = places;
+    const look = () => {
+      const stage = document.querySelector('.home-opening .stage');
+      const heading = document.getElementById('question-h');
+      if (stage) heights.add(Math.round(stage.getBoundingClientRect().height));
+      if (heading) places.add(Math.round(heading.getBoundingClientRect().top + window.scrollY));
+    };
+    new MutationObserver(look).observe(document, { subtree: true, childList: true, attributes: true });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(SITE + '/');
+  const stage = page.locator('.home-opening .stage');
+  // Counted from when the page has its fonts and the stage is in view, as a reader comes to it.
+  await page.evaluate(() => document.fonts.ready);
+  await stage.scrollIntoViewIfNeeded();
+  await page.evaluate(() => ['heroHeights', 'heroPlaces'].forEach((name) => (window as any)[name].clear()));
+  const step = page.locator('#stage-step');
+  for (const tab of TABS) {
+    if (tab !== RECORD) await tabOf(page, tab).click();
+    await expect(step).toHaveText(finished(tab), { timeout: 90000 });
+    await page.screenshot({ path: `test-results/screens/site-home-phone-stage-${tab.id}.png` });
+  }
+  expect(await page.evaluate(() => [...((window as any).heroHeights as Set<number>)]), 'one height').toHaveLength(1);
+  expect(await page.evaluate(() => [...((window as any).heroPlaces as Set<number>)]), 'the chapter under it never moved').toHaveLength(1);
+  // Its record whole inside it, scrolled there, and the page round it never sideways.
+  const height = (await stage.boundingBox())!.height;
+  expect(height).toBeLessThanOrEqual(844);
+  await expectNoSidewaysScroll(page);
 });
 
 test('Maps has its own place in the top bar, beside Demos, and is the one lit on the maps page', async ({ page }) => {

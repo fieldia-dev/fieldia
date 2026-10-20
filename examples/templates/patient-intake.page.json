@@ -19,7 +19,8 @@
     "birth_date": {
       "type": "date",
       "label": "Date of birth",
-      "required": true
+      "required": true,
+      "max": "today"
     },
     "sex": {
       "type": "selection",

@@ -101,7 +101,8 @@
     },
     "deadline": {
       "type": "date",
-      "label": "Needed by"
+      "label": "Needed by",
+      "min": "today"
     },
     "brief": {
       "type": "text",

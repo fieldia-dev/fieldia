@@ -96,7 +96,8 @@
     },
     "move_in": {
       "type": "date",
-      "label": "Move in by"
+      "label": "Move in by",
+      "min": "today"
     },
     "viewing": {
       "type": "boolean",
@@ -104,7 +105,8 @@
     },
     "viewing_date": {
       "type": "date",
-      "label": "A good day for a viewing"
+      "label": "A good day for a viewing",
+      "min": "today"
     },
     "notes": {
       "type": "text",

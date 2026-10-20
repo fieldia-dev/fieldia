@@ -1,9 +1,10 @@
 // fieldia.dev's demo gallery: by business area as it opens, or by feature for developers (?by=feature), and a search
-// that keeps only the demos whose name, words, area or feature hold every word typed — "booking" finding "booked" too,
-// and, when nothing holds a word, the demos with a word one letter off it ("invoce"). While a search is on, each
-// heading counts the demos it still shows, of its whole count. The cards are drawn once, in their areas
-// (site/pages/demos.mjs); the switch moves them into the feature groups and back. Featured stays on top, out of the
-// way while a search is on.
+// that keeps only the demos whose name, words, area or feature hold every word typed, each at the start of a word of
+// theirs — "booking" finding "booked" too, "dent" a dentist's demos, never "dependent" — and, for a word no demo
+// holds, the demos with a word one letter off it ("invoce"), never in place of one that holds ("lease" is not
+// "leave"). While a search is on, each heading counts the demos it still shows, of its whole count. The cards are
+// drawn once, in their areas (site/pages/demos.mjs); the switch moves them into the feature groups and back. Featured
+// stays on top, out of the way while a search is on.
 (function () {
   'use strict';
   var body = document.querySelector('.gallery-body');
@@ -50,21 +51,26 @@
     if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1) || (a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2));
     return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
   }
-  /** Whether a card holds a word typed: as written, or by its stem; with `loose`, a word of its own one letter off. */
+  /** Whether some words hold one at the start of a word of theirs: "dent" in "dentist", never in "dependent". */
+  function starts(words, word) {
+    for (var at = words.indexOf(word); at !== -1; at = words.indexOf(word, at + 1)) {
+      if (at === 0 || !/[\p{L}\p{N}]/u.test(words[at - 1])) return true;
+    }
+    return false;
+  }
+  /** Whether a card holds a word typed: a word of its own starting so, as written or by its stem; with `loose`, a word of its own one letter off. */
   function holds(card, word, loose) {
-    if (card.dataset.words.indexOf(word) !== -1 || card.dataset.words.indexOf(stem(word)) !== -1) return true;
+    if (starts(card.dataset.words, word) || starts(card.dataset.words, stem(word))) return true;
     return loose && word.length >= 4 && wordsOf(card).some(function (own) { return near(word, own) || near(stem(word), stem(own)); });
   }
 
   function filter() {
     var words = find.value.trim().toLowerCase().replace(/[’']/g, '’').split(/\s+/).filter(Boolean);
-    var match = function (loose) {
-      return cards.filter(function (card) { return words.every(function (word) { return holds(card, word, loose); }); });
-    };
-    var found = match(false);
-    // Nothing holds the words as typed: the demos with words one letter off them, as a slip of the keys writes them.
-    var loose = words.length > 0 && !found.length;
-    if (loose) found = match(true);
+    // A word some demo holds as typed is held so; only a word no demo holds is read as a slip of the keys writes it,
+    // its demos those with a word one letter off it — never "leave" for "lease", which the real estate demos hold.
+    var slips = words.map(function (word) { return !cards.some(function (card) { return holds(card, word, false); }); });
+    var found = cards.filter(function (card) { return words.every(function (word, i) { return holds(card, word, slips[i]); }); });
+    var loose = slips.some(Boolean);
     cards.forEach(function (card) { card.hidden = found.indexOf(card) === -1; });
     sections(by).forEach(function (section) {
       var left = section.querySelectorAll('.demo-card:not([hidden])').length;
