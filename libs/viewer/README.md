@@ -510,6 +510,28 @@ in a part of its own (`importPart`), the first time it is pressed. At most
 50,000 rows in the browser; `importRecords` takes more on your server. See
 [bringing records in](https://fieldia.dev/lists/#import).
 
+### Cells changed in place
+
+With `"editable": true` (or `{ "fields": [...] }`), a list's cells are changed
+where they stand, as a price list, a week's hours or a pipeline's stages are
+kept: a press on a cell, Enter on it or a key typed on it opens it in its
+field's own box, with its rules; Tab and Shift+Tab go from cell to cell, in the
+order a person put the columns in, and on to the next row; Enter takes a cell
+and goes down its column; Escape puts back what it held (on a cell at rest, the
+whole row). Each row is saved through your source's `save` as it is left — the
+fields changed alone, `partial: true`, with the version it was listed at — and
+one refused stays as typed, why said under it, with Put back; someone else's
+save first is said under the row with Reload and Keep mine. A worked-out column
+follows the cells as they are typed, and waits where one of them does not read
+or is refused. **Add a line** adds a row at the end, saved as it is left
+(`"add": false` for none); a block pasted from a spreadsheet goes across and
+down the rows, each then saved — rows given the same change in one `writeMany`;
+on a phone a card is changed in a sheet. `"open": true` gives each row an Open
+button where your app opens records. It comes in a part of its own
+(`editablePart`, `fieldia.editable.js`), loaded only for such a list; a row is
+a form made as the page's own (its words, clock, person and functions). See
+[cells changed in place](https://fieldia.dev/lists/#editable).
+
 ### A related list inside a record
 
 Another model's records that point at this one — a customer's invoices, a
