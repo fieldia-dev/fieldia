@@ -656,7 +656,9 @@ chunk of its own in an app's bundle, about 5 KB gzipped):
   related list with no title of its own no empty band over its rows;
 - light colours whatever the screen's scheme, the theme's accent kept for the
   headings; the page's language and direction;
-- over it, the record's own name — with none yet (a draft invoice's "/"),
+- over it, the record's own name — its sheet's title field, else its `name`,
+  else its first line of text, on a page of sections too — with none yet (a
+  draft invoice's "/"),
   what the page calls its records and the stage it is in, "Invoice · Draft" —
   and the day it was printed (`now`, on the page's `timeZone`), and — with a
   page's `print` — the app's logo and words over it, and its footer under every

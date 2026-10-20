@@ -153,6 +153,32 @@ describe('the owner’s walk of 0.25 on paper', () => {
     }
   });
 
+  it('titles a record by its own name on a page of sections too: its "name" field, before what its records are called', async () => {
+    // The owner's walk of 0.27: a service agreement's printout headed "Agreement" where the record is SA-2026-014.
+    const agreement: Page = {
+      fieldia: '0.6',
+      id: 'agreement',
+      title: 'Service agreement',
+      records: { one: 'agreement', other: 'agreements', a: 'an agreement' },
+      data: { kind: 'record', model: 'sales.agreement' },
+      fields: { name: { type: 'char', label: 'Agreement' }, customer: { type: 'char', label: 'Customer' } },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-customer', field: 'customer' }] },
+    };
+    const records = createMemoryDataSource({ records: { 'sales.agreement': { 1: { name: 'SA-2026-014', customer: 'Nile Traders' }, 2: { name: '', customer: 'Nile Traders' } } } });
+    for (const [recordId, title] of [
+      [1, 'SA-2026-014'],
+      // No name yet: what its page calls its records.
+      [2, 'Agreement'],
+    ] as const) {
+      const host = await mount({ page: agreement, dataSource: records, recordId });
+      window.dispatchEvent(new Event('beforeprint'));
+      expect(host.querySelector('.fd-print-title')?.textContent).toBe(title);
+      window.dispatchEvent(new Event('afterprint'));
+      handle?.destroy();
+      handle = null;
+    }
+  });
+
   it('leaves out a header or footer line whose value is empty, "/" or no words, whole; the others stay', async () => {
     const page: Page = { ...invoice, print: { header: 'Zamalek\nOrder {reference}', footer: 'Quote {name} when you pay.\nThank you.' } };
     const host = await mount({ page, dataSource: draft(), recordId: 8 });

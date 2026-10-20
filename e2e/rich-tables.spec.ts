@@ -472,5 +472,8 @@ test.describe('on paper', () => {
     const scheduleSheets = [...new Set(instalments.flat())];
     expect(scheduleSheets.length, 'the schedule across two sheets at least').toBeGreaterThan(1);
     for (const at of scheduleSheets) expect(lines[at].some((line) => squash(line).startsWith('instalmentdue')), `the header row on sheet ${at + 1}`).toBe(true);
+    // Its head names the agreement by its own name (the owner's walk of 0.27: "Agreement", where it is SA-2026-014).
+    expect(lines[0].slice(0, 4).map(squash).some((line) => line.includes(squash('SA-2026-014')))).toBe(true);
+    expect(lines[0].slice(0, 4).map(squash).some((line) => /^agreement/.test(line))).toBe(false);
   });
 });
