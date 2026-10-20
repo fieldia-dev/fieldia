@@ -1,4 +1,6 @@
 import {
+  optionsField,
+  optionsList,
   validatePage,
   wideColumns,
   type AnswerRule,
@@ -1722,9 +1724,10 @@ export function createDesigner(options: {
     lists: () => clone(options.lists ?? []),
     setOptionsFrom(id, from) {
       const found = findNode(page, id);
-      const was = found?.node.type === 'field' ? (page.fields[found.node.field] as { optionsFrom?: OptionsFrom } | undefined)?.optionsFrom : undefined;
+      const was = optionsList(found?.node.type === 'field' ? (page.fields[found.node.field] as { optionsFrom?: OptionsFrom } | undefined)?.optionsFrom : undefined);
+      const list = optionsList(from ?? undefined);
       // Typing a list's name is one step, as typing a label is.
-      const naming = !!from && !!was && JSON.stringify(was.dependsOn ?? []) === JSON.stringify(from.dependsOn ?? []);
+      const naming = !!list && !!was && JSON.stringify(was.dependsOn ?? []) === JSON.stringify(list.dependsOn ?? []);
       return apply(
         (draft) => {
           const field = fieldOfType(draft, id, ['selection'], (w) => w.refusals.onlyChoiceFromList, (w, label) => w.refusals.choicesFromModel(label));
@@ -1734,7 +1737,16 @@ export function createDesigner(options: {
             if (!field.options.length) field.options = [{ value: 'option_1', label: words.defaults.option(1) }];
             return;
           }
-          field.optionsFrom = { list: from.list, ...(from.dependsOn?.length ? { dependsOn: [...from.dependsOn] } : {}) };
+          const carried = optionsField(from);
+          if (carried) {
+            const source = draft.fields[carried.field];
+            if (carried.field === fieldNode(draft, id).field || source?.type !== 'selection') throw new Refusal((w) => w.refusals.carriedFromChoice);
+            field.optionsFrom = { field: carried.field, ...(carried.picked === false ? { picked: false } : {}) };
+            // Its own options follow those carried: none until some are written.
+            field.options = field.options.filter((o) => !/^option_\d+$/.test(String(o.value)) || !isDefaultOption(o.label));
+            return;
+          }
+          if (list) field.optionsFrom = { list: list.list, ...(list.dependsOn?.length ? { dependsOn: [...list.dependsOn] } : {}) };
         },
         naming ? `list-name:${id}` : null
       );

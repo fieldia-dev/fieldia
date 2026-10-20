@@ -279,6 +279,13 @@ export const questions = {
   noOtherFields: 'No other fields on the page yet.',
   changesWith: 'Changes with',
   listNote: 'The app gives these choices as the form opens, and again when a field they change with changes.',
+  fromAnswers: 'Picked in another question',
+  carriedFrom: 'Question',
+  carriedWhich: 'Offer',
+  carriedPicked: 'The answers picked there',
+  carriedUnpicked: 'The answers not picked there',
+  noOtherChoices: 'No other choice on the page yet.',
+  carriedNote: 'Offered by their labels as they are picked there; this question’s own options follow them, such as “None of them”. One no longer picked there is taken out here, and said.',
   // ---- the business kinds' own
   noField: 'None',
   endsOn: 'Ends on',

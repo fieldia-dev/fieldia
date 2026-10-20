@@ -1,4 +1,4 @@
-import { compileModifier, relatedInTab, type ButtonNode, type LayoutNode, type Page, type SheetNode } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, relatedInTab, type ButtonNode, type LayoutNode, type Page, type SheetNode } from '@fieldia/core';
 
 /**
  * What a record's head (`SheetHead`) holds, for the designer's walk through a
@@ -28,7 +28,7 @@ export function headFields(root: SheetNode): string[] {
 function pressedReads(button: ButtonNode): string[] {
   if (typeof button.pressed !== 'string') return [];
   try {
-    return [...compileModifier(button.pressed).fields];
+    return [...compileModifier(button.pressed, ANY_FUNCTION).fields];
   } catch {
     // A condition that does not read is the page's checks' to say.
     return [];

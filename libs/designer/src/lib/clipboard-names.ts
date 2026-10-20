@@ -1,4 +1,4 @@
-import type { Field, FilterItem, Modifier } from '@fieldia/core';
+import { optionsField, optionsList, type Field, type FilterItem, type Modifier, type SelectionOption } from '@fieldia/core';
 import type { Part } from './layout-tree';
 
 /**
@@ -128,10 +128,25 @@ export function remapReferences(parts: Part[], fields: Record<string, Field>, na
       if (kept.length) def.filter = kept;
       else delete def.filter;
     }
-    if (def.type === 'selection' && def.optionsFrom?.dependsOn) {
-      const kept = def.optionsFrom.dependsOn.map(name).filter((n): n is string => n !== undefined);
-      if (kept.length) def.optionsFrom.dependsOn = kept;
-      else delete def.optionsFrom.dependsOn;
+    const list = def.type === 'selection' ? optionsList(def.optionsFrom) : undefined;
+    if (list?.dependsOn) {
+      const kept = list.dependsOn.map(name).filter((n): n is string => n !== undefined);
+      if (kept.length) list.dependsOn = kept;
+      else delete list.dependsOn;
+    }
+    if (def.type === 'selection') {
+      // An option's condition renamed with the rest; one reading a field that is gone goes, and the option shows always.
+      for (const option of def.options as SelectionOption[]) {
+        if (typeof option.invisible !== 'string') continue;
+        const renamed = expression(option.invisible);
+        if (renamed === undefined) delete option.invisible;
+        else option.invisible = renamed;
+      }
+      // Carried from a question that is gone: written here again, from those it was carried with.
+      const carried = optionsField(def.optionsFrom);
+      const renamed = carried ? name(carried.field) : undefined;
+      if (carried && renamed !== undefined) carried.field = renamed;
+      else if (carried) delete def.optionsFrom;
     }
   }
   return dropped;

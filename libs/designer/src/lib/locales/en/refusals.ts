@@ -80,6 +80,7 @@ export const refusals = {
   linesNeedColumn: 'A table of lines needs a column',
   newColumnKind: 'A new column is text, a number, a date, or yes or no',
   onlyChoiceFromList: 'Only a choice takes its options from a list',
+  carriedFromChoice: 'Options are carried from another choice of the page',
   choicesFromModel: (label: string) => `The choices of ${label} come from the model`,
   // ---- choices
   orderFromModel: (label: string) => `The order of the options of ${label} comes from the model`,
