@@ -151,14 +151,13 @@ export default {
       <div class="stage-bar">
         <span class="stage-file" id="stage-file">${TABS[0].file}</span>
         <span class="stage-step" id="stage-step" aria-live="polite">The whole page</span>
-        <span class="stage-controls"><button type="button" id="stage-replay">Replay</button><button type="button" id="stage-skip" hidden>Skip</button></span>
+        <span class="stage-controls"><span class="stage-busy" id="stage-busy" aria-hidden="true"><span class="stage-spin"></span><span class="stage-busy-words" id="stage-wait-words">Drawing the screen…</span></span><button type="button" id="stage-replay">Replay</button><button type="button" id="stage-skip" hidden>Skip</button></span>
       </div>
       <div class="stage-panes">
         <pre class="stage-json" id="stage-json" tabindex="0" aria-label="The page’s JSON"><code>${HERO_JSON.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre>
         <div class="stage-form" id="stage-form" aria-busy="false"></div>
         <div class="stage-wait" id="stage-wait" aria-hidden="true">
           <span class="stage-sketch"><i class="sk-title"></i><span class="sk-field"><i></i><i></i></span><span class="sk-field"><i></i><i></i></span><span class="sk-field"><i></i><i></i></span><span class="sk-field"><i></i><i></i></span></span>
-          <span class="stage-busy"><span class="stage-spin"></span><span id="stage-wait-words">Drawing the screen…</span></span>
         </div>
       </div>
     </div>

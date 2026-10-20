@@ -21,6 +21,52 @@
   // ---- the stage: four pages of JSON, a tab each, each written step by step where each part belongs, drawn at each
   // step, then used; the first plays once it is seen, and each the next once it is done, until someone touches it ----
   var stage = document.querySelector('.home-opening .stage');
+
+  /**
+   * The stage plays only while it is seen — a quarter of it or more on the screen: scrolled away, its typing and its
+   * pauses wait where they are, and go on as it comes back, so no one returns to a tab played without them.
+   */
+  var SEEN = 0.25;
+  var inView = !stage || !('IntersectionObserver' in window);
+  /** What waits for the stage to come back into view, and what is told when it leaves. */
+  var comeBack = [];
+  var goneAway = [];
+  if (!inView) {
+    new IntersectionObserver(function (entries) {
+      var entry = entries[entries.length - 1];
+      var seen = entry.isIntersecting && entry.intersectionRatio >= SEEN;
+      if (seen === inView) return;
+      inView = seen;
+      (seen ? comeBack : goneAway).splice(0).forEach(function (told) { told(); });
+    }, { threshold: [0, SEEN, 0.5, 1] }).observe(stage);
+  }
+  /** Once the stage is in view: at once where it is (false), else when it comes back (true). */
+  function inSight() {
+    return inView ? Promise.resolve(false) : new Promise(function (done) { comeBack.push(function () { done(true); }); });
+  }
+  /** `ms` of the stage in view, or less where it leaves view first (`leave`): a call told when it leaves is let go as it ends. */
+  function seenFor(ms, leave) {
+    return new Promise(function (done) {
+      if (!inView) return done();
+      var told = function () { clearTimeout(timer); done(); if (leave) leave(); };
+      var timer = setTimeout(function () {
+        var at = goneAway.indexOf(told);
+        if (at >= 0) goneAway.splice(at, 1);
+        done();
+      }, ms);
+      goneAway.push(told);
+    });
+  }
+  /** A pause of the stage's: `ms` of it seen, its clock stopped while it is out of view. */
+  async function beat(ms) {
+    if (calm) return;
+    for (var left = ms; left > 0; ) {
+      await inSight();
+      var from = performance.now();
+      await seenFor(left);
+      left -= performance.now() - from;
+    }
+  }
   var panel = document.getElementById('stage-panel');
   var json = document.getElementById('stage-json');
   var stageForm = document.getElementById('stage-form');
@@ -226,19 +272,19 @@
       use: async function (say, alive) {
         var form = viewer.form;
         say(0);
-        await wait(900);
+        await beat(900);
         if (!alive()) return;
         form.setValue('company', true);
         say(1);
         await new Promise(function (done) { setTimeout(done, 60); });
         var vat = stageForm.querySelector('[data-field="vat"]');
         if (vat) bringIntoSight(vat);
-        await wait(1300);
+        await beat(1300);
         var typed = 'DE 123456789';
         for (var i = 1; i <= typed.length; i++) {
           if (!alive()) return;
           form.setValue('vat', typed.slice(0, i));
-          await wait(90);
+          await beat(90);
         }
       },
       done: function () {
@@ -257,14 +303,14 @@
       // Grouped by customer from the search's own menu, as a person groups it, and Kessler's opened: one invoice overdue, one not.
       use: async function (say, alive) {
         say(0);
-        await wait(900);
+        await beat(900);
         if (!alive() || !(await groupByCustomer())) return;
         say(1);
-        await wait(1700);
+        await beat(1700);
         if (!alive()) return;
         press(await kessler());
         say(2);
-        await wait(1500);
+        await beat(1500);
       },
       done: async function () {
         if (await groupByCustomer()) press(await kessler());
@@ -279,14 +325,14 @@
       // A district pressed searches for its homes; a pin pressed opens its home's card.
       use: async function (say, alive) {
         say(0);
-        await wait(900);
+        await beat(900);
         if (!alive() || !(await pressDistrict())) return;
         say(1);
-        await wait(1800);
+        await beat(1800);
         if (!alive()) return;
         press(await found('.fd-map-mark[data-id="1"] .fd-map-face'));
         say(2);
-        await wait(1500);
+        await beat(1500);
       },
       done: async function () {
         if (await pressDistrict()) press(await found('.fd-map-mark[data-id="1"] .fd-map-face'));
@@ -303,11 +349,11 @@
       // pressed, said taken; another booked.
       use: async function (say, alive) {
         say(0);
-        await wait(900);
+        await beat(900);
         if (!alive() || !(await pickDay())) return;
         say(1);
         bringIntoSight(stageForm.querySelector('.fd-slots-times'));
-        await wait(1500);
+        await beat(1500);
         if (!alive()) return;
         var chips = stageForm.querySelectorAll('.fd-slots-chip');
         var taken = chips[1] || chips[0];
@@ -315,21 +361,21 @@
         source.records.drive[999] = { name: 'Someone else', start: new Date(Number(taken.dataset.at)).toISOString() };
         taken.classList.add('hero-taken');
         say(2);
-        await wait(1800);
+        await beat(1800);
         if (!alive()) return;
         var at = taken.dataset.at;
         press(taken);
         // Told, and the times asked again without it.
         await found('.fd-slots-said', function (el) { return el.textContent.trim() !== ''; });
         say(3);
-        await wait(2000);
+        await beat(2000);
         if (!alive()) return;
         var other = await found('.fd-slots-chip', function (el) { return el.dataset.at !== at; });
         if (!alive()) return;
         press(other);
         say(4);
         await backBy();
-        await wait(1500);
+        await beat(1500);
       },
       done: async function () {
         if (await pickDay() && press(await found('.fd-slots-chip'))) await backBy();
@@ -347,10 +393,15 @@
   }
   /** Kessler's group in the list, by its heading. */
   var kessler = function () { return found('.fd-group-toggle', function (el) { return el.textContent.indexOf('Kessler') >= 0; }); };
-  /** A district of the map pressed, as a person presses it: its homes searched for, and the map showing only theirs (Zamalek's one). */
+  /**
+   * A district of the map pressed, as a person presses it: its homes searched for, and the map showing only theirs
+   * (Zamalek's one) — the map brought into sight, where the pane is a phone's strip and the map runs on under it.
+   */
   async function pressDistrict() {
     if (!press(await found('path.fd-map-region', function (el) { return /^Zamalek/.test(el.getAttribute('aria-label') || ''); }))) return false;
     await found('.fd-facet');
+    var box = stageForm.querySelector('.fd-map-box');
+    if (box) bringIntoSight(box);
     return !!(await found('.fd-map-mark[data-id="1"]', function () { return !stageForm.querySelector('.fd-map-mark[data-id]:not([data-id="1"])'); }));
   }
   /** Back by, once the time picked has written it (and the record's bar has come with the change), brought into sight. */
@@ -435,7 +486,7 @@
   }
 
   var current = 0;
-  /** Whether the stage has a height of its own (home.css), its JSON beside what it draws. */
+  /** Whether the stage's JSON stands beside what it draws (home.css): a map fills the pane there; on a phone, its own height, scrolled to. */
   var tall = window.matchMedia('(min-width: 800px)');
   var shownPage = null;
   var viewer = null;
@@ -443,19 +494,27 @@
   /** What the tab's kit gives the viewer beside the page: for the map, its map's code, once loaded. */
   var given = null;
   /**
-   * The screen being made, for exactly as long as a step's lines are typed (the typing is the work): `first` an empty
-   * pane sketched, `update` the screen there under a veil, each with its chip (home.css); the pane busy meanwhile. Its
-   * chip's words are not read out: the bar's words are the stage's live region.
+   * The screen being made while a step's lines are typed (the typing is the work): `first` an empty pane sketched, from
+   * the step's first letter; `update` the screen there under a light veil, only for a step whose typing is long enough
+   * to be seen as work (`VEIL_AFTER`, with `VEIL_LEFT` still to go: never a flash) — the pane busy meanwhile, and a chip
+   * in the stage's bar saying which, never over the screen (home.css). Its words are not read out: the bar's step words
+   * are the stage's live region.
    */
   function making(kind) {
     stageWait.dataset.kind = kind;
+    panel.dataset.making = kind;
     waitWords.textContent = kind === 'first' ? 'Drawing the screen…' : 'Updating…';
     stageForm.setAttribute('aria-busy', 'true');
   }
-  /** The screen made, or the tab left or finished at once: never a sketch or a veil left behind. */
+  /** The screen made, or the tab left or finished at once: never a sketch, a veil or a chip left behind. */
   function made() {
+    delete panel.dataset.making;
     stageForm.setAttribute('aria-busy', 'false');
   }
+  /** A later step's veil: once its typing has gone on this long (ms, at the hand's speed it is typed at)… */
+  var VEIL_AFTER = 700;
+  /** …and while as long as this is still to type: a step a moment longer is drawn without one. */
+  var VEIL_LEFT = 400;
 
   /**
    * The page drawn, as the reader's scheme dresses it; the part it adds marked as it arrives, and brought into sight.
@@ -473,7 +532,8 @@
       stageForm.dataset.lift = lift;
     } else delete stageForm.dataset.lift;
     if (viewer) viewer.destroy();
-    // How tall the pane is, where the stage has a height of its own: a map fills it rather than running on under it.
+    // How tall the pane is, where the JSON stands beside it: a map fills it rather than running on under it. On a phone
+    // the pane is a strip under the JSON, and a map keeps its own height, the pane scrolled to it.
     stageForm.style.setProperty('--pane', tall.matches ? stageForm.clientHeight + 'px' : '');
     viewer = Fieldia.mountViewer(stageForm, Object.assign({ page: readers(p), dataSource: source, skin: 'outlined' }, kit.options(given)));
     stageForm.scrollTop = kept;
@@ -538,11 +598,16 @@
     var steps = stepsOf(tab);
     for (var s = 0; s < steps.length; s++) {
       var step = steps[s];
-      // The screen being made while the step is written: the tab's first sketched, each later under a veil. Not with
-      // reduced motion, where Replay alone plays a tab.
+      // The screen being made while the step is written: the tab's first sketched at once; a later one under a veil
+      // only once its typing reads as work. Not with reduced motion, where Replay alone plays a tab.
       var kind = calm ? null : s === 0 ? 'first' : 'update';
-      if (kind) making(kind);
+      if (kind === 'first') making(kind);
       var plan = edits(lines, step.text.split('\n'));
+      // How much the step types, and how long it has typed (the stage's clock: not while it is out of view).
+      var toType = plan.reduce(function (sum, x) { return sum + ('write' in x ? x.write.length - x.from : 0); }, 0);
+      var typed = 0;
+      var typedFor = 0;
+      var veiled = kind !== 'update';
       var fresh = [];
       lines = [];
       for (var k = 0; k < plan.length; k++) {
@@ -562,18 +627,31 @@
         while (written < e.write.length) {
           var now = await new Promise(requestAnimationFrame);
           if (!alive()) return;
-          written = Math.min(e.write.length, written + Math.max(1, Math.round((now - since) * TYPED)));
+          // Out of view: the line waits as it is, and goes on from there.
+          if (await inSight()) {
+            if (!alive()) return;
+            since = now = performance.now();
+          }
+          var more = Math.min(e.write.length - written, Math.max(1, Math.round((now - since) * TYPED)));
+          typedFor += now - since;
+          written += more;
+          typed += more;
           since = now;
           lines[at] = e.write.slice(0, written);
           retype(typing, lines[at]);
+          if (!veiled && typedFor >= VEIL_AFTER && (toType - typed) / TYPED >= VEIL_LEFT) {
+            veiled = true;
+            making('update');
+          }
         }
       }
       if (!alive()) return;
       paint(lines, fresh, -1);
       stepWords.textContent = step.words;
+      var lift = stageForm.getAttribute('aria-busy') === 'true' ? kind : null;
       made();
-      draw(JSON.parse(step.text), kind);
-      await wait(s === 0 ? 1000 : 1400);
+      draw(JSON.parse(step.text), lift);
+      await beat(s === 0 ? 1000 : 1400);
       if (!alive()) return;
     }
     // Someone uses it, saying each of the tab's words in turn but the last, its finished state's.
@@ -607,10 +685,8 @@
   // ---- which tab, and the stage moving on to the next by itself until someone touches it ----
   /** Whether the stage moves on to the next tab once one is done: until someone presses, types or points in it. */
   var onward = !calm;
-  var next = null;
   function hold() {
     onward = false;
-    clearTimeout(next);
     // The reader's own hand from now: where the focus goes is theirs.
     pressed.until = 0;
   }
@@ -626,13 +702,18 @@
     if (calm) rest();
     else play();
   }
-  /** A tab played to its end by itself: the map's code fetched for later, and the next tab played after a rest, while it is seen. */
+  /** How long a tab played to its end rests, seen, for the reader to try what it drew, before the next tab plays. */
+  var REST = 9000;
+  /**
+   * A tab played to its end by itself: the map's code fetched for later, and the next tab played after the tab has
+   * rested `REST` in view — or, scrolled out of view before, once the stage is seen again.
+   */
   function played() {
     loadMap().catch(function () { return null; });
     if (!onward || current >= TABS.length - 1) return;
-    next = setTimeout(function () {
-      whenSeen(stage, function () { if (onward) show(current + 1, false); }, 0.3);
-    }, 2600);
+    var mine = run;
+    var goOn = function () { if (onward && mine === run) show(current + 1, false); };
+    seenFor(REST).then(function () { whenSeen(stage, goOn, SEEN); });
   }
 
   if (stage && json && stageForm && TABS.length && window.Fieldia) {
