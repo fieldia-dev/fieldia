@@ -52,6 +52,13 @@ describe('the functions part', () => {
     expect(form.getState().dirty).toEqual([]);
   });
 
+  it("makes a value worked out from the app's own function wait for it too, then calls it", async () => {
+    // (The part came in the test before: a form made now finds it in, the app's function called at once.)
+    const vat = { ...page, fields: { ...page.fields, rate: { type: 'float', label: 'VAT', compute: "vatRate('EG')" } } } as unknown as Page;
+    const form = createForm({ page: vat, dataSource: createMemoryDataSource(), functions: { vatRate: (country: never) => (country === 'EG' ? 0.14 : 0) } });
+    expect(form.getState().values['rate']).toBe(0.14);
+  });
+
   it('works a value out at once once it has come', () => {
     const form = createForm({ page: { ...page, fields: { ...page.fields, birth: { type: 'date', label: 'Birth date', default: '1990-10-20' } } }, dataSource: createMemoryDataSource(), now: () => new Date('2026-10-20T12:00:00Z') });
     expect(form.getState().values['age']).toBe(36);

@@ -132,9 +132,10 @@ export type FunctionsPart = typeof FunctionsModule;
 
 /**
  * The bodies of Fieldia's functions beyond the plain ones — a person's age, days and months added, text tested and
- * joined, an average, money rounded to its currency, the first that is not empty — loaded before a page that calls one
- * is drawn (`callsPartFunctions`): a page that calls none never downloads them. Their names, and what each takes, are
- * known without it, so a page is read and checked as ever.
+ * joined, an average, money rounded to its currency, the first that is not empty — and the calls of the app's own
+ * (`functions`, app-functions.ts): loaded before a page that calls one of Fieldia's is drawn (`callsPartFunctions`), or
+ * a viewer given the app's: a page that calls none never downloads them. Their names, and what each takes, are known
+ * without it, so a page is read and checked as ever.
  */
 export const functionsPart: Part<FunctionsPart> = lazyPart('functions', () => import('./functions-part'));
 
@@ -148,19 +149,20 @@ const PART_ASKED = 'fieldia:functions';
  * for.
  */
 function inPart(name: string, takes: readonly [number, number], check?: ExpressionFunction['check']): ExpressionFunction {
-  return {
-    takes,
-    ...(check ? { check } : {}),
-    call(call) {
-      const part = functionsPart.loaded;
-      if (part) return part.functionBody(name)(call);
-      const coming = functionsPart.load();
-      const asked = call.env.answer?.(PART_ASKED, coming);
-      if (asked === 'asking') throw new Asking();
-      if (!call.env.answer) coming.catch(() => undefined);
-      return null;
-    },
-  };
+  return { takes, ...(check ? { check } : {}), call: (call) => (functionsPart.loaded ? functionsPart.loaded.functionBody(name)(call) : partComing(call)) };
+}
+
+/**
+ * A call of a function the functions part works out — one of Fieldia's beyond the plain ones, or the app's own — made
+ * before the part has come: it waits for it, as an app's function that asks does, or — where nothing can wait (no
+ * form) — gives nothing meanwhile, the part asked for.
+ */
+export function partComing(call: Call): null {
+  const coming = functionsPart.load();
+  const asked = call.env.answer?.(PART_ASKED, coming);
+  if (asked === 'asking') throw new Asking();
+  if (!call.env.answer) coming.catch(() => undefined);
+  return null;
 }
 
 /** The functions whose bodies are in the functions part, each with how many values it takes: at least, at most. */

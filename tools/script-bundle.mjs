@@ -997,8 +997,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // list's in the list part, booking slots' settings in the slots part, a signature's in the files part and a page's
 // endings in the answers part, 515.34 after; a map's checks — a form's map and a list's on one — in a part of their own
 // (fieldia.mapchecks.js, 5.76), asked for by the viewer as the check owes them, 511.39 after; a table of lines' own
-// settings in the lines part, 509.75 after, to 509.8.
-const BUDGET_KB = 509.8;
+// settings in the lines part, 509.75 after; the app's own functions' calls in the functions part, which a viewer given
+// some waits for — their names and what each takes known at once — 509.19 after, to 509.2.
+const BUDGET_KB = 509.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1224,8 +1225,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // in the list part, 0.69 in the head part's, 0.52 in the limits part's), 169.07 after; a related list's, booking slots',
 // a signature's and endings' checks in their parts, 168.42 after; a map's checks in fieldia.mapchecks.js (2.24), asked
 // for by a page with a map as its check owes them, 167.32 after; a table of lines' checks in the lines part (0.72 more
-// there), 166.98 after, to 167.0.
-const GZIP_BUDGET_KB = 167.0;
+// there), 166.98 after; the app's own functions' calls in fieldia.functions.js (0.38 more there), 166.69 after, to
+// 166.7.
+const GZIP_BUDGET_KB = 166.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1779,8 +1781,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 2.32, to 4.7 and 2.4; mapchecks new, 5.76 and 2.24 — a map's layers, places, routes, reachable areas and fences, and
 // the fields a pin and a card show, a form's map's and a list's — to 5.8 and 2.3; a table of lines' checks — its columns,
 // totals, order, cells' and rows' rules, the columns a person may hide — lines 42.26 and 14.57 to 44.65 and 15.29, to
-// 44.7 and 15.3.
-const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [127.6, 41.0], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [44.7, 15.3], business: [30.4, 11.1], files: [37.0, 13.6], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.6, 5.0], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [4.4, 1.9], options: [4.0, 1.9], mapchecks: [5.8, 2.3] };
+// 44.7 and 15.3; the app's own functions' calls — what one gives tidied, one that asks its server waiting for its answer
+// — functions 4.32 and 1.88 to 5.25 and 2.26, to 5.3 and 2.3.
+const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [127.6, 41.0], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [44.7, 15.3], business: [30.4, 11.1], files: [37.0, 13.6], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.6, 5.0], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [4.0, 1.9], mapchecks: [5.8, 2.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1808,7 +1811,7 @@ const PART_GIVES = {
   print: ['printLook', 'printPage', 'printAlone', 'installPrintStyles'],
   limits: ['drawLimits', 'installLimitsStyles', 'formLimits'],
   memory: ['createMemoryDataSource', 'memorySource'],
-  functions: ['functionBody'],
+  functions: ['functionBody', 'appCall'],
   options: ['optionRules'],
   mapchecks: ['checkMap', 'checkPlace'],
 };

@@ -1,5 +1,6 @@
 import { addDays, addMonths, monthsBetween } from './dates';
-import { listOf, localDay, numbersOf, opened, type ExpressionFunction } from './functions';
+import { Asking, listOf, localDay, numbersOf, opened, type ExpressionFunction } from './functions';
+import { functionInfo, type AppFunction, type FunctionInfo } from './app-functions';
 import { isNumber, roundTo, tidy } from './operations';
 import { placesOfCurrency } from '../record/input-rules';
 
@@ -166,4 +167,62 @@ const BY_NAME = new Map(BODIES);
 /** A function's body, by its name: what its stand-in in the main table calls once the part has come. */
 export function functionBody(name: string): ExpressionFunction['call'] {
   return (BY_NAME.get(name) as Body).call;
+}
+
+/** What an app's function gives, as Fieldia's own arithmetic gives numbers: 110, never 110.00000000000001; nothing for no number. */
+const tidied = (value: unknown): unknown => (value === undefined ? null : typeof value === 'number' ? tidy(value) : value);
+
+const isThenable = (value: unknown): value is PromiseLike<unknown> => value !== null && (typeof value === 'object' || typeof value === 'function') && typeof (value as { then?: unknown }).then === 'function';
+
+/**
+ * An app's function's call, as the page's expressions make it: its values handed in order; one that asks the app's server
+ * waits for its answer (`ExpressionEnv.answer`), once for the same values, for the record shown.
+ */
+function appFunction(name: string, entry: FunctionInfo | AppFunction | ((...values: never[]) => unknown)): ExpressionFunction['call'] {
+  const info = functionInfo(entry);
+  const run = typeof entry === 'function' ? entry : 'call' in entry && typeof entry.call === 'function' ? entry.call.bind(entry) : null;
+  /** Whether it asks: said, or found out at a call that gave a promise. */
+  let asks = info.asks === true;
+  return ({ args, value, env }) => {
+    if (!run) return null;
+    const values = args.map(value);
+    const key = `${name}(${JSON.stringify(values)})`;
+    if (asks) {
+      const kept = env.answer?.(key);
+      if (kept === 'asking') throw new Asking();
+      if (kept) return tidied(kept.value);
+      // Where nothing can wait for an answer (a list's row), it is not asked.
+      if (!env.answer) return null;
+    }
+    let result: unknown;
+    try {
+      result = (run as (...values: unknown[]) => unknown)(...values);
+    } catch (error) {
+      // Told to the console, as a part that throws is: the value is empty, the form goes on.
+      (globalThis as unknown as { console?: { error(...what: unknown[]): void } }).console?.error(`Fieldia: the app's function ${name}() failed`, error);
+      return null;
+    }
+    if (!isThenable(result)) return tidied(result);
+    asks = true;
+    const now = env.answer?.(key, result);
+    if (!now) {
+      // Nothing waits for it: its answer, or its failure, goes unheard.
+      result.then(undefined, () => undefined);
+      return null;
+    }
+    if (now === 'asking') throw new Asking();
+    return tidied(now.value);
+  };
+}
+
+/** Each of the app's functions as it is called, made once: by its entry, by its name. */
+const appCalls = new WeakMap<object, Map<string, ExpressionFunction['call']>>();
+
+/** One of the app's functions called: its call made once — said whether it asks its server, or found out — and kept. */
+export function appCall(name: string, entry: FunctionInfo | AppFunction | ((...values: never[]) => unknown)): ExpressionFunction['call'] {
+  const byName = appCalls.get(entry) ?? new Map<string, ExpressionFunction['call']>();
+  appCalls.set(entry, byName);
+  let call = byName.get(name);
+  if (!call) byName.set(name, (call = appFunction(name, entry)));
+  return call;
 }
