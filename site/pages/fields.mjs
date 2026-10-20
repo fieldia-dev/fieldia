@@ -11,7 +11,7 @@ const ROWS = [
   ['boolean', 'Yes or no', 'toggle, priority (one star)', ''],
   ['date', 'A date', 'daterange', 'min, max, days'],
   ['datetime', 'A date and a time, kept as an instant', 'daterange, timer, slots (booking a time from those free)', 'min, max, days, timeZone'],
-  ['selection', 'One choice from a list, or several with multiple', 'radio, checkboxes, statusbar, priority (stars), dot (a state’s dot)', 'options, multiple'],
+  ['selection', 'One choice from a list, or several with multiple', 'radio, checkboxes, statusbar, priority (stars), dot (a state’s dot)', 'options, multiple, optionsFrom'],
   ['many2one', 'A link to one record of another model, found by typing', 'statusbar, path (a record of a tree as its path)', 'relation, filter'],
   ['many2many', 'Links to several records', 'tags, checkboxes', 'relation, filter'],
   ['one2many', 'A table of lines that belong to this record', '', 'relation, fields; columns on the node'],
@@ -313,6 +313,23 @@ ${code(
 
 <h3 id="lines-paste">Rows pasted from a spreadsheet</h3>
 <p>Rows copied from Excel, Google Sheets, LibreOffice or Numbers and pasted in a cell of a table of lines — or on a cell of the grid, chosen or opened for typing by a click, in Safari too — go each on its own line, across the columns from that cell: each cell read as its column reads what is typed — a number in any script with the page's marks, an amount in its line's currency, a day in the page's order, a choice by its label, a product or any link by its exact name, looked up through your data source's search as typing it is — a cell a spreadsheet quoted (a line break or a tab inside it) read as one. Rows past the last line add lines, as many as the table's ${c('max')} lets it have. A row whose name reads as no record — nothing, or more than one, called so — is not pasted at all: never its description and price on another product's line. A cell that cannot take what was pasted keeps what it holds, and one note under the table says what went in and what did not, with why: <em>Pasted into 7 cells. 2 lines added. Not pasted: the row starting “Laser printer”, none of it (Product: nothing is called “Laser printer”); Unit price, line 3 (Unit price: “abc” is not a number)</em>. One value pasted is the box's own paste, and a paragraph's lines go into the paragraph.</p>
+
+<h3 id="lines-choices">Choices that follow another column</h3>
+<p>A line's choice may take its options from one of your app's lists rather than the page — an agent's tools from the connection on that line, a size from the product chosen beside it. ${c('optionsFrom')} names the list and the columns it changes with; ${c('parent.')} and a field, the record the line is on. Each line's choices are asked through your data source's ${c('options')} with that line's values (the record as ${c('parent')}), and lines whose columns hold the same values share one answer. When a line's connection changes, its tools are asked again; a tool the new connection does not offer is cleared and said under its cell — <em>Send an email was cleared: no longer offered</em> — or, in the grid, aloud; one it offers too stays. A record that comes in with a tool its choices no longer offer keeps it, said, until the person chooses: Save says why. The plain table, the grid, cards and a line's own form alike; a block pasted reads each tool among its own line's choices, its connection read first; Import reads a choice that follows another field by each row's own values.</p>
+${code(
+  'json',
+  `
+"tool_ids": {
+  "type": "one2many",
+  "label": "Tools",
+  "relation": "ai.agent.tool",
+  "fields": {
+    "connection_id": { "type": "many2one", "label": "Connection", "relation": "ai.connection" },
+    "tool": { "type": "selection", "label": "Tool", "options": [], "optionsFrom": { "list": "connection_tools", "dependsOn": ["connection_id"] } }
+  }
+}`
+)}
+<p>Your ${c('options({ list, values, parent })')} is asked ${c('{ list: "connection_tools", values: { connection_id: { id: 2, label: "Slack" }, … }, parent: { name: "Sales inbox helper", … } }')}. <a href="/demos/plain/?page=agent-tools&amp;skin=underline">Try an AI agent's tools</a>.</p>
 
 <h3 id="table-node">On the node</h3>
 <p>The node that shows the table can add up number columns in a row under the lines, and let people hide or show some columns:</p>

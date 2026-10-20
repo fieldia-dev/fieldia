@@ -21,6 +21,7 @@ import fields from '../../examples/pages/fields.page.json';
 import kinds from '../../examples/pages/kinds.page.json';
 import layout from '../../examples/pages/layout.page.json';
 import lists from '../../examples/pages/lists.page.json';
+import agentTools from '../../examples/pages/agent-tools.page.json';
 import customers from '../../examples/pages/customers.page.json';
 import invoices from '../../examples/pages/invoices.page.json';
 import contacts from '../../examples/pages/contacts.page.json';
@@ -60,6 +61,7 @@ import { emptyGridsPage, emptyGridsRecords } from './empty-grids';
 import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings, searchFromQuery } from './related-lists';
 import { customerCardPage, duplicateCustomers } from './duplicates';
 import { keepWrites, keptOver } from './kept';
+import { agentLists, agentRecords } from './agent-tools';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -91,6 +93,8 @@ export const pages: Record<string, Page> = {
   rules: rules as Page,
   layout: layout as Page,
   lists: lists as Page,
+  // An AI agent's tools, each line's from its connection: the app's lists asked by a line's values (shared/agent-tools.ts).
+  'agent-tools': agentTools as Page,
   custom: customPage,
   // A part that fails — the app's price tag, its delivery planner — kept to its place: shared/contained.ts.
   contained: containedPage,
@@ -423,7 +427,7 @@ export function sampleDataSource() {
   const options = withReal({
     // The listing's photos go to a store as slow as a phone's upload, one of them failing once (shared/listing-photos.ts).
     ...(params.get('page') === 'listing-photos' ? { storage: LISTING_STORAGE } : {}),
-    lists: appLists,
+    lists: { ...appLists, ...agentLists },
     // A test drive's free times, from the showroom's schedule, on the demos' clock (shared/test-drive.ts).
     slots: scheduleSlots({ showroom: showroom() }, { now: demoNow }),
     // Records like the one typed — the same phone, email or tax id, a name close enough — for a page with `duplicates`.
@@ -460,6 +464,8 @@ export function sampleDataSource() {
       ...calendarDemo.records(),
       // Fifteen months of invoices up to now (shared/invoices.ts).
       invoice: sampleInvoices(),
+      // An AI agent and the company's connections its tools come from (shared/agent-tools.ts).
+      ...agentRecords,
       // The showroom's cars and test drives, made round now (shared/test-drive.ts).
       ...testDriveRecords(),
       'work.item': {
