@@ -229,10 +229,11 @@ describe('a signature that signs answers', () => {
 
 describe('a signature that signs nothing', () => {
   it('keeps its picture as before: no evidence, nothing locked', () => {
-    const { form, draw, value, shown } = consent({ signs: [] });
+    const { form, draw, value, el } = consent({ signs: [] });
     draw();
     expect(value()).toEqual({ name: 'signature.png', type: 'image/png', size: 4, data: btoa('pad1') });
     expect(form.node('f-patient').readonly).toBe(false);
-    expect(shown('.fd-signature-evidence')).toBe(false);
+    // Its evidence's part is never asked for: no line under it.
+    expect(el.querySelector('.fd-signature-evidence')).toBeNull();
   });
 });

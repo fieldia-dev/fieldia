@@ -148,7 +148,7 @@ export {
   type Values,
 } from './lib/record/values';
 // The answers a signature kept signed: locked until it is taken away (the evidence's fingerprint is the files part's).
-export { evidenceOf, signedBy, type SignedBy } from './lib/record/signed';
+export { evidenceOf, signedBy, signsAnswers, type SignedBy } from './lib/record/signed';
 export { checkValue, checkProperties, decimalsWords, formatBytes, fileProblem, describeTypes } from './lib/record/check';
 export { scoreOf, type Score } from './lib/record/score';
 export type {

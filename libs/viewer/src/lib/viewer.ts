@@ -586,7 +586,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const uid = (id: string) => ownUid(scope.prefix + id);
     /** The answers signatures kept signed, as the values hold them now: worked out once for each change of the values. */
     let signed: { values: Readonly<Values>; by: SignedBy } | null = null;
-    const signedNow = (values: Readonly<Values>) => (signed?.values === values ? signed : (signed = { values, by: signedBy(page.fields, values) })).by;
+    const signedNow = (values: Readonly<Values>) => (signed?.values === values ? signed : (signed = { values, by: signedBy(page, values) })).by;
     /** A part's updater, handed the state of the part's own form; one that throws puts the part's box in its place. */
     const watch = (update: Updater) => sink.push(keptTo(drawing, scope.root ? update : () => update(form.getState())));
 

@@ -308,14 +308,19 @@ milliseconds; a link its record's id (several, their ids in order); a reference
 array of each line's own fields; anything else its JSON by these rules. `by` is
 left out when no one is named; `page` is the page's id and `field` the
 signature's. So an app checks a record it keeps in any language — or with the
-files part's own functions, in a browser or on a server:
+evidence part's own functions (@fieldia/widgets' `evidencePart`, the part a
+page whose signature signs answers loads), in a browser or on a server:
 
 ```ts
-import { filesPart } from '@fieldia/widgets';
+import { evidencePart } from '@fieldia/widgets';
 
-const { answersMatch, signatureText, sha256Hex } = await filesPart.load();
+const { answersMatch, signatureText, sha256Hex } = await evidencePart.load();
 const same = await answersMatch(record.signature.signed, page, 'signature', record);   // true while no signed answer changed
 ```
+
+Only a signature the page has sign answers locks them (`signsAnswers(node)`):
+a page whose signature no longer says `signs` treats it as a picture, whatever
+its value carries.
 
 `checkPage` and `validatePage` refuse `signs` that is neither `"form"` nor a
 list of the page's fields, a signature signing itself, and a `signerField` that

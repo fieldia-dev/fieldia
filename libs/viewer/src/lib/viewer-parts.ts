@@ -1,5 +1,5 @@
-import type { ButtonNode, Field, FieldNode, Page, SectionNode, SheetTitle } from '@fieldia/core';
-import { businessPart, choicePart, datePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as CardsModule from './cards-part';
@@ -62,7 +62,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -81,7 +81,7 @@ const markdownAlone = (node: SectionNode) => {
  * a path picker, a choice in Fieldia's own list, a date's box and calendar, a table of lines or of a many2many's
  * records or its cards, a business widget, a file, a picture, a signature or a PDF field, the survey kinds, booking
  * slots, a link to other records — a many2one, a many2many's tags, a reference — and an analytic distribution's links
- * with the business part) — unless the app's
+ * with the business part; and beside the files part, for a signature that signs answers, its evidence's part) — unless the app's
  * `widgets` draw those fields; and those the app's `slots` name for the slots the page has (a Discussion's). The
  * page's own look's too: the themes part for the theme it names, and the quiet look's for its quiet skin, or a group
  * or a field it marks quiet. (A theme or a skin the app gives the viewer is worn as its part comes: look-parts.ts in
@@ -108,7 +108,10 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     for (const one of part ? partsOf(part) : []) found.add(one);
   };
   const fieldParts = (field: Field, node: FieldNode): void => {
-    add(widgetPart(field, node, widgets, page));
+    const part = widgetPart(field, node, widgets, page);
+    add(part);
+    // A signature that signs answers, drawn by the files part: its evidence's part beside it.
+    if (part === filesPart && node.widget === 'signature' && signsAnswers(node)) add(evidencePart);
     // Its rows are drawn with each kind's widget: a date's, unless the app draws dates; and a long choice's, searched —
     // one of the page's own, or any of those the data source gives.
     if (field.type === 'properties') {

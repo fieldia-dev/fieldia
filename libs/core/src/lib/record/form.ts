@@ -1470,7 +1470,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** The answers signatures signed, as the values hold them now: worked out once for each change of the values. */
   let signedCache: { values: Values; answers: SignedBy } | null = null;
   function signedNow(): SignedBy {
-    if (signedCache?.values !== state.values) signedCache = { values: state.values as Values, answers: signedBy(fields, state.values) };
+    if (signedCache?.values !== state.values) signedCache = { values: state.values as Values, answers: signedBy(page, state.values) };
     return signedCache.answers;
   }
 

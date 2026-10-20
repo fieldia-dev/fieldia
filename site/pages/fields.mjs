@@ -197,13 +197,13 @@ ${code(
   <li><strong>Locked once signed.</strong> Each answer it signed is read-only while it is kept, its lock saying how to change it. <em>Change answers</em> asks in place, then takes the signature away: the answers open, and the person signs again.</li>
   <li><strong>Kept with the signature.</strong> The value's ${c('signed')}: ${c('{ "format": "fieldia-signature/1", "by", "at", "fields", "sha256" }')}. A save storing the picture keeps it; a store that keeps a signature as bytes keeps it beside them.</li>
 </ul>
-<p>The fingerprint is the SHA-256 of a canonical text your server can write again in any language: the JSON ${c('{ "answers", "at", "by", "field", "format", "page" }')} as RFC 8785 writes it — no spaces, keys in order — each answer as the person saw it, written so a store that hands it back another way reads the same (a link its record's id, a file its name, size and kind, nothing ${c('null')}). The rules are in ${c('@fieldia/core')}'s README; the files part has them as functions:</p>
+<p>The fingerprint is the SHA-256 of a canonical text your server can write again in any language: the JSON ${c('{ "answers", "at", "by", "field", "format", "page" }')} as RFC 8785 writes it — no spaces, keys in order — each answer as the person saw it, written so a store that hands it back another way reads the same (a link its record's id, a file its name, size and kind, nothing ${c('null')}). The rules are in ${c('@fieldia/core')}'s README; the evidence part — loaded only for a signature that signs answers, never for uploads or a plain signature — has them as functions:</p>
 ${code(
   'ts',
   `
-import { filesPart } from '@fieldia/widgets';
+import { evidencePart } from '@fieldia/widgets';
 
-const { answersMatch, signatureText, sha256Hex } = await filesPart.load();
+const { answersMatch, signatureText, sha256Hex } = await evidencePart.load();
 await answersMatch(record.signature.signed, page, 'signature', record); // true while no signed answer changed`
 )}
 <p>In the designer, a signature's settings say what it <em>Signs</em> — nothing, every answer on the page, or the answers chosen — and the <em>Signer's name</em>. Two people signing in turn is your app's to order (a flow's): each signature signs its answers.</p>

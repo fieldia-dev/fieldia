@@ -43,10 +43,10 @@ export const PART_WORDS = {
       'uploadImage', 'dropHere', 'addFiles', 'addPhotos', 'dropThem', 'upToSize', 'upToEach', 'upToFiles', 'fileCount', 'oneFile', 'fileCountOf', 'tooMany', 'alreadyAdded', 'fileAt', 'noPreview', 'showFilesAs', 'asList', 'asCards', 'asThumbnails',
       'signaturePad', 'signHere', 'typeSignature', 'clearDrawing', 'uploadSignature', 'uploadPercent', 'uploadWaiting', 'uploadPreparing', 'uploadFailed', 'uploadRefused', 'uploadingNamed', 'retryUploadNamed', 'fileUploaded', 'filesUploaded', 'notUploadedNamed', 'noDocument',
       'removeAsk', 'removed',
-      'signedByName', 'signedAt', 'answersAsSigned', 'answersChanged', 'changeAnswers', 'changeAnswersAsk', 'signatureTakenAway', 'notSignedYet',
     ],
     viewer: ['showAs'],
   },
+  evidence: { widgets: ['signedByName', 'signedAt', 'answersAsSigned', 'answersChanged', 'changeAnswers', 'changeAnswersAsk', 'signatureTakenAway', 'notSignedYet'] },
   filters: { viewer: ['filterByKeyword', 'clearFilters', 'filterNamed', 'filterSettings'] },
   head: {
     widgets: ['maximiseNamed', 'foldNamed', 'unfoldNamed'],

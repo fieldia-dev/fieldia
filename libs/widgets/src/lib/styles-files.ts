@@ -172,16 +172,6 @@ export const FILES_CSS = /* css */ `
 .fd-signature-tools { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; width: 100%; }
 .fd-signature-typed { flex: 1 1 200px; min-width: 0; }
 .fd-signature-footer { margin-block-start: -4px; color: var(--fd-muted); font-size: 12.5px; }
-/* Who signed and when, whether the answers are as signed, and Change answers: under the signature, a line that wraps. */
-.fd-signature-evidence { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; width: 100%; font-size: 13px; }
-.fd-signature-who { font-weight: 600; }
-.fd-signature-when { white-space: nowrap; }
-.fd-signature-state { color: var(--fd-success); }
-.fd-signature-state[data-changed] { color: var(--fd-warning); font-weight: 600; }
-.fd-signature-state > [aria-hidden] { margin-inline-end: 4px; }
-.fd-signature-evidence > .fd-signature-ask { flex-basis: 100%; }
-.fd-signature-note[data-news] { color: var(--fd-muted); }
-@media print { .fd-form :is(.fd-signature-change, .fd-signature-ask) { display: none !important; } }
 /* On paper: a file's name and picture, not the ways to pick, switch or remove one. */
 @media print { .fd-form :is(.fd-file-remove, .fd-file-pick, .fd-file-views, .fd-file-limits) { display: none !important; } }
 `;

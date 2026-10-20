@@ -1,4 +1,4 @@
-import { checkPage, createForm, evidenceOf, signedBy, validatePage, type Field, type Page, type SignatureEvidence } from '../../index';
+import { checkPage, createForm, evidenceOf, signedBy, signsAnswers, validatePage, type Field, type Page, type SignatureEvidence } from '../../index';
 
 /**
  * A signature that signs answers (`options.signs`) keeps who, when, which answers and their fingerprint beside its
@@ -48,10 +48,17 @@ describe('answers a signature signed', () => {
     expect(evidenceOf(PICTURE)).toBeNull();
     expect(evidenceOf(null)).toBeNull();
     expect(evidenceOf({ ...PICTURE, signed: { fields: 'patient' } } as never)).toBeNull();
-    const by = signedBy(page().fields, { signature: { ...PICTURE, signed: EVIDENCE } });
+    const by = signedBy(page(), { signature: { ...PICTURE, signed: EVIDENCE } });
     expect([...by.keys()]).toEqual(['patient', 'treatment']);
     expect(by.get('patient')).toEqual({ field: 'signature', evidence: EVIDENCE });
-    expect(signedBy(page().fields, { signature: PICTURE }).size).toBe(0);
+    expect(signedBy(page(), { signature: PICTURE }).size).toBe(0);
+    // A signature the page no longer has sign answers is a picture, whatever its value carries.
+    expect(signedBy(page([]), { signature: { ...PICTURE, signed: EVIDENCE } }).size).toBe(0);
+    expect(signsAnswers({ options: { signs: 'form' } })).toBe(true);
+    expect(signsAnswers({ options: { signs: ['patient'] } })).toBe(true);
+    expect(signsAnswers({ options: { signs: [] } })).toBe(false);
+    expect(signsAnswers({ options: { penWidth: 5 } })).toBe(false);
+    expect(signsAnswers({})).toBe(false);
   });
 
   it('are locked while it is kept, whatever the page’s conditions say; taken away, they open again', () => {
@@ -69,16 +76,22 @@ describe('answers a signature signed', () => {
     expect(form.fieldReadonly('treatment')).toBe(false);
   });
 
-  it('are locked as a record loads with its signature, and in a page with no signs: the evidence is the value’s', async () => {
+  it('are locked as a record loads with its signature — and not where the page’s signature no longer signs answers', async () => {
+    const opened = async (given: Page) => {
+      const form = createForm({
+        page: { ...given, data: { kind: 'record', model: 'consent' } } as Page,
+        recordId: 1,
+        dataSource: { load: async () => ({ patient: 'Mona Adel', treatment: 'botox', signature: { ...PICTURE, url: 'https://files/1', signed: EVIDENCE } }) },
+      });
+      await form.load();
+      return form;
+    };
+    expect((await opened(page())).node('f-treatment').readonly).toBe(true);
     const plain = page();
     (plain.layout as unknown as { children: { children: Record<string, unknown>[] }[] }).children[2].children[0]['options'] = {};
-    const form = createForm({
-      page: { ...plain, data: { kind: 'record', model: 'consent' } } as Page,
-      recordId: 1,
-      dataSource: { load: async () => ({ patient: 'Mona Adel', treatment: 'botox', signature: { ...PICTURE, url: 'https://files/1', signed: EVIDENCE } }) },
-    });
-    await form.load();
-    expect(form.node('f-treatment').readonly).toBe(true);
+    const form = await opened(plain);
+    expect(form.node('f-treatment').readonly).toBe(false);
+    expect(form.fieldReadonly('treatment')).toBe(false);
   });
 });
 

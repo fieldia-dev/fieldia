@@ -131,10 +131,14 @@ answers read first, an answer still to give said instead — it keeps who signed
 picture (`FileValue.signed`). Under it, "Signed by Mona Adel, 19 Oct 2026,
 11:42", whether the answers are still as signed — the fingerprint made again
 from them — and Change answers, asked in place, which takes it away; the form
-locks the answers while it is kept. The canonical form (`fieldia-signature/1`,
-@fieldia/core's README) and its functions — `signatureText`, `signedAnswers`,
-`canonicalJson`, `sha256Hex` (the browser's SubtleCrypto, else worked out the
-same where a page is served without https), `signAnswers`, `answersMatch` —
-come in the files part with the signature, `(await filesPart.load()).answersMatch(…)`.
+locks the answers while it is kept. All of that, and the canonical form
+(`fieldia-signature/1`, @fieldia/core's README) with its functions —
+`signatureText`, `signedAnswers`, `canonicalJson`, `sha256Hex` (the browser's
+SubtleCrypto, else worked out the same where a page is served without https),
+`signAnswers`, `answersMatch` — come in a part of their own,
+`evidencePart` (`fieldia.evidence.js`), loaded only for a signature that signs
+answers: a page with uploads or a plain signature never asks for it. Until it
+comes, the files part's pad draws and keeps the picture, and its signing waits
+for it — a save waits for that signing: `(await evidencePart.load()).answersMatch(…)`.
 
 MIT licensed.
