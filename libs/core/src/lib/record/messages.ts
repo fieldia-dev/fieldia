@@ -151,6 +151,13 @@ export interface Messages {
   /** A choice whose places are all taken (an option's `seats`): picked now (`choiceFull`), or held as it filled up. */
   choiceFull: string;
   choiceFilled: string;
+  /**
+   * A text kept in several languages (`translate`) typed in some, not in all those a required answer is typed in:
+   * `{languages}`, their names in the page's language ("Arabic", "Arabic and French"); of a label that is a question,
+   * `languagesNeededQuestion`.
+   */
+  languagesNeeded: string;
+  languagesNeededQuestion: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -263,6 +270,8 @@ const en: Messages = {
   formSent: 'You have sent your answers to this form already.',
   choiceFull: '{option} is full',
   choiceFilled: '{option} is full now: choose another',
+  languagesNeeded: '{label} is required in {languages}',
+  languagesNeededQuestion: 'Please answer {label} in {languages}',
   locale: 'en',
 };
 

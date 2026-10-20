@@ -1,0 +1,31 @@
+{
+  "fieldia": "0.7",
+  "id": "services-languages",
+  "title": "Services",
+  "description": "A clinic's services, each named in English and in Arabic by the clinic: listed in the reader's language — another's said to be another's — and found by a search in either.",
+  "data": { "kind": "record", "model": "clinic.service" },
+  "records": { "one": "service", "other": "services", "a": "a service" },
+  "fields": {
+    "name": { "type": "char", "label": "Service", "translate": ["en", "ar"], "required": true },
+    "category": {
+      "type": "selection",
+      "label": "Category",
+      "options": [
+        { "value": "dental", "label": "Dental" },
+        { "value": "skin", "label": "Skin" },
+        { "value": "checkup", "label": "Check-up" }
+      ]
+    },
+    "minutes": { "type": "integer", "label": "Minutes", "min": 5 },
+    "price": { "type": "monetary", "label": "Price", "currency": "EGP", "digits": [10, 0] }
+  },
+  "layout": {
+    "type": "list",
+    "id": "list",
+    "columns": ["name", "category", "minutes", "price"],
+    "sort": [{ "field": "name" }],
+    "pageSize": 10,
+    "groupBy": ["category"],
+    "card": { "title": "name", "fields": [["category"], ["minutes", "price"]] }
+  }
+}

@@ -1,6 +1,7 @@
 import type { Field, LineField } from '../format/field';
 import type { JsonValue } from '../format/json';
 import { dayOf } from './limits';
+import { languagesOf } from './languages';
 
 /**
  * The values a form holds while someone edits it. Plain JSON, so a draft can
@@ -130,6 +131,8 @@ export function isEmpty(field: AnyField, value: Value | undefined): boolean {
   if (value === null || value === undefined) return true;
   if (typeof value === 'string') return value.trim() === '';
   if (Array.isArray(value)) return value.length === 0;
+  // A text kept in several languages typed in none of them.
+  if (typeof value === 'object' && languagesOf(field)) return Object.values(value).every((text) => typeof text !== 'string' || !text.trim());
   // A matrix with no row answered is not answered at all.
   if (field.type === 'matrix' && typeof value === 'object') {
     return Object.values(value as Record<string, unknown>).every((a) => a === null || a === undefined || (Array.isArray(a) && !a.length));

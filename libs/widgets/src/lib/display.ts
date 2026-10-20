@@ -1,4 +1,5 @@
-import { placesOf, placesOfCurrency, type LineField, type Locale, type Value } from '@fieldia/core';
+import { languagesOf, placesOf, placesOfCurrency, type LineField, type Locale, type Value } from '@fieldia/core';
+import { anyText, languagesPart } from './widget-parts';
 import { formatMoney, formatNumber } from './numbers';
 import { writeMoney } from './money';
 import { shownNumber } from './duration';
@@ -39,6 +40,8 @@ export function currencyOf(def: LineField, values: Readonly<Record<string, Value
  */
 export function displayValue(def: LineField, value: Value | undefined, values: Record<string, Value> = {}, locale: Locale = 'en', parent?: Readonly<Record<string, Value>>): string {
   if (value === null || value === undefined || value === '') return '';
+  // A text kept in several languages: in the reader's (the languages part, which its page loads), else the first typed.
+  if (languagesOf(def)) return languagesPart.loaded?.languageText(value, def, locale) ?? anyText(value);
   if ((def.type === 'integer' || def.type === 'float' || def.type === 'monetary') && typeof value !== 'number') return typeof value === 'object' ? JSON.stringify(value) : String(value);
   if (typeof value === 'number' && !Number.isFinite(value)) return '';
   /** The places a number is written with: its field's, and never fewer than it has. */

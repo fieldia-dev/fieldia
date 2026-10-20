@@ -300,6 +300,8 @@ export { dayOf } from './lib/record/limits';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
 // (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)
+// A text kept in several languages, typed by people (`translate`): the reader's, and its part's checks loaded on first use.
+export { formLanguagesPart, hasLanguages, languagesOf, type FormLanguagesPart, type Translated } from './lib/record/languages';
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
 export { fieldPattern } from './lib/format/pattern';

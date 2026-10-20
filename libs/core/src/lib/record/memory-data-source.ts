@@ -7,6 +7,7 @@ import type {
   GroupInterval,
   GroupRequest,
   ListRequest,
+  ResolvedFilter,
   ListResult,
   LineOp,
   LinkOp,
@@ -155,6 +156,12 @@ export interface MemoryDataSourceOptions {
   drafts?: Record<string, StoredDraft & { pageId: string }>;
   /** The link "Continue later" answers with, made from the draft's key — the app's own address with it: none without it. */
   draftLink?: (key: string, request: SaveDraftRequest) => string;
+  /**
+   * The language a text kept in several (`{ ar, en }`) is read in where this source says it as one — a link's name, a
+   * list's order — as an app's server reads it in its person's language: their tag ("ar"), the first typed where it has
+   * none in it, or where this is left out. A search finds a link by its name in any of its languages.
+   */
+  language?: string;
 }
 
 /**
@@ -222,9 +229,17 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   const told = (version: RecordVersion | undefined, can: RecordPermissions | undefined) => ({ ...(version ? { version } : {}), ...(can ? { can } : {}) });
 
   const pause = () => (options.delayMs ? wait(options.delayMs, options.scheduler) : Promise.resolve());
+  /** A record's name, or its names in each language it is kept in (`{ ar, en }`). */
+  const nameOf = (model: string, id: RecordId) => table(model)[String(id)]?.[options.labelField?.[model] ?? 'name'];
   const labelOf = (model: string, id: RecordId) => {
-    const value = table(model)[String(id)]?.[options.labelField?.[model] ?? 'name'];
-    return typeof value === 'string' ? value : String(id);
+    const value = nameOf(model, id);
+    const name = oneText(value, options.language);
+    return typeof name === 'string' ? name : String(id);
+  };
+  /** Every name a record goes by: its name, in each of its languages. */
+  const namesOf = (model: string, record: RelatedRecord) => {
+    const value = nameOf(model, record.id);
+    return value !== null && typeof value === 'object' && !Array.isArray(value) ? Object.values(value).filter((name): name is string => typeof name === 'string') : [record.label];
   };
   /** A linked record with what its model shows besides its name. */
   const shown = (model: string, record: RelatedRecord): RelatedRecord => {
@@ -253,7 +268,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   /** A record as a filter reads it: its values and its own `id`, which a field of its own named id comes before. */
   const withId = (key: string, values: Values): Values => ({ id: asId(key), ...values });
   /** The stored records a filter keeps. */
-  const matchingRows = (model: string, filter: TotalsRequest['filter']): Values[] => Object.entries(table(model)).filter(([key, values]) => matchesFilter(withId(key, values), filter)).map(([, values]) => values);
+  const matchingRows = (model: string, filter: TotalsRequest['filter']): Values[] => Object.entries(table(model)).filter(([key, values]) => passes(withId(key, values), filter)).map(([, values]) => values);
 
   /** A save, as a backend makes one: refused where the person may not, or over a newer version; else stored, its version moved on. */
   function write(request: SaveRequest): SaveResult {
@@ -445,13 +460,13 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       // Found as a person writes it: in any case, with Arabic letters in any of their forms and digits in any script.
       const query = findable(request.query.trim());
       return Object.entries(table(request.model))
-        .filter(([key, values]) => matchesFilter(withId(key, values), request.filter ?? []))
+        .filter(([key, values]) => passes(withId(key, values), request.filter ?? []))
         .map(([key]) => ({ id: asId(key), label: labelOf(request.model, asId(key)) }))
         // By its name, or a tree's record by its whole path: "Portal\Sprint", "Portal / Sprint"; asked exactly, the name or path itself.
         .filter((record) =>
           request.exact
-            ? findable(record.label) === query || findable(pathWords(request.model, record.id)) === query
-            : findable(record.label).includes(query) || findable(pathWords(request.model, record.id)).includes(query)
+            ? namesOf(request.model, record).some((name) => findable(name) === query) || findable(pathWords(request.model, record.id)) === query
+            : namesOf(request.model, record).some((name) => findable(name).includes(query)) || findable(pathWords(request.model, record.id)).includes(query)
         )
         .slice(0, request.limit ?? 8)
         .map((record) => shown(request.model, record));
@@ -461,14 +476,14 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       calls.push({ method: 'list', request });
       await pause();
       const matching = Object.entries(table(request.model))
-        .filter(([key, values]) => matchesFilter(withId(key, values), request.filter))
+        .filter(([key, values]) => passes(withId(key, values), request.filter))
         .map(([key, values]) => ({ id: asId(key), values }));
       matching.sort((a, b) => {
         for (const order of request.sort) {
           // Nearest first: by how far each is, those with no place last.
           const compared = order.near
             ? compareValues(distanceFrom(a.values, order.field, order.near), distanceFrom(b.values, order.field, order.near))
-            : compareValues(a.values[order.field], b.values[order.field]);
+            : compareValues(oneText(a.values[order.field], options.language), oneText(b.values[order.field], options.language));
           // Empty last, whichever way the rest goes.
           if (compared.empty) return compared.result;
           if (compared.result) return order.desc ? -compared.result : compared.result;
@@ -713,6 +728,29 @@ function pathOf(value: unknown): string[] | null {
   const names = Array.isArray(value) ? value : typeof value === 'string' ? value.split('\\') : null;
   const kept = names?.filter((name): name is string => typeof name === 'string' && name.trim() !== '');
   return kept?.length ? kept : null;
+}
+
+/** A text kept in several languages: texts keyed by their languages' tags, { ar, en }. */
+const inLanguages = (value: unknown): value is Record<string, string> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length > 0 && Object.entries(value).every(([tag, text]) => typeof text === 'string' && /^[a-z]{2,3}(-[a-z\d]{2,8})*$/i.test(tag));
+
+/**
+ * Whether a record passes a filter (`matchesFilter`), a text it keeps in several languages read in each of them: the
+ * record as it reads in one of its languages passes — "villa" finds { ar: "فيلا", en: "Villa" }, "فيلا" too — as a
+ * server's search finds a text in any language it keeps.
+ */
+function passes(values: Values, filter: readonly ResolvedFilter[]): boolean {
+  const texts = Object.entries(values).filter((entry): entry is [string, Record<string, string>] => inLanguages(entry[1]));
+  if (!texts.length) return matchesFilter(values, filter);
+  const tags = new Set(texts.flatMap(([, value]) => Object.keys(value)));
+  return [...tags].some((tag) => matchesFilter({ ...values, ...Object.fromEntries(texts.map(([name, value]) => [name, value[tag] ?? null])) }, filter));
+}
+
+/** A text kept in several languages ({ ar, en }) as one, in `language` (the first typed where it has none there); any other value as it is. */
+function oneText(value: unknown, language = ''): unknown {
+  if (value === null || typeof value !== 'object' || Array.isArray(value) || 'id' in value || !Object.values(value).every((text) => typeof text === 'string')) return value;
+  const texts = value as Record<string, string>;
+  return texts[language]?.trim() ? texts[language] : (Object.values(texts).find((text) => text.trim()) ?? null);
 }
 
 /** Two values in order: a link by its label, text by the reader's rules, numbers by size; `empty` says one of them had nothing. */

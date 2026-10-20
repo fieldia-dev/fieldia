@@ -1,5 +1,5 @@
-import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
-import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { callsPartFunctions, formLimitsPart, functionsPart, hasLanguages, hasLimits, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { businessPart, choicePart, datePart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as AnswersModule from './answers-part';
@@ -88,7 +88,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -132,6 +132,10 @@ const markdownAlone = (node: SectionNode) => {
  * for its form's too, @fieldia/core's (`formLimitsPart`): when it takes answers and each choice's places, worked out —
  * in the one-tag script, the same script.
  *
+ * A page with a text kept in several languages (`translate`) — a field of its own, a related list's or a many2many's
+ * records' — asks for the languages part: its switch between them where it is typed, and where a list, a card or a
+ * table reads it, the reader's language, else another's, marked; with @fieldia/core's form code for it.
+ *
  * A page whose formulas call one of Fieldia's functions beyond the plain ones (`age`, `addMonths`, `contains`, `join`,
  * `average`, …) asks for @fieldia/core's functions part, their bodies (`callsPartFunctions`); one whose choices' options
  * show by a condition, or are carried from an earlier question, its options part (`hasOptionRules`).
@@ -155,6 +159,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       const choices = field.definitionsFrom ? [widgetPart({ type: 'selection', label: field.label, options: [] }, { ...row, options: { search: true } }, widgets, page)] : (field.definitions ?? []).map((one) => (one.type === 'selection' ? widgetPart({ type: 'selection', label: one.label, options: one.options ?? [] }, row, widgets, page) : undefined));
       for (const part of [dated, ...choices]) add(part);
     }
+    // A many2many's records' text kept in several languages, shown in its table in the reader's.
+    if (field.type === 'many2many' && Object.values(field.fields ?? {}).some((sub) => languagesOf(sub))) add(languagesPart);
     if (field.type !== 'one2many' || !field.fields) return;
     for (const [column, sub] of Object.entries(field.fields)) {
       const cell = node.cells?.[column];
@@ -197,6 +203,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       if (node['card']) found.add(cardsPart);
       const fields = node['fields'] && typeof node['fields'] === 'object' ? (node['fields'] as Page['fields']) : {};
       if (phoneColumns({ ...page, fields }, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
+      if (hasLanguages({ fields })) found.add(languagesPart);
     }
     else if (node.type === 'slot' && typeof node['name'] === 'string') for (const part of slots[node['name']]?.parts ?? []) add(part);
     else if (node.type === 'field' && typeof node['field'] === 'string') {
@@ -215,6 +222,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (hasLimits(page)) found.add(formLimitsPart);
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);
+  // A text kept in several languages: its switch where it is typed, the reader's language where a list or a card reads it.
+  if (hasLanguages(page)) found.add(languagesPart);
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
@@ -225,7 +234,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart };
+  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, languages: languagesPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 

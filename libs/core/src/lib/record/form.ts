@@ -47,6 +47,7 @@ import {
   type StoredDraft,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
+import { formLanguagesPart, hasLanguages } from './languages';
 import type { Limits } from './form-limits';
 import { draftRead, resumeStep } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
@@ -1779,6 +1780,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return optionKit;
   }
   if (hasOptionRules(page)) void track(optionsCode());
+  // A text in several languages is checked by the languages part: asked for at once, a save waiting for it.
+  const languagesCode = () => formLanguagesPart.load().then(() => undefined, () => undefined);
+  if (hasLanguages(page)) void track(languagesCode());
 
   /** A table line's choice's options as they are offered on that line: its list's once loaded, or its own, by their conditions once they came. */
   function lineOffered(lines: string, line: Line, column: string, record: Record<string, unknown>): Option[] {
@@ -2695,6 +2699,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Options by condition waited for where they have not come: what is saved never holds one they would take out.
     if (!optionKit && hasOptionRules(page)) {
       await optionsCode();
+      if (asked !== generation) return elsewhere();
+    }
+    // A text in several languages, checked in each once its part has come.
+    if (!formLanguagesPart.loaded && hasLanguages(page)) {
+      await languagesCode();
       if (asked !== generation) return elsewhere();
     }
     // Values the app's functions are asked for are waited for — those that failed asked again — so what is saved is worked out.

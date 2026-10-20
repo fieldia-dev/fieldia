@@ -1,5 +1,5 @@
-import { compileModifier, type ButtonNode, type CompiledModifier, type FunctionTable, type FileValue, type LineField, type ListCell, type ListNode, type Locale, type Page, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
-import { cellText, drawIcon, formatNumber, phoneLinksOf, phoneSettings, phoneWritten, type IconSet, type WidgetLabels } from '@fieldia/widgets';
+import { compileModifier, languagesOf, type ButtonNode, type CompiledModifier, type FunctionTable, type FileValue, type LineField, type ListCell, type ListNode, type Locale, type Page, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
+import { cellText, drawIcon, formatNumber, languagesPart, phoneLinksOf, phoneSettings, phoneWritten, type IconSet, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 
 /**
@@ -71,6 +71,11 @@ export interface Cells {
   words(name: string, values: Values): string;
   /** A column's cell, drawn: its words with what its widget draws before them, or in their place. `named` names the row's record, for its initials. */
   draw(name: string, values: Values, named?: string): Node[];
+  /**
+   * A column's words, each in its own direction — a text kept in several languages in the reader's, else another's,
+   * written its own way and marked with its language ("EN"): a card's title, its subtitle, a line's value.
+   */
+  text(name: string, values: Values): Node[];
   /** A field's value as a pill, in its column's tones or colours: a card's status. Null for none. */
   pill(name: string, values: Values): HTMLElement | null;
   /** Where a field's picture is: empty for none. */
@@ -161,6 +166,13 @@ export function listCells(context: CellsContext): Cells {
     ];
   }
 
+  /** A column's words in their own direction; a text in several languages in the reader's, marked where it is another's (the languages part). */
+  function text(name: string, values: Values): Node[] {
+    const def = page.fields[name] as LineField | undefined;
+    const drawn = def && languagesOf(def) ? languagesPart.loaded?.languageWords(doc, values[name], def, locale, context.widgetLabels) : undefined;
+    return drawn?.length ? drawn : [el('bdi', {}, words(name, values))];
+  }
+
   function draw(name: string, values: Values, named = ''): Node[] {
     const cell = cellOf(name);
     const value = values[name];
@@ -198,12 +210,13 @@ export function listCells(context: CellsContext): Cells {
     }
     // Each value in its own direction: a phone number or an amount reads left to right on a right-to-left page.
     const after = cell?.widget === 'phone' && cell.options?.['links'] === true ? phoneLinks(value) : [];
-    return [...before, el('bdi', {}, said), ...after];
+    return [...before, ...text(name, values), ...after];
   }
 
   return {
     words,
     draw,
+    text,
     pill: (name, values) => pillOf(el, cellOf(name), values[name], words(name, values)),
     picture: (name, values) => pictureOf(values[name]),
     initials,

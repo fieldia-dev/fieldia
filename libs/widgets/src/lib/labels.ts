@@ -402,6 +402,15 @@ export interface WidgetLabels {
   seatsLeft: string;
   seatsLeftOne: string;
   seatsFull: string;
+  /**
+   * A text kept in several languages (`translate`): its switch between them, named for its field (`{label}`), and what
+   * a language's tab says to a screen reader while nothing is typed in it, and while it must be.
+   */
+  languageSwitch: string;
+  languageEmpty: string;
+  languageNeeded: string;
+  /** A list's cell or card showing a text in another language than the reader's: `{language}`, its name in the page's. */
+  inLanguage: string;
   rankTop: string;
   /** A total that cannot be added up while line `{n}` holds text that does not read. */
   totalWaits: string;
@@ -772,6 +781,10 @@ const en: WidgetLabels = {
   seatsLeft: '{n} left',
   seatsLeftOne: '{n} left',
   seatsFull: 'Full',
+  languageSwitch: 'Languages of {label}',
+  languageEmpty: 'not typed yet',
+  languageNeeded: 'required, not typed yet',
+  inLanguage: 'in {language}',
   rankTop: 'Only the top {max} are ranked; take one out to rank another',
   totalWaits: 'Fix line {n} to see this total',
   cellWaits: 'Fix {column} to see this line’s {own}',

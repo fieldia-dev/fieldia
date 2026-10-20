@@ -1,4 +1,4 @@
-import { foldForSearch, placesOf, placesOfCurrency, readNumber, type NumberLimits } from '@fieldia/core';
+import { foldForSearch, languagesOf, placesOf, placesOfCurrency, readNumber, type NumberLimits } from '@fieldia/core';
 import type {
   Field,
   FieldNode,
@@ -38,7 +38,7 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { anyText, businessPart, choicePart, datePart, filesPart, languagesPart, linesPart, partFactory, partWidget, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTimer, plainTotal } from './business-plain';
 import { plainAddress, plainChosen, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
@@ -207,6 +207,9 @@ export function createWidget(given: WidgetContext, registry: Record<string, Widg
   // Kept from throwing: a widget that fails is a box naming its field, and the page goes on (contain.ts).
   return containWidget((kept) => {
     const own = { ...context, ...kept };
+    // A text kept in several languages: a box of its own kind for each, under a switch between them (the languages part),
+    // its first text read until that comes where something did not wait for it, as the viewer does.
+    if (factory && languagesOf(field)) return partWidget(languagesPart, own, (module) => module.languagesWidget(factory, own), pendingWidget);
     // Choices from the app's list, shown by conditions or carried from another question: the same widget, drawn again as they change.
     if (factory) return field.type === 'selection' && (field.optionsFrom || own.form.offersChange?.(own.name)) ? listChoices(factory, own) : factory(own);
     return pendingWidget(own);
@@ -220,7 +223,9 @@ export function createWidget(given: WidgetContext, registry: Record<string, Widg
  * for a widget its page's settings choose (a phone read the world over).
  */
 export function widgetPart(field: Field, node: FieldNode, registry: Record<string, WidgetFactory> = {}, page?: Page): Part | undefined {
-  return (factoryFor(field, node, registry) as Partial<PartFactory> | undefined)?.partOf?.(node, page, field);
+  const part = (factoryFor(field, node, registry) as Partial<PartFactory> | undefined)?.partOf?.(node, page, field);
+  // A text in several languages: its switch's part, with its box's (formatted text's editor) where it has one.
+  return languagesOf(field) ? (part ? partWith(languagesPart, part) : languagesPart) : part;
 }
 
 /** The factory for a field: the app's or the built-in one for `type.widget`, then for the type alone. */
@@ -969,6 +974,7 @@ function pendingWidget({ field, id, document }: WidgetContext): Widget {
 
 export function summary(value: Value | undefined, field: Field): string {
   if (value === null || value === undefined) return '';
+  if (languagesOf(field)) return anyText(value);
   switch (field.type) {
     case 'many2one':
     case 'reference':

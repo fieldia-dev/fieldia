@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Page, Value } from '@fieldia/core';
+import { formLanguagesPart, type Field, type FieldNode, type Page, type Value } from '@fieldia/core';
 import { lazyPart, type Part } from './parts';
 import type * as TextModule from './text-part';
 import type * as PathModule from './path-part';
@@ -13,6 +13,7 @@ import type * as SurveyModule from './survey-part';
 import type * as PhoneModule from './phone-part';
 import type * as SlotsModule from './slots-part';
 import type * as RelationsModule from './relations-part';
+import type * as LanguagesModule from './languages-part';
 import type { TypedText, Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
@@ -42,6 +43,8 @@ export type PhonePart = typeof PhoneModule;
 export type SlotsPart = typeof SlotsModule;
 /** The relations part: links to other records — a many2one's and a reference's box, a many2many's tags and checkboxes, a char field's tags. */
 export type RelationsPart = typeof RelationsModule;
+/** The languages part: a text kept in several languages — its switch between them over its box, and a list's cell of it, marked. */
+export type LanguagesPart = typeof LanguagesModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
@@ -120,6 +123,17 @@ export function loadPhonePart(): Promise<PhonePart> {
  * loaded the first time a page shows one.
  */
 export const relationsPart: Part<RelationsPart> = lazyPart('relations', () => import('./relations-part'));
+
+/**
+ * A text kept in several languages (`translate`), each typed by a person: its switch between them over its box, and a
+ * list's cell or card of it in the reader's language, else another's, marked — loaded the first time a page shows one,
+ * with the form's code that checks it in each language and reads it in the reader's (@fieldia/core's `formLanguagesPart`).
+ */
+export const languagesPart: Part<LanguagesPart> = lazyPart('languages', () => Promise.all([import('./languages-part'), formLanguagesPart.load()]).then(([module]) => module));
+
+/** A text in several languages as one, before its part has come: the first language typed in. */
+export const anyText = (value: Value | undefined): string =>
+  value !== null && typeof value === 'object' && !Array.isArray(value) ? ((Object.values(value).find((text) => typeof text === 'string' && text.trim()) as string | undefined) ?? '') : value === null || value === undefined ? '' : String(value);
 
 /** A factory whose widget comes in a part, for a field `when` says (every one unless it says). */
 export type PartFactory = WidgetFactory & {

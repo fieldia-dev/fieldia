@@ -93,10 +93,12 @@ export function drawCard(context: CardContext, spec: CardSpec, values: Values, f
     parts.push(photo);
   }
   const status = spec.status ? cells.pill(spec.status, values) : null;
-  const head = el('div', { class: 'fd-list-card-head' }, el('strong', { class: 'fd-list-card-title' }, el('bdi', {}, title)), ...(status ? [status] : []));
+  // Its title and subtitle each in its own direction — a text kept in several languages in the reader's, else marked with another's.
+  const titled = cells.words(spec.title, values) ? cells.text(spec.title, values) : [el('bdi', {}, title)];
+  const head = el('div', { class: 'fd-list-card-head' }, el('strong', { class: 'fd-list-card-title' }, ...titled), ...(status ? [status] : []));
   const body = el('div', { class: 'fd-list-card-body' }, head);
   const subtitle = spec.subtitle ? cells.words(spec.subtitle, values) : '';
-  if (subtitle) body.append(el('div', { class: 'fd-list-card-subtitle' }, el('bdi', {}, subtitle)));
+  if (subtitle && spec.subtitle) body.append(el('div', { class: 'fd-list-card-subtitle' }, ...cells.text(spec.subtitle, values)));
   // Each line, its parts side by side: each part its own label beside its own value — "Next follow-up 30 Sept 2026",
   // "Agent Mona Adel" — never the labels of a line together, then its values; one alone drawn as its column draws it.
   // The line wraps between its parts, a part moving whole to the next row where it does not fit beside the one before.
@@ -106,7 +108,7 @@ export function drawCard(context: CardContext, spec: CardSpec, values: Values, f
     .map((line) => {
       const pairs = line.map(({ part, said }) => {
         const only = line.length === 1 && part.unit === undefined && DRAWN.has(node.cells?.[part.field]?.widget ?? '') ? part.field : null;
-        const value = only ? cells.draw(only, values, title) : [el('bdi', {}, said)];
+        const value = only ? cells.draw(only, values, title) : part.unit === undefined ? cells.text(part.field, values) : [el('bdi', {}, said)];
         // Words read as one — a number, an amount, a day, a phone number — never broken inside (cards-styles.ts).
         const whole = keepsWhole(page.fields[part.field]?.type, node.cells?.[part.field]?.widget);
         return el('div', { 'data-part': part.field, 'data-whole': whole ? '' : undefined }, el('dt', {}, page.fields[part.field]?.label ?? part.field), el('dd', {}, ...value));

@@ -87,5 +87,7 @@ export const de: Messages = {
   formSent: 'Sie haben Ihre Antworten auf dieses Formular bereits gesendet.',
   choiceFull: '{option} ist ausgebucht',
   choiceFilled: '{option} ist jetzt ausgebucht: Wählen Sie etwas anderes',
+  languagesNeeded: '{label} ist auf {languages} erforderlich',
+  languagesNeededQuestion: 'Bitte beantworten Sie {label} auf {languages}',
   locale: 'de',
 };
