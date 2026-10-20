@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { expectNoSidewaysScroll, node, open, screen } from './support';
+import { axeFindings } from './a11y-support';
 
 /**
  * A clinic's consent to treatment, signed as a patient signs it (`options.signs` on its signature): the answers given,
@@ -135,6 +136,24 @@ test.describe('a consent signed, with its evidence', () => {
     await sign(page).scrollIntoViewIfNeeded();
     await screen(page, 'signature-evidence-phone', { viewport: true });
   });
+});
+
+test.describe('a consent signed, read by everyone', () => {
+  for (const scheme of ['light', 'dark']) {
+    test(`its evidence, a signed answer's lock, its question and a changed answer pass axe · ${scheme}`, async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      ({ problems } = await open(page, 'plain', `page=clinic-consent&record=new&skin=outlined&scheme=${scheme}&now=${NOW}`));
+      await answer(page);
+      await draw(page, sign(page).locator('canvas'));
+      await expect(evidence(page).locator('.fd-signature-state')).toBeVisible();
+      expect(await axeFindings(page, 'signed')).toEqual([]);
+      await sign(page).getByRole('button', { name: 'Change answers' }).click();
+      expect(await axeFindings(page, 'asked')).toEqual([]);
+      await page.goto(`/plain/?page=clinic-consent&record=2&skin=outlined&scheme=${scheme}`);
+      await expect(evidence(page).locator('.fd-signature-state[data-changed]')).toBeVisible();
+      expect(await axeFindings(page, 'changed after')).toEqual([]);
+    });
+  }
 });
 
 test.describe('a consent kept', () => {
