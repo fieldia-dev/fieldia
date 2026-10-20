@@ -7,6 +7,8 @@ export { dayWords } from './lib/record/day-words';
 export { scheduleSlots, type MemorySchedule } from './lib/record/memory-schedules';
 // A memory source's records like the one typed, for its `duplicates`: for demos and tests, outside the one-tag script.
 export { alikeRecords, nameLikeness } from './lib/record/memory-duplicates';
+// A memory source's map records gathered by a grid, as a server gathers them, for its `clusters`: outside the one-tag script.
+export { gridClusters } from './lib/record/memory-clusters';
 export {
   FieldSchema,
   FieldsSchema,

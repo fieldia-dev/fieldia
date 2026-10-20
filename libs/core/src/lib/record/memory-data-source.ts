@@ -50,6 +50,8 @@ import type {
   SaveDraftRequest,
   SavedDraft,
   LoadDraftRequest,
+  ClustersRequest,
+  ClustersResult,
 } from './data-source';
 import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
@@ -155,15 +157,26 @@ export interface MemoryDataSourceOptions {
   drafts?: Record<string, StoredDraft & { pageId: string }>;
   /** The link "Continue later" answers with, made from the draft's key — the app's own address with it: none without it. */
   draftLink?: (key: string, request: SaveDraftRequest) => string;
+  /**
+   * How `clusters` answers: a list's map's records gathered where they crowd, worked out from the records the source
+   * keeps — `gridClusters()` gathers them by a grid, as a server does — or `false` for the map to load them and gather
+   * them itself. `row` gives a record standing alone as a list's row is: the fields asked, as this person may read
+   * them. Without it, the source has no `clusters`, and every map gathers its records in the browser.
+   */
+  clusters?: (
+    request: ClustersRequest,
+    records: Readonly<Record<string, Record<string, Values>>>,
+    row: (id: RecordId, values: Values) => ListedRecord
+  ) => ClustersResult | false | Promise<ClustersResult | false>;
 }
 
 /**
  * Every member of a data source but `exportRecords` and `importRecords`: a
  * memory source leaves an export and an import to the browser, as a source
  * without a server of its own does. A test or a demo gives it one by setting
- * it.
+ * it. `clusters` is there where its option says how it answers.
  */
-export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords' | 'importRecords'>>, Pick<DataSource, 'exportRecords' | 'importRecords'> {
+export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords' | 'importRecords' | 'clusters'>>, Pick<DataSource, 'exportRecords' | 'importRecords' | 'clusters'> {
   readonly records: Record<string, Record<string, Values>>;
   /**
    * The records said to be someone else for one another, by model: each pair of ids, in the order kept, through
@@ -220,6 +233,11 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   };
   /** A version and permissions, where this source keeps them. */
   const told = (version: RecordVersion | undefined, can: RecordPermissions | undefined) => ({ ...(version ? { version } : {}), ...(can ? { can } : {}) });
+  /** A record as a list's row gives it: the fields asked, as this person may read them, with its version and what they may do. */
+  const row = (model: string, id: RecordId, values: Values, fields: string[]): ListedRecord => {
+    const can = permissions(model, id);
+    return { id, values: readable(Object.fromEntries(fields.map((field) => [field, structuredCopy(values[field] ?? null) as Value])), can), ...told(versionOf(model, id), can) };
+  };
 
   const pause = () => (options.delayMs ? wait(options.delayMs, options.scheduler) : Promise.resolve());
   const labelOf = (model: string, id: RecordId) => {
@@ -356,6 +374,15 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       return { key, ...(link ? { link } : {}) };
     },
 
+    // A map's records gathered as the option says, each record standing alone as a list's row is.
+    ...(options.clusters && {
+      async clusters(request: ClustersRequest): Promise<ClustersResult | false> {
+        calls.push({ method: 'clusters', request });
+        await pause();
+        return (options.clusters as NonNullable<MemoryDataSourceOptions['clusters']>)(request, records, (id, values) => row(request.model, id, values, request.fields));
+      },
+    }),
+
     async loadDraft(request: LoadDraftRequest): Promise<StoredDraft | null> {
       calls.push({ method: 'loadDraft', request });
       await pause();
@@ -477,11 +504,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       });
       return {
         total: matching.length,
-        records: matching.slice(request.offset, request.offset + request.limit).map(({ id, values }): ListedRecord => {
-          const can = permissions(request.model, id);
-          const shownValues = readable(Object.fromEntries(request.fields.map((field) => [field, structuredCopy(values[field] ?? null) as Value])), can);
-          return { id, values: shownValues, ...told(versionOf(request.model, id), can) };
-        }),
+        records: matching.slice(request.offset, request.offset + request.limit).map(({ id, values }) => row(request.model, id, values, request.fields)),
         ...(request.allIds ? { allIds: matching.map(({ id }) => id) } : {}),
       };
     },
