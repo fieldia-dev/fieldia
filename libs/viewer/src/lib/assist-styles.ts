@@ -45,6 +45,8 @@ const ASSIST_CSS = /* css */ `
 .fd-proposal-words del { color: var(--fd-muted); text-decoration-thickness: 1px; }
 .fd-proposal-words ins { text-decoration: none; font-weight: 600; }
 .fd-proposal-arrow { color: var(--fd-muted); }
+/* From the old to the new, the way the words run: leftwards right to left. */
+[dir="rtl"] .fd-proposal-arrow { display: inline-block; transform: scaleX(-1); }
 .fd-proposal-text { margin-block-start: 4px; padding: 6px 8px; max-height: 14em; overflow: auto; white-space: pre-wrap; border-radius: var(--fd-control-radius); background: var(--fd-surface); border: 1px solid var(--fd-border); }
 .fd-proposal-lines { margin: 4px 0 0; padding-inline-start: 18px; }
 .fd-proposal-why { margin: 0; color: var(--fd-muted); }

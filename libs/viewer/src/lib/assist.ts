@@ -179,7 +179,8 @@ export function watchAssist(context: AssistContext): AssistKit {
   const fillButton = el('button', { type: 'button', class: 'fd-button fd-assist-fill', ...(page.suggest?.fromField ? {} : { 'aria-haspopup': 'dialog' }) }, ...icon(), el('span', {}, page.suggest?.label ?? labels.assistFill));
   fillButton.addEventListener('click', () => openFill());
   const reviewText = el('p', { class: 'fd-assist-review-text', id: `${id}-review` });
-  const reviewWhy = el('p', { class: 'fd-assist-review-why' });
+  // The app's words, in their own direction: English on an Arabic page too.
+  const reviewWhy = el('p', { class: 'fd-assist-review-why', dir: 'auto' });
   const reviewMore = el('ul', { class: 'fd-assist-review-more' });
   const acceptAll = el('button', { type: 'button', class: 'fd-button fd-button-primary fd-assist-accept-all', 'aria-describedby': `${id}-review` }, labels.assistAcceptAll);
   const rejectAll = el('button', { type: 'button', class: 'fd-button fd-assist-reject-all', 'aria-describedby': `${id}-review` }, labels.assistRejectAll);
@@ -267,23 +268,24 @@ export function watchAssist(context: AssistContext): AssistKit {
     const label = el('span', { class: 'fd-sr-only' }, `${def.label}: `);
     if (proposal.lines) {
       const head = fill(proposal.lines.length === 1 ? labels.assistLinesOne : labels.assistLines, { n: proposal.lines.length });
-      body = el('div', { class: 'fd-proposal-words', id: wordsId }, el('strong', {}, `${labels.assistProposal}: `), label, head, el('ul', { class: 'fd-proposal-lines' }, ...proposal.lines.map((line) => el('li', {}, lineWords(def, line)))));
+      body = el('div', { class: 'fd-proposal-words', id: wordsId }, el('strong', {}, `${labels.assistProposal}: `), label, head, el('ul', { class: 'fd-proposal-lines' }, ...proposal.lines.map((line) => el('li', {}, el('bdi', {}, lineWords(def, line))))));
     } else {
       const now = words(def, proposal.value, values);
       const before = words(def, proposal.was, values);
       const long = TEXT_KINDS.has(def.type) && (now.length > 60 || /\n/.test(String(proposal.value ?? '')));
       body = long
-        ? el('div', { class: 'fd-proposal-words', id: wordsId }, el('strong', {}, labels.assistProposedText), label, el('div', { class: 'fd-proposal-text' }, now))
+        ? el('div', { class: 'fd-proposal-words', id: wordsId }, el('strong', {}, labels.assistProposedText), label, el('div', { class: 'fd-proposal-text', dir: 'auto' }, now))
         : el(
             'div',
             { class: 'fd-proposal-words', id: wordsId },
             el('strong', {}, `${labels.assistProposal}: `),
             label,
-            ...(isEmpty(def, proposal.was ?? null) || (def.type === 'html' && blankText(proposal.was)) ? [] : [el('del', {}, before), el('span', { class: 'fd-proposal-arrow', 'aria-hidden': 'true' }, ' → '), el('span', { class: 'fd-sr-only' }, ` ${fill(labels.assistInPlaceOf, { value: before })}: `)]),
-            el('ins', {}, now)
+            ...(isEmpty(def, proposal.was ?? null) || (def.type === 'html' && blankText(proposal.was)) ? [] : [el('del', {}, el('bdi', {}, before)), el('span', { class: 'fd-proposal-arrow', 'aria-hidden': 'true' }, ' → '), el('span', { class: 'fd-sr-only' }, ` ${fill(labels.assistInPlaceOf, { value: before })}: `)]),
+            // Each value in its own direction: a phone, a tax id, a street keep their order on a right-to-left page.
+            el('ins', {}, el('bdi', {}, now))
           );
     }
-    const why = proposal.why && proposal.batch !== review?.batch ? [el('p', { class: 'fd-proposal-why' }, proposal.why)] : [];
+    const why = proposal.why && proposal.batch !== review?.batch ? [el('p', { class: 'fd-proposal-why', dir: 'auto' }, proposal.why)] : [];
     return el('div', { class: 'fd-proposal', 'data-proposal-of': proposal.field, role: 'group', 'aria-label': `${labels.assistProposal}: ${def.label}` }, el('span', { class: 'fd-proposal-icon', 'aria-hidden': 'true' }, ...icon()), el('div', { class: 'fd-proposal-main' }, body, ...why, el('div', { class: 'fd-proposal-ways' }, accept, reject)));
   }
 

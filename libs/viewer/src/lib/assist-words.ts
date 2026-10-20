@@ -156,7 +156,7 @@ export function searchWords(context: WordsContext): { read(): Promise<void>; typ
   /** The search and the words before the last were read: what Undo puts back. */
   let before: { facets: Facet[]; typed: string } | null = null;
   const tell = (text: string, undoable: boolean) => {
-    readText.replaceChildren(...text.split('\n').map((part, i) => (i ? el('span', { class: 'fd-assist-read-why' }, ` ${part}`) : part)));
+    readText.replaceChildren(...text.split('\n').map((part, i) => (i ? el('span', { class: 'fd-assist-read-why', dir: 'auto' }, ` ${part}`) : part)));
     undo.hidden = !undoable;
     line.hidden = !text;
   };

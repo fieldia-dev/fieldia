@@ -107,6 +107,18 @@ test.describe('a customer filled from an e-mail, by its keys and its files', () 
     expect((await values(page))['name']).toBe('Amman Fresh Markets');
   });
 
+  test('in Arabic, right to left: the dialog, the review and each proposal in its words', async ({ page }) => {
+    await page.goto('/plain/?page=customer-from-email&record=new&skin=underline&locale=ar&dir=rtl');
+    await page.getByRole('button', { name: 'Fill from an e-mail' }).click();
+    const box = page.getByRole('dialog').getByRole('textbox', { name: 'النص الذي يُملأ منه النموذج' });
+    await box.fill(SIGNATURE);
+    await page.getByRole('dialog').getByRole('button', { name: 'اقترح القيم' }).click();
+    await expect(review(page)).toContainText('قيم مقترحة: 9');
+    await expect(proposal(page, 'f-city').getByRole('button', { name: 'قبول' })).toBeVisible();
+    await expectNoSidewaysScroll(page);
+    await screen(page, 'ai-fill-arabic');
+  });
+
   test('on a phone the review and each proposal fit, nothing sideways', async ({ page }) => {
     await page.setViewportSize(PHONE);
     await page.reload();
