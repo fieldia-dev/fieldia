@@ -221,3 +221,56 @@ describe('the form: findDuplicates and merge', () => {
     expect(createForm({ page: page(), dataSource: without as DataSource }).canMerge()).toBe(false);
   });
 });
+
+describe('"It’s someone new" kept on the app’s server: notDuplicates and markNotDuplicate', () => {
+  it('the memory source keeps each pair once, either way round, never a record and itself, by model', async () => {
+    const ds = source();
+    await ds.markNotDuplicate({ model: 'partner', recordId: 3, matchId: 1 });
+    await ds.markNotDuplicate({ model: 'partner', recordId: '1', matchId: '3' });
+    await ds.markNotDuplicate({ model: 'partner', recordId: 3, matchId: 3 });
+    await ds.markNotDuplicate({ model: 'partner', recordId: 3, matchId: 2 });
+    expect(ds.notDuplicatePairs).toEqual({ partner: [[3, 1], [3, 2]] });
+    expect(await ds.notDuplicates({ model: 'partner', recordId: '3' })).toEqual([1, 2]);
+    // A pair either way round: Nile Traders is someone else for Nile Traders Co. as much as the other way.
+    expect(await ds.notDuplicates({ model: 'partner', recordId: 1 })).toEqual([3]);
+    expect(await ds.notDuplicates({ model: 'partner', recordId: 4 })).toEqual([]);
+    expect(await ds.notDuplicates({ model: 'contact', recordId: 3 })).toEqual([]);
+  });
+
+  it('the memory source refuses a record it does not keep, and starts from the pairs an earlier visit kept', async () => {
+    await expect(source().markNotDuplicate({ model: 'partner', recordId: 99, matchId: 1 })).rejects.toThrow('No partner record with id 99');
+    const given: Record<string, [number, number][]> = { partner: [[41, 1]] };
+    const ds = source({ notDuplicatePairs: given });
+    expect(await ds.notDuplicates({ model: 'partner', recordId: 1 })).toEqual([41]);
+    // Its own copy: what it was given is left as it was.
+    await ds.markNotDuplicate({ model: 'partner', recordId: 1, matchId: 2 });
+    expect(given).toEqual({ partner: [[41, 1]] });
+  });
+
+  it('the form asks them for the record shown, saved; keepsNotDuplicates only where the source has both', async () => {
+    const ds = source({ notDuplicatePairs: { partner: [[3, 1]] } });
+    const fresh = createForm({ page: page(), dataSource: ds });
+    expect(fresh.keepsNotDuplicates()).toBe(true);
+    // A new record has none, and asks nothing; it is kept apart once it is saved.
+    expect(await fresh.notDuplicates()).toEqual([]);
+    await expect(fresh.markNotDuplicate(1)).rejects.toThrow();
+    expect(ds.calls.filter((call) => call.method === 'notDuplicates' || call.method === 'markNotDuplicate')).toEqual([]);
+    const form = createForm({ page: page(), dataSource: ds, recordId: 3 });
+    await form.load();
+    expect(await form.notDuplicates()).toEqual([1]);
+    await form.markNotDuplicate(2);
+    expect(ds.calls.find((call) => call.method === 'markNotDuplicate')?.request).toEqual({ model: 'partner', recordId: 3, matchId: 2 });
+    expect(await form.notDuplicates()).toEqual([1, 2]);
+    const { notDuplicates: _read, ...writes } = ds;
+    const { markNotDuplicate: _write, ...reads } = ds;
+    expect(createForm({ page: page(), dataSource: writes as DataSource }).keepsNotDuplicates()).toBe(false);
+    expect(createForm({ page: page(), dataSource: reads as DataSource }).keepsNotDuplicates()).toBe(false);
+  });
+
+  it('never gives the record shown, nor what is not an id, whatever the source says', async () => {
+    const careless: DataSource = { load: async () => partners()[3], notDuplicates: async () => [1, '3', 3, null, { id: 2 }] as never, markNotDuplicate: async () => undefined };
+    const form = createForm({ page: page(), dataSource: careless, recordId: 3 });
+    await form.load();
+    expect(await form.notDuplicates()).toEqual([1]);
+  });
+});

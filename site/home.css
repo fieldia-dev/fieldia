@@ -131,6 +131,9 @@
 /* The business line in the stage's own ink; the developers' a step quieter and smaller. */
 .lede-business { color: var(--h-stage-ink); font-size: clamp(17px, 1.6vw, 20px); line-height: 1.5; }
 .lede-dev { font-size: 15px; line-height: 1.55; }
+/* Neither line ends on a word alone ("language." under the rest): wrapped as prose is set where the engine can; where it
+   cannot, its lines evened out (balance), and where it can do neither, wrapped as before. */
+:is(.lede-business, .lede-dev) { text-wrap: balance; text-wrap: pretty; }
 .home-opening .opening-actions { margin-top: 6px; }
 
 /* The stage: its tabs, then the tab's panel — a bar, then the JSON and what it draws. */
@@ -259,6 +262,12 @@
   .home-opening .opening-copy h1 { font-size: clamp(40px, 3.4vw, 60px); }
   .lede-business { font-size: 18px; }
   .home-opening .stage { height: clamp(480px, calc(100svh - 60px - 2 * var(--hero-pad)), 820px); }
+}
+/* Just side by side, before a laptop's 1280px: the words' column narrower — its headline's lines are shorter than it,
+   and Get started and the install line still fit — so the stage's record keeps a list's four columns whole beside its
+   JSON, never scrolling sideways in its pane; it widens back to 400px as the screen reaches 1280px. */
+@media (min-width: 1180px) and (max-width: 1279.98px) {
+  .home-opening { grid-template-columns: clamp(344px, calc(56vw - 317px), 400px) minmax(0, 1fr); }
 }
 
 /* The business areas it is at work in, each a link to its demos in the gallery: a strip at the foot of the opening. */

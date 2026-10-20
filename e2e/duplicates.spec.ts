@@ -97,6 +97,32 @@ test.describe('a customer typed twice', () => {
     await screen(page, 'duplicates-name');
   });
 
+  test('It’s a new customer is kept by the app’s server: another device, its browser keeping nothing, lets that one be too', async ({ page }) => {
+    await node(page, 'f-email').locator('input').fill('orders@niletraders.example');
+    const words = note(page, 'f-email').locator('.fd-duplicate-words');
+    await expect(words).toHaveText(['A customer with this email already exists: Nile Traders', 'A customer with this email already exists: Nile Traders Co.']);
+    await note(page, 'f-email').locator('.fd-duplicate').first().getByRole('button', { name: 'It’s a new customer' }).click();
+    await expect(words).toHaveText(['A customer with this email already exists: Nile Traders Co.']);
+    // Saved: kept by the demo's source as an app's server keeps it, nothing in this browser's own store.
+    await title(page).fill('Sinai Outfitters');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect.poll(() => shownId(page)).toBe(41);
+    await expect(words).toHaveText(['A customer with this email already exists: Nile Traders Co.']);
+    expect(await page.evaluate(() => (window as any).fieldiaDemo.dataSource.notDuplicatePairs)).toEqual({ partner: [[41, 1]] });
+    expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.includes('duplicates')))).toEqual([]);
+    // Another device: a page of its own, the browser's store empty, the same server (the demo keeps its records in the
+    // tab, which a page it opens is given a copy of). Sinai Outfitters opened there: Nile Traders Co. said, never Nile Traders.
+    await page.evaluate(() => localStorage.clear());
+    const [other] = await Promise.all([page.context().waitForEvent('page'), page.evaluate(() => void window.open(location.href))]);
+    await expect(title(other)).toHaveValue('Sinai Outfitters');
+    await expect(note(other, 'f-email').locator('.fd-duplicate-words')).toHaveText(['A customer with this email already exists: Nile Traders Co.']);
+    expect(await other.evaluate(() => (window as any).fieldiaDemo.dataSource.calls.filter((call: { method: string }) => call.method === 'notDuplicates').map((call: { request: unknown }) => call.request))).toEqual([
+      { model: 'partner', recordId: 41 },
+    ]);
+    await screen(other, 'duplicates-kept-elsewhere');
+    await other.close();
+  });
+
   test('Merge shows the two side by side, a value picked for each field, and keeps one', async ({ page }) => {
     await node(page, 'f-email').locator('input').fill('orders@niletraders.example');
     await note(page, 'f-email').locator('.fd-duplicate').nth(1).getByRole('button', { name: 'Open it' }).click();

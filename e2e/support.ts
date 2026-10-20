@@ -20,13 +20,39 @@ export async function open(page: Page, variant: string, query: string) {
 /** A field's wrapper, by its layout id. */
 export const node = (page: Page, id: string) => page.locator(`[data-node="${id}"]`);
 
-/** Save a screenshot for a person to look at — transitions finished, so it shows where things settle. */
+/**
+ * Save a screenshot for a person to look at — transitions finished, so it shows where things settle.
+ *
+ * A full-page shot lays the page out at its whole height and back again (Chromium's `captureBeyondViewport`); the page
+ * can come back scrolled to its foot, its own place given back only when something next moves it — the next press,
+ * between its down and its up: what was under the pointer at the down has moved by the up, and the press is lost (the
+ * tender's Lots tab, 37px lower by its up, its click on the grid above it). So the page is put back where it stood,
+ * and a frame awaited that shows it there (or as near as the page's height now lets it).
+ */
 export async function screen(page: Page, name: string, options: { viewport?: boolean } = {}) {
   // Firefox's and WebKit's beside Chromium's, never over them: screens/firefox/…, screens/webkit/….
   const engine = test.info().project.name;
   const folder = engine === 'chromium' || !engine ? 'test-results/screens' : `test-results/screens/${engine}`;
   // Only what is in view, for a dialog: a full-page shot would leave its backdrop over part of the page.
-  await page.screenshot({ path: `${folder}/${name}.png`, fullPage: !options.viewport, animations: 'disabled' });
+  const fullPage = !options.viewport;
+  const stood = fullPage ? await page.evaluate(() => ({ x: scrollX, y: scrollY })) : null;
+  await page.screenshot({ path: `${folder}/${name}.png`, fullPage, animations: 'disabled' });
+  if (!stood) return;
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (at) =>
+          new Promise<boolean>((done) => {
+            const root = document.scrollingElement ?? document.documentElement;
+            const x = Math.min(at.x, root.scrollWidth - innerWidth);
+            const y = Math.min(at.y, root.scrollHeight - innerHeight);
+            if (Math.abs(scrollX - x) > 1 || Math.abs(scrollY - y) > 1) scrollTo({ left: x, top: y, behavior: 'instant' });
+            requestAnimationFrame(() => done(Math.abs(scrollX - x) <= 1 && Math.abs(scrollY - y) <= 1));
+          }),
+        stood
+      )
+    )
+    .toBe(true);
 }
 
 /** Nothing on the page may scroll sideways. */

@@ -27,8 +27,9 @@ export const LINES_CSS = /* css */ `
 .fd-lines-table th[data-fit="integer"] { width: max(7em, var(--fd-fit-need, 0px)); min-width: max(7em, var(--fd-fit-need, 0px)); }
 .fd-lines-table th[data-fit="float"] { width: max(7.5em, var(--fd-fit-need, 0px)); min-width: max(7.5em, var(--fd-fit-need, 0px)); }
 .fd-lines-table th[data-fit="monetary"] { width: max(11.5em, var(--fd-fit-need, 0px)); min-width: max(11.5em, var(--fd-fit-need, 0px)); }
-.fd-lines-table th[data-fit="date"] { width: 9em; min-width: 9em; }
-.fd-lines-table th[data-fit="datetime"] { width: 12.5em; min-width: 12.5em; }
+/* A day, or a day and its time, beside its box's calendar button: never cut (lines-table.ts measures its longest). */
+.fd-lines-table th[data-fit="date"] { width: max(9em, var(--fd-fit-need, 0px)); min-width: max(9em, var(--fd-fit-need, 0px)); }
+.fd-lines-table th[data-fit="datetime"] { width: max(12.5em, var(--fd-fit-need, 0px)); min-width: max(12.5em, var(--fd-fit-need, 0px)); }
 /* Numbers and money read from the end, as Flectra's lists align them. */
 .fd-lines-table th:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) { text-align: end; }
 .fd-lines-table td:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) input { text-align: end; }

@@ -587,6 +587,15 @@ export interface Form {
    * record shown as it was asked (`recordShown`).
    */
   findDuplicates(): Promise<DuplicateMatch[]>;
+  /** Whether the source keeps "It's someone new" itself, on the app's server: it has `notDuplicates` and `markNotDuplicate`, both. */
+  keepsNotDuplicates(): boolean;
+  /**
+   * The records said to be someone else for the record shown, asked of the source's `notDuplicates`: none while it is
+   * new. Rejects where the source has no `notDuplicates`. Its answer is for the record shown as it was asked.
+   */
+  notDuplicates(): Promise<RecordId[]>;
+  /** Keep that `matchId` is someone else for the record shown, through the source's `markNotDuplicate`: refused while it is new. */
+  markNotDuplicate(matchId: RecordId): Promise<void>;
   /** Whether records of the page's model can be merged: its source has `merge`, and `load` to read the others. */
   canMerge(): boolean;
   /** Another record of the page's model, as its source loads it, its values alone: the form is left as it is. For a merge's screen. */
@@ -994,7 +1003,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    * dialog, a record step's — none is laid on another record, nor over the values the person's Discard let go.
    */
   /** The data source with a member a record's page asks of it, and the page's model: refused where either is missing. */
-  function recordSource<K extends 'duplicates' | 'merge' | 'load'>(member: K): [Required<Pick<DataSource, K>>, string] {
+  function recordSource<K extends 'duplicates' | 'notDuplicates' | 'markNotDuplicate' | 'merge' | 'load'>(member: K): [Required<Pick<DataSource, K>>, string] {
     const source = options.dataSource;
     if (page.data.kind !== 'record' || !source?.[member]) throw new Error(`The data source has no ${member}()`);
     return [source as Required<Pick<DataSource, K>>, page.data.model];
@@ -2796,6 +2805,20 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Never the record itself, whatever the source says; the likest first where it scores them.
       const others = (matches ?? []).filter((match) => match && String(match.id) !== String(recordId));
       return others.every((match) => typeof match.score === 'number') ? others.sort((a, b) => (b.score as number) - (a.score as number)) : others;
+    },
+    keepsNotDuplicates: () => !!(page.data.kind === 'record' && options.dataSource?.notDuplicates && options.dataSource.markNotDuplicate),
+    async notDuplicates() {
+      const [source, model] = recordSource('notDuplicates');
+      const recordId = state.recordId;
+      if (recordId === null) return [];
+      const ids = await source.notDuplicates({ model, recordId });
+      return Array.isArray(ids) ? ids.filter((id) => (typeof id === 'string' || typeof id === 'number') && String(id) !== String(recordId)) : [];
+    },
+    async markNotDuplicate(matchId) {
+      const [source, model] = recordSource('markNotDuplicate');
+      const recordId = state.recordId;
+      if (recordId === null) throw new Error('A new record has no id to keep it by');
+      await source.markNotDuplicate({ model, recordId, matchId });
     },
     canMerge: () => !!(page.data.kind === 'record' && options.dataSource?.merge && options.dataSource.load),
     async readRecord(id) {

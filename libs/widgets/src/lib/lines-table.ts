@@ -1,6 +1,6 @@
 import { isEmpty, labelAt, lineKind, type Field, type FieldNode, type Line, type LineField, type Value } from '@fieldia/core';
 import { blockOf, pasteRows, type PasteTable } from './cell-paste';
-import { dateOrderOf } from './date-text';
+import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
 import { drawIcon } from './icons';
 import { askFirst, fillIn, maker } from './kind-parts';
@@ -585,10 +585,15 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
         if (node.cells?.[column]?.width) continue;
         const sub = def.fields[column];
         if (th.dataset['fit']) {
-          // A number keeps its kind's width at the least, and has room for its longest value too ("E£ 21,600,000.00"), never cut.
-          if (!NUMERIC.has(sub.type)) continue;
+          const dated = sub.type === 'date' || sub.type === 'datetime';
+          if (!NUMERIC.has(sub.type) && !dated) continue;
           const widest = current.reduce((most, line) => (lineKind(def, line.values) ? most : Math.max(most, cellText(sub, line.values[column], line.values, locale).length)), 0);
-          th.style.setProperty('--fd-fit-need', `${widest + 4}ch`);
+          // A number keeps its kind's width at the least, and has room for its longest value too ("E£ 21,600,000.00"), never cut.
+          // A day, or a day and its time, likewise: as its box writes it — its pattern where it is empty ("dd/mm/yyyy") —
+          // beside the box's calendar button, so a date is never cut ("14 Mar 20…"), in its language's words; the head's
+          // letters a little smaller than the cells', so a little more.
+          const need = dated ? `calc(${Math.max(widest, dateShape(sub.type as 'date' | 'datetime', dateOrderOf(form), labels).length) + 2}ch + 4.5em)` : `${widest + 4}ch`;
+          th.style.setProperty('--fd-fit-need', need);
           continue;
         }
         const longest = current.reduce((most, line) => (lineKind(def, line.values) ? most : Math.max(most, cellText(sub, line.values[column], line.values, locale).length)), 0);

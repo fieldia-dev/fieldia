@@ -240,13 +240,22 @@ source's work, and `saveRefused({ kind: 'rule', message })` refuses it.
 source for a screen of your own, `form.canFindDuplicates()` and
 `form.canMerge()` say whether it can; the viewer says each match under the field
 it matched on, with Open it, "It's someone new" and Merge (`@fieldia/viewer`).
+"It's someone new" is kept on the app's server where the source has both
+`notDuplicates({ model, recordId }) → ids` (asked as a saved record is shown,
+before its matches are said) and `markNotDuplicate({ model, recordId, matchId })`
+(as it is pressed on a saved record, or a new one is saved after it): a pair,
+answered from either side, so another device lets that record be too; without
+both, the person's browser keeps it (the viewer's `preferences`), as before.
+`form.keepsNotDuplicates()`, `form.notDuplicates()` and
+`form.markNotDuplicate(matchId)` reach them.
 `checkPage` and `validatePage` refuse a field the page has not, one named twice,
 and one of a kind records are not compared by (`DUPLICATE_KINDS`). Without
 `duplicates` in the source, nothing is asked. For demos and tests,
 `alikeRecords()` answers from the memory source's records — the same value as
 people write them apart (a phone's spaces, an email's case, a link's record) or,
-in the name field, a name close enough (`nameLikeness`) — and its `merge`
-merges as a backend would:
+in the name field, a name close enough (`nameLikeness`) — its `merge`
+merges as a backend would, and its `notDuplicates` and `markNotDuplicate` keep
+what was let be as pairs (`notDuplicatePairs`, an option to start from):
 
 ```ts
 import { alikeRecords, createMemoryDataSource } from '@fieldia/core';

@@ -205,6 +205,8 @@ export type {
   DuplicateMatch,
   MergeRequest,
   MergeResult,
+  NotDuplicatesRequest,
+  MarkNotDuplicateRequest,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';

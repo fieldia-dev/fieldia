@@ -10,6 +10,8 @@ import type { MemoryDataSource, RecordId, Values } from '@fieldia/core';
 export const KEPT = 'fieldia-demo-records:';
 /** Told on the window each time something is kept: the frame shows its Start over. */
 export const KEPT_EVENT = 'fieldia-demo-kept';
+/** Where the records said to be someone else for one another ("It's someone new") are kept, as the server keeps them. */
+const APART = `${KEPT}#not-duplicates`;
 
 type Tables = Record<string, Record<string, Values>>;
 /** A model as kept: its records, and the ids taken away (deleted, merged), which a page's own extra samples stay out of. */
@@ -46,7 +48,7 @@ export function keptOver(samples: Tables, extra: Tables = {}): Tables {
   if (!storage) return records;
   for (let at = 0; at < storage.length; at++) {
     const key = storage.key(at);
-    if (!key?.startsWith(KEPT)) continue;
+    if (!key?.startsWith(KEPT) || key === APART) continue;
     const model = key.slice(KEPT.length);
     const kept = read(storage, model);
     if (!kept) continue;
@@ -54,6 +56,17 @@ export function keptOver(samples: Tables, extra: Tables = {}): Tables {
     records[model] = { ...kept.records, ...Object.fromEntries(back) };
   }
   return records;
+}
+
+/** The records this tab said are someone else for one another, by model: what the demo's source starts from. */
+export function keptApart(): Record<string, [RecordId, RecordId][]> {
+  const storage = store();
+  try {
+    const kept = JSON.parse(storage?.getItem(APART) ?? 'null') as Record<string, [RecordId, RecordId][]> | null;
+    return kept && typeof kept === 'object' ? kept : {};
+  } catch {
+    return {};
+  }
 }
 
 type Request = { model: string; id?: RecordId | null; mergeIds?: RecordId[] };
@@ -85,6 +98,18 @@ export function keepWrites(source: MemoryDataSource): void {
       return answer;
     };
   }
+  // "It's someone new", kept as the server keeps it: another page of this tab — another device, its browser keeping
+  // nothing — lets that record be too.
+  const apart = source.markNotDuplicate.bind(source);
+  source.markNotDuplicate = async (request) => {
+    await apart(request);
+    try {
+      storage.setItem(APART, JSON.stringify(source.notDuplicatePairs));
+    } catch {
+      // Storage full: kept while the page is open.
+    }
+    told();
+  };
   // A merge moves every link to the records it takes away: each model it changed is kept.
   const merge = own['merge']?.bind(source);
   if (merge) {

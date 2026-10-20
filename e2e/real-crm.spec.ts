@@ -346,3 +346,33 @@ test('the properties line up with the fields round them: their labels as the she
   expect(await look('.fd-field[data-type="properties"] .fd-property > label')).toEqual(await look('[data-node="f-user"] .fd-label'));
   expect(problems).toEqual([]);
 });
+
+test('the tender’s lots: a delivery date whole at every laptop’s and desktop’s width, its pattern too, and no box cut', async ({ page }) => {
+  const { problems } = await open(page, 'plain', 'page=real-tender&record=7801&skin=underline');
+  const lots = node(page, 'f-lots');
+  /** Each box of the lots whose words run past it — what it holds, or the pattern it asks for, in its own type: its column and those words. */
+  const cut = () =>
+    lots.locator('tbody td[data-column] input:not([type="checkbox"])').evaluateAll((boxes) =>
+      boxes.flatMap((box) => {
+        const input = box as HTMLInputElement;
+        const style = getComputedStyle(input);
+        const words = document.createElement('span');
+        words.style.cssText = `position: absolute; visibility: hidden; white-space: pre; font: ${style.font}; letter-spacing: ${style.letterSpacing}`;
+        words.textContent = input.value || input.placeholder;
+        document.body.append(words);
+        const room = input.clientWidth - parseFloat(style.paddingInlineStart) - parseFloat(style.paddingInlineEnd);
+        const over = words.getBoundingClientRect().width > room + 0.5;
+        words.remove();
+        return over ? [`${input.closest('td')!.dataset['column']}: ${input.value || input.placeholder}`] : [];
+      })
+    );
+  for (const width of [1280, 1366, 1440, 1600, 1680, 1920]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect.poll(() => lots.locator('td[data-column="delivery_deadline"] input').evaluateAll((boxes) => boxes.map((box) => (box as HTMLInputElement).value))).toEqual(['14 Mar 2027', '13 Apr 2027', '']);
+    await expect(lots.locator('td[data-column="delivery_deadline"] input').last()).toHaveAttribute('placeholder', 'dd/mm/yyyy');
+    await expect.poll(cut, `${width}: nothing cut`).toEqual([]);
+    expect(await lots.locator('.fd-lines-scroll').evaluate((box) => box.scrollWidth - box.clientWidth), `${width}: the table fits`).toBeLessThanOrEqual(0);
+    if (width === 1280) await screen(page, 'real-crm-tender-lots-1280');
+  }
+  expect(problems).toEqual([]);
+});

@@ -34,9 +34,15 @@ async function openOrder(page: Page, query = ORDER) {
 }
 
 /**
- * Time jumped ahead in the page, as a laptop's lid closed for a while: under
- * load Playwright's jump can miss the page, so it is made again (at most
- * three times) until the page's own clock shows it.
+ * Time jumped ahead in the page, as a laptop's lid closed for a while: the
+ * timers due in it fire once. Playwright's clock (1.56) can take a jump back
+ * a moment later: its own step that keeps the page's clock on real time, if
+ * it was part-way through the page's timers as the jump came, ends by setting
+ * the clock back where that step began (`_runTo` ends `_advanceNow(to)` with
+ * its own `to`). Before the jump is read, so it is made again (at most three
+ * times) until the page's own clock shows it; after, nothing tells — so a
+ * test that needs the clock to stay on, past a "not more than every ten
+ * seconds", moves it with `later`.
  */
 async function jump(page: Page, ms: number) {
   const before = await page.evaluate(() => Date.now());
@@ -45,6 +51,17 @@ async function jump(page: Page, ms: number) {
     if ((await page.evaluate(() => Date.now())) >= before + ms) return;
   }
   throw new Error('The page’s clock did not move on');
+}
+
+/**
+ * The page's clock moved on, as the next place a courier's phone sends comes
+ * some seconds after the last: its time of day changed, no timer fired.
+ * `setSystemTime` moves the time alone, which the clock's real-time step
+ * leaves as it is (it can take back a jump of its ticks, as `jump` says): a
+ * route asked "at most every ten seconds" is asked again, every time.
+ */
+async function later(page: Page, ms: number) {
+  await page.clock.setSystemTime((await page.evaluate(() => Date.now())) + ms);
 }
 
 /** The map at rest: its pane where it stays, once a drag's glide has ended. */
@@ -140,7 +157,7 @@ test('a courier who leaves the road is given a new route, but not more than ever
   const { routes } = await openOrder(page);
   // Two hundred metres east of the road.
   const off = { lat: ROUTE_LINE[20].lat, lng: ROUTE_LINE[20].lng + 0.002 };
-  await jump(page, 11_000);
+  await later(page, 11_000);
   await send(page, off);
   await expect.poll(() => routes.length).toBe(2);
   expect(routes[1]).toContain(`/route/v1/driving/${off.lng},${off.lat};31.21971,30.06259?`);
@@ -155,12 +172,12 @@ test('a courier standing beside the road is not given the same route again and a
   const { routes } = await openOrder(page);
   // 115 m from the road.
   const beside = { lat: 30.046213, lng: 31.236328 };
-  await jump(page, 11_000);
+  await later(page, 11_000);
   await send(page, beside);
   await expect.poll(() => routes.length).toBe(2);
   // Still there minute after minute, their phone's fix wandering a few metres: nothing more asked.
   for (let i = 1; i <= 3; i++) {
-    await jump(page, 11_000);
+    await later(page, 11_000);
     await send(page, { lat: beside.lat + 0.00003 * (i % 2), lng: beside.lng });
   }
   await page.waitForTimeout(500);
@@ -317,7 +334,7 @@ test('pins that crowd are gathered: the courier at the kitchen is one pin with t
   await page.route('https://router.project-osrm.org/**', (asked) => void routes.push(asked.request().url()));
   await open(page, 'plain', ORDER);
   await mapReady(theMap(page));
-  await jump(page, 11_000);
+  await later(page, 11_000);
   for (const [i, place] of [KITCHEN, { lat: KITCHEN.lat + 0.0003, lng: KITCHEN.lng + 0.0003 }].entries()) {
     await send(page, place);
     // The courier stays themself, the count at their shoulder; the kitchen's pin is gathered under theirs, not drawn over it.

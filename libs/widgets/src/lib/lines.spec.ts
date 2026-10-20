@@ -313,4 +313,35 @@ describe('a table’s columns by their values', () => {
     expect(parseFloat(need())).toBeGreaterThan(small);
     expect(need()).toMatch(/ch$/);
   });
+
+  it('gives a date column room for its longest day as its box writes it, or its pattern, beside the calendar button', () => {
+    const dated = {
+      ...page,
+      fields: { line_ids: { type: 'one2many', label: 'Lots', relation: 'lot', fields: { due: { type: 'date', label: 'Due' }, at: { type: 'datetime', label: 'Opening' } } } },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n-lines', field: 'line_ids', columns: ['due', 'at'] }] },
+    } as unknown as Page;
+    const form = createForm({ page: dated });
+    const node = (dated.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'line_ids', field: dated.fields['line_ids'] as Field, node, id: 'fd-lines', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['line_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    /** The room a column asks for: its words in characters, and the box's own (its calendar button, its padding). */
+    const need = (column: string) => {
+      const asked = (widget.element.querySelector(`thead th[data-column="${column}"]`) as HTMLElement).style.getPropertyValue('--fd-fit-need');
+      const [, chars, more] = /^calc\((\d+)ch \+ ([\d.]+)em\)$/.exec(asked) ?? [];
+      return { chars: Number(chars), more: Number(more) };
+    };
+    // Empty: its pattern, "dd/mm/yyyy", whole beside the button.
+    form.addLine('line_ids');
+    expect(need('due').chars).toBeGreaterThan('dd/mm/yyyy'.length);
+    expect(need('due').more).toBeGreaterThanOrEqual(4);
+    expect(need('at').chars).toBeGreaterThan('dd/mm/yyyy hh:mm'.length);
+    // A day longer than its pattern: the column grows as its line comes, the day never cut ("14 Sept 20…").
+    const pattern = need('due').chars;
+    form.addLine('line_ids', { due: '2027-09-14', at: '2027-09-14T10:30:00Z' });
+    expect(need('due').chars).toBeGreaterThan('14 Sept 2027'.length);
+    expect(need('due').chars).toBeGreaterThan(pattern);
+  });
 });
