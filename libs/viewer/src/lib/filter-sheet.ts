@@ -122,7 +122,9 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
     list.element.replaceChildren(
       ...all.map((option) => {
         const on = ticked.some((p) => same(p.value, option.value));
-        const input = el('input', { type: 'checkbox', class: 'fd-filter-sheet-box', 'data-value': JSON.stringify(option.value) });
+        const count = list.known.find((k) => same(k.value, option.value))?.count;
+        const counted = count === undefined ? null : countMark(el, count, page, labels, fill, locale);
+        const input = el('input', { type: 'checkbox', class: 'fd-filter-sheet-box', 'data-value': JSON.stringify(option.value), 'aria-label': counted?.named(option.label) });
         input.checked = on;
         input.addEventListener('change', () => {
           const now = state.picks.get(field) ?? [];
@@ -131,8 +133,7 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
           else state.picks.delete(field);
           changed(field);
         });
-        const count = list.known.find((k) => same(k.value, option.value))?.count;
-        return el('label', { class: 'fd-filter-sheet-option' }, input, el('span', { class: 'fd-filter-option-text' }, option.label), ...(count === undefined ? [] : countMark(el, count, page, labels, fill, locale)));
+        return el('label', { class: 'fd-filter-sheet-option' }, input, el('span', { class: 'fd-filter-option-text' }, option.label), ...(counted ? [counted.mark] : []));
       })
     );
     if (focused !== undefined) [...list.element.querySelectorAll<HTMLInputElement>('input')].find((input) => input.dataset['value'] === focused)?.focus();

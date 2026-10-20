@@ -28,11 +28,11 @@ export const FILTER_CSS = /* css */ `
 .fd-filter-option[aria-checked="true"] .fd-filter-box { background: var(--fd-accent); border-color: var(--fd-accent); color: var(--fd-accent-text, #fff); }
 .fd-filter-option-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* A range (filterRanges): the presses for its least values, then From and To side by side (the list's sheet), what is wrong said under them. */
-.fd-filter-range-menu { padding: 12px; width: 280px; max-width: min(320px, 90vw); max-height: none; overflow: visible; }
+.fd-filter-range-menu { padding: 12px; width: 300px; max-width: min(320px, 90vw); max-height: none; overflow: visible; }
 .fd-filter-range { display: grid; gap: 10px; }
 .fd-filter-range-presses { display: flex; flex-wrap: wrap; gap: 6px; }
 .fd-filter-range-press {
-  all: unset; box-sizing: border-box; cursor: pointer; display: inline-grid; place-items: center; min-width: 40px; min-height: 32px; padding-inline: 10px;
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-grid; place-items: center; min-width: 38px; min-height: 32px; padding-inline: 8px;
   border: 1px solid var(--fd-border-strong); border-radius: 999px; font-size: 13.5px; color: var(--fd-text); font-variant-numeric: tabular-nums;
 }
 .fd-filter-range-press:hover { background: var(--fd-page); }

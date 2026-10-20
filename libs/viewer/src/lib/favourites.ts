@@ -53,7 +53,7 @@ export function favouritesPart(context: {
 
   const write = (favourites: Favourite[]) => preferences.set(key(page), favourites as unknown as JsonValue);
   /** Each favourite drawn, and where its count goes. */
-  let slots: { slot: HTMLElement; facets: Facet[] }[] = [];
+  let slots: { slot: HTMLElement; name: string; facets: Facet[] }[] = [];
 
   function draw() {
     const favourites = readFavourites(preferences, page);
@@ -62,7 +62,7 @@ export function favouritesPart(context: {
     list.replaceChildren(
       ...favourites.map((favourite) => {
         const slot = context.slot?.();
-        if (slot) slots.push({ slot, facets: favourite.facets });
+        if (slot) slots.push({ slot, name: favourite.name, facets: favourite.facets });
         const use = el('button', { type: 'button', class: 'fd-search-option', 'data-default': favourite.isDefault ? 'true' : undefined }, favourite.name, ...(slot ? [slot] : []));
         use.addEventListener('click', () => context.apply(favourite.facets));
         const remove = el('button', { type: 'button', class: 'fd-favourite-remove', 'aria-label': fill(labels.deleteFavourite, { name: favourite.name }) }, '×');

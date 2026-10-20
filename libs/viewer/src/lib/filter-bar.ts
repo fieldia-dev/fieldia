@@ -268,12 +268,13 @@ export function filterBar(context: FilterBarContext) {
 
   /** A row of the list: a box ticked or not, the value's words, and how many records it finds where the list counts. */
   const tickRow = (text: string, checked: boolean, onClick: () => void, count?: number) => {
+    const counted = count === undefined ? null : countMark(el, count, page, labels, fill, locale);
     const row = el(
       'div',
-      { role: 'menuitemcheckbox', class: 'fd-filter-option', tabindex: '-1', 'aria-checked': String(checked) },
+      { role: 'menuitemcheckbox', class: 'fd-filter-option', tabindex: '-1', 'aria-checked': String(checked), 'aria-label': counted?.named(text) },
       el('span', { class: 'fd-filter-box', 'aria-hidden': 'true' }, ...icon('check')),
       el('span', { class: 'fd-filter-option-text' }, text),
-      ...(count === undefined ? [] : countMark(el, count, page, labels, fill, locale))
+      ...(counted ? [counted.mark] : [])
     );
     row.addEventListener('click', onClick);
     return row;

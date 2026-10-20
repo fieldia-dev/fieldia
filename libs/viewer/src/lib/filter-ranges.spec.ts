@@ -92,7 +92,8 @@ describe('a count beside each value', () => {
     kind.click();
     await until(() => options(menuOf(kind)).some((o) => o.querySelector('.fd-filter-count')));
     expect(options(menuOf(kind)).map(shownOption)).toEqual(['Flat 3', 'Villa 2']);
-    expect(options(menuOf(kind))[0].querySelector('.fd-sr-only')?.textContent).toBe(', 3 homes');
+    expect(options(menuOf(kind))[0].getAttribute('aria-label')).toBe('Flat, 3 homes');
+    expect(options(menuOf(kind))[0].querySelector('.fd-filter-count')?.getAttribute('aria-hidden')).toBe('true');
     // Villas: the amenities count among them; a value none of them holds says 0, still to tick.
     options(menuOf(kind))[1].click();
     await until(() => rows(host).length === 2);
@@ -394,7 +395,7 @@ describe('the search bar’s named filters and favourites', () => {
     (host.querySelector('.fd-search-toggle') as HTMLButtonElement).click();
     await until(() => option(host, 'late').querySelector('.fd-filter-count') && host.querySelector('.fd-favourite .fd-filter-count'));
     expect(['late', 'today', 'new'].map((id) => counted(option(host, id)))).toEqual(['Late 2', 'Today 1', 'New 3']);
-    expect(option(host, 'late').querySelector('.fd-sr-only')?.textContent).toBe(', 2 leads');
+    expect(option(host, 'late').getAttribute('aria-label')).toBe('Late, 2 leads');
     expect(counted(host.querySelector('.fd-favourite .fd-search-option') as HTMLElement)).toBe('Big ones 2');
     // A named filter on: the others still count as if each were on alone, among the rest.
     option(host, 'new').click();

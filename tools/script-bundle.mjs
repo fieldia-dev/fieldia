@@ -1507,13 +1507,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // count in words and its sums ("Cairo, 12 invoices, EGP 4.3M", their English with it), the arrows crossing a heading,
 // Right and Left opening and closing it — list 109.78 and 35.19 measured before, 110.61 and 35.49 after, to 110.7
 // and 35.5.
-// Filters that sales teams and buyers expect (0.27, w4-filters): filters 11.30 and 4.24 measured before, 22.52 and 7.75
+// Filters that sales teams and buyers expect (0.27, w4-filters): filters 11.30 and 4.24 measured before, 22.61 and 7.78
 // after — a count beside each value, a range's dropdown with its presses (filter-range-control.ts), the phone's sheet
-// with Show (filter-sheet.ts) and their sheet — to 22.6 and 7.8; list 110.61 and 35.49 to 117.36 and 37.79 — a range's
+// with Show (filter-sheet.ts) and their sheet — to 22.7 and 7.8; list 110.61 and 35.49 to 117.51 and 37.85 — a range's
 // boxes, words and chip and a count's mark, which it hands the filter bar (filter-range.ts, filter-count.ts: a part's
 // code is in one part), a custom filter's "is between", the search bar's counts of its filters and favourites, a count
-// asked of the source — to 117.4 and 37.8.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.6, 7.8], date: [22.2, 8.4], list: [117.4, 37.8], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
+// asked of the source — to 117.6 and 37.9.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.6, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

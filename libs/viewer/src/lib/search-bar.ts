@@ -258,15 +258,22 @@ export function searchBar(context: SearchContext) {
     const { count, searchFilter } = context;
     if (!count || !searchFilter || panel.hidden) return;
     const mine = ++counting;
-    const mark = (slot: HTMLElement, of: Facet[]) =>
-      count(searchFilter(of)).then(
-        (n) => mine === counting && slot.replaceChildren(...(n === null ? [] : countMark(el, n, page, labels, fill, context.locale))),
-        () => mine === counting && slot.replaceChildren()
-      );
+    // Its number after its words, and its name with the count in words; none where it cannot be counted.
+    const mark = (slot: HTMLElement, words: string, of: Facet[]) => {
+      const owner = slot.parentElement as HTMLElement;
+      const draw = (n: number | null) => {
+        if (mine !== counting) return;
+        const counted = n === null ? null : countMark(el, n, page, labels, fill, context.locale);
+        slot.replaceChildren(...(counted ? [counted.mark] : []));
+        if (counted) owner.setAttribute('aria-label', counted.named(words));
+        else owner.removeAttribute('aria-label');
+      };
+      return count(searchFilter(of)).then(draw, () => draw(null));
+    };
     // A named filter as if it were the only one on: the filters on are any of them.
     const rest = facets.filter((f) => f.kind !== 'filters');
-    for (const filter of node.filters ?? []) void mark(filterSlots.get(filter.id) as HTMLElement, [...rest, { kind: 'filters', ids: [filter.id], labels: [filter.label] }]);
-    for (const { slot, facets: kept } of favourites?.slots() ?? []) void mark(slot, kept);
+    for (const filter of node.filters ?? []) void mark(filterSlots.get(filter.id) as HTMLElement, filter.label, [...rest, { kind: 'filters', ids: [filter.id], labels: [filter.label] }]);
+    for (const { slot, name, facets: kept } of favourites?.slots() ?? []) void mark(slot, name, kept);
   }
 
   function showPanel(open: boolean) {
