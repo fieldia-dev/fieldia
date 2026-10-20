@@ -852,6 +852,8 @@ export class ReferenceCheck {
     else if (node.widget === 'slots') checkSlots(node, path, this.fieldTools());
     if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
+    // A photo set is a picture field's of several photos: one photo has no order, no cover.
+    if (node.widget === 'photos' && def && (def.type !== 'image' || !def.multiple)) this.report(`${path}.widget`, `photos is for an image field of several photos (multiple); "${node.field}" is not one`);
     if (def) this.checkPicker(node, def, path);
     // The order lines load in: fields of its lines.
     if (def && node.order && def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);

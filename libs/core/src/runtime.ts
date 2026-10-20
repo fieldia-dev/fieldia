@@ -84,6 +84,7 @@ export type { PathPickerOptions, StateDotOptions } from './lib/format/picker-opt
 export type { PagePhone, PhoneOptions } from './lib/format/phone';
 export type { SlotsOptions } from './lib/format/slots-options';
 export type { SignatureOptions } from './lib/format/signature-options';
+export type { PhotosOptions } from './lib/format/photos-options';
 export type { PageDuplicates } from './lib/format/duplicates';
 export type { PageLimits } from './lib/format/limits';
 export type { PageRecords } from './lib/format/records';
@@ -152,6 +153,7 @@ export {
   type ReferenceValue,
   type FileValue,
   type SignatureEvidence,
+  type PhotoEdit,
   type Line,
   type Value,
   type Values,

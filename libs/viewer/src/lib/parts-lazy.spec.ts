@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { businessPart, choicePart, datePart, evidencePart, filesPart, linesPart, pathPart, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, choicePart, datePart, evidencePart, filesPart, linesPart, pathPart, photosPart, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { customers, partners } from './test-list';
@@ -48,7 +48,7 @@ describe('the parts a page draws from', () => {
     expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
     await handle.drawn;
-    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, slotsPart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
+    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart, linesPart, businessPart, filesPart, evidencePart, photosPart, surveyPart, slotsPart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
   });
 
   it('are found wherever the page names what needs them, unless the app draws those fields', () => {
@@ -117,6 +117,17 @@ describe('the parts a page draws from', () => {
     // The app's own signature: neither.
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(partsFor(page(sections(signature({ signs: 'form' })), fields), { 'binary.signature': own })).toEqual([]);
+  });
+
+  it('the photos part for a photo set, which brings the files part — never for a plain picture field', () => {
+    const fields = { photos: { type: 'image', label: 'Photos', multiple: true }, photo: { type: 'image', label: 'Photo' }, docs: { type: 'binary', label: 'Documents', multiple: true } };
+    const set = { type: 'field', id: 'f-photos', field: 'photos', widget: 'photos', options: { captions: true } };
+    expect(partsFor(page(sections(set), fields))).toEqual([photosPart]);
+    expect(partsFor(page(sections(set, { type: 'field', id: 'f-docs', field: 'docs' }), fields))).toEqual([photosPart, filesPart]);
+    expect(partsFor(page(sections({ type: 'field', id: 'f-photos', field: 'photos' }), fields))).toEqual([filesPart]);
+    // The app's own set: neither.
+    const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
+    expect(partsFor(page(sections(set), fields), { 'image.photos': own })).toEqual([]);
   });
 
   it('a list: nothing of it drawn, its element busy, until the list part has come; then the list whole, its records in', async () => {

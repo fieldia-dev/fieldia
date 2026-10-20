@@ -1,0 +1,194 @@
+{
+  "fieldia": "0.7",
+  "id": "agent-listings",
+  "title": "My listings",
+  "description": "An agent's listings as a gallery and on a map: each card and each pin shows its listing's cover, the first of its photos.",
+  "records": {
+    "one": "listing",
+    "other": "listings",
+    "a": "a listing"
+  },
+  "data": {
+    "kind": "record",
+    "model": "agent.listing"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Title",
+      "required": true
+    },
+    "offer": {
+      "type": "selection",
+      "label": "Offer",
+      "options": [
+        {
+          "value": "sale",
+          "label": "For sale"
+        },
+        {
+          "value": "rent",
+          "label": "For rent"
+        }
+      ]
+    },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currency": "EGP",
+      "digits": [
+        12,
+        0
+      ]
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        {
+          "value": "zamalek",
+          "label": "Zamalek"
+        },
+        {
+          "value": "maadi",
+          "label": "Maadi"
+        },
+        {
+          "value": "new_cairo",
+          "label": "New Cairo"
+        },
+        {
+          "value": "sheikh_zayed",
+          "label": "Sheikh Zayed"
+        }
+      ]
+    },
+    "bedrooms": {
+      "type": "integer",
+      "label": "Bedrooms",
+      "min": 0
+    },
+    "photos": {
+      "type": "image",
+      "label": "Photos",
+      "help": "The first photo is the cover: the listing's card and its pin on the map show it.",
+      "multiple": true,
+      "maxFiles": 12,
+      "maxSize": 8388608,
+      "shrink": {
+        "maxSide": 1600,
+        "quality": 0.85
+      }
+    },
+    "lat": {
+      "type": "float",
+      "label": "Latitude",
+      "digits": [
+        9,
+        6
+      ]
+    },
+    "lng": {
+      "type": "float",
+      "label": "Longitude",
+      "digits": [
+        9,
+        6
+      ]
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "agent-listings",
+    "columns": [
+      "photos",
+      "name",
+      "offer",
+      "price",
+      "district",
+      "bedrooms"
+    ],
+    "pageSize": 12,
+    "searchFields": [
+      "name"
+    ],
+    "cells": {
+      "photos": {
+        "widget": "image"
+      },
+      "offer": {
+        "widget": "badge",
+        "options": {
+          "tones": {
+            "sale": "success",
+            "rent": "info"
+          }
+        }
+      }
+    },
+    "card": {
+      "title": "name",
+      "image": "photos",
+      "status": "offer",
+      "labels": false,
+      "lead": true,
+      "fields": [
+        "price",
+        [
+          "district",
+          {
+            "field": "bedrooms",
+            "unit": {
+              "one": "bedroom",
+              "other": "bedrooms"
+            }
+          }
+        ]
+      ]
+    },
+    "gallery": {
+      "opens": "gallery"
+    },
+    "map": {
+      "latitude": "lat",
+      "longitude": "lng",
+      "pin": {
+        "image": "photos"
+      },
+      "card": {
+        "title": "name",
+        "image": "photos",
+        "labels": false,
+        "lead": true,
+        "fields": [
+          "price",
+          "district"
+        ]
+      },
+      "view": "list"
+    }
+  },
+  "translations": {
+    "ar": {
+      "My listings": "إعلاناتي",
+      "An agent's listings as a gallery and on a map: each card and each pin shows its listing's cover, the first of its photos.": "إعلانات الوسيط معرضًا وعلى الخريطة: تُظهر كل بطاقة وكل دبوس غلاف إعلانه، أولى صوره.",
+      "Listing": "إعلان",
+      "Title": "العنوان",
+      "Offer": "العرض",
+      "For sale": "للبيع",
+      "For rent": "للإيجار",
+      "Price": "السعر",
+      "District": "الحي",
+      "Zamalek": "الزمالك",
+      "Maadi": "المعادي",
+      "New Cairo": "القاهرة الجديدة",
+      "Sheikh Zayed": "الشيخ زايد",
+      "Bedrooms": "غرف النوم",
+      "Photos": "الصور",
+      "The first photo is the cover: the listing's card and its pin on the map show it.": "الصورة الأولى هي الغلاف: تظهر في بطاقة الإعلان وفي دبوسه على الخريطة.",
+      "The home": "المنزل",
+      "Latitude": "خط العرض",
+      "Longitude": "خط الطول"
+    }
+  }
+}

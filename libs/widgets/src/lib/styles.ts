@@ -979,8 +979,15 @@ export function installStyles(document: Document): void {
  * and banner drawn by the main sheet's rules. Like possible duplicates', they go after the slots' and Import's (none
  * names another's parts) and before the themes', so a theme still reshapes their buttons, their box and their words'
  * type: rank 10 after the evidence's (5) moved the phone's on, the ranks from the themes' on moving on by one again.
+ *
+ * A photo set's (0.29, the photos part, loaded for a picture field drawn as `"widget": "photos"`) is new too, cut from no
+ * rule: its tiles, their cover mark, tools and captions, a tile lifted while it is dragged, and the crop and turn
+ * dialog, laid out alone, its tiles drawn after the files part's sheet (a file on its way is the files part's item,
+ * the add tile its picker). It goes after the limits' (none of those names its parts) and before the themes', so a
+ * theme still reshapes its buttons, its caption boxes, its dialog and their focus, and the quiet look quietens its
+ * boxes: rank 11, the ranks from the themes' on moving on by one.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, themes: 11, quiet: 12, picker: 13, head: 14, groups: 15, text: 16, surveyLooks: 17, cards: 18 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, photos: 11, themes: 12, quiet: 13, picker: 14, head: 15, groups: 16, text: 17, surveyLooks: 18, cards: 19 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

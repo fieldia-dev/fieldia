@@ -53,6 +53,25 @@ export interface FileValue {
   fileId?: RecordId;
   /** A signature that signs answers (its node's `options.signs`): when, by whom and the fingerprint of what it signed. */
   signed?: SignatureEvidence;
+  /** A photo set's words under a photo (`"widget": "photos"`, `options.captions`), as a person typed them. */
+  caption?: string;
+  /**
+   * A photo of a photo set cropped or turned (`"widget": "photos"`): the photo as it was before — its link, or its
+   * bytes where files travel inside the record — kept unless the page's `options.keepOriginal` is false. A crop again
+   * starts from it; Put back the original makes it the photo again. It holds no `original` of its own.
+   */
+  original?: FileValue;
+  /** What was done to `original` to make this photo: the turn, then the part kept. */
+  edit?: PhotoEdit;
+}
+
+/**
+ * A photo cropped or turned in a photo set, as done to its original: turned clockwise by `turn` degrees, then the part
+ * `crop` names kept — its left, top, width and height as fractions (0 to 1) of the turned photo's width and height.
+ */
+export interface PhotoEdit {
+  turn: 0 | 90 | 180 | 270;
+  crop: { x: number; y: number; width: number; height: number };
 }
 
 /**

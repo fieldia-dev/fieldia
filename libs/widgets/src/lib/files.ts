@@ -1,4 +1,4 @@
-import { describeTypes, fileProblem, fill, formatBytes, MESSAGES, saveRefused, uploadGoing, type Field, type FileUpload, type FileValue, type Form } from '@fieldia/core';
+import { describeTypes, fileProblem, fill, formatBytes, MESSAGES, saveRefused, uploadGoing, type Field, type FileUpload, type FileValue, type Form, type Messages } from '@fieldia/core';
 import { keepTabIn } from './focus-trap';
 import { goingItem, type GoingItem } from './files-going';
 import { shrinkable, shrinkFor, shrinkPhoto } from './shrink';
@@ -35,7 +35,7 @@ import { installFilesStyles } from './styles-files';
  * shows one; the names of the files a value holds meanwhile.
  */
 
-type FileField = Extract<Field, { type: 'binary' | 'image' }>;
+export type FileField = Extract<Field, { type: 'binary' | 'image' }>;
 
 const asText = (file: FileValue) => /^text\/|json|xml|csv/.test(file.type);
 const warned = new WeakSet<object>();
@@ -142,8 +142,9 @@ export function viewFiles(context: ViewFiles): void {
     free();
     const data = bytesOf(file);
     url = data ? URL.createObjectURL(new Blob([data], { type: file.type })) : (file.url ?? '');
-    title.textContent = file.name;
-    meta.replaceChildren(...(sized(file) ? [make('span', { class: 'fd-file-size' }, sized(file))] : []), all.length > 1 ? ` · ${fill(words.fileAt, { n: at + 1, total: all.length })}` : '');
+    // A photo of a set by its caption, where it has one, its file's name beside it.
+    title.textContent = file.caption || file.name;
+    meta.replaceChildren(...(file.caption ? [`${file.name} · `] : []), ...(sized(file) ? [make('span', { class: 'fd-file-size' }, sized(file))] : []), all.length > 1 ? ` · ${fill(words.fileAt, { n: at + 1, total: all.length })}` : '');
     download.href = url;
     download.download = file.name;
     const kind = kindOf(file);
@@ -177,6 +178,80 @@ export function viewFiles(context: ViewFiles): void {
   // Over the page, wearing the form's skin, scheme and direction.
   (context.home.closest('.fd-form') ?? doc.body).append(backdrop);
   box.focus();
+}
+
+/** A picture picked, shown from the file itself while it is on its way: an address to let go once it is stored. */
+export const preview = (file: File): string => (/^image\//.test(file.type) && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : '');
+
+/** What files picked for a field are taken with: the form and the field, its words, the files it holds now, and where it says why. */
+export interface FilesTaking {
+  form: Form;
+  name: string;
+  field: FileField;
+  doc: Document;
+  words: WidgetLabels;
+  messages: Messages;
+  /** The files the field holds now. */
+  held(): readonly FileValue[];
+  /** Why some were not taken, a line each: said at once, and again with a photo too large even once smaller. */
+  say(lines: string[]): void;
+}
+
+/**
+ * Files picked or dropped for a file or picture field, taken as the field takes them — a file field's list, a photo
+ * set alike: one of a kind it does not take, too large, already there or past the most is refused, said why; a photo
+ * made smaller first (the field's `shrink`), and checked for its size once it is. Where the data source stores files
+ * (`upload`), each goes to the store as it is picked: the uploads started, each with its file. Otherwise each is read
+ * into the field's value as its bytes, after the files it holds, for the record shown as they were picked.
+ */
+export async function takeFiles(taking: FilesTaking, chosen: readonly File[]): Promise<{ id: string; file: File }[]> {
+  const { form, name, field, doc, messages, words, say } = taking;
+  const several = field.multiple === true;
+  const most = several ? (field.maxFiles ?? Infinity) : 1;
+  // Picked on the record shown now: read once another is shown, the files are laid on no record.
+  const shown = stillShown(form);
+  const storing = form.canUpload();
+  // A photo made smaller is checked for its size once it is: a 12 MB photo may well fit.
+  const shrink = shrinkFor(field, storing);
+  const files = taking.held();
+  const going = several ? form.uploading(name) : [];
+  const kept: File[] = [];
+  const lines: string[] = [];
+  let over = 0;
+  for (const file of chosen) {
+    const checked = shrink && shrinkable(file) ? { ...field, maxSize: undefined } : field;
+    const problem = fileProblem(checked, file, messages) ?? (several && [...files, ...going, ...kept].some((f) => f.name === file.name) ? fill(words.alreadyAdded, { name: file.name }) : undefined);
+    if (problem) lines.push(problem);
+    else if ((several ? files.length + going.length : 0) + kept.length < most) kept.push(file);
+    else over++;
+  }
+  if (over && several) lines.push(fill(words.tooMany, { max: most, n: over }));
+  say(lines);
+  if (!kept.length) return [];
+  // Too large even once smaller: refused, saying so.
+  const smaller = async (file: File) => {
+    const made = shrink ? await shrinkPhoto(file, shrink, doc) : file;
+    const problem = fileProblem(field, made, messages);
+    if (problem) throw saveRefused({ kind: 'rule', message: problem });
+    return made;
+  };
+  if (storing) {
+    const ids = form.upload(name, kept, shrink ? { prepare: (file) => smaller(file as File) } : {});
+    return ids.map((id, at) => ({ id, file: kept[at] }));
+  }
+  const ready: File[] = [];
+  for (const file of kept) {
+    try {
+      ready.push(await smaller(file));
+    } catch (error) {
+      say([...lines, (error as Error).message]);
+    }
+  }
+  if (!ready.length) return [];
+  warnInline(form, ready);
+  const added = await Promise.all(ready.map(readFile));
+  if (shown()) form.setValue(name, several ? [...taking.held(), ...added] : added[0]);
+  return [];
 }
 
 function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
@@ -266,55 +341,15 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
 
     const take = async (chosen: File[]) => {
       if (readonly || !chosen.length) return;
-      // Picked on the record shown now: read once another is shown, the files are laid on no record.
-      const shown = stillShown(form);
-      const storing = form.canUpload();
-      // A photo made smaller is checked for its size once it is: a 12 MB photo may well fit.
-      const shrink = shrinkFor(field, storing);
-      const going = several ? goingNow() : [];
-      const kept: File[] = [];
-      const lines: string[] = [];
-      let over = 0;
-      for (const file of chosen) {
-        const checked = shrink && shrinkable(file) ? { ...field, maxSize: undefined } : field;
-        const problem = fileProblem(checked, file, messages) ?? (several && [...files, ...going, ...kept].some((f) => f.name === file.name) ? fill(words.alreadyAdded, { name: file.name }) : undefined);
-        if (problem) lines.push(problem);
-        else if ((several ? files.length + going.length : 0) + kept.length < most) kept.push(file);
-        else over++;
-      }
-      if (over && several) lines.push(fill(words.tooMany, { max: most, n: over }));
-      say(lines);
-      if (!kept.length) return;
-      // Too large even once smaller: refused, saying so.
-      const smaller = async (file: File) => {
-        const made = shrink ? await shrinkPhoto(file, shrink, doc) : file;
-        const problem = fileProblem(field, made, messages);
-        if (problem) throw saveRefused({ kind: 'rule', message: problem });
-        return made;
-      };
-      if (storing) {
-        // Each to the store as it is picked; its picture shown from the file meanwhile.
-        tell('');
-        const ids = form.upload(name, kept, shrink ? { prepare: (file) => smaller(file as File) } : {});
-        ids.forEach((upload, at) => previews.set(upload, /^image\//.test(kept[at].type) && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(kept[at]) : ''));
-        // Drawn as the form told of them, before their pictures were known: drawn again with them.
-        for (const upload of ids) goingItems.get(upload)?.item.element.remove();
-        for (const upload of ids) goingItems.delete(upload);
-        return drawGoing();
-      }
-      const ready: File[] = [];
-      for (const file of kept) {
-        try {
-          ready.push(await smaller(file));
-        } catch (error) {
-          say([...lines, (error as Error).message]);
-        }
-      }
-      if (!ready.length) return;
-      warnInline(form, ready);
-      const added = await Promise.all(ready.map(readFile));
-      if (!shown()) return;
-      form.setValue(name, several ? [...files, ...added] : added[0]);
+      const started = await takeFiles({ form, name, field, doc, words, messages, held: () => files, say }, chosen);
+      if (!started.length) return;
+      // Each to the store as it is picked; its picture shown from the file meanwhile.
+      tell('');
+      for (const { id: upload, file } of started) previews.set(upload, preview(file));
+      // Drawn as the form told of them, before their pictures were known: drawn again with them.
+      for (const { id: upload } of started) goingItems.get(upload)?.item.element.remove();
+      for (const { id: upload } of started) goingItems.delete(upload);
+      drawGoing();
     };
 
     // ---- files on their way to the store ------------------------------------------------

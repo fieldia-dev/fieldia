@@ -239,6 +239,47 @@ export interface WidgetLabels {
   fileUploaded: string;
   filesUploaded: string;
   notUploadedNamed: string;
+  /**
+   * A photo set (`"widget": "photos"`): how a photo is moved, with or without the cover's words; the cover's mark; Make
+   * cover, a photo's crop and its caption's box by its `{name}`, and the caption's words while it is empty; a photo by
+   * its words and place (`{n}` of `{total}`); a photo moved first, said; how many photos (`{n}`, of `{max}`), the most
+   * said before anyone tries, and how many were uploaded; a photo changed, its original kept or not; its original put
+   * back.
+   */
+  photosMove: string;
+  photosMoveCover: string;
+  photoCover: string;
+  makeCover: string;
+  coverNow: string;
+  editPhoto: string;
+  photoCaption: string;
+  captionPlaceholder: string;
+  photoNamed: string;
+  photoNamedCover: string;
+  photoCount: string;
+  photoCountOne: string;
+  photoCountOf: string;
+  upToPhotos: string;
+  photoUploaded: string;
+  photosUploaded: string;
+  photoChanged: string;
+  photoChangedKept: string;
+  originalBack: string;
+  /**
+   * A photo cropped and turned, in its dialog: its turns, the shapes to pick (any, or one), the part kept and how it
+   * moves, Apply and Put back the original; while the photo is read, and why it cannot be cropped, or was not made.
+   */
+  turnLeft: string;
+  turnRight: string;
+  cropShape: string;
+  cropAny: string;
+  cropArea: string;
+  cropKeys: string;
+  applyEdit: string;
+  putBackOriginal: string;
+  photoLoading: string;
+  photoUnreadable: string;
+  photoNotMade: string;
   /** A slider not slid yet, as a screen reader reads it. */
   notAnswered: string;
   /** A ranking's buttons for a line (`{label}`), and where it went, said aloud: `{n}` of `{total}`, counted from 1. */
@@ -669,6 +710,36 @@ const en: WidgetLabels = {
   fileUploaded: '1 file uploaded',
   filesUploaded: '{n} files uploaded',
   notUploadedNamed: '{name} was not uploaded',
+  photosMove: 'Drag a photo to move it, or press Alt and an arrow key.',
+  photosMoveCover: 'Drag a photo to move it, or press Alt and an arrow key. The first is the cover.',
+  photoCover: 'Cover',
+  makeCover: 'Make {name} the cover',
+  coverNow: '{name} is the cover now',
+  editPhoto: 'Crop and turn {name}',
+  photoCaption: 'Caption for {name}',
+  captionPlaceholder: 'Add a caption',
+  photoNamed: '{name}, photo {n} of {total}',
+  photoNamedCover: '{name}, the cover, photo {n} of {total}',
+  photoCount: '{n} photos',
+  photoCountOne: '1 photo',
+  photoCountOf: '{n} of {max} photos',
+  upToPhotos: 'up to {max} photos',
+  photoUploaded: '1 photo uploaded',
+  photosUploaded: '{n} photos uploaded',
+  photoChanged: '{name} changed',
+  photoChangedKept: '{name} changed: its original is kept',
+  originalBack: 'The original of {name} is back',
+  turnLeft: 'Turn left',
+  turnRight: 'Turn right',
+  cropShape: 'Shape',
+  cropAny: 'Any',
+  cropArea: 'The part of the photo kept',
+  cropKeys: 'Drag the part kept, or one of its corners. Arrow keys move it; Shift and an arrow key size it.',
+  applyEdit: 'Apply',
+  putBackOriginal: 'Put back the original',
+  photoLoading: 'Reading the photo…',
+  photoUnreadable: 'This photo cannot be cropped here: the page is not allowed to read it.',
+  photoNotMade: 'The photo could not be made. Try again.',
   notAnswered: 'Not answered',
   moveUp: 'Move {label} up',
   moveDown: 'Move {label} down',
