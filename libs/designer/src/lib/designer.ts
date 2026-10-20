@@ -16,6 +16,7 @@ import {
   type LabelPlace,
   type LayoutNode,
   type Option,
+  type SelectionOption,
   type OptionsFrom,
   type OptionsFromList,
   type PartLookKind,
@@ -479,6 +480,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    * `from: null` writes them here again.
    */
   setColumnChoices(id: string, column: string, choices: { labels?: string[]; from?: OptionsFromList | null }): boolean;
+  /**
+   * When a table's choice column's option shows on a line: a condition on the line's own columns, or `parent.` and a
+   * field of the record it is on, kept as the option's `invisible` (hidden when it holds); `null` or empty shows it
+   * always. An option a line's change hides is taken out of that line, and said.
+   */
+  setColumnOptionWhen(id: string, column: string, index: number, invisible: string | null): boolean;
   /** An option's picture and points for a quiz; `null` or empty takes either away. */
   setOptionDetails(id: string, index: number, details: OptionDetails): boolean;
   /** A matrix's rows or columns, by their words, in order. */
@@ -1742,6 +1749,18 @@ export function createDesigner(options: {
         // Typing an option's words, or a list's name, is one step.
         choices.labels ? `column-options:${id}:${column}:${choices.labels.length}` : choices.from ? `column-list:${id}:${column}:${JSON.stringify(choices.from.dependsOn ?? [])}` : null
       );
+    },
+
+    setColumnOptionWhen(id, column, index, invisible) {
+      return apply((draft) => {
+        const lines = fieldOfType(draft, id, ['one2many'], (w) => w.refusals.onlyLinesColumns, (w, label) => w.refusals.columnsFromModel(label));
+        const field = lines.fields[column];
+        if (field?.type !== 'selection') throw new Refusal((w) => w.refusals.notAChoiceColumn(field?.label ?? column));
+        const option = field.options[index] as SelectionOption | undefined;
+        if (!option) throw new Refusal((w) => w.refusals.noOption(index + 1));
+        if (invisible === null || !invisible.trim()) delete option.invisible;
+        else option.invisible = invisible.trim();
+      });
     },
 
     undo() {

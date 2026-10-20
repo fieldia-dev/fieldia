@@ -32,6 +32,8 @@ export function conditionToHide(condition: Condition): string {
 }
 
 const RULE = /^\s*([A-Za-z_]\w*)\s*(==|!=)\s*('[^']*'|True|False|-?\d+(?:\.\d+)?)\s*/;
+/** The same rule on a table's line, where a field may be the record's the line is on: `parent.kind`. */
+const LINE_RULE = /^\s*((?:parent\.)?[A-Za-z_]\w*)\s*(==|!=)\s*('[^']*'|True|False|-?\d+(?:\.\d+)?)\s*/;
 
 /** When a part shows of a record's being edited: always, only while it is edited (Flectra's oe_edit_only), or only while it is read. */
 export type ShownWhile = 'always' | 'editing' | 'reading';
@@ -55,8 +57,12 @@ export function withShownWhile(rest: string | undefined, mode: ShownWhile): stri
   return rest ? `(${rest}) or ${clause}` : clause;
 }
 
-/** The condition a node's `invisible` holds: null when it always shows, `custom` when it was written another way. When it shows of the record's being edited is said apart. */
-export function readCondition(shown: unknown): Condition | null | 'custom' {
+/**
+ * The condition a node's `invisible` holds: null when it always shows, `custom` when it was written another way. When
+ * it shows of the record's being edited is said apart. `lines`: a table line's own, whose rules may read the record's
+ * fields as `parent.` and one.
+ */
+export function readCondition(shown: unknown, lines = false): Condition | null | 'custom' {
   const invisible = splitShownWhile(shown).rest;
   if (invisible === undefined || invisible === null || invisible === '' || invisible === false) return null;
   if (typeof invisible !== 'string') return 'custom';
@@ -64,7 +70,7 @@ export function readCondition(shown: unknown): Condition | null | 'custom' {
   const joins = new Set<string>();
   let rest = invisible;
   for (;;) {
-    const match = RULE.exec(rest);
+    const match = (lines ? LINE_RULE : RULE).exec(rest);
     if (!match) return 'custom';
     const raw = match[3];
     const value = raw.startsWith("'") ? raw.slice(1, -1) : raw === 'True' ? true : raw === 'False' ? false : Number(raw);

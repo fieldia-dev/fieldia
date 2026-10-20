@@ -25,8 +25,11 @@ export function conditionEditor(
   targetId: string,
   what: 'page' | 'question' | 'group',
   kind: 'shows' | 'required' | 'readonly' = 'shows',
-  /** A rule kept elsewhere, such as when an answer rule holds: its own words, and where it is saved. Read as it holds. */
-  custom?: { lead: string; label: string; save(condition: Condition): boolean }
+  /**
+   * A rule kept elsewhere, such as when an answer rule holds: its own words, and where it is saved. Read as it holds.
+   * `lines`: a table line's option's, whose rules may test the record's fields (`parent.` and one).
+   */
+  custom?: { lead: string; label: string; save(condition: Condition): boolean; lines?: boolean }
 ) {
   const words = designer.words;
   const w = words.rulesUi;
@@ -99,7 +102,7 @@ export function conditionEditor(
     update(current: Page, before: FieldNode[], invisible: unknown) {
       page = current;
       available = before.filter((n) => choicesOf(current.fields[n.field], words) !== null);
-      const held = kind === 'shows' ? readCondition(invisible) : readHolds(invisible);
+      const held = kind === 'shows' ? readCondition(invisible, custom?.lines) : readHolds(invisible);
       // Always required is the Required box's, not a rule's.
       const condition = held === 'always' ? null : held;
       setHidden(customBox, condition !== 'custom');

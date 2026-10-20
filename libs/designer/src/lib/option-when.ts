@@ -1,4 +1,4 @@
-import type { FieldNode, LayoutNode, Page, SelectionOption } from '@fieldia/core';
+import type { Field, FieldNode, LayoutNode, Page, SelectionOption } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { choicesOf, conditionEditor } from './condition-editor';
 import { conditionToHide } from './conditions';
@@ -62,6 +62,63 @@ export function optionWhen(el: ElementFactory, designer: Designer): OptionWhen {
       setHidden(box, !has);
       // Begun only where another question has answers to test.
       setHidden(button, has || !others.some((node) => choicesOf(page.fields[node.field], designer.words) !== null));
+    },
+  };
+}
+
+/** A line's choice column's own condition on one of its options: its row's "Show when…" and its rules under it. */
+export interface LineOptionWhen {
+  button: HTMLElement;
+  box: HTMLElement;
+  update(page: Page, lines: Extract<Field, { type: 'one2many' }>, nodeId: string, column: string, index: number): void;
+}
+
+/**
+ * A table's choice column's option shown by a condition on the line: "Show when…" in the option's row begins one on
+ * another column of the line — or, as "… (the record)", a field of the record the line is on (`parent.`) — as a
+ * question's option does on another question. Saved as the line option's `invisible` (`setColumnOptionWhen`); an
+ * option a line's change hides is taken out of that line, and said under its cell.
+ */
+export function lineOptionWhen(el: ElementFactory, designer: Designer): LineOptionWhen {
+  const w = designer.words.options;
+  let at: { nodeId: string; column: string; index: number } | null = null;
+  let seen: { page: Page; others: FieldNode[]; invisible: SelectionOption['invisible'] } | null = null;
+  const save = (invisible: string | null) => !!at && designer.setColumnOptionWhen(at.nodeId, at.column, at.index, invisible);
+  const box = el('div', { class: 'fd-q-option-when-box', hidden: '' }, el('span', { class: 'fd-q-option-when-lead' }, w.shownWhen));
+  let editor: ReturnType<typeof conditionEditor> | null = null;
+  const rules = () => {
+    if (!editor) {
+      editor = conditionEditor(el, designer, '', 'question', 'shows', {
+        lead: w.showOptionWhen,
+        label: w.whenOptionShows,
+        save: (condition) => save(condition.rules.length ? conditionToHide(condition) : null),
+        lines: true,
+      });
+      box.append(editor.element);
+    }
+    if (seen) editor.update(seen.page, seen.others, seen.invisible);
+    return editor;
+  };
+  const button = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-option-when' }, w.showWhen);
+  button.addEventListener('click', () => rules().start());
+  return {
+    button,
+    box,
+    update(page, lines, nodeId, column, index) {
+      at = { nodeId, column, index };
+      const own = lines.fields[column];
+      const option = own?.type === 'selection' ? (own.options[index] as SelectionOption | undefined) : undefined;
+      // What a line's condition reads: the line's other columns, then the record's fields as `parent.` and one, said so.
+      const fields: Record<string, Field> = {};
+      for (const [name, def] of Object.entries(lines.fields)) if (name !== column) fields[name] = def as Field;
+      for (const [name, def] of Object.entries(page.fields)) if (def.type !== 'one2many') fields[`parent.${name}`] = { ...def, label: designer.words.questions.ofTheRecord(def.label || name) } as Field;
+      const others = Object.keys(fields).map((name) => ({ type: 'field', id: `${nodeId}:${column}:${name}`, field: name }) as FieldNode);
+      seen = { page: { ...page, fields } as Page, others, invisible: option?.invisible };
+      const has = option?.invisible !== undefined && option.invisible !== false;
+      if (has || editor) rules();
+      setHidden(box, !has);
+      // Begun only where a column or a field has answers to test.
+      setHidden(button, has || !others.some((node) => choicesOf(fields[node.field], designer.words) !== null));
     },
   };
 }

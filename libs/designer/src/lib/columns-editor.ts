@@ -1,6 +1,7 @@
 import { optionsList, type Field, type OptionsFromList, type Option } from '@fieldia/core';
 import { iconButton, type ElementFactory } from './chrome';
 import { columnKind, type Designer, type LineColumn } from './designer';
+import { lineOptionWhen, type LineOptionWhen } from './option-when';
 
 const KINDS: Exclude<LineColumn['kind'], 'other'>[] = ['text', 'number', 'date', 'yes-no', 'choice'];
 
@@ -10,8 +11,9 @@ let sources = 0;
  * A table of lines' columns in the properties panel: a label and a kind for
  * each, one to take away, and one more to add. A column of a type it does
  * not offer, such as a link, keeps its type and shows it as "Other". A choice
- * column has its choices under it: written here, or one of the app's lists,
- * changing with the line's other columns or the record's fields.
+ * column has its choices under it: written here — each with "Show when…", a
+ * condition on the line's other columns or the record's fields — or one of the
+ * app's lists, changing with the line's other columns or the record's fields.
  */
 export function columnsEditor(el: ElementFactory, designer: Designer, nodeId: string) {
   const w = designer.words.questions;
@@ -83,8 +85,9 @@ export function columnsEditor(el: ElementFactory, designer: Designer, nodeId: st
 }
 
 /**
- * A choice column's choices, under its row: written here — each option's words, one to add, one to take away — or
- * from one of the app's lists, by its name, and the line's other columns or the record's fields they change with.
+ * A choice column's choices, under its row: written here — each option's words, one to add, one to take away, and when
+ * it shows on a line (`lineOptionWhen`) — or from one of the app's lists, by its name, and the line's other columns or
+ * the record's fields they change with.
  */
 function choicesBox(el: ElementFactory, designer: Designer, nodeId: string, column: () => string) {
   const w = designer.words.questions;
@@ -126,9 +129,11 @@ function choicesBox(el: ElementFactory, designer: Designer, nodeId: string, colu
   typed.addEventListener('input', () => from && typed.value.trim() && set({ from: { ...from, list: typed.value.trim() } }));
   depends.addEventListener('change', () => from && set({ from: { list: from.list, dependsOn: [...depends.querySelectorAll<HTMLInputElement>('input:checked')].map((box) => box.value) } }));
   let drawn = '';
+  /** Each option row's "Show when…", by its row. */
+  const whens = new WeakMap<Element, LineOptionWhen>();
 
-  /** The options' boxes, as many as the options, each with its words. */
-  function drawOptions(options: Option[]) {
+  /** The options' boxes, as many as the options, each with its words and when it shows on a line. */
+  function drawOptions(options: Option[], lines: Extract<Field, { type: 'one2many' }>, own: string) {
     while (items.children.length > options.length) items.lastElementChild?.remove();
     while (items.children.length < options.length) {
       const index = items.children.length;
@@ -141,16 +146,21 @@ function choicesBox(el: ElementFactory, designer: Designer, nodeId: string, colu
         now.splice(index, 1);
         set({ labels: now });
       });
-      items.append(el('li', { class: 'fd-kind-item-row' }, input, remove));
+      const when = lineOptionWhen(el, designer);
+      const row = el('li', { class: 'fd-kind-item-row' }, input, remove, when.button, when.box);
+      whens.set(row, when);
+      items.append(row);
     }
+    const page = designer.getPage();
     options.forEach((option, i) => {
       const row = items.children[i] as HTMLElement;
       const input = row.querySelector('input') as HTMLInputElement;
       if (!focused(input)) input.value = option.label;
-      const remove = row.querySelector('button') as HTMLButtonElement;
+      const remove = row.querySelector(':scope > .fd-icon-button') as HTMLButtonElement;
       remove.setAttribute('aria-label', o.removeNamed(option.label));
       remove.title = remove.getAttribute('aria-label') ?? '';
       remove.hidden = options.length === 1;
+      whens.get(row)?.update(page, lines, nodeId, own, i);
     });
   }
 
@@ -165,7 +175,7 @@ function choicesBox(el: ElementFactory, designer: Designer, nodeId: string, colu
       listed.checked = !!from;
       writtenBox.hidden = !!from;
       listBox.hidden = !from;
-      if (!from) return drawOptions(def.options);
+      if (!from) return drawOptions(def.options, lines, own);
       const lists = designer.lists();
       // A name the app does not list, from a page written by hand, stays offered.
       const offered = lists.some((l) => l.name === from?.list) || !lists.length ? lists : [...lists, { name: from.list, label: from.list }];

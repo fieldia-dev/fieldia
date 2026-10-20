@@ -491,6 +491,9 @@ export const DESIGNER_CSS = /* css */ `
 .fd-column-choices { grid-column: 1 / -1; display: grid; gap: 6px; padding-inline-start: 10px; margin-block-end: 4px; border-inline-start: 2px solid var(--fd-border); }
 .fd-column-written { display: grid; gap: 6px; justify-items: start; }
 .fd-column-choices[hidden], .fd-column-written[hidden] { display: none; }
+/* An option of a choice column shown by a condition on the line: Show when… under its words, its rules under that. */
+.fd-column-written li > .fd-q-option-when { grid-column: 1 / -1; justify-self: start; border: 0; background-color: transparent; box-shadow: none; padding: 0; min-height: 0; font-weight: 400; font-size: 12.5px; }
+.fd-column-written li > .fd-q-option-when-box { grid-column: 1 / -1; padding-inline-start: 0; }
 .fd-props-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-block-start: 4px; border-block-start: 1px solid var(--fd-border); }
 .fd-properties-hint { color: var(--fd-muted); font-size: 13px; margin: 0; }
 .fd-kind-note { font-size: 12px; margin-block-start: -4px; }

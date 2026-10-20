@@ -243,7 +243,10 @@ Each option of a choice has **Show when…** in its row: a condition on another
 question's answer, drawn under the row, its rules taken away to show it always — kept
 as the option's `invisible` (`designer.setOptionDetails(id, index, { invisible })`,
 the one command an option's details go through: its picture, points, places and
-condition). A choice's **Choices** may be **Picked in another
+condition). A table's Choice column has the same **Show when…** in each of its
+options' rows, its condition on the line's other columns or — said "… (the record)"
+— the record's fields (`parent.`), kept as the line option's `invisible`
+(`designer.setColumnOptionWhen(id, column, index, invisible)`). A choice's **Choices** may be **Picked in another
 question**: which question, and the answers picked there or those not
 (`optionsFrom: { field, picked }`); its own options follow them.
 

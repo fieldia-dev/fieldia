@@ -5,8 +5,8 @@ import { inAdvanced, watch } from './designer-support';
 
 /**
  * The designer's per-option rules and functions, as a person meets them on a screen: an option's row offers Show
- * when…, its condition on another question's answer drawn under the row; a choice's options carried from another
- * question; and a formula's functions listed by what they work on, the app's own after them, a value of a kind a
+ * when…, its condition on another question's answer drawn under the row — a table's Choice column's option on the
+ * line's columns or the record's fields; a choice's options carried from another question; and a formula's functions listed by what they work on, the app's own after them, a value of a kind a
  * function does not take said in words. The demos give the designer their own function, districtPrice.
  */
 
@@ -62,6 +62,40 @@ test.describe('the designer: options that follow the answers, and functions', ()
     const page_ = await built(page);
     const features = page_.fields[Object.keys(page_.fields).find((name) => page_.fields[name].label === 'Features') as string];
     expect(features.options[0].invisible).toMatch(/ != 'villa'$/);
+  });
+
+  test('a table’s Choice column: Show when… in an option’s row, on the line’s columns or the record’s fields', async ({ page }) => {
+    // A table's columns are an Advanced setting.
+    await inAdvanced(page);
+    await page.reload();
+    const ids = await questions(page, [{ kind: 'multiple-choice', label: 'Plan', options: ['Free', 'Pro'] }]);
+    const lines = await page.evaluate(() => {
+      const designer = (window as any).fieldiaDesigner.designer;
+      const id = designer.addQuestion('lines');
+      designer.setLineColumns(id, [{ name: 'connection', label: 'Connection', kind: 'choice' }, { name: 'tool', label: 'Tool', kind: 'choice' }]);
+      designer.setColumnChoices(id, 'connection', { labels: ['Gmail', 'Slack'] });
+      designer.setColumnChoices(id, 'tool', { labels: ['Send an email', 'Read the inbox'] });
+      return id as string;
+    });
+    await card(page, lines).click();
+    const rows = panel(page).locator('.fd-columns > li').nth(1).locator('.fd-column-written .fd-kind-item-row');
+    await expect(rows.first().locator('input')).toHaveValue('Send an email');
+    await rows.first().getByRole('button', { name: 'Show when…' }).click();
+    const rule = rows.first().locator('.fd-q-option-when-box');
+    await expect(rule).toBeVisible();
+    const what = rule.locator('.fd-when-rule select').first();
+    // The line's other column first, then the screen's own questions with answers, each said to be the record's.
+    await expect(what.locator('option').nth(1)).toHaveText('Connection');
+    await expect(what.locator('option').last()).toHaveText('Plan (the record)');
+    await what.selectOption({ label: 'Plan (the record)' });
+    await rule.locator('.fd-when-rule select').nth(1).selectOption({ label: 'is Pro' });
+    await expect(rows.nth(1).locator('.fd-q-option-when-box')).toBeHidden();
+    await screen(page, 'designer-column-option-show-when', { viewport: true });
+    const page_ = await built(page);
+    const plan = Object.keys(page_.fields).find((name) => page_.fields[name].label === 'Plan') as string;
+    const tool = Object.values(page_.fields as Record<string, { type: string; fields?: Record<string, { options: { invisible?: string }[] }> }>).find((f) => f.type === 'one2many')?.fields?.['tool'];
+    expect(tool?.options[0].invisible).toBe(`parent.${plan} != 'pro'`);
+    expect(ids['Plan']).toBeTruthy();
   });
 
   test('a choice’s options picked in another question, which answers, its own after them', async ({ page }) => {

@@ -122,3 +122,78 @@ describe('a table’s choice column, in the panel', () => {
     expect(properties.textContent).toContain('يقدّم التطبيق لكل بند اختياراته');
   });
 });
+
+describe('a choice column’s option shown by a condition on the line', () => {
+  /** An agent's tools: a line's connection and its tool, the agent's plan a question of the screen. */
+  function agent(locale?: 'ar') {
+    const designer = createDesigner({ page: blankPage('screen', 'Agent', locale ? { locale } : {}), lists: LISTS, ...(locale ? { locale } : {}) });
+    const plan = designer.addQuestion('multiple-choice') as string;
+    designer.updateQuestion(plan, { label: locale ? 'الخطة' : 'Plan' });
+    designer.setOptions(plan, locale ? ['مجانية', 'مدفوعة'] : ['Free', 'Pro']);
+    const lines = designer.addQuestion('lines') as string;
+    designer.setLineColumns(lines, [{ name: 'connection', label: locale ? 'الاتصال' : 'Connection', kind: 'choice' }, { name: 'tool', label: locale ? 'الأداة' : 'Tool', kind: 'choice' }]);
+    designer.setColumnChoices(lines, 'connection', { labels: ['Gmail', 'Slack'] });
+    designer.setColumnChoices(lines, 'tool', { labels: ['Send an email', 'Read the inbox'] });
+    const page = () => designer.getPage();
+    const planField = () => Object.keys(page().fields).find((name) => page().fields[name].type === 'selection') as string;
+    const tool = () => linesOf(page(), lines).fields['tool'] as Field & { options: { label: string; invisible?: string }[] };
+    return { designer, lines, page, planField, tool };
+  }
+
+  it('is written as the line option’s invisible, on the line’s columns or the record’s fields, and taken away', () => {
+    const { designer, lines, page, planField, tool } = agent();
+    expect(designer.setColumnOptionWhen(lines, 'tool', 0, "connection != 'option_1'")).toBe(true);
+    expect(tool().options[0].invisible).toBe("connection != 'option_1'");
+    expect(designer.setColumnOptionWhen(lines, 'tool', 1, `parent.${planField()} != 'pro'`)).toBe(true);
+    expect(checkPage(page()).ok).toBe(true);
+    expect(designer.setColumnOptionWhen(lines, 'tool', 0, null)).toBe(true);
+    expect(tool().options[0].invisible).toBeUndefined();
+    // What reads no column of the line, nor the record's field, is refused in words; the option is as it was.
+    expect(designer.setColumnOptionWhen(lines, 'tool', 0, "account != 'x'")).toBe(false);
+    expect(designer.getState().issues.join(' ')).toMatch(/reads "account", which is not a field of the lines/);
+    expect(tool().options[0].invisible).toBeUndefined();
+    expect(designer.setColumnOptionWhen(lines, 'tool', 5, "connection != 'x'")).toBe(false);
+    expect(designer.getState().issues).toEqual(['There is no option 6']);
+    expect(designer.setColumnOptionWhen(lines, 'nope', 0, "connection != 'x'")).toBe(false);
+  });
+
+  it('offers Show when… in each option’s row: the line’s other columns, then the record’s fields, said so', () => {
+    const { designer, lines, planField, tool } = agent();
+    designer.select(lines);
+    const { host } = mount(designer, { mode: 'advanced' });
+    const properties = host.querySelector('.fd-properties') as HTMLElement;
+    const toolRows = () => [...properties.querySelectorAll<HTMLElement>('.fd-columns > li')][1].querySelectorAll<HTMLElement>('.fd-column-written .fd-kind-item-row');
+    expect(toolRows()).toHaveLength(2);
+    button(toolRows()[0], 'Show when…')?.click();
+    // Begun on the first that has answers to test: the line's connection, its first answer.
+    expect(tool().options[0].invisible).toBe("connection != 'option_1'");
+    const rule = toolRows()[0].querySelector('.fd-q-option-when-box') as HTMLElement;
+    expect(rule.hidden).toBe(false);
+    const [what, answer] = [...rule.querySelectorAll<HTMLSelectElement>('.fd-when-rule select')];
+    expect([...what.options].map((o) => o.textContent)).toEqual(['Always', 'Connection', 'Plan (the record)']);
+    expect(answer.selectedOptions[0].textContent).toBe('is Gmail');
+    // The record's plan instead: written as parent., read back as its rule.
+    choose(what, `parent.${planField()}`);
+    expect(tool().options[0].invisible).toBe(`parent.${planField()} != 'free'`);
+    const [again] = [...(toolRows()[0].querySelector('.fd-q-option-when-box') as HTMLElement).querySelectorAll<HTMLSelectElement>('.fd-when-rule select')];
+    expect(again.selectedOptions[0].textContent).toBe('Plan (the record)');
+    // The other option shows always: its own Show when… to begin one, nothing under it.
+    expect((toolRows()[1].querySelector('.fd-q-option-when-box') as HTMLElement).hidden).toBe(true);
+    expect(button(toolRows()[1], 'Show when…')).toBeDefined();
+    // Back to Always: shown always again.
+    choose(again, '');
+    expect(tool().options[0].invisible).toBeUndefined();
+  });
+
+  it('says it in Arabic', () => {
+    const { designer, lines } = agent('ar');
+    designer.select(lines);
+    const { host } = mount(designer, { mode: 'advanced' });
+    const properties = host.querySelector('.fd-properties') as HTMLElement;
+    const row = [...properties.querySelectorAll<HTMLElement>('.fd-columns > li')][1].querySelector('.fd-column-written .fd-kind-item-row') as HTMLElement;
+    button(row, 'اعرضه عندما…')?.click();
+    const box = row.querySelector('.fd-q-option-when-box') as HTMLElement;
+    expect(box.textContent).toContain('يظهر عندما');
+    expect([...(box.querySelector('.fd-when-rule select') as HTMLSelectElement).options].map((o) => o.textContent)).toContain('الخطة (السجل)');
+  });
+});
