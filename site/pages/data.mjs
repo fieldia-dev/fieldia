@@ -321,6 +321,14 @@ changes.lines['child_ids'] = [
 changes.links['tag_ids'] = [{ op: 'link', id: 3 }, { op: 'unlink', id: 4 }];   // or { op: 'set', ids }, { op: 'clear' }`
 )}
 
+<h2 id="languages">A text kept in several languages</h2>
+<p>A field with ${c('translate')} (<a href="/fields/#languages">one text in several languages</a>) holds an object of each language's text, ${c('{ "ar": "…", "en": "…" }')}, a language not typed yet left out — what ${c('load')}, ${c('list')} and ${c('save')} carry, as any value. No new method: three things are yours to do.</p>
+<ul>
+  <li><strong>Keep each language as typed.</strong> A server that keeps translations apart — Flectra's translated fields (${c('get_field_translations')}, ${c('update_field_translations')}), a column per language — builds the object as it loads and splits it as it saves. A plain text loaded for such a field is read as its first language's: nothing is lost, and the form saves the object once it is changed.</li>
+  <li><strong>Find it in any of its languages.</strong> A search's ${c('ilike')}, ${c('like')}, ${c('=')}, ${c('startswith')} on such a field holds where it holds in one of them, so a buyer's <em>villa</em> and <em>فيلا</em> find the same listing; a link's name searched in either finds its record.</li>
+  <li><strong>One text where one is said.</strong> A list may give the object, and the page shows each row in its reader's language, another's marked; or it may give the reader's text alone, which the page shows as it is. A link's ${c('label')} and a list's order are your server's to read in its person's language — the memory source's ${c('language')} option does so.</li>
+</ul>
+
 <h2 id="versions">Two people, one record: versions and conflicts</h2>
 <p>When two people open the same record and both save, the second save would wipe out the first without a word. A source that keeps versions stops that. Its ${c('load')} returns the record with the version it was read at, through ${c('loadedRecord')}; the form sends that version back with each save, as ${c('version')}, and keeps the one each save returns. When the record changed in between, the source throws a ${c('ConflictError')} naming who changed it, when, and — if it can — the record as they left it:</p>
 ${code(
@@ -464,6 +472,7 @@ dataSource.responses;   // every submitted response, for tests
 dataSource.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });   // as someone else, on another screen`
 )}
 <p>Its ${c('limits')} counts the responses it takes — and those ${c('answeredElsewhere(pageId, values)')} says someone else sent meanwhile, never this person's — over the starting counts its ${c('limits')} option gives by page (${c("{ 'event-signup': { responses: 147, perChoice: { session: { morning: 28 } } } }")}), and a record page's model's records but the one edited. Its ${c('saveDraft')} keys drafts ${c('draft-1')}, ${c('draft-2')}…, kept in ${c('dataSource.drafts')} (each with its page and ${c('later')}), answering Continue later with ${c('draftLink(key)')}'s link where given; ${c('loadDraft')} finds them, and those its ${c('drafts')} option starts with. A send lets its draft go.</p>
+<p>A text kept in several languages (${c('{ ar, en }')}) is found by a search in any of them, and read in its ${c('language')} option's — the reader's, ${c("createMemoryDataSource({ language: 'ar' })")} — where it says one text: a link's name, a list's order; the first typed where it has none there, or the option is left out.</p>
 <p>Its ${c('groups')} and ${c('totals')} group a date by the span it falls in (${c('interval')}), and total an amount in one currency only where ${c('currencies')} names the field holding each record's (see <a href="/lists/#totals">lists that add up</a>).</p>
 <p>Its ${c('slots')} answers from booking schedules, with ${c('scheduleSlots')}: the hours each day of the week on a zone's clock, a booking's length and the minutes kept free after one, holidays, and the records its bookings are — each car's own, with ${c('same')} — a time the clocks skip that day left out, and times gone by too:</p>
 ${code(

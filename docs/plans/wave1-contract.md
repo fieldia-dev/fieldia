@@ -914,3 +914,39 @@ In plain words:
   `limits` option's starting counts, a record page's model's records but the one edited; `saveDraft` keys drafts
   `draft-1`, `draft-2`… (`drafts` shows them, with `later`), with `draftLink(key)`'s link on "Continue later";
   `loadDraft` finds them, and the `drafts` option's. Tests: `libs/core/src/lib/record/taking.spec.ts`, `drafts.spec.ts`.
+
+## 19. A text kept in several languages (Wave 5, lane w5-two-languages)
+
+No new member: a char, text or html field with `translate` (`["ar", "en"]`) holds an object of each language's text
+by its tag, which every member that carries values carries as it is.
+
+```ts
+type Translated = Record<string, string>;      // { ar: "شقة بإطلالة على النيل", en: "Nile-view flat" }
+// load → LoadedRecord.values.title: Translated | string | null
+// list → ListedRecord.values.title: Translated | string | null
+// save → SaveRequest.values.title / changes.values.title: Translated | null
+```
+
+In plain words:
+
+- **The value.** Each language a person typed in, by its tag as the field names it; a language not typed yet is left
+  out (never an empty text kept), and a text typed in none is `null`. Nothing is ever translated by Fieldia: a language
+  with no text is shown as another's, said to be another's.
+- **The app's own shape, through the source.** A server that keeps translations apart — Flectra's translated fields
+  (`get_field_translations` / `update_field_translations`), a column per language (`name_ar`, `name_en`) — builds the
+  object in `load` and `list`, and splits it in `save`. A plain text given for such a field is read as its first
+  language's (`translate[0]`) and saved as the object once it is changed: a record kept before the field had languages
+  loses nothing.
+- **Lists.** A row may carry the object — the page shows it in the reader's language (the page's), else in the
+  field's first it was typed in, marked with that language — or the reader's text alone, shown as it is.
+- **Search.** A condition on such a field (`ilike`, `like`, `=`, `startswith`, `endswith`, `in`) holds where it holds in
+  one of its languages: "villa" and "فيلا" find the same listing; a link's name searched (`search`) finds its record by
+  its name in any language. `!=` and `not in` hold where they hold in the record read in one of its languages.
+- **One text where one is said** — a link's `label`, a list's order — is the source's to read in its person's
+  language, as its server would.
+- **Required.** `required` asks for every language of `translate`, `requiredIn` for some; the form checks each before a
+  save, and a source that refuses one says it as any rule (`saveRefused`, its field's message).
+- **The memory source** keeps the object as given, finds a record by a text in any of its languages (each record read in
+  each of its languages, `matchesFilter` on each), a link by any of its names, and reads one text — a link's name, a
+  list's order — in its `language` option's (the reader's tag: the demos pass the page's), else the first typed.
+  `matchesFilter` itself judges one text, as before. Tests: `libs/core/src/lib/record/languages.spec.ts`.

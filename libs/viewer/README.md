@@ -408,6 +408,16 @@ messages (`formOpens`, `formClosed`, …). See
 [opening, closing and limiting a form](https://fieldia.dev/data/#limits) and
 [save and resume](https://fieldia.dev/data/#drafts).
 
+## One text in several languages
+
+A field with `translate` (`["ar", "en"]`, @fieldia/core's README) is drawn as a
+switch over its box, the page's language first, each language typed by a person;
+its page asks for the languages part before it is drawn (`partsFor`), and a list's
+cells and cards show the text in the page's language, else another's marked with
+it, written its own way. A save refused in a language shows that language and takes
+the focus to its box. A related list's or a many2many's records' fields may say
+`translate` too: their cells read the same way.
+
 ## Lists
 
 A page whose layout is a `list` shows its records as a table: pages, sorting,

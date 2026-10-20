@@ -2,9 +2,9 @@ import { SIZES } from '../facts.mjs';
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint'],
-  ['text', 'Several lines of text', 'copy, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size'],
-  ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', ''],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint, translate, requiredIn'],
+  ['text', 'Several lines of text', 'copy, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, translate, requiredIn'],
+  ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', 'translate, requiredIn'],
   ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],
   ['float', 'A decimal number', 'progressbar, label, duration (HH:MM), percentage, timer, place (a latitude, with @fieldia/map)', 'min, max, digits'],
   ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits, money'],
@@ -68,6 +68,30 @@ ${code(
   <li><strong>A list writes them as people read them.</strong> A list's column with ${c('"cells": { "phone": { "widget": "phone" } }')} on a page with ${c('phone')} shows ${c('02 2345 6789')} and ${c('+971 50 123 4567')}; a table's phone cells are the phone box.</li>
 </ul>
 <p>The country table — every country's dialling code, the lengths its numbers have by how they start, and how they are written in groups — is made from libphonenumber's metadata and comes with the box in a part of its own, ${c('fieldia.phone.js')} (${SIZES.phone} KB gzipped), the first time a page shows such a phone; libphonenumber's own smallest build is 34. A page that says nothing of phones never downloads it. In the designer: the screen's Phone numbers, Phone country to start on and Phone numbers shown; a phone field's Country to start on and Shown.</p>
+
+<h2 id="languages">One text in several languages</h2>
+<p>A listing's title read on a portal in Arabic and in English, a service's name on a clinic's site in both: a line, a paragraph or formatted text says the languages it is kept in, ${c('translate')}, each typed by a person — Fieldia never translates it, nor offers to. Its value is an object of each language's text by its tag, a language not typed yet left out, none typed no value at all.</p>
+${code(
+  'json',
+  `
+{
+  "fields": {
+    "title": { "type": "char", "label": "Title", "translate": ["ar", "en"], "required": true, "size": 80 },
+    "description": { "type": "text", "label": "Description", "translate": ["ar", "en"], "required": true, "requiredIn": ["en"] }
+  }
+}
+
+// its value, as the data source loads and saves it
+{ "title": { "ar": "شقة بإطلالة على النيل", "en": "Nile-view flat" }, "description": { "en": "Three bedrooms." } }`
+)}
+<ul>
+  <li><strong>A switch over its box</strong>, one press for each language, named in itself — <em>English</em>, <em>العربية</em> — the reader's language first (the page's), and the box under it that language's: the field's own box, its most characters counted and its keys held as any, written its own way — Arabic right to left on an English page, English left to right on an Arabic one. The arrows move along the switch (mirrored right to left), Home and End to its ends. A language not typed yet has a ring on its press, and one a required answer still needs a dot; a screen reader is told which.</li>
+  <li><strong>Required in the languages the page says.</strong> ${c('required')} asks for every language, ${c('requiredIn')} for some of them: <em>Title is required in Arabic</em>, <em>Description is required in English</em>; a save refused so takes the focus to the language still to type. Each language's text is held to the field's ${c('size')} and ${c('pattern')}, the problem naming the language: <em>Title (English) is 4 characters too long: shorten it to 80</em>.</li>
+  <li><strong>Read in the reader's language.</strong> A list's cell and a card show the text in the reader's language — else in the field's first it was typed in, marked with that language's code (<em>EN</em>), said as <em>in English</em> — written its own way; a value shown as words (a record's name in its crumb, a sentence) is the reader's too.</li>
+  <li><strong>Found in either.</strong> A list's search for <em>villa</em> or <em>فيلا</em> finds it: a condition on such a text holds where it holds in any of its languages (the data source's to answer so; the memory source does).</li>
+  <li><strong>A source that keeps one language.</strong> A plain text loaded for such a field is read as its first language's, and saved as the object once changed. An app whose server keeps each language apart — Flectra's translated fields, a ${c('name_ar')} and a ${c('name_en')} column — builds the object as it loads and splits it as it saves.</li>
+</ul>
+<p>It comes in a part of its own, ${c('fieldia.languages.js')}, with its checks, the first time a page with one is shown; a page with none never downloads it. A table's line keeps one language. In the designer: a short answer's, a paragraph's or formatted text's <em>Typed in several languages</em>, its languages, and, while it is required, <em>Required in</em>. <a href="/demos/plain/?page=listing-languages&amp;record=2&amp;skin=underline">See a listing in Arabic and English</a>, and <a href="/demos/plain/?page=services-languages&amp;skin=underline">a clinic's services named in both</a>.</p>
 
 <h2 id="time-zones">Time zones</h2>
 <p>A page may name the time zone its dates and times are in — a branch's, a clinic's — by its IANA name, and a date and time field its own: a flight's departure in its airport's. A date and time is kept as an instant, as always; it is shown and typed on the zone's clock wherever the person is, with the zone's short name beside its box where the browser's zone is another, and after it in words: <em>15 Oct 2026, 14:30 CEST</em>, which a paste reads back. Today is the zone's day: a date's default ${c('"today"')}, its earliest and latest counted from today, ${c('today()')}, a rule's past and future, and a booking's days. Without ${c('timeZone')}, the browser's own zone, as before.</p>

@@ -120,6 +120,18 @@ close before the open, or limits on a record's screen, are refused in words),
 `designer.setContinueLater(on)` and `designer.setOptionDetails(id, index, {
 seats })` the rest; Publish lists each change.
 
+## A text typed in several languages
+
+A short answer's, a paragraph's or formatted text's own settings offer *Typed in
+several languages*: on, it is typed in the page's language and English (or Arabic,
+on an English page), its languages as chips — one added from the common ones, one
+taken away while three or more are kept — and, while it is required, *Required in*,
+the languages a required answer is typed in (none refused). `setLanguages(id,
+["ar", "en"] | null)` and `setRequiredIn(id, ["en"] | null)` are the commands; a
+model's field keeps the model's, and a field made a paragraph or formatted text
+keeps its languages. Publish says what changed: "“Title”: typed in Arabic and
+English".
+
 ## Trying a field's rules
 
 Under a field's answer rules — on the panel's Rules tab, and in a survey
