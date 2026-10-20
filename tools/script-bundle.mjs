@@ -1015,6 +1015,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
+// A record's approvals (0.29, w5-approvals), what every page with `approval` needs before its part comes, the rest in
+// fieldia.approvals.js: the form asking for them after a load and a save, its fields locked while one waits (the node's
+// state, fieldReadonly), refreshApprovals, decide and approvalLock, the part asked for (0.63); the viewer placing its
+// band under a sheet's alerts and a lock saying why (0.34); the parts' declarations, partsFor and the page's checks owed
+// until the part comes (0.31); the memory source's two members named (0.02): 506.76 measured before, 507.99 after, to
+// 508.0.
 const BUDGET_KB = 508.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1249,6 +1255,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
+// A record's approvals (0.29, w5-approvals; listed with the raw budget above) — every page's hook: asked after a load
+// and a save, fields locked while one waits, the form's three methods, the band placed and a lock's words, the parts
+// declared and their checks owed — 166.15 measured before, 166.77 after, to 166.8. A page with approval takes 6.78 more
+// in fieldia.approvals.js.
 const GZIP_BUDGET_KB = 166.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -1430,7 +1440,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The owner's walk of 0.27 mended: a question's required message, and a refused signature's "ready to sign" and Sign
 // now — Arabic's 77.58 and 13.24 measured before, 77.88 and 13.29 after, to 77.9 and 13.3; German's 36.14 and 11.60 to
 // 36.27 and 11.64, to 36.3 and 11.7; French's 36.60 and 11.64 to 36.75 and 11.70, to 36.8 and 11.7.
-const ADD_ON_BUDGET_KB = { ar: [82, 14], de: [39, 12.5], fr: [39, 12.5] };
+// A record's approvals (0.29, w5-approvals): where it stands, its levels, Approve and Reject, Reject's question, what
+// stays open, its history, a field's lock and a rejection with no reason — 37 words in each — Arabic's 77.88 and 13.29
+// measured before, 81.25 and 13.82 after, to 81.3 and 13.9; German's 36.27 and 11.64 to 38.01 and 12.11, to 38.1 and
+// 12.2; French's 36.75 and 11.70 to 38.53 and 12.16, to 38.6 and 12.2.
+const ADD_ON_BUDGET_KB = { ar: [81.3, 13.9], de: [38.1, 12.2], fr: [38.6, 12.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1823,7 +1837,15 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [30, 10], print: [16.9, 5.4], memory: [18.7, 6.7], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// A record's approvals (0.29, w5-approvals), a part of their own — the form's (asked of the source, a decision taken on
+// the record as saved, its fields locked while it waits, a moment of its history in words, the page's checks of
+// `approval`) and the viewer's (the band over the record, its levels, Approve and Reject, Reject's question, what stays
+// open, its history folded, and their sheet) in one script — new, in fieldia.approvals.js (19.79 and 6.78, to 19.8 and
+// 6.8), loaded with the page's parts where it has `approval`. In the main script it would have added them to every page.
+// The memory source's approvals and decide, an approval engine in small (in turn or together, any or all, a rejection
+// ending a round, a round each time a record is sent again) — memory 16.07 and 5.71 measured before, 18.68 and 6.68 after,
+// to 18.7 and 6.7.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [19.8, 6.8], print: [16.9, 5.4], memory: [18.7, 6.7], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
