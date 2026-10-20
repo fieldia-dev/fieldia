@@ -1,4 +1,4 @@
-import type { ButtonNode, ListCard, ListNode, MapCard, Pin, StatButton } from './layout';
+import type { ButtonNode, ListCard, ListNode, MapCard, Pin, RelatedNode, StatButton } from './layout';
 import type { Field, FilterItem, LineField } from './field';
 import type { Page } from './page';
 import { BULK_KINDS, bulkSettable } from './bulk-edit';
@@ -8,7 +8,8 @@ import type { Scope } from './references';
 /**
  * The checks of a list page's own settings (`layout.type: "list"`): its filters, buttons, calendar, map, filter bar,
  * rows' cards and rules, Edit and Import — the reference check hands over its own tools, so what is said reads as the
- * rest of its findings. What a related list shares with a list (its columns, its card) stays the reference check's.
+ * rest of its findings — and a related list's, which the list part draws too. What a related list shares with a list
+ * (its columns, its card) stays the reference check's.
  * In the one-tag script they come with the list part, which draws what they check: a list page's are run once it came,
  * before the page is drawn (later-checks.ts); the packages' `checkPage` and `validatePage` run them at once.
  */
@@ -25,6 +26,14 @@ export interface ListTools {
   checkPlace(at: { point?: string; latitude?: string; longitude?: string }, path: string, scope: Scope, pin?: Pin, card?: MapCard): void;
   /** Where the page's own expressions read. */
   here(): Scope;
+  /** Whether the page checked is a table's line's own form. */
+  readonly onLine: boolean;
+  /** A money field's currency: a field beside it, or on a line `parent.` and a field of the record. */
+  checkCurrency(name: string, path: string, fields: Record<string, Field | LineField>, lines: string | undefined, parent?: Record<string, Field | LineField>): void;
+  /** A time zone the browser knows. */
+  checkZone(zone: unknown, path: string): void;
+  /** A filter's conditions, each valueFrom one that reads. */
+  checkFilterItem(item: FilterItem, at: string, scope: Scope): void;
   /** Said where checks come in a part that has not come (the one-tag script's: later-checks.ts): they are owed. */
   owe(part: string): void;
 }
@@ -235,3 +244,43 @@ function checkListMap(map: NonNullable<ListNode['map']>, path: string, tools: Li
   }
 }
 
+/** Whether a record holds a key of its own. */
+const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
+
+/**
+ * A related list: on a record's page, its columns, order, search, cells, card and rows' rules of its own records'
+ * fields, its link to this record a link of theirs to this model where its fields name it, and its filter's
+ * `valueFrom` this record's.
+ */
+export function checkRelated(node: RelatedNode, path: string, tools: ListTools): void {
+  // The quick check reads no shapes: a part with nothing to go by is said here.
+  if (typeof node.model !== 'string' || typeof node.field !== 'string' || !Array.isArray(node.columns) || !node.fields || typeof node.fields !== 'object') {
+    return tools.report(path, 'a related list needs the model of its records, their link to this record (field), their fields and its columns');
+  }
+  const model = tools.page.data.kind === 'record' ? tools.page.data.model : null;
+  if (!model || tools.onLine) tools.report(path, 'a related list shows the records that point at a record: it belongs on a record’s page');
+  const fields = node.fields as Record<string, Field | LineField>;
+  tools.checkListed(node, fields, path);
+  // On a phone its rows are cards, as a list's: of its own records' fields.
+  if (node.card) tools.checkListCard(node.card, `${path}.card`, fields);
+  // Its rows' own rules, as a list's, each read on the row's record: its own fields, its id, the person, the context.
+  const row: Scope = { fields };
+  node.rowTones?.forEach((tone, i) => tools.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when'], row));
+  tools.checkModifiers(node, path, ['rowBold'], row);
+  node.rowButtons?.forEach((button, i) => {
+    tools.claim(button.id, `${path}.rowButtons[${i}]`);
+    tools.checkPress(button, `${path}.rowButtons[${i}]`);
+    tools.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible'], row);
+  });
+  const link = has(fields, node.field) ? fields[node.field] : undefined;
+  if (link && model && (link.type !== 'many2one' || link.relation !== model)) {
+    tools.report(`${path}.field`, `"${node.field}" ${link.type === 'many2one' ? `links to ${link.relation}` : `is a ${link.type}`}; the records listed point at this one by a many2one to ${model}`);
+  }
+  for (const [name, def] of Object.entries(fields)) {
+    if (def.type === 'monetary' && def.currencyField !== undefined) tools.checkCurrency(def.currencyField, `${path}.fields.${name}.currencyField`, fields, undefined, fields);
+    if (def.type === 'datetime' && def.timeZone !== undefined) tools.checkZone(def.timeZone, `${path}.fields.${name}.timeZone`);
+  }
+  // Its filter is about its records, by their fields; what it compares with may be read from this record.
+  node.filter?.forEach((item, i) => tools.checkFilterItem(item, `${path}.filter[${i}]`, tools.here()));
+  if (node.viewAll && node.viewAll.page === tools.page.id) tools.report(`${path}.viewAll.page`, 'View all opens a list of the records related: this page is the record they point at');
+}

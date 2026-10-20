@@ -1,7 +1,7 @@
 import type { ActionStep, PageEvents } from './actions';
 import type { Field, Fields, FilterItem, LineField, LineKinds, SelectionOption } from './field';
 import { optionsField, optionsList } from './choice-options';
-import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListCard, ListNode, MapCard, MapNode, Pin, RelatedNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
+import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListCard, ListNode, MapCard, MapNode, Pin, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
 import type { Page } from './page';
 import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
@@ -20,7 +20,11 @@ import { fill, MESSAGES } from '../record/messages';
 import { autofillGroupProblem } from './autofill-group';
 import { checkLimits } from './limits-checks';
 import { checkSeats } from './seats-checks';
-import { checkList, type ListTools } from './list-checks';
+import { checkList, checkRelated, type ListTools } from './list-checks';
+import type { FieldTools } from './part-checks';
+import { checkSlots } from './slots-checks';
+import { checkSignature } from './signature-checks';
+import { checkEndings } from './endings-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -135,7 +139,11 @@ export class ReferenceCheck {
     if (this.page.botCheck !== undefined && !this.line) this.checkBotCheck(this.page);
     if (this.page.duplicates !== undefined && !this.line) this.checkDuplicates(this.page);
     if (this.page.records !== undefined && !this.line) this.checkRecords(this.page.records);
-    if (this.page.endings !== undefined && !this.line) this.checkEndings(this.page);
+    if (this.page.endings !== undefined && !this.line) {
+      if (this.page.data.kind !== 'responses') this.report('endings', 'endings are for a page of responses, shown once it is sent');
+      // Each ending: in the one-tag script, its checks come with the answers part, which a page with any asks for.
+      if (Array.isArray(this.page.endings) && this.page.endings.length) checkEndings(this.page, { ...this.fieldTools(), checkModifiers: (owner, path, keys) => this.checkModifiers(owner, path, keys), checkWords: (owner, path, keys, sent) => this.checkWords(owner, path, keys, sent) });
+    }
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
     this.checkGoingTo();
@@ -172,23 +180,6 @@ export class ReferenceCheck {
     if (!said(words['one'])) this.report('records.one', 'the word for one record, as a sentence says it: "customer"');
     if (!said(words['other'])) this.report('records.other', 'the word for more than one record: "customers"');
     if (words['a'] !== undefined && !said(words['a'])) this.report('records.a', 'the word for one record with its article: "a customer", "an invoice"');
-  }
-
-  /**
-   * What a page of responses shows once it is sent: each ending's condition reads the answers (and `id`, the response's),
-   * its words name fields of the page (or `id`), it says something, and none follows one that is always shown.
-   */
-  private checkEndings(page: Page) {
-    if (page.data.kind !== 'responses') this.report('endings', 'endings are for a page of responses, shown once it is sent');
-    let always = '';
-    (Array.isArray(page.endings) ? page.endings : []).forEach((ending, i) => {
-      const at = `endings[${i}]`;
-      if (always) this.report(at, `never shown: ${always} has no when and comes first`);
-      this.checkModifiers(ending, at, ['when']);
-      if (ending.when === undefined || ending.when === true) always ||= at;
-      if (typeof ending.title !== 'string' && typeof ending.text !== 'string') this.report(at, 'an ending needs a title or text');
-      this.checkWords(ending, at, ['title', 'text'], true);
-    });
   }
 
   /** A time zone the browser knows, by its IANA name: a page's dates and times are never drawn on a clock it cannot read. */
@@ -621,6 +612,11 @@ export class ReferenceCheck {
   }
 
   /** A page's own buttons at its foot: buttons as any. */
+  /** The tools a part's checks of a field are handed (part-checks.ts). */
+  private fieldTools(): FieldTools {
+    return { page: this.page, need: (name, path) => this.need(name, path), report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) };
+  }
+
   /** The tools a list page's own checks are handed (list-checks.ts). */
   private listTools(): ListTools {
     return {
@@ -634,6 +630,10 @@ export class ReferenceCheck {
       checkListCard: (card, at, fields) => this.checkListCard(card, at, fields),
       checkPlace: (at, path, scope, pin, card) => this.checkPlace(at, path, scope, pin, card),
       here: () => this.here(),
+      onLine: !!this.line,
+      checkCurrency: (name, path, fields, lines, parent) => this.checkCurrency(name, path, fields, lines, parent),
+      checkZone: (zone, path) => this.checkZone(zone, path),
+      checkFilterItem: (item, at, scope) => this.checkFilterItem(item, at, scope),
       owe: (part) => this.later.add(part),
     };
   }
@@ -854,7 +854,7 @@ export class ReferenceCheck {
       case 'map':
         return this.walkMap(node, path);
       case 'related':
-        return this.checkRelated(node, path);
+        return checkRelated(node, path, this.listTools());
       case 'slot':
         this.slots.add(node.name);
         return;
@@ -874,44 +874,6 @@ export class ReferenceCheck {
     } else if (first !== undefined) {
       this.report(`${path}.name`, `the answers of the saved form at ${first} go under "${node.name}" already: give each copy a name of its own`);
     } else this.formNames.set(node.name, path);
-  }
-
-  /**
-   * A related list: on a record's page, its columns, order, search, cells, card and rows' rules of its own records'
-   * fields, its link to this record a link of theirs to this model where its fields name it, and its filter's
-   * `valueFrom` this record's.
-   */
-  private checkRelated(node: RelatedNode, path: string) {
-    // The quick check reads no shapes: a part with nothing to go by is said here.
-    if (typeof node.model !== 'string' || typeof node.field !== 'string' || !Array.isArray(node.columns) || !node.fields || typeof node.fields !== 'object') {
-      return this.report(path, 'a related list needs the model of its records, their link to this record (field), their fields and its columns');
-    }
-    const model = this.page.data.kind === 'record' ? this.page.data.model : null;
-    if (!model || this.line) this.report(path, 'a related list shows the records that point at a record: it belongs on a record’s page');
-    const fields = node.fields as Record<string, Field | LineField>;
-    this.checkListed(node, fields, path);
-    // On a phone its rows are cards, as a list's: of its own records' fields.
-    if (node.card) this.checkListCard(node.card, `${path}.card`, fields);
-    // Its rows' own rules, as a list's, each read on the row's record: its own fields, its id, the person, the context.
-    const row: Scope = { fields };
-    node.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when'], row));
-    this.checkModifiers(node, path, ['rowBold'], row);
-    node.rowButtons?.forEach((button, i) => {
-      this.claim(button.id, `${path}.rowButtons[${i}]`);
-      this.checkPress(button, `${path}.rowButtons[${i}]`);
-      this.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible'], row);
-    });
-    const link = has(fields, node.field) ? fields[node.field] : undefined;
-    if (link && model && (link.type !== 'many2one' || link.relation !== model)) {
-      this.report(`${path}.field`, `"${node.field}" ${link.type === 'many2one' ? `links to ${link.relation}` : `is a ${link.type}`}; the records listed point at this one by a many2one to ${model}`);
-    }
-    for (const [name, def] of Object.entries(fields)) {
-      if (def.type === 'monetary' && def.currencyField !== undefined) this.checkCurrency(def.currencyField, `${path}.fields.${name}.currencyField`, fields, undefined, fields);
-      if (def.type === 'datetime' && def.timeZone !== undefined) this.checkZone(def.timeZone, `${path}.fields.${name}.timeZone`);
-    }
-    // Its filter is about its records, by their fields; what it compares with may be read from this record.
-    node.filter?.forEach((item, i) => this.checkFilterItem(item, `${path}.filter[${i}]`, this.here()));
-    if (node.viewAll && node.viewAll.page === this.page.id) this.report(`${path}.viewAll.page`, 'View all opens a list of the records related: this page is the record they point at');
   }
 
   private walkTabs(node: TabsNode, path: string) {
@@ -1034,43 +996,6 @@ export class ReferenceCheck {
     if (parts && parts !== 'json') this.report(`${path}.options.partsField`, `"${options['partsField']}" is a ${parts}; an address's parts are kept in a json field`);
   }
 
-  /** Booking slots: on a date and time, its end written in another, asked again as the fields it depends on change. */
-  private checkSlots(node: FieldNode, def: Field | LineField | undefined, path: string) {
-    const options = node.options ?? {};
-    if (def && def.type !== 'datetime') this.report(`${path}.widget`, `slots is for a datetime field; "${node.field}" is a ${def.type}`);
-    const end = options['endField'];
-    if (typeof end === 'string' && has(this.page.fields, end)) {
-      const type = this.page.fields[end].type;
-      if (end === node.field) this.report(`${path}.options.endField`, 'a booking ends in another field than the one it starts in');
-      else if (type !== 'datetime') this.report(`${path}.options.endField`, `"${end}" is a ${type}; a booking's end is kept in a datetime field`);
-    }
-    const on = options['dependsOn'];
-    if (Array.isArray(on)) on.forEach((name, i) => typeof name === 'string' && this.need(name, `${path}.options.dependsOn[${i}]`));
-  }
-
-  /**
-   * A signature that signs answers: on a binary field, the answers it signs fields of this page — never itself — and
-   * the signer's name in a field that holds words (a text, or a link's name).
-   */
-  private checkSignature(node: FieldNode, def: Field | LineField | undefined, path: string) {
-    const options = node.options ?? {};
-    if (def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
-    const signs = options['signs'];
-    if (Array.isArray(signs)) {
-      signs.forEach((name, i) => {
-        if (typeof name !== 'string') return;
-        if (name === node.field) this.report(`${path}.options.signs[${i}]`, 'a signature signs other answers than its own');
-        else this.need(name, `${path}.options.signs[${i}]`);
-      });
-    }
-    const signer = options['signerField'];
-    if (typeof signer === 'string' && has(this.page.fields, signer)) {
-      const type = this.page.fields[signer].type;
-      if (type !== 'char' && type !== 'many2one') this.report(`${path}.options.signerField`, `"${signer}" is a ${type}; the signer's name is kept in a char field, or is a many2one's record`);
-    }
-    if (signer !== undefined && signs === undefined) this.report(`${path}.options.signerField`, 'signerField names who signs the answers in signs: say which it signs');
-  }
-
   /** A picker's own settings, on the kind of field each is for: a path on a link, Fieldia's own list on a choice, a button adding tags, a colour for each state. */
   private checkPicker(node: FieldNode, def: Field | LineField, path: string) {
     const options = node.options ?? {};
@@ -1134,8 +1059,12 @@ export class ReferenceCheck {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
     }
     if (node.widget === 'address-search') this.checkAddressSearch(node, def, path);
-    if (node.widget === 'slots') this.checkSlots(node, def, path);
-    if (node.widget === 'signature') this.checkSignature(node, def, path);
+    // Booking slots on a date and time, a signature on a file: drawn by their parts, whose checks of their settings come
+    // with them in the one-tag script.
+    if (node.widget === 'slots' && def && def.type !== 'datetime') this.report(`${path}.widget`, `slots is for a datetime field; "${node.field}" is a ${def.type}`);
+    else if (node.widget === 'slots') checkSlots(node, path, this.fieldTools());
+    if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
+    else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
     if (def) this.checkPicker(node, def, path);
     // The order lines load in: fields of its lines.
     if (def && node.order) {
