@@ -424,6 +424,9 @@ export function sampleDataSource() {
     // The listing's photos go to a store as slow as a phone's upload, one of them failing once (shared/listing-photos.ts).
     ...(params.get('page') === 'listing-photos' ? { storage: LISTING_STORAGE } : {}),
     lists: appLists,
+    // A booking answered as a clinic's server answers it: with its reference, which the page's ending says ("Your
+    // booking is B-1043"); every other response with its number.
+    submitted: (request, count) => ({ id: request.pageId === 'appointment-booking' ? `B-${1042 + count}` : count }),
     // A test drive's free times, from the showroom's schedule, on the demos' clock (shared/test-drive.ts).
     slots: scheduleSlots({ showroom: showroom() }, { now: demoNow }),
     // Records like the one typed — the same phone, email or tax id, a name close enough — for a page with `duplicates`.

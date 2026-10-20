@@ -198,5 +198,18 @@
         ]
       }
     ]
-  }
+  },
+  "endings": [
+    {
+      "when": "visit == 'video'",
+      "title": "You are booked, {name}",
+      "text": "Your booking is {id}: {service} on {date} at {time}, by video call.\nThe link to join comes to {email} an hour before.",
+      "again": "Book another"
+    },
+    {
+      "title": "You are booked, {name}",
+      "text": "Your booking is {id}: {service} on {date} at {time}.\nWe have sent the details to {email}.",
+      "again": "Book another"
+    }
+  ]
 }
