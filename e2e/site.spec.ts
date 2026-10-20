@@ -334,7 +334,7 @@ test('the business areas in a strip under the opening, each to its demos', async
 
 test('the opening on the first screen: side by side on a laptop, its tabs and the stage’s record readable; on a phone Get started before the fold', async ({ page }) => {
   test.setTimeout(180000);
-  for (const [width, height] of [[1280, 720], [1440, 900], [1920, 1080]]) {
+  for (const [width, height] of [[1180, 720], [1280, 720], [1440, 900], [1920, 1080]]) {
     await page.setViewportSize({ width, height });
     await page.goto(SITE + '/');
     await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[0].words, { timeout: 20000 });
@@ -355,6 +355,12 @@ test('the opening on the first screen: side by side on a laptop, its tabs and th
     expect((await page.locator('#stage-form').boundingBox())!.width, `${width}: the record's width`).toBeGreaterThanOrEqual(420);
     // The JSON readable: 13px or more.
     expect(parseFloat(await page.locator('#stage-json').evaluate((pre) => getComputedStyle(pre).fontSize))).toBeGreaterThanOrEqual(13);
+    // Get started and the install line whole in the words' column, however narrow it is just side by side.
+    const column = (await page.locator('.opening-copy').boundingBox())!;
+    for (const action of await page.locator('.opening-copy .opening-actions > *').all()) {
+      const box = (await action.boundingBox())!;
+      expect(box.x + box.width, `${width}: ${await action.textContent()} in the words' column`).toBeLessThanOrEqual(column.x + column.width + 0.5);
+    }
     await page.screenshot({ path: `test-results/screens/site-home-opening-${width}.png` });
   }
   for (const [width, height] of [[390, 844], [360, 740]]) {
@@ -652,7 +658,8 @@ test('the list is a table beside the JSON, its four columns whole and its amount
   /** How far the list's table runs past its box: nothing, or it scrolls sideways inside it. */
   const overrun = () => form.locator('.fd-list-scroll').evaluate((box) => box.scrollWidth - box.clientWidth);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  for (const [width, height] of [[1280, 720], [1440, 900], [1920, 1080], [768, 1024]]) {
+  // Just side by side (1180 to 1279, the words' column narrower there), a laptop's, a desktop's, a tablet's.
+  for (const [width, height] of [[1180, 720], [1200, 800], [1250, 800], [1280, 720], [1440, 900], [1920, 1080], [768, 1024]]) {
     await page.setViewportSize({ width, height });
     await page.goto(SITE + '/');
     await tabOf(page, LIST).click();

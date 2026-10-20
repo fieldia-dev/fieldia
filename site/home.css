@@ -260,6 +260,12 @@
   .lede-business { font-size: 18px; }
   .home-opening .stage { height: clamp(480px, calc(100svh - 60px - 2 * var(--hero-pad)), 820px); }
 }
+/* Just side by side, before a laptop's 1280px: the words' column narrower — its headline's lines are shorter than it,
+   and Get started and the install line still fit — so the stage's record keeps a list's four columns whole beside its
+   JSON, never scrolling sideways in its pane; it widens back to 400px as the screen reaches 1280px. */
+@media (min-width: 1180px) and (max-width: 1279.98px) {
+  .home-opening { grid-template-columns: clamp(344px, calc(56vw - 317px), 400px) minmax(0, 1fr); }
+}
 
 /* The business areas it is at work in, each a link to its demos in the gallery: a strip at the foot of the opening. */
 .uses { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 16px var(--hero-end) 18px var(--hero-start); background: var(--h-stage-2); border-top: 1px solid rgba(164, 179, 204, 0.16); }
