@@ -521,6 +521,27 @@ export interface ViewerLabels {
   merging: string;
   merged: string;
   mergeUnread: string;
+  /**
+   * A page that takes no answers now (`limits`), said as it opens: why is the form's (its core messages), and these
+   * after it — answers typed when it closed can no longer be sent (`closedTyped`).
+   */
+  closedTyped: string;
+  /**
+   * "Continue later" (`continueLater`): its button, while the answers are kept, once kept — the link to continue from,
+   * its box's name, Copy and once copied, the words where the app gave no link — back to the form, why they could not
+   * be kept (`{why}`), and a draft opened by its key that names none.
+   */
+  laterButton: string;
+  laterSaving: string;
+  laterSaved: string;
+  laterLink: string;
+  laterLinkName: string;
+  laterCopy: string;
+  laterCopied: string;
+  laterAgain: string;
+  laterBack: string;
+  laterFailed: string;
+  resumeMissing: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -902,6 +923,18 @@ const en: ViewerLabels = {
   merging: 'Merging…',
   merged: 'Merged into {name}.',
   mergeUnread: 'Could not read {name}: {why}',
+  closedTyped: 'Your answers can no longer be sent.',
+  laterButton: 'Continue later',
+  laterSaving: 'Saving your answers…',
+  laterSaved: 'Your answers are saved',
+  laterLink: 'To continue, open this link on this device or another:',
+  laterLinkName: 'Link to continue',
+  laterCopy: 'Copy link',
+  laterCopied: 'Link copied',
+  laterAgain: 'Open this form again to continue where you stopped.',
+  laterBack: 'Keep going',
+  laterFailed: 'Your answers could not be saved: {why}',
+  resumeMissing: 'These saved answers could not be found: they may have been sent already. The form starts empty.',
 };
 
 /**
