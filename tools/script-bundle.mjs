@@ -1007,7 +1007,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 506.96 after; what a list shows of its records (its columns, cards) and options by condition and carried checked by
 // the parts that draw them, 504.85 after; Copy title's and Export's words in the parts that read them alone, 504.82
 // after, to 504.9.
-const BUDGET_KB = 504.9;
+// The owner's walk of 0.27 mended (0.27.1), what a form needs of it in the form itself, where every page's checks and
+// values are worked out — measured in the main script's modules: a value worked out from an answer the form refuses
+// waiting for it, as for text that does not read (0.23 in the form); a note of options taken out said only while true,
+// each note's options kept to judge it (0.70); a label that is a question quoted wherever a sentence names it, its
+// required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
+// boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
+// after, to 506.8.
+const BUDGET_KB = 506.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1238,7 +1245,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // functions part waits only for a page calling the app's own); a list's columns' and cards' checks in the list part and
 // options by condition's in the options part, 165.40 after; Copy title's and Export's words in the head and list parts,
 // 165.38 after, to 165.4.
-const GZIP_BUDGET_KB = 165.4;
+// The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
+// a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
+// page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2.
+const GZIP_BUDGET_KB = 166.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1416,7 +1426,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // + 0.29 + 0.01 + 0.13 + 0.41, to 77.8 and 13.3; German's 32.03 + 1.30 + 0.48 + 0.79 + 0.06 + 0.41 + 1.12 and 10.44 + 0.31
 // + 0.15 + 0.23 + 0.01 + 0.11 + 0.34, to 36.2 and 11.6; French's 32.37 + 1.26 + 0.53 + 0.84 + 0.06 + 0.44 + 1.16 and
 // 10.43 + 0.34 + 0.17 + 0.25 + 0.02 + 0.12 + 0.36, to 36.7 and 11.7.
-const ADD_ON_BUDGET_KB = { ar: [77.8, 13.3], de: [36.2, 11.6], fr: [36.7, 11.7] };
+// The owner's walk of 0.27 mended: a question's required message, and a refused signature's "ready to sign" and Sign
+// now — Arabic's 77.58 and 13.24 measured before, 77.88 and 13.29 after, to 77.9 and 13.3; German's 36.14 and 11.60 to
+// 36.27 and 11.64, to 36.3 and 11.7; French's 36.60 and 11.64 to 36.75 and 11.70, to 36.8 and 11.7.
+const ADD_ON_BUDGET_KB = { ar: [77.9, 13.3], de: [36.3, 11.7], fr: [36.8, 11.7] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1799,7 +1812,15 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // records, its columns' and cards' checks — list 127.54 and 40.96 to 128.95 and 41.42, to 129.0 and 41.5 — and options
 // by condition and carried checked — options 3.93 and 1.80 to 4.97 and 2.25, to 5.0 and 2.3; Copy title's word in the
 // head part (36.50 and 10.80, to 36.6 and 10.9), Export's in the list part (128.97 and 41.43, under its own).
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.0, 41.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.6], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.6, 5.0], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.0, 2.3], mapchecks: [6.9, 2.6] };
+// The owner's walk of 0.27 mended (0.27.1), each part's own: a list under a filter bar saying how many records it finds
+// — list 128.97 and 41.43 to 129.37 and 41.55, to 129.4 and 41.6 — a card's line giving each field its label beside its
+// value — cards 11.85 and 3.77 to 12.31 and 3.83, to 12.4 and 3.9 — a refused signature's note following the answers,
+// with Sign now — evidence 9.17 and 4.20 to 9.79 and 4.38, to 9.8 and 4.4; files 36.95 and 13.59 to 36.99 and 13.62,
+// to 37.0 and 13.7 — an unanswered slider's ring and "Not answered" — survey 36.61 and 12.75 to 37.88 and 13.00, to
+// 37.9 and 13.1 — the day and time a form opens written as the date boxes write it — limits 11.50 and 4.93 to 11.63 and
+// 5.01, to 11.7 and 5.1 — and the options a note of them taken out names, kept to judge it — options 4.97 and 2.25 to
+// 5.02 and 2.28, to 5.1 and 2.3.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.4, 41.6], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
