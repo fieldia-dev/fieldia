@@ -62,7 +62,8 @@ function watch(page: Page) {
 function scripts(page: Page) {
   const requested: string[] = [];
   page.on('request', (request) => requested.push(new URL(request.url()).pathname));
-  return () => requested.filter((path) => /\/fieldia(\.\w+)?\.js$/.test(path)).sort();
+  // The demo's memory source's members come in a part of their own as it is first asked (script.spec): the source's.
+  return () => requested.filter((path) => /\/fieldia(\.\w+)?\.js$/.test(path) && !path.endsWith('/fieldia.memory.js')).sort();
 }
 
 test.describe('a table of lines in a part of its own', () => {
