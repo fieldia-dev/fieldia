@@ -207,6 +207,9 @@ export interface WidgetLabels {
   changeAnswersAsk: string;
   signatureTakenAway: string;
   notSignedYet: string;
+  /** A drawing refused for answers to put right, once none is left: said, with Sign now, which signs that drawing. */
+  readyToSign: string;
+  signNow: string;
   /**
    * The signing's own part that could not come (offline, its script blocked): a picture not signed for want of it, a
    * signature kept whose evidence it cannot show, and Try again, which asks for it again.
@@ -646,6 +649,8 @@ const en: WidgetLabels = {
   changeAnswersAsk: 'Change your answers? The signature is taken away, and you sign again once they are right.',
   signatureTakenAway: 'Signature taken away: change your answers, then sign again.',
   notSignedYet: 'Not signed yet: first put right {fields}, then sign again.',
+  readyToSign: 'Your answers are ready to sign.',
+  signNow: 'Sign now',
   notSignedNoPart: 'Not signed yet: the signing could not load.',
   signingNoPart: 'The signing could not load: who signed and when are not shown, and the answers cannot be changed.',
   signingRetry: 'Try again',

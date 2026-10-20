@@ -192,7 +192,7 @@ ${code(
 }`
 )}
 <ul>
-  <li><strong>Signed as the person saw it.</strong> What is typed in the answers is read first; an answer still to give, or text that does not read, is said under the pad — “Not signed yet: first put right Treatment, then sign again.” — and nothing is signed, what was drawn kept to sign again.</li>
+  <li><strong>Signed as the person saw it.</strong> What is typed in the answers is read first; an answer still to give, or text that does not read, is said under the pad — “Not signed yet: first put right Treatment, then sign again.” — and nothing is signed, what was drawn kept. The words follow the answers as they are put right, and once none is left say “Your answers are ready to sign.” with <strong>Sign now</strong>, which signs that drawing: no second one, and never signed for the person as the last answer is given (signing locks the answers).</li>
   <li><strong>Said under it.</strong> “Signed by Mona Adel, 19 Oct 2026, 11:42” on the page's clock, and whether the answers are as they were signed: the fingerprint made again from them as the record opens and as they change — a step, the app or your server changing a signed answer is said, “An answer has changed since it was signed.”</li>
   <li><strong>Locked once signed.</strong> Each answer it signed is read-only while it is kept, its lock saying how to change it. <em>Change answers</em> asks in place, then takes the signature away: the answers open, and the person signs again.</li>
   <li><strong>Kept with the signature.</strong> The value's ${c('signed')}: ${c('{ "format": "fieldia-signature/1", "by", "at", "fields", "sha256" }')}. A save storing the picture keeps it; a store that keeps a signature as bytes keeps it beside them.</li>

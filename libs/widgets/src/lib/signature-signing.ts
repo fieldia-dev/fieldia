@@ -35,11 +35,17 @@ export interface SigningContext {
   letGo(): void;
   /** Taken away by Change answers: the pad wiped, the value let go, the focus in the name box. */
   takeAway(): void;
+  /** Whether something is on the pad: strokes drawn, or a name typed. */
+  drawn(): boolean;
+  /** What is on the pad kept as the picture, and signed: the drawing a refused signing left there. */
+  signDrawn(): void;
 }
 
 /** A signature's evidence: its line under the signature, its signing, and the line kept to the value. */
 export interface Signing {
   element: HTMLElement;
+  /** Sign now, under the note, once a drawing refused for answers to put right can be signed: placed by the signature. */
+  prompt: HTMLElement;
   /** The answers signed with this picture, once what is typed in them is read (`settle`); laid while `current` holds. */
   sign(picture: FileValue, how: { settle(): Promise<void>; current(): boolean }): Promise<void>;
   update(value: Value | undefined, values: Readonly<Values>, readonly: boolean): void;
@@ -68,10 +74,15 @@ export function signingFor(context: SigningContext): Signing {
     return text.trim() || typedText?.trim() || form.user()?.name?.trim() || undefined;
   }
 
-  /** Not signed: the answers to put right named, each saying its own problem, and the picture let go. */
-  function refuse(wrong: string[]) {
-    context.letGo();
-    for (const field of wrong) form.boxLeft(field);
+  /** The answers it signs, shown now, and those of them to put right first: still to give, or text that does not read. */
+  function toPutRight(): { fields: string[]; wrong: string[] } {
+    const fields = answersToSign(form.page, node, form.shownFields());
+    const unread = Object.keys(form.getState().unread);
+    return { fields, wrong: fields.filter((field) => form.problem(field) !== null || unread.some((path) => path.startsWith(`${field}.`))) };
+  }
+
+  /** "Not signed yet: first put right …", naming the answers `wrong`. */
+  function notSignedWords(wrong: string[]): string {
     const asLabel = labelAt(words.notSignedYet, 'fields', form.page.lowerLabels, locale);
     const labelsOf = wrong.map((field) => asLabel(form.page.fields[field]?.label ?? field));
     let list: string;
@@ -80,22 +91,59 @@ export function signingFor(context: SigningContext): Signing {
     } catch {
       list = labelsOf.join(', ');
     }
-    context.say(fillIn(words.notSignedYet, { fields: list }));
+    return fillIn(words.notSignedYet, { fields: list });
+  }
+
+  /**
+   * A drawing refused for answers to put right, still on the pad: the note follows the answers — those left named, and
+   * once none is, that they are ready, with Sign now, which signs that drawing (signing is the person's own act: never
+   * done for them as the last answer is put right, which would lock the answers under their hands).
+   */
+  let waiting = false;
+  const prompt = make('button', { type: 'button', class: 'fd-button fd-signature-sign-now', hidden: '' }, words.signNow);
+  prompt.addEventListener('click', () => {
+    setHidden(prompt, true);
+    context.signDrawn();
+  });
+
+  /** Not signed: the answers to put right named, each saying its own problem, and the picture let go. */
+  function refuse(wrong: string[]) {
+    context.letGo();
+    for (const field of wrong) form.boxLeft(field);
+    waiting = true;
+    setHidden(prompt, true);
+    context.say(notSignedWords(wrong));
+  }
+
+  /** What a refused drawing's note says now: what is left to put right, or that the answers are ready to sign. */
+  function follow(value: Value | undefined, readonly: boolean) {
+    if (!waiting) return;
+    // Signed since, its signing on its way, or the pad cleared: there is nothing more to say of the drawing refused.
+    if (value || readonly || !context.drawn()) {
+      if (value && !evidenceOf(value)) return setHidden(prompt, true);
+      waiting = false;
+      setHidden(prompt, true);
+      if (!value) context.say('');
+      return;
+    }
+    const { wrong } = toPutRight();
+    context.say(wrong.length ? notSignedWords(wrong) : words.readyToSign);
+    setHidden(prompt, wrong.length > 0);
   }
 
   async function sign(picture: FileValue, how: { settle(): Promise<void>; current(): boolean }): Promise<void> {
     for (let tries = 0; tries < 3; tries++) {
       await how.settle();
       if (!how.current()) return;
-      const fields = answersToSign(form.page, node, form.shownFields());
-      const unread = Object.keys(form.getState().unread);
-      const wrong = fields.filter((field) => form.problem(field) !== null || unread.some((path) => path.startsWith(`${field}.`)));
+      const { fields, wrong } = toPutRight();
       if (wrong.length) return refuse(wrong);
       const values = form.getState().values;
       const signed = await signAnswers({ page: form.page, field: name, values, fields, by: signer(picture.text), at: form.now() });
       if (!how.current()) return;
       const now = form.getState().values;
       if (tries < 2 && now !== values && canonicalJson(signedAnswers(form.page, now, fields)) !== canonicalJson(signedAnswers(form.page, values, fields))) continue;
+      waiting = false;
+      setHidden(prompt, true);
       context.say('');
       form.setValue(name, { ...picture, signed });
       return;
@@ -140,9 +188,11 @@ export function signingFor(context: SigningContext): Signing {
 
   return {
     element,
+    prompt,
     sign,
     /** Who signed and when, and whether the answers are still as signed: their fingerprint made again from them now. */
     update(value, values, readonly) {
+      follow(value, readonly);
       const evidence = evidenceOf(value);
       if (readonly || !evidence) setHidden(question, true);
       setHidden(change, readonly || !evidence || !question.hidden);

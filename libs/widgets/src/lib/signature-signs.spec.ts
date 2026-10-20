@@ -150,6 +150,45 @@ describe('a signature that signs answers', () => {
     expect(shown('.fd-signature-note')).toBe(false);
   });
 
+  it('says what is left to put right as the answers change, then signs the drawing kept with Sign now: no second drawing', async () => {
+    // The owner's walk of 0.27: signed first, then every answer filled in — the note still named them all, and the
+    // drawing kept on the pad counted for nothing.
+    const { form, draw, value, text, shown, button } = consent({ values: { patient: '', treatment: null, age: 34 } });
+    draw();
+    await settle();
+    expect(text('.fd-signature-note')).toBe('Not signed yet: first put right Patient and Treatment, then sign again.');
+    expect(button('Sign now')).toBeUndefined();
+    form.setValue('patient', 'Mona Adel');
+    await settle();
+    // One left: the note names it alone.
+    expect(text('.fd-signature-note')).toBe('Not signed yet: first put right Treatment, then sign again.');
+    expect(button('Sign now')).toBeUndefined();
+    form.setValue('treatment', 'peel');
+    await settle();
+    // Nothing left: the note says so, and the drawing still on the pad is signed by a press — the person's own act.
+    expect(text('.fd-signature-note')).toBe('Your answers are ready to sign.');
+    expect(value()).toBeNull();
+    expect(form.node('f-treatment').readonly).toBe(false);
+    button('Sign now')?.click();
+    await settle();
+    expect(value()?.signed?.fields).toEqual(['patient', 'treatment', 'age']);
+    expect(shown('.fd-signature-note')).toBe(false);
+    expect(button('Sign now')).toBeUndefined();
+    expect(form.node('f-treatment').readonly).toBe(true);
+  });
+
+  it('says nothing more of a drawing cleared after it was refused', async () => {
+    const { form, draw, text, shown, button } = consent({ values: { patient: 'Mona Adel', treatment: null, age: 34 } });
+    draw();
+    await settle();
+    expect(text('.fd-signature-note')).toBe('Not signed yet: first put right Treatment, then sign again.');
+    button('Clear')?.click();
+    form.setValue('treatment', 'peel');
+    await settle();
+    expect(shown('.fd-signature-note')).toBe(false);
+    expect(button('Sign now')).toBeUndefined();
+  });
+
   it('reads what is typed in a signed answer before it signs: the answer as the person saw it', async () => {
     const { form, draw, value } = consent();
     // A box of the page that reads its text when the form settles, as the viewer's does for the box with the focus.
