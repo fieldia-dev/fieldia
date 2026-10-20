@@ -1257,7 +1257,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
 // A record's approvals (0.29, w5-approvals; listed with the raw budget above) — every page's hook: asked after a load
 // and a save, fields locked while one waits, the form's three methods, the band placed and a lock's words, the parts
-// declared and their checks owed — 166.15 measured before, 166.77 after, to 166.8. A page with approval takes 6.78 more
+// declared and their checks owed — 166.15 measured before, 166.77 after, to 166.8. A page with approval takes 6.82 more
 // in fieldia.approvals.js.
 const GZIP_BUDGET_KB = 166.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
@@ -1840,12 +1840,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // A record's approvals (0.29, w5-approvals), a part of their own — the form's (asked of the source, a decision taken on
 // the record as saved, its fields locked while it waits, a moment of its history in words, the page's checks of
 // `approval`) and the viewer's (the band over the record, its levels, Approve and Reject, Reject's question, what stays
-// open, its history folded, and their sheet) in one script — new, in fieldia.approvals.js (19.79 and 6.78, to 19.8 and
-// 6.8), loaded with the page's parts where it has `approval`. In the main script it would have added them to every page.
+// open, its history folded, and their sheet) in one script — new, in fieldia.approvals.js (19.87 and 6.82, to 19.9 and
+// 6.9), loaded with the page's parts where it has `approval`. In the main script it would have added them to every page.
 // The memory source's approvals and decide, an approval engine in small (in turn or together, any or all, a rejection
 // ending a round, a round each time a record is sent again) — memory 16.07 and 5.71 measured before, 18.68 and 6.68 after,
 // to 18.7 and 6.7.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [19.8, 6.8], print: [16.9, 5.4], memory: [18.7, 6.7], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [19.9, 6.9], print: [16.9, 5.4], memory: [18.7, 6.7], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
