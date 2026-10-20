@@ -99,7 +99,13 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
   const add = make('li', { class: 'fd-photos-add' }, input, pick);
   const list = make('ul', { class: 'fd-photos-list', role: 'list' }, add);
   const count = make('span', { class: 'fd-help fd-photos-count' });
-  const how = make('span', { id: `${id}-how`, class: 'fd-help fd-photos-how' }, covered ? words.photosMoveCover : words.photosMove);
+  // How a photo is moved: with a mouse and keys, or — where the screen is touched (the sheet says which) — a finger.
+  const how = make(
+    'span',
+    { id: `${id}-how`, class: 'fd-help fd-photos-how' },
+    make('span', { class: 'fd-photos-how-keys' }, covered ? words.photosMoveCover : words.photosMove),
+    make('span', { class: 'fd-photos-how-touch' }, covered ? words.photosMoveTouchCover : words.photosMoveTouch)
+  );
   const bar = make('div', { class: 'fd-photos-bar' }, count, how);
   // The limits, said before anyone tries.
   const limits = [field.maxSize ? fill(words.upToEach, { size: formatBytes(field.maxSize) }) : '', field.maxFiles ? fill(words.upToPhotos, { max: field.maxFiles }) : ''].filter(Boolean);
@@ -258,7 +264,12 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
     tile.element.setAttribute('data-lifted', '');
     element.setAttribute('data-moving', '');
     dragged = true;
-    const place = () => order.forEach((one, at) => (one.element.style.order = String(at - order.length)));
+    // Laid out in the order it would be kept, the cover's mark on the first of them.
+    const place = () =>
+      order.forEach((one, at) => {
+        one.element.style.order = String(at - order.length);
+        setHidden(one.cover, !(covered && at === 0));
+      });
     function to(x: number, y: number) {
       point = { x, y };
       const own = tile.element.getBoundingClientRect();
@@ -297,7 +308,10 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
       view?.cancelAnimationFrame(frame);
       tile.element.removeAttribute('data-lifted');
       element.removeAttribute('data-moving');
-      for (const one of before) one.element.style.order = '';
+      before.forEach((one, at) => {
+        one.element.style.order = '';
+        setHidden(one.cover, !(covered && at === 0));
+      });
       doc.removeEventListener('keydown', escape, true);
       lifted = null;
     };
@@ -490,7 +504,7 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
     const made: FileValue = { ...read, ...(keepOriginal ? { original: bare(was.original ?? was), edit: result.edit } : {}), ...keep };
     stopGoing(was);
     form.setValue(name, photos.map((one, i) => (i === now ? made : one)));
-    if (form.canUpload()) form.upload(name, [result.file], { replaces: made });
+    if (form.canUpload()) for (const upload of form.upload(name, [result.file], { replaces: made })) cropping.add(upload);
     voice.say(fill(keepOriginal ? words.photoChangedKept : words.photoChanged, { name: named(made) }));
   }
 
@@ -521,6 +535,12 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
     void take([...((event as DragEvent).dataTransfer?.files ?? [])].filter((file) => /^image\//.test(file.type)));
   });
 
+  /**
+   * The uploads of photos cropped here, and any of a photo the set holds as its bytes (one cropped before this was
+   * drawn): each shows its bar on its own tile, never as a photo picked.
+   */
+  const cropping = new Set<string>();
+  const cropped = (upload: FileUpload) => cropping.has(upload.id) || photos.some((photo) => photo.data !== undefined && photo.name === upload.name);
   const goingItems = new Map<string, { item: ReturnType<FilesPart['goingItem']>; name: string }>();
   const previews = new Map<string, string>();
   let uploadedSince = 0;
@@ -528,10 +548,10 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
   /** A photo held as its bytes and on its way — one cropped — shows its bar on its own tile; one picked, as a tile after the photos. */
   function drawGoing() {
     const going = form.uploading(name);
-    const cropped = (upload: FileUpload) => photos.some((photo) => photo.data !== undefined && photo.name === upload.name);
+    for (const upload of cropping) if (!going.some((one) => one.id === upload)) cropping.delete(upload);
     const picked = going.filter((upload) => !cropped(upload));
     for (const tile of tiles) {
-      const upload = tile.photo.data !== undefined ? going.find((one) => one.name === tile.photo.name) : undefined;
+      const upload = going.find((one) => one.name === tile.photo.name && cropped(one));
       tile.upload = upload?.id ?? null;
       setHidden(tile.going, !upload);
       if (!upload) continue;
@@ -589,8 +609,7 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
       readonly = state.readonly;
       const value = state.value as FileValue[] | FileValue | null | undefined;
       photos = Array.isArray(value) ? value : value ? [value] : [];
-      const going = form.uploading(name);
-      const picked = going.filter((upload) => !photos.some((photo) => photo.data !== undefined && photo.name === upload.name));
+      const picked = form.uploading(name).filter((upload) => !cropped(upload));
       setAttr(element, 'data-readonly', readonly ? '' : null);
       setHidden(add, readonly || photos.length + picked.length >= most);
       input.disabled = readonly;

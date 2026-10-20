@@ -240,7 +240,8 @@ export interface WidgetLabels {
   filesUploaded: string;
   notUploadedNamed: string;
   /**
-   * A photo set (`"widget": "photos"`): how a photo is moved, with or without the cover's words; the cover's mark; Make
+   * A photo set (`"widget": "photos"`): how a photo is moved, by a mouse and keys or by a finger, with or without the
+   * cover's words; the cover's mark; Make
    * cover, a photo's crop and its caption's box by its `{name}`, and the caption's words while it is empty; a photo by
    * its words and place (`{n}` of `{total}`); a photo moved first, said; how many photos (`{n}`, of `{max}`), the most
    * said before anyone tries, and how many were uploaded; a photo changed, its original kept or not; its original put
@@ -248,6 +249,8 @@ export interface WidgetLabels {
    */
   photosMove: string;
   photosMoveCover: string;
+  photosMoveTouch: string;
+  photosMoveTouchCover: string;
   photoCover: string;
   makeCover: string;
   coverNow: string;
@@ -712,6 +715,8 @@ const en: WidgetLabels = {
   notUploadedNamed: '{name} was not uploaded',
   photosMove: 'Drag a photo to move it, or press Alt and an arrow key.',
   photosMoveCover: 'Drag a photo to move it, or press Alt and an arrow key. The first is the cover.',
+  photosMoveTouch: 'Hold a photo a moment, then drag it to move it.',
+  photosMoveTouchCover: 'Hold a photo a moment, then drag it to move it. The first is the cover.',
   photoCover: 'Cover',
   makeCover: 'Make {name} the cover',
   coverNow: '{name} is the cover now',

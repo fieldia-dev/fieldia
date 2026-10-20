@@ -180,6 +180,8 @@ export const fr: WidgetLabels = {
   notUploadedNamed: '{name} n’a pas été envoyé',
   photosMove: 'Faites glisser une photo pour la déplacer, ou appuyez sur Alt et une flèche.',
   photosMoveCover: 'Faites glisser une photo pour la déplacer, ou appuyez sur Alt et une flèche. La première est la couverture.',
+  photosMoveTouch: 'Maintenez une photo un instant, puis faites-la glisser pour la déplacer.',
+  photosMoveTouchCover: 'Maintenez une photo un instant, puis faites-la glisser pour la déplacer. La première est la couverture.',
   photoCover: 'Couverture',
   makeCover: 'Mettre {name} en couverture',
   coverNow: '{name} est maintenant la couverture',

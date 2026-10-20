@@ -1438,11 +1438,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The owner's walk of 0.27 mended: a question's required message, and a refused signature's "ready to sign" and Sign
 // now — Arabic's 77.58 and 13.24 measured before, 77.88 and 13.29 after, to 77.9 and 13.3; German's 36.14 and 11.60 to
 // 36.27 and 11.64, to 36.3 and 11.7; French's 36.60 and 11.64 to 36.75 and 11.70, to 36.8 and 11.7.
-// A photo set (0.29, w5-photos): how a photo is moved and said moved, the cover, a photo's tools and caption by its
-// name, the photos counted and uploaded, a photo changed and its original back, and the crop and turn dialog's words —
-// 30 in each: Arabic's 77.88 and 13.29 measured before, 81.25 and 13.82 after, to 81.3 and 13.9; German's 36.27 and
-// 11.64 to 37.73 and 12.08, to 37.8 and 12.1; French's 36.75 and 11.70 to 38.24 and 12.13, to 38.3 and 12.2.
-const ADD_ON_BUDGET_KB = { ar: [81.3, 13.9], de: [37.8, 12.1], fr: [38.3, 12.2] };
+// A photo set (0.29, w5-photos): how a photo is moved — by a mouse and keys, or by a finger — and said moved, the
+// cover, a photo's tools and caption by its name, the photos counted and uploaded, a photo changed and its original
+// back, and the crop and turn dialog's words — 32 in each: Arabic's 77.88 and 13.29 measured before, 81.73 and 13.87
+// after, to 81.8 and 13.9; German's 36.27 and 11.64 to 37.96 and 12.13, to 38.0 and 12.2; French's 36.75 and 11.70 to
+// 38.46 and 12.18, to 38.5 and 12.2.
+const ADD_ON_BUDGET_KB = { ar: [81.8, 13.9], de: [38.0, 12.2], fr: [38.5, 12.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1836,15 +1837,15 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
 // A photo set (0.29, w5-photos): a part of its own, asked for only by a page with a picture field drawn as
-// `"widget": "photos"`, and coming with the files part — photos new, 30.82 and 11.46: its tiles in the order a person
+// `"widget": "photos"`, and coming with the files part — photos new, 31.42 and 11.59: its tiles in the order a person
 // puts them, dragged by a pointer or a finger resting on one, moved by keys and said, the cover marked and made,
-// captions, a cropped photo's bar on its tile (photos.ts: 14.26 raw and 5.88 gzipped alone); the crop and turn dialog
-// and its geometry (photo-editor.ts: 7.15 and 3.10); its sheet (6.97 and 2.02); and its words — to 30.9 and 11.5. The
+// captions, a cropped photo's bar on its tile (photos.ts: 14.2 raw and 5.8 gzipped alone); the crop and turn dialog
+// and its geometry (photo-editor.ts: 7.0 and 3.0); its sheet (7.0 and 2.0); and its words — to 31.5 and 11.6. The
 // files part gives it what a picture field does already, never a second copy: its taking of photos picked or dropped
 // (`takeFiles`, the file field's own now), a picture read for drawing (`readPicture`, shrinking's own), a picture's
 // preview, and a photo's caption as its dialog's title — files 36.99 and 13.62 measured before, 37.36 and 13.77 after,
 // to 37.4 and 13.8.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.4, 13.8], evidence: [9.8, 4.4], photos: [30.9, 11.5], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.4, 13.8], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

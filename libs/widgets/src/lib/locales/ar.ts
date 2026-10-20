@@ -180,6 +180,8 @@ export const ar: WidgetLabels = {
   notUploadedNamed: 'لم يُرفع {name}',
   photosMove: 'اسحب صورة لنقلها، أو اضغط Alt ومفتاح سهم.',
   photosMoveCover: 'اسحب صورة لنقلها، أو اضغط Alt ومفتاح سهم. الصورة الأولى هي الغلاف.',
+  photosMoveTouch: 'المس صورة لحظة ثم اسحبها لنقلها.',
+  photosMoveTouchCover: 'المس صورة لحظة ثم اسحبها لنقلها. الصورة الأولى هي الغلاف.',
   photoCover: 'الغلاف',
   makeCover: 'اجعل {name} الغلاف',
   coverNow: 'أصبحت {name} الغلاف',

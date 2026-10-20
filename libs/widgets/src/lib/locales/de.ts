@@ -180,6 +180,8 @@ export const de: WidgetLabels = {
   notUploadedNamed: '{name} wurde nicht hochgeladen',
   photosMove: 'Ziehen Sie ein Foto, um es zu verschieben, oder drücken Sie Alt und eine Pfeiltaste.',
   photosMoveCover: 'Ziehen Sie ein Foto, um es zu verschieben, oder drücken Sie Alt und eine Pfeiltaste. Das erste ist das Titelbild.',
+  photosMoveTouch: 'Halten Sie ein Foto einen Moment und ziehen Sie es dann, um es zu verschieben.',
+  photosMoveTouchCover: 'Halten Sie ein Foto einen Moment und ziehen Sie es dann, um es zu verschieben. Das erste ist das Titelbild.',
   photoCover: 'Titelbild',
   makeCover: '{name} als Titelbild',
   coverNow: '{name} ist jetzt das Titelbild',

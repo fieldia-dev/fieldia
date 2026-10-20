@@ -17,6 +17,12 @@ export const PHOTOS_CSS = /* css */ `
 .fd-photos { --fd-photo-shape: 4 / 3; justify-items: stretch; }
 .fd-photos-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
 .fd-photos-bar .fd-help { margin: 0; }
+/* How a photo is moved: a finger's way where the screen is touched, the mouse's and the keys' elsewhere. */
+.fd-photos-how-touch { display: none; }
+@media (hover: none), (pointer: coarse) {
+  .fd-photos-how-keys { display: none; }
+  .fd-photos-how-touch { display: inline; }
+}
 .fd-photos-list {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 12px;
   list-style: none; margin: 0; padding: 0; min-width: 0;
@@ -45,7 +51,11 @@ export const PHOTOS_CSS = /* css */ `
 .fd-photo-cover svg { width: 13px; height: 13px; }
 .fd-photo-tools { position: absolute; inset-block-start: 6px; inset-inline-end: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.12s; }
 .fd-photo:is(:hover, :focus-within) .fd-photo-tools, .fd-photos[data-readonly] .fd-photo-tools { opacity: 1; }
-@media (hover: none) { .fd-photo-tools { opacity: 1; } }
+/* A screen touched shows each photo's tools, as large as a finger presses. */
+@media (hover: none), (pointer: coarse) {
+  .fd-photo-tools { opacity: 1; }
+  .fd-photo-tool { width: 36px; height: 36px; }
+}
 .fd-photo-tool {
   display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 999px;
   background: rgba(15, 20, 25, 0.62); color: #fff; font: inherit; font-size: 19px; line-height: 1; cursor: pointer;
@@ -81,9 +91,9 @@ export const PHOTOS_CSS = /* css */ `
 .fd-photos-list .fd-file-going .fd-file-cancel {
   position: absolute; inset-block-start: 4px; inset-inline-end: 4px; width: 28px; height: 28px; font-size: 18px; background: rgba(15, 20, 25, 0.62); color: #fff;
 }
-/* The tile that adds photos, last of them. */
-.fd-photos-add { display: grid; }
-.fd-photos-add .fd-image-pick { width: auto; height: auto; min-height: 96px; aspect-ratio: var(--fd-photo-shape); }
+/* The tile that adds photos, last of them: a photo's frame, its caption's room left empty. */
+.fd-photos-add { display: grid; align-content: start; }
+.fd-photos-add .fd-image-pick { width: 100%; height: auto; min-height: 96px; aspect-ratio: var(--fd-photo-shape); }
 .fd-photos.fd-dragging .fd-photos-add .fd-image-pick { border-color: var(--fd-accent); }
 
 /* ---- a photo cropped and turned: its dialog ------------------------------------------------------------------- */

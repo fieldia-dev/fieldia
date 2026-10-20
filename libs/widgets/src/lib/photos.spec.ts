@@ -80,7 +80,9 @@ describe('a photo set', () => {
     expect(labels(el)).toEqual(['Living room.jpg, the cover, photo 1 of 3', 'Kitchen.jpg, photo 2 of 3', 'Hall.jpg, photo 3 of 3']);
     expect(tiles(el).map((tile) => !(tile.querySelector('.fd-photo-cover') as HTMLElement).hidden)).toEqual([true, false, false]);
     expect(el.querySelector('.fd-photos-count')?.textContent).toBe('3 of 6 photos');
-    expect(el.querySelector('.fd-photos-how')?.textContent).toBe('Drag a photo to move it, or press Alt and an arrow key. The first is the cover.');
+    expect(el.querySelector('.fd-photos-how-keys')?.textContent).toBe('Drag a photo to move it, or press Alt and an arrow key. The first is the cover.');
+    // Where the screen is touched, the sheet shows a finger's way instead.
+    expect(el.querySelector('.fd-photos-how-touch')?.textContent).toBe('Hold a photo a moment, then drag it to move it. The first is the cover.');
     expect(opens(el)[1].getAttribute('aria-describedby')).toBe('fd-photos-how');
     expect(el.querySelector('.fd-file-limits')?.textContent).toBe('up to 6 photos');
     // The cover needs no Make cover; the rest have it, with Crop and turn and Remove, each named by its photo.
@@ -94,7 +96,8 @@ describe('a photo set', () => {
     expect(labels(el)[0]).toBe('Living room.jpg, photo 1 of 3');
     expect(el.querySelector('.fd-photo-cover:not([hidden])')).toBeNull();
     expect(tiles(el)[1].querySelector('[data-tool="cover"]')).toBeNull();
-    expect(el.querySelector('.fd-photos-how')?.textContent).toBe('Drag a photo to move it, or press Alt and an arrow key.');
+    expect(el.querySelector('.fd-photos-how-keys')?.textContent).toBe('Drag a photo to move it, or press Alt and an arrow key.');
+    expect(el.querySelector('.fd-photos-how-touch')?.textContent).toBe('Hold a photo a moment, then drag it to move it.');
     expect((el as HTMLElement).style.getPropertyValue('--fd-photo-shape')).toBe('1');
   });
 
@@ -146,8 +149,9 @@ describe('a photo set', () => {
     document.dispatchEvent(pointer('pointermove', 20, 45));
     expect(tiles(el)[2].hasAttribute('data-lifted')).toBe(true);
     expect(el.hasAttribute('data-moving')).toBe(true);
-    // Over the first tile's start: before it — laid out first while dragged, nothing kept yet.
+    // Over the first tile's start: before it — laid out first while dragged, the cover's mark on it, nothing kept yet.
     expect(tiles(el).map((tile) => tile.style.order)).toEqual(['-2', '-1', '-3']);
+    expect(tiles(el).map((tile) => !(tile.querySelector('.fd-photo-cover') as HTMLElement).hidden)).toEqual([false, false, true]);
     expect(value().map((p) => p.name)).toEqual(ROOMS);
     document.dispatchEvent(pointer('pointerup', 20, 45));
     expect(value().map((p) => p.name)).toEqual(['Hall.jpg', 'Living room.jpg', 'Kitchen.jpg']);
@@ -163,6 +167,7 @@ describe('a photo set', () => {
     expect(tiles(el)[0].style.order).toBe('-2');
     key(document.body, 'Escape');
     expect(tiles(el).every((tile) => tile.style.order === '')).toBe(true);
+    expect(tiles(el).map((tile) => !(tile.querySelector('.fd-photo-cover') as HTMLElement).hidden)).toEqual([true, false, false]);
     document.dispatchEvent(pointer('pointerup', 160, 45));
     expect(value().map((p) => p.name)).toEqual(['Hall.jpg', 'Living room.jpg', 'Kitchen.jpg']);
   });
@@ -378,6 +383,9 @@ describe('a photo cropped and turned', () => {
     box.dispatchEvent(new Event('change', { bubbles: true }));
     sent[0].end();
     await form.settled();
+    // Never drawn as a photo picked, nor counted as one uploaded: it is the kitchen's.
+    expect(el.querySelector('.fd-file-going')).toBeNull();
+    expect(el.querySelector('.fd-file-news')?.textContent).toBe('');
     expect(value()[1]).toEqual({ url: 'https://files.example/Kitchen-cropped.jpg', name: 'Kitchen.jpg', size: 7, type: 'image/jpeg', fileId: 41, original: photo('Kitchen.jpg'), edit: { turn: 0, crop: { x: 0, y: 0, width: 1, height: 1 } }, caption: 'Newly fitted' });
     expect(going.hidden).toBe(true);
   });
