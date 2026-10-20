@@ -108,6 +108,8 @@ export function formApprovals(host: ApprovalsHost): ApprovalsKit {
   const page = form.page;
   /** Counted at each ask: only the latest answer is kept, a save's and a load's asks crossing. */
   let asks = 0;
+  /** A decision on its way, from the save before it to the record loaded after: a second press is the same press. */
+  let deciding = false;
   const user = () => {
     const person = form.user();
     return person ? { user: { id: person.id, ...(person.name ? { name: person.name } : {}) } } : {};
@@ -157,8 +159,17 @@ export function formApprovals(host: ApprovalsHost): ApprovalsKit {
     if (!now?.mine.includes(level)) throw new Error(fill(messages.approvalNotYours, { level: nameOf(level) }));
     const why = typeof reason === 'string' ? reason.trim() : '';
     if (decision === 'rejected' && !why) throw new Error(messages.approvalReasonNeeded);
-    // One decision at a time: a second press while one is on its way is the same press.
-    if (now.deciding) return;
+    // One decision at a time: a second press while one is on its way — its save, its answer — is the same press.
+    if (deciding || now.deciding) return;
+    deciding = true;
+    try {
+      await decided(source.decide.bind(source), recordId, level, decision, why);
+    } finally {
+      deciding = false;
+    }
+  }
+
+  async function decided(send: NonNullable<DataSource['decide']>, recordId: NonNullable<FormState['recordId']>, level: string, decision: ApprovalDecision, why: string): Promise<void> {
     const shown = form.recordShown();
     // Decided on the record as it is saved: what is typed read, and the person's changes saved, first.
     const refused = await saveFirst();
@@ -168,7 +179,7 @@ export function formApprovals(host: ApprovalsHost): ApprovalsKit {
     if (!at) return;
     host.set({ approval: { ...at, deciding: { level, decision } } });
     try {
-      const answer = await source.decide({ model, recordId, level, decision, ...(why ? { reason: why } : {}), ...user() });
+      const answer = await send({ model, recordId, level, decision, ...(why ? { reason: why } : {}), ...user() });
       if (!shown()) return;
       const after = state().approval;
       host.set({ approval: answer && Array.isArray(answer.levels) ? approvalOf(answer, true) : after ? { ...after, deciding: null } : null });

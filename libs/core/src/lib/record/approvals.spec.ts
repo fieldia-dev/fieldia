@@ -332,6 +332,18 @@ describe('a decision, as the form takes it', () => {
     expect(dataSource.records['purchase.order'][1]['notes']).toBe('Split the delivery in two');
   });
 
+  it('takes a second press while the save before it goes as the same press: one save, one decision', async () => {
+    const dataSource = source();
+    const form = open(dataSource, 1);
+    await form.settled();
+    form.setValue('notes', 'Split the delivery in two');
+    const first = form.decide('finance', 'approved');
+    const second = form.decide('finance', 'approved');
+    await Promise.all([first, second]);
+    await form.settled();
+    expect(dataSource.calls.map((call) => call.method).filter((method) => method === 'save' || method === 'decide')).toEqual(['save', 'decide']);
+  });
+
   it('says the source’s refusal in its words, and nothing is decided', async () => {
     const dataSource = source();
     dataSource.decide = () => Promise.reject(saveRefused({ kind: 'rule', message: 'Finance closes its books today: decide tomorrow' }));
