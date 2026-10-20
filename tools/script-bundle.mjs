@@ -121,15 +121,19 @@ const CORE_RUNTIME = join(WORKSPACE, 'libs/core/src/runtime.ts');
 const asksForParts = (table, parts) => ({
   name: 'asks-for-parts',
   setup(builder) {
-    builder.onLoad({ filter: /libs\/(widgets|viewer)\/src\/lib\/[a-z-]+\.ts$/ }, ({ path }) => {
+    builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/([a-z-]+\/)?[a-z-]+\.ts$/ }, ({ path }) => {
       const source = readFileSync(path, 'utf8');
       /** Whether code, its comments aside, calls import(). */
       const callsImport = (code) => /\bimport\s*\(/.test(code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1'));
       if (!callsImport(source)) return undefined;
       const asking = source.replace(/\bimport\('\.\/([a-z]+)-part'\)/g, (_, part) => {
         const file = join(dirname(path), `${part}-part.ts`);
-        if (parts.has(part) && parts.get(part) !== file) throw new Error(`two parts are named ${part}: ${parts.get(part)} and ${file}`);
-        parts.set(part, file);
+        // A part's modules, one a package at most: a feature's form code in @fieldia/core and what draws it in the
+        // viewer come as one script (the limits part), each package asking for its own module of it.
+        const files = parts.get(part) ?? new Set();
+        const same = [...files].find((other) => other !== file && packageOf(other) === packageOf(file));
+        if (same) throw new Error(`two parts are named ${part}: ${same} and ${file}`);
+        parts.set(part, files.add(file));
         return `__fieldiaPart(${JSON.stringify(part)})`;
       });
       if (callsImport(asking)) throw new Error(`${path} loads a module with import(): the script bundle loads only parts (a ./x-part module) on demand`);
@@ -139,13 +143,20 @@ const asksForParts = (table, parts) => ({
     builder.onLoad({ filter: /.*/, namespace: 'fieldia-shared-table' }, () => ({
       contents: [
         ...table.map(([file, names], i) => `import { ${names.map((name) => `${name} as m${i}_${name}`).join(', ')} } from ${JSON.stringify(file)};`),
-        `export const SHARED = [${table.map(([, names], i) => `{ ${names.map((name) => `${name}: m${i}_${name}`).join(', ')} }`).join(', ')}];`,
+        // Made the first time a part is taken, once every module of the main script has run: a module that asks for a
+        // part may be one the table's modules import (the form's, in @fieldia/core), whose consts are not set yet as it
+        // is first read.
+        `let made;`,
+        `export const SHARED = () => made || (made = [${table.map(([, names], i) => `{ ${names.map((name) => `${name}: m${i}_${name}`).join(', ')} }`).join(', ')}]);`,
       ].join('\n'),
       resolveDir: WORKSPACE,
       loader: 'js',
     }));
   },
 });
+
+/** The package a module of the workspace is in: core, widgets or viewer. */
+const packageOf = (file) => /libs\/([a-z]+)\//.exec(file)?.[1];
 
 /**
  * A part: a module of the main script is taken from the table — `__fieldia`, its factory's argument — or, while the
@@ -191,8 +202,11 @@ const mainScript = async (table) => {
     outfile: OUT,
     metafile: true,
   });
-  const inMain = new Set(Object.keys(metafile.inputs).filter((input) => input.startsWith('libs/') || input.startsWith('tools/')).map((input) => join(WORKSPACE, input)));
-  for (const [part, file] of parts) PART_SOURCES[part] = file;
+  // The modules the main script carries: those its file was made of, never one it read and left out whole (the
+  // packages' memory source, which only its part's members use: the one-tag script's own source stands in for it).
+  const [, written] = Object.entries(metafile.outputs).find(([file]) => file.endsWith('/fieldia.js'));
+  const inMain = new Set(Object.keys(written.inputs).filter((input) => input.startsWith('libs/') || input.startsWith('tools/')).map((input) => join(WORKSPACE, input)));
+  for (const [part, files] of parts) PART_SOURCES[part] = [...files].sort();
   return { inMain, parts: [...parts.keys()].sort(), metafile };
 };
 /**
@@ -231,10 +245,12 @@ const wordsLiteral = (tables) => {
   const object = (entries) => `{${entries.map(([key, value]) => `${/^[A-Za-z_]\w*$/.test(key) ? key : ascii(key)}:${value}`).join(',')}}`;
   return object(Object.entries(tables).map(([table, words]) => [table, object(Object.entries(words).map(([key, text]) => [key, ascii(text)]))]));
 };
+/** A part's script's own module: each of its modules' exports (a part may have one in each package). */
+const partEntry = (part) => PART_SOURCES[part].map((file) => `export * from ${JSON.stringify(file)};`).join('\n');
 const partScript = (part, inMain, table) =>
   build({
     ...common,
-    stdin: { contents: `export * from ${JSON.stringify(PART_SOURCES[part])};`, resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
+    stdin: { contents: partEntry(part), resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
     plugins: [minifiedStyles, englishOnly, takesShared(inMain, table)],
     globalName: 'part',
     // It hands itself to the main script (tools/script-parts.ts), or waits for it in the queue.
@@ -252,14 +268,14 @@ const partNeeds = async (part, inMain) => {
     minify: false,
     sourcemap: false,
     write: false,
-    stdin: { contents: `export * from ${JSON.stringify(PART_SOURCES[part])};`, resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
+    stdin: { contents: partEntry(part), resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
     plugins: [minifiedStyles, englishOnly, takesShared(inMain, null)],
     outfile: join(BUNDLE, `fieldia.${part}.mjs`),
   });
   return namesUsed(outputFiles[0].text);
 };
 
-/** Each part's module, by its name, as the main script asks for it. */
+/** Each part's modules, by its name, as the main script asks for it: one, or one in each package that asks for it. */
 const PART_SOURCES = {};
 
 // The table settles in a round or two: the main script built with it may carry a module a part would otherwise have copied.
@@ -919,7 +935,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 13.53 + 12.30 is 545.24; the merged build with the cross-lane jobs (one optionsFrom, a line's options by condition
 // and one rule for what is taken out, endings reading the functions, places in every way a choice is drawn) measured
 // 547.63, to 547.7.
-const BUDGET_KB = 547.7;
+// The 0.27 size pass, each move measured after the one before: a memory source's members in a part of their own
+// (fieldia.memory.js, 16.07), the one-tag script handing its source over at once with what it keeps — its records,
+// responses, calls, drafts and versions, someone else's change — and each member answering once its part came: 547.63
+// measured before, 534.54 after; the bodies of the formula language's sixteen functions beyond the plain ones in
+// @fieldia/core's functions part (fieldia.functions.js, 4.32), with the days they count — their names and what each
+// takes kept, so a page reads and checks as ever, a value worked out from one waiting for it as for an app's function
+// that asks — 532.31 after, to 532.4.
+const BUDGET_KB = 532.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1135,7 +1158,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // before, 167.38 after — 4.4 more, to 167.4. A page with limits or Continue later takes 2.41 more in fieldia.limits.js.
 // All merged for 0.27.0 (provisional until the size step): the lanes' 162.94 + 0.34 + 0.86 + 0.51 + 0.83 + 1.52 + 1.47
 // + 4.76 + 4.44 is 177.67; the merged build with the cross-lane jobs measured 178.21, to 178.3.
-const GZIP_BUDGET_KB = 178.3;
+// The 0.27 size pass (listed with the raw budget above), each move measured after the one before: a memory source's
+// members in fieldia.memory.js (5.71 gzipped), loaded the first time a page's memory source is asked — never by a page
+// whose app gives its own source, as an app's real one does — 178.21 measured before, 174.04 after; the sixteen
+// functions' bodies in fieldia.functions.js (1.88), loaded before a page whose formulas call one is drawn, 173.40
+// after, to 173.5.
+const GZIP_BUDGET_KB = 173.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1672,7 +1700,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 4.6.
 // Measured on the merged build, two parts past their lanes' numbers by what the lanes share: filters 22.69 and 7.81, to
 // 22.7 and 7.9; import 38.11 and 15.03, to 38.2 and 15.1.
-const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [5.4, 2.5], print: [16.9, 5.4] };
+// The 0.27 size pass: memory new, 16.07 and 5.71 — a memory source's every member a backend has, on what the one-tag
+// script's source keeps at once (memory-kept.ts, in the main script) — to 16.1 and 5.8; functions new, 4.32 and 1.88 —
+// age, years, months, addDays, addMonths, addYears, contains, startsWith, endsWith, upper, lower, join, average,
+// roundMoney, empty and firstOf, their bodies alone, and the days they count (dates.ts) — to 4.4 and 1.9.
+const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [5.4, 2.5], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [4.4, 1.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1699,9 +1731,11 @@ const PART_GIVES = {
   answers: ['sentenceValue', 'orderedDay', 'wordedWidget', 'drawEnding', 'linkedValueWords'],
   print: ['printLook', 'printPage', 'printAlone', 'installPrintStyles'],
   limits: ['drawLimits', 'installLimitsStyles'],
+  memory: ['createMemoryDataSource', 'memorySource'],
+  functions: ['functionBody'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -1816,7 +1850,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
   });
   await new Promise((done) => dom.window.addEventListener('load', done));
   const { Fieldia: inPage, document: doc } = dom.window;
-  const loaded = () => PARTS.filter((part) => inPage[PART_OF[part]].loaded).join(', ');
+  // The memory part is a data source's, never a page's: said apart below.
+  const loaded = () => PARTS.filter((part) => part !== 'memory' && inPage[PART_OF[part]].loaded).join(', ');
   /** The parts in after a step, every one so far — as one run of this check found them, each part's first use clear. */
   const hasIn = (step, want) => {
     const now = loaded();
@@ -1838,6 +1873,20 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const waits = (view, what) => {
     if (host.querySelector('.fd-field, .fd-list') || view.element.getAttribute('aria-busy') !== 'true') throw new Error(`in a page, ${what} drew before its part came`);
   };
+  // A page whose app gives its own data source never asks for the memory part. A memory source is handed over at once —
+  // its records, its calls, someone else's change — and its members answer once their part came, asked for the first
+  // time one is called.
+  {
+    const own = inPage.mountViewer(host, { page: read('delivery.page.json'), dataSource: { submit: async () => ({}) } });
+    await own.drawn;
+    own.destroy();
+    if (inPage.memoryPart.loaded) throw new Error('in a page, an app with its own data source brought the memory part');
+    const memory = inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders' } } }, versions: true });
+    if (inPage.memoryPart.loaded || memory.records.partner[1].name !== 'Nile Traders' || memory.changeElsewhere('partner', 1, { name: 'Nile Traders Co.' }, { by: 'Mona' }).by !== 'Mona') throw new Error("in a page, a memory source's own state is not there at once");
+    const read1 = await memory.load({ model: 'partner', id: 1, fields: {} });
+    if (!inPage.memoryPart.loaded || read1.values?.name !== 'Nile Traders Co.' || memory.calls.length !== 1) throw new Error(`in a page, a memory source does not answer once its part came: ${JSON.stringify(read1)}`);
+    if (inPage.createMemoryDataSource().load === memory.load) throw new Error('in a page, a memory source made once its part came is not made whole');
+  }
   // A page of plain parts — a delivery's words and a tick, no link to another record: drawn at once, nothing asked for.
   const plain = inPage.mountViewer(host, { page: read('delivery.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
@@ -2057,6 +2106,15 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (!doc.getElementById('fieldia-limits-styles')) throw new Error("in a page, the limits part's sheet was never put in");
   closed.destroy();
   gone('closed');
+  // A visit's feedback whose formula counts an age: the form's functions part (@fieldia/core's), the page drawn once
+  // it came — nothing of it before — the age worked out at once, never waiting in sight.
+  const visit = inPage.mountViewer(host, { page: read('visit-feedback.page.json'), dataSource: inPage.createMemoryDataSource(), values: { birth_date: '1990-10-20' }, now: () => new dom.window.Date('2026-10-20T12:00:00Z') });
+  waits(visit, 'a page whose formula counts an age');
+  await visit.drawn;
+  hasIn("a visit's feedback counting an age", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
+  if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
+  visit.destroy();
+  gone('visit');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
@@ -2079,7 +2137,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age, worked out by the form's functions part — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

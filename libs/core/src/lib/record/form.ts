@@ -9,7 +9,7 @@ import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
 import { zonedPage } from '../format/zoned';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
-import type { Answered, ExpressionEnv, FunctionTable } from '../expression/functions';
+import { callsPartFunctions, functionsPart, type Answered, type ExpressionEnv, type FunctionTable } from '../expression/functions';
 import { functionTable, type AppFunctions } from '../expression/app-functions';
 import { dayIn, ownZone } from './zones';
 import { checkProperties, checkValue } from './check';
@@ -941,6 +941,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let answers = new Map<string, Answered | 'asking'>();
   /** Those on their way: a save waits for them. */
   const asking = new Set<Promise<unknown>>();
+  /** Everything the form waits on (`track`): there before the form's first values are worked out, which may ask. */
+  const pending = new Set<Promise<unknown>>();
   function answer(key: string, asked?: PromiseLike<unknown>): Answered | 'asking' | undefined {
     const kept = answers.get(key);
     if (kept !== undefined || !asked) return kept;
@@ -960,8 +962,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     track(going);
     return 'asking';
   }
-  /** What every expression of the form is handed of the app's. */
-  const app: AppReads = table ? { functions: table, answer } : {};
+  /**
+   * What every expression of the form is handed of the app's — and, on a page calling Fieldia's functions whose bodies
+   * come in the functions part before it has come, the answers they wait for it with, as an app's function that asks.
+   */
+  const app: AppReads = table ? { functions: table, answer } : !functionsPart.loaded && callsPartFunctions(page) ? { answer } : {};
   const index = indexLayout(page.layout, table);
   /** Each field node's answer rules, read once. */
   const nodeRules = new Map<string, CompiledRule[]>();
@@ -1350,7 +1355,6 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let onchangeSeq = 0;
   let draftTimer: unknown = null;
   let autosaveTimer: unknown = null;
-  const pending = new Set<Promise<unknown>>();
   const listeners = new Set<(state: FormState) => void>();
   /** The app's listeners, by event. */
   const events = new Map<keyof FormEvents, Set<(event: never) => void>>();

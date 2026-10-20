@@ -1,5 +1,6 @@
 import {
   functionTable,
+  functionsPart,
   optionsField,
   optionsList,
   limitInstant,
@@ -689,6 +690,9 @@ export function createDesigner(options: {
   /** The sets of borders the app's maps know (their `regions`), offered for a map's areas by colour. Without them, a map has no areas to add. */
   regionSets?: readonly RegionSet[];
 }): Designer {
+  // The formula boxes work a formula out on made-up values with each of Fieldia's functions: their bodies beyond the
+  // plain ones are @fieldia/core's functions part, asked for at once.
+  functionsPart.load().catch(() => undefined);
   const store = options.store;
   /** How each editor reads a setting typed and not yet left (`settling`): publish runs them first. */
   const readers = new Set<() => void>();

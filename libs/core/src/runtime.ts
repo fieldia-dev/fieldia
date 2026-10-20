@@ -299,3 +299,7 @@ export { limitInstant, takingWords, whenWords, type FormLimits, type Seats, type
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
 export { fieldPattern } from './lib/format/pattern';
+// Code a page loads the first time it uses it (a part): the loader the widgets' and the viewer's parts are made with.
+export { lazyPart, partWith, partsOf, partsComeByScriptTag, settleParts, type Part } from './lib/parts';
+// The bodies of Fieldia's functions beyond the plain ones, loaded before a page that calls one is drawn.
+export { callsPartFunctions, functionsPart, type FunctionsPart } from './lib/expression/functions';

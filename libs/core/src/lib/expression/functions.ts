@@ -1,7 +1,7 @@
 import type { ASTNode } from './parser';
 import { isNumber, roundTo, tidy, truthy } from './operations';
-import { addDays, addMonths, monthsBetween } from './dates';
-import { placesOfCurrency } from '../record/input-rules';
+import { lazyPart, type Part } from '../parts';
+import type * as FunctionsModule from './functions-part';
 
 /**
  * The functions an expression may call. Each says how many values it takes,
@@ -75,14 +75,14 @@ export function localDay(date: Date): string {
 }
 
 /** The list a function counts or adds up: the rows of a one2many named by its field, or any list. */
-function listOf(call: Call): unknown {
+export function listOf(call: Call): unknown {
   const first = call.args[0];
   const rows = first.type === 'Identifier' ? call.env.lines?.(first.name) : undefined;
   return rows ?? call.value(first);
 }
 
 /** A condition given in quotes as the value at `at`: refused when it is anything else. */
-function conditionAt(args: readonly ASTNode[], at: number, name: string, example: string): string | undefined {
+export function conditionAt(args: readonly ASTNode[], at: number, name: string, example: string): string | undefined {
   const arg = args[at];
   return arg && !(arg.type === 'Literal' && typeof arg.value === 'string') ? `${name} takes a condition, in quotes, on the lines: ${example}` : undefined;
 }
@@ -96,7 +96,7 @@ function rowsWhere(call: Call, list: unknown[], at: number): unknown[] {
 }
 
 /** The numbers of a list a function adds up: its items, or a field of its rows (`sum(lines, 'x')`), where a condition holds. */
-function numbersOf(call: Call, list: unknown[]): number[] {
+export function numbersOf(call: Call, list: unknown[]): number[] {
   const field = call.args[1]?.type === 'Literal' ? (call.args[1].value as string) : undefined;
   return rowsWhere(call, list, 2)
     .map((item) => (field === undefined ? item : (item as Record<string, unknown> | null)?.[field]))
@@ -111,69 +111,11 @@ function dayNumber(value: unknown): number | null {
 }
 
 /** The values given, lists opened, empty ones left out. */
-function opened(call: Call, args: readonly ASTNode[] = call.args): unknown[] {
+export function opened(call: Call, args: readonly ASTNode[] = call.args): unknown[] {
   return args.flatMap((arg) => {
     const value = call.value(arg);
     return Array.isArray(value) ? value : [value];
   }).filter((value) => value !== null && value !== undefined);
-}
-
-/** Empty as a person sees it: nothing, text of only spaces, an empty list or object. Zero and no are values. */
-export function isBlank(value: unknown): boolean {
-  if (value === null || value === undefined) return true;
-  if (typeof value === 'string') return value.trim() === '';
-  if (Array.isArray(value)) return value.length === 0;
-  return typeof value === 'object' && Object.keys(value).length === 0;
-}
-
-/** Text as compared whatever its case. */
-const folded = (text: string) => text.toLowerCase();
-
-/** A test on text whatever its case: false for empty text, null for what is not text. */
-function textTest(test: (text: string, part: string) => boolean): ExpressionFunction {
-  return {
-    takes: [2, 2],
-    call({ args, value }) {
-      const text = value(args[0]);
-      const part = value(args[1]);
-      if (text === null || text === undefined || text === '') return false;
-      if (typeof text !== 'string' || (typeof part !== 'string' && !isNumber(part))) return null;
-      return test(folded(text), folded(String(part)));
-    },
-  };
-}
-
-/** Text in capitals or small letters; null for what is not text. */
-function textCase(upper: boolean): ExpressionFunction {
-  return {
-    takes: [1, 1],
-    call({ args, value }) {
-      const text = value(args[0]);
-      return typeof text === 'string' ? (upper ? text.toUpperCase() : text.toLowerCase()) : null;
-    },
-  };
-}
-
-/** A day moved by a whole number of days, months or years. */
-function moveDay(move: (day: unknown, n: number) => string | null, times = 1): ExpressionFunction {
-  return {
-    takes: [2, 2],
-    call({ args, value }) {
-      const n = value(args[1]);
-      return isNumber(n) ? move(value(args[0]), Math.trunc(n) * times) : null;
-    },
-  };
-}
-
-/** Whole months, or years, from one day to another. */
-function between(per: number): ExpressionFunction {
-  return {
-    takes: [2, 2],
-    call({ args, value }) {
-      const months = monthsBetween(value(args[0]), value(args[1]));
-      return months === null ? null : Math.trunc(months / per);
-    },
-  };
 }
 
 /** The smallest or largest of the values, lists opened: empty ones left out, numbers or text but not both. */
@@ -184,6 +126,79 @@ function extreme(call: Call, smaller: boolean): unknown {
   const ordered = items as (number | string)[];
   return ordered.reduce((best, value) => ((smaller ? value < best : value > best) ? value : best));
 }
+
+/** The functions part: the bodies of Fieldia's functions beyond the plain ones (more-functions.ts). */
+export type FunctionsPart = typeof FunctionsModule;
+
+/**
+ * The bodies of Fieldia's functions beyond the plain ones — a person's age, days and months added, text tested and
+ * joined, an average, money rounded to its currency, the first that is not empty — loaded before a page that calls one
+ * is drawn (`callsPartFunctions`): a page that calls none never downloads them. Their names, and what each takes, are
+ * known without it, so a page is read and checked as ever.
+ */
+export const functionsPart: Part<FunctionsPart> = lazyPart('functions', () => import('./functions-part'));
+
+/** The key the functions part is asked by, as an app's function that asks is (`ExpressionEnv.answer`). */
+const PART_ASKED = 'fieldia:functions';
+
+/**
+ * One of Fieldia's functions whose body is in the functions part. Before the part has come, a value worked out from it
+ * waits for it as for an app's function that asks — shown as asked, a condition reading it not holding, a save waiting
+ * for it — and is worked out as it comes; where nothing can wait (no form), it gives nothing meanwhile, the part asked
+ * for.
+ */
+function inPart(name: string, takes: readonly [number, number], check?: ExpressionFunction['check']): ExpressionFunction {
+  return {
+    takes,
+    ...(check ? { check } : {}),
+    call(call) {
+      const part = functionsPart.loaded;
+      if (part) return part.functionBody(name)(call);
+      const coming = functionsPart.load();
+      const asked = call.env.answer?.(PART_ASKED, coming);
+      if (asked === 'asking') throw new Asking();
+      if (!call.env.answer) coming.catch(() => undefined);
+      return null;
+    },
+  };
+}
+
+/** The functions whose bodies are in the functions part, each with how many values it takes: at least, at most. */
+const IN_PART: [string, number, number][] = [
+  ['age', 1, 2],
+  ['years', 2, 2],
+  ['months', 2, 2],
+  ['addDays', 2, 2],
+  ['addMonths', 2, 2],
+  ['addYears', 2, 2],
+  ['contains', 2, 2],
+  ['startsWith', 2, 2],
+  ['endsWith', 2, 2],
+  ['upper', 1, 1],
+  ['lower', 1, 1],
+  ['join', 2, Infinity],
+  ['average', 1, Infinity],
+  ['roundMoney', 2, 2],
+  ['empty', 1, 1],
+  ['firstOf', 1, Infinity],
+];
+
+/** What is wrong with the values `average` is given, found as the expression is read: of the lines, a field and a condition. */
+function averageCheck(args: readonly ASTNode[]): string | undefined {
+  if (!(args[1]?.type === 'Literal' && typeof args[1].value === 'string')) return undefined;
+  if (args.length > 3) return `average of the lines takes the lines, a field and a condition: average(lines, 'price', "qty > 0")`;
+  return conditionAt(args, 2, 'average', `average(lines, 'price', "qty > 0")`);
+}
+
+/** A call of a function whose body is in the functions part. */
+const CALLS_IN_PART = new RegExp(`\\b(${IN_PART.map(([name]) => name).join('|')})\\s*\\(`);
+
+/**
+ * Whether a page (or any part of one) calls a function whose body is in the functions part: its formulas name one. Read
+ * over the whole page, so words that look like a call ("Your age (in years)") ask for the part too, which is no harm;
+ * one never missed.
+ */
+export const callsPartFunctions = (page: unknown): boolean => CALLS_IN_PART.test(JSON.stringify(page) ?? '');
 
 export const FUNCTIONS: ReadonlyMap<string, ExpressionFunction> = new Map<string, ExpressionFunction>([
   [
@@ -273,110 +288,8 @@ export const FUNCTIONS: ReadonlyMap<string, ExpressionFunction> = new Map<string
       call: ({ args, value }) => (truthy(value(args[0])) ? value(args[1]) : value(args[2])),
     },
   ],
-  [
-    'age',
-    {
-      takes: [1, 2],
-      // Whole years from a birth date to a day — today on the page's clock unless given — as years() counts them.
-      call({ args, value, env }) {
-        const months = monthsBetween(value(args[0]), args.length > 1 ? value(args[1]) : (env.today?.() ?? localDay(new Date())));
-        return months === null ? null : Math.trunc(months / 12);
-      },
-    },
-  ],
-  ['years', between(12)],
-  ['months', between(1)],
-  ['addDays', moveDay(addDays)],
-  ['addMonths', moveDay(addMonths)],
-  ['addYears', moveDay(addMonths, 12)],
-  [
-    'contains',
-    {
-      takes: [2, 2],
-      // Text holding words, whatever their case; a list (choices ticked, links) holding a value.
-      call({ args, value }) {
-        const where = value(args[0]);
-        const what = value(args[1]);
-        if (Array.isArray(where)) return where.includes(what);
-        if (where === null || where === undefined || where === '') return false;
-        if (typeof where !== 'string' || (typeof what !== 'string' && !isNumber(what))) return null;
-        return folded(where).includes(folded(String(what)));
-      },
-    },
-  ],
-  ['startsWith', textTest((text, part) => text.startsWith(part))],
-  ['endsWith', textTest((text, part) => text.endsWith(part))],
-  ['upper', textCase(true)],
-  ['lower', textCase(false)],
-  [
-    'join',
-    {
-      takes: [2, Infinity],
-      // The values after the first, lists opened, empty ones left out, with the first between them: join(' ', first, last).
-      call(call) {
-        const between = call.value(call.args[0]);
-        if (typeof between !== 'string') return null;
-        const items = opened(call, call.args.slice(1)).filter((item) => !isBlank(item));
-        if (!items.every((item) => typeof item === 'string' || isNumber(item))) return null;
-        return items.map(String).join(between);
-      },
-    },
-  ],
-  [
-    'average',
-    {
-      takes: [1, Infinity],
-      // Of the values or a list — or, as sum takes them, a field of the lines where a condition holds — empty ones left out.
-      check(args) {
-        if (!(args[1]?.type === 'Literal' && typeof args[1].value === 'string')) return undefined;
-        if (args.length > 3) return `average of the lines takes the lines, a field and a condition: average(lines, 'price', "qty > 0")`;
-        return conditionAt(args, 2, 'average', `average(lines, 'price', "qty > 0")`);
-      },
-      call(call) {
-        const lines = call.args[1]?.type === 'Literal' && typeof call.args[1].value === 'string';
-        let numbers: unknown[];
-        if (lines) {
-          const list = listOf(call);
-          if (list !== null && list !== undefined && !Array.isArray(list)) return null;
-          numbers = numbersOf(call, (list as unknown[] | null) ?? []);
-        } else {
-          numbers = opened(call);
-          if (!numbers.every(isNumber)) return null;
-        }
-        const all = numbers as number[];
-        return all.length ? tidy(all.reduce((total, n) => total + n, 0) / all.length) : null;
-      },
-    },
-  ],
-  [
-    'roundMoney',
-    {
-      takes: [2, 2],
-      // Rounded to its currency's places: 3 for a Jordanian dinar, 0 for a yen, 2 for most. A link to a currency is read by its name.
-      call({ args, value, env }) {
-        const amount = value(args[0]);
-        const named = args[1].type === 'Identifier' ? env.nameOf?.(args[1].name) : undefined;
-        const currency = named ?? value(args[1]);
-        if (!isNumber(amount) || typeof currency !== 'string' || !/^[A-Za-z]{3}$/.test(currency)) return null;
-        return roundTo(amount, placesOfCurrency(currency.toUpperCase()));
-      },
-    },
-  ],
-  ['empty', { takes: [1, 1], call: ({ args, value }) => isBlank(value(args[0])) }],
-  [
-    'firstOf',
-    {
-      takes: [1, Infinity],
-      // The first value that is not empty — zero and no are values — read only as far as it is found.
-      call({ args, value }) {
-        for (const arg of args) {
-          const found = value(arg);
-          if (!isBlank(found)) return found;
-        }
-        return null;
-      },
-    },
-  ],
+  // Fieldia's functions beyond the plain ones: their bodies in the functions part, loaded for a page that calls them.
+  ...IN_PART.map(([name, least, most]): [string, ExpressionFunction] => [name, inPart(name, [least, most], name === 'average' ? averageCheck : undefined)]),
 ]);
 
 /** How many values a function takes, in words: "round takes 1 or 2 values". */

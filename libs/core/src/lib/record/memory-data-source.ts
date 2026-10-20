@@ -55,6 +55,7 @@ import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused 
 import { distanceFrom, matchesFilter } from './filter';
 import { spanStart } from './periods';
 import { wait, type Scheduler } from './scheduler';
+import { memoryKept, type MemoryKept } from './memory-kept';
 import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 export interface MemoryDataSourceOptions {
@@ -189,13 +190,12 @@ export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecor
  * paths a real adapter takes.
  */
 export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): MemoryDataSource {
-  const records = structuredCopy(options.records ?? {});
-  const notDuplicatePairs = structuredCopy(options.notDuplicatePairs ?? {});
-  const responses: SubmitRequest[] = [];
-  const calls: MemoryDataSource['calls'] = [];
-  /** Responses others sent meanwhile (`answeredElsewhere`): counted, never as this person's. */
-  const elsewhere: SubmitRequest[] = [];
-  const drafts: MemoryDataSource['drafts'] = structuredCopy(options.drafts ?? {});
+  return memorySource(options, memoryKept(options));
+}
+
+/** A memory source's members, working on what it keeps (`memoryKept`): the one-tag script's memory part. */
+export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept): MemoryDataSource {
+  const { records, notDuplicatePairs, responses, calls, elsewhere, drafts, table, versionOf, moveOn } = kept;
   let draftIds = 0;
   /** Properties added in place, by the list and the definitions the app gave for the record they were added to. */
   const addedDefinitions = new Map<string, PropertyDefinition[]>();
@@ -204,20 +204,6 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   let fileIds = 0;
   /** Each file's tries at the store, by its name and size: what `storage.fails` is told. */
   const tries = new Map<string, number>();
-  /** Each record's version, by `model:id`, given when first asked. */
-  const versions = new Map<string, RecordVersion>();
-  let stamps = 0;
-  const versionOf = (model: string, id: RecordId): RecordVersion | undefined => {
-    if (!options.versions) return undefined;
-    const key = `${model}:${id}`;
-    if (!versions.has(key)) versions.set(key, { token: String(++stamps) });
-    return versions.get(key);
-  };
-  const moveOn = (model: string, id: RecordId, by: string | undefined, at = new Date().toISOString()): RecordVersion => {
-    const version: RecordVersion = { token: String(++stamps), ...(by ? { by } : {}), at };
-    versions.set(`${model}:${id}`, version);
-    return version;
-  };
   const me = typeof options.versions === 'object' ? options.versions.by : undefined;
   const permissions = (model: string, id: RecordId) => {
     const stored = table(model)[String(id)];
@@ -236,7 +222,6 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   const told = (version: RecordVersion | undefined, can: RecordPermissions | undefined) => ({ ...(version ? { version } : {}), ...(can ? { can } : {}) });
 
   const pause = () => (options.delayMs ? wait(options.delayMs, options.scheduler) : Promise.resolve());
-  const table = (model: string) => (records[model] ??= {});
   const labelOf = (model: string, id: RecordId) => {
     const value = table(model)[String(id)]?.[options.labelField?.[model] ?? 'name'];
     return typeof value === 'string' ? value : String(id);
@@ -344,10 +329,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     responses,
     calls,
     drafts,
-
-    answeredElsewhere(pageId: string, values: Values) {
-      elsewhere.push({ pageId, values: structuredCopy(values) });
-    },
+    answeredElsewhere: kept.answeredElsewhere,
+    changeElsewhere: kept.changeElsewhere,
 
     async limits(request: LimitsRequest): Promise<LimitsResult> {
       calls.push({ method: 'limits', request });
@@ -380,13 +363,6 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       if (!kept || kept.pageId !== request.pageId) return null;
       const { pageId: _page, later: _later, ...draft } = structuredCopy(kept);
       return draft;
-    },
-
-    changeElsewhere(model: string, id: RecordId, values: Values, who: { by: string; at?: string }): RecordVersion {
-      const stored = table(model)[String(id)];
-      if (!stored) throw new Error(`No ${model} record with id ${id}`);
-      Object.assign(stored, structuredCopy(values));
-      return moveOn(model, id, who.by, who.at);
     },
 
     async load(request: LoadRequest): Promise<Values | LoadedRecord> {
