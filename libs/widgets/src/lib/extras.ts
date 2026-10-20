@@ -3,7 +3,7 @@ import type { JsonValue } from '@fieldia/core';
 import { fillIn } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 import { jsonProblem, readJson } from './json-problem';
-import { linkAddress, sanitizeHtml } from './sanitize';
+import { linkAddress, pasteTable, sanitizeHtml } from './sanitize';
 import { partFactory, textPart } from './widget-parts';
 
 export { linkAddress, sanitizeHtml } from './sanitize';
@@ -74,6 +74,8 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
     last = clean;
     form.setValue(name, clean.trim() === '' ? null : clean);
   });
+  // A table pasted from Word, Excel or Google Docs is kept, plain.
+  area.addEventListener('paste', (event) => area.getAttribute('contenteditable') === 'true' && pasteTable(event, document));
   area.addEventListener('blur', () => {
     // Show what was stored: anything unsafe that was typed or pasted is gone.
     if (area.innerHTML !== last) area.innerHTML = last;
