@@ -1,21 +1,12 @@
-import type { Field } from './field';
 import type { Page } from './page';
-
-/** What a page's approvals are checked with: the reference check's own report, its fields, and its word that they are owed (`owe`). */
-export interface ApprovalTools {
-  report(path: string, message: string): void;
-  /** The field of this name, or reported missing at `path`. */
-  need(name: string, path: string): Field | undefined;
-  /** Said where checks come in a part that has not come (the one-tag script's: later-checks.ts): they are owed. */
-  owe(part: string): void;
-}
+import type { FieldTools } from './part-checks';
 
 /**
  * A page's `approval`: on a record's own page — a page of responses keeps no record to approve, and a list approves
  * none of its rows — the fields it leaves open each one of the page's, named once. In the one-tag script it comes with
  * the approvals part, which a page with approvals asks for: run once it came (later-checks.ts).
  */
-export function checkApproval(page: Page, tools: ApprovalTools): void {
+export function checkApproval(page: Page, tools: FieldTools): void {
   const approval = page.approval;
   if (approval === undefined) return;
   if (page.data.kind !== 'record') tools.report('approval', 'approvals are asked of a record: a page of responses keeps none to approve');

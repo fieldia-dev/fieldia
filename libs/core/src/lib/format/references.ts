@@ -150,7 +150,7 @@ export class ReferenceCheck {
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
     // A record's approvals: checked where it has them (in the one-tag script, by the approvals part it asks for).
-    if (!this.line && this.page.approval !== undefined) checkApproval(this.page, { report: (path, message) => this.report(path, message), need: (name, path) => this.need(name, path), owe: (part) => this.later.add(part) });
+    if (!this.line && this.page.approval !== undefined) checkApproval(this.page, this.fieldTools());
     this.checkGoingTo();
     return this.issues;
   }

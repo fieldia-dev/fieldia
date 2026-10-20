@@ -1,7 +1,7 @@
 import type { Page } from '../format/page';
 import { createForm } from './form';
 import { createMemoryDataSource } from './memory-data-source';
-import { formApprovalsPart, hasApprovals } from './approving';
+import { formApprovalsPart } from './approving';
 
 /**
  * Before the approvals part has come (approving.ts, `formApprovalsPart`): a record's approvals — asked of the source,
@@ -28,13 +28,6 @@ const source = () =>
   });
 
 describe("a record's approvals part", () => {
-  it('is asked for by a record’s own page with approval, never by another', () => {
-    expect(hasApprovals(order())).toBe(true);
-    expect(hasApprovals(order({ approval: undefined }))).toBe(false);
-    expect(hasApprovals(order({ data: { kind: 'responses' } }))).toBe(false);
-    expect(hasApprovals(order({ layout: { type: 'list', id: 'l', columns: ['vendor'] } as Page['layout'] }))).toBe(false);
-  });
-
   it('a page without approvals never loads it, and keeps none', async () => {
     const dataSource = source();
     const form = createForm({ page: order({ approval: undefined }), dataSource, recordId: 1 });

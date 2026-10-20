@@ -1,4 +1,3 @@
-import type { Page } from '../format/page';
 import { lazyPart, type Part } from '../parts';
 import type * as ApprovalsModule from './approvals-part';
 import type { ApprovalDecision, ApprovalEntry, ApprovalLevel } from './data-source';
@@ -46,6 +45,3 @@ export type FormApprovalsPart = typeof ApprovalsModule;
  * with `approval` is drawn: in the one-tag script, one script with the viewer's approvals part (fieldia.approvals.js).
  */
 export const formApprovalsPart: Part<FormApprovalsPart> = lazyPart('approvals', () => import('./approvals-part'));
-
-/** Whether a page shows approvals on its record: a record's own page with `approval`. */
-export const hasApprovals = (page: Page): boolean => !!page.approval && page.data.kind === 'record' && page.layout.type !== 'list';

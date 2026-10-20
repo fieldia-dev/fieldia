@@ -49,7 +49,7 @@ import {
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
 import type { Limits } from './form-limits';
-import { formApprovalsPart, hasApprovals, type FormApproval, type FormApprovalsPart } from './approving';
+import { formApprovalsPart, type FormApproval } from './approving';
 import type { ApprovalsKit } from './form-approvals';
 import { draftRead, resumeStep } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
@@ -2584,36 +2584,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /** The approvals made for this form from the approvals part, once it came: none before, nor on a page without them. */
   let approvalKit: ApprovalsKit | null = null;
-  /** Whether the form asks for approvals: a record's own page with `approval`, its source telling them. */
-  const keepsApprovals = !outer && hasApprovals(page) && !!options.dataSource?.approvals;
-  /** The approvals, made from their part as it comes — at once where it has come; null without them, or where it could not come. */
-  function approvalsCode(): Promise<ApprovalsKit | null> {
-    if (approvalKit || !keepsApprovals) return Promise.resolve(approvalKit);
-    if (formApprovalsPart.loaded) return Promise.resolve(approvalsMade(formApprovalsPart.loaded));
-    return formApprovalsPart.load().then(approvalsMade, () => null);
-  }
-  function approvalsMade(part: FormApprovalsPart): ApprovalsKit | null {
-    if (!approvalKit && !disposed)
-      approvalKit = part.formApprovals({
-        page,
-        dataSource: options.dataSource,
-        user: options.user,
-        messages,
-        state: () => state,
-        set,
-        shownNow,
-        async saveFirst() {
-          await (readTyped() ?? Promise.resolve());
-          if (!state.dirty.length && !Object.keys(state.unread).length && !(state.uploads ?? []).some(uploadGoing)) return null;
-          const stopped = await saving([]);
-          return stopped ? (stopped.message ?? state.error ?? '') : null;
-        },
-        reload: () => load(true),
-      });
-    return approvalKit;
-  }
+  /** Whether the form asks for approvals: a page with `approval` (a record's own, as its check says), its source telling them. */
+  const keepsApprovals = !outer && !!page.approval && !!options.dataSource?.approvals;
+  /** The approvals, made from their part once it came; null without them, or where it could not come. */
+  const approvalsCode = (): Promise<ApprovalsKit | null> =>
+    keepsApprovals ? formApprovalsPart.load().then((part) => (approvalKit ??= part.formApprovals({ form, dataSource: options.dataSource, messages, set, reload: () => load(true) })), () => null) : Promise.resolve(null);
   /** Ask the record shown's approvals, once their part came; nothing on a page without them. */
-  const askApprovals = (): Promise<void> => (keepsApprovals ? approvalsCode().then((kit) => kit?.ask()) : Promise.resolve());
+  const askApprovals = () => approvalsCode().then((kit) => kit?.ask());
 
   function scheduleAutosave() {
     const autosave = options.autosave;
@@ -4058,11 +4035,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     refreshLimits: () => askLimits(),
 
-    refreshApprovals: () => askApprovals(),
+    refreshApprovals: askApprovals,
 
     async decide(level, decision, reason) {
       const kit = await approvalsCode();
-      if (!kit) throw new Error('This page has no approval, or its data source no approvals()');
+      if (!kit) throw new Error('No approvals on this page');
       return track(kit.decide(level, decision, reason));
     },
 

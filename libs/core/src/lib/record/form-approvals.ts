@@ -1,11 +1,13 @@
 import type { Page } from '../format/page';
 import type { ApprovalDecision, ApprovalEntry, ApprovalLevel, ApprovalLevelState, Approvals, Approver, DataSource } from './data-source';
 import { saveProblemOf } from './data-source';
-import type { FormState, FormUser } from './form';
+import type { Form, FormState } from './form';
 import type { ApprovalStatus, FormApproval } from './approving';
 import { fill, type Messages } from './messages';
-import { whenWords } from './form-limits';
+import { dayWords } from './day-words';
 import type { DateOrder } from './input-rules';
+import { isOwnZone, wallClock, wallDay, wallTime } from './zones';
+import { uploadGoing } from './uploads';
 
 /**
  * A record's approvals (the approvals part): asked of the data source's `approvals` as a saved record is shown — again
@@ -15,18 +17,12 @@ import type { DateOrder } from './input-rules';
  * before it draws such a page, so nothing is typed in a field that would lock.
  */
 
-/** What the approvals ask of the form they are made for. */
+/** What the approvals ask of the form they are made for: the form itself — its page, its state, the record shown, its typing read and its changes saved — and what it keeps to itself. */
 export interface ApprovalsHost {
-  readonly page: Page;
+  readonly form: Form;
   readonly dataSource: DataSource | undefined;
-  readonly user: FormUser | undefined;
   readonly messages: Messages;
-  state(): FormState;
   set(patch: Partial<FormState>): void;
-  /** Whether what is asked now still lands on the record shown, when it answers. */
-  shownNow(): () => boolean;
-  /** What is typed read and the person's changes saved, before a decision: null once done, or why not, in words. */
-  saveFirst(): Promise<string | null>;
   /** The record loaded again, after a decision: its approvals asked again with it. */
   reload(): Promise<void>;
 }
@@ -98,29 +94,48 @@ export function approvalWhen(at: string, messages: Messages, page: Page): string
   if (Number.isNaN(ms)) return at;
   const own: unknown = page.look?.dateOrder;
   const order: DateOrder | undefined = own === 'dmy' || own === 'mdy' || own === 'ymd' ? own : messages.dateOrder;
-  // Written as an instant, never a day alone: its time is said.
-  return whenWords(at.includes('T') ? at : new Date(ms).toISOString(), ms, messages, page.timeZone, order);
+  const zone = page.timeZone;
+  const wall = wallTime(ms, zone);
+  const words = `${dayWords(wallDay(wall), messages, order)}${order === 'ymd' ? ' ' : ', '}${wallClock(wall)}`;
+  if (!zone || isOwnZone(zone)) return words;
+  const name = new Intl.DateTimeFormat(messages.locale === 'en' ? 'en-GB' : messages.locale, { timeZone: zone, timeZoneName: 'short' }).formatToParts(ms).find((part) => part.type === 'timeZoneName')?.value;
+  return name ? `${words} ${name}` : words;
 }
 
 /** A record's approvals: what the form keeps of them, and what it asks, decides and locks by them. */
 export function formApprovals(host: ApprovalsHost): ApprovalsKit {
-  const { page, messages } = host;
+  const { form, messages } = host;
+  const page = form.page;
   /** Counted at each ask: only the latest answer is kept, a save's and a load's asks crossing. */
   let asks = 0;
-  const user = () => (host.user ? { user: { id: host.user.id, ...(host.user.name ? { name: host.user.name } : {}) } } : {});
+  const user = () => {
+    const person = form.user();
+    return person ? { user: { id: person.id, ...(person.name ? { name: person.name } : {}) } } : {};
+  };
+  const state = () => form.getState();
   const model = page.data.kind === 'record' ? page.data.model : '';
-  const nameOf = (level: string) => host.state().approval?.levels.find((one) => one.id === level)?.name ?? level;
+  const nameOf = (level: string) => state().approval?.levels.find((one) => one.id === level)?.name ?? level;
+
+  /** What is typed read and the person's changes saved, before a decision: null once done, or why not, in words. */
+  async function saveFirst(): Promise<string | null> {
+    await form.settle();
+    const now = state();
+    if (!now.dirty.length && !Object.keys(now.unread).length && !(now.uploads ?? []).some(uploadGoing)) return null;
+    if (await form.save()) return null;
+    const after = state();
+    return after.saveProblem?.message ?? after.error ?? Object.values(after.errors)[0] ?? '';
+  }
 
   async function ask(): Promise<void> {
     const source = host.dataSource;
-    const recordId = host.state().recordId;
+    const recordId = state().recordId;
     if (!source?.approvals || recordId == null || !model) {
-      if (host.state().approval) host.set({ approval: null });
+      if (state().approval) host.set({ approval: null });
       return;
     }
-    const shown = host.shownNow();
+    const shown = form.recordShown();
     const seq = ++asks;
-    const before = host.state().approval;
+    const before = state().approval;
     // Asked again for the record shown — after a save, a decision, a load — what it told stays meanwhile: what waits stays locked.
     host.set({ approval: before && before.state === 'told' ? { ...before, state: 'asking' } : asking });
     try {
@@ -136,29 +151,29 @@ export function formApprovals(host: ApprovalsHost): ApprovalsKit {
 
   async function decide(level: string, decision: ApprovalDecision, reason?: string): Promise<void> {
     const source = host.dataSource;
-    const recordId = host.state().recordId;
+    const recordId = state().recordId;
     if (!source?.decide || recordId == null || !model) throw new Error('The data source has no decide()');
-    const now = host.state().approval;
+    const now = state().approval;
     if (!now?.mine.includes(level)) throw new Error(fill(messages.approvalNotYours, { level: nameOf(level) }));
     const why = typeof reason === 'string' ? reason.trim() : '';
     if (decision === 'rejected' && !why) throw new Error(messages.approvalReasonNeeded);
     // One decision at a time: a second press while one is on its way is the same press.
     if (now.deciding) return;
-    const shown = host.shownNow();
+    const shown = form.recordShown();
     // Decided on the record as it is saved: what is typed read, and the person's changes saved, first.
-    const refused = await host.saveFirst();
+    const refused = await saveFirst();
     if (refused !== null) throw new Error(refused);
     if (!shown()) return;
-    const at = host.state().approval;
+    const at = state().approval;
     if (!at) return;
     host.set({ approval: { ...at, deciding: { level, decision } } });
     try {
       const answer = await source.decide({ model, recordId, level, decision, ...(why ? { reason: why } : {}), ...user() });
       if (!shown()) return;
-      const after = host.state().approval;
+      const after = state().approval;
       host.set({ approval: answer && Array.isArray(answer.levels) ? approvalOf(answer, true) : after ? { ...after, deciding: null } : null });
     } catch (error) {
-      const after = host.state().approval;
+      const after = state().approval;
       if (shown() && after) host.set({ approval: { ...after, deciding: null } });
       throw new Error(saveProblemOf(error).message, { cause: error });
     }
@@ -168,7 +183,7 @@ export function formApprovals(host: ApprovalsHost): ApprovalsKit {
 
   function locks(name: string): boolean {
     const own = page.approval;
-    return !!own && own.lock !== false && host.state().approval?.status === 'waiting' && !(own.open ?? []).includes(name);
+    return !!own && own.lock !== false && state().approval?.status === 'waiting' && !(own.open ?? []).includes(name);
   }
 
   return {

@@ -310,7 +310,7 @@ export { dayOf } from './lib/record/limits';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
 // A record's approvals (`approval`): the form's state of them; asking, deciding and locking are the approvals part's.
-export { formApprovalsPart, hasApprovals, type ApprovalStatus, type FormApproval, type FormApprovalsPart } from './lib/record/approving';
+export { formApprovalsPart, type ApprovalStatus, type FormApproval, type FormApprovalsPart } from './lib/record/approving';
 // (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
