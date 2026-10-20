@@ -94,6 +94,10 @@ export const settingsChanges = {
   propertyColumns: (n: number): string => (n === 2 ? 'its properties in two columns' : 'its properties in one column'),
   canAddProperty: 'people may add a property',
   cannotAddProperty: 'people may not add a property',
+  // ---- scanned with the camera
+  scanned: 'scanned with the camera',
+  scannedBy: (field: string) => `scanned with the camera, a record found by its “${field}”`,
+  notScanned: 'no longer scanned with the camera',
   // ---- code
   writtenIn: (language: string) => `written in ${language}`,
   plainText: 'plain text',

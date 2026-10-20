@@ -1,4 +1,4 @@
-import type { FieldNode, InputMode } from '@fieldia/core';
+import type { FieldNode, InputMode, JsonValue } from '@fieldia/core';
 import { appKindPanel } from './app-kinds-ui';
 import { optionsEditor, type ElementFactory } from './chrome';
 import { choicesOf, conditionEditor } from './condition-editor';
@@ -58,6 +58,20 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const keyboard = el('select', { class: 'fd-input fd-select', 'aria-label': w.keyboard }, ...Object.entries(w.keyboards).map(([value, words]) => el('option', { value }, words))) as HTMLSelectElement;
   keyboard.addEventListener('change', () => designer.updateQuestion(id, { inputmode: keyboard.value as InputMode | '' }));
   const keyboardRow = setting(el, 'content', 'Keyboard on a phone', keyboard, { hint: w.keyboardHint, words: w.keyboard });
+  // Scanned with the camera (`options.scan`): a Scan button beside its box; a link's record found by the field of its
+  // records holding their codes. Settings beyond these (formats, a GS1 code's parts, a table counted) are the JSON's.
+  const scanSwitch = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': w.scanWithCamera }) as HTMLButtonElement;
+  scanSwitch.addEventListener('click', () => designer.setWidgetOptions(id, { scan: scanSwitch.getAttribute('aria-checked') === 'true' ? null : true }));
+  const scanRow = setting(el, 'content', 'Scan with the camera', scanSwitch, { hint: w.scanHint, words: w.scanWithCamera });
+  const codeField = el('input', { class: 'fd-input', 'aria-label': w.scanCodeField, placeholder: 'barcode', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+  codeField.addEventListener('input', () => {
+    const scan = findField(designer.getPage(), id)?.node.options?.['scan'];
+    const { by: _by, ...rest } = scan && typeof scan === 'object' && !Array.isArray(scan) ? (scan as Record<string, JsonValue>) : {};
+    const by = codeField.value.trim();
+    const next = by ? { ...rest, by } : rest;
+    designer.setWidgetOptions(id, { scan: Object.keys(next).length ? next : true });
+  });
+  const codeFieldRow = setting(el, 'content', 'Code kept in', codeField, { hint: w.scanCodeFieldHint, words: w.scanCodeField });
   // Only the kinds that suit what the field holds, as the bar on the canvas offers them, and why.
   const kind = el('select', { class: 'fd-input fd-select', 'aria-label': w.shownAs });
   kind.addEventListener('change', () => designer.changeKind(id, kind.value));
@@ -139,6 +153,8 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     placeholderRow,
     purposeRow,
     keyboardRow,
+    scanRow,
+    codeFieldRow,
     focusRow,
     ...accessKey.rows,
     setting(el, 'content', 'Shown as', kind, { hint: kindNote, words: w.shownAs }),
@@ -191,6 +207,14 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       }
       purpose.value = filled;
       keyboard.value = found.node.inputmode ?? '';
+      // A box a code is written into: words, or a link's record.
+      const scan = found.node.options?.['scan'];
+      const scannable = (def.type === 'char' && (!widget || ['email', 'phone', 'url'].includes(widget))) || ((def.type === 'text' || def.type === 'many2one') && !widget);
+      scanRow.hidden = !scannable;
+      scanSwitch.setAttribute('aria-checked', String(!!scan));
+      codeFieldRow.hidden = !scannable || !scan || def.type !== 'many2one';
+      const by = scan && typeof scan === 'object' && !Array.isArray(scan) ? (scan as { by?: unknown }).by : undefined;
+      if (!focused(codeField)) codeField.value = typeof by === 'string' ? by : '';
       focusBox.checked = found.node.focus === true;
       accessKey.update(page);
       const current = kindOfField(def, found.node);

@@ -395,6 +395,11 @@ export const panel = {
   addressPurposes: { '': 'Each part as itself', shipping: 'A shipping address', billing: 'A billing address', off: 'Nothing: the browser offers none' } as Record<string, string>,
   keyboard: 'Keyboard on a phone',
   keyboardHint: 'The keys a phone shows as the box is typed in.',
+  /** A code scanned with the camera into the field (`options.scan`), and for a link the field of its records holding their codes. */
+  scanWithCamera: 'Scan with the camera',
+  scanHint: 'A Scan button beside the box reads a barcode, a QR or a DataMatrix code with the camera. A scanner gun types into the box as ever.',
+  scanCodeField: 'Code kept in',
+  scanCodeFieldHint: 'The field of the linked records that holds their code, such as barcode. Left empty, the code is searched as a name.',
   keyboards: { '': 'As its kind says', text: 'Letters', numeric: 'Digits', decimal: 'Digits and a decimal mark', tel: 'A phone’s keypad', email: 'For an email', url: 'For a web address', search: 'For a search' } as Record<string, string>,
   // ---- a public page's bot check
   botCheck: 'Bot check',
