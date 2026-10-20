@@ -15,7 +15,7 @@
  */
 
 import { CONSTANTS, listNumber, type Token } from './tokenizer';
-import { FUNCTIONS, takesInWords } from './functions';
+import { FUNCTIONS, takesInWords, type FunctionTable } from './functions';
 
 /**
  * AST Node Types
@@ -59,7 +59,11 @@ export class ExpressionParser {
   private tokens: Token[];
   private position: number = 0;
 
-  constructor(tokens: Token[]) {
+  /** `functions`: the app's, which the expression may call besides Fieldia's own. */
+  constructor(
+    tokens: Token[],
+    private readonly functions?: FunctionTable
+  ) {
     this.tokens = tokens;
   }
 
@@ -223,8 +227,8 @@ export class ExpressionParser {
    * call: name '(' (or_expr (',' or_expr)*)? ')'
    */
   private parseCall(name: string): ASTNode {
-    const fn = FUNCTIONS.get(name);
-    if (!fn) throw new Error(`no function "${name}": the functions are ${[...FUNCTIONS.keys()].join(', ')}`);
+    const fn = FUNCTIONS.get(name) ?? this.functions?.get(name);
+    if (!fn) throw new Error(`no function "${name}": the functions are ${[...FUNCTIONS.keys(), ...(this.functions?.keys() ?? [])].join(', ')}`);
     this.advance(); // (
     const args: ASTNode[] = [];
     if (!this.match('PAREN', ')')) {

@@ -8,7 +8,7 @@
  */
 
 import type { ASTNode, BinaryOpNode, CallNode, UnaryOpNode } from './parser';
-import { FUNCTIONS, type ExpressionEnv } from './functions';
+import { FUNCTIONS, type ExpressionEnv, type FunctionTable } from './functions';
 import { ExpressionParser } from './parser';
 import { tokenize } from './tokenizer';
 import { arithmetic, negate, truthy } from './operations';
@@ -125,16 +125,22 @@ function evaluateUnaryOp(node: UnaryOpNode, context: Record<string, unknown>, en
 
 /** A function called with its values, each read only when the function asks for it. */
 function evaluateCall(node: CallNode, context: Record<string, unknown>, env: ExpressionEnv): unknown {
-  const fn = FUNCTIONS.get(node.name);
+  const fn = FUNCTIONS.get(node.name) ?? env.functions?.get(node.name);
   if (!fn) throw new Error(`Unknown function: ${node.name}`);
-  return fn.call({ args: node.args, value: (arg) => evaluate(arg, context, env), env, holds: (condition, row) => truthy(evaluate(conditionAst(condition), row as Record<string, unknown>, env)) });
+  return fn.call({ args: node.args, value: (arg) => evaluate(arg, context, env), env, holds: (condition, row) => truthy(evaluate(conditionAst(condition, env.functions), row as Record<string, unknown>, env)) });
 }
 
-/** Conditions on lines, as `count` and `sum` take them in quotes: each read once. */
+/** Conditions on lines, as `count` and `sum` take them in quotes: each read once, for each table of the app's functions. */
 const conditions = new Map<string, ASTNode>();
-function conditionAst(source: string): ASTNode {
-  let ast = conditions.get(source);
-  if (!ast) conditions.set(source, (ast = new ExpressionParser(tokenize(source)).parse()));
+const appConditions = new WeakMap<FunctionTable, Map<string, ASTNode>>();
+function conditionAst(source: string, functions: FunctionTable | undefined): ASTNode {
+  let read = conditions;
+  if (functions) {
+    read = appConditions.get(functions) ?? new Map();
+    appConditions.set(functions, read);
+  }
+  let ast = read.get(source);
+  if (!ast) read.set(source, (ast = new ExpressionParser(tokenize(source), functions).parse()));
   return ast;
 }
 

@@ -3,7 +3,8 @@ import type { Page } from '../format/page';
 import { compileExpression, type CompiledExpression, type ExpressionEnv } from '../expression/expression';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { fitTo } from './compute';
-import { expressionEnv, lineContext, recordContext, type About } from './env';
+import { expressionEnv, lineContext, recordContext, type About, type AppReads } from './env';
+import type { FunctionTable } from '../expression/functions';
 import { lineKind, sameValue, type Line, type Values } from './values';
 
 /**
@@ -36,14 +37,14 @@ interface Rule {
   on?: readonly string[];
 }
 
-function rules(fields: Record<string, Field | LineField>): Rule[] {
+function rules(fields: Record<string, Field | LineField>, functions?: FunctionTable): Rule[] {
   return Object.entries(fields).flatMap(([name, def]) =>
     (def.setWhen ?? []).map((rule: SetWhen, i): Rule => ({
       key: `${name}#${i}`,
       name,
       def,
-      when: compileModifier(rule.when ?? true),
-      value: compileExpression(rule.value),
+      when: compileModifier(rule.when ?? true, functions),
+      value: compileExpression(rule.value, functions),
       ...(rule.on ? { on: rule.on } : {}),
     }))
   );
@@ -52,16 +53,16 @@ function rules(fields: Record<string, Field | LineField>): Rule[] {
 /** Before anything was known: every condition counts as holding, so none starts. */
 const EVERYTHING: ReadonlySet<string> = { has: () => true } as unknown as ReadonlySet<string>;
 
-/** Read every `setWhen` of a page once. `today` is the day `today()` gives. */
-export function compileSetWhen(page: Page, today: () => string, about: () => About = () => ({ recordId: null })): SetWhenRules {
-  const own = rules(page.fields);
+/** Read every `setWhen` of a page once. `today` is the day `today()` gives; `app`, the app's functions and their answers. */
+export function compileSetWhen(page: Page, today: () => string, about: () => About = () => ({ recordId: null }), app: AppReads = {}): SetWhenRules {
+  const own = rules(page.fields, app.functions);
   const lineRules = new Map<string, { def: Extract<Field, { type: 'one2many' }>; rules: Rule[] }>();
   for (const [name, def] of Object.entries(page.fields)) {
     if (def.type !== 'one2many') continue;
-    const found = rules(def.fields);
+    const found = rules(def.fields, app.functions);
     if (found.length) lineRules.set(name, { def, rules: found });
   }
-  const lineEnv: ExpressionEnv = { today };
+  const lineEnv: ExpressionEnv = { ...app, today };
 
   /** One set of values (the record's, or a line's): every rule read against them as they are, before any is set. */
   function run(values: Values, list: Rule[], context: Record<string, unknown>, env: ExpressionEnv, prefix: string, before: ReadonlySet<string>, now: Set<string>): Values {
@@ -86,7 +87,7 @@ export function compileSetWhen(page: Page, today: () => string, about: () => Abo
 
   function apply(values: Values, before: ReadonlySet<string>) {
     const now = new Set<string>();
-    let next = own.length ? run(values, own, recordContext(values, page.fields, about()), expressionEnv(values, page.fields, today), '', before, now) : values;
+    let next = own.length ? run(values, own, recordContext(values, page.fields, about()), expressionEnv(values, page.fields, today, app), '', before, now) : values;
     const parent = lineRules.size ? recordContext(values, page.fields, about()) : {};
     for (const [field, { def, rules: list }] of lineRules) {
       const current = values[field];

@@ -1,6 +1,6 @@
 import type { Modifier } from '../format/layout';
 import { evaluate, truthy } from './evaluator';
-import type { ExpressionEnv } from './functions';
+import type { ExpressionEnv, FunctionTable } from './functions';
 import { ExpressionParser } from './parser';
 import { fieldsRead, pathsRead, wheresRead } from './reads';
 import { tokenize } from './tokenizer';
@@ -21,14 +21,15 @@ export interface CompiledModifier {
 /**
  * Read a modifier. `true`, `false` and a missing modifier become constants;
  * an expression is parsed now, so a mistake surfaces here and not on the
- * first keystroke. Throws when the expression cannot be read.
+ * first keystroke. Throws when the expression cannot be read. `functions`, the
+ * app's own, which it may call besides Fieldia's.
  */
-export function compileModifier(modifier: Modifier | undefined): CompiledModifier {
+export function compileModifier(modifier: Modifier | undefined, functions?: FunctionTable): CompiledModifier {
   if (typeof modifier !== 'string') {
     const value = modifier === true;
     return { source: modifier, fields: [], paths: [], wheres: [], evaluate: () => value };
   }
-  const ast = new ExpressionParser(tokenize(modifier)).parse();
+  const ast = new ExpressionParser(tokenize(modifier), functions).parse();
   return {
     source: modifier,
     fields: fieldsRead(ast),

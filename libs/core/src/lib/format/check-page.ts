@@ -2,6 +2,7 @@ import { FIELD_TYPES } from './names';
 import type { Page } from './page';
 import type { Field, LineField } from './field';
 import { ReferenceCheck, type PageIssue, type PageValidation } from './references';
+import type { FunctionsKnown } from '../expression/app-functions';
 import { formatProblem } from './version';
 import { upgradePage } from './upgrade';
 
@@ -10,15 +11,18 @@ const LAYOUTS = ['sheet', 'sections', 'tabs', 'wizard'];
 
 /**
  * The check a page gets as it is shown: its outline, then every name and
- * condition in it, the same as `validatePage` finds them. It leaves out the
+ * condition in it, the same as `validatePage` finds them — but for the kinds
+ * of value an expression hands a function (`age(notes)`), which there only
+ * give null, and are said where pages are made. It leaves out the
  * key-by-key check of the format, and so the validation library, which an app
  * showing forms need not carry; run `validatePage` where pages are made or
  * tested. A page that passes is handed back as it is — one in an older
  * format, brought up to date (`upgradePage`). A line's own form —
  * a page of a table's line fields — is checked with `parent`, the fields of
- * the record the line is on, which its conditions read as `parent`.
+ * the record the line is on, which its conditions read as `parent`; `functions`, the app's own, which its
+ * expressions may call besides Fieldia's.
  */
-export function checkPage(given: unknown, options: { parent?: Record<string, Field | LineField> } = {}): PageValidation {
+export function checkPage(given: unknown, options: { parent?: Record<string, Field | LineField>; functions?: FunctionsKnown } = {}): PageValidation {
   // A page in an older format is read as the current one (upgradePage); one newer than this Fieldia is said to be.
   const input = upgradePage(given);
   if (!isObject(input)) return { ok: false, issues: [{ path: '(page)', message: 'a page is a JSON object' }] };
@@ -49,7 +53,7 @@ export function checkPage(given: unknown, options: { parent?: Record<string, Fie
   const page = input as unknown as Page;
   try {
     // A line's own form reads the record the line is on as parent.
-    const found = new ReferenceCheck(page, options.parent ? { name: page.id, parent: options.parent } : undefined).run();
+    const found = new ReferenceCheck(page, options.parent ? { name: page.id, parent: options.parent } : undefined, { functions: options.functions }).run();
     return found.length ? { ok: false, issues: found } : { ok: true, page };
   } catch (error) {
     return { ok: false, issues: [{ path: '(page)', message: `a part of this page cannot be read: ${(error as Error).message}` }] };

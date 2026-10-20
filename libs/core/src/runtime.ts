@@ -128,6 +128,8 @@ export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';
 export { translatePage, localizePage, pageWords, isRightToLeft } from './lib/format/translate';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
+export { functionTable, functionNameProblem, type AppFunction, type AppFunctions, type FunctionInfo, type FunctionsKnown, type ValueKind } from './lib/expression/app-functions';
+export type { FunctionTable, ExpressionEnv } from './lib/expression/functions';
 export { rolesAllow } from './lib/record/roles';
 export type { CellState, FieldTone, LineState } from './lib/record/cells';
 export { evaluateModifier, isModifierValid } from './lib/expression/evaluateModifier';

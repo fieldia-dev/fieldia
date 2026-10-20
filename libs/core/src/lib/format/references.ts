@@ -5,6 +5,8 @@ import type { Page } from './page';
 import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
 import { compileExpression } from '../expression/expression';
+import { functionTable, type FunctionsKnown } from '../expression/app-functions';
+import type { FunctionTable } from '../expression/functions';
 import { dependencyOrder } from '../expression/order';
 import { valuesIn } from './words';
 import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
@@ -65,6 +67,17 @@ export interface LineOf {
   parent: Record<string, Field | LineField>;
 }
 
+/** How a page is checked besides its own parts: what the app gives its expressions, and how deep. */
+export interface CheckOptions {
+  /** The app's own functions its expressions may call (`functions` on the form, the viewer and its wrappers). */
+  functions?: FunctionsKnown;
+  /**
+   * What is wrong with the kinds of value an expression hands its functions, in words, where it is read (`validatePage`
+   * gives it: `age(notes)` says notes is text). Left out, kinds are not read: a value of the wrong kind gives null.
+   */
+  kinds?(source: string, scope: { fields: Record<string, Field | LineField>; parent?: Record<string, Field | LineField> }): string[];
+}
+
 /** Names quoted and joined as a person lists them: "a", "b" and "c". */
 const listed = (names: string[]) => {
   const quoted = names.map((name) => `"${name}"`);
@@ -83,12 +96,24 @@ export class ReferenceCheck {
   /** The names of the slots the layout places. */
   private readonly slots = new Set<string>();
 
+  /** The app's functions, as the page's expressions call them; or why the names given cannot be. */
+  private readonly table: FunctionTable | undefined;
+  private readonly tableProblem: string | undefined;
+
   constructor(
     private readonly page: Page,
-    private readonly line?: LineOf
-  ) {}
+    private readonly line?: LineOf,
+    private readonly options: CheckOptions = {}
+  ) {
+    try {
+      this.table = functionTable(options.functions);
+    } catch (error) {
+      this.tableProblem = (error as Error).message;
+    }
+  }
 
   run(): PageIssue[] {
+    if (this.tableProblem) this.report('(functions)', this.tableProblem);
     if (this.page.timeZone !== undefined) this.checkZone(this.page.timeZone, 'timeZone');
     this.checkFields(this.page.fields, 'fields', this.line?.name, this.line?.parent);
     this.walkRoot(this.page.layout, 'layout');
@@ -165,7 +190,7 @@ export class ReferenceCheck {
     const children = node.lineForm?.children;
     if (!Array.isArray(children)) return this.report(`${path}.lineForm`, 'a line’s form holds its parts: { "children": [...] }');
     const page = { ...this.page, fields: def.fields as Fields, layout: { type: 'sections', id: `${node.id}#line`, children }, on: undefined } as Page;
-    const inside = new ReferenceCheck(page, { name: node.field, parent: this.page.fields });
+    const inside = new ReferenceCheck(page, { name: node.field, parent: this.page.fields }, this.options);
     inside.walkChildren(children, `${path}.lineForm`);
     inside.checkGoingTo();
     this.issues.push(...inside.issues);
@@ -245,7 +270,7 @@ export class ReferenceCheck {
           for (const [name, value] of Object.entries(step.into ?? {})) {
             this.need(name, `${at}.into.${name}`);
             try {
-              compileExpression(value);
+              compileExpression(value, this.table);
             } catch (error) {
               this.report(`${at}.into.${name}`, `cannot read "${value}": ${(error as Error).message}`);
             }
@@ -314,12 +339,13 @@ export class ReferenceCheck {
       if (typeof value !== 'string') continue;
       let compiled: ReturnType<typeof compileModifier>;
       try {
-        compiled = compileModifier(value);
+        compiled = compileModifier(value, this.table);
       } catch (error) {
         this.report(`${path}.${key}`, `cannot read "${value}": ${(error as Error).message}`);
         continue;
       }
       this.checkReads(value, compiled, `${path}.${key}`, scope);
+      this.checkKinds(value, `${path}.${key}`, scope);
     }
   }
 
@@ -335,7 +361,7 @@ export class ReferenceCheck {
       if (lines?.type !== 'one2many') continue;
       let fields: readonly string[];
       try {
-        fields = compileModifier(where.condition).fields;
+        fields = compileModifier(where.condition, this.table).fields;
       } catch (error) {
         this.report(path, `cannot read the condition "${where.condition}": ${(error as Error).message}`);
         continue;
@@ -360,6 +386,13 @@ export class ReferenceCheck {
     }
   }
 
+  /** The kinds of value an expression hands its functions, where the check reads them (`CheckOptions.kinds`). */
+  private checkKinds(source: string, path: string, scope: Scope) {
+    if (!this.options.kinds) return;
+    const parent = scope.lines === undefined ? undefined : (scope.parent ?? this.page.fields);
+    for (const words of this.options.kinds(source, { fields: scope.fields, ...(parent ? { parent } : {}) })) this.report(path, `"${source}": ${words}`);
+  }
+
   /**
    * An expression for a value must read, read only fields where it is worked
    * out, and add up only line fields that exist. Returns the fields it reads,
@@ -368,12 +401,13 @@ export class ReferenceCheck {
   private checkExpression(source: string, path: string, scope: Scope): readonly string[] | null {
     let compiled: ReturnType<typeof compileExpression>;
     try {
-      compiled = compileExpression(source);
+      compiled = compileExpression(source, this.table);
     } catch (error) {
       this.report(path, `cannot read "${source}": ${(error as Error).message}`);
       return null;
     }
     this.checkReads(source, compiled, path, scope);
+    this.checkKinds(source, path, scope);
     for (const sum of compiled.sums) {
       if (!has(scope.fields, sum.lines)) continue;
       const lines = scope.fields[sum.lines];

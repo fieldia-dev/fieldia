@@ -76,5 +76,8 @@ export const de: Messages = {
   endBeforeStart: '{end} darf nicht vor {start} liegen',
   timeStep: '{label}: Uhrzeiten in Schritten von {step} Minuten, z. B. {example} oder {next}',
   patternBroken: 'Das Muster von {label} ist ungültig: {problem}',
+  stillWorkedOut: '{label} wird noch berechnet',
+  notWorkedOut: '{label} konnte nicht berechnet werden: {problem}',
+  notOfferedNow: '{name} steht nicht mehr zur Wahl und wurde entfernt',
   locale: 'de',
 };

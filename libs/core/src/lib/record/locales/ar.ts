@@ -74,5 +74,8 @@ export const ar: Messages = {
   endBeforeStart: 'لا يمكن أن يكون {end} قبل {start}',
   timeStep: '{label}: اختر وقتًا من الخطوات المتاحة، مثل {example} أو {next}',
   patternBroken: 'نمط {label} غير صالح: {problem}',
+  stillWorkedOut: 'ما زال {label} قيد الحساب',
+  notWorkedOut: 'تعذّر حساب {label}: {problem}',
+  notOfferedNow: '{name} لم يعد متاحًا، فأُزيل',
   locale: 'ar',
 };

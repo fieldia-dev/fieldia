@@ -1,7 +1,7 @@
 import type { Field, LineField } from '../format/field';
 import { FIELD_NAME } from '../format/names';
 import { compileExpression, type CompiledExpression } from '../expression/expression';
-import type { ExpressionEnv } from '../expression/functions';
+import type { ExpressionEnv, FunctionTable } from '../expression/functions';
 import { fitTo } from './compute';
 import { structuredCopy, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
@@ -25,9 +25,16 @@ export interface MapScope {
 }
 
 const expressions = new Map<string, CompiledExpression>();
-function expression(source: string): CompiledExpression {
-  let found = expressions.get(source);
-  if (!found) expressions.set(source, (found = compileExpression(source)));
+/** Those that may call an app's functions, for each table of them. */
+const appExpressions = new WeakMap<FunctionTable, Map<string, CompiledExpression>>();
+function expression(source: string, functions: FunctionTable | undefined): CompiledExpression {
+  let read = expressions;
+  if (functions) {
+    read = appExpressions.get(functions) ?? new Map();
+    appExpressions.set(functions, read);
+  }
+  let found = read.get(source);
+  if (!found) read.set(source, (found = compileExpression(source, functions)));
   return found;
 }
 
@@ -42,7 +49,7 @@ export function readSource(source: string, scope: MapScope): unknown {
   if (name === 'user' && !('user' in scope.fields)) return scope.user?.id == null ? null : { id: scope.user.id, label: scope.user.name ?? String(scope.user.id) };
   const above = /^parent\.([A-Za-z_][A-Za-z0-9_]*)$/.exec(name);
   if (above && scope.parent && above[1] in scope.parent.fields) return structuredCopy(scope.parent.values[above[1]]);
-  return expression(source).evaluate(scope.context, scope.env);
+  return expression(source, scope.env.functions).evaluate(scope.context, scope.env);
 }
 
 /** A value read for a field: a link from a record or an id, named as the form knows it; anything else fitted to the field. */
