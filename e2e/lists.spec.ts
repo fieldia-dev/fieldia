@@ -165,7 +165,7 @@ for (const variant of VARIANTS) {
       await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
       await expect.poll(() => demo<{ action: string; recordIds?: number[] }[]>('requests')).toEqual([expect.objectContaining({ action: 'archive', recordIds: [23, 24] })]);
       // No app behind the demo shows a thing for it: the demo says what the app was given, in plain words.
-      await expect(page.locator('.fd-say')).toHaveText(['The app was asked to archive Delta Foods and Giza Plaza.×']);
+      await expect(page.locator('.fd-say')).toHaveText(['The app was asked to archive 2 customers: Delta Foods and Giza Plaza.×']);
       await names(page).filter({ hasText: 'Delta Foods' }).click();
       await expect(page).toHaveURL(/page=customer&record=23/);
       await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('Delta Foods');
