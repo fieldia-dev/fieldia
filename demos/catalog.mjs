@@ -49,7 +49,7 @@ const AREA_OF = {
   accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
   crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'leads-queue', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
-  operations: ['backlog', 'work-item', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
+  operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent'],
   'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property'],
   surveys: ['survey', 'signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
@@ -94,6 +94,7 @@ const SEARCH_WORDS = {
   rules: 'order totals calculate calculation discount warning validation checks email postcode rules',
   'contract-fees': 'contract agreement clause clauses legal terms fees prices price list quote quotation table tables paste pasted word excel google docs sheets rich text formatted rows columns header print',
   lists: 'country city cities dropdown choices options delivery address shipping server',
+  'agent-tools': 'ai agent assistant bot automation tools integrations connections gmail slack drive hubspot triggers lines dependent choices dropdown follows column',
   'map-delivery': 'map place location address pin gps coordinates delivery openstreetmap where you are',
   'map-address': 'address autocomplete suggestions lookup street search type ahead location',
   'map-zone': 'map area zone shape polygon circle box draw delivery region territory',
@@ -542,7 +543,19 @@ export const DEMOS = [
     howTo: [
       'Watch the countries load as the form opens: the app answers after a moment, as a server does.',
       'Pick Egypt: its cities load. Pick Alexandria.',
-      'Change the country to Jordan: Jordan’s cities load, and Alexandria stays, marked as no longer offered, until you pick again.',
+      'Change the country to Jordan: Jordan’s cities load, and Alexandria, which Jordan does not have, is cleared and said under the cities until you pick again.',
+    ],
+  },
+  {
+    id: 'agent-tools',
+    name: 'An AI agent’s tools',
+    category: 'records',
+    query: 'page=agent-tools&skin=underline',
+    blurb: 'An assistant’s tools in a table of lines, each from one of the company’s connections: a line’s Tool offers only its own connection’s, asked for again when the connection changes — in the plain table and in the grid alike.',
+    howTo: [
+      'Open Tool on the first line, then on the Slack line: each offers its own connection’s tools.',
+      'Change the first line’s connection to Slack: its tools load again, and Send an email, which Slack does not have, is cleared and said under the cell. The second line’s Search, changed to Slack too, stays: Slack searches as well.',
+      'In When it starts, change a start’s connection: its event is said again in the new connection’s words, or cleared and said aloud.',
     ],
   },
   {

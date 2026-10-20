@@ -14,6 +14,7 @@ import { installPartStyles, PART_RANK } from './styles';
 export const LINES_CSS = /* css */ `
 /* ---- a table of lines: its own rules --------------------------------------- */
 .fd-lines { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
+.fd-lines-paste-catcher { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); opacity: 0; resize: none; pointer-events: none; }
 /* A yes/no cell sits level with the inputs beside it. */
 .fd-lines-table td > .fd-checkbox, .fd-lines-table td > .fd-switch { margin-block-start: 6px; }
 .fd-lines-table .fd-lines-grip { width: 1px; min-width: 0; padding-inline: 6px 2px; }

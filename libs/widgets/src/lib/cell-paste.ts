@@ -1,4 +1,4 @@
-import { charCount, cleanPastedNumber, couldBeNumber, fill, foldForSearch, isRightToLeft, MESSAGES, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type Line, type LineField, type Locale, type NumberLimits, type RelatedRecord, type Value } from '@fieldia/core';
+import { charCount, cleanPastedNumber, couldBeNumber, fill, foldForSearch, isRightToLeft, MESSAGES, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type Line, type LineField, type Locale, type NumberLimits, type Option, type RelatedRecord, type Value, type Values } from '@fieldia/core';
 import { readDateText } from './date-text';
 import { leftWords, quoted, refusalWords } from './input-rules';
 import { inPlural, type WidgetLabels } from './labels';
@@ -273,6 +273,12 @@ export interface PasteTable {
    * line's values (`key`), or a new line's (null), `exact` asking for those named exactly so.
    */
   search(key: string | null, column: string, query: string, limit: number, exact: boolean): Promise<RelatedRecord[]>;
+  /**
+   * A choice column's choices from the app's list (`optionsFrom`), as its line asks for them (`form.lineChoices`): by
+   * the line's values (`key`), or a new line's (null), with the row's own laid over them. Without it, such a column
+   * takes nothing pasted, and says so.
+   */
+  choices?(key: string | null, column: string, values: Values): Promise<Option[]>;
   /** False once the record pasted on is no longer the one shown: a late answer writes nothing on another. */
   shown(): boolean;
 }
@@ -325,6 +331,47 @@ async function readLinkCell(table: PasteTable, key: string | null, column: strin
 }
 
 const isLink = (def: LineField | undefined) => def?.type === 'many2one' || def?.type === 'many2many';
+/** A choice column whose choices are the app's, each line's its own. */
+const isListed = (def: LineField | undefined) => def?.type === 'selection' && !!def.optionsFrom;
+
+/**
+ * A row's choices from the app's lists read by its line's choices: the line as the row leaves it — its links found and
+ * its other cells read — asked for each such cell, its words read among them as a choice's are. Null for a cell that
+ * is none, that takes nothing, or is empty; why, where the choices could not be asked.
+ */
+async function readListedCells(table: PasteTable, key: string | null, line: Line | undefined, cells: readonly string[], columnOf: (c: number) => string | undefined, links: readonly (({ value: Value } | { why: string }) | null)[], labels: WidgetLabels) {
+  const listed = cells.map((text, c) => {
+    const column = columnOf(c);
+    const def = column ? table.fields[column] : undefined;
+    return column && isListed(def) && text.trim() && (!line || table.typable(line, column)) ? column : null;
+  });
+  if (!listed.some(Boolean)) return listed.map(() => null);
+  // A row past the last line is read as a line of nothing yet.
+  const at = line ?? { key: '', values: {} };
+  // The line as the row leaves it, but for these cells: what their choices change with.
+  const values: Values = {};
+  cells.forEach((text, c) => {
+    const column = columnOf(c);
+    const def = column ? table.fields[column] : undefined;
+    if (!column || !def || listed[c] || (line && !table.typable(line, column))) return;
+    const link = links[c];
+    const read = link ? ('value' in link ? link : null) : isLink(def) ? null : readPastedCell(def, text, table.reading(at, column));
+    if (read) values[column] = read.value;
+  });
+  return Promise.all(
+    cells.map(async (text, c): Promise<{ value: Value } | { why: string } | null> => {
+      const column = listed[c];
+      if (!column) return null;
+      const def = table.fields[column];
+      try {
+        const options = table.choices ? await table.choices(key, column, values) : [];
+        return readPastedCell({ ...def, options } as LineField, text, table.reading(at, column)) ?? { why: fill(labels.noMatch, { label: def.label, text: quoted(text.trim()) }) };
+      } catch {
+        return { why: fill(labels.pasteNotLookedUp, { label: def.label, text: quoted(text.trim()) }) };
+      }
+    })
+  );
+}
 /** A row named in the note by the words it starts with, as the person copied it. */
 const rowStart = (cells: readonly string[]) => quoted(cells.find((text) => text.trim()) ?? '');
 
@@ -363,6 +410,8 @@ export async function pasteRows(table: PasteTable, from: number, fromColumn: str
       );
     })
   );
+  // Every choice from the app's lists, read by its line's choices as the row leaves the line.
+  const listed = await Promise.all(block.map((cells, r) => readListedCells(table, landing[r] ?? null, landing[r] ? lineOf(landing[r]) : undefined, cells, columnOf, links[r], labels)));
   if (!table.shown()) return null;
   let pasted = 0;
   let added = 0;
@@ -394,9 +443,10 @@ export async function pasteRows(table: PasteTable, from: number, fromColumn: str
       // Nothing pasted on a cell that takes nothing: nothing lost, nothing to say.
       if (!takes && !text.trim()) continue;
       const reading = table.reading(line, column);
-      const value = !takes ? null : link && 'value' in link ? link : isLink(def) && !text.trim() ? { value: def.type === 'many2many' ? [] : null } : readPastedCell(def, text, reading);
+      const choice = listed[r][c];
+      const value = !takes ? null : link && 'value' in link ? link : choice ? ('value' in choice ? choice : null) : isLink(def) && !text.trim() ? { value: def.type === 'many2many' ? [] : null } : readPastedCell(def, text, reading);
       if (!value) {
-        const why = takes ? whyNotPasted(def, text, { ...reading, labels }) : null;
+        const why = !takes ? null : choice && 'why' in choice ? choice.why : whyNotPasted(def, text, { ...reading, labels });
         const cell = table.cellName(line, column);
         missed.push(why ? fill(labels.notPastedWhy, { cell, why }) : cell);
         continue;

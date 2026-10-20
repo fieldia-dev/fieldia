@@ -24,6 +24,7 @@ import fields from '../../examples/pages/fields.page.json';
 import kinds from '../../examples/pages/kinds.page.json';
 import layout from '../../examples/pages/layout.page.json';
 import lists from '../../examples/pages/lists.page.json';
+import agentTools from '../../examples/pages/agent-tools.page.json';
 import customers from '../../examples/pages/customers.page.json';
 import invoices from '../../examples/pages/invoices.page.json';
 import contacts from '../../examples/pages/contacts.page.json';
@@ -67,6 +68,7 @@ import { customerCardPage, duplicateCustomers } from './duplicates';
 import { keepWrites, keptApart, keptOver } from './kept';
 import { consentPage, sampleConsents } from './consents';
 import { CONTRACT_FEES_RECORDS } from './contract-fees';
+import { agentLists, agentRecords } from './agent-tools';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -102,6 +104,8 @@ export const pages: Record<string, Page> = {
   rules: rules as Page,
   layout: layout as Page,
   lists: lists as Page,
+  // An AI agent's tools, each line's from its connection: the app's lists asked by a line's values (shared/agent-tools.ts).
+  'agent-tools': agentTools as Page,
   custom: customPage,
   // A part that fails — the app's price tag, its delivery planner — kept to its place: shared/contained.ts.
   contained: containedPage,
@@ -451,7 +455,7 @@ export function sampleDataSource() {
   const options = withReal({
     // The listing's photos go to a store as slow as a phone's upload, one of them failing once (shared/listing-photos.ts).
     ...(params.get('page') === 'listing-photos' ? { storage: LISTING_STORAGE } : {}),
-    lists: appLists,
+    lists: { ...appLists, ...agentLists },
     // A booking answered as a clinic's server answers it: with its reference, which the page's ending says ("Your
     // booking is B-1043"); every other response with its number.
     submitted: (request, count) => ({ id: request.pageId === 'appointment-booking' ? `B-${1042 + count}` : count }),
@@ -495,6 +499,8 @@ export function sampleDataSource() {
       ...calendarDemo.records(),
       // Fifteen months of invoices up to now (shared/invoices.ts).
       invoice: sampleInvoices(),
+      // An AI agent and the company's connections its tools come from (shared/agent-tools.ts).
+      ...agentRecords,
       // The showroom's cars and test drives, made round now (shared/test-drive.ts).
       ...testDriveRecords(),
       // Two consents signed, one changed in the clinic's system after (shared/consents.ts).

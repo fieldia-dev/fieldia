@@ -74,14 +74,11 @@ describe('choices from the app’s lists, in the format', () => {
     expect(checkPage(bad).ok).toBe(false);
   });
 
-  it('keeps lists to the page’s own fields: a table’s lines cannot load choices', () => {
+  it('takes a list on a table’s lines too (line-choices.spec.ts)', () => {
     const lines = page({
       lines: { type: 'one2many', label: 'Lines', relation: 'line', fields: { kind: { type: 'selection', label: 'Kind', options: [], optionsFrom: { list: 'kinds' } } } },
     });
-    expect(problems(lines)).toEqual([
-      'fields.lines.fields.kind.options: Too small: expected array to have >=1 items',
-      'fields.lines.fields.kind.optionsFrom: choices from the app’s lists are for the page’s own fields, not a table’s lines',
-    ]);
+    expect(problems(lines)).toEqual([]);
   });
 
   it('is in the JSON Schema, with the same rule for written options', () => {
@@ -212,7 +209,7 @@ describe('choices from the app’s lists, in a form', () => {
     expect(form.getState().errors['country']).toBe('Must be one of: Egypt, Jordan');
   });
 
-  it('keeps a value the list no longer offers: the person decides', async () => {
+  it('clears and names a value the list no longer offers once the field it changes with changed, as a line’s', async () => {
     const { source, asked } = lists();
     const form = createForm({ page: page(), dataSource: source, values: { country: 'eg', city: 'cai' } });
     form.loadChoices('city');
@@ -221,7 +218,23 @@ describe('choices from the app’s lists, in a form', () => {
     form.setValue('country', 'jo');
     asked[1].answer(CITIES['jo']);
     await form.settled();
+    expect(form.getState().values['city']).toBeNull();
+    expect(form.getState().choices['city']).toEqual({ options: CITIES['jo'], cleared: 'Cairo' });
+    // Said until the city changes again.
+    form.setValue('city', 'amm');
+    expect(form.getState().choices['city']).toEqual({ options: CITIES['jo'] });
+  });
+
+  it('keeps a value a record comes in with that the list does not offer: the person decides, and a save says why', async () => {
+    const { source, asked } = lists();
+    source.load = async () => ({ country: 'jo', city: 'cai' });
+    const form = createForm({ page: page(), dataSource: source, recordId: 7 });
+    await form.load();
+    form.loadChoices('city');
+    asked[0].answer(CITIES['jo']);
+    await form.settled();
     expect(form.getState().values['city']).toBe('cai');
+    expect(form.getState().choices['city'].cleared).toBeUndefined();
     expect(form.problem('city')).toBe('Must be one of: Amman');
   });
 

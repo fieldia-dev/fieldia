@@ -12,6 +12,7 @@ import {
   type LayoutNode,
   type Option,
   type OptionsFrom,
+  type LineOptionsFrom,
   type PartLookKind,
   type HelpShown,
   type InputMode,
@@ -34,7 +35,7 @@ import { comparable, FIELD_NAME, FORMAT_VERSION, upgradePage } from '@fieldia/co
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, setRowRules, type ListCommands, type RowRulesPatch } from './list-commands';
-import { kindCommands, type OptionDetails } from './kind-commands';
+import { kindCommands, relabel, type OptionDetails } from './kind-commands';
 import { choiceCommands, type ChoiceCommands } from './choice-commands';
 import { inputCommands, type InputCommands } from './input-commands';
 import { structureCommands, type StructureCommands } from './structure-commands';
@@ -458,6 +459,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   addBlock(kind: BlockKind, where?: Where): string | false;
   /** A table of lines' columns, in order. */
   setLineColumns(id: string, columns: LineColumn[]): boolean;
+  /**
+   * A table's choice column's choices: its options by their words (`labels`, values kept as `relabel` keeps them), or
+   * one of the app's lists (`from`), changing with the line's other columns or `parent.` and a field of the record;
+   * `from: null` writes them here again.
+   */
+  setColumnChoices(id: string, column: string, choices: { labels?: string[]; from?: LineOptionsFrom | null }): boolean;
   /** An option's picture and points for a quiz; `null` or empty takes either away. */
   setOptionDetails(id: string, index: number, details: OptionDetails): boolean;
   /** A matrix's rows or columns, by their words, in order. */
@@ -1647,12 +1654,40 @@ export function createDesigner(options: {
             const kept = old[name];
             if (kept && columnKind(kept) === column.kind) fields[name] = { ...kept, label: column.label };
             else if (column.kind === 'other') throw new Refusal((w) => w.refusals.newColumnKind);
+            // A new choice starts with one option, to be written over.
+            else if (column.kind === 'choice') fields[name] = { type: 'selection', label: column.label, options: [{ value: 'option_1', label: words.defaults.option(1) }] };
             else fields[name] = { type: COLUMN_TYPES[column.kind], label: column.label } as (typeof old)[string];
           }
           field.fields = fields;
         },
         // Typing in a column's label is one undo step, as in an option.
         `columns:${id}:${columns.length}`
+      );
+    },
+
+    setColumnChoices(id, column, choices) {
+      return apply(
+        (draft) => {
+          const lines = fieldOfType(draft, id, ['one2many'], (w) => w.refusals.onlyLinesColumns, (w, label) => w.refusals.columnsFromModel(label));
+          const field = lines.fields[column];
+          if (field?.type !== 'selection') throw new Refusal((w) => w.refusals.notAChoiceColumn(field?.label ?? column));
+          if (choices.labels) {
+            const options = relabel(field.options, choices.labels, 'option');
+            if (!options.length && !field.optionsFrom) throw new Refusal((w) => w.refusals.columnNeedsOption(field.label));
+            field.options = options;
+          }
+          if (choices.from === null) {
+            delete field.optionsFrom;
+            // Written again: one option to start from, when there were none.
+            if (!field.options.length) field.options = [{ value: 'option_1', label: words.defaults.option(1) }];
+          } else if (choices.from) {
+            // What it changes with: the line's other columns, and the record's fields.
+            const on = (choices.from.dependsOn ?? []).filter((name) => (name.startsWith('parent.') ? !!draft.fields[name.slice(7)] : name !== column && !!lines.fields[name]));
+            field.optionsFrom = { list: choices.from.list, ...(on.length ? { dependsOn: on } : {}) };
+          }
+        },
+        // Typing an option's words, or a list's name, is one step.
+        choices.labels ? `column-options:${id}:${column}:${choices.labels.length}` : choices.from ? `column-list:${id}:${column}:${JSON.stringify(choices.from.dependsOn ?? [])}` : null
       );
     },
 

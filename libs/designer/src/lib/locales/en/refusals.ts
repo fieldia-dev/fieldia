@@ -78,7 +78,9 @@ export const refusals = {
   onlyLinesColumns: 'Only a table of lines has columns',
   columnsFromModel: (label: string) => `The columns of ${label} come from the model`,
   linesNeedColumn: 'A table of lines needs a column',
-  newColumnKind: 'A new column is text, a number, a date, or yes or no',
+  newColumnKind: 'A new column is text, a number, a date, yes or no, or a choice',
+  notAChoiceColumn: (label: string) => `${label} is not a choice column`,
+  columnNeedsOption: (label: string) => `${label} needs an option`,
   onlyChoiceFromList: 'Only a choice takes its options from a list',
   choicesFromModel: (label: string) => `The choices of ${label} come from the model`,
   // ---- choices

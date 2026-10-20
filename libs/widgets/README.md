@@ -142,7 +142,9 @@ GitHub's (`| a | b |` over `| --- | ---: |`), both ways; switching asks first
 where a table cannot be written so. On paper a table is whole on a sheet where
 it fits, else broken between its rows with its header row again.
 
-Rows copied from a spreadsheet and pasted in a cell of a table of lines (or on
+Rows copied from a spreadsheet and pasted in a cell of a table of lines — a
+dropdown's too, where no browser sends a paste: Ctrl or ⌘ and V on it is caught by
+a box of the table's own, out of sight — (or on
 a cell of @fieldia/grid, chosen or open for typing) go each on its own line from
 that cell, across the columns shown, each cell read as its column reads what is
 typed (the page's marks and digits in any script, an amount in its line's
@@ -173,5 +175,15 @@ SubtleCrypto, else worked out the same where a page is served without https),
 answers: a page with uploads or a plain signature never asks for it. Until it
 comes, the files part's pad draws and keeps the picture, and its signing waits
 for it — a save waits for that signing: `(await evidencePart.load()).answersMatch(…)`.
+
+A line's choice from the app's lists (`optionsFrom` on a line's selection, its
+`dependsOn` naming a column of the line or `parent.` and a field of the record)
+draws each line's own choices: the cell's form (`lineForm`) gives the line's
+`choices` and asks its own by its cell's path (`form.loadChoices("tools.k1.tool")`).
+A tool its new connection does not offer is cleared by the form and said under
+the cell (`choiceCleared`). `lineColumn(form, field, key, column, def)` gives a
+column as its cell reads at rest — its choices those loaded for that line — for a
+grid's cells, a printout, cards. A block pasted reads such a cell among its own
+line's choices (`PasteTable.choices`, `form.lineChoices`), its links first.
 
 MIT licensed.

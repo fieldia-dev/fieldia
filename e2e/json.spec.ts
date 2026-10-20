@@ -240,7 +240,9 @@ test.describe('choices from the app’s lists', () => {
     await country.selectOption({ label: 'Jordan' });
     await expect(city).toContainText('Loading choices…');
     await expect(city.getByLabel('Amman')).toBeVisible();
-    await expect(city).toContainText('Alexandria: no longer offered');
+    await expect(city).toContainText('Alexandria was cleared: no longer offered');
+    await expect(city.getByLabel('Amman')).not.toBeChecked();
+    await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values['city'])).toBeNull();
     await screen(page, 'lists-not-offered', { viewport: true });
     await city.getByLabel('Amman').check();
     await expect(city).not.toContainText('no longer offered');

@@ -73,8 +73,11 @@ export interface MemoryDataSourceOptions {
    * such a record by its whole path too.
    */
   shows?: Record<string, { avatar?: string; color?: string; details?: string[]; folded?: string; path?: string; aside?: string }>;
-  /** The app's lists of choices, by name: the choices, or a function of the form's values giving them. */
-  lists?: Record<string, Option[] | ((values: Values) => Option[] | Promise<Option[]>)>;
+  /**
+   * The app's lists of choices, by name: the choices, or a function of the form's values giving them — a table line's
+   * values for a line's choices, with the whole request (its `parent`, the record the line is on) after them.
+   */
+  lists?: Record<string, Option[] | ((values: Values, request: OptionsRequest) => Option[] | Promise<Option[]>)>;
   /**
    * Properties' definitions kept on linked records, by the list's name: a
    * function of the form's values giving them — those of the record the link
@@ -603,7 +606,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       await pause();
       const list = options.lists?.[request.list];
       if (!list) throw new Error(`No list "${request.list}"`);
-      return structuredCopy(typeof list === 'function' ? await list(request.values) : list);
+      return structuredCopy(typeof list === 'function' ? await list(request.values, request) : list);
     },
 
     async definitions(request: OptionsRequest): Promise<PropertyDefinition[]> {

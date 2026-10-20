@@ -14,7 +14,7 @@ import {
   type IHeaderParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import { fill, isRightToLeft, labelAt, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
+import { fill, isRightToLeft, labelAt, lineKind, type ButtonNode, type Choices, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
 import {
   afterPress,
@@ -32,6 +32,7 @@ import {
   keepsWhole,
   openLineDialog,
   kindTextField,
+  lineColumn,
   lineForm,
   linesPart,
   type LinesPart,
@@ -1068,6 +1069,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     if (!line || (kindOf(line) && spanStart(api)?.getColId() !== column)) return undefined;
     return form.getState().errors[`${name}.${line.key}.${editedField(line, column)}`];
   };
+  /** A choice from the app's list the line's connection no longer offers, cleared, until its value changes again: its words. */
+  const clearedAt = (line: Line | undefined, column: string) => {
+    const cleared = line ? form.getState().choices[`${name}.${line.key}.${column}`]?.cleared : undefined;
+    return cleared ? fill(labels.choiceCleared, { name: cleared }) : undefined;
+  };
   /** Every line problem, in the order the lines and columns are shown. */
   const lineProblems = () => {
     const shown = api.getAllDisplayedColumns().map((c) => c.getColId()).filter((id) => !isTool(id));
@@ -1157,7 +1163,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const roomOf = (column: string, lines = drawnFirst) => {
     const sub = def.fields[column];
     const least = FIXED_CHARS[sub.type] ?? 6;
-    let longest = sub.type === 'boolean' ? 0 : lines.reduce((most, line) => Math.max(most, cellText(sub, line.values[column] as Value, line.values, locale, form.getState().values, node.cells?.[column]).length), 0);
+    let longest = sub.type === 'boolean' ? 0 : lines.reduce((most, line) => Math.max(most, cellText(lineColumn(form, name, line.key, column, sub), line.values[column] as Value, line.values, locale, form.getState().values, node.cells?.[column]).length), 0);
     // A badge may turn to any of its choices: room for the longest, though no line holds it yet.
     if (badged(column) && sub.type === 'selection') longest = sub.options.reduce((most, option) => Math.max(most, option.label.length), longest);
     // A long label over short numbers wraps onto a second line rather than widen its column; only its longest word sets a floor.
@@ -1210,7 +1216,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         if (unread) return unread.text;
         // A number worked out from it waits for it: a dash, its words said by its renderer.
         if (!p.node?.rowPinned && cellWaits(p.data, column)) return '—';
-        return cellText(sub, p.value as Value, p.data?.values ?? {}, locale, form.getState().values, node.cells?.[column]);
+        // A choice from the app's list by the label its line's choices give it.
+        return cellText(p.data && !p.node?.rowPinned ? lineColumn(form, name, p.data.key, column, sub) : sub, p.value as Value, p.data?.values ?? {}, locale, form.getState().values, node.cells?.[column]);
       },
       type: numeric ? 'rightAligned' : undefined,
       // A section or note runs across every column but the delete button.
@@ -1225,7 +1232,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         'fd-cell-bold': (p) => !!ruleOf(p.data, column)?.bold,
         ...Object.fromEntries(TONES.map((tone) => [`fd-tone-${tone}`, (p: { data: Line | undefined }) => ruleOf(p.data, column)?.tone === tone])),
       },
-      tooltipValueGetter: (p) => (p.node?.rowPinned ? undefined : (problemAt(p.data, column, p.api) ?? unreadAt(p.data, column)?.message)),
+      tooltipValueGetter: (p) => (p.node?.rowPinned ? undefined : (problemAt(p.data, column, p.api) ?? unreadAt(p.data, column)?.message ?? clearedAt(p.data, column))),
       suppressKeyboardEvent: keys,
       // Numbers, money and dates as wide as their values, never cut; words share the rest by the room they need, giving way when it is tight.
       minWidth: fixedWidth(column) ? 48 : Math.max(96, Math.round(labelWord(column) * 7.6 + 40)),
@@ -1833,7 +1840,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   function cellWords(line: Line, column: string, parent: Values): string {
     // A distribution says its accounts by their names, as its cell does, once they are found.
     const shares = distributions.get(column);
-    if (!shares) return unreadAt(line, column)?.text ?? (cellWaits(line, column) ? '—' : cellText(def.fields[column], line.values[column] as Value, line.values, locale, parent, node.cells?.[column]));
+    if (!shares) return unreadAt(line, column)?.text ?? (cellWaits(line, column) ? '—' : cellText(lineColumn(form, name, line.key, column, def.fields[column]), line.values[column] as Value, line.values, locale, parent, node.cells?.[column]));
     const unknown = distributionIds(line.values[column] as Value).map(String).filter((id) => shares.nameOf(id) === undefined);
     if (unknown.length) shares.find(line, unknown);
     return distributionWords(line.values[column] as Value, locale, shares.nameOf);
@@ -1921,7 +1928,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const current = lines();
     const hidden = new Set(columns.filter((column) => ruleHidden.has(column) || api.getColumn(column)?.isVisible() === false));
     const shownColumns = columns.filter((column) => !hidden.has(column));
-    const signature = JSON.stringify([current, [...lineStates], shownColumns, readonly, form.getState().values, form.getState().unread ?? {}]);
+    const signature = JSON.stringify([current, [...lineStates], shownColumns, readonly, form.getState().values, form.getState().unread ?? {}, [...choicesShown.values()].map((choices) => choices.options)]);
     if (signature === cardsDrawn) return;
     cardsDrawn = signature;
     const parent = form.getState().values;
@@ -2087,6 +2094,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         form.updateLine(name, line.key, column, value);
       },
       search: (key, column, query, limit, exact) => form.searchLine(name, key, column, query, limit, exact ? { exact: true } : {}),
+      choices: (key, column, values) => form.lineChoices(name, key, column, values),
       shown: () => stillShown() && !destroyed,
     };
     pasting = pasting.then(() =>
@@ -2174,6 +2182,44 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     api.setGridOption('domLayout', long ? 'normal' : 'autoHeight');
   };
 
+  /**
+   * The choices from the app's lists of this table's lines, by their cells' paths, as last drawn: each line's asked for
+   * as it is drawn — its cells at rest say a choice by its label — drawn again once they change, and a choice cleared
+   * as its line's connection changed said aloud, once.
+   */
+  const choicesShown = new Map<string, Choices>();
+  const listedColumns = columns.filter((column) => def.fields[column].type === 'selection' && !!(def.fields[column] as { optionsFrom?: unknown }).optionsFrom);
+  let listedSized = false;
+  function followChoices(current: readonly Line[]) {
+    if (!listedColumns.length) return;
+    const items = current.filter((line) => !kindOf(line));
+    // Asked, each once, as the line is drawn: an answer the form has already is given at once, the rest as they come.
+    for (const line of items) for (const column of listedColumns) if (!form.getState().choices[`${name}.${line.key}.${column}`] && lines().some((one) => one.key === line.key)) form.loadChoices(`${name}.${line.key}.${column}`);
+    const changed = new Set<string>();
+    const said: string[] = [];
+    for (const line of items) {
+      for (const column of listedColumns) {
+        const path = `${name}.${line.key}.${column}`;
+        const now = form.getState().choices[path];
+        const was = choicesShown.get(path);
+        if (now === was) continue;
+        if (now) choicesShown.set(path, now);
+        else choicesShown.delete(path);
+        changed.add(column);
+        if (now?.cleared && !now.loading) said.push(fill(labels.lineProblem, { n: numberOf(line), message: fill(labels.choiceCleared, { name: now.cleared }) }));
+      }
+    }
+    for (const path of [...choicesShown.keys()]) if (!current.some((line) => path.startsWith(`${name}.${line.key}.`))) choicesShown.delete(path);
+    if (changed.size && !api.isDestroyed()) api.refreshCells({ columns: [...changed], force: true, suppressFlash: true });
+    // Its words' room once the lines' choices first come, as the lines' room was given: a person's own widths stay.
+    if (!listedSized && sizedByLines && items.length && items.every((line) => listedColumns.every((column) => form.getState().choices[`${name}.${line.key}.${column}`]?.options))) {
+      listedSized = true;
+      const sized = listedColumns.filter((column) => !node.cells?.[column]?.width && !fixedWidth(column));
+      if (!Array.isArray(saved) && sized.length && !api.isDestroyed()) api.applyColumnState({ state: sized.map((colId) => ({ colId, flex: roomOf(colId, items) })) });
+    }
+    if (said.length) voice.textContent = said.join(' ');
+  }
+
   let shown: Line[] | null = null;
   let problemsShown = '';
   /** The text left unread in this table's cells when last drawn: drawn again, and the totals added again, once it changes. */
@@ -2231,6 +2277,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
           api.redrawRows();
         }
       }
+      followChoices(current);
       const found = readonly ? [] : lineProblems();
       const signature = found.map((p) => `${p.index}.${p.column}:${p.message}`).join('|');
       if (signature !== problemsShown) {

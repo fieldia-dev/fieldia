@@ -1,0 +1,89 @@
+{
+  "fieldia": "0.5",
+  "id": "agent-tools",
+  "title": "AI agent",
+  "description": "An assistant's tools, each from one of the company's connections: a line's tools are its connection's, asked for again when the connection changes, and one the new connection does not have is cleared and said.",
+  "records": { "one": "agent", "other": "agents", "a": "an agent" },
+  "data": { "kind": "record", "model": "ai.agent" },
+  "fields": {
+    "name": { "type": "char", "label": "Name", "required": true },
+    "instructions": { "type": "text", "label": "Instructions", "help": "What the agent is for, in plain words." },
+    "tool_ids": {
+      "type": "one2many",
+      "label": "Tools",
+      "relation": "ai.agent.tool",
+      "fields": {
+        "connection_id": { "type": "many2one", "label": "Connection", "relation": "ai.connection", "required": true },
+        "tool": {
+          "type": "selection",
+          "label": "Tool",
+          "required": true,
+          "options": [],
+          "optionsFrom": { "list": "connection_tools", "dependsOn": ["connection_id"] }
+        },
+        "ask_first": { "type": "boolean", "label": "Asks first" }
+      }
+    },
+    "trigger_ids": {
+      "type": "one2many",
+      "label": "Starts when",
+      "relation": "ai.agent.trigger",
+      "fields": {
+        "connection_id": { "type": "many2one", "label": "Connection", "relation": "ai.connection", "required": true },
+        "event": {
+          "type": "selection",
+          "label": "Event",
+          "required": true,
+          "options": [],
+          "optionsFrom": { "list": "connection_events", "dependsOn": ["connection_id"] }
+        },
+        "only_when": { "type": "char", "label": "Only when" }
+      }
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "root",
+    "children": [
+      {
+        "type": "section",
+        "id": "agent",
+        "title": "Agent",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-name", "field": "name" },
+          { "type": "field", "id": "f-instructions", "field": "instructions", "colspan": 2 }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "tools",
+        "title": "What it may do",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-tools",
+            "field": "tool_ids",
+            "columns": ["connection_id", "tool", "ask_first"],
+            "options": { "addLabel": "Add a tool", "emptyLabel": "No tools yet: the agent only answers." }
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "triggers",
+        "title": "When it starts",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-triggers",
+            "field": "trigger_ids",
+            "widget": "grid",
+            "columns": ["connection_id", "event", "only_when"],
+            "options": { "addLabel": "Add a start" }
+          }
+        ]
+      }
+    ]
+  }
+}

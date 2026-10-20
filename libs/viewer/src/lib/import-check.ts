@@ -39,8 +39,11 @@ export interface RowsCheck {
   readers: Pick<LinesPart, 'readPastedCell' | 'whyNotPasted'>;
   /** A phone read the world over, where a column of the page's reads its phones so: the phone part. */
   phones?: Pick<PhonePart, 'readPhone' | 'phoneCountry'>;
-  /** A choice's options, for a field whose options the app lists (`optionsFrom`). */
-  options?: (field: string) => Promise<Option[]>;
+  /**
+   * A choice's options, for a field whose options the app lists (`optionsFrom`): by the row's values where they change
+   * with another field (`dependsOn`) — asked once for each of its values among the rows — else once, with none.
+   */
+  options?: (field: string, values: Values) => Promise<Option[]>;
 }
 
 /** A row read: its number in the file, the values it would make a record with, and why it may not, in the person's words. */
@@ -61,6 +64,9 @@ const LIMIT = 20;
 const NAMES = /\s*[,;\n]\s*/;
 
 const folded = (text: string) => foldForSearch(text.trim()).replace(/\s+/g, ' ');
+
+/** A value as a choice follows it: a link by its id, whatever its name says. */
+const keyOf = (value: unknown): unknown => (Array.isArray(value) ? value.map(keyOf) : value !== null && typeof value === 'object' && 'id' in value ? (value as { id: unknown }).id : (value ?? null));
 
 /** A cell as words: a number as JavaScript writes it whole ("201001234567"), a day as written, yes or no as given. */
 function textOf(cell: FileCell): string {
@@ -132,11 +138,22 @@ export async function checkRows(check: RowsCheck, sheet: FileSheet, columns: rea
     if (stopped()) break;
     records.set(field, await lookUp(check, field, names, tick, stopped));
   }
-  // A choice's options, for those the app lists.
+  // A choice's options, for those the app lists; one that changes with another field, by each row's values below.
   const choices = new Map<string, Option[]>();
+  /** A choice that changes with another field: its options asked by each row's values, once for each such value. */
+  const following = (def: Field) => def.type === 'selection' && !!def.optionsFrom?.dependsOn?.length && !!check.options;
   for (const { field, def } of filled) {
-    if (def.type !== 'selection') continue;
-    choices.set(field, def.optionsFrom && check.options ? await check.options(field).catch(() => []) : def.options);
+    if (def.type !== 'selection' || following(def)) continue;
+    choices.set(field, def.optionsFrom && check.options ? await check.options(field, {}).catch(() => []) : def.options);
+  }
+  const choicesAsked = new Map<string, Promise<Option[]>>();
+  /** A row's options for a choice that follows another field: asked by what it follows, as the row has it. */
+  function rowOptions(field: string, def: Field, values: Values): Promise<Option[]> {
+    const on = (def as Extract<Field, { type: 'selection' }>).optionsFrom?.dependsOn ?? [];
+    const key = JSON.stringify([field, on.map((name) => keyOf(values[name]))]);
+    let ask = choicesAsked.get(key);
+    if (!ask) choicesAsked.set(key, (ask = (check.options as NonNullable<RowsCheck['options']>)(field, { ...values }).catch(() => [])));
+    return ask;
   }
   // What a new record starts with: the page's defaults, today's date where it says so.
   const start = initialValues(page.fields, check.today);
@@ -188,7 +205,7 @@ export async function checkRows(check: RowsCheck, sheet: FileSheet, columns: rea
         // A day a workbook keeps as a number with no day's format: as a spreadsheet counts days.
         return pasted(typeof cell === 'number' && cell > 0 && cell < 2958466 ? textOf(serialAt(cell, def.type === 'date' ? 'day' : 'both')) : text);
       case 'selection': {
-        const options = choices.get(field) ?? [];
+        const options = (following(def) ? rowChoices.get(field) : choices.get(field)) ?? [];
         const byWords = new Map<string, Option>();
         for (const option of options) for (const words of inEveryLanguage(page, option.label)) if (!byWords.has(folded(words))) byWords.set(folded(words), option);
         const pick = (words: string) => byWords.get(folded(words)) ?? options.find((option) => String(option.value) === words.trim());
@@ -219,8 +236,12 @@ export async function checkRows(check: RowsCheck, sheet: FileSheet, columns: rea
   }
 
   const rows: CheckedRow[] = [];
-  // Links first: an amount reads in its record's currency, which may be a link of the same row.
-  const order = [...filled].sort((a, b) => Number(b.def.type === 'many2one' || b.def.type === 'many2many') - Number(a.def.type === 'many2one' || a.def.type === 'many2many'));
+  /** The options of a row's choices that follow another field, as asked for that row. */
+  const rowChoices = new Map<string, Option[]>();
+  // Links first: an amount reads in its record's currency, which may be a link of the same row; a choice that follows
+  // another field last, by what the row's other cells read.
+  const rank = (def: Field) => (following(def) ? 2 : def.type === 'many2one' || def.type === 'many2many' ? 0 : 1);
+  const order = [...filled].sort((a, b) => rank(a.def) - rank(b.def));
   for (let r = 0; r < sheet.rows.length; r++) {
     if (stopped()) break;
     const row = sheet.rows[r];
@@ -230,6 +251,7 @@ export async function checkRows(check: RowsCheck, sheet: FileSheet, columns: rea
     const problems: { at: number; why: string }[] = [];
     const unread = new Set<string>();
     for (const { field, column, def } of order) {
+      if (following(def) && stripMarks(textOf(row[column])).trim()) rowChoices.set(field, await rowOptions(field, def, values));
       const got = read(field, def, row[column], values);
       if (!got) continue;
       if ('why' in got) {

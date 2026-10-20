@@ -193,6 +193,7 @@ export const fr: WidgetLabels = {
   loadingChoices: 'Chargement des choix…',
   choicesFailed: 'Recharger les choix',
   notOffered: '{name} : plus proposé',
+  choiceCleared: '{name} a été retiré : plus proposé',
   yes: 'Oui',
   no: 'Non',
   upTo: 'Jusqu’à {n}',

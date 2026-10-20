@@ -287,8 +287,33 @@ const Selection = z
   })
   // The same rule for tools that read only the JSON Schema.
   .meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
-/** A choice in a table's lines: its options written in the page, as a list loads only for the page's own fields. */
-const LineSelection = z.object({ ...selection, options: z.array(OptionSchema).min(1), optionsFrom: z.never({ error: 'choices from the app’s lists are for the page’s own fields, not a table’s lines' }).optional() }).strict();
+/**
+ * A table line's choices from one of the app's lists: asked for each line by that line's values — a connection's
+ * tools on its own line — and again when a column they change with changes on that line, or, as `parent.` and a
+ * field, the record the line is on. Lines whose columns hold the same values share one answer.
+ */
+export const LineOptionsFromSchema = z
+  .object({
+    list: z.string().min(1),
+    /** The line's columns the choices change with, or `parent.` and a field of the record it is on. */
+    dependsOn: z.array(z.string().regex(/^(parent\.)?[A-Za-z_][A-Za-z0-9_]*$/)).min(1).optional(),
+  })
+  .strict()
+  .meta({ id: 'LineOptionsFrom' });
+
+export type LineOptionsFrom = z.infer<typeof LineOptionsFromSchema>;
+
+/** A choice in a table's lines: its options written in the page, or from one of the app's lists for each line. */
+const LineSelection = z
+  .object({ ...selection, optionsFrom: LineOptionsFromSchema.optional() })
+  .strict()
+  .refine((field) => field.options.length > 0 || field.optionsFrom !== undefined, {
+    message: 'a choice needs its options, or a list of the app’s to take them from',
+    path: ['options'],
+  })
+  .meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
+/** A choice of a linked record's, shown in a table of them: its options written in the page. */
+const LinkedSelection = z.object({ ...selection, options: z.array(OptionSchema).min(1), optionsFrom: z.never({ error: 'choices from the app’s lists are for the page’s own fields and a table’s lines, not a linked record’s' }).optional() }).strict();
 /**
  * What a file or an image field takes: the largest file, and whether it holds
  * several — its value then a list of files, as few as `minFiles` and as many
@@ -352,7 +377,7 @@ const Many2one = z.object({ type: z.literal('many2one'), ...common, relation, fi
  * A related list's records' fields are the same (`RelatedNode.fields`).
  */
 export const LinkedFieldSchema = z
-  .discriminatedUnion('type', [Char, Text, Integer, Float, Monetary, BooleanField, DateField, DateTime, LineSelection, Many2one])
+  .discriminatedUnion('type', [Char, Text, Integer, Float, Monetary, BooleanField, DateField, DateTime, LinkedSelection, Many2one])
   .meta({ id: 'LinkedField' });
 
 export type LinkedField = z.infer<typeof LinkedFieldSchema>;

@@ -276,8 +276,12 @@ export const questions = {
   addressLines: { street: 'Street address', line2: 'Address line 2', city: 'City', region: 'State or region', postcode: 'Postcode', country: 'Country' },
   entryOne: 'Entry 1',
   // ---- a table's columns
-  columnKinds: { text: 'Text', number: 'Number', date: 'Date', 'yes-no': 'Yes or no', other: 'Other' },
+  columnKinds: { text: 'Text', number: 'Number', date: 'Date', 'yes-no': 'Yes or no', choice: 'Choice', other: 'Other' },
   kindOfColumn: (n: number) => `Kind of column ${n}`,
+  choicesOfColumn: (label: string) => `Choices of ${label}`,
+  /** A field of the record a line's choices may change with, beside the line's own columns. */
+  ofTheRecord: (label: string) => `${label} (the record)`,
+  columnListNote: 'The app gives each line its own choices, and again when what they change with changes on that line.',
   // ---- choices from the app's list
   choices: 'Choices',
   writtenHere: 'Written here',

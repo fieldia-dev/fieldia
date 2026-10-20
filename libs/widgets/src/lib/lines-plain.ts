@@ -1,7 +1,7 @@
 import { lineKind, type Field, type Line, type RelatedRecord, type Value } from '@fieldia/core';
 import { cellText } from './display';
 import { describeState, fillIn, maker, wordsFor } from './kind-parts';
-import { itemNumber } from './lines';
+import { itemNumber, lineColumn } from './lines';
 import type { Widget, WidgetFactory, WidgetState } from './widgets';
 
 /**
@@ -37,7 +37,7 @@ function plainList(document: Document, id: string, texts: (state: WidgetState) =
  * A one2many's lines: each line's values in its columns' order, as its cells show them at rest ("Desk · 2 · E£ 1,200.00"),
  * a section's or a note's text, and "line 2" for a line with nothing shown — never nothing while there are lines.
  */
-export const plainLinesWidget: WidgetFactory = ({ field, node, id, document, labels, locale }) => {
+export const plainLinesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
   const def = field as Extract<Field, { type: 'one2many' }>;
   const words = wordsFor(labels, locale);
   const kinds = def.lineKinds;
@@ -49,7 +49,7 @@ export const plainLinesWidget: WidgetFactory = ({ field, node, id, document, lab
   return plainList(document, id, (state) =>
     ((state.value as Line[] | null) ?? []).map((line, _index, all) => {
       const kind = lineKind(def, line.values);
-      const shown = kind && kinds ? [said(line.values[kinds.text])] : columns.map((column) => cellText(def.fields[column], line.values[column], line.values, locale, state.values, node.cells?.[column]));
+      const shown = kind && kinds ? [said(line.values[kinds.text])] : columns.map((column) => cellText(lineColumn(form, name, line.key, column, def.fields[column]), line.values[column], line.values, locale, state.values, node.cells?.[column]));
       // Named by its number as people count lines: a section or a note before it is not one.
       return shown.filter(Boolean).join(' · ') || (kind ? '' : fillIn(words.lineN, { n: itemNumber(all, line.key, (one) => !lineKind(def, one.values)) }));
     })

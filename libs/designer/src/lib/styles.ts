@@ -479,6 +479,10 @@ export const DESIGNER_CSS = /* css */ `
 .fd-columns-box { display: grid; gap: 6px; }
 .fd-columns { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .fd-column { display: grid; grid-template-columns: minmax(0, 1fr) 104px 28px; gap: 6px; align-items: center; }
+/* A choice column's choices, under its row, set in from it. */
+.fd-column-choices { grid-column: 1 / -1; display: grid; gap: 6px; padding-inline-start: 10px; margin-block-end: 4px; border-inline-start: 2px solid var(--fd-border); }
+.fd-column-written { display: grid; gap: 6px; justify-items: start; }
+.fd-column-choices[hidden], .fd-column-written[hidden] { display: none; }
 .fd-props-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-block-start: 4px; border-block-start: 1px solid var(--fd-border); }
 .fd-properties-hint { color: var(--fd-muted); font-size: 13px; margin: 0; }
 .fd-kind-note { font-size: 12px; margin-block-start: -4px; }

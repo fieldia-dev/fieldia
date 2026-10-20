@@ -35,7 +35,7 @@ export interface DataSource {
   list?(request: ListRequest): Promise<ListResult>;
   /** How many records fall under each value of a field, for a list's Group By. */
   groups?(request: GroupRequest): Promise<Group[]>;
-  /** The choices of one of the app's lists, for a selection with `optionsFrom`. */
+  /** The choices of one of the app's lists, for a selection with `optionsFrom` — a page's field, or a table's line by its values. */
   options?(request: OptionsRequest): Promise<Option[]>;
   /** The definitions of a properties field with `definitionsFrom`: those the linked record keeps. */
   definitions?(request: OptionsRequest): Promise<PropertyDefinition[]>;
@@ -371,8 +371,16 @@ export interface ArchiveRequest extends RecordRequest {
 export interface OptionsRequest {
   /** The list's name, from the field's `optionsFrom.list`. */
   list: string;
-  /** Every value of the form, for a list that changes with another field (`dependsOn`). */
+  /**
+   * Every value of the form, for a list that changes with another field (`dependsOn`). For a table's line, the line's
+   * values: its connection, for its tools.
+   */
   values: Values;
+  /**
+   * For a table's line — or a form editing one in a dialog — the values of the record it is on, which a line's list
+   * may change with (`parent.` in its `dependsOn`). Left out for a page's own field.
+   */
+  parent?: Values;
 }
 
 export interface CreateRequest {
