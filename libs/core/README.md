@@ -187,14 +187,15 @@ Without `timeZone`, the browser's own zone, as before.
 
 A selection's choices may come from the app's own lists (`optionsFrom: { list,
 dependsOn }`), through the data source's `options({ list, values })`, asked again
-when a field in `dependsOn` changes. On a table's line they are that line's:
+when a field in `dependsOn` changes — by the person, a step or the app: a choice
+the new answer does not offer is then cleared and named (`Choices.cleared`, until
+its value changes again); a record that comes in with one keeps it, and its save
+says why. On a table's line they are that line's:
 asked with the line's values and the record it is on as `parent`
 (`dependsOn` naming the line's columns, or `parent.` and a field), shared by the
 lines whose columns hold the same values, and kept by the cell's path in
-`state.choices` (`form.loadChoices("tool_ids.k1.tool")`). When a column they change
-with changes on a line — by the person, a step or the app — a choice its new
-choices do not offer is cleared and named (`Choices.cleared`); a record that comes
-in with one keeps it, and its save says why. `form.lineChoices(field, key, column,
+`state.choices` (`form.loadChoices("tool_ids.k1.tool")`), cleared and named the
+same way as a column they change with changes on that line. `form.lineChoices(field, key, column,
 values)` asks a line's for a row about to be pasted on it. The memory source's
 `lists` functions take the request after the values.
 

@@ -496,7 +496,7 @@ export const DEMOS = [
     howTo: [
       'Watch the countries load as the form opens: the app answers after a moment, as a server does.',
       'Pick Egypt: its cities load. Pick Alexandria.',
-      'Change the country to Jordan: Jordan’s cities load, and Alexandria stays, marked as no longer offered, until you pick again.',
+      'Change the country to Jordan: Jordan’s cities load, and Alexandria, which Jordan does not have, is cleared and said under the cities until you pick again.',
     ],
   },
   {

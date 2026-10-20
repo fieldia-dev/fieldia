@@ -667,7 +667,8 @@ In plain words:
   again), and told as a step's change (`change`, `by: "step"`):
   the person's claim on the line stays. A record that comes in with a choice its
   choices do not offer keeps it, said; `validate` and a save refuse it with "Must be
-  one of: …". A line's own form (a dialog, `parent` given) clears the same way.
+  one of: …". A page's own field with `dependsOn` clears the same way (one rule for
+  every choice from a list; 0.26 kept its value, said as no longer offered).
 - **State**: `state.choices` keeps a line's by its cell's path (`field.lineKey.subfield`);
   `form.loadChoices(path)` asks for one; `form.lineChoices(field, key | null,
   subfield, values)` asks as a line would with `values` laid over it (a pasted row).

@@ -5,11 +5,12 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 /**
  * A choice whose options are one of the app's lists: the widget the field
  * would have anyway, drawn afresh from each answer the list gives. While the
- * choices load it says so; when they fail it offers to load them again; and
- * a value the list no longer offers is kept — the person decides — and said.
- * In a table's line (its `lineForm`), the line's own choices: asked again
- * where the form let them go (another record's line of the same key), and
- * one cleared as the line's connection changed said until its value changes again.
+ * choices load it says so; when they fail it offers to load them again; a
+ * value the form cleared as a field they change with changed is said until
+ * the value changes again; and one a record came in with that the list does
+ * not offer is kept — the person decides — and said. In a table's line (its
+ * `lineForm`), the line's own choices, asked again where the form let them go
+ * (another record's line of the same key).
  */
 export function listChoices(factory: WidgetFactory, context: WidgetContext): Widget {
   const { form, name, document: doc } = context;

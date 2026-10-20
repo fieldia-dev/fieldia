@@ -224,8 +224,8 @@ export interface Choices {
   /** Why the last load failed. */
   readonly error?: string;
   /**
-   * A table line's choice the line held that these choices no longer offer, once a column they change with changed:
-   * cleared, and named here — its label, or labels — to be said until its value changes again.
+   * A choice these choices no longer offer, once a field they change with changed — a page's, or a column of a table
+   * line's: cleared, and named here — its label, or labels — to be said until its value changes again.
    */
   readonly cleared?: string;
 }
@@ -477,12 +477,13 @@ export interface Form {
   /**
    * Load, or load again, the choices of a selection whose options come from
    * the app's list (`optionsFrom`). Once loaded, they load again by themselves
-   * when a field they change with changes; the latest answer wins. A table
-   * line's, by its cell's path (`field.lineKey.subfield`), are asked by the
-   * line's values and shared with every line where the columns they change
-   * with hold the same, for the record shown; once loaded, they follow those
-   * columns on that line, and a choice they no longer offer after the person,
-   * a step or the app changed one is cleared, and named (`Choices.cleared`).
+   * when a field they change with changes; the latest answer wins, and a
+   * choice it no longer offers after the person, a step or the app changed
+   * that field is cleared and named (`Choices.cleared`). A value a record
+   * comes in with is kept, and its save says why. A table line's, by its
+   * cell's path (`field.lineKey.subfield`), are asked by the line's values and
+   * shared with every line where the columns they change with hold the same,
+   * for the record shown; once loaded, they follow those columns on that line.
    */
   loadChoices(field: string): void;
   /**
@@ -1202,8 +1203,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     for (const listener of [...listeners]) listener(state);
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
-      // In a line's own form, a choice its new choices do not offer is cleared, as on the line's row.
-      for (const name in state.choices) if (!name.includes('.') && fromList(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadChoices(name, edited && !!options.parent);
+      // After someone's change, a choice its new choices do not offer is cleared and named, as a line's is.
+      for (const name in state.choices) if (!name.includes('.') && fromList(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadChoices(name, edited);
       for (const name in state.definitions) if (fromRecord(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadDefinitions(name);
       if (listed.length) followLines(was, edited);
     }
@@ -1415,8 +1416,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /**
    * Load a field's choices, or a line cell's by its path (`table.key.column`). `judge`, after a change someone made of
-   * what they change with — on a line, or in a line's own form (a dialog): a choice they no longer offer is cleared and
-   * named, on the record they were asked for, while its line still asks by the same.
+   * what they change with: a choice they no longer offer is cleared and named, on the record they were asked for,
+   * while a line still asks by the same.
    */
   function loadChoices(name: string, judge = false) {
     const cell = cellOf(name);

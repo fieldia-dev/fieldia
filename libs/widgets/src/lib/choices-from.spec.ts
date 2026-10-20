@@ -73,7 +73,7 @@ describe('choices from the app’s list', () => {
     expect(form.problem('city')).toBeNull();
   });
 
-  it('load again when the field they change with changes, keeping a value no longer offered and saying so', async () => {
+  it('load again when the field they change with changes, clearing a value no longer offered and saying so', async () => {
     const { form, el, asked, note, settle } = mount('radio', {}, { country: 'eg', city: 'cai' });
     asked[0].answer(CITIES['eg']);
     await settle();
@@ -83,8 +83,8 @@ describe('choices from the app’s list', () => {
     asked[1].answer(CITIES['jo']);
     await settle();
     expect([...el.querySelectorAll('label.fd-choice')].map((l) => l.textContent)).toEqual(['Amman']);
-    expect(form.getState().values['city']).toBe('cai');
-    expect(note()).toEqual(['Cairo: no longer offered']);
+    expect(form.getState().values['city']).toBeNull();
+    expect(note()).toEqual(['Cairo was cleared: no longer offered']);
     (el.querySelector('input[type=radio]') as HTMLInputElement).click();
     expect(note()).toEqual([]);
   });

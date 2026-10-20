@@ -417,17 +417,4 @@ describe('a line’s own form, its choices from the app’s lists', () => {
     expect(dialog.getState().values['tool']).toBeNull();
     expect(dialog.getState().choices['tool']).toEqual({ options: TOOLS['slack'], cleared: 'Send email' });
   });
-
-  it('keeps a page’s own field as it was: the person decides', async () => {
-    const { source, asked } = lists();
-    const own = createForm({ page: dialogPage, dataSource: source, values: { connection_id: gmail, tool: 'send_email' } });
-    own.loadChoices('tool');
-    asked[0].answer(TOOLS['gmail']);
-    await own.settled();
-    own.setValue('connection_id', slack);
-    asked[1].answer(TOOLS['slack']);
-    await own.settled();
-    expect(own.getState().values['tool']).toBe('send_email');
-    expect(own.getState().choices['tool']).toEqual({ options: TOOLS['slack'] });
-  });
 });
