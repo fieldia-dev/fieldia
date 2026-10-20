@@ -857,7 +857,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // with the printout's parts kept off the screen, 1.17 of the main sheet. The main script keeps the printout's head and
 // footer, made as a form is drawn (the screen's every element as it was), and Ctrl+P's and intent's watch (print.ts,
 // 2.17): 515.51 measured before, 503.40 after — 12.1 less, to 503.5.
-const BUDGET_KB = 503.5;
+// Tables inside formatted text (0.27, w4-rich-tables): every formatted text keeps a table — its cells, a cell's span
+// over its neighbours, a header's scope, the way its columns run, a cell's alignment, and words a style makes bold,
+// italic, underlined or struck as elements (a bold its style undoes, Google Docs' wrapper, its words) — wherever it is
+// stored, loaded or shown, so the sanitizer every page draws formatted text through grows (sanitize.ts, 2.1 of 5.1);
+// the classic editor's look for a table and its paste of one, made plain by the text part as it is pasted (extras.ts);
+// a table's rows whole on paper, its box a block, before the print part came: 503.41 measured before, 505.59 after —
+// 2.2 more, to 505.6.
+const BUDGET_KB = 505.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1051,7 +1058,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.15 and 0.55 added up — to 166.0.
 // Print on intent (listed with the raw budget above): 165.90 measured before, 162.94 after — 3.0 less, to 163.0. A
 // page that prints takes 5.22 more in fieldia.print.js.
-const GZIP_BUDGET_KB = 163.0;
+// Tables inside formatted text (listed with the raw budget above): 162.94 measured before, 163.79 after — 0.85 more,
+// to 163.8. The table tool, its picker, Tab and Escape in a table, Markdown's tables and a paste made plain are the text
+// part's.
+const GZIP_BUDGET_KB = 163.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1198,7 +1208,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // words for its records, two words in Arabic, four in German and French: Arabic's 68.25 and 11.82 measured before,
 // 68.38 and 11.83 after, its raw to 68.4; German's 31.91 and 10.42 to 32.03 and 10.44, to 32.1; French's 32.24 and
 // 10.41 to 32.37 and 10.43, to 32.4.
-const ADD_ON_BUDGET_KB = { ar: [68.4, 11.9], de: [32.1, 10.5], fr: [32.4, 10.5] };
+// Tables inside formatted text (0.27, w4-rich-tables): the table tool's 22 words in each — its name, its picker's
+// sizes, what may be done where the caret is, the keys a table takes and what is said once done: Arabic's 68.38 and
+// 11.83 measured before, 70.14 and 12.12 after, to 70.2 and 12.2; German's 32.03 and 10.44 to 32.82 and 10.67, to 32.9
+// and 10.7; French's 32.37 and 10.43 to 33.21 and 10.68, to 33.3 and 10.7.
+const ADD_ON_BUDGET_KB = { ar: [70.2, 12.2], de: [32.9, 10.7], fr: [33.3, 10.7] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1497,11 +1511,19 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // count in words and its sums ("Cairo, 12 invoices, EGP 4.3M", their English with it), the arrows crossing a heading,
 // Right and Left opening and closing it — list 109.78 and 35.19 measured before, 110.61 and 35.49 after, to 110.7
 // and 35.5.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
+// Tables inside formatted text (0.27, w4-rich-tables): text 56.45 and 18.84 measured before, 70.61 and 23.74 after —
+// the table tool, its picker of a size on a grid of 8 by 8 and its menu of what to do where the caret is (rich-table.ts,
+// 4.0), rows and columns added and taken away round cells spanning several, a header row, Tab from cell to cell (a row
+// past the last) and Escape out (formatted-text.ts), a table pasted from Word, Excel or Google Docs and Sheets made plain
+// and put in as given (pasted-html.ts, 2.3), GitHub's tables in Markdown both ways, their look on the screen and on
+// paper and their 22 English words — to 70.7 and 23.8; print 15.99 and 5.22 to 16.81 and 5.38 — a formatted text's
+// table measured whole where it fits a sheet (print-look.ts), its field broken between its rows, the classic box a
+// block — to 16.9 and 5.4.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [70.7, 23.8], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.9, 5.4] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
-  text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu'],
+  text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu', 'cleanPasted', 'pasteTable', 'putHtml'],
   path: ['pathPickerWidget'],
   choice: ['ownListWidget', 'searchWidget', 'choiceTagsWidget'],
   filters: ['filterBar', 'installFilterStyles'],
