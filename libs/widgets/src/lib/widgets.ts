@@ -38,7 +38,7 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, partWidget, pathPart, phonePart, relationsPart, scanPart, scans, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTimer, plainTotal } from './business-plain';
 import { plainAddress, plainChosen, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
@@ -207,9 +207,11 @@ export function createWidget(given: WidgetContext, registry: Record<string, Widg
   // Kept from throwing: a widget that fails is a box naming its field, and the page goes on (contain.ts).
   return containWidget((kept) => {
     const own = { ...context, ...kept };
+    if (!factory) return pendingWidget(own);
     // Choices from the app's list, shown by conditions or carried from another question: the same widget, drawn again as they change.
-    if (factory) return field.type === 'selection' && (field.optionsFrom || own.form.offersChange?.(own.name)) ? listChoices(factory, own) : factory(own);
-    return pendingWidget(own);
+    const draw: WidgetFactory = (context) => (field.type === 'selection' && (field.optionsFrom || context.form.offersChange?.(context.name)) ? listChoices(factory, context) : factory(context));
+    // Scanned into with the camera: the scan part's Scan button beside it, the box typed in meanwhile.
+    return scans(own.node) ? partWidget(scanPart, own, (part) => part.scanning(draw(own), own), draw) : draw(own);
   }, context);
 }
 

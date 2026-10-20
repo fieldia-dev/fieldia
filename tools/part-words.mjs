@@ -90,6 +90,9 @@ export const PART_WORDS = {
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
   print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },
+  scan: {
+    widgets: ['scanButton', 'scanInto', 'scanTitle', 'scanStarting', 'scanAim', 'scanAimCount', 'scanTypeInstead', 'scanDone', 'scanLookingUp', 'scanNoneFound', 'scanSeveral', 'scanLookUpFailed', 'scanNoPart', 'scanRead', 'scanCounted', 'scanRefused', 'scanNoCamera', 'scanCameraBusy', 'scanUnavailable', 'scanNoReader'],
+  },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {
     widgets: ['notAnswered', 'addressStreet', 'addressCity', 'addressLine2', 'addressRegion', 'addressPostcode', 'addressCountry', 'keepOrder', 'addProperty', 'propertyName', 'propertyType', 'propertyTypes', 'colourCode', 'colourCodeBox', 'noColour', 'rankTop', 'moveUp', 'moveDown', 'movedTo', 'removed'],

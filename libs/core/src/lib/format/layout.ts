@@ -10,6 +10,7 @@ import { pickerOptionIssues } from './picker-options';
 import { phoneOptionIssues } from './phone';
 import { slotsOptionIssues } from './slots-options';
 import { signatureOptionIssues } from './signature-options';
+import { scanOptionIssues } from './scan-options';
 import { SECTION_TRACK } from './section-checks';
 import { DATE_PERIODS, type DatePeriod } from '../record/periods';
 import type { TotalKind } from '../record/data-source';
@@ -1572,6 +1573,10 @@ export const CellRulesSchema = z
     width: z.int().min(1).max(200).optional(),
     roles,
   })
+  // A column scanned into (`options.scan`): its settings' shape, as a field's.
+  .superRefine((rules, context) => {
+    for (const issue of scanOptionIssues(rules)) context.addIssue({ code: 'custom', ...issue });
+  })
   .meta({ id: 'CellRules' });
 
 export const AnswerRuleSchema = z
@@ -1649,7 +1654,7 @@ export const FieldNodeSchema = z.strictObject({
   hotkey: z.string().regex(/^[a-z0-9]$/, 'an access key is one letter or digit of the label, in small letters: "e"').optional(),
 }).superRefine((node, context) => {
   // A widget's own options, where the format knows them: an address with suggestions.
-  for (const issue of [...pickerOptionIssues(node), ...phoneOptionIssues(node), ...slotsOptionIssues(node), ...signatureOptionIssues(node)]) context.addIssue({ code: 'custom', ...issue });
+  for (const issue of [...pickerOptionIssues(node), ...phoneOptionIssues(node), ...slotsOptionIssues(node), ...signatureOptionIssues(node), ...scanOptionIssues(node)]) context.addIssue({ code: 'custom', ...issue });
   if (node.widget !== 'address-search') return;
   const checked = AddressSearchOptionsSchema.safeParse(node.options ?? {});
   for (const issue of checked.error?.issues ?? []) context.addIssue({ code: 'custom', message: issue.message, path: ['options', ...issue.path] });

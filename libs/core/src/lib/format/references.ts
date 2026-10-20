@@ -24,6 +24,7 @@ import { checkList, checkRelated, type ListTools } from './list-checks';
 import type { FieldTools } from './part-checks';
 import { checkSlots } from './slots-checks';
 import { checkSignature } from './signature-checks';
+import { checkScan } from './scan-checks';
 import { checkEndings } from './endings-checks';
 import { checkAddressSearch, checkMap, checkPlace, type MapTools } from './map-checks';
 import { checkLineKinds, checkTable, type TableTools } from './table-checks';
@@ -45,6 +46,8 @@ export interface PageIssue {
 export type PageValidation = { ok: true; page: Page; warnings?: PageIssue[]; later?: string[] } | { ok: false; issues: PageIssue[]; warnings?: PageIssue[]; later?: string[] };
 
 const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
+/** Whether a field, or a column of its table, is scanned into with the camera (`options.scan`). */
+const scansAny = (node: FieldNode): boolean => [node, ...Object.values(node.cells ?? {})].some((one) => one?.options?.['scan'] !== undefined);
 
 /** The kinds of field an expression can give a value to: the rest hold records, lines or files. */
 const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'json']);
@@ -853,6 +856,8 @@ export class ReferenceCheck {
     if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
     if (def) this.checkPicker(node, def, path);
+    // Scanned into with the camera — the field, or a table's columns: checked with the scan part's code, which draws it.
+    if (scansAny(node)) checkScan(node, def, path, this.fieldTools());
     // The order lines load in: fields of its lines.
     if (def && node.order && def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);
     // A line's own form: its parts read the line's fields, the record as parent.

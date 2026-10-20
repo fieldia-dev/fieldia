@@ -1,0 +1,68 @@
+{
+  "fieldia": "0.7",
+  "id": "clinic-treatment",
+  "title": "Treatment record",
+  "description": "What was injected, for the patient’s file and the medicines authority: each injectable’s product, lot and expiry, read from the DataMatrix code on its box.",
+  "data": { "kind": "record", "model": "clinic.treatment" },
+  "records": { "one": "treatment", "other": "treatments", "a": "a treatment" },
+  "timeZone": "Africa/Cairo",
+  "fields": {
+    "patient_id": { "type": "many2one", "label": "Patient", "relation": "clinic.patient", "required": true },
+    "treated_on": { "type": "date", "label": "Treated on", "required": true },
+    "doctor": { "type": "char", "label": "Doctor" },
+    "line_ids": {
+      "type": "one2many",
+      "label": "Injectables used",
+      "relation": "clinic.treatment.line",
+      "fields": {
+        "product_id": { "type": "many2one", "label": "Product", "relation": "clinic.product", "required": true },
+        "lot": { "type": "char", "label": "Lot", "required": true, "size": 20 },
+        "expiry": { "type": "date", "label": "Expiry" },
+        "units": { "type": "integer", "label": "Units" }
+      }
+    },
+    "notes": { "type": "text", "label": "Notes" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "children": [
+      {
+        "type": "section",
+        "id": "visit",
+        "title": "The visit",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-patient",
+            "field": "patient_id",
+            "help": "Scan the QR code on the patient’s card, or type their name.",
+            "options": { "scan": { "formats": ["qr_code"], "by": "card" } }
+          },
+          { "type": "field", "id": "f-treated-on", "field": "treated_on" },
+          { "type": "field", "id": "f-doctor", "field": "doctor" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "used",
+        "title": "Injectables used",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-lines",
+            "field": "line_ids",
+            "labels": "hidden",
+            "columns": ["product_id", "lot", "expiry", "units"],
+            "help": "Add a line, press Scan beside its lot and hold the box’s DataMatrix code to the camera: the product, the lot and the expiry fill in.",
+            "cells": {
+              "lot": { "options": { "scan": { "formats": ["data_matrix"], "part": "10", "fills": { "expiry": "17", "product_id": { "part": "01", "by": "gtin" } } } } }
+            }
+          }
+        ]
+      },
+      { "type": "field", "id": "f-notes", "field": "notes" }
+    ]
+  }
+}

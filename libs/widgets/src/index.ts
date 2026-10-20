@@ -68,8 +68,11 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // A phone read the world over (a page's `phone`, a field's `country` or `shown`) comes in the phone part, with every
 // country's numbers: `(await phonePart.load()).readPhone(…)`, `.writePhone(…)`. Whether a field reads so is here.
 // Booking slots (`"widget": "slots"`) come in the slots part, with the date part.
+// A code scanned with the camera (`options.scan`) comes in the scan part, loaded with a page that has one — its Scan
+// button, the camera's sheet — and where the browser reads no codes itself, the decode part, as Scan is pressed. An app
+// reads codes its own way with `(await scanPart.load()).useCodeReader(reader)`.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, scanPart, decodePart, loadDecodePart, scans, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type ScanPart, type DecodePart, type PartFactory } from './lib/widget-parts';
 export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.

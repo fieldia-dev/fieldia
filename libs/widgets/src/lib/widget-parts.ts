@@ -13,6 +13,8 @@ import type * as SurveyModule from './survey-part';
 import type * as PhoneModule from './phone-part';
 import type * as SlotsModule from './slots-part';
 import type * as RelationsModule from './relations-part';
+import type * as ScanModule from './scan-part';
+import type * as DecodeModule from './decode-part';
 import type { TypedText, Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
@@ -42,6 +44,10 @@ export type PhonePart = typeof PhoneModule;
 export type SlotsPart = typeof SlotsModule;
 /** The relations part: links to other records — a many2one's and a reference's box, a many2many's tags and checkboxes, a char field's tags. */
 export type RelationsPart = typeof RelationsModule;
+/** The scan part: a field's Scan button, the camera's sheet, a code read written into the field, a table's lines counted. */
+export type ScanPart = typeof ScanModule;
+/** The decode part: codes read in a camera's picture where the browser reads none itself (ZXing's readers). */
+export type DecodePart = typeof DecodeModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
@@ -120,6 +126,26 @@ export function loadPhonePart(): Promise<PhonePart> {
  * loaded the first time a page shows one.
  */
 export const relationsPart: Part<RelationsPart> = lazyPart('relations', () => import('./relations-part'));
+
+/**
+ * A code scanned with the camera (`options.scan`): a field's Scan button, the camera's sheet, the code read written into
+ * the field — a link's record found by its code — and a table's lines counted, loaded the first time a page shows a
+ * field scanned into (the viewer asks for it before it draws such a page). Meanwhile its box is typed in, as a scanner
+ * gun types into it.
+ */
+export const scanPart: Part<ScanPart> = lazyPart('scan', () => import('./scan-part'));
+/**
+ * Codes read in a camera's picture where the browser has no reader of its own (`BarcodeDetector`) — Safari, Firefox, a
+ * computer's Chrome — loaded only as Scan is pressed in such a browser: about 40 KB, never for a page no one scans on.
+ */
+export const decodePart: Part<DecodePart> = lazyPart('decode', () => import('./decode-part'));
+/** The decode part, asked for, for the scan part as Scan is pressed. A function, as `loadLinesPart` is. */
+export function loadDecodePart(): Promise<DecodePart> {
+  return decodePart.load();
+}
+
+/** Whether a field is scanned into with the camera: its node's `options.scan` — true, or its settings. */
+export const scans = (node: FieldNode): boolean => !!node.options?.['scan'];
 
 /** A factory whose widget comes in a part, for a field `when` says (every one unless it says). */
 export type PartFactory = WidgetFactory & {

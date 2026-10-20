@@ -70,6 +70,7 @@
     "vue": "3.5.43"
   },
   "dependencies": {
+    "@zxing/library": "0.23.0",
     "zod": "^4.6.5"
   }
 }

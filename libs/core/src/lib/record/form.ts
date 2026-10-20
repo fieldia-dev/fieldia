@@ -189,6 +189,11 @@ export interface SearchOptions {
   ids?: RecordId[];
   /** Only the records named exactly the query, in any case (`SearchRequest.exact`): a typed name read as a record. */
   exact?: boolean;
+  /**
+   * Only the records whose `field` holds the query exactly — a code read by a scanner, by the field holding the linked
+   * records' codes ("barcode") — asked through the search's filter, whatever their names.
+   */
+  field?: string;
 }
 
 /** Text left in a box that does not read, and why, as `FormState.unread` keeps it. */
@@ -3011,7 +3016,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     ctx: Record<string, unknown>,
     query: string,
     limit: number,
-    { model, ids, exact }: SearchOptions = {}
+    { model, ids, exact, field }: SearchOptions = {}
   ): Promise<RelatedRecord[]> {
     // Formatted text names people and records in place (@mention, #4127): searched by the model they are of.
     const byModel = def.type === 'reference' || def.type === 'json' || def.type === 'html';
@@ -3023,9 +3028,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (!source?.search) return [];
     // Every valueFrom, in groups too, becomes the value it names before the search goes out.
     const own: ResolvedFilter[] | undefined = byModel || !def.filter ? undefined : resolveFilter(def.filter, ctx);
-    const filter = ids ? [...(own ?? []), { field: 'id', op: 'in' as const, value: ids }] : own;
+    const kept = ids ? [...(own ?? []), { field: 'id', op: 'in' as const, value: ids }] : own;
+    // A code read by a scanner: the records whose field holds it, whatever their names.
+    const filter = field ? [...(kept ?? []), { field, op: '=' as const, value: query }] : kept;
     const relation = byModel ? (model as string) : def.relation;
-    return track(source.search({ model: relation, query, ...(filter ? { filter } : {}), limit, ...(exact ? { exact: true } : {}) }));
+    return track(source.search({ model: relation, query: field ? '' : query, ...(filter ? { filter } : {}), limit, ...(exact ? { exact: true } : {}) }));
   }
 
   function lineField(field: string) {
