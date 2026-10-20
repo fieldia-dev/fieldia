@@ -393,8 +393,8 @@ export interface FormOptions {
   parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
   /**
    * How a field's value reads inside the page's own words — a `{field}` in a label, a help, a choice, a step's title, a
-   * button, an ending — and so inside the form's messages that name a label ("How was your visit to Zamalek? is
-   * required"). The viewer gives its own, as each field shows its value at rest: a choice by its label, money with its
+   * button, an ending — and so inside the form's messages that name a label ("Please answer “How was your visit to
+   * Zamalek?”"). The viewer gives its own, as each field shows its value at rest: a choice by its label, money with its
    * currency, a day in the page's order. Left out, a choice by its label, a link by its name, a yes or no as Yes or No,
    * anything else as it is held.
    */

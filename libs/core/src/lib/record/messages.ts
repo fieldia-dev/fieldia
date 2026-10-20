@@ -8,6 +8,8 @@ import { labelAt } from './record-words';
  */
 export interface Messages {
   required: string;
+  /** Required, of a label that is a question (`isQuestion`): `{label}` is quoted already ("Please answer “How was it?”"). */
+  requiredQuestion: string;
   maxLength: string;
   pattern: string;
   text: string;
@@ -165,6 +167,7 @@ export type MessageKey = Exclude<keyof Messages, `${string}Noun` | 'lowerLabels'
 /** English: always here, and the words a language leaves out. */
 const en: Messages = {
   required: '{label} is required',
+  requiredQuestion: 'Please answer {label}',
   maxLength: '{label} takes at most {max} characters',
   pattern: '{label} is not in the expected format',
   text: '{label} must be text',
@@ -270,12 +273,11 @@ const LABELS = ['label', 'column', 'start', 'end'];
 
 /**
  * A message filled in (`fill`), each field's label as its sentence puts it (`labelAt`): small inside the sentence where
- * the form's page asks (`messages.lowerLabels`), else as written.
+ * the form's page asks (`messages.lowerLabels`), a question quoted, else as written.
  */
 export function fillMessage(messages: Messages, template: string, values: Record<string, string | number>): string {
-  if (!messages.lowerLabels) return fill(template, values);
   const own = { ...values };
-  for (const key of LABELS) if (typeof own[key] === 'string') own[key] = labelAt(template, key, true, messages.locale)(own[key] as string);
+  for (const key of LABELS) if (typeof own[key] === 'string') own[key] = labelAt(template, key, messages.lowerLabels, messages.locale)(own[key] as string);
   return fill(template, own);
 }
 

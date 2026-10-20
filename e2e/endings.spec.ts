@@ -69,7 +69,9 @@ test.describe('feedback that asks of the branch by its name', () => {
     await expect(rating(page).locator('.fd-label')).toHaveText('How was your visit to Hillcrest?');
     // Required, it says so by the label as it reads now.
     await page.getByRole('button', { name: 'Submit' }).click();
-    await expect(rating(page).locator('.fd-error')).toHaveText('How was your visit to Hillcrest? is required');
+    await expect(rating(page).locator('.fd-error')).toHaveText('Please answer “How was your visit to Hillcrest?”');
+    await expect(node(page, 'f-recommend').locator('.fd-error')).toHaveText('Please answer “How likely are you to recommend us to a friend?”');
+    await screen(page, 'endings-feedback-required');
   });
 
   test('a low rating ends in sorry, naming who reads it, with no second response', async ({ page }) => {

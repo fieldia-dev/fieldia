@@ -270,7 +270,10 @@ form.endingWords('Your booking is {id}.');   // "Your booking is B-1043."
 help, each choice's words, a step's title and words, a wizard's and a button's
 words — as in a text's and an alert's: `form.words('How was your visit to
 {branch}?')` is "How was your visit to Zamalek?", and the form's messages name
-the field so ("How was your visit to Zamalek? is required"). How a value reads
+the field so ("Please answer “How was your visit to Zamalek?”": a label that is
+a question — ending with a question mark, or an ellipsis the answer completes —
+is quoted in the language's marks wherever a sentence names it, `isQuestion` and
+`quotedLabel`, and its required message is `requiredQuestion`). How a value reads
 there is the viewer's (`valueWords` in `createForm`'s options: a choice by its
 label, money with its currency, a day in the page's order); without one, a
 choice's label, a link's name, Yes or No, anything else as held. After a bar,

@@ -3,6 +3,7 @@ import type { Messages } from '../messages';
 /** The validation messages in French. */
 export const fr: Messages = {
   required: '{label} est obligatoire',
+  requiredQuestion: 'Veuillez répondre à {label}',
   maxLength: '{label} accepte au plus {max} caractères',
   pattern: "{label} n'a pas le format attendu",
   text: '{label} doit être du texte',

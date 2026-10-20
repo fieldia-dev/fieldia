@@ -1,4 +1,4 @@
-import type { FieldNode, Locale } from '@fieldia/core';
+import { quotedLabel, type FieldNode, type Locale } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { TypedText, WidgetState } from './widgets';
 
@@ -45,9 +45,21 @@ export function boxPurpose(node: FieldNode, own: { autocomplete?: string; inputm
 /** The words a widget shows: the page's, its language's, or English (a language the one-tag script was not given). */
 export const wordsFor = (labels: WidgetLabels | undefined, locale: Locale | undefined): WidgetLabels => labels ?? WIDGET_LABELS[locale ?? 'en'] ?? WIDGET_LABELS.en;
 
-/** `{name}` and the like filled in. */
+/** The blanks a field's label fills: a question there is quoted (`quotedLabel`). */
+const LABEL_BLANKS = new Set(['label', 'column', 'field']);
+/** The language whose quotation marks a sentence quotes typed words in: „…“, « … », «…», else “…”. */
+const marksOf = (template: string) => (template.includes('„') ? 'de' : template.includes('« ') ? 'fr' : template.includes('«') ? 'ar' : 'en');
+
+/**
+ * `{name}` and the like filled in; a label that is a question quoted, in the marks the sentence quotes in:
+ * "“How many days?”: numbers only".
+ */
 export const fillIn = (template: string, values: Record<string, string | number>) =>
-  template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
+  template.replace(/\{(\w+)\}/g, (match, key: string) => {
+    if (!(key in values)) return match;
+    const value = values[key];
+    return LABEL_BLANKS.has(key) && typeof value === 'string' ? quotedLabel(value, marksOf(template)) : String(value);
+  });
 
 /**
  * An attribute set, or taken away with null, only when that changes it.
