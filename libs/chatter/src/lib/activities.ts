@@ -165,7 +165,7 @@ export function activitiesPart(context: ChatterContext, afterChange: () => Promi
   const summary = el('input', { class: 'fd-input', name: 'summary', 'aria-label': labels.summary, placeholder: labels.summary });
   const due = el('input', { class: 'fd-input', type: 'date', name: 'due', 'aria-label': labels.dueDate });
   // An hour on the page's clock, if the activity has one: left empty, it is due on its day.
-  const time = el('input', { class: 'fd-input', type: 'time', name: 'time', 'aria-label': labels.dueTime });
+  const time = el('input', { class: 'fd-input', type: 'time', name: 'time', step: '60', 'aria-label': labels.dueTime });
   const assignee = el('select', { class: 'fd-input', name: 'assignee', 'aria-label': labels.assignedTo });
   const schedule = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.schedule);
   const cancelForm = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
