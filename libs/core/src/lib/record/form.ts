@@ -449,11 +449,13 @@ export interface Form {
   /** What a field would be told if the form were checked now, or null when it passes. Nothing is shown. */
   problem(field: string): string | null;
   /**
-   * What a value worked out from others waits for while one of them holds text that does not read (`unread`): a
-   * total of the page's own (`compute`) over a table whose line says "abc" in its Quantity, or an amount the app
-   * works out as the lines change (read-only, from a source with an onchange) — the line, as people count them, and
-   * its cell. Shown, it is a dash said in words, as the table's own total waits: never an amount worked out from the
-   * value that text replaced. Null when it shows its value.
+   * What a value worked out from others waits for while one of them holds text that does not read (`unread`), or an
+   * answer the form refuses (shown, not empty, and refused by its checks: an area under its least, a day past today):
+   * a total of the page's own (`compute`) over a table whose line says "abc" in its Quantity, a price per m² over an
+   * area of −50, or an amount the app works out as the lines change (read-only, from a source with an onchange) — the
+   * line, as people count them, and its cell. Shown, it is a dash said in words, as the table's own total waits: never
+   * an amount worked out from the value that text replaced, or from one refused. Then what is asked of the app's
+   * server for it (`asking`). Null when it shows its value.
    */
   waitsFor(field: string): WaitsFor | null;
   /**
@@ -1975,6 +1977,39 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return unticked(node) ?? checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages, today(), (node.source as FieldNode).widget) ?? ruleCheck(node).error;
   }
 
+  /** Which answers the form refuses, as `refusedAt` found them for the state they were found in. */
+  let refusals: { state: FormState; at: Map<string, boolean> } | null = null;
+  /**
+   * Whether the form refuses the answer at a path — a field's, or a table line's cell (`field.lineKey.subfield`) — as a
+   * check would now: one it shows that holds a value its rules do not take (under its least, past today, a pattern not
+   * met, an answer rule's error). An empty answer is none, required or not: there is nothing worked out from it to wait.
+   */
+  function refusedAt(path: string): boolean {
+    if (refusals?.state !== state) refusals = { state, at: new Map() };
+    let refused = refusals.at.get(path);
+    if (refused === undefined) {
+      refused = refusedNow(path);
+      refusals.at.set(path, refused);
+    }
+    return refused;
+  }
+  function refusedNow(path: string): boolean {
+    const parts = path.split('.');
+    const def = page.fields[parts[0]];
+    if (!def) return false;
+    if (parts.length === 1) return !isEmpty(def, state.values[path]) && form.problem(path) !== null;
+    if (def.type !== 'one2many' || parts.length < 3) return false;
+    const sub = parts[parts.length - 1];
+    const subDef = def.fields[sub];
+    const line = ((state.values[parts[0]] as Line[] | null) ?? []).find((one) => one.key === parts.slice(1, -1).join('.'));
+    if (!subDef || !line || isEmpty(subDef, line.values[sub])) return false;
+    // As a check reads it: on a table shown, where its line shows the cell.
+    const node = visibleFieldNodes(undefined, 'field', parts[0])[0];
+    if (!node) return false;
+    if (tables.has(node.id) && (lineStateOf(node.id, line.key).cells[sub]?.invisible || tables.get(node.id)!.compiled.hidden(sub, reading().context, reading().env, userRoles))) return false;
+    return checkValue(checkedLine(path, subDef), line.values[sub], false, messages, today(), (node.source as FieldNode).cells?.[sub]?.widget) !== undefined;
+  }
+
   /** Warnings for the visible fields of the page, without publishing them. */
   function collectWarnings(): Record<string, string> {
     const warnings: Record<string, string> = {};
@@ -3481,10 +3516,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     waitsFor(name) {
-      const found = state.asked[name];
-      if (found) return { field: name, asking: true, ...(found.failed !== undefined ? { failed: found.failed } : {}) };
+      // What it is worked out from first: an answer that does not read, or that the form refuses, is never asked about.
       const from = workedOut.get(name);
-      return from ? waitingOn(page, from, state.values, state.unread) : null;
+      const waits = from ? waitingOn(page, from, state.values, state.unread, refusedAt) : null;
+      if (waits) return waits;
+      const found = state.asked[name];
+      return found ? { field: name, asking: true, ...(found.failed !== undefined ? { failed: found.failed } : {}) } : null;
     },
 
     problem(name) {

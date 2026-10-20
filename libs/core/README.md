@@ -78,6 +78,15 @@ and null when it shows its value; the viewer draws it as a dash, said in words
 ("Fix line 1 of Order lines to see Untaxed amount"). An answer your onchange
 gives meanwhile is kept, and shown once the line reads.
 
+It waits the same for an answer the form refuses: one shown that holds a value
+its checks do not take — an area of −50 under its `min` of 0, a day past its
+`max` of `today`, a pattern not met, an answer rule's error — on the record or
+in a line's cell, whether the value is the page's own formula, one of
+Fieldia's functions (`years(built_on, today())`) or your app's: "Fix Area (m²)
+to see Price per m²", never −120,000.00. An empty answer is none, required or
+not, and one no one is shown is never refused. What waits for an answer is told
+before what is asked of your app's server for it.
+
 ## Functions, and your app's own
 
 A value worked out (`compute`), a value set by a condition (`setWhen`) and every
