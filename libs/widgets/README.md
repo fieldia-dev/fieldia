@@ -193,4 +193,57 @@ column as its cell reads at rest — its choices those loaded for that line — 
 grid's cells, a printout, cards. A block pasted reads such a cell among its own
 line's choices (`PasteTable.choices`, `form.lineChoices`), its links first.
 
+A field whose node says `options.scan` is scanned into with the camera: a char's
+or a text's box, a link's (a many2one), a table's column (`cells.<column>.options.scan`)
+or a table of lines that counts what is scanned. A **Scan** button at the end of
+its box — a line's cell's, its icon alone — opens the camera in a sheet over the
+page, the back camera on a phone, with a frame to hold the code in; a code read
+fills the field, beeps where the browser lets it and buzzes a phone, and the
+sheet closes and stops the camera — as Escape, × and **Type it instead** do. It
+reads QR codes, DataMatrix, EAN-13 and EAN-8, UPC-A and UPC-E, Code 128 and Code
+39 (`formats` keeps it to some), with the browser's own `BarcodeDetector` where
+it reads them all, else with ZXing's readers in the decode part
+(`fieldia.decode.js`, about 40 KB gzipped), loaded only as Scan is pressed in a
+browser without — Safari, Firefox, a computer's Chrome. Where the camera is not
+allowed, there is none, another app holds it, or the page cannot use one, the
+field says why beside the button and the cursor goes to its box, to type. A
+scanner gun (a keyboard wedge) types into the box as ever.
+
+```json
+{ "type": "field", "id": "f-patient", "field": "patient_id", "options": { "scan": { "by": "card" } } }
+{ "type": "field", "id": "f-lines", "field": "line_ids",
+  "cells": { "lot": { "options": { "scan": { "formats": ["data_matrix"], "part": "10", "fills": { "expiry": "17", "product_id": { "part": "01", "by": "gtin" } } } } } } }
+{ "type": "field", "id": "f-count", "field": "line_ids", "options": { "scan": { "field": "product_id", "count": "counted", "by": "barcode" } } }
+```
+
+- **Words** take the code as read, one line in a char; a GS1 code taken whole is
+  written as its label prints it, `(01)06285096000842(17)281231(10)25A1234`.
+- **A link** finds its record by the code through the data source's `search`: by
+  the field of its records that holds their codes (`by`: the search's filter asks
+  for that field equal to the code, its query empty), else by name — the name
+  itself first, then as the source searches names, which may find a product by
+  its barcode. A GTIN of 14 digits is found as the 13 or 12 a shop may keep. One
+  record is taken; none, or several, is said in the sheet, which reads on.
+- **A GS1 code** — a medicine's DataMatrix, a GS1-128 barcode — is read by its
+  parts: `part` is the one this field takes, by its Application Identifier (`10`
+  a lot, `21` a serial number, `01` a GTIN, `17` an expiry), and `fills` the
+  others the same code fills, a line's columns for a cell — a day as the date it
+  names (`00` the month's last), a measure with its places, a link by its code.
+  A code without the part is said, and the camera reads on.
+- **A table counted** (`field` and `count` on a one2many's own node): each code
+  read adds one to the line whose `field` — and every column the code fills —
+  holds what it names, else adds a line with one; the sheet stays open, saying
+  each count ("Hand cream 50 ml: 2 counted"), until Done. An item held still is
+  read once; out of sight a moment and back, it is the next.
+- `sound: false` keeps it silent. A Scan is hidden while the field is read-only.
+
+The scan part (`scanPart`, `fieldia.scan.js`) draws all of it, loaded with a page
+that has a field scanned into; until it comes, the field is its box alone. An
+app reads codes its own way — a commercial scanning library, a test's stand-in —
+with `(await scanPart.load()).useCodeReader({ detect })`, `detect` handed a
+video's frame and answering `[{ rawValue, format }]` as `BarcodeDetector` does.
+An app's bundler makes the decode part a chunk of its own, with `@zxing/library`
+as its index brings it (about 120 KB gzipped, asked for only as Scan is pressed in
+a browser that reads no codes itself).
+
 MIT licensed.

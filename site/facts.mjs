@@ -38,6 +38,10 @@ export const SIZES = {
   print: Math.round(gzippedKB('fieldia.print.js')),
   /** fieldia.phone.js: the phone box and its country table, fetched the first time a page shows a phone. */
   phone: Math.round(gzippedKB('fieldia.phone.js')),
+  /** fieldia.scan.js: a field's Scan button and the camera's sheet, fetched with a page that scans. */
+  scan: Math.round(gzippedKB('fieldia.scan.js')),
+  /** fieldia.decode.js: ZXing's readers of codes, fetched as Scan is pressed in a browser that reads none itself. */
+  decode: Math.round(gzippedKB('fieldia.decode.js')),
 };
 
 const packages = readdirSync(new URL('libs/', ROOT)).filter((dir) => {
