@@ -15,6 +15,122 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.28.0 — 2026-10-20
+
+**Everything a business owner's walk of 0.27 found, mended** — values worked
+out from an answer the form refuses wait for it, notes go once they are no
+longer true, a table of lines reads whole on a phone, the booking template books
+only free times, and fieldia.dev's front page stays still while you read it. The
+page format is 0.7; a page of 0.1 to 0.6 is read as it is.
+
+**The business owner's walk of 0.27, mended:**
+
+- **A value worked out from an answer the form refuses waits** for it, as one
+  worked out from text that does not read: "Fix Area (m²) to see Price per m²",
+  never −120,000.00. An area under its `min`, a day past its `max` of `today`, a
+  pattern not met, an answer rule's error — on the record or in a line's cell —
+  hold back the page's own formula, Fieldia's functions (`years(built_on,
+  today())`) and your app's alike. An empty answer is none, and one no one is
+  shown is never refused.
+- **"X is no longer offered, so it was taken out" goes once it is untrue**: the
+  value written again, or what it names offered again (Villa picked again, the
+  treatment ticked again above, the app's list asked again offering it); one of
+  several offered again leaves it naming the rest.
+- **A grid's cell says what a line's change took out of it** under its value, its
+  row as tall as the words, as a plain table's cell does — and aloud, as before.
+- **A consent's "Not signed yet" follows the answers.** Once nothing is left to
+  put right it says "Your answers are ready to sign." with **Sign now**, which
+  signs the drawing kept on the pad: never a second drawing.
+- **A table of lines on a phone is cards**, a plain table and a grid alike: at
+  520px or less each line is a card, each value whole beside its column's label,
+  where a table's boxes and a grid's cells cut their words ("Send an ema", "A f").
+  A grid's card opens its line in its own form; where the app gives the viewer
+  no dialogs to open one in, the grid stays a grid. `"cards": "never"` keeps rows
+  at every width, `"always"` cards at every width.
+- **A card's line of two fields gives each its label beside its value** — "Next
+  follow-up 30 Sept 2026 · Agent Mona Adel", never the two labels and then the two
+  values — a part moving whole to the next row where it does not fit.
+- **A printout's head names the record** by its name field — its sheet's title
+  field, else its `name`, else its first line of text, on a page of sections
+  too: "SA-2026-014", not "Agreement".
+- **A label that is a question is quoted where a message names it**: "Please
+  answer “How was your visit to Riverside?”" (`requiredQuestion`), in the
+  language's quotation marks, wherever a message names a field by its label.
+- **A day a message names is written as the page's date boxes write it**: "This
+  form closed on 20 Nov 2026.", "can't be after 20 Oct 2026" — in the page's
+  `look.dateOrder` and language, a time after it on the page's clock (`dayWords`).
+- **An unanswered slider shows no knob**: a hollow ring at the start of an empty
+  track and "Not answered" beside it, where 0.27 put the knob halfway beside "–";
+  a press or a key that leaves it at its least answers it.
+- **A list under a filter bar says how many records it finds** — "42 homes", in
+  the page's words for its records — in its filter bar's row, in the table, the
+  gallery and on a map; nothing while none is found, none for a list in a record.
+- **The appointment-booking template books from the times the clinic has free**,
+  with booking slots as the test drive does: never a day gone by, never a time
+  already booked. A page of responses' slots ask for their free times again once
+  a response is sent, so Book another is never offered the time just booked; the
+  ending still says "Your booking is B-1043…". The templates' dates refuse the
+  past or the future where neither makes sense (a date of birth, a move-in day).
+- **A page that takes one response from each person** offers no other from its
+  ending's own button either.
+- **Sign-ups end naming what was kept**: the event sign-up names the session kept
+  and where the ticket goes, the event registration template the ticket, its
+  price and the workshops picked.
+- fieldia.dev: the front page's stage keeps one height while it plays, its panes
+  scrolling inside, on a phone too, and the tour waits while the stage is out of
+  view; a tab played to its end rests 9 seconds, seen, before the next; the
+  screen is veiled, lighter, only while a step's typing lasts long enough to read
+  as work (700 ms), its chip in the stage's bar, never over the record. The
+  gallery's search finds the words owners use — dentist, tenant, lease, WhatsApp,
+  payroll, gym, hotel, membership — and prefers whole words to one-letter-off
+  ones ("lease" no longer finds time off). The demos say "The app was asked to
+  share 12 properties with a buyer: …", write days as their boxes do (time off's
+  "25 Oct 2026 - 27 Oct 2026", one way with the core's `dayWords`), link the
+  record a step opens, and the backlog counts "17 work items".
+
+**And:** the page format is **0.7** (`FORMAT_VERSION`): it only added — a table
+of lines' `cards: "never"` — so a 0.1 to 0.6 page is read as it is, and
+`upgradePage` writes 0.7 in it.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- A table of lines — a plain one or a grid — is cards on a phone (a form 520px
+  wide or less) where its node says nothing: 0.27 kept rows unless it said
+  `"cards": "narrow"`. `"cards": "never"` keeps rows.
+- A message naming a label that is a question quotes it, and its required
+  message is "Please answer “…”" (`messages.requiredQuestion`), where 0.27 wrote
+  "How was your visit? is required".
+- A message naming a day writes it as the page's date boxes do: "20 Nov 2026"
+  (0.27: "November 20, 2026"), "1 Nov 2026, 09:00" (0.27: "November 1, 2026 at
+  09:00"), month first where `look.dateOrder` is `mdy`, as stored where `ymd`.
+  `whenWords` takes the order as a fifth argument; `Messages` gains `dateOrder?`,
+  which the form sets (never a language's table).
+- A list card's line is a `div` holding a `dl` of its parts, each a
+  `div[data-part]` with its own `dt` and `dd`, in a `div.fd-list-card-lines`
+  (0.27: one `dt` of the labels joined and one `dd`, in a `dl`).
+- An unanswered slider's output says "Not answered" (0.27: "–") and its range
+  stands at its least (0.27: halfway).
+- A list under a filter bar shows its count, `.fd-list-found` (a polite status).
+- A page of responses' booking slots ask the data source's `slots` again after
+  each response sent.
+- An app that gives the widgets a whole `labels` object adds `readyToSign` and
+  `signNow`; whole `messages` add `requiredQuestion`. `addLanguage` fills any left
+  out from English.
+- @fieldia/core exports `dayWords`, `isQuestion` and `quotedLabel`
+  (`quotedLabel` is on the script's global too).
+- A page the designer saves says `"fieldia": "0.7"`: Fieldia 0.27 refuses it as
+  newer than it reads. An app that keeps pages for older Fieldias keeps them in
+  0.6 (nothing 0.7 adds is in them).
+
+**Size:** `fieldia.js` 506.8 KB, 166.2 gzipped (0.27.0: 504.8, 165.4): a value
+worked out from a refused answer waiting, a note of options taken out said only
+while true, a question's label quoted, a day written as the date boxes write it.
+Of the parts, the survey kinds' grew with the unanswered slider (13.0 KB gzipped,
+from 12.7), the list's with its count (41.6, from 41.4), the evidence's with
+Sign now (4.4, from 4.2), the cards' with each label beside its value (3.8), the
+limits' (5.0, from 4.9); the rest are as they were. A language's add-on is 11.6
+to 13.3 KB gzipped.
+
 ## 0.27.0 — 2026-10-20
 
 **Forms that finish well: endings chosen by the answers, answers in a page's own
