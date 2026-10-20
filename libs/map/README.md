@@ -124,6 +124,47 @@ when it moves again; or `countArea` is the app's own
 `(filter, signal) => Promise<number>`. Each time it stops, the map's element
 sends `fd-map-view` (it bubbles): `{ center, zoom, bounds, byPerson }`.
 
+### Thousands of records: bubbles counted by your server
+
+A map loads at most `limit` records (500) and gathers them in the browser. Where
+a search finds thousands — every listing of a portal, a city's orders — give
+the data source `clusters`, and the map shows every record the search finds,
+never loading them: it asks for the view's bubbles as the search changes and a
+moment after the map stops (a run of moves asks once, the last ask wins, an
+answer that comes late is dropped), first the whole world's for a new search, to
+fit to where its records are. Each bubble shows its count; pressed, the map
+zooms to the box its records lie in, and a bubble on one spot (a tower's flats)
+lists the first 50 of them, asked of `list`, with how many more. A record that
+stands alone comes with its values, as its own pin with its card. The table
+beside the map pages as ever; "Search this area" says how many the view holds
+from the bubbles drawn, with no question of its own; shaded areas and the heat
+map from afar are as they were. Without `clusters`, or where it answers `false`
+for a search, the map loads the records and gathers them itself, as before.
+
+```ts
+const dataSource = {
+  // …list, groups and the rest, as ever
+  async clusters({ model, filter, field, longitude, bbox, zoom, radius, fields, weight, signal }) {
+    const answer = await fetch('/api/homes/clusters', { method: 'POST', body: JSON.stringify({ filter, bbox, zoom, radius }), signal }).then((r) => r.json());
+    // { clusters: [{ lat, lng, count, bbox: { south, west, north, east } }], points: [{ id, values }], unplaced: 12 }
+    return answer;
+  },
+};
+```
+
+`bbox` is the view (`{ south, west, north, east }`, west beyond east across the
+antimeridian), `zoom` the map's (Web Mercator: 0 is the world in one 256-pixel
+image), and `radius` how near two pins come in pixels before they crowd: a grid
+of `radius`-pixel squares fixed to the world at that zoom is what most servers
+gather by (PostGIS's `ST_SnapToGrid`, Elasticsearch's `geotile_grid`, a
+geohash's prefix). `field` and `longitude` say where each record is, as the page
+does; `fields` are the fields a point carries, for its pin and its card; `weight`
+names a heat map's number field, added up in each bubble. The map gathers the
+bubbles again where they still come too close, a point among them. A bubble
+without `bbox` zooms two steps in when pressed. `createMemoryDataSource({
+clusters: gridClusters() })` answers it from the records it keeps, as such a
+server does.
+
 ## A list's map in a page of your own
 
 A page that is not Fieldia's — its own list, filters and address — shows a list's

@@ -178,11 +178,13 @@ export function drawCrowd(options: {
   labels: ListMapLabels;
   dir: 'ltr' | 'rtl';
   records: { record: MapRecord; name: string; plain?: boolean }[];
+  /** How many are there, where the list holds only the first of them. */
+  count?: number;
   pick(record: MapRecord): void;
   close(): void;
 }): Card {
   const { document: doc, labels } = options;
-  const heading = fill(labels.crowd, { n: options.records.length });
+  const heading = fill(labels.crowd, { n: options.count ?? options.records.length });
   const element = make(doc, 'div', 'fd-map-card fd-map-crowd');
   element.dir = options.dir;
   element.setAttribute('role', 'group');

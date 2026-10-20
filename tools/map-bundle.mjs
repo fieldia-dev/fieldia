@@ -111,8 +111,21 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * 0.26.1: the credits' links a 24px target (11 to 15 bytes) took a list's map
  * in a page of its own from 31,830 to the 31.1 itself, over it on CI's build:
  * 31.2.
+ * A list's map whose data source gathers its records (`clusters`, Wave 5's
+ * w5-map-clusters): the asks themselves — a view's bubbles a moment after the
+ * map stops, the last one winning, a new search's extent first to fit to, a
+ * bubble's records on one spot, a lit row's place — in a chunk of their own
+ * (server-clusters, 1.1), loaded with the first map whose source gathers; with
+ * the page, what every list's map needs to know of them: the search sent to
+ * the source or loaded, its bubbles drawn and gathered again with the records
+ * standing alone (by their counts), a bubble of the source's pressed, its count
+ * for Search this area, its heat, the keys kept on a record drawn again, an
+ * open card's record on its own pin, and "And 10 more here" in four languages
+ * — 1,083 bytes more for all (47,484 to 48,567: 47.5), 1,040 more for a list's
+ * map in a page of its own (31,865 to 32,905: 32.2); a place and an area as
+ * they were (27,084).
  */
-const BUDGET = { fields: 26.5, all: 46.4, embed: 31.2, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 26.5, all: 47.5, embed: 32.2, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
