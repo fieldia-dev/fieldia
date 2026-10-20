@@ -3,22 +3,66 @@
   "id": "service-languages",
   "title": "A service",
   "description": "One of a clinic's services: its name typed in English and in Arabic, both required, as the booking desk and the clinic's site show it.",
-  "data": { "kind": "record", "model": "clinic.service" },
-  "records": { "one": "service", "other": "services", "a": "a service" },
+  "data": {
+    "kind": "record",
+    "model": "clinic.service"
+  },
+  "records": {
+    "one": "service",
+    "other": "services",
+    "a": "a service"
+  },
   "fields": {
-    "name": { "type": "char", "label": "Service", "translate": ["en", "ar"], "required": true, "size": 60 },
+    "name": {
+      "type": "char",
+      "label": "Service",
+      "translate": [
+        "en",
+        "ar"
+      ],
+      "required": true,
+      "size": 60
+    },
     "category": {
       "type": "selection",
       "label": "Category",
       "options": [
-        { "value": "dental", "label": "Dental" },
-        { "value": "skin", "label": "Skin" },
-        { "value": "checkup", "label": "Check-up" }
+        {
+          "value": "dental",
+          "label": "Dental"
+        },
+        {
+          "value": "skin",
+          "label": "Skin"
+        },
+        {
+          "value": "checkup",
+          "label": "Check-up"
+        }
       ]
     },
-    "minutes": { "type": "integer", "label": "Minutes", "min": 5 },
-    "price": { "type": "monetary", "label": "Price", "currency": "EGP", "digits": [10, 0] },
-    "notes": { "type": "html", "label": "What to tell the patient", "translate": ["en", "ar"] }
+    "minutes": {
+      "type": "integer",
+      "label": "Minutes",
+      "min": 5
+    },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currency": "EGP",
+      "digits": [
+        10,
+        0
+      ]
+    },
+    "notes": {
+      "type": "html",
+      "label": "What to tell the patient",
+      "translate": [
+        "en",
+        "ar"
+      ]
+    }
   },
   "layout": {
     "type": "sheet",
@@ -29,13 +73,33 @@
         "id": "service",
         "columns": 2,
         "children": [
-          { "type": "field", "id": "f-name", "field": "name", "colspan": 2 },
-          { "type": "field", "id": "f-category", "field": "category" },
-          { "type": "field", "id": "f-minutes", "field": "minutes" },
-          { "type": "field", "id": "f-price", "field": "price" },
-          { "type": "field", "id": "f-notes", "field": "notes", "colspan": 2 }
+          {
+            "type": "field",
+            "id": "f-category",
+            "field": "category"
+          },
+          {
+            "type": "field",
+            "id": "f-minutes",
+            "field": "minutes"
+          },
+          {
+            "type": "field",
+            "id": "f-price",
+            "field": "price"
+          },
+          {
+            "type": "field",
+            "id": "f-notes",
+            "field": "notes",
+            "colspan": 2
+          }
         ]
       }
-    ]
+    ],
+    "title": {
+      "field": "name",
+      "placeholder": "The service, as the booking desk names it"
+    }
   }
 }
