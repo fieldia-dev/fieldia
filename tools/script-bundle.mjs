@@ -862,9 +862,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // any part could come; the app's own functions and the answers of those that ask, which a value waits for and a save
 // waits on (app-functions.ts 1.4, the form's 1.6); options shown by a condition and carried from another question, taken
 // out of an answer at the form's every write and said (the form's 2.5, choices-from.ts 0.4, choice-options.ts 0.5);
-// their checks as a page is shown (references.ts 1.2); a value asked shown as an ellipsis, said (viewer.ts 0.4):
-// 503.41 measured before, 516.85 after — 13.4 more, to 516.9.
-const BUDGET_KB = 516.9;
+// their checks as a page is shown (references.ts 1.2); a value asked shown as an ellipsis, said (viewer.ts 0.4); an
+// app function's numbers tidied as Fieldia's own arithmetic tidies them: 503.41 measured before, 516.94 after — 13.5
+// more, to 517.0.
+const BUDGET_KB = 517.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1059,8 +1060,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Print on intent (listed with the raw budget above): 165.90 measured before, 162.94 after — 3.0 less, to 163.0. A
 // page that prints takes 5.22 more in fieldia.print.js.
 // More functions, the app's own, and options that follow the answers (listed with the raw budget above): 162.94
-// measured before, 167.69 after — 4.75 more, to 167.7.
-const GZIP_BUDGET_KB = 167.7;
+// measured before, 167.70 after — 4.76 more, to 167.8.
+const GZIP_BUDGET_KB = 167.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

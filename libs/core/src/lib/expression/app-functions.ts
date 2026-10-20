@@ -1,4 +1,5 @@
 import { Asking, FUNCTIONS, type ExpressionFunction, type FunctionTable } from './functions';
+import { tidy } from './operations';
 import { CONSTANTS } from './tokenizer';
 
 /**
@@ -59,6 +60,9 @@ const UNKNOWN: ExpressionFunction = { takes: [0, Infinity], call: () => null };
  */
 export const ANY_FUNCTION = { get: (name: string) => (FUNCTIONS.has(name) ? undefined : UNKNOWN), keys: () => [][Symbol.iterator]() } as unknown as FunctionTable;
 
+/** What an app's function gives, as Fieldia's own arithmetic gives numbers: 110, never 110.00000000000001; nothing for no number. */
+const tidied = (value: unknown): unknown => (value === undefined ? null : typeof value === 'number' ? tidy(value) : value);
+
 const isThenable = (value: unknown): value is PromiseLike<unknown> => value !== null && (typeof value === 'object' || typeof value === 'function') && typeof (value as { then?: unknown }).then === 'function';
 
 const tables = new WeakMap<object, FunctionTable>();
@@ -101,7 +105,7 @@ function appFunction(name: string, entry: FunctionInfo | AppFunction | ((...valu
       if (asks) {
         const kept = env.answer?.(key);
         if (kept === 'asking') throw new Asking();
-        if (kept) return kept.value;
+        if (kept) return tidied(kept.value);
         // Where nothing can wait for an answer (a list's row), it is not asked.
         if (!env.answer) return null;
       }
@@ -113,7 +117,7 @@ function appFunction(name: string, entry: FunctionInfo | AppFunction | ((...valu
         (globalThis as unknown as { console?: { error(...what: unknown[]): void } }).console?.error(`Fieldia: the app's function ${name}() failed`, error);
         return null;
       }
-      if (!isThenable(result)) return result === undefined ? null : result;
+      if (!isThenable(result)) return tidied(result);
       asks = true;
       const now = env.answer?.(key, result);
       if (!now) {
@@ -122,7 +126,7 @@ function appFunction(name: string, entry: FunctionInfo | AppFunction | ((...valu
         return null;
       }
       if (now === 'asking') throw new Asking();
-      return now.value;
+      return tidied(now.value);
     },
   };
 }

@@ -34,6 +34,18 @@ describe('the app’s functions', () => {
     expect(() => compileExpression('nights()', table)).not.toThrow();
   });
 
+  it('give numbers as Fieldia’s own arithmetic does: 110, never 110.00000000000001', async () => {
+    const tax = functionTable({ withTax: (price: number) => price * 1.1, odd: () => Number.NaN, late: { asks: true, call: () => Promise.resolve(0.1 + 0.2) } });
+    expect(compileExpression('withTax(price)', tax).evaluate({ price: 100 }, { functions: tax })).toBe(110);
+    expect(compileExpression('odd()', tax).evaluate({}, { functions: tax })).toBeNull();
+    let kept: { value: unknown } | 'asking' | undefined;
+    const env: ExpressionEnv = { functions: tax, answer: (_key, promise) => (promise ? (promise.then((value) => (kept = { value })), (kept = 'asking')) : kept) };
+    const late = compileExpression('late()', tax);
+    expect(late.evaluate({}, env)).toBeNull();
+    await Promise.resolve();
+    expect(late.evaluate({}, env)).toBe(0.3);
+  });
+
   it('give null for what they leave undefined, and when they fail', () => {
     const error = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const odd = functionTable({ nothing: () => undefined, broken: () => { throw new Error('down'); } });
