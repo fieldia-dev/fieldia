@@ -7,8 +7,9 @@
  * backslash at a line's end), **bold**, *italic*, ~~strikethrough~~, `code`,
  * ==highlighted== words, fenced code, [links](https://…), <https://…> and bare web addresses,
  * ![pictures](https://…), headings 1 to 4, `-`/`*`/`+` lists, `1.` lists,
- * `- [ ]` checklists, nested by indenting, and `>` quotes. Raw HTML is
- * escaped: it shows as written, never runs.
+ * `- [ ]` checklists, nested by indenting, `>` quotes, and tables as GitHub
+ * writes them (`| a | b |` over `| --- | ---: |`, a column's alignment by its
+ * colons). Raw HTML is escaped: it shows as written, never runs.
  */
 
 const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -66,6 +67,39 @@ const FENCE = /^ {0,3}(`{3,}|~{3,})\s*([\w+-]*)\s*$/;
 const HEADING = /^ {0,3}(#{1,4})(?: +(.*?))?(?: +#+)? *$/;
 const QUOTE = /^ {0,3}> ?(.*)$/;
 const RULE = /^ {0,3}([-*_])( *\1){2,} *$/;
+/** A table's line under its header: a cell of dashes for each column, a colon at an end for its alignment. */
+const TABLE_RULE = /^ {0,3}\|?( *:?-+:? *\|)*( *:?-+:? *)\|? *$/;
+
+/** A table row's cells: split at each pipe not escaped (`\|` is one in the words), its pipes at either end left off. */
+function tableCells(line: string): string[] {
+  const cells: string[] = [];
+  let cell = '';
+  const text = line.trim();
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '\\' && text[i + 1] === '|') cell += text[i++] + '|';
+    else if (text[i] === '|') {
+      cells.push(cell);
+      cell = '';
+    } else cell += text[i];
+  }
+  cells.push(cell);
+  if (text.startsWith('|')) cells.shift();
+  if (text.endsWith('|') && !text.endsWith('\\|')) cells.pop();
+  return cells.map((one) => one.trim());
+}
+
+/** Whether a table starts at line `i`: a row with a pipe, the line under it its columns' dashes, as many. */
+const tableAt = (lines: string[], i: number) => lines[i].includes('|') && TABLE_RULE.test(lines[i + 1] ?? '') && lines[i + 1].includes('|') && tableCells(lines[i]).length === tableCells(lines[i + 1]).length;
+
+/** A table from line `start`, and where the lines after it begin: its header row, its rows up to a line with no pipe. */
+function table(lines: string[], start: number): [string, number] {
+  const aligns = tableCells(lines[start + 1]).map((rule) => (rule.startsWith(':') && rule.endsWith(':') ? 'center' : rule.endsWith(':') ? 'right' : rule.startsWith(':') ? 'left' : ''));
+  const row = (tag: string, cells: string[]) => `<tr>${aligns.map((align, c) => `<${tag}${align ? ` style="text-align: ${align};"` : ''}>${inlineMarkdown(cells[c] ?? '')}</${tag}>`).join('')}</tr>`;
+  const body: string[] = [];
+  let i = start + 2;
+  while (i < lines.length && lines[i].trim() && lines[i].includes('|')) body.push(row('td', tableCells(lines[i++])));
+  return [`<table><thead>${row('th', tableCells(lines[start]))}</thead>${body.length ? `<tbody>${body.join('')}</tbody>` : ''}</table>`, i];
+}
 
 /** Markdown as clean HTML: the subset above, raw HTML escaped. Nothing at all gives an empty string. */
 export function markdownToHtml(markdown: string): string {
@@ -90,6 +124,12 @@ function blocks(lines: string[]): string {
       out.push(`<pre><code>${escapeHtml(code.join('\n'))}</code></pre>`);
       continue;
     }
+    if (tableAt(lines, i)) {
+      const [html, next] = table(lines, i);
+      out.push(html);
+      i = next;
+      continue;
+    }
     const heading = HEADING.exec(line);
     if (heading) {
       out.push(`<h${heading[1].length}>${inlineMarkdown(heading[2] ?? '')}</h${heading[1].length}>`);
@@ -110,7 +150,7 @@ function blocks(lines: string[]): string {
     }
     // A paragraph: lines up to a blank one or the start of another block.
     const para: string[] = [];
-    while (i < lines.length && lines[i].trim() && !(para.length && (FENCE.test(lines[i]) || HEADING.test(lines[i]) || QUOTE.test(lines[i]) || LIST_ITEM.test(lines[i])))) para.push(lines[i++]);
+    while (i < lines.length && lines[i].trim() && !(para.length && (FENCE.test(lines[i]) || HEADING.test(lines[i]) || QUOTE.test(lines[i]) || LIST_ITEM.test(lines[i]) || tableAt(lines, i)))) para.push(lines[i++]);
     out.push(`<p>${paragraph(para)}</p>`);
   }
   return out.join('');
@@ -179,7 +219,7 @@ function itemBlocks(own: string[]): string {
 
 // ---- HTML → Markdown ----------------------------------------------------------
 
-const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'PRE']);
+const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'PRE', 'TABLE']);
 
 /** Marks that would read as Markdown in plain words, escaped with a backslash. */
 const escapeMarkdown = (text: string) =>
@@ -218,6 +258,7 @@ function blockOf(element: Element, prefix: string): string {
   const tag = element.tagName;
   if (/^H[1-4]$/.test(tag)) return `${'#'.repeat(Number(tag[1]))} ${inlineOf([...element.childNodes]).trim()}`;
   if (tag === 'PRE') return '```\n' + (element.textContent ?? '').replace(/\n$/, '') + '\n```';
+  if (tag === 'TABLE') return tableMarkdown(element as HTMLTableElement);
   if (tag === 'BLOCKQUOTE') return blockChildren(element, prefix).split('\n').map((line) => (line ? `> ${line}` : '>')).join('\n');
   if (tag === 'UL' || tag === 'OL') {
     let n = 0;
@@ -287,9 +328,46 @@ function inlineNode(node: Node): string {
   }
 }
 
+/** A cell's alignment, as a column's colons can say it, or not ('?'). */
+const alignOf = (cell: HTMLTableCellElement) => {
+  const align = cell.style.textAlign;
+  return !align || /^(left|center|right)$/.test(align) ? align : '?';
+};
+
+/**
+ * A table as GitHub writes one: its first row the header's, the line of dashes under it with each column's alignment
+ * (its first row's), every cell its words on one line, a pipe in them escaped. As near as Markdown can say it: a cell
+ * across several, a row of headers further down, a line break, a list in a cell — what `markdownLoses` asks about.
+ */
+function tableMarkdown(table: HTMLTableElement): string {
+  const rows = [...table.rows].map((row) => [...row.cells]);
+  const width = Math.max(1, ...rows.map((cells) => cells.length));
+  const words = (cell?: HTMLTableCellElement) => (cell ? inlineOf([...cell.childNodes]).replace(/\\?\n/g, ' ').replace(/\|/g, '\\|').trim() : '');
+  const line = (cells: string[]) => `| ${cells.join(' | ')} |`;
+  const each = <T>(of: (c: number) => T) => Array.from({ length: width }, (_, c) => of(c));
+  const rule = each((c) => ({ left: ':---', center: ':---:', right: '---:' })[alignOf(rows[0]?.[c] ?? table.ownerDocument.createElement('td'))] ?? '---');
+  return [line(each((c) => words(rows[0]?.[c]))), line(rule), ...rows.slice(1).map((cells) => line(each((c) => words(cells[c]))))].join('\n');
+}
+
+/** Whether a table written as Markdown would lose some of it: anything but a header row over rows of words, each column aligned one way. */
+function tableLoses(table: HTMLTableElement): boolean {
+  const rows = [...table.rows];
+  const width = rows[0]?.cells.length ?? 0;
+  return (
+    !width ||
+    !!table.caption ||
+    !!table.tFoot ||
+    table.hasAttribute('dir') ||
+    rows.some((row, r) =>
+      [...row.cells].some((cell, c) => row.cells.length !== width || cell.colSpan > 1 || cell.rowSpan > 1 || (cell.tagName === 'TH') !== (r === 0) || !!cell.querySelector('p, div, ul, ol, blockquote, pre, h1, h2, h3, h4, table, br') || alignOf(cell) === '?' || alignOf(cell) !== alignOf(rows[0].cells[c]))
+    )
+  );
+}
+
 /**
  * Whether writing this formatted text as Markdown would lose some of it:
- * underlining, colours, sizes, alignment, a person or record linked in place.
+ * underlining, colours, sizes, alignment (but a table's columns'), a person
+ * or record linked in place, a table Markdown cannot write as it is.
  * Asked before a field switches from the rich editor to Markdown.
  */
 export function markdownLoses(html: string, doc: Document = globalThis.document): boolean {
@@ -300,7 +378,8 @@ export function markdownLoses(html: string, doc: Document = globalThis.document)
       element.tagName === 'U' ||
       element.hasAttribute('data-mention') ||
       element.hasAttribute('data-record') ||
-      (element.hasAttribute('style') && !highlightOnly(element)) ||
+      (element.tagName === 'TABLE' && tableLoses(element as HTMLTableElement)) ||
+      (element.hasAttribute('style') && !highlightOnly(element) && !/^T[DH]$/.test(element.tagName)) ||
       (element.tagName === 'SPAN' && element.attributes.length > 0 && !highlightOnly(element))
   );
 }

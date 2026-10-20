@@ -12,8 +12,6 @@ const ALLOWED = new Set([
 const DROPPED_WITH_CONTENT = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'TEMPLATE', 'NOSCRIPT', 'SVG', 'MATH', 'TITLE']);
 /** Blocks that may keep their alignment, the one style the toolbar sets on a block: a table's cell too (a price at its end). */
 const ALIGNABLE = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'LI', 'BLOCKQUOTE', 'PRE', 'TD', 'TH']);
-/** What stands as a block of its own: a space beside one is nothing. */
-const BLOCKS = /^(P|DIV|H[1-4]|UL|OL|LI|BLOCKQUOTE|PRE|BR|TABLE)$/;
 /** Words made bold, italic, underlined or struck by a style (Google Docs' spans, Sheets' cells), and the element saying so. */
 const MARKS: [tag: string, says: (style: CSSStyleDeclaration) => boolean, already: RegExp][] = [
   ['B', (style) => /^(bold|bolder|[6-9]00)$/.test(style.fontWeight), /^(B|STRONG|TH|H[1-4])$/],
@@ -41,24 +39,12 @@ const MODEL = /^[A-Za-z][\w.]{0,63}$/;
  * italic, underlined or struck keep it as an element (`<b>`…), and a bold or
  * italic element whose style says it is not loses it: Google Docs wraps what
  * it copies in `<b style="font-weight:normal">`. Every other element and
- * attribute goes.
- *
- * `pasted`: markup pasted from Word, Excel or Google Docs and Sheets, made
- * plainer still — a span that keeps nothing goes, its words stay, and a cell
- * holding one paragraph holds its words, the paragraph's alignment the cell's.
+ * attribute goes. (What is pasted from an office app is made plainer still by
+ * the text part, pasted-html.ts.)
  */
-export function sanitizeHtml(html: string, document: Document = globalThis.document, pasted = false): string {
+export function sanitizeHtml(html: string, document: Document = globalThis.document): string {
   const box = document.createElement('template');
   box.innerHTML = html;
-  // Excel's cells bold or aligned by a class of its sheet (`.xl65 { font-weight: 700 }`): the class's words written on
-  // each, read below as a style written there is.
-  if (pasted) {
-    for (const sheet of box.content.querySelectorAll('style')) {
-      for (const [, name, rules] of (sheet.textContent ?? '').matchAll(/\.([\w-]+)\s*\{([^}]*)\}/g)) {
-        for (const marked of box.content.querySelectorAll<HTMLElement>(`[class~="${name}"]`)) marked.setAttribute('style', `${rules};${marked.getAttribute('style') ?? ''}`);
-      }
-    }
-  }
   const clean = (parent: ParentNode) => {
     for (const node of [...parent.childNodes]) {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -106,17 +92,6 @@ export function sanitizeHtml(html: string, document: Document = globalThis.docum
         kept.push(['src', src], ['alt', element.getAttribute('alt') ?? '']);
       }
       const styles: string[] = [];
-      // A cell holding one paragraph (Word's and Docs' cells, when pasted) holds its words; the paragraph's alignment
-      // is the cell's where the cell has none of its own.
-      const only = pasted && /^T[DH]$/.test(tag) && element.children.length === 1 && element.firstElementChild?.tagName === 'P' && ![...element.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim()) ? (element.firstElementChild as HTMLElement) : null;
-      if (only) {
-        if (!style.textAlign && !element.getAttribute('align') && only.style.textAlign) style.textAlign = only.style.textAlign;
-        only.replaceWith(...only.childNodes);
-        element.normalize();
-        const [first, last] = [element.firstChild, element.lastChild];
-        if (first?.nodeType === Node.TEXT_NODE) first.textContent = first.textContent?.trimStart() ?? '';
-        if (last?.nodeType === Node.TEXT_NODE) last.textContent = last.textContent?.trimEnd() ?? '';
-      }
       // Its alignment as a style, or as the old `align` attribute: Firefox's toolbar centres a line with one.
       const align = ALIGNABLE.has(tag) ? (style?.textAlign || element.getAttribute('align') || '').trim().toLowerCase() : '';
       if (align && ALIGNMENTS.has(align)) styles.push(`text-align: ${align};`);
@@ -124,10 +99,8 @@ export function sanitizeHtml(html: string, document: Document = globalThis.docum
         const colour = style.color?.trim();
         const ground = style.backgroundColor?.trim();
         const size = style.fontSize?.trim();
-        // Pasted, the words' own black or white (Google Docs writes black on every word) is the field's colour.
-        const own = (value: string) => pasted && /^(#000(000)?|#fff(fff)?|rgba?\(\s*(0,\s*0,\s*0|255,\s*255,\s*255)\s*[,)])/i.test(value);
-        if (colour && COLOUR.test(colour) && !own(colour)) styles.push(`color: ${colour};`);
-        if (ground && COLOUR.test(ground) && !own(ground)) styles.push(`background-color: ${ground};`);
+        if (colour && COLOUR.test(colour)) styles.push(`color: ${colour};`);
+        if (ground && COLOUR.test(ground)) styles.push(`background-color: ${ground};`);
         if (size && SIZES.has(size)) styles.push(`font-size: ${size};`);
       }
       if (styles.length) kept.push(['style', styles.join(' ')]);
@@ -153,43 +126,14 @@ export function sanitizeHtml(html: string, document: Document = globalThis.docum
       if (dir === 'rtl' || dir === 'ltr') kept.push(['dir', dir]);
       for (const attribute of [...element.attributes]) element.removeAttribute(attribute.name);
       for (const [name, value] of kept) element.setAttribute(name, value);
-      // When pasted, a span left with nothing to keep, and a block round a table alone (Google Docs'), are what they hold.
-      if (pasted && ((tag === 'SPAN' && !kept.length) || (tag === 'DIV' && element.children.length === 1 && element.firstElementChild?.tagName === 'TABLE'))) element.replaceWith(...element.childNodes);
       // A table with no cell left is nothing.
-      else if (tag === 'TABLE' && !element.querySelector('td, th')) element.remove();
+      if (tag === 'TABLE' && !element.querySelector('td, th')) element.remove();
     }
   };
   clean(box.content);
-  // When pasted, the lines its source was written in are spaces, and none is left between blocks.
-  const spaces = (parent: Node) => {
-    for (const node of [...parent.childNodes]) {
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        if (node.nodeName !== 'PRE') spaces(node);
-      } else if (/^[ \t\n\r]*$/.test(node.textContent ?? '') && [node.previousSibling, node.nextSibling].some((by) => !by || BLOCKS.test(by.nodeName))) node.remove();
-      else node.textContent = node.textContent?.replace(/\s*\n\s*/g, ' ') ?? '';
-    }
-  };
-  if (pasted) spaces(box.content);
   const out = document.createElement('div');
   out.append(box.content);
   return out.innerHTML;
-}
-
-/**
- * A table pasted into a formatted text from Word, Excel, Google Docs or Sheets — or any page — kept as a table: the
- * clipboard's HTML made plain (`sanitizeHtml(…, true)`) and put where the caret is, in one step the browser undoes.
- * Rows alone (a spreadsheet's fragment) are put in a table of their own. Whatever else is pasted is the browser's, as
- * it was. True when it took the paste.
- */
-export function pasteTable(event: ClipboardEvent, doc: Document): boolean {
-  let html = event.clipboardData?.getData('text/html') ?? '';
-  if (!/<table[\s>]/i.test(html)) {
-    if (!/<tr[\s>]/i.test(html)) return false;
-    html = `<table>${html}</table>`;
-  }
-  event.preventDefault();
-  doc.execCommand?.('insertHTML', false, sanitizeHtml(html, doc, true));
-  return true;
 }
 
 /** A typed address as a link target: web and mail addresses only, "https://" added to a bare domain. */

@@ -3,7 +3,7 @@ import type { JsonValue } from '@fieldia/core';
 import { fillIn } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 import { jsonProblem, readJson } from './json-problem';
-import { linkAddress, pasteTable, sanitizeHtml } from './sanitize';
+import { linkAddress, sanitizeHtml } from './sanitize';
 import { partFactory, textPart } from './widget-parts';
 
 export { linkAddress, sanitizeHtml } from './sanitize';
@@ -74,8 +74,26 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
     last = clean;
     form.setValue(name, clean.trim() === '' ? null : clean);
   });
-  // A table pasted from Word, Excel or Google Docs is kept, plain.
-  area.addEventListener('paste', (event) => area.getAttribute('contenteditable') === 'true' && pasteTable(event, document));
+  // A table pasted from Word, Excel or Google Docs is kept, made plain by the text part (asked for as it is pasted) where
+  // the caret was; if that part cannot come, as any value is kept.
+  area.addEventListener('paste', (event) => {
+    const html = event.clipboardData?.getData('text/html') ?? '';
+    if (area.getAttribute('contenteditable') !== 'true' || !/<t(able|r)[\s>]/i.test(html)) return;
+    event.preventDefault();
+    const selection = document.getSelection();
+    const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+    const put = (clean: string, putHtml = (_box: HTMLElement, html: string, doc: Document): unknown => doc.execCommand?.('insertHTML', false, html)) => {
+      if (document.activeElement === area && range && area.contains(range.commonAncestorContainer)) {
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        putHtml(area, clean, document);
+      }
+      // The person has gone on elsewhere: the table at the text's end, the focus left where it is.
+      else area.insertAdjacentHTML('beforeend', clean);
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    textPart.load().then((part) => put(part.cleanPasted(html, document), part.putHtml), () => put(sanitizeHtml(html, document)));
+  });
   area.addEventListener('blur', () => {
     // Show what was stored: anything unsafe that was typed or pasted is gone.
     if (area.innerHTML !== last) area.innerHTML = last;

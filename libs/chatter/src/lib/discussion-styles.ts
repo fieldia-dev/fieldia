@@ -53,6 +53,9 @@ export const DISCUSSION_STYLES = /* css */ `
 .fd-comment-body > * { unicode-bidi: plaintext; }
 .fd-comment-body > :last-child { margin-block-end: 0; }
 .fd-comment-body a { color: var(--fd-link, var(--fd-accent)); }
+.fd-comment-body table { width: 100%; margin: 0 0 6px; border-collapse: collapse; }
+.fd-comment-body :is(td, th) { min-width: 2em; padding: 4px 8px; border: 1px solid var(--fd-border-strong); text-align: start; vertical-align: top; }
+.fd-comment-body th { font-weight: 600; background: color-mix(in srgb, var(--fd-text) 6%, var(--fd-surface)); }
 .fd-comment-body img { max-width: 100%; height: auto; }
 .fd-comment-body :is([data-mention], [data-record]) { color: var(--fd-link, var(--fd-accent)); font-weight: 600; }
 .fd-comment-body .fd-external { width: 12px; height: 12px; margin-inline-start: 4px; vertical-align: -1px; color: var(--fd-muted); }

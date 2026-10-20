@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { pasteTable, sanitizeHtml } from './sanitize';
+import { cleanPasted, pasteTable } from './pasted-html';
+import { sanitizeHtml } from './sanitize';
 
 /**
  * A table pasted into a formatted text from Word, Excel, Google Docs or Google Sheets, kept as plain table markup: the
@@ -17,7 +18,7 @@ const LINES = (three: string) =>
 
 describe('a table pasted from an office app', () => {
   it('from Word: its words, bold and italic, a total across three cells, the paragraph after it', () => {
-    expect(sanitizeHtml(fixture('word-table'), document, true)).toBe(
+    expect(cleanPasted(fixture('word-table'), document)).toBe(
       '<p><b>4. Fees</b></p><p>The Client pays the fees below within 30 days of each invoice.</p>' +
         `<table><tbody>${HEAD}${LINES('Site build, <i>three languages</i>')}<tr><td style="text-align: right;" colspan="3"><b>Total</b></td>${right('<b>15,000.00</b>')}</tr></tbody></table>` +
         '<p>&nbsp;</p>'
@@ -25,27 +26,27 @@ describe('a table pasted from an office app', () => {
   });
 
   it('from Excel: bold and aligned by its sheet’s classes, its numbers at their cells’ end, empty cells kept', () => {
-    expect(sanitizeHtml(fixture('excel-table'), document, true)).toBe(`<table><tbody>${HEAD}${LINES('Site build, three languages')}<tr><td><b>Total</b></td><td></td><td></td>${right('15,000.00')}</tr></tbody></table>`);
+    expect(cleanPasted(fixture('excel-table'), document)).toBe(`<table><tbody>${HEAD}${LINES('Site build, three languages')}<tr><td><b>Total</b></td><td></td><td></td>${right('15,000.00')}</tr></tbody></table>`);
   });
 
   it('from Google Docs: not all bold (its wrapper says normal), no black written on every word, no block round the table', () => {
-    expect(sanitizeHtml(fixture('google-docs-table'), document, true)).toBe(
+    expect(cleanPasted(fixture('google-docs-table'), document)).toBe(
       '<p><b>4. Fees</b></p><p>The Client pays the fees below within 30 days of each invoice.</p><br>' +
         `<table><tbody>${HEAD}${LINES('Site build, <i>three languages</i>')}<tr><td style="text-align: right;" colspan="3"><b>Total</b></td>${right('<b>15,000.00</b>')}</tr></tbody></table><br>`
     );
   });
 
   it('from Google Sheets: bold by its cells’ style, the way its columns run kept', () => {
-    expect(sanitizeHtml(fixture('google-sheets-table'), document, true)).toBe(
+    expect(cleanPasted(fixture('google-sheets-table'), document)).toBe(
       `<table dir="ltr"><tbody>${HEAD}${LINES('Site build, three languages')}<tr><td><b>Total</b></td><td></td><td></td>${right('<b>15,000.00</b>')}</tr></tbody></table>`
     );
   });
 
   it('reads the same again: a table kept is kept as it is', () => {
     for (const name of ['word-table', 'excel-table', 'google-docs-table', 'google-sheets-table']) {
-      const once = sanitizeHtml(fixture(name), document, true);
+      const once = cleanPasted(fixture(name), document);
       expect(sanitizeHtml(once)).toBe(once);
-      expect(sanitizeHtml(once, document, true)).toBe(once);
+      expect(cleanPasted(once, document)).toBe(once);
     }
   });
 });
@@ -87,7 +88,7 @@ describe('words a style marks', () => {
   });
 
   it('pasted, a span that keeps nothing is its words; its colour kept unless it is the words’ own black or white', () => {
-    expect(sanitizeHtml('<p><span style="color:#000000;background-color:transparent">a</span><span style="color:#d13438">b</span><span style="background-color:#ffffff">c</span></p>', document, true)).toBe(
+    expect(cleanPasted('<p><span style="color:#000000;background-color:transparent">a</span><span style="color:#d13438">b</span><span style="background-color:#ffffff">c</span></p>', document)).toBe(
       '<p>a<span style="color: rgb(209, 52, 56);">b</span>c</p>'
     );
   });
@@ -98,13 +99,13 @@ describe('pasting a table into a formatted text', () => {
     const event = Object.assign(new Event('paste', { cancelable: true }), { clipboardData: { getData: (type: string) => (type === 'text/html' ? html : 'plain') } }) as unknown as ClipboardEvent;
     const commands: [string, string | undefined][] = [];
     (document as unknown as { execCommand: unknown }).execCommand = (command: string, _ui: boolean, value?: string) => commands.push([command, value]);
-    return { taken: pasteTable(event, document), prevented: event.defaultPrevented, commands };
+    return { taken: pasteTable(event, document, document.body), prevented: event.defaultPrevented, commands };
   };
 
   it('puts the table in as plain markup, in one step the browser undoes', () => {
     const { taken, prevented, commands } = paste(fixture('excel-table'));
     expect([taken, prevented]).toEqual([true, true]);
-    expect(commands).toEqual([['insertHTML', sanitizeHtml(fixture('excel-table'), document, true)]]);
+    expect(commands).toEqual([['insertHTML', cleanPasted(fixture('excel-table'), document)]]);
   });
 
   it('puts rows copied alone in a table of their own', () => {
@@ -114,5 +115,32 @@ describe('pasting a table into a formatted text', () => {
   it('leaves anything else to the browser, as before', () => {
     expect(paste('<p>Hello <b>you</b></p>')).toEqual({ taken: false, prevented: false, commands: [] });
     expect(paste('')).toEqual({ taken: false, prevented: false, commands: [] });
+  });
+});
+
+describe('the classic formatted text', () => {
+  it('keeps a table pasted from Excel, made plain by the text part, where the caret was', async () => {
+    const { mountKind } = await import('./test-kinds');
+    const { el, value } = mountKind({ type: 'html', label: 'Terms' });
+    const area = el.querySelector('.fd-richtext') as HTMLElement;
+    const commands: string[] = [];
+    (document as unknown as { execCommand: unknown }).execCommand = (command: string, _ui: boolean, html?: string) => {
+      commands.push(command);
+      const range = document.getSelection()?.getRangeAt(0);
+      if (command === 'insertHTML' && range && html) range.insertNode(range.createContextualFragment(html));
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    };
+    area.focus();
+    const range = document.createRange();
+    range.setStart(area, 0);
+    document.getSelection()?.removeAllRanges();
+    document.getSelection()?.addRange(range);
+    const paste = Object.assign(new Event('paste', { bubbles: true, cancelable: true }), { clipboardData: { getData: (type: string) => (type === 'text/html' ? fixture('excel-table') : '') } });
+    area.dispatchEvent(paste);
+    expect(paste.defaultPrevented).toBe(true);
+    await new Promise((done) => setTimeout(done));
+    expect(commands).toEqual(['insertHTML']);
+    expect(value()).toBe(cleanPasted(fixture('excel-table'), document));
   });
 });

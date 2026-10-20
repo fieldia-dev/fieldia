@@ -14,7 +14,7 @@ import type { Widget, WidgetContext } from './widgets';
  *                light box when pointed at, the accent box with the toolbar
  *                inside it while worked in — or 'never' (false)
  *   toolbarAt    'top' or 'bottom' (the foot unless said, with 'focus')
- *   tools        the tools, in order: bold … attach (text-tools.ts)
+ *   tools        the tools, in order: bold … attach, table (text-tools.ts)
  *   editor       'rich', or 'markdown': at rest the text as it reads, its
  *                links opening in a tab of their own; a click on its words,
  *                Enter, or Edit in its group's heading opens the Markdown
@@ -30,7 +30,7 @@ const isTool = (tool: unknown): tool is TextTool => typeof tool === 'string' && 
 const record = (value: JsonValue | undefined): Record<string, JsonValue> | null => (value !== null && typeof value === 'object' && !Array.isArray(value) ? value : null);
 
 export function modernHtml(context: WidgetContext): Widget {
-  const { form, name, node, id, document, labels = WIDGET_LABELS.en } = context;
+  const { form, name, node, id, document, labels = WIDGET_LABELS.en, locale } = context;
   const make = maker(document);
   const options = node.options ?? {};
   const pageEditor = options['editor'] === 'markdown' ? 'markdown' : 'rich';
@@ -55,6 +55,7 @@ export function modernHtml(context: WidgetContext): Widget {
     labelledBy: `${id}-label`,
     placeholder: node.placeholder,
     labels,
+    ...(locale ? { locale } : {}),
     editor: pageEditor,
     tools,
     toolbar,

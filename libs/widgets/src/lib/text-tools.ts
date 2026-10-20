@@ -11,8 +11,8 @@ import type { TextTool } from './text-tool-names';
 
 export { MARKDOWN_TOOLS, RICH_TOOLS, TEXT_TOOLS, type TextTool } from './text-tool-names';
 
-/** Tools that open a list of choices: a colour, a size, a heading's level, an emoji. */
-export const CHOOSING: ReadonlySet<TextTool> = new Set(['highlight', 'colour', 'size', 'heading', 'emoji']);
+/** Tools that open a list of choices: a colour, a size, a heading's level, an emoji; a table's size, or what to do to one. */
+export const CHOOSING: ReadonlySet<TextTool> = new Set(['highlight', 'colour', 'size', 'heading', 'emoji', 'table']);
 /** Tools whose button says whether the selection already has their format. */
 export const TOGGLES: ReadonlySet<TextTool> = new Set(['bold', 'italic', 'underline', 'strike']);
 
@@ -22,6 +22,7 @@ export function toolLabel(tool: TextTool, labels: WidgetLabels): string {
     bold: 'bold', italic: 'italic', underline: 'underline', bulletList: 'bulletList', numberList: 'numberList', highlight: 'highlight', colour: 'textColour',
     emoji: 'emoji', outdent: 'outdent', indent: 'indent', strike: 'strike', size: 'textSize', code: 'code', mention: 'mention', reference: 'linkRecordNamed',
     clearFormatting: 'clearFormatting', image: 'image', link: 'link', unlink: 'removeLink', taskList: 'taskList', heading: 'heading', attach: 'attachFile',
+    table: 'tableTool',
   };
   return labels[key[tool]];
 }
@@ -51,6 +52,8 @@ const PATHS: Partial<Record<TextTool, string>> = {
   taskList: '<path d="M7 3.5h7.5M7 8h7.5M7 12.5h7.5"/><path class="fd-text-accent-line" d="M1.5 3.5l1.2 1.2L5 2.2M1.5 8l1.2 1.2L5 6.7"/><rect x="1.6" y="11" width="3" height="3" rx=".4"/>',
   // A heading's level: a letter and a pen, its list of levels beside it.
   heading: '<path d="M1.4 8.2L3.9 1.6l2.5 6.6M2.3 5.9h3.2"/><path d="M5.4 13.4l.7-2.6 6.6-6.6 1.9 1.9-6.6 6.6z"/>',
+  // A table: its header row in the accent, three columns and rows of cells under it.
+  table: '<rect class="fd-text-accent-fill" x="1.5" y="2.5" width="13" height="3.5"/><rect x="1.5" y="2.5" width="13" height="11" rx=".6"/><path d="M1.5 6h13M1.5 9.75h13M5.83 2.5v11M10.17 2.5v11" stroke-width="1"/>',
 };
 
 /** The Markdown editor's own drawings, where they differ: its marks on words, not a colour; a link across; ticks for a task list. */
