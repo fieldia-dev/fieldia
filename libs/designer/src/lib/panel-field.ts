@@ -19,6 +19,7 @@ import { tableSettings } from './table-panel';
 import { shownWhileSetting } from './shown-while';
 import { fieldHotkeySetting } from './head-properties';
 import { placeholderWhenList } from './placeholder-when';
+import { withAnswers } from './answer-picker';
 
 /**
  * A field's settings, on the panel's tabs: its words and how it is shown
@@ -132,8 +133,9 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const element = el(
     'div',
     { class: 'fd-props' },
-    setting(el, 'content', 'Label', label, { words: w.label }),
-    setting(el, 'content', 'Help text', help, { words: w.helpText }),
+    // Words that may show an answer given — "How was your visit to {branch}?" — with a button that puts one in (answer-picker.ts).
+    setting(el, 'content', 'Label', withAnswers(el, designer, label), { words: w.label }),
+    setting(el, 'content', 'Help text', withAnswers(el, designer, help), { words: w.helpText }),
     placeholderRow,
     purposeRow,
     keyboardRow,

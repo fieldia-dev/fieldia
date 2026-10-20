@@ -61,6 +61,7 @@ import { rulesCommands, type AnswerRulePatch } from './rules-commands';
 import { headCommands, type HeadCommands } from './head-commands';
 import { keepWhatRulesRead } from './rules-reads';
 import { stepsCommands, type StepsCommands } from './steps-commands';
+import { endingsCommands, type EndingsCommands } from './endings-commands';
 import { forgetGoneTargets } from './steps-places';
 import { forgetGoneCounts } from './head-parts';
 import * as clipboard from './clipboard-ops';
@@ -106,6 +107,7 @@ export type { JsonProblem, PageJsonResult } from './page-json';
 export type { AnswerRulePatch } from './rules-commands';
 export type { FormPartPatch, SavedFormRef } from './saved-forms';
 export type { StepPatch, StepsCommands } from './steps-commands';
+export type { EndingPatch, EndingsCommands } from './endings-commands';
 export type { Moment, StepPath, StepsPlace } from './steps-places';
 export { createBrowserLookStore, createMemoryLookStore } from './look-store';
 export type { LookValues } from './look-presets';
@@ -294,7 +296,7 @@ export interface ModelField {
   field: Field;
 }
 
-export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands, StructureCommands, StepsCommands, TableCommands, HeadCommands {
+export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands, StructureCommands, StepsCommands, TableCommands, HeadCommands, EndingsCommands {
   /** The designer's own words, in its language: English unless `locale` said another it speaks. */
   readonly words: DesignerWords;
   /**
@@ -881,6 +883,7 @@ export function createDesigner(options: {
     ...inputs,
     ...structures,
     ...tableCommands({ apply }),
+    ...endingsCommands({ apply }),
     words,
     locale,
     getPage: () => page,

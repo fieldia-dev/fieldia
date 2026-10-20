@@ -11,6 +11,7 @@ import { headSettings } from './head-properties';
 import { settingNumber } from './number-box';
 import { zoneBox } from './zone-setting';
 import { recordsSettings } from './records-settings';
+import { endingsEditor } from './endings-editor';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
@@ -110,6 +111,9 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     setting(el, 'content', 'Printout’s footer', printFooter, { hint: w.printFooterHint, words: w.printFooter }),
     setting(el, 'content', 'Logo’s address', printLogo, { hint: w.printLogoHint, words: w.printLogo }),
   ];
+  // A form of responses: what it says once sent (endings-editor.ts).
+  const endings = endingsEditor(el, designer);
+  const endingsRow = setting(el, 'content', 'Once it is sent', endings.element, { words: designer.words.endings.heading });
   const look = pageLookSettings(el, designer);
   // steps lane: what the form does at its moments — opened, saved or sent, a tab or step shown.
   const moments = formMoments(el, designer);
@@ -127,6 +131,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     phoneCountryRow,
     phoneShownRow,
     ...printRows,
+    endingsRow,
     el('p', { class: 'fd-properties-hint' }, w.nothingPicked),
     setting(el, 'layout', 'Layout', layout, { hint: w.layoutHint, words: w.layout }),
     pagerRow,
@@ -159,6 +164,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       if (!focused(printFooter)) printFooter.value = page.print?.footer ?? '';
       if (!focused(printLogo)) printLogo.value = page.print?.logo ?? '';
       records.update(page);
+      endingsRow.hidden = page.data.kind !== 'responses';
+      if (!endingsRow.hidden) endings.update(page);
       look.update(page);
       moments.update(page);
       head.update(page);

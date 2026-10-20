@@ -89,6 +89,23 @@ customers"). `designer.setRecords({ one, other, a })` sets the records' words,
 `null` takes them away, and one word without the other is refused in words;
 `designer.setLowerLabels(on)` sets the labels' case.
 
+## What a form says once it is sent, and answers in its words
+
+A form of responses lists its endings — on the screen's panel with nothing
+picked (**Once it is sent**), and under a survey's pages — each with when it is
+shown (rules on the answers, as a question's are), its title, its words and its
+button to start again or **No button**; the last is **Shown otherwise**, and
+**Add an ending** puts a new one before it, shown by the first question it can
+test (or says why none can be added: no choice or yes-or-no to choose it by).
+Beside every box where a page's words are typed — a field's label and help, a
+button's words, a survey's question and page title, an ending's title and words —
+a **{ }** button puts an answer in at the caret, `{branch}`, which the form shows
+as it reads ("How was your visit to Zamalek?"); an ending's offers the reference
+the app gives the response, `{id}`, too. `designer.setEnding(index, patch)` and
+`designer.moveEnding(from, to)` edit them, one undo step each (a run of typing in
+one box, one); what the page check refuses — a `{name}` that is no field, one
+after the ending shown otherwise — is refused in words.
+
 ## Trying a field's rules
 
 Under a field's answer rules — on the panel's Rules tab, and in a survey
