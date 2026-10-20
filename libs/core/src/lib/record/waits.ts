@@ -6,8 +6,9 @@ import type { UnreadText } from './form';
 import { lineKind, type Line, type Values } from './values';
 
 /**
- * What a value worked out from others waits for, while one of them holds text that does not read: the field, and on
- * a table of lines the line — numbered as people count lines, sections and notes not counted — and its cell.
+ * What a value worked out from others waits for, while one of them holds text that does not read or an answer the form
+ * refuses: the field, and on a table of lines the line — numbered as people count lines, sections and notes not
+ * counted — and its cell.
  */
 export interface WaitsFor {
   /** The field holding the text, or the table whose line holds it. */
@@ -69,27 +70,32 @@ export function workedOutFrom(page: Page, appWorksOut: boolean, asLine = false, 
 }
 
 /**
- * The first of `from` holding text that does not read, in the page's order: a field's own, or a table's line's cell
- * (the first line holding one, as people count lines). Null when none does.
+ * The first of `from` holding text that does not read, or an answer the form refuses (`refused`: a value its checks
+ * would not take — under its least, past today, not a whole number), in the page's order: a field's own, or a table's
+ * line's cell (the first line holding one, as people count lines). Null when none does.
  */
-export function waitingOn(page: Page, from: readonly string[], values: Readonly<Values>, unread: Readonly<Record<string, UnreadText>>): WaitsFor | null {
+export function waitingOn(
+  page: Page,
+  from: readonly string[],
+  values: Readonly<Values>,
+  unread: Readonly<Record<string, UnreadText>>,
+  refused: (path: string) => boolean = () => false
+): WaitsFor | null {
   const paths = Object.keys(unread);
-  if (!paths.length) return null;
   for (const field of from) {
     const def = page.fields[field];
     if (!def) continue;
     if (def.type !== 'one2many') {
-      if (unread[field]) return { field };
+      if (unread[field] || refused(field)) return { field };
       continue;
     }
     const held = paths.filter((path) => path.startsWith(`${field}.`));
-    if (!held.length) continue;
     let n = 0;
     for (const line of (values[field] as Line[] | null | undefined) ?? []) {
       if (lineKind(def, line.values) !== null) continue;
       n++;
-      const cell = held.find((path) => path.startsWith(`${field}.${line.key}.`));
-      if (cell) return { field, line: n, column: cell.slice(field.length + line.key.length + 2).split('.')[0] };
+      const cell = held.find((path) => path.startsWith(`${field}.${line.key}.`))?.slice(field.length + line.key.length + 2).split('.')[0] ?? Object.keys(def.fields).find((column) => refused(`${field}.${line.key}.${column}`));
+      if (cell) return { field, line: n, column: cell };
     }
   }
   return null;

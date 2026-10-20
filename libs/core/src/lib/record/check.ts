@@ -3,6 +3,7 @@ import { fieldPattern } from '../format/pattern';
 import { checkDay } from './limits';
 import { fill, fillMessage, MESSAGES, type MessageKey, type Messages } from './messages';
 import { charCount, foldDigits, MOST_DIGITS, placesOf, stripMarks } from './input-rules';
+import { isQuestion } from './record-words';
 import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type Value } from './values';
 
 /**
@@ -28,7 +29,8 @@ export function checkValue(
 ): string | undefined {
   const label = field.label || 'This field';
   const say = (key: MessageKey, values: Record<string, string | number> = {}) => fillMessage(messages, messages[key], { label, ...values });
-  if (isEmpty(field, value)) return required ? say('required') : undefined;
+  // A question is asked for: "Please answer “How was your visit?”", never "How was your visit? is required".
+  if (isEmpty(field, value)) return required ? say(isQuestion(label) ? 'requiredQuestion' : 'required') : undefined;
   if (field.type === 'matrix') return checkMatrix(field, value, required, say);
 
   switch (field.type) {

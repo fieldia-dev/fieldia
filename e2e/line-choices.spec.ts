@@ -1,6 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { node, open, screen } from './support';
+import { expectNoSidewaysScroll, node, open, screen } from './support';
 
 /**
  * An AI agent's tools (the agent-tools demo, nexibi's asks FA-2 and FA-6): each line's Tool is a choice from the app's
@@ -72,6 +72,19 @@ test.describe('an AI agent’s tools, each line’s from its connection', () => 
     expect(problems).toEqual([]);
   });
 
+  test('the first connection picked again: its tools are offered again, and the note of the one taken out goes', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=agent-tools&skin=underline');
+    await expect.poll(() => offered(page, 0)).toEqual(GMAIL);
+    await pick(page, connection(page, 0), 'Slack', 'Slack — Nile Traders');
+    await expect(said(page, 0)).toHaveText('Send an email is no longer offered, so it was taken out');
+    await pick(page, connection(page, 0), 'Gmail', 'Gmail — sales@niletraders.example');
+    await expect.poll(() => offered(page, 0)).toEqual(GMAIL);
+    await expect(said(page, 0)).toHaveCount(0);
+    // Taken out all the same: the person picks it again.
+    await expect(tool(page, 0)).toHaveValue('');
+    expect(problems).toEqual([]);
+  });
+
   test('a new line’s tools wait for its connection, then are its own', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=agent-tools&skin=underline');
     await tools(page).locator('.fd-lines-add').first().click();
@@ -127,8 +140,21 @@ test.describe('what starts the agent, in the grid', () => {
     await page.keyboard.press('Enter');
     await expect(grid(page).locator('.fd-grid-editor')).toHaveCount(0);
     await expect(cell(page, 0, 'connection_id')).toHaveText('HubSpot — Sales');
-    await expect(cell(page, 0, 'event')).toHaveText('');
+    // Seen under the cell, as a plain table's cell shows it — and said aloud.
+    const note = cell(page, 0, 'event').locator('.fd-grid-taken-out');
+    await expect(note).toBeVisible();
+    await expect(note).toHaveText('A new email arrives is no longer offered, so it was taken out');
+    await expect(cell(page, 0, 'event').locator('.fd-grid-choice-value')).toHaveCount(0);
     await expect(grid(page).locator('.fd-sr-only[role="status"]', { hasText: 'Line 1:' })).toHaveText('Line 1: A new email arrives is no longer offered, so it was taken out');
+    // The row grows to show all of it: nothing of the note is cut.
+    const fits = await note.evaluate((box) => {
+      const row = box.closest('.ag-row') as HTMLElement;
+      const at = box.getBoundingClientRect();
+      const rowAt = row.getBoundingClientRect();
+      return at.top >= rowAt.top && at.bottom <= rowAt.bottom && box.scrollWidth <= box.clientWidth + 1;
+    });
+    expect(fits).toBe(true);
+    await screen(page, 'line-choices-grid-taken-out', { viewport: true });
     // The event chosen again, among HubSpot's.
     await cell(page, 0, 'event').click();
     const events = grid(page).locator('.fd-grid-editor select');
@@ -136,6 +162,7 @@ test.describe('what starts the agent, in the grid', () => {
     await events.selectOption({ label: 'A deal changes stage' });
     await page.keyboard.press('Enter');
     await expect(cell(page, 0, 'event')).toHaveText('A deal changes stage');
+    await expect(note).toHaveCount(0);
     await screen(page, 'line-choices-grid', { viewport: true });
     expect(problems).toEqual([]);
   });
@@ -154,6 +181,75 @@ test.describe('what starts the agent, in the grid', () => {
     await expect(event).toHaveValue('');
     await expect(dialog.locator('[role="status"]:not([hidden])', { hasText: 'taken out' })).toHaveText('Someone mentions the agent is no longer offered, so it was taken out');
     await screen(page, 'line-choices-dialog', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+});
+
+test.describe('an agent’s tools on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('each table of lines reads whole as cards: every value, label and tick whole, nothing cut or under another', async ({ page }) => {
+    // The owner's walk of 0.27: "Send an ema", "Gmail — sale…", "A f" over half a tick, and the grid all "…".
+    const { problems } = await open(page, 'plain', 'page=agent-tools&skin=underline');
+    await expect.poll(() => offered(page, 0)).toEqual(GMAIL);
+    const table = node(page, 'f-tools').locator('.fd-lines');
+    await expect(table).toHaveAttribute('data-cards', 'narrow');
+    // As cards: no header row; each box its label over it, its words whole in it.
+    await expect(table.locator('thead')).toBeHidden();
+    for (const box of await table.locator('tbody tr[data-line] :is(input[role="combobox"], select)').all()) {
+      const cut = await box.evaluate((el) => {
+        if (el instanceof HTMLSelectElement) {
+          const probe = document.createElement('span');
+          probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${getComputedStyle(el).font}`;
+          probe.textContent = el.selectedOptions[0]?.textContent ?? '';
+          document.body.append(probe);
+          const too = probe.getBoundingClientRect().width > el.clientWidth - 24;
+          probe.remove();
+          return too;
+        }
+        return (el as HTMLInputElement).scrollWidth > (el as HTMLInputElement).clientWidth + 1;
+      });
+      expect(cut, await box.evaluate((el) => (el as HTMLInputElement).value ?? '')).toBe(false);
+    }
+    // The tick whole in sight, beside its label.
+    const tick = row(page, 0).locator('td[data-column="ask_first"] input[type="checkbox"]');
+    const box = (await tick.boundingBox())!;
+    const card = (await row(page, 0).boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(card.x + card.width);
+    await expect(row(page, 0).locator('td[data-column="ask_first"]')).toHaveAttribute('data-label', 'Asks first');
+    await node(page, 'f-tools').scrollIntoViewIfNeeded();
+    await screen(page, 'line-choices-phone-tools', { viewport: true });
+    // The grid as cards: each start's connection, event and condition whole, by their labels.
+    const starts = node(page, 'f-triggers').locator('.fd-grid-lines');
+    await expect(starts).toHaveAttribute('data-cards', 'narrow');
+    const cards = starts.locator('.fd-line-cards > .fd-line-card');
+    await expect(cards).toHaveCount(2);
+    await expect(cards.first().locator('.fd-line-card-title')).toHaveText('Gmail — sales@niletraders.example');
+    await expect(cards.first().locator('dd').first()).toHaveText('A new email arrives');
+    await expect(starts.locator('.fd-grid-host')).toBeHidden();
+    await node(page, 'f-triggers').scrollIntoViewIfNeeded();
+    await screen(page, 'line-choices-phone-starts', { viewport: true });
+    await expectNoSidewaysScroll(page);
+    expect(problems).toEqual([]);
+  });
+
+  test('a start added on a phone opens in its own form; let go there, it goes again', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=agent-tools&skin=underline');
+    const starts = node(page, 'f-triggers').locator('.fd-grid-lines');
+    await expect(starts.locator('.fd-line-cards > .fd-line-card')).toHaveCount(2);
+    await node(page, 'f-triggers').getByRole('button', { name: 'Add a start' }).click();
+    const dialog = page.locator('.fd-form-dialog');
+    await expect(dialog).toBeVisible();
+    await screen(page, 'line-choices-phone-start-added', { viewport: true });
+    await dialog.getByRole('button', { name: /Discard|Cancel/ }).first().click();
+    await expect(dialog).toBeHidden();
+    await expect(starts.locator('.fd-line-cards > .fd-line-card')).toHaveCount(2);
+    // Opened from its card's name and changed there.
+    await starts.locator('.fd-line-card-title').nth(1).click();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('textbox', { name: 'Only when' }).fill('In #sales');
+    await dialog.getByRole('button', { name: /Save/ }).first().click();
+    await expect(starts.locator('.fd-line-card').nth(1)).toContainText('In #sales');
     expect(problems).toEqual([]);
   });
 });

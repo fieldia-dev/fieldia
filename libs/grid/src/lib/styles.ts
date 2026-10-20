@@ -43,6 +43,12 @@ export const GRID_CSS = /* css */ `
 .fd-grid-drawn { display: flex; align-items: center; width: 100%; height: 100%; min-width: 0; }
 .fd-grid-drawn > .fd-progressbar, .fd-grid-drawn > .fd-progressbar-edit { flex: 1 1 auto; min-width: 0; }
 .fd-grid-row-buttons { display: inline-flex; gap: 2px; }
+/* A choice's cell: its value as a line's height centres it; what a line's change took out of it under it, seen as a
+   plain table's cell shows it, its row as tall as the words need (autoHeight). */
+.fd-grid-choice { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 38px; min-width: 0; line-height: 20px; }
+.fd-grid-choice-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-grid-choice > .fd-grid-taken-out { white-space: normal; line-height: 1.4; margin-block-end: 8px; width: fit-content; max-width: 100%; box-sizing: border-box; }
+.fd-grid-choice > .fd-grid-taken-out:first-child { margin-block-start: 8px; }
 /* On paper, every line in a plain table as wide as the sheet, in the grid's place (and its cards'). */
 .fd-grid-lines > .fd-print-table { display: none; }
 /* So too while the room a heading over it keeps on paper is measured, as printing begins (@fieldia/viewer's print.ts). */
@@ -89,6 +95,7 @@ button.fd-line-card-title { color: var(--fd-accent); }
 .fd-line-card dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; margin: 0; font-size: 13px; }
 .fd-line-card dt { color: var(--fd-muted); }
 .fd-line-card dd { margin: 0; text-align: end; font-variant-numeric: tabular-nums; }
+.fd-line-card dd > .fd-grid-taken-out { display: block; width: fit-content; margin: 4px 0 0 auto; text-align: start; font-variant-numeric: normal; }
 .fd-line-card-tools { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .fd-line-card-tools:empty { display: none; }
 .fd-line-card-tools .fd-line-delete { position: absolute; inset-block-start: 6px; inset-inline-end: 6px; }

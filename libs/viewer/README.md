@@ -453,7 +453,11 @@ week or day, asked of `groups` with `interval`. See
 
 ### Filters a buyer and a sales team expect
 
-A filter bar (`"search": "fields"`) may say how many records each of its values
+A filter bar (`"search": "fields"`) says beside it how many records the search
+finds — "42 homes", in the page's `records` words, in the table, the gallery and
+on a map — as its pager stands under the rows and shows only past a page
+(`.fd-list-found`, said politely as it changes; none while nothing is found, nor
+for a list in a record). It may also say how many records each of its values
 finds among the rest of the search — `"filterCounts": true`: *Villa 5*, read out
 as "Villa, 5 homes" — asked of the source's `groups` (a record of links counted
 under each of its links); without `groups`, its values and no count. A number's
@@ -656,7 +660,9 @@ chunk of its own in an app's bundle, about 5 KB gzipped):
   related list with no title of its own no empty band over its rows;
 - light colours whatever the screen's scheme, the theme's accent kept for the
   headings; the page's language and direction;
-- over it, the record's own name — with none yet (a draft invoice's "/"),
+- over it, the record's own name — its sheet's title field, else its `name`,
+  else its first line of text, on a page of sections too — with none yet (a
+  draft invoice's "/"),
   what the page calls its records and the stage it is in, "Invoice · Draft" —
   and the day it was printed (`now`, on the page's `timeZone`), and — with a
   page's `print` — the app's logo and words over it, and its footer under every

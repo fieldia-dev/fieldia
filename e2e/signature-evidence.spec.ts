@@ -121,6 +121,38 @@ test.describe('a consent signed, with its evidence', () => {
     await expect(sign(page).locator('.fd-signature-note')).toBeHidden();
   });
 
+  test('signed first, every answer filled in after: the note follows them, and Sign now signs the drawing kept', async ({ page }) => {
+    // The owner's walk of 0.27: the note still named every answer once all were given, and the drawing on the pad
+    // counted for nothing — a second drawing was needed.
+    await draw(page, sign(page).locator('canvas'));
+    const note = sign(page).locator('.fd-signature-note');
+    await expect(note).toHaveText('Not signed yet: first put right Patient, Date of birth, Treatment, Areas treated, and I have read the risks above, and my questions were answered, then sign again.');
+    await expect(sign(page).getByRole('button', { name: 'Sign now' })).toBeHidden();
+    await page.locator('[data-node="#title"] textarea').fill('Mona Adel');
+    const birth = node(page, 'f-birth').locator('input');
+    await birth.fill('12/04/1991');
+    await birth.press('Tab');
+    // Those given are named no more.
+    await expect(note).toHaveText('Not signed yet: first put right Treatment, Areas treated, and I have read the risks above, and my questions were answered, then sign again.');
+    await node(page, 'f-treatment').locator('select').selectOption({ label: 'Anti-wrinkle injections' });
+    await node(page, 'f-areas').getByRole('checkbox', { name: 'Forehead' }).check();
+    await node(page, 'f-risks').getByRole('checkbox').check();
+    await expect(note).toHaveText('Your answers are ready to sign.');
+    const signNow = sign(page).getByRole('button', { name: 'Sign now' });
+    await expect(signNow).toBeVisible();
+    expect((await state(page)).values.signature).toBeNull();
+    await sign(page).scrollIntoViewIfNeeded();
+    await screen(page, 'signature-evidence-ready', { viewport: true });
+    // Signed with the drawing on the pad: no second drawing.
+    await signNow.click();
+    await expect(evidence(page).locator('.fd-signature-who')).toHaveText('Signed by Mona Adel, 19 Oct 2026, 11:42');
+    await expect(evidence(page).locator('.fd-signature-state')).toHaveText('✓The answers are as they were signed.');
+    await expect(note).toBeHidden();
+    await expect(signNow).toBeHidden();
+    expect((await state(page)).values.signature.signed.fields).toContain('risks_read');
+    await screen(page, 'signature-evidence-signed-now', { viewport: true });
+  });
+
   test('a name typed instead of drawn signs the same', async ({ page }) => {
     await answer(page);
     await sign(page).getByLabel('Or type your name').fill('Mona Adel');

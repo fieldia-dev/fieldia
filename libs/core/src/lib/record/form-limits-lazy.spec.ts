@@ -53,7 +53,7 @@ describe("a form's limits part", () => {
     expect(await form.save()).toBe(false);
     expect(formLimitsPart.loaded).toBeDefined();
     expect(form.getState().limits?.state).toBe('closed');
-    expect(form.getState().saveProblem?.message).toBe('This form closed on November 20, 2026.');
+    expect(form.getState().saveProblem?.message).toBe('This form closed on 20 Nov 2026.');
     expect(dataSource.responses).toEqual([]);
   });
 

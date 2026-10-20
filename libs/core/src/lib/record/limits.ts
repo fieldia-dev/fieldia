@@ -2,6 +2,7 @@ import type { Field, LineField } from '../format/field';
 import { localDay } from '../expression/functions';
 import { dayIn } from './zones';
 import { fillMessage, type Messages } from './messages';
+import { dayWords } from './day-words';
 
 /**
  * A date's limits: its earliest and latest day (`min`, `max`), each a day
@@ -19,7 +20,7 @@ export function dayOf(limit: string, today = localDay(new Date())): string {
   return new Date(Date.UTC(y, m - 1, d + Number(counted[1] ?? 0))).toISOString().slice(0, 10);
 }
 
-/** A day in words, in the messages' language: "March 2, 2026", "2 مارس 2026". */
+/** A weekday in words, in the messages' language: "Friday", "الجمعة". */
 const written = (options: Intl.DateTimeFormatOptions, messages: Messages, at: number) =>
   new Intl.DateTimeFormat(messages.locale, { ...options, timeZone: 'UTC', numberingSystem: 'latn' }).format(at);
 
@@ -29,7 +30,8 @@ export function checkDay(field: Field | LineField, value: string, today: string 
   // A date and time by the day it falls on in its zone (the page's, written into it), else where the person is.
   const day = field.type === 'date' ? value : dayIn(Date.parse(value), field.timeZone);
   const say = (key: 'before' | 'after' | 'weekday', limit: string) => fillMessage(messages, messages[key], { label: field.label, min: limit, max: limit, days: limit });
-  const words = (limit: string) => written({ day: 'numeric', month: 'long', year: 'numeric' }, messages, Date.parse(limit));
+  // As the page's date boxes write a day: its order, its language (`dayWords`).
+  const words = (limit: string) => dayWords(limit, messages);
   const min = field.min && dayOf(field.min, today);
   const max = field.max && dayOf(field.max, today);
   if (min && day < min) return say('before', words(min));

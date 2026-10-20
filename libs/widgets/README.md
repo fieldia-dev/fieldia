@@ -162,7 +162,9 @@ Import read cells with too.
 
 A signature whose node says `options.signs` (`"form"`, or the fields by name)
 signs those answers: once drawn, typed or uploaded — what is typed in the
-answers read first, an answer still to give said instead — it keeps who signed
+answers read first, an answer still to give said instead, the drawing kept on
+the pad, the words following the answers until none is left to put right and
+**Sign now** signs that drawing — it keeps who signed
 (`options.signerField`'s name, the name typed, else the form's `user`), when
 (the form's clock) and the SHA-256 of the answers with who and when beside its
 picture (`FileValue.signed`). Under it, "Signed by Mona Adel, 19 Oct 2026,

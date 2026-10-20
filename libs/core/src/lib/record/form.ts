@@ -1,7 +1,7 @@
 import type { ActionStep } from '../format/actions';
 import type { DefinitionsFrom, Field, Fields, LineField, Option, PropertyDefinition } from '../format/field';
 import { changesOptions, hasOptionRules, optionRulesPart, optionsField, optionsList, type OptionRulesPart } from '../format/choice-options';
-import type { OptionRules } from './option-rules';
+import type { OptionRules, TakenOption } from './option-rules';
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { PageEnding } from '../format/endings';
@@ -393,8 +393,8 @@ export interface FormOptions {
   parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
   /**
    * How a field's value reads inside the page's own words — a `{field}` in a label, a help, a choice, a step's title, a
-   * button, an ending — and so inside the form's messages that name a label ("How was your visit to Zamalek? is
-   * required"). The viewer gives its own, as each field shows its value at rest: a choice by its label, money with its
+   * button, an ending — and so inside the form's messages that name a label ("Please answer “How was your visit to
+   * Zamalek?”"). The viewer gives its own, as each field shows its value at rest: a choice by its label, money with its
    * currency, a day in the page's order. Left out, a choice by its label, a link by its name, a yes or no as Yes or No,
    * anything else as it is held.
    */
@@ -449,11 +449,13 @@ export interface Form {
   /** What a field would be told if the form were checked now, or null when it passes. Nothing is shown. */
   problem(field: string): string | null;
   /**
-   * What a value worked out from others waits for while one of them holds text that does not read (`unread`): a
-   * total of the page's own (`compute`) over a table whose line says "abc" in its Quantity, or an amount the app
-   * works out as the lines change (read-only, from a source with an onchange) — the line, as people count them, and
-   * its cell. Shown, it is a dash said in words, as the table's own total waits: never an amount worked out from the
-   * value that text replaced. Null when it shows its value.
+   * What a value worked out from others waits for while one of them holds text that does not read (`unread`), or an
+   * answer the form refuses (shown, not empty, and refused by its checks: an area under its least, a day past today):
+   * a total of the page's own (`compute`) over a table whose line says "abc" in its Quantity, a price per m² over an
+   * area of −50, or an amount the app works out as the lines change (read-only, from a source with an onchange) — the
+   * line, as people count them, and its cell. Shown, it is a dash said in words, as the table's own total waits: never
+   * an amount worked out from the value that text replaced, or from one refused. Then what is asked of the app's
+   * server for it (`asking`). Null when it shows its value.
    */
   waitsFor(field: string): WaitsFor | null;
   /**
@@ -929,7 +931,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const page = zonedPage(options.page);
   const scheduler = options.scheduler ?? hostScheduler;
   // A field's label small inside a message's sentence where the page asks (`lowerLabels`).
-  const messages: Messages = page.lowerLabels ? { ...(options.messages ?? MESSAGES.en), lowerLabels: true } : (options.messages ?? MESSAGES.en);
+  // …and a day written in the page's order where it says one (`look.dateOrder`): "can't be after Oct 20, 2026".
+  const dateOrder = page.look?.dateOrder;
+  const messages: Messages = page.lowerLabels || dateOrder ? { ...(options.messages ?? MESSAGES.en), lowerLabels: page.lowerLabels, dateOrder } : (options.messages ?? MESSAGES.en);
   /** One of the form's sentences in the words the page names its records by (`records`), else as the language says it plainly. */
   const named = (noun: string | undefined, plain: string) => recordSentence(page.records, noun, plain, messages.locale);
   /** The app's functions the page's expressions call: a name none may call is refused now. */
@@ -1377,6 +1381,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   function set(patch: Partial<FormState>) {
     const was = state.values;
+    const choicesWas = state.choices;
     const shown = state.errors;
     const edited = edit;
     edit = false;
@@ -1384,6 +1389,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     state = { ...state, ...patch };
     // A line's choices go with their line.
     if (state.values !== was) state = { ...state, choices: choicesNow(state.choices) };
+    // What was said taken out is said while it is true: an option offered again, or picked again, is said no more.
+    if ((state.values !== was || state.choices !== choicesWas) && Object.keys(state.takenOut).length) {
+      const takenOut = takenOutTrue();
+      if (takenOut !== state.takenOut) state = { ...state, takenOut };
+    }
     // What waits for an app's answer, as the values shown last settled.
     if (patch.values !== undefined && patch.asked === undefined && !sameAsked(state.asked, askedNow)) state = { ...state, asked: Object.fromEntries(askedNow) };
     // The person's changes the last save did not send, worked out again from the values as they are now, and from the
@@ -1670,7 +1680,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const written = line
       ? ((values[field] as Line[] | null) ?? []).map((l) => (l.key === line.key ? { ...l, values: { ...l.values, [line.column]: without(l.values[line.column]) } } : l))
       : without(values[field]);
-    writeValues({ ...values, [field]: written }, {}, false, { [line ? `${field}.${line.key}.${line.column}` : field]: takenOutWords(labels) });
+    const path = line ? `${field}.${line.key}.${line.column}` : field;
+    takenOutOf.set(path, lost.map((value, i) => ({ value, label: labels[i] })));
+    writeValues({ ...values, [field]: written }, {}, false, { [path]: takenOutWords(labels) });
     afterEdit(field);
     changed(field, 'step', { keep: true });
   }
@@ -1790,6 +1802,34 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    */
   const takenOutWords = (labels: string[]) =>
     fillMessage(messages, labels.length > 1 ? messages.notOfferedNowMany : messages.notOfferedNow, { name: listedLabels(labels.map((label) => (label.includes('{') ? wordsNow(label) : label))) });
+
+  /** The options each note of `takenOut` names, by its path: a note goes once none of them is still out. */
+  const takenOutOf = new Map<string, readonly TakenOption[]>();
+  /**
+   * The notes of options taken out (`FormState.takenOut`) that are still true for the values and the choices now: one
+   * whose options are all offered again — the type that offers them picked again, the treatment ticked again above, the
+   * app's list asked again offering it — or picked again goes; one with some still out names those. A list being asked
+   * again says nothing yet. The same notes, when none changed.
+   */
+  function takenOutTrue(): Readonly<Record<string, string>> {
+    let kept: Record<string, string> | null = null;
+    for (const path of Object.keys(state.takenOut)) {
+      const options = takenOutOf.get(path);
+      const held = valueAt(state.values, path);
+      if (!options || held === gone || state.choices[path]?.loading) continue;
+      const offered = form.offered(path);
+      if (!offered) continue;
+      const chosen: unknown[] = [held].flat();
+      const left = options.filter((option) => !chosen.includes(option.value) && !offered.some((one) => one.value === option.value));
+      if (left.length === options.length) continue;
+      kept ??= { ...state.takenOut };
+      if (left.length) {
+        takenOutOf.set(path, left);
+        kept[path] = takenOutWords(left.map((option) => option.label));
+      } else delete kept[path];
+    }
+    return kept ?? state.takenOut;
+  }
 
   /** A line's field as its value is checked: its choices from the app's list, those loaded for its line. */
   function checkedLine(path: string, def: LineField): LineField {
@@ -1973,6 +2013,22 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   function nodeError(node: IndexedNode): string | undefined {
     const name = node.field as string;
     return unticked(node) ?? checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages, today(), (node.source as FieldNode).widget) ?? ruleCheck(node).error;
+  }
+
+  /** What a check would refuse now (`collectErrors`), for the state it was found for. */
+  let refusals: { state: FormState; errors: Record<string, string> } | null = null;
+  /**
+   * Whether the form refuses the answer at a path — a field's, or a table line's cell (`field.lineKey.subfield`) — as a
+   * check would now: one it shows that holds a value its rules do not take (under its least, past today, a pattern not
+   * met, an answer rule's error). An empty answer is none, required or not: there is nothing worked out from it to wait.
+   */
+  function refusedAt(path: string): boolean {
+    if (refusals?.state !== state) refusals = { state, errors: collectErrors() };
+    if (!refusals.errors[path]) return false;
+    const parts = path.split('.');
+    const def = page.fields[parts[0]];
+    const held = valueAt(state.values, path);
+    return held !== gone && !isEmpty((parts.length > 2 && def?.type === 'one2many' ? def.fields[parts[parts.length - 1]] : def) as Field, held);
   }
 
   /** Warnings for the visible fields of the page, without publishing them. */
@@ -2225,6 +2281,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (out) {
       settled = out.values;
       takenOut = { ...takenOut, ...out.said };
+      for (const [path, gone] of Object.entries(out.gone)) takenOutOf.set(path, gone);
     }
     if (Object.keys(takenOut).length || Object.keys(state.takenOut).length) extra = { takenOut, ...extra };
     const values = syncParts(settled, fresh ? 'fresh' : 'edit');
@@ -3481,10 +3538,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     waitsFor(name) {
-      const found = state.asked[name];
-      if (found) return { field: name, asking: true, ...(found.failed !== undefined ? { failed: found.failed } : {}) };
+      // What it is worked out from first: an answer that does not read, or that the form refuses, is never asked about.
       const from = workedOut.get(name);
-      return from ? waitingOn(page, from, state.values, state.unread) : null;
+      const waits = from ? waitingOn(page, from, state.values, state.unread, refusedAt) : null;
+      if (waits) return waits;
+      const found = state.asked[name];
+      return found ? { field: name, asking: true, ...(found.failed !== undefined ? { failed: found.failed } : {}) } : null;
     },
 
     problem(name) {

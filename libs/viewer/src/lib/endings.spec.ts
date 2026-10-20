@@ -124,7 +124,7 @@ describe('{field} words in a page’s own words', () => {
     form.setValue('branch', 'maadi');
     expect(await form.save()).toBe(false);
     await flush();
-    expect(words(at(host, 'f-rating').querySelector('.fd-error'))).toBe('How was your visit to Maadi? is required');
+    expect(words(at(host, 'f-rating').querySelector('.fd-error'))).toBe('Please answer “How was your visit to Maadi?”');
   });
 
   it('show the answers in a step’s title and words, its place in the list of steps, and the wizard’s button', async () => {

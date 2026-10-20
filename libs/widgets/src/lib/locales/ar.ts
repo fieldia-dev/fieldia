@@ -158,6 +158,8 @@ export const ar: WidgetLabels = {
   changeAnswersAsk: 'تغيير إجاباتك؟ سيُزال التوقيع، وتوقّع من جديد بعد تصحيحها.',
   signatureTakenAway: 'أُزيل التوقيع: غيّر إجاباتك، ثم وقّع من جديد.',
   notSignedYet: 'لم يُوقَّع بعد: صحّح أولًا {fields}، ثم وقّع من جديد.',
+  readyToSign: 'إجاباتك جاهزة للتوقيع.',
+  signNow: 'وقّع الآن',
   notSignedNoPart: 'لم يُوقَّع بعد: تعذّر تحميل التوقيع.',
   signingNoPart: 'تعذّر تحميل التوقيع: لا يظهر من وقّع ومتى، ولا يمكن تغيير الإجابات.',
   signingRetry: 'حاول مرة أخرى',

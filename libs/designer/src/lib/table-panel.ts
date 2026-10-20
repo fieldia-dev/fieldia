@@ -250,7 +250,8 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
   const opens = select(w.lineOpens, [['', w.opensFields], ['form', w.opensForm], ['record', w.opensRecord]], (value) =>
     designer.setTableShape(id, { lineOpens: value === 'record' ? 'record' : null, lineForm: value === 'form' ? true : null })
   );
-  const phone = select(w.onAPhone, [['', w.rows], ['narrow', w.cardsOnPhone], ['always', w.cardsAlways]], (value) => designer.setTableShape(id, { cards: (value || null) as 'narrow' | 'always' | null }));
+  // On a phone a table's lines are cards unless the page says otherwise: its rows kept (`never`), or cards at every width.
+  const phone = select(w.onAPhone, [['', w.cardsOnPhone], ['never', w.rows], ['always', w.cardsAlways]], (value) => designer.setTableShape(id, { cards: (value || null) as 'never' | 'always' | null }));
   const fit = select(w.columnWidths, [['', w.shareWidth], ['content', w.fitContent], ['shrink', w.shrinkToFit]], (value) => designer.setTableShape(id, { fit: (value || null) as 'content' | 'shrink' | null }));
   // The order lines load in: their fields' names, apart by commas, "desc" after one turning it round.
   const order = el('input', { class: 'fd-input fd-answer-rule-code fd-table-order', 'aria-label': w.linesOrder, placeholder: w.linesOrderPlaceholder, spellcheck: 'false', autocomplete: 'off' }) as HTMLInputElement;
@@ -315,7 +316,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
         drawColumn();
         for (const place of buttonPlaces) place.draw();
         opens.value = node.lineOpens === 'record' ? 'record' : node.lineForm ? 'form' : '';
-        phone.value = node.cards ?? '';
+        phone.value = node.cards === 'narrow' ? '' : (node.cards ?? '');
         fit.value = node.fit ?? '';
         copy.checked = node.options?.['copy'] === true;
         if (!focused(order)) order.value = orderText(node.order);

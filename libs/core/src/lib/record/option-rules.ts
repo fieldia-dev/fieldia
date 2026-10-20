@@ -41,7 +41,13 @@ export interface OptionRules {
    * The chosen options a write no longer offers taken out of their answers, with what is said: those offered before it
    * and not after. Null when none goes.
    */
-  takeOut(before: Readonly<Values>, after: Values): { values: Values; said: Record<string, string> } | null;
+  takeOut(before: Readonly<Values>, after: Values): { values: Values; said: Record<string, string>; gone: Record<string, TakenOption[]> } | null;
+}
+
+/** An option taken out of an answer, as its note names it: so the note goes once it is offered again. */
+export interface TakenOption {
+  readonly value: Value;
+  readonly label: string;
 }
 
 /** A choice's options that show or hide by a condition, read once: by each option's value. */
@@ -110,10 +116,16 @@ export function optionRules(host: OptionsHost): OptionRules {
    * opened holding one keeps it, and says so. A table line's alike, by its cell's path, its conditions read on the line
    * as it was and as it is. Again while one taken out takes another's away. Null when none goes.
    */
-  function takeOut(before: Readonly<Values>, after: Values): { values: Values; said: Record<string, string> } | null {
+  function takeOut(before: Readonly<Values>, after: Values): { values: Values; said: Record<string, string>; gone: Record<string, TakenOption[]> } | null {
     if (!changing.length && !lineOptionRules.size) return null;
     const was = before === host.state().values ? host.reading() : { context: recordContext(before as Values, page.fields, host.about()), env: expressionEnv(before as Values, page.fields, today, app) };
     const said: Record<string, string> = {};
+    const taken: Record<string, TakenOption[]> = {};
+    /** Said at a path: the options gone, by their labels as they were offered. */
+    const say = (path: string, gone: unknown[], offeredBefore: ReadonlyMap<Option['value'], string>) => {
+      taken[path] = gone.map((value) => ({ value: value as Value, label: offeredBefore.get(value as Option['value']) ?? String(value) }));
+      said[path] = host.words(taken[path].map((option) => option.label));
+    };
     let values = after;
     for (let round = 0; round < 4; round++) {
       const now = { context: recordContext(values, page.fields, host.about()), env: expressionEnv(values, page.fields, today, app) };
@@ -127,7 +139,7 @@ export function optionRules(host: OptionsHost): OptionRules {
         if (!gone.length) continue;
         const held = values[name];
         next = { ...next, [name]: Array.isArray(held) ? ((held as unknown[]).filter((value) => !gone.includes(value)) as Value) : null };
-        said[name] = host.words(gone.map((value) => offeredBefore.get(value as Option['value']) ?? String(value)));
+        say(name, gone, offeredBefore);
       }
       // A line's choice its line's change hides: only a line that was there, and what it offered then.
       for (const [lines, columns] of lineOptionRules) {
@@ -147,7 +159,7 @@ export function optionRules(host: OptionsHost): OptionRules {
             if (!gone.length) continue;
             written ??= [...rows];
             written[i] = { ...written[i], values: { ...written[i].values, [column]: (Array.isArray(held) ? (held as unknown[]).filter((value) => !gone.includes(value)) : null) as Value } };
-            said[`${lines}.${line.key}.${column}`] = host.words(gone.map((value) => offeredBefore.get(value as Option['value']) ?? String(value)));
+            say(`${lines}.${line.key}.${column}`, gone, offeredBefore);
           }
         });
         if (written) next = { ...next, [lines]: written };
@@ -155,7 +167,7 @@ export function optionRules(host: OptionsHost): OptionRules {
       if (next === values) break;
       values = host.settle(next);
     }
-    return Object.keys(said).length ? { values, said } : null;
+    return Object.keys(said).length ? { values, said, gone: taken } : null;
   }
 
   return { offered: (name, values, read) => offeredIn(name, values, read), lineOffered, takeOut };

@@ -97,20 +97,25 @@ export function drawCard(context: CardContext, spec: CardSpec, values: Values, f
   const body = el('div', { class: 'fd-list-card-body' }, head);
   const subtitle = spec.subtitle ? cells.words(spec.subtitle, values) : '';
   if (subtitle) body.append(el('div', { class: 'fd-list-card-subtitle' }, el('bdi', {}, subtitle)));
-  // Each line: its label (or its parts' labels), and its parts — one drawn as its column draws it, several parted by a dot.
+  // Each line, its parts side by side: each part its own label beside its own value — "Next follow-up 30 Sept 2026",
+  // "Agent Mona Adel" — never the labels of a line together, then its values; one alone drawn as its column draws it.
+  // The line wraps between its parts, a part moving whole to the next row where it does not fit beside the one before.
   const lines = spec.lines
     .map((line) => line.map((part) => ({ part, said: partWords(part, values) })).filter(({ said }) => said !== ''))
     .filter((line) => line.length)
     .map((line) => {
-      const label = line.map(({ part }) => page.fields[part.field]?.label ?? part.field).join(' · ');
-      const only = line.length === 1 && line[0].part.unit === undefined && DRAWN.has(node.cells?.[line[0].part.field]?.widget ?? '') ? line[0].part.field : null;
-      const value = only ? cells.draw(only, values, title) : line.flatMap(({ said }, i) => [...(i ? [' · '] : []), el('bdi', {}, said)]);
-      // Words read as one — a number, an amount, a day, a phone number — never broken inside (cards-styles.ts).
+      const pairs = line.map(({ part, said }) => {
+        const only = line.length === 1 && part.unit === undefined && DRAWN.has(node.cells?.[part.field]?.widget ?? '') ? part.field : null;
+        const value = only ? cells.draw(only, values, title) : [el('bdi', {}, said)];
+        // Words read as one — a number, an amount, a day, a phone number — never broken inside (cards-styles.ts).
+        const whole = keepsWhole(page.fields[part.field]?.type, node.cells?.[part.field]?.widget);
+        return el('div', { 'data-part': part.field, 'data-whole': whole ? '' : undefined }, el('dt', {}, page.fields[part.field]?.label ?? part.field), el('dd', {}, ...value));
+      });
       const whole = line.every(({ part }) => keepsWhole(page.fields[part.field]?.type, node.cells?.[part.field]?.widget));
-      return el('div', { 'data-field': line[0].part.field, 'data-whole': whole ? '' : undefined }, el('dt', {}, label), el('dd', {}, ...value));
+      return el('div', { 'data-field': line[0].part.field, 'data-whole': whole ? '' : undefined }, el('dl', {}, ...pairs));
     });
   if (lines.length) {
-    const list = el('dl', { class: 'fd-list-card-lines', 'data-labels': spec.labels ? undefined : 'hidden', 'data-lead': spec.lead ? '' : undefined }, ...lines);
+    const list = el('div', { class: 'fd-list-card-lines', 'data-labels': spec.labels ? undefined : 'hidden', 'data-lead': spec.lead ? '' : undefined }, ...lines);
     body.append(list);
   }
   parts.push(body);

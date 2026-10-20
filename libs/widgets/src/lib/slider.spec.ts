@@ -41,13 +41,34 @@ describe('slider', () => {
     expect(shown(el)).toBe('10,0');
   });
 
-  it('says it is not answered yet, until it is', () => {
+  it('says it is not answered yet, in words and to a screen reader, until it is', () => {
+    // The owner's walk of 0.27: an unanswered slider showed its knob halfway beside "–", which looked answered.
     const { el } = mountKind({ type: 'integer', min: 0, max: 10 }, { widget: 'slider' });
     expect(el.classList.contains('fd-slider-empty')).toBe(true);
-    expect(shown(el)).toBe('–');
+    expect(shown(el)).toBe('Not answered');
     expect(range(el).getAttribute('aria-valuetext')).toBe('Not answered');
+    // No knob halfway: a hollow ring at the start, drawn over a track with nothing filled, and the keys move from there.
+    expect(range(el).value).toBe('0');
+    expect((el.querySelector('.fd-slider-blank') as HTMLElement).hidden).toBe(false);
     slide(range(el), '3');
     expect(el.classList.contains('fd-slider-empty')).toBe(false);
+    expect(shown(el)).toBe('3');
+    expect((el.querySelector('.fd-slider-blank') as HTMLElement).hidden).toBe(true);
+  });
+
+  it('takes its least as the answer from a press or a key that leaves the knob where it starts', async () => {
+    const pressed = mountKind({ type: 'integer', min: 1, max: 5 }, { widget: 'slider' });
+    range(pressed.el).dispatchEvent(new Event('pointerup', { bubbles: true }));
+    expect(pressed.value()).toBe(1);
+    const keyed = mountKind({ type: 'integer', min: 1, max: 5 }, { widget: 'slider' });
+    range(keyed.el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    await new Promise((done) => setTimeout(done, 0));
+    expect(keyed.value()).toBe(1);
+    // Read-only, nothing is answered.
+    const locked = mountKind({ type: 'integer', min: 1, max: 5 }, { widget: 'slider' });
+    locked.refresh({ readonly: true });
+    range(locked.el).dispatchEvent(new Event('pointerup', { bubbles: true }));
+    expect(locked.value()).toBeNull();
   });
 
   it('takes the answer back when it need not be given, and not when it must', () => {

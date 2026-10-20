@@ -60,6 +60,7 @@ import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { relatedInTab, upgradePage, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
+import { nameFieldOf } from './name-field';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
 import type { RelatedCount, RelatedPart } from './list-related';
 import { waitingList } from './list-waiting';
@@ -1921,11 +1922,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     return ownName() || page.title || '';
   }
 
-  /** The record's own name: its sheet's title field's words, empty where it has none (yet). */
+  /**
+   * The record's own name: the words of the field its records are named by (`nameFieldOf`: its sheet's title field,
+   * else its "name", else its first line of text), on a sheet or a page of sections alike; empty where it has none (yet).
+   */
   function ownName(): string {
     const state = form.getState();
-    const field = page.layout.type === 'sheet' ? page.layout.title?.field : undefined;
-    return field ? displayValue(page.fields[field] as LineField, state.values[field], state.values as Values, locale) : '';
+    const field = page.data.kind === 'record' ? nameFieldOf(page) : null;
+    return field && page.fields[field] ? displayValue(page.fields[field] as LineField, state.values[field], state.values as Values, locale) : '';
   }
 
   /** The bar over a record — its breadcrumbs, its gear menu, its pager — or null when it would hold nothing. */

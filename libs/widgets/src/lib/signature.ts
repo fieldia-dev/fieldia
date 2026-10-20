@@ -196,8 +196,9 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
       (part) => {
         failed = false;
         if (gone || evidence) return;
-        evidence = part.signingFor({ form, name, node, document, words, locale, say, letGo, takeAway });
+        evidence = part.signingFor({ form, name, node, document, words, locale, say, letGo, takeAway, drawn: () => !blank(), signDrawn: keep });
         tools.before(evidence.element);
+        refused.after(evidence.prompt);
         if (lastState) evidence.update(lastState.value, lastState.values, lastState.readonly);
       },
       () => {

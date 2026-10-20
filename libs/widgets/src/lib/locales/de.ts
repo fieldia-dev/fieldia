@@ -158,6 +158,8 @@ export const de: WidgetLabels = {
   changeAnswersAsk: 'Antworten ändern? Die Unterschrift wird entfernt; Sie unterschreiben erneut, sobald alles stimmt.',
   signatureTakenAway: 'Unterschrift entfernt: Antworten ändern, dann erneut unterschreiben.',
   notSignedYet: 'Noch nicht unterschrieben: zuerst {fields} korrigieren, dann erneut unterschreiben.',
+  readyToSign: 'Ihre Antworten sind bereit zur Unterschrift.',
+  signNow: 'Jetzt unterschreiben',
   notSignedNoPart: 'Noch nicht unterschrieben: Das Unterschreiben konnte nicht geladen werden.',
   signingNoPart: 'Das Unterschreiben konnte nicht geladen werden: Wer wann unterschrieben hat, wird nicht angezeigt, und die Antworten lassen sich nicht ändern.',
   signingRetry: 'Erneut versuchen',

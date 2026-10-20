@@ -50,7 +50,7 @@ export interface TableButton {
 /** How a table's lines open and show: `null` takes a choice back to the usual. */
 export interface TableShape {
   lineOpens?: 'fields' | 'record' | null;
-  cards?: 'narrow' | 'always' | null;
+  cards?: 'narrow' | 'always' | 'never' | null;
   fit?: 'content' | 'shrink' | null;
   /** A ⧉ on each line that puts a copy of it after it (the widget's `copy`). */
   copy?: boolean | null;

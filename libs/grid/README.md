@@ -40,6 +40,14 @@ pass `widgets={gridWidgets}`, in Vue `:widgets="gridWidgets"`, in Angular
   (a swipe there scrolls the page), and its new place is said to a screen
   reader.
 - **A refused save** marks the wrong cells and opens the first one.
+- **On a phone** (the grid 520px wide or less) its lines are cards, as where
+  the node says `"cards": "narrow"`: each value whole by its column's label,
+  a card's title opening the line in its own form (a section's or a note's,
+  its words), a line added opening there and going again if let go. Where the
+  host gives no dialogs to open a line in, the grid stays a grid;
+  `"cards": "never"` keeps it one, `"always"` makes cards at every width.
+- **A choice a line's change took out** is said under its cell, the row as
+  tall as the words need, and aloud.
 - **Most lines** (`"options": { "max": 12 }` on the node), as the plain table
   keeps them: at its most, Add and a line's copy are hidden (never disabled),
   and Enter or Tab at the last line's end adds none.

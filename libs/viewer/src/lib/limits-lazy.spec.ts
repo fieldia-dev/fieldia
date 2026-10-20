@@ -49,7 +49,7 @@ describe("a page's limits parts", () => {
     expect(host.querySelector('.fd-field')).toBeNull();
     await until(() => host.querySelector('.fd-closed:not([hidden]) .fd-closed-title'));
     expect(formLimitsPart.loaded).toBeDefined();
-    expect(host.querySelector('.fd-closed-title')?.textContent).toBe('This form closed on November 20, 2026.');
+    expect(host.querySelector('.fd-closed-title')?.textContent).toBe('This form closed on 20 Nov 2026.');
     expect([...host.querySelectorAll('.fd-field')].every((field) => field.closest('[hidden]'))).toBe(true);
   });
 });

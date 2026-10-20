@@ -78,6 +78,15 @@ and null when it shows its value; the viewer draws it as a dash, said in words
 ("Fix line 1 of Order lines to see Untaxed amount"). An answer your onchange
 gives meanwhile is kept, and shown once the line reads.
 
+It waits the same for an answer the form refuses: one shown that holds a value
+its checks do not take — an area of −50 under its `min` of 0, a day past its
+`max` of `today`, a pattern not met, an answer rule's error — on the record or
+in a line's cell, whether the value is the page's own formula, one of
+Fieldia's functions (`years(built_on, today())`) or your app's: "Fix Area (m²)
+to see Price per m²", never −120,000.00. An empty answer is none, required or
+not, and one no one is shown is never refused. What waits for an answer is told
+before what is asked of your app's server for it.
+
 ## Functions, and your app's own
 
 A value worked out (`compute`), a value set by a condition (`setWhen`) and every
@@ -177,8 +186,11 @@ app's list gave, or those picked where they are carried from (`picked: false`: t
 left unpicked; a "None of these" is never carried) — less those whose condition hides
 them. A chosen option a change no longer offers is taken out of the answer, never
 silently kept: `form.getState().takenOut` says so by path ("Garden is no longer
-offered, so it was taken out"), until that value is written again — the same words
-for a choice its app's list no longer offers, a page's or a line's. One a record held
+offered, so it was taken out"), while it is true: it goes once the value is written
+again, or once what it names is offered again (Villa picked again, the treatment
+ticked again above, the list asked again offering it); one of several offered again
+leaves it naming the rest. The same words for a choice its app's list no longer
+offers, a page's or a line's. One a record held
 as it was opened stays chosen, and the choice says it is no longer offered. The
 page's checks read each option's condition and refuse a choice carried from itself,
 from a field that is no choice, or round a circle.
@@ -258,7 +270,10 @@ form.endingWords('Your booking is {id}.');   // "Your booking is B-1043."
 help, each choice's words, a step's title and words, a wizard's and a button's
 words — as in a text's and an alert's: `form.words('How was your visit to
 {branch}?')` is "How was your visit to Zamalek?", and the form's messages name
-the field so ("How was your visit to Zamalek? is required"). How a value reads
+the field so ("Please answer “How was your visit to Zamalek?”": a label that is
+a question — ending with a question mark, or an ellipsis the answer completes —
+is quoted in the language's marks wherever a sentence names it, `isQuestion` and
+`quotedLabel`, and its required message is `requiredQuestion`). How a value reads
 there is the viewer's (`valueWords` in `createForm`'s options: a choice by its
 label, money with its currency, a day in the page's order); without one, a
 choice's label, a link's name, Yes or No, anything else as held. After a bar,
@@ -527,7 +542,11 @@ send, as it starts again, and just before its answers go. `state.limits` tells
 whether it takes answers now (`open`, `soon`, `closed`, `full`, `sent`), when it
 opens and closes, the responses it takes still, and each choice's places
 (`seats[field][value]`: `{ seats, taken, left }`); `takingWords(page, limits,
-messages)` says why it takes none. A full option the person picks is refused,
+messages)` says why it takes none ("This form closed on 20 Nov 2026."). Every
+message that names a day writes it as the page's date boxes do — its
+`look.dateOrder` (the form puts it on its messages, `messages.dateOrder`), its
+language, a time on its clock: "can’t be after 20 Oct 2026", "Oct 20, 2026"
+month first; `dayWords(value, messages, zone?)` is that rule. A full option the person picks is refused,
 said under its field ("Afternoon workshop is full"); one that filled up while
 held, or a page closed since it was opened, stops the send. The app's own
 `setValues` is never refused: the check says it. Without `limits` in the

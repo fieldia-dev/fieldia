@@ -6368,7 +6368,8 @@
           "type": "string",
           "enum": [
             "narrow",
-            "always"
+            "always",
+            "never"
           ]
         },
         "fit": {

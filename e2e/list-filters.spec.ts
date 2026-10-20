@@ -57,6 +57,33 @@ test.describe('the homes to buy', () => {
     expect(problems).toEqual([]);
   });
 
+  test('say beside the search how many homes the filters leave, in the list and its gallery, on a desktop', async ({ page }) => {
+    // The owner's walk of 0.27: on a desktop the homes to buy never said how many homes its filters left.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const { problems } = await open(page, 'plain', HOMES);
+    const homes = await homesToBuy(page);
+    const found = page.locator('.fd-filter-bar .fd-list-found');
+    await expect(found).toHaveText(`${homes.length} homes`);
+    await expect(found).toBeVisible();
+    await page.locator('.fd-list-views').getByRole('button', { name: 'Gallery' }).click();
+    await expect(found).toHaveText(`${homes.length} homes`);
+    await pick(page, 'kind').click();
+    await option(page, 'kind', 'Villa').click();
+    const villas = homes.filter((home) => home.kind === 'villa').length;
+    await expect(found).toHaveText(`${villas} ${villas === 1 ? 'home' : 'homes'}`);
+    await page.keyboard.press('Escape');
+    await screen(page, 'list-filters-count-gallery', { viewport: true });
+    // A price nothing is listed at: the list says no homes match, and the count says nothing more.
+    await pick(page, 'price').click();
+    const from = page.getByRole('textbox', { name: 'Price: From' });
+    await expect(from).toBeFocused();
+    await from.fill('900,000,000');
+    await from.press('Enter');
+    await expect(page.getByText('No homes match.')).toBeVisible();
+    await expect(found).toBeHidden();
+    expect(problems).toEqual([]);
+  });
+
   test('take bedrooms 2+ and a price from and to, each as one filter, and say what cannot be one', async ({ page }) => {
     const { problems } = await open(page, 'plain', HOMES);
     const homes = await homesToBuy(page);

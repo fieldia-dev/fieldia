@@ -5,7 +5,8 @@ import { gridApiOf, gridWidgets } from './grid';
 /**
  * A grid's lines with choices from the app's lists: an agent's triggers, each line's events from the connection on
  * it — said by their labels at rest, asked once for lines alike, asked again as a line's connection changes, an event
- * the new one does not offer taken out and said aloud; and a line's option its condition hides, taken out and said alike.
+ * the new one does not offer taken out, seen under its cell and said aloud; and a line's option its condition hides, taken
+ * out and said alike.
  */
 
 const EVENTS: Record<string, Option[]> = {
@@ -92,7 +93,10 @@ describe('a grid’s lines with choices from the app’s lists', () => {
     await form.settled();
     await frames();
     expect(asked).toEqual(['gmail', 'slack']);
-    expect(rowCells(box, 0)).toEqual(['Slack', '']);
+    // Its value gone, and what was taken out seen under it in the cell, as a plain table's cell shows it.
+    expect(rowCells(box, 0)).toEqual(['Slack', 'New email is no longer offered, so it was taken out']);
+    expect(box.querySelector('.ag-row[row-index="0"] .ag-cell[col-id="event"] .fd-grid-taken-out')?.className).toBe('fd-warning fd-grid-taken-out');
+    expect(box.querySelector('.ag-row[row-index="0"] .ag-cell[col-id="event"] .fd-grid-choice-value')).toBeNull();
     // One the new connection offers too stays, said by its label there.
     expect(rowCells(box, 1)).toEqual(['Slack', 'Message saved']);
     expect(said(box)).toEqual(['Line 1: New email is no longer offered, so it was taken out']);

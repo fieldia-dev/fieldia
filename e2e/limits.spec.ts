@@ -84,7 +84,7 @@ test.describe('a sign-up not open yet, or closed', () => {
     ({ problems } = await open(page, 'plain', 'page=event-signup&skin=outlined&now=2020-01-01T08:00:00Z'));
     const closed = page.locator('.fd-closed');
     await expect(closed).toBeVisible();
-    await expect(closed.locator('.fd-closed-title')).toHaveText(/^This form opens on \w+ \d+, 20\d\d.* 09:00.*\.$/);
+    await expect(closed.locator('.fd-closed-title')).toHaveText(/^This form opens on \d+ \w+ 20\d\d, 09:00.*\.$/);
     await expect(closed.locator('.fd-closed-message')).toHaveText('Missed it? Write to events@dawarly.example and we will tell you about the next one.');
     // Under the form's own title, in place of its questions.
     await expect(page.locator('.fd-page-title')).toHaveText('Founders’ evening: sign up');

@@ -31,7 +31,7 @@ test.describe('a paste past a field’s most', () => {
     await expect(box).toHaveValue(thread);
     await expect(access.locator('.fd-count')).toHaveText('2401 / 500');
     await expect(access.locator('.fd-count')).toHaveClass(/fd-count-past/);
-    const said = 'Anything we should arrange for you to take part? is 1901 characters too long: shorten it to 500';
+    const said = '“Anything we should arrange for you to take part?” is 1901 characters too long: shorten it to 500';
     await expect(access.locator(':scope > .fd-error')).toHaveText(said);
     // Said once: no other words in the field name how far over it is.
     await expect(access.getByText(/1901/)).toHaveCount(1);

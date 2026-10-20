@@ -1,5 +1,6 @@
 import { LANGUAGES } from './locales/all';
 import { labelAt } from './record-words';
+import type { DateOrder } from './input-rules';
 
 /**
  * Validation messages, by language. `{label}` is the field's label; the other
@@ -8,6 +9,8 @@ import { labelAt } from './record-words';
  */
 export interface Messages {
   required: string;
+  /** Required, of a label that is a question (`isQuestion`): `{label}` is quoted already ("Please answer “How was it?”"). */
+  requiredQuestion: string;
   maxLength: string;
   pattern: string;
   text: string;
@@ -155,16 +158,22 @@ export interface Messages {
    * a form's page asks (`lowerLabels`): set on the form's own messages, never in a language's table.
    */
   lowerLabels?: boolean;
+  /**
+   * The order the page writes its days in (`look.dateOrder`), as a message names a day ("can't be after 20 Oct 2026",
+   * `dayWords`): set on the form's own messages, never in a language's table. Day first without it.
+   */
+  dateOrder?: DateOrder;
 }
 
 export type Locale = 'en' | 'ar' | 'de' | 'fr';
 
 /** A message every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
-export type MessageKey = Exclude<keyof Messages, `${string}Noun` | 'lowerLabels'>;
+export type MessageKey = Exclude<keyof Messages, `${string}Noun` | 'lowerLabels' | 'dateOrder'>;
 
 /** English: always here, and the words a language leaves out. */
 const en: Messages = {
   required: '{label} is required',
+  requiredQuestion: 'Please answer {label}',
   maxLength: '{label} takes at most {max} characters',
   pattern: '{label} is not in the expected format',
   text: '{label} must be text',
@@ -270,12 +279,11 @@ const LABELS = ['label', 'column', 'start', 'end'];
 
 /**
  * A message filled in (`fill`), each field's label as its sentence puts it (`labelAt`): small inside the sentence where
- * the form's page asks (`messages.lowerLabels`), else as written.
+ * the form's page asks (`messages.lowerLabels`), a question quoted, else as written.
  */
 export function fillMessage(messages: Messages, template: string, values: Record<string, string | number>): string {
-  if (!messages.lowerLabels) return fill(template, values);
   const own = { ...values };
-  for (const key of LABELS) if (typeof own[key] === 'string') own[key] = labelAt(template, key, true, messages.locale)(own[key] as string);
+  for (const key of LABELS) if (typeof own[key] === 'string') own[key] = labelAt(template, key, messages.lowerLabels, messages.locale)(own[key] as string);
   return fill(template, own);
 }
 

@@ -81,7 +81,7 @@ describe('a page that takes no answers now says so as it opens', () => {
     await mount(signup());
     expect(questions()).toBeNull();
     expect(shown('.fd-page-title')?.textContent).toBe('Workshop sign-up');
-    expect(closedWords()).toEqual([expect.stringMatching(/^This form opens on November 1, 2026(,| at) 09:00\.$/), 'Ask us at hello@example.com.']);
+    expect(closedWords()).toEqual([expect.stringMatching(/^This form opens on 1 Nov 2026, 09:00\.$/), 'Ask us at hello@example.com.']);
     expect(shown('.fd-closed')?.getAttribute('role')).toBe('status');
     // Left open as it opens.
     now = Date.parse('2026-11-01T09:00:01Z');
@@ -94,7 +94,7 @@ describe('a page that takes no answers now says so as it opens', () => {
     now = Date.parse('2026-11-21T00:00:00Z');
     await mount(signup());
     expect(questions()).toBeNull();
-    expect(closedWords()[0]).toBe('This form closed on November 20, 2026.');
+    expect(closedWords()[0]).toBe('This form closed on 20 Nov 2026.');
   });
 
   it('closing on answers typed keeps them, says they can no longer be sent, and refuses them as they go', async () => {
@@ -105,7 +105,7 @@ describe('a page that takes no answers now says so as it opens', () => {
     now = Date.parse('2026-11-21T00:00:30Z');
     await pass(120_000);
     expect(questions()).not.toBeNull();
-    expect(shown('.fd-closed-banner')?.textContent).toBe('This form closed on November 20, 2026. Your answers can no longer be sent.');
+    expect(shown('.fd-closed-banner')?.textContent).toBe('This form closed on 20 Nov 2026. Your answers can no longer be sent.');
     button('Submit')?.click();
     await pass(0);
     await pass(0);

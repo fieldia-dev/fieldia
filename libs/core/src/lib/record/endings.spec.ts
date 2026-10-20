@@ -159,7 +159,7 @@ describe('{field} words in a page’s own words', () => {
     page.fields['overall'] = { ...page.fields['overall'], label: 'How was your visit to {branch|this branch}?' } as Page['fields'][string];
     const form = createForm({ page, dataSource: createMemoryDataSource() });
     expect(await form.save()).toBe(false);
-    expect(form.getState().errors['overall']).toBe('How was your visit to this branch? is required');
+    expect(form.getState().errors['overall']).toBe('Please answer “How was your visit to this branch?”');
   });
 
   it('say an ending’s reference’s words while the source gave none', async () => {
@@ -181,7 +181,7 @@ describe('{field} words in a page’s own words', () => {
     const form = createForm({ page: feedback(), dataSource: createMemoryDataSource() });
     form.setValue('branch', 'zamalek');
     expect(await form.save()).toBe(false);
-    expect(form.getState().errors['overall']).toBe('How was your visit to Zamalek? is required');
+    expect(form.getState().errors['overall']).toBe('Please answer “How was your visit to Zamalek?”');
   });
 
   it('name a choice in the form’s messages as the page shows it', () => {

@@ -3,6 +3,7 @@ import type { Messages } from '../messages';
 /** The validation messages in German. */
 export const de: Messages = {
   required: '{label} ist erforderlich',
+  requiredQuestion: 'Bitte beantworten Sie {label}',
   maxLength: '{label} hat höchstens {max} Zeichen',
   pattern: '{label} hat nicht das erwartete Format',
   text: '{label} muss Text sein',

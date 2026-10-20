@@ -3,6 +3,7 @@ import type { Messages } from '../messages';
 /** The validation messages in Arabic. */
 export const ar: Messages = {
   required: '{label} مطلوب',
+  requiredQuestion: 'يُرجى الإجابة عن {label}',
   maxLength: '{label}: لا يزيد عدد الأحرف على {max}',
   pattern: 'صيغة {label} غير صحيحة',
   text: 'يجب أن يكون {label} نصًا',

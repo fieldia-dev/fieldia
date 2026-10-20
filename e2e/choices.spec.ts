@@ -33,7 +33,7 @@ test.describe('the choice kinds in the viewer', () => {
     expect(await valueOf(page, 'drive')).toBeNull();
     // Required, it asks for an answer when the form is sent.
     await page.getByRole('button', { name: 'Submit', exact: true }).click();
-    await expect(drive.locator('.fd-error')).toHaveText('Will you drive to the new building? is required');
+    await expect(drive.locator('.fd-error')).toHaveText('Please answer “Will you drive to the new building?”');
     await no.click();
     expect(await valueOf(page, 'drive')).toBe(false);
     await expect(drive.locator('.fd-error')).toBeHidden();
@@ -265,7 +265,7 @@ test.describe('the choice kinds in the survey designer', () => {
     await screen(page, 'choices-designer-yes-no', { viewport: true });
     await tryIt(page);
     await tried(page).getByRole('button', { name: /Send|Submit|Finish/ }).click();
-    await expect(tried(page).locator('.fd-error')).toHaveText('Coming to the party? is required');
+    await expect(tried(page).locator('.fd-error')).toHaveText('Please answer “Coming to the party?”');
     await tried(page).getByRole('radio', { name: 'No' }).click();
     await expect(tried(page).locator('.fd-error')).toBeHidden();
     await screen(page, 'choices-designer-yes-no-tried', { viewport: true });

@@ -156,11 +156,11 @@ describe('a date’s earliest, latest and days', () => {
 
   it('keeps between its earliest and latest, fixed or counted from today, naming the day', () => {
     const field = visit({ min: 'today', max: 'today+30' });
-    expect(checkValue(field, '2026-03-01', false, MESSAGES.en, today)).toBe('Visit can’t be before March 2, 2026');
-    expect(checkValue(field, '2026-04-02', false, MESSAGES.en, today)).toBe('Visit can’t be after April 1, 2026');
+    expect(checkValue(field, '2026-03-01', false, MESSAGES.en, today)).toBe('Visit can’t be before 2 Mar 2026');
+    expect(checkValue(field, '2026-04-02', false, MESSAGES.en, today)).toBe('Visit can’t be after 1 Apr 2026');
     expect(checkValue(field, '2026-03-02', false, MESSAGES.en, today)).toBeUndefined();
     expect(checkValue(field, '2026-04-01', false, MESSAGES.en, today)).toBeUndefined();
-    expect(checkValue(visit({ min: '2026-06-01' }), '2026-05-31', false, MESSAGES.en, today)).toBe('Visit can’t be before June 1, 2026');
+    expect(checkValue(visit({ min: '2026-06-01' }), '2026-05-31', false, MESSAGES.en, today)).toBe('Visit can’t be before 1 Jun 2026');
   });
 
   it('refuses a day of the week it may not fall on, naming those days', () => {
@@ -181,14 +181,14 @@ describe('a date’s earliest, latest and days', () => {
 
   it('asks the same of a date and time, by the day it falls on', () => {
     const meeting = { type: 'datetime', label: 'Meeting', min: 'today', days: [1, 2, 3, 4, 5] } as Field;
-    expect(checkValue(meeting, '2026-02-20T12:00:00.000Z', false, MESSAGES.en, today)).toBe('Meeting can’t be before March 2, 2026');
+    expect(checkValue(meeting, '2026-02-20T12:00:00.000Z', false, MESSAGES.en, today)).toBe('Meeting can’t be before 2 Mar 2026');
     expect(checkValue(meeting, '2026-03-07T12:00:00.000Z', false, MESSAGES.en, today)).toBe('Meeting can’t be on a Saturday or Sunday');
     expect(checkValue(meeting, '2026-03-04T12:00:00.000Z', false, MESSAGES.en, today)).toBeUndefined();
   });
 
   it('reads today from the form’s clock', () => {
     const date = ask({ type: 'date', min: 'today' }, {}, { now: new Date(2026, 2, 2, 10) });
-    expect(date('2026-03-01')).toBe('Answer can’t be before March 2, 2026');
+    expect(date('2026-03-01')).toBe('Answer can’t be before 2 Mar 2026');
     expect(date('2026-03-02')).toBeNull();
   });
 });

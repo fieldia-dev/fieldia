@@ -579,7 +579,7 @@ describe('a sections page', () => {
     expect(at(host, 'f-other-role').classList.contains('fd-required')).toBe(true);
     button(host, 'Submit').click();
     await flush();
-    expect(at(host, 'f-other-role').querySelector('.fd-error')?.textContent).toBe('Which role? is required');
+    expect(at(host, 'f-other-role').querySelector('.fd-error')?.textContent).toBe('Please answer “Which role?”');
   });
 
   it('hides the dietary question until dinner is chosen', () => {

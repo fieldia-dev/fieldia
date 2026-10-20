@@ -12,9 +12,19 @@ export const SURVEY_LOOKS_CSS = /* css */ `
 .fd-slider-input:disabled { cursor: default; }
 .fd-slider-value { min-width: 2.5em; text-align: start; font-variant-numeric: tabular-nums; font-weight: 600; }
 .fd-slider-ends { grid-column: 1; display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
-/* Grey, not the accent: half filled in colour would read as an answer. */
-.fd-slider-empty .fd-slider-input { filter: grayscale(1); opacity: 0.55; }
+/* Not answered: the range out of sight (still taking the pointer and the keys), and in its place a track with nothing
+   filled and a hollow ring at its start — no knob halfway, which reads as an answer — "Not answered" beside it. */
+.fd-slider-rail { position: relative; display: block; min-width: 0; }
+.fd-slider-empty .fd-slider-input { opacity: 0; position: relative; z-index: 1; }
+.fd-slider-blank { position: absolute; inset: 0; display: flex; align-items: center; pointer-events: none; }
+.fd-slider-blank[hidden] { display: none; }
+.fd-slider-blank::before { content: ""; position: absolute; inset-inline: 2px; height: 4px; border-radius: 2px; background: var(--fd-border-strong, var(--fd-border)); }
+.fd-slider-ring { position: relative; width: 14px; height: 14px; box-sizing: border-box; border: 2px solid var(--fd-muted); border-radius: 50%; background: var(--fd-surface); }
+.fd-slider-empty:has(.fd-slider-input:focus-visible) .fd-slider-ring { outline: 2px solid var(--fd-accent); outline-offset: 2px; }
 .fd-slider-empty .fd-slider-value { color: var(--fd-muted); font-weight: 400; }
+/* The value and the room its words "Not answered" take share one cell: the track is as long answered or not. */
+.fd-slider-value, .fd-slider-room { grid-column: 2; grid-row: 1; white-space: nowrap; }
+.fd-slider-room { visibility: hidden; pointer-events: none; }
 .fd-slider .fd-choice-clear { grid-column: 1 / -1; }
 /* Pictures to choose from: cards of a picture over its words, a ring or a box before the words, the card picked edged in the accent. */
 .fd-image-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr)); gap: 12px; width: 100%; min-width: 0; }
