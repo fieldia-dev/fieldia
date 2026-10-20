@@ -446,7 +446,7 @@ export class ReferenceCheck {
       if (def.type === 'many2many' && def.fields) {
         for (const [column, linked] of Object.entries(def.fields)) if (linked.type === 'datetime' && linked.timeZone !== undefined) this.checkZone(linked.timeZone, `${path}.fields.${column}.timeZone`);
       }
-      if (def.type === 'selection') def.optionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.optionsFrom.dependsOn[${i}]`, fields));
+      if (def.type === 'selection') def.optionsFrom?.dependsOn?.forEach((other, i) => this.checkDependsOn(name, other, `${path}.optionsFrom.dependsOn[${i}]`, fields, lines, parent));
       if (def.type === 'properties') def.definitionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.definitionsFrom.dependsOn[${i}]`, fields));
       if (def.type === 'properties' && def.definitions) {
         const seen = new Set<string>();
@@ -471,6 +471,19 @@ export class ReferenceCheck {
         }
       }
     }
+  }
+
+  /**
+   * A field a choice's list changes with: one beside it, or on a line `parent.` and a field of the record it is on. A
+   * line's list never changes with its own column: choosing would ask for its choices again.
+   */
+  private checkDependsOn(own: string, name: string, path: string, fields: Record<string, Field | LineField>, lines: string | undefined, parent: Record<string, Field | LineField> = this.page.fields) {
+    if (!name.startsWith('parent.')) {
+      if (lines !== undefined && name === own) return this.report(path, `"${own}" cannot change with itself`);
+      return void this.need(name, path, fields);
+    }
+    if (lines === undefined) return this.report(path, `"${name}": only a line’s choices read parent, the record it is on`);
+    if (!has(parent, name.slice('parent.'.length))) this.report(path, `"${name}": "${name.slice('parent.'.length)}" is not a field of this page`);
   }
 
   /** A money field's currency: a field beside it, or on a line `parent.` and a field of the record — one that holds a currency. */

@@ -857,7 +857,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // with the printout's parts kept off the screen, 1.17 of the main sheet. The main script keeps the printout's head and
 // footer, made as a form is drawn (the screen's every element as it was), and Ctrl+P's and intent's watch (print.ts,
 // 2.17): 515.51 measured before, 503.40 after — 12.1 less, to 503.5.
-const BUDGET_KB = 503.5;
+// A table line's choices from the app's lists (0.27, w4-line-choices): the form asks each line's by its own values,
+// shares one ask among lines alike, follows the columns they change with on each line and clears a choice its new
+// choices do not offer, naming it, checks a line's value against its own line's choices, and a line's own form clears
+// the same way (form.ts, line-choices.ts); the page's checks refuse a column the line has not (references.ts); the
+// cell's form gives its line's choices, a line's column read at rest by its label (lines.ts), the cell says a choice
+// cleared (choices-from.ts) — the form's work every page with a table runs, which no part can bring: 503.41 measured
+// before, 507.72 after — 4.3 more, to 507.8.
+const BUDGET_KB = 507.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1051,7 +1058,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.15 and 0.55 added up — to 166.0.
 // Print on intent (listed with the raw budget above): 165.90 measured before, 162.94 after — 3.0 less, to 163.0. A
 // page that prints takes 5.22 more in fieldia.print.js.
-const GZIP_BUDGET_KB = 163.0;
+// A table line's choices from the app's lists (listed with the raw budget above): 162.94 measured before, 164.41 after
+// — 1.5 more, to 164.5.
+const GZIP_BUDGET_KB = 164.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1198,7 +1207,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // words for its records, two words in Arabic, four in German and French: Arabic's 68.25 and 11.82 measured before,
 // 68.38 and 11.83 after, its raw to 68.4; German's 31.91 and 10.42 to 32.03 and 10.44, to 32.1; French's 32.24 and
 // 10.41 to 32.37 and 10.43, to 32.4.
-const ADD_ON_BUDGET_KB = { ar: [68.4, 11.9], de: [32.1, 10.5], fr: [32.4, 10.5] };
+// A table line's choice cleared as its connection changed, said under its cell (0.27, w4-line-choices), one word in
+// each: Arabic's 68.38 and 11.83 measured before, 68.50 and 11.84 after, its raw to 68.6; German's 32.03 and 10.44 to
+// 32.09 and 10.45, under its own; French's 32.37 and 10.43 to 32.43 and 10.45, its raw to 32.5.
+const ADD_ON_BUDGET_KB = { ar: [68.6, 11.9], de: [32.1, 10.5], fr: [32.5, 10.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1497,7 +1509,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // count in words and its sums ("Cairo, 12 invoices, EGP 4.3M", their English with it), the arrows crossing a heading,
 // Right and Left opening and closing it — list 109.78 and 35.19 measured before, 110.61 and 35.49 after, to 110.7
 // and 35.5.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
+// A table line's choices from the app's lists (0.27, w4-line-choices): a block pasted reads such a cell among its own
+// line's choices, the row's links and other cells read first, and says why where they could not be asked — lines 40.51
+// and 13.97 measured before, 41.46 and 14.30 after, to 41.5 and 14.3; a list's Import reads a choice that follows
+// another field by each row's own values, once for each — import 37.59 and 14.77 to 38.02 and 14.99, to 38.1 and 15.0.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.1, 15.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [41.5, 14.3], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

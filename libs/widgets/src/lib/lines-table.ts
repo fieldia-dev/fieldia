@@ -369,6 +369,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
         form.updateLine(name, line.key, column, value);
       },
       search: (key, column, query, limit, exact) => form.searchLine(name, key, column, query, limit, exact ? { exact: true } : {}),
+      choices: (key, column, values) => form.lineChoices(name, key, column, values),
       shown: () => stillShown() && !destroyed,
     };
     const from = current().findIndex((line) => line.key === fromKey);

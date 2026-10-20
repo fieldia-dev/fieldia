@@ -7,6 +7,9 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  * would have anyway, drawn afresh from each answer the list gives. While the
  * choices load it says so; when they fail it offers to load them again; and
  * a value the list no longer offers is kept — the person decides — and said.
+ * In a table's line (its `lineForm`), the line's own choices: asked again
+ * where the form let them go (another record's line of the same key), and
+ * one cleared as the line's connection changed said until its value changes again.
  */
 export function listChoices(factory: WidgetFactory, context: WidgetContext): Widget {
   const { form, name, document: doc } = context;
@@ -39,7 +42,11 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
     focus: () => inner.focus(),
     destroy: () => inner.destroy?.(),
     update(state) {
-      const choices = form.getState().choices[name];
+      let choices = form.getState().choices[name];
+      if (!choices) {
+        form.loadChoices(name);
+        choices = form.getState().choices[name];
+      }
       if (choices?.options && choices.options !== shown) {
         shown = choices.options;
         for (const option of shown) named.set(option.value, option.label);
@@ -49,7 +56,13 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
       // With "Other", a value not among them is an answer of the person's own.
       const lost = shown && !(context.field as { other?: boolean }).other ? [state.value].flat().filter((v) => v != null && !shown?.some((o) => o.value === v)) : [];
       note.className = choices?.loading ? 'fd-help' : 'fd-warning';
-      note.textContent = choices?.loading ? words.loadingChoices : lost.length ? fill(words.notOffered, { name: lost.map((v) => named.get(v) ?? String(v)).join(', ') }) : '';
+      note.textContent = choices?.loading
+        ? words.loadingChoices
+        : lost.length
+          ? fill(words.notOffered, { name: lost.map((v) => named.get(v) ?? String(v)).join(', ') })
+          : choices?.cleared
+            ? fill(words.choiceCleared, { name: choices.cleared })
+            : '';
       note.hidden = !note.textContent;
       // Loading again sets the failure aside, and the button with it.
       retry.hidden = !choices?.error;

@@ -123,4 +123,14 @@ under the table. The readers — `blockOf`, `readPastedCell`, `whyNotPasted`, an
 part (`(await linesPart.load()).readPastedCell(…)`), which the grid and a list's
 Import read cells with too.
 
+A line's choice from the app's lists (`optionsFrom` on a line's selection, its
+`dependsOn` naming a column of the line or `parent.` and a field of the record)
+draws each line's own choices: the cell's form (`lineForm`) gives the line's
+`choices` and asks its own by its cell's path (`form.loadChoices("tools.k1.tool")`).
+A tool its new connection does not offer is cleared by the form and said under
+the cell (`choiceCleared`). `lineColumn(form, field, key, column, def)` gives a
+column as its cell reads at rest — its choices those loaded for that line — for a
+grid's cells, a printout, cards. A block pasted reads such a cell among its own
+line's choices (`PasteTable.choices`, `form.lineChoices`), its links first.
+
 MIT licensed.

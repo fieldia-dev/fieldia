@@ -74,14 +74,11 @@ describe('choices from the app’s lists, in the format', () => {
     expect(checkPage(bad).ok).toBe(false);
   });
 
-  it('keeps lists to the page’s own fields: a table’s lines cannot load choices', () => {
+  it('takes a list on a table’s lines too (line-choices.spec.ts)', () => {
     const lines = page({
       lines: { type: 'one2many', label: 'Lines', relation: 'line', fields: { kind: { type: 'selection', label: 'Kind', options: [], optionsFrom: { list: 'kinds' } } } },
     });
-    expect(problems(lines)).toEqual([
-      'fields.lines.fields.kind.options: Too small: expected array to have >=1 items',
-      'fields.lines.fields.kind.optionsFrom: choices from the app’s lists are for the page’s own fields, not a table’s lines',
-    ]);
+    expect(problems(lines)).toEqual([]);
   });
 
   it('is in the JSON Schema, with the same rule for written options', () => {

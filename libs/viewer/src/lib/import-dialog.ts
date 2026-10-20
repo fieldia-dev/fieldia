@@ -428,9 +428,10 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
       ...yesAndNo(),
       readers,
       ...(phoneReaders ? { phones: phoneReaders } : {}),
-      options: async (field) => {
+      // A choice that changes with another field is asked by the row's values: a row's city by its own country.
+      options: async (field, values) => {
         const def = page.fields[field];
-        return def.type === 'selection' && def.optionsFrom && context.dataSource.options ? context.dataSource.options({ list: def.optionsFrom.list, values: {} }) : [];
+        return def.type === 'selection' && def.optionsFrom && context.dataSource.options ? context.dataSource.options({ list: def.optionsFrom.list, values }) : [];
       },
     };
     let rows: CheckedRow[];

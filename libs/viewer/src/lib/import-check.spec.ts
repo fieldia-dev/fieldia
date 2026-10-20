@@ -206,3 +206,47 @@ describe('a day and its time read from a file', () => {
     expect(plain.values['on']).toBe('2026-10-17');
   });
 });
+
+describe('a file’s choices that follow another column of the row', () => {
+  const sites: Page = {
+    fieldia: '0.5',
+    id: 'sites',
+    data: { kind: 'record', model: 'site' },
+    fields: {
+      name: { type: 'char', label: 'Name' },
+      country: { type: 'selection', label: 'Country', options: [{ value: 'eg', label: 'Egypt' }, { value: 'jo', label: 'Jordan' }] },
+      city: { type: 'selection', label: 'City', options: [], optionsFrom: { list: 'cities', dependsOn: ['country'] } },
+      size: { type: 'selection', label: 'Size', options: [], optionsFrom: { list: 'sizes' } },
+    },
+    layout: { type: 'list', id: 'sites-list', columns: ['name', 'country', 'city'], import: true },
+  };
+  const CITIES: Record<string, { value: string; label: string }[]> = { eg: [{ value: 'cai', label: 'Cairo' }], jo: [{ value: 'amm', label: 'Amman' }] };
+
+  it('reads a city by the cities of the row’s own country, each country asked once', async () => {
+    const asked: string[] = [];
+    const viewer = VIEWER_LABELS.en;
+    const rowsCheck: RowsCheck = {
+      page: sites,
+      form: createForm({ page: sites, dataSource: createMemoryDataSource({}) }),
+      cells: {},
+      locale: 'en',
+      dateOrder: 'dmy',
+      today: '2026-10-16',
+      messages: MESSAGES.en,
+      labels: WIDGET_LABELS.en,
+      words: { importNoneCalled: viewer.importNoneCalled, importSeveralCalled: viewer.importSeveralCalled, importNotYesNo: viewer.importNotYesNo },
+      yes: ['yes'],
+      no: ['no'],
+      readers: linesPart.loaded as NonNullable<typeof linesPart.loaded>,
+      options: async (field, values) => {
+        asked.push(`${field}:${values['country'] ?? ''}`);
+        return field === 'size' ? [{ value: 's', label: 'Small' }] : (CITIES[values['country'] as string] ?? []);
+      },
+    };
+    // The city before its country in the file: read after it all the same.
+    const rows = await checkRows(rowsCheck, sheetOf(['City', 'Name', 'Country', 'Size'], [['Cairo', 'Nile', 'Egypt', 'Small'], ['Amman', 'Petra', 'Jordan', 'Small'], ['Cairo', 'Dead Sea', 'Jordan', null], ['Cairo', 'Delta', 'Egypt', null]]), ['city', 'name', 'country', 'size']);
+    expect(rows.map((row) => row.values['city'] ?? null)).toEqual(['cai', 'amm', null, 'cai']);
+    expect(rows[2].problems).toEqual(['City: nothing is called “Cairo”']);
+    expect(asked).toEqual(['size:', 'city:eg', 'city:jo']);
+  });
+});

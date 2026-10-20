@@ -632,3 +632,49 @@ In plain words:
   away, and moves every link to them (by id and name) to the one kept, refusing as
   a backend would where the person may not change the kept one or take one away.
   Tests: `libs/core/src/lib/record/duplicates.spec.ts`.
+
+## 13. A table line's choices from the app's lists (Wave 4, lane w4-line-choices)
+
+No new member: a line's selection may now take its options from one of the app's
+lists (`optionsFrom` on a line field, refused there until 0.27), and the existing
+`options` member is asked for it, with one more optional field in its request.
+Without `options`, such a cell says the list is missing (`No list "…"`) and offers
+to load it again, as a page's own field does.
+
+```ts
+options?(request: OptionsRequest): Promise<Option[]>;
+
+interface OptionsRequest {
+  list: string;    // the field's `optionsFrom.list`
+  values: Values;  // a page's field: every value of the form; a table's line: that line's values
+  parent?: Values; // a table's line, or a form editing one in a dialog: the record it is on; left out for a page's own field
+}
+```
+
+In plain words:
+
+- On a line, `optionsFrom.dependsOn` names the line's own columns, or `parent.` and
+  a field of the record the line is on (`checkPage` refuses a column the line does
+  not have, a field the record does not have, and the column itself).
+- **Asked by the line's values, shared by lines alike**: lines whose `dependsOn`
+  values are the same (a link by its id) share one ask, for the record shown; a
+  failed ask is asked again next time. So the source answers by `values[dependsOn…]`
+  and `parent[…]`, never by another value of the line.
+- **Followed**: once a line's choices are loaded, a change on that line of what they
+  change with asks again (the latest answer wins). After a change someone made — the
+  person, a step, the app — a choice the new answer does not offer is cleared (of
+  several, the rest kept) and named (`Choices.cleared`, until the cell's value changes
+  again), and told as a step's change (`change`, `by: "step"`):
+  the person's claim on the line stays. A record that comes in with a choice its
+  choices do not offer keeps it, said; `validate` and a save refuse it with "Must be
+  one of: …". A line's own form (a dialog, `parent` given) clears the same way.
+- **State**: `state.choices` keeps a line's by its cell's path (`field.lineKey.subfield`);
+  `form.loadChoices(path)` asks for one; `form.lineChoices(field, key | null,
+  subfield, values)` asks as a line would with `values` laid over it (a pasted row).
+- **Paste and Import**: a block pasted reads such a cell among its own line's
+  choices, the row's links and other cells read first (`PasteTable.choices`); a
+  list's Import reads a page field's choice that follows another field by each
+  row's own values (`RowsCheck.options(field, values)`), once for each such value.
+- The memory source: a `lists` function is given the request after the values,
+  `(values, request) => …`, so a line's list may read `request.parent`.
+  Tests: `libs/core/src/lib/record/line-choices.spec.ts`.

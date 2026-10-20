@@ -69,15 +69,30 @@ export function kindTextField(def: LineField, kind: 'section' | 'note'): LineFie
   return kind === 'section' ? ({ ...def, type: 'char' } as LineField) : ({ ...def, type: 'text' } as LineField);
 }
 
+/** The columns of a table whose choices are one of the app's lists, each line's its own. */
+const listedOf = (form: Form, field: string): string[] => {
+  const def = form.page.fields[field];
+  return def?.type === 'one2many' ? Object.keys(def.fields).filter((column) => def.fields[column].type === 'selection' && !!(def.fields[column] as { optionsFrom?: unknown }).optionsFrom) : [];
+};
+
 /** The form a cell sees: the line's values, written back into the line. Shared with @fieldia/grid. */
 export function lineForm(form: Form, field: string, key: string): Form {
-  const values = () => (((form.getState().values[field] as Line[] | null) ?? []).find((l) => l.key === key)?.values ?? {});
+  const line = () => ((form.getState().values[field] as Line[] | null) ?? []).find((l) => l.key === key);
+  const values = () => line()?.values ?? {};
   // A cell's unread text is kept by its path in the record's form (`field.key.column`): the cell sees its own by its column.
   const at = `${field}.${key}.`;
   const unread = () => Object.fromEntries(Object.entries(form.getState().unread ?? {}).flatMap(([path, text]) => (path.startsWith(at) ? [[path.slice(at.length), text]] : [])));
+  // A choice from the app's list is the line's own, kept by its cell's path as well.
+  const listed = listedOf(form, field);
+  const choices = (all: FormState['choices']) => Object.fromEntries(listed.flatMap((column) => (all[at + column] ? [[column, all[at + column]]] : [])));
   return {
     ...form,
-    getState: (): FormState => ({ ...form.getState(), values: values(), unread: unread() }),
+    getState: (): FormState => {
+      const state = form.getState();
+      return { ...state, values: values(), unread: unread(), ...(listed.length ? { choices: choices(state.choices) } : {}) };
+    },
+    // Asked while the line is there: a cell of a line taken away asks nothing.
+    loadChoices: (name: string) => (!listed.includes(name) ? form.loadChoices(name) : line() ? form.loadChoices(at + name) : undefined),
     setValue: (name: string, value: Value) => form.updateLine(field, key, name, value),
     setUnread: (name: string, text) => form.setUnread(`${at}${name}`, text),
     boxLeft: (name: string) => form.boxLeft(`${at}${name}`),
@@ -89,6 +104,16 @@ export function lineForm(form: Form, field: string, key: string): Form {
     upload: (name: string, files: Parameters<Form['upload']>[1], how: Parameters<Form['upload']>[2] = {}) => form.upload(name, files, { ...how, line: { field, key } }),
     uploading: (name: string) => form.getState().uploads.filter((upload) => upload.field === name && upload.line?.field === field && upload.line.key === key),
   };
+}
+
+/**
+ * A line's column as its cell reads at rest — the grid's, a printout's, the plain words before the lines part: a choice
+ * from the app's list with the choices loaded for that line, its value said by its label. Shared with @fieldia/grid.
+ */
+export function lineColumn(form: Form, field: string, key: string, column: string, sub: LineField): LineField {
+  if (sub.type !== 'selection' || !sub.optionsFrom) return sub;
+  const options = form.getState().choices[`${field}.${key}.${column}`]?.options;
+  return options ? ({ ...sub, options } as LineField) : sub;
 }
 
 /** A line's money in its record's currency (`parent.…`), as a field of its own: in that currency, fixed — for a dialog with no record round it. */

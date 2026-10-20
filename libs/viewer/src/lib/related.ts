@@ -1,4 +1,4 @@
-import type { CreateRequest, DataSource, Field, LayoutNode, Page, SearchRequest, Tone } from '@fieldia/core';
+import type { CreateRequest, DataSource, Field, LayoutNode, OptionsRequest, Page, SearchRequest, Tone } from '@fieldia/core';
 import type { WidgetDialogs } from '@fieldia/widgets';
 import { openFormDialog, openSearchDialog } from './dialog';
 import type { ViewerOptions } from './viewer';
@@ -57,12 +57,14 @@ export function findPage(options: Pick<ViewerOptions, 'pages' | 'relatedPages'>,
   return (typeof relatedPages === 'function' ? relatedPages(request.model) : relatedPages?.[request.model]) ?? null;
 }
 
-/** Only finding and making linked records: values edited in a dialog are no record of the source's to load, save or recalculate. */
+/** Only finding and making linked records, and the app's lists of choices: values edited in a dialog are no record of the source's to load, save or recalculate. */
 function lookupsOf(source: DataSource | undefined): DataSource | undefined {
   if (!source) return undefined;
   return {
     ...(source.search ? { search: (request: SearchRequest) => source.search!(request) } : {}),
     ...(source.create ? { create: (request: CreateRequest) => source.create!(request) } : {}),
+    // A choice from the app's lists: a line's own form asks them as its line does, its record as parent.
+    ...(source.options ? { options: (request: OptionsRequest) => source.options!(request) } : {}),
   };
 }
 
