@@ -11,9 +11,9 @@ const LAYOUTS = ['sheet', 'sections', 'tabs', 'wizard'];
 
 /**
  * The check a page gets as it is shown: its outline, then every name and
- * condition in it, the same as `validatePage` finds them — but for the kinds
- * of value an expression hands a function (`age(notes)`), which there only
- * give null, and are said where pages are made. It leaves out the
+ * condition in it, the same as `validatePage` finds them (its warnings — a
+ * value of a kind a function does not take — are said where pages are made,
+ * and stop nothing). It leaves out the
  * key-by-key check of the format, and so the validation library, which an app
  * showing forms need not carry; run `validatePage` where pages are made or
  * tested. A page that passes is handed back as it is — one in an older

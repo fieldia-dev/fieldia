@@ -1,4 +1,4 @@
-import { checkPage, validatePage, type Page } from '../../index';
+import { checkPage, pageWarnings, validatePage, type Page } from '../../index';
 
 /**
  * The page's checks read every function an expression calls: Fieldia's own
@@ -25,6 +25,7 @@ function page(fields: Record<string, unknown>, more: Record<string, unknown> = {
 }
 
 const issues = (result: ReturnType<typeof validatePage>) => (result.ok ? [] : result.issues.map((i) => `${i.path}: ${i.message}`));
+const warnings = (result: ReturnType<typeof validatePage>) => (result.warnings ?? []).map((i) => `${i.path}: ${i.message}`);
 
 describe('functions in a page’s expressions', () => {
   it('reads Fieldia’s new functions where fields are worked out', () => {
@@ -42,22 +43,30 @@ describe('functions in a page’s expressions', () => {
     expect(issues(result)).toEqual(['fields.x.compute: cannot read "addMonths(birth)": addMonths takes 2 values']);
   });
 
-  it('says a value of a kind a function does not take', () => {
-    const result = validatePage(page({
+  it('warns of a value of a kind a function does not take, and passes the page all the same: it worked before', () => {
+    const wrong = page({
       a: { type: 'integer', label: 'A', compute: 'age(notes)' },
       b: { type: 'char', label: 'B', compute: 'upper(amount)' },
       c: { type: 'date', label: 'C', compute: "addDays(birth, 'two')" },
-    }));
-    expect(issues(result)).toEqual([
+      d: { type: 'float', label: 'D', compute: 'round(name)' },
+    });
+    const result = validatePage(wrong);
+    expect(result.ok).toBe(true);
+    expect(checkPage(wrong).ok).toBe(true);
+    expect(pageWarnings(wrong)).toEqual(result.warnings);
+    expect(warnings(result)).toEqual([
       'fields.a.compute: "age(notes)": age takes a date as its first value; "notes" is text',
       'fields.b.compute: "upper(amount)": upper takes text as its first value; "amount" is a number',
       `fields.c.compute: "addDays(birth, 'two')": addDays takes a number as its second value; 'two' is text`,
+      'fields.d.compute: "round(name)": round takes a number as its first value; "name" is text',
     ]);
+    // A page with none says none.
+    expect(validatePage(page({}))).toEqual({ ok: true, page: page({}) });
   });
 
   it('reads kinds in conditions too, and takes what cannot be known', () => {
     const shown = page({}, { layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'name', invisible: "startsWith(amount, '2') or startsWith(birth, '2026')" }, { type: 'field', id: 'b', field: 'birth', invisible: 'age(context.born) < 18 or contains(user.roles, "nurse")' }] } });
-    expect(issues(validatePage(shown))).toEqual([`layout.children[0].invisible: "startsWith(amount, '2') or startsWith(birth, '2026')": startsWith takes text as its first value; "amount" is a number`]);
+    expect(warnings(validatePage(shown))).toEqual([`layout.children[0].invisible: "startsWith(amount, '2') or startsWith(birth, '2026')": startsWith takes text as its first value; "amount" is a number`]);
   });
 
   it('calls the app’s functions where they are given, and checks what they take', () => {
@@ -69,7 +78,8 @@ describe('functions in a page’s expressions', () => {
     const wrong = page({ vat: { type: 'monetary', label: 'VAT', currency: 'EGP', compute: 'vatRate(amount, country)' } });
     expect(issues(validatePage(wrong, { functions }))).toEqual(['fields.vat.compute: cannot read "vatRate(amount, country)": vatRate takes 1 value']);
     const kind = page({ vat: { type: 'monetary', label: 'VAT', currency: 'EGP', compute: 'vatRate(amount)' } });
-    expect(issues(validatePage(kind, { functions }))).toEqual(['fields.vat.compute: "vatRate(amount)": vatRate takes text as its first value; "amount" is a number']);
+    expect(issues(validatePage(kind, { functions }))).toEqual([]);
+    expect(warnings(validatePage(kind, { functions }))).toEqual(['fields.vat.compute: "vatRate(amount)": vatRate takes text as its first value; "amount" is a number']);
   });
 
   it('says a name the app cannot give a function', () => {

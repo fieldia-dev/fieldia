@@ -27,7 +27,11 @@ export interface PageIssue {
   message: string;
 }
 
-export type PageValidation = { ok: true; page: Page } | { ok: false; issues: PageIssue[] };
+/**
+ * What a check found. `warnings`, where pages are made (`validatePage`): what does not stop a page — a value of a kind
+ * a function does not take, which gives nothing there — said beside it; left out when there are none.
+ */
+export type PageValidation = { ok: true; page: Page; warnings?: PageIssue[] } | { ok: false; issues: PageIssue[]; warnings?: PageIssue[] };
 
 const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
 
@@ -74,7 +78,8 @@ export interface CheckOptions {
   functions?: FunctionsKnown;
   /**
    * What is wrong with the kinds of value an expression hands its functions, in words, where it is read (`validatePage`
-   * gives it: `age(notes)` says notes is text). Left out, kinds are not read: a value of the wrong kind gives null.
+   * gives it: `age(notes)` says notes is text) — a warning, never a refusal: such a call gives null, as it did before
+   * the kinds were read. Left out, kinds are not read.
    */
   kinds?(source: string, scope: { fields: Record<string, Field | LineField>; parent?: Record<string, Field | LineField> }): string[];
 }
@@ -88,6 +93,8 @@ const listed = (names: string[]) => {
 /** The second pass of every check: ids unique, every name defined, every condition readable. */
 export class ReferenceCheck {
   private readonly issues: PageIssue[] = [];
+  /** What does not stop the page, said beside it: the kinds an expression hands its functions (`CheckOptions.kinds`). */
+  readonly warnings: PageIssue[] = [];
   private readonly ids = new Map<string, string>();
   /** Where the answers of each saved form placed here go, by name: the path of the part that took it first. */
   private readonly formNames = new Map<string, string>();
@@ -391,7 +398,7 @@ export class ReferenceCheck {
   private checkKinds(source: string, path: string, scope: Scope) {
     if (!this.options.kinds) return;
     const parent = scope.lines === undefined ? undefined : (scope.parent ?? this.page.fields);
-    for (const words of this.options.kinds(source, { fields: scope.fields, ...(parent ? { parent } : {}) })) this.report(path, `"${source}": ${words}`);
+    for (const words of this.options.kinds(source, { fields: scope.fields, ...(parent ? { parent } : {}) })) this.warnings.push({ path, message: `"${source}": ${words}` });
   }
 
   /**

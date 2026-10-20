@@ -21,7 +21,7 @@ export {
 export { ModifierSchema, RolesSchema, CellRulesSchema, ToneWhenSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema, ListCellSchema, ListCalendarSchema, ListCardSchema, ListGallerySchema, FilterPeriodSchema, RelatedNodeSchema } from './lib/format/layout';
 export { PageSchema } from './lib/format/page';
 export { ActionStepSchema, PageEventsSchema } from './lib/format/actions';
-export { validatePage } from './lib/format/validate';
+export { pageWarnings, validatePage } from './lib/format/validate';
 export { kindProblems, kindProblemWords, kindWords, fieldKind, writtenAs, type KindProblem, type KindScope } from './lib/expression/kinds';
 export { parseExpression } from './lib/expression/expression';
 export { AddressSearchOptionsSchema } from './lib/format/address-search';
