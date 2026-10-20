@@ -12,21 +12,27 @@ import { installPartStyles, PART_RANK } from './styles';
  * reshapes them all — and before the quiet look's, which quietens the boxes it holds.
  */
 export const LANGUAGES_CSS = /* css */ `
-/* The switch over the box, at its end: one press for each language, the one shown pressed. */
-.fd-langs { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.fd-lang-tabs { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px; }
-.fd-lang-tab { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius, 6px); background: var(--fd-surface); color: var(--fd-muted); font: inherit; font-size: 13px; line-height: 1.2; cursor: pointer; }
+/* The switch at the box's end, beside it: one press for each language, the one shown pressed; over the box on a phone. */
+.fd-langs { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: 8px; min-width: 0; }
+.fd-lang-tabs { grid-column: 2; grid-row: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px; padding-block-start: max(0px, calc((var(--fd-control-height, 30px) - 24px) / 2)); }
+.fd-lang-pane { grid-column: 1; grid-row: 1; min-width: 0; }
+@media (max-width: 520px) {
+  .fd-langs { grid-template-columns: minmax(0, 1fr); row-gap: 4px; }
+  .fd-lang-tabs { grid-column: 1; padding-block-start: 0; }
+  .fd-lang-pane { grid-row: 2; }
+}
+.fd-lang-tab { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius, 6px); background: var(--fd-surface); color: var(--fd-muted); font: inherit; font-size: 13px; line-height: 1.2; white-space: nowrap; cursor: pointer; }
 .fd-lang-tab:hover { color: var(--fd-text); border-color: var(--fd-border-strong, var(--fd-border)); }
-.fd-lang-tab[aria-selected="true"] { color: var(--fd-accent-text, var(--fd-accent)); background: var(--fd-accent-soft); border-color: var(--fd-accent); font-weight: 600; }
+.fd-lang-tab[aria-selected="true"] { color: var(--fd-text); background: var(--fd-accent-soft); border-color: var(--fd-accent); font-weight: 600; }
 .fd-lang-tab:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 /* A language with nothing typed yet: a ring; one a required answer still needs, or whose text does not fit: a dot. */
 .fd-lang-tab > .fd-lang-state { width: 7px; height: 7px; border-radius: 50%; flex: none; }
 .fd-lang-tab[data-empty] > .fd-lang-state { box-shadow: inset 0 0 0 1.5px currentColor; opacity: 0.7; }
 .fd-lang-tab[data-fault] > .fd-lang-state { background: var(--fd-error); box-shadow: none; opacity: 1; }
-.fd-lang-pane { min-width: 0; }
 .fd-lang-pane[hidden] { display: none; }
 /* On paper: every language, each under its name. */
 @media print {
+  .fd-form .fd-langs { display: block; }
   .fd-form .fd-lang-tabs { display: none; }
   .fd-form .fd-lang-pane[hidden] { display: block; }
   .fd-form .fd-lang-pane::before { content: attr(data-language); display: block; font-size: 11px; color: var(--fd-muted); }

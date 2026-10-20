@@ -52,7 +52,7 @@ describe('a text kept in several languages, typed', () => {
   it('is a switch over its box, the reader’s language first, each named in itself and written its own way', () => {
     const form = createForm({ page: page(), dataSource: createMemoryDataSource() });
     const english = draw(form, 'title', 'en');
-    expect(tabs(english.element).map((tab) => [tab.textContent?.replace(/not typed yet|required, not typed yet/, ''), tab.lang, tab.getAttribute('aria-selected')])).toEqual([
+    expect(tabs(english.element).map((tab) => [tab.querySelector('span')?.textContent, tab.lang, tab.getAttribute('aria-selected')])).toEqual([
       ['English', 'en', 'true'],
       ['العربية', 'ar', 'false'],
     ]);
@@ -106,8 +106,8 @@ describe('a text kept in several languages, typed', () => {
     const form = createForm({ page: page(), dataSource: createMemoryDataSource() });
     const made = draw(form);
     expect(tabs(made.element).map((tab) => [tab.hasAttribute('data-empty'), tab.querySelector('.fd-sr-only')?.textContent])).toEqual([
-      [true, 'required, not typed yet'],
-      [true, 'required, not typed yet'],
+      [true, ' required, not typed yet'],
+      [true, ' required, not typed yet'],
     ]);
     type(boxIn(shownPane(made.element)), 'Villa');
     await form.save();
@@ -122,6 +122,19 @@ describe('a text kept in several languages, typed', () => {
     made.focus();
     expect(tabs(made.element)[1].getAttribute('aria-selected')).toBe('true');
     expect(document.activeElement).toBe(boxIn(shownPane(made.element)));
+  });
+
+  it('shows the language of the box a refused save takes the focus to (the viewer’s fd-focus-problem)', async () => {
+    const form = createForm({ page: page(), dataSource: createMemoryDataSource() });
+    const made = draw(form);
+    type(boxIn(shownPane(made.element)), 'Villa');
+    await form.save();
+    const arabic = [...made.element.querySelectorAll('[role="tabpanel"]')][1];
+    expect(arabic.hasAttribute('hidden')).toBe(true);
+    // As the viewer finds the first box said to be wrong, and sends it the event before it focuses it.
+    boxIn(arabic).dispatchEvent(new CustomEvent('fd-focus-problem', { cancelable: true }));
+    expect(arabic.hasAttribute('hidden')).toBe(false);
+    expect(tabs(made.element)[1].getAttribute('aria-selected')).toBe('true');
   });
 
   it('keeps each language within the field’s most characters, counted under its box', () => {

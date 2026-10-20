@@ -1016,7 +1016,7 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
 // A text kept in several languages (0.29, w5-two-languages), what every page asks of it alone — the switch, the checks
-// in each language, the reader's text and a list's mark are the languages part's (fieldia.languages.js, 10.24): whether
+// in each language, the reader's text and a list's mark are the languages part's (fieldia.languages.js, 10.78): whether
 // a field keeps its text in several, and so whether a page asks for the part, before it is drawn (`languagesOf`,
 // `hasLanguages`, the part's loader; partsFor's three asks — a page's, a related list's, a many2many's records' — 0.28);
 // a form asking for its part and a save waiting for it (0.12); a value typed in none of its languages empty, and one
@@ -1259,7 +1259,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
 // A text kept in several languages (listed with the raw budget above): 166.15 measured before, 166.57 after, to 166.6.
-// A page with one takes 4.32 more in fieldia.languages.js.
+// A page with one takes 4.54 more in fieldia.languages.js.
 const GZIP_BUDGET_KB = 166.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -1838,14 +1838,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-// A text kept in several languages (0.29, w5-two-languages): languages new, 10.24 and 4.32 — its switch over each of
+// A text kept in several languages (0.29, w5-two-languages): languages new, 10.78 and 4.54 — its switch over each of
 // its boxes, the reader's language first, each language's box its field's own and written its own way; the form's
 // checks of it in each language and its text in the reader's (@fieldia/core's, in the same script); a list's cell and
-// card of it in the reader's language, else another's, marked; its page's checks, and its sheet — to 10.3 and 4.4; a
+// card of it in the reader’s language, else another’s, marked; its page’s checks, and its sheet — to 10.8 and 4.6; a
 // list's cell and a card drawing such a text through it — list 129.50 and 41.60 to 129.66 and 41.69, to 129.7 and 41.7;
 // cards 12.31 and 3.83 to 12.40 and 3.85, to 12.5 and 3.9 — and a memory source's search, order and links' names
 // reading each of its languages — memory 16.07 and 5.71 to 16.88 and 5.99, to 16.9 and 6.0.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.7, 41.7], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.9, 6.0], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [20, 8] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.7, 41.7], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.9, 6.0], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

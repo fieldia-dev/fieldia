@@ -97,8 +97,15 @@ export function languagesWidget(base: WidgetFactory, context: WidgetContext): Wi
     return { tag, tab, said, pane, widget };
   });
 
-  /** A language's box, by its tag: named by the field's label and its language's tab. */
-  const boxOf = (one: (typeof each)[number]) => (one.widget.element.matches(BOX) ? one.widget.element : one.widget.element.querySelector<HTMLElement>(BOX));
+  /**
+   * A language's box: the one its widget gave its id (formatted text's editor, never the link row's box before it), else
+   * the first it holds — named by the field's label and its language's tab.
+   */
+  const boxOf = (one: (typeof each)[number]) => {
+    const own = `${id}-${one.tag}`;
+    const element = one.widget.element;
+    return element.id === own ? element : (element.querySelector<HTMLElement>(`[id="${own}"]`) ?? (element.matches(BOX) ? element : element.querySelector<HTMLElement>(BOX)));
+  };
 
   function show(tag: string, focusTab = false) {
     shown = tag;
@@ -123,6 +130,14 @@ export function languagesWidget(base: WidgetFactory, context: WidgetContext): Wi
     show(each[next].tag, true);
   });
 
+  // A save refused takes the focus to the first box said to be wrong (the viewer's `fd-focus-problem`, sent to it): its
+  // language shown first, so the focus lands where the person sees it.
+  element.addEventListener('fd-focus-problem', (event) => {
+    const pane = (event.target as Element).closest?.('.fd-lang-pane');
+    const one = each.find((own) => own.pane === pane);
+    if (one && one.tag !== shown) show(one.tag);
+  }, true);
+
   /** The languages a problem is in: those a required answer misses, those whose text the field does not take. */
   const atFault = (state: WidgetState): string[] => (state.invalid ? core().languagesAtFault(field as Field, state.value, state.required) : []);
 
@@ -143,7 +158,7 @@ export function languagesWidget(base: WidgetFactory, context: WidgetContext): Wi
         one.widget.update({ ...state, value: typeof text === 'string' ? text : null, required, invalid });
         setAttr(one.tab, 'data-empty', typed ? null : '');
         setAttr(one.tab, 'data-fault', faults.includes(one.tag) ? '' : null);
-        setText(one.said, typed ? '' : required ? words.languageNeeded : words.languageEmpty);
+        setText(one.said, typed ? '' : ` ${required ? words.languageNeeded : words.languageEmpty}`);
         const box = boxOf(one);
         if (box) setAttr(box, 'aria-labelledby', `${id}-label ${one.tab.id}`);
       }
