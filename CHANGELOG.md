@@ -15,6 +15,232 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.27.0 — 2026-10-20
+
+**Forms that finish well: endings chosen by the answers, answers in a page's own
+words, more functions and the app's own, options that follow the answers, a
+form that opens, closes and counts its places, Continue later on another device,
+a signature that signs the answers** — and lists filtered as buyers and sales
+teams expect, tables in formatted text, a table line's choices from the app's
+lists. The page format is 0.6; a page of 0.1 to 0.5 is read as it is.
+
+**Endings, and the answers in a page's own words.** A page of responses'
+`endings` say what it shows once its answers are sent: the first whose `when`
+holds on the answers as sent — with what the data source answered, the id it
+gave the response and the values it added (`SubmitResult.values`) — else the one
+with no `when`, its title, its words (a paragraph a line, `[words](https://…)`
+links) and its button to start again, its own words or none. `{id}` in them is
+that reference: "Your booking is B-1043". `form.getState().sent` keeps what was
+sent until `reset()`; `form.ending()` and `form.endingWords(text)` read it. A
+`{field}` shows an answer in a field's label and help, a choice's words, a
+step's title and words, a wizard's and a button's words — not only in a text or
+an alert — as people read it (a choice by its label, money with its currency, a
+day in the page's order) and follows it as it changes; the form's messages name
+the field so ("How was your visit to Zamalek? is required"). After a bar, what is
+said while the answer is empty: `{branch|this branch}`. A `{name}` naming no
+field is refused by the page's check. The endings and the answers in words come
+in a part of their own, `fieldia.answers.js`. In the designer: **Once it is
+sent** lists a form's endings, each shown by rules on the answers, and a **{ }**
+button beside every box where a page's words are typed puts an answer in at the
+caret, with **When empty**. The booking demo ends with its reference; a clinic's
+feedback asks "How was your visit to {branch}?".
+
+**Sixteen more functions, and your app's own.** `age`, `years`, `months`,
+`addDays`, `addMonths`, `addYears` on dates (on the page's clock; a shorter
+month's last day kept), `contains`, `startsWith`, `endsWith`, `upper`, `lower`,
+`join` on words, `average` and `roundMoney` (to the currency's places) on
+numbers, `empty` and `firstOf` to choose — in `compute`, `setWhen`, every
+condition and an ending's `when`. An unknown function or a wrong number of
+values is refused by the checks; a value of a kind a function does not take is a
+**warning**, never a refusal: `validatePage` gives `warnings` beside the page,
+`pageWarnings(page)` alone, and the designer says it as a fix to make. `functions`
+on `createForm`, the viewer, the designer and the React, Vue and Angular
+components gives a page your app's own — a plain function, or `{ call, takes,
+values, gives, tip }` — and one that asks your server gives a promise: what is
+worked out from it waits, an ellipsis said in words ("Working out Total…"),
+asked once for the same values for the record shown, a save waiting for every
+answer and asking a failed one again. Their bodies, and the calls of the app's
+own, come in `fieldia.functions.js`.
+
+**Options that follow the answers.** An option shows only while a condition
+holds (`options[].invisible`: "Garden" only for a villa); a choice may offer the
+options picked in an earlier question (`optionsFrom: { field, picked? }`), its
+own after them; a table line's options take conditions too, read on the line's
+own values and the record it is on (`parent.`). A chosen option a change no
+longer offers is taken out of the answer and said — "Garden is no longer
+offered, so it was taken out", the same words for one an app's list no longer
+offers, under the field, under a line's cell, aloud in a grid
+(`form.getState().takenOut`, by path) — and one a record held as it was opened
+stays, said to be no longer offered. `form.offered(path)` gives the options
+offered now. In the designer: **Show when…** in each option's row, a table's
+Choice column's too, and **Picked in another question**. They come in
+`fieldia.options.js`. Demos: a listing by its type, a clinic's feedback that
+follows the treatments ticked.
+
+**A table line's choices from the app's lists.** A line's choice may take its
+options from one of the app's lists (`optionsFrom: { list, dependsOn }`, the
+same `optionsFrom` as a page's own choice) by that line's own columns, or the
+record's fields as `parent.` and a field: asked through `options` with the line's
+values and the record as `parent` (`OptionsRequest.parent`), once for lines
+alike, again as a column it changes with changes on that line. A plain table, a
+grid, cards, a line's own form and a block pasted all read it; Import reads a
+choice that follows another field by each row's own values; rows pasted on a
+dropdown cell spread as on a text cell, in every engine. In the
+designer: a table's **Choice** column, its options written there or one of the
+app's lists with what it changes with. Demo: an AI agent's tools, each line's
+from its connection.
+
+**A form that opens, closes and counts its places.** A page of responses'
+`limits` — `opens` and `closes` on the page's clock, `maxResponses`,
+`onePerPerson`, a `message` of its own — and an option's `seats`: a closed or
+full form says so as it opens, in place of its questions, never after it is
+filled; each option's places left show beside its words ("3 left", "Full") in
+radios, checkboxes, the browser's list, picture cards, Fieldia's own list, a
+list that searches and tags; a full option is shown and refused when picked, and
+one that filled up meanwhile stops the send. Counts come from the data source's
+new optional `limits` member; without it, the dates alone. In the designer: the
+Rules tab's Opens, Closes, Most responses, One per person and Words, and a
+choice's **Limit places**. Demo: an event's sign-up.
+
+**Continue later, on another device.** A page with `continueLater` keeps its
+answers on your server as they are typed and as a wizard's step is entered —
+the data source's new `saveDraft` and `loadDraft` — with the step, the steps
+skipped and any text typed that does not read yet; **Continue later** shows the
+link your app makes, with Copy, and `resume` (the key in that link: the viewer's
+and the components' option) opens the draft at its step. Without the two
+members, drafts stay in the browser, now with their wizard step. A send carries
+the draft's key (`SubmitRequest.draft`, `SaveRequest.draft`). Demo: a long
+clinic intake continued from its link.
+
+**A signature that signs the answers.** A signature whose node says `signs`
+(`"form"`, or the fields) and `signerField` keeps beside its picture who signed,
+when and the SHA-256 of the answers in a stated canonical form,
+`fieldia-signature/1` (`FileValue.signed`), so an app can check it again on its
+server; the form locks the answers it names, "Signed by Mona Adel, 19 Oct 2026,
+11:42" and whether the answers are still as signed show under it, and **Change
+answers**, asked first, takes it away to sign again. It comes in
+`fieldia.evidence.js`, only for a signature that signs answers; where that part
+cannot come, the signature says so — with Try again where asking again can
+bring it, else "Reload the page to sign" — and a save refuses the picture
+unsigned. Demo: a clinic's consent, signed, then changed in the clinic's system.
+
+**Filters a buyer and a sales team expect.** `filterCounts: true` counts each of
+a filter bar's values among the rest of the search ("Villa 5", read as "Villa, 5
+homes"), and in the search bar's menu each named filter and favourite ("Late
+5"); a number's or a date's field filters by its range as one chip
+(`filterRanges`, with a press for each least value: "Bedrooms: 2+"), and a custom
+filter takes "is between"; `filterSheet: true` puts the fields in one sheet on a
+phone with "Show 37 homes". A choice from the app's list is listed by its
+records' values. Demos: homes to buy, a sales queue with "Late 5".
+
+**Tables in formatted text.** A table pasted from Word, Excel, Google Docs or
+Sheets into a formatted text is kept, cleaned to plain table markup (cells,
+spans, a header row, alignment — no styles, no widths); the work item's editor
+gets a table tool where a field names `table` among its `tools`: a size picked
+on an 8 by 8 grid, rows and columns added and taken away, a header row, Tab from
+cell to cell; GitHub's tables in Markdown both ways; on paper a table is whole
+where it fits, else broken between its rows with its header row again. Every
+HTML paste into formatted text is made plain in its field's own look — Word's
+lists lists again, fonts and colours left behind — and what a Fieldia editor
+copies keeps its colours, highlights and sizes (`data-fieldia-copy`). Demo: a
+contract's fees pasted as a table.
+
+**Smaller things:**
+
+- **"It's someone new" kept on your server**, every device, where the source has
+  `notDuplicates` and `markNotDuplicate`; else in the browser, as before.
+- **A table of lines' date column** is as wide as its longest day, beside its
+  calendar button: the tender's dates are no longer cut at 1280–1920px.
+- fieldia.dev's hero: its list fits beside its JSON from 1180px, and its lines
+  never end on a word alone.
+- **Smaller main script**: what most pages never use came out of `fieldia.js` —
+  the functions beyond the plain ones, options by condition, a form's limits,
+  and each feature's page checks (carried by the part that draws it, run before
+  the page is drawn); a map's checks in `fieldia.mapchecks.js`, the memory
+  source's members in `fieldia.memory.js` (the one-tag script alone).
+
+**Fixes:** a long table's last rows kept on paper in Chromium (a field's overflow
+clipped in Firefox only); Google Docs' bold wrapper read; a counted filter named
+with its count; two flaky browser tests fixed at their cause (a courier's next
+place, a full-page screenshot putting the page back).
+
+**And:** the page format is **0.6** (`FORMAT_VERSION`): it only added — `endings`,
+`limits`, `continueLater`, an option's `seats` and `invisible`, `optionsFrom`
+from a question and on a line, a signature's `signs` and `signerField`, a list's
+`filterRanges`, `filterCounts` and `filterSheet` — so a 0.1 to 0.5 page is read as
+it is, and `upgradePage` writes 0.6 in it.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- An app that serves `fieldia.js` itself serves the new parts beside it:
+  `fieldia.answers.js`, `fieldia.evidence.js`, `fieldia.limits.js`,
+  `fieldia.functions.js`, `fieldia.options.js`, `fieldia.mapchecks.js` and
+  `fieldia.memory.js` (the package's `bundle` folder has them).
+- In the one-tag script, `checkPage` may say checks it owes a part not come yet
+  (`PageValidation.later`): the viewer asks for those parts and runs them before
+  drawing, and a mistake found then draws nothing and rejects `drawn`. The
+  packages' `checkPage` and `validatePage` stay whole and synchronous.
+  `takingWords` and `whenWords` are no longer on the script's global (still
+  exported from @fieldia/core).
+- In @fieldia/core, the functions beyond the plain ones, options by condition and
+  a form's limits load as parts the form asks for itself; code that evaluates an
+  expression outside a form awaits `functionsPart.load()` first.
+- `lazyPart`, `partsOf`, `settleParts` and `partsComeByScriptTag` are @fieldia/core's
+  (@fieldia/widgets still exports them).
+- A page's choice from the app's list with `dependsOn`: a value the new answer
+  does not offer is taken out after a change, and said (0.26 kept it, said as no
+  longer offered); a record that comes in with one keeps it, as before.
+- `PART_RANK`: `evidence` is 5 and `limits` 10; the phone's and every rank after
+  moved on (themes 11, quiet 12, picker 13, head 14, groups 15, text 16,
+  surveyLooks 17, cards 18).
+- A formatted text's sanitizer keeps tables (`table`, `thead`, `tbody`, `tr`,
+  `th`, `td`, spans, a header's scope, alignment), and every HTML paste into one
+  is cleaned, where 0.26 left it to the browser.
+- `OptionsFrom` is `OptionsFromList | OptionsFromField`: code reading
+  `optionsFrom.list` reads it through `optionsList()`. A page's choice's options
+  are `SelectionOption`s (with `invisible`). `PageValidation` gains `warnings?`
+  and `later?`.
+- `FormState` gains `sent`, `asked`, `takenOut`, `limits` and `resume`; `Form`
+  gains `words`, `ending`, `endingWords`, `offered`, `offersChange`,
+  `lineChoices`, `continueLater`, `canContinueLater`, `refreshLimits`,
+  `keepsNotDuplicates`, `notDuplicates`, `markNotDuplicate`, `now`, `user`,
+  `shownFields`, and a line's cell form `line`; `FormOptions` gains `functions`,
+  `valueWords` and `resume`. A form's `draft` event tells each draft kept
+  (`onDraft`, `@draft`, `(draft)` in the components).
+- The memory source's `submitted`, `limits`, `drafts`, `draftLink` and
+  `notDuplicatePairs` options, and `answeredElsewhere`.
+- An app that gives the viewer a whole `labels` object adds `opBetween`,
+  `valueAsking`, `valueNotWorkedOut`, `rangeFrom`, `rangeTo`, `rangeAny`,
+  `rangeBetween`, `rangeOrMore`, `rangeUpTo`, `rangeSince`, `rangeUntil`,
+  `rangeOrder`, `rangeOrderDate`, `filtersOn`, `filtersClearAll`, `showResults`,
+  `showResultsOne`, `showResultsSome`, `signedAnswer`, `closedTyped` and the
+  `later…` words and `resumeMissing`; one that gives the widgets a whole `labels`
+  object adds the `table…` words, the signature's (`signedByName`, `signedAt`,
+  `answersAsSigned`, `answersChanged`, `changeAnswers`, `changeAnswersAsk`,
+  `signatureTakenAway`, `notSignedYet`, `notSignedNoPart`, `signingNoPart`,
+  `signingRetry`, `notSignedReload`, `signingNoPartReload`) and `seatsLeft`,
+  `seatsLeftOne`, `seatsFull`; whole `messages` add `stillWorkedOut`,
+  `notWorkedOut`, `notOfferedNow`, `notOfferedNowMany`, `formOpens`,
+  `formClosed`, `formFull`, `formSent`, `choiceFull` and `choiceFilled`.
+  `addLanguage` fills any left out from English.
+- A page the designer saves says `"fieldia": "0.6"`: Fieldia 0.26 refuses it as
+  newer than it reads. An app that keeps pages for older Fieldias keeps them in
+  0.5 (nothing 0.6 adds is in them).
+
+**Size:** `fieldia.js` 504.8 KB, 165.4 gzipped (0.26.1: 503.4, 162.9; the lanes
+merged, before what most pages never use moved to parts, measured 547.6, 178.2).
+New parts: `fieldia.evidence.js` 4.2 KB gzipped, `fieldia.answers.js` 2.3,
+`fieldia.limits.js` 4.9, `fieldia.functions.js` 2.3, `fieldia.options.js` 2.2,
+`fieldia.mapchecks.js` 2.6, `fieldia.memory.js` 5.7 (the one-tag script alone).
+Of the parts, the text part grew with tables and the paste cleaner (24.6 KB
+gzipped, from 18.8), the list's with ranges, counts and a list's own checks
+(41.4, from 35.5), the filters' with counts, ranges and the phone's sheet (7.8,
+from 4.2), the lines' with a line's choices and a table's checks (15.5, from
+14.0), the files' with a signature's signing (13.6, from 12.3), the head's (10.8,
+from 10.0), the business widgets' (11.5, from 11.1), the choice part's places
+(4.6, from 4.3), the slots' (6.1, from 5.9). A language's add-on is 11.6 to 13.2
+KB gzipped (0.26: 10.4 to 11.8).
+
 ## 0.26.1 — 2026-10-19
 
 **Two accessibility fixes**, found by checking fieldia.dev's new front page with
