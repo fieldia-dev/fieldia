@@ -216,6 +216,8 @@ export const LIST_STYLES = `
 /* A list with the filter bar: its card above the table's, the pager under the table. */
 .fd-list[data-search="fields"] .fd-list-bar { gap: 16px; }
 .fd-list[data-search="fields"] .fd-list-records > .fd-pager { justify-self: end; }
+/* How many records its filters leave, beside them at the bar's end, as the pager's words are where it stands there. */
+.fd-list-found { margin-inline-start: auto; color: var(--fd-muted); font-size: 13.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* Fluent's lists, as a work tracker draws its backlog: the table a card with a light shadow and no frame; the header's words
    small, semibold and muted, the columns parted by short rules; rows 35px tall with no lines between them. */
 /* Its header 38px and its rule, 39px in all whether a column's width is in pixels (its whole box) or characters. */

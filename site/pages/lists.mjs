@@ -128,7 +128,7 @@ totals({ model: 'invoice', filter, totals: { amount: ['sum'] }, groupBy: 'city',
 </ul>
 
 <h2 id="backlog">A backlog: cells, a filter bar, rows under their parent</h2>
-<p>A list can read as a work tracker's backlog. ${c('"search": "fields"')} puts a filter bar over it: <em>Filter by keyword</em> looks in the search fields, and each field of ${c('filterFields')} has a list of its values to tick — a choice's options, yes and no, the records a link or links hold — its button muted until values are ticked, then saying them. <kbd>↓</kbd> opens a list, the arrows move, <kbd>Space</kbd> ticks, <kbd>Escape</kbd> closes; × clears every filter, and the gear chooses which fields the bar offers, kept in the viewer's ${c('preferences')}. A default favourite search starts it with values ticked.</p>
+<p>A list can read as a work tracker's backlog. ${c('"search": "fields"')} puts a filter bar over it: <em>Filter by keyword</em> looks in the search fields, and each field of ${c('filterFields')} has a list of its values to tick — a choice's options, yes and no, the records a link or links hold — its button muted until values are ticked, then saying them. <kbd>↓</kbd> opens a list, the arrows move, <kbd>Space</kbd> ticks, <kbd>Escape</kbd> closes; × clears every filter, and the gear chooses which fields the bar offers, kept in the viewer's ${c('preferences')}. A default favourite search starts it with values ticked. Beside it the list says how many records the filters leave — <em>42 homes</em>, in the page's words for its records — in its table, its gallery and on its map alike, as its pager goes under the rows and shows only past a page.</p>
 ${code(
   'json',
   `

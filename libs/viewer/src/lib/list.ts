@@ -824,7 +824,22 @@ export function listView(context: ListContext): ListView {
     void load();
   });
 
+  /**
+   * How many records the search finds, beside the search where the pager is not beside it — under a filter bar, the
+   * pager goes under the rows and shows only past a page: "42 homes", in the page's words for its records. Nothing while
+   * none is found (the list says so) or the list could not be asked; none in a record, whose tab and pager count it.
+   */
+  const found = fieldsSearch && !inRecord ? el('span', { class: 'fd-list-found', role: 'status', hidden: '' }) : null;
+  function drawCount() {
+    if (!found) return;
+    found.hidden = matching === 0 || !failed.hidden;
+    const one = matching === 1;
+    const words = fill(one ? sentence(labels.groupCountNounOne, labels.groupCountOne) : sentence(labels.groupCountNoun, labels.groupCount), { n: number(matching) });
+    if (found.textContent !== words) found.textContent = words;
+  }
+
   function drawPager() {
+    drawCount();
     // Under a filter bar, or in a record, the pager shows only when there is more than one page.
     const fits = offset === 0 && total <= pageSize;
     pager.hidden = total === 0 || ((fieldsSearch || inRecord) && fits);
@@ -1522,7 +1537,7 @@ export function listView(context: ListContext): ListView {
     return names;
   }
 
-  const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, importButton, exportBox, printButton, views, ...(fieldsSearch ? [] : [pager]));
+  const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, importButton, exportBox, printButton, views, ...(fieldsSearch ? (found ? [found] : []) : [pager]));
   const key = rowsKey();
   const element = el(
     'div',

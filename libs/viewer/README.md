@@ -453,7 +453,11 @@ week or day, asked of `groups` with `interval`. See
 
 ### Filters a buyer and a sales team expect
 
-A filter bar (`"search": "fields"`) may say how many records each of its values
+A filter bar (`"search": "fields"`) says beside it how many records the search
+finds — "42 homes", in the page's `records` words, in the table, the gallery and
+on a map — as its pager stands under the rows and shows only past a page
+(`.fd-list-found`, said politely as it changes; none while nothing is found, nor
+for a list in a record). It may also say how many records each of its values
 finds among the rest of the search — `"filterCounts": true`: *Villa 5*, read out
 as "Villa, 5 homes" — asked of the source's `groups` (a record of links counted
 under each of its links); without `groups`, its values and no count. A number's
