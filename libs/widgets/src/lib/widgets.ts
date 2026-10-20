@@ -27,6 +27,7 @@ import { plainDateWidget, type DateKind } from './date-text';
 import { htmlWidget, jsonWidget } from './extras';
 
 import { boxPurpose, clearSelection, fillIn, maker, rightToLeft, setAttr, setText, wordsFor } from './kind-parts';
+import { seatMarks, seatWords } from './seats';
 import { shownOptions } from './shuffle';
 import { counted, grower } from './limits';
 import { currencySymbol } from './units';
@@ -653,17 +654,21 @@ const ownList = (node: FieldNode) => node.options?.['list'] === 'own';
 
 /** A choice in the browser's own list: a long one's too, until the choice part's box that searches it has come. */
 const selectWidget: WidgetFactory = (context) => {
-  const { form, name, field, node, id, document } = context;
+  const { form, name, field, node, id, document, labels, locale } = context;
   const choices = shownOptions(options(field), form, name, node);
+  const words = wordsFor(labels, locale);
   const blank = make(document, 'option', { value: '' });
   // A country, a card's month: what the browser fills it in with, when the page says.
   const select = make(document, 'select', { id, class: 'fd-input fd-select', autocomplete: node.autocomplete }, blank);
-  choices.forEach((option, i) => select.append(make(document, 'option', { value: String(i) }, option.label)));
+  const items = choices.map((option, i) => select.appendChild(make(document, 'option', { value: String(i) }, option.label)));
   select.addEventListener('change', () => form.setValue(name, select.value === '' ? null : choices[Number(select.value)].value));
   return {
     element: select,
     focus: () => select.focus(),
     update(state) {
+      // Its places left after each option's words, where the page counts them: "Morning workshop (3 left)", "… (Full)".
+      const places = form.getState().limits?.seats?.[name];
+      if (places) items.forEach((item, i) => setText(item, ((left) => (left ? `${choices[i].label} (${left})` : choices[i].label))(seatWords(places[String(choices[i].value)], words))));
       const index = choices.findIndex((option) => option.value === state.value);
       select.value = index === -1 ? '' : String(index);
       // A required choice made is never taken back to nothing from its list, as Flectra hides the blank.
@@ -682,9 +687,11 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
     const group = make(document, 'div', { id, class: `fd-choices fd-choices-${kind}`, role: kind === 'radio' ? 'radiogroup' : 'group' });
     layOut(group, node);
     const limit = kind === 'checkbox' ? limiter(maker(document), words, node) : null;
+    // Each option's places left beside its words, where the page counts them (seats.ts).
+    const seats = seatMarks(document, form, name, words, choices.map((option) => option.value));
     const inputs = choices.map((option, i) => {
       const input = make(document, 'input', { type: kind, name: id, value: String(i), id: `${id}-${i}` });
-      group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, make(document, 'span', {}, option.label)));
+      group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, make(document, 'span', {}, option.label), seats.marks[i]));
       return input;
     });
     // "Other:", after the options: a choice of its own, with a box for the answer — as Google Forms has it.
@@ -775,6 +782,7 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
         const chosen = Array.isArray(state.value) ? state.value : [state.value];
         // At the most a question takes, "Up to 3" says so; a box more, pressed, says why (hide, never disable).
         limit?.full(Array.isArray(state.value) ? state.value.length : 0);
+        seats.update();
         inputs.forEach((input, i) => {
           input.checked = chosen.includes(choices[i].value as never);
           if (input.disabled !== state.readonly) input.disabled = state.readonly;

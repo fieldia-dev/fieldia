@@ -1,6 +1,7 @@
 import type { Option } from '@fieldia/core';
 import { layOut, limiter, withAlone } from './choice-rules';
 import { clearSelection, describeState, fillIn, maker, rightToLeft, wordsFor } from './kind-parts';
+import { seatMarks } from './seats';
 import { shownOptions } from './shuffle';
 import { installSurveyStyles } from './styles-survey';
 import type { WidgetFactory } from './widgets';
@@ -35,14 +36,16 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
   const group = make('div', { id, class: `fd-image-choices${bare ? ' fd-image-choices-bare' : ''}`, role: multiple ? 'group' : 'radiogroup', 'data-size': look['imageSize'] as string, 'data-fit': look['imageFit'] as string });
   layOut(group, node);
   const limit = multiple ? limiter(make, words, node) : null;
-  const cards = options.map((option) => {
+  // Each card's places left under its words, where the page counts them (seats.ts).
+  const seats = seatMarks(document, form, name, words, options.map((option) => option.value));
+  const cards = options.map((option, i) => {
     const picture = option.image ? make('img', { src: option.image, alt: option.alt ?? '', loading: 'lazy', draggable: 'false' }) : make('span', { class: 'fd-image-card-blank' });
     if (!option.image) picture.innerHTML = BLANK; // a constant drawing, never words from the page
     const card = make(
       'button',
       { type: 'button', class: 'fd-image-card', role: multiple ? 'checkbox' : 'radio', 'aria-checked': 'false', 'aria-label': bare ? option.label : undefined },
       make('span', { class: 'fd-image-card-picture' }, picture),
-      make('span', { class: 'fd-image-card-words' }, option.label)
+      make('span', { class: 'fd-image-card-words' }, option.label, seats.marks[i])
     );
     card.addEventListener('click', () => pick(option));
     group.append(card);
@@ -92,6 +95,7 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
       const stop = multiple ? -1 : Math.max(0, options.findIndex((o) => chosen.has(o.value)));
       // "Up to 3" once full: a card more says why when pressed.
       limit?.full(Array.isArray(state.value) ? state.value.length : 0);
+      seats.update();
       cards.forEach((card, i) => {
         const on = chosen.has(options[i].value);
         card.setAttribute('aria-checked', String(on));
