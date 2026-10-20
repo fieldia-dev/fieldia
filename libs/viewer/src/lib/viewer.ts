@@ -1804,10 +1804,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const content = el('div', { class: 'fd-content' });
   /**
    * A page's opening, closing and limits, and Continue later (`limits`, `continueLater`), from the limits part, waited
-   * for with the page's parts: a closed form's words where its questions would be, in this place after them.
+   * for with the page's parts: a closed form's words in place of its questions, under its title.
    */
-  const limitsSlot = page.limits || page.continueLater || options.resume ? el('div', { class: 'fd-limits' }) : null;
+  const limitsAsked = !!(page.limits || page.continueLater || options.resume);
   let limitsKit: LimitsKit | null = null;
+  /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
+  let questions: HTMLElement | null = null;
 
   async function submitOrSave() {
     // A record only to read has nothing to save: Ctrl+Enter there does nothing.
@@ -2314,10 +2316,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * nothing moves as a part arrives, and no focus is lost: there was nothing to have it.
    */
   function drawPage() {
-    const limits = limitsSlot ? limitsPart.loaded : undefined;
-    if (limits && limitsSlot) {
-      const kit = limits.drawLimits({ form, page, doc, el, labels, messages: options.messages ?? MESSAGES[locale], fill, content, done: () => !done.hidden, announce });
-      limitsSlot.append(...kit.after);
+    const limits = limitsAsked ? limitsPart.loaded : undefined;
+    if (limits) {
+      const kit = limits.drawLimits({ form, page, doc, el, labels, messages: options.messages ?? MESSAGES[locale], fill, content: () => questions, done: () => !done.hidden, announce });
       updaters.push((state) => kit.update(state));
       limitsKit = kit;
     }
@@ -2366,7 +2367,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const head = layout.type === 'sheet' ? null : pageHead();
     // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, body];
+    questions = body;
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, body, ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);
@@ -2425,7 +2427,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   cleanups.push(() => paper.destroy());
   // Its footer the content's last part: on paper the footer of the table the content is, under every sheet.
   if (paper.foot) content.append(paper.foot);
-  root.append(paper.head, content, ...(limitsSlot ? [limitsSlot] : []), done, announcer);
+  root.append(paper.head, content, done, announcer);
   // A public page's bot check (`botCheck`): a box no person sees, reaches with Tab or hears read out — inert, so no
   // browser fills it in either — which a bot filling every box fills. Told to the form as it is filled, and read again
   // as the answers go; the send carries it, and the app decides.

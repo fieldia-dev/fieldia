@@ -80,6 +80,7 @@ describe('a page that takes no answers now says so as it opens', () => {
     now = Date.parse('2026-10-31T12:00:00Z');
     await mount(signup());
     expect(questions()).toBeNull();
+    expect(shown('.fd-page-title')?.textContent).toBe('Workshop sign-up');
     expect(closedWords()).toEqual([expect.stringMatching(/^This form opens on November 1, 2026(,| at) 09:00\.$/), 'Ask us at hello@example.com.']);
     expect(shown('.fd-closed')?.getAttribute('role')).toBe('status');
     // Left open as it opens.

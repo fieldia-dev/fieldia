@@ -28,8 +28,11 @@ export interface LimitsContext {
   /** The form's messages, in the page's language: why it takes no answers. */
   messages: Messages;
   fill(template: string, values: Record<string, string | number>): string;
-  /** The page's questions: given way to while it takes no answers and nothing is typed, and while Continue later says it kept them. */
-  content: HTMLElement;
+  /**
+   * The page's questions and their buttons, once drawn — never its title — given way to while it takes no answers and
+   * nothing is typed, and while Continue later says what it kept.
+   */
+  content(): HTMLElement | null;
   /** Whether the page's Thank you shows: nothing of this does then. */
   done(): boolean;
   /** Words said at once to a screen reader. */
@@ -40,7 +43,7 @@ export interface LimitsContext {
 export interface LimitsKit {
   /** Over the questions: the banner of a form that closed as answers were typed, and the note of a draft not found. */
   before: HTMLElement[];
-  /** In their place: the closed form's words, and what Continue later kept. */
+  /** Right after them, standing in their place: the closed form's words, and what Continue later kept. */
   after: HTMLElement[];
   /** Continue later, for the page's actions — its button, and why it could not keep them — null where the page or its source offers none. */
   later: HTMLElement | null;
@@ -48,7 +51,7 @@ export interface LimitsKit {
 }
 
 export function drawLimits(ctx: LimitsContext): LimitsKit {
-  const { form, page, el, labels, content } = ctx;
+  const { form, page, el, labels } = ctx;
   installLimitsStyles(ctx.doc);
   const title = el('p', { class: 'fd-closed-title' });
   const own = el('p', { class: 'fd-closed-message' });
@@ -60,6 +63,8 @@ export function drawLimits(ctx: LimitsContext): LimitsKit {
   /** Whether the questions were put away by this part — for a closed form, or what was kept — and so are its to bring back. */
   let away = false;
   const aside = (hide: boolean) => {
+    const content = ctx.content();
+    if (!content) return;
     if (hide && !content.hidden) {
       content.hidden = true;
       away = true;
@@ -92,7 +97,7 @@ export function drawLimits(ctx: LimitsContext): LimitsKit {
   };
 
   /** Continue later's button, and what it shows once the answers are kept: the link, Copy, the app's words, Keep going. */
-  function laterKit({ form: own, doc, el: make, labels: words, fill, announce }: LimitsContext) {
+  function laterKit({ form: own, doc, el: make, labels: words, fill, announce, content: questions }: LimitsContext) {
     const button = make('button', { type: 'button', class: 'fd-button fd-later-button' }, words.laterButton);
     const said = make('span', { class: 'fd-later-said', role: 'alert' });
     const heading = make('p', { class: 'fd-later-title', tabindex: '-1' }, words.laterSaved);
@@ -127,7 +132,8 @@ export function drawLimits(ctx: LimitsContext): LimitsKit {
       setHidden(appWords, !saved.message);
       setText(copy, words.laterCopy);
       showing = true;
-      content.hidden = true;
+      const content = questions();
+      if (content) content.hidden = true;
       away = true;
       panel.hidden = false;
       heading.focus();
@@ -147,7 +153,8 @@ export function drawLimits(ctx: LimitsContext): LimitsKit {
     back.addEventListener('click', () => {
       showing = false;
       panel.hidden = true;
-      content.hidden = false;
+      const content = questions();
+      if (content) content.hidden = false;
       away = false;
       button.focus();
     });
