@@ -865,9 +865,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // later (form.ts, drafts.ts), the memory source's counts and drafts, the page checks of both, their six English
 // sentences, an option's places drawn beside its words in the radios, checkboxes and the browser's list (seats.ts),
 // and the viewer placing the limits part's screen, banner and button — the screen and Continue later's words in
-// fieldia.limits.js — and a draft's text that did not read said again as it opens: 503.41 measured before, 515.60
-// after — 12.2 more, to 515.7.
-const BUDGET_KB = 515.7;
+// fieldia.limits.js — and a draft's text that did not read said again as it opens, the questions shown after 10 seconds
+// of a source that never answers: 503.41 measured before, 515.71 after — 12.3 more, to 515.8.
+const BUDGET_KB = 515.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1062,7 +1062,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Print on intent (listed with the raw budget above): 165.90 measured before, 162.94 after — 3.0 less, to 163.0. A
 // page that prints takes 5.22 more in fieldia.print.js.
 // Opening, closing and limiting a page, and save and resume (listed with the raw budget above): 162.94 measured
-// before, 167.33 after — 4.4 more, to 167.4. A page with limits or Continue later takes 2.41 more in fieldia.limits.js.
+// before, 167.38 after — 4.4 more, to 167.4. A page with limits or Continue later takes 2.41 more in fieldia.limits.js.
 const GZIP_BUDGET_KB = 167.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -1518,9 +1518,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // words in place of its questions, the banner of answers it closed on, Continue later's button, what it kept, the link
 // with Copy, a draft's key that names none, and their sheet — new, in fieldia.limits.js (limits 5.4, 2.5, as measured
 // 5.37 and 2.41), loaded with the page's parts where it has limits or Continue later. In the main script it would have
-// added them to every page. The survey kinds' picture cards draw an option's places too: survey 36.31 and 12.62
-// measured before, 36.45 and 12.67 after, its raw to 36.5.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.5, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3], limits: [5.4, 2.5] };
+// added them to every page. The survey kinds' picture cards draw an option's places too, and name a card whose words
+// are out of sight with them: survey 36.31 and 12.62 measured before, 36.61 and 12.75 after, to 36.7 and 12.8.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3], limits: [5.4, 2.5] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
