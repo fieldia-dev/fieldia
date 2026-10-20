@@ -46,9 +46,9 @@ test.describe('the inputs’ details in the viewer', () => {
     await expect(day).toHaveAttribute('data-max', dayFrom(60));
     await day.fill(dayFrom(1, 5));
     await send(page);
-    await expect(errorOf(page, 'q-move-day')).toHaveText('Which day shall we move your things? can’t be on a Friday or Saturday');
+    await expect(errorOf(page, 'q-move-day')).toHaveText('“Which day shall we move your things?” can’t be on a Friday or Saturday');
     await day.fill(dayFrom(90, 1));
-    await expect(errorOf(page, 'q-move-day')).toContainText('Which day shall we move your things? can’t be after ');
+    await expect(errorOf(page, 'q-move-day')).toContainText('“Which day shall we move your things?” can’t be after ');
     await day.fill(dayFrom(1, 0));
     await expect(errorOf(page, 'q-move-day')).toBeHidden();
     await node(page, 'q-move-day').scrollIntoViewIfNeeded();
@@ -61,7 +61,7 @@ test.describe('the inputs’ details in the viewer', () => {
     await expect(time).toHaveAttribute('data-step', '15');
     await time.fill('06:30');
     await send(page);
-    await expect(errorOf(page, 'q-arrival')).toHaveText('What time will you arrive on your first day? can’t be before 07:00');
+    await expect(errorOf(page, 'q-arrival')).toHaveText('“What time will you arrive on your first day?” can’t be before 07:00');
     await time.fill('08:45');
     await expect(errorOf(page, 'q-arrival')).toBeHidden();
     expect(await valueOf(page, 'arrival')).toBe('08:45');
@@ -391,7 +391,7 @@ test.describe('the inputs’ settings in the survey designer', () => {
     await tried.getByLabel('When will you arrive?').fill('07:30');
     await tried.locator('.fd-nps [data-value="10"]').click();
     await tried.getByRole('button', { name: /Send|Submit|Finish|Next/ }).last().click();
-    await expect(tried.getByText('When will you arrive? can’t be before 08:00').first()).toBeVisible();
+    await expect(tried.getByText('“When will you arrive?” can’t be before 08:00').first()).toBeVisible();
     await screen(page, 'inputs-survey-try', { viewport: true });
     expect(problems).toEqual([]);
   });
