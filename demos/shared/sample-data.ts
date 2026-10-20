@@ -75,6 +75,9 @@ import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
 import clinicIntake from '../../examples/pages/clinic-intake.page.json';
+import customerFromEmail from '../../examples/pages/customer-from-email.page.json';
+import enquiryReply from '../../examples/pages/enquiry-reply.page.json';
+import { demoAssist, sampleEnquiries } from './enquiries';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 
 /** The example pages every demo can show, by name. */
@@ -184,6 +187,10 @@ export const pages: Record<string, Page> = {
   'event-signup': eventSignupPage(),
   // A clinic's long intake, Continue later on any device: shared/clinic-intake.ts.
   'clinic-intake': clinicIntake as Page,
+  // AI help, answered by the memory source's stand-in (no model, no keys): a customer filled from an e-mail's signature,
+  // a buyer's enquiry read and answered with a drafted and polished reply (shared/enquiries.ts).
+  'customer-from-email': customerFromEmail as Page,
+  'enquiry-reply': enquiryReply as Page,
   // A test drive booked at a showroom in Berlin, on Berlin's clock, from the times its schedule has free: shared/test-drive.ts.
   'test-drive': testDriveDemo.page,
   // The showroom's week of test drives on a calendar, on Berlin's clock wherever it is looked at from.
@@ -494,6 +501,9 @@ export function sampleDataSource() {
     duplicates: alikeRecords(),
     // The sign-ups already counted, as the server's limits answer (shared/event-signup.ts).
     limits: EVENT_COUNTS,
+    // AI help — Fill from text, Draft and Polish, a search's words read as filters — answered by Fieldia's stand-in: no
+    // model and no keys, words read by their patterns, a reply drafted from the agency's template (shared/enquiries.ts).
+    assist: demoAssist,
     // The drafts the server keeps, and the link Continue later gives (shared/clinic-intake.ts).
     drafts: keptDrafts(),
     draftLink,
@@ -511,6 +521,8 @@ export function sampleDataSource() {
       'home.amenity': Object.fromEntries(Object.entries(AMENITIES).map(([id, name]) => [id, { name }])),
       // A sales team's buyer leads, made round now (shared/leads.ts).
       lead: sampleLeads(),
+      // Buyers' enquiries to read and answer with AI help (shared/enquiries.ts).
+      enquiry: sampleEnquiries(),
       // The homes' viewings and the agents who show them; the customers' quotations (shared/related-lists.ts).
       viewing: sampleViewings(sampleHomes()),
       agent: Object.fromEntries(Object.entries(AGENTS).map(([id, name]) => [id, { name }])),
