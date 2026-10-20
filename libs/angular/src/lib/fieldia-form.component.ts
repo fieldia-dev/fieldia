@@ -24,7 +24,7 @@ import {
   type Type,
 } from '@angular/core';
 import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
-import { mountViewer, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, newestFunctions, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PartFailure, PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
 /**
@@ -79,6 +79,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly user = input<FormUser | undefined>(undefined);
   /** Values the app passes in, as Flectra's context: what conditions and filters read as `context`. */
   readonly context = input<ViewerOptions['context']>(undefined);
+  /** The app's own functions, which the page's expressions call by name: each call reaches the newest given. */
+  readonly functions = input<ViewerOptions['functions']>(undefined);
   readonly values = input<Values | undefined>(undefined);
   /** The skin — underline, outlined or quiet: the page's own when left out, else its theme's, else underline. */
   readonly skin = input<Skin | undefined>(undefined);
@@ -190,6 +192,8 @@ export class FieldiaFormComponent implements OnDestroy {
         recordId: this.recordId(),
         user: this.user(),
         context: this.context(),
+        // Made again when a function is named or no longer named; each call reaches the newest given.
+        functionNames: Object.keys(this.functions() ?? {}).join('|'),
         dir: this.dir(),
         locale: this.locale(),
         labels: this.labels(),
@@ -226,7 +230,7 @@ export class FieldiaFormComponent implements OnDestroy {
     this.unmount();
   }
 
-  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; user?: FormUser; context?: ViewerOptions['context']; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
+  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; user?: FormUser; context?: ViewerOptions['context']; functionNames?: string; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
     this.unmount();
     const widgets: Record<string, WidgetFactory> = { ...this.widgets() };
     for (const [key, type] of Object.entries(options.fieldTypes ?? {})) {
@@ -273,6 +277,7 @@ export class FieldiaFormComponent implements OnDestroy {
       recordId: options.recordId,
       user: options.user,
       context: options.context,
+      functions: newestFunctions(() => this.functions()),
       values: this.values(),
       skin: this.skin(),
       theme: this.theme(),

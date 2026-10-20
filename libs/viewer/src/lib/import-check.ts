@@ -1,4 +1,4 @@
-import { checkValue, fill, foldForSearch, initialValues, oneLine, stripMarks, zonedPage, type DateOrder, type Field, type Form, type LineField, type ListNode, type Locale, type Messages, type Option, type Page, type RelatedRecord, type Value, type Values } from '@fieldia/core';
+import { checkValue, choiceOptions, fill, foldForSearch, initialValues, oneLine, optionsList, stripMarks, zonedPage, type DateOrder, type Field, type Form, type LineField, type ListNode, type Locale, type Messages, type Option, type Page, type RelatedRecord, type Value, type Values } from '@fieldia/core';
 import { currencyOf, phoneSettings, type LinesPart, type PhonePart, type WidgetLabels } from '@fieldia/widgets';
 import { serialAt, type FileCell, type FileSheet } from './import-file';
 import { inEveryLanguage } from './import-match';
@@ -132,11 +132,11 @@ export async function checkRows(check: RowsCheck, sheet: FileSheet, columns: rea
     if (stopped()) break;
     records.set(field, await lookUp(check, field, names, tick, stopped));
   }
-  // A choice's options, for those the app lists.
+  // A choice's options: those the app lists, or every option one carried from an earlier question may hold.
   const choices = new Map<string, Option[]>();
   for (const { field, def } of filled) {
     if (def.type !== 'selection') continue;
-    choices.set(field, def.optionsFrom && check.options ? await check.options(field).catch(() => []) : def.options);
+    choices.set(field, optionsList(def.optionsFrom) && check.options ? await check.options(field).catch(() => []) : choiceOptions(page.fields, field));
   }
   // What a new record starts with: the page's defaults, today's date where it says so.
   const start = initialValues(page.fields, check.today);

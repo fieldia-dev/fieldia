@@ -262,6 +262,8 @@ export const fr: ViewerLabels = {
   totalMixedShort: 'Plusieurs devises',
   valueWaits: 'Corrigez {field} pour voir « {own} »',
   valueWaitsLine: 'Corrigez la ligne {n} de {lines} pour voir « {own} »',
+  valueAsking: 'Calcul de « {own} »…',
+  valueNotWorkedOut: '« {own} » n’a pas pu être calculé : {why}. L’enregistrement réessaiera.',
   exportCurrency: 'Devise : {column}',
   yes: 'Oui',
   no: 'Non',

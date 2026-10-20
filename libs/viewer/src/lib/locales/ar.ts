@@ -238,6 +238,8 @@ export const ar: ViewerLabels = {
   totalMixedShort: 'عملات متعددة',
   valueWaits: 'صحّح {field} ليظهر {own}',
   valueWaitsLine: 'صحّح السطر {n} من {lines} ليظهر {own}',
+  valueAsking: 'جارٍ حساب {own}…',
+  valueNotWorkedOut: 'تعذّر حساب {own}: {why}. يُعاد المحاولة عند الحفظ.',
   exportCurrency: 'عملة {column}',
   yes: 'نعم',
   no: 'لا',

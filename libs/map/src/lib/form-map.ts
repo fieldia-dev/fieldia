@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import { compileModifier, expressionContext, type FormState, type Line, type MapLayer, type Page, type Value, type Values } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, expressionContext, type FormState, type Line, type MapLayer, type Page, type Value, type Values } from '@fieldia/core';
 import type { MapPart, MapPartContext, MapPartFactory } from '@fieldia/viewer';
 import { stillShown } from '@fieldia/widgets';
 import { drawCard, drawCrowd, type Card } from './card';
@@ -139,7 +139,8 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     const scope = lineFields ? ({ ...page, fields: lineFields } as Page) : page;
     pinsOf.set(layer.id, { pins: makePins({ document: doc, page: scope, locale, pin: layer.pin ?? {}, title: layer.card?.title ?? '', icons: context.icons, drawers: settings.pins }), scope });
   }
-  const hidden = new Map(node.layers.filter((layer) => typeof layer.invisible === 'string' || layer.invisible === true).map((layer) => [layer.id, compileModifier(layer.invisible)]));
+  // A layer's condition read apart from the form: a call of the app's own functions gives nothing here.
+  const hidden = new Map(node.layers.filter((layer) => typeof layer.invisible === 'string' || layer.invisible === true).map((layer) => [layer.id, compileModifier(layer.invisible, ANY_FUNCTION)]));
 
   const placeOf = (layer: MapLayer, values: Values): LatLng | null => {
     if (layer.point) return readPoint(values[layer.point]);

@@ -368,6 +368,12 @@ export interface ViewerLabels {
    */
   valueWaits: string;
   valueWaitsLine: string;
+  /**
+   * A value worked out from an app's function that asks its server (`functions`): while its answer comes, and why it
+   * did not (`{why}`, the app's words) — a save asks again.
+   */
+  valueAsking: string;
+  valueNotWorkedOut: string;
   /** A CSV file's column of the currency each amount of a column (`{column}`) is in. */
   exportCurrency: string;
   yes: string;
@@ -801,6 +807,8 @@ const en: ViewerLabels = {
   totalMixedShort: 'Several currencies',
   valueWaits: 'Fix {field} to see {own}',
   valueWaitsLine: 'Fix line {n} of {lines} to see {own}',
+  valueAsking: 'Working out {own}…',
+  valueNotWorkedOut: '{own} could not be worked out: {why}. Saving tries again.',
   exportCurrency: '{column} currency',
   yes: 'Yes',
   no: 'No',
