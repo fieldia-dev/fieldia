@@ -8,8 +8,8 @@ import type { Scope } from './references';
 /**
  * The checks of a list page's own settings (`layout.type: "list"`): its filters, buttons, calendar, map, filter bar,
  * rows' cards and rules, Edit and Import — the reference check hands over its own tools, so what is said reads as the
- * rest of its findings — and a related list's, which the list part draws too. What a related list shares with a list
- * (its columns, its card) stays the reference check's.
+ * rest of its findings — and a related list's, which the list part draws too: what it shares with a list, its columns,
+ * order, search, cells and card.
  * In the one-tag script they come with the list part, which draws what they check: a list page's are run once it came,
  * before the page is drawn (later-checks.ts); the packages' `checkPage` and `validatePage` run them at once.
  */
@@ -20,9 +20,6 @@ export interface ListTools {
   claim(id: string, path: string): void;
   checkModifiers(owner: object, path: string, keys?: readonly string[], scope?: Scope): void;
   checkPress(button: ButtonNode | StatButton, path: string): void;
-  /** What a list shows of its records: its columns, order, search and cells. */
-  checkListed(list: Pick<ListNode, 'columns' | 'sort' | 'searchFields' | 'cells'>, fields: Record<string, Field | LineField>, path: string): void;
-  checkListCard(card: ListCard, at: string, fields: Record<string, Field | LineField>): void;
   checkPlace(at: { point?: string; latitude?: string; longitude?: string }, path: string, scope: Scope, pin?: Pin, card?: MapCard): void;
   /** Where the page's own expressions read. */
   here(): Scope;
@@ -55,7 +52,7 @@ const CALENDAR_COLOURS: ReadonlySet<string> = new Set(['many2one', 'selection', 
 
 export function checkList(list: ListNode, path: string, tools: ListTools): void {
   if (tools.page.data.kind !== 'record') tools.report('data', 'a list shows records: its data needs kind "record" and a model');
-  tools.checkListed(list, tools.page.fields, path);
+  checkListed(list, tools.page.fields, path, tools);
   list.groupBy?.forEach((name, i) => tools.need(name, `${path}.groupBy[${i}]`));
   // A list's filters are about its own records: their fields are the page's, and there is no record to take a value from.
   const walk = (item: FilterItem, at: string): void => {
@@ -94,7 +91,7 @@ export function checkList(list: ListNode, path: string, tools: ListTools): void 
  * opening on one thing.
  */
 function checkListRows(list: ListNode, path: string, tools: ListTools): void {
-  if (list.card) tools.checkListCard(list.card, `${path}.card`, tools.page.fields);
+  if (list.card) checkListCard(list.card, `${path}.card`, tools.page.fields, tools);
   for (const column of Object.keys(list.optionalColumns ?? {})) {
     if (!list.columns.includes(column)) tools.report(`${path}.optionalColumns.${column}`, `"${column}" is no column of this list: a person shows or hides its columns`);
   }
@@ -260,9 +257,9 @@ export function checkRelated(node: RelatedNode, path: string, tools: ListTools):
   const model = tools.page.data.kind === 'record' ? tools.page.data.model : null;
   if (!model || tools.onLine) tools.report(path, 'a related list shows the records that point at a record: it belongs on a record’s page');
   const fields = node.fields as Record<string, Field | LineField>;
-  tools.checkListed(node, fields, path);
+  checkListed(node, fields, path, tools);
   // On a phone its rows are cards, as a list's: of its own records' fields.
-  if (node.card) tools.checkListCard(node.card, `${path}.card`, fields);
+  if (node.card) checkListCard(node.card, `${path}.card`, fields, tools);
   // Its rows' own rules, as a list's, each read on the row's record: its own fields, its id, the person, the context.
   const row: Scope = { fields };
   node.rowTones?.forEach((tone, i) => tools.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when'], row));
@@ -283,4 +280,49 @@ export function checkRelated(node: RelatedNode, path: string, tools: ListTools):
   // Its filter is about its records, by their fields; what it compares with may be read from this record.
   node.filter?.forEach((item, i) => tools.checkFilterItem(item, `${path}.filter[${i}]`, tools.here()));
   if (node.viewAll && node.viewAll.page === tools.page.id) tools.report(`${path}.viewAll.page`, 'View all opens a list of the records related: this page is the record they point at');
+}
+
+/** Kinds of field a list's card shows as its picture: a picture held, or text holding a picture's address. */
+const PICTURES: ReadonlySet<string> = new Set(['image', 'binary', 'char']);
+
+/**
+ * What a list shows of its records — a list page's, or a related list's of its own records' fields: its columns, its
+ * order and the fields its search looks in, each a field; each column's cells for a column of it, a sum, an average,
+ * the lowest and the highest of a number column (any column's count), a lead's icon by a field's values.
+ */
+function checkListed(list: Pick<ListNode, 'columns' | 'sort' | 'searchFields' | 'cells'>, fields: Record<string, Field | LineField>, path: string, tools: ListTools): void {
+  list.columns.forEach((name, i) => tools.need(name, `${path}.columns[${i}]`, fields));
+  list.sort?.forEach((order, i) => tools.need(order.field, `${path}.sort[${i}].field`, fields));
+  list.searchFields?.forEach((name, i) => tools.need(name, `${path}.searchFields[${i}]`, fields));
+  for (const [column, cell] of Object.entries(list.cells ?? {})) {
+    const at = `${path}.cells.${column}`;
+    if (!list.columns.includes(column)) {
+      tools.report(at, `"${column}" is no column of this list: its cells are for its columns`);
+      continue;
+    }
+    const kind = has(fields, column) ? fields[column].type : undefined;
+    if (cell.total && cell.total !== 'count' && kind && kind !== 'integer' && kind !== 'float' && kind !== 'monetary') {
+      tools.report(`${at}.total`, `"${column}" is a ${kind}; its total "${cell.total}" is of numbers — an integer, a float or an amount — and any column's is "count"`);
+    }
+    if (!cell.lead) continue;
+    const def = tools.need(cell.lead.field, `${at}.lead.field`, fields);
+    if (def?.type !== 'selection') continue;
+    const values = new Set(def.options.map((option) => String(option.value)));
+    for (const value of Object.keys(cell.lead.looks)) if (!values.has(value)) tools.report(`${at}.lead.looks.${value}`, `"${value}" is no value of "${cell.lead.field}"`);
+  }
+}
+
+/**
+ * What a list's card shows — a list page's, or a related list's of its own records' fields: its title, subtitle,
+ * status and lines each a field, its picture one that can hold a picture.
+ */
+function checkListCard(card: ListCard, at: string, fields: Record<string, Field | LineField>, tools: ListTools): void {
+  for (const key of ['title', 'subtitle', 'status'] as const) if (card[key] !== undefined) tools.need(card[key] as string, `${at}.${key}`, fields);
+  if (card.image !== undefined) {
+    const def = tools.need(card.image, `${at}.image`, fields);
+    if (def && !PICTURES.has(def.type)) tools.report(`${at}.image`, `"${card.image}" is a ${def.type}; a card's picture is an image or binary field, or text holding a picture's address`);
+  }
+  card.fields?.forEach((line, i) =>
+    (Array.isArray(line) ? line : [line]).forEach((part, j) => tools.need(typeof part === 'string' ? part : part.field, `${at}.fields[${i}]${Array.isArray(line) ? `[${j}]` : ''}${typeof part === 'string' ? '' : '.field'}`, fields))
+  );
 }

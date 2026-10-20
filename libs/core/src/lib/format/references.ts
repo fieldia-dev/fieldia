@@ -1,7 +1,7 @@
 import type { ActionStep, PageEvents } from './actions';
-import type { Field, Fields, FilterItem, LineField, SelectionOption } from './field';
-import { optionsField, optionsList } from './choice-options';
-import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListCard, ListNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
+import type { Field, Fields, FilterItem, LineField } from './field';
+import { changesOptions, optionsList } from './choice-options';
+import type { ButtonNode, FieldNode, FormNode, LayoutNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
 import type { Page } from './page';
 import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
@@ -28,6 +28,7 @@ import { checkEndings } from './endings-checks';
 import { checkAddressSearch, checkMap, checkPlace, type MapTools } from './map-checks';
 import { checkLineKinds, checkTable, type TableTools } from './table-checks';
 import { checkStatusbar } from './statusbar-checks';
+import { checkOptionRules } from './option-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -48,8 +49,6 @@ const has = (record: object, key: string) => Object.prototype.hasOwnProperty.cal
 /** The kinds of field an expression can give a value to: the rest hold records, lines or files. */
 const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'json']);
 const EXPRESSIBLE_WORDS = 'text, numbers, yes or no, dates, choices and json can';
-/** Kinds of field a list's card shows as its picture: a picture held, or text holding a picture's address. */
-const PICTURES: ReadonlySet<string> = new Set(['image', 'binary', 'char']);
 /** Where an expression's names are looked up: the page's fields, or the fields of one one2many's lines. */
 export interface Scope {
   fields: Record<string, Field | LineField>;
@@ -483,26 +482,10 @@ export class ReferenceCheck {
    * this one — and never for a line, whose choices are its own or one of the app's lists.
    */
   private checkChoices(name: string, def: Extract<Field | LineField, { type: 'selection' }>, path: string, fields: Record<string, Field | LineField>, scope: Scope) {
-    (def.options as SelectionOption[]).forEach((option, i) => this.checkModifiers(option, `${path}.options[${i}]`, ['invisible'], scope));
     optionsList(def.optionsFrom)?.dependsOn?.forEach((other, i) => this.checkDependsOn(name, other, `${path}.optionsFrom.dependsOn[${i}]`, fields, scope.lines, scope.parent));
-    const carried = optionsField(def.optionsFrom);
-    if (!carried) return;
-    const at = `${path}.optionsFrom.field`;
-    if (scope.lines !== undefined) return this.report(at, `"${name}": a line's choice carries no options from a question — its own, or one of the app's lists`);
-    if (carried.field === name) return this.report(at, `"${name}" cannot carry its options from itself`);
-    const from = this.need(carried.field, at, fields);
-    if (!from) return;
-    if (from.type !== 'selection') return this.report(at, `"${carried.field}" is a ${from.type}; options are carried from a choice`);
-    // Through the choices each carries from, never back to this one: a circle elsewhere is said at its own fields.
-    const seen = [name];
-    for (let next: Field | LineField | undefined = from, field = carried.field; next?.type === 'selection'; next = fields[field]) {
-      if (field === name) return this.report(at, `${listed(seen)} carry their options from each other`);
-      if (seen.includes(field)) return;
-      seen.push(field);
-      const further = optionsField(next.optionsFrom);
-      if (!further) return;
-      field = further.field;
-    }
+    // Options by condition, or carried from an earlier question: in the one-tag script, checked by the options part a
+    // page with any asks for.
+    if (changesOptions(def)) checkOptionRules(name, def, path, fields, scope, { ...this.fieldTools(), checkModifiers: (owner, at, keys, inside) => this.checkModifiers(owner, at, keys, inside) });
   }
 
   private checkFields(fields: Fields | Record<string, LineField>, base: string, lines?: string, parent?: Record<string, Field | LineField>) {
@@ -634,8 +617,6 @@ export class ReferenceCheck {
       claim: (id, path) => this.claim(id, path),
       checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
       checkPress: (button, path) => this.checkPress(button, path),
-      checkListed: (list, fields, path) => this.checkListed(list, fields, path),
-      checkListCard: (card, at, fields) => this.checkListCard(card, at, fields),
       checkPlace: (at, path, scope, pin, card) => checkPlace(at, path, scope, pin, card, this.mapTools()),
       here: () => this.here(),
       onLine: !!this.line,
@@ -674,47 +655,7 @@ export class ReferenceCheck {
     });
   }
 
-  /**
-   * What a list's card shows — a list page's, or a related list's of its own records' fields: its title, subtitle,
-   * status and lines each a field, its picture one that can hold a picture.
-   */
-  private checkListCard(card: ListCard, at: string, fields: Record<string, Field | LineField>) {
-    for (const key of ['title', 'subtitle', 'status'] as const) if (card[key] !== undefined) this.need(card[key] as string, `${at}.${key}`, fields);
-    if (card.image !== undefined) {
-      const def = this.need(card.image, `${at}.image`, fields);
-      if (def && !PICTURES.has(def.type)) this.report(`${at}.image`, `"${card.image}" is a ${def.type}; a card's picture is an image or binary field, or text holding a picture's address`);
-    }
-    card.fields?.forEach((line, i) =>
-      (Array.isArray(line) ? line : [line]).forEach((part, j) => this.need(typeof part === 'string' ? part : part.field, `${at}.fields[${i}]${Array.isArray(line) ? `[${j}]` : ''}${typeof part === 'string' ? '' : '.field'}`, fields))
-    );
-  }
 
-  /**
-   * What a list shows of its records — a list page's, or a related list's of its own records' fields: its columns, its
-   * order and the fields its search looks in, each a field; each column's cells for a column of it, a sum, an average,
-   * the lowest and the highest of a number column (any column's count), a lead's icon by a field's values.
-   */
-  private checkListed(list: Pick<ListNode, 'columns' | 'sort' | 'searchFields' | 'cells'>, fields: Record<string, Field | LineField>, path: string) {
-    list.columns.forEach((name, i) => this.need(name, `${path}.columns[${i}]`, fields));
-    list.sort?.forEach((order, i) => this.need(order.field, `${path}.sort[${i}].field`, fields));
-    list.searchFields?.forEach((name, i) => this.need(name, `${path}.searchFields[${i}]`, fields));
-    for (const [column, cell] of Object.entries(list.cells ?? {})) {
-      const at = `${path}.cells.${column}`;
-      if (!list.columns.includes(column)) {
-        this.report(at, `"${column}" is no column of this list: its cells are for its columns`);
-        continue;
-      }
-      const kind = has(fields, column) ? fields[column].type : undefined;
-      if (cell.total && cell.total !== 'count' && kind && kind !== 'integer' && kind !== 'float' && kind !== 'monetary') {
-        this.report(`${at}.total`, `"${column}" is a ${kind}; its total "${cell.total}" is of numbers — an integer, a float or an amount — and any column's is "count"`);
-      }
-      if (!cell.lead) continue;
-      const def = this.need(cell.lead.field, `${at}.lead.field`, fields);
-      if (def?.type !== 'selection') continue;
-      const values = new Set(def.options.map((option) => String(option.value)));
-      for (const value of Object.keys(cell.lead.looks)) if (!values.has(value)) this.report(`${at}.lead.looks.${value}`, `"${value}" is no value of "${cell.lead.field}"`);
-    }
-  }
 
   private walkChildren(children: LayoutNode[], path: string) {
     children.forEach((child, i) => this.walkNode(child, `${path}.children[${i}]`));
