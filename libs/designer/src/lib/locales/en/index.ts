@@ -32,6 +32,7 @@ import { relatedPart } from './related-part';
 import { head } from './head';
 import { workText } from './work-text';
 import { inputs } from './inputs';
+import { endings } from './endings';
 
 /** The designer's words in English: the source every other language's table follows, area by area. */
-export const en = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms, steps, tables, mapPart, relatedPart, head, workText, inputs };
+export const en = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms, steps, tables, mapPart, relatedPart, head, workText, inputs, endings };

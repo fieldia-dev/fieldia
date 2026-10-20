@@ -20,16 +20,18 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
   const own = !!node.steps?.length || node.action !== undefined;
   const menu = node.menu?.length ? node.menu : null;
   const look = () => (node.primaryWhenChanged ? (form.getState().dirty.length ? 'primary' : 'subtle') : node.style ?? 'secondary');
-  const words = el('bdi', { class: 'fd-button-words' }, node.label);
+  /** Its words as they read now: a page's own may name the answers given ("Call {branch}"). */
+  const label = () => form.words(node.label);
+  const words = el('bdi', { class: 'fd-button-words' }, label());
   const icon = drawIcon(context.doc, node.icon, context.icons);
   const main = el('button', { type: 'button', class: 'fd-button', 'data-node': menu && own ? undefined : node.id });
   if (icon) main.append(icon);
   if (node.iconOnly) {
     main.classList.add('fd-button-icon-only');
-    main.setAttribute('aria-label', node.label);
-    main.title = node.label;
+    main.setAttribute('aria-label', label());
+    main.title = label();
   } else main.append(words);
-  if (node.hotkey) hotkeyOn(main, node.hotkey, node.label);
+  if (node.hotkey) hotkeyOn(main, node.hotkey, label());
 
   /** What a press of the button itself does: its steps and action — Save and Close with nothing to save only closes. */
   const run = (): Promise<RunResult> => {
@@ -55,7 +57,7 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
   const chevron = drawIcon(context.doc, node.menuIcon ?? 'chevron-down', context.icons);
   const opener = own ? el('button', { type: 'button', class: 'fd-button fd-split-more', id: `${id}-button`, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': id }) : main;
   // Its own name, never the button's: a reader hears two buttons, not one twice.
-  const menuName = node.menuLabel ?? labels.optionsFor.replace('{label}', node.label);
+  const menuName = node.menuLabel ?? labels.optionsFor.replace('{label}', label());
   if (own) {
     opener.setAttribute('aria-label', menuName);
     opener.title = menuName;
@@ -78,7 +80,7 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
   });
   list.append(...items.map((i) => i.button));
   const parts: HTMLElement[] = own ? [main, el('span', { class: 'fd-split-rule', 'aria-hidden': 'true' }), opener] : [main];
-  const box = el('div', { class: `fd-split${own ? '' : ' fd-split-alone'}`, 'data-node': node.id, role: own ? 'group' : undefined, 'aria-label': own ? node.label : undefined }, ...parts, list);
+  const box = el('div', { class: `fd-split${own ? '' : ' fd-split-alone'}`, 'data-node': node.id, role: own ? 'group' : undefined, 'aria-label': own ? label() : undefined }, ...parts, list);
 
   const shown = () => items.filter((i) => !i.button.hidden).map((i) => i.button);
   const outside = (event: Event) => {
@@ -150,12 +152,18 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
     if (button === main && onlyResets(node.steps, node.action)) {
       const idle = !form.getState().dirty.length;
       setAttr(main, 'data-idle', idle ? '' : null);
-      if (node.iconOnly) main.title = idle ? `${node.label} — ${labels.nothingChanged}` : node.label;
+      if (node.iconOnly) main.title = idle ? `${label()} — ${labels.nothingChanged}` : label();
+    } else if (button === main && node.pressed === undefined && node.label.includes('{')) {
+      // Words that name answers follow them.
+      if (node.iconOnly) {
+        setAttr(main, 'aria-label', label());
+        main.title = label();
+      } else setText(words, label());
     }
     if (node.pressed === undefined || button !== main) return;
     const pressed = at.pressed === true;
     setAttr(main, 'aria-pressed', String(pressed));
-    const said = pressed && node.pressedLabel ? node.pressedLabel : node.label;
+    const said = form.words(pressed && node.pressedLabel ? node.pressedLabel : node.label);
     if (node.iconOnly) {
       setAttr(main, 'aria-label', said);
       main.title = said;

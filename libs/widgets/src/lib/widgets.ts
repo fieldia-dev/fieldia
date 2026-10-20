@@ -658,12 +658,15 @@ const selectWidget: WidgetFactory = (context) => {
   const blank = make(document, 'option', { value: '' });
   // A country, a card's month: what the browser fills it in with, when the page says.
   const select = make(document, 'select', { id, class: 'fd-input fd-select', autocomplete: node.autocomplete }, blank);
-  choices.forEach((option, i) => select.append(make(document, 'option', { value: String(i) }, option.label)));
+  const items = choices.map((option, i) => make(document, 'option', { value: String(i) }, option.label));
+  select.append(...items);
   select.addEventListener('change', () => form.setValue(name, select.value === '' ? null : choices[Number(select.value)].value));
   return {
     element: select,
     focus: () => select.focus(),
     update(state) {
+      // An option's words as they read now: one that shows an answer given follows it (the viewer's answers part).
+      items.forEach((item, i) => item.text !== choices[i].label && (item.text = choices[i].label));
       const index = choices.findIndex((option) => option.value === state.value);
       select.value = index === -1 ? '' : String(index);
       // A required choice made is never taken back to nothing from its list, as Flectra hides the blank.
@@ -682,9 +685,11 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
     const group = make(document, 'div', { id, class: `fd-choices fd-choices-${kind}`, role: kind === 'radio' ? 'radiogroup' : 'group' });
     layOut(group, node);
     const limit = kind === 'checkbox' ? limiter(maker(document), words, node) : null;
+    const optionWords: HTMLElement[] = [];
     const inputs = choices.map((option, i) => {
       const input = make(document, 'input', { type: kind, name: id, value: String(i), id: `${id}-${i}` });
-      group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, make(document, 'span', {}, option.label)));
+      optionWords.push(make(document, 'span', {}, option.label));
+      group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, optionWords[i]));
       return input;
     });
     // "Other:", after the options: a choice of its own, with a box for the answer — as Google Forms has it.
@@ -778,6 +783,8 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
         inputs.forEach((input, i) => {
           input.checked = chosen.includes(choices[i].value as never);
           if (input.disabled !== state.readonly) input.disabled = state.readonly;
+          // Its words as they read now: one that shows an answer given follows it (the viewer's answers part).
+          if (optionWords[i].textContent !== choices[i].label) optionWords[i].textContent = choices[i].label;
         });
         if (otherChoice && otherBox) {
           // A value not among the options is an answer of its own: "Other", with its words.

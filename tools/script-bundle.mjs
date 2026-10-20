@@ -880,8 +880,19 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // the classic editor's look for a table and its paste of anything with HTML in it, made plain by the text part's cleaner
 // as it is pasted (extras.ts); a table's rows whole on paper, its box a block, before the print part came: 503.41
 // measured before, 505.57 after — 2.2 more, to 505.6.
-// All merged for 0.27.0 (provisional until the merged build is measured): 503.41 + 1.11 + 2.68 + 1.74 + 2.16, to 511.2.
-const BUDGET_KB = 511.2;
+// Endings and the answers in a page's own words (0.27, w4-endings): the page check of every `{field}` in a label, a
+// help, a choice, a step, a wizard's and a button's words and of a page's `endings` (1.13), the form's answer to a send
+// kept and its ending chosen, its words and a field's label in its messages filled in (form.words, ending, 1.17), the
+// viewer drawing those words, asking for the answers part where a page has any and handing it the done screen (1.15),
+// a choice's words kept to its options (0.13) and the stylesheet's ending (0.13); writing a value as a sentence says it
+// (a day in the page's order, yes or no), choices whose words follow the answers, a link's address and an ending's
+// drawing are in fieldia.answers.js — 503.40 measured before, 507.19 after: 3.8 more, to 507.2.
+// The words said while an answer is empty (w4-endings, `{branch|this branch}`): read after a bar wherever a page's
+// words show values, a text's and a post's too, drawn in the words' own weight — 507.19 measured before, 507.40 after:
+// 0.2 more, to 507.5.
+// All merged for 0.27.0 (provisional until the merged build is measured): 503.41 + 1.11 + 2.68 + 1.74 + 2.16 + 4.00,
+// to 515.2.
+const BUDGET_KB = 515.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1085,8 +1096,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Tables inside formatted text (listed with the raw budget above): 162.94 measured before, 163.77 after — 0.8 more, to
 // 163.8. The table tool, its picker, Tab and Escape in a table, Markdown's tables and a paste made plain are the text
 // part's.
-// All merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86 + 0.51 + 0.83, to 165.5.
-const GZIP_BUDGET_KB = 165.5;
+// Endings and the answers in a page's own words (0.27, w4-endings; listed with the raw budget above): 162.94 measured
+// before, 164.34 after — 1.4 more, to 164.4. A page that says the answers takes 2.07 more in fieldia.answers.js.
+// The words said while an answer is empty (listed with the raw budget above): 164.34 measured before, 164.46 after —
+// 0.1 more, to 164.5.
+// All merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86 + 0.51 + 0.83 + 1.52, to 167.1.
+const GZIP_BUDGET_KB = 167.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1581,7 +1596,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // in Markdown both ways, their look on the screen and on paper and their 22 English words — to 73.1 and 24.7; print 15.99 and 5.22 to 16.81 and 5.38 — a formatted text's
 // table measured whole where it fits a sheet (print-look.ts), its field broken between its rows, the classic box a
 // block — to 16.9 and 5.4.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.6, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.8, 14.1], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], print: [16.9, 5.4] };
+// Endings and the answers in a page's own words (0.27, w4-endings): answers new, 4.13 and 2.07 — a value written as a
+// sentence says it (sentence-value.ts), choices whose words follow the answers (worded-choices.ts), an ending drawn
+// with its links (ending.ts) — to 4.2 and 2.1; head 34.39 and 10.02 measured before, 34.53 and 10.06 after — a split
+// or toggled button's words with the answers they name — to 34.6 and 10.1.
+const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.6, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.8, 14.1], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], print: [16.9, 5.4] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1605,10 +1624,11 @@ const PART_GIVES = {
   slots: ['slotsWidget'],
   relations: ['many2oneWidget', 'tagsWidget', 'charTagsWidget', 'linkCheckboxesWidget', 'referenceWidget'],
   duplicates: ['watchDuplicates', 'openMergeScreen', 'installDuplicateStyles'],
+  answers: ['sentenceValue', 'orderedDay', 'wordedWidget', 'drawEnding', 'linkedValueWords'],
   print: ['printLook', 'printPage', 'printAlone', 'installPrintStyles'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', print: 'printPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', print: 'printPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.

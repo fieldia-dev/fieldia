@@ -11,6 +11,7 @@ import { hotkeyShown } from './hotkey-setting';
 import { shownWhileSetting } from './shown-while';
 import { helpIconSetting } from './work-text';
 import { settingNumber } from './number-box';
+import { withAnswers } from './answer-picker';
 
 /**
  * A block's own settings, on the Content tab: a picture's address and the
@@ -160,7 +161,8 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
     const buttonWhile = shownWhileSetting(el, designer, id, { tab: 'content' });
     return {
       rows: [
-        setting(el, 'content', 'Button words', words, { words: w.buttonWords }),
+        // Its words may show an answer given: "Call {branch}" (answer-picker.ts).
+        setting(el, 'content', 'Button words', withAnswers(el, designer, words), { words: w.buttonWords }),
         clicked.element,
         setting(el, 'content', 'Look', look.element, { words: w.look }),
         setting(el, 'content', 'Asks first', asks, { words: w.asksFirst }),

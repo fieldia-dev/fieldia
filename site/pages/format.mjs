@@ -187,6 +187,21 @@ ${code(
 )}
 <p>${c('clickable')} lists the steps over the form: any step behind can be gone back to at once, and a step ahead only past steps that are complete — the first one with a problem stops the jump and shows it. An ${c('optional')} step offers Skip: its answers are then left out, and its required questions are not asked for, unless someone goes back to it and on.</p>
 
+<h3 id="endings">Endings, and the answers in a page's own words</h3>
+<p>A page of responses says what it says once it is sent with ${c('endings')}: the first whose ${c('when')} holds on the answers as they were sent — with what your data source answered, the response's ${c('id')} and the values it added — else the one with no ${c('when')}, shown otherwise, which comes last. Its ${c('title')} and ${c('text')} show ${c('{field}')}s as a text's words do, and ${c('{id}')} the reference your app gave the response; each line of ${c('text')} is a paragraph, and ${c('[words](https://…)')} a link, whose address may hold a ${c('{field}')} too (the value as it is kept: a choice's value, a link's id). ${c('again')} is its button's words — "Book another" — or ${c('false')} for none. The ending takes the focus as it shows, so a screen reader reads it, the reference with it. Without ${c('endings')}, "Thank you. Your answers were sent.", as before; a redirect after sending is a step, ${c('on.afterSave')}'s ${c('openUrl')} with its ${c('when')}.</p>
+${code(
+  'json',
+  `
+"endings": [
+  { "when": "overall <= 2", "title": "We are sorry, {name}",
+    "text": "Someone from {branch} will call you today.", "again": false },
+  { "title": "Thank you, {name|and see you soon}",
+    "text": "Your booking is {id}: {day} at {time}.\\n[Add it to your calendar](https://clinic.example/b/{id}.ics)",
+    "again": "Book another" }
+]`
+)}
+<p>${c('{field}')} shows an answer given in a page's own words beyond a text's and an alert's: a field's ${c('label')} and ${c('help')} — its own, or its part's — each choice's words, a step's ${c('label')} and ${c('description')}, a wizard's ${c('nextLabel')}, ${c('backLabel')} and ${c('finishLabel')}, and a button's ${c('label')}: <em>"How was your visit to {branch}?"</em> reads <em>"How was your visit to Zamalek?"</em> once the branch is chosen, and again as it changes. Each value reads as people read it — a choice by its label, a link by its name, money with its currency, a day in the page's order (${c('look.dateOrder')}: <em>Oct 15, 2026</em> month first), a yes or no in words — and the form's messages name the field as its label reads (<em>"How was your visit to Zamalek? is required"</em>). After a bar, the words said while the answer is empty: ${c('{branch|this branch}')} reads <em>"How was your visit to this branch?"</em> until a branch is chosen — the page's own words, translated with the rest of its words, drawn as the words round them; without them, an empty answer says nothing. A ${c('{name}')} that is no field of the page is refused by the page check, wherever it is written, with words after its bar or not. These words, and the endings, come in a part of their own, ${c('fieldia.answers.js')}, loaded before a page that has any; a page with none never loads it.</p>
+
 <h3 id="columns">Columns at each width</h3>
 <p>${c('columns')} can give a count for each width of the form: ${c('wide')} above 760px, ${c('medium')} up to 760px, ${c('narrow')} up to 520px. A width left out stacks the way the skin does by itself — the outlined skin keeps its columns until the form is narrow, the underline skin, whose labels sit beside their values, stacks at medium. On a narrow form — a phone — every label goes above its value, the page's or a group's ${c('"labels": "beside"')} too, in every theme: the value has the whole width, never cut to <em>+20 100 912 4…</em>; a title gives its picture the line under it rather than break its words.</p>
 ${code('json', `{ "type": "section", "id": "header", "columns": { "wide": 2, "medium": 2 }, "children": [] }`)}

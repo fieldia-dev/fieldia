@@ -6,6 +6,7 @@ import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
 import { PagePhoneSchema, type PagePhone } from './phone';
 import { PageDuplicatesSchema, type PageDuplicates } from './duplicates';
 import { PageRecordsSchema, type PageRecords } from './records';
+import { PageEndingsSchema, type PageEnding } from './endings';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -187,6 +188,13 @@ export interface Page {
    * line's own dialog, and a list's Edit, follow the page they are part of, unless the line's own page says otherwise.
    */
   lowerLabels?: boolean;
+  /**
+   * What a page of responses shows once its answers are sent, in place of the plain thanks: the first ending whose
+   * `when` holds on the answers as sent — with what the app's source answered, the response's `id` and the values it
+   * added — else the one with no `when`, the default. Its words hold `{field}`s and `{id}`: "Your booking is {id}". See
+   * `PageEnding`. Without it, "Thank you. Your answers were sent.", as before.
+   */
+  endings?: PageEnding[];
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -271,6 +279,7 @@ export const PageSchema = z
     duplicates: PageDuplicatesSchema.optional(),
     records: PageRecordsSchema.optional(),
     lowerLabels: z.boolean().optional(),
+    endings: PageEndingsSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

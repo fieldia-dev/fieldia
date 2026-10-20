@@ -28,6 +28,8 @@ import { rulesOverview } from './rules-overview';
 import type { DesignerAssistant } from './assistant';
 import type { PageTemplate } from './templates';
 import { startHere } from './templates-start';
+import { answerButton } from './answer-picker';
+import { endingsEditor } from './endings-editor';
 
 /**
  * The survey editor, the Google Forms way: on a tinted page, a card heading
@@ -165,7 +167,10 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
 
   // A blank survey: templates to start from.
   const start = startHere({ el, doc, designer, root, survey: true, templates: options.templates, assistant: options.assistant ?? designer.assistant(), blankFocus: () => root.querySelector('.fd-add-question') });
-  const column = el('div', { class: 'fd-survey-column' }, head, start.element, map, pages, addPage, rail);
+  // What the form says once it is sent, under its pages: its endings, each shown by the answers (endings-editor.ts).
+  const endings = endingsEditor(el, designer);
+  const endingsCard = el('section', { class: 'fd-survey-endings', 'aria-label': own.endings.heading }, el('h2', { class: 'fd-survey-endings-head' }, own.endings.heading), endings.element);
+  const column = el('div', { class: 'fd-survey-column' }, head, start.element, map, pages, addPage, endingsCard, rail);
   const editor = el('div', { class: 'fd-designer-editor fd-survey-canvas' }, column);
   const tools = toolbox({
     el,
@@ -499,7 +504,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       'div',
       { class: 'fd-q fd-q-selected fd-editing', 'data-node': id },
       grip,
-      el('div', { class: 'fd-q-head' }, lined(el, label, 'fd-q-label-box'), kind),
+      // Its words may show an answer given before it: "How was your visit to {branch}?" (answer-picker.ts).
+      el('div', { class: 'fd-q-head' }, lined(el, label, 'fd-q-label-box'), answerButton(el, designer, label), kind),
       helpBox,
       choices.element,
       answer,
@@ -561,7 +567,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     addQuestion.setAttribute('aria-label', w.addQuestion);
     addQuestion.addEventListener('click', () => add('short-answer', { parent: id }));
     // The page's own card, its number on a tab over it, as Google Forms heads a section.
-    section.append(el('header', { class: 'fd-step-head' }, number, el('div', { class: 'fd-step-head-row' }, lined(el, name, 'fd-step-title-box'), removeStep), condition), cards, addQuestion);
+    section.append(el('header', { class: 'fd-step-head' }, number, el('div', { class: 'fd-step-head-row' }, lined(el, name, 'fd-step-title-box'), answerButton(el, designer, name), removeStep), condition), cards, addQuestion);
 
     return {
       element: section,
@@ -669,6 +675,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       while (view.cards.children.length > fields.length) view.cards.lastElementChild?.remove();
     });
     ruleMarks(pages, page, designer);
+    endings.update(page);
     placeRail();
   }
 

@@ -53,7 +53,8 @@ import {
   workAtRisk,
   type SignedBy,
 } from '@fieldia/core';
-import { afterPress, browserPreferences, createWidget, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory, watchPresses } from '@fieldia/widgets';
+import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses } from '@fieldia/widgets';
+import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { relatedInTab, upgradePage, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
@@ -67,7 +68,7 @@ import { setAttr, setHidden, setText } from './dom';
 import { openPage } from './open';
 import { sayer } from './say';
 import { tabStrip } from './tab-strip';
-import { valueWords } from './value-words';
+import { valueWords, type ValueWriter } from './value-words';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { recordBar, type Breadcrumb, type RecordPager } from './record-bar';
 import { attachmentPreview } from './attachment-preview';
@@ -75,7 +76,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { duplicatesPart, headPart, listPart, partsFor, type HeadPart } from './viewer-parts';
+import { answersPart, duplicatesPart, headPart, listPart, partsFor, type HeadPart } from './viewer-parts';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
 import { steadyPresses } from './steady-press';
@@ -433,8 +434,20 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     file: (file) => filesPart.load().then((part) => part.showAppFile({ doc, labels: widgetLabels, home: root, file })),
     ...options.host,
   };
-  const form = options.form ?? createForm({ ...options, page, host: actionHost, messages: options.messages ?? MESSAGES[locale] });
   const widgetLabels = WIDGET_LABELS[locale];
+  /** How a value reads inside the page's own words on screen (a `{field}`): a day in the page's order, a yes or no in words. */
+  const sentenceWords: SentenceWords = { order: dateOrderOf({ page }), yes: widgetLabels.yes, no: widgetLabels.no };
+  /** So, once the answers part has come (a page that says the answers loads it first); else as each field shows its value. */
+  const asSaid: ValueWriter = (def, value, values) => answersPart.loaded?.sentenceValue(def, value, values, locale, sentenceWords) ?? displayValue(def, value, values, locale);
+  const form =
+    options.form ??
+    createForm({
+      ...options,
+      page,
+      host: actionHost,
+      messages: options.messages ?? MESSAGES[locale],
+      valueWords: options.valueWords ?? ((def, value, values) => asSaid(def as LineField, value, values as Values)),
+    });
   /** A part that failed: said to the console, and to the app's onError, which may not throw the page down either. */
   const report: ErrorHandler = (error, where) => {
     console.error(`[Fieldia] ${describeFailure(where)}`, error);
@@ -473,9 +486,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * The words sit in a <bdi>: left as written on a page of the other direction,
    * they still run their own way, the icon still before them.
    */
-  function withIcon(name: string | undefined, text: string): (Node | string)[] {
+  function withIcon(name: string | undefined, text: string | (Node | string)[]): (Node | string)[] {
     const icon = drawIcon(doc, name, options.icons);
-    const words = el('bdi', {}, text);
+    const words = el('bdi', {}, ...[text].flat());
     return icon ? [icon, words] : [words];
   }
 
@@ -589,6 +602,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const signedNow = (values: Readonly<Values>) => (signed?.values === values ? signed : (signed = { values, by: signedBy(page, values) })).by;
     /** A part's updater, handed the state of the part's own form; one that throws puts the part's box in its place. */
     const watch = (update: Updater) => sink.push(keptTo(drawing, scope.root ? update : () => update(form.getState())));
+    /**
+     * The page's own words — a label, a help, a button's — with the value of each field they name (`{field}`) as a
+     * sentence says it, kept to the answers as they change; words that name none, as they are.
+     */
+    const pageWords = (text: string): (Node | string)[] => {
+      if (!text.includes('{')) return [text];
+      const words = valueWords(doc, page.fields, text, locale, asSaid);
+      watch((state) => words.update(state.values));
+      return words.nodes;
+    };
 
     // ---- errors kept to their part (@fieldia/widgets' contain.ts) ----
 
@@ -655,14 +678,21 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-path': scope.path + node.field, 'data-type': def.type, 'data-labels': labelsAt, 'data-focus': node.focus && scope.root ? '' : undefined });
       if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
       const labelText = node.label ?? def.label;
-      const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, ...accessKeyed(labelText, node.hotkey));
+      // Words that show answers given ("How was your visit to {branch}?"): drawn with them, kept to them; said so where a sentence names the field.
+      const worded = labelText.includes('{');
+      const labelNow = () => (worded ? form.words(labelText) : labelText);
+      // Its words one piece, as an access key's are: what names the field reads them whole ("Check: How was your visit to Zamalek?").
+      const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, ...(worded ? [el('span', { class: 'fd-label-words' }, ...pageWords(labelText))] : accessKeyed(labelText, node.hotkey)));
       // The ✓ of a field filled in right; never on a yes/no box, a table or a file, where it would say nothing.
       const mark = options.showValid && !NO_VALID_MARK.has(def.type) ? drawIcon(doc, 'check') : null;
       if (mark) {
         mark.classList.add('fd-valid-mark');
         label.append(mark);
       }
-      const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report }, options.widgets);
+      const context: WidgetContext = { form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report };
+      // Choices whose words show the answers given follow them, as the answers part draws them.
+      const draw = (own: WidgetContext) => createWidget(own, options.widgets);
+      const widget = answersPart.loaded?.wordedWidget(context, draw) ?? draw(context);
       // Its own tools (a Markdown text's Edit and Done), for a group that holds it alone to put in its heading.
       keepTools(wrapper, widget);
       // The field that takes the focus as the record opens (Flectra's default_focus): the page's own, not a saved form's inside it.
@@ -675,9 +705,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       }
       // A label kept out of sight still names the box; the empty box shows it instead, unless the page gives it words of its own.
       const textBox = widget.element.matches(TEXT_BOX) ? widget.element : widget.element.querySelector(TEXT_BOX);
-      if (labelsAt === 'hidden' && !node.placeholder) textBox?.setAttribute('placeholder', labelText);
+      if (labelsAt === 'hidden' && !node.placeholder) textBox?.setAttribute('placeholder', labelNow());
       // Words chosen by a condition (placeholderWhen), else what the box showed as it was drawn.
-      const drawnPlaceholder = textBox?.getAttribute('placeholder') ?? null;
+      let drawnPlaceholder = textBox?.getAttribute('placeholder') ?? null;
       const chosenPlaceholder = node.placeholderWhen?.length ? textBox : null;
       // The quiet look: its own word, else its group's, else the form's skin. In a quiet place its label is quiet; its value
       // wears the look (data-quiet) unless its widget keeps its own face.
@@ -688,10 +718,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // question "Your answer". A field of several boxes, each with its own label (an address), says it in none of them.
       const ownWords = !!node.placeholder || labelsAt === 'hidden' || def.type === 'json' || def.type === 'properties';
       // Unless the page says empty quiet fields show nothing at rest (quietHints false): then its label alone says what it is.
-      const hint = page.look?.quietHints === false ? null : quietHint(labelText, locale, labels);
+      const hint = page.look?.quietHints === false ? null : quietHint(labelNow(), locale, labels);
       const restWords = () => (!ownWords && wrapper.hasAttribute('data-quiet') ? hint : drawnPlaceholder);
       // Where no box can hold a placeholder (a choice's blank, a state's words), the page's own words come first.
-      const blankWords = node.placeholder || (labelsAt === 'hidden' ? labelText : (hint ?? ''));
+      const blankWords = node.placeholder || (labelsAt === 'hidden' ? labelNow() : (hint ?? ''));
       const quietSelect = widget.element instanceof HTMLSelectElement ? widget.element.querySelector<HTMLOptionElement>(':scope > option[value=""]') : null;
       const richText = widget.element.matches('.fd-richtext') ? widget.element : widget.element.querySelector<HTMLElement>(':scope > .fd-richtext');
       const stateWords = widget.element.querySelector<HTMLElement>(':scope > .fd-dot-label');
@@ -733,8 +763,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const helpText = node.help ?? def.help;
       // Under the field, behind a (?) by its label, or both: the field's own way, else the page's.
       const helpWay = node.helpShown ?? page.look?.helpShown ?? 'below';
-      const help = helpText && helpWay !== 'tooltip' ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
-      const tip = helpText && helpWay !== 'below' ? helpTip(`${id}-tip`, helpText, labelled(labels.helpFor, { label: labelText }, 'label')) : null;
+      const help = helpText && helpWay !== 'tooltip' ? el('div', { class: 'fd-help', id: `${id}-help` }, ...pageWords(helpText)) : null;
+      const tip = helpText && helpWay !== 'below' ? helpTip(`${id}-tip`, helpText, labelled(labels.helpFor, { label: labelNow() }, 'label')) : null;
+      if (tip && helpText?.includes('{')) tip.bubble.replaceChildren(...pageWords(helpText));
       // In the label, as Flectra's: a press on it does not move into the box. A label out of sight keeps it after the box.
       if (tip && labelsAt === 'hidden') widget.element.after(tip.element);
       // Its side of the words and the gap before it follow the way the words run: English on an Arabic page too.
@@ -764,7 +795,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         lockMark?.remove();
         lockWords = words;
         const icon = drawIcon(doc, 'lock', options.icons) ?? '';
-        lock = words ? bubbleTip(`${id}-lock`, words, labelled(labels.locked, { label: labelText }, 'label'), 'fd-lock', icon) : null;
+        lock = words ? bubbleTip(`${id}-lock`, words, labelled(labels.locked, { label: labelNow() }, 'label'), 'fd-lock', icon) : null;
         if (words && !pointing) {
           pointing = true;
           for (const [event, on] of [['mouseenter', true], ['mouseleave', false], ['focusin', true], ['focusout', false]] as const) widget.element.addEventListener(event, () => point(on));
@@ -797,8 +828,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       let waitMark: HTMLElement | null = null;
       const waitWords = (waits: WaitsFor) =>
         waits.line
-          ? labelled(labels.valueWaitsLine, { n: waits.line, lines: page.fields[waits.field]?.label ?? waits.field, own: labelText }, 'lines', 'own')
-          : labelled(labels.valueWaits, { field: page.fields[waits.field]?.label ?? waits.field, own: labelText }, 'field', 'own');
+          ? labelled(labels.valueWaitsLine, { n: waits.line, lines: page.fields[waits.field]?.label ?? waits.field, own: labelNow() }, 'lines', 'own')
+          : labelled(labels.valueWaits, { field: form.words(page.fields[waits.field]?.label ?? waits.field), own: labelNow() }, 'field', 'own');
       const drawWaiting = (words: string | null) => {
         if (!words && !waitMark) return;
         if (!waitMark) {
@@ -904,6 +935,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           wrapper.classList.toggle('fd-value-bold', look.bold);
         }
         if (chosenPlaceholder) setAttr(chosenPlaceholder, 'placeholder', form.placeholder(node.id) ?? restWords());
+        // A label out of sight that shows answers: its empty box says it as it reads now.
+        if (worded && labelsAt === 'hidden' && !node.placeholder && textBox && drawnPlaceholder !== labelNow()) {
+          drawnPlaceholder = labelNow();
+          face();
+        }
         const message = state.errors[node.field];
         // Raised by leaving the box, it is said once, politely; a refused Save's announcer says the rest, once. Shown
         // already while it was typed in (a paste past its most), it is said now, as the box is left.
@@ -1028,8 +1064,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         spans(rich, node.colspan);
         return hiddenOn(node, rich);
       }
-      const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
-      if (node.hotkey) hotkeyOn(button, node.hotkey, node.label);
+      // Its words, with the answers they name ("Call {branch}") kept to them.
+      const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, pageWords(node.label)));
+      if (node.hotkey) hotkeyOn(button, node.hotkey, form.words(node.label));
       // A button that prints: the print part fetched as a pointer rests on it.
       if (node.steps?.some((step) => step.do === 'print')) printIntent(button);
       spans(button, node.colspan);
@@ -1045,7 +1082,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     function textItem(node: TextNode, inline = false): HTMLElement {
       const style = node.style ?? 'paragraph';
       // Its words, with the values of the fields they name, and its [words](address) as links.
-      const words = valueWords(doc, page.fields, node.text, locale);
+      // As a sentence says them where the page says the answers elsewhere too (its answers part came), else as before.
+      const words = valueWords(doc, page.fields, node.text, locale, answersPart.loaded && asSaid);
       const shown = wordsWithLinks(doc, words.nodes);
       const element = inline
         ? el('span', { class: `fd-oneline-words fd-text-${style}`, 'data-node': node.id }, ...shown)
@@ -1606,10 +1644,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       return box;
     }
 
-    return { item, grid, fieldItem, buttonItem, hideWhen, slotItem };
+    return { item, grid, fieldItem, buttonItem, hideWhen, slotItem, pageWords };
   }
 
-  const { item, grid, fieldItem, buttonItem, hideWhen, slotItem } = drawer({
+  const { item, grid, fieldItem, buttonItem, hideWhen, slotItem, pageWords } = drawer({
     root: true,
     form,
     page,
@@ -1803,10 +1841,27 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     target?.focus();
   }
 
-  const done = el('div', { class: 'fd-done', hidden: '' }, el('p', { class: 'fd-done-title' }, labels.submitted));
+  const doneTitle = el('p', { class: 'fd-done-title' }, labels.submitted);
+  const done = el('div', { class: 'fd-done', hidden: '' }, doneTitle);
+  // An ending's own words, under its title: a paragraph for each of its lines.
+  const doneWords = page.endings?.length ? el('div', { class: 'fd-done-text' }) : null;
+  if (doneWords) done.append(doneWords);
   const again = el('button', { type: 'button', class: 'fd-button' }, labels.submitAnother);
   done.append(again);
   const content = el('div', { class: 'fd-content' });
+
+  /**
+   * The answers sent: the page's ending for them (`form.ending()`) — its title, its words with the answers they name and
+   * the id the app gave the response (`{id}`), its button to start again or none — else the plain thanks. An ending
+   * takes the focus, so what it says, the reference with it, is read out.
+   */
+  function showDone() {
+    content.hidden = true;
+    done.hidden = false;
+    const answers = doneWords && answersPart.loaded;
+    if (!answers || !doneWords) return;
+    answers.drawEnding({ doc, page, form, locale, write: asSaid, title: doneTitle, words: doneWords, again, thanks: labels.submitted, another: labels.submitAnother })?.focus();
+  }
 
   async function submitOrSave() {
     // A record only to read has nothing to save: Ctrl+Enter there does nothing.
@@ -1824,8 +1879,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         announce(labels.sentNotLatest);
         return;
       }
-      content.hidden = true;
-      done.hidden = false;
+      showDone();
     }
   }
   again.addEventListener('click', () => {
@@ -1951,7 +2005,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const stepButtons = new Map<string, HTMLButtonElement>();
     if (list) {
       for (const step of node.children) {
-        const go = el('button', { type: 'button', class: 'fd-step-link' }, ...withIcon(step.icon, step.label));
+        // A step's title, its list's and its own, with the answers it names: "Your visit to {branch}".
+        const go = el('button', { type: 'button', class: 'fd-step-link' }, ...withIcon(step.icon, pageWords(step.label)));
         go.addEventListener('click', async () => {
           if (form.goTo(step.id)) return focusStep();
           // Refused while a name typed is still being looked up: once it is found, or not, it is asked again — on the
@@ -1969,14 +2024,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
     const panels = node.children.map((step) => {
       const panel = el('section', { class: 'fd-step', 'data-node': step.id, 'aria-labelledby': uid(`${step.id}-title`) });
-      panel.append(el('h2', { class: 'fd-step-title', id: uid(`${step.id}-title`) }, ...withIcon(step.icon, step.label)));
-      if (step.description) panel.append(el('p', { class: 'fd-section-description' }, step.description));
+      panel.append(el('h2', { class: 'fd-step-title', id: uid(`${step.id}-title`) }, ...withIcon(step.icon, pageWords(step.label))));
+      if (step.description) panel.append(el('p', { class: 'fd-section-description' }, ...pageWords(step.description)));
       // The step is the box: a card in it draws none of its own.
       panel.append(grid(step.children, 1, top(false)));
       box.append(panel);
       return { step, panel };
     });
-    const back = el('button', { type: 'button', class: 'fd-button' }, node.backLabel ?? labels.back);
+    const back = el('button', { type: 'button', class: 'fd-button' }, ...pageWords(node.backLabel ?? labels.back));
     const skip = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.skip);
     const forward = el('button', { type: 'submit', class: 'fd-button fd-button-primary' });
     box.append(el('div', { class: 'fd-wizard-nav' }, back, el('span', { class: 'fd-spacer' }), status, skip, forward));
@@ -2018,7 +2073,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const last = index === steps.length - 1;
       back.hidden = index === 0;
       skip.hidden = last || !node.children.find((step) => step.id === state.step)?.optional;
-      forward.textContent = last ? node.finishLabel ?? labels.submit : node.nextLabel ?? labels.next;
+      // Its words as they read now: a page's own may name the answers given ("Send to {branch}").
+      const words = last ? node.finishLabel ?? labels.submit : node.nextLabel ?? labels.next;
+      forward.textContent = words.includes('{') ? form.words(words) : words;
       for (const [id, go] of stepButtons) {
         const at = steps.indexOf(id);
         (go.parentElement as HTMLElement).hidden = at === -1;
@@ -2198,7 +2255,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** The sheet's alerts: its words with the values they name, or a field's words while it holds any; its buttons after them, as links unless styled. */
   function alertBoxes(node: SheetNode): HTMLElement[] {
     return (node.alerts ?? []).map((alert) => {
-      const words = valueWords(doc, page.fields, alert.message, locale);
+      const words = valueWords(doc, page.fields, alert.message, locale, answersPart.loaded && asSaid);
       const message = el('span', { class: 'fd-alert-message' }, ...words.nodes);
       let fromField = false;
       const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, message);

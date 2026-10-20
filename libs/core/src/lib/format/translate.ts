@@ -2,12 +2,12 @@ import type { Page } from './page';
 
 /**
  * Keys whose text a person reads: titles, labels, help, prompts, messages, a printout's header and footer, why a
- * field is locked and why an answer does not fit its pattern. (What a page's records are called, `records`, is read
+ * field is locked and why an answer does not fit its pattern, an ending's button (`again`). (What a page's records are called, `records`, is read
  * too: see `walk`.)
  * Any key ending in `Label` is read too — a wizard's `nextLabel`, and in a
  * widget's settings the words at a scale's ends.
  */
-const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'header', 'footer', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip', 'unit', 'readonlyReason', 'patternHint']);
+const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'header', 'footer', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip', 'unit', 'readonlyReason', 'patternHint', 'again']);
 
 /** In a widget's settings, words besides those ending in `Label`: a links box's help and its empty box's link. */
 const WIDGET_TEXT_KEYS = new Set(['help', 'emptyLink']);

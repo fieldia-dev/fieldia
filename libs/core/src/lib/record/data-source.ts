@@ -673,7 +673,14 @@ export interface BotReport {
 }
 
 export interface SubmitResult {
+  /** The id the app gave the response: a booking's reference ("B-1043"), a ticket's number. An ending's words say it as `{id}`. */
   id?: RecordId;
+  /**
+   * Values the app worked out as it kept the response, by the page's fields — a reference field it filled in, the time
+   * it confirmed — laid over the answers sent where an ending reads them (its `when` and its `{field}`s). The form's
+   * answers themselves stay as they were sent.
+   */
+  values?: Values;
 }
 
 /**

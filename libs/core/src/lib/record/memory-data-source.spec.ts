@@ -119,6 +119,13 @@ describe('createMemoryDataSource — implements every DataSource method', () => 
     expect(ds.responses).toEqual([{ pageId: 'feedback', values: { rating: 5 } }]);
   });
 
+  it('answers a response as the demo’s server would, when told how: its reference and the values it adds', async () => {
+    const ds = createMemoryDataSource({ submitted: (request, count) => ({ id: `B-${1042 + count}`, values: { rating: Number(request.values['rating']) * 2 } }) });
+    expect(await ds.submit({ pageId: 'feedback', values: { rating: 5 } })).toEqual({ id: 'B-1043', values: { rating: 10 } });
+    expect(await ds.submit({ pageId: 'feedback', values: { rating: 1 } })).toEqual({ id: 'B-1044', values: { rating: 2 } });
+    expect(ds.responses.map((response) => response.values['rating'])).toEqual([5, 1]);
+  });
+
   it('logs every call, for tests that need to know what was asked', async () => {
     const ds = source();
     await ds.search({ model: 'country', query: 'jo' });

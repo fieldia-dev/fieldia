@@ -157,6 +157,7 @@ const NAMES: Record<string, string> = {
   'Rows and New open': 'الصفوف و«جديد» تُفتح',
   'Possible duplicates': 'السجلات المكررة المحتملة',
   'Records are called': 'اسم السجلات',
+  'Once it is sent': 'بعد الإرسال',
   'One with its article': 'الواحد مع أداة التنكير',
   'Field names small inside them': 'أسماء الحقول بحرف صغير داخلها',
   'Duplicates asked for': 'متى يُبحث عن السجلات المكررة',

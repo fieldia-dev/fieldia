@@ -763,3 +763,37 @@ In plain words:
   Show as it opens and on each change. An answer older than the last change is dropped.
 - **Without `groups`** a filter bar lists a choice's and a yes or no's values with no count, and a link's or text's
   none, as before; **without `totals` and `list`**, Show says "Show results" and the menu no number.
+
+## 16. What a send is answered with (Wave 4, lane w4-endings)
+
+A page of responses' ending says what the app's server answered as it kept the
+response — "Your booking is B-1043" — so `submit`'s answer, which the form threw
+away, is kept:
+
+```ts
+interface SubmitResult {
+  id?: RecordId;               // the reference the app gave the response: "B-1043"
+  values?: Values;             // values it worked out as it kept it, by the page's fields
+}
+// FormState gains sent?: SentResponse | null; Form gains words(text), ending(), endingWords(text);
+// FormOptions gains valueWords?(field, value, values): how a value reads inside the page's words.
+interface SentResponse { id: RecordId | null; values: Values }   // the answers sent, `values` laid over them
+```
+
+In plain words:
+
+- **Kept, not written back.** The form keeps the answer as `state.sent` once the
+  send lands — the answers as they went, the source's `values` laid over them —
+  and the page's `endings` read it (`form.ending()`): the first whose `when` holds
+  on those values with `id` as the response's id, else the one with no `when`. The
+  form's own values stay as sent: nothing changes, nothing is dirty, no step runs.
+  `reset()` (Submit another) clears it.
+- **Late answers.** An answer for answers no longer shown — the form started
+  again while the send was on its way, or another record shown — lays nothing.
+- **Optional.** A source that answers `{}` or nothing gives an ending with no
+  reference (`{id}` reads empty) and the `id` built-in null; one that gives no
+  `values` changes nothing of the answers. The `send` event is as it was.
+- The memory source answers `{ id: n }` (the response's number), or as its
+  `submitted?(request, count) => SubmitResult` option says, for demos that show a
+  reference. Tests: `libs/core/src/lib/record/endings.spec.ts`,
+  `memory-data-source.spec.ts`.

@@ -11,9 +11,28 @@
     "theme": "google-forms"
   },
   "fields": {
+    "branch": {
+      "type": "selection",
+      "label": "Which branch did you visit?",
+      "required": true,
+      "options": [
+        {
+          "value": "downtown",
+          "label": "Downtown"
+        },
+        {
+          "value": "riverside",
+          "label": "Riverside"
+        },
+        {
+          "value": "hillcrest",
+          "label": "Hillcrest"
+        }
+      ]
+    },
     "overall": {
       "type": "integer",
-      "label": "How would you rate your experience?",
+      "label": "How was your visit to {branch|us}?",
       "required": true,
       "min": 1,
       "max": 5
@@ -54,7 +73,7 @@
     },
     "better": {
       "type": "text",
-      "label": "What could we do better?",
+      "label": "What could {branch|we} do better?",
       "size": 2000
     },
     "follow_up": {
@@ -77,6 +96,12 @@
         "title": "Your experience",
         "columns": 1,
         "children": [
+          {
+            "type": "field",
+            "id": "f-branch",
+            "field": "branch",
+            "widget": "radio"
+          },
           {
             "type": "field",
             "id": "f-overall",
@@ -121,5 +146,23 @@
         ]
       }
     ]
-  }
+  },
+  "endings": [
+    {
+      "when": "overall <= 2 and follow_up",
+      "title": "We are sorry, and thank you for telling us",
+      "text": "The manager at {branch} reads every answer, and will write to you at {email} within a day.",
+      "again": false
+    },
+    {
+      "when": "overall <= 2",
+      "title": "We are sorry, and thank you for telling us",
+      "text": "The team at {branch} reads every answer, and it changes what we do next.",
+      "again": false
+    },
+    {
+      "title": "Thank you!",
+      "text": "We are glad you came to {branch}. See you again soon."
+    }
+  ]
 }

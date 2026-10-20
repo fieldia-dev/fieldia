@@ -80,7 +80,7 @@ interface DataSource {
   <li>${c('definitions({ list, values })')} — the definitions of a properties field's ${c('definitionsFrom.list')}: those the record its link points to keeps (Flectra's ${c('definition_record')}), read from ${c('values')}. ${c('saveDefinitions({ list, values, definitions })')} keeps them all again, one added in place among them.</li>
   <li>${c('create({ model, name })')} — make a record from just its name (a backend's ${c('name_create')}). Return ${c('{ id, label }')}.</li>
   <li id="related">What a link shows of its record besides its name, a found or loaded link may carry: ${c('avatar')} (a picture's address or a ${c('data:')} URI), ${c('color')} (1 to 11, Flectra's colours), ${c('details')} (lines under its name, such as an address, joined by new lines) and, for a stage, ${c('folded')}. The page asks for them with its nodes' ${c('avatar')}, ${c('colors')} and ${c('details')} options and a statusbar's ${c('fold')}; a source gives them where its model has them. A record of a tree — an area, an iteration — may carry its ${c('path')}, its names from the top down (${c('["Portal", "Sprint 14"]')}), and an ${c('aside')}, words a path picker shows at the end of its row (an iteration's dates). ${c('createMemoryDataSource')} takes ${c('shows')}: by model, the fields each comes from — ${c('{ "res.users": { avatar: "image_128" }, tag: { color: "color" }, stage: { folded: "fold" }, partner: { details: ["street", "city"] }, iteration: { path: "path", aside: "dates" } }')}; a ${c('path')} field holds a list of names, or names joined by a backslash, and a search finds such a record by its whole path too.</li>
-  <li>${c('submit({ pageId, values, bot })')} — the answers to the questions that were shown; skipped steps are left out. ${c('bot')} comes on a page with a bot check, below.</li>
+  <li>${c('submit({ pageId, values, bot })')} — the answers to the questions that were shown; skipped steps are left out. ${c('bot')} comes on a page with a bot check, below. Return ${c('{ id }')} — the reference you give the response, ${c('"B-1043"')} — and any ${c('values')} you worked out as you kept it, by the page's fields (the time you confirmed): the page's <a href="/pages/#endings">ending</a> reads them, ${c('{id}')} in its words saying the reference. The answers on the form stay as they were sent; ${c('form.getState().sent')} keeps what you answered.</li>
 </ul>
 <p>A slow answer is handled for you: if someone keeps typing, an ${c('onchange')} or ${c('search')} answer that arrives after a newer question is ignored.</p>
 
@@ -378,8 +378,10 @@ export const api: DataSource = {
     return rows.map((row: { id: number; name: string }) => ({ id: row.id, label: row.name }));
   },
   async submit({ pageId, values }) {
-    await fetch(\`/api/responses/\${pageId}\`, { method: 'POST', body: JSON.stringify(values) });
-    return {};
+    const response = await fetch(\`/api/responses/\${pageId}\`, { method: 'POST', body: JSON.stringify(values) });
+    // The reference it was given, which the page's ending says: "Your booking is {id}".
+    const kept = await response.json();
+    return { id: kept.reference, values: { confirmed_at: kept.confirmed_at } };
   },
 };`
 )}
@@ -400,6 +402,7 @@ const dataSource = createMemoryDataSource({
   can: { lead: (values) => (values.stage === 'won' ? { edit: false, reason: 'A won lead is closed.' } : undefined) },
 });
 dataSource.responses;   // every submitted response, for tests
+// Each response answered as your server would: createMemoryDataSource({ submitted: (request, count) => ({ id: \`B-\${1042 + count}\` }) })
 dataSource.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });   // as someone else, on another screen`
 )}
 <p>Its ${c('groups')} and ${c('totals')} group a date by the span it falls in (${c('interval')}), and total an amount in one currency only where ${c('currencies')} names the field holding each record's (see <a href="/lists/#totals">lists that add up</a>).</p>
