@@ -260,6 +260,17 @@ const assistant: DesignerAssistant = {
 createDesigner({ page, assistant }); // or mountSurveyEditor(host, { designer, assistant })
 ```
 
+### A table's columns
+
+A table of lines' panel lists its columns — a label and a kind each: text, a
+number, a date, yes or no, or a choice. A choice column's choices sit under its
+row: written there, an option each (Add option, ×), or one of the app's lists
+(`lists` given to the designer, a box for a name without), with the line's other
+columns and the record's fields (“Workspace (the record)”, `parent.workspace`) it
+changes with — `designer.setColumnChoices(id, column, { labels })`, `{ from: {
+list, dependsOn } }`, `{ from: null }`. A column of a kind it does not offer, such
+as a link, keeps its type.
+
 ### Saved forms placed in a page
 
 A store that lists its saved forms — `PageStore.list()`, optional, giving

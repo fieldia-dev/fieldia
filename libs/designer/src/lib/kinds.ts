@@ -187,10 +187,10 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
 export interface LineColumn {
   name?: string;
   label: string;
-  /** `other` keeps a column of a type the editor does not offer, such as a link, as it is. */
-  kind: 'text' | 'number' | 'date' | 'yes-no' | 'other';
+  /** `choice`, its options written here or from one of the app's lists (`setColumnChoices`); `other` keeps a column of a type the editor does not offer, such as a link, as it is. */
+  kind: 'text' | 'number' | 'date' | 'yes-no' | 'choice' | 'other';
 }
-export const COLUMN_TYPES = { text: 'char', number: 'float', date: 'date', 'yes-no': 'boolean' } as const;
+export const COLUMN_TYPES = { text: 'char', number: 'float', date: 'date', 'yes-no': 'boolean', choice: 'selection' } as const;
 
 /** The kind of column a line field is; a whole number and a float are both numbers. */
 export function columnKind(field: Field): LineColumn['kind'] {
@@ -207,6 +207,8 @@ export function columnKind(field: Field): LineColumn['kind'] {
       return 'date';
     case 'boolean':
       return 'yes-no';
+    case 'selection':
+      return 'choice';
     default:
       return 'other';
   }
