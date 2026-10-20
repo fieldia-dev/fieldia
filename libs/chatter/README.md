@@ -40,5 +40,12 @@ the customer" where you give no `kind`; standing alone, they take the page's
 words as `records`. An app's own `notSaved` or `created`, given without its
 `…Noun` sentence, is said instead.
 
+On a page with `approval`, the record's approval history is told among its
+messages by when each happened — "Asked for approval", "Approved for Finance",
+"Rejected for Finance" with why — as events, kept up as decisions are taken
+and never posted to the source. `chatterSlot({ source, approvals: false })`
+tells none, where your server posts each decision in the conversation itself;
+`approvalEntries(approval, labels)` gives the events for a chatter of your own.
+
 Message HTML is cleaned before it is shown; what people type is posted as
 escaped text. MIT.

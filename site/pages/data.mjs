@@ -40,6 +40,8 @@ interface DataSource {
   limits?(request: LimitsRequest): Promise<LimitsResult>;    // responses taken, this person's, each choice's takers
   saveDraft?(request: SaveDraftRequest): Promise<SavedDraft>; // keep the answers so far, to continue later
   loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>; // a draft, by its key
+  approvals?(request: ApprovalsRequest): Promise<Approvals>;  // a record's approval levels, what was decided, what this person may decide
+  decide?(request: DecideRequest): Promise<Approvals | void>; // approve or reject at a level, with why
 }`
 )}
 
@@ -72,6 +74,7 @@ interface DataSource {
     <tr><td>${c('notDuplicates')} · ${c('markNotDuplicate')}</td><td>A saved record with possible duplicates is shown; someone presses <em>It's someone new</em></td><td>What was let be kept on your server, so every device lets it be — without both, the person's browser keeps it. See <a href="#duplicates">possible duplicates</a></td></tr>
     <tr><td>${c('limits')}</td><td>A page with ${c('limits')} or options with ${c('seats')} opens, and again just before its answers go and after</td><td>The most responses, one from each person, each choice's places left — see <a href="#limits">opening, closing and limiting a form</a>; without it, a page keeps to its dates alone</td></tr>
     <tr><td>${c('saveDraft')} · ${c('loadDraft')}</td><td>Someone types on a page with ${c('continueLater')}, enters a wizard's step, or presses Continue later; a page opens with a draft's key</td><td>Answers kept on your server, continued on any device — see <a href="#drafts">save and resume</a>; without them, no Continue later shows</td></tr>
+    <tr><td>${c('approvals')} · ${c('decide')}</td><td>A record of a page with ${c('approval')} is shown, saved, or decided on; someone presses Approve, or Reject with why</td><td>Who must approve it at which level, the record locked while it waits, Approve and Reject, its history — see <a href="#approvals">approvals on a record</a>; without them, nothing shows</td></tr>
   </tbody>
 </table>
 </div>
@@ -308,6 +311,46 @@ mountViewer(element, { page, dataSource, resume: new URLSearchParams(location.se
   <li>Without the two members, no Continue later shows, and drafts stay in the browser's store as they always have (with their step now). ${c('form.continueLater()')}, ${c('form.canContinueLater()')} and the form's ${c('draft')} event (${c('onDraft')} in React, ${c('@draft')} in Vue, ${c('(draft)')} in Angular) are there for a screen of your own.</li>
 </ul>
 
+<h2 id="approvals">Approvals on a record</h2>
+<p>A purchase order over a limit, an expense, time off, a discount, a legal sign-off: a record that must be approved before it goes on. A page with ${c('approval')} says on the record where it stands — <em>“Waiting for Finance: Mona Adel or Hany Lotfy”</em>, <em>“Needs approval from Finance, then CFO”</em>, <em>“Approved”</em>, <em>“Rejected by Mona Adel (Finance)”</em> with why — its levels in their order with who decided there, <strong>Approve</strong> and <strong>Reject</strong> for those who may decide (Reject always asks why), the record locked while it waits but for the fields the page leaves open, each lock saying why, and its history: who asked, who decided, when, and why — beside the record and in its conversation. Fieldia says it and asks; who is asked, and in what order, is your app's to decide, or the approval engine's behind it.</p>
+${code(
+  'json',
+  `
+"approval": { "open": ["notes"] }`
+)}
+${code(
+  'ts',
+  `
+const dataSource = {
+  ...yourDataSource,
+  // The record's route as your engine has it: its levels, each with its people and where it stands.
+  async approvals({ model, recordId, user }) {
+    const route = await fetch(\`/api/approvals/\${model}/\${recordId}\`).then((answer) => answer.json());
+    return {
+      levels: [
+        { id: 'finance', name: 'Finance', approvers: [{ id: 21, name: 'Mona Adel' }, { id: 28, name: 'Hany Lotfy' }], state: 'waiting' },
+        { id: 'cfo', name: 'CFO', approvers: [{ id: 26, name: 'Sara Nabil' }], needs: 'all', state: 'later' },
+      ],
+      history: route.history,        // [{ decision: 'requested' | 'approved' | 'rejected', level?, by, at, reason? }], oldest first
+      mine: route.mine,              // the level ids this person may decide now: ['finance']
+      why: 'Orders over EGP 150,000 go to Finance, then the CFO.',
+    };
+  },
+  // A decision taken: your engine moves the record on; answer with the approvals as they stand, or nothing.
+  async decide({ model, recordId, level, decision, reason }) {
+    await fetch(\`/api/approvals/\${model}/\${recordId}/\${level}\`, { method: 'POST', body: JSON.stringify({ decision, reason }) });
+  },
+};`
+)}
+<ul>
+  <li>${c('approvals({ model, recordId, user })')} — asked as a saved record is shown, after each save (a save may send it for approval), and after each decision. Each level comes with its ${c('state')} — ${c('waiting')}, ${c('later')}, ${c('approved')}, ${c('rejected')} or ${c('skipped')} — and its ${c('approvers')}, each with what they decided in this round; ${c('needs: "all"')} where every one of them must approve (<em>“Mona Adel and Omar Said”</em>), any one by default (<em>“… or …”</em>); ${c('together: true')} where the levels are asked at once. No levels: the record needs no approval, and nothing shows. Throw, and the page says it could not read them, with Retry.</li>
+  <li>${c('decide({ model, recordId, level, decision, reason, user })')} — ${c('decision')} is ${c('approved')} or ${c('rejected')}; a rejection always carries why. What is typed is read and saved first, then the record is loaded again after it — your decision may have moved it on. Refuse with ${c("saveRefused({ kind: 'rule', message })")}: nothing is decided, and your words are said. Without ${c('decide')}, the page says where a record stands and offers no Approve or Reject.</li>
+  <li>While a level waits, every field is locked but those ${c('approval.open')} names; ${c('"lock": false')} locks none, and your ${c('save')} refuses what it must. Rejected or approved, nothing is locked by it.</li>
+  <li>With Fieldia's chatter beside the record (${c('chatterSlot')}), the history is told among its messages, as events never posted to your chatter's source — ${c('chatterSlot({ source, approvals: false })')} where your server posts each decision there itself.</li>
+  <li>An engine such as Flowyard's approval step answers them from a record's run: each approval step on its way a level — not reached ${c('later')}, waiting for its people ${c('waiting')}, gone on its Approved way ${c('approved')}, its Declined way ${c('rejected')}, on a branch not taken ${c('skipped')}, on parallel branches ${c('together')} — ${c('decide')} answering the waiting step for the person, and its run's steps as they went the ${c('history')}.</li>
+  <li>${c('form.decide(level, decision, reason?)')}, ${c('form.refreshApprovals()')}, ${c('form.approvalLock(field)')} and ${c('state.approval')} are there for a screen of your own.</li>
+</ul>
+
 <h2 id="changes">What a save sends</h2>
 <p>${c('changes.values')} has the plain fields that changed. Tables of lines and many2many links come as operations, named the way Odoo names its x2many commands, so an Odoo or Flectra adapter maps them one to one:</p>
 ${code(
@@ -464,6 +507,7 @@ dataSource.responses;   // every submitted response, for tests
 dataSource.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });   // as someone else, on another screen`
 )}
 <p>Its ${c('limits')} counts the responses it takes — and those ${c('answeredElsewhere(pageId, values)')} says someone else sent meanwhile, never this person's — over the starting counts its ${c('limits')} option gives by page (${c("{ 'event-signup': { responses: 147, perChoice: { session: { morning: 28 } } } }")}), and a record page's model's records but the one edited. Its ${c('saveDraft')} keys drafts ${c('draft-1')}, ${c('draft-2')}…, kept in ${c('dataSource.drafts')} (each with its page and ${c('later')}), answering Continue later with ${c('draftLink(key)')}'s link where given; ${c('loadDraft')} finds them, and those its ${c('drafts')} option starts with. A send lets its draft go.</p>
+<p>Its ${c('approvals')} and ${c('decide')} work as a small approval engine, from its ${c('approvals')} option by model: ${c("{ 'purchase.order': (values) => ({ levels: [{ id: 'finance', name: 'Finance', approvers: [{ id: 21, name: 'Mona Adel' }] }], asked: values.state === 'to_approve', approved: { state: 'purchase' }, rejected: { state: 'rejected' } }) }")} — the levels a record must pass (or ${c('null')}: none), in turn unless ${c('together')}, whether it is sent for approval now (${c('asked')}), and what it holds once approved or rejected. It keeps each decision, starts a round each time a record is sent again, and finds the person deciding by the form's ${c('user')}; ${c('approvalHistory')} (by ${c("'model:id'")}) is what it starts from.</p>
 <p>Its ${c('groups')} and ${c('totals')} group a date by the span it falls in (${c('interval')}), and total an amount in one currency only where ${c('currencies')} names the field holding each record's (see <a href="/lists/#totals">lists that add up</a>).</p>
 <p>Its ${c('slots')} answers from booking schedules, with ${c('scheduleSlots')}: the hours each day of the week on a zone's clock, a booking's length and the minutes kept free after one, holidays, and the records its bookings are — each car's own, with ${c('same')} — a time the clocks skip that day left out, and times gone by too:</p>
 ${code(

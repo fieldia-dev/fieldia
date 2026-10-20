@@ -120,6 +120,17 @@ close before the open, or limits on a record's screen, are refused in words),
 `designer.setContinueLater(on)` and `designer.setOptionDetails(id, index, {
 seats })` the rest; Publish lists each change.
 
+## Approvals on a record's screen
+
+With nothing picked, a record's screen's Rules tab offers **Approvals** — its
+records wait for approval as the app's data source says — and once it is on,
+**Locked while it waits** and **Open while it waits**: a tick for each field
+that stays open while a record waits for a decision, every other one locked.
+`designer.setApproval({ on, open, lock })` sets them (`on: false` takes the
+setting away; `lock: false` leaves none open to name; a form of responses or a
+list is refused in words); a field taken away goes from those left open, and
+Publish lists each change.
+
 ## Trying a field's rules
 
 Under a field's answer rules — on the panel's Rules tab, and in a survey
