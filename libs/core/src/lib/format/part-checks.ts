@@ -9,7 +9,7 @@ import type { Page } from './page';
  */
 export interface FieldTools {
   readonly page: Page;
-  need(name: string, path: string): Field | LineField | undefined;
+  need(name: string, path: string, scope?: Record<string, Field | LineField>): Field | LineField | undefined;
   report(path: string, message: string): void;
   /** Said where checks come in a part that has not come (the one-tag script's): they are owed. */
   owe(part: string): void;

@@ -26,6 +26,7 @@ import { checkSlots } from './slots-checks';
 import { checkSignature } from './signature-checks';
 import { checkEndings } from './endings-checks';
 import { checkMap, checkPlace, type MapTools } from './map-checks';
+import { checkTable, type TableTools } from './table-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -613,9 +614,19 @@ export class ReferenceCheck {
   }
 
   /** A page's own buttons at its foot: buttons as any. */
+  /** The tools a table of lines' checks are handed (table-checks.ts). */
+  private tableTools(): TableTools {
+    return {
+      ...this.fieldTools(),
+      claim: (id, path) => this.claim(id, path),
+      checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
+      checkPress: (button, path) => this.checkPress(button, path),
+    };
+  }
+
   /** The tools a part's checks of a field are handed (part-checks.ts). */
   private fieldTools(): FieldTools {
-    return { page: this.page, need: (name, path) => this.need(name, path), report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) };
+    return { page: this.page, need: (name, path, scope) => this.need(name, path, scope), report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) };
   }
 
   /** The tools a map's checks are handed (map-checks.ts). */
@@ -941,19 +952,7 @@ export class ReferenceCheck {
       const problem = autofillGroupProblem(node.autocomplete, node.widget === 'address');
       if (problem) this.report(`${path}.autocomplete`, problem);
     }
-    if (def && node.totals) {
-      if (def.type !== 'one2many') {
-        this.report(`${path}.totals`, `totals only apply to one2many fields; "${node.field}" is a ${def.type}`);
-      } else {
-        node.totals.forEach((column, i) => {
-          const sub = has(def.fields, column) ? def.fields[column] : undefined;
-          if (!sub) this.report(`${path}.totals[${i}]`, `"${column}" is not a field of the lines of "${node.field}"`);
-          else if (!['integer', 'float', 'monetary'].includes(sub.type)) {
-            this.report(`${path}.totals[${i}]`, `"${column}" is a ${sub.type}; only integer, float and monetary columns add up`);
-          }
-        });
-      }
-    }
+    if (def && node.totals && def.type !== 'one2many') this.report(`${path}.totals`, `totals only apply to one2many fields; "${node.field}" is a ${def.type}`);
     // Options that point at another field: by convention their names end in "Field".
     for (const [key, value] of Object.entries(node.options ?? {})) {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
@@ -967,10 +966,7 @@ export class ReferenceCheck {
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
     if (def) this.checkPicker(node, def, path);
     // The order lines load in: fields of its lines.
-    if (def && node.order) {
-      if (def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);
-      else node.order.forEach((item, i) => !has(def.fields, item.field) && this.report(`${path}.order[${i}].field`, `"${item.field}" is not a field of the lines of "${node.field}"`));
-    }
+    if (def && node.order && def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);
     // A line's own form: its parts read the line's fields, the record as parent.
     if (def && node.lineForm) {
       if (def.type !== 'one2many') this.report(`${path}.lineForm`, `lineForm only applies to one2many fields; "${node.field}" is a ${def.type}`);
@@ -984,34 +980,7 @@ export class ReferenceCheck {
     }
     // A table's own rules: a cell's read on its line (with parent), a column's `hidden` on the record.
     if (def && node.lineDelete !== undefined && def.type !== 'one2many') this.report(`${path}.lineDelete`, `lineDelete only applies to one2many fields; "${node.field}" is a ${def.type}`);
-    if (def && (node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons || node.lineDelete !== undefined)) {
-      if (def.type !== 'one2many') {
-        if (node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons) this.report(path, `cells, rowTones, rowBold and rowButtons only apply to one2many fields; "${node.field}" is a ${def.type}`);
-      }
-      else {
-        const line: Scope = { fields: def.fields, lines: node.field };
-        for (const [column, rules] of Object.entries(node.cells ?? {})) {
-          if (!has(def.fields, column)) {
-            this.report(`${path}.cells.${column}`, `"${column}" is not a field of the lines of "${node.field}"`);
-            continue;
-          }
-          this.checkModifiers(rules, `${path}.cells.${column}`, ['invisible', 'readonly', 'required', 'bold'], line);
-          this.checkModifiers(rules, `${path}.cells.${column}`, ['hidden']);
-          rules.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.cells.${column}.tones[${i}]`, ['when'], line));
-          // Its widget's options that point at a field: one of the line's.
-          for (const [key, value] of Object.entries(rules.options ?? {})) {
-            if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.cells.${column}.options.${key}`, def.fields);
-          }
-        }
-        node.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when'], line));
-        this.checkModifiers(node, path, ['rowBold', 'lineDelete'], line);
-        node.rowButtons?.forEach((button, i) => {
-          this.claim(button.id, `${path}.rowButtons[${i}]`);
-          this.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible'], line);
-          this.checkPress(button, `${path}.rowButtons[${i}]`);
-        });
-      }
-    }
+    if (def && def.type !== 'one2many' && (node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons)) this.report(path, `cells, rowTones, rowBold and rowButtons only apply to one2many fields; "${node.field}" is a ${def.type}`);
     // Buttons for the chosen lines and in the control row: buttons of the record, as any.
     for (const key of ['selectedButtons', 'controlButtons'] as const) {
       if (!node[key]) continue;
@@ -1022,27 +991,11 @@ export class ReferenceCheck {
         this.checkPress(button, `${path}.${key}[${i}]`);
       });
     }
-    if (def && node.optionalColumns) {
-      if (def.type !== 'one2many') {
-        this.report(`${path}.optionalColumns`, `optional columns only apply to one2many fields; "${node.field}" is a ${def.type}`);
-      } else {
-        // The columns the table shows: those named, or every line field but the structural ones.
-        const shown = node.columns ?? Object.keys(def.fields).filter((c) => c !== ('lineKinds' in def ? def.lineKinds?.field : undefined) && c !== def.sequenceField);
-        for (const column of Object.keys(node.optionalColumns)) {
-          if (!shown.includes(column)) this.report(`${path}.optionalColumns.${column}`, `"${column}" is not a column of "${node.field}"`);
-        }
-      }
-    }
+    if (def && node.optionalColumns && def.type !== 'one2many') this.report(`${path}.optionalColumns`, `optional columns only apply to one2many fields; "${node.field}" is a ${def.type}`);
+    // A table of lines' own settings, drawn by the lines part: its columns, totals, order, cells and rows' rules.
+    if (def?.type === 'one2many') return checkTable(node, def, path, this.tableTools());
     if (!def || !node.columns) return;
-    if (def.type === 'one2many') {
-      node.columns.forEach((column, i) => {
-        if (!has(def.fields, column)) {
-          this.report(`${path}.columns[${i}]`, `"${column}" is not a field of the lines of "${node.field}"`);
-        } else if (def.fields[column].type === 'one2many') {
-          this.report(`${path}.columns[${i}]`, `"${column}" holds lines of its own: they are edited in the line's form (lineForm), not drawn in its row`);
-        }
-      });
-    } else if (def.type === 'many2many') {
+    if (def.type === 'many2many') {
       // A table of the records linked: its columns are fields of those records.
       node.columns.forEach((column, i) => {
         if (!def.fields || !has(def.fields, column)) this.report(`${path}.columns[${i}]`, `"${column}" is not a field of the records of "${node.field}"`);
