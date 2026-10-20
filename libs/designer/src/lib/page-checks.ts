@@ -333,7 +333,7 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
     out.push(...fileChanges(name, was, p, words));
     out.push(...structureChanges(name, was, p, words));
     // How it shows, beyond what the files' own words and the inputs' said.
-    if (settings.unsaid.some((key) => !isFiles(p.field) || !['files', 'filesSwitch', 'camera'].includes(key))) out.push(w.showsChanged(name));
+    if (settings.unsaid.some((key) => !isFiles(p.field) || !FILE_OPTIONS.includes(key))) out.push(w.showsChanged(name));
     const shows = whenItShows(name, was.node.invisible, p.node.invisible, survey, words);
     if (shows) out.push(shows);
     if (was.holder.id !== p.holder.id && !layout.said.has(p.node.id)) out.push(w.moved(name, placeName(after, p.holder, words)));
@@ -358,6 +358,8 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
 }
 
 const isFiles = (field: Field) => field.type === 'binary' || field.type === 'image';
+/** A file field's settings the files' own words say: how chosen files show, a phone's camera, and a photo set's own. */
+const FILE_OPTIONS = ['files', 'filesSwitch', 'camera', 'cover', 'captions', 'edit', 'keepOriginal', 'aspect'];
 
 /** A file upload's or an image's: the files it takes, how many, how the chosen ones show and whether people can switch, a phone's camera. */
 function fileChanges(name: string, was: { field: Field; node: FieldNode }, now: { field: Field; node: FieldNode }, words: DesignerWords): string[] {
@@ -384,6 +386,15 @@ function fileChanges(name: string, was: { field: Field; node: FieldNode }, now: 
   const [shrinkWas, shrinkNow] = [a.shrink, b.shrink];
   if (JSON.stringify(shrinkWas ?? null) !== JSON.stringify(shrinkNow ?? null)) {
     out.push(shrinkNow === false ? w.photosAsTaken(name) : shrinkNow ? w.photosSmaller(name, shrinkNow.maxSide ?? 2048, Math.round((shrinkNow.quality ?? 0.85) * 100)) : w.photosUsual(name));
+  }
+  // A photo set's own, as set on a set both before and after: its cover, captions, crop and turn, the original, its shape.
+  if (was.node.widget === 'photos' && now.node.widget === 'photos') {
+    const on = (q: { node: FieldNode }, key: string, usual: boolean) => (usual ? option(q, key) !== false : option(q, key) === true);
+    for (const [key, usual, said] of [['cover', true, w.photoCover], ['captions', false, w.photoCaptions], ['edit', true, w.photoEdit], ['keepOriginal', true, w.photoOriginal]] as const) {
+      if (on(was, key, usual) !== on(now, key, usual)) out.push(said(name, on(now, key, usual)));
+    }
+    const shape = (q: { node: FieldNode }) => (typeof option(q, 'aspect') === 'string' ? (option(q, 'aspect') as string) : null);
+    if (shape(was) !== shape(now)) out.push(w.photoShape(name, shape(now)));
   }
   return out;
 }

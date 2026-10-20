@@ -56,6 +56,12 @@ export const changes = {
   photosSmaller: (name: string, side: number, percent: number) => `“${name}”: photos are made smaller, to ${side} px at ${percent}%`,
   photosAsTaken: (name: string) => `“${name}”: photos are kept as they were taken`,
   photosUsual: (name: string) => `“${name}”: photos are made smaller as usual`,
+  /** A photo set's own: its cover, its captions, crop and turn, the original kept, the shape of a crop (null: any). */
+  photoCover: (name: string, on: boolean) => `“${name}”: ${on ? 'the first photo is the cover' : 'no photo is marked the cover'}`,
+  photoCaptions: (name: string, on: boolean) => `“${name}”: ${on ? 'a caption under each photo' : 'no caption under the photos'}`,
+  photoEdit: (name: string, on: boolean) => `“${name}”: photos ${on ? 'can be' : 'can no longer be'} cropped and turned`,
+  photoOriginal: (name: string, on: boolean) => `“${name}”: a photo cropped ${on ? 'keeps' : 'no longer keeps'} its original`,
+  photoShape: (name: string, shape: string | null) => `“${name}”: photos are cropped to ${shape ?? 'any shape'}`,
   // ---- a sheet's header, a list
   addedHeader: (kind: HeaderKind, label: string) => `Added the ${kind} “${label}”`,
   removedHeader: (kind: HeaderKind, label: string) => `Removed the ${kind} “${label}”`,

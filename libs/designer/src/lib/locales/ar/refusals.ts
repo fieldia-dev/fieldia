@@ -64,6 +64,7 @@ export const refusals: DesignerWords['refusals'] = {
   onlyFiles: 'تحميل الملف وحده يقبل الملفات',
   filesFromModel: (label) => `الملفات التي يقبلها ${q(label)} تأتي من نموذج البيانات`,
   imageOnly: 'الصورة تقبل الصور فقط',
+  photoSetSeveral: 'مجموعة الصور تضم عدة صور',
   largestFile: 'أكبر حجم للملف رقم بالبايت أكبر من صفر',
   smallerPhotos: 'تُصغَّر الصور إلى عدد صحيح من البكسلات بين 160 و16384، بجودة بين 0.3 و1',
   severalFirst: 'فعّل «أكثر من ملف» أولًا',

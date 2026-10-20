@@ -7,8 +7,8 @@ import { linksPart, richTextPart } from './work-text';
 import { settingNumber } from './number-box';
 
 /**
- * The settings of the kinds that hold more than one value — a signature, an
- * address, a table of lines, links to records and rich text — in the picked
+ * The settings of the kinds that hold more than one value — a signature, a
+ * photo set, an address, a table of lines, links to records and rich text — in the picked
  * field itself, beside the rest of its kind's, and in the side panel the
  * same way: a signature's pen, its words and an upload; an address's parts
  * that must be filled and its country to start with; a table's least and
@@ -287,8 +287,41 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
     };
   }
 
+  /**
+   * A photo set's own (`"widget": "photos"`): whether the first is the cover, a caption under each photo, crop and turn
+   * — and with it whether the original of a photo cropped is kept — and the shape every crop keeps, or any.
+   */
+  function photos(): StructurePart {
+    const cover = toggle(w.photoCover, (on) => widget({ cover: on ? null : false }));
+    const captions = toggle(w.photoCaptions, (on) => widget({ captions: on || null }));
+    const edit = toggle(w.photoEdit, (on) => widget({ edit: on ? null : false, ...(on ? {} : { keepOriginal: null, aspect: null }) }));
+    const original = toggle(w.photoOriginal, (on) => widget({ keepOriginal: on ? null : false }));
+    const shapes: [string, string][] = [['', w.photoShapeAny], ...['1:1', '4:3', '3:2', '16:9', '3:4'].map((shape): [string, string] => [shape, shape])];
+    const shape = select(w.photoShape, shapes);
+    shape.addEventListener('change', () => widget({ aspect: shape.value || null }));
+    const shapeRow = word(w.photoShape, shape);
+    return {
+      element: el('div', { class: 'fd-kind-block' }, cover.element, captions.element, edit.element, original.element, shapeRow, el('span', { class: 'fd-kind-hint' }, w.photosHelp)),
+      refresh(_page, node) {
+        cover.button.setAttribute('aria-checked', String(option(node, 'cover') !== false));
+        captions.button.setAttribute('aria-checked', String(option(node, 'captions') === true));
+        const editing = option(node, 'edit') !== false;
+        edit.button.setAttribute('aria-checked', String(editing));
+        original.button.setAttribute('aria-checked', String(option(node, 'keepOriginal') !== false));
+        // What a crop keeps, only where photos are cropped: hidden, never disabled, where they are not.
+        original.element.hidden = !editing;
+        shapeRow.hidden = !editing;
+        const aspect = option(node, 'aspect');
+        // A shape the page set that is none of these is shown as it is.
+        if (typeof aspect === 'string' && aspect && !shapes.some(([value]) => value === aspect)) shape.append(el('option', { value: aspect }, aspect));
+        show(shape, typeof aspect === 'string' ? aspect : '');
+      },
+    };
+  }
+
   const parts: StructurePart[] = [];
   if (kind === 'signature') parts.push(signature());
+  if (kind === 'photos') parts.push(photos());
   if (kind === 'link' || kind === 'links') parts.push(link());
   // A many2many as tags or as a work item's links box, with its Add link, help and empty link.
   if (kind === 'links') parts.push(linksPart(el, designer, id));

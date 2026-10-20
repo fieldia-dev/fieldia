@@ -277,6 +277,14 @@ export const questions = {
   photoQuality: 'Photo quality',
   qualityUsual: 'As usual (85%)',
   qualityOf: (n: number) => `${n}%`,
+  /** A photo set's own: its cover, captions, crop and turn, the original kept, the shape every crop keeps. */
+  photoCover: 'The first photo is the cover',
+  photoCaptions: 'A caption under each photo',
+  photoEdit: 'Crop and turn',
+  photoOriginal: 'Keep the original of a photo cropped',
+  photoShape: 'Shape of a crop',
+  photoShapeAny: 'Any shape',
+  photosHelp: 'People put the photos in the order they want; the first is what a list’s card and a map’s pin show.',
   // ---- previews of the newer kinds
   addressLines: { street: 'Street address', line2: 'Address line 2', city: 'City', region: 'State or region', postcode: 'Postcode', country: 'Country' },
   entryOne: 'Entry 1',
