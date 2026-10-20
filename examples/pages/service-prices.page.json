@@ -1,0 +1,86 @@
+{
+  "fieldia": "0.7",
+  "id": "service-prices",
+  "title": "Service prices",
+  "description": "A clinic's price list kept as a list: each price, length and who does it changed in its cell, each row saved as you leave it, a service added at the end, and rows pasted from a spreadsheet.",
+  "records": {
+    "one": "service",
+    "other": "services",
+    "a": "a service"
+  },
+  "data": {
+    "kind": "record",
+    "model": "clinic.service"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Service",
+      "required": true,
+      "size": 60
+    },
+    "category": {
+      "type": "selection",
+      "label": "Category",
+      "options": [
+        { "value": "face", "label": "Face" },
+        { "value": "skin", "label": "Skin" },
+        { "value": "body", "label": "Body" },
+        { "value": "hair", "label": "Hair removal" }
+      ]
+    },
+    "done_by": {
+      "type": "many2one",
+      "label": "Done by",
+      "relation": "clinic.role"
+    },
+    "minutes": {
+      "type": "integer",
+      "label": "Minutes",
+      "required": true,
+      "min": 5,
+      "max": 480
+    },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currency": "EGP",
+      "required": true,
+      "min": 0,
+      "digits": [12, 0]
+    },
+    "per_hour": {
+      "type": "monetary",
+      "label": "Per hour",
+      "currency": "EGP",
+      "digits": [12, 0],
+      "compute": "round(price / minutes * 60)"
+    },
+    "active": {
+      "type": "boolean",
+      "label": "Offered"
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "services",
+    "columns": ["name", "category", "done_by", "minutes", "price", "per_hour", "active"],
+    "sort": [{ "field": "category" }, { "field": "name" }],
+    "pageSize": 20,
+    "searchFields": ["name", "done_by"],
+    "groupBy": ["category", "done_by"],
+    "filters": [
+      { "id": "offered", "label": "Offered", "filter": [{ "field": "active", "op": "=", "value": true }] }
+    ],
+    "cells": {
+      "category": { "widget": "badge", "options": { "tones": { "face": "info", "skin": "success", "body": "warning", "hair": "muted" } } }
+    },
+    "optionalColumns": { "category": "show", "done_by": "show", "per_hour": "show", "active": "show" },
+    "card": {
+      "title": "name",
+      "status": "category",
+      "fields": [["price", "minutes"], "done_by"]
+    },
+    "editable": true
+  }
+}

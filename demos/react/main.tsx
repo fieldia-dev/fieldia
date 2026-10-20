@@ -9,7 +9,7 @@ import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { createRoot } from 'react-dom/client';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
+import { appPages, openRecord, opensRows, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { answerAction } from '../shared/order-desk';
 import { addressFollowsRecord } from '../shared/address';
 import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
@@ -87,7 +87,7 @@ function Demo() {
       page={page}
       dataSource={dataSource}
       recordId={recordFromQuery(params, page)}
-      onOpenRecord={(id) => openRecord(params, id)}
+      onOpenRecord={opensRows(params) ? (id) => openRecord(params, id) : undefined}
       skin={(params.get('skin') as Skin | null) ?? undefined}
       theme={(params.get('theme') as Theme | null) ?? undefined}
       dir={params.get('dir') === 'rtl' ? 'rtl' : undefined}

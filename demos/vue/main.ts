@@ -8,7 +8,7 @@ import { createApp, defineComponent, h, onBeforeUnmount, onMounted, ref, type Pr
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
+import { appPages, openRecord, opensRows, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { answerAction } from '../shared/order-desk';
 import { addressFollowsRecord } from '../shared/address';
 import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
@@ -127,7 +127,8 @@ createApp({
         page,
         dataSource,
         recordId: recordFromQuery(params, page),
-        onOpenRecord: (id: string | number) => openRecord(params, id),
+        // A list changed in place has no record's page to open.
+        ...(opensRows(params) ? { onOpenRecord: (id: string | number) => openRecord(params, id) } : {}),
         skin: (params.get('skin') as Skin | null) ?? undefined,
         theme: (params.get('theme') as Theme | null) ?? undefined,
         dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
