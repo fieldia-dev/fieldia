@@ -29,7 +29,8 @@ export interface PageUpgrade {
  * page's `endings`, `limits` and `continueLater`, an option's `seats` and `invisible`, `optionsFrom` carried from a
  * question (`{ field, picked }`) and on a table's line, a signature's `signs` and `signerField`, a list's
  * `filterRanges`, `filterCounts` and `filterSheet`, `{field}` words in a page's words — so a 0.5 page is a 0.6 page as
- * it is. A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
+ * it is; and 0.7 (Fieldia 0.28) only added — a table of lines' `cards: "never"`, its rows kept at a phone's width — so a
+ * 0.6 page is a 0.7 page as it is. A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
  * none: the page is the same, and upgradePage writes the new version in it.
  */
 export const PAGE_UPGRADES: readonly PageUpgrade[] = [];

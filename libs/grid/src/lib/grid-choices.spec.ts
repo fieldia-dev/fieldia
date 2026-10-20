@@ -21,7 +21,7 @@ const EVENTS: Record<string, Option[]> = {
 };
 
 const agent: Page = {
-  fieldia: '0.6',
+  fieldia: '0.7',
   id: 'agent',
   title: 'Agent',
   data: { kind: 'record', model: 'agent' },

@@ -4,7 +4,7 @@ import { checkPage } from './check-page';
 /** Where a related list's rows and New open (`open`): a dialog, the default, or the app's own way; nothing else. */
 
 const customer = (open: unknown) => ({
-  fieldia: '0.6',
+  fieldia: '0.7',
   id: 'customer',
   data: { kind: 'record', model: 'partner' },
   fields: { name: { type: 'char', label: 'Name' } },

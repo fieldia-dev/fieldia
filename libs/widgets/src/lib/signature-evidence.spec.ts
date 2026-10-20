@@ -10,7 +10,7 @@ import { answersMatch, answersToSign, canonicalJson, sha256Hex, signAnswers, sig
 const sha = (text: string) => createHash('sha256').update(Buffer.from(text, 'utf8')).digest('hex');
 
 const page = {
-  fieldia: '0.6',
+  fieldia: '0.7',
   id: 'consent',
   data: { kind: 'record', model: 'clinic.consent' },
   fields: {

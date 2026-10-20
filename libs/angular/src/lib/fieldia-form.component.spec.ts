@@ -192,7 +192,7 @@ class ContextHostComponent {
   template: `<fieldia-form [page]="page" [functions]="functions()" (ready)="ready.push($event)" />`,
 })
 class FunctionsHostComponent {
-  readonly page: Page = { fieldia: '0.6', id: 'priced', data: { kind: 'responses' }, fields: { price: { type: 'float', label: 'Price' }, total: { type: 'float', label: 'Total', compute: 'withTax(price)' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-price', field: 'price' }, { type: 'field', id: 'f-total', field: 'total' }] } };
+  readonly page: Page = { fieldia: '0.7', id: 'priced', data: { kind: 'responses' }, fields: { price: { type: 'float', label: 'Price' }, total: { type: 'float', label: 'Total', compute: 'withTax(price)' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-price', field: 'price' }, { type: 'field', id: 'f-total', field: 'total' }] } };
   readonly functions = signal<Record<string, (price: number) => number>>({ withTax: (price) => price * 2 });
   readonly ready: ViewerHandle[] = [];
 }

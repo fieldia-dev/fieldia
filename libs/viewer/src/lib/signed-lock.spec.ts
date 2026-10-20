@@ -20,7 +20,7 @@ afterEach(() => {
 const SIGNED: SignatureEvidence = { format: 'fieldia-signature/1', by: 'Mona Adel', at: '2026-10-19T08:42:00.000Z', fields: ['patient', 'treatment', 'total'], sha256: 'ab'.repeat(32) };
 
 const consent: Page = {
-  fieldia: '0.6',
+  fieldia: '0.7',
   id: 'consent',
   data: { kind: 'responses' },
   fields: {

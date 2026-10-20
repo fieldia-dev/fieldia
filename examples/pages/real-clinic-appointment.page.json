@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.6",
+  "fieldia": "0.7",
   "id": "real-clinic-appointment",
   "title": "Appointment",
   "description": "Sherkety ERP, clinic_aesthetic: clinic.appointment, view_appointment_form, with clinic_finance (deposit) and clinic_kpi (no-show risk) on it.",

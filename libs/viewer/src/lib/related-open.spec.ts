@@ -26,7 +26,7 @@ const invoices = {
 
 const customer = (related: Record<string, unknown> = {}): Page =>
   ({
-    fieldia: '0.6',
+    fieldia: '0.7',
     id: 'customer',
     title: 'Customer',
     data: { kind: 'record', model: 'partner' },
@@ -36,7 +36,7 @@ const customer = (related: Record<string, unknown> = {}): Page =>
 
 /** The page the app gives for an invoice. */
 const invoicePage = {
-  fieldia: '0.6',
+  fieldia: '0.7',
   id: 'invoice-form',
   title: 'Invoice',
   data: { kind: 'record', model: 'invoice' },

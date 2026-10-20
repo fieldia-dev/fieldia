@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.6",
+  "fieldia": "0.7",
   "id": "tables",
   "title": "Work order",
   "description": "A table's own rules, the way an ERP's lists have them: values and lines in a tone while a condition holds, choices drawn as pills, and buttons on the lines.",

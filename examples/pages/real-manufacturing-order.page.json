@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.6",
+  "fieldia": "0.7",
   "id": "real-manufacturing-order",
   "title": "Manufacturing Order",
   "description": "Sherkety ERP's manufacturing order (mrp.production, mrp_production_form_view), with what mrp_account, sale_mrp and purchase_mrp add to it.",

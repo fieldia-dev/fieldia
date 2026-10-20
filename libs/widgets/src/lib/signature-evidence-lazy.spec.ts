@@ -25,7 +25,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function consent(options: Record<string, unknown>, record = false) {
   const page = {
-    fieldia: '0.6',
+    fieldia: '0.7',
     id: 'consent',
     data: record ? { kind: 'record', model: 'consent' } : { kind: 'responses' },
     fields: { patient: { type: 'char', label: 'Patient' }, docs: { type: 'binary', label: 'Documents' }, signature: { type: 'binary', label: 'Signature' } } as Record<string, Field>,

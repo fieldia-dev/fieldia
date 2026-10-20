@@ -18,7 +18,7 @@ const fields = {
 };
 
 const page = (list: Record<string, unknown>) => ({
-  fieldia: '0.6',
+  fieldia: '0.7',
   id: 'contacts',
   data: { kind: 'record', model: 'contact' },
   fields,

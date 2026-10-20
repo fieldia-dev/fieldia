@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.6",
+  "fieldia": "0.7",
   "id": "listing-photos",
   "title": "Listing",
   "description": "A home's listing with its photos: each photo is made smaller on the phone, then stored as it is picked, and the record keeps only its link.",

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.6",
+  "fieldia": "0.7",
   "id": "contract-fees",
   "title": "Service agreement",
   "description": "A service agreement's clauses as formatted text: its fees a price table pasted from Word, Excel or Google Docs, kept as a plain table to change row by row.",

@@ -23,7 +23,7 @@ const TOOLS: Record<string, Option[]> = {
 };
 
 const page = {
-  fieldia: '0.6',
+  fieldia: '0.7',
   id: 'agent',
   data: { kind: 'record', model: 'agent' },
   fields: {
