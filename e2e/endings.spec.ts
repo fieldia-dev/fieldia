@@ -52,12 +52,16 @@ test.describe('a booking that ends with its reference', () => {
 test.describe('feedback that asks of the branch by its name', () => {
   const rating = (page: Page) => node(page, 'f-overall');
 
-  test('asks how the visit went once a branch is picked, by its name, and follows a change', async ({ page }) => {
+  test('asks how the visit went in its own words until a branch is picked, then by its name, and follows a change', async ({ page }) => {
     await open(page, 'plain', 'page=template-customer-feedback&theme=google-forms');
-    await expect(rating(page)).toBeHidden();
+    // While the branch is empty, the words the page gives for it: in the label's own weight, not a value's.
+    await expect(rating(page).locator('.fd-label')).toHaveText('How was your visit to us?');
+    await expect(node(page, 'f-better').locator('.fd-label')).toHaveText('What could we do better?');
+    await expect(rating(page).locator('.fd-label .fd-value')).toHaveCSS('font-weight', '400');
+    await screen(page, 'endings-feedback-empty');
     await node(page, 'f-branch').getByLabel('Riverside').check();
-    await expect(rating(page)).toBeVisible();
     await expect(rating(page).locator('.fd-label')).toHaveText('How was your visit to Riverside?');
+    await expect(rating(page).locator('.fd-label .fd-value')).not.toHaveCSS('font-weight', '400');
     await expect(node(page, 'f-better').locator('.fd-label')).toHaveText('What could Riverside do better?');
     await screen(page, 'endings-feedback-branch');
     expect(await axeFindings(page, 'a label naming the branch')).toEqual([]);
@@ -100,7 +104,7 @@ test.describe('feedback that asks of the branch by its name', () => {
     await expect(ending(page).locator('.fd-done-title')).toHaveText('Thank you!');
     await expect(ending(page).locator('.fd-done-words')).toHaveText('We are glad you came to Hillcrest. See you again soon.');
     await page.getByRole('button', { name: 'Submit another response' }).click();
-    await expect(rating(page)).toBeHidden();
+    await expect(rating(page).locator('.fd-label')).toHaveText('How was your visit to us?');
   });
 });
 
@@ -116,10 +120,14 @@ test.describe('the survey designer', () => {
     await title.press('End');
     await title.pressSequentially(', ');
     await endings.getByRole('button', { name: 'Put an answer in: Title of ending 1' }).click();
-    await page.getByRole('menuitem', { name: 'Your name' }).click();
-    await expect(title).toHaveValue('Thank you, {name}');
+    // What to say while the name is empty, then the answer.
+    const answers = page.getByRole('dialog', { name: 'Put in the answer to' });
+    await answers.getByRole('textbox', { name: 'When empty' }).fill('friend');
+    await screen(page, 'endings-answer-picker', { viewport: true });
+    await answers.getByRole('button', { name: 'Your name' }).click();
+    await expect(title).toHaveValue('Thank you, {name|friend}');
     await expect(title).toBeFocused();
-    await expect.poll(() => page.evaluate(() => (window as unknown as { fieldiaDesigner: { designer: { getPage(): { endings?: unknown } } } }).fieldiaDesigner.designer.getPage().endings)).toEqual([{ title: 'Thank you, {name}' }]);
+    await expect.poll(() => page.evaluate(() => (window as unknown as { fieldiaDesigner: { designer: { getPage(): { endings?: unknown } } } }).fieldiaDesigner.designer.getPage().endings)).toEqual([{ title: 'Thank you, {name|friend}' }]);
     await screen(page, 'endings-designer');
     await page.getByRole('button', { name: 'Try it' }).click();
     const tried = page.locator('.fd-try');

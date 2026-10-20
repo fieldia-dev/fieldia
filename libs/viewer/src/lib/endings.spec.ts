@@ -93,6 +93,20 @@ describe('{field} words in a page’s own words', () => {
     expect(label?.querySelector('bdi.fd-value')?.textContent).toBe('Maadi');
   });
 
+  it('say the page’s words while an answer is empty, as the words round them, and the answer once given', async () => {
+    const page = booking();
+    page.fields['rating'] = { ...page.fields['rating'], label: 'How was your visit to {branch|this branch}?' } as Page['fields'][string];
+    const { host, form } = mount(page);
+    await flush();
+    const label = at(host, 'f-rating').querySelector('.fd-label');
+    expect(words(label)).toBe('How was your visit to this branch?');
+    expect(label?.querySelector('.fd-value')?.hasAttribute('data-empty')).toBe(true);
+    form.setValue('branch', 'zamalek');
+    await flush();
+    expect(words(label)).toBe('How was your visit to Zamalek?');
+    expect(label?.querySelector('.fd-value')?.hasAttribute('data-empty')).toBe(false);
+  });
+
   it('write a day in the page’s order, money with its currency, a yes or no in words', async () => {
     const { host, form } = mount(booking());
     form.setValues({ day: '2026-10-15', price: 1500, first: true });

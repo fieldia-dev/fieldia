@@ -341,7 +341,8 @@ reads it out. A `{field}` in a field's label or help, a choice's words, a
 step's title and words, a wizard's or a button's words shows that answer as
 people read it — a choice by its label, money with its currency, a day in the
 page's order, a yes or no in words — and follows it as it changes; on such a
-page a text's and an alert's `{field}`s read so too. They come in a part of
+page a text's and an alert's `{field}`s read so too. `{branch|this branch}`
+says "this branch", in the words' own weight, while the branch is empty. They come in a part of
 their own (`answersPart`, `fieldia.answers.js`), loaded before a page that has
 any is drawn; where it cannot come, the words show each value as its field
 does at rest, and a page sent says the plain thanks. See

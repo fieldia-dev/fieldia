@@ -59,7 +59,7 @@ export const answersPart: Part<AnswersPart> = lazyPart('answers', () => import('
  * are drawn without it, as before (on a page with the part, as a sentence says them).
  */
 const showsAnswers = (page: Page): boolean =>
-  !!page.endings?.length || /\{[A-Za-z_]\w*\}/.test(JSON.stringify([page.fields, page.layout], (key, value) => (key === 'text' || key === 'message' ? undefined : value)));
+  !!page.endings?.length || /\{[A-Za-z_]\w*(\|[^{}]*)?\}/.test(JSON.stringify([page.fields, page.layout], (key, value) => (key === 'text' || key === 'message' ? undefined : value)));
 
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,

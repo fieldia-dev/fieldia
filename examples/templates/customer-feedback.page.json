@@ -32,7 +32,7 @@
     },
     "overall": {
       "type": "integer",
-      "label": "How was your visit to {branch}?",
+      "label": "How was your visit to {branch|us}?",
       "required": true,
       "min": 1,
       "max": 5
@@ -73,7 +73,7 @@
     },
     "better": {
       "type": "text",
-      "label": "What could {branch} do better?",
+      "label": "What could {branch|we} do better?",
       "size": 2000
     },
     "follow_up": {
@@ -106,8 +106,7 @@
             "type": "field",
             "id": "f-overall",
             "field": "overall",
-            "widget": "rating",
-            "invisible": "not branch"
+            "widget": "rating"
           },
           {
             "type": "field",

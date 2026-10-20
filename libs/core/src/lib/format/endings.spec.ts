@@ -1,4 +1,4 @@
-import { localizePage, pageJsonSchema, pageWords, validatePage } from '../../index';
+import { fillValues, localizePage, pageJsonSchema, pageWords, splitValues, validatePage, valuesIn } from '../../index';
 import { checkPage } from './check-page';
 import type { Page } from './page';
 
@@ -150,6 +150,20 @@ describe('{field} words in a page’s own words', () => {
     ]);
   });
 
+  it('take the words while an answer is empty after a bar, and still refuse a name that is no field', () => {
+    const more = {
+      fields: {
+        name: { type: 'char', label: 'Your name' },
+        branch: { type: 'selection', label: 'Branch', options: [{ value: 'zamalek', label: 'Zamalek' }] },
+        overall: { type: 'integer', label: 'How was your visit to {branch|this branch}?', help: 'Thanks, {name|}.' },
+      },
+    };
+    expect(issues(page(more))).toEqual([]);
+    const wrong = { fields: { ...more.fields, overall: { type: 'integer', label: 'How was {brnch|this branch}?' } } };
+    expect(issues(page(wrong))).toEqual(['fields.overall.label: no field "brnch"']);
+    expect(issues(page({ endings: [{ title: 'Ref {id|to follow}' }] }))).toEqual([]);
+  });
+
   it('leave braces round anything but a name alone, and a line’s own fields’ words as they are', () => {
     const more = {
       fields: {
@@ -159,5 +173,15 @@ describe('{field} words in a page’s own words', () => {
     };
     const layout = { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-lines', field: 'lines' }] };
     expect(issues(page(more, layout))).toEqual([]);
+  });
+});
+
+describe('{field} words read and filled', () => {
+  it('cut words at each name, with its words while empty after a bar', () => {
+    expect(valuesIn('At {branch|this branch}, {name} and {x|}')).toEqual(['branch', 'name', 'x']);
+    expect(splitValues('At {branch|this branch}.')).toEqual([{ text: 'At ' }, { text: '', field: 'branch', fallback: 'this branch' }, { text: '.' }]);
+    expect(fillValues('At {branch|this branch}, {name|you}', (name) => (name === 'name' ? 'Mona' : ''))).toBe('At this branch, Mona');
+    // Braces round anything but a name, with or without a bar, stay as written.
+    expect(fillValues('{as on your ID} {a|b|c} {|x}', () => 'v')).toBe('{as on your ID} v {|x}');
   });
 });

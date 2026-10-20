@@ -33,4 +33,6 @@ export const endings: DesignerWords['endings'] = {
   answersTitle: 'إدراج إجابة',
   reference: 'المرجع الذي يعطيه تطبيقك لها',
   noAnswers: 'لا يوجد سؤال يعطي إجابة لإدراجها بعد.',
+  whenEmpty: 'عندما تكون فارغة',
+  whenEmptyHint: 'اختياري: كلمات تظهر ما دامت بلا إجابة، «هذا الفرع»',
 };

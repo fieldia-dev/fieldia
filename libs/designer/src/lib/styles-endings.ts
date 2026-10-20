@@ -9,7 +9,15 @@ export const DESIGNER_ENDINGS_CSS = /* css */ `
 .fd-words-box > .fd-input { flex: 1 1 auto; min-width: 0; }
 .fd-answer-picker { flex: none; min-width: 32px; padding-inline: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; letter-spacing: 0.04em; color: var(--fd-muted); }
 .fd-answer-picker:hover, .fd-answer-picker[aria-expanded="true"] { color: var(--fd-text); }
-.fd-q-head > .fd-answer-picker, .fd-step-head-row > .fd-answer-picker { align-self: center; }
+.fd-q-head > .fd-answer-picker, .fd-step-head-row > .fd-answer-picker, .fd-q-option > .fd-answer-picker { align-self: center; }
+/* On an option's row, as its grip: shown as the row is pointed at or worked in, always on a touch screen. */
+.fd-q-option > .fd-answer-picker { opacity: 0; }
+.fd-q-option:hover > .fd-answer-picker, .fd-q-option:focus-within > .fd-answer-picker, .fd-q-option > .fd-answer-picker[aria-expanded="true"] { opacity: 1; }
+@media (hover: none) { .fd-q-option > .fd-answer-picker { opacity: 1; } }
+/* Its list of answers, and the words said while the one picked is empty under them. */
+.fd-answer-list { display: grid; gap: 1px; }
+.fd-answer-empty-row { display: grid; gap: 4px; padding: 6px 8px 4px; margin-block-start: 4px; border-block-start: 1px solid var(--fd-border); }
+.fd-answer-empty-row > .fd-menu-heading { padding: 0; }
 
 /* ---- the endings ---- */
 .fd-endings { display: grid; gap: 10px; min-width: 0; }

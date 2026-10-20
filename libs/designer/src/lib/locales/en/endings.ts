@@ -36,4 +36,6 @@ export const endings = {
   answersTitle: 'Put in the answer to',
   reference: 'The reference your app gives it',
   noAnswers: 'No question gives an answer to put in yet.',
+  whenEmpty: 'When empty',
+  whenEmptyHint: 'Optional: words while it is unanswered, “this branch”',
 };

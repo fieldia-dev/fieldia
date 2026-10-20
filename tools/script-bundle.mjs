@@ -864,7 +864,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // a choice's words kept to its options (0.13) and the stylesheet's ending (0.13); writing a value as a sentence says it
 // (a day in the page's order, yes or no), choices whose words follow the answers, a link's address and an ending's
 // drawing are in fieldia.answers.js — 503.40 measured before, 507.19 after: 3.8 more, to 507.2.
-const BUDGET_KB = 507.2;
+// The words said while an answer is empty (w4-endings, `{branch|this branch}`): read after a bar wherever a page's
+// words show values, a text's and a post's too, drawn in the words' own weight — 507.19 measured before, 507.40 after:
+// 0.2 more, to 507.5.
+const BUDGET_KB = 507.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1060,7 +1063,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // page that prints takes 5.22 more in fieldia.print.js.
 // Endings and the answers in a page's own words (0.27, w4-endings; listed with the raw budget above): 162.94 measured
 // before, 164.34 after — 1.4 more, to 164.4. A page that says the answers takes 2.07 more in fieldia.answers.js.
-const GZIP_BUDGET_KB = 164.4;
+// The words said while an answer is empty (listed with the raw budget above): 164.34 measured before, 164.46 after —
+// 0.1 more, to 164.5.
+const GZIP_BUDGET_KB = 164.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

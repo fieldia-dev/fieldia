@@ -34,7 +34,7 @@ export default [
     query: 'page=template-customer-feedback&theme=google-forms',
     blurb: "The branch they visited, then how it went there by its name, how likely they are to recommend you, what they liked and what to do better, a reply only if they want one, and an ending that answers what they said.",
     howTo: [
-      "Pick a branch: the next question asks how your visit to it was, by its name. Pick another: the question follows.",
+      "Before a branch is picked, the next question asks how your visit to us was. Pick a branch: it asks of that one by its name, and follows another.",
       "Give it four stars and pick a number on the scale.",
       "Turn on You may contact me: Email appears, and is now required.",
       "Give it one star and send: the page says sorry, names who at that branch reads it, and offers no second response.",

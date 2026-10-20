@@ -1,6 +1,6 @@
 import { validatePage, type Page } from '@fieldia/core';
 import { answerButton, withAnswers } from './answer-picker';
-import { elementFactory } from './chrome';
+import { elementFactory, optionsEditor } from './chrome';
 import { createDesigner } from './designer';
 import { DESIGNER_WORDS } from './designer-words';
 import { endingsEditor } from './endings-editor';
@@ -198,6 +198,54 @@ describe('the button that puts an answer in words', () => {
     expect(typed).toEqual(['Thanks, {name} see you']);
     expect(document.activeElement).toBe(box);
     expect(box.selectionStart).toBe(14);
+  });
+
+  it('puts in what to say while the answer is empty, from When empty; keys move, Escape gives the focus back', () => {
+    const designer = createDesigner({ page: feedback() });
+    const box = el('input', { 'aria-label': 'Label' }) as HTMLInputElement;
+    const wrap = withAnswers(el, designer, box);
+    document.body.append(wrap);
+    box.value = 'How was your visit to ?';
+    box.setSelectionRange(22, 22);
+    const button = wrap.querySelector('.fd-answer-picker') as HTMLButtonElement;
+    button.click();
+    const dialog = document.querySelector('[role="dialog"].fd-answer-menu') as HTMLElement;
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    // The first answer takes the focus; the arrows move on.
+    expect((document.activeElement as HTMLElement).textContent).toBe('Your name');
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect((document.activeElement as HTMLElement).textContent).toBe('Branch');
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(document.querySelector('.fd-answer-menu')).toBeNull();
+    expect(document.activeElement).toBe(button);
+    button.click();
+    const empty = document.querySelector('.fd-answer-empty') as HTMLInputElement;
+    expect(empty.getAttribute('aria-label')).toBe('When empty');
+    // Braces in it would end the name early: they are left out.
+    empty.value = ' this {branch} ';
+    (document.querySelector('[data-answer="branch"]') as HTMLButtonElement).click();
+    expect(box.value).toBe('How was your visit to {branch|this branch}?');
+    expect(DESIGNER_WORDS.ar.endings.whenEmpty).toBe('عندما تكون فارغة');
+  });
+
+  it('is on each option’s row, putting the answer in its words', () => {
+    const page = feedback();
+    const designer = createDesigner({ page: { ...page, fields: { ...page.fields, reach: { type: 'selection', label: 'Reach me', options: [{ value: 'call', label: 'Call me' }, { value: 'mail', label: 'Email' }] } }, layout: { type: 'sections', id: 's', children: [{ type: 'field', id: 'f-branch', field: 'branch' }, { type: 'field', id: 'f-reach', field: 'reach' }] } } });
+    const view = optionsEditor(el, designer, 'f-reach');
+    document.body.append(view.element);
+    const update = () => view.update(designer.getPage().fields['reach'], { type: 'field', id: 'f-reach', field: 'reach' });
+    update();
+    const rows = [...view.element.querySelectorAll('.fd-q-option')];
+    expect(rows.map((row) => row.querySelector('.fd-answer-picker')?.getAttribute('aria-label'))).toEqual(['Put an answer in: Option 1', 'Put an answer in: Option 2']);
+    const input = rows[0].querySelector('input') as HTMLInputElement;
+    input.focus();
+    input.setSelectionRange(7, 7);
+    (rows[0].querySelector('.fd-answer-picker') as HTMLButtonElement).click();
+    (document.querySelector('[data-answer="branch"]') as HTMLButtonElement).click();
+    expect((designer.getPage().fields['reach'] as { options: { label: string }[] }).options[0].label).toBe('Call me{branch}');
+    update();
+    // Its × is still the row's own.
+    expect(rows[0].querySelector('.fd-icon-button')?.getAttribute('aria-label')).toBe('Remove option Call me{branch}');
   });
 
   it('offers no reference outside an ending', () => {

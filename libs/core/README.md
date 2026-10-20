@@ -147,8 +147,11 @@ words — as in a text's and an alert's: `form.words('How was your visit to
 the field so ("How was your visit to Zamalek? is required"). How a value reads
 there is the viewer's (`valueWords` in `createForm`'s options: a choice by its
 label, money with its currency, a day in the page's order); without one, a
-choice's label, a link's name, Yes or No, anything else as held. A `{name}` that
-is no field of the page is refused by the page check. `createMemoryDataSource`
+choice's label, a link's name, Yes or No, anything else as held. After a bar,
+the words said while the answer is empty — `{branch|this branch}` reads "this
+branch" until one is chosen, translated with the page's other words; without
+them an empty answer says nothing. A `{name}` that is no field of the page is
+refused by the page check. `createMemoryDataSource`
 answers each response as a server would with ``submitted: (request, count) =>
 ({ id: `B-${1042 + count}` })``.
 

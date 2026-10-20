@@ -144,6 +144,31 @@ describe('{field} words in a page’s own words', () => {
     expect(form.words('{nothing} here')).toBe(' here');
   });
 
+  it('say the page’s words while an answer is empty, after a bar, and the answer once given', () => {
+    const form = createForm({ page: feedback() });
+    expect(form.words('How was your visit to {branch|this branch}?')).toBe('How was your visit to this branch?');
+    expect(form.words('{branch|}{name|you}')).toBe('you');
+    form.setValues({ branch: 'maadi', name: 'Mona' });
+    expect(form.words('How was your visit to {branch|this branch}, {name|you}?')).toBe('How was your visit to Maadi, Mona?');
+  });
+
+  it('name an empty answer by its words while empty in the form’s messages', async () => {
+    const page = feedback();
+    page.fields['overall'] = { ...page.fields['overall'], label: 'How was your visit to {branch|this branch}?' } as Page['fields'][string];
+    const form = createForm({ page, dataSource: createMemoryDataSource() });
+    expect(await form.save()).toBe(false);
+    expect(form.getState().errors['overall']).toBe('How was your visit to this branch? is required');
+  });
+
+  it('say an ending’s reference’s words while the source gave none', async () => {
+    const ds = createMemoryDataSource();
+    ds.submit = async () => ({});
+    const form = createForm({ page: feedback({ endings: [{ title: 'Thanks' }] }), dataSource: ds });
+    form.setValues({ overall: 4 });
+    await form.save();
+    expect(form.endingWords('Your reference: {id|on its way by email}')).toBe('Your reference: on its way by email');
+  });
+
   it('are written by the app’s valueWords when it gives one, as its viewer shows each value', () => {
     const form = createForm({ page: feedback(), valueWords: (def, value) => `«${def.type}:${String(value)}»` });
     form.setValue('branch', 'maadi');

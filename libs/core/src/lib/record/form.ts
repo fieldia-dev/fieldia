@@ -856,7 +856,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Today, on the clock of the page's time zone (the browser's own when it names none). */
   const today = () => dayIn(options.now?.() ?? new Date(), page.timeZone);
   /** Whether a field's own words — a label, a choice's — show a value: found once, so a page with none checks as before. */
-  const worded = /\{[A-Za-z_]\w*\}/.test(JSON.stringify(page.fields));
+  const worded = /\{[A-Za-z_]\w*(\|[^{}]*)?\}/.test(JSON.stringify(page.fields));
   const clock = () => (options.now?.() ?? new Date()).getTime();
   /** What a page's bot check saw — its hidden box filled, the captcha's token — and when the page was shown or started again. */
   let bot = { honeypot: false, captcha: null as string | null, since: clock() };

@@ -612,11 +612,11 @@ export function createRunner(form: RunForm) {
   /** Words posted: a `post` step's with each `{field}` filled in, or the app's as they are. */
   async function post(message: string, kind: 'note' | 'message', filled: boolean): Promise<Stopped | null> {
     const parts = filled ? splitValues(message) : [{ text: message }];
-    const text = parts.map((part) => (part.field ? form.wordsOf(part.field) : part.text)).join('');
+    // A field empty says its words while empty, where the page gives some ({field|words}).
+    const said = (part: { text: string; field?: string; fallback?: string }) => (part.field ? form.wordsOf(part.field) || (part.fallback ?? '') : part.text);
+    const text = parts.map(said).join('');
     // An html field's value comes as HTML; the rest are escaped, a line each.
-    const body = parts
-      .map((part) => (part.field && form.fields[part.field]?.type === 'html' ? String(form.values()[part.field] ?? '') : escapeHtml(part.field ? form.wordsOf(part.field) : part.text)))
-      .join('');
+    const body = parts.map((part) => (part.field && form.fields[part.field]?.type === 'html' && form.values()[part.field] ? String(form.values()[part.field]) : escapeHtml(said(part)))).join('');
     const posted = await form.post({ kind, text, body: `<p>${body}</p>` });
     return posted ? null : cannot('Nothing can post a message here: no conversation is beside this record');
   }

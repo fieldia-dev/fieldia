@@ -6,6 +6,7 @@ import { listSource } from './list-source';
 import { designerIcon } from './icons';
 import { checksButton, openPublishDialog, statusWords, versionsMenu, type GoTo } from './publish-ui';
 import { setHidden, setText } from './writes';
+import { answerButton } from './answer-picker';
 
 /** The parts both editors share: the bar with undo and publish, and the list of options. */
 
@@ -395,13 +396,14 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
         const grip = el('span', { class: 'fd-q-option-grip', 'aria-hidden': 'true', title: w.grip }, designerIcon(list.ownerDocument, 'grip'));
         grip.addEventListener('pointerdown', (event) => drag(grip, event));
         const alone = el('span', { class: 'fd-q-alone', hidden: '' }, w.alone);
-        list.append(el('li', { class: 'fd-q-option' }, grip, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }, multiple ? '☐' : '◯'), input, alone, remove));
+        // An option's words may show an answer given before it: "Yes, call me at {branch}" (answer-picker.ts).
+        list.append(el('li', { class: 'fd-q-option' }, grip, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }, multiple ? '☐' : '◯'), input, answerButton(el, designer, input), alone, remove));
       }
       choices.forEach((option, i) => {
         const row = list.children[i] as HTMLElement;
         const input = row.querySelector('input') as HTMLInputElement;
         if (!focused(input)) input.value = option.label;
-        const remove = row.querySelector('button') as HTMLButtonElement;
+        const remove = row.querySelector('.fd-icon-button') as HTMLButtonElement;
         remove.setAttribute('aria-label', w.removeNamed(option.label));
         remove.hidden = choices.length === 1;
         (row.querySelector('.fd-q-alone') as HTMLElement).hidden = !option.exclusive;

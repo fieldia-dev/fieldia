@@ -30,6 +30,8 @@ export const SHEET_CSS = /* css */ `
 .fd-ribbon[title] { pointer-events: auto; cursor: help; }
 /* A field's value inside an alert's or a text's words, set apart by its weight. */
 .fd-value { font-weight: 600; }
+/* A value empty, its words while empty in its place ({branch|this branch}): the page's words, as the words round them. */
+.fd-value[data-empty] { font-weight: inherit; }
 /* An alert's own buttons, after its words: links in the alert's colour, wrapping under the words on a narrow screen. */
 .fd-alert:has(> .fd-alert-actions) { flex-wrap: wrap; align-items: baseline; }
 .fd-alert-actions { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
