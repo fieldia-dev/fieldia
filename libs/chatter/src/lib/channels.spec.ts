@@ -99,6 +99,15 @@ describe('each message says its channel and how far it got', () => {
     expect(item(host, 2).querySelector('.fd-message-failure')?.textContent).toBe('Not delivered: The number cannot take SMS');
   });
 
+  it('writes each message’s time as the page’s date boxes write a moment, on the page’s clock', async () => {
+    const host = await mount(source(), { timeZone: 'Africa/Cairo' });
+    expect(item(host, 6).querySelector('time')?.textContent).toBe('20 Oct 2026, 12:40');
+    expect(item(host, 6).querySelector('time')?.getAttribute('datetime')).toBe('2026-10-20T09:40:00Z');
+    handle!.destroy();
+    const plain = await mount(source(), { dateOrder: 'mdy' });
+    expect(item(plain, 6).querySelector('time')?.textContent).toBe('Oct 20, 2026, 09:40');
+  });
+
   it('says a note as the chatter’s own Note where the app has no note channel, and draws a message without a channel as before', async () => {
     const host = await mount(source(), { channels: CHANNELS.filter((channel) => !channel.note) });
     expect(item(host, 5).querySelector('.fd-message-kind')?.textContent).toBe('Note');

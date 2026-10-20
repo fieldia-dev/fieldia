@@ -5,6 +5,7 @@ import '@angular/compiler';
 import { Component, DestroyRef, ElementRef, Input, inject, provideZonelessChangeDetection, signal, type AfterViewInit, type OnInit, type Signal } from '@angular/core';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
+import { buyerBar, enquiryChatterOptions } from '../shared/enquiry';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from '@fieldia/angular';
 import { gridWidgets } from '@fieldia/grid';
@@ -98,6 +99,8 @@ if (params.get('page') === 'test-drive') document.getElementById('app')?.before(
 if (params.get('page') === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
 
 const chatter = sampleChatter();
+// The enquiry has a bar over it: the buyer's phone reads what was sent and writes back (shared/enquiry.ts).
+if (params.get('page') === 'enquiry') document.getElementById('app')?.before(buyerBar(chatter));
 
 /** The chatter in an Angular slot: its own element it mounts into, for as long as the slot lives. */
 @Component({ selector: 'demo-chatter', template: '' })
@@ -106,7 +109,7 @@ class ChatterComponent implements AfterViewInit {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
   ngAfterViewInit() {
-    const done = chatterSlot({ source: chatter, locale: (params.get('locale') as Locale | null) ?? undefined })(this.host.nativeElement, { form: this.form });
+    const done = chatterSlot({ source: chatter, ...enquiryChatterOptions(params), locale: (params.get('locale') as Locale | null) ?? undefined })(this.host.nativeElement, { form: this.form });
     this.destroyRef.onDestroy(done);
   }
 }

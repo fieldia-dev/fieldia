@@ -343,9 +343,10 @@ export const CHANNEL_STYLES = `
 .fd-delivery[data-delivery="failed"] { color: var(--fd-error); }
 .fd-message-failure { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--fd-error); font-size: 13px; }
 .fd-message-failure .fd-icon { width: 14px; height: 14px; flex: none; }
-.fd-message[data-direction="in"] { background: color-mix(in srgb, var(--fd-accent) 5%, transparent); }
+/* What came from outside on a surface of its own, laid on the surface (never on transparency: a colour to fade from). */
+.fd-message[data-direction="in"] { background: color-mix(in srgb, var(--fd-accent) 6%, var(--fd-surface)); }
 .fd-message-new { animation: fd-message-arrives 2.4s ease-out; }
-@keyframes fd-message-arrives { from { background: var(--fd-accent-soft); } }
+@keyframes fd-message-arrives { from { background-color: var(--fd-accent-soft); } }
 @media (prefers-reduced-motion: reduce) { .fd-message-new { animation: none; } }
 .fd-send-by { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
 .fd-send-by-label { font-size: 12.5px; color: var(--fd-muted); }

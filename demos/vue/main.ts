@@ -7,6 +7,7 @@ import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { createApp, defineComponent, h, onBeforeUnmount, onMounted, ref, type PropType } from 'vue';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
+import { buyerBar, enquiryChatterOptions } from '../shared/enquiry';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { answerAction } from '../shared/order-desk';
@@ -104,6 +105,8 @@ if (params.get('page') === 'test-drive') document.getElementById('app')?.before(
 if (params.get('page') === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
 
 const chatter = sampleChatter();
+// The enquiry has a bar over it: the buyer's phone reads what was sent and writes back (shared/enquiry.ts).
+if (params.get('page') === 'enquiry') document.getElementById('app')?.before(buyerBar(chatter));
 
 /** The chatter in a Vue slot: a box it mounts into, for as long as the slot lives. */
 const Chatter = defineComponent({
@@ -112,7 +115,7 @@ const Chatter = defineComponent({
     const box = ref<HTMLElement | null>(null);
     let done: (() => void) | undefined;
     onMounted(() => {
-      if (box.value) done = chatterSlot({ source: chatter, locale: (params.get('locale') as Locale | null) ?? undefined })(box.value, { form: props.form });
+      if (box.value) done = chatterSlot({ source: chatter, ...enquiryChatterOptions(params), locale: (params.get('locale') as Locale | null) ?? undefined })(box.value, { form: props.form });
     });
     onBeforeUnmount(() => done?.());
     return () => h('div', { ref: box });

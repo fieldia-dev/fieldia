@@ -1,6 +1,6 @@
 import { fill, recordSentence, type DateOrder, type Locale, type PageRecords } from '@fieldia/core';
 import { installStyles, sanitizeHtml, type IconSet, type ShrinkOptions } from '@fieldia/widgets';
-import { activitiesPart } from './activities';
+import { activitiesPart, momentWords } from './activities';
 import { attachmentList, composerFiles } from './attachments';
 import type * as ChannelsModule from './channels';
 import { channelsPart } from './chatter-parts';
@@ -331,7 +331,8 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
 
   // ---- the messages ---------------------------------------------------------------
 
-  const when = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-EG-u-nu-latn' : locale, { dateStyle: 'medium', timeStyle: 'short', ...(options.timeZone ? { timeZone: options.timeZone } : {}) });
+  /** When a message was posted, as the page's date boxes write a moment, on its clock: "20 Oct 2026, 09:20". */
+  const when = (date: string) => (Number.isFinite(Date.parse(date)) ? momentWords(context, Date.parse(date)) : date);
 
   function avatar(person: Person | null): HTMLElement {
     if (person?.avatar) return el('img', { class: 'fd-avatar-image', src: person.avatar, alt: '' });
@@ -352,7 +353,7 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
       'div',
       { class: 'fd-message-head' },
       el('span', { class: 'fd-message-author' }, message.author?.name ?? ''),
-      el('time', { datetime: message.date }, when.format(new Date(message.date)))
+      el('time', { datetime: message.date }, when(message.date))
     );
     // A note says so, unless the app's note channel says it with its own name.
     if (message.kind === 'note' && !mark?.querySelector('.fd-message-channel')) head.append(el('span', { class: 'fd-message-kind' }, labels.note));

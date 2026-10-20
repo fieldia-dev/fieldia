@@ -51,23 +51,35 @@ export function dueState(due: Due, today: string, now: number): 'overdue' | 'tod
 const RANK = { overdue: 0, today: 1, planned: 2 } as const;
 
 /**
+ * A moment as the page's date boxes write one, on its clock: "20 Oct 2026, 09:20", in the page's order and language
+ * (`dayWords`) — with its zone's short name where it is not the browser's own, where `zoned` asks ("09:20 EEST").
+ */
+export function momentWords(context: Pick<ChatterContext, 'locale' | 'zone' | 'dateOrder'>, at: number, zoned = false): string {
+  const wall = wallTime(at, context.zone);
+  const order = context.dateOrder ?? 'dmy';
+  return `${dayWords(wallDay(wall), { locale: context.locale, dateOrder: order })}${order === 'ymd' ? ' ' : ', '}${clockWords(context, at, zoned)}`;
+}
+/** A moment's time on the page's clock, "15:30" — "15:30 EEST" where `zoned` asks and the zone is not the browser's own. */
+function clockWords(context: Pick<ChatterContext, 'locale' | 'zone'>, at: number, zoned: boolean): string {
+  const time = wallClock(wallTime(at, context.zone));
+  return zoned && context.zone && !isOwnZone(context.zone) ? `${time} ${zoneName(at, context.zone, context.locale)}` : time;
+}
+
+/**
  * The record's activities: what is to be done, by whom and by when, overdue
  * first. Each can be marked done, with what came of it, or cancelled; a form
  * schedules a new one. Every part the source cannot do is left out.
  */
 export function activitiesPart(context: ChatterContext, afterChange: () => Promise<void>) {
   const { el, labels, source, doc, icons, locale, zone } = context;
+  const dayText = (day: string) => dayWords(day, { locale, dateOrder: context.dateOrder ?? 'dmy' });
   if (!source.activities) return { button: null, element: null, load: async () => undefined };
   const list = el('ul', { class: 'fd-activity-list' });
   const element = el('section', { class: 'fd-activities', 'aria-label': labels.activities }, list);
   const canSchedule = !!(source.schedule && source.activityTypes && source.people);
-  const order = context.dateOrder ?? 'dmy';
-  /** A day as the page's date boxes write it: "20 Oct 2026". */
-  const dayText = (day: string) => dayWords(day, { locale, dateOrder: order });
-  /** A time on the page's clock, with the zone's short name where it is not the browser's own: "15:30 EEST". */
-  const timeText = (due: Due) => (zone && due.at !== null && !isOwnZone(zone) ? `${due.time} ${zoneName(due.at, zone, locale)}` : (due.time as string));
-  /** A day and a time, as the page's boxes write them: "20 Oct 2026, 15:30". */
-  const dayAndTime = (due: Due) => `${dayText(due.day)}${order === 'ymd' ? ' ' : ', '}${timeText(due)}`;
+  /** An hour on the page's clock, its zone named where it is not the browser's own: "15:30 EEST"; with its day, "20 Oct 2026, 15:30 EEST". */
+  const timeText = (due: Due) => clockWords(context, due.at as number, true);
+  const dayAndTime = (due: Due) => momentWords(context, due.at as number, true);
 
   /** When it is due, in words: "Overdue", "Today", "Due 22 Oct 2026" — and with an hour, "Overdue since 11:00", "Today at 15:30", "Due 22 Oct 2026, 09:00". */
   function dueWords(due: Due, when: 'overdue' | 'today' | 'planned', today: string): string {
