@@ -1,4 +1,4 @@
-import { validatePage, type Field, type FieldNode, type FunctionsKnown, type Page, type SheetNode } from '@fieldia/core';
+import { pageWarnings, validatePage, type Field, type FieldNode, type FunctionsKnown, type Page, type SheetNode } from '@fieldia/core';
 import { wordsOf, type HeaderPart } from './header-commands';
 import { readCondition, type Condition } from './conditions';
 import { kindById, kindOfField } from './kinds';
@@ -95,6 +95,10 @@ export function pageChecks(page: Page, options: { valid?: boolean; words?: Desig
     for (const issue of checked.issues) if (!rules.covers(issue.path) && !doing.covers(issue.path) && !SAID_BY_FORM_CHECKS.test(issue.message)) found.push({ at: null, severity: 'must', text: w.invalid(issue.path, issue.message) });
   }
   found.push(...rules.checks, ...doing.checks);
+  // A value of a kind a function does not take, anywhere a formula is (a list's row tones, a step's value): a fix to
+  // make, never a refusal — those the rules' checks said in words are not said again.
+  const warned = checked ? (checked.warnings ?? []) : pageWarnings(page, { functions: options.functions });
+  for (const warning of warned) if (!rules.covers(warning.path)) found.push({ at: null, severity: 'should', text: w.invalid(warning.path, warning.message) });
   // embed lane: saved forms placed in the page that cannot be found, would hold it, or would mix their answers.
   found.push(...formChecks(page, options.forms ?? null, words));
   const survey = page.data.kind === 'responses';

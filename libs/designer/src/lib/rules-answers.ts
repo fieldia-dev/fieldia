@@ -8,7 +8,7 @@ import { allSections, findNode } from './page-tree';
 import { segmented } from './panel-controls';
 import { ruleRefusal, type AnswerRulePatch } from './rules-commands';
 import { formulaBox } from './rules-formula-box';
-import { formulaProblem, sampleHolds } from './rules-formula';
+import { formulaAdvice, formulaProblem, problemWords, sampleHolds } from './rules-formula';
 import { answerSample, type SampleOptions } from './rules-sample';
 import { answerRuleSentence, kindsFitting, NAMED_PATTERNS, ruleAsks } from './rules-words';
 import { settingNumber, type SettingNumberOptions } from './number-box';
@@ -226,6 +226,12 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       check: (on, source) => formulaProblem(on, source, words, designer.functions()),
       commit: (source) => source && change({ holds: source }),
       said: (on, source) => {
+        // A value of a kind a function does not take, said in the result's place: kept, it gives nothing there.
+        const advice = formulaAdvice(on, source, words, designer.functions());
+        if (advice) {
+          holds.result.toggleAttribute('data-fails', false);
+          return { warn: problemWords(advice, words) };
+        }
         const said = sampleHolds(on, source, words, designer.functions());
         holds.result.toggleAttribute('data-fails', said.endsWith(words.rules.doesNotHold) || said === words.rules.neverHolds);
         return said;

@@ -82,7 +82,7 @@ test.describe('the designer: options that follow the answers, and functions', ()
     expect(again.optionsFrom).toEqual({ field: expect.any(String), picked: false });
   });
 
-  test('Worked out from lists every function by what it works on, the app’s own last, and says a value of the wrong kind', async ({ page }) => {
+  test('Worked out from lists every function by what it works on, the app’s own last, and says a value of the wrong kind, keeping it', async ({ page }) => {
     // Worked out from is an Advanced setting.
     await inAdvanced(page);
     await page.reload();
@@ -104,7 +104,16 @@ test.describe('the designer: options that follow the answers, and functions', ()
     await worked.getByRole('button', { name: 'age()', exact: true }).click();
     await page.keyboard.type(price);
     await expect(box).toHaveValue(`age(${price})`);
-    await expect(worked.locator('.fd-formula-problem')).toHaveText(/“age” takes a date: Price is a number/);
+    // A value of a kind the function does not take stops nothing: said in the result's place, in the warning's colours,
+    // and the formula kept as the box is left.
+    await expect(worked.locator('.fd-formula-result')).toHaveText(/“age” takes a date: Price is a number/);
+    await expect(worked.locator('.fd-formula-result')).toHaveAttribute('data-warn', '');
+    await expect(worked.locator('.fd-formula-problem')).toBeHidden();
     await screen(page, 'designer-functions', { viewport: true });
+    await page.keyboard.press('Tab');
+    await expect.poll(async () => {
+      const after = await built(page);
+      return Object.values(after.fields as Record<string, { label: string; compute?: string }>).find((f) => f.label === 'Price per m²')?.compute;
+    }).toBe(`age(${price})`);
   });
 });

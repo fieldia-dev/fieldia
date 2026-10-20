@@ -7,7 +7,7 @@ import { plainNumber, settingNumber, type SettingNumber } from './number-box';
 import { findNode } from './page-tree';
 import { cannotHold } from './rules-commands';
 import { formulaBox } from './rules-formula-box';
-import { formulaProblem, literalOf, sampleResult, wouldCircle } from './rules-formula';
+import { formulaAdvice, formulaProblem, literalOf, problemWords, sampleResult, wouldCircle } from './rules-formula';
 import { pageRules } from './rules-words';
 
 /**
@@ -111,7 +111,12 @@ export function workedOutSetting(el: ElementFactory, designer: Designer, id: str
       if (source === was) return;
       designer.setCompute(id, source || null);
     },
-    said: (page, source) => (own ? sampleResult(page, own.name, source, words, designer.functions()) : ''),
+    // A value of a kind a function does not take is said in the result's place: kept, it gives nothing there.
+    said: (page, source) => {
+      const advice = formulaAdvice(page, source, words, designer.functions());
+      if (advice) return { warn: problemWords(advice, words) };
+      return own ? sampleResult(page, own.name, source, words, designer.functions()) : '';
+    },
   });
   /** A function's button: its tip on pointing at it, and put in where the cursor is. */
   const offer = (name: string, tip: string, text: string, back: number) => {

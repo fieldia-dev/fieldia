@@ -74,6 +74,8 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-formula-result { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--fd-text); padding: 6px 9px; border-radius: 6px; background: var(--fd-success-soft, var(--fd-page)); overflow-wrap: anywhere; }
 .fd-formula-result[hidden], .fd-formula-problem[hidden], .fd-formula-reads[hidden] { display: none; }
 .fd-formula-result { display: grid; gap: 2px; }
+/* A fix to make that stops nothing — a value of a kind a function does not take: the warning's colours. */
+.fd-formula-result[data-warn] { background: var(--fd-warning-soft, var(--fd-page)); color: var(--fd-warning, var(--fd-text)); }
 /* The formula in words, above its box: each field one name, as it reads. */
 .fd-formula-reads { margin: 0 0 4px; font-size: 12.5px; line-height: 1.45; color: var(--fd-muted); overflow-wrap: anywhere; }
 .fd-formula-name { color: var(--fd-text); font-weight: 600; }

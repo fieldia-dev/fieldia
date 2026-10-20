@@ -27,6 +27,7 @@ export const checks: DesignerWords['checks'] = {
   invalid: (path, _message) => (path ? `هذا الجزء من الصفحة غير صالح: ${ltr(path)}` : 'في الصفحة ما لا يطابق صيغتها.'),
   readsGone: (name, sentence, gone) => `${q(name)}: ${q(sentence)} تقرأ ${listOf('ar', gone, 'and')}، ولم يعد ${gone.length === 1 ? 'موجودًا' : 'موجودين'} في الصفحة.`,
   formulaBroken: (name, problem) => `${q(name)}: لم تعد صيغته تُقرأ — ${problem}.`,
+  givesNothing: (name, sentence, problem) => `${q(name)}: في ${q(sentence)}، ${problem} — فلا يعطي هذا الجزء شيئًا.`,
   removeTheFormula: 'إزالة الصيغة',
   setBroken: (name, sentence, problem) => `${q(name)}: لم تعد ${q(sentence)} تُقرأ — ${problem}.`,
   setCannotHold: (name, sentence, problem) => `${q(name)}: ${q(sentence)} تضبط قيمة لا يمكنه حملها — ${problem}.`,

@@ -103,7 +103,8 @@ const ranOut = (message: string) => /EOF|^Expected/.test(message);
  * What is wrong with a formula on this page, or null when it reads: a sign it
  * cannot hold, a piece out of place, something missing, a function there is
  * not — Fieldia's or the app's (`functions`) — or given too many values, a
- * field the page does not have, a value of a kind a function does not take.
+ * field the page does not have. A value of a kind a function does not take
+ * stops nothing: `formulaAdvice` says it.
  */
 export function formulaProblem(page: Page, source: string, words: DesignerWords = en, functions?: FunctionsKnown): FormulaProblem | null {
   const w = words.rules;
@@ -125,7 +126,16 @@ export function formulaProblem(page: Page, source: string, words: DesignerWords 
     }
     return { words: w.unknownField(root), ...place(token) };
   }
-  // It reads, and its fields are the page's: each function is given values of a kind it takes.
+  return null;
+}
+
+/**
+ * What a formula that reads hands a function of a kind it does not take, in words and where — "“age” takes a date:
+ * Notes is text" — or null. Said, never refused: such a call gives nothing, as it did before kinds were read.
+ */
+export function formulaAdvice(page: Page, source: string, words: DesignerWords = en, functions?: FunctionsKnown): FormulaProblem | null {
+  const tokens = formulaTokens(source);
+  if (!Array.isArray(tokens) || readError(source, functions) !== null) return null;
   const kind = kindProblems(parseExpression(source, tableOf(functions)), { fields: page.fields }, functions)[0];
   return kind ? kindSaid(page, tokens, kind, words) : null;
 }

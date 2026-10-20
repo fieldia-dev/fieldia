@@ -33,8 +33,8 @@ export interface FormulaBoxOptions {
   check(page: Page, source: string): FormulaProblem | null;
   /** A formula that reads, or an empty box, as the box is left. */
   commit(source: string): void;
-  /** Said after each change: the result on made-up values. */
-  said?(page: Page, source: string): string;
+  /** Said after each change: the result on made-up values — or `{ warn }`, a fix to make that stops nothing. */
+  said?(page: Page, source: string): string | { warn: string };
 }
 
 export interface FormulaBox {
@@ -199,7 +199,9 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
         : [])
     );
     reads.hidden = !reads.textContent;
-    outcome.textContent = source && options.said ? options.said(on, source) : '';
+    const said = source && options.said ? options.said(on, source) : '';
+    outcome.textContent = typeof said === 'string' ? said : said.warn;
+    result.toggleAttribute('data-warn', typeof said !== 'string');
     result.hidden = !outcome.textContent;
   }
 
