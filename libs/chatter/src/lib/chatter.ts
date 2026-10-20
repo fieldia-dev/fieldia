@@ -26,6 +26,11 @@ export interface ChatterOptions {
   shrink?: ShrinkOptions;
   /** What the page calls its records (`Page.records`), for its words that name one: "once the customer is saved". */
   records?: PageRecords;
+  /**
+   * What happened to the record that the page knows of its own, told among its messages by when it happened, newest
+   * first, as events: its approval history (`chatterSlot`). Never posted to the source.
+   */
+  entries?: readonly ChatterMessage[];
 }
 
 export interface ChatterHandle {
@@ -34,6 +39,8 @@ export interface ChatterHandle {
   refresh(): Promise<void>;
   /** Follow another record, or none while one is not saved. */
   setRecord(record: RecordRef | null): Promise<void>;
+  /** What the page knows of the record shown, told among its messages by when it happened (`entries`), in place of what it told before. A Discussion has none. */
+  setEntries?(entries: readonly ChatterMessage[]): void;
   destroy(): void;
 }
 
@@ -206,6 +213,9 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
 
   /** The messages on show, by id: an answer names whom it answers. */
   let shown = new Map<ChatterMessage['id'], ChatterMessage>();
+  /** The record's messages as the source gave them last, and the page's own entries told among them (`entries`). */
+  let fetched: ChatterMessage[] = [];
+  let entries: readonly ChatterMessage[] = options.entries ?? [];
 
   function messageItem(message: ChatterMessage): HTMLElement {
     const head = el(
@@ -256,9 +266,16 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     void followers.load();
     const messages = await options.source.messages(current);
     if (destroyed || record !== current) return; // another record, or gone, meanwhile
-    shown = new Map(messages.map((message) => [message.id, message]));
-    list.replaceChildren(...messages.map(messageItem));
-    empty.hidden = messages.length > 0;
+    fetched = messages;
+    draw();
+  }
+
+  /** The source's messages and the page's own entries, newest first: each entry among the messages by when it happened. */
+  function draw() {
+    const all = entries.length ? [...fetched, ...entries].sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0)) : fetched;
+    shown = new Map(all.map((message) => [message.id, message]));
+    list.replaceChildren(...all.map(messageItem));
+    empty.hidden = all.length > 0;
   }
 
   // Marking an activity done posts what came of it: the conversation is fetched again.
@@ -276,7 +293,12 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     refresh: load,
     async setRecord(next) {
       record = next;
+      fetched = [];
       await load();
+    },
+    setEntries(next) {
+      entries = next;
+      if (record && !destroyed) draw();
     },
     destroy() {
       destroyed = true;

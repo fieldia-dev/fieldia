@@ -88,6 +88,10 @@ export interface ChatterLabels {
   discardComment: string;
   discard: string;
   keepWriting: string;
+  /** A record's approval history, told among its messages (`chatterSlot`): sent for approval, and a decision at a `{level}`. */
+  approvalAsked: string;
+  approvalApproved: string;
+  approvalRejected: string;
 }
 
 /**
@@ -176,6 +180,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     discardComment: 'Discard your comment?',
     discard: 'Discard',
     keepWriting: 'Keep writing',
+    approvalAsked: 'Asked for approval',
+    approvalApproved: 'Approved for {level}',
+    approvalRejected: 'Rejected for {level}',
   },
   ar: {
     conversation: 'المحادثة',
@@ -250,6 +257,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     discardComment: 'هل تريد تجاهل تعليقك؟',
     discard: 'تجاهل',
     keepWriting: 'متابعة الكتابة',
+    approvalAsked: 'طلب الموافقة',
+    approvalApproved: 'وافق عن {level}',
+    approvalRejected: 'رفض عن {level}',
   },
   de: {
     conversation: 'Unterhaltung',
@@ -324,6 +334,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     discardComment: 'Kommentar verwerfen?',
     discard: 'Verwerfen',
     keepWriting: 'Weiterschreiben',
+    approvalAsked: 'Hat um Genehmigung gebeten',
+    approvalApproved: 'Für {level} genehmigt',
+    approvalRejected: 'Für {level} abgelehnt',
   },
   fr: {
     conversation: 'Conversation',
@@ -398,5 +411,8 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     discardComment: 'Abandonner votre commentaire ?',
     discard: 'Abandonner',
     keepWriting: 'Continuer à écrire',
+    approvalAsked: 'A demandé l’approbation',
+    approvalApproved: 'Approuvé pour {level}',
+    approvalRejected: 'Refusé pour {level}',
   },
 };
