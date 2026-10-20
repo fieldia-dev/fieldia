@@ -184,6 +184,123 @@ test.describe('a table pasted into a formatted text', () => {
   });
 });
 
+test.describe('copied from a Fieldia editor and pasted back', () => {
+  /** The words' look where they stand in a box: their colour and size, and the highlight behind them. */
+  const look = (box: Locator, words: string) =>
+    box.evaluate((el, words) => {
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let node = walker.nextNode();
+      while (node && !node.textContent?.includes(words)) node = walker.nextNode();
+      if (!node?.parentElement) return null;
+      const style = getComputedStyle(node.parentElement);
+      let ground = 'none';
+      for (let at: Element | null = node.parentElement; at && at !== el; at = at.parentElement) {
+        const behind = getComputedStyle(at).backgroundColor;
+        if (behind !== 'rgba(0, 0, 0, 0)' && behind !== 'transparent') {
+          ground = behind;
+          break;
+        }
+      }
+      return [style.color, ground, style.fontSize];
+    }, words);
+  const RED_ON_YELLOW_20 = ['rgb(209, 52, 56)', 'rgb(255, 255, 0)', '20px'];
+
+  /** "650.00" in the fees' last line, made red, highlighted yellow and 20px with the toolbar, and left selected. */
+  async function marked(page: Page) {
+    const fees = area(page, 'f-fees');
+    const choose = async () =>
+      fees.evaluate((el) => {
+        const words = [...el.querySelectorAll('p')].at(-1)!;
+        const walker = document.createTreeWalker(words, NodeFilter.SHOW_TEXT);
+        let node = walker.nextNode();
+        while (node && !node.textContent?.includes('650.00')) node = walker.nextNode();
+        const at = node!.textContent!.indexOf('650.00');
+        const range = document.createRange();
+        range.setStart(node!, at);
+        range.setEnd(node!, at + 6);
+        getSelection()?.removeAllRanges();
+        getSelection()?.addRange(range);
+      });
+    await fees.click();
+    for (const [tool, choice] of [
+      ['Text colour', 'Red'],
+      ['Highlight', 'Yellow'],
+      ['Text size', '20px'],
+    ]) {
+      await choose();
+      await node(page, 'f-fees').getByRole('button', { name: tool, exact: true }).click();
+      await page.getByRole('menu', { name: tool }).getByRole('menuitem', { name: choice }).click();
+    }
+    expect(await look(fees, '650.00')).toEqual(RED_ON_YELLOW_20);
+    await choose();
+    return fees;
+  }
+
+  test('Ctrl+C and Ctrl+V: its colour, highlight and size kept, here, in another editor and in the classic one', async ({ page, browserName, context }) => {
+    test.skip(browserName !== 'chromium', 'the browser’s own clipboard, as a person copies; the other engines by the event’s data, below');
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const { problems } = await open(page, 'plain', QUERY);
+    const fees = await marked(page);
+    await page.keyboard.press('ControlOrMeta+c');
+    // Here, at the end of the text.
+    await page.keyboard.press('ControlOrMeta+End');
+    await page.keyboard.type(' Late: ');
+    await page.keyboard.press('ControlOrMeta+v');
+    await expect(fees.locator('p').last()).toContainText('Late: 650.00');
+    expect(await look(fees.locator('p').last(), 'Late: ')).not.toEqual(RED_ON_YELLOW_20);
+    expect(await fees.locator('p').last().evaluate((p) => [...p.querySelectorAll('span')].filter((span) => span.textContent === '650.00').length)).toBeGreaterThan(1);
+    // In another editor, and in the classic one.
+    for (const [id, field] of [
+      ['f-payment', 'payment'],
+      ['f-scope', 'scope'],
+    ] as const) {
+      const box = area(page, id);
+      await box.click();
+      await page.keyboard.press('ControlOrMeta+End');
+      await page.keyboard.press('ControlOrMeta+v');
+      await expect(box).toContainText('650.00');
+      expect(await look(box, '650.00'), id).toEqual(RED_ON_YELLOW_20);
+      await expect.poll(() => value(page, field)).toMatch(/color: rgb\(209, 52, 56\)[\s\S]*650\.00/);
+    }
+    await screen(page, 'rich-tables-own-copy');
+    expect(problems).toEqual([]);
+  });
+
+  test('what the editor puts on the clipboard, pasted in another editor and the classic one, keeps its own look', async ({ page }) => {
+    const { problems } = await open(page, 'plain', QUERY);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const fees = await marked(page);
+    // The copy as the browser asks the page for it, its data kept as the clipboard keeps it.
+    const copied = await fees.evaluate((el) => {
+      const data: Record<string, string> = {};
+      const event = new ClipboardEvent('copy', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'clipboardData', { value: { types: [], files: [], setData: (type: string, words: string) => (data[type] = words), getData: (type: string) => data[type] ?? '' } });
+      el.dispatchEvent(event);
+      return { data, prevented: event.defaultPrevented };
+    });
+    expect(copied.prevented).toBe(true);
+    expect(copied.data['text/plain']).toBe('650.00');
+    expect(copied.data['text/html']).toMatch(/^<div data-fieldia-copy="">/);
+    for (const id of ['f-payment', 'f-scope']) {
+      const box = area(page, id);
+      await box.click();
+      await box.press('ControlOrMeta+End');
+      await paste(box, copied.data['text/html']);
+      await expect(box).toContainText('650.00');
+      expect(await look(box, '650.00'), id).toEqual(RED_ON_YELLOW_20);
+    }
+    // The same words from Word, or anywhere else, come in the field's own look: at the start of the fees' plain text.
+    await fees.click();
+    await fees.press('ControlOrMeta+Home');
+    await paste(fees, copied.data['text/html'].replace(' data-fieldia-copy=""', ''));
+    await expect(fees).toHaveText(/^\s*650\.00\s*The Client pays/);
+    const [colour, ground, size] = (await look(fees, '650.00')) ?? [];
+    expect([colour === RED_ON_YELLOW_20[0], ground, size === '20px']).toEqual([false, 'none', false]);
+    expect(problems).toEqual([]);
+  });
+});
+
 test.describe('the table tool', () => {
   test('a size picked on its grid with the keys: a table with its header row, the cursor in its first cell', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });

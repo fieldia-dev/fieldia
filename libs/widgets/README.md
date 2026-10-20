@@ -114,8 +114,11 @@ Google Sheets — or copied from any page — comes in plain, in the field's own
 look, in either editor: its headings, bold, italic, underlined and struck
 words, links, lists (Word's too, which it writes as paragraphs, nested by
 their level) and alignment kept; its fonts, sizes, colours, highlights,
-classes, widths and Office's own markup left behind. Words alone (no HTML) are
-the browser's to paste, as before. The cleaner is the text part's: the classic
+classes, widths and Office's own markup left behind. What is copied or cut
+from a Fieldia editor is marked as its own (`data-fieldia-copy`), so pasted
+back there or in another formatted text it keeps what the editor's tools wrote
+— a word's colour, highlight and size — and nothing more. Words alone (no HTML)
+are the browser's to paste, as before. The cleaner is the text part's: the classic
 editor asks for it as something is pasted, and puts the paste in as soon as it
 comes. A formatted text keeps tables: their cells, a cell spanning several
 (`colspan`, `rowspan`), a header row and a cell's alignment (an amount at its

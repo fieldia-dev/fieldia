@@ -294,6 +294,51 @@ describe('the rich editor’s table tool', () => {
   });
 });
 
+describe('copied from a Fieldia editor and pasted back', () => {
+  const LOOK = 'color: rgb(209, 52, 56); background-color: rgb(255, 255, 0); font-size: 20px;';
+  const clipboard = () => {
+    const data: Record<string, string> = {};
+    return { data, setData: (type: string, words: string) => (data[type] = words), getData: (type: string) => data[type] ?? '', types: [] as string[], files: [] };
+  };
+  const copy = (area: HTMLElement, type: 'copy' | 'cut' = 'copy') => {
+    const clipboardData = clipboard();
+    const event = Object.assign(new Event(type, { bubbles: true, cancelable: true }), { clipboardData });
+    area.dispatchEvent(event);
+    return { data: clipboardData.data, prevented: event.defaultPrevented };
+  };
+
+  it('puts its selection on the clipboard as its own: a word copied out of its coloured span keeps it, its words beside', () => {
+    const { area } = rich(['bold', 'colour', 'highlight', 'size']);
+    area.innerHTML = `<p>Pay <span style="${LOOK}">late fees</span> in full.</p>`;
+    area.focus();
+    const words = area.querySelector('span')!.firstChild!;
+    const range = document.createRange();
+    range.setStart(words, 5);
+    range.setEnd(words, 9);
+    document.getSelection()?.removeAllRanges();
+    document.getSelection()?.addRange(range);
+    const { data, prevented } = copy(area);
+    expect(prevented).toBe(true);
+    expect(data).toEqual({ 'text/html': `<div data-fieldia-copy=""><span style="${LOOK}">fees</span></div>`, 'text/plain': 'fees' });
+    // Cut: the same on the clipboard, the words taken away as one step Undo takes back.
+    expect(copy(area, 'cut').data['text/plain']).toBe('fees');
+    expect(commands.at(-1)).toEqual(['delete', undefined]);
+  });
+
+  it('pasted back, here or in another editor, keeps its own colour, highlight and size — and nothing it was not given', () => {
+    const marked = `<div data-fieldia-copy=""><p>Pay <span class="x" onclick="x()" style="${LOOK} font-family: Georgia; position: fixed">late fees</span> <span data-mention="7">@Karim</span></p></div>`;
+    expect(cleanPasted(marked, document)).toBe(`<p>Pay <span style="${LOOK}">late fees</span> <span data-mention="7">@Karim</span></p>`);
+    // Without the mark, from anywhere else, its colours and sizes are left behind.
+    expect(cleanPasted(marked.replace(' data-fieldia-copy=""', ''), document)).toBe('<div><p>Pay late fees <span data-mention="7">@Karim</span></p></div>');
+    const { area, value } = rich(['bold']);
+    area.focus();
+    caretIn(area, 0);
+    const paste = Object.assign(new Event('paste', { bubbles: true, cancelable: true }), { clipboardData: { getData: (type: string) => (type === 'text/html' ? marked : '') } });
+    area.dispatchEvent(paste);
+    expect(value()).toBe(`<p>Pay <span style="${LOOK}">late fees</span> <span data-mention="7">@Karim</span></p>`);
+  });
+});
+
 describe('the Markdown editor’s table tool', () => {
   it('puts a table to start from where the caret is, a blank line before it', () => {
     const mounted = mountKind({ type: 'html', label: 'Notes' }, { options: { editor: 'markdown', tools: ['bold', 'table'] } });

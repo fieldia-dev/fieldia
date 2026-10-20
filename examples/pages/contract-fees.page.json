@@ -42,14 +42,14 @@
             "type": "field",
             "id": "f-fees",
             "field": "fees",
-            "options": { "tools": ["bold", "italic", "underline", "bulletList", "numberList", "link", "clearFormatting", "table"] }
+            "options": { "tools": ["bold", "italic", "underline", "bulletList", "numberList", "highlight", "colour", "size", "link", "clearFormatting", "table"] }
           },
           {
             "type": "field",
             "id": "f-payment",
             "field": "payment",
             "placeholder": "Paste the payment schedule here, from Word, Excel or Google Docs.",
-            "options": { "tools": ["bold", "italic", "underline", "bulletList", "numberList", "link", "clearFormatting", "table"] }
+            "options": { "tools": ["bold", "italic", "underline", "bulletList", "numberList", "highlight", "colour", "size", "link", "clearFormatting", "table"] }
           }
         ]
       }

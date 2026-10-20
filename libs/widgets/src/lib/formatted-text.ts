@@ -5,7 +5,7 @@ import { htmlToMarkdown, markdownLoses, markdownToHtml } from './markdown';
 import { CHOOSING, EMOJI, HIGHLIGHTS, MARKDOWN_TOOLS, RICH_TOOLS, TEXT_COLOURS, TEXT_SIZES, TOGGLES, chevron, moreIcon, swatch, toolIcon, toolLabel, type TextTool } from './text-tools';
 import { textMenu, type MenuChoice, type TextMenu } from './text-menu';
 import { linkAddress, sanitizeHtml } from './sanitize';
-import { keepCells, pasteHtml } from './pasted-html';
+import { copyHtml, keepCells, pasteHtml } from './pasted-html';
 import { PICK_COLUMNS, cellAt, cellsInOrder, editTable, hasHeader, markdownTable, newTable, pickerChoices, placeOf, tableGrid, tableHeight, tableSize, tableWidth, type TableEdit } from './rich-table';
 import { installEditorStyles } from './styles-editor';
 
@@ -416,6 +416,13 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     return true;
   }
   area.addEventListener('paste', (event) => editor === 'rich' && !readonly && pasteHtml(event, doc, area) && emit());
+  // What is copied or cut from it is marked as its own: pasted back here or in another, its colours and sizes stay.
+  area.addEventListener('copy', (event) => editor === 'rich' && copyHtml(event, area, doc));
+  area.addEventListener('cut', (event) => {
+    if (editor !== 'rich' || readonly || !copyHtml(event, area, doc)) return;
+    doc.execCommand?.('delete', false);
+    emit();
+  });
 
   // ---- the tools --------------------------------------------------------------------------------
   /** What a tool does when pressed, in the editor shown now. */

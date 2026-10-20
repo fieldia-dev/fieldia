@@ -1511,16 +1511,16 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // count in words and its sums ("Cairo, 12 invoices, EGP 4.3M", their English with it), the arrows crossing a heading,
 // Right and Left opening and closing it — list 109.78 and 35.19 measured before, 110.61 and 35.49 after, to 110.7
 // and 35.5.
-// Tables inside formatted text (0.27, w4-rich-tables): text 56.45 and 18.84 measured before, 72.15 and 24.31 after —
+// Tables inside formatted text (0.27, w4-rich-tables): text 56.45 and 18.84 measured before, 73.00 and 24.62 after —
 // the table tool, its picker of a size on a grid of 8 by 8 and its menu of what to do where the caret is (rich-table.ts,
 // 4.0), rows and columns added and taken away round cells spanning several, a header row, Tab from cell to cell (a row
 // past the last) and Escape out (formatted-text.ts), whatever is pasted from Word, Excel, Google Docs and Sheets or a
-// page made plain — Word's lists lists again, fonts and colours left behind — and put in as given (pasted-html.ts, 3.8),
-// GitHub's tables in Markdown both ways, their look on the screen and on paper and their 22 English words — to 72.2
-// and 24.4; print 15.99 and 5.22 to 16.81 and 5.38 — a formatted text's
+// page made plain — Word's lists lists again, fonts and colours left behind — and put in as given, what a Fieldia editor
+// copies marked as its own so its colours, highlights and sizes come back with it (pasted-html.ts, 4.6), GitHub's tables
+// in Markdown both ways, their look on the screen and on paper and their 22 English words — to 73.1 and 24.7; print 15.99 and 5.22 to 16.81 and 5.38 — a formatted text's
 // table measured whole where it fits a sheet (print-look.ts), its field broken between its rows, the classic box a
 // block — to 16.9 and 5.4.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [72.2, 24.4], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.9, 5.4] };
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.9, 5.4] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

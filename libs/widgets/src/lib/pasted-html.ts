@@ -16,8 +16,17 @@ import { sanitizeHtml } from './sanitize';
  *   source was written in are spaces, and Word's second line break for other programs, and Safari's newline after
  *   what was copied, go.
  *
+ * What a Fieldia editor copied (`copyHtml`: marked `data-fieldia-copy`) keeps what its own tools wrote — a span's
+ * colour, highlight and size, a person or a record linked in place — and nothing more: it is kept as any stored value
+ * is (`sanitizeHtml`). Whatever else the marker came with is dropped as from anywhere.
+ *
  * The result reads the same through `sanitizeHtml` again: what is stored is what was put in.
  */
+
+/** The mark on what a Fieldia editor puts on the clipboard. */
+const COPIED = 'data-fieldia-copy';
+/** Elements a word sits inside that are its look, carried with words copied out of them. */
+const INLINE = /^(SPAN|B|STRONG|I|EM|U|S|CODE|A)$/;
 
 /** What stands as a block of its own: a space beside one is nothing. */
 const BLOCKS = /^(P|DIV|H[1-4]|UL|OL|LI|BLOCKQUOTE|PRE|BR|TABLE)$/;
@@ -77,6 +86,9 @@ export function cleanPasted(html: string, doc: Document): string {
   const box = doc.createElement('template');
   box.innerHTML = /<table[\s>]/i.test(html) || !/<tr[\s>]/i.test(html) ? html : `<table>${html}</table>`;
   const content = box.content;
+  // A Fieldia editor's own copy: its own styles kept, as a stored value keeps them.
+  const own = content.querySelector(`[${COPIED}]`);
+  if (own) return sanitizeHtml(own.innerHTML, doc);
   for (const sheet of content.querySelectorAll('style')) {
     for (const [, name, rules] of (sheet.textContent ?? '').matchAll(/\.([\w-]+)\s*\{([^}]*)\}/g)) {
       for (const marked of content.querySelectorAll<HTMLElement>(`[class~="${name}"]`)) marked.setAttribute('style', `${rules};${marked.getAttribute('style') ?? ''}`);
@@ -161,5 +173,29 @@ export function pasteHtml(event: ClipboardEvent, doc: Document, box: HTMLElement
   if (!html.trim()) return false;
   event.preventDefault();
   putHtml(box, cleanPasted(html, doc), doc);
+  return true;
+}
+
+/**
+ * A copy or cut from a Fieldia editor (`box`): its selection as the editor keeps it — the words, the marks and look
+ * round them (a coloured word copied alone keeps its span), cleaned as a stored value is — marked as its own, with its
+ * words as plain text beside it. True when it put them on the clipboard.
+ */
+export function copyHtml(event: ClipboardEvent, box: HTMLElement, doc: Document): boolean {
+  const selection = doc.getSelection();
+  const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+  if (!event.clipboardData || !range || range.collapsed || !box.contains(range.commonAncestorContainer)) return false;
+  let piece: Node = range.cloneContents();
+  const common = range.commonAncestorContainer;
+  for (let at = common.nodeType === Node.ELEMENT_NODE ? (common as Element) : common.parentElement; at && at !== box && INLINE.test(at.tagName); at = at.parentElement) {
+    const look = at.cloneNode(false);
+    look.appendChild(piece);
+    piece = look;
+  }
+  const holder = doc.createElement('div');
+  holder.append(piece);
+  event.clipboardData.setData('text/html', `<div ${COPIED}="">${sanitizeHtml(holder.innerHTML, doc)}</div>`);
+  event.clipboardData.setData('text/plain', selection?.toString() ?? '');
+  event.preventDefault();
   return true;
 }
