@@ -50,8 +50,8 @@ const AREA_OF = {
   crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'leads-queue', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
-  clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
-  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing'],
+  clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake', 'services-languages'],
+  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'listing-languages'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -78,6 +78,8 @@ const SEARCH_WORDS = {
   'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print tab count badge route router own page',
   property: 'property home house real estate listing viewings visits appointments related records inside agent client',
   listing: 'listing property home house villa apartment flat studio features garden pool balcony options conditions price per square metre meter district average server function formula handover months age building',
+  'listing-languages': 'listing property home portal title description two languages bilingual arabic english translation translations translate multilingual right to left rtl each language typed',
+  'services-languages': 'services service list price list menu clinic salon spa treatments names two languages bilingual arabic english translation translations translate multilingual search cards',
   'visit-feedback': 'feedback survey clinic patient treatments follow up carry forward picked earlier question age birthday options conditions aesthetic botox filler',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
   'clinic-consent': 'consent form signature sign signed esign e-signature evidence proof audit trail fingerprint hash tamper locked patient clinic treatment contract agreement',
@@ -356,6 +358,34 @@ export const DEMOS = [
       'Pick a district: its average per m² shows “…” while the app’s server is asked, then the listing against it in per cent.',
       'Type 18 in Handover in (months): Handed over by is a year and a half after today; a built-on date gives the building’s age in whole years.',
       'Save while the district’s average is still asked: the save waits for it.',
+    ],
+  },
+  {
+    id: 'listing-languages',
+    name: 'A listing in Arabic and English',
+    category: 'records',
+    query: 'page=listing-languages&record=2&skin=underline',
+    blurb: 'A home’s title and description typed by the agent in each language the portal is read in — never translated by a machine: a switch over each box, your language first, Arabic written right to left. The title is required in both, the description in English; a language still to type is marked on its switch.',
+    howTo: [
+      'Title shows English first, empty and marked: this listing has its Arabic title only. Press العربية over it to read the Arabic, written right to left.',
+      'Change Bedrooms to 4 and press Save: “Title is required in English”, and the switch is on English, its box ready. Type “Nile-view flat in Zamalek” and save.',
+      'In Description, press العربية: its Arabic may wait — Description is required in English alone.',
+      'Press the arrows on a switch with the keyboard: Left and Right move between the languages, Home and End to the ends.',
+      '[Open it in Arabic](?locale=ar&dir=rtl): العربية comes first on each switch, and the page reads right to left; English is still written left to right.',
+    ],
+  },
+  {
+    id: 'services-languages',
+    name: 'Services named in English and Arabic',
+    category: 'lists',
+    query: 'page=services-languages&skin=underline',
+    blurb: 'A clinic’s services, each named by its staff in English and Arabic: listed in your language, a name typed in another language alone shown in it and marked with its code, found by a search in either language, in its rows and its cards on a phone.',
+    howTo: [
+      'The last service, “حشو تجميلي”, has its Arabic name alone: it is shown in Arabic, marked AR. Chemical peel has its English alone.',
+      'Type تنظيف in the search and press Enter: Teeth cleaning is found by its Arabic name. Clear it, and type whitening: Teeth whitening.',
+      'Click Teeth cleaning: its page has a switch over its name and over what to tell the patient, each typed in English and Arabic.',
+      '[Open the list in Arabic](?locale=ar&dir=rtl): each name in Arabic, and Chemical peel in English, marked EN.',
+      'Narrow the window, or open it on a phone: each service is a card, its name in your language.',
     ],
   },
   {
@@ -1136,6 +1166,7 @@ export const OPENED = [
   { page: 'quotation', name: 'A quotation', from: 'customer-account' },
   { page: 'viewing', name: 'A viewing', from: 'property' },
   { page: 'lead', name: 'A lead', from: 'leads-queue' },
+  { page: 'service-languages', name: 'A service', from: 'services-languages' },
 ];
 
 /** What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock. */

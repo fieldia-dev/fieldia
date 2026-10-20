@@ -76,6 +76,10 @@ import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
 import clinicIntake from '../../examples/pages/clinic-intake.page.json';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
+import listingLanguages from '../../examples/pages/listing-languages.page.json';
+import servicesLanguages from '../../examples/pages/services-languages.page.json';
+import serviceLanguages from '../../examples/pages/service-languages.page.json';
+import { bilingualListings, bilingualServices } from './languages';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -188,6 +192,11 @@ export const pages: Record<string, Page> = {
   'test-drive': testDriveDemo.page,
   // The showroom's week of test drives on a calendar, on Berlin's clock wherever it is looked at from.
   'test-drives': testDriveDemo.list,
+  // A listing's title and description typed in Arabic and English; a clinic's services named in both, and each one's
+  // page: shared/languages.ts.
+  'listing-languages': listingLanguages as Page,
+  'services-languages': servicesLanguages as Page,
+  'service-languages': serviceLanguages as Page,
 };
 
 /**
@@ -248,6 +257,7 @@ const RECORD_PAGES: Record<string, string> = {
   invoices: 'invoice',
   'customer-account': 'invoice',
   property: 'viewing',
+  'services-languages': 'service-languages',
 };
 
 /** What a portal's page of homes to buy keeps to, whatever is filtered: homes for sale, priced in pounds. */
@@ -494,6 +504,9 @@ export function sampleDataSource() {
     duplicates: alikeRecords(),
     // The sign-ups already counted, as the server's limits answer (shared/event-signup.ts).
     limits: EVENT_COUNTS,
+    // A text kept in several languages read in the reader's where the source says it as one — a list's order, a link's
+    // name — as an app's server reads it in its person's language.
+    language: params.get('locale') ?? 'en',
     // The drafts the server keeps, and the link Continue later gives (shared/clinic-intake.ts).
     drafts: keptDrafts(),
     draftLink,
@@ -541,6 +554,9 @@ export function sampleDataSource() {
       ...appointmentRecords(),
       // Two consents signed, one changed in the clinic's system after (shared/consents.ts).
       'clinic.consent': sampleConsents(),
+      // A portal's listings and a clinic's services, typed in Arabic and English (shared/languages.ts).
+      'portal.listing': bilingualListings(),
+      'clinic.service': bilingualServices(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',
