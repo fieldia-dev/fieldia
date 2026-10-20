@@ -1850,16 +1850,17 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-// A code scanned with the camera (0.29, w5-scan): scan new, 18.47 and 7.80 — a field's widget with its Scan button and
+// A code scanned with the camera (0.29, w5-scan): scan new, 18.63 and 7.87 — a field's widget with its Scan button and
 // why the camera did not open beside it, the camera's sheet reading its frames (the back camera, stopped as it closes,
 // an item still in sight read once, a beep and a buzz), the reader it reads with (an app's own, the browser's
 // BarcodeDetector, else the decode part), a code written into words, a link's record found by its code, a GS1 code's
-// parts and the fields they fill, a table's lines counted, the page's checks of it, its words and its sheet — to 18.5
-// and 7.9; decode new, 153.78 and 38.94 — ZXing's readers of QR codes, DataMatrix, the UPC and EAN family, Code 128 and
-// Code 39 (@zxing/library 0.23.0, its readers alone: tools/zxing-readers.mjs), loaded only as Scan is pressed in a
-// browser that reads no codes itself — to 153.8 and 39.0. A number's total under its column read from the end, as the
-// column's numbers are (lines 45.36 and 15.52 measured before, 45.51 and 15.54 after, to 45.6 and 15.6).
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], scan: [18.5, 7.9], decode: [153.8, 39.0] };
+// parts and the fields they fill, a table's lines counted, a grid cell's sheet outliving its editor, the page's checks
+// of it, its words and its sheet — to 18.7 and 7.9; decode new, 153.78 and 38.94 — ZXing's readers of QR codes,
+// DataMatrix, the UPC and EAN family, Code 128 and Code 39 (@zxing/library 0.23.0, its readers alone:
+// tools/zxing-readers.mjs), loaded only as Scan is pressed in a browser that reads no codes itself — to 153.8 and 39.0.
+// A number's total under its column read from the end, as the column's numbers are (lines 45.36 and 15.52 measured
+// before, 45.51 and 15.54 after, to 45.6 and 15.6).
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], scan: [18.7, 7.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
