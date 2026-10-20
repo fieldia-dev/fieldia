@@ -42,7 +42,7 @@ import { listTotals } from './list-totals';
 import { keepFootRoom, printout, PRINT_MOST } from './list-print';
 import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
-import { cardsPart, columnsPart, filtersPart, importPart, type ColumnsPart } from './viewer-parts';
+import { assistPart, cardsPart, columnsPart, filtersPart, importPart, type AssistPart, type ColumnsPart } from './viewer-parts';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
 
 export interface ListContext {
@@ -982,6 +982,35 @@ export function listView(context: ListContext): ListView {
     filters
       ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], searchFilter, count: countOf, facets, onChange: searched, kit: filterKit })
       : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}), ...(node.filterCounts ? { count: countOf, searchFilter } : {}) });
+  // A search in plain words read as filters (`searchToFilter`): a ✦ beside the box while it holds two words or more;
+  // pressed, the assist part reads them — loaded then, so a list no one asks never downloads it — and says under the bar
+  // what they were read as. Hidden where the source cannot read words.
+  const wordsSource = context.dataSource;
+  const wordsLine = el('div', { class: 'fd-assist-read', hidden: '' });
+  let wordsRead: ReturnType<AssistPart['searchWords']> | null = null;
+  if (node.searchToFilter && !inRecord && wordsSource?.searchToFilter) {
+    // Its mark a ✦ in words: the assist part's own icon comes with it.
+    const button = el('button', { type: 'button', class: 'fd-button fd-button-link fd-assist-words', title: labels.assistWordsTitle, 'aria-label': labels.assistWordsTitle, hidden: '' }, el('span', { class: 'fd-assist-mark', 'aria-hidden': 'true' }, '✦'), el('span', {}, labels.assistWords));
+    const offer = () => {
+      button.hidden = search.input.value.trim().split(/\s+/).filter(Boolean).length < 2;
+    };
+    search.input.addEventListener('input', () => {
+      offer();
+      wordsRead?.typing();
+    });
+    button.addEventListener('click', () => {
+      void assistPart.load().then(
+        (part) => {
+          if (destroyed) return;
+          wordsRead ??= part.searchWords({ page, node, doc, el, labels, fill, locale, icons: context.icons, dataSource: wordsSource, model, kit: filterKit, bar: search, button, line: wordsLine, offer });
+          return wordsRead.read();
+        },
+        // A part that could not come: the words stay in the box, searched as typed.
+        () => undefined
+      );
+    });
+    (search.input.closest('label') ?? search.input).after(button);
+  }
 
   /**
    * The key to the rows' own looks, where the page says what they mean (`rowTones`' labels, `rowBoldLabel`): each
@@ -1557,6 +1586,7 @@ export function listView(context: ListContext): ListView {
       'data-size': gallery ? (node.gallery?.size ?? 'medium') : undefined,
     },
     bar,
+    wordsLine,
     // A list with no box to choose a row has nothing to act on; an import's report is said all the same.
     ...(choose ? [selection] : []),
     report,
@@ -1580,6 +1610,7 @@ export function listView(context: ListContext): ListView {
       destroyed = true;
       doc.removeEventListener('pointerdown', outsideExport, true);
       search.destroy();
+      wordsRead?.typing();
       widths?.disconnect();
       choices?.destroy();
       parts.forEach((part) => part.destroy());

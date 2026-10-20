@@ -79,7 +79,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, type HeadPart } from './viewer-parts';
+import { answersPart, asksAssist, assistPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, type AssistPart, type HeadPart } from './viewer-parts';
 import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
@@ -287,6 +287,14 @@ export interface ViewerHandle {
   on<E extends keyof FormEvents>(event: E, listener: (event: FormEvents[E]) => void): () => void;
   /** Write several fields at once, as the app: the page's change steps do not run for it. */
   setValues(values: Values): void;
+  /**
+   * Values the app proposes — an agent's, a model's — each shown on its field to accept or reject before it is kept
+   * (the assist part, asked for the first time): the value it takes the place of and the new one, a table's lines to
+   * add, Accept all, Undo once kept. A field the person is typing in keeps what they type; another record shown lets
+   * them go. How many were proposed: those that read as their fields hold values and change something. A list page has
+   * none to propose: 0.
+   */
+  propose(values: Values, how?: { why?: string }): Promise<number>;
   /** Run steps on the form, as a button would. */
   run(steps: readonly ActionStep[], context?: RunContext): Promise<RunResult>;
   /**
@@ -822,6 +830,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
       const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
       wrapper.append(...(labelsAt === 'after' ? [widget.element, label] : [label, widget.element]), ...(help ? [help] : []), error, warning);
+      // AI help's tools under its box, and the place a value proposed for it is said.
+      if (scope.root) assistKit?.field(node, wrapper, widget.element);
       // Read-only, as words in place of the box, when the page draws them so.
       const asText = page.look?.readonlyShown === 'text' && readsAsText(def, node, page) ? readText({ document: doc, field: def, node, id, locale, labels: widgetLabels, dialogs }) : null;
       if (asText) widget.element.after(asText.element);
@@ -1876,6 +1886,20 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   let limitsKit: LimitsKit | null = null;
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
+  /**
+   * AI help (`suggest`, a text field's `rewrite`, the app's `propose`), from the assist part: made as the page is drawn
+   * where it asks for it (the part waited for with the page's), else as the app first proposes.
+   */
+  let assistKit: ReturnType<AssistPart['watchAssist']> | null = null;
+  const makeAssist = (part: AssistPart) => {
+    if (assistKit || gone || page.layout.type === 'list') return assistKit;
+    const kit = part.watchAssist({ form, page, doc, el, labels, locale, tag: page.language ?? locale, icons: options.icons, fill, dataSource: options.dataSource, root, editable: () => !locked });
+    updaters.push(kit.update);
+    cleanups.push(kit.destroy);
+    // Made once the page was drawn: its bar over the questions.
+    questions?.before(kit.bar);
+    return (assistKit = kit);
+  };
 
   /**
    * The answers sent: the page's ending for them (`form.ending()`) — its title, its words with the answers they name and
@@ -2278,7 +2302,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       layout.append(el('aside', { class: 'fd-side' }, slotItem(node.sidePanel)));
     }
     const bar = topBar(node.toolbar);
-    pageBox.append(...(bar ? [bar] : []), header, layout);
+    // AI help's Fill from text among the record's buttons, the review of what it proposed over the card.
+    if (assistKit) actions.append(assistKit.fill);
+    pageBox.append(...(bar ? [bar] : []), header, ...(assistKit ? [assistKit.bar] : []), layout);
     return pageBox;
   }
 
@@ -2406,6 +2432,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       updaters.push((state) => kit.update(state));
       limitsKit = kit;
     }
+    if (assistPart.loaded && asksAssist(page)) makeAssist(assistPart.loaded);
     let body: HTMLElement;
     if (layout.type === 'sheet') body = sheetLayout(layout);
     else if (layout.type === 'wizard') body = wizardLayout(layout);
@@ -2452,7 +2479,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
     questions = body;
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, body, ...(limitsKit?.after ?? [])];
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, ...(assistKit && !assistKit.bar.parentElement ? [assistKit.bar] : []), body, ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);
@@ -2886,6 +2913,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       return off;
     },
     setValues: (values) => form.setValues(values),
+    propose: (values, how) =>
+      afterDrawing(async () => {
+        const kit = assistKit ?? makeAssist(await assistPart.load());
+        return kit ? kit.propose(values, how) : 0;
+      }),
     run: (steps, context) => form.run(steps, context),
     print: () => afterDrawing(() => paper.print()),
     drawn: dressed,

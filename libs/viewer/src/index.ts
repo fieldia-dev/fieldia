@@ -1,7 +1,7 @@
 export * from './lib/viewer';
 export * from './lib/dialog';
 export { addLanguage, type LanguageWords } from './lib/add-language';
-export { answersPart, cardsPart, columnsPart, duplicatesPart, filtersPart, headPart, importPart, installListStyles, limitsPart, listPart, loadParts, partsFor, type AnswersPart, type CardsPart, type ColumnsPart, type DuplicatesPart, type FiltersPart, type HeadPart, type ImportPart, type LimitsPart, type ListPart } from './lib/viewer-parts';
+export { answersPart, assistPart, cardsPart, columnsPart, duplicatesPart, filtersPart, headPart, importPart, installListStyles, limitsPart, listPart, loadParts, partsFor, type AnswersPart, type AssistPart, type CardsPart, type ColumnsPart, type DuplicatesPart, type FiltersPart, type HeadPart, type ImportPart, type LimitsPart, type ListPart } from './lib/viewer-parts';
 // A page on paper whole comes in the print part, loaded as a person means to print — Ctrl+P, a Print, the gear opened.
 export { printPart, type PrintPart } from './lib/print';
 export { newestFunctions } from './lib/newest-functions';

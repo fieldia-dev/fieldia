@@ -44,6 +44,10 @@ export const LIST_STYLES = `
 .fd-search-toggle[aria-expanded="true"]::before { transform: translateY(2px) rotate(-135deg); }
 .fd-search-toggle:hover, .fd-search-toggle[aria-expanded="true"] { background: var(--fd-page); color: var(--fd-text); }
 .fd-search-toggle:focus-visible { outline: 2px solid var(--fd-focus); }
+/* The ✦ beside the box (searchToFilter): its words read as filters by the assist part, which comes as it is pressed. */
+.fd-assist-words { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 2px 8px; font-size: 13px; white-space: nowrap; }
+.fd-assist-words[hidden] { display: none; }
+.fd-assist-mark { color: var(--fd-accent); font-size: 15px; line-height: 1; }
 .fd-search-suggestions, .fd-search-panel { position: absolute; z-index: 30; inset-inline: 0; top: calc(100% + 4px); box-sizing: border-box; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14); }
 .fd-search-suggestions { list-style: none; margin: 0; padding: 4px 0; }
 .fd-search-suggestions [role="option"] { padding: 7px 12px; cursor: pointer; font-size: 14px; }
