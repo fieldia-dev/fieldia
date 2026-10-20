@@ -8,6 +8,7 @@ import maintenanceRequest from '../../../examples/pages/real-maintenance-request
 import employeeDeparture from '../../../examples/pages/real-employee-departure.page.json';
 import employeeEquipment from '../../../examples/pages/real-employee-equipment.page.json';
 import type { RealLane } from './lane';
+import { dayWords } from '../day-words';
 
 /**
  * The people lane: Sherkety ERP's clinic, HR and maintenance screens, rebuilt
@@ -375,10 +376,6 @@ function nextWeekday(weekday: number, ahead: number): number {
   }
   return offset;
 }
-const usDate = (iso: string) => {
-  const [y, m, d] = iso.split('-');
-  return `${m}/${d}/${y}`;
-};
 const hoursText = (hours: number, bare: boolean) => `${bare ? '' : '('}${Number(hours.toFixed(2))} Hours${bare ? '' : ')'}`;
 
 /** This year's time off already taken, for the stats beside a request (hr_leave_stats). */
@@ -407,7 +404,7 @@ function leaveStats(values: Values): string | null {
     (mine.size ? lines([...mine].map(([type, days]) => `${LEAVE_TYPES[type].name}: ${days} day(s)`)) : '<p>None</p>') +
     `<h4>${DEPARTMENTS[department]}</h4>` +
     (theirs.length
-      ? lines(theirs.map((t) => (t.employee === who ? `<b>${STAFF[t.employee].name}: ${t.days} day(s)</b>, ${usDate(t.from)} - ${usDate(t.to)}` : `${STAFF[t.employee].name}: ${t.days} day(s), ${usDate(t.from)} - ${usDate(t.to)}`)))
+      ? lines(theirs.map((t) => (t.employee === who ? `<b>${STAFF[t.employee].name}: ${t.days} day(s)</b>, ${dayWords(t.from)} - ${dayWords(t.to)}` : `${STAFF[t.employee].name}: ${t.days} day(s), ${dayWords(t.from)} - ${dayWords(t.to)}`)))
       : '<p>None</p>')
   );
 }
@@ -456,8 +453,8 @@ function recalculateLeave(values: Values): Values {
     const what = target ? `${target} on ${type.name}` : type.name;
     display =
       type.unit === 'hour'
-        ? `${what}: ${hours.toFixed(2)} hours on ${usDate(from)}`
-        : `${what}: ${days.toFixed(2)} days (${usDate(from)}${days > 1 && to ? ` - ${usDate(to)}` : ''})`;
+        ? `${what}: ${hours.toFixed(2)} hours on ${dayWords(from)}`
+        : `${what}: ${days.toFixed(2)} days (${dayWords(from)}${days > 1 && to ? ` - ${dayWords(to)}` : ''})`;
   }
   const who = single ? Number(single.id) : null;
   return {
@@ -773,7 +770,7 @@ const planRules: Record<string, (values: Values) => Values> = {
     const due = (values['plan_date_deadline'] as string | null) ?? day(0);
     return {
       plan_has_user_on_demand: plan.onDemand,
-      plan_assignation_summary: `<ul>${plan.steps.map(([what, who]) => `<li>${what}: ${who}, due ${usDate(due)}</li>`).join('')}</ul>`,
+      plan_assignation_summary: `<ul>${plan.steps.map(([what, who]) => `<li>${what}: ${who}, due ${dayWords(due)}</li>`).join('')}</ul>`,
     };
   },
 };

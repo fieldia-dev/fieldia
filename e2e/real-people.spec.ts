@@ -132,6 +132,25 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('time off: its summary and its team’s days write each day as its own boxes do, never the browser’s order', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      // In a browser that writes days month first (the tests' en-US): the page's words are still the page's.
+      const { problems } = await open(page, variant, 'page=real-time-off&record=4171&skin=underline');
+      const [from, to] = await node(page, 'f-dates-from').locator('input').evaluateAll((boxes) => boxes.map((box) => (box as HTMLInputElement).value));
+      expect(from).toMatch(/^\d{1,2} [A-Z][a-z]{2} \d{4}$/);
+      await expect(words(page, 'f-display-name')).toHaveText(`Salma Adel on Paid Time Off: 3.00 days (${from} - ${to})`);
+      // The department's days off this year, beside it: each day as a box writes it, none month first.
+      await expect(node(page, 'f-stats')).toContainText('Salma Adel: 5 day(s), 19 Apr 2026 - 23 Apr 2026');
+      await expect(node(page, 'f-stats')).not.toContainText(/\d\d\/\d\d\/\d{4}/);
+      // Changed, it is worked out again in the same words.
+      const end = node(page, 'f-dates-from').locator('input').nth(1);
+      await end.fill(from);
+      await end.press('Tab');
+      await expect(words(page, 'f-display-name')).toHaveText(`Salma Adel on Paid Time Off: 1.00 days (${from})`);
+      if (variant === 'plain') await screen(page, 'real-time-off-days-in-words');
+      expect(problems).toEqual([]);
+    });
+
     test('time off: the doctor’s note beside the sick leave, and the list’s pager', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, 'page=real-time-off&record=4173&skin=underline');
@@ -280,6 +299,9 @@ for (const variant of VARIANTS) {
       await plan.fill('Onb');
       await dialog.getByRole('option', { name: 'Onboarding', exact: true }).click();
       await expect(dialog.locator('[data-node="f-summary"]')).toContainText('Setup IT materials: Ahmed Tawfik');
+      // Each due day as the deadline's box beside it writes it.
+      const deadline = await dialog.locator('[data-node="f-plan-date"] input').inputValue();
+      await expect(dialog.locator('[data-node="f-summary"]')).toContainText(`Setup IT materials: Ahmed Tawfik, due ${deadline}`);
       if (variant === 'plain') await screen(page, 'real-employee-plan', { viewport: true });
       // The wizard's own footer, as Flectra's: Schedule and Cancel.
       await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);

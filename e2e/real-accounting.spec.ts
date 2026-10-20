@@ -295,7 +295,8 @@ for (const variant of VARIANTS) {
       // A dialog's page on its own: once its payment is made, the page gives way to what was done — the app's words —
       // and Start over, so a second press can never make a second payment. In a dialog it closes (the tests above).
       const done = page.locator('.demo-done');
-      await expect(done).toContainText(/posted, check CHK-004417 due 2026-11-15/);
+      // The cheque's day as the page's box wrote it, not as it is stored.
+      await expect(done).toContainText(/posted, check CHK-004417 due 15 Nov 2026/);
       await expect(done.locator('.demo-done-note')).toHaveText('In your app this window closes, and the invoice shows the payment.');
       await expect(page.getByRole('button', { name: 'Create Payment', exact: true })).toBeHidden();
       await expectNoSidewaysScroll(page);

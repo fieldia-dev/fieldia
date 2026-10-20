@@ -86,11 +86,14 @@ test('no how-to step sends a person to the address bar; a step naming a file lin
   // A setting typed into the address ("record=new", "&allIds=1000") is a link in the step instead (catalog.mjs: stepParts).
   const ADDRESS = /\b[a-zA-Z]+=[^\s,)]*|address bar|to the address|in the address\b/i;
   const FILE = /\bsample (workbook|CSV file|file)\b|\.(xlsx|csv|pdf)\b|\bdownload (the|a) (sample|file|workbook)/i;
+  // A record named by its number ("Open record 4172") is a link that opens it, never a number to find by hand.
+  const BY_NUMBER = /\brecords? (no\.? ?|number |#)?\d+\b/i;
   let files = 0;
   for (const demo of DEMOS) {
     for (const step of demo.howTo) {
       const text = stepText(step);
       expect(text, `${demo.id}: ${text}`).not.toMatch(ADDRESS);
+      for (const plain of stepParts(step).filter((part) => !part.href)) expect(plain.text, `${demo.id}: ${text}`).not.toMatch(BY_NUMBER);
       const links = stepParts(step).filter((part) => part.href);
       if (FILE.test(text)) expect(links.some((link) => !link.href!.startsWith('?')), `${demo.id}: ${text}`).toBe(true);
       for (const link of links) {
