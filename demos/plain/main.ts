@@ -21,6 +21,7 @@ import { errorLog, plannerSlot, priceTag } from '../shared/contained';
 import { photosBar } from '../shared/listing-photos';
 import { botLog, captchaSlot } from '../shared/captcha';
 import { meanwhileBar } from '../shared/test-drive';
+import { lastPlacesBar } from '../shared/event-signup';
 import { addressFollowsRecord } from '../shared/address';
 
 /**
@@ -206,6 +207,8 @@ if (name === 'listing-photos') document.getElementById('app')?.before(photosBar(
 
 // The test drive has a bar over it: someone else books a time on another screen (shared/test-drive.ts).
 if (name === 'test-drive') document.getElementById('app')?.before(meanwhileBar(dataSource));
+// The sign-up has a bar over it: two people take the morning's last places on other screens (shared/event-signup.ts).
+if (name === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
 
 // `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `pages` themselves,
 // for the one that each draws the sample records' values as their kind is.

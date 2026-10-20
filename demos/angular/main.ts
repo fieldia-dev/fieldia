@@ -18,6 +18,7 @@ import { answerAction } from '../shared/order-desk';
 import { addressFollowsRecord } from '../shared/address';
 import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
 import { meanwhileBar } from '../shared/test-drive';
+import { lastPlacesBar } from '../shared/event-signup';
 import type { PartFailure } from '@fieldia/widgets';
 
 const params = new URLSearchParams(location.search);
@@ -93,6 +94,8 @@ const failures = params.get('page') === 'contained' ? errorLog(document) : null;
 if (failures) document.getElementById('app')?.after(failures.element);
 // The test drive has a bar over it: someone else books a time on another screen (shared/test-drive.ts).
 if (params.get('page') === 'test-drive') document.getElementById('app')?.before(meanwhileBar(dataSource));
+// The sign-up has a bar over it: two people take the morning's last places on other screens (shared/event-signup.ts).
+if (params.get('page') === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
 
 const chatter = sampleChatter();
 
@@ -157,6 +160,7 @@ class NoteComponent implements OnInit {
     [records]="options.records"
     [context]="options.context"
     [breadcrumbs]="options.breadcrumbs"
+    [resume]="options.resume"
     [user]="options.user"
     (ready)="ready($event)"
     (action)="pressed($event)"

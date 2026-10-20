@@ -60,6 +60,9 @@ import { emptyGridsPage, emptyGridsRecords } from './empty-grids';
 import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings, searchFromQuery } from './related-lists';
 import { customerCardPage, duplicateCustomers } from './duplicates';
 import { keepWrites, keptOver } from './kept';
+import { EVENT_COUNTS, eventSignupPage } from './event-signup';
+import clinicIntake from '../../examples/pages/clinic-intake.page.json';
+import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -149,6 +152,10 @@ export const pages: Record<string, Page> = {
   ...calendarDemo.pages,
   // A listing's handover with the owner's consent placed in it, its files the listing's: shared/listing-handover.ts.
   ...listingHandover.pages,
+  // An event's sign-up with open and close dates, places for each session, one from each person: shared/event-signup.ts.
+  'event-signup': eventSignupPage(),
+  // A clinic's long intake, Continue later on any device: shared/clinic-intake.ts.
+  'clinic-intake': clinicIntake as Page,
   // A test drive booked at a showroom in Berlin, on Berlin's clock, from the times its schedule has free: shared/test-drive.ts.
   'test-drive': testDriveDemo.page,
   // The showroom's week of test drives on a calendar, on Berlin's clock wherever it is looked at from.
@@ -246,6 +253,7 @@ export function optionsFromQuery(params: URLSearchParams): {
   translate?: (text: string) => string;
   user?: FormUser;
   now?: () => Date;
+  resume?: string;
   listFilter?: ResolvedFilter[];
   listSearch?: Facet[];
 } {
@@ -259,8 +267,11 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(listSearch ? { listSearch } : {}),
     // The contacts' person signed in: Mona Adel, one of their owners — her own contacts bold (the page's rowBold).
     ...(params.get('page') === 'contacts' ? { user: { id: 9001, name: 'Mona Adel' } } : {}),
-    // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both.
-    ...(params.get('page') === 'invoices' ? { now: demoNow } : {}),
+    // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both. The sign-up
+    // opens and closes on it: `?now=` before sign-ups open, or after they close.
+    ...(params.get('page') === 'invoices' || params.get('page') === 'event-signup' ? { now: demoNow } : {}),
+    // A draft to continue from, by the key in the link Continue later gave (shared/clinic-intake.ts).
+    ...(params.get('resume') ? { resume: params.get('resume') as string } : {}),
     // The vendor bill has the records round it and the trail to it, as an app gives them.
     ...(params.get('page') === 'vendor-bill' ? billNavigation() : {}),
     // A real page's person, with the roles that show its parts, and the records round it: `roles=a,b` (or none) changes the roles.
@@ -428,6 +439,11 @@ export function sampleDataSource() {
     slots: scheduleSlots({ showroom: showroom() }, { now: demoNow }),
     // Records like the one typed — the same phone, email or tax id, a name close enough — for a page with `duplicates`.
     duplicates: alikeRecords(),
+    // The sign-ups already counted, as the server's limits answer (shared/event-signup.ts).
+    limits: EVENT_COUNTS,
+    // The drafts the server keeps, and the link Continue later gives (shared/clinic-intake.ts).
+    drafts: keptDrafts(),
+    draftLink,
     attachments: billAttachments(),
     // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's.
     can: { 'crm.contact': contactPermissions },
@@ -686,6 +702,8 @@ export function sampleDataSource() {
   if (lines > 0 && posted) posted['invoice_line_ids'] = longLines(posted['invoice_line_ids'], lines);
   // Each save, import, merge and delete kept in this tab: the next page the demo goes to shows it.
   keepWrites(source);
+  // Each draft kept in this browser, for the link opened in another tab (shared/clinic-intake.ts).
+  keepDrafts(source);
   return source;
 }
 
