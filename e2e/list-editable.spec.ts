@@ -36,10 +36,18 @@ async function prices(page: Page) {
   return opened;
 }
 
-/** Text put on the clipboard, then pasted with Ctrl+V where the focus is. */
-async function paste(page: Page, text: string) {
-  await page.evaluate((t) => navigator.clipboard.writeText(t), text);
-  await page.keyboard.press('Control+V');
+/** Rows copied as a spreadsheet puts them on the clipboard, in every engine: from a box of their own, chosen whole and copied with the keys. */
+async function copy(page: Page, text: string) {
+  await page.evaluate((words) => {
+    const sheet = document.createElement('textarea');
+    sheet.id = 'e2e-copied';
+    sheet.value = words;
+    document.body.append(sheet);
+    sheet.focus();
+    sheet.select();
+  }, text);
+  await page.keyboard.press('ControlOrMeta+C');
+  await page.evaluate(() => document.getElementById('e2e-copied')?.remove());
 }
 
 test.describe('a clinic’s service prices', () => {
@@ -211,22 +219,23 @@ test.describe('a clinic’s service prices', () => {
     expect(problems).toEqual([]);
   });
 
-  test('a block pasted from a spreadsheet goes across and down the rows, each row then saved; one value in many rows in one write', async ({ context, page }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  test('a block pasted from a spreadsheet goes across and down the rows, each row then saved; one value in many rows in one write', async ({ page }) => {
     const { problems } = await prices(page);
-    // Three rows' Minutes and Price.
+    // Three rows' Minutes and Price, pasted on a cell chosen (opened, then Escape).
+    await copy(page, '25\t3800\n35\t4800\n50\t8200\n');
     await cell(page, 'Botox, crow’s feet', 'minutes').click();
     await page.keyboard.press('Escape');
-    await paste(page, '25\t3800\n35\t4800\n50\t8200\n');
+    await page.keyboard.press('ControlOrMeta+V');
     await expect(page.locator('.fd-list-paste-note')).toHaveText('Pasted into 6 cells.');
     await expect.poll(() => calls(page, 'save')).toHaveLength(3);
     await expect(cell(page, 'Botox, crow’s feet', 'price')).toHaveText('E£ 3,800');
     await expect(cell(page, 'Botox, forehead', 'minutes')).toHaveText('35');
     await expect(cell(page, 'Cheek filler, 2 ml', 'price')).toHaveText('E£ 8,200');
     // The same one in three rows: one writeMany, each with the version it was listed at.
+    await copy(page, 'Doctor\nDoctor\nDoctor\n');
     await cell(page, 'Laser, face', 'done_by').click();
     await page.keyboard.press('Escape');
-    await paste(page, 'Doctor\nDoctor\nDoctor\n');
+    await page.keyboard.press('ControlOrMeta+V');
     await expect.poll(() => calls(page, 'writeMany')).toHaveLength(1);
     const [many] = await calls(page, 'writeMany');
     expect(many.ids).toEqual([13, 12, 11]);
@@ -244,6 +253,37 @@ test.describe('a clinic’s service prices', () => {
     await page.locator('.fd-search-input').click();
     await expect.poll(async () => (await stored(page, 'clinic.service', 10))['active']).toBe(true);
     await expect(cell(page, 'Lymphatic drainage', 'active')).toHaveText('✓');
+    expect(problems).toEqual([]);
+  });
+
+  test('under Group By headings its rows are changed in place, and no row is added', async ({ page }) => {
+    const { problems } = await prices(page);
+    await page.getByRole('button', { name: 'Search options' }).click();
+    await page.locator('.fd-search-panel [data-group-kind="groupBy"]').getByRole('button', { name: 'Category' }).click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.fd-list-group')).toHaveCount(4);
+    await expect(page.getByRole('button', { name: 'Add a service' })).toBeHidden();
+    await page.locator('.fd-group-toggle', { has: page.locator('.fd-group-label', { hasText: /^Skin$/ }) }).click();
+    await cell(page, 'Hydrafacial', 'minutes').click();
+    await cell(page, 'Hydrafacial', 'minutes').locator('input').fill('50');
+    await page.keyboard.press('Tab');
+    await expect(editor(page)).toHaveAttribute('data-col', 'price');
+    await page.locator('.fd-search-input').click();
+    await expect.poll(async () => (await stored(page, 'clinic.service', 6))['minutes']).toBe(50);
+    expect(problems).toEqual([]);
+  });
+
+  test('a row kept from the search until it is saved or put back: its work stays in sight', async ({ page }) => {
+    const { problems } = await prices(page);
+    await cell(page, 'Laser, face', 'minutes').click();
+    await cell(page, 'Laser, face', 'minutes').locator('input').fill('2');
+    await page.locator('.fd-search-input').fill('Botox');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.fd-list-row')).toHaveCount(3);
+    await expect(row(page, 'Laser, face')).toHaveAttribute('data-kept', '');
+    await expect(note(page, 'Laser, face')).toContainText('Not saved: Minutes must be at least 5.');
+    await note(page, 'Laser, face').getByRole('button', { name: 'Put back' }).click();
+    await expect(cell(page, 'Laser, face', 'minutes')).toHaveText('20');
     expect(problems).toEqual([]);
   });
 

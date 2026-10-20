@@ -373,6 +373,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
         })
       : Promise.resolve();
     attach(edit, tr);
+    // Made as the focus came into its row: the person is on it, and leaving it saves it.
+    edit.on = tr.contains(doc.activeElement);
     return edit;
   }
 
@@ -813,7 +815,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
     if (!state.dirty.length && !Object.keys(state.unread).length) {
       // A row added and left with nothing in it is no record: it goes. Another, nothing to save: at rest.
       if (!edit.record && state.recordId === null) drop(edit);
-      else if (!edit.editor) done(edit);
+      // Nothing changed: its form let go, the row as it stands; one refused before and put right, drawn again at rest.
+      else if (!edit.editor) (edit.refused ? done(edit) : release(edit));
       return true;
     }
     const ok = await form.save();
@@ -1212,6 +1215,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
     },
     drawn() {
       drawings++;
+      // Under Group By headings no row is added: the end of which group would it be?
+      addButton.hidden = !canAdd();
       for (const edit of [...edits.values()]) {
         if (edit.gone) continue;
         if (edit.tr?.isConnected) {
