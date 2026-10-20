@@ -41,7 +41,7 @@ export const LATIN_KEPT = [
 ];
 
 /** Code an example writes as it is typed: a formula's function and the fields it reads, as in round(price * qty, 2); an escape; and a place in a sentence that something is drawn in, as {language}. */
-const CODE = /\b[a-z_]+\([^)]*\)|#\w+|https?:\/\/\S*|mailto:\S*|\\[a-z]|\{[a-z]+\}/g;
+const CODE = /\b[A-Za-z_]+\([^)]*\)|#\w+|https?:\/\/\S*|mailto:\S*|\\[a-z]|\{[a-z]+\}/g;
 
 /** Latin letters left in Arabic words, besides those kept on purpose and code. */
 export function latinIn(text: string): string[] {
@@ -78,6 +78,7 @@ const SAMPLES: Record<string, unknown[][]> = {
   'clipboard.pasted': [['س', 0], ['س', 1], ['س', 2], ['س', 3]],
   'steps.open': ['dialog', 'panel', 'page'].map((as) => ['س', as]),
   'steps.sayTone': ['success', 'warning', 'danger', 'muted'].map((tone) => ['س', tone]),
+  'rules.wrongKind': [['س', ['date'], '«ص»', 'text'], ['س', ['text', 'list'], '«ص»', 'number']],
   'changes.lookValue': [['font', 'serif'], ['density', 'compact'], ['corners', 'round'], ['scheme', 'auto'], ['labels', 'beside'], ['labelWidth', 120], ['accent', null]],
 };
 const GENERIC: unknown[] = [0, 1, 2, 3, 11, 100, 'س', ['س', 'ص']];

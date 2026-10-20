@@ -1,4 +1,4 @@
-import type { ButtonNode, CellRules, Field, FieldNode, LayoutNode, Page, PlaceholderWhen, ScreenWidth, ToneWhen } from '@fieldia/core';
+import type { ButtonNode, CellRules, Field, FieldNode, FunctionsKnown, LayoutNode, Page, PlaceholderWhen, ScreenWidth, ToneWhen } from '@fieldia/core';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -15,6 +15,7 @@ export const CELL_WIDGETS: Readonly<Record<string, readonly string[]>> = {
 /** The kind each cell widget is named by. */
 export const CELL_WIDGET_KINDS: Readonly<Record<string, string>> = { duration: 'duration', percentage: 'percentage', progressbar: 'progress', color: 'colour', priority: 'priority', dot: 'state-dot', distribution: 'distribution' };
 import { formulaProblem, problemWords } from './rules-formula';
+import { en } from './locales/en';
 
 /**
  * A table's own rules and a field's tone, as the designer edits them: each
@@ -28,6 +29,8 @@ import { formulaProblem, problemWords } from './rules-formula';
 
 export interface TableCommandsDeps {
   apply(edit: (draft: Page) => void, merge?: string | null): boolean;
+  /** The app's own functions a formula may call. */
+  functions?: FunctionsKnown;
 }
 
 /** A cell's conditions, each read on its line — but `hidden`, read on the record. */
@@ -89,7 +92,7 @@ const WIDTHS: ScreenWidth[] = ['narrow', 'medium', 'wide'];
 /** A role's name, as the format takes it. */
 const ROLE = /^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$/;
 
-export function tableCommands({ apply }: TableCommandsDeps): TableCommands {
+export function tableCommands({ apply, functions }: TableCommandsDeps): TableCommands {
   function fieldNode(draft: Page, id: string): FieldNode {
     const found = findNode(draft, id);
     if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noQuestion(id));
@@ -110,7 +113,7 @@ export function tableCommands({ apply }: TableCommandsDeps): TableCommands {
 
   /** A condition that does not read is refused, saying what is wrong with it. */
   function refuseCondition(scope: Page, when: string) {
-    if (formulaProblem(scope, when)) throw new Refusal((w) => w.rules.inWhen(problemWords(formulaProblem(scope, when, w), w)));
+    if (formulaProblem(scope, when, en, functions)) throw new Refusal((w) => w.rules.inWhen(problemWords(formulaProblem(scope, when, w, functions), w)));
   }
 
   /** Tones as kept: each condition trimmed and read, none an empty list. */

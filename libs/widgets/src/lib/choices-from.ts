@@ -1,19 +1,22 @@
-import { fill, type Field, type Option } from '@fieldia/core';
+import { fill, optionsList, type Field, type Option } from '@fieldia/core';
 import { wordsFor } from './kind-parts';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
- * A choice whose options are one of the app's lists: the widget the field
- * would have anyway, drawn afresh from each answer the list gives. While the
- * choices load it says so; when they fail it offers to load them again; a
- * value the form cleared as a field they change with changed is said until
- * the value changes again; and one a record came in with that the list does
- * not offer is kept — the person decides — and said. In a table's line (its
- * `lineForm`), the line's own choices, asked again where the form let them go
- * (another record's line of the same key).
+ * A choice whose options change: one of the app's lists, options shown by a
+ * condition on the other answers, or those carried from an earlier question —
+ * the widget the field would have anyway, drawn afresh as the options it
+ * offers change (`form.offered`). While a list's choices load it says so; when
+ * they fail it offers to load them again; a value the form cleared as a field
+ * they change with changed is said until the value changes again; and a value
+ * no longer offered that the record held as it was opened is kept — the person
+ * decides — and said. One a change no longer offers is taken out by the form,
+ * which says so. In a table's line (its `lineForm`), the line's own choices,
+ * asked again where the form let them go (another record's line of the same key).
  */
 export function listChoices(factory: WidgetFactory, context: WidgetContext): Widget {
   const { form, name, document: doc } = context;
+  const listed = context.field.type === 'selection' && !!optionsList(context.field.optionsFrom);
   const words = wordsFor(context.labels, context.locale);
   const box = doc.createElement('div');
   const note = doc.createElement('div');
@@ -22,36 +25,54 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
   retry.className = 'fd-button fd-button-link';
   retry.textContent = words.choicesFailed;
   retry.onclick = () => form.loadChoices(name);
+  retry.hidden = true;
   note.setAttribute('role', 'status');
+  note.hidden = true;
   // Spaced as a field's own parts are.
   box.style.cssText = 'display:grid;gap:4px';
-  /** Every choice the list has given, to name a value it no longer offers. */
+  /** Every choice it has offered, to name a value it no longer offers. */
   const named = new Map<unknown, string>();
   let inner: Widget;
-  let shown: Option[] | null = null;
-  const draw = (options: Option[]) => {
+  let shown: readonly Option[] | null = null;
+  /** The options drawn, by their values and words: drawn again only when they change. */
+  let drawnKey = '';
+  const draw = (options: readonly Option[]) => {
     inner?.destroy?.();
     inner = factory({ ...context, field: { ...context.field, options } as Field });
     // Named by the field's label, as the viewer names a widget with a role of its own.
     if (inner.element.getAttribute('role')) inner.element.setAttribute('aria-labelledby', `${context.id}-label`);
     box.replaceChildren(inner.element, note, retry);
   };
-  draw([]);
-  if (!form.getState().choices[name]) form.loadChoices(name);
+  /** The options offered now: a list's once loaded, else what the form offers. */
+  const offeredNow = (): readonly Option[] | null => {
+    if (listed && !form.getState().choices[name]?.options) return null;
+    return form.offered?.(name) ?? form.getState().choices[name]?.options ?? null;
+  };
+  const first = offeredNow();
+  if (first) {
+    shown = first;
+    drawnKey = keyOf(first);
+    for (const option of first) named.set(option.value, option.label);
+  }
+  draw(first ?? []);
+  if (listed && !form.getState().choices[name]) form.loadChoices(name);
   return {
     element: box,
     focus: () => inner.focus(),
     destroy: () => inner.destroy?.(),
     update(state) {
-      let choices = form.getState().choices[name];
-      if (!choices) {
+      let choices = listed ? form.getState().choices[name] : undefined;
+      // A line's, let go by the form (another record's line of the same key), asked again.
+      if (listed && !choices) {
         form.loadChoices(name);
         choices = form.getState().choices[name];
       }
-      if (choices?.options && choices.options !== shown) {
-        shown = choices.options;
-        for (const option of shown) named.set(option.value, option.label);
-        draw(shown);
+      const options = offeredNow();
+      if (options && keyOf(options) !== drawnKey) {
+        shown = options;
+        drawnKey = keyOf(options);
+        for (const option of options) named.set(option.value, option.label);
+        draw(options);
       }
       inner.update(state);
       // With "Other", a value not among them is an answer of the person's own.
@@ -60,7 +81,7 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
       note.textContent = choices?.loading
         ? words.loadingChoices
         : lost.length
-          ? fill(words.notOffered, { name: lost.map((v) => named.get(v) ?? String(v)).join(', ') })
+          ? fill(words.notOffered, { name: lost.map((v) => named.get(v) ?? labelIn(context.field, v)).join(', ') })
           : choices?.cleared
             ? fill(words.choiceCleared, { name: choices.cleared })
             : '';
@@ -70,3 +91,9 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
     },
   };
 }
+
+/** Options as their values and words, to tell when they change. */
+const keyOf = (options: readonly Option[]) => JSON.stringify(options.map((o) => [o.value, o.label, o.image ?? null]));
+
+/** A value's label among the field's own options, else the value. */
+const labelIn = (field: Field, value: unknown) => (field.type === 'selection' ? field.options.find((o) => o.value === value)?.label : undefined) ?? String(value);

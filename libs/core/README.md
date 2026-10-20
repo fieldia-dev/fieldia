@@ -78,6 +78,111 @@ and null when it shows its value; the viewer draws it as a dash, said in words
 ("Fix line 1 of Order lines to see Untaxed amount"). An answer your onchange
 gives meanwhile is kept, and shown once the line reads.
 
+## Functions, and your app's own
+
+A value worked out (`compute`), a value set by a condition (`setWhen`) and every
+condition call functions by name. Fieldia's own: `round`, `roundMoney`, `min`,
+`max`, `abs`, `sum`, `count`, `average` on numbers; `today`, `days`, `age`,
+`years`, `months`, `addDays`, `addMonths`, `addYears` on dates; `contains`,
+`startsWith`, `endsWith`, `upper`, `lower`, `join`, `len` on words; `if`,
+`empty`, `firstOf` to choose.
+
+```json
+"age":        { "type": "integer",  "label": "Age",            "compute": "age(birth_date)" },
+"second_due": { "type": "date",     "label": "Second payment", "compute": "addMonths(first_due, 1)" },
+"per_meter":  { "type": "monetary", "label": "Price per m²",   "compute": "roundMoney(price / area, currency_id)", "currencyField": "currency_id" },
+"code":       { "type": "char",     "label": "Code",           "compute": "upper(join('-', city, firstOf(nickname, name)))" }
+```
+
+- `age(birth, on?)` counts whole years to today on the page's clock (its `timeZone`),
+  or to a day given; `years(from, to)` and `months(from, to)` count whole ones,
+  negative when the second day comes first.
+- `addMonths(day, n)` ends on a shorter month's last day — 31 January and a month
+  is 28 February — and `months` counts the same way, so the two agree. A date and
+  time keeps its time. `addYears` moves 29 February to the 28th.
+- `contains`, `startsWith` and `endsWith` read text whatever its case; `contains`
+  also finds a value in a list (choices ticked, links).
+- `join(between, values…)` joins the values — lists opened — with the words given
+  first, leaving the empty ones out: `join(' ', first_name, last_name)`.
+- `average` takes values or a list, or a field of the lines where a condition holds,
+  as `sum` does: `average(lines, 'price', "qty > 0")`.
+- `roundMoney(amount, currency)` rounds to the currency's places — three for a
+  Jordanian dinar, none for a yen — the currency a code (`'JOD'`) or a link to one,
+  read by its name.
+- `empty(value)` holds for nothing, words of only spaces, an empty list; zero and
+  no are values. `firstOf(a, b, …)` is the first that is not empty.
+
+Each is read as the page is. **Refused**, by `validatePage`, `checkPage` and so as a
+form is made: a function there is not, or one given too many or too few values.
+**A warning**, never a refusal: a value of a kind a function does not take —
+`age(notes)`: "age takes a date as its first value; "notes" is text". `validatePage`
+passes such a page and says it in `warnings` beside it (`pageWarnings(page)` gives
+them alone; `kindProblems` to your own tools); the designer says it as a fix to make;
+the viewer runs the page as it always did, the call giving nothing — a function given
+a value it cannot use gives nothing, never an error. A page that passed before still
+passes.
+
+**Your app's own.** Give the form `functions` — the viewer and the React, Vue and
+Angular components take the same option — and a page calls them by name, beside
+Fieldia's. A plain function will do; say what it takes and gives, and the page's
+checks and the designer read it:
+
+```ts
+createForm({
+  page,
+  functions: {
+    vatRate: { takes: [1, 1], values: ['text'], gives: 'number', tip: 'The VAT rate of a country: vatRate(country)', call: (country) => RATES[country] ?? 0 },
+    // One that asks your server: a promise.
+    districtPrice: { asks: true, call: (district) => api.get(`/districts/${district}/price`).then((r) => r.perMeter) },
+  },
+});
+```
+
+A number one gives is tidied as Fieldia's own arithmetic tidies one — `price * 1.1`
+of 100 is 110, never 110.00000000000001 — and one that is no number (NaN, Infinity) is
+nothing. A function that asks your server gives a promise. What is worked out from it waits
+while it is asked — empty meanwhile, `form.getState().asked` says so by field
+(`{ total: {} }`), `form.waitsFor('total')` gives `{ field: 'total', asking: true }`,
+and the viewer shows an ellipsis, said in words ("Working out Total…") — then its
+answer is worked into everything after it. It is asked once for the same values,
+for the record shown: another record shown, its answer is laid on none. A save waits
+for every answer; one that failed (`{ failed: 'why' }`) is asked again as the person
+saves, and stops the save under its field when it fails again ("Total could not be
+worked out: …"). A condition calling one does not hold while it is asked. A name a
+page cannot call — Fieldia's own, a word of the language — is refused as the form is
+made. `validatePage(page, { functions })` and `checkPage(page, { functions })` read
+pages that call them.
+
+## Options that follow the answers
+
+An option of a choice may show only while a condition holds, written as a part's
+`invisible`; and a choice may offer the options picked in an earlier one
+(`optionsFrom: { "field": … }`), its own options after them:
+
+```json
+"features": { "type": "selection", "label": "Features", "multiple": true, "options": [
+  { "value": "garden", "label": "Garden",  "invisible": "unit_type != 'villa'" },
+  { "value": "lift",   "label": "Lift",    "invisible": "unit_type == 'villa'" },
+  { "value": "security", "label": "24-hour security" }
+] },
+"again": { "type": "selection", "label": "Which would you have again?",
+  "options": [{ "value": "none", "label": "None of them" }],
+  "optionsFrom": { "field": "treatments" } },
+"try_next": { "type": "selection", "label": "Which would you like to try?", "multiple": true,
+  "options": [], "optionsFrom": { "field": "treatments", "picked": false } }
+```
+
+`form.offered(field)` gives the options a choice offers now: its own — or those its
+app's list gave, or those picked where they are carried from (`picked: false`: those
+left unpicked; a "None of these" is never carried) — less those whose condition hides
+them. A chosen option a change no longer offers is taken out of the answer, never
+silently kept: `form.getState().takenOut` says so by field ("Garden is no longer
+offered, so it was taken out"), until the field is written again. One a record held
+as it was opened stays chosen, and the choice says it is no longer offered. The
+page's checks read each option's condition and refuse a choice carried from itself,
+from a field that is no choice, or round a circle. A table's lines take neither: their
+options are written in the page.
+
 ## A public form's bot check
 
 A page of responses anyone may send — a sign-up, a contact form — can check that

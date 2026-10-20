@@ -27,6 +27,8 @@ export const checks = {
   // ---- rules
   readsGone: (name: string, sentence: string, gone: readonly string[]) => `“${name}”: “${sentence}” reads ${andList(gone)}, which ${gone.length === 1 ? 'is' : 'are'} no longer on the page.`,
   formulaBroken: (name: string, problem: string) => `“${name}”: its formula no longer reads — ${problem}.`,
+  /** A formula handing a function a value of a kind it does not take: kept, and said — that part gives nothing. */
+  givesNothing: (name: string, sentence: string, problem: string) => `“${name}”: in “${sentence}”, ${problem} — that part gives nothing.`,
   removeTheFormula: 'Remove the formula',
   setBroken: (name: string, sentence: string, problem: string) => `“${name}”: “${sentence}” no longer reads — ${problem}.`,
   setCannotHold: (name: string, sentence: string, problem: string) => `“${name}”: “${sentence}” sets a value it cannot hold — ${problem}.`,

@@ -1,0 +1,79 @@
+{
+  "fieldia": "0.5",
+  "id": "visit-feedback",
+  "title": "After your visit",
+  "description": "Two minutes about the treatments you had: the questions after the first offer what you ticked in it.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "name": { "type": "char", "label": "Your name" },
+    "birth_date": { "type": "date", "label": "Your date of birth", "max": "today" },
+    "age_now": { "type": "integer", "label": "Your age", "compute": "age(birth_date)" },
+    "treatments": {
+      "type": "selection",
+      "label": "Which treatments did you have?",
+      "required": true,
+      "multiple": true,
+      "options": [
+        { "value": "botox", "label": "Botox" },
+        { "value": "filler", "label": "Filler" },
+        { "value": "peel", "label": "Chemical peel" },
+        { "value": "laser", "label": "Laser hair removal" },
+        { "value": "hydrafacial", "label": "HydraFacial" },
+        { "value": "none", "label": "None of these", "exclusive": true }
+      ]
+    },
+    "again": {
+      "type": "selection",
+      "label": "Which would you have again?",
+      "options": [{ "value": "none_again", "label": "None of them" }],
+      "optionsFrom": { "field": "treatments" }
+    },
+    "try_next": {
+      "type": "selection",
+      "label": "Which would you like to try next time?",
+      "multiple": true,
+      "options": [],
+      "optionsFrom": { "field": "treatments", "picked": false }
+    },
+    "hear_about": {
+      "type": "selection",
+      "label": "May we tell you about…",
+      "multiple": true,
+      "options": [
+        { "value": "offers", "label": "Offers on what you had", "invisible": "empty(treatments) or contains(treatments, 'none')" },
+        { "value": "laser_packages", "label": "Laser packages for adults", "invisible": "not birth_date or age(birth_date) < 18" },
+        { "value": "news", "label": "The clinic’s news" }
+      ]
+    },
+    "comments": { "type": "text", "label": "Anything else?", "size": 2000 }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "root",
+    "children": [
+      {
+        "type": "section",
+        "id": "about-you",
+        "title": "About you",
+        "columns": 3,
+        "children": [
+          { "type": "field", "id": "f-name", "field": "name" },
+          { "type": "field", "id": "f-birth-date", "field": "birth_date" },
+          { "type": "field", "id": "f-age-now", "field": "age_now", "invisible": "not birth_date" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "your-visit",
+        "title": "Your visit",
+        "children": [
+          { "type": "field", "id": "f-treatments", "field": "treatments", "widget": "checkboxes" },
+          { "type": "field", "id": "f-again", "field": "again", "widget": "radio", "invisible": "empty(treatments) or contains(treatments, 'none')" },
+          { "type": "field", "id": "f-try-next", "field": "try_next", "widget": "checkboxes", "invisible": "empty(treatments)" },
+          { "type": "field", "id": "f-hear-about", "field": "hear_about", "widget": "checkboxes" },
+          { "type": "field", "id": "f-comments", "field": "comments" }
+        ]
+      }
+    ]
+  }
+}

@@ -175,6 +175,16 @@ class ContextHostComponent {
   readonly context = signal<Record<string, string>>({ code: 'outgoing' });
 }
 
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<fieldia-form [page]="page" [functions]="functions()" (ready)="ready.push($event)" />`,
+})
+class FunctionsHostComponent {
+  readonly page: Page = { fieldia: '0.5', id: 'priced', data: { kind: 'responses' }, fields: { price: { type: 'float', label: 'Price' }, total: { type: 'float', label: 'Total', compute: 'withTax(price)' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-price', field: 'price' }, { type: 'field', id: 'f-total', field: 'total' }] } };
+  readonly functions = signal<Record<string, (price: number) => number>>({ withTax: (price) => price * 2 });
+  readonly ready: ViewerHandle[] = [];
+}
+
 async function setup(start: Page = custom) {
   const fixture = TestBed.createComponent(HostComponent);
   fixture.componentInstance.page.set(start);
@@ -213,6 +223,23 @@ describe('<fieldia-form> for Angular', () => {
     fixture.componentInstance.context.set({ code: 'incoming' });
     await fixture.whenStable();
     expect(lock()).toBeDefined();
+  });
+
+  it('hands the form the app’s functions, each call reaching the newest given, mounted again only for a new name', async () => {
+    const fixture = TestBed.createComponent(FunctionsHostComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const host = fixture.componentInstance;
+    host.ready[0].form.setValue('price', 100);
+    expect(host.ready[0].form.getState().values['total']).toBe(200);
+    host.functions.set({ withTax: (price) => price * 3 });
+    await fixture.whenStable();
+    host.ready[host.ready.length - 1].form.setValue('price', 200);
+    expect(host.ready[host.ready.length - 1].form.getState().values['total']).toBe(600);
+    expect(host.ready).toHaveLength(1);
+    host.functions.set({ withTax: (price) => price, other: () => 1 });
+    await fixture.whenStable();
+    expect(host.ready).toHaveLength(2);
   });
 
   it('switches skin without mounting again', async () => {

@@ -50,7 +50,7 @@ handle from `@ready` has `on`, `setValues` and `run`.
 handle.form.leave()` in a router's `beforeRouteLeave`, before removing
 `<FieldiaForm>`, and before changing a prop that mounts it again (`page`,
 `form`, `dataSource`, `recordId`, `user`, `context`, `dir`, `locale`,
-`labels`). Vue unmounts at once, so nothing else can keep the person there. It
+`labels`, the names in `functions`). Vue unmounts at once, so nothing else can keep the person there. It
 waits for a save on its way, then asks "Discard your changes?" only when their
 work is at risk, and answers false when they choose to stay. `warn-on-leave` has
 the browser's own Back, Reload or a closed tab ask first while there is a change

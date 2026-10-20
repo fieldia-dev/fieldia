@@ -428,6 +428,8 @@ button.fd-chip-label:hover { text-decoration: underline; }
 /* A value worked out from a field or a line holding text that does not read: a dash where the value goes, why on pointing at it. */
 .fd-value-waits:not([hidden]) { display: block; position: relative; min-height: var(--fd-control-height, 30px); padding: var(--fd-pad-y) var(--fd-pad-x); box-sizing: border-box; color: var(--fd-muted); cursor: help; }
 .fd-value-waits-why { margin-inline-start: 8px; font-size: 12.5px; }
+.fd-value-waits[data-failed] { cursor: default; }
+.fd-value-waits[data-failed] .fd-value-waits-why { color: var(--fd-warning); }
 
 /* ---- rich text, json (files and pictures are the files part's: styles-files.ts) ---- */
 /* Asking first, in place, before a file or a table's line goes (askFirst): "Remove report.pdf?  Remove · Keep". */

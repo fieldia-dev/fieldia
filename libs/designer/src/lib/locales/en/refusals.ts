@@ -82,6 +82,8 @@ export const refusals = {
   notAChoiceColumn: (label: string) => `${label} is not a choice column`,
   columnNeedsOption: (label: string) => `${label} needs an option`,
   onlyChoiceFromList: 'Only a choice takes its options from a list',
+  carriedFromChoice: 'Options are carried from another choice of the page',
+  onlyChoiceOptionWhen: 'Only a choice’s options show by a condition',
   choicesFromModel: (label: string) => `The choices of ${label} come from the model`,
   // ---- choices
   orderFromModel: (label: string) => `The order of the options of ${label} comes from the model`,

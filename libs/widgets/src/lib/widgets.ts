@@ -206,8 +206,8 @@ export function createWidget(given: WidgetContext, registry: Record<string, Widg
   // Kept from throwing: a widget that fails is a box naming its field, and the page goes on (contain.ts).
   return containWidget((kept) => {
     const own = { ...context, ...kept };
-    // Choices from the app's list: the same widget, drawn again as they load.
-    if (factory) return field.type === 'selection' && field.optionsFrom ? listChoices(factory, own) : factory(own);
+    // Choices from the app's list, shown by conditions or carried from another question: the same widget, drawn again as they change.
+    if (factory) return field.type === 'selection' && (field.optionsFrom || own.form.offersChange?.(own.name)) ? listChoices(factory, own) : factory(own);
     return pendingWidget(own);
   }, context);
 }

@@ -1,3 +1,4 @@
+import type { ValueKind } from '@fieldia/core';
 import type { DesignerWords } from '../../designer-words';
 import { listOf, ltr, plural, quoteAr } from '../speak';
 
@@ -6,6 +7,9 @@ const letters = (n: number) => plural('ar', n, { zero: '# حرف', one: 'حرف 
 /** After a preposition: "من حرفين". */
 const lettersAfter = (n: number) => plural('ar', n, { zero: '# حرف', one: 'حرف واحد', two: 'حرفين', few: '# أحرف', many: '# حرفًا', other: '# حرف' });
 const KEYWORDS: Record<string, string> = { and: 'و', or: 'أو', not: 'ليس', in: 'ضمن' };
+/** The kinds of value a function takes, and a value's own kind. */
+const TAKES: Record<ValueKind, string> = { number: 'رقمًا', text: 'نصًا', date: 'تاريخًا', boolean: 'نعم أو لا', list: 'قائمة', any: 'أي قيمة' };
+const IS: Record<ValueKind, string> = { number: 'رقم', text: 'نص', date: 'تاريخ', boolean: 'نعم أو لا', list: 'قائمة', any: 'أي قيمة' };
 
 export const rules: DesignerWords['rules'] = {
   kinds: {
@@ -88,6 +92,7 @@ export const rules: DesignerWords['rules'] = {
   unknownField: (name) => `حقل غير معروف ${q(name)}`,
   personHas: (part) => `للشخص معرّف واسم وأدوار، لا ${q(part)}`,
   unknownFunction: (name) => `دالة غير معروفة ${q(name)}`,
+  wrongKind: (name, wants, given, got) => `${q(name)} تأخذ ${listOf('ar', wants.map((kind) => TAKES[kind]), 'or')}، و${q(given)} من نوع ${IS[got]}`,
   takes: (name, rest) => {
     // The formula reader's own words, said again in Arabic.
     const values = (n: number) => plural('ar', n, { zero: 'أي قيمة', one: 'قيمة واحدة', two: 'قيمتين', few: '# قيم', many: '# قيمة', other: '# قيمة' });

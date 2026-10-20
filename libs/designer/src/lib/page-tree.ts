@@ -1,4 +1,4 @@
-import { cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListCalendar, type ListCard, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { ANY_FUNCTION, cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListCalendar, type ListCard, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { headFields, headParts, tabCountFields } from './head-parts';
@@ -141,7 +141,7 @@ export function shownFields(page: Page): Set<string> {
     for (const when of [...(root.rowTones ?? []).map((tone) => tone.when), root.rowBold, ...(root.rowButtons ?? []).map((button) => button.invisible)]) {
       if (typeof when !== 'string') continue;
       try {
-        for (const name of compileModifier(when).fields) shown.add(name);
+        for (const name of compileModifier(when, ANY_FUNCTION).fields) shown.add(name);
       } catch {
         // A condition that does not read is the page's checks' to say.
       }
@@ -170,7 +170,7 @@ export function fieldReads(def: Field | undefined): string[] {
   for (const item of def.money?.per ?? []) {
     if (item.when === undefined) continue;
     try {
-      reads.push(...compileModifier(item.when).fields);
+      reads.push(...compileModifier(item.when, ANY_FUNCTION).fields);
     } catch {
       // A condition that does not read is the page's checks' to say.
     }
@@ -208,7 +208,7 @@ export function listMapFields(map: Pick<ListMap, 'point' | 'latitude' | 'longitu
   const pin = map.pin ?? {};
   const read = (when: string | boolean) => {
     try {
-      return [...compileModifier(when).fields];
+      return [...compileModifier(when, ANY_FUNCTION).fields];
     } catch {
       return [];
     }

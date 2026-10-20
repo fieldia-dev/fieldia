@@ -64,7 +64,7 @@ describe('choices from the app’s lists, in the format', () => {
   });
 
   it('still asks for written options when the choices are not from a list', () => {
-    expect(problems(page({ size: { type: 'selection', label: 'Size', options: [] } }))).toEqual(['fields.size.options: a choice needs its options, or a list of the app’s to take them from']);
+    expect(problems(page({ size: { type: 'selection', label: 'Size', options: [] } }))).toEqual(['fields.size.options: a choice needs its options, a list of the app’s to take them from, or an earlier question to carry them from']);
   });
 
   it('refuses a list with no name, and a field to change with that the page does not have', () => {

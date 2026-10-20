@@ -204,6 +204,34 @@ page (Undo brings them back). A look of your own carries each kind's look.
 
 ## What an app adds
 
+### Functions of its own
+
+`functions` gives the designer your app's functions, as the viewer is given them
+(see `@fieldia/core`) — or only what is known of each (`takes`, `values`, `gives`,
+`tip`), without its call. A formula's box offers them after Fieldia's, each with its
+tip, and checks a formula calling one as it checks Fieldia's: how many values, and of
+what kind. Nothing calls them while a page is designed — a formula's made-up values
+give nothing for one — but Try it calls those it has calls for. A name no page may
+call is refused as the designer is made.
+
+```ts
+createDesigner({ page, functions: { districtPrice: { takes: [1, 1], values: ['text'], gives: 'number', tip: 'The district’s average per m²: districtPrice(district)' } } });
+```
+
+Every formula box lists Fieldia's functions by what they work on — Numbers, Dates,
+Words, Choosing — each with its words. A function there is not, or given too many or
+too few values, is refused as a formula is typed; a value of a kind a function does not
+take is said and kept — "“age” takes a date: Notes is text", in the box's result and as
+a "should fix" check, never stopping an edit or a publish.
+
+### Options that follow the answers
+
+Each option of a choice has **Show when…** in its row: a condition on another
+question's answer, drawn under the row, its rules taken away to show it always — kept
+as the option's `invisible`. A choice's **Choices** may be **Picked in another
+question**: which question, and the answers picked there or those not
+(`optionsFrom: { field, picked }`); its own options follow them.
+
 ### Kinds of its own
 
 An app adds kinds of field beside Fieldia's: each is the field a new one starts

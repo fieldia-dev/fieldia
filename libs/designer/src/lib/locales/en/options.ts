@@ -12,4 +12,10 @@ export const options = {
   option: (n: number) => `Option ${n}`,
   grip: 'Drag to move · Alt+↑ or ↓ moves it too',
   alone: 'goes alone',
+  /** An option shown only when another question's answer says so: "Garden" for a villa. */
+  showWhen: 'Show when…',
+  /** Over an option's condition, under its row. */
+  shownWhen: 'Shown when',
+  showOptionWhen: 'Show this option',
+  whenOptionShows: 'When this option shows',
 };

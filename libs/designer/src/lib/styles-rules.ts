@@ -60,7 +60,10 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-formula-suggest-option[aria-selected="true"] { background: var(--fd-accent-soft); }
 .fd-formula-suggest-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fd-text); }
 .fd-formula-suggest-name { flex: none; font-size: 11.5px; color: var(--fd-muted); }
-.fd-formula-functions { display: flex; flex-wrap: wrap; gap: 4px; }
+.fd-formula-functions { display: grid; gap: 6px; }
+/* Each kind of function a row of its own: its name, then its functions, wrapping as words do. */
+.fd-formula-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.fd-formula-group-name { flex: 0 0 100%; font-size: 11.5px; color: var(--fd-muted); }
 .fd-formula-function {
   all: unset; box-sizing: border-box; cursor: pointer; font: 12px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--fd-text);
   padding: 5px 8px; border-radius: 999px; background: var(--fd-page);
@@ -71,6 +74,8 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-formula-result { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--fd-text); padding: 6px 9px; border-radius: 6px; background: var(--fd-success-soft, var(--fd-page)); overflow-wrap: anywhere; }
 .fd-formula-result[hidden], .fd-formula-problem[hidden], .fd-formula-reads[hidden] { display: none; }
 .fd-formula-result { display: grid; gap: 2px; }
+/* A fix to make that stops nothing — a value of a kind a function does not take: the warning's colours. */
+.fd-formula-result[data-warn] { background: var(--fd-warning-soft, var(--fd-page)); color: var(--fd-warning, var(--fd-text)); }
 /* The formula in words, above its box: each field one name, as it reads. */
 .fd-formula-reads { margin: 0 0 4px; font-size: 12.5px; line-height: 1.45; color: var(--fd-muted); overflow-wrap: anywhere; }
 .fd-formula-name { color: var(--fd-text); font-weight: 600; }

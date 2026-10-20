@@ -1,4 +1,4 @@
-import type { ActionStep, Field, OpenStep, Page, PanelSide, Tone } from '@fieldia/core';
+import type { ActionStep, Field, FunctionsKnown, OpenStep, Page, PanelSide, Tone } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { DesignerWords } from './designer-words';
 import { segmented } from './panel-controls';
@@ -21,6 +21,8 @@ import { showTargets } from './steps-places';
 
 export interface StepContext {
   words: DesignerWords;
+  /** The app's own functions a formula may call. */
+  functions?: FunctionsKnown;
   page(): Page;
   /** Change the step: kept when it can be, else said why under it. With `typing`, a run in one box is one undo step. */
   change(patch: StepPatch, typing?: boolean): void;
@@ -98,7 +100,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       words,
       label,
       placeholder,
-      check: (page, source) => formulaProblem(page, source, words),
+      check: (page, source) => formulaProblem(page, source, words, ctx.functions),
       commit: (source) => ctx.change({ [key]: source || (optional ? null : '') }, true),
     });
     parts.push(row(el, label, box.element, box.problem));
@@ -228,6 +230,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
     const opened = () => (current.do === 'open' ? ctx.saved(current.page) : null);
     const startsWith = stepMap(el, {
       words,
+      functions: ctx.functions,
       label: w.startsWith,
       addWords: w.addValue,
       nameLabel: w.itsField,
@@ -246,6 +249,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
     };
     const into = stepMap(el, {
       words,
+      functions: ctx.functions,
       label: w.answersGo,
       addWords: w.addAnswer,
       nameLabel: w.thisFormsField,
@@ -331,6 +335,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
     };
     const values = stepMap(el, {
       words,
+      functions: ctx.functions,
       label: w.lineValues,
       addWords: w.addValue,
       nameLabel: w.field,
@@ -385,7 +390,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       words,
       label: w.runsOnlyWhen,
       placeholder: w.whenPlaceholder,
-      check: (page, source) => formulaProblem(page, source, words),
+      check: (page, source) => formulaProblem(page, source, words, ctx.functions),
       commit: (source) => ctx.change({ when: source || null }, true),
     });
     const holder = row(el, w.runsOnlyWhen, box.element, box.problem);

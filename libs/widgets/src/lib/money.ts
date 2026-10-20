@@ -1,4 +1,4 @@
-import { compileModifier, isRightToLeft, stripMarks, type Field, type LineField, type Locale, type MoneyLook, type Period, type Value } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, isRightToLeft, stripMarks, type Field, type LineField, type Locale, type MoneyLook, type Period, type Value } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { formatNumber } from './numbers';
 import { currencySymbol } from './units';
@@ -36,7 +36,8 @@ function periodOf(look: MoneyLook, values: Readonly<Record<string, Value>>): Per
   let rules = compiled.get(look.per);
   if (!rules) {
     rules = look.per.map(({ period, when }) => {
-      const condition = when === undefined ? null : compileModifier(when);
+      // Drawn apart from the form: a call of the app's own functions gives nothing here.
+      const condition = when === undefined ? null : compileModifier(when, ANY_FUNCTION);
       return { period, holds: (context) => !condition || condition.evaluate(context) };
     });
     compiled.set(look.per, rules);
@@ -76,6 +77,6 @@ export function writeMoney(value: number, currency: string | null, decimals: num
 export function moneyReads(def: Field | LineField | undefined, over?: MoneyLook): string[] {
   if (def?.type !== 'monetary') return [];
   const reads = def.currencyField && !def.currencyField.startsWith('parent.') ? [def.currencyField] : [];
-  for (const look of [def.money, over]) for (const item of look?.per ?? []) if (item.when !== undefined) reads.push(...compileModifier(item.when).fields);
+  for (const look of [def.money, over]) for (const item of look?.per ?? []) if (item.when !== undefined) reads.push(...compileModifier(item.when, ANY_FUNCTION).fields);
   return [...new Set(reads)];
 }

@@ -1,4 +1,4 @@
-import { checkValue, fill, foldForSearch, initialValues, oneLine, stripMarks, zonedPage, type DateOrder, type Field, type Form, type LineField, type ListNode, type Locale, type Messages, type Option, type Page, type RelatedRecord, type Value, type Values } from '@fieldia/core';
+import { checkValue, choiceOptions, fill, foldForSearch, initialValues, oneLine, optionsList, stripMarks, zonedPage, type DateOrder, type Field, type Form, type LineField, type ListNode, type Locale, type Messages, type Option, type Page, type RelatedRecord, type Value, type Values } from '@fieldia/core';
 import { currencyOf, phoneSettings, type LinesPart, type PhonePart, type WidgetLabels } from '@fieldia/widgets';
 import { serialAt, type FileCell, type FileSheet } from './import-file';
 import { inEveryLanguage } from './import-match';
@@ -138,18 +138,19 @@ export async function checkRows(check: RowsCheck, sheet: FileSheet, columns: rea
     if (stopped()) break;
     records.set(field, await lookUp(check, field, names, tick, stopped));
   }
-  // A choice's options, for those the app lists; one that changes with another field, by each row's values below.
+  // A choice's options: those the app lists — one that changes with another field, by each row's values below — or
+  // every option one carried from an earlier question may hold.
   const choices = new Map<string, Option[]>();
   /** A choice that changes with another field: its options asked by each row's values, once for each such value. */
-  const following = (def: Field) => def.type === 'selection' && !!def.optionsFrom?.dependsOn?.length && !!check.options;
+  const following = (def: Field) => def.type === 'selection' && !!optionsList(def.optionsFrom)?.dependsOn?.length && !!check.options;
   for (const { field, def } of filled) {
     if (def.type !== 'selection' || following(def)) continue;
-    choices.set(field, def.optionsFrom && check.options ? await check.options(field, {}).catch(() => []) : def.options);
+    choices.set(field, optionsList(def.optionsFrom) && check.options ? await check.options(field, {}).catch(() => []) : choiceOptions(page.fields, field));
   }
   const choicesAsked = new Map<string, Promise<Option[]>>();
   /** A row's options for a choice that follows another field: asked by what it follows, as the row has it. */
   function rowOptions(field: string, def: Field, values: Values): Promise<Option[]> {
-    const on = (def as Extract<Field, { type: 'selection' }>).optionsFrom?.dependsOn ?? [];
+    const on = optionsList((def as Extract<Field, { type: 'selection' }>).optionsFrom)?.dependsOn ?? [];
     const key = JSON.stringify([field, on.map((name) => keyOf(values[name]))]);
     let ask = choicesAsked.get(key);
     if (!ask) choicesAsked.set(key, (ask = (check.options as NonNullable<RowsCheck['options']>)(field, { ...values }).catch(() => [])));

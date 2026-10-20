@@ -1,5 +1,6 @@
 import type { Locale, Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountSurveyEditor } from '@fieldia/designer';
+import { demoFunctions } from '../shared/functions';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
 import type { Skin } from '@fieldia/viewer';
 import { APP_WIDGETS, appKinds } from '../shared/app-kinds';
@@ -30,7 +31,8 @@ const start = template ? (structuredClone(template) as Page) : params.get('start
 const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200), locale });
 const opened = timeFirstPaint('designer');
 // No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.
-const designer = createDesigner({ page: start, store, lists: arabic ? APP_LISTS_AR : APP_LISTS, kinds: appKinds(locale as Locale | undefined), assistant, locale });
+// The app's own functions, offered in a formula's list after Fieldia's: a district's average price (shared/functions.ts).
+const designer = createDesigner({ page: start, store, lists: arabic ? APP_LISTS_AR : APP_LISTS, functions: demoFunctions, kinds: appKinds(locale as Locale | undefined), assistant, locale });
 const handle = mountSurveyEditor(document.getElementById('app') as HTMLElement, { designer, skin: (params.get('skin') as Skin) ?? 'outlined', dataSource: sampleDataSource(), widgets: APP_WIDGETS });
 opened();
 // The tab names the page being made, not the tool it is made in: “Job application — Fieldia designer”.

@@ -5,7 +5,8 @@
  */
 export type { JsonValue } from './lib/format/json';
 export { FIELD_NAME, FIELD_TYPES, type FieldType } from './lib/format/names';
-export type { Field, Fields, LineField, LinkedField, LineKinds, Option, OptionsFrom, LineOptionsFrom, DefinitionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen, MoneyLook, Period } from './lib/format/field';
+export type { Field, Fields, LineField, LinkedField, LineKinds, Option, SelectionOption, OptionsFrom, OptionsFromList, OptionsFromField, LineOptionsFrom, DefinitionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen, MoneyLook, Period } from './lib/format/field';
+export { choiceOptions, optionsField, optionsList, withCarriedOptions } from './lib/format/choice-options';
 export type { Shrink } from './lib/format/field';
 export type {
   Modifier,
@@ -131,6 +132,8 @@ export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';
 export { translatePage, localizePage, pageWords, isRightToLeft } from './lib/format/translate';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
+export { ANY_FUNCTION, functionInfo, functionTable, functionNameProblem, type AppFunction, type AppFunctions, type FunctionInfo, type FunctionsKnown, type ValueKind } from './lib/expression/app-functions';
+export type { FunctionTable, ExpressionEnv } from './lib/expression/functions';
 export { rolesAllow } from './lib/record/roles';
 export type { CellState, FieldTone, LineState } from './lib/record/cells';
 export { evaluateModifier, isModifierValid } from './lib/expression/evaluateModifier';

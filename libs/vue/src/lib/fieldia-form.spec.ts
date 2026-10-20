@@ -110,6 +110,20 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('hands the form the app’s functions, each call reaching the newest given', async () => {
+    const priced: Page = { fieldia: '0.5', id: 'priced', data: { kind: 'responses' }, fields: { price: { type: 'float', label: 'Price' }, total: { type: 'float', label: 'Total', compute: 'withTax(price)' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-price', field: 'price' }, { type: 'field', id: 'f-total', field: 'total' }] } };
+    const ready: ViewerHandle[] = [];
+    const wrapper = mount(FieldiaForm, { props: { page: priced, functions: { withTax: (price: number) => price * 2 }, onReady: (handle: ViewerHandle) => ready.push(handle) }, attachTo: document.body });
+    await nextTick();
+    ready[0].form.setValue('price', 100);
+    expect(ready[0].form.getState().values['total']).toBe(200);
+    await wrapper.setProps({ functions: { withTax: (price: number) => price * 3 } });
+    ready[ready.length - 1].form.setValue('price', 200);
+    expect(ready[ready.length - 1].form.getState().values['total']).toBe(600);
+    expect(ready).toHaveLength(1);
+    wrapper.unmount();
+  });
+
   it('wears a theme on its own skin, and switches it without mounting again', async () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey'), theme: 'material' }, attachTo: document.body });
     expect(wrapper.find('.fd-form').attributes('data-fd-theme')).toBe('material');

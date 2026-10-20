@@ -14,9 +14,11 @@ describe('checkPage', () => {
   it('passes every example page, as the full check does, and hands the page back unchanged', () => {
     for (const name of readdirSync(EXAMPLES).filter((f) => f.endsWith('.page.json')).map((f) => f.replace('.page.json', ''))) {
       const page = example(name);
-      const result = checkPage(page);
+      // The demos' own function a listing calls, as the demos give it (demos/shared/functions.ts).
+      const functions = { districtPrice: { takes: [1, 1] as const } };
+      const result = checkPage(page, { functions });
       expect(result.ok).toBe(true);
-      expect(validatePage(page).ok).toBe(true);
+      expect(validatePage(page, { functions }).ok).toBe(true);
       expect(result.ok && result.page).toBe(page);
     }
   });

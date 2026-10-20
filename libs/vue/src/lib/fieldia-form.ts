@@ -1,7 +1,8 @@
 import type { DataSource, DraftStore, Field, FieldNode, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
-import { mountViewer, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, newestFunctions, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
+  computed,
   defineComponent,
   getCurrentScope,
   h,
@@ -116,6 +117,8 @@ export const FieldiaForm = defineComponent({
     user: { type: Object as PropType<FormUser>, default: undefined },
     /** Values the app passes in, as Flectra's context: what conditions and filters read as `context`. */
     context: { type: Object as PropType<ViewerOptions['context']>, default: undefined },
+    /** The app's own functions, which the page's expressions call by name: each call reaches the newest given. */
+    functions: { type: Object as PropType<ViewerOptions['functions']>, default: undefined },
     values: { type: Object as PropType<Values>, default: undefined },
     /** The skin — underline, outlined or quiet: the page's own when left out, else its theme's, else underline. */
     skin: { type: String as PropType<Skin>, default: undefined },
@@ -256,6 +259,7 @@ export const FieldiaForm = defineComponent({
         recordId: props.recordId,
         user: props.user,
         context: props.context ? toRaw(props.context) : undefined,
+        functions: newestFunctions(() => (props.functions ? toRaw(props.functions) : undefined)),
         values: props.values,
         skin: props.skin,
         theme: props.theme,
@@ -306,8 +310,10 @@ export const FieldiaForm = defineComponent({
 
     onMounted(mount);
     onBeforeUnmount(unmount);
+    // The app's functions' names alone: a new object with the same names is called through, never mounted again.
+    const functionNames = computed(() => Object.keys(props.functions ?? {}).join('|'));
     watch(
-      () => [props.page, props.form, props.dataSource, props.recordId, JSON.stringify(props.user ?? null), JSON.stringify(props.context ?? null), props.dir, props.locale, JSON.stringify(props.labels ?? {})],
+      () => [props.page, props.form, props.dataSource, props.recordId, JSON.stringify(props.user ?? null), JSON.stringify(props.context ?? null), props.dir, props.locale, JSON.stringify(props.labels ?? {}), functionNames.value],
       () => {
         unmount();
         mount();

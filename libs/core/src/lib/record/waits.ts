@@ -1,6 +1,7 @@
 import type { Field } from '../format/field';
 import type { Page } from '../format/page';
 import { compileExpression } from '../expression/expression';
+import type { FunctionTable } from '../expression/functions';
 import type { UnreadText } from './form';
 import { lineKind, type Line, type Values } from './values';
 
@@ -15,6 +16,10 @@ export interface WaitsFor {
   readonly line?: number;
   /** The line's cell holding the text. */
   readonly column?: string;
+  /** It waits for an app's function that asks its server (`functions`): `field` is the value itself. */
+  readonly asking?: true;
+  /** Why that answer did not come: a save asks again. */
+  readonly failed?: string;
 }
 
 /** Kinds of value an app works out from a record's lines: amounts, and totals kept whole (Flectra's tax_totals). */
@@ -33,7 +38,7 @@ const NUMBERS = new Set<Field['type']>(['integer', 'float', 'monetary']);
  * its fields a person types in, as its cell in the table does. Fields worked out from nothing that can hold such text
  * are left out.
  */
-export function workedOutFrom(page: Page, appWorksOut: boolean, asLine = false): Map<string, readonly string[]> {
+export function workedOutFrom(page: Page, appWorksOut: boolean, asLine = false, functions?: FunctionTable): Map<string, readonly string[]> {
   const tables = Object.keys(page.fields).filter((name) => page.fields[name].type === 'one2many');
   const typed = Object.keys(page.fields).filter((name) => page.fields[name].readonly !== true && page.fields[name].compute === undefined);
   const reads = new Map<string, readonly string[]>();
@@ -42,7 +47,7 @@ export function workedOutFrom(page: Page, appWorksOut: boolean, asLine = false):
     if (asLine && NUMBERS.has(def.type) && (def.readonly === true || def.compute !== undefined)) reads.set(name, typed);
     else if (def.compute !== undefined) {
       try {
-        reads.set(name, compileExpression(def.compute).fields.filter((one) => one !== name && one in page.fields));
+        reads.set(name, compileExpression(def.compute, functions).fields.filter((one) => one !== name && one in page.fields));
       } catch {
         // An expression that does not read is refused by the page's checks; it works nothing out here.
       }

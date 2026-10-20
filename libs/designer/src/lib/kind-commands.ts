@@ -1,4 +1,4 @@
-import { ADDRESS_PARTS, type Field, type FieldNode, type Option, type Page } from '@fieldia/core';
+import { ADDRESS_PARTS, type Field, type FieldNode, type Option, type Page, type SelectionOption } from '@fieldia/core';
 import { kindOfField } from './kinds';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
@@ -21,6 +21,8 @@ export interface OptionDetails {
   alt?: string | null;
   /** Kept in place when the options are shuffled; `null` or false lets it move. */
   fixed?: boolean | null;
+  /** A choice's option hidden while this condition holds (its `invisible`); `null` shows it always. */
+  invisible?: string | null;
 }
 
 export interface KindCommandsDeps {
@@ -99,6 +101,11 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
           if (details.fixed !== undefined) {
             if (details.fixed) option.fixed = true;
             else delete option.fixed;
+          }
+          if (details.invisible !== undefined) {
+            if (field.type !== 'selection') throw new Refusal((w) => w.refusals.onlyChoiceOptionWhen);
+            if (details.invisible === null || !details.invisible.trim()) delete (option as SelectionOption).invisible;
+            else (option as SelectionOption).invisible = details.invisible.trim();
           }
           if (details.score !== undefined) {
             if (details.score === null) delete option.score;

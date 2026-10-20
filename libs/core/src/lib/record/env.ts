@@ -66,10 +66,21 @@ export function lineContext(values: Values, fields: Record<string, LineField>, p
   return { ...names, ...expressionContext(values, fields) };
 }
 
-export function expressionEnv(values: Values, fields: Record<string, Field | LineField>, today: () => string): ExpressionEnv {
+/** What a form hands every expression of the app's own: its functions, and the answers of those that ask (`ExpressionEnv`). */
+export type AppReads = Pick<ExpressionEnv, 'functions' | 'answer'>;
+
+/** The name of the record a link field holds: a currency's "EGP". */
+export function nameIn(values: Values, field: string): string | undefined {
+  const value = values[field];
+  return value !== null && typeof value === 'object' && !Array.isArray(value) && typeof (value as { label?: unknown }).label === 'string' ? (value as { label: string }).label : undefined;
+}
+
+export function expressionEnv(values: Values, fields: Record<string, Field | LineField>, today: () => string, app: AppReads = {}): ExpressionEnv {
   const rows = new Map<string, Record<string, unknown>[]>();
   return {
+    ...app,
     today,
+    nameOf: (field) => nameIn(values, field),
     lines(name) {
       const def = fields[name];
       if (def?.type !== 'one2many') return undefined;

@@ -1,10 +1,15 @@
 import { evaluate } from './evaluator';
-import type { ExpressionEnv } from './functions';
-import { ExpressionParser } from './parser';
+import type { ExpressionEnv, FunctionTable } from './functions';
+import { ExpressionParser, type ASTNode } from './parser';
 import { fieldsRead, pathsRead, sumsRead, wheresRead } from './reads';
 import { tokenize } from './tokenizer';
 
-export type { ExpressionEnv } from './functions';
+export type { ExpressionEnv, FunctionTable } from './functions';
+
+/** An expression read into its parts, as the page's checks read it: throws when it cannot be read. */
+export function parseExpression(source: string, functions?: FunctionTable): ASTNode {
+  return new ExpressionParser(tokenize(source), functions).parse();
+}
 
 /** An expression read once, ready to work out a value from a record's values many times. */
 export interface CompiledExpression {
@@ -25,9 +30,10 @@ export interface CompiledExpression {
  * Read an expression for a value, such as `price * qty` or
  * `if(total > 1000, 10, 0)`. It is parsed now, so a mistake surfaces when the
  * page is read and not on the first keystroke: throws when it cannot be read.
+ * `functions`, the app's own, which it may call besides Fieldia's.
  */
-export function compileExpression(source: string): CompiledExpression {
-  const ast = new ExpressionParser(tokenize(source)).parse();
+export function compileExpression(source: string, functions?: FunctionTable): CompiledExpression {
+  const ast = new ExpressionParser(tokenize(source), functions).parse();
   return {
     source,
     fields: fieldsRead(ast),

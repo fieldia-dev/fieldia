@@ -1,11 +1,11 @@
-import type { Field, FieldNode, Page, SetWhen } from '@fieldia/core';
+import type { Field, FieldNode, FunctionsKnown, Page, SetWhen } from '@fieldia/core';
 import { readCondition, readHolds, type Condition } from './conditions';
 import { findHeaderPart } from './header-commands';
 import { storedAs } from './kinds';
 import { findContainer, findNode, shownFields } from './page-tree';
 import type { PageCheck } from './page-checks';
 import { cannotHold } from './rules-commands';
-import { formulaProblem, problemWords, wouldCircle } from './rules-formula';
+import { formulaAdvice, formulaProblem, problemWords, wouldCircle } from './rules-formula';
 import { asksNotFitting, pageRules, ruleAsks, type RuleEntry, type RuleKind } from './rules-words';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
@@ -58,7 +58,7 @@ function nodePaths(page: Page): Map<string, string> {
 const CONDITION_KEY: Partial<Record<RuleKind, string>> = { shows: 'invisible', required: 'required', readonly: 'readonly' };
 
 /** The rules' checks, and whether the page's own check said one of the same things at a path. */
-export function ruleChecks(page: Page, words: DesignerWords = en): { checks: PageCheck[]; covers(path: string): boolean } {
+export function ruleChecks(page: Page, words: DesignerWords = en, functions?: FunctionsKnown): { checks: PageCheck[]; covers(path: string): boolean } {
   const w = words.checks;
   const checks: PageCheck[] = [];
   const covered: string[] = [];
@@ -81,6 +81,17 @@ export function ruleChecks(page: Page, words: DesignerWords = en): { checks: Pag
     if (path) covered.push(path);
   };
 
+  /** A formula of the rule's handing a function a value of a kind it does not take: said, a fix offered, never a refusal. */
+  const advise = (rule: RuleEntry, sources: readonly unknown[], fix: string): boolean => {
+    for (const source of sources) {
+      const advice = typeof source === 'string' ? formulaAdvice(page, source, words, functions) : null;
+      if (!advice) continue;
+      say(rule, 'should', w.givesNothing(rule.name, rule.sentence, problemWords(advice, words)), fix);
+      return true;
+    }
+    return false;
+  };
+
   for (const rule of pageRules(page, words)) {
     // A field it reads that no one can fill in here any more.
     const gone = rule.reads.filter((name) => !shown.has(name));
@@ -92,14 +103,15 @@ export function ruleChecks(page: Page, words: DesignerWords = en): { checks: Pag
     }
     const def = rule.field ? page.fields[rule.field] : undefined;
     if (rule.kind === 'compute' && def?.compute !== undefined && rule.field) {
-      const problem = formulaProblem(page, def.compute, words);
+      const problem = formulaProblem(page, def.compute, words, functions);
       const said = problem ? problemWords(problem, words) : wouldCircle(page, rule.field, def.compute, words);
       if (said) say(rule, 'must', w.formulaBroken(rule.name, said), w.removeTheFormula);
+      else advise(rule, [def.compute], w.removeTheFormula);
       continue;
     }
     if (rule.kind === 'set' && def?.setWhen && rule.index !== undefined) {
       const item = def.setWhen[rule.index];
-      const problem = (item.when === undefined ? null : formulaProblem(page, item.when, words)) ?? formulaProblem(page, item.value, words);
+      const problem = (item.when === undefined ? null : formulaProblem(page, item.when, words, functions)) ?? formulaProblem(page, item.value, words, functions);
       if (problem) {
         say(rule, 'must', w.setBroken(rule.name, rule.sentence, problemWords(problem, words)), w.removeIt);
         continue;
@@ -109,6 +121,7 @@ export function ruleChecks(page: Page, words: DesignerWords = en): { checks: Pag
         say(rule, 'must', w.setCannotHold(rule.name, rule.sentence, wrong), w.removeIt);
         continue;
       }
+      if (advise(rule, [item.when, item.value], w.removeIt)) continue;
     }
     if (rule.kind === 'answer' && rule.index !== undefined && rule.part) {
       const node = findNode(page, rule.part)?.node as FieldNode | undefined;
@@ -118,6 +131,11 @@ export function ruleChecks(page: Page, words: DesignerWords = en): { checks: Pag
     }
     // A condition waiting for a choice no longer offered (when a part shows is the page's older check's).
     if (rule.kind !== 'shows' && rule.kind !== 'compute' && rule.part) choiceGone(page, rule, say, words);
+    // A condition, or an answer rule's, handing a function a value of a kind it does not take.
+    if (rule.kind !== 'compute' && rule.kind !== 'set' && rule.part) {
+      const answer = rule.kind === 'answer' ? (findNode(page, rule.part)?.node as FieldNode | undefined)?.validate?.[rule.index ?? 0] : undefined;
+      advise(rule, answer ? [answer.when, answer.holds] : [conditionValue(page, rule)], w.removeTheRule);
+    }
   }
   // A path names the rule itself, or something inside it: its pattern, its condition.
   return { checks, covers: (path) => covered.some((at) => path === at || path.startsWith(`${at}.`)) };

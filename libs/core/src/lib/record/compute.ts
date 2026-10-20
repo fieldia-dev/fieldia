@@ -1,9 +1,10 @@
 import type { Field, LineField } from '../format/field';
 import type { Page } from '../format/page';
 import { compileExpression, type CompiledExpression, type ExpressionEnv } from '../expression/expression';
+import type { FunctionTable } from '../expression/functions';
 import { isNumber, roundTo, truthy } from '../expression/operations';
 import { dependencyOrder } from '../expression/order';
-import { expressionEnv, lineContext, recordContext, type About } from './env';
+import { expressionEnv, lineContext, recordContext, type About, type AppReads } from './env';
 import { expressionContext, lineKind, sameValue, type Line, type Value, type Values } from './values';
 
 /**
@@ -14,18 +15,35 @@ import { expressionContext, lineKind, sameValue, type Line, type Value, type Val
  * form redraws only what did.
  */
 export interface Computed {
-  /** The values with every worked-out field brought up to date. */
-  apply(values: Values): Values;
+  /**
+   * The values with every worked-out field brought up to date. `asked`, when given, is told each worked out from an
+   * app's function that asks and has no answer yet, by its path (a line's `field.lineKey.subfield`): waiting for
+   * it (`{}`), or why it did not come (`failed`). Such a value is empty meanwhile.
+   */
+  apply(values: Values, asked?: Map<string, AskedFor>): Values;
   /** One line of a one2many on the record `values`, with its worked-out fields brought up to date. */
   line(field: string, line: Values, values: Values): Values;
+}
+
+/** A value worked out from an app's function that asks, with no answer yet: waiting for it, or why it did not come. */
+export interface AskedFor {
+  failed?: string;
+}
+
+/** What waits at a path, or inside it (a table's lines' cells): undefined when nothing does. */
+function waitsIn(asked: ReadonlyMap<string, AskedFor>, path: string): AskedFor | undefined {
+  const own = asked.get(path);
+  if (own) return own;
+  for (const [key, found] of asked) if (key.startsWith(`${path}.`)) return found;
+  return undefined;
 }
 
 type Step = [name: string, expression: CompiledExpression, def: Field | LineField];
 
 /** The worked-out fields among `fields`, each read once, in the order to work them out. */
-function steps(fields: Record<string, Field | LineField>): Step[] {
+function steps(fields: Record<string, Field | LineField>, functions?: FunctionTable): Step[] {
   const compiled = new Map<string, CompiledExpression>();
-  for (const [name, def] of Object.entries(fields)) if (def.compute !== undefined) compiled.set(name, compileExpression(def.compute));
+  for (const [name, def] of Object.entries(fields)) if (def.compute !== undefined) compiled.set(name, compileExpression(def.compute, functions));
   const { order } = dependencyOrder(new Map([...compiled].map(([name, expression]) => [name, expression.fields])));
   return order.map((name) => [name, compiled.get(name) as CompiledExpression, fields[name]]);
 }
@@ -57,24 +75,52 @@ export function fitTo(def: Field | LineField, value: unknown): Value {
   }
 }
 
-/** Read every `compute` of a page once. `today` is the day `today()` gives; `about`, the record's id and the person, as lines read them on `parent`. */
-export function compileComputed(page: Page, today: () => string, about: () => About = () => ({ recordId: null })): Computed {
-  const own = steps(page.fields);
+/**
+ * Read every `compute` of a page once. `today` is the day `today()` gives; `about`, the record's id and the person, as
+ * lines read them on `parent`; `app`, the app's functions and the answers of those that ask.
+ */
+export function compileComputed(page: Page, today: () => string, about: () => About = () => ({ recordId: null }), app: AppReads = {}): Computed {
+  const own = steps(page.fields, app.functions);
   const lineSteps = new Map<string, { def: Extract<Field, { type: 'one2many' }>; steps: Step[] }>();
   for (const [name, def] of Object.entries(page.fields)) {
     if (def.type !== 'one2many') continue;
-    const found = steps(def.fields);
+    const found = steps(def.fields, app.functions);
     if (found.length) lineSteps.set(name, { def, steps: found });
   }
-  // Lines hold no lines of their own: inside one, only today() needs the env.
-  const lineEnv: ExpressionEnv = { today };
+  // Lines hold no lines of their own: inside one, only today() and the app's functions need the env.
+  const lineEnv: ExpressionEnv = { ...app, today };
 
-  /** Work out the steps on these values, writing each change into a copy; `read` gives the values as expressions read them. */
-  function run(values: Values, list: Step[], fields: Record<string, Field | LineField>, env: ExpressionEnv, read: (values: Values) => Record<string, unknown>): Values {
+  /** A value worked out, and whether it waits for an app's answer, or why that did not come. */
+  function worked(expression: CompiledExpression, context: Record<string, unknown>, env: ExpressionEnv): { value: unknown; asked?: AskedFor } {
+    const answer = env.answer;
+    if (!answer) return { value: expression.evaluate(context, env) };
+    let asked: AskedFor | undefined;
+    const value = expression.evaluate(context, {
+      ...env,
+      answer(key, promise) {
+        const found = answer(key, promise);
+        if (found === 'asking') asked ??= {};
+        else if (found?.failed !== undefined) asked = { failed: found.failed };
+        return found;
+      },
+    });
+    return asked ? { value, asked } : { value };
+  }
+
+  /**
+   * Work out the steps on these values, writing each change into a copy; `read` gives the values as expressions read
+   * them; `at`, the path a value's waiting is told by (a line's `field.lineKey.`).
+   */
+  function run(values: Values, list: Step[], fields: Record<string, Field | LineField>, env: ExpressionEnv, read: (values: Values) => Record<string, unknown>, asked?: Map<string, AskedFor>, at = ''): Values {
     let next = values;
     const context = read(values);
     for (const [name, expression, def] of list) {
-      const value = fitTo(def, expression.evaluate(context, env));
+      const found = worked(expression, context, env);
+      // Worked out from a value that waits — a field, or a table's line — it waits as that one does.
+      const from = asked?.size ? expression.fields.map((field) => waitsIn(asked, at + field)).find((one) => one !== undefined) : undefined;
+      const waits = found.asked ?? from;
+      if (waits) asked?.set(at + name, waits);
+      const value = fitTo(def, found.value);
       if (sameValue(value, next[name])) continue;
       next = { ...next, [name]: value };
       // What comes after reads this value as it is now.
@@ -83,16 +129,16 @@ export function compileComputed(page: Page, today: () => string, about: () => Ab
     return next;
   }
 
-  function line(field: string, values: Values, parent: Record<string, unknown>): Values {
+  function line(field: string, values: Values, parent: Record<string, unknown>, asked?: Map<string, AskedFor>, at = ''): Values {
     const found = lineSteps.get(field);
     // A section or a note has nothing to work out.
     if (!found || lineKind(found.def, values) !== null) return values;
-    return run(values, found.steps, found.def.fields, lineEnv, (v) => lineContext(v, found.def.fields, parent));
+    return run(values, found.steps, found.def.fields, lineEnv, (v) => lineContext(v, found.def.fields, parent), asked, at);
   }
 
   return {
     line: (field, values, record) => line(field, values, recordContext(record, page.fields, about())),
-    apply(values) {
+    apply(values, asked) {
       let next = values;
       const parent = lineSteps.size ? recordContext(values, page.fields, about()) : {};
       for (const field of lineSteps.keys()) {
@@ -100,7 +146,7 @@ export function compileComputed(page: Page, today: () => string, about: () => Ab
         if (!Array.isArray(current)) continue;
         let changed = false;
         const updated = (current as Line[]).map((l) => {
-          const worked = line(field, l.values, parent);
+          const worked = line(field, l.values, parent, asked, `${field}.${l.key}.`);
           if (worked === l.values) return l;
           changed = true;
           return { ...l, values: worked };
@@ -108,7 +154,7 @@ export function compileComputed(page: Page, today: () => string, about: () => Ab
         if (changed) next = { ...next, [field]: updated };
       }
       if (!own.length) return next;
-      return run(next, own, page.fields, expressionEnv(next, page.fields, today), (v) => recordContext(v, page.fields, about()));
+      return run(next, own, page.fields, expressionEnv(next, page.fields, today, app), (v) => recordContext(v, page.fields, about()), asked);
     },
   };
 }

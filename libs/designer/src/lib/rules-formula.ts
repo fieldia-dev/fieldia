@@ -1,4 +1,5 @@
-import { compileModifier, createForm, foldDigits, type Field, type Page } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, createForm, foldDigits, functionTable, kindProblems, parseExpression, type Field, type FunctionsKnown, type FunctionTable, type KindProblem, type Page } from '@fieldia/core';
+import { uncalled } from './uncalled';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 
@@ -76,10 +77,19 @@ const place = (token: FormulaToken) => ({ from: token.from + 1, to: token.to });
 /** A field called as a function is a function: "round(" is not a field "round". */
 const calls = (tokens: FormulaToken[], i: number) => tokens[i + 1]?.kind === 'open';
 
-/** Whether it reads at all: the page's own reader, stopped where it stops. */
-function readError(source: string): string | null {
+/** The app's functions as a formula calls them; none when their names cannot be (the designer was given a name no page may call). */
+function tableOf(functions: FunctionsKnown | undefined): FunctionTable | undefined {
   try {
-    compileModifier(source);
+    return functionTable(functions);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Whether it reads at all: the page's own reader, with the app's functions, stopped where it stops. */
+function readError(source: string, functions?: FunctionsKnown): string | null {
+  try {
+    compileModifier(source, tableOf(functions));
     return null;
   } catch (error) {
     return (error as Error).message;
@@ -92,15 +102,17 @@ const ranOut = (message: string) => /EOF|^Expected/.test(message);
 /**
  * What is wrong with a formula on this page, or null when it reads: a sign it
  * cannot hold, a piece out of place, something missing, a function there is
- * not or given too many values, a field the page does not have.
+ * not — Fieldia's or the app's (`functions`) — or given too many values, a
+ * field the page does not have. A value of a kind a function does not take
+ * stops nothing: `formulaAdvice` says it.
  */
-export function formulaProblem(page: Page, source: string, words: DesignerWords = en): FormulaProblem | null {
+export function formulaProblem(page: Page, source: string, words: DesignerWords = en, functions?: FunctionsKnown): FormulaProblem | null {
   const w = words.rules;
   if (!source.trim()) return { words: w.typeAFormula };
   const tokens = formulaTokens(source);
   if (!Array.isArray(tokens)) return { words: w.cannotBeIn(source[tokens.bad]), from: tokens.bad + 1, to: tokens.bad + 1 };
-  const message = readError(source);
-  if (message !== null) return whereItStops(source, tokens, message, words);
+  const message = readError(source, functions);
+  if (message !== null) return whereItStops(source, tokens, message, words, functions);
   // It reads: each name must be a field of the page.
   for (const [i, token] of tokens.entries()) {
     if (token.kind !== 'name' || calls(tokens, i)) continue;
@@ -117,12 +129,38 @@ export function formulaProblem(page: Page, source: string, words: DesignerWords 
   return null;
 }
 
-function whereItStops(source: string, tokens: FormulaToken[], message: string, words: DesignerWords): FormulaProblem {
+/**
+ * What a formula that reads hands a function of a kind it does not take, in words and where — "“age” takes a date:
+ * Notes is text" — or null. Said, never refused: such a call gives nothing, as it did before kinds were read.
+ */
+export function formulaAdvice(page: Page, source: string, words: DesignerWords = en, functions?: FunctionsKnown): FormulaProblem | null {
+  const tokens = formulaTokens(source);
+  if (!Array.isArray(tokens) || readError(source, functions) !== null) return null;
+  const kind = kindProblems(parseExpression(source, tableOf(functions)), { fields: page.fields }, functions)[0];
+  return kind ? kindSaid(page, tokens, kind, words) : null;
+}
+
+/** A value of a kind a function does not take, in words — a field by its label — and where it is. */
+function kindSaid(page: Page, tokens: FormulaToken[], problem: KindProblem, words: DesignerWords): FormulaProblem {
+  const w = words.rules;
+  const given = problem.given;
+  const at =
+    given.type === 'Identifier' || given.type === 'Call'
+      ? tokens.find((t, i) => t.kind === 'name' && t.text === given.name && calls(tokens, i) === (given.type === 'Call'))
+      : given.type === 'Literal'
+        ? tokens.find((t) => (t.kind === 'text' || t.kind === 'number' || t.kind === 'word' || t.kind === 'list') && literalOf(t.text)?.value === given.value)
+        : undefined;
+  const said = given.type === 'Identifier' && page.fields[given.name] ? labelOf(page, given.name) : given.type === 'Call' ? `${given.name}(…)` : (at?.text ?? '');
+  const text = w.wrongKind(problem.name, problem.wants, said, problem.got);
+  return at ? { words: text, ...place(at) } : { words: text };
+}
+
+function whereItStops(source: string, tokens: FormulaToken[], message: string, words: DesignerWords, functions?: FunctionsKnown): FormulaProblem {
   const w = words.rules;
   const named = /^no function "(\w+)"/.exec(message) ?? /^(\w+) takes /.exec(message) ?? /^(sum) takes the name/.exec(message);
   if (named) {
     // The call the reader stopped at: the last one of that name before where it stopped.
-    const at = firstFailing(source, tokens);
+    const at = firstFailing(source, tokens, functions);
     const name = [...tokens.slice(0, at + 1)].reverse().find((t) => t.kind === 'name' && t.text === named[1]) ?? tokens.find((t) => t.text === named[1]);
     const said = /^no function/.test(message) ? w.unknownFunction(named[1]) : w.takes(named[1], message.slice(named[1].length));
     return name ? { words: said, ...place(name) } : { words: said };
@@ -133,14 +171,14 @@ function whereItStops(source: string, tokens: FormulaToken[], message: string, w
     const last = tokens[tokens.length - 1];
     return { words: w.missingAfter(last.text), ...place(last) };
   }
-  const token = tokens[firstFailing(source, tokens)];
+  const token = tokens[firstFailing(source, tokens, functions)];
   return { words: w.outOfPlace(token.text), ...place(token) };
 }
 
 /** The first piece the formula cannot go on from: up to it, the formula reads, or only runs out. */
-function firstFailing(source: string, tokens: FormulaToken[]): number {
+function firstFailing(source: string, tokens: FormulaToken[], functions?: FunctionsKnown): number {
   for (let i = 0; i < tokens.length; i++) {
-    const message = readError(source.slice(0, tokens[i].to));
+    const message = readError(source.slice(0, tokens[i].to), functions);
     if (message !== null && !ranOut(message)) return i;
   }
   return tokens.length - 1;
@@ -156,11 +194,11 @@ function unclosed(tokens: FormulaToken[]): FormulaToken | undefined {
   return open[0];
 }
 
-/** The fields a formula reads, by name, once each; none when it cannot be read. */
+/** The fields a formula reads, by name, once each, whatever functions it calls; none when it cannot be read. */
 export function fieldsReadBy(source: string | boolean | undefined): string[] {
   if (typeof source !== 'string') return [];
   try {
-    return [...compileModifier(source).fields];
+    return [...compileModifier(source, ANY_FUNCTION).fields];
   } catch {
     return [];
   }
@@ -315,11 +353,15 @@ function samplesFor(page: Page, reads: string[]): Record<string, unknown> {
   return values;
 }
 
-/** The values as a form settles them on these fields, worked-out ones worked out; null when they cannot be. */
-function settled(fields: Page['fields'], values: Record<string, unknown>): Record<string, unknown> | null {
+/**
+ * The values as a form settles them on these fields, worked-out ones worked out; null when they cannot be. The app's
+ * functions are known, never called: on made-up values one gives nothing.
+ */
+function settled(fields: Page['fields'], values: Record<string, unknown>, functions?: FunctionsKnown): Record<string, unknown> | null {
   const trial: Page = { fieldia: '0.1', id: 'sample', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'root', children: [] } };
+  const known = uncalled(functions);
   try {
-    return createForm({ page: trial, values: values as never }).getState().values;
+    return createForm({ page: trial, values: values as never, ...(known ? { functions: known } : {}) }).getState().values;
   } catch {
     return null;
   }
@@ -333,12 +375,12 @@ const givenWords = (page: Page, reads: string[], values: Record<string, unknown>
  * (a whole number rounded, text as text): "With Price 120 and Quantity 3:
  * 360". Empty when the formula does not read.
  */
-export function sampleResult(page: Page, own: string, source: string, words: DesignerWords = en): string {
-  if (formulaProblem(page, source) || wouldCircle(page, own, source)) return '';
+export function sampleResult(page: Page, own: string, source: string, words: DesignerWords = en, functions?: FunctionsKnown): string {
+  if (formulaProblem(page, source, en, functions) || wouldCircle(page, own, source)) return '';
   const reads = fieldsReadBy(source).filter((name) => name !== own && page.fields[name]);
   const target = page.fields[own];
   if (!target) return '';
-  const worked = settled({ ...page.fields, [own]: { ...target, compute: source } as Field }, samplesFor(page, reads));
+  const worked = settled({ ...page.fields, [own]: { ...target, compute: source } as Field }, samplesFor(page, reads), functions);
   if (!worked) return '';
   const result = worked[own];
   const said = result === null || result === undefined || (typeof result === 'number' && !Number.isFinite(result)) ? words.rules.cannotWorkOut : shown(target, result, words);
@@ -351,13 +393,13 @@ export function sampleResult(page: Page, own: string, source: string, words: Des
  * it: "With Contract ends 2026-03-14 and Start date 2026-03-01: holds".
  * Empty when the formula does not read.
  */
-export function sampleHolds(page: Page, source: string, words: DesignerWords = en): string {
+export function sampleHolds(page: Page, source: string, words: DesignerWords = en, functions?: FunctionsKnown): string {
   const w = words.rules;
-  if (formulaProblem(page, source)) return '';
+  if (formulaProblem(page, source, en, functions)) return '';
   const reads = fieldsReadBy(source).filter((name) => page.fields[name]);
-  const worked = settled(page.fields, samplesFor(page, reads));
+  const worked = settled(page.fields, samplesFor(page, reads), functions);
   if (!worked) return '';
-  const holds = compileModifier(source).evaluate(worked);
+  const holds = compileModifier(source, ANY_FUNCTION).evaluate(worked);
   if (!reads.length) return holds ? w.alwaysHolds : w.neverHolds;
   // The form waits for every field a rule reads: one with no made-up value is said so.
   const waits = reads.filter((name) => worked[name] === null || worked[name] === undefined);

@@ -96,6 +96,8 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     // The person, and the values the app passes in, as the opener's own conditions and filters read them.
     user: options.user,
     context: options.context,
+    // The app's own functions, as the opener's expressions call them.
+    functions: options.functions,
   };
   return {
     canOpen: (model) => pageFor(model) !== null,

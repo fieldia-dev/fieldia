@@ -1,4 +1,4 @@
-import { compileModifier, type ButtonNode, type CompiledModifier, type FileValue, type LineField, type ListCell, type ListNode, type Locale, type Page, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
+import { compileModifier, type ButtonNode, type CompiledModifier, type FunctionTable, type FileValue, type LineField, type ListCell, type ListNode, type Locale, type Page, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
 import { cellText, drawIcon, formatNumber, phoneLinksOf, phoneSettings, phoneWritten, type IconSet, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 
@@ -236,10 +236,10 @@ export interface RowRules {
  * form's own way (`form.recordReads`): its values, its `id`, the person (`user`) and the app's `context`. `today` is
  * the page's day, for `today()`.
  */
-export function rowRules(page: Page, node: ListNode, recordOf: (id: RecordId, values: Values) => Record<string, unknown>, today: () => string, shown: (button: ButtonNode) => boolean): RowRules {
+export function rowRules(page: Page, node: ListNode, recordOf: (id: RecordId, values: Values) => Record<string, unknown>, today: () => string, shown: (button: ButtonNode) => boolean, functions?: FunctionTable): RowRules {
   const read = (modifier: ButtonNode['invisible']): CompiledModifier | null => {
     try {
-      return compileModifier(modifier);
+      return compileModifier(modifier, functions);
     } catch {
       // A condition that cannot be read holds for no row: the page check says why.
       return null;
@@ -253,8 +253,8 @@ export function rowRules(page: Page, node: ListNode, recordOf: (id: RecordId, va
   return {
     reads,
     any: tones.length > 0 || bold !== null || buttons.length > 0,
-    tone: (id, values) => (tones.length ? (tones.find((item) => item.when?.evaluate(context(id, values), { today }))?.tone ?? null) : null),
-    bold: (id, values) => !!bold?.evaluate(context(id, values), { today }),
-    buttons: (id, values) => buttons.filter(({ button, hidden }) => shown(button) && !hidden?.evaluate(context(id, values), { today })).map(({ button }) => button),
+    tone: (id, values) => (tones.length ? (tones.find((item) => item.when?.evaluate(context(id, values), { today, functions }))?.tone ?? null) : null),
+    bold: (id, values) => !!bold?.evaluate(context(id, values), { today, functions }),
+    buttons: (id, values) => buttons.filter(({ button, hidden }) => shown(button) && !hidden?.evaluate(context(id, values), { today, functions })).map(({ button }) => button),
   };
 }

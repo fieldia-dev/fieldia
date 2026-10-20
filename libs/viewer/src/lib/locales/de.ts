@@ -271,6 +271,8 @@ export const de: ViewerLabels = {
   totalMixedShort: 'Mehrere Währungen',
   valueWaits: 'Korrigieren Sie {field}, um „{own}“ zu sehen',
   valueWaitsLine: 'Korrigieren Sie Zeile {n} von {lines}, um „{own}“ zu sehen',
+  valueAsking: '„{own}“ wird berechnet …',
+  valueNotWorkedOut: '„{own}“ konnte nicht berechnet werden: {why}. Beim Speichern wird es erneut versucht.',
   exportCurrency: 'Währung: {column}',
   yes: 'Ja',
   no: 'Nein',

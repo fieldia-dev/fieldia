@@ -149,7 +149,15 @@ export const DESIGNER_CSS = /* css */ `
 .fd-switch:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .fd-switch::before, .fd-switch::after { transition: none; } }
 .fd-q-options { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.fd-q-option { display: flex; gap: 8px; align-items: center; }
+.fd-q-option { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* The option's words take the row's room, ten letters at least: Show when… goes under them where the row is narrow. */
+.fd-q-option > .fd-input { flex: 1 1 10em; min-width: 0; }
+.fd-q-option > .fd-q-option-when { margin-inline-start: auto; }
+/* An option's own condition: a quiet link in its row, the rules under it across the row's width. */
+.fd-q-option .fd-q-option-when { border: 0; background-color: transparent; box-shadow: none; padding: 2px 0; min-height: 0; font-weight: 400; font-size: 12.5px; white-space: nowrap; }
+.fd-q-option-when-box { flex: 0 0 100%; padding-inline-start: 46px; box-sizing: border-box; display: grid; gap: 4px; }
+.fd-q-option-when-lead { font-size: 12px; color: var(--fd-muted); }
+.fd-q-option-when[hidden], .fd-q-option-when-box[hidden] { display: none; }
 .fd-q-bullet { color: var(--fd-muted); width: 16px; text-align: center; }
 .fd-q-option-box { display: grid; gap: 4px; justify-items: start; }
 .fd-q-option-box > ul { width: 100%; }

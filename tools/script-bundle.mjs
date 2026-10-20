@@ -897,9 +897,17 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // cell's form gives its line's choices, a line's column read at rest by its label (lines.ts), the cell says a choice
 // cleared (choices-from.ts) — the form's work every page with a table runs, which no part can bring: 503.41 measured
 // before, 507.72 after — 4.3 more, to 507.8.
+// More functions, the app's own, and options that follow the answers (0.27, w4-rules): the formula language's sixteen
+// new functions and their days counted by months (functions.ts 2.6, dates.ts 1.0) — read as the form is made, before
+// any part could come; the app's own functions and the answers of those that ask, which a value waits for and a save
+// waits on (app-functions.ts 1.4, the form's 1.6); options shown by a condition and carried from another question, taken
+// out of an answer at the form's every write and said (the form's 2.5, choices-from.ts 0.4, choice-options.ts 0.5);
+// their checks as a page is shown (references.ts 1.2); a value asked shown as an ellipsis, said (viewer.ts 0.4); an
+// app function's numbers tidied as Fieldia's own arithmetic tidies them: 503.41 measured before, 516.94 after — 13.5
+// more, to 517.0.
 // All merged for 0.27.0 (provisional until the merged build is measured): 503.41 + 1.11 + 2.68 + 1.74 + 2.16 + 4.00 +
-// 4.31, to 519.5.
-const BUDGET_KB = 519.5;
+// 4.31 + 13.53, to 533.0.
+const BUDGET_KB = 533.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1109,8 +1117,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.1 more, to 164.5.
 // A table line's choices from the app's lists (listed with the raw budget above): 162.94 measured before, 164.41 after
 // — 1.5 more, to 164.5.
-// All merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86 + 0.51 + 0.83 + 1.52 + 1.47, to 168.5.
-const GZIP_BUDGET_KB = 168.5;
+// More functions, the app's own, and options that follow the answers (listed with the raw budget above): 162.94
+// measured before, 167.70 after — 4.76 more, to 167.8.
+// All merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86 + 0.51 + 0.83 + 1.52 + 1.47 + 4.76, to 173.3.
+const GZIP_BUDGET_KB = 173.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1274,10 +1284,16 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // A table line's choice cleared as its connection changed, said under its cell (0.27, w4-line-choices), one word in
 // each: Arabic's 68.38 and 11.83 measured before, 68.50 and 11.84 after, its raw to 68.6; German's 32.03 and 10.44 to
 // 32.09 and 10.45, under its own; French's 32.37 and 10.43 to 32.43 and 10.45, its raw to 32.5.
-// All merged for 0.27.0 (provisional): Arabic's 68.38 + 2.96 + 0.91 + 1.76 + 0.12 and 11.83 + 0.38 + 0.19 + 0.29 + 0.01,
-// to 74.2 and 12.8; German's 32.03 + 1.30 + 0.48 + 0.79 + 0.06 and 10.44 + 0.31 + 0.15 + 0.23 + 0.01, to 34.7 and 11.2;
 // French's 32.37 + 1.26 + 0.53 + 0.84 + 0.06 and 10.43 + 0.34 + 0.17 + 0.25 + 0.02, to 35.1 and 11.3.
-const ADD_ON_BUDGET_KB = { ar: [74.2, 12.8], de: [34.7, 11.2], fr: [35.1, 11.3] };
+// A value an app's function is asked for, its answer not come, and choices a change takes out of an answer (0.27,
+// w4-rules): five words of the form's messages and two of the viewer's, in each language: Arabic's 68.38 and 11.83
+// measured before, 69.14 and 11.96 after, to 69.2 and 12.0; German's 32.03 and 10.44 to 32.44 and 10.55, to 32.5 and
+// 10.6; French's 32.37 and 10.43 to 32.81 and 10.55, to 32.9 and 10.6.
+// All merged for 0.27.0 (provisional): Arabic's 68.38 + 2.96 + 0.91 + 1.76 + 0.12 + 0.76 and 11.83 + 0.38 + 0.19 + 0.29 +
+// 0.01 + 0.13, to 74.9 and 12.9; German's 32.03 + 1.30 + 0.48 + 0.79 + 0.06 + 0.41 and 10.44 + 0.31 + 0.15 + 0.23 + 0.01
+// + 0.11, to 35.1 and 11.3; French's 32.37 + 1.26 + 0.53 + 0.84 + 0.06 + 0.44 and 10.43 + 0.34 + 0.17 + 0.25 + 0.02 +
+// 0.12, to 35.6 and 11.4.
+const ADD_ON_BUDGET_KB = { ar: [74.9, 12.9], de: [35.1, 11.3], fr: [35.6, 11.4] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1618,8 +1634,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // text cell — lines 40.51 and 13.97 measured before, 42.26 and 14.57 after, to 42.3 and 14.6; a list's Import reads a
 // choice that follows another field by each row's own values, once for each — import 37.59 and 14.77 to 38.02 and
 // 14.99, to 38.1 and 15.0.
-// Both lanes' lines, merged for 0.27.0 (provisional): 40.51 + 0.26 + 1.75 and 13.97 + 0.05 + 0.60, to 42.6 and 14.7.
-const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.6, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.1, 15.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], print: [16.9, 5.4] };
+// A choice carried from an earlier question, read by every option it may hold (0.27, w4-rules): its list's cells,
+// groups and filters by their labels — list 110.61 and 35.49 measured before, 110.71 and 35.52 after, to 110.8 and
+// 35.6; Import reading such a choice's every option, and only a list's from the app — import 37.59 and 14.77 to 37.65
+// and 14.80, to 37.7 and 14.9.
+// Both lanes' lines, merged for 0.27.0 (provisional): 40.51 + 0.26 + 1.75 and 13.97 + 0.05 + 0.60, to 42.6 and 14.7;
+// list's 110.61 + 6.90 + 0.10 and 35.49 + 2.36 + 0.03, to 117.7 and 37.9; import's 37.59 + 0.43 + 0.06 and 14.77 + 0.22 +
+// 0.03, to 38.1 and 15.1.
+const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.1, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], print: [16.9, 5.4] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

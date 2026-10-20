@@ -1,6 +1,9 @@
-import { alikeRecords, createMemoryDataSource, scheduleSlots, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
+import { alikeRecords, createMemoryDataSource, scheduleSlots, type AppFunctions, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
+import listing from '../../examples/pages/listing.page.json';
+import visitFeedback from '../../examples/pages/visit-feedback.page.json';
+import { demoFunctions } from './functions';
 import delivery from '../../examples/pages/delivery.page.json';
 import mapDelivery from '../../examples/pages/map-delivery.page.json';
 import mapAddress from '../../examples/pages/map-address.page.json';
@@ -84,6 +87,10 @@ export const pages: Record<string, Page> = {
   // A customer with its invoices and quotations listed inside it, and a home with its viewings: shared/related-lists.ts.
   'customer-account': customerAccount as Page,
   property: property as Page,
+  // A listing's features by its type, its sums and dates worked out, the district's average asked of the app (shared/functions.ts).
+  listing: listing as Page,
+  // A clinic's feedback: the questions after the first offer the treatments ticked in it.
+  'visit-feedback': visitFeedback as Page,
   // A record each of their rows opens: an invoice, a quotation, a viewing.
   invoice: relatedLists.pages.invoice,
   quotation: relatedLists.pages.quotation,
@@ -276,12 +283,15 @@ export function optionsFromQuery(params: URLSearchParams): {
   now?: () => Date;
   listFilter?: ResolvedFilter[];
   listSearch?: Facet[];
+  functions: AppFunctions;
 } {
   const saveStatus = params.get('saveStatus');
   // A portal's page of homes to buy: those for sale, in pounds, whatever the buyer filters.
   const listFilter = filterFromQuery(params) ?? (params.get('page') === 'homes-search' ? HOMES_TO_BUY : undefined);
   const listSearch = searchFromQuery(params);
   return {
+    // The app's own functions its pages' formulas call: a district's average price, asked of its server (shared/functions.ts).
+    functions: demoFunctions,
     // A list kept to one record's records by its address: a related list's View all, by the app's route — said as chips
     // a person may take away ("Customer: Nile Traders"), or conditions kept whatever is searched.
     ...(listFilter ? { listFilter } : {}),

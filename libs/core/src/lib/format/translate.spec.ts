@@ -32,7 +32,8 @@ describe('translatePage', () => {
     for (const name of readdirSync(EXAMPLES).filter((f) => f.endsWith('.page.json')).map((f) => f.replace('.page.json', ''))) {
       const before = page(name);
       const after = translatePage(before, marked);
-      expect(validatePage(after).ok).toBe(true);
+      // The demos' own function a listing calls, as the demos give it (demos/shared/functions.ts).
+      expect(validatePage(after, { functions: { districtPrice: { takes: [1, 1] } } }).ok).toBe(true);
       expect(after.id).toBe(before.id);
       expect(Object.keys(after.fields)).toEqual(Object.keys(before.fields));
     }

@@ -358,16 +358,18 @@ export function createRunner(form: RunForm) {
   const expressions = new Map<string, CompiledExpression>();
   const conditions = new Map<string, CompiledModifier>();
 
+  /** The app's functions the form's expressions call: one table for the form's life. */
+  const functions = () => form.reading().env.functions;
   const expression = (source: string) => {
     let found = expressions.get(source);
-    if (!found) expressions.set(source, (found = compileExpression(source)));
+    if (!found) expressions.set(source, (found = compileExpression(source, functions())));
     return found;
   };
 
   function holds(when: Modifier): boolean {
     if (typeof when === 'boolean') return when;
     let found = conditions.get(when);
-    if (!found) conditions.set(when, (found = compileModifier(when)));
+    if (!found) conditions.set(when, (found = compileModifier(when, functions())));
     const { context, env } = form.reading();
     return found.evaluate(context, env);
   }
@@ -528,7 +530,7 @@ export function createRunner(form: RunForm) {
     for (const [name, source] of Object.entries(map)) {
       const def = fieldOf(name);
       const alone = named(source);
-      const raw = alone === 'id' ? id : alone !== null && !EXPRESSIBLE.has(def.type) && alone in answers ? answers[alone] : expression(source).evaluate(context, { today: form.today });
+      const raw = alone === 'id' ? id : alone !== null && !EXPRESSIBLE.has(def.type) && alone in answers ? answers[alone] : expression(source).evaluate(context, { today: form.today, functions: functions() });
       values[name] = fit(def, raw, label);
     }
     return values;

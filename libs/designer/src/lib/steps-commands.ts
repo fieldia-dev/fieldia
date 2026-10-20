@@ -1,4 +1,4 @@
-import type { ActionStep, AddLineStep, CallStep, CheckStep, GoToStep, OpenStep, OpenUrlStep, Page, PostStep, SayStep, SetStep } from '@fieldia/core';
+import type { ActionStep, AddLineStep, CallStep, CheckStep, FunctionsKnown, GoToStep, OpenStep, OpenUrlStep, Page, PostStep, SayStep, SetStep } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { Refusal } from './refusal';
@@ -42,6 +42,8 @@ export interface StepsCommands {
 export interface StepsCommandsDeps {
   apply(edit: (draft: Page) => void, merge?: string | null): boolean;
   getPage(): Page;
+  /** The app's own functions a formula may call. */
+  functions?: FunctionsKnown;
 }
 
 const KINDS_WITH_FIELD = new Set(['set', 'clear', 'addLine']);
@@ -66,11 +68,11 @@ function withoutEmpty(step: Record<string, unknown>): ActionStep {
  * kept. What it opens, sets, empties or adds to must be there; what it says
  * or asks, the app's action, must be written; its formulas must read.
  */
-export function stepProblem(page: Page, step: ActionStep, words: DesignerWords = en): string | null {
+export function stepProblem(page: Page, step: ActionStep, words: DesignerWords = en, functions?: FunctionsKnown): string | null {
   const w = words.steps;
   const formula = (source: string | undefined) => {
     if (source === undefined) return null;
-    const problem = formulaProblem(page, source, words);
+    const problem = formulaProblem(page, source, words, functions);
     return problem ? problemWords(problem, words) : null;
   };
   if (typeof step.when === 'string') {
@@ -125,7 +127,7 @@ export function stepProblem(page: Page, step: ActionStep, words: DesignerWords =
   }
 }
 
-export function stepsCommands({ apply, getPage }: StepsCommandsDeps): StepsCommands {
+export function stepsCommands({ apply, getPage, functions }: StepsCommandsDeps): StepsCommands {
   /** Change a place's list, as one edit: refused when the place is gone, a step is not one, or a button is left with nothing to do. */
   const change = (place: StepsPlace, edit: (list: ActionStep[], draft: Page) => void, merge: string | null = null) =>
     apply((draft) => {
@@ -138,7 +140,7 @@ export function stepsCommands({ apply, getPage }: StepsCommandsDeps): StepsComma
     }, merge);
   /** A step that cannot be kept is refused, saying why. */
   const refuseIfWrong = (draft: Page, step: ActionStep) => {
-    if (stepProblem(draft, step)) throw new Refusal((w) => stepProblem(draft, step, w) as string);
+    if (stepProblem(draft, step, en, functions)) throw new Refusal((w) => stepProblem(draft, step, w, functions) as string);
   };
   const missing = (path: StepPath) => new Refusal((w) => w.steps.noStep(path[path.length - 1] + 1));
 

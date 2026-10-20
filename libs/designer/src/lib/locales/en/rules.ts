@@ -1,4 +1,8 @@
+import type { ValueKind } from '@fieldia/core';
 import { listOf, plural } from '../speak';
+
+/** The kinds of value, as a sentence names them. */
+const KINDS: Record<ValueKind, string> = { number: 'a number', text: 'text', date: 'a date', boolean: 'yes or no', list: 'a list', any: 'any value' };
 
 const lower = (words: string) => words.charAt(0).toLowerCase() + words.slice(1);
 const letters = (n: number) => plural('en', n, { one: '# letter', other: '# letters' });
@@ -105,6 +109,8 @@ export const rules = {
   unknownField: (name: string) => `Unknown field “${name}”`,
   personHas: (part: string) => `The person has an id, name or roles, not “${part}”`,
   unknownFunction: (name: string) => `Unknown function “${name}”`,
+  /** A value of a kind a function does not take: "“age” takes a date: Notes is text". `given` is the field's label, or the value as written. */
+  wrongKind: (name: string, wants: readonly ValueKind[], given: string, got: ValueKind) => `“${name}” takes ${listOf('en', wants.map((kind) => KINDS[kind]), 'or')}: ${given} is ${KINDS[got]}`,
   /** A function given the wrong values, in the formula reader's own words after its name. */
   takes: (name: string, rest: string) => `“${name}”${rest},`,
   neverClosed: 'A “(” is never closed',

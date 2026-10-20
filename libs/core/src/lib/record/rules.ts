@@ -1,6 +1,6 @@
 import type { Field } from '../format/field';
 import type { AnswerRule } from '../format/layout';
-import type { ExpressionEnv } from '../expression/functions';
+import type { ExpressionEnv, FunctionTable } from '../expression/functions';
 import { localDay } from '../expression/functions';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { isNumber } from '../expression/operations';
@@ -24,13 +24,13 @@ export interface CompiledRule {
   readonly holds: CompiledModifier | null;
 }
 
-export function compileRules(rules: readonly AnswerRule[] | undefined): CompiledRule[] {
+export function compileRules(rules: readonly AnswerRule[] | undefined, functions?: FunctionTable): CompiledRule[] {
   return (rules ?? []).map((rule) => ({
     rule,
-    when: compileModifier(rule.when ?? true),
+    when: compileModifier(rule.when ?? true, functions),
     // A pattern is about the whole answer, not a part of it.
     pattern: rule.pattern === undefined ? null : new RegExp(`^(?:${rule.pattern})$`),
-    holds: rule.holds === undefined ? null : compileModifier(rule.holds),
+    holds: rule.holds === undefined ? null : compileModifier(rule.holds, functions),
   }));
 }
 

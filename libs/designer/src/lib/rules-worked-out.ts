@@ -1,12 +1,13 @@
 import type { Field, FieldNode, Page, SetWhen } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
+import type { DesignerWords } from './designer-words';
 import type { Designer } from './designer';
 import { settingDate, type SettingDate } from './date-setting';
 import { plainNumber, settingNumber, type SettingNumber } from './number-box';
 import { findNode } from './page-tree';
 import { cannotHold } from './rules-commands';
 import { formulaBox } from './rules-formula-box';
-import { formulaProblem, literalOf, sampleResult, wouldCircle } from './rules-formula';
+import { formulaAdvice, formulaProblem, literalOf, problemWords, sampleResult, wouldCircle } from './rules-formula';
 import { pageRules } from './rules-words';
 
 /**
@@ -23,16 +24,57 @@ const WORKED_OUT = new Set(['char', 'text', 'integer', 'float', 'monetary']);
 /** The kinds a value can be set for by a rule: those, choices of one, yes or no, and dates. */
 const SET = new Set([...WORKED_OUT, 'selection', 'boolean', 'date', 'datetime']);
 
-/** The functions offered, with where the cursor goes: the first value to type. */
-const FUNCTIONS: { name: 'round' | 'min' | 'max' | 'if' | 'abs' | 'sum' | 'count' | 'days'; text: string; back: number }[] = [
-  { name: 'round', text: 'round(, 2)', back: 4 },
-  { name: 'min', text: 'min(, )', back: 3 },
-  { name: 'max', text: 'max(, )', back: 3 },
-  { name: 'if', text: 'if(, , )', back: 5 },
-  { name: 'abs', text: 'abs()', back: 1 },
-  { name: 'sum', text: "sum(, '')", back: 5 },
-  { name: 'count', text: 'count()', back: 1 },
-  { name: 'days', text: 'days(, today())', back: 10 },
+type FunctionName = keyof DesignerWords['rulesUi']['functionTips'];
+type FunctionGroup = keyof DesignerWords['rulesUi']['functionGroups'];
+
+/** The functions offered, by what they work on, each with what is put in and where the cursor goes: the first value to type. */
+const FUNCTIONS: [FunctionGroup, { name: FunctionName; text: string; back: number }[]][] = [
+  [
+    'numbers',
+    [
+      { name: 'round', text: 'round(, 2)', back: 4 },
+      { name: 'roundMoney', text: 'roundMoney(, )', back: 3 },
+      { name: 'min', text: 'min(, )', back: 3 },
+      { name: 'max', text: 'max(, )', back: 3 },
+      { name: 'abs', text: 'abs()', back: 1 },
+      { name: 'sum', text: "sum(, '')", back: 5 },
+      { name: 'count', text: 'count()', back: 1 },
+      { name: 'average', text: 'average()', back: 1 },
+    ],
+  ],
+  [
+    'dates',
+    [
+      { name: 'today', text: 'today()', back: 0 },
+      { name: 'days', text: 'days(, today())', back: 10 },
+      { name: 'age', text: 'age()', back: 1 },
+      { name: 'years', text: 'years(, today())', back: 10 },
+      { name: 'months', text: 'months(, today())', back: 10 },
+      { name: 'addDays', text: 'addDays(, 1)', back: 4 },
+      { name: 'addMonths', text: 'addMonths(, 1)', back: 4 },
+      { name: 'addYears', text: 'addYears(, 1)', back: 4 },
+    ],
+  ],
+  [
+    'words',
+    [
+      { name: 'contains', text: "contains(, '')", back: 5 },
+      { name: 'startsWith', text: "startsWith(, '')", back: 5 },
+      { name: 'endsWith', text: "endsWith(, '')", back: 5 },
+      { name: 'upper', text: 'upper()', back: 1 },
+      { name: 'lower', text: 'lower()', back: 1 },
+      { name: 'join', text: "join(' ', )", back: 1 },
+      { name: 'len', text: 'len()', back: 1 },
+    ],
+  ],
+  [
+    'choosing',
+    [
+      { name: 'if', text: 'if(, , )', back: 5 },
+      { name: 'empty', text: 'empty()', back: 1 },
+      { name: 'firstOf', text: 'firstOf(, )', back: 3 },
+    ],
+  ],
 ];
 
 interface Own {
@@ -63,24 +105,41 @@ export function workedOutSetting(el: ElementFactory, designer: Designer, id: str
     label: w.workedOutFrom,
     placeholder: w.typeAName,
     own: () => own?.name,
-    check: (page, source) => formulaProblem(page, source, words) ?? (own && wouldCircle(page, own.name, source) ? { words: wouldCircle(page, own.name, source, words) as string } : null),
+    check: (page, source) => formulaProblem(page, source, words, designer.functions()) ?? (own && wouldCircle(page, own.name, source) ? { words: wouldCircle(page, own.name, source, words) as string } : null),
     commit(source) {
       const was = own?.def.compute ?? '';
       if (source === was) return;
       designer.setCompute(id, source || null);
     },
-    said: (page, source) => (own ? sampleResult(page, own.name, source, words) : ''),
+    // A value of a kind a function does not take is said in the result's place: kept, it gives nothing there.
+    said: (page, source) => {
+      const advice = formulaAdvice(page, source, words, designer.functions());
+      if (advice) return { warn: problemWords(advice, words) };
+      return own ? sampleResult(page, own.name, source, words, designer.functions()) : '';
+    },
+  });
+  /** A function's button: its tip on pointing at it, and put in where the cursor is. */
+  const offer = (name: string, tip: string, text: string, back: number) => {
+    const button = el('button', { type: 'button', class: 'fd-formula-function', title: tip }, name);
+    // The box keeps its cursor: the function goes in where it was.
+    button.addEventListener('mousedown', (event) => event.preventDefault());
+    button.addEventListener('click', () => box.insert(text, back));
+    return button;
+  };
+  const group = (title: string, buttons: HTMLElement[]) => {
+    const heading = el('span', { class: 'fd-formula-group-name' }, title);
+    return el('div', { class: 'fd-formula-group', role: 'group', 'aria-label': title }, heading, ...buttons);
+  };
+  // The app's own, after Fieldia's, each with the words it gave.
+  const appFunctions = Object.entries(designer.functions() ?? {}).map(([name, entry]) => {
+    const tip = typeof entry === 'function' ? undefined : entry.tip;
+    return offer(name, tip ?? w.appFunctionTip(name), `${name}()`, 1);
   });
   const functions = el(
     'div',
     { class: 'fd-formula-functions', role: 'group', 'aria-label': w.functions },
-    ...FUNCTIONS.map((fn) => {
-      const button = el('button', { type: 'button', class: 'fd-formula-function', title: w.functionTips[fn.name] }, fn.name);
-      // The box keeps its cursor: the function goes in where it was.
-      button.addEventListener('mousedown', (event) => event.preventDefault());
-      button.addEventListener('click', () => box.insert(fn.text, fn.back));
-      return button;
-    })
+    ...FUNCTIONS.map(([title, list]) => group(w.functionGroups[title], list.map((fn) => offer(fn.name, w.functionTips[fn.name], fn.text, fn.back)))),
+    ...(appFunctions.length ? [group(w.functionGroups.app, appFunctions)] : [])
   );
   const hint = el('p', { class: 'fd-properties-hint fd-set-hint' });
   const element = el('div', { class: 'fd-prop fd-worked-out', 'data-tab': 'rules', 'data-setting': 'Worked out from' }, el('span', { class: 'fd-prop-name' }, w.workedOutFrom), box.element, functions, box.problem, box.result, hint);
@@ -221,7 +280,7 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
       words,
       label: w.when,
       placeholder: w.whenPlaceholder,
-      check: (p, source) => formulaProblem(p, source, words),
+      check: (p, source) => formulaProblem(p, source, words, designer.functions()),
       commit(source) {
         when = source;
         save();
@@ -241,7 +300,7 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
     function save() {
       if (!own) return;
       const expression = raw ? value.value.trim() : number ? (typedNumber === null ? null : plainNumber(typedNumber)) : date ? (typedDate === null ? null : `'${typedDate}'`) : literalFrom(own.def, value.value);
-      const wrong = !expression ? null : raw ? formulaProblem(page, expression, words)?.words ?? null : cannotHold(own.def, own.node.label ?? own.def.label, expression, words);
+      const wrong = !expression ? null : raw ? formulaProblem(page, expression, words, designer.functions())?.words ?? null : cannotHold(own.def, own.node.label ?? own.def.label, expression, words);
       problem.textContent = wrong ?? '';
       problem.hidden = !wrong;
       if (!expression || !(when || as.value) || wrong) return;

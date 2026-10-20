@@ -1,4 +1,4 @@
-import { compileModifier, expressionContext, isRightToLeft, type FileValue, type LineField, type Locale, type MoneyLook, type Page, type Pin, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, expressionContext, isRightToLeft, type FileValue, type LineField, type Locale, type MoneyLook, type Page, type Pin, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
 import { currencyOf, displayValue, drawIcon, moneyReads, writeMoney, type IconSet } from '@fieldia/widgets';
 import { MAP_ICONS } from './map-icons';
 
@@ -57,7 +57,8 @@ export function makePins(options: PinsOptions): Pins {
   const icons: IconSet = { ...MAP_ICONS, ...options.icons };
   const look = pin.widget ? 'own' : (pin.look ?? (pin.label ? 'label' : pin.image ? 'photo' : pin.icon || pin.iconField ? 'icon' : 'pin'));
   const drawer = pin.widget ? options.drawers?.[pin.widget] : undefined;
-  const tones = (pin.tones ?? []).map(({ tone, when }) => ({ tone, when: compileModifier(when) }));
+  // Drawn apart from the form: a call of the app's own functions gives nothing on a pin.
+  const tones = (pin.tones ?? []).map(({ tone, when }) => ({ tone, when: compileModifier(when, ANY_FUNCTION) }));
   const money = pinMoney(page, pin, options.homeCurrency);
   const fields = [
     ...new Set(

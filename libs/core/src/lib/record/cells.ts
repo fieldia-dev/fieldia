@@ -1,6 +1,6 @@
 import type { ButtonNode, CellRules, FieldNode, Tone, ToneWhen } from '../format/layout';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
-import type { ExpressionEnv } from '../expression/functions';
+import type { ExpressionEnv, FunctionTable } from '../expression/functions';
 import { rolesAllow } from './roles';
 
 /** A cell of a table's line, as its rules have it now. */
@@ -53,33 +53,34 @@ export interface FieldTone {
 }
 
 /** A field node's tones and bold, read once; read on the record. */
-export function compileFieldTone(node: Pick<FieldNode, 'tones' | 'bold'>): (context: Record<string, unknown>, env: ExpressionEnv) => FieldTone {
-  const tones = tonesOf(node.tones);
-  const bold = compileModifier(node.bold);
+export function compileFieldTone(node: Pick<FieldNode, 'tones' | 'bold'>, functions?: FunctionTable): (context: Record<string, unknown>, env: ExpressionEnv) => FieldTone {
+  const tones = tonesOf(node.tones, functions);
+  const bold = compileModifier(node.bold, functions);
   return (context, env) => ({ tone: toneNow(tones, context, env), bold: bold.evaluate(context, env) });
 }
 
-const tonesOf = (list: readonly ToneWhen[] | undefined): CompiledTone[] => (list ?? []).map((item) => ({ tone: item.tone, when: compileModifier(item.when) }));
+const tonesOf = (list: readonly ToneWhen[] | undefined, functions?: FunctionTable): CompiledTone[] => (list ?? []).map((item) => ({ tone: item.tone, when: compileModifier(item.when, functions) }));
 const toneNow = (list: readonly CompiledTone[], context: Record<string, unknown>, env: ExpressionEnv) => list.find((item) => item.when.evaluate(context, env))?.tone ?? null;
 
-export function compileTable(node: FieldNode): CompiledTable {
+export function compileTable(node: FieldNode, functions?: FunctionTable): CompiledTable {
+  const read = (modifier: CellRules['invisible']) => compileModifier(modifier, functions);
   const cells = new Map<string, CompiledCell>();
   for (const [column, rules] of Object.entries(node.cells ?? {}) as [string, CellRules][]) {
     cells.set(column, {
-      invisible: compileModifier(rules.invisible),
-      readonly: compileModifier(rules.readonly),
-      required: compileModifier(rules.required),
-      hidden: compileModifier(rules.hidden),
+      invisible: read(rules.invisible),
+      readonly: read(rules.readonly),
+      required: read(rules.required),
+      hidden: read(rules.hidden),
       ...(rules.roles?.length ? { roles: rules.roles } : {}),
-      tones: tonesOf(rules.tones),
-      bold: compileModifier(rules.bold),
+      tones: tonesOf(rules.tones, functions),
+      bold: read(rules.bold),
     });
   }
-  const rowTones = tonesOf(node.rowTones);
-  const rowBold = compileModifier(node.rowBold);
-  const lineDelete = node.lineDelete === undefined ? null : compileModifier(node.lineDelete);
+  const rowTones = tonesOf(node.rowTones, functions);
+  const rowBold = read(node.rowBold);
+  const lineDelete = node.lineDelete === undefined ? null : read(node.lineDelete);
   const buttons = node.rowButtons ?? [];
-  const shown = buttons.map((button) => ({ id: button.id, roles: button.roles, invisible: compileModifier(button.invisible) }));
+  const shown = buttons.map((button) => ({ id: button.id, roles: button.roles, invisible: read(button.invisible) }));
   return {
     buttons,
     line(context, env, roles) {

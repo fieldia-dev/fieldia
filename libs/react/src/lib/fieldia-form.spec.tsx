@@ -106,6 +106,21 @@ describe('<FieldiaForm>', () => {
     expect(screen.getByRole('button', { name: 'Lock' })).toBeDefined();
   });
 
+  it('hands the form the app’s functions, each call reaching the newest given, mounting again only for a new name', () => {
+    const priced: Page = { ...pricing, fields: { ...pricing.fields, total: { type: 'float', label: 'Total', compute: 'withTax(price)' } } };
+    let mounts = 0;
+    let handle: ViewerHandle | null = null;
+    const { rerender } = render(<FieldiaForm page={priced} functions={{ withTax: (price: number) => price * 2 }} onReady={(h) => ((handle = h), mounts++)} />);
+    act(() => handle?.form.setValue('price', 100));
+    expect(handle!.form.getState().values['total']).toBe(200);
+    rerender(<FieldiaForm page={priced} functions={{ withTax: (price: number) => price * 3 }} onReady={(h) => ((handle = h), mounts++)} />);
+    act(() => handle?.form.setValue('price', 200));
+    expect(handle!.form.getState().values['total']).toBe(600);
+    expect(mounts).toBe(1);
+    rerender(<FieldiaForm page={priced} functions={{ withTax: (price: number) => price * 3, other: () => 1 }} onReady={(h) => ((handle = h), mounts++)} />);
+    expect(mounts).toBe(2);
+  });
+
   it('switches skin without mounting again', () => {
     let mounts = 0;
     const survey = page('survey');

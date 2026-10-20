@@ -243,7 +243,7 @@ ${code(
   "readonly": "state in ('done', 'cancel') or not is_company" }`
 )}
 <p>Expressions read like Python: ${c('==')} ${c('!=')} ${c('<')} ${c('>')} ${c('<=')} ${c('>=')}, ${c('in')} and ${c('not in')} with a list — ${c("['draft', 'sent']")}, or Python’s tuple ${c("('draft', 'sent')")} as Flectra writes it — ${c('and')} ${c('or')} ${c('not')}, ${c('True')} ${c('False')} ${c('None')}, numbers and quoted strings. An empty value is false, and as in Python ${c('and')} and ${c('or')} give the value that decided: ${c('discount or 0')} is a number. Conditions are checked again on every change, and a hidden field's value is left out of what is saved or submitted.</p>
-<p>A field's ${c('compute')} — a value worked out as people type — and ${c('setWhen')} use the same expressions, with arithmetic and functions: ${c('round(x, 2)')}, ${c('abs')}, ${c('min')}, ${c('max')}, ${c('len')}, ${c('if(condition, a, b)')}, ${c('today()')}, ${c('days(from, to)')}, and over a table's lines ${c("sum(lines, 'amount')")} and ${c('count(lines)')}, each taking a condition on the lines in quotes: ${c(`count(requirement_ids, "state == 'done'")`)}. While what a value is worked out from holds text that does not read — "abc" in a line's Quantity — the value waits, a dash said in words (<em>Fix line 1 of Order lines to see Untaxed amount</em>), as the table's own total does: never an amount counting the value that text replaced. An amount your app works out as the lines change (read-only, from a source with an onchange) waits the same.</p>
+<p>A field's ${c('compute')} — a value worked out as people type — and ${c('setWhen')} use the same expressions, with arithmetic and <a href="#functions">functions</a>: ${c('round(x, 2)')}, ${c('age(birth_date)')}, ${c('addMonths(first_due, 1)')}, ${c("join(' ', first_name, last_name)")}, and over a table's lines ${c("sum(lines, 'amount')")} and ${c('count(lines)')}, each taking a condition on the lines in quotes: ${c(`count(requirement_ids, "state == 'done'")`)}. While what a value is worked out from holds text that does not read — "abc" in a line's Quantity — the value waits, a dash said in words (<em>Fix line 1 of Order lines to see Untaxed amount</em>), as the table's own total does: never an amount counting the value that text replaced. An amount your app works out as the lines change (read-only, from a source with an onchange) waits the same.</p>
 <p>A ${c('setWhen')} acts as its condition starts to hold; with ${c('on')}, as one of those fields changes instead — Flectra's onchange: ${c(`{ "on": ["certification"], "when": "certification", "value": "'scoring_without_answers'" }`)} sets the scoring when Certification is ticked, and never as something else makes its condition hold. Its ${c('when')} may then be left out: set at every change.</p>
 <p>A section's ${c('readonly')} locks every field inside it, sections within it too: a blocked customer's whole credit section, say.</p>
 <p>Besides the page's fields, a condition reads ${c('id')}, the record's id — empty while it is new, so ${c('not id')} hides what only a saved record can do — and ${c('user')}, the person the app says is using the form: ${c('user.id')}, ${c('user.name')} and ${c('user.roles')}. A page's own field of the same name comes first. On a line — a worked-out value, a value set by a condition — ${c('parent')} is the record the line is on: ${c('parent.discount')}, ${c("parent.state == 'sale'")}. A link's filter may compare with any of these too, its ${c('valueFrom')} naming ${c('user.id')}, or on a line ${c('parent.company_id')}.</p>
@@ -253,6 +253,42 @@ ${code('json', `{ "type": "button", "id": "lock", "label": "Lock", "action": "ac
 <p>${c('context')} holds the values your app passes in, as Flectra's context: ${c("mountViewer(host, { page, context: { restricted_picking_type_code: 'incoming' } })")} — the same ${c('context')} option in React, Vue and Angular, and on ${c('createForm')}. A condition reads ${c("context.restricted_picking_type_code == 'incoming'")}, and a link's filter compares with one, ${c('{ "field": "code", "op": "=?", "valueFrom": "context.restricted_picking_type_code" }')} — with ${c('=?')}, left out when the app gives none. They are the app's values, never the page's: nothing saves them, a dialog the page opens reads the same ones, and a page's own field named ${c('context')} comes first. The designer's conditions read them too.</p>
 <p>${c('editing')} says whether the record is being edited: false while a view shows it locked — the Edit switch before Edit is pressed, or the app's ${c('setReadonly(true)')}. ${c('"invisible": "not editing"')} is a part for editing only, Flectra's ${c('oe_edit_only')}, and ${c('"invisible": "editing"')} one for reading only; a form always being edited shows its editing parts. In the designer it is Shown while.</p>
 <p>A condition that names a field the page does not have is refused when the page is checked, not when someone fills it in.</p>
+
+<h2 id="functions">Functions, and your app's own</h2>
+<p>Fieldia's own, by what they work on:</p>
+<ul>
+  <li><strong>Numbers.</strong> ${c('round(x, 2)')}, ${c('roundMoney(amount, currency)')} — to the currency's places, three for a dinar, none for a yen; the currency a code or a link to one —, ${c('min')}, ${c('max')}, ${c('abs')}, ${c("sum(lines, 'amount')")}, ${c('count(lines)')}, ${c("average(lines, 'price')")} or ${c('average(a, b, c)')}, the empty ones left out.</li>
+  <li><strong>Dates.</strong> ${c('today()')} on the page's clock, ${c('days(from, to)')}, ${c('age(birth_date)')} in whole years, ${c('years(from, to)')}, ${c('months(from, to)')}, ${c('addDays(day, n)')}, ${c('addMonths(day, n)')} — 31 January and a month is 28 February, and ${c('months')} counts the same way —, ${c('addYears(day, n)')}. A date and time keeps its time.</li>
+  <li><strong>Words.</strong> ${c("contains(email, '@gmail.')")}, ${c("startsWith(phone, '+20')")}, ${c('endsWith')}, whatever the case — ${c('contains')} also finds a value among choices ticked —, ${c('upper')}, ${c('lower')}, ${c("join(' ', first_name, last_name)")}, the empty ones left out, ${c('len')}.</li>
+  <li><strong>Choosing.</strong> ${c('if(condition, a, b)')}, ${c('empty(phone)')} — zero and no are values —, ${c("firstOf(nickname, first_name, 'friend')")}.</li>
+</ul>
+<p>A function there is not, or given too many or too few values, is refused as the page is read. A value of a kind a function does not take — ${c('age(notes)')}: <em>age takes a date as its first value; "notes" is text</em> — is a warning, never a refusal: ${c('validatePage')} passes the page and says it in ${c('warnings')}, the designer as a fix to make, and the form runs it as before, the call giving nothing. A function given a value it cannot use gives nothing, never an error.</p>
+<p>Your app gives its own with ${c('functions')}, on the viewer, ${c('createForm')}, the React, Vue and Angular components and the designer, and a page calls them by name. One that asks your server returns a promise: the value worked out from it shows an ellipsis while it is asked — <em>Working out Total…</em> —, is asked once for the same values, and is laid only on the record it was asked for; a save waits for it, and one whose answer did not come is asked again as the person saves.</p>
+${code(
+  'ts',
+  `
+mountViewer(host, {
+  page,
+  functions: {
+    vatRate: { takes: [1, 1], values: ['text'], gives: 'number', call: (country) => RATES[country] ?? 0 },
+    districtPrice: { asks: true, call: (district) => api.average(district) },   // a promise
+  },
+});`
+)}
+
+<h2 id="option-rules">Options that follow the answers</h2>
+<p>An option may show only while a condition holds — written as a part's ${c('invisible')} — and a choice may offer the options picked in an earlier one, its own after them:</p>
+${code(
+  'json',
+  `
+"features": { "type": "selection", "label": "Features", "multiple": true, "options": [
+  { "value": "garden", "label": "Garden", "invisible": "unit_type != 'villa'" },
+  { "value": "lift",   "label": "Lift",   "invisible": "unit_type == 'villa'" } ] },
+"again": { "type": "selection", "label": "Which would you have again?",
+  "options": [{ "value": "none", "label": "None of them" }],
+  "optionsFrom": { "field": "treatments" } }`
+)}
+<p>With ${c('"picked": false')}, the options left unpicked there; a <em>None of these</em> is never carried. A chosen option a change no longer offers is taken out of the answer and said under its field — <em>Garden is no longer offered, so it was taken out</em> — never silently kept; one a record held as it was opened stays, and is said to be no longer offered. In the designer: <strong>Show when…</strong> in an option's row, and <strong>Picked in another question</strong> among a choice's Choices.</p>
 
 <h2 id="checking">Checking a page</h2>
 ${code(

@@ -1,5 +1,5 @@
 import type { SheetCell } from './xlsx';
-import { MESSAGES, recordSentence, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value } from '@fieldia/core';
+import { MESSAGES, optionsList, recordSentence, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value } from '@fieldia/core';
 import { dateOrderOf, displayValue, drawIcon, keepTabIn, loadLinesPart, loadPhonePart, phoneSettings, WIDGET_LABELS, type IconSet, type LinesPart, type PhonePart } from '@fieldia/widgets';
 import { checkRows, type CheckedRow, type RowsCheck } from './import-check';
 import { ENCODING_SCRIPT, ENCODINGS, FileProblem, readFile, SEPARATORS, type FileCell, type FileSheet, type PickedFile, type ReadHow } from './import-file';
@@ -431,7 +431,8 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
       // A choice that changes with another field is asked by the row's values: a row's city by its own country.
       options: async (field, values) => {
         const def = page.fields[field];
-        return def.type === 'selection' && def.optionsFrom && context.dataSource.options ? context.dataSource.options({ list: def.optionsFrom.list, values }) : [];
+        const from = def.type === 'selection' ? optionsList(def.optionsFrom) : undefined;
+        return from && context.dataSource.options ? context.dataSource.options({ list: from.list, values }) : [];
       },
     };
     let rows: CheckedRow[];

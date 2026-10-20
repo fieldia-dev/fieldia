@@ -1,5 +1,6 @@
 import type { ActionStep } from '../format/actions';
-import type { DefinitionsFrom, Field, Fields, LineField, Option, OptionsFrom, PropertyDefinition } from '../format/field';
+import type { DefinitionsFrom, Field, Fields, LineField, Option, PropertyDefinition, SelectionOption } from '../format/field';
+import { optionsField, optionsList } from '../format/choice-options';
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { PageEnding } from '../format/endings';
@@ -8,14 +9,15 @@ import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
 import { zonedPage } from '../format/zoned';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
-import type { ExpressionEnv } from '../expression/functions';
+import type { Answered, ExpressionEnv, FunctionTable } from '../expression/functions';
+import { functionTable, type AppFunctions } from '../expression/app-functions';
 import { dayIn, ownZone } from './zones';
 import { checkProperties, checkValue } from './check';
 import { checkInput } from './inputs';
-import { compileComputed } from './compute';
+import { compileComputed, type AskedFor } from './compute';
 import { compileSetWhen } from './set-when';
 import { checkRules, compileRules, type CompiledRule } from './rules';
-import { expressionEnv, lineContext, recordContext } from './env';
+import { expressionEnv, lineContext, recordContext, type AppReads } from './env';
 import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-map';
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
@@ -138,6 +140,18 @@ export interface FormState {
    * send, and again once the form starts a new response (`reset`).
    */
   readonly sent?: SentResponse | null;
+  /**
+   * Values worked out from an app's function that asks its server (`functions`) with no answer yet, by path (a
+   * line's `field.lineKey.subfield`): waiting for it (`{}`) — the value empty meanwhile, a save waiting for it — or
+   * why it did not come (`failed`), which a save asks again and, failing, is stopped by under its field.
+   */
+  readonly asked: Readonly<Record<string, AskedFor>>;
+  /**
+   * Words said under a choice whose chosen options a change of other answers no longer offers — hidden by their
+   * condition, or no longer picked where they are carried from — by field: they were taken out of its answer. Until
+   * the field is written again, or another record is shown.
+   */
+  readonly takenOut: Readonly<Record<string, string>>;
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -353,6 +367,13 @@ export interface FormOptions {
    * anything else as it is held.
    */
   valueWords?: (field: Field, value: Value | undefined, values: Readonly<Values>) => string;
+  /**
+   * The app's own functions, which the page's expressions call by name besides Fieldia's: `vatRate(country)`. Each a
+   * plain function, or `{ call, takes, values, gives, tip }`. One that asks the app's server gives a promise: a value
+   * worked out from it waits while it is asked — once for the same values, for the record shown — and a save waits
+   * for it; a condition reading it does not hold meanwhile. A name a page cannot call is refused as the form is made.
+   */
+  functions?: AppFunctions;
 }
 
 /** The person using a form, as the app knows them. */
@@ -365,6 +386,8 @@ export interface FormUser {
 
 export interface Form {
   readonly page: Page;
+  /** The app's own functions as the page's expressions call them (`FormOptions.functions`): for what reads its conditions apart. */
+  readonly functions?: FunctionTable;
   getState(): FormState;
   subscribe(listener: (state: FormState) => void): () => void;
   load(): Promise<void>;
@@ -533,6 +556,14 @@ export interface Form {
    * pasted on it, its connection read first. `key` null: a line not added yet, by the values one added now starts with.
    */
   lineChoices(field: string, key: string | null, subfield: string, values?: Values): Promise<Option[]>;
+  /**
+   * The options a choice offers now: its own — or those its list gave (`optionsFrom.list`), or those picked in the
+   * question they are carried from (`optionsFrom.field`), its own after them — less those whose condition hides them
+   * (`options[].invisible`). Null for a field that is no choice.
+   */
+  offered(field: string): readonly Option[] | null;
+  /** Whether a choice's options change with the record's answers: a condition on one, or carried from another question. */
+  offersChange(field: string): boolean;
   /**
    * Load, or load again, the definitions of a properties field whose
    * definitions come from a linked record (`definitionsFrom`). Once loaded,
@@ -847,25 +878,56 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const messages: Messages = page.lowerLabels ? { ...(options.messages ?? MESSAGES.en), lowerLabels: true } : (options.messages ?? MESSAGES.en);
   /** One of the form's sentences in the words the page names its records by (`records`), else as the language says it plainly. */
   const named = (noun: string | undefined, plain: string) => recordSentence(page.records, noun, plain, messages.locale);
-  const index = indexLayout(page.layout);
+  /** The app's functions the page's expressions call: a name none may call is refused now. */
+  const table = functionTable(options.functions);
+  /**
+   * The answers of the app's functions that ask, for the record shown (`ExpressionEnv.answer`), by function and
+   * values: each asked once, `asking` until it comes. Another record shown, they start again: an answer for the last
+   * one is laid on none.
+   */
+  let answers = new Map<string, Answered | 'asking'>();
+  /** Those on their way: a save waits for them. */
+  const asking = new Set<Promise<unknown>>();
+  function answer(key: string, asked?: PromiseLike<unknown>): Answered | 'asking' | undefined {
+    const kept = answers.get(key);
+    if (kept !== undefined || !asked) return kept;
+    const map = answers;
+    map.set(key, 'asking');
+    const land = (found: Answered) => {
+      asking.delete(going);
+      if (map !== answers || disposed) return;
+      map.set(key, found);
+      answered();
+    };
+    const going: Promise<void> = Promise.resolve(asked).then(
+      (value) => land({ value: value === undefined ? null : value }),
+      (error: unknown) => land({ value: null, failed: error instanceof Error ? error.message : String(error) })
+    );
+    asking.add(going);
+    track(going);
+    return 'asking';
+  }
+  /** What every expression of the form is handed of the app's. */
+  const app: AppReads = table ? { functions: table, answer } : {};
+  const index = indexLayout(page.layout, table);
   /** Each field node's answer rules, read once. */
   const nodeRules = new Map<string, CompiledRule[]>();
   for (const node of index.values()) {
     const rules = (node.source as { validate?: FieldNode['validate'] }).validate;
-    if (node.kind === 'field' && rules) nodeRules.set(node.id, compileRules(rules));
+    if (node.kind === 'field' && rules) nodeRules.set(node.id, compileRules(rules, table));
   }
   /** Tables of lines with rules of their own, by their field node: each read once. */
   const tables = new Map<string, { field: string; compiled: CompiledTable }>();
   for (const node of index.values()) {
     const source = node.source as FieldNode;
     if (node.kind !== 'field' || page.fields[source.field]?.type !== 'one2many') continue;
-    if (source.cells || source.rowTones || source.rowBold !== undefined || source.rowButtons || source.lineDelete !== undefined) tables.set(node.id, { field: source.field, compiled: compileTable(source) });
+    if (source.cells || source.rowTones || source.rowBold !== undefined || source.rowButtons || source.lineDelete !== undefined) tables.set(node.id, { field: source.field, compiled: compileTable(source, table) });
   }
   /** Field nodes whose value takes a tone or bold, by id: each read once. */
   const fieldTones = new Map<string, ReturnType<typeof compileFieldTone>>();
   for (const node of index.values()) {
     const source = node.source as FieldNode;
-    if (node.kind === 'field' && (source.tones || source.bold !== undefined)) fieldTones.set(node.id, compileFieldTone(source));
+    if (node.kind === 'field' && (source.tones || source.bold !== undefined)) fieldTones.set(node.id, compileFieldTone(source, table));
   }
   /** The tables whose lines load in an order of their own fields, by the field: the first node to give one. */
   const lineOrders = new Map<string, NonNullable<FieldNode['order']>>();
@@ -888,7 +950,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** The words of each field's empty box chosen by conditions, by its node: read once. */
   const placeholders = new Map<string, { fixed?: string; when: { text: string; holds: CompiledModifier }[] }>();
   const placeholderOf = (id: string, own: { placeholder?: string; placeholderWhen?: FieldNode['placeholderWhen'] }) => {
-    if (own.placeholderWhen?.length) placeholders.set(id, { fixed: own.placeholder, when: own.placeholderWhen.map((item) => ({ text: item.text, holds: compileModifier(item.when) })) });
+    if (own.placeholderWhen?.length) placeholders.set(id, { fixed: own.placeholder, when: own.placeholderWhen.map((item) => ({ text: item.text, holds: compileModifier(item.when, table) })) });
   };
   for (const node of index.values()) if (node.kind === 'field' && 'type' in node.source) placeholderOf(node.id, node.source as FieldNode);
   if (page.layout.type === 'sheet' && page.layout.title) placeholderOf('#title', page.layout.title);
@@ -918,10 +980,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Whether the record is being edited now: not while a view locks it, nor when its source lets the person only read it. */
   const editingNow = () => editing && !(started && state.can?.edit === false);
   const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing: editingNow(), context: options.context, parent: parentContext });
-  const computed = compileComputed(page, today, about);
+  const computed = compileComputed(page, today, about, app);
   /** Each value worked out from others — by the page, or by the app as the lines change — and what it waits for. */
-  const workedOut = workedOutFrom(page, !!options.dataSource?.onchange && page.data.kind === 'record', !!options.parent);
-  const setWhen = compileSetWhen(page, today, about);
+  const workedOut = workedOutFrom(page, !!options.dataSource?.onchange && page.data.kind === 'record', !!options.parent, table);
+  const setWhen = compileSetWhen(page, today, about, app);
   /** The saved forms placed on the page, by the part's id: each one's answers sit under its name, as JSON. */
   const parts = new Map<string, FormNode>();
   for (const node of index.values()) if (node.kind === 'form') parts.set(node.id, node.source as FormNode);
@@ -968,7 +1030,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const values = initialValues(fields, today());
     if (isNew) {
       const about = { recordId: null, user: options.user, context: options.context, parent: parentContext };
-      Object.assign(values, firstValues(page.fields, mapScope(values, page.fields, recordContext(values, page.fields, about), expressionEnv(values, page.fields, today))));
+      Object.assign(values, firstValues(page.fields, mapScope(values, page.fields, recordContext(values, page.fields, about), expressionEnv(values, page.fields, today, app))));
     }
     return given ? ordered({ ...values, ...structuredCopy(options.values ?? {}) }) : values;
   }
@@ -999,7 +1061,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   function lineScope(field: string, values: Values): MapScope {
     const def = lineField(field);
     const lineFields = def.fields as Record<string, LineField>;
-    return mapScope(values, lineFields, lineContext(values, lineFields, reading().context), { today }, { values: state.values as Values, fields: page.fields });
+    return mapScope(values, lineFields, lineContext(values, lineFields, reading().context), { ...app, today }, { values: state.values as Values, fields: page.fields });
   }
 
   function tableOf(nodeId: string) {
@@ -1017,7 +1079,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const line = ((state.values[table.field] as Line[] | null) ?? []).find((l) => l.key === key);
     if (!line) throw new Error(`"${table.field}" has no line "${key}"`);
     const def = lineField(table.field);
-    return table.compiled.line(lineContext(line.values, def.fields as Record<string, LineField>, reading().context, line.id ?? null), { today }, userRoles);
+    return table.compiled.line(lineContext(line.values, def.fields as Record<string, LineField>, reading().context, line.id ?? null), { ...app, today }, userRoles);
   }
 
   function createValuesOf(field: string, line?: { lines: string; key: string }): Values {
@@ -1031,7 +1093,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return readLooseMap(sub.createValues, lineScope(line.lines, found.values));
   }
 
-  let baseline: Values = computed.apply(startingValues());
+  /** The values worked out from an app's function that asks with no answer yet, as the values shown last settled. */
+  let askedNow: Map<string, AskedFor> = new Map();
+  let baseline: Values = computed.apply(startingValues(), askedNow);
   /** The setWhen conditions holding for the values as they last settled: one starts to hold only against these. */
   let holding = setWhen.holding(baseline);
   let state: FormState = {
@@ -1059,6 +1123,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     leaving: false,
     unread: {},
     sent: null,
+    asked: Object.fromEntries(askedNow),
+    takenOut: {},
   };
   started = true;
   /**
@@ -1256,6 +1322,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     state = { ...state, ...patch };
     // A line's choices go with their line; a choice named as cleared is no longer said once its value changes.
     if (state.values !== was) state = { ...state, choices: choicesNow(state.choices, was) };
+    // What waits for an app's answer, as the values shown last settled.
+    if (patch.values !== undefined && patch.asked === undefined && !sameAsked(state.asked, askedNow)) state = { ...state, asked: Object.fromEntries(askedNow) };
     // The person's changes the last save did not send, worked out again from the values as they are now, and from the
     // text they left that does not read.
     if (patch.unsent === undefined && (patch.values !== undefined || patch.unread !== undefined)) {
@@ -1268,7 +1336,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
       // After someone's change, a choice its new choices do not offer is cleared and named, as a line's is.
-      for (const name in state.choices) if (!name.includes('.') && fromList(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadChoices(name, edited);
+      for (const name in state.choices) if (!name.includes('.') && fromList(name)?.dependsOn?.some((other) => was[other] !== state.values[other])) loadChoices(name, edited);
       for (const name in state.definitions) if (fromRecord(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadDefinitions(name);
       if (listed.length) followLines(was, edited);
     }
@@ -1297,6 +1365,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     generation++;
     // Another record's lines ask the source anew.
     lineAsks = new Map();
+    answers = new Map();
     personal.clear();
     personalLines.clear();
     filed.clear();
@@ -1415,7 +1484,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     }
   }
 
-  const fromList = (name: string) => (page.fields[name] as Extract<Field, { type: 'selection' }>).optionsFrom as OptionsFrom;
+  /** The app's list a choice's options come from; none for one whose options are its own or carried. */
+  const fromList = (name: string) => optionsList((page.fields[name] as Extract<Field, { type: 'selection' }> | undefined)?.optionsFrom);
 
   // ---- a table line's choices from the app's lists (line-choices.ts) ----------------------------------------------
 
@@ -1488,7 +1558,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const one = cell && listedAt(cell.table, cell.column);
     const line = cell && lineAt(cell.table, cell.key);
     if (cell && (!one || !line)) throw new Error(`"${name}" is no line's choice from the app's lists`);
-    const { list } = one ?? fromList(name);
+    const from = one ?? fromList(name);
+    if (!from) throw new Error(`"${name}" takes no choices from the app's lists`);
+    const { list } = from;
     const load = (choiceLoads[name] = (choiceLoads[name] ?? 0) + 1);
     const by = one && line ? askKey(one, line.values, state.values as Values) : '';
     if (cell) askedBy.set(name, by);
@@ -1593,7 +1665,83 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const definitions = state.definitions[name]?.definitions;
       return definitions ? { ...def, definitions } : def;
     }
-    return def.type === 'selection' && def.optionsFrom && loaded ? { ...def, options: loaded, optionsFrom: undefined } : def;
+    // Carried from an earlier question: any of its options, and its own after them, is one of this one's.
+    if (def.type === 'selection' && optionsField(def.optionsFrom)) return { ...def, options: everyOption(name), optionsFrom: undefined };
+    return def.type === 'selection' && optionsList(def.optionsFrom) && loaded ? { ...def, options: loaded, optionsFrom: undefined } : def;
+  }
+
+  /** Every option a choice may hold, whatever its conditions: its own, its list's once loaded, or those of the question it carries them from and its own. */
+  function everyOption(name: string, seen: readonly string[] = []): Option[] {
+    const def = page.fields[name];
+    if (def?.type !== 'selection') return [];
+    const carried = optionsField(def.optionsFrom);
+    if (carried && !seen.includes(carried.field)) return [...everyOption(carried.field, [...seen, name]).filter((o) => !o.exclusive), ...def.options];
+    return [...((fromList(name) && state.choices[name]?.options) || def.options)];
+  }
+
+  /** Each choice's options that show or hide by a condition, read once: by the field, by each option's value. */
+  const optionRules = new Map<string, Map<Option['value'], CompiledModifier>>();
+  for (const [name, def] of Object.entries(page.fields)) {
+    if (def.type !== 'selection') continue;
+    const rules = new Map<Option['value'], CompiledModifier>();
+    for (const option of def.options as SelectionOption[]) if (option.invisible !== undefined && option.invisible !== false) rules.set(option.value, compileModifier(option.invisible, table));
+    if (rules.size) optionRules.set(name, rules);
+  }
+  /** The choices whose options change with the record's answers. */
+  const changing = Object.keys(page.fields).filter((name) => optionRules.has(name) || (page.fields[name].type === 'selection' && !!optionsField((page.fields[name] as Extract<Field, { type: 'selection' }>).optionsFrom)));
+
+  /** A choice's options as they are offered for these values, read with `read`: see `Form.offered`. */
+  function offeredIn(name: string, values: Readonly<Values>, read: { context: Record<string, unknown>; env: ExpressionEnv }, seen: readonly string[] = []): Option[] {
+    const def = page.fields[name] as Extract<Field, { type: 'selection' }>;
+    const carried = optionsField(def.optionsFrom);
+    let options: readonly Option[];
+    if (carried && page.fields[carried.field]?.type === 'selection' && !seen.includes(carried.field)) {
+      const picked = new Set([values[carried.field]].flat().filter((value) => value !== null && value !== undefined));
+      // A "None of these" goes alone: it is no choice to carry.
+      const from = offeredIn(carried.field, values, read, [...seen, name]).filter((o) => !o.exclusive && picked.has(o.value) === (carried.picked !== false));
+      options = [...from.map(({ invisible: _, ...option }: SelectionOption) => option), ...def.options];
+    } else options = (fromList(name) && state.choices[name]?.options) || def.options;
+    const rules = optionRules.get(name);
+    return rules ? options.filter((o) => !rules.get(o.value)?.evaluate(read.context, read.env)) : [...options];
+  }
+
+  /** Options in words, as a sentence joins them: "Garden and Pool". */
+  function listedLabels(labels: string[]): string {
+    try {
+      return new Intl.ListFormat(messages.locale, { type: 'conjunction' }).format(labels);
+    } catch {
+      return labels.join(', ');
+    }
+  }
+
+  /**
+   * The chosen options a write no longer offers — hidden by their condition, or no longer picked where they are
+   * carried from — taken out of their answers, with what is said: those offered before it and not after, so a record
+   * opened holding one keeps it, and says so. Again while one taken out takes another's away. Null when none goes.
+   */
+  function takeOut(before: Readonly<Values>, after: Values): { values: Values; said: Record<string, string> } | null {
+    if (!changing.length) return null;
+    const was = before === state.values ? reading() : { context: recordContext(before as Values, page.fields, about()), env: expressionEnv(before as Values, page.fields, today, app) };
+    const said: Record<string, string> = {};
+    let values = after;
+    for (let round = 0; round < 4; round++) {
+      const now = { context: recordContext(values, page.fields, about()), env: expressionEnv(values, page.fields, today, app) };
+      let next = values;
+      for (const name of changing) {
+        const chosen: unknown[] = [values[name]].flat().filter((value) => value !== null && value !== undefined);
+        if (!chosen.length) continue;
+        const offeredBefore = new Map(offeredIn(name, before, was).map((o) => [o.value, o.label]));
+        const offeredNow = new Set(offeredIn(name, values, now).map((o) => o.value));
+        const gone = chosen.filter((value) => offeredBefore.has(value as Option['value']) && !offeredNow.has(value as Option['value']));
+        if (!gone.length) continue;
+        const held = values[name];
+        next = { ...next, [name]: Array.isArray(held) ? ((held as unknown[]).filter((value) => !gone.includes(value)) as Value) : null };
+        said[name] = fillMessage(messages, gone.length > 1 ? messages.notOfferedNowMany : messages.notOfferedNow, { name: listedLabels(gone.map((value) => offeredBefore.get(value as Option['value']) ?? String(value))) });
+      }
+      if (next === values) break;
+      values = settle(next);
+    }
+    return Object.keys(said).length ? { values, said } : null;
   }
 
   /** A line's field as its value is checked: its choices from the app's list, those loaded for its line. */
@@ -1664,7 +1812,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (contextCache?.values !== state.values || contextCache.recordId !== state.recordId || contextCache.editing !== editingNow()) {
       const values = state.values as Values;
       const context = recordContext(values, page.fields, about());
-      contextCache = { values, recordId: state.recordId, editing: editingNow(), context, env: expressionEnv(values, page.fields, today) };
+      contextCache = { values, recordId: state.recordId, editing: editingNow(), context, env: expressionEnv(values, page.fields, today, app) };
     }
     return contextCache;
   }
@@ -1763,6 +1911,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const shownWidget = (shown: IndexedNode[]) => shown.map((node) => (node.source as FieldNode).widget).find((widget) => widget === 'percentage');
 
   /** A field node's error now: its field's own rules first, then its answer rules. */
+  /** A path's field's label: a field's, or a line's cell's (`field.lineKey.subfield`). */
+  function labelOfPath(path: string): string {
+    const parts = path.split('.');
+    const def = page.fields[parts[0]];
+    if (parts.length >= 3 && def?.type === 'one2many') return def.fields[parts[parts.length - 1]]?.label ?? path;
+    return def?.label ?? path;
+  }
+
   function nodeError(node: IndexedNode): string | undefined {
     const name = node.field as string;
     return unticked(node) ?? checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages, today(), (node.source as FieldNode).widget) ?? ruleCheck(node).error;
@@ -1850,6 +2006,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     }
     // Text left in a box that does not read answers for its field, in the words it was left with.
     for (const [path, unread] of Object.entries(state.unread)) if (seen.has(path.split('.')[0])) errors[path] = unread.message;
+    // A value an app's function is asked for answers for its field: still asked, or why it did not come.
+    for (const [path, found] of Object.entries(state.asked)) {
+      if (!seen.has(path.split('.')[0]) || errors[path]) continue;
+      const label = labelOfPath(path);
+      errors[path] = found.failed === undefined ? fillMessage(messages, messages.stillWorkedOut, { label }) : fillMessage(messages, messages.notWorkedOut, { label, problem: found.failed });
+    }
     // A saved form placed here answers for its fields by its own page's rules.
     for (const node of visibleFieldNodes(root, 'form')) {
       const part = attached.get(node.id);
@@ -1938,26 +2100,69 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    * few rounds at most, so rules that set each other cannot run forever.
    */
   function settle(written: Values): Values {
-    let values = computed.apply(written);
+    let asked = new Map<string, AskedFor>();
+    let values = computed.apply(written, asked);
     for (let round = 0; round < 8; round++) {
       const result = setWhen.apply(values, holding);
       holding = result.holding;
       if (result.values === values) break;
-      values = computed.apply(result.values);
+      asked = new Map();
+      values = computed.apply(result.values, asked);
     }
+    askedNow = asked;
     return values;
   }
 
   /** Values to start again from, as loaded or restored: conditions holding in them hold already, and set nothing. */
   function startFrom(values: Values): Values {
-    const worked = computed.apply(values);
+    const asked = new Map<string, AskedFor>();
+    const worked = computed.apply(values, asked);
+    askedNow = asked;
     holding = setWhen.holding(worked);
     return worked;
   }
 
+  /**
+   * An app's function answered: the values worked out again with its answer, and the record as loaded with them, so
+   * an answer is never a change of the person's. Values no one has changed start again from it — no rule starts to
+   * hold on what only came late — and changed ones settle as any change does.
+   */
+  function answered() {
+    baseline = computed.apply(baseline);
+    if (state.dirty.length) return writeValues(state.values as Values);
+    const values = startFrom(state.values as Values);
+    set({ values, dirty: dirtyFields(values) });
+  }
+
+  /** Every answer on its way, and those that come of them, waited for: what a save does before it checks. */
+  async function asksSettled(): Promise<void> {
+    while (asking.size) await Promise.all([...asking]);
+  }
+
+  /** Answers that failed asked again — a save's try — and waited for. */
+  async function askAgain(): Promise<void> {
+    let failed = false;
+    for (const [key, found] of answers) {
+      if (found === 'asking' || found.failed === undefined) continue;
+      answers.delete(key);
+      failed = true;
+    }
+    if (failed) writeValues(state.values as Values);
+    await asksSettled();
+  }
+
   /** Write values someone or something changed. `fresh` values are a starting point instead (a restored draft). */
   function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false) {
-    const values = syncParts(fresh ? startFrom(written) : settle(written), fresh ? 'fresh' : 'edit');
+    let settled = fresh ? startFrom(written) : settle(written);
+    // A choice written again says no more what was taken out of it; options a change no longer offers are taken out now.
+    let takenOut = fresh ? {} : Object.fromEntries(Object.entries(state.takenOut).filter(([name]) => written[name] === state.values[name]));
+    const out = fresh ? null : takeOut(state.values, settled);
+    if (out) {
+      settled = out.values;
+      takenOut = { ...takenOut, ...out.said };
+    }
+    if (Object.keys(takenOut).length || Object.keys(state.takenOut).length) extra = { takenOut, ...extra };
+    const values = syncParts(settled, fresh ? 'fresh' : 'edit');
     // Text left unread in a box goes once its field is written another way, and its words with it.
     const unread = unreadKept(values);
     const before = state;
@@ -2187,6 +2392,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const waiting = readTyped();
     if (waiting) await waiting;
     if (asked !== generation) return elsewhere();
+    // Values the app's functions are asked for are waited for — those that failed asked again — so what is saved is worked out.
+    if (asking.size || Object.values(state.asked).some((found) => found.failed !== undefined)) {
+      set({ status: 'saving', error: null, saveProblem: null });
+      await askAgain();
+      if (asked !== generation) return elsewhere();
+      set({ status: 'ready' });
+    }
     // Files still on their way are waited for first — a saved form's placed here too: the state says how many, so the page can say why it waits.
     if (filesGoing()) {
       set({ status: 'saving', error: null, saveProblem: null });
@@ -2534,7 +2746,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (seq !== loads) return;
       // Lines load in their tables' orders; where a person moves them after, they stay.
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
-      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {} });
+      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {}, takenOut: {} });
       if (again) return;
       offerDraft();
       void track(opening());
@@ -2561,7 +2773,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     told = null;
     showing = false;
     clearFiles();
-    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {} };
+    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {} };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
       await load();
@@ -2920,6 +3132,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   const form: Form = {
     page,
+    ...(table ? { functions: table } : {}),
     getState: () => state,
 
     subscribe(listener) {
@@ -2980,7 +3193,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       return track(askLine(one, { ...line.values, ...values }));
     },
 
+    offered(name) {
+      return page.fields[name]?.type === 'selection' ? offeredIn(name, state.values, reading()) : null;
+    },
+    offersChange: (name) => changing.includes(name),
+
     waitsFor(name) {
+      const found = state.asked[name];
+      if (found) return { field: name, asking: true, ...(found.failed !== undefined ? { failed: found.failed } : {}) };
       const from = workedOut.get(name);
       return from ? waitingOn(page, from, state.values, state.unread) : null;
     },
@@ -3144,7 +3364,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Started again: a new response, timed from now.
       bot = { ...bot, honeypot: false, since: clock() };
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, sent: null });
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null });
     },
 
     words: (text) => wordsNow(text),
@@ -3586,7 +3806,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       filed.clear();
       baseline = startFrom({ ...initialValues(page.fields, today()), ...structuredCopy(values) });
       const start = syncParts(structuredCopy(baseline), 'start');
-      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null, unread: {} });
+      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null, unread: {}, takenOut: {} });
     },
     errorsNow: () => collectErrors(),
     typing: typingNow,
@@ -3611,6 +3831,8 @@ const sameHow = (a: LeaveHow, b: LeaveHow) => !!a.changes === !!b.changes && !!a
 
 /** Two lists of names the same, in the same order. */
 const sameList = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((name, i) => name === b[i]);
+/** Whether what waits for an app's answer is the same as before: the same paths, each waiting or failed for the same reason. */
+const sameAsked = (shown: Readonly<Record<string, AskedFor>>, now: ReadonlyMap<string, AskedFor>) => Object.keys(shown).length === now.size && [...now].every(([path, found]) => shown[path] !== undefined && shown[path].failed === found.failed);
 
 /** A file on its way in a saved form placed in another, as that one names it: its id and its field under the part's name. */
 function underPart(name: string, upload: FileUpload): FileUpload {
@@ -3719,7 +3941,7 @@ function linkOps(before: RelatedRecord[], now: RelatedRecord[]): LinkOp[] {
   ];
 }
 
-function indexLayout(root: RootLayout): Map<string, IndexedNode> {
+function indexLayout(root: RootLayout, functions?: FunctionTable): Map<string, IndexedNode> {
   const index = new Map<string, IndexedNode>();
   const add = (
     source: IndexedNode['source'],
@@ -3736,10 +3958,10 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
       kind,
       field: modifiers.field,
       ...(roles?.length ? { roles } : {}),
-      invisible: compileModifier(modifiers.invisible),
-      readonly: compileModifier(modifiers.readonly),
-      required: compileModifier(modifiers.required),
-      ...(pressed !== undefined ? { pressed: compileModifier(pressed) } : {}),
+      invisible: compileModifier(modifiers.invisible, functions),
+      readonly: compileModifier(modifiers.readonly, functions),
+      required: compileModifier(modifiers.required, functions),
+      ...(pressed !== undefined ? { pressed: compileModifier(pressed, functions) } : {}),
       ...(does.length ? { does } : {}),
       source,
     });

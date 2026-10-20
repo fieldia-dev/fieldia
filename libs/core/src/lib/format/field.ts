@@ -14,6 +14,9 @@ import { isTimeZone } from '../record/zones';
 import { FIELD_NAME } from './names';
 export { FIELD_NAME, FIELD_TYPES, type FieldType } from './names';
 
+/** `true`, `false`, or a condition on the record's values, as everything that shows or hides by state takes it (layout.ts `Modifier`). */
+export const ModifierSchema = z.union([z.boolean(), z.string().min(1)]).meta({ id: 'Modifier' });
+
 /** One choice in a selection or reference. */
 export const OptionSchema = z
   .object({
@@ -34,6 +37,15 @@ export const OptionSchema = z
   .meta({ id: 'Option' });
 
 export type Option = z.infer<typeof OptionSchema>;
+
+/**
+ * One choice of a page's own selection, which may show or hide by a condition on the record's other answers
+ * (`invisible`, as a part's): "Garden" hidden unless the unit is a villa. A choice that a change hides while it is
+ * chosen is taken out of the answer, and the form says so; one the record held as it was opened stays, and is said.
+ */
+export const SelectionOptionSchema = OptionSchema.extend({ invisible: ModifierSchema.optional() }).strict().meta({ id: 'SelectionOption' });
+
+export type SelectionOption = z.infer<typeof SelectionOptionSchema>;
 
 /**
  * One condition limiting which records a relation may point to. `valueFrom`
@@ -251,16 +263,36 @@ const DateTime = z.object({ type: z.literal('datetime'), ...common, ...days, tim
  * the data source's `options` when the form shows the field, and again when a
  * field named in `dependsOn` changes — a city list that follows the country.
  */
-export const OptionsFromSchema = z
+export const OptionsFromListSchema = z
   .object({
     list: z.string().min(1),
     /** The fields the choices change with: the list is asked again when one does. */
     dependsOn: z.array(z.string().regex(FIELD_NAME)).min(1).optional(),
   })
   .strict()
-  .meta({ id: 'OptionsFrom' });
+  .meta({ id: 'OptionsFromList' });
+
+/**
+ * Choices carried from an earlier question of the page: the options picked in it — or, with `picked: false`, those
+ * left unpicked — by their labels, then the choice's own options after them ("None of them"). A choice picked here
+ * that is no longer picked there is taken out, and the form says so.
+ */
+export const OptionsFromFieldSchema = z
+  .object({
+    /** The page's choice they are carried from. */
+    field: z.string().regex(FIELD_NAME),
+    /** False: the options left unpicked there. */
+    picked: z.boolean().optional(),
+  })
+  .strict()
+  .meta({ id: 'OptionsFromField' });
+
+export const OptionsFromSchema = z.union([OptionsFromListSchema, OptionsFromFieldSchema]).meta({ id: 'OptionsFrom' });
 
 export type OptionsFrom = z.infer<typeof OptionsFromSchema>;
+export type OptionsFromList = z.infer<typeof OptionsFromListSchema>;
+export type OptionsFromField = z.infer<typeof OptionsFromFieldSchema>;
+
 
 const selection = {
   type: z.literal('selection'),
@@ -279,10 +311,10 @@ const selection = {
   ownAnswers: z.boolean().optional(),
 };
 const Selection = z
-  .object({ ...selection, optionsFrom: OptionsFromSchema.optional() })
+  .object({ ...selection, options: z.array(SelectionOptionSchema), optionsFrom: OptionsFromSchema.optional() })
   .strict()
   .refine((field) => field.options.length > 0 || field.optionsFrom !== undefined, {
-    message: 'a choice needs its options, or a list of the app’s to take them from',
+    message: 'a choice needs its options, a list of the app’s to take them from, or an earlier question to carry them from',
     path: ['options'],
   })
   // The same rule for tools that read only the JSON Schema.

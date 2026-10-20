@@ -1,5 +1,5 @@
 import type { Field, FieldNode, Form, FormEvents, FormState, Value } from '@fieldia/core';
-import { mountViewer, skinFor, type SlotRenderer, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, newestFunctions, skinFor, type SlotRenderer, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
 import type { WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
   Component as ReactComponent,
@@ -181,6 +181,8 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
   const userKey = JSON.stringify(props.user ?? null);
   // Other values from the app (its context) may filter and show other things: made again for them too.
   const contextKey = JSON.stringify(props.context ?? null);
+  // The app's functions are called as they are each render; a function named or no longer named makes the form again.
+  const functionKeys = Object.keys(props.functions ?? {}).join('|');
 
   useEffect(() => {
     const element = host.current;
@@ -234,6 +236,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
     const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, onRecord: _record, onArchive: _archive, onDuplicate: _duplicate, onDelete: _delete, ...options } = latest.current;
     const mounted = mountViewer(element, {
       ...options,
+      functions: newestFunctions(() => latest.current.functions),
       widgets,
       slots,
       // The newest handler; what it answers — values, words, a page, a stop — the form takes.
@@ -259,7 +262,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       setHandle(null);
       setPortals([]);
     };
-  }, [props.page, props.form, props.dataSource, props.recordId, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys]);
+  }, [props.page, props.form, props.dataSource, props.recordId, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys, functionKeys]);
 
   // A theme and a skin switch in place: the theme brings its skin, unless one is given here or by the page.
   useEffect(() => {

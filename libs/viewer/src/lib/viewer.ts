@@ -369,7 +369,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const doc = host.ownerDocument;
   // The quick check of names and conditions: the full one, with its validation library, belongs where pages are made.
   // A line's own form reads the record the line is on as parent.
-  const checked = checkPage(options.page, options.parent ? { parent: options.parent.fields } : {});
+  const checked = checkPage(options.page, { ...(options.parent ? { parent: options.parent.fields } : {}), ...(options.functions ? { functions: options.functions } : {}) });
   if (!checked.ok) {
     throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
   }
@@ -827,20 +827,32 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // in words, never the amount worked out from the value that text replaced. Made the first time it waits.
       let waitMark: HTMLElement | null = null;
       const waitWords = (waits: WaitsFor) =>
-        waits.line
-          ? labelled(labels.valueWaitsLine, { n: waits.line, lines: page.fields[waits.field]?.label ?? waits.field, own: labelNow() }, 'lines', 'own')
-          : labelled(labels.valueWaits, { field: form.words(page.fields[waits.field]?.label ?? waits.field), own: labelNow() }, 'field', 'own');
-      const drawWaiting = (words: string | null) => {
+        waits.failed !== undefined
+          ? labelled(labels.valueNotWorkedOut, { own: labelNow(), why: waits.failed }, 'own')
+          : waits.asking
+            ? labelled(labels.valueAsking, { own: labelNow() }, 'own')
+            : waits.line
+              ? labelled(labels.valueWaitsLine, { n: waits.line, lines: page.fields[waits.field]?.label ?? waits.field, own: labelNow() }, 'lines', 'own')
+              : labelled(labels.valueWaits, { field: form.words(page.fields[waits.field]?.label ?? waits.field), own: labelNow() }, 'field', 'own');
+      /** `inSight`: the words in sight whatever the label does, as why an answer did not come is. */
+      const drawWaiting = (words: string | null, inSight = false) => {
         if (!words && !waitMark) return;
         if (!waitMark) {
           // Why, said to a screen reader and on pointing at it — and in sight where no label names what waits (a tax totals' table).
-          waitMark = el('span', { class: 'fd-value-waits', 'data-waits': '' }, el('span', { 'aria-hidden': 'true' }, '—'), el('span', { class: labelsAt === 'hidden' ? 'fd-value-waits-why' : 'fd-sr-only' }));
+          waitMark = el('span', { class: 'fd-value-waits', 'data-waits': '' }, el('span', { 'aria-hidden': 'true' }, '—'), el('span', {}));
           (asText?.element ?? widget.element).after(waitMark);
         }
         setHidden(waitMark, !words);
         setAttr(waitMark, 'title', words);
-        setText(waitMark.lastElementChild as HTMLElement, words ?? '');
+        const why = waitMark.lastElementChild as HTMLElement;
+        setAttr(why, 'class', labelsAt === 'hidden' || inSight ? 'fd-value-waits-why' : 'fd-sr-only');
+        setText(why, words ?? '');
+        // Asked of the app's server: an ellipsis while it answers, the dash once it did not.
+        const asking = words !== null && !inSight && !!form.waitsFor(node.field)?.asking;
+        setText(waitMark.firstElementChild as HTMLElement, asking ? '…' : '—');
+        setAttr(waitMark, 'data-failed', inSight ? '' : null);
         setAttr(wrapper, 'data-waits', words === null ? null : '');
+        setAttr(wrapper, 'data-asking', asking ? '' : null);
       };
       if (widget.destroy) cleanups.push(() => widget.destroy?.());
       // An answer rule's warning waits until the person leaves the field: no advice
@@ -956,7 +968,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const now = state.warnings[node.field] ?? '';
         if (!typing || !now) advice = now;
         // An error shown says enough: the rule's warning gives way to it.
-        const warned = [message ? '' : advice, state.warning && state.warningField === node.field ? state.warning : ''].filter(Boolean).join(' ');
+        // Options a change no longer offers, taken out of the answer: said, whatever else is.
+        const warned = [message ? '' : advice, state.warning && state.warningField === node.field ? state.warning : '', state.takenOut?.[node.field] ?? ''].filter(Boolean).join(' ');
         setHidden(warning, !warned);
         setText(warning, warned);
         if (mark) {
@@ -983,7 +996,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         setAttr(wrapper, 'data-empty', quiet && isBlank(state.values[node.field]) ? '' : null);
         const waits = form.waitsFor(node.field);
         const waiting = waits ? waitWords(waits) : null;
-        drawWaiting(waiting);
+        drawWaiting(waiting, waits?.failed !== undefined);
         if (asText) {
           setHidden(widget.element, readonly || !!waiting);
           setHidden(asText.element, !readonly || !!waiting);
@@ -1605,7 +1618,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         // meanwhile, then drawn whole — never plainly, then again.
         const awaited = waited ? [] : partsFor(saved, options.widgets, options.slots).filter((part) => !part.loaded);
         if (awaited.length) return void settleParts(awaited).then(() => draw(found, true));
-        const checked = checkPage(saved);
+        const checked = checkPage(saved, options.functions ? { functions: options.functions } : {});
         let inner: Form;
         try {
           if (!checked.ok) throw new Error(checked.issues.map((i) => `${i.path}: ${i.message}`).join('; '));

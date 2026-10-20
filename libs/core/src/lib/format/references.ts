@@ -1,10 +1,13 @@
 import type { ActionStep, PageEvents } from './actions';
-import type { Field, Fields, FilterItem, LineField, LineKinds } from './field';
+import type { Field, Fields, FilterItem, LineField, LineKinds, SelectionOption } from './field';
+import { optionsField, optionsList } from './choice-options';
 import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListCard, ListNode, MapCard, MapNode, Pin, RelatedNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
 import type { Page } from './page';
 import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
 import { compileExpression } from '../expression/expression';
+import { functionTable, type FunctionsKnown } from '../expression/app-functions';
+import type { FunctionTable } from '../expression/functions';
 import { dependencyOrder } from '../expression/order';
 import { valuesIn } from './words';
 import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
@@ -24,7 +27,11 @@ export interface PageIssue {
   message: string;
 }
 
-export type PageValidation = { ok: true; page: Page } | { ok: false; issues: PageIssue[] };
+/**
+ * What a check found. `warnings`, where pages are made (`validatePage`): what does not stop a page — a value of a kind
+ * a function does not take, which gives nothing there — said beside it; left out when there are none.
+ */
+export type PageValidation = { ok: true; page: Page; warnings?: PageIssue[] } | { ok: false; issues: PageIssue[]; warnings?: PageIssue[] };
 
 const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
 
@@ -69,6 +76,18 @@ export interface LineOf {
   parent: Record<string, Field | LineField>;
 }
 
+/** How a page is checked besides its own parts: what the app gives its expressions, and how deep. */
+export interface CheckOptions {
+  /** The app's own functions its expressions may call (`functions` on the form, the viewer and its wrappers). */
+  functions?: FunctionsKnown;
+  /**
+   * What is wrong with the kinds of value an expression hands its functions, in words, where it is read (`validatePage`
+   * gives it: `age(notes)` says notes is text) — a warning, never a refusal: such a call gives null, as it did before
+   * the kinds were read. Left out, kinds are not read.
+   */
+  kinds?(source: string, scope: { fields: Record<string, Field | LineField>; parent?: Record<string, Field | LineField> }): string[];
+}
+
 /** Names quoted and joined as a person lists them: "a", "b" and "c". */
 const listed = (names: string[]) => {
   const quoted = names.map((name) => `"${name}"`);
@@ -78,6 +97,8 @@ const listed = (names: string[]) => {
 /** The second pass of every check: ids unique, every name defined, every condition readable. */
 export class ReferenceCheck {
   private readonly issues: PageIssue[] = [];
+  /** What does not stop the page, said beside it: the kinds an expression hands its functions (`CheckOptions.kinds`). */
+  readonly warnings: PageIssue[] = [];
   private readonly ids = new Map<string, string>();
   /** Where the answers of each saved form placed here go, by name: the path of the part that took it first. */
   private readonly formNames = new Map<string, string>();
@@ -87,12 +108,24 @@ export class ReferenceCheck {
   /** The names of the slots the layout places. */
   private readonly slots = new Set<string>();
 
+  /** The app's functions, as the page's expressions call them; or why the names given cannot be. */
+  private readonly table: FunctionTable | undefined;
+  private readonly tableProblem: string | undefined;
+
   constructor(
     private readonly page: Page,
-    private readonly line?: LineOf
-  ) {}
+    private readonly line?: LineOf,
+    private readonly options: CheckOptions = {}
+  ) {
+    try {
+      this.table = functionTable(options.functions);
+    } catch (error) {
+      this.tableProblem = (error as Error).message;
+    }
+  }
 
   run(): PageIssue[] {
+    if (this.tableProblem) this.report('(functions)', this.tableProblem);
     if (this.page.timeZone !== undefined) this.checkZone(this.page.timeZone, 'timeZone');
     this.checkFields(this.page.fields, 'fields', this.line?.name, this.line?.parent);
     this.walkRoot(this.page.layout, 'layout');
@@ -187,7 +220,7 @@ export class ReferenceCheck {
     const children = node.lineForm?.children;
     if (!Array.isArray(children)) return this.report(`${path}.lineForm`, 'a line’s form holds its parts: { "children": [...] }');
     const page = { ...this.page, fields: def.fields as Fields, layout: { type: 'sections', id: `${node.id}#line`, children }, on: undefined } as Page;
-    const inside = new ReferenceCheck(page, { name: node.field, parent: this.page.fields });
+    const inside = new ReferenceCheck(page, { name: node.field, parent: this.page.fields }, this.options);
     inside.walkChildren(children, `${path}.lineForm`);
     inside.checkGoingTo();
     this.issues.push(...inside.issues);
@@ -268,7 +301,7 @@ export class ReferenceCheck {
           for (const [name, value] of Object.entries(step.into ?? {})) {
             this.need(name, `${at}.into.${name}`);
             try {
-              compileExpression(value);
+              compileExpression(value, this.table);
             } catch (error) {
               this.report(`${at}.into.${name}`, `cannot read "${value}": ${(error as Error).message}`);
             }
@@ -348,12 +381,13 @@ export class ReferenceCheck {
       if (typeof value !== 'string') continue;
       let compiled: ReturnType<typeof compileModifier>;
       try {
-        compiled = compileModifier(value);
+        compiled = compileModifier(value, this.table);
       } catch (error) {
         this.report(`${path}.${key}`, `cannot read "${value}": ${(error as Error).message}`);
         continue;
       }
       this.checkReads(value, compiled, `${path}.${key}`, scope);
+      this.checkKinds(value, `${path}.${key}`, scope);
     }
   }
 
@@ -369,7 +403,7 @@ export class ReferenceCheck {
       if (lines?.type !== 'one2many') continue;
       let fields: readonly string[];
       try {
-        fields = compileModifier(where.condition).fields;
+        fields = compileModifier(where.condition, this.table).fields;
       } catch (error) {
         this.report(path, `cannot read the condition "${where.condition}": ${(error as Error).message}`);
         continue;
@@ -394,6 +428,13 @@ export class ReferenceCheck {
     }
   }
 
+  /** The kinds of value an expression hands its functions, where the check reads them (`CheckOptions.kinds`). */
+  private checkKinds(source: string, path: string, scope: Scope) {
+    if (!this.options.kinds) return;
+    const parent = scope.lines === undefined ? undefined : (scope.parent ?? this.page.fields);
+    for (const words of this.options.kinds(source, { fields: scope.fields, ...(parent ? { parent } : {}) })) this.warnings.push({ path, message: `"${source}": ${words}` });
+  }
+
   /**
    * An expression for a value must read, read only fields where it is worked
    * out, and add up only line fields that exist. Returns the fields it reads,
@@ -402,12 +443,13 @@ export class ReferenceCheck {
   private checkExpression(source: string, path: string, scope: Scope): readonly string[] | null {
     let compiled: ReturnType<typeof compileExpression>;
     try {
-      compiled = compileExpression(source);
+      compiled = compileExpression(source, this.table);
     } catch (error) {
       this.report(path, `cannot read "${source}": ${(error as Error).message}`);
       return null;
     }
     this.checkReads(source, compiled, path, scope);
+    this.checkKinds(source, path, scope);
     for (const sum of compiled.sums) {
       if (!has(scope.fields, sum.lines)) continue;
       const lines = scope.fields[sum.lines];
@@ -444,6 +486,33 @@ export class ReferenceCheck {
       const names = cycle.slice(0, -1);
       const message = names.length === 1 ? `"${names[0]}" is worked out from itself` : `${listed(names)} are worked out from each other: ${cycle.join(' → ')}`;
       this.report(`${base}.${cycle[0]}.compute`, message);
+    }
+  }
+
+  /**
+   * A choice's options: each condition on one reads the record (`options[].invisible`); its list's `dependsOn` names
+   * fields (`checkDependsOn`); an earlier question it carries them from (`optionsFrom.field`) is another choice of the page, never one
+   * carrying its own from this one.
+   */
+  private checkChoices(name: string, def: Extract<Field | LineField, { type: 'selection' }>, path: string, fields: Record<string, Field | LineField>, scope: Scope) {
+    (def.options as SelectionOption[]).forEach((option, i) => this.checkModifiers(option, `${path}.options[${i}]`, ['invisible'], scope));
+    optionsList(def.optionsFrom)?.dependsOn?.forEach((other, i) => this.checkDependsOn(name, other, `${path}.optionsFrom.dependsOn[${i}]`, fields, scope.lines, scope.parent));
+    const carried = optionsField(def.optionsFrom);
+    if (!carried) return;
+    const at = `${path}.optionsFrom.field`;
+    if (carried.field === name) return this.report(at, `"${name}" cannot carry its options from itself`);
+    const from = this.need(carried.field, at, fields);
+    if (!from) return;
+    if (from.type !== 'selection') return this.report(at, `"${carried.field}" is a ${from.type}; options are carried from a choice`);
+    // Through the choices each carries from, never back to this one: a circle elsewhere is said at its own fields.
+    const seen = [name];
+    for (let next: Field | LineField | undefined = from, field = carried.field; next?.type === 'selection'; next = fields[field]) {
+      if (field === name) return this.report(at, `${listed(seen)} carry their options from each other`);
+      if (seen.includes(field)) return;
+      seen.push(field);
+      const further = optionsField(next.optionsFrom);
+      if (!further) return;
+      field = further.field;
     }
   }
 
@@ -485,7 +554,7 @@ export class ReferenceCheck {
       if (def.type === 'many2many' && def.fields) {
         for (const [column, linked] of Object.entries(def.fields)) if (linked.type === 'datetime' && linked.timeZone !== undefined) this.checkZone(linked.timeZone, `${path}.fields.${column}.timeZone`);
       }
-      if (def.type === 'selection') def.optionsFrom?.dependsOn?.forEach((other, i) => this.checkDependsOn(name, other, `${path}.optionsFrom.dependsOn[${i}]`, fields, lines, parent));
+      if (def.type === 'selection') this.checkChoices(name, def, path, fields, scope);
       if (def.type === 'properties') def.definitionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.definitionsFrom.dependsOn[${i}]`, fields));
       if (def.type === 'properties' && def.definitions) {
         const seen = new Set<string>();

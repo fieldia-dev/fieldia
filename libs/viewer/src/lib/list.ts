@@ -4,7 +4,9 @@ import {
   facetsToFilter,
   groupByFields,
   importFields,
+  optionsList,
   ownZone,
+  withCarriedOptions,
   recordSentence,
   type ButtonNode,
   type DayCount,
@@ -202,7 +204,9 @@ const isPromise = (value: unknown): value is Promise<unknown> => !!value && type
  * app their ids. A plain table, so it reads the same in every binding.
  */
 export function listView(context: ListContext): ListView {
-  const { page, node, form, el, labels, fill, locale, doc } = context;
+  const { node, form, el, labels, fill, locale, doc } = context;
+  // A choice carried from an earlier question shows its answers by the labels of every option it may hold.
+  const page = withCarriedOptions(context.page);
   /** One of the list's sentences in the words its page names its records by (`records`), else as it says them plainly. */
   const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
   installListStyles(doc);
@@ -256,7 +260,7 @@ export function listView(context: ListContext): ListView {
   const show = cells.words;
   /** Each row's own tone, bold and buttons, read on its record as the form reads one — the person among it; a button's roles the form's. */
   // A row's record read as the form reads one, of this list's fields: a related list's are its own records'.
-  const rules = rowRules(page, node, (id, values) => form.recordReads(id, values, page.fields), () => form.today(), (button) => !form.node(button.id).invisible);
+  const rules = rowRules(page, node, (id, values) => form.recordReads(id, values, page.fields), () => form.today(), (button) => !form.node(button.id).invisible, form.functions);
   /** The cards part, which the page waited for where the list has cards (on a phone, `card`) or a gallery; where it could not come, a table. */
   const cards = node.card || node.gallery ? cardsPart.loaded : undefined;
   /** What a record's card shows. */
@@ -1414,7 +1418,7 @@ export function listView(context: ListContext): ListView {
   const importOffered = importFields(page, node).filter((name) => {
     const def = page.fields[name];
     if (def.type === 'many2one' || def.type === 'many2many') return !!context.dataSource?.search;
-    if (def.type === 'selection' && def.optionsFrom) return !!context.dataSource?.options;
+    if (def.type === 'selection' && optionsList(def.optionsFrom)) return !!context.dataSource?.options;
     return true;
   });
   const importOn = importOffered.length > 0 && !!(context.dataSource?.createMany || context.dataSource?.save);
