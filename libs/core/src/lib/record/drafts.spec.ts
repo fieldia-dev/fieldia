@@ -119,6 +119,8 @@ describe('drafts on the app’s server', () => {
     expect(there.getState().status).toBe('ready');
     expect(there.getState().values).toMatchObject({ name: 'Mona Adel', weight: null });
     expect(there.getState().unread).toEqual({ weight: { text: '64,5kg', message: 'Weight must be a number' } });
+    // Said at once, as where it was typed and left.
+    expect(there.getState().errors['weight']).toBe('Weight must be a number');
     expect(there.validate()).toBe(false);
     expect(there.getState().errors['weight']).toBe('Weight must be a number');
     expect(there.getState().resume).toEqual({ key: 'draft-1' });
