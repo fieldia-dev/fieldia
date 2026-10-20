@@ -29,6 +29,12 @@ export const OptionSchema = z
     exclusive: z.boolean().optional(),
     /** Keeps its place when the options are shuffled. */
     fixed: z.boolean().optional(),
+    /**
+     * How many may choose it — a session's places, a limited offer's stock. With the data source's `limits`, which
+     * tells how many took it, the places left show beside it ("3 left"), and a full one says "Full" and is refused when
+     * picked (never hidden). Without it, nothing shows: the server refuses as it would.
+     */
+    seats: z.int().min(0).max(100_000_000).optional(),
   })
   .strict()
   .meta({ id: 'Option' });

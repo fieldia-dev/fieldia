@@ -6,6 +6,7 @@ import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
 import { PagePhoneSchema, type PagePhone } from './phone';
 import { PageDuplicatesSchema, type PageDuplicates } from './duplicates';
 import { PageRecordsSchema, type PageRecords } from './records';
+import { PageLimitsSchema, type PageLimits } from './limits';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -187,6 +188,20 @@ export interface Page {
    * line's own dialog, and a list's Edit, follow the page they are part of, unless the line's own page says otherwise.
    */
   lowerLabels?: boolean;
+  /**
+   * When a page of responses takes answers, and how many: open and close dates on the page's clock, the most
+   * responses it takes, one from each person, and the page's own words while it takes none. A closed form says so as it
+   * is opened, never after it is filled. Counts come from the data source's `limits`; without it only the dates are
+   * kept to. A choice's places are its option's `seats`. See `PageLimits`.
+   */
+  limits?: PageLimits;
+  /**
+   * A "Continue later" button: the answers so far kept on the app's server — the data source's `saveDraft` — with the
+   * wizard's step and any text typed that does not read yet, and a link the app makes to continue from, on this device
+   * or another (the viewer's `resume`: the draft's key). The answers are kept there as they are typed too, so the app
+   * sees where people stopped. Hidden where the source has no `saveDraft`.
+   */
+  continueLater?: boolean;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -271,6 +286,8 @@ export const PageSchema = z
     duplicates: PageDuplicatesSchema.optional(),
     records: PageRecordsSchema.optional(),
     lowerLabels: z.boolean().optional(),
+    limits: PageLimitsSchema.optional(),
+    continueLater: z.boolean().optional(),
   })
   .meta({
     title: 'Fieldia page',

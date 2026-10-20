@@ -42,6 +42,12 @@ import type {
   DuplicatesRequest,
   DuplicatesResult,
   MergeRequest,
+  LimitsRequest,
+  LimitsResult,
+  StoredDraft,
+  SaveDraftRequest,
+  SavedDraft,
+  LoadDraftRequest,
 } from './data-source';
 import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
@@ -122,6 +128,16 @@ export interface MemoryDataSourceOptions {
    * `merge` keeps one record with the values picked and takes the others away, links to them moved to it, either way.
    */
   duplicates?: (request: DuplicatesRequest, records: Readonly<Record<string, Record<string, Values>>>) => DuplicatesResult | Promise<DuplicatesResult>;
+  /**
+   * What `limits` counts from, by page id — the responses sent before this source was made (`responses`), this
+   * person's (`mine`) and each choice's takers (`perChoice`) — with the responses it takes, and those `answeredElsewhere`
+   * tells, counted on top. A record page's model counts its records, the one edited left out.
+   */
+  limits?: Record<string, LimitsResult>;
+  /** Drafts kept before, by their key, each with its page's id: what `loadDraft` finds, as an app's server keeps them. */
+  drafts?: Record<string, StoredDraft & { pageId: string }>;
+  /** The link "Continue later" answers with, made from the draft's key — the app's own address with it: none without it. */
+  draftLink?: (key: string, request: SaveDraftRequest) => string;
 }
 
 /**
@@ -140,6 +156,10 @@ export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecor
    * told of a conflict when it saves. Gives the new version.
    */
   changeElsewhere(model: string, id: RecordId, values: Values, who: { by: string; at?: string }): RecordVersion;
+  /** Drafts kept by `saveDraft`, by key, each with its page's id and the request's `later`: the partial answers an app sees. */
+  readonly drafts: Record<string, StoredDraft & { pageId: string; later?: boolean }>;
+  /** Take a response to a page as someone else would, on another screen: counted by `limits`, never as this person's. */
+  answeredElsewhere(pageId: string, values: Values): void;
 }
 
 /**
@@ -151,6 +171,10 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   const records = structuredCopy(options.records ?? {});
   const responses: SubmitRequest[] = [];
   const calls: MemoryDataSource['calls'] = [];
+  /** Responses others sent meanwhile (`answeredElsewhere`): counted, never as this person's. */
+  const elsewhere: SubmitRequest[] = [];
+  const drafts: MemoryDataSource['drafts'] = structuredCopy(options.drafts ?? {});
+  let draftIds = 0;
   /** Properties added in place, by the list and the definitions the app gave for the record they were added to. */
   const addedDefinitions = new Map<string, PropertyDefinition[]>();
   // A new line's id comes after every line id of the records given (kept from an earlier visit, say), never one of them.
@@ -278,10 +302,62 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     return field && 'relation' in field ? field.relation : name;
   }
 
+  /** How many of `rows` hold each option of each field asked, over what `limits` starts from. */
+  function takers(rows: Values[], fieldsAsked: string[], from: LimitsResult['perChoice']): NonNullable<LimitsResult['perChoice']> {
+    const counted: NonNullable<LimitsResult['perChoice']> = {};
+    for (const field of fieldsAsked) {
+      const each: Record<string, number> = { ...(from?.[field] ?? {}) };
+      for (const values of rows) {
+        const held = values[field];
+        for (const one of Array.isArray(held) ? held : held === null || held === undefined ? [] : [held]) each[String(one)] = (each[String(one)] ?? 0) + 1;
+      }
+      counted[field] = each;
+    }
+    return counted;
+  }
+
   return {
     records,
     responses,
     calls,
+    drafts,
+
+    answeredElsewhere(pageId: string, values: Values) {
+      elsewhere.push({ pageId, values: structuredCopy(values) });
+    },
+
+    async limits(request: LimitsRequest): Promise<LimitsResult> {
+      calls.push({ method: 'limits', request });
+      await pause();
+      const from = options.limits?.[request.pageId] ?? {};
+      if (request.model) {
+        // A record page: its model's records, the one edited not counted against itself.
+        const rows = Object.entries(table(request.model)).filter(([key]) => request.recordId === null || key !== String(request.recordId)).map(([, values]) => values);
+        return { responses: (from.responses ?? 0) + Object.keys(table(request.model)).length, ...(from.mine !== undefined ? { mine: from.mine } : {}), perChoice: takers(rows, request.fields, from.perChoice) };
+      }
+      const mine = responses.filter((response) => response.pageId === request.pageId);
+      const all = [...mine, ...elsewhere.filter((response) => response.pageId === request.pageId)];
+      return { responses: (from.responses ?? 0) + all.length, mine: (from.mine ?? 0) + mine.length, perChoice: takers(all.map((response) => response.values), request.fields, from.perChoice) };
+    },
+
+    async saveDraft(request: SaveDraftRequest): Promise<SavedDraft> {
+      calls.push({ method: 'saveDraft', request });
+      await pause();
+      // A key it gave keeps naming the same draft; a key it never gave (or one sent since) is a new draft's.
+      const key = request.key && drafts[request.key]?.pageId === request.pageId ? request.key : `draft-${++draftIds}`;
+      drafts[key] = { ...structuredCopy(request.draft), pageId: request.pageId, ...(request.later ? { later: true } : {}) };
+      const link = request.later && options.draftLink ? options.draftLink(key, request) : undefined;
+      return { key, ...(link ? { link } : {}) };
+    },
+
+    async loadDraft(request: LoadDraftRequest): Promise<StoredDraft | null> {
+      calls.push({ method: 'loadDraft', request });
+      await pause();
+      const kept = drafts[request.key];
+      if (!kept || kept.pageId !== request.pageId) return null;
+      const { pageId: _page, later: _later, ...draft } = structuredCopy(kept);
+      return draft;
+    },
 
     changeElsewhere(model: string, id: RecordId, values: Values, who: { by: string; at?: string }): RecordVersion {
       const stored = table(model)[String(id)];
@@ -313,7 +389,10 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     async save(request: SaveRequest): Promise<SaveResult> {
       calls.push({ method: 'save', request });
       await pause();
-      return write(request);
+      const saved = write(request);
+      // Saved: the draft its changes were kept in is let go, as a server does.
+      if (request.draft) delete drafts[request.draft];
+      return saved;
     },
 
     async writeMany(request: WriteManyRequest): Promise<WriteManyResult> {
@@ -512,6 +591,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       calls.push({ method: 'submit', request });
       await pause();
       responses.push(structuredCopy(request));
+      // Sent: the draft it was kept in is let go, as a server does.
+      if (request.draft) delete drafts[request.draft];
       return { id: responses.length };
     },
 

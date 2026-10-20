@@ -74,5 +74,11 @@ export const fr: Messages = {
   endBeforeStart: '{end} ne peut pas précéder {start}',
   timeStep: '{label} : les heures vont par pas de {step} minutes, par exemple {example} ou {next}',
   patternBroken: 'Le motif de {label} n’est pas valide : {problem}',
+  formOpens: 'Ce formulaire ouvre le {when}.',
+  formClosed: 'Ce formulaire a fermé le {when}.',
+  formFull: 'Ce formulaire a reçu toutes les réponses qu’il accepte.',
+  formSent: 'Vous avez déjà envoyé vos réponses à ce formulaire.',
+  choiceFull: '{option} est complet',
+  choiceFilled: '{option} est maintenant complet : choisissez autre chose',
   locale: 'fr',
 };

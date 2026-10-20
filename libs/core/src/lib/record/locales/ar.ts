@@ -74,5 +74,11 @@ export const ar: Messages = {
   endBeforeStart: 'لا يمكن أن يكون {end} قبل {start}',
   timeStep: '{label}: اختر وقتًا من الخطوات المتاحة، مثل {example} أو {next}',
   patternBroken: 'نمط {label} غير صالح: {problem}',
+  formOpens: 'يُفتح هذا النموذج في {when}.',
+  formClosed: 'أُغلق هذا النموذج في {when}.',
+  formFull: 'اكتمل عدد الردود التي يقبلها هذا النموذج.',
+  formSent: 'لقد أرسلت إجاباتك على هذا النموذج من قبل.',
+  choiceFull: 'لا أماكن متبقية في {option}',
+  choiceFilled: 'امتلأ {option} الآن: اختر غيره',
   locale: 'ar',
 };

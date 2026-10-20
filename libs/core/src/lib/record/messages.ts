@@ -131,6 +131,17 @@ export interface Messages {
   timeStep: string;
   /** A field's pattern that is no pattern, as checkPage says it: `{problem}` is the browser's words. */
   patternBroken: string;
+  /**
+   * Why a page takes no answers now (`limits`): before it opens and after it closed (`{when}`, its day, or its day and
+   * time), all its responses taken, this person's one sent already.
+   */
+  formOpens: string;
+  formClosed: string;
+  formFull: string;
+  formSent: string;
+  /** A choice whose places are all taken (an option's `seats`): picked now (`choiceFull`), or held as it filled up. */
+  choiceFull: string;
+  choiceFilled: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -227,6 +238,12 @@ const en: Messages = {
   endBeforeStart: '{end} can’t be before {start}',
   timeStep: '{label}: times go in steps of {step} minutes, like {example} or {next}',
   patternBroken: 'The pattern of {label} is not a valid pattern: {problem}',
+  formOpens: 'This form opens on {when}.',
+  formClosed: 'This form closed on {when}.',
+  formFull: 'This form has all the responses it takes.',
+  formSent: 'You have sent your answers to this form already.',
+  choiceFull: '{option} is full',
+  choiceFilled: '{option} is full now: choose another',
   locale: 'en',
 };
 

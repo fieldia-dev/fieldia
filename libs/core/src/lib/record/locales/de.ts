@@ -76,5 +76,11 @@ export const de: Messages = {
   endBeforeStart: '{end} darf nicht vor {start} liegen',
   timeStep: '{label}: Uhrzeiten in Schritten von {step} Minuten, z. B. {example} oder {next}',
   patternBroken: 'Das Muster von {label} ist ungültig: {problem}',
+  formOpens: 'Dieses Formular öffnet am {when}.',
+  formClosed: 'Dieses Formular wurde am {when} geschlossen.',
+  formFull: 'Dieses Formular hat alle Antworten, die es annimmt.',
+  formSent: 'Sie haben Ihre Antworten auf dieses Formular bereits gesendet.',
+  choiceFull: '{option} ist ausgebucht',
+  choiceFilled: '{option} ist jetzt ausgebucht: Wählen Sie etwas anderes',
   locale: 'de',
 };
