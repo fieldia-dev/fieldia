@@ -122,6 +122,12 @@ export interface MemoryDataSourceOptions {
    * `merge` keeps one record with the values picked and takes the others away, links to them moved to it, either way.
    */
   duplicates?: (request: DuplicatesRequest, records: Readonly<Record<string, Record<string, Values>>>) => DuplicatesResult | Promise<DuplicatesResult>;
+  /**
+   * What a response sent is answered with, as an app's server answers it: the id it gives the response — a booking's
+   * reference, "B-1043" — and any values it adds, which an ending reads. `count` is how many responses the source keeps
+   * now, this one among them. Without it, each response's id is that count: 1, 2, 3.
+   */
+  submitted?: (request: SubmitRequest, count: number) => SubmitResult;
 }
 
 /**
@@ -512,7 +518,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       calls.push({ method: 'submit', request });
       await pause();
       responses.push(structuredCopy(request));
-      return { id: responses.length };
+      return options.submitted ? options.submitted(structuredCopy(request), responses.length) : { id: responses.length };
     },
 
     async archive(request: ArchiveRequest): Promise<void> {

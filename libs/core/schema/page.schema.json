@@ -373,6 +373,14 @@
     },
     "lowerLabels": {
       "type": "boolean"
+    },
+    "endings": {
+      "minItems": 1,
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PageEnding"
+      }
     }
   },
   "required": [
@@ -10035,6 +10043,38 @@
         "one",
         "other"
       ],
+      "additionalProperties": false
+    },
+    "PageEnding": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300,
+          "pattern": "\\S"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "again": {
+          "anyOf": [
+            {
+              "type": "boolean",
+              "const": false
+            },
+            {
+              "type": "string",
+              "maxLength": 80,
+              "pattern": "\\S"
+            }
+          ]
+        }
+      },
       "additionalProperties": false
     }
   }

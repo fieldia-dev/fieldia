@@ -115,6 +115,43 @@ viewer draws the hidden box and tells the form when it is filled
 (`form.botCheck({ honeypot: true })`). A page without `botCheck` sends what it
 always did.
 
+## What a page says once it is sent, and answers in its words
+
+A page of responses' `endings` say what it shows once its answers are sent: the
+first whose `when` holds on the answers as they were sent — with what the data
+source answered, the id it gave the response and the values it added — else the
+one with no `when`, shown otherwise, which comes last. `{id}` in its words is
+that reference:
+
+```json
+"endings": [
+  { "when": "overall <= 2", "title": "We are sorry, {name}", "text": "{branch} will call you today.", "again": false },
+  { "title": "Thank you, {name}", "text": "Your booking is {id}.", "again": "Book another" }
+]
+```
+
+```ts
+async submit({ pageId, values }) {
+  const kept = await store(pageId, values);
+  return { id: kept.reference, values: { confirmed_at: kept.confirmedAt } };   // what the ending reads
+}
+form.getState().sent;          // { id: 'B-1043', values: { …the answers sent, confirmed_at } } until reset()
+form.ending();                 // the ending for them, or null
+form.endingWords('Your booking is {id}.');   // "Your booking is B-1043."
+```
+
+`{field}` shows an answer in the page's own words too — a field's label and
+help, each choice's words, a step's title and words, a wizard's and a button's
+words — as in a text's and an alert's: `form.words('How was your visit to
+{branch}?')` is "How was your visit to Zamalek?", and the form's messages name
+the field so ("How was your visit to Zamalek? is required"). How a value reads
+there is the viewer's (`valueWords` in `createForm`'s options: a choice by its
+label, money with its currency, a day in the page's order); without one, a
+choice's label, a link's name, Yes or No, anything else as held. A `{name}` that
+is no field of the page is refused by the page check. `createMemoryDataSource`
+answers each response as a server would with ``submitted: (request, count) =>
+({ id: `B-${1042 + count}` })``.
+
 ## Files stored as they are picked
 
 Give the data source `upload(file, request)` and a file or picture field sends

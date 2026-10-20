@@ -2,6 +2,8 @@ import type { ActionStep } from '../format/actions';
 import type { DefinitionsFrom, Field, Fields, LineField, Option, OptionsFrom, PropertyDefinition } from '../format/field';
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
+import type { PageEnding } from '../format/endings';
+import { fillValues } from '../format/words';
 import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
 import { zonedPage } from '../format/zoned';
@@ -125,6 +127,20 @@ export interface FormState {
    * value it held as the box was entered; validate and save refuse with the words until the text is fixed.
    */
   readonly unread: Readonly<Record<string, UnreadText>>;
+  /**
+   * A page of responses sent: the answers as they went, with what the app's source answered — the id it gave the
+   * response and the values it added (`SubmitResult`). What its ending reads (`form.ending()`, `{id}`). Null until a
+   * send, and again once the form starts a new response (`reset`).
+   */
+  readonly sent?: SentResponse | null;
+}
+
+/** A response sent, as `FormState.sent` keeps it. */
+export interface SentResponse {
+  /** The id the app's source gave the response ("B-1043"), or null where it gave none. */
+  readonly id: RecordId | null;
+  /** The answers as they were sent, with the values the source added (`SubmitResult.values`) laid over them. */
+  readonly values: Readonly<Values>;
 }
 
 /** How a search for a link's records is asked (`form.search`, `form.searchLine`). */
@@ -319,6 +335,14 @@ export interface FormOptions {
    * `parent.state`, a filter's `valueFrom: "parent.company_id"`.
    */
   parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
+  /**
+   * How a field's value reads inside the page's own words — a `{field}` in a label, a help, a choice, a step's title, a
+   * button, an ending — and so inside the form's messages that name a label ("How was your visit to Zamalek? is
+   * required"). The viewer gives its own, as each field shows its value at rest: a choice by its label, money with its
+   * currency, a day in the page's order. Left out, a choice by its label, a link by its name, a yes or no as Yes or No,
+   * anything else as it is held.
+   */
+  valueWords?: (field: Field, value: Value | undefined, values: Readonly<Values>) => string;
 }
 
 /** The person using a form, as the app knows them. */
@@ -401,6 +425,20 @@ export interface Form {
   validate(): boolean;
   save(): Promise<boolean>;
   reset(): void;
+  /**
+   * Words of the page's with each `{field}` showing the value the form holds now, as `valueWords` writes it — a label's,
+   * a help's, a step's title, a button's: "How was your visit to {branch}?" reads "How was your visit to Zamalek?". A
+   * name that is no field of the page shows nothing.
+   */
+  words(text: string): string;
+  /**
+   * The ending a page of responses shows now its answers are sent (`FormState.sent`): the first of the page's
+   * `endings` whose `when` holds on the answers as sent, with what the source added and the response's `id`, else the
+   * first with no `when`; null before a send, on a page with none, or where none holds.
+   */
+  ending(): PageEnding | null;
+  /** An ending's words, its `{field}`s and `{id}` filled in from the response sent (`FormState.sent`), as `words` writes them. */
+  endingWords(text: string): string;
   changes(): RecordChanges;
   addLine(field: string, values?: Values): string;
   updateLine(field: string, key: string, name: string, value: Value): void;
@@ -817,6 +855,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const draftKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
   /** Today, on the clock of the page's time zone (the browser's own when it names none). */
   const today = () => dayIn(options.now?.() ?? new Date(), page.timeZone);
+  /** Whether a field's own words — a label, a choice's — show a value: found once, so a page with none checks as before. */
+  const worded = /\{[A-Za-z_]\w*\}/.test(JSON.stringify(page.fields));
   const clock = () => (options.now?.() ?? new Date()).getTime();
   /** What a page's bot check saw — its hidden box filled, the captcha's token — and when the page was shown or started again. */
   let bot = { honeypot: false, captcha: null as string | null, since: clock() };
@@ -975,6 +1015,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     unsent: [],
     leaving: false,
     unread: {},
+    sent: null,
   };
   started = true;
   /**
@@ -1363,8 +1404,24 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     await track(options.dataSource?.saveDefinitions?.({ list, values: structuredCopy(state.values as Values), definitions }) ?? Promise.resolve());
   }
 
-  /** A field as its value is checked: a list's choices are those loaded, and until they are, any choice may be one. */
+  /**
+   * A field as its value is checked: a list's choices are those loaded, and until they are, any choice may be one; its
+   * label and its choices' words with their `{field}`s filled in, as the page shows them.
+   */
   function checked(name: string): Field {
+    const def = checkedAsLoaded(name);
+    return worded ? shownWords(def) : def;
+  }
+
+  /** A field whose words show values — its label, its choices' — with them filled in now, else as it is. */
+  function shownWords(def: Field): Field {
+    const options = def.type === 'selection' && def.options.some((option) => option.label.includes('{')) ? def.options.map((option) => ({ ...option, label: wordsNow(option.label) })) : null;
+    if (!def.label.includes('{') && !options) return def;
+    return { ...def, label: wordsNow(def.label), ...(options ? { options } : {}) } as Field;
+  }
+
+  /** A field as its value is checked, its choices those loaded from the app's list. */
+  function checkedAsLoaded(name: string): Field {
     const def = page.fields[name];
     const loaded = state.choices[name]?.options;
     if (def.type === 'properties' && def.definitionsFrom) {
@@ -1392,6 +1449,44 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const done = () => pending.delete(promise);
     promise.then(done, done);
     return promise;
+  }
+
+  /**
+   * Words with each `{field}` showing the value `values` hold (the form's now, unless given), as the app's viewer
+   * writes it (`valueWords`), else plainly; `other` answers a name first (an ending's `{id}`). A name that is no field
+   * shows nothing.
+   */
+  function wordsNow(text: string, values: Readonly<Values> = state.values, other?: (name: string) => string | undefined): string {
+    if (!text.includes('{')) return text;
+    return fillValues(text, (name) => {
+      const own = other?.(name);
+      if (own !== undefined) return own;
+      const def = page.fields[name];
+      if (!def) return '';
+      return options.valueWords ? options.valueWords(def, values[name], values) : wordsOfValue(def, values[name]);
+    });
+  }
+
+  /** Each ending's condition, read once: null for the default (no `when`), and one that does not read never holds. */
+  const endingConditions = (page.endings ?? []).map((ending) => {
+    if (ending.when === undefined) return null;
+    try {
+      return compileModifier(ending.when);
+    } catch {
+      return compileModifier(false);
+    }
+  });
+
+  /** The ending for the response sent: the first whose condition holds on it — its answers, what the source added, its id — else the default. */
+  function endingNow(): PageEnding | null {
+    const sent = state.sent;
+    const endings = page.endings;
+    if (!sent || !endings?.length) return null;
+    const values = sent.values as Values;
+    const context = recordContext(values, page.fields, { ...about(), recordId: sent.id });
+    const env = expressionEnv(values, page.fields, today);
+    const at = endingConditions.findIndex((condition) => !condition || condition.evaluate(context, env));
+    return at === -1 ? null : endings[at];
   }
 
   /** The values as expressions read them, and what else they read: the record's id, the person, the lines' rows, today. */
@@ -1467,7 +1562,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (!rules) return {};
     const name = node.field as string;
     const def = page.fields[name];
-    const label = (node.source as FieldNode).label ?? def.label;
+    const label = wordsNow((node.source as FieldNode).label ?? def.label);
     const { context: ctx, env } = reading();
     return checkRules(def, label, state.values[name], rules, { context: ctx, env, now: options.now?.() ?? new Date(), messages });
   }
@@ -1529,7 +1624,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const start = state.values[node.field as string];
     if (typeof start !== 'string' || typeof value !== 'string' || !start || !value) return undefined;
     const at = (v: string) => (def.type === 'datetime' ? Date.parse(v) : Date.parse(v.slice(0, 10)));
-    if (at(value) < at(start)) return fillMessage(messages, messages.endBeforeStart, { end: def.label, start: page.fields[node.field as string].label });
+    if (at(value) < at(start)) return fillMessage(messages, messages.endBeforeStart, { end: wordsNow(def.label), start: wordsNow(page.fields[node.field as string].label) });
     return undefined;
   }
 
@@ -1950,8 +2045,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const sent = shownValues();
         const before = state.values as Values;
         at = generation;
+        const resetAt = resets;
         const seen = botReport();
-        await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}) });
+        // What the source answered: the id it gave the response, and the values it added — what an ending reads.
+        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}) })) ?? {};
         // The captcha's token is spent once sent: the next send waits for a new one.
         if (seen?.captcha) bot.captcha = null;
         // Answered for answers no longer shown — the form was started again meanwhile: the source has them, the form lays nothing.
@@ -1959,7 +2056,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         forgetDraft();
         // What it sent is what an answer changed since is told against: still to send.
         sentAs = before;
-        set({ status: 'saved', unsent: unsentNow() });
+        const added = answer.values && typeof answer.values === 'object' ? structuredCopy(answer.values) : {};
+        // Started again meanwhile (`reset`): a new response is on screen, and no ending is the old one's.
+        set({ status: 'saved', unsent: unsentNow(), ...(resets === resetAt ? { sent: { id: answer.id ?? null, values: { ...structuredCopy(sent), ...added } } } : {}) });
         emit('send', { values: sent, ...(seen ? { bot: seen } : {}) });
         void track(moment('on.afterSave', page.on?.afterSave, chain, false));
         return null;
@@ -2834,7 +2933,18 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Started again: a new response, timed from now.
       bot = { ...bot, honeypot: false, since: clock() };
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {} });
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, sent: null });
+    },
+
+    words: (text) => wordsNow(text),
+
+    ending: endingNow,
+
+    endingWords(text) {
+      const sent = state.sent;
+      if (!sent) return wordsNow(text);
+      // The response's id where the page has no field of that name: "Your booking is {id}".
+      return wordsNow(text, sent.values, (name) => (name === 'id' && !page.fields['id'] ? String(sent.id ?? '') : undefined));
     },
 
     changes,
@@ -3203,6 +3313,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           scheduler,
           messages,
           now: options.now,
+          // Its words that show its answers read them as this form's do.
+          ...(options.valueWords ? { valueWords: options.valueWords } : {}),
         },
         chain,
         // Its files are the record's: stored for it, under the part's name.

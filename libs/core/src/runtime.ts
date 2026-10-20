@@ -83,6 +83,7 @@ export type { PagePhone, PhoneOptions } from './lib/format/phone';
 export type { SlotsOptions } from './lib/format/slots-options';
 export type { PageDuplicates } from './lib/format/duplicates';
 export type { PageRecords } from './lib/format/records';
+export type { PageEnding } from './lib/format/endings';
 export { labelAt, recordSentence } from './lib/record/record-words';
 export { wideColumns } from './lib/format/columns';
 export { relatedInTab } from './lib/format/head-checks';

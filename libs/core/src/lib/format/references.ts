@@ -99,7 +99,7 @@ export class ReferenceCheck {
       walkNode: (node, path) => this.walkNode(node, path),
       checkModifiers: (owner, path, keys) => this.checkModifiers(owner, path, keys),
       checkSteps: (steps, path) => this.checkSteps(steps, path),
-      checkPress: (button, path) => this.checkPress(button, path),
+      checkPress: (button, path) => this.checkPress(button, path, true),
       isPart: (id) => this.ids.has(id),
       isPlace: (id) => this.places.has(id),
     });
@@ -107,6 +107,7 @@ export class ReferenceCheck {
     if (this.page.botCheck !== undefined && !this.line) this.checkBotCheck(this.page);
     if (this.page.duplicates !== undefined && !this.line) this.checkDuplicates(this.page);
     if (this.page.records !== undefined && !this.line) this.checkRecords(this.page.records);
+    if (this.page.endings !== undefined && !this.line) this.checkEndings(this.page);
     this.checkGoingTo();
     return this.issues;
   }
@@ -141,6 +142,23 @@ export class ReferenceCheck {
     if (!said(words['one'])) this.report('records.one', 'the word for one record, as a sentence says it: "customer"');
     if (!said(words['other'])) this.report('records.other', 'the word for more than one record: "customers"');
     if (words['a'] !== undefined && !said(words['a'])) this.report('records.a', 'the word for one record with its article: "a customer", "an invoice"');
+  }
+
+  /**
+   * What a page of responses shows once it is sent: each ending's condition reads the answers (and `id`, the response's),
+   * its words name fields of the page (or `id`), it says something, and none follows one that is always shown.
+   */
+  private checkEndings(page: Page) {
+    if (page.data.kind !== 'responses') this.report('endings', 'endings are for a page of responses, shown once it is sent');
+    let always = '';
+    (Array.isArray(page.endings) ? page.endings : []).forEach((ending, i) => {
+      const at = `endings[${i}]`;
+      if (always) this.report(at, `never shown: ${always} has no when and comes first`);
+      this.checkModifiers(ending, at, ['when']);
+      if (ending.when === undefined || ending.when === true) always ||= at;
+      if (typeof ending.title !== 'string' && typeof ending.text !== 'string') this.report(at, 'an ending needs a title or text');
+      this.checkWords(ending, at, ['title', 'text'], true);
+    });
   }
 
   /** A time zone the browser knows, by its IANA name: a page's dates and times are never drawn on a clock it cannot read. */
@@ -187,8 +205,9 @@ export class ReferenceCheck {
     }
   }
 
-  /** A press: steps, an app action, or both — and its steps checked. */
-  private checkPress(button: ButtonNode | StatButton, path: string) {
+  /** A press: steps, an app action, or both — and its steps checked; on a button drawn on the record (`drawn`, not a list's row's), the `{field}`s its words show. */
+  private checkPress(button: ButtonNode | StatButton, path: string, drawn = false) {
+    if (drawn && 'type' in button) this.checkWords(button, path, ['label', 'pressedLabel']);
     // A button with a menu of its own and nothing else is a menu button.
     const menu = 'menu' in button && !!button.menu?.length;
     if (!button.steps && button.action === undefined && !menu) this.report(path, 'a button needs steps, an action, or both');
@@ -261,9 +280,20 @@ export class ReferenceCheck {
     });
   }
 
-  /** Words that show fields' values: each `{name}` a field of this page. */
-  private checkValuesIn(words: string, path: string) {
-    for (const name of valuesIn(words)) this.need(name, path);
+  /**
+   * Words that show fields' values: each `{name}` a field of this page — in an ending's (`sent`), or `id`, the id the
+   * app's source gave the response.
+   */
+  private checkValuesIn(words: string, path: string, sent = false) {
+    for (const name of valuesIn(words)) if (!(sent && name === 'id' && !has(this.page.fields, 'id'))) this.need(name, path);
+  }
+
+  /** The words of a part that may show the answers given (`keys` of `owner`): each `{name}` a field of the page. */
+  private checkWords(owner: object, path: string, keys: readonly string[], sent = false) {
+    for (const key of keys) {
+      const words = (owner as Record<string, unknown>)[key];
+      if (typeof words === 'string') this.checkValuesIn(words, `${path}.${key}`, sent);
+    }
   }
 
   private report(path: string, message: string) {
@@ -418,6 +448,11 @@ export class ReferenceCheck {
     this.checkWorkedOut(fields, base, scope);
     for (const [name, def] of Object.entries(fields as Record<string, Field | LineField>)) {
       const path = `${base}.${name}`;
+      // A field's label, its help and its choices' words may show the answers given — the page's own fields', not a line's.
+      if (lines === undefined) {
+        this.checkWords(def, path, ['label', 'help']);
+        if (def.type === 'selection' && Array.isArray(def.options)) def.options.forEach((option, i) => this.checkWords(option ?? {}, `${path}.options[${i}]`, ['label']));
+      }
       if (def.type === 'monetary' && def.currencyField !== undefined) this.checkCurrency(def.currencyField, `${path}.currencyField`, fields, lines, parent);
       // What an amount is for, by a condition on the record it is on: "/month" on a rent.
       if (def.type === 'monetary') def.money?.per?.forEach((item, i) => this.checkModifiers(item, `${path}.money.per[${i}]`, ['when'], scope));
@@ -508,7 +543,7 @@ export class ReferenceCheck {
     footer?.forEach((button, i) => {
       this.claim(button.id, `${path}.footer[${i}]`);
       this.checkModifiers(button, `${path}.footer[${i}]`);
-      this.checkPress(button, `${path}.footer[${i}]`);
+      this.checkPress(button, `${path}.footer[${i}]`, true);
     });
   }
 
@@ -519,11 +554,14 @@ export class ReferenceCheck {
     if (root.type === 'sheet') return this.walkSheet(root, path);
     if (root.type === 'sections') return this.walkChildren(root.children, path);
     if (root.type === 'list') return this.walkList(root, path);
+    // A wizard's own buttons' words, and each step's title and words, may show the answers given: "Your visit to {branch}".
+    this.checkWords(root, path, ['nextLabel', 'backLabel', 'finishLabel']);
     root.children.forEach((step, i) => {
       const stepPath = `${path}.children[${i}]`;
       this.places.add(step.id);
       this.claim(step.id, stepPath);
       this.checkModifiers(step, stepPath);
+      this.checkWords(step, stepPath, ['label', 'description']);
       this.walkChildren(step.children, stepPath);
     });
   }
@@ -881,7 +919,7 @@ export class ReferenceCheck {
       case 'form':
         return this.checkFormNode(node, path);
       case 'button':
-        return this.checkPress(node, path);
+        return this.checkPress(node, path, true);
       case 'text':
         return this.checkValuesIn(node.text, `${path}.text`);
       case 'map':
@@ -990,7 +1028,7 @@ export class ReferenceCheck {
     sheet.buttons?.forEach((button, i) => {
       this.claim(button.id, `${path}.buttons[${i}]`);
       this.checkModifiers(button, `${path}.buttons[${i}]`);
-      this.checkPress(button, `${path}.buttons[${i}]`);
+      this.checkPress(button, `${path}.buttons[${i}]`, true);
     });
     sheet.statButtons?.forEach((stat, i) => {
       this.claim(stat.id, `${path}.statButtons[${i}]`);
@@ -1024,7 +1062,7 @@ export class ReferenceCheck {
       alert.buttons?.forEach((button, j) => {
         this.claim(button.id, `${at}.buttons[${j}]`);
         this.checkModifiers(button, `${at}.buttons[${j}]`);
-        this.checkPress(button, `${at}.buttons[${j}]`);
+        this.checkPress(button, `${at}.buttons[${j}]`, true);
       });
     });
     // The gear menu: buttons of the record, each doing something — its steps, an action, or a built-in — and named.
@@ -1098,6 +1136,8 @@ export class ReferenceCheck {
 
   private checkFieldNode(node: FieldNode, path: string) {
     const def = this.need(node.field, `${path}.field`);
+    // Its own label and help, as the field's: words that may show the answers given.
+    this.checkWords(node, path, ['label', 'help']);
     // Answer rules: each condition and rule across fields reads, each pattern is a regular expression.
     node.validate?.forEach((rule, i) => {
       const at = `${path}.validate[${i}]`;
