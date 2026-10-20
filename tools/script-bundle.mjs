@@ -1015,11 +1015,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
-// A list's cells changed in place (Wave 5, w5-editable-list), in the editable part (fieldia.editable.js) with its
-// rules and its page checks; in the main script only what lets any page reach it: the part's holders and partsFor's
-// asking for it, a list page's viewer handing a list its rows' forms and boxes (made as the page's own), and the check
-// owing the part its checks — 506.77 measured before, 507.33 after, to 507.4.
-const BUDGET_KB = 508.5;
+// A list's cells changed in place (Wave 5, w5-editable-list): its code, its sheet and its page checks in the editable
+// part (fieldia.editable.js); in the main script only what every page's drawing asks before it draws — partsFor knowing
+// a list changes its cells, so it asks for the editable part and each such column's box's own part (a link's, a day's)
+// and the page is drawn whole (viewer-parts 0.37), by the one rule of which columns a cell changes, which the part's
+// check reads too (list-editable 0.26); a list page's viewer handing its list a row's form and a field's box, made as
+// the page's own (viewer 0.18); the reference check owing the part its checks (0.14); the names the parts take from the
+// main script and the global's (0.23) — 506.77 measured before, 507.91 after, to 508.0.
+const BUDGET_KB = 508.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1253,8 +1256,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
-// A list's cells changed in place (listed with the raw budget above): 166.15 measured before, 166.38 after, to 166.4.
-const GZIP_BUDGET_KB = 166.8;
+// A list's cells changed in place (listed with the raw budget above): 166.15 measured before, 166.57 after, to 166.6.
+const GZIP_BUDGET_KB = 166.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1435,7 +1438,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The owner's walk of 0.27 mended: a question's required message, and a refused signature's "ready to sign" and Sign
 // now — Arabic's 77.58 and 13.24 measured before, 77.88 and 13.29 after, to 77.9 and 13.3; German's 36.14 and 11.60 to
 // 36.27 and 11.64, to 36.3 and 11.7; French's 36.60 and 11.64 to 36.75 and 11.70, to 36.8 and 11.7.
-const ADD_ON_BUDGET_KB = { ar: [79.9, 13.9], de: [37.9, 12.2], fr: [37.9, 12.2] };
+// A list's cells changed in place (Wave 5, w5-editable-list): what a cell that takes a change is, Add a line, Remove,
+// why a row was not saved, a row saved, Open, Change and a cell named in a paste's note — 8 words in each (Add {aRecord}
+// in English alone): Arabic's 77.88 and 13.29 measured before, 78.52 and 13.42 after, to 78.6 and 13.5; German's 36.27
+// and 11.64 to 36.60 and 11.75, to 36.7 and 11.8; French's 36.75 and 11.70 to 37.09 and 11.80, to 37.1 and 11.9.
+const ADD_ON_BUDGET_KB = { ar: [78.6, 13.5], de: [36.7, 11.8], fr: [37.1, 11.9] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1828,7 +1835,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [130.6, 42.0], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [40.0, 14.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// A list's cells changed in place (Wave 5, w5-editable-list), in a part of its own — editable 28.70 and 10.57, to 28.8
+// and 10.6: a cell opened in its field's own box, Tab, Escape and Enter, each row a form saved as it is left, one refused
+// or met by someone else's save said under it, a row added, a paste across the rows and writeMany, a card's sheet, its
+// sheet and its checks — and in the list part only the list's hooks for it (its rows wired, a press and Enter handed
+// over, the saves waited for before it asks again, a row saved counted): list 129.50 and 41.60 to 130.54 and 41.96, to
+// 130.6 and 42.0. In the list part it would have added 28.7 and 10.6 to every list's.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [130.6, 42.0], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [28.8, 10.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
