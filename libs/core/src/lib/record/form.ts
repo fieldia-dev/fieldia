@@ -1,6 +1,6 @@
 import type { ActionStep } from '../format/actions';
 import type { DefinitionsFrom, Field, Fields, LineField, Option, PropertyDefinition, SelectionOption } from '../format/field';
-import { optionsField, optionsList } from '../format/choice-options';
+import { choiceOptions, optionsField, optionsList } from '../format/choice-options';
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { PageEnding } from '../format/endings';
@@ -153,8 +153,9 @@ export interface FormState {
   readonly asked: Readonly<Record<string, AskedFor>>;
   /**
    * Words said under a choice whose chosen options a change of other answers no longer offers — hidden by their
-   * condition, or no longer picked where they are carried from — by field: they were taken out of its answer. Until
-   * the field is written again, or another record is shown.
+   * condition, no longer picked where they are carried from, or no longer in the app's list as a field it changes with
+   * changed — by path (a field, or a table line's `field.lineKey.subfield`): they were taken out of its answer. Until
+   * that value is written again, its line goes, or another record is shown.
    */
   readonly takenOut: Readonly<Record<string, string>>;
   /**
@@ -271,11 +272,6 @@ export interface Choices {
   readonly loading?: boolean;
   /** Why the last load failed. */
   readonly error?: string;
-  /**
-   * A choice these choices no longer offer, once a field they change with changed — a page's, or a column of a table
-   * line's: cleared, and named here — its label, or labels — to be said until its value changes again.
-   */
-  readonly cleared?: string;
 }
 
 /** What a layout element looks like right now. */
@@ -423,6 +419,11 @@ export interface Form {
   readonly page: Page;
   /** The app's own functions as the page's expressions call them (`FormOptions.functions`): for what reads its conditions apart. */
   readonly functions?: FunctionTable;
+  /**
+   * A table line's cell's form (@fieldia/widgets' `lineForm`): the table and the line it is the form of, whose values,
+   * choices and words taken out of them are the line's own. Left out of a record's own form.
+   */
+  readonly line?: { readonly field: string; readonly key: string };
   getState(): FormState;
   subscribe(listener: (state: FormState) => void): () => void;
   load(): Promise<void>;
@@ -579,7 +580,7 @@ export interface Form {
    * the app's list (`optionsFrom`). Once loaded, they load again by themselves
    * when a field they change with changes; the latest answer wins, and a
    * choice it no longer offers after the person, a step or the app changed
-   * that field is cleared and named (`Choices.cleared`). A value a record
+   * that field is taken out and said (`FormState.takenOut`). A value a record
    * comes in with is kept, and its save says why. A table line's, by its
    * cell's path (`field.lineKey.subfield`), are asked by the line's values and
    * shared with every line where the columns they change with hold the same,
@@ -594,10 +595,14 @@ export interface Form {
   /**
    * The options a choice offers now: its own — or those its list gave (`optionsFrom.list`), or those picked in the
    * question they are carried from (`optionsFrom.field`), its own after them — less those whose condition hides them
-   * (`options[].invisible`). Null for a field that is no choice.
+   * (`options[].invisible`). A table line's by its cell's path (`field.lineKey.subfield`), its conditions read on that
+   * line. Null for a field that is no choice.
    */
   offered(field: string): readonly Option[] | null;
-  /** Whether a choice's options change with the record's answers: a condition on one, or carried from another question. */
+  /**
+   * Whether a choice's options change with the record's answers: a condition on one, or carried from another question.
+   * A table line's by its cell's path: a condition on one of its column's options.
+   */
   offersChange(field: string): boolean;
   /**
    * Load, or load again, the definitions of a properties field whose
@@ -1372,8 +1377,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     edit = false;
     const stepWas = state.step;
     state = { ...state, ...patch };
-    // A line's choices go with their line; a choice named as cleared is no longer said once its value changes.
-    if (state.values !== was) state = { ...state, choices: choicesNow(state.choices, was) };
+    // A line's choices go with their line.
+    if (state.values !== was) state = { ...state, choices: choicesNow(state.choices) };
     // What waits for an app's answer, as the values shown last settled.
     if (patch.values !== undefined && patch.asked === undefined && !sameAsked(state.asked, askedNow)) state = { ...state, asked: Object.fromEntries(askedNow) };
     // The person's changes the last save did not send, worked out again from the values as they are now, and from the
@@ -1387,7 +1392,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     for (const listener of [...listeners]) listener(state);
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
-      // After someone's change, a choice its new choices do not offer is cleared and named, as a line's is.
+      // After someone's change, a choice its new choices do not offer is taken out and said, as a line's is.
       for (const name in state.choices) if (!name.includes('.') && fromList(name)?.dependsOn?.some((other) => was[other] !== state.values[other])) loadChoices(name, edited);
       for (const name in state.definitions) if (fromRecord(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadDefinitions(name);
       if (listed.length) followLines(was, edited);
@@ -1565,22 +1570,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return ask;
   }
 
-  /**
-   * The choices as the values are now: a line's go with their line, and a choice named as cleared (`Choices.cleared`) is
-   * said no more once its field's value changed after — the person chose another, or emptied it themselves.
-   */
-  function choicesNow(choices: Readonly<Record<string, Choices>>, was: Readonly<Values>): Readonly<Record<string, Choices>> {
+  /** The choices as the values are now: a line's go with their line. */
+  function choicesNow(choices: Readonly<Record<string, Choices>>): Readonly<Record<string, Choices>> {
     let kept: Record<string, Choices> | null = null;
-    for (const [path, one] of Object.entries(choices)) {
-      const now = valueAt(state.values, path);
-      if (now === gone) {
-        kept ??= { ...choices };
-        delete kept[path];
-        askedBy.delete(path);
-      } else if (one.cleared && JSON.stringify(now ?? null) !== JSON.stringify(valueAt(was, path) ?? null)) {
-        const { cleared: _, ...rest } = one;
-        (kept ??= { ...choices })[path] = rest;
-      }
+    for (const path of Object.keys(choices)) {
+      if (valueAt(state.values, path) !== gone) continue;
+      kept ??= { ...choices };
+      delete kept[path];
+      askedBy.delete(path);
     }
     return kept ?? choices;
   }
@@ -1604,7 +1601,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /**
    * Load a field's choices, or a line cell's by its path (`table.key.column`). `judge`, after a change someone made of
-   * what they change with: a choice they no longer offer is cleared and named, on the record they were asked for,
+   * what they change with: a choice they no longer offer is taken out and said, on the record they were asked for,
    * while a line still asks by the same.
    */
   function loadChoices(name: string, judge = false) {
@@ -1643,9 +1640,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           const now = cell && lineAt(cell.table, cell.key);
           const held = !cell ? state.values[name] : now && askKey(one as ListedColumn, now.values, state.values as Values) === by ? now.values[cell.column] : null;
           const lost = judge && onRecord() ? notOffered(one?.def ?? (page.fields[name] as LineField), held, loaded) : [];
-          // Cleared first, then named: the words stay until its value changes again.
-          if (lost.length) clearChoices(cell ? cell.table : name, cell, lost);
-          put({ options: loaded, ...(lost.length ? { cleared: namedChoices(lost, shown, loaded) } : {}) });
+          // Taken out and said: the words stay until its value changes again.
+          if (lost.length) clearChoices(cell ? cell.table : name, cell, lost, namedChoices(lost, shown, loaded));
+          put({ options: loaded });
           // Options of the app's list with places, never counted yet: how many took each is asked.
           if (!cell && loaded.some((option) => option.seats !== undefined) && !counted?.perChoice?.[name]) void track(askLimits());
         },
@@ -1654,18 +1651,21 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     );
   }
 
-  /** Choices said by their labels, as the choices shown before or now name them. */
+  /** Choices by their labels, as the choices shown before or now name them. */
   const namedChoices = (lost: readonly Value[], shown: readonly Option[] | null, loaded: readonly Option[]) =>
-    lost.map((value) => [...(shown ?? []), ...loaded].find((option) => option.value === value)?.label ?? String(value)).join(', ');
+    lost.map((value) => [...(shown ?? []), ...loaded].find((option) => option.value === value)?.label ?? String(value));
 
-  /** A choice — a field's, or a line's (`key`) column — less what its choices no longer offer, worked out from someone's change: their claim stays. */
-  function clearChoices(field: string, line: { key: string; column: string } | null, lost: readonly Value[]) {
+  /**
+   * A choice — a field's, or a line's (`key`) column — less what its choices no longer offer, worked out from someone's
+   * change, and said as every choice taken out is (`FormState.takenOut`): their claim stays.
+   */
+  function clearChoices(field: string, line: { key: string; column: string } | null, lost: readonly Value[], labels: string[]) {
     const without = (value: Value | undefined) => (Array.isArray(value) ? value.filter((v) => !lost.includes(v as Value)) : null) as Value;
     const values = state.values as Values;
     const written = line
       ? ((values[field] as Line[] | null) ?? []).map((l) => (l.key === line.key ? { ...l, values: { ...l.values, [line.column]: without(l.values[line.column]) } } : l))
       : without(values[field]);
-    writeValues({ ...values, [field]: written });
+    writeValues({ ...values, [field]: written }, {}, false, { [line ? `${field}.${line.key}.${line.column}` : field]: takenOutWords(labels) });
     afterEdit(field);
     changed(field, 'step', { keep: true });
   }
@@ -1745,6 +1745,33 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   }
   /** The choices whose options change with the record's answers. */
   const changing = Object.keys(page.fields).filter((name) => optionRules.has(name) || (page.fields[name].type === 'selection' && !!optionsField((page.fields[name] as Extract<Field, { type: 'selection' }>).optionsFrom)));
+  /**
+   * A table line's choices whose options show or hide by a condition on the line's values (and `parent.` the record's),
+   * read once: by the table, its column, each option's value.
+   */
+  const lineOptionRules = new Map<string, Map<string, Map<Option['value'], CompiledModifier>>>();
+  for (const [lines, def] of Object.entries(page.fields)) {
+    if (def.type !== 'one2many') continue;
+    for (const [column, sub] of Object.entries(def.fields)) {
+      if (sub.type !== 'selection') continue;
+      const rules = new Map<Option['value'], CompiledModifier>();
+      for (const option of sub.options as SelectionOption[]) if (option.invisible !== undefined && option.invisible !== false) rules.set(option.value, compileModifier(option.invisible, table));
+      if (!rules.size) continue;
+      if (!lineOptionRules.has(lines)) lineOptionRules.set(lines, new Map());
+      lineOptionRules.get(lines)?.set(column, rules);
+    }
+  }
+
+  /** A table line's choice's options as they are offered on that line, its conditions read on it and `record` its record's context. */
+  function lineOffered(lines: string, line: Line, column: string, record: Record<string, unknown>): Option[] {
+    const sub = (page.fields[lines] as Extract<Field, { type: 'one2many' }>).fields[column] as Extract<LineField, { type: 'selection' }>;
+    const options = (optionsList(sub.optionsFrom) && state.choices[`${lines}.${line.key}.${column}`]?.options) || sub.options;
+    const rules = lineOptionRules.get(lines)?.get(column);
+    if (!rules) return [...options];
+    const context = lineContext(line.values, (page.fields[lines] as Extract<Field, { type: 'one2many' }>).fields as Record<string, LineField>, record, line.id ?? null);
+    const env = { ...app, today };
+    return options.filter((o) => !rules.get(o.value)?.evaluate(context, env));
+  }
 
   /** A choice's options as they are offered for these values, read with `read`: see `Form.offered`. */
   function offeredIn(name: string, values: Readonly<Values>, read: { context: Record<string, unknown>; env: ExpressionEnv }, seen: readonly string[] = []): Option[] {
@@ -1771,12 +1798,20 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   }
 
   /**
+   * What is said of options taken out of an answer, by their labels — an answer they show (`{branch}`) as it reads now:
+   * "Garden is no longer offered, so it was taken out".
+   */
+  const takenOutWords = (labels: string[]) =>
+    fillMessage(messages, labels.length > 1 ? messages.notOfferedNowMany : messages.notOfferedNow, { name: listedLabels(labels.map((label) => (label.includes('{') ? wordsNow(label) : label))) });
+
+  /**
    * The chosen options a write no longer offers — hidden by their condition, or no longer picked where they are
    * carried from — taken out of their answers, with what is said: those offered before it and not after, so a record
-   * opened holding one keeps it, and says so. Again while one taken out takes another's away. Null when none goes.
+   * opened holding one keeps it, and says so. A table line's alike, by its cell's path, its conditions read on the line
+   * as it was and as it is. Again while one taken out takes another's away. Null when none goes.
    */
   function takeOut(before: Readonly<Values>, after: Values): { values: Values; said: Record<string, string> } | null {
-    if (!changing.length) return null;
+    if (!changing.length && !lineOptionRules.size) return null;
     const was = before === state.values ? reading() : { context: recordContext(before as Values, page.fields, about()), env: expressionEnv(before as Values, page.fields, today, app) };
     const said: Record<string, string> = {};
     let values = after;
@@ -1792,7 +1827,30 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         if (!gone.length) continue;
         const held = values[name];
         next = { ...next, [name]: Array.isArray(held) ? ((held as unknown[]).filter((value) => !gone.includes(value)) as Value) : null };
-        said[name] = fillMessage(messages, gone.length > 1 ? messages.notOfferedNowMany : messages.notOfferedNow, { name: listedLabels(gone.map((value) => offeredBefore.get(value as Option['value']) ?? String(value))) });
+        said[name] = takenOutWords(gone.map((value) => offeredBefore.get(value as Option['value']) ?? String(value)));
+      }
+      // A line's choice its line's change hides: only a line that was there, and what it offered then.
+      for (const [lines, columns] of lineOptionRules) {
+        const rows = (values[lines] as Line[] | null) ?? [];
+        const rowsBefore = (before[lines] as Line[] | null) ?? [];
+        let written: Line[] | null = null;
+        rows.forEach((line, i) => {
+          const old = rowsBefore.find((one) => one.key === line.key);
+          if (!old) return;
+          for (const column of columns.keys()) {
+            const held = (written?.[i] ?? line).values[column];
+            const chosen: unknown[] = [held].flat().filter((value) => value !== null && value !== undefined);
+            if (!chosen.length) continue;
+            const offeredBefore = new Map(lineOffered(lines, old, column, was.context).map((o) => [o.value, o.label]));
+            const offeredNow = new Set(lineOffered(lines, written?.[i] ?? line, column, now.context).map((o) => o.value));
+            const gone = chosen.filter((value) => offeredBefore.has(value as Option['value']) && !offeredNow.has(value as Option['value']));
+            if (!gone.length) continue;
+            written ??= [...rows];
+            written[i] = { ...written[i], values: { ...written[i].values, [column]: (Array.isArray(held) ? (held as unknown[]).filter((value) => !gone.includes(value)) : null) as Value } };
+            said[`${lines}.${line.key}.${column}`] = takenOutWords(gone.map((value) => offeredBefore.get(value as Option['value']) ?? String(value)));
+          }
+        });
+        if (written) next = { ...next, [lines]: written };
       }
       if (next === values) break;
       values = settle(next);
@@ -1802,7 +1860,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /** A line's field as its value is checked: its choices from the app's list, those loaded for its line. */
   function checkedLine(path: string, def: LineField): LineField {
-    const loaded = def.type === 'selection' && def.optionsFrom ? state.choices[path]?.options : null;
+    const loaded = def.type === 'selection' && optionsList(def.optionsFrom) ? state.choices[path]?.options : null;
     return loaded ? ({ ...def, options: loaded, optionsFrom: undefined } as LineField) : def;
   }
 
@@ -1841,11 +1899,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     });
   }
 
-  /** Each ending's condition, read once: null for the default (no `when`), and one that does not read never holds. */
+  /**
+   * Each ending's condition, read once — with Fieldia's functions and the app's own, as every condition of the page —
+   * null for the default (no `when`), and one that does not read never holds.
+   */
   const endingConditions = (page.endings ?? []).map((ending) => {
     if (ending.when === undefined) return null;
     try {
-      return compileModifier(ending.when);
+      return compileModifier(ending.when, table);
     } catch {
       return compileModifier(false);
     }
@@ -1858,7 +1919,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (!sent || !endings?.length) return null;
     const values = sent.values as Values;
     const context = recordContext(values, page.fields, { ...about(), recordId: sent.id });
-    const env = expressionEnv(values, page.fields, today);
+    // An app's function that asks its server is asked as any condition asks it: it holds once answered.
+    const env = expressionEnv(values, page.fields, today, app);
     const at = endingConditions.findIndex((condition) => !condition || condition.evaluate(context, env));
     return at === -1 ? null : endings[at];
   }
@@ -2096,6 +2158,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return line ? line.values[sub] : gone;
   }
 
+  /** A value — a field's, or a table line's by its cell's path — the same in both: a line that is gone, none. */
+  function sameAt(a: Readonly<Values>, b: Readonly<Values>, path: string): boolean {
+    if (!path.includes('.')) return a[path] === b[path];
+    const now = valueAt(a, path);
+    return now !== gone && JSON.stringify(now ?? null) === JSON.stringify(valueAt(b, path) ?? null);
+  }
+
   /** Unread text whose field has since been written another way — a value typed that reads, the app's — is let go. */
   function unreadKept(values: Readonly<Values>): Readonly<Record<string, UnreadText>> {
     let kept: Record<string, UnreadText> | null = null;
@@ -2212,11 +2281,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     await asksSettled();
   }
 
-  /** Write values someone or something changed. `fresh` values are a starting point instead (a restored draft). */
-  function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false) {
+  /**
+   * Write values someone or something changed. `fresh` values are a starting point instead (a restored draft). `said`:
+   * options taken out of an answer by the write, by path, with their words (`FormState.takenOut`).
+   */
+  function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false, said: Record<string, string> = {}) {
     let settled = fresh ? startFrom(written) : settle(written);
-    // A choice written again says no more what was taken out of it; options a change no longer offers are taken out now.
-    let takenOut = fresh ? {} : Object.fromEntries(Object.entries(state.takenOut).filter(([name]) => written[name] === state.values[name]));
+    // A choice written again says no more what was taken out of it — a line's, nor once its line is gone; options a
+    // change no longer offers are taken out now.
+    let takenOut: Record<string, string> = fresh ? {} : { ...Object.fromEntries(Object.entries(state.takenOut).filter(([path]) => sameAt(written, state.values, path))), ...said };
     const out = fresh ? null : takeOut(state.values, settled);
     if (out) {
       settled = out.values;
@@ -2436,7 +2509,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const optionsOf = (name: string): readonly Option[] => {
     const def = page.fields[name];
     if (def?.type !== 'selection') return [];
-    return def.optionsFrom ? ((started ? state.choices[name]?.options : null) ?? []) : (def.options ?? []);
+    if (optionsList(def.optionsFrom)) return (started ? state.choices[name]?.options : null) ?? [];
+    // Carried from an earlier question: its options, and the choice's own after them.
+    return optionsField(def.optionsFrom) ? choiceOptions(page.fields, name) : (def.options ?? []);
   };
   /** The choice fields with places now: those of the page's own, and of the app's lists whose options loaded with them. */
   const seatedNow = () => [...seated, ...Object.keys(started ? state.choices : {}).filter((name) => !seated.includes(name) && optionsOf(name).some((option) => option.seats !== undefined))];
@@ -3484,9 +3559,16 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     offered(name) {
-      return page.fields[name]?.type === 'selection' ? offeredIn(name, state.values, reading()) : null;
+      const cell = cellOf(name);
+      if (!cell) return page.fields[name]?.type === 'selection' ? offeredIn(name, state.values, reading()) : null;
+      const lines = page.fields[cell.table];
+      const line = lineAt(cell.table, cell.key);
+      return lines?.type === 'one2many' && lines.fields[cell.column]?.type === 'selection' && line ? lineOffered(cell.table, line, cell.column, reading().context) : null;
     },
-    offersChange: (name) => changing.includes(name),
+    offersChange(name) {
+      const cell = cellOf(name);
+      return cell ? !!lineOptionRules.get(cell.table)?.has(cell.column) : changing.includes(name);
+    },
 
     waitsFor(name) {
       const found = state.asked[name];

@@ -1823,7 +1823,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(parent\\.)?[A-Za-z_][A-Za-z0-9_]*$"
           }
         }
       },
@@ -3164,7 +3164,7 @@
             "options": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/Option"
+                "$ref": "#/$defs/SelectionOption"
               }
             },
             "multiple": {
@@ -3177,7 +3177,7 @@
               "type": "boolean"
             },
             "optionsFrom": {
-              "$ref": "#/$defs/LineOptionsFrom"
+              "$ref": "#/$defs/OptionsFrom"
             }
           },
           "required": [
@@ -3748,27 +3748,6 @@
           "additionalProperties": false
         }
       ]
-    },
-    "LineOptionsFrom": {
-      "type": "object",
-      "properties": {
-        "list": {
-          "type": "string",
-          "minLength": 1
-        },
-        "dependsOn": {
-          "minItems": 1,
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^(parent\\.)?[A-Za-z_][A-Za-z0-9_]*$"
-          }
-        }
-      },
-      "required": [
-        "list"
-      ],
-      "additionalProperties": false
     },
     "PropertyDefinition": {
       "type": "object",
@@ -4385,7 +4364,7 @@
             "options": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/Option"
+                "$ref": "#/$defs/SelectionOption"
               }
             },
             "multiple": {
@@ -4398,7 +4377,7 @@
               "type": "boolean"
             },
             "optionsFrom": {
-              "$ref": "#/$defs/LineOptionsFrom"
+              "$ref": "#/$defs/OptionsFrom"
             }
           },
           "required": [

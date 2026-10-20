@@ -4,7 +4,7 @@ import { checkPage, createForm, createMemoryDataSource, pageJsonSchema, validate
 /**
  * A table line's choices from the app's lists: an agent's tools, each line's from the connection on that line — asked
  * by the line's values (its record as `parent`), shared by lines alike, asked again as that column changes on the
- * line, and a tool the new connection does not offer cleared and named.
+ * line, and a tool the new connection does not offer taken out and said, as every choice taken out is.
  */
 
 const TOOLS: Record<string, Option[]> = {
@@ -113,6 +113,16 @@ describe('a table line’s choices from the app’s lists, in the format', () =>
     ]);
   });
 
+  it('is the same optionsFrom as a page’s own choice’s — one schema, one check — a line’s carrying none from a question', () => {
+    const schema = pageJsonSchema() as { $defs: Record<string, unknown> };
+    expect(Object.keys(schema.$defs).filter((name) => /OptionsFrom/.test(name)).sort()).toEqual(['OptionsFrom', 'OptionsFromField', 'OptionsFromList']);
+    const carried = page({ optionsFrom: { field: 'connection_id' } });
+    expect(problems(carried)).toEqual(['fields.tools.fields.tool.optionsFrom.field: "tool": a line\'s choice carries no options from a question — its own, or one of the app\'s lists']);
+    // A page's own choice from a list and a line's read alike: by the list's name, asked with the values it changes with.
+    const own = page({}, { city: { type: 'selection', label: 'City', options: [], optionsFrom: { list: 'cities', dependsOn: ['workspace'] } } });
+    expect(problems(own)).toEqual([]);
+  });
+
   it('is in the JSON Schema, with the same rule for written options', () => {
     const validate = new Ajv2020({ allErrors: true, strict: false }).compile(pageJsonSchema());
     expect(validate(page())).toBe(true);
@@ -171,21 +181,23 @@ describe('a table line’s choices from the app’s lists, in a form', () => {
     asked[1].answer(TOOLS['slack']);
     await form.settled();
     expect(lineOf(form, 'a')['tool']).toBeNull();
-    expect(form.getState().choices['tools.a.tool']).toEqual({ options: TOOLS['slack'], cleared: 'Send email' });
+    expect(form.getState().choices['tools.a.tool']).toEqual({ options: TOOLS['slack'] });
+    expect(form.getState().takenOut['tools.a.tool']).toBe('Send email is no longer offered, so it was taken out');
     // One the new connection offers too stays.
     expect(lineOf(form, 'b')['tool']).toBe('read_inbox');
     expect(form.getState().choices['tools.b.tool']).toEqual({ options: TOOLS['slack'] });
     // Cleared as the person's change is worked out: told, never as the person's own.
     expect(told.at(-1)).toEqual({ value: expect.anything(), by: 'step' });
     expect(form.getState().dirty).toContain('tools');
-    // Another tool chosen: what was cleared is said no more, nor once the person empties it again.
+    expect(form.getState().takenOut['tools.b.tool']).toBeUndefined();
+    // Another tool chosen: what was taken out is said no more, nor once the person empties it again.
     form.updateLine('tools', 'a', 'tool', 'post_message');
-    expect(form.getState().choices['tools.a.tool']).toEqual({ options: TOOLS['slack'] });
+    expect(form.getState().takenOut['tools.a.tool']).toBeUndefined();
     form.updateLine('tools', 'a', 'tool', null);
-    expect(form.getState().choices['tools.a.tool'].cleared).toBeUndefined();
+    expect(form.getState().takenOut['tools.a.tool']).toBeUndefined();
   });
 
-  it('keeps the rest of several tools chosen, naming the one cleared until the choice changes', async () => {
+  it('keeps the rest of several tools chosen, saying the one taken out until the choice changes', async () => {
     const { source, asked } = lists();
     const form = createForm({ page: page({ multiple: true }), dataSource: source, values: { tools: [line('a', { connection_id: gmail, tool: ['send_email', 'read_inbox'] })] } });
     form.loadChoices('tools.a.tool');
@@ -195,9 +207,9 @@ describe('a table line’s choices from the app’s lists, in a form', () => {
     asked[1].answer(TOOLS['slack']);
     await form.settled();
     expect(lineOf(form, 'a')['tool']).toEqual(['read_inbox']);
-    expect(form.getState().choices['tools.a.tool'].cleared).toBe('Send email');
+    expect(form.getState().takenOut['tools.a.tool']).toBe('Send email is no longer offered, so it was taken out');
     form.updateLine('tools', 'a', 'tool', ['read_inbox', 'post_message']);
-    expect(form.getState().choices['tools.a.tool'].cleared).toBeUndefined();
+    expect(form.getState().takenOut['tools.a.tool']).toBeUndefined();
   });
 
   it('asks nothing again when another column of the line changes', async () => {
@@ -237,7 +249,7 @@ describe('a table line’s choices from the app’s lists, in a form', () => {
     asked[0].answer(TOOLS['slack']);
     await form.settled();
     expect(lineOf(form, 'a')['tool']).toBeNull();
-    expect(form.getState().choices['tools.a.tool'].cleared).toBe('send_email');
+    expect(form.getState().takenOut['tools.a.tool']).toBe('send_email is no longer offered, so it was taken out');
   });
 
   it('keeps a tool a record comes in with that its choices do not offer: the person decides, and a save says why', async () => {
@@ -249,7 +261,7 @@ describe('a table line’s choices from the app’s lists, in a form', () => {
     asked[0].answer(TOOLS['slack']);
     await form.settled();
     expect(lineOf(form, 'a')['tool']).toBe('send_email');
-    expect(form.getState().choices['tools.a.tool'].cleared).toBeUndefined();
+    expect(form.getState().takenOut['tools.a.tool']).toBeUndefined();
     expect(form.validate()).toBe(false);
     expect(form.getState().errors['tools.a.tool']).toBe('Must be one of: Post message, Read channel');
     // A choice of them reads.
@@ -294,7 +306,7 @@ describe('a table line’s choices from the app’s lists, in a form', () => {
     asked[1].answer(TOOLS['slack']);
     await form.settled();
     expect(lineOf(form, 'a')['tool']).toBe('send_email');
-    expect(form.getState().choices['tools.a.tool'].cleared).toBeUndefined();
+    expect(form.getState().takenOut['tools.a.tool']).toBeUndefined();
   });
 
   it('lets a line’s choices go with the line, and lays no late answer where it was', async () => {
@@ -324,7 +336,7 @@ describe('a table line’s choices from the app’s lists, in a form', () => {
     asked[1].answer([{ value: 'read_inbox', label: 'Read inbox' }]);
     await form.settled();
     expect(lineOf(form, 'a')['tool']).toBeNull();
-    expect(form.getState().choices['tools.a.tool'].cleared).toBe('Send email');
+    expect(form.getState().takenOut['tools.a.tool']).toBe('Send email is no longer offered, so it was taken out');
   });
 
   it('says why a line’s choices did not load, and asks again when asked', async () => {
@@ -405,7 +417,7 @@ describe('a line’s own form, its choices from the app’s lists', () => {
   const fields = (page().fields['tools'] as { fields: Record<string, unknown> }).fields;
   const dialogPage = { fieldia: '0.5', id: 'line', data: { kind: 'record', model: 'values' }, fields, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'c', field: 'connection_id' }, { type: 'field', id: 't', field: 'tool' }] } } as Page;
 
-  it('clears and names a tool its new connection does not offer, as the line’s row does', async () => {
+  it('takes out and says a tool its new connection does not offer, as the line’s row does', async () => {
     const { source, asked } = lists();
     const dialog = createForm({ page: dialogPage, dataSource: source, values: { connection_id: gmail, tool: 'send_email' }, parent: { values: { name: 'Helper' }, fields: page().fields } });
     dialog.loadChoices('tool');
@@ -415,6 +427,7 @@ describe('a line’s own form, its choices from the app’s lists', () => {
     asked[1].answer(TOOLS['slack']);
     await dialog.settled();
     expect(dialog.getState().values['tool']).toBeNull();
-    expect(dialog.getState().choices['tool']).toEqual({ options: TOOLS['slack'], cleared: 'Send email' });
+    expect(dialog.getState().choices['tool']).toEqual({ options: TOOLS['slack'] });
+    expect(dialog.getState().takenOut['tool']).toBe('Send email is no longer offered, so it was taken out');
   });
 });

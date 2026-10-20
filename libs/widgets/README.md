@@ -180,8 +180,11 @@ A line's choice from the app's lists (`optionsFrom` on a line's selection, its
 `dependsOn` naming a column of the line or `parent.` and a field of the record)
 draws each line's own choices: the cell's form (`lineForm`) gives the line's
 `choices` and asks its own by its cell's path (`form.loadChoices("tools.k1.tool")`).
-A tool its new connection does not offer is cleared by the form and said under
-the cell (`choiceCleared`). `lineColumn(form, field, key, column, def)` gives a
+A tool its new connection does not offer — or an option its condition hides as
+the line changes (`options[].invisible`, read on the line and `parent.`) — is
+taken out by the form and said under the cell (`state.takenOut`, by the cell's
+path; the cell's form, `lineForm`, gives its line's by column, and `form.line`
+the line it is of). `lineColumn(form, field, key, column, def)` gives a
 column as its cell reads at rest — its choices those loaded for that line — for a
 grid's cells, a printout, cards. A block pasted reads such a cell among its own
 line's choices (`PasteTable.choices`, `form.lineChoices`), its links first.

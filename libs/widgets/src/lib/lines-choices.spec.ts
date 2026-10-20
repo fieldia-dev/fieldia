@@ -95,7 +95,7 @@ describe('a table line’s choices from the app’s lists', () => {
     expect(select(el, 0, 'tool').selectedOptions[0].textContent).toBe('Send email');
   });
 
-  it('asks again as a line’s connection changes, and says the tool it cleared until another is chosen', async () => {
+  it('asks again as a line’s connection changes, and says the tool it took out until another is chosen', async () => {
     const { form, el } = mount([
       { key: 'a', values: { connection: 'gmail', tool: 'send_email' } },
       { key: 'b', values: { connection: 'gmail', tool: 'read_inbox' } },
@@ -105,7 +105,7 @@ describe('a table line’s choices from the app’s lists', () => {
     await form.settled();
     expect(values(form)[0]).toEqual({ connection: 'slack', tool: null });
     expect(offered(el, 0)).toEqual(['Post message', 'Read channel']);
-    expect(said(el, 0)).toEqual(['Send email was cleared: no longer offered']);
+    expect(said(el, 0)).toEqual(['Send email is no longer offered, so it was taken out']);
     // The other line is as it was.
     expect(values(form)[1]['tool']).toBe('read_inbox');
     expect(said(el, 1)).toEqual([]);
@@ -204,5 +204,67 @@ describe('a table line’s choices from the app’s lists', () => {
     plain.update({ value: form.getState().values['tools'], values: form.getState().values, readonly: true, required: false, invalid: false });
     expect(plain.element.textContent).toBe('Slack · Read channel');
     expect(plain.element.textContent).not.toContain('read_inbox');
+  });
+});
+
+describe('a table line’s option shown by a condition', () => {
+  /** A line's mode offered by its own connection, and by the plan of the agent it is on (`parent.`). */
+  const ruled = {
+    ...page,
+    fields: {
+      plan: { type: 'selection', label: 'Plan', options: [{ value: 'free', label: 'Free' }, { value: 'pro', label: 'Pro' }] },
+      tools: {
+        type: 'one2many',
+        label: 'Tools',
+        relation: 'agent.tool',
+        fields: {
+          connection: { type: 'selection', label: 'Connection', options: [{ value: 'gmail', label: 'Gmail' }, { value: 'slack', label: 'Slack' }] },
+          mode: {
+            type: 'selection',
+            label: 'Mode',
+            options: [
+              { value: 'draft', label: 'Draft only' },
+              { value: 'send', label: 'Send', invisible: "connection != 'gmail'" },
+              { value: 'auto', label: 'Run by itself', invisible: "parent.plan != 'pro'" },
+            ],
+          },
+        },
+      },
+    },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n-tools', field: 'tools', columns: ['connection', 'mode'] }] },
+  } as unknown as Page;
+
+  function mountRuled(values: Values) {
+    const form = createForm({ page: ruled, values });
+    const node = (ruled.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'tools', field: ruled.fields['tools'] as Field, node, id: 'fd-tools', document, labels: WIDGET_LABELS.en, locale: 'en' });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['tools'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    return { form, el: widget.element };
+  }
+  const modes = (el: Element, n: number) => [...select(el, n, 'mode').options].map((option) => option.textContent).filter(Boolean);
+  const saidOfMode = (el: Element, n: number) => [...row(el, n).querySelectorAll('td[data-column="mode"] [role=status]')].filter((s) => !(s as HTMLElement).hidden).map((s) => s.textContent);
+
+  it('offers each line the options its own values and its record let be', () => {
+    const { el } = mountRuled({ plan: 'pro', tools: [{ key: 'a', values: { connection: 'gmail', mode: null } }, { key: 'b', values: { connection: 'slack', mode: null } }] } as Values);
+    expect(modes(el, 0)).toEqual(['Draft only', 'Send', 'Run by itself']);
+    expect(modes(el, 1)).toEqual(['Draft only', 'Run by itself']);
+  });
+
+  it('takes out one its line’s change hides, said under the cell as a list’s is, until the cell is chosen again', () => {
+    const { form, el } = mountRuled({ plan: 'pro', tools: [{ key: 'a', values: { connection: 'gmail', mode: 'send' } }, { key: 'b', values: { connection: 'gmail', mode: 'auto' } }] } as Values);
+    choose(select(el, 0, 'connection'), 'Slack');
+    expect((form.getState().values['tools'] as Line[]).map((line) => line.values['mode'])).toEqual([null, 'auto']);
+    expect(modes(el, 0)).toEqual(['Draft only', 'Run by itself']);
+    expect(saidOfMode(el, 0)).toEqual(['Send is no longer offered, so it was taken out']);
+    expect(saidOfMode(el, 1)).toEqual([]);
+    // The record's change reaches its lines.
+    form.setValue('plan', 'free');
+    expect(saidOfMode(el, 1)).toEqual(['Run by itself is no longer offered, so it was taken out']);
+    choose(select(el, 0, 'mode'), 'Draft only');
+    expect(saidOfMode(el, 0)).toEqual([]);
+    expect(lineForm(form, 'tools', 'b').getState().takenOut).toEqual({ mode: 'Run by itself is no longer offered, so it was taken out' });
   });
 });

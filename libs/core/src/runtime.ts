@@ -5,7 +5,7 @@
  */
 export type { JsonValue } from './lib/format/json';
 export { FIELD_NAME, FIELD_TYPES, type FieldType } from './lib/format/names';
-export type { Field, Fields, LineField, LinkedField, LineKinds, Option, SelectionOption, OptionsFrom, OptionsFromList, OptionsFromField, LineOptionsFrom, DefinitionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen, MoneyLook, Period } from './lib/format/field';
+export type { Field, Fields, LineField, LinkedField, LineKinds, Option, SelectionOption, OptionsFrom, OptionsFromList, OptionsFromField, DefinitionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen, MoneyLook, Period } from './lib/format/field';
 export { choiceOptions, optionsField, optionsList, withCarriedOptions } from './lib/format/choice-options';
 export type { Shrink } from './lib/format/field';
 export type {

@@ -603,7 +603,7 @@ export const DEMOS = [
     howTo: [
       'Watch the countries load as the form opens: the app answers after a moment, as a server does.',
       'Pick Egypt: its cities load. Pick Alexandria.',
-      'Change the country to Jordan: Jordan’s cities load, and Alexandria, which Jordan does not have, is cleared and said under the cities until you pick again.',
+      'Change the country to Jordan: Jordan’s cities load, and Alexandria, which Jordan does not have, is taken out and said under the cities until you pick again.',
     ],
   },
   {
@@ -614,8 +614,8 @@ export const DEMOS = [
     blurb: 'An assistant’s tools in a table of lines, each from one of the company’s connections: a line’s Tool offers only its own connection’s, asked for again when the connection changes — in the plain table and in the grid alike.',
     howTo: [
       'Open Tool on the first line, then on the Slack line: each offers its own connection’s tools.',
-      'Change the first line’s connection to Slack: its tools load again, and Send an email, which Slack does not have, is cleared and said under the cell. The second line’s Search, changed to Slack too, stays: Slack searches as well.',
-      'In When it starts, change a start’s connection: its event is said again in the new connection’s words, or cleared and said aloud.',
+      'Change the first line’s connection to Slack: its tools load again, and Send an email, which Slack does not have, is taken out and said under the cell. The second line’s Search, changed to Slack too, stays: Slack searches as well.',
+      'In When it starts, change a start’s connection: its event is said again in the new connection’s words, or taken out and said aloud.',
     ],
   },
   {

@@ -289,7 +289,7 @@ ${code(
   "options": [{ "value": "none", "label": "None of them" }],
   "optionsFrom": { "field": "treatments" } }`
 )}
-<p>With ${c('"picked": false')}, the options left unpicked there; a <em>None of these</em> is never carried. A chosen option a change no longer offers is taken out of the answer and said under its field — <em>Garden is no longer offered, so it was taken out</em> — never silently kept; one a record held as it was opened stays, and is said to be no longer offered. In the designer: <strong>Show when…</strong> in an option's row, and <strong>Picked in another question</strong> among a choice's Choices.</p>
+<p>With ${c('"picked": false')}, the options left unpicked there; a <em>None of these</em> is never carried. A chosen option a change no longer offers is taken out of the answer and said under its field — <em>Garden is no longer offered, so it was taken out</em> — never silently kept; one a record held as it was opened stays, and is said to be no longer offered. A table line's choice takes conditions too, read on the line's own values and the record it is on (${c('parent.')}): an option a change of the line hides is taken out and said under its cell in the same words, as one its app's list no longer offers is. In the designer: <strong>Show when…</strong> in an option's row, and <strong>Picked in another question</strong> among a choice's Choices.</p>
 
 <h2 id="checking">Checking a page</h2>
 ${code(

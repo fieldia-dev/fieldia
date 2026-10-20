@@ -10,8 +10,9 @@ import type { Widget, WidgetContext } from '@fieldia/widgets';
  */
 export function wordedWidget(context: WidgetContext, draw: (context: WidgetContext) => Widget): Widget {
   const { form, field } = context;
-  // Any other field, or a choice whose words name no answer: its widget as it is.
-  if (field.type !== 'selection' || field.optionsFrom || !field.options.some((option) => option.label.includes('{'))) return draw(context);
+  // Any other field, or a choice whose words name no answer: its widget as it is. A choice whose options change — a
+  // list's, a condition's, carried from another question — is drawn afresh as they do, its words filled in (choices-from.ts).
+  if (field.type !== 'selection' || field.optionsFrom || form.offersChange?.(context.name) || !field.options.some((option) => option.label.includes('{'))) return draw(context);
   const written = field.options.map((option) => option.label);
   // The widget's own options: their words written over as the answers they show change.
   const options: Option[] = field.options.map((option) => ({ ...option, label: form.words(option.label) }));

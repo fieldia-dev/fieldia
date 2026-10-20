@@ -73,7 +73,7 @@ describe('choices from the app’s list', () => {
     expect(form.problem('city')).toBeNull();
   });
 
-  it('load again when the field they change with changes, clearing a value no longer offered and saying so', async () => {
+  it('load again when the field they change with changes, taking out a value no longer offered — said under the field, by the page', async () => {
     const { form, el, asked, note, settle } = mount('radio', {}, { country: 'eg', city: 'cai' });
     asked[0].answer(CITIES['eg']);
     await settle();
@@ -84,9 +84,11 @@ describe('choices from the app’s list', () => {
     await settle();
     expect([...el.querySelectorAll('label.fd-choice')].map((l) => l.textContent)).toEqual(['Amman']);
     expect(form.getState().values['city']).toBeNull();
-    expect(note()).toEqual(['Cairo was cleared: no longer offered']);
-    (el.querySelector('input[type=radio]') as HTMLInputElement).click();
+    // Taken out as every choice is: the page says it under the field, where it says a condition's, so never twice here.
+    expect(form.getState().takenOut['city']).toBe('Cairo is no longer offered, so it was taken out');
     expect(note()).toEqual([]);
+    (el.querySelector('input[type=radio]') as HTMLInputElement).click();
+    expect(form.getState().takenOut['city']).toBeUndefined();
   });
 
   it('offer to try again when they did not load', async () => {

@@ -193,7 +193,6 @@ export const ar: WidgetLabels = {
   loadingChoices: 'تحميل الخيارات…',
   choicesFailed: 'أعد تحميل الخيارات',
   notOffered: '{name}: لم يعد متاحًا',
-  choiceCleared: 'أُزيل {name}: لم يعد متاحًا',
   yes: 'نعم',
   no: 'لا',
   upTo: 'حتى {n}',

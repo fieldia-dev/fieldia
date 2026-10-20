@@ -14,7 +14,7 @@ import {
   type IHeaderParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import { fill, isRightToLeft, labelAt, lineKind, type ButtonNode, type Choices, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
+import { fill, isRightToLeft, labelAt, lineKind, optionsList, type ButtonNode, type Choices, type SelectionOption, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
 import {
   afterPress,
@@ -1069,11 +1069,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     if (!line || (kindOf(line) && spanStart(api)?.getColId() !== column)) return undefined;
     return form.getState().errors[`${name}.${line.key}.${editedField(line, column)}`];
   };
-  /** A choice from the app's list the line's connection no longer offers, cleared, until its value changes again: its words. */
-  const clearedAt = (line: Line | undefined, column: string) => {
-    const cleared = line ? form.getState().choices[`${name}.${line.key}.${column}`]?.cleared : undefined;
-    return cleared ? fill(labels.choiceCleared, { name: cleared }) : undefined;
-  };
+  /** A choice its line's change no longer offers — its connection's list, or its condition — taken out, until its value changes again: its words. */
+  const clearedAt = (line: Line | undefined, column: string) => (line ? form.getState().takenOut?.[`${name}.${line.key}.${column}`] : undefined);
   /** Every line problem, in the order the lines and columns are shown. */
   const lineProblems = () => {
     const shown = api.getAllDisplayedColumns().map((c) => c.getColId()).filter((id) => !isTool(id));
@@ -2184,14 +2181,17 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
 
   /**
    * The choices from the app's lists of this table's lines, by their cells' paths, as last drawn: each line's asked for
-   * as it is drawn — its cells at rest say a choice by its label — drawn again once they change, and a choice cleared
-   * as its line's connection changed said aloud, once.
+   * as it is drawn — its cells at rest say a choice by its label — drawn again once they change; and a choice taken out
+   * as its line changed — no longer in its connection's list, or hidden by its condition — said aloud, once.
    */
   const choicesShown = new Map<string, Choices>();
-  const listedColumns = columns.filter((column) => def.fields[column].type === 'selection' && !!(def.fields[column] as { optionsFrom?: unknown }).optionsFrom);
+  const takenShown = new Map<string, string>();
+  const listedColumns = columns.filter((column) => { const sub = def.fields[column]; return sub.type === 'selection' && !!optionsList(sub.optionsFrom); });
+  /** The columns whose choices a line's change may take out of it: its list's, or its options' conditions. */
+  const changingColumns = columns.filter((column) => { const sub = def.fields[column]; return sub.type === 'selection' && (!!optionsList(sub.optionsFrom) || (sub.options as SelectionOption[]).some((option) => option.invisible !== undefined && option.invisible !== false)); });
   let listedSized = false;
   function followChoices(current: readonly Line[]) {
-    if (!listedColumns.length) return;
+    if (!changingColumns.length) return;
     const items = current.filter((line) => !kindOf(line));
     // Asked, each once, as the line is drawn: an answer the form has already is given at once, the rest as they come.
     for (const line of items) for (const column of listedColumns) if (!form.getState().choices[`${name}.${line.key}.${column}`] && lines().some((one) => one.key === line.key)) form.loadChoices(`${name}.${line.key}.${column}`);
@@ -2206,10 +2206,19 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         if (now) choicesShown.set(path, now);
         else choicesShown.delete(path);
         changed.add(column);
-        if (now?.cleared && !now.loading) said.push(fill(labels.lineProblem, { n: numberOf(line), message: fill(labels.choiceCleared, { name: now.cleared }) }));
+      }
+      for (const column of changingColumns) {
+        const path = `${name}.${line.key}.${column}`;
+        const words = form.getState().takenOut?.[path];
+        if (words === takenShown.get(path)) continue;
+        if (words) takenShown.set(path, words);
+        else takenShown.delete(path);
+        changed.add(column);
+        if (words) said.push(fill(labels.lineProblem, { n: numberOf(line), message: words }));
       }
     }
     for (const path of [...choicesShown.keys()]) if (!current.some((line) => path.startsWith(`${name}.${line.key}.`))) choicesShown.delete(path);
+    for (const path of [...takenShown.keys()]) if (!current.some((line) => path.startsWith(`${name}.${line.key}.`))) takenShown.delete(path);
     if (changed.size && !api.isDestroyed()) api.refreshCells({ columns: [...changed], force: true, suppressFlash: true });
     // Its words' room once the lines' choices first come, as the lines' room was given: a person's own widths stay.
     if (!listedSized && sizedByLines && items.length && items.every((line) => listedColumns.every((column) => form.getState().choices[`${name}.${line.key}.${column}`]?.options))) {

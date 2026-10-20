@@ -219,10 +219,11 @@ describe('choices from the app’s lists, in a form', () => {
     asked[1].answer(CITIES['jo']);
     await form.settled();
     expect(form.getState().values['city']).toBeNull();
-    expect(form.getState().choices['city']).toEqual({ options: CITIES['jo'], cleared: 'Cairo' });
+    expect(form.getState().choices['city']).toEqual({ options: CITIES['jo'] });
+    expect(form.getState().takenOut['city']).toBe('Cairo is no longer offered, so it was taken out');
     // Said until the city changes again.
     form.setValue('city', 'amm');
-    expect(form.getState().choices['city']).toEqual({ options: CITIES['jo'] });
+    expect(form.getState().takenOut['city']).toBeUndefined();
   });
 
   it('keeps a value a record comes in with that the list does not offer: the person decides, and a save says why', async () => {
@@ -234,7 +235,7 @@ describe('choices from the app’s lists, in a form', () => {
     asked[0].answer(CITIES['jo']);
     await form.settled();
     expect(form.getState().values['city']).toBe('cai');
-    expect(form.getState().choices['city'].cleared).toBeUndefined();
+    expect(form.getState().takenOut['city']).toBeUndefined();
     expect(form.problem('city')).toBe('Must be one of: Amman');
   });
 

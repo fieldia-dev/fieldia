@@ -1,4 +1,4 @@
-import { charCount, cleanPastedNumber, couldBeNumber, fill, foldForSearch, isRightToLeft, MESSAGES, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type Line, type LineField, type Locale, type NumberLimits, type Option, type RelatedRecord, type Value, type Values } from '@fieldia/core';
+import { charCount, cleanPastedNumber, optionsList, couldBeNumber, fill, foldForSearch, isRightToLeft, MESSAGES, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type Line, type LineField, type Locale, type NumberLimits, type Option, type RelatedRecord, type Value, type Values } from '@fieldia/core';
 import { readDateText } from './date-text';
 import { leftWords, quoted, refusalWords } from './input-rules';
 import { inPlural, type WidgetLabels } from './labels';
@@ -332,7 +332,7 @@ async function readLinkCell(table: PasteTable, key: string | null, column: strin
 
 const isLink = (def: LineField | undefined) => def?.type === 'many2one' || def?.type === 'many2many';
 /** A choice column whose choices are the app's, each line's its own. */
-const isListed = (def: LineField | undefined) => def?.type === 'selection' && !!def.optionsFrom;
+const isListed = (def: LineField | undefined) => def?.type === 'selection' && !!optionsList(def.optionsFrom);
 
 /**
  * A row's choices from the app's lists read by its line's choices: the line as the row leaves it — its links found and

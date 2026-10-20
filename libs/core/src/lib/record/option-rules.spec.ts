@@ -1,5 +1,5 @@
 import Ajv2020 from 'ajv/dist/2020';
-import { createForm, pageJsonSchema, validatePage, type Page, type Values } from '../../index';
+import { createForm, pageJsonSchema, validatePage, type Line, type Page, type Values } from '../../index';
 
 /**
  * Options that react to the record's other answers without a server: an
@@ -127,12 +127,97 @@ describe('an option shown by a condition', () => {
     expect(form.getState().dirty).toEqual(['features']);
   });
 
-  it('is checked as the page is read, and kept to a page’s own choices', () => {
+  it('is checked as the page is read', () => {
     const broken = structuredClone(unit) as unknown as { fields: Record<string, { options: { invisible?: string }[] }> };
     broken.fields['outside'].options[0].invisible = "type != 'villa'";
     expect(issues(broken)).toEqual([`fields.outside.options[0].invisible: "type != 'villa'" reads "type", which is not a field of this page`]);
-    const inLines = { ...unit, fields: { ...unit.fields, rooms: { type: 'one2many', label: 'Rooms', relation: 'unit.room', fields: { use: { type: 'selection', label: 'Use', options: [{ value: 'bed', label: 'Bedroom', invisible: 'parent.kind' }] } } } } };
-    expect(issues(inLines)).toEqual([expect.stringMatching(/^fields\.rooms\.fields\.use\.options\[0\]: Unrecognized key: "invisible"/)]);
+  });
+});
+
+/** A unit's rooms, each room's use offered by the room's own floor and the unit's type (`parent.`). */
+const rooms = {
+  ...unit,
+  fields: {
+    ...unit.fields,
+    rooms: {
+      type: 'one2many',
+      label: 'Rooms',
+      relation: 'unit.room',
+      fields: {
+        floor: { type: 'integer', label: 'Floor' },
+        use: {
+          type: 'selection',
+          label: 'Use',
+          options: [
+            { value: 'bed', label: 'Bedroom' },
+            { value: 'garden_room', label: 'Garden room', invisible: 'floor != 0' },
+            { value: 'pool_house', label: 'Pool house', invisible: "parent.kind != 'villa'" },
+          ],
+        },
+        extras: { type: 'selection', label: 'Extras', multiple: true, options: [{ value: 'desk', label: 'Desk' }, { value: 'terrace', label: 'Terrace', invisible: 'floor == 0' }, { value: 'sauna', label: 'Sauna', invisible: "parent.kind != 'villa'" }] },
+      },
+    },
+  },
+  layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-kind', field: 'kind' }, { type: 'field', id: 'f-rooms', field: 'rooms' }] },
+} as Page;
+const room = (key: string, values: Values): Line => ({ key, values });
+
+describe('an option shown by a condition in a table’s lines', () => {
+  it('is offered by the line’s own values and the record it is on, by its cell’s path', () => {
+    const form = createForm({ page: rooms, values: { kind: 'flat', rooms: [room('a', { floor: 0, use: null }), room('b', { floor: 2, use: null })] } });
+    expect(labels(form.offered('rooms.a.use'))).toEqual(['Bedroom', 'Garden room']);
+    expect(labels(form.offered('rooms.b.use'))).toEqual(['Bedroom']);
+    form.setValue('kind', 'villa');
+    expect(labels(form.offered('rooms.b.use'))).toEqual(['Bedroom', 'Pool house']);
+    expect(form.offersChange('rooms.a.use')).toBe(true);
+    expect(form.offersChange('rooms.a.floor')).toBe(false);
+    expect(form.offered('rooms.z.use')).toBeNull();
+  });
+
+  it('is taken out when the line’s change hides it, and said by its cell’s path as every choice taken out is', () => {
+    const form = createForm({ page: rooms, values: { kind: 'villa', rooms: [room('a', { floor: 0, use: 'garden_room', extras: ['desk', 'sauna'] }), room('b', { floor: 1, use: 'pool_house', extras: ['terrace', 'sauna'] })] } });
+    form.updateLine('rooms', 'a', 'floor', 1);
+    expect(form.getState().values['rooms']).toMatchObject([{ values: { use: null, extras: ['desk', 'sauna'] } }, { values: { use: 'pool_house' } }]);
+    expect(form.getState().takenOut).toEqual({ 'rooms.a.use': 'Garden room is no longer offered, so it was taken out' });
+    // The record's change reaches every line it hides one on.
+    form.setValue('kind', 'flat');
+    expect(form.getState().values['rooms']).toMatchObject([{ values: { use: null, extras: ['desk'] } }, { values: { use: null, extras: ['terrace'] } }]);
+    expect(form.getState().takenOut).toEqual({
+      'rooms.a.use': 'Garden room is no longer offered, so it was taken out',
+      'rooms.a.extras': 'Sauna is no longer offered, so it was taken out',
+      'rooms.b.use': 'Pool house is no longer offered, so it was taken out',
+      'rooms.b.extras': 'Sauna is no longer offered, so it was taken out',
+    });
+  });
+
+  it('says it until the cell is written again, or its line goes', () => {
+    const form = createForm({ page: rooms, values: { kind: 'villa', rooms: [room('a', { floor: 0, use: 'garden_room' }), room('b', { floor: 0, use: 'garden_room' })] } });
+    form.updateLine('rooms', 'a', 'floor', 1);
+    form.updateLine('rooms', 'b', 'floor', 1);
+    expect(Object.keys(form.getState().takenOut)).toEqual(['rooms.a.use', 'rooms.b.use']);
+    // Another cell of the line written: still said.
+    form.updateLine('rooms', 'a', 'floor', 2);
+    expect(Object.keys(form.getState().takenOut)).toEqual(['rooms.a.use', 'rooms.b.use']);
+    form.updateLine('rooms', 'a', 'use', 'bed');
+    expect(Object.keys(form.getState().takenOut)).toEqual(['rooms.b.use']);
+    form.removeLine('rooms', 'b');
+    expect(form.getState().takenOut).toEqual({});
+  });
+
+  it('stays chosen, unsaid, on a record opened holding it: only a change takes one out', async () => {
+    const stored = { kind: 'flat', rooms: [room('a', { floor: 2, use: 'garden_room' })] } as Values;
+    const form = createForm({ page: rooms, recordId: 1, dataSource: { load: async () => structuredClone(stored) } });
+    await form.load();
+    form.updateLine('rooms', 'a', 'floor', 3);
+    expect(form.getState().values['rooms']).toMatchObject([{ values: { use: 'garden_room' } }]);
+    expect(form.getState().takenOut).toEqual({});
+  });
+
+  it('is checked as the page is read, on the line and the record it is on', () => {
+    const page = (invisible: string) => ({ ...rooms, fields: { ...rooms.fields, rooms: { ...rooms.fields['rooms'], fields: { ...(rooms.fields['rooms'] as { fields: object }).fields, use: { type: 'selection', label: 'Use', options: [{ value: 'bed', label: 'Bedroom', invisible }] } } } } });
+    expect(issues(page("parent.kind == 'flat' or floor > 3"))).toEqual([]);
+    expect(issues(page('storey > 3'))).toEqual(['fields.rooms.fields.use.options[0].invisible: "storey > 3" reads "storey", which is not a field of the lines of "rooms"']);
+    expect(issues(page('parent.storey'))).toEqual(['fields.rooms.fields.use.options[0].invisible: "parent.storey" reads "parent.storey": "storey" is not a field of this page']);
   });
 });
 

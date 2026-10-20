@@ -5,7 +5,7 @@ import { gridApiOf, gridWidgets } from './grid';
 /**
  * A grid's lines with choices from the app's lists: an agent's triggers, each line's events from the connection on
  * it — said by their labels at rest, asked once for lines alike, asked again as a line's connection changes, an event
- * the new one does not offer cleared and said aloud.
+ * the new one does not offer taken out and said aloud; and a line's option its condition hides, taken out and said alike.
  */
 
 const EVENTS: Record<string, Option[]> = {
@@ -95,7 +95,35 @@ describe('a grid’s lines with choices from the app’s lists', () => {
     expect(rowCells(box, 0)).toEqual(['Slack', '']);
     // One the new connection offers too stays, said by its label there.
     expect(rowCells(box, 1)).toEqual(['Slack', 'Message saved']);
-    expect(said(box)).toEqual(['Line 1: New email was cleared: no longer offered']);
+    expect(said(box)).toEqual(['Line 1: New email is no longer offered, so it was taken out']);
     expect(api?.getDisplayedRowAtIndex(0)?.data?.values['event']).toBeNull();
+  });
+});
+
+describe('a grid’s line option shown by a condition', () => {
+  it('takes out one its line’s change hides, said aloud as a list’s is', async () => {
+    const page = JSON.parse(JSON.stringify(agent)) as Page;
+    const lines = page.fields['trigger_ids'] as { fields: Record<string, unknown> };
+    lines.fields['when'] = { type: 'selection', label: 'When', options: [{ value: 'now', label: 'At once' }, { value: 'unread', label: 'While unread', invisible: "connection != 'gmail'" }] };
+    const host = document.createElement('div');
+    document.body.append(host);
+    const dataSource = createMemoryDataSource({
+      records: { agent: { 1: { name: 'Inbox helper', trigger_ids: [{ key: 't1', id: 1, values: { connection: 'gmail', event: 'new_email', when: 'unread' } }] } } },
+      lists: { events: (values) => EVENTS[values['connection'] as string] ?? [] },
+    });
+    handle = mountViewer(host, { page, dataSource, recordId: 1, widgets: gridWidgets });
+    await handle.form.settled();
+    await frames();
+    const box = host.querySelector('[data-node="f-lines"] .fd-grid-lines') as HTMLElement;
+    // Each said as it is taken out: the condition's at once, the list's once its answer came.
+    const heard: string[] = [];
+    const watch = new MutationObserver(() => heard.push(...said(box).filter((words) => heard.at(-1) !== words)));
+    watch.observe(box, { subtree: true, childList: true, characterData: true });
+    handle.form.updateLine('trigger_ids', 't1', 'connection', 'slack');
+    await handle.form.settled();
+    await frames();
+    watch.disconnect();
+    expect(handle.form.getState().takenOut).toEqual({ 'trigger_ids.t1.event': 'New email is no longer offered, so it was taken out', 'trigger_ids.t1.when': 'While unread is no longer offered, so it was taken out' });
+    expect(heard).toEqual(['Line 1: While unread is no longer offered, so it was taken out', 'Line 1: New email is no longer offered, so it was taken out']);
   });
 });

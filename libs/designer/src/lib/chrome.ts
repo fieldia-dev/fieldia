@@ -414,7 +414,7 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
         // Options carried from another question may be followed by none of its own.
         remove.hidden = choices.length === 1 && !(field.type === 'selection' && field.optionsFrom);
         (row.querySelector('.fd-q-alone') as HTMLElement).hidden = !option.exclusive;
-        // A page's own choice only: a table's lines take no option conditions.
+        // A page's own choice's row: a table line's options' conditions are written in its page (its Choice column shows none).
         whens.get(input)?.update(designer.getPage(), nodeId, i);
         (row.querySelector('.fd-q-option-grip') as HTMLElement).hidden = choices.length === 1;
         (row.querySelector('.fd-q-bullet') as HTMLElement).textContent = kind === 'dropdown' ? `${i + 1}.` : multiple ? '☐' : '◯';

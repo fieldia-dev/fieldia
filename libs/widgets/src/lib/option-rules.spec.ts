@@ -81,3 +81,42 @@ describe('options carried from an earlier question, in a widget', () => {
     expect(ticked()).toEqual([]);
   });
 });
+
+describe('an option’s words that show an answer, shown by a condition or carried', () => {
+  const worded = {
+    ...page,
+    fields: {
+      ...page.fields,
+      branch: { type: 'selection', label: 'Branch', options: [{ value: 'zamalek', label: 'Zamalek' }, { value: 'maadi', label: 'Maadi' }] },
+      call: { type: 'selection', label: 'Call', options: [{ value: 'yes', label: 'Yes, call me at {branch}', invisible: "kind != 'villa'" }, { value: 'no', label: 'No' }] },
+      tried: { type: 'selection', label: 'Treatments', multiple: true, options: [{ value: 'botox', label: 'Botox at {branch|the clinic}' }, { value: 'peel', label: 'Peel' }] },
+    },
+  } as unknown as Page;
+
+  function mountWorded(name: string, values: Values) {
+    const form = createForm({ page: worded, values });
+    const node = { type: 'field', id: `f-${name}`, field: name, widget: 'radio' } as FieldNode;
+    const shown = createWidget({ form, name, field: worded.fields[name], node, id: `fd-${name}`, document, labels: WIDGET_LABELS.en, locale: 'en' });
+    document.body.replaceChildren(shown.element);
+    const refresh = () => shown.update({ value: form.getState().values[name], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    return { form, labels: () => [...shown.element.querySelectorAll('label.fd-choice')].map((l) => l.textContent) };
+  }
+
+  it('reads them filled in, and again as that answer changes, while a condition shows it', () => {
+    const { form, labels } = mountWorded('call', { kind: 'villa', branch: 'zamalek' });
+    expect(labels()).toEqual(['Yes, call me at Zamalek', 'No']);
+    form.setValue('branch', 'maadi');
+    expect(labels()).toEqual(['Yes, call me at Maadi', 'No']);
+    form.setValue('kind', 'flat');
+    expect(labels()).toEqual(['No']);
+  });
+
+  it('reads them filled in where they are carried to another question', () => {
+    const { form, labels } = mountWorded('again', { tried: ['botox', 'peel'] });
+    expect(labels()).toEqual(['Botox at the clinic', 'Peel', 'None of them']);
+    form.setValue('branch', 'zamalek');
+    expect(labels()).toEqual(['Botox at Zamalek', 'Peel', 'None of them']);
+  });
+});

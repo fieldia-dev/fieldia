@@ -1,4 +1,6 @@
 import type { Page } from '../format/page';
+import { checkPage } from '../format/check-page';
+import { pageWarnings, validatePage } from '../format/validate';
 import { createForm } from './form';
 import { createMemoryDataSource } from './memory-data-source';
 import type { SubmitResult } from './data-source';
@@ -187,5 +189,77 @@ describe('{field} words in a page’s own words', () => {
     form.setValues({ branch: 'maadi', contact: 'later' as never, overall: 3 });
     expect(form.validate()).toBe(false);
     expect(form.getState().errors['contact']).toContain('Yes, call me at Maadi');
+  });
+});
+
+describe('endings and {field} words with the functions, Fieldia’s and the app’s own', () => {
+  /** The feedback with a name worked out in capitals, and endings chosen by functions. */
+  const shouted = (endings: Page['endings']) => {
+    const page = feedback({ endings });
+    const layout = page.layout as Extract<Page['layout'], { type: 'sections' }>;
+    return { ...page, fields: { ...page.fields, shout: { type: 'char', label: 'Name', compute: 'upper(name)' } }, layout: { ...layout, children: [...layout.children, { type: 'field', id: 'f-shout', field: 'shout' }] } } as Page;
+  };
+
+  it('choose an ending by a condition calling the new functions and the app’s own', async () => {
+    const endings: Page['endings'] = [
+      { when: "startsWith(lower(name), 'dr')", title: 'Thank you, doctor' },
+      { when: 'vip(name)', title: 'Welcome back, {shout}' },
+      { title: 'Thank you' },
+    ];
+    const form = createForm({ page: shouted(endings), dataSource: createMemoryDataSource(), functions: { vip: (name: unknown) => name === 'Mona' } });
+    form.setValues({ name: 'Dr Hana', overall: 4 });
+    await form.save();
+    expect(form.ending()?.title).toBe('Thank you, doctor');
+    form.reset();
+    form.setValues({ name: 'Mona', overall: 4 });
+    await form.save();
+    expect(form.ending()?.title).toBe('Welcome back, {shout}');
+    // A {field} whose value the functions work out reads it as worked out.
+    expect(form.endingWords('Welcome back, {shout}')).toBe('Welcome back, MONA');
+    expect(form.words('{shout|you}, how was {branch|your branch}?')).toBe('MONA, how was your branch?');
+  });
+
+  it('are checked as the page is read: a function no one gives refused in an ending, as anywhere', () => {
+    const result = checkPage(shouted([{ when: 'vip(name)', title: 'Welcome back' }, { title: 'Thanks' }]));
+    expect(result.ok).toBe(false);
+    expect(result.ok ? [] : result.issues.map((issue) => issue.path)).toEqual(['endings[0].when']);
+  });
+
+  it('say an option’s words with an answer as they read now when a condition takes it out', () => {
+    const page = feedback();
+    const contact = page.fields['contact'] as Extract<Page['fields'][string], { type: 'selection' }>;
+    const ruled = { ...page, fields: { ...page.fields, contact: { ...contact, options: [{ value: 'yes', label: 'Yes, call me at {branch}', invisible: 'overall >= 4' }, { value: 'no', label: 'No' }] } } } as Page;
+    const form = createForm({ page: ruled });
+    form.setValues({ branch: 'zamalek', overall: 2 });
+    form.setValue('contact', 'yes');
+    form.setValue('overall', 5);
+    expect(form.getState().values['contact']).toBeNull();
+    expect(form.getState().takenOut['contact']).toBe('Yes, call me at Zamalek is no longer offered, so it was taken out');
+  });
+});
+
+describe('a page’s checks in one place: endings’ words and the kinds functions take', () => {
+  const page = (endings: Page['endings'], label = 'How was your visit to {branch}?') => {
+    const base = feedback({ endings });
+    return { ...base, fields: { ...base.fields, overall: { ...base.fields['overall'], label } } } as Page;
+  };
+
+  it('refuse a {name} naming no field — in an ending or a label — in validatePage and checkPage alike', () => {
+    for (const check of [validatePage, checkPage]) {
+      const ending = check(page([{ title: 'Thanks, {nmae}' }]));
+      expect(ending.ok ? [] : ending.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual(['endings[0].title: no field "nmae"']);
+      const label = check(page(undefined, 'How was {brnch}?'));
+      expect(label.ok ? [] : label.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual(['fields.overall.label: no field "brnch"']);
+    }
+  });
+
+  it('warn of a value of a kind a function does not take in an ending’s condition, beside the page, never refusing it', () => {
+    const warned = page([{ when: 'age(name) > 2', title: 'Welcome back' }, { title: 'Thanks' }]);
+    const checked = validatePage(warned);
+    expect(checked.ok).toBe(true);
+    expect(checked.warnings?.map((warning) => warning.path)).toEqual(['endings[0].when']);
+    expect(pageWarnings(warned).map((warning) => warning.path)).toEqual(['endings[0].when']);
+    // Where a page is shown, nothing is warned: the check that refuses is the same.
+    expect(checkPage(warned)).toEqual({ ok: true, page: warned });
   });
 });

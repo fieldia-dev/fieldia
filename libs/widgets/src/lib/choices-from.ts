@@ -7,12 +7,12 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  * condition on the other answers, or those carried from an earlier question —
  * the widget the field would have anyway, drawn afresh as the options it
  * offers change (`form.offered`). While a list's choices load it says so; when
- * they fail it offers to load them again; a value the form cleared as a field
- * they change with changed is said until the value changes again; and a value
- * no longer offered that the record held as it was opened is kept — the person
- * decides — and said. One a change no longer offers is taken out by the form,
- * which says so. In a table's line (its `lineForm`), the line's own choices,
- * asked again where the form let them go (another record's line of the same key).
+ * they fail it offers to load them again; and a value no longer offered that
+ * the record held as it was opened is kept — the person decides — and said.
+ * One a change no longer offers is taken out by the form, which says so
+ * (`takenOut`): under the field on a page, and here, under its cell, in a
+ * table's line (its `lineForm`) — whose choices are the line's own, asked
+ * again where the form let them go (another record's line of the same key).
  */
 export function listChoices(factory: WidgetFactory, context: WidgetContext): Widget {
   const { form, name, document: doc } = context;
@@ -43,10 +43,14 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
     if (inner.element.getAttribute('role')) inner.element.setAttribute('aria-labelledby', `${context.id}-label`);
     box.replaceChildren(inner.element, note, retry);
   };
-  /** The options offered now: a list's once loaded, else what the form offers. */
+  /**
+   * The options offered now: a list's once loaded, else what the form offers — an option's words that show an answer
+   * given (`{branch}`) as they read now, whether it is the choice's own, shown by a condition or carried from another.
+   */
   const offeredNow = (): readonly Option[] | null => {
     if (listed && !form.getState().choices[name]?.options) return null;
-    return form.offered?.(name) ?? form.getState().choices[name]?.options ?? null;
+    const options = form.offered?.(name) ?? form.getState().choices[name]?.options ?? null;
+    return options?.some((option) => option.label.includes('{')) ? options.map((option) => (option.label.includes('{') ? { ...option, label: form.words(option.label) } : option)) : options;
   };
   const first = offeredNow();
   if (first) {
@@ -82,9 +86,8 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
         ? words.loadingChoices
         : lost.length
           ? fill(words.notOffered, { name: lost.map((v) => named.get(v) ?? labelIn(context.field, v)).join(', ') })
-          : choices?.cleared
-            ? fill(words.choiceCleared, { name: choices.cleared })
-            : '';
+          : // A line's, taken out as its line changed: the page says a field's under it.
+            ((form.line ? form.getState().takenOut?.[name] : undefined) ?? '');
       note.hidden = !note.textContent;
       // Loading again sets the failure aside, and the button with it.
       retry.hidden = !choices?.error;

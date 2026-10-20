@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Form, FormState, Line, LineField, RecordId, Value, Values } from '@fieldia/core';
+import { optionsList, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type RecordId, type Value, type Values } from '@fieldia/core';
 import { currencyOf } from './display';
 import { stillShown, whileShown } from './shown';
 import type { WidgetDialogs } from './widgets';
@@ -72,10 +72,13 @@ export function kindTextField(def: LineField, kind: 'section' | 'note'): LineFie
 /** The columns of a table whose choices are one of the app's lists, each line's its own. */
 const listedOf = (form: Form, field: string): string[] => {
   const def = form.page.fields[field];
-  return def?.type === 'one2many' ? Object.keys(def.fields).filter((column) => def.fields[column].type === 'selection' && !!(def.fields[column] as { optionsFrom?: unknown }).optionsFrom) : [];
+  return def?.type === 'one2many' ? Object.keys(def.fields).filter((column) => { const sub = def.fields[column]; return sub.type === 'selection' && !!optionsList(sub.optionsFrom); }) : [];
 };
 
-/** The form a cell sees: the line's values, written back into the line. Shared with @fieldia/grid. */
+/**
+ * The form a cell sees: the line's values, written back into the line; its choices', and what was taken out of them,
+ * the line's own (`offered`, `takenOut`), by its column. Shared with @fieldia/grid.
+ */
 export function lineForm(form: Form, field: string, key: string): Form {
   const line = () => ((form.getState().values[field] as Line[] | null) ?? []).find((l) => l.key === key);
   const values = () => line()?.values ?? {};
@@ -85,12 +88,19 @@ export function lineForm(form: Form, field: string, key: string): Form {
   // A choice from the app's list is the line's own, kept by its cell's path as well.
   const listed = listedOf(form, field);
   const choices = (all: FormState['choices']) => Object.fromEntries(listed.flatMap((column) => (all[at + column] ? [[column, all[at + column]]] : [])));
+  // Options taken out of the line's choices, said under their cells: kept by the cell's path, seen by the column.
+  const takenOut = (all: FormState['takenOut'] | undefined) => Object.fromEntries(Object.entries(all ?? {}).flatMap(([path, words]) => (path.startsWith(at) ? [[path.slice(at.length), words]] : [])));
+  const columns = new Set(Object.keys((form.page.fields[field] as { fields?: object } | undefined)?.fields ?? {}));
   return {
     ...form,
+    line: { field, key },
     getState: (): FormState => {
       const state = form.getState();
-      return { ...state, values: values(), unread: unread(), ...(listed.length ? { choices: choices(state.choices) } : {}) };
+      return { ...state, values: values(), unread: unread(), takenOut: takenOut(state.takenOut), ...(listed.length ? { choices: choices(state.choices) } : {}) };
     },
+    // A column's options as its line offers them, its conditions read on the line.
+    offered: (name: string) => (form.offered ? form.offered(columns.has(name) ? at + name : name) : null),
+    offersChange: (name: string) => !!form.offersChange?.(columns.has(name) ? at + name : name),
     // Asked while the line is there: a cell of a line taken away asks nothing.
     loadChoices: (name: string) => (!listed.includes(name) ? form.loadChoices(name) : line() ? form.loadChoices(at + name) : undefined),
     setValue: (name: string, value: Value) => form.updateLine(field, key, name, value),
@@ -111,7 +121,7 @@ export function lineForm(form: Form, field: string, key: string): Form {
  * from the app's list with the choices loaded for that line, its value said by its label. Shared with @fieldia/grid.
  */
 export function lineColumn(form: Form, field: string, key: string, column: string, sub: LineField): LineField {
-  if (sub.type !== 'selection' || !sub.optionsFrom) return sub;
+  if (sub.type !== 'selection' || !optionsList(sub.optionsFrom)) return sub;
   const options = form.getState().choices[`${field}.${key}.${column}`]?.options;
   return options ? ({ ...sub, options } as LineField) : sub;
 }

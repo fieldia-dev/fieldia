@@ -259,8 +259,6 @@ export interface WidgetLabels {
   loadingChoices: string;
   choicesFailed: string;
   notOffered: string;
-  /** A table line's choice its new choices do not offer, cleared once a column they change with changed (`{name}`: its label). */
-  choiceCleared: string;
   /** A yes or no as two buttons. */
   yes: string;
   no: string;
@@ -683,7 +681,6 @@ const en: WidgetLabels = {
   loadingChoices: 'Loading choices…',
   choicesFailed: 'Load the choices again',
   notOffered: '{name}: no longer offered',
-  choiceCleared: '{name} was cleared: no longer offered',
   yes: 'Yes',
   no: 'No',
   upTo: 'Up to {n}',

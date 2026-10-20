@@ -56,7 +56,7 @@ test.describe('an AI agent’s tools, each line’s from its connection', () => 
     await pick(page, connection(page, 0), 'Slack', 'Slack — Nile Traders');
     await expect.poll(() => offered(page, 0)).toEqual(SLACK);
     await expect(tool(page, 0)).toHaveValue('');
-    await expect(said(page, 0)).toHaveText('Send an email was cleared: no longer offered');
+    await expect(said(page, 0)).toHaveText('Send an email is no longer offered, so it was taken out');
     // Search: Slack searches too, in its own words.
     await pick(page, connection(page, 1), 'Slack', 'Slack — Nile Traders');
     await expect.poll(() => offered(page, 1)).toEqual(SLACK);
@@ -128,7 +128,7 @@ test.describe('what starts the agent, in the grid', () => {
     await expect(grid(page).locator('.fd-grid-editor')).toHaveCount(0);
     await expect(cell(page, 0, 'connection_id')).toHaveText('HubSpot — Sales');
     await expect(cell(page, 0, 'event')).toHaveText('');
-    await expect(grid(page).locator('.fd-sr-only[role="status"]', { hasText: 'Line 1:' })).toHaveText('Line 1: A new email arrives was cleared: no longer offered');
+    await expect(grid(page).locator('.fd-sr-only[role="status"]', { hasText: 'Line 1:' })).toHaveText('Line 1: A new email arrives is no longer offered, so it was taken out');
     // The event chosen again, among HubSpot's.
     await cell(page, 0, 'event').click();
     const events = grid(page).locator('.fd-grid-editor select');
@@ -152,7 +152,7 @@ test.describe('what starts the agent, in the grid', () => {
     await pick(page, dialog.getByRole('combobox').first(), 'Drive', 'Google Drive — Shared drive');
     await expect.poll(async () => (await event.locator('option').allTextContents()).filter(Boolean)).toEqual(['A file is added']);
     await expect(event).toHaveValue('');
-    await expect(dialog.locator('[role="status"]:not([hidden])', { hasText: 'cleared' })).toHaveText('Someone mentions the agent was cleared: no longer offered');
+    await expect(dialog.locator('[role="status"]:not([hidden])', { hasText: 'taken out' })).toHaveText('Someone mentions the agent is no longer offered, so it was taken out');
     await screen(page, 'line-choices-dialog', { viewport: true });
     expect(problems).toEqual([]);
   });

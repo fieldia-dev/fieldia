@@ -17,7 +17,7 @@ import {
   type LayoutNode,
   type Option,
   type OptionsFrom,
-  type LineOptionsFrom,
+  type OptionsFromList,
   type PartLookKind,
   type HelpShown,
   type InputMode,
@@ -478,7 +478,7 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    * one of the app's lists (`from`), changing with the line's other columns or `parent.` and a field of the record;
    * `from: null` writes them here again.
    */
-  setColumnChoices(id: string, column: string, choices: { labels?: string[]; from?: LineOptionsFrom | null }): boolean;
+  setColumnChoices(id: string, column: string, choices: { labels?: string[]; from?: OptionsFromList | null }): boolean;
   /** An option's picture and points for a quiz; `null` or empty takes either away. */
   setOptionDetails(id: string, index: number, details: OptionDetails): boolean;
   /** A matrix's rows or columns, by their words, in order. */

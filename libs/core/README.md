@@ -176,12 +176,21 @@ An option of a choice may show only while a condition holds, written as a part's
 app's list gave, or those picked where they are carried from (`picked: false`: those
 left unpicked; a "None of these" is never carried) — less those whose condition hides
 them. A chosen option a change no longer offers is taken out of the answer, never
-silently kept: `form.getState().takenOut` says so by field ("Garden is no longer
-offered, so it was taken out"), until the field is written again. One a record held
+silently kept: `form.getState().takenOut` says so by path ("Garden is no longer
+offered, so it was taken out"), until that value is written again — the same words
+for a choice its app's list no longer offers, a page's or a line's. One a record held
 as it was opened stays chosen, and the choice says it is no longer offered. The
 page's checks read each option's condition and refuse a choice carried from itself,
-from a field that is no choice, or round a circle. A table's lines take neither: their
-options are written in the page.
+from a field that is no choice, or round a circle.
+
+A table line's choice takes conditions on its options too, read on the line's own
+values and the record it is on (`parent.`): a room's "Garden room" only on the
+ground floor, a "Pool house" only for a villa. `form.offered("rooms.k1.use")` gives
+a line's by its cell's path; an option a change of the line, or of the record, hides
+is taken out and said by that path (`takenOut["rooms.k1.use"]`). A line's choice
+carries no options from a question: its own, or one of the app's lists — the same
+`optionsFrom` as a page's own choice (`{ list, dependsOn }`, its `dependsOn` naming
+the line's columns or `parent.` and a field).
 
 ## A public form's bot check
 
@@ -333,14 +342,14 @@ Without `timeZone`, the browser's own zone, as before.
 A selection's choices may come from the app's own lists (`optionsFrom: { list,
 dependsOn }`), through the data source's `options({ list, values })`, asked again
 when a field in `dependsOn` changes — by the person, a step or the app: a choice
-the new answer does not offer is then cleared and named (`Choices.cleared`, until
-its value changes again); a record that comes in with one keeps it, and its save
-says why. On a table's line they are that line's:
+the new answer does not offer is then taken out and said (`state.takenOut`, as a
+condition's is, until its value changes again); a record that comes in with one
+keeps it, and its save says why. On a table's line they are that line's:
 asked with the line's values and the record it is on as `parent`
 (`dependsOn` naming the line's columns, or `parent.` and a field), shared by the
 lines whose columns hold the same values, and kept by the cell's path in
-`state.choices` (`form.loadChoices("tool_ids.k1.tool")`), cleared and named the
-same way as a column they change with changes on that line. `form.lineChoices(field, key, column,
+`state.choices` (`form.loadChoices("tool_ids.k1.tool")`), taken out and said the
+same way, by the cell's path, as a column they change with changes on that line. `form.lineChoices(field, key, column,
 values)` asks a line's for a row about to be pasted on it. The memory source's
 `lists` functions take the request after the values.
 

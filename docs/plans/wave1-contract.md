@@ -827,13 +827,14 @@ In plain words:
   and `parent[…]`, never by another value of the line.
 - **Followed**: once a line's choices are loaded, a change on that line of what they
   change with asks again (the latest answer wins). After a change someone made — the
-  person, a step, the app — a choice the new answer does not offer is cleared (of
-  several, the rest kept) and named (`Choices.cleared`, until the cell's value changes
-  again), and told as a step's change (`change`, `by: "step"`):
+  person, a step, the app — a choice the new answer does not offer is taken out (of
+  several, the rest kept) and said (`FormState.takenOut` by the cell's path, as an
+  option a condition hides is, until the cell's value changes again), and told as a
+  step's change (`change`, `by: "step"`):
   the person's claim on the line stays. A record that comes in with a choice its
   choices do not offer keeps it, said; `validate` and a save refuse it with "Must be
-  one of: …". A page's own field with `dependsOn` clears the same way (one rule for
-  every choice from a list; 0.26 kept its value, said as no longer offered).
+  one of: …". A page's own field with `dependsOn` takes out the same way (one rule
+  for every choice from a list; 0.26 kept its value, said as no longer offered).
 - **State**: `state.choices` keeps a line's by its cell's path (`field.lineKey.subfield`);
   `form.loadChoices(path)` asks for one; `form.lineChoices(field, key | null,
   subfield, values)` asks as a line would with `values` laid over it (a pasted row).

@@ -45,9 +45,10 @@ export const OptionSchema = z
 export type Option = z.infer<typeof OptionSchema>;
 
 /**
- * One choice of a page's own selection, which may show or hide by a condition on the record's other answers
- * (`invisible`, as a part's): "Garden" hidden unless the unit is a villa. A choice that a change hides while it is
- * chosen is taken out of the answer, and the form says so; one the record held as it was opened stays, and is said.
+ * One choice of a page's own selection or a table line's, which may show or hide by a condition on the record's other
+ * answers — a line's, on the line's values and `parent.` the record's — (`invisible`, as a part's): "Garden" hidden
+ * unless the unit is a villa. A choice that a change hides while it is chosen is taken out of the answer, and the form
+ * says so; one the record held as it was opened stays, and is said.
  */
 export const SelectionOptionSchema = OptionSchema.extend({ invisible: ModifierSchema.optional() }).strict().meta({ id: 'SelectionOption' });
 
@@ -267,13 +268,20 @@ const DateTime = z.object({ type: z.literal('datetime'), ...common, ...days, tim
 /**
  * Choices the app gives rather than the page: its list by name, loaded through
  * the data source's `options` when the form shows the field, and again when a
- * field named in `dependsOn` changes — a city list that follows the country.
+ * field named in `dependsOn` changes — a city list that follows the country. A
+ * table line's are asked for each line by that line's values — a connection's
+ * tools on its own line — and again when a column they change with changes on
+ * that line, or, as `parent.` and a field, the record the line is on; lines
+ * whose columns hold the same values share one answer.
  */
 export const OptionsFromListSchema = z
   .object({
     list: z.string().min(1),
-    /** The fields the choices change with: the list is asked again when one does. */
-    dependsOn: z.array(z.string().regex(FIELD_NAME)).min(1).optional(),
+    /**
+     * The fields the choices change with: the list is asked again when one does. On a table's line, the line's own
+     * columns, or `parent.` and a field of the record it is on.
+     */
+    dependsOn: z.array(z.string().regex(/^(parent\.)?[A-Za-z_][A-Za-z0-9_]*$/)).min(1).optional(),
   })
   .strict()
   .meta({ id: 'OptionsFromList' });
@@ -293,12 +301,15 @@ export const OptionsFromFieldSchema = z
   .strict()
   .meta({ id: 'OptionsFromField' });
 
+/**
+ * Where a choice's options come from besides the page: one of the app's lists (`list`), or an earlier question
+ * (`field`). The same for a page's own choice and a table line's; a line's carries none from a question.
+ */
 export const OptionsFromSchema = z.union([OptionsFromListSchema, OptionsFromFieldSchema]).meta({ id: 'OptionsFrom' });
 
 export type OptionsFrom = z.infer<typeof OptionsFromSchema>;
 export type OptionsFromList = z.infer<typeof OptionsFromListSchema>;
 export type OptionsFromField = z.infer<typeof OptionsFromFieldSchema>;
-
 
 const selection = {
   type: z.literal('selection'),
@@ -326,24 +337,11 @@ const Selection = z
   // The same rule for tools that read only the JSON Schema.
   .meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
 /**
- * A table line's choices from one of the app's lists: asked for each line by that line's values — a connection's
- * tools on its own line — and again when a column they change with changes on that line, or, as `parent.` and a
- * field, the record the line is on. Lines whose columns hold the same values share one answer.
+ * A choice in a table's lines: its options written in the page — each may show or hide by a condition on the line's
+ * values (`options[].invisible`, `parent.` the record's) — or from one of the app's lists for each line.
  */
-export const LineOptionsFromSchema = z
-  .object({
-    list: z.string().min(1),
-    /** The line's columns the choices change with, or `parent.` and a field of the record it is on. */
-    dependsOn: z.array(z.string().regex(/^(parent\.)?[A-Za-z_][A-Za-z0-9_]*$/)).min(1).optional(),
-  })
-  .strict()
-  .meta({ id: 'LineOptionsFrom' });
-
-export type LineOptionsFrom = z.infer<typeof LineOptionsFromSchema>;
-
-/** A choice in a table's lines: its options written in the page, or from one of the app's lists for each line. */
 const LineSelection = z
-  .object({ ...selection, optionsFrom: LineOptionsFromSchema.optional() })
+  .object({ ...selection, options: z.array(SelectionOptionSchema), optionsFrom: OptionsFromSchema.optional() })
   .strict()
   .refine((field) => field.options.length > 0 || field.optionsFrom !== undefined, {
     message: 'a choice needs its options, or a list of the app’s to take them from',

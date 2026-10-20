@@ -193,7 +193,6 @@ export const de: WidgetLabels = {
   loadingChoices: 'Auswahl lädt…',
   choicesFailed: 'Auswahl neu laden',
   notOffered: '{name}: nicht mehr angeboten',
-  choiceCleared: '{name} wurde entfernt: nicht mehr angeboten',
   yes: 'Ja',
   no: 'Nein',
   upTo: 'Bis zu {n}',

@@ -492,9 +492,10 @@ export class ReferenceCheck {
   }
 
   /**
-   * A choice's options: each condition on one reads the record (`options[].invisible`); its list's `dependsOn` names
-   * fields (`checkDependsOn`); an earlier question it carries them from (`optionsFrom.field`) is another choice of the page, never one
-   * carrying its own from this one.
+   * A choice's options, a page's own and a table line's alike: each condition on one reads the record — a line's, its
+   * line and `parent.` (`options[].invisible`); its list's `dependsOn` names fields (`checkDependsOn`); an earlier
+   * question it carries them from (`optionsFrom.field`) is another choice of the page, never one carrying its own from
+   * this one — and never for a line, whose choices are its own or one of the app's lists.
    */
   private checkChoices(name: string, def: Extract<Field | LineField, { type: 'selection' }>, path: string, fields: Record<string, Field | LineField>, scope: Scope) {
     (def.options as SelectionOption[]).forEach((option, i) => this.checkModifiers(option, `${path}.options[${i}]`, ['invisible'], scope));
@@ -502,6 +503,7 @@ export class ReferenceCheck {
     const carried = optionsField(def.optionsFrom);
     if (!carried) return;
     const at = `${path}.optionsFrom.field`;
+    if (scope.lines !== undefined) return this.report(at, `"${name}": a line's choice carries no options from a question — its own, or one of the app's lists`);
     if (carried.field === name) return this.report(at, `"${name}" cannot carry its options from itself`);
     const from = this.need(carried.field, at, fields);
     if (!from) return;

@@ -1,4 +1,4 @@
-import type { Field, LineOptionsFrom, Option } from '@fieldia/core';
+import { optionsList, type Field, type OptionsFromList, type Option } from '@fieldia/core';
 import { iconButton, type ElementFactory } from './chrome';
 import { columnKind, type Designer, type LineColumn } from './designer';
 
@@ -90,7 +90,7 @@ function choicesBox(el: ElementFactory, designer: Designer, nodeId: string, colu
   const w = designer.words.questions;
   const o = designer.words.options;
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
-  const set = (choices: { labels?: string[]; from?: LineOptionsFrom | null }) => designer.setColumnChoices(nodeId, column(), choices);
+  const set = (choices: { labels?: string[]; from?: OptionsFromList | null }) => designer.setColumnChoices(nodeId, column(), choices);
   const name = `fd-column-source-${++sources}`;
   const written = el('input', { type: 'radio', name, value: 'written' }) as HTMLInputElement;
   const listed = el('input', { type: 'radio', name, value: 'list' }) as HTMLInputElement;
@@ -118,7 +118,7 @@ function choicesBox(el: ElementFactory, designer: Designer, nodeId: string, colu
     el('p', { class: 'fd-q-list-note' }, w.columnListNote)
   );
   const element = el('div', { class: 'fd-column-choices' }, source, writtenBox, listBox);
-  let from: LineOptionsFrom | undefined;
+  let from: OptionsFromList | undefined;
   written.addEventListener('change', () => set({ from: null }));
   listed.addEventListener('change', () => set({ from: { list: designer.lists()[0]?.name ?? 'choices' } }));
   pick.addEventListener('change', () => from && set({ from: { ...from, list: pick.value } }));
@@ -160,7 +160,7 @@ function choicesBox(el: ElementFactory, designer: Designer, nodeId: string, colu
       const def = lines.fields[own];
       if (def?.type !== 'selection') return;
       source.setAttribute('aria-label', w.choicesOfColumn(def.label));
-      from = def.optionsFrom;
+      from = optionsList(def.optionsFrom);
       written.checked = !from;
       listed.checked = !!from;
       writtenBox.hidden = !!from;

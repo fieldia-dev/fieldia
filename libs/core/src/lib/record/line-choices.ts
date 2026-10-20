@@ -1,4 +1,5 @@
 import type { Field, LineField, Option } from '../format/field';
+import { optionsList } from '../format/choice-options';
 import type { Value, Values } from './values';
 
 /**
@@ -27,9 +28,10 @@ export function listedColumns(fields: Readonly<Record<string, Field>>): ListedCo
   for (const [table, def] of Object.entries(fields)) {
     if (def.type !== 'one2many') continue;
     for (const [column, sub] of Object.entries(def.fields)) {
-      if (sub.type !== 'selection' || !sub.optionsFrom) continue;
-      const on = sub.optionsFrom.dependsOn ?? [];
-      found.push({ table, column, def: sub, list: sub.optionsFrom.list, own: on.filter((name) => !name.startsWith('parent.')), parent: on.filter((name) => name.startsWith('parent.')).map((name) => name.slice(7)) });
+      const from = sub.type === 'selection' ? optionsList(sub.optionsFrom) : undefined;
+      if (!from) continue;
+      const on = from.dependsOn ?? [];
+      found.push({ table, column, def: sub, list: from.list, own: on.filter((name) => !name.startsWith('parent.')), parent: on.filter((name) => name.startsWith('parent.')).map((name) => name.slice(7)) });
     }
   }
   return found;
