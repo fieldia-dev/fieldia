@@ -1,4 +1,4 @@
-import { bulkSettable, importable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Modifier, type Page, type ToneWhen } from '@fieldia/core';
+import { bulkSettable, importable, type ButtonNode, type Field, type FilterCondition, type FilterRange, type FilterItem, type FilterPeriod, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Modifier, type Page, type ToneWhen } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { allIds, fieldReads, keptFields, listCalendarFields, listCardFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
@@ -32,6 +32,15 @@ export interface ListOptionsPatch extends RowRulesPatch {
   filterFields?: string[];
   /** A filter's own name on the bar, for a field it offers; empty for the field's label. */
   filterLabel?: { field: string; label: string };
+  /**
+   * A field the filter bar offers, filtered by its range — From and To, a press for each of its least values — or, null,
+   * by its values to tick (a whole number's: a decimal, an amount and a date are always filtered by their range).
+   */
+  filterRange?: { field: string; range: FilterRange | null };
+  /** How many records each value and named filter finds, beside it: true asks for it, false takes it away. */
+  filterCounts?: boolean;
+  /** On a phone, the filter bar's fields in a sheet with "Show 37 results": true asks for it, false takes it away. */
+  filterSheet?: boolean;
   /** The link to the list's own records its rows nest under; null for none. */
   parentField?: string | null;
   /** The records on a calendar too: when each starts and ends, its words, its colour, a column for each; null for none. */
@@ -85,8 +94,12 @@ export const ruleIsGood = (rule: unknown): boolean => rule === false || (typeof 
 export const widthIsGood = (width: unknown): boolean =>
   typeof width === 'number' ? Number.isInteger(width) && width >= 1 && width <= 200 : typeof width === 'string' && /^([89]|[1-9]\d{1,2}|[1-3]\d{3}|4000)px$/.test(width);
 
-/** Kinds of field whose values a list's filter bar can offer to tick. */
-export const FILTERABLE = new Set(['selection', 'many2one', 'many2many', 'boolean', 'char', 'integer']);
+/** Kinds of field a list's filter bar can offer: their values to tick, or their range (a number's, a date's). */
+export const FILTERABLE = new Set(['selection', 'many2one', 'many2many', 'boolean', 'char', 'integer', 'float', 'monetary', 'date', 'datetime']);
+/** Kinds of field the filter bar filters by their range: a whole number where the page says so, the rest always. */
+export const RANGEABLE: ReadonlySet<string> = new Set(['integer', 'float', 'monetary', 'date', 'datetime']);
+/** Kinds whose range is all the filter bar takes of them. */
+export const RANGE_ONLY: ReadonlySet<string> = new Set(['float', 'monetary', 'date', 'datetime']);
 
 /** Kinds of field a column cannot show: lines, rich text, files and raw data. */
 const NOT_IN_A_COLUMN = new Set(['one2many', 'html', 'binary', 'json']);
@@ -316,10 +329,19 @@ export function listCommands(context: {
         }
         if (options.search === 'fields') list.search = 'fields';
         else if (options.search === 'bar') {
-          // The fields' values, and their names on the bar, belong to the filter bar alone.
+          // The fields' values, their names, ranges and sheet on the bar, belong to the filter bar alone.
           delete list.search;
           delete list.filterFields;
           delete list.filterLabels;
+          delete list.filterRanges;
+          delete list.filterSheet;
+        }
+        if (options.filterCounts === true) list.filterCounts = true;
+        else if (options.filterCounts === false) delete list.filterCounts;
+        if (options.filterSheet === false) delete list.filterSheet;
+        else if (options.filterSheet === true) {
+          if (list.search !== 'fields') throw new Refusal((w) => w.refusals.sheetNeedsFilterBar);
+          list.filterSheet = true;
         }
         if (options.filterFields !== undefined) {
           for (const name of options.filterFields) {
@@ -328,10 +350,33 @@ export function listCommands(context: {
           }
           if (options.filterFields.length) list.filterFields = [...options.filterFields];
           else delete list.filterFields;
-          // A filter no longer offered takes its own name with it.
+          // A filter no longer offered takes its own name and its range with it.
           const named = Object.entries(list.filterLabels ?? {}).filter(([name]) => list.filterFields?.includes(name));
           if (named.length) list.filterLabels = Object.fromEntries(named);
           else delete list.filterLabels;
+          const ranges = Object.entries(list.filterRanges ?? {}).filter(([name]) => list.filterFields?.includes(name));
+          if (ranges.length) list.filterRanges = Object.fromEntries(ranges);
+          else delete list.filterRanges;
+        }
+        if (options.filterRange !== undefined) {
+          const { field, range } = options.filterRange;
+          const def = fieldFor(draft, field);
+          if (!list.filterFields?.includes(field)) throw new Refusal((w) => w.refusals.filterLabelNotOffered(def.label));
+          if (!RANGEABLE.has(def.type)) throw new Refusal((w) => w.refusals.notRangeable(def.label));
+          const ranges = { ...list.filterRanges };
+          const least = range?.atLeast ?? [];
+          if (least.length) {
+            if (def.type === 'date' || def.type === 'datetime') throw new Refusal((w) => w.refusals.atLeastNeedsNumber(def.label));
+            if (least.some((n) => !Number.isFinite(n))) throw new Refusal((w) => w.refusals.atLeastNotNumbers(def.label));
+            if (def.type === 'integer' && least.some((n) => !Number.isInteger(n))) throw new Refusal((w) => w.refusals.atLeastWhole(def.label));
+          }
+          // Least values a press each, from the smallest, each once.
+          const sorted = [...new Set(least)].sort((a, b) => a - b);
+          // A whole number's range is its own choice; another's is there whatever is named, kept only for its presses.
+          if (!range || (!sorted.length && RANGE_ONLY.has(def.type))) delete ranges[field];
+          else ranges[field] = sorted.length ? { atLeast: sorted } : {};
+          if (Object.keys(ranges).length) list.filterRanges = ranges;
+          else delete list.filterRanges;
         }
         if (options.filterLabel !== undefined) {
           const { field, label } = options.filterLabel;
