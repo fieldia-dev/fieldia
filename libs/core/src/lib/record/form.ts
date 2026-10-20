@@ -932,10 +932,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const scheduler = options.scheduler ?? hostScheduler;
   // A field's label small inside a message's sentence where the page asks (`lowerLabels`).
   // …and a day written in the page's order where it says one (`look.dateOrder`): "can't be after Oct 20, 2026".
-  const dateOrder: unknown = page.look?.dateOrder;
-  const ownOrder = dateOrder === 'mdy' || dateOrder === 'ymd' || dateOrder === 'dmy' ? dateOrder : undefined;
-  const messages: Messages =
-    page.lowerLabels || ownOrder ? { ...(options.messages ?? MESSAGES.en), ...(page.lowerLabels ? { lowerLabels: true } : {}), ...(ownOrder ? { dateOrder: ownOrder } : {}) } : (options.messages ?? MESSAGES.en);
+  const dateOrder = page.look?.dateOrder;
+  const messages: Messages = page.lowerLabels || dateOrder ? { ...(options.messages ?? MESSAGES.en), lowerLabels: page.lowerLabels, dateOrder } : (options.messages ?? MESSAGES.en);
   /** One of the form's sentences in the words the page names its records by (`records`), else as the language says it plainly. */
   const named = (noun: string | undefined, plain: string) => recordSentence(page.records, noun, plain, messages.locale);
   /** The app's functions the page's expressions call: a name none may call is refused now. */
@@ -2017,37 +2015,20 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return unticked(node) ?? checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages, today(), (node.source as FieldNode).widget) ?? ruleCheck(node).error;
   }
 
-  /** Which answers the form refuses, as `refusedAt` found them for the state they were found in. */
-  let refusals: { state: FormState; at: Map<string, boolean> } | null = null;
+  /** What a check would refuse now (`collectErrors`), for the state it was found for. */
+  let refusals: { state: FormState; errors: Record<string, string> } | null = null;
   /**
    * Whether the form refuses the answer at a path — a field's, or a table line's cell (`field.lineKey.subfield`) — as a
    * check would now: one it shows that holds a value its rules do not take (under its least, past today, a pattern not
    * met, an answer rule's error). An empty answer is none, required or not: there is nothing worked out from it to wait.
    */
   function refusedAt(path: string): boolean {
-    if (refusals?.state !== state) refusals = { state, at: new Map() };
-    let refused = refusals.at.get(path);
-    if (refused === undefined) {
-      refused = refusedNow(path);
-      refusals.at.set(path, refused);
-    }
-    return refused;
-  }
-  function refusedNow(path: string): boolean {
+    if (refusals?.state !== state) refusals = { state, errors: collectErrors() };
+    if (!refusals.errors[path]) return false;
     const parts = path.split('.');
     const def = page.fields[parts[0]];
-    if (!def) return false;
-    if (parts.length === 1) return !isEmpty(def, state.values[path]) && form.problem(path) !== null;
-    if (def.type !== 'one2many' || parts.length < 3) return false;
-    const sub = parts[parts.length - 1];
-    const subDef = def.fields[sub];
-    const line = ((state.values[parts[0]] as Line[] | null) ?? []).find((one) => one.key === parts.slice(1, -1).join('.'));
-    if (!subDef || !line || isEmpty(subDef, line.values[sub])) return false;
-    // As a check reads it: on a table shown, where its line shows the cell.
-    const node = visibleFieldNodes(undefined, 'field', parts[0])[0];
-    if (!node) return false;
-    if (tables.has(node.id) && (lineStateOf(node.id, line.key).cells[sub]?.invisible || tables.get(node.id)!.compiled.hidden(sub, reading().context, reading().env, userRoles))) return false;
-    return checkValue(checkedLine(path, subDef), line.values[sub], false, messages, today(), (node.source as FieldNode).cells?.[sub]?.widget) !== undefined;
+    const held = valueAt(state.values, path);
+    return held !== gone && !isEmpty((parts.length > 2 && def?.type === 'one2many' ? def.fields[parts[parts.length - 1]] : def) as Field, held);
   }
 
   /** Warnings for the visible fields of the page, without publishing them. */

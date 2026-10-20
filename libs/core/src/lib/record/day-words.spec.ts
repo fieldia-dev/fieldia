@@ -2,7 +2,7 @@ import type { Page } from '../format/page';
 import { checkValue } from './check';
 import { dayWords } from './day-words';
 import { createForm } from './form';
-import { takingWords } from './form-limits';
+import { takingWords, whenWords } from './form-limits';
 import { MESSAGES } from './messages';
 
 /**
@@ -34,10 +34,11 @@ describe('a day in a message', () => {
 
   it('with its time on the page’s clock, the zone named where it is not the reader’s', () => {
     const at = Date.parse('2026-11-01T07:00:00.000Z');
-    expect(dayWords('', MESSAGES.en, undefined, { at, zone: 'Africa/Cairo', named: false })).toBe('1 Nov 2026, 09:00');
-    expect(dayWords('', MESSAGES.en, undefined, { at, zone: 'Africa/Cairo', named: true })).toMatch(/^1 Nov 2026, 09:00 (EET|GMT\+2)$/);
-    expect(dayWords('', MESSAGES.en, 'mdy', { at, zone: 'Africa/Cairo', named: false })).toBe('Nov 1, 2026, 09:00');
-    expect(dayWords('', MESSAGES.en, 'ymd', { at, zone: 'Africa/Cairo', named: false })).toBe('2026-11-01 09:00');
+    expect(whenWords('2026-11-01T09:00', at, MESSAGES.en, 'Africa/Cairo')).toMatch(/^1 Nov 2026, 09:00( (EET|GMT\+2))?$/);
+    expect(whenWords('2026-11-01T09:00', at, MESSAGES.en, 'Africa/Cairo', 'mdy')).toMatch(/^Nov 1, 2026, 09:00( (EET|GMT\+2))?$/);
+    expect(whenWords('2026-11-01T09:00', at, MESSAGES.en, 'Africa/Cairo', 'ymd')).toMatch(/^2026-11-01 09:00( (EET|GMT\+2))?$/);
+    // Tokyo is no reader's own here (the tests run on another clock): its name said.
+    expect(whenWords('2026-11-01T16:00', at, MESSAGES.en, 'Asia/Tokyo')).toMatch(/^1 Nov 2026, 16:00 (GMT\+9|JST)$/);
   });
 
   it('a day’s earliest and latest, as the page writes its days', () => {

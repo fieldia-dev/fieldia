@@ -8,7 +8,7 @@ import type { Stopped } from './run';
 import type { Scheduler } from './scheduler';
 import { countsAsked, dayAlone, limitInstant, seatedFields, type FormLimits, type Seats, type TakingState } from './taking';
 import { dayWords } from './day-words';
-import { isOwnZone } from './zones';
+import { isOwnZone, wallClock, wallDay, wallTime } from './zones';
 import type { DateOrder } from './input-rules';
 import type { Value } from './values';
 
@@ -239,8 +239,13 @@ export function formLimits(host: LimitsHost): Limits {
  * page's `look.dateOrder`, else the messages'), its language, on its clock — "20 Nov 2026", "1 Nov 2026, 09:00" — with
  * the zone's short name where it is not the browser's own ("09:00 EET").
  */
-export function whenWords(written: string, at: number, messages: Messages, zone?: string, order?: DateOrder): string {
-  return dayAlone(written) ? dayWords(written.slice(0, 10), messages, order) : dayWords('', messages, order, { at, zone, named: !!zone && !isOwnZone(zone) });
+export function whenWords(written: string, at: number, messages: Messages, zone?: string, order: DateOrder = messages.dateOrder ?? 'dmy'): string {
+  if (dayAlone(written)) return dayWords(written.slice(0, 10), messages, order);
+  const wall = wallTime(at, zone);
+  const words = `${dayWords(wallDay(wall), messages, order)}${order === 'ymd' ? ' ' : ', '}${wallClock(wall)}`;
+  if (!zone || isOwnZone(zone)) return words;
+  const name = new Intl.DateTimeFormat(messages.locale === 'en' ? 'en-GB' : messages.locale, { timeZone: zone, timeZoneName: 'short' }).formatToParts(at).find((part) => part.type === 'timeZoneName')?.value;
+  return name ? `${words} ${name}` : words;
 }
 
 /**
