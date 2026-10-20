@@ -1454,10 +1454,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The owner's walk of 0.27 mended: a question's required message, and a refused signature's "ready to sign" and Sign
 // now — Arabic's 77.58 and 13.24 measured before, 77.88 and 13.29 after, to 77.9 and 13.3; German's 36.14 and 11.60 to
 // 36.27 and 11.64, to 36.3 and 11.7; French's 36.60 and 11.64 to 36.75 and 11.70, to 36.8 and 11.7.
-// A code scanned with the camera (0.29, w5-scan): the Scan button's, the camera sheet's and why it did not open's 20
-// words — Arabic's 77.88 and 13.29 measured before, 81.47 and 13.78 after, to 81.5 and 13.8; German's 36.27 and 11.64
-// to 37.65 and 12.07, to 37.7 and 12.1; French's 36.75 and 11.70 to 38.13 and 12.12, to 38.2 and 12.2.
-const ADD_ON_BUDGET_KB = { ar: [81.5, 13.8], de: [37.7, 12.1], fr: [38.2, 12.2] };
+// A code scanned with the camera (0.29, w5-scan): the Scan button's, the camera sheet's and why it did not open's 21
+// words — Arabic's 77.88 and 13.29 measured before, 81.55 and 13.79 after, to 81.6 and 13.8; German's 36.27 and 11.64
+// to 37.69 and 12.08, to 37.7 and 12.1; French's 36.75 and 11.70 to 38.18 and 12.14, to 38.2 and 12.2.
+const ADD_ON_BUDGET_KB = { ar: [81.6, 13.8], de: [37.7, 12.1], fr: [38.2, 12.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1850,15 +1850,16 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-// A code scanned with the camera (0.29, w5-scan): scan new, 18.12 and 7.67 — a field's widget with its Scan button and
+// A code scanned with the camera (0.29, w5-scan): scan new, 18.47 and 7.80 — a field's widget with its Scan button and
 // why the camera did not open beside it, the camera's sheet reading its frames (the back camera, stopped as it closes,
 // an item still in sight read once, a beep and a buzz), the reader it reads with (an app's own, the browser's
 // BarcodeDetector, else the decode part), a code written into words, a link's record found by its code, a GS1 code's
-// parts and the fields they fill, a table's lines counted, the page's checks of it, its words and its sheet — to 18.2
-// and 7.7; decode new, 153.76 and 38.91 — ZXing's readers of QR codes, DataMatrix, the UPC and EAN family, Code 128 and
+// parts and the fields they fill, a table's lines counted, the page's checks of it, its words and its sheet — to 18.5
+// and 7.9; decode new, 153.78 and 38.94 — ZXing's readers of QR codes, DataMatrix, the UPC and EAN family, Code 128 and
 // Code 39 (@zxing/library 0.23.0, its readers alone: tools/zxing-readers.mjs), loaded only as Scan is pressed in a
-// browser that reads no codes itself — to 153.8 and 39.0.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], scan: [19, 8], decode: [153.8, 39.0] };
+// browser that reads no codes itself — to 153.8 and 39.0. A number's total under its column read from the end, as the
+// column's numbers are (lines 45.36 and 15.52 measured before, 45.51 and 15.54 after, to 45.6 and 15.6).
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], scan: [18.5, 7.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

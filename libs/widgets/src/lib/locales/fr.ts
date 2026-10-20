@@ -334,6 +334,7 @@ export const fr: WidgetLabels = {
   slotsZone: 'Heures : {zone}',
   scanButton: 'Scanner',
   scanInto: 'Scanner un code dans {label}',
+  scanCountInto: 'Compter {label} en scannant',
   scanTitle: 'Scanner {label}',
   scanStarting: 'Démarrage de la caméra…',
   scanAim: 'Placez le code dans le cadre.',

@@ -334,6 +334,7 @@ export const ar: WidgetLabels = {
   slotsZone: 'الأوقات حسب {zone}',
   scanButton: 'مسح',
   scanInto: 'امسح رمزًا في {label}',
+  scanCountInto: 'عدّ {label} بالمسح',
   scanTitle: 'مسح {label}',
   scanStarting: 'جارٍ تشغيل الكاميرا…',
   scanAim: 'ضع الرمز داخل الإطار.',

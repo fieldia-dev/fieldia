@@ -247,6 +247,23 @@ describe('a link scanned into', () => {
     expect(await until(() => (values()['product_id'] as { id?: number } | undefined)?.id === 9)).toBe(true);
   });
 
+  it('takes the place of words typed in the box that named nothing, and of what they said', async () => {
+    const source = createMemoryDataSource({ records: { 'clinic.product': PRODUCTS } });
+    const { button, values, form } = mount(fields, 'product_id', { options: { scan: { by: 'gtin' } } }, { dataSource: source });
+    const input = document.querySelector<HTMLInputElement>('.fd-scan input');
+    if (!input) throw new Error('no box');
+    input.focus();
+    input.value = 'Botulinum toxin type B';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.blur();
+    expect(await until(() => form.getState().unread?.['product_id'])).toBe(true);
+    button()?.click();
+    frames.push(code('06285096000842', 'data_matrix'));
+    expect(await until(() => (values()['product_id'] as { id?: number } | undefined)?.id === 1)).toBe(true);
+    expect(form.getState().unread?.['product_id']).toBeUndefined();
+    expect(await until(() => input.value === 'Botulinum toxin type A, 100 U')).toBe(true);
+  });
+
   it('lays nothing on a record no longer shown, and closes', async () => {
     let answer: (found: { id: number; label: string }[]) => void = () => undefined;
     const source = { ...createMemoryDataSource(), search: () => new Promise<{ id: number; label: string }[]>((resolve) => (answer = resolve)) } as DataSource;
@@ -323,14 +340,15 @@ describe("a GS1 code's parts", () => {
 describe('a table of lines counted by scanning', () => {
   const PRODUCTS = { 1: { name: 'Hand cream 50 ml', barcode: '6224000123451' }, 2: { name: 'Lip balm', barcode: '6224000123468' } };
   const lineFields: Record<string, Field> = { product_id: { type: 'many2one', label: 'Product', relation: 'stock.product' }, counted: { type: 'integer', label: 'Counted' } } as Record<string, Field>;
-  const fields: Record<string, Field> = { line_ids: { type: 'one2many', label: 'Counted', relation: 'stock.count.line', fields: lineFields } as Field };
+  const fields: Record<string, Field> = { line_ids: { type: 'one2many', label: 'Products', relation: 'stock.count.line', fields: lineFields } as Field };
   const scan = { field: 'product_id', count: 'counted', by: 'barcode', formats: ['ean_13'] };
 
   it('counts each code read on its line, a line added for a new one, the sheet reading on until Done', async () => {
     const source = createMemoryDataSource({ records: { 'stock.product': PRODUCTS } });
     const { button, said, sheet, values } = mount(fields, 'line_ids', { columns: ['product_id', 'counted'], options: { scan } }, { dataSource: source, values: { line_ids: [{ key: 'k1', id: null, values: { product_id: { id: 2, label: 'Lip balm' }, counted: 4 } }] } });
     expect(document.querySelector('.fd-scan')?.getAttribute('data-scan')).toBe('lines');
-    expect(button()?.getAttribute('aria-label')).toBe('Scan a code into Counted');
+    expect(button()?.getAttribute('aria-label')).toBe('Count Products by scanning');
+    expect(button()?.textContent).toBe('Scan');
     button()?.click();
     expect(await until(() => said() === 'Scan each item: every code read counts one.')).toBe(true);
     const counts = () => Object.fromEntries((values()['line_ids'] as Line[]).map((line) => [(line.values['product_id'] as { label: string }).label, line.values['counted']]));

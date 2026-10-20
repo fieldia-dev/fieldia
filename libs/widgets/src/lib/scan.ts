@@ -2,6 +2,7 @@ import { labelAt, type Field, type Line, type LineField, type RelatedRecord, typ
 import { gs1Day, gs1Number, gs1Parts, isGs1Day, readGs1 } from './gs1';
 import { drawIcon } from './icons';
 import { announcer, fillIn, maker, setAttr, setHidden, wordsFor } from './kind-parts';
+import { formatNumber } from './numbers';
 import { openScanSheet, type ScanAnswer, type ScanEnd, type ScanSheet } from './scan-sheet';
 import type { FoundCode } from './scan-reader';
 import { stillShown } from './shown';
@@ -131,7 +132,9 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
 
   const icon = drawIcon(doc, 'scan', { scan: SCAN_ICON });
   icon?.setAttribute('aria-hidden', 'true');
-  const button = make('button', { type: 'button', class: 'fd-button fd-scan-button', 'aria-haspopup': 'dialog', 'aria-label': named(words.scanInto), title: named(words.scanInto) }, ...(icon ? [icon] : []), ...(inLine ? [] : [words.scanButton]));
+  // Named by what it does: a code scanned into the field, or a table counted by scanning.
+  const into = named(kind === 'lines' ? words.scanCountInto : words.scanInto);
+  const button = make('button', { type: 'button', class: 'fd-button fd-scan-button', 'aria-haspopup': 'dialog', 'aria-label': into, title: into }, ...(icon ? [icon] : []), ...(inLine ? [] : [words.scanButton]));
   const note = make('p', { class: 'fd-scan-note', id: `${id}-note`, role: 'status', hidden: '' });
   const voice = announcer(make);
   holder.dataset['scan'] = kind;
@@ -142,6 +145,11 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
   const columns: Record<string, Field | LineField> =
     kind === 'lines' ? ((field as { fields?: Record<string, LineField> }).fields ?? {}) : form.line ? ((form.page.fields[form.line.field] as { fields?: Record<string, LineField> } | undefined)?.fields ?? {}) : form.page.fields;
   let sheet: ScanSheet | null = null;
+  /**
+   * Whether the sheet outlives this widget: a grid's cell editor (@fieldia/grid) goes as the sheet takes the focus — the
+   * grid stops editing a cell that loses it — and the sheet reads on into the line, through the line's form.
+   */
+  let outlives = false;
 
   /** What a part of a code (or the whole, `id` null) is as `def` holds it; a link's is looked up apart. Null where it is none. */
   function valueOf(def: Field | LineField, id: string | null, part: string): Value | null {
@@ -218,7 +226,12 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
     if ('said' in got) return { kept: false, said: got.said };
     const others = await filled(readGs1(code.rawValue));
     if (!shown()) return { kept: false, close: true };
-    for (const [other, value] of Object.entries(others)) form.setValue(other, value);
+    // What the code names replaces what the boxes held, words typed in them that did not read too.
+    for (const [other, value] of Object.entries(others)) {
+      if (form.getState().unread?.[other]) form.setUnread(other, null);
+      form.setValue(other, value);
+    }
+    if (form.getState().unread?.[name]) form.setUnread(name, null);
     form.setValue(name, got.value);
     voice.say(fillIn(words.scanRead, { label: labelAt(words.scanRead, 'label', lower, locale)(label), value: shownOf(got.value) }));
     return { kept: true, close: true };
@@ -244,7 +257,7 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
     } else {
       form.addLine(name, { ...others, [column]: got.value, [counted]: 1 });
     }
-    return { kept: true, said: fillIn(words.scanCounted, { name: shownOf(got.value), n }) };
+    return { kept: true, said: fillIn(words.scanCounted, { name: shownOf(got.value), n: formatNumber(n, 0, locale) }) };
   }
 
   function ended(end: ScanEnd) {
@@ -269,11 +282,12 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
     note.hidden = true;
     setAttr(button, 'aria-describedby', null);
     const shown = stillShown(form);
+    outlives = !!holder.closest('.fd-grid-editor');
     sheet = openScanSheet({
       doc,
       from: button,
       words,
-      title: named(words.scanTitle),
+      title: kind === 'lines' ? into : named(words.scanTitle),
       aim: kind === 'lines' ? words.scanAimCount : words.scanAim,
       formats: settings.formats,
       counting: kind === 'lines',
@@ -295,7 +309,7 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
     },
     focus: () => widget.focus(),
     destroy() {
-      sheet?.close();
+      if (!outlives) sheet?.close();
       sheet = null;
       widget.destroy?.();
     },

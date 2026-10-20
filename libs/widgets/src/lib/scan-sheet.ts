@@ -141,8 +141,10 @@ export function openScanSheet(options: ScanSheetOptions): ScanSheet {
     for (const track of stream?.getTracks() ?? []) track.stop();
     stream = null;
     video.srcObject = null;
-    void audio?.close?.().catch(() => undefined);
+    // Closed once the last beep has sounded: a code kept closes the sheet at once, its beep whole all the same.
+    const sound = audio;
     audio = null;
+    if (sound) setTimeout(() => void sound.close?.().catch(() => undefined), 400);
   }
   function close(end: ScanEnd | null) {
     if (done) return;

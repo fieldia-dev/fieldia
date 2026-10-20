@@ -87,6 +87,19 @@ export function codeSvg(format: DrawnFormat, text: string, options: { gs1?: bool
   const [w, h] = [modules[0].length, modules.length];
   const size = options.size ?? 360;
   const [width, height] = w >= h ? [size, Math.round((size * h) / w)] : [Math.round((size * w) / h), size];
-  const dark = modules.flatMap((row, y) => row.flatMap((on, x) => (on ? [`M${x} ${y}h1v1h-1z`] : []))).join('');
+  // Each run of dark modules in a row one shape; a 1D code's rows are alike, so each bar is one shape the whole height.
+  const bars = modules.every((row) => row.join() === modules[0].join());
+  const runs = (row: boolean[], y: number, tall: number) => {
+    const out: string[] = [];
+    for (let x = 0; x < row.length; x++) {
+      if (!row[x]) continue;
+      let end = x;
+      while (row[end + 1]) end++;
+      out.push(`M${x} ${y}h${end - x + 1}v${tall}h-${end - x + 1}z`);
+      x = end;
+    }
+    return out;
+  };
+  const dark = (bars ? runs(modules[0], 0, h) : modules.flatMap((row, y) => runs(row, y, 1))).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges"><rect width="${w}" height="${h}" fill="#fff"/><path fill="#000" d="${dark}"/></svg>`;
 }

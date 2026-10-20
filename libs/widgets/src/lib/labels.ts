@@ -490,7 +490,8 @@ export interface WidgetLabels {
   slotTaken: string;
   slotsZone: string;
   /**
-   * A code scanned with the camera (the scan part): the Scan button, named by the field's `{label}` it scans into; the
+   * A code scanned with the camera (the scan part): the Scan button, named by the field's `{label}` it scans into (or the
+   * table it counts by scanning); the
    * camera's sheet — its title, the camera starting, where to hold the code (or, counting a table's lines, that each
    * code read counts one), Type it instead and Done; a code (`{code}`) looked up, naming nothing, or several, or not
    * looked up; a GS1 code holding no part for the field; what was read (`{value}`) and what a table counted (`{name}`
@@ -499,6 +500,7 @@ export interface WidgetLabels {
    */
   scanButton: string;
   scanInto: string;
+  scanCountInto: string;
   scanTitle: string;
   scanStarting: string;
   scanAim: string;
@@ -854,6 +856,7 @@ const en: WidgetLabels = {
   slotsZone: 'Times are {zone}',
   scanButton: 'Scan',
   scanInto: 'Scan a code into {label}',
+  scanCountInto: 'Count {label} by scanning',
   scanTitle: 'Scan {label}',
   scanStarting: 'Starting the camera…',
   scanAim: 'Hold the code inside the frame.',
