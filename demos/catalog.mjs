@@ -45,7 +45,7 @@ export const AREAS = [
 
 /** Each area's demos, by id: every demo of the catalog in exactly one. */
 const AREA_OF = {
-  sales: ['order', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive', 'test-drives'],
+  sales: ['order', 'contract-fees', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive', 'test-drives'],
   accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
   crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
@@ -89,6 +89,7 @@ const SEARCH_WORDS = {
   survey: 'survey questionnaire feedback poll steps wizard skip branching product',
   delivery: 'address shipping billing reuse saved form twice nested',
   rules: 'order totals calculate calculation discount warning validation checks email postcode rules',
+  'contract-fees': 'contract agreement clause clauses legal terms fees prices price list quote quotation table tables paste pasted word excel google docs sheets rich text formatted rows columns header print',
   lists: 'country city cities dropdown choices options delivery address shipping server',
   'map-delivery': 'map place location address pin gps coordinates delivery openstreetmap where you are',
   'map-address': 'address autocomplete suggestions lookup street search type ahead location',
@@ -820,6 +821,21 @@ export const DEMOS = [
       'Notice the values read as text: nothing can be typed in.',
       'Press Edit: the fields become editable.',
       'Change a field and press Done: the record is saved and locked again.',
+    ],
+  },
+  {
+    id: 'contract-fees',
+    name: 'A contract’s fees, pasted as a table',
+    category: 'records',
+    query: 'page=contract-fees&skin=underline',
+    blurb: 'A service agreement whose fees are a price table pasted from Word, Excel or Google Docs: kept as a plain table in the field’s own look — no widths, borders or fonts carried over — its rows and columns added and taken away where the cursor is, a header row, Tab from cell to cell, and on paper the table whole.',
+    howTo: [
+      'Copy a table from Word, Excel or Google Docs — or from [the sample price list](samples/price-list.html) — and paste it into 5. Payment schedule: it stays a table, in the page’s own look.',
+      'Click a cell in 4. Fees and press Tab: the next cell’s words are selected. Tab in the last cell adds a row; Escape leaves the table.',
+      'With the cursor in the table, press Table in the toolbar: insert a row or a column beside the cell, delete one, or turn the header row off.',
+      'Press Ctrl+Z (⌘Z on a Mac): the last change to the table is taken back, as any typing is.',
+      'With the cursor outside a table, press Table and pick 3 rows by 4 columns on its grid: a new table, its header row on, the cursor in its first cell.',
+      'Press Print in the menu at the top: the agreement on paper, each table whole on a sheet where it fits.',
     ],
   },
   {

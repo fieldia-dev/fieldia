@@ -1,0 +1,58 @@
+{
+  "fieldia": "0.5",
+  "id": "contract-fees",
+  "title": "Service agreement",
+  "description": "A service agreement's clauses as formatted text: its fees a price table pasted from Word, Excel or Google Docs, kept as a plain table to change row by row.",
+  "data": { "kind": "record", "model": "sales.agreement" },
+  "records": { "one": "agreement", "other": "agreements", "a": "an agreement" },
+  "print": {
+    "header": "Nile Digital Studio\n12 Nile St, Garden City, Cairo",
+    "footer": "Service agreement {name} between Nile Digital Studio and {customer}."
+  },
+  "fields": {
+    "name": { "type": "char", "label": "Agreement", "required": true },
+    "customer": { "type": "char", "label": "Customer", "required": true },
+    "signed_on": { "type": "date", "label": "Signed on" },
+    "scope": { "type": "html", "label": "3. Scope of work" },
+    "fees": { "type": "html", "label": "4. Fees" },
+    "payment": { "type": "html", "label": "5. Payment schedule" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "agreement",
+    "children": [
+      {
+        "type": "section",
+        "id": "parties",
+        "title": "The agreement",
+        "columns": 3,
+        "children": [
+          { "type": "field", "id": "f-name", "field": "name" },
+          { "type": "field", "id": "f-customer", "field": "customer" },
+          { "type": "field", "id": "f-signed-on", "field": "signed_on" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "clauses",
+        "title": "Clauses",
+        "children": [
+          { "type": "field", "id": "f-scope", "field": "scope" },
+          {
+            "type": "field",
+            "id": "f-fees",
+            "field": "fees",
+            "options": { "tools": ["bold", "italic", "underline", "bulletList", "numberList", "link", "clearFormatting", "table"] }
+          },
+          {
+            "type": "field",
+            "id": "f-payment",
+            "field": "payment",
+            "placeholder": "Paste the payment schedule here, from Word, Excel or Google Docs.",
+            "options": { "tools": ["bold", "italic", "underline", "bulletList", "numberList", "link", "clearFormatting", "table"] }
+          }
+        ]
+      }
+    ]
+  }
+}
