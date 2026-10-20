@@ -42,7 +42,7 @@ export function defaultsSettings(el: ElementFactory, designer: Designer, id: str
     words,
     label: w.startsWith,
     placeholder: w.startsWithPlaceholder,
-    check: (page, source) => formulaProblem(page, source, words),
+    check: (page, source) => formulaProblem(page, source, words, designer.functions()),
     commit(source) {
       if (source === (own?.def.defaultFrom ?? '')) return;
       designer.setDefaultFrom(id, source || null);
@@ -54,6 +54,7 @@ export function defaultsSettings(el: ElementFactory, designer: Designer, id: str
   // ---- A table of lines: what a new line starts with ----
   const lineDefaults = stepMap(el, {
     words,
+    functions: designer.functions(),
     label: w.newLinesStartWith,
     addWords: words.steps.addValue,
     nameLabel: words.steps.itsField,
@@ -67,6 +68,7 @@ export function defaultsSettings(el: ElementFactory, designer: Designer, id: str
   // ---- A link: what a record made from it starts with ----
   const createValues = stepMap(el, {
     words,
+    functions: designer.functions(),
     label: w.madeStartsWith,
     addWords: words.steps.addValue,
     nameLabel: words.steps.itsField,

@@ -1,4 +1,4 @@
-import { validatePage, type Field, type FieldNode, type Page, type SheetNode } from '@fieldia/core';
+import { validatePage, type Field, type FieldNode, type FunctionsKnown, type Page, type SheetNode } from '@fieldia/core';
 import { wordsOf, type HeaderPart } from './header-commands';
 import { readCondition, type Condition } from './conditions';
 import { kindById, kindOfField } from './kinds';
@@ -82,12 +82,12 @@ function withRules(page: Page, words: DesignerWords = en): { id: string; name: s
  * pass `validatePage`, as each page the designer keeps is: it is not checked
  * against the format again, which on a big page is most of the time it takes.
  */
-export function pageChecks(page: Page, options: { valid?: boolean; words?: DesignerWords; forms?: SavedFormsCache | null } = {}): PageCheck[] {
+export function pageChecks(page: Page, options: { valid?: boolean; words?: DesignerWords; forms?: SavedFormsCache | null; functions?: FunctionsKnown } = {}): PageCheck[] {
   const words = options.words ?? en;
   const w = words.checks;
   const found: PageCheck[] = [];
-  const checked = options.valid ? null : validatePage(page);
-  const rules = ruleChecks(page, words);
+  const checked = options.valid ? null : validatePage(page, { functions: options.functions });
+  const rules = ruleChecks(page, words, options.functions);
   // steps lane: what the page's parts do — on a page written by hand, the page's own check said by part and step.
   const doing = stepChecks(page, checked && !checked.ok ? checked.issues : [], words);
   // A page written by hand can be wrong in ways the designer would never let it be; what the rules' checks — and the saved forms', and the steps' — say in words is not said again.

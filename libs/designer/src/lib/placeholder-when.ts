@@ -30,7 +30,7 @@ export function placeholderWhenList(el: ElementFactory, designer: Designer, id: 
     const keep = () => {
       const words = text.value;
       const condition = when.input.value.trim();
-      if (!words.trim() || !condition || formulaProblem(page, condition)) return;
+      if (!words.trim() || !condition || formulaProblem(page, condition, designer.words, designer.functions())) return;
       const items = [...read()];
       items[index] = { when: condition, text: words };
       const begun = index >= read().length;
@@ -39,7 +39,7 @@ export function placeholderWhenList(el: ElementFactory, designer: Designer, id: 
     };
     const text = el('input', { class: 'fd-input fd-placeholder-when-text', 'aria-label': w.placeholderWhenWords, placeholder: w.placeholderHint }) as HTMLInputElement;
     text.addEventListener('input', keep);
-    const when = formulaBox(el, { words: designer.words, label: w.placeholderWhenCondition, placeholder: designer.words.tables.whenPlaceholder, check: (on, source) => formulaProblem(on, source, designer.words), commit: () => keep() });
+    const when = formulaBox(el, { words: designer.words, label: w.placeholderWhenCondition, placeholder: designer.words.tables.whenPlaceholder, check: (on, source) => formulaProblem(on, source, designer.words, designer.functions()), commit: () => keep() });
     const remove = iconButton(el, w.placeholderWhenRemove(index + 1), '×', () => {
       if (index >= read().length) {
         drafting = false;

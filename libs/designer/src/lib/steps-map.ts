@@ -1,4 +1,4 @@
-import type { Page } from '@fieldia/core';
+import type { FunctionsKnown, Page } from '@fieldia/core';
 import { iconButton, type ElementFactory } from './chrome';
 import type { DesignerWords } from './designer-words';
 import { formulaBox, type FormulaBox } from './rules-formula-box';
@@ -20,6 +20,8 @@ export interface MapChoice {
 
 export interface StepMapOptions {
   words: DesignerWords;
+  /** The app's own functions a formula may call. */
+  functions?: FunctionsKnown;
   /** Its name, for the group and for a screen reader: "It starts with". */
   label: string;
   /** "Add a value". */
@@ -98,7 +100,7 @@ export function stepMap(el: ElementFactory, options: StepMapOptions): StepMap {
         words: options.words,
         label: valueLabel(),
         placeholder: w.expressionPlaceholder,
-        check: (_page, source) => formulaProblem(options.reads(), source, options.words),
+        check: (_page, source) => formulaProblem(options.reads(), source, options.words, options.functions),
         commit(source) {
           typed = source;
           save(true);

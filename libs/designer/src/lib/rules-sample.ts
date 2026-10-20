@@ -1,4 +1,5 @@
-import { createForm, isRightToLeft, localizePage, MESSAGES, type AnswerRule, type Field, type FieldNode, type Form, type FormState, type Locale, type Page, type Values } from '@fieldia/core';
+import { createForm, isRightToLeft, localizePage, MESSAGES, type AnswerRule, type FunctionsKnown, type Field, type FieldNode, type Form, type FormState, type Locale, type Page, type Values } from '@fieldia/core';
+import { uncalled } from './uncalled';
 import { createWidget, WIDGET_LABELS, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import { findNode } from './page-tree';
@@ -26,6 +27,8 @@ export interface SampleOptions {
   tryIt?: () => void;
   /** The clock, for dates in the past or the future. The computer's own when left out. */
   now?: () => Date;
+  /** The app's own functions a formula may call: known, never called, while a page is designed. */
+  functions?: FunctionsKnown;
 }
 
 export interface AnswerSample {
@@ -83,7 +86,7 @@ const localeOf = (tag: string): Locale => {
  * checked alone and read as a warning, so the field's own checks never hide
  * it — the form words a rule's message the same at either level.
  */
-export function sampleChecker(page: Page, nodeId: string, tag: string, now?: () => Date): (values: Values) => SampleResult[] {
+export function sampleChecker(page: Page, nodeId: string, tag: string, now?: () => Date, functions?: FunctionsKnown): (values: Values) => SampleResult[] {
   const found = findNode(page, nodeId)?.node;
   if (found?.type !== 'field') return () => [];
   const { field } = found;
@@ -93,7 +96,7 @@ export function sampleChecker(page: Page, nodeId: string, tag: string, now?: () 
   const alone = rules.map((rule) => localizePage(variantOf(page, nodeId, field, [{ ...rule, level: 'warning' }]), tag));
   const ask = <T>(variant: Page, values: Values, read: (form: Form) => T): T | null => {
     try {
-      const form = createForm({ page: variant, values, messages, now });
+      const form = createForm({ page: variant, values, messages, now, ...(functions ? { functions: uncalled(functions) } : {}) });
       try {
         return read(form);
       } finally {
@@ -225,7 +228,7 @@ export function answerSample(el: ElementFactory, nodeId: string, options: Sample
     if (drawn?.key === key) return;
     const kept = drawn ? pick(drawn.form.getState().values, names) : values;
     forget();
-    const form = createForm({ page: shown, values: kept });
+    const form = createForm({ page: shown, values: kept, ...(options.functions ? { functions: uncalled(options.functions) } : {}) });
     const locale = localeOf(tag);
     const boxes = names.map((name, index): Box => {
       const place = places[index];
@@ -262,7 +265,7 @@ export function answerSample(el: ElementFactory, nodeId: string, options: Sample
   function check(state: FormState) {
     if (!drawn || !page) return;
     const tag = tagNow();
-    if (checker?.page !== page || checker.tag !== tag) checker = { page, tag, check: sampleChecker(page, nodeId, tag, options.now) };
+    if (checker?.page !== page || checker.tag !== tag) checker = { page, tag, check: sampleChecker(page, nodeId, tag, options.now, options.functions) };
     const said = touched ? checker.check(values) : null;
     const stops = !!said?.some((result) => result.level === 'error');
     drawn.boxes.forEach((box, index) => {

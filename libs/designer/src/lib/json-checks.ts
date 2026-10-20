@@ -1,4 +1,4 @@
-import type { ActionStep, Page } from '@fieldia/core';
+import type { ActionStep, FunctionsKnown, Page } from '@fieldia/core';
 import { conditionToHide, conditionToHold, type Condition } from './conditions';
 import { placeOf, pathTo, readJson, type Spot } from './json-text';
 import { fixCheck, pageChecks, type CheckFixer, type PageCheck } from './page-checks';
@@ -82,14 +82,14 @@ function checkPath(value: unknown, check: PageCheck): string {
   return typeof node?.field === 'string' ? `fields.${node.field}.${action.part}` : path;
 }
 
-export function checkJson(text: string, words: DesignerWords = en): JsonCheck {
-  const read = readPage(text, words);
+export function checkJson(text: string, words: DesignerWords = en, functions?: FunctionsKnown): JsonCheck {
+  const read = readPage(text, words, functions);
   const rows: JsonRow[] = read.problems.map((problem) => ({ ...problem, severity: 'error' }));
   const errors = rows.length;
   if (!read.tree) return { rows, errors };
   let checks: PageCheck[] = [];
   try {
-    checks = pageChecks(read.value as Page, { words });
+    checks = pageChecks(read.value as Page, { words, functions });
   } catch {
     // A page too broken to look over: its errors say enough.
   }

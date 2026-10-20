@@ -1,4 +1,5 @@
 import { createForm, type DataSource, type Field, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
+import { uncalled } from './uncalled';
 import type { Skin } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { branchMap, drawBranchMap } from './branch-map';
@@ -275,7 +276,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   }
   const cardViews = new Map<string, CardView>();
   let drawn: { page: Page; form: Form } | null = null;
-  const formFor = (page: Page) => (drawn?.page === page ? drawn.form : (drawn = { page, form: createForm({ page }) }).form);
+  // The app's functions known, none called: a question's box is looked at here, not answered.
+  const formFor = (page: Page) => (drawn?.page === page ? drawn.form : (drawn = { page, form: createForm({ page, functions: uncalled(designer.functions()) }) }).form);
 
   /** The question's real answer box, inert: here it is looked at, not answered. */
   function answerPainter(box: HTMLElement, id: string) {

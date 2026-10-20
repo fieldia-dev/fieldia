@@ -1,4 +1,5 @@
 import { createForm, type Field, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
+import { uncalled } from './uncalled';
 import { applyLook, labelPlace, planSection, quietHint, THEME_SKINS, type Place } from '@fieldia/viewer';
 import { createWidget, wearQuiet, wearsQuiet, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { advancedDrag } from './canvas-advanced';
@@ -157,7 +158,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   const form = () => {
     if (drawn?.page === page && drawn.sample === sample) return drawn.form;
     const values = sample === null ? undefined : sampleRows(page.fields, Object.keys(page.fields), sample + 1)[sample];
-    drawn = { page, sample, form: createForm({ page, values }) };
+    // The app's functions known, none called: nothing asks the app's server as a page is designed.
+    drawn = { page, sample, form: createForm({ page, values, functions: uncalled(options.designer.functions()) }) };
     return drawn.form;
   };
 

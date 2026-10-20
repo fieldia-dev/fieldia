@@ -76,6 +76,7 @@ export const refusals: DesignerWords['refusals'] = {
   newColumnKind: 'العمود الجديد نص أو رقم أو تاريخ أو نعم أو لا',
   onlyChoiceFromList: 'الاختيار وحده يأخذ خياراته من قائمة',
   carriedFromChoice: 'تُنقل الخيارات من اختيار آخر في الصفحة',
+  onlyChoiceOptionWhen: 'خيارات الاختيار وحدها تظهر بشرط',
   choicesFromModel: (label) => `اختيارات ${q(label)} تأتي من نموذج البيانات`,
   orderFromModel: (label) => `ترتيب خيارات ${q(label)} يأتي من نموذج البيانات`,
   theOptionsFromModel: (label) => `خيارات ${q(label)} تأتي من نموذج البيانات`,

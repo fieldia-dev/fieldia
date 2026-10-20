@@ -96,7 +96,7 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
   function check() {
     if (timer !== null) clearTimeout(timer);
     timer = null;
-    ({ rows, errors } = checkJson(input.value, designer.words));
+    ({ rows, errors } = checkJson(input.value, designer.words, designer.functions()));
     draw();
   }
 

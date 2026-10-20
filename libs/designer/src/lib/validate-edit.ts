@@ -1,4 +1,4 @@
-import { checkPage, FieldSchema, PageSchema, validatePage, type Page, type PageValidation } from '@fieldia/core';
+import { checkPage, FieldSchema, PageSchema, validatePage, type FunctionsKnown, type Page, type PageValidation } from '@fieldia/core';
 import { keepUnchanged } from './keep-unchanged';
 
 /**
@@ -19,7 +19,8 @@ export interface EditChecker {
   passed(page: Page): boolean;
 }
 
-export function editChecker(): EditChecker {
+/** `functions`: the app's own, which the page's formulas may call. */
+export function editChecker(functions?: FunctionsKnown): EditChecker {
   /** Pages that passed: an edit of one of them may be checked by what it changed. */
   const passed = new WeakSet<Page>();
   const check = (before: Page, draft: Page): PageValidation => {
@@ -29,12 +30,12 @@ export function editChecker(): EditChecker {
       changed &&
       changed.fields.every((name) => FieldSchema.safeParse(next.fields[name]).success) &&
       changed.parts.every((key) => PARTS[key]?.safeParse(next[key as keyof Page]).success === true) &&
-      checkPage(next).ok
+      checkPage(next, { functions }).ok
     ) {
       passed.add(next);
       return { ok: true, page: next };
     }
-    const whole = validatePage(draft);
+    const whole = validatePage(draft, { functions });
     if (!whole.ok) return whole;
     const page = keepUnchanged(before, whole.page);
     passed.add(page);

@@ -1,4 +1,4 @@
-import { createMemoryDataSource, isRightToLeft, scoreOf, type DataSource, type ListCalendar, type MapNode, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, isRightToLeft, scoreOf, type AppFunctions, type DataSource, type ListCalendar, type MapNode, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type ListViewFactory, type MapPartFactory, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
@@ -165,6 +165,8 @@ export function tryIt(options: TryItOptions): TryIt {
     viewer = mountViewer(frame, {
       page,
       dataSource,
+      // The app's functions as it gave them: those it gave calls for are called, as the form will call them.
+      functions: designer.functions() as AppFunctions | undefined,
       // The page's own skin when it names one, as the form will wear it; else the editor's.
       skin: page.look?.skin ?? options.skin,
       widgets: options.widgets,

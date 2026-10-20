@@ -1,4 +1,4 @@
-import { validatePage, type Page } from '@fieldia/core';
+import { validatePage, type FunctionsKnown, type Page } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { placeOf, readJson, type Place, type Spot } from './json-text';
 import { en } from './locales/en';
@@ -34,10 +34,10 @@ export function pageToJson(page: Page): string {
 }
 
 /** Read text as a page: first as JSON, then by the format's every check. */
-export function readPage(text: string, words: DesignerWords = en): ReadPage {
+export function readPage(text: string, words: DesignerWords = en, functions?: FunctionsKnown): ReadPage {
   const read = readJson(text, words);
   if (!read.ok) return { value: undefined, tree: null, page: null, problems: [read.problem] };
-  const checked = validatePage(read.value);
+  const checked = validatePage(read.value, { functions });
   if (checked.ok) return { value: read.value, tree: read.tree, page: checked.page, problems: [] };
   // A number setting's problem in its own words: "Minutes is a whole number from 1 to 120", not the format's English.
   const problems = checked.issues.map((issue) => ({ ...placeOf(text, read.tree, issue.path), path: issue.path, message: settingRefusal(issue.path, words) ?? issue.message }));
@@ -57,13 +57,15 @@ export interface PageJsonDeps {
   apply(edit: (draft: Page) => void): boolean;
   /** The designer's words, for the problems it says. */
   words?: DesignerWords;
+  /** The app's own functions a formula may call. */
+  functions?: FunctionsKnown;
 }
 
-export function pageJsonCommands({ getPage, apply, words = en }: PageJsonDeps): PageJsonCommands {
+export function pageJsonCommands({ getPage, apply, words = en, functions }: PageJsonDeps): PageJsonCommands {
   return {
     pageJson: () => pageToJson(getPage()),
     setPageJson(text) {
-      const { page, problems } = readPage(text, words);
+      const { page, problems } = readPage(text, words, functions);
       if (!page) return { ok: false, problems };
       // The page as it is already: nothing to undo.
       if (pageToJson(page) === pageToJson(getPage())) return { ok: true };

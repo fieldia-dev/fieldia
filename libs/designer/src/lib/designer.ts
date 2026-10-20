@@ -1,7 +1,9 @@
 import {
+  functionTable,
   optionsField,
   optionsList,
   validatePage,
+  type FunctionsKnown,
   wideColumns,
   type AnswerRule,
   type BotCheck,
@@ -510,6 +512,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setPageJson(text: string): PageJsonResult;
   /** The app's lists of choices a choice may take its options from, as the app named them. */
   lists(): AppList[];
+  /** The app's own functions a formula may call, as the designer was given them (`functions`); none when it was given none. */
+  functions(): FunctionsKnown | undefined;
   /** A choice's options taken from one of the app's lists, changing with other fields; `null` for options written here. */
   setOptionsFrom(id: string, from: OptionsFrom | null): boolean;
   // canvas lane
@@ -639,6 +643,12 @@ export function createDesigner(options: {
   versions?: PublishedVersion[];
   model?: Record<string, Field>;
   lists?: AppList[];
+  /**
+   * The app's own functions a page's formulas may call besides Fieldia's — as the viewer is given them, or what is
+   * known of each (`takes`, `values`, `gives`, `tip`) without its call: offered in the formula boxes' list with their
+   * words, and checked as Fieldia's are. Try it calls those it has calls for. A name no page may call is refused.
+   */
+  functions?: FunctionsKnown;
   /** The app's own kinds of field, offered after Fieldia's. One whose id or widget is taken is refused. */
   kinds?: readonly AppKind[];
   /** The app's own templates, offered after Fieldia's to a blank page made the same way. */
@@ -750,7 +760,10 @@ export function createDesigner(options: {
   }
 
   /** An edit's page checked as validatePage would, at the cost of what it changed. */
-  const checkEdit = editChecker();
+  // The app's functions: a name no page may call is refused now, as a form refuses it.
+  const functions = options.functions;
+  functionTable(functions);
+  const checkEdit = editChecker(functions);
 
   /**
    * Apply an edit to a copy, validate it, and keep it — or refuse it, saying
@@ -862,6 +875,7 @@ export function createDesigner(options: {
 
   const list = listCommands({
     apply,
+    functions,
     select(id) {
       selected = id;
       notify();
@@ -882,7 +896,7 @@ export function createDesigner(options: {
     ...choices,
     ...inputs,
     ...structures,
-    ...tableCommands({ apply }),
+    ...tableCommands({ apply, functions }),
     words,
     locale,
     getPage: () => page,
@@ -1686,7 +1700,7 @@ export function createDesigner(options: {
     async publish() {
       // A setting still typed is read first, as leaving its box reads it: what is published is what the boxes show.
       for (const read of [...readers]) read();
-      const checked = validatePage(page);
+      const checked = validatePage(page, { functions });
       if (!checked.ok) throw new Error(words.refusals.cannotPublish);
       const version = store ? await store.publish(clone(page)) : versions.length + 1;
       versions = [...versions, { version, publishedAt: new Date().toISOString(), page: clone(page) }];
@@ -1695,7 +1709,7 @@ export function createDesigner(options: {
     },
 
     checks() {
-      if (checksOf?.page !== page || checksOf.forms !== formsCame) checksOf = { page, forms: formsCame, checks: pageChecks(page, { valid: checkEdit.passed(page), forms, words }) };
+      if (checksOf?.page !== page || checksOf.forms !== formsCame) checksOf = { page, forms: formsCame, checks: pageChecks(page, { valid: checkEdit.passed(page), forms, words, functions }) };
       return [...checksOf.checks];
     },
     fixCheck: (check) => fixCheck(designer, check),
@@ -1720,8 +1734,9 @@ export function createDesigner(options: {
     // panel lane
     setEach: (ids, change) => apply((draft) => several.setEach(draft, ids, change, fromModel)),
     // json lane
-    ...pageJsonCommands({ getPage: () => page, apply, words }),
+    ...pageJsonCommands({ getPage: () => page, apply, words, functions }),
     lists: () => clone(options.lists ?? []),
+    functions: () => functions,
     setOptionsFrom(id, from) {
       const found = findNode(page, id);
       const was = optionsList(found?.node.type === 'field' ? (page.fields[found.node.field] as { optionsFrom?: OptionsFrom } | undefined)?.optionsFrom : undefined);
@@ -1774,11 +1789,11 @@ export function createDesigner(options: {
       apply((draft) => {
         const node = findNode(draft, id)?.node;
         if (!node || node.type !== 'related') throw new Refusal((w) => w.layout.noPart(id));
-        changeRelated(draft, node, patch);
+        changeRelated(draft, node, patch, functions);
       }, `related:${id}:${Object.keys(patch).join(',')}`),
     setWidths: (widths, options) => apply((draft) => settings.setWidths(draft, widths, options?.twelfths)),
     // rules lane
-    ...rulesCommands({ apply, getPage: () => page, fromModel }),
+    ...rulesCommands({ apply, getPage: () => page, fromModel, functions }),
     // A record's head, and the parts it brought: a button's icon alone, toggle and menu; a tab's count; a field's access key.
     ...headCommands({ apply, select: (id) => designer.select(id), model, words }),
     // extend lane
@@ -1859,7 +1874,7 @@ export function createDesigner(options: {
     canOpenForm: () => typeof options.openForm === 'function',
     openForm: (id) => options.openForm?.(id),
     // steps lane
-    ...stepsCommands({ apply, getPage: () => page }),
+    ...stepsCommands({ apply, getPage: () => page, functions }),
   };
   return designer;
 }
@@ -1880,12 +1895,12 @@ export interface RegionSet {
 createDesigner.open = async (
   id: string,
   store: PageStore,
-  options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[]; looks?: LookStore; openForm?: (id: string) => void; locale?: DesignerLocale | (string & {}); regionSets?: readonly RegionSet[] } = {}
+  options: { model?: Record<string, Field>; lists?: AppList[]; functions?: FunctionsKnown; kinds?: readonly AppKind[]; looks?: LookStore; openForm?: (id: string) => void; locale?: DesignerLocale | (string & {}); regionSets?: readonly RegionSet[] } = {}
 ): Promise<Designer> => {
   const { draft, versions } = await store.load(id);
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
-  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks, openForm: options.openForm, locale: options.locale, regionSets: options.regionSets });
+  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, functions: options.functions, kinds: options.kinds, looks: options.looks, openForm: options.openForm, locale: options.locale, regionSets: options.regionSets });
 };
 
 /** A sheet's status steps, by the id the designer picks them by: they show for some records only, and to some roles, as any part. */
@@ -1910,7 +1925,7 @@ export interface RelatedPatch extends RowRulesPatch {
 }
 
 /** A related list changed as asked: names that are no field's refused, and what named a column taken away gone with it. */
-function changeRelated(draft: Page, node: RelatedNode, patch: RelatedPatch): void {
+function changeRelated(draft: Page, node: RelatedNode, patch: RelatedPatch, functions?: FunctionsKnown): void {
   const named = (name: string) => {
     if (!FIELD_NAME.test(name)) throw new Refusal((w) => w.relatedPart.notAName(name));
   };
@@ -1968,7 +1983,7 @@ function changeRelated(draft: Page, node: RelatedNode, patch: RelatedPatch): voi
     node.card = JSON.parse(JSON.stringify(patch.card)) as ListCard;
   }
   // Its rows' own rules, as a list's: each condition read on a row's record — its own fields, its id, the person.
-  setRowRules(node, patch, draft, { ...draft, fields: node.fields as Page['fields'] });
+  setRowRules(node, patch, draft, { ...draft, fields: node.fields as Page['fields'] }, functions);
   // A field taken away with its column goes from the card too: its lines, its title, picture and status.
   if (patch.columns !== undefined && node.card) {
     const card: ListCard = node.card;

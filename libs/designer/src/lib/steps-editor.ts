@@ -160,7 +160,7 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
     const step = newStep(page, kind);
     if (kind === 'open') listPages();
     status.hidden = true;
-    if (!stepProblem(page, step, words)) {
+    if (!stepProblem(page, step, words, designer.functions())) {
       draft = null;
       const at = designer.addStep(place, step, under ? { then: under } : {});
       if (!at) return;
@@ -195,6 +195,7 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
     const problem = el('p', { class: 'fd-answer-rule-problem', role: 'alert', hidden: '' });
     const settings = stepSettings(el, kind, {
       words,
+      functions: designer.functions(),
       page: () => page,
       saved,
       listed: () => listed,
@@ -273,7 +274,7 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
     const next = { ...view.step, ...patch } as Record<string, unknown>;
     for (const key of Object.keys(next)) if (next[key] === null) delete next[key];
     const step = next as unknown as ActionStep;
-    const wrong = stepProblem(page, step, words);
+    const wrong = stepProblem(page, step, words, designer.functions());
     problem.textContent = wrong ?? '';
     problem.hidden = !wrong;
     if (wrong) {

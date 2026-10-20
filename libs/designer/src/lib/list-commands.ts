@@ -1,8 +1,9 @@
-import { bulkSettable, importable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Modifier, type Page, type ToneWhen } from '@fieldia/core';
+import { bulkSettable, importable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type FunctionsKnown, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Modifier, type Page, type ToneWhen } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { allIds, fieldReads, keptFields, listCalendarFields, listCardFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
 import { formulaProblem, problemWords } from './rules-formula';
+import { en } from './locales/en';
 import type { TableButton } from './table-commands';
 
 /**
@@ -122,9 +123,9 @@ export interface RowRulesPatch {
  * a row's record (`reads`: a page whose fields are its records' — the list page itself, or a related list's own
  * `fields`), a button kept by its id, a new one named afresh in the page, each doing something.
  */
-export function setRowRules(target: { id: string; rowTones?: ToneWhen[]; rowBold?: Modifier; rowBoldLabel?: string; rowButtons?: ButtonNode[] }, options: RowRulesPatch, draft: Page, reads: Page): void {
+export function setRowRules(target: { id: string; rowTones?: ToneWhen[]; rowBold?: Modifier; rowBoldLabel?: string; rowButtons?: ButtonNode[] }, options: RowRulesPatch, draft: Page, reads: Page, functions?: FunctionsKnown): void {
   const refuse = (when: string) => {
-    if (formulaProblem(reads, when)) throw new Refusal((w) => w.rules.inWhen(problemWords(formulaProblem(reads, when, w), w)));
+    if (formulaProblem(reads, when, en, functions)) throw new Refusal((w) => w.rules.inWhen(problemWords(formulaProblem(reads, when, w, functions), w)));
   };
   if (options.rowTones !== undefined) {
     const kept = (options.rowTones ?? []).map((item) => ({ tone: item.tone, when: typeof item.when === 'string' ? item.when.trim() : item.when, ...(item.label?.trim() ? { label: item.label.trim() } : {}) }));
@@ -180,6 +181,8 @@ export function filterFields(items: readonly FilterItem[]): string[] {
 
 export function listCommands(context: {
   apply(edit: (draft: Page) => void, merge?: string | null): boolean;
+  /** The app's own functions a formula may call. */
+  functions?: FunctionsKnown;
   select(id: string | null): void;
   selected(): string | null;
   model: Record<string, Field>;
@@ -372,7 +375,7 @@ export function listCommands(context: {
         if (options.gallery === null) delete list.gallery;
         else if (options.gallery !== undefined) list.gallery = { ...options.gallery };
         // A row's own rules: conditions on its record, refused in words where they do not read.
-        setRowRules(list, options, draft, draft);
+        setRowRules(list, options, draft, draft, context.functions);
         if (options.optionalColumn !== undefined) {
           const { field, starts } = options.optionalColumn;
           if (!list.columns.includes(field)) throw new Refusal((w) => w.refusals.notAColumn(field));

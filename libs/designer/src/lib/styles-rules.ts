@@ -60,7 +60,10 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-formula-suggest-option[aria-selected="true"] { background: var(--fd-accent-soft); }
 .fd-formula-suggest-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fd-text); }
 .fd-formula-suggest-name { flex: none; font-size: 11.5px; color: var(--fd-muted); }
-.fd-formula-functions { display: flex; flex-wrap: wrap; gap: 4px; }
+.fd-formula-functions { display: grid; gap: 6px; }
+/* Each kind of function a row of its own: its name, then its functions, wrapping as words do. */
+.fd-formula-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.fd-formula-group-name { flex: 0 0 100%; font-size: 11.5px; color: var(--fd-muted); }
 .fd-formula-function {
   all: unset; box-sizing: border-box; cursor: pointer; font: 12px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--fd-text);
   padding: 5px 8px; border-radius: 999px; background: var(--fd-page);

@@ -47,7 +47,7 @@ export function rowSettings(el: ElementFactory, designer: Designer, source: Rows
   const page = () => designer.getPage();
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const list = () => source.rules(page());
-  const condition = (label: string, commit: (source: string) => void) => formulaBox(el, { words, label, placeholder: w.whenPlaceholder, check: (on, source) => formulaProblem(on, source, words), commit });
+  const condition = (label: string, commit: (source: string) => void) => formulaBox(el, { words, label, placeholder: w.whenPlaceholder, check: (on, source) => formulaProblem(on, source, words, designer.functions()), commit });
 
   // ---- each row's tone, the first that holds ----
   const tonesList = el('ul', { class: 'fd-table-tones' });

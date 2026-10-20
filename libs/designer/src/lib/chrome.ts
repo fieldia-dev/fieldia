@@ -3,6 +3,7 @@ import type { Designer, DesignerState } from './designer';
 import { openFind, type FindItem } from './find-anything';
 import { kindOfField } from './kinds';
 import { listSource } from './list-source';
+import { optionWhen, type OptionWhen } from './option-when';
 import { designerIcon } from './icons';
 import { checksButton, openPublishDialog, statusWords, versionsMenu, type GoTo } from './publish-ui';
 import { setHidden, setText } from './writes';
@@ -211,7 +212,9 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
   const addRow = el('div', { class: 'fd-q-add-row' }, add, or, addOther);
   const source = listSource(el, designer, nodeId);
   const element = el('div', { class: 'fd-q-option-box' }, source.element, list, otherRow, addRow, source.list);
-  const inputs = () => [...list.querySelectorAll<HTMLInputElement>('input')];
+  const inputs = () => [...list.querySelectorAll<HTMLInputElement>(':scope > li > input')];
+  /** Each option's condition, by its box. */
+  const whens = new WeakMap<HTMLInputElement, OptionWhen>();
   const labels = () => inputs().map((i) => i.value);
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const focusAt = (index: number, atEnd = false) => {
@@ -395,17 +398,22 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
         const grip = el('span', { class: 'fd-q-option-grip', 'aria-hidden': 'true', title: w.grip }, designerIcon(list.ownerDocument, 'grip'));
         grip.addEventListener('pointerdown', (event) => drag(grip, event));
         const alone = el('span', { class: 'fd-q-alone', hidden: '' }, w.alone);
-        list.append(el('li', { class: 'fd-q-option' }, grip, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }, multiple ? '☐' : '◯'), input, alone, remove));
+        // Shown by another question's answer: "Garden" only for a villa.
+        const when = optionWhen(el, designer);
+        whens.set(input, when);
+        list.append(el('li', { class: 'fd-q-option' }, grip, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }, multiple ? '☐' : '◯'), input, alone, when.button, remove, when.box));
       }
       choices.forEach((option, i) => {
         const row = list.children[i] as HTMLElement;
         const input = row.querySelector('input') as HTMLInputElement;
         if (!focused(input)) input.value = option.label;
-        const remove = row.querySelector('button') as HTMLButtonElement;
+        const remove = row.querySelector(':scope > button:not(.fd-q-option-when)') as HTMLButtonElement;
         remove.setAttribute('aria-label', w.removeNamed(option.label));
         // Options carried from another question may be followed by none of its own.
         remove.hidden = choices.length === 1 && !(field.type === 'selection' && field.optionsFrom);
         (row.querySelector('.fd-q-alone') as HTMLElement).hidden = !option.exclusive;
+        // A page's own choice only: a table's lines take no option conditions.
+        whens.get(input)?.update(designer.getPage(), nodeId, i);
         (row.querySelector('.fd-q-option-grip') as HTMLElement).hidden = choices.length === 1;
         (row.querySelector('.fd-q-bullet') as HTMLElement).textContent = kind === 'dropdown' ? `${i + 1}.` : multiple ? '☐' : '◯';
       });

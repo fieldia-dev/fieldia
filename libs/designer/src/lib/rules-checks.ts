@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Page, SetWhen } from '@fieldia/core';
+import type { Field, FieldNode, FunctionsKnown, Page, SetWhen } from '@fieldia/core';
 import { readCondition, readHolds, type Condition } from './conditions';
 import { findHeaderPart } from './header-commands';
 import { storedAs } from './kinds';
@@ -58,7 +58,7 @@ function nodePaths(page: Page): Map<string, string> {
 const CONDITION_KEY: Partial<Record<RuleKind, string>> = { shows: 'invisible', required: 'required', readonly: 'readonly' };
 
 /** The rules' checks, and whether the page's own check said one of the same things at a path. */
-export function ruleChecks(page: Page, words: DesignerWords = en): { checks: PageCheck[]; covers(path: string): boolean } {
+export function ruleChecks(page: Page, words: DesignerWords = en, functions?: FunctionsKnown): { checks: PageCheck[]; covers(path: string): boolean } {
   const w = words.checks;
   const checks: PageCheck[] = [];
   const covered: string[] = [];
@@ -92,14 +92,14 @@ export function ruleChecks(page: Page, words: DesignerWords = en): { checks: Pag
     }
     const def = rule.field ? page.fields[rule.field] : undefined;
     if (rule.kind === 'compute' && def?.compute !== undefined && rule.field) {
-      const problem = formulaProblem(page, def.compute, words);
+      const problem = formulaProblem(page, def.compute, words, functions);
       const said = problem ? problemWords(problem, words) : wouldCircle(page, rule.field, def.compute, words);
       if (said) say(rule, 'must', w.formulaBroken(rule.name, said), w.removeTheFormula);
       continue;
     }
     if (rule.kind === 'set' && def?.setWhen && rule.index !== undefined) {
       const item = def.setWhen[rule.index];
-      const problem = (item.when === undefined ? null : formulaProblem(page, item.when, words)) ?? formulaProblem(page, item.value, words);
+      const problem = (item.when === undefined ? null : formulaProblem(page, item.when, words, functions)) ?? formulaProblem(page, item.value, words, functions);
       if (problem) {
         say(rule, 'must', w.setBroken(rule.name, rule.sentence, problemWords(problem, words)), w.removeIt);
         continue;

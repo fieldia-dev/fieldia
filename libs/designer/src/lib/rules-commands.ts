@@ -1,4 +1,4 @@
-import type { AnswerRule, Field, FieldNode, Page, SetWhen } from '@fieldia/core';
+import type { AnswerRule, Field, FieldNode, FunctionsKnown, Page, SetWhen } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
@@ -42,6 +42,8 @@ export interface RulesCommandsDeps {
   getPage(): Page;
   /** Whether a field is the backend's, whose definition the page does not change. */
   fromModel(name: string): boolean;
+  /** The app's own functions a formula may call. */
+  functions?: FunctionsKnown;
 }
 
 /** The kinds of field a formula can give a value to, as the page format allows. */
@@ -56,8 +58,8 @@ function fieldNode(draft: Page, id: string): FieldNode {
 const labelOf = (draft: Page, node: FieldNode) => node.label ?? draft.fields[node.field]?.label ?? node.field;
 
 /** A formula's problem on this page, in words, led by which box it is in when there are several. */
-function refuseFormula(draft: Page, source: string, lead: (w: DesignerWords, problem: string) => string = (_w, problem) => problem): void {
-  if (formulaProblem(draft, source)) throw new Refusal((w) => lead(w, problemWords(formulaProblem(draft, source, w), w)));
+function refuseFormula(draft: Page, source: string, functions: FunctionsKnown | undefined, lead: (w: DesignerWords, problem: string) => string = (_w, problem) => problem): void {
+  if (formulaProblem(draft, source, en, functions)) throw new Refusal((w) => lead(w, problemWords(formulaProblem(draft, source, w, functions), w)));
 }
 
 /** What is wrong with setting this value on this field, in words; null when it can hold it, or it is worked out as it goes. */
@@ -93,7 +95,7 @@ export function cannotHold(field: Field, label: string, value: string, words: De
 }
 
 /** What is wrong with an answer rule on this field, in words; null when it can be kept. */
-export function ruleRefusal(draft: Page, node: FieldNode, rule: AnswerRule, words: DesignerWords = en): string | null {
+export function ruleRefusal(draft: Page, node: FieldNode, rule: AnswerRule, words: DesignerWords = en, functions?: FunctionsKnown): string | null {
   const w = words.rules;
   const field = draft.fields[node.field];
   const label = labelOf(draft, node);
@@ -117,11 +119,11 @@ export function ruleRefusal(draft: Page, node: FieldNode, rule: AnswerRule, word
   if (rule.min !== undefined && rule.max !== undefined && rule.min > rule.max) return w.smallestMore(rule.min, rule.max);
   if (rule.atLeast !== undefined && rule.atMost !== undefined && rule.atLeast > rule.atMost) return w.atLeastMore(rule.atLeast, rule.atMost);
   if (rule.holds !== undefined) {
-    const problem = formulaProblem(draft, rule.holds, words);
+    const problem = formulaProblem(draft, rule.holds, words, functions);
     if (problem) return w.inMustHold(problemWords(problem, words));
   }
   if (typeof rule.when === 'string') {
-    const problem = formulaProblem(draft, rule.when, words);
+    const problem = formulaProblem(draft, rule.when, words, functions);
     if (problem) return w.inOnlyWhen(problemWords(problem, words));
   }
   return null;
@@ -140,7 +142,7 @@ function tidyMap(values: Record<string, string> | null): Record<string, string> 
   return kept.length ? Object.fromEntries(kept) : null;
 }
 
-export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps): RulesCommands {
+export function rulesCommands({ apply, getPage, fromModel, functions }: RulesCommandsDeps): RulesCommands {
   return {
     setDefaultFrom(id, expression) {
       return apply(
@@ -152,7 +154,7 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
             delete field.defaultFrom;
             return;
           }
-          refuseFormula(draft, source);
+          refuseFormula(draft, source, functions);
           field.defaultFrom = source;
         },
         expression?.trim() ? `default-from:${id}` : null
@@ -171,7 +173,7 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
         }
         for (const [name, source] of Object.entries(map)) {
           if (!field.fields[name]) throw new Refusal((w) => w.rules.notALineField(name, labelOf(draft, node)));
-          refuseFormula(draft, source);
+          refuseFormula(draft, source, functions);
         }
         field.lineDefaults = map;
       }, map ? `line-defaults:${id}` : null);
@@ -187,7 +189,7 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
           delete field.createValues;
           return;
         }
-        for (const source of Object.values(map)) refuseFormula(draft, source);
+        for (const source of Object.values(map)) refuseFormula(draft, source, functions);
         field.createValues = map;
       }, map ? `create-values:${id}` : null);
     },
@@ -205,7 +207,7 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
             return;
           }
           if (!WORKED_OUT.has(field.type)) throw new Refusal((w) => w.rules.cannotBeWorkedOut(label, storedAs(field, w)));
-          refuseFormula(draft, source);
+          refuseFormula(draft, source, functions);
           if (wouldCircle(draft, node.field, source)) throw new Refusal((w) => wouldCircle(draft, node.field, source, w) as string);
           field.compute = source;
         },
@@ -235,8 +237,8 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
             if (item.when === undefined && !item.on) throw new Refusal((w) => w.rules.inWhen(w.rules.typeAFormula));
             const gone = item.on?.find((name) => !draft.fields[name]);
             if (gone) throw new Refusal((w) => w.rules.unknownField(gone));
-            if (item.when !== undefined) refuseFormula(draft, item.when, (w, problem) => w.rules.inWhen(problem));
-            refuseFormula(draft, item.value, (w, problem) => w.rules.inSetTo(problem));
+            if (item.when !== undefined) refuseFormula(draft, item.when, functions, (w, problem) => w.rules.inWhen(problem));
+            refuseFormula(draft, item.value, functions, (w, problem) => w.rules.inSetTo(problem));
             if (cannotHold(field, label, item.value)) throw new Refusal((w) => cannotHold(field, label, item.value, w) as string);
           }
           field.setWhen = list;
@@ -249,7 +251,7 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
       return apply((draft) => {
         const node = fieldNode(draft, id);
         const tidy = withoutEmpty(rule);
-        if (ruleRefusal(draft, node, tidy)) throw new Refusal((w) => ruleRefusal(draft, node, tidy, w) as string);
+        if (ruleRefusal(draft, node, tidy, en, functions)) throw new Refusal((w) => ruleRefusal(draft, node, tidy, w, functions) as string);
         node.validate = [...(node.validate ?? []), tidy];
       });
     },
@@ -261,7 +263,7 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
           const rule = node.validate?.[index];
           if (!rule) throw new Refusal((w) => w.rules.noRule(labelOf(draft, node), index + 1));
           const next = withoutEmpty({ ...rule, ...patch } as AnswerRulePatch);
-          if (ruleRefusal(draft, node, next)) throw new Refusal((w) => ruleRefusal(draft, node, next, w) as string);
+          if (ruleRefusal(draft, node, next, en, functions)) throw new Refusal((w) => ruleRefusal(draft, node, next, w, functions) as string);
           (node.validate as AnswerRule[])[index] = next;
         },
         `answer-rule:${id}:${index}:${Object.keys(patch).sort().join(',')}`
