@@ -1,5 +1,5 @@
 import type { Field, LineField } from '../format/field';
-import { infoOf, type FunctionsKnown, type ValueKind } from './app-functions';
+import { functionInfo, type FunctionsKnown, type ValueKind } from './app-functions';
 import type { ASTNode } from './parser';
 
 /**
@@ -106,7 +106,7 @@ export function kindProblems(ast: ASTNode, scope: KindScope, functions?: Functio
     if (FUNCTION_KINDS[name]) return FUNCTION_KINDS[name];
     const entry = functions?.[name];
     if (!entry) return undefined;
-    const info = infoOf(entry);
+    const info = functionInfo(entry);
     return { values: info.values ?? ['any'], gives: info.gives ?? 'any' };
   };
   const kind = (node: ASTNode): ValueKind => {

@@ -94,12 +94,12 @@ export function functionTable(given: FunctionsKnown | undefined): FunctionTable 
 }
 
 /** What is known of an entry: a plain function is one taking any number of values. */
-export function infoOf(entry: FunctionInfo | AppFunction | ((...values: never[]) => unknown)): FunctionInfo {
+export function functionInfo(entry: FunctionInfo | AppFunction | ((...values: never[]) => unknown)): FunctionInfo {
   return typeof entry === 'function' ? {} : entry;
 }
 
 function appFunction(name: string, entry: FunctionInfo | AppFunction | ((...values: never[]) => unknown)): ExpressionFunction {
-  const info = infoOf(entry);
+  const info = functionInfo(entry);
   const run = typeof entry === 'function' ? entry : 'call' in entry && typeof entry.call === 'function' ? entry.call.bind(entry) : null;
   /** Whether it asks: said, or found out at a call that gave a promise. */
   let asks = info.asks === true;
