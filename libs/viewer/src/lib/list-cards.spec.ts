@@ -239,6 +239,25 @@ describe('a list’s cards', () => {
     expect(cardSpec(homes, listOf(homes), 'name')).toBeNull();
   });
 
+  it('gives each field of a line of two its own label beside its own value: never two labels, then two values', async () => {
+    // The owner's walk of 0.27: a lead's card read "Next follow-up · Agent 30 Sept 2026 · Mona / Adel".
+    const page = withList({ card: { fields: [['price', 'agent'], 'bedrooms'] }, gallery: {} });
+    const host = await mount(page);
+    (host.querySelector('.fd-list-views') as HTMLElement).querySelectorAll('button')[1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const card = rowOf(host, 'Nile view flat').querySelector('.fd-list-card') as HTMLElement;
+    const lines = [...card.querySelectorAll<HTMLElement>('.fd-list-card-lines > div')];
+    expect(lines).toHaveLength(2);
+    // Each part its own pair, its label then its value, in one line that wraps between the pairs, never inside one.
+    const pairs = (line: HTMLElement) => [...line.querySelectorAll<HTMLElement>('dl > div')].map((pair) => [pair.querySelector('dt')?.textContent, pair.querySelector('dd')?.textContent]);
+    expect(pairs(lines[0])).toEqual([
+      ['Price', 'E£\u00a04,500,000'],
+      ['Agent', 'Mona Adel'],
+    ]);
+    expect(pairs(lines[1])).toEqual([['Bedrooms', '3']]);
+    expect(lines[0].dataset['field']).toBe('price');
+    expect(lines[0].textContent).not.toContain('Price · Agent');
+  });
+
   it('offers a gallery on the switcher: the rows as cards, each with its photo, title, status pill and lines', async () => {
     const page = withList({ card: { image: 'photo', subtitle: 'agent', fields: ['price', [{ field: 'bedrooms', unit: { one: 'bedroom', other: 'bedrooms' } }]], lead: true, labels: false }, gallery: {} });
     const host = await mount(page);

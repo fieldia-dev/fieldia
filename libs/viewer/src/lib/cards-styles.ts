@@ -57,17 +57,25 @@ export const CARD_STYLES = `
 .fd-list-card-head > .fd-list-pill { flex: none; }
 .fd-list-card-subtitle { color: var(--fd-muted); font-size: 13.5px; overflow-wrap: anywhere; }
 .fd-list-card-lines { display: grid; gap: 3px; margin: 4px 0 0; font-size: 13.5px; }
-.fd-list-card-lines > div { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+/* A line: its parts side by side, each its label beside its own value ("Next follow-up 30 Sept 2026", "Agent Mona
+   Adel"); it wraps between them, a part moving whole to the next row where it does not fit — never a name broken. */
+.fd-list-card-lines > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 16px; min-width: 0; }
+.fd-list-card-lines dl { display: contents; }
+.fd-list-card-lines dl > div { display: flex; align-items: baseline; gap: 8px; min-width: 0; max-width: 100%; }
+.fd-list-card-lines dl > div:only-child { flex: 1 1 auto; }
 .fd-list-card-lines dt { flex: none; color: var(--fd-muted); }
 .fd-list-card-lines dd { min-width: 0; margin: 0; overflow-wrap: break-word; font-variant-numeric: tabular-nums; }
 /* A phone's links stay together, beside its number or under it. */
 .fd-list-card-lines .fd-list-links { white-space: nowrap; }
 /* A number, an amount, a day or a phone number never breaks inside ("E£ 473,734." over "00"): the line gives it its
    room — under its label where there is none beside it — and a phone's links wrap after it as one, in every theme. */
-.fd-list-card-lines > div[data-whole] { flex-wrap: wrap; }
-.fd-list-card-lines > div[data-whole] dd { flex: 1 1 0; min-width: min-content; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; overflow-wrap: normal; }
-.fd-list-card-lines > div[data-whole] dd > bdi { white-space: nowrap; }
+.fd-list-card-lines dl > div[data-whole] { flex-wrap: wrap; }
+.fd-list-card-lines dl > div[data-whole] dd { flex: 1 1 0; min-width: min-content; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; overflow-wrap: normal; }
+.fd-list-card-lines dl > div[data-whole] dd > bdi { white-space: nowrap; }
 .fd-list-card-lines[data-labels="hidden"] dt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* With no labels to part them, a line's parts are parted by a dot: "Dokki · 6 bedrooms · 575 m²". */
+.fd-list-card-lines[data-labels="hidden"] > div { column-gap: 8px; }
+.fd-list-card-lines[data-labels="hidden"] dl > div + div::before { content: "·"; content: "·" / ""; color: var(--fd-muted); }
 .fd-list-card-lines[data-lead] > div:first-child dd { color: var(--fd-text); font-size: 17px; font-weight: 700; }
 .fd-list-card-lines .fd-list-links { margin-block: -3px; }
 /* A narrow list's card: its picture small at its start, round where it is a person's initials. */

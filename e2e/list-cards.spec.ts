@@ -269,6 +269,28 @@ test.describe('lists on a phone', () => {
     });
   }
 
+  test('a lead’s card gives each field of a line its own label beside its own value, and keeps a name whole', async ({ page }) => {
+    // The owner's walk of 0.27: "Next follow-up · Agent 30 Sept 2026 · Mona / Adel".
+    const { problems } = await open(page, 'plain', 'page=leads-queue&skin=underline&now=2026-10-14T09:40');
+    const card = page.locator('.fd-list-card').first();
+    await expect(card).toBeVisible();
+    const line = card.locator('.fd-list-card-lines > div').first();
+    const pairs = line.locator('dl > div');
+    await expect(pairs).toHaveCount(2);
+    await expect(pairs.nth(0).locator('dt')).toHaveText('Next follow-up');
+    await expect(pairs.nth(0).locator('dd')).toHaveText(/^\d{1,2} \w+ 2026$/);
+    await expect(pairs.nth(1).locator('dt')).toHaveText('Agent');
+    await expect(pairs.nth(1).locator('dd')).toHaveText('Mona Adel');
+    // The agent's name on one line: it moved whole under the follow-up rather than break, as it fits there.
+    for (const dd of await page.locator('.fd-list-card-lines dl > div:has(dt:text-is("Agent")) dd').all()) {
+      const lines = await dd.evaluate((box) => Math.round(box.getBoundingClientRect().height / parseFloat(getComputedStyle(box).lineHeight || '20')));
+      expect(lines, await dd.textContent() ?? '').toBe(1);
+    }
+    await expectNoSidewaysScroll(page);
+    await screen(page, 'list-cards-leads-phone', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+
   test('an invoice’s card shows its amount and its status, and the list’s total is in sight from the first screen as it scrolls', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=invoices&skin=underline');
     await expect(rows(page)).toHaveCount(10);
