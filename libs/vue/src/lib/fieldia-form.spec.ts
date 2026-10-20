@@ -249,6 +249,16 @@ describe('<FieldiaForm> for Vue', () => {
     survey.unmount();
   });
 
+  it('opens a draft by its key (resume) at its step, and emits each draft Continue later kept', async () => {
+    const source = createMemoryDataSource({ drafts: { abc: { pageId: 'clinic-intake', values: { full_name: 'Mona Adel' }, step: 'visit', savedAt: '2026-10-19T10:42:00Z' } } });
+    const wrapper = mount(FieldiaForm, { props: { page: page('clinic-intake'), dataSource: source, resume: 'abc' }, attachTo: document.body });
+    await handleOf(wrapper)!.form.settled();
+    expect(handleOf(wrapper)!.form.getState().step).toBe('visit');
+    await handleOf(wrapper)!.form.continueLater();
+    expect(wrapper.emitted('draft')?.[0]?.[0]).toMatchObject({ key: 'abc', later: true });
+    wrapper.unmount();
+  });
+
   it('passes a list’s opened row on as an openRecord event', async () => {
     const dataSource = createMemoryDataSource({ records: { partner: { 7: { name: 'Delta Foods' } } } });
     const wrapper = mount(FieldiaForm, { props: { page: page('customers'), dataSource }, attachTo: document.body });

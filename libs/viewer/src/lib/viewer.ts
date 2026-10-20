@@ -76,7 +76,8 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, duplicatesPart, headPart, listPart, partsFor, type HeadPart } from './viewer-parts';
+import { answersPart, duplicatesPart, headPart, limitsPart, listPart, partsFor, type HeadPart } from './viewer-parts';
+import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
 import { steadyPresses } from './steady-press';
@@ -1860,8 +1861,18 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const doneWords = page.endings?.length ? el('div', { class: 'fd-done-text' }) : null;
   if (doneWords) done.append(doneWords);
   const again = el('button', { type: 'button', class: 'fd-button' }, labels.submitAnother);
+  // A page that takes one response from each person offers no other.
+  if (page.limits?.onePerPerson) again.hidden = true;
   done.append(again);
   const content = el('div', { class: 'fd-content' });
+  /**
+   * A page's opening, closing and limits, and Continue later (`limits`, `continueLater`), from the limits part, waited
+   * for with the page's parts: a closed form's words in place of its questions, under its title.
+   */
+  const limitsAsked = !!(page.limits || page.continueLater || options.resume);
+  let limitsKit: LimitsKit | null = null;
+  /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
+  let questions: HTMLElement | null = null;
 
   /**
    * The answers sent: the page's ending for them (`form.ending()`) — its title, its words with the answers they name and
@@ -1986,7 +1997,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const own = pageFooter(node.footer);
     if (own) return el('div', {}, box, own);
     const action = el('button', { type: 'submit', class: 'fd-button fd-button-primary' }, page.data.kind === 'responses' ? labels.submit : labels.save);
-    const actions = el('div', { class: 'fd-actions fd-actions-end' }, status, action);
+    const actions = el('div', { class: 'fd-actions fd-actions-end' }, status, ...(limitsKit?.later ? [limitsKit.later] : []), action);
     if (page.data.kind === 'record') {
       // A record offers Save and Discard once something changes, the same as on a sheet.
       const discard = el('button', { type: 'button', class: 'fd-button' }, labels.discard);
@@ -2047,7 +2058,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const back = el('button', { type: 'button', class: 'fd-button' }, ...pageWords(node.backLabel ?? labels.back));
     const skip = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.skip);
     const forward = el('button', { type: 'submit', class: 'fd-button fd-button-primary' });
-    box.append(el('div', { class: 'fd-wizard-nav' }, back, el('span', { class: 'fd-spacer' }), status, skip, forward));
+    box.append(el('div', { class: 'fd-wizard-nav' }, back, el('span', { class: 'fd-spacer' }), status, ...(limitsKit?.later ? [limitsKit.later] : []), skip, forward));
     back.addEventListener('click', () => {
       if (form.back()) focusStep();
     });
@@ -2383,6 +2394,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * nothing moves as a part arrives, and no focus is lost: there was nothing to have it.
    */
   function drawPage() {
+    const limits = limitsAsked ? limitsPart.loaded : undefined;
+    if (limits) {
+      const kit = limits.drawLimits({ form, page, doc, el, labels, messages: options.messages ?? MESSAGES[locale], fill, content: () => questions, done: () => !done.hidden, announce });
+      updaters.push((state) => kit.update(state));
+      limitsKit = kit;
+    }
     let body: HTMLElement;
     if (layout.type === 'sheet') body = sheetLayout(layout);
     else if (layout.type === 'wizard') body = wizardLayout(layout);
@@ -2428,7 +2445,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const head = layout.type === 'sheet' ? null : pageHead();
     // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...safety.elements, draft, body];
+    questions = body;
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, body, ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);
@@ -2445,7 +2463,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   let pageDrawn = false;
   /** What needs the page drawn — a list's rows to open or ask for again — at once when it is, else once it is. */
   const afterDrawing = <T>(then: () => Promise<T>): Promise<T> => (pageDrawn ? then() : drawn.then(then));
-  const awaited = partsFor(page, options.widgets, options.slots).filter((part) => !part.loaded);
+  // A draft opened by its key (`resume`) may name none: the limits part says so.
+  const awaited = [...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : [])].filter((part) => !part.loaded);
   let drawn: Promise<void> = Promise.resolve();
   if (!awaited.length) drawPage();
   else {

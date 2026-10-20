@@ -1,0 +1,69 @@
+{
+  "fieldia": "0.5",
+  "id": "event-signup",
+  "title": "Founders’ evening: sign up",
+  "description": "Three sessions on growing a property business, at the Nile Ritz-Carlton, Cairo. Places are limited; sign-ups close ten days before.",
+  "data": { "kind": "responses" },
+  "maxWidth": "medium",
+  "timeZone": "Africa/Cairo",
+  "limits": {
+    "opens": "2026-10-01T09:00",
+    "closes": "2026-12-10T18:00",
+    "maxResponses": 200,
+    "onePerPerson": true,
+    "message": "Missed it? Write to events@dawarly.example and we will tell you about the next one."
+  },
+  "fields": {
+    "full_name": { "type": "char", "label": "Full name", "required": true, "size": 80 },
+    "email": { "type": "char", "label": "Email", "required": true, "help": "Your ticket goes here.", "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" },
+    "company": { "type": "char", "label": "Company" },
+    "session": {
+      "type": "selection",
+      "label": "Session",
+      "required": true,
+      "options": [
+        { "value": "morning", "label": "Morning workshop: pricing a launch (10:00)", "seats": 30 },
+        { "value": "afternoon", "label": "Afternoon workshop: selling off-plan (14:00)", "seats": 25 },
+        { "value": "evening", "label": "Evening talk and dinner (19:00)", "seats": 120 }
+      ]
+    },
+    "extras": {
+      "type": "selection",
+      "label": "Add to your ticket",
+      "multiple": true,
+      "options": [
+        { "value": "lunch", "label": "Lunch", "seats": 40 },
+        { "value": "parking", "label": "A parking place", "seats": 15 },
+        { "value": "headset", "label": "An Arabic–English headset" }
+      ]
+    },
+    "dietary": { "type": "text", "label": "Dietary needs", "size": 300 }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "event",
+    "children": [
+      {
+        "type": "section",
+        "id": "about",
+        "title": "About you",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-name", "field": "full_name", "autocomplete": "name" },
+          { "type": "field", "id": "f-email", "field": "email", "widget": "email", "autocomplete": "email" },
+          { "type": "field", "id": "f-company", "field": "company", "autocomplete": "organization", "colspan": 2 }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "places",
+        "title": "Your place",
+        "children": [
+          { "type": "field", "id": "f-session", "field": "session", "widget": "radio", "options": { "columns": 1 } },
+          { "type": "field", "id": "f-extras", "field": "extras", "widget": "checkboxes" },
+          { "type": "field", "id": "f-dietary", "field": "dietary", "invisible": "session != 'evening'" }
+        ]
+      }
+    ]
+  }
+}

@@ -85,6 +85,7 @@ export type { PagePhone, PhoneOptions } from './lib/format/phone';
 export type { SlotsOptions } from './lib/format/slots-options';
 export type { SignatureOptions } from './lib/format/signature-options';
 export type { PageDuplicates } from './lib/format/duplicates';
+export type { PageLimits } from './lib/format/limits';
 export type { PageRecords } from './lib/format/records';
 export type { PageEnding } from './lib/format/endings';
 export { labelAt, recordSentence } from './lib/record/record-words';
@@ -216,6 +217,12 @@ export type {
   MergeResult,
   NotDuplicatesRequest,
   MarkNotDuplicateRequest,
+  LimitsRequest,
+  LimitsResult,
+  StoredDraft,
+  SaveDraftRequest,
+  SavedDraft,
+  LoadDraftRequest,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
@@ -287,6 +294,8 @@ export {
   type TimeRead,
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
+// When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
+export { limitInstant, takingWords, whenWords, type FormLimits, type Seats, type TakingState } from './lib/record/taking';
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
 export { fieldPattern } from './lib/format/pattern';

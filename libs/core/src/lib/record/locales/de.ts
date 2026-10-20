@@ -80,5 +80,11 @@ export const de: Messages = {
   notWorkedOut: '{label} konnte nicht berechnet werden: {problem}',
   notOfferedNow: '{name} steht nicht mehr zur Wahl und wurde entfernt',
   notOfferedNowMany: '{name} stehen nicht mehr zur Wahl und wurden entfernt',
+  formOpens: 'Dieses Formular öffnet am {when}.',
+  formClosed: 'Dieses Formular wurde am {when} geschlossen.',
+  formFull: 'Dieses Formular hat alle Antworten, die es annimmt.',
+  formSent: 'Sie haben Ihre Antworten auf dieses Formular bereits gesendet.',
+  choiceFull: '{option} ist ausgebucht',
+  choiceFilled: '{option} ist jetzt ausgebucht: Wählen Sie etwas anderes',
   locale: 'de',
 };

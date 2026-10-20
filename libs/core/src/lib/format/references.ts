@@ -20,6 +20,7 @@ import { IMPORT_KINDS, importable } from './import-fields';
 import { isTimeZone } from '../record/zones';
 import { fill, MESSAGES } from '../record/messages';
 import { autofillGroupProblem } from './autofill-group';
+import { checkLimits, checkSeats } from './limits-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -145,6 +146,7 @@ export class ReferenceCheck {
     if (this.page.duplicates !== undefined && !this.line) this.checkDuplicates(this.page);
     if (this.page.records !== undefined && !this.line) this.checkRecords(this.page.records);
     if (this.page.endings !== undefined && !this.line) this.checkEndings(this.page);
+    if (!this.line) checkLimits(this.page, (path, message) => this.report(path, message));
     this.checkGoingTo();
     return this.issues;
   }
@@ -555,6 +557,7 @@ export class ReferenceCheck {
         for (const [column, linked] of Object.entries(def.fields)) if (linked.type === 'datetime' && linked.timeZone !== undefined) this.checkZone(linked.timeZone, `${path}.fields.${column}.timeZone`);
       }
       if (def.type === 'selection') this.checkChoices(name, def, path, fields, scope);
+      checkSeats(def, path, lines ?? this.line?.name, (at, message) => this.report(at, message));
       if (def.type === 'properties') def.definitionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.definitionsFrom.dependsOn[${i}]`, fields));
       if (def.type === 'properties' && def.definitions) {
         const seen = new Set<string>();

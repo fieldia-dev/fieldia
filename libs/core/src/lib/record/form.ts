@@ -22,7 +22,7 @@ import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
 import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
-import { fillMessage, MESSAGES, type Messages } from './messages';
+import { fill, fillMessage, MESSAGES, type Messages } from './messages';
 import { recordSentence } from './record-words';
 import { askKey, cellOf, listedColumns, notOffered, type ListedColumn } from './line-choices';
 import {
@@ -42,7 +42,12 @@ import {
   type UploadFile,
   type DuplicateMatch,
   type MergeResult,
+  type LimitsResult,
+  type SavedDraft,
+  type StoredDraft,
 } from './data-source';
+import { countsAsked, fullChosen, limitsNow, seatedFields, takingWords, type FormLimits } from './taking';
+import { draftRead, resumeStep } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -152,6 +157,18 @@ export interface FormState {
    * the field is written again, or another record is shown.
    */
   readonly takenOut: Readonly<Record<string, string>>;
+  /**
+   * When the page takes answers and each choice's places, as its `limits`, its options' `seats`, the form's clock and
+   * the data source's `limits` tell: whether it takes them now (`state`), when it opens and closes, the responses it
+   * takes still, and each choice's places left. Null on a page with neither.
+   */
+  readonly limits?: FormLimits | null;
+  /**
+   * The draft kept on the app's server (`saveDraft`) that these answers continue: its `key`, once the source gave one
+   * (the viewer's `resume`, or the first draft kept); `missing` when the key the form was given named no draft — it
+   * starts empty. Null while none is.
+   */
+  readonly resume?: { readonly key: string; readonly missing?: boolean } | null;
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -309,6 +326,11 @@ export interface FormEvents {
   delete: { recordId: RecordId };
   /** Words to post in the record's conversation, from a `post` step or the app's answer: the chatter beside it listens. */
   post: { recordId: RecordId | null; message: PostedMessage };
+  /**
+   * A draft was kept on the app's server (`saveDraft`): its key — what a link to continue from carries — and whether the
+   * person pressed "Continue later" (`later`), with the source's answer.
+   */
+  draft: { key: string; savedAt: string; later: boolean; saved: SavedDraft };
 }
 
 export interface FormOptions {
@@ -329,7 +351,20 @@ export interface FormOptions {
   host?: ActionHost;
   /** How a question is asked when there is no host. Without either, a question goes on as though answered Yes. */
   confirm?: (message: string) => boolean | Promise<boolean>;
+  /**
+   * Keep what is typed as a draft, offered again the next time the page opens: in `store` (the browser's localStorage
+   * fits) — or, on a page with `continueLater` whose data source has `saveDraft` and `loadDraft`, on the app's server,
+   * the store keeping only its key (such a page keeps its drafts there without this too). A draft keeps the wizard's
+   * step and text typed that does not read yet. `restore`: `ask` (the default) offers it, `auto` lays it at once.
+   */
   drafts?: { store: DraftStore; restore?: 'auto' | 'ask'; delayMs?: number };
+  /**
+   * The key of a draft kept on the app's server (`saveDraft`) to continue from — what the link the app made after
+   * "Continue later" carries: loaded through the source's `loadDraft` as the form opens, its answers, its wizard step
+   * and its text typed that does not read laid as they were. A key that names none starts the form empty
+   * (`resume.missing`). Without the source's `loadDraft`, it is let be.
+   */
+  resume?: string;
   autosave?: { delayMs: number };
   scheduler?: Scheduler;
   /** Validation messages in the page's language. English by default. */
@@ -648,6 +683,19 @@ export interface Form {
   on<E extends keyof FormEvents>(event: E, listener: (event: FormEvents[E]) => void): () => void;
   restoreDraft(): void;
   discardDraft(): void;
+  /** Whether the page offers "Continue later": it says `continueLater`, and its data source has `saveDraft`. */
+  canContinueLater(): boolean;
+  /**
+   * "Continue later": what is typed read first (`settle`), then the answers so far — their wizard step, text that does
+   * not read kept as typed — kept on the app's server through `saveDraft` (`later: true`): its answer, the key, and the
+   * link the app made to continue from and its words. Rejects where the source refused, or has no `saveDraft`.
+   */
+  continueLater(): Promise<SavedDraft>;
+  /**
+   * Ask the data source's `limits` again — how many responses the page took, this person's, each choice's takers — and
+   * show what it tells (`limits`). The form asks it itself as it opens, before its answers go, and after they went.
+   */
+  refreshLimits(): Promise<void>;
   /**
    * Whether a file picked for a file or picture field is stored at once,
    * through the data source's `upload`. False without one: a file then
@@ -957,7 +1005,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Whether any rule only warns: without one, there are never warnings to look for. */
   const warns = [...nodeRules.values()].some((rules) => rules.some((compiled) => compiled.rule.level === 'warning'));
   const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
-  const draftKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
+  const storeKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
   /** Today, on the clock of the page's time zone (the browser's own when it names none). */
   const today = () => dayIn(options.now?.() ?? new Date(), page.timeZone);
   /** Whether a field's own words — a label, a choice's — show a value: found once, so a page with none checks as before. */
@@ -1125,6 +1173,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     sent: null,
     asked: Object.fromEntries(askedNow),
     takenOut: {},
+    // Worked out once the form has its state (`showLimits`, as it is made).
+    limits: null,
+    resume: null,
   };
   started = true;
   /**
@@ -1319,6 +1370,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const shown = state.errors;
     const edited = edit;
     edit = false;
+    const stepWas = state.step;
     state = { ...state, ...patch };
     // A line's choices go with their line; a choice named as cleared is no longer said once its value changes.
     if (state.values !== was) state = { ...state, choices: choicesNow(state.choices, was) };
@@ -1341,6 +1393,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (listed.length) followLines(was, edited);
     }
     if (showing && state.step !== told) tellStep(entering);
+    // A wizard's step entered with answers typed is kept in the draft, so it opens there again.
+    if (state.step !== stepWas && showing && state.dirty.length) scheduleDraft();
   }
 
   function emit<E extends keyof FormEvents>(event: E, payload: FormEvents[E]) {
@@ -1592,6 +1646,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           // Cleared first, then named: the words stay until its value changes again.
           if (lost.length) clearChoices(cell ? cell.table : name, cell, lost);
           put({ options: loaded, ...(lost.length ? { cleared: namedChoices(lost, shown, loaded) } : {}) });
+          // Options of the app's list with places, never counted yet: how many took each is asked.
+          if (!cell && loaded.some((option) => option.seats !== undefined) && !counted?.perChoice?.[name]) void track(askLimits());
         },
         (error) => put({ options: shown, error: (error as Error).message ?? String(error) })
       )
@@ -2012,6 +2068,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const label = labelOfPath(path);
       errors[path] = found.failed === undefined ? fillMessage(messages, messages.stillWorkedOut, { label }) : fillMessage(messages, messages.notWorkedOut, { label, problem: found.failed });
     }
+    // A choice held whose places filled up since it was picked: never sent, said under it.
+    for (const [name, places] of Object.entries(state.limits?.seats ?? {})) {
+      const full = seen.has(name) && !errors[name] ? fullChosen(page.fields[name], places, state.values[name]) : [];
+      if (full.length) errors[name] = fill(messages.choiceFilled, { option: full.map((option) => option.label).join(', ') });
+    }
     // A saved form placed here answers for its fields by its own page's rules.
     for (const node of visibleFieldNodes(root, 'form')) {
       const part = attached.get(node.id);
@@ -2202,21 +2263,86 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return kept;
   }
 
+  /**
+   * Whether drafts are kept on the app's server: its source keeps them, and the page offers "Continue later" (or the
+   * form continues one by its key). A page without either keeps its drafts where it always did.
+   */
+  const onServer = () => !!options.dataSource?.saveDraft && !!options.dataSource.loadDraft && (page.continueLater === true || !!options.resume);
+  /** Whether drafts are kept: the app gave a store, or they are kept on the server. */
+  const draftsOn = () => !!options.drafts || onServer();
+  /** The key of the draft kept on the server for the record shown; null until the source gave one. */
+  let serverKey: string | null = null;
+  /** Counted each time the draft is let go (sent, discarded, another record shown): a keeping answered after is dropped. */
+  let draftEpoch = 0;
+  /** The draft kept on the server last asked to be kept: the next waits for it, so it carries the key it gave. */
+  let draftGoing: Promise<unknown> = Promise.resolve();
+  /** How many drafts are on their way to the server. */
+  let keeping = 0;
+  /** The draft found as the form opened, offered to restore (`state.draft`). */
+  let found: StoredDraft | null = null;
+  /** The key the form was given to continue from (`resume`), until it is opened. */
+  let resumeKey = outer ? undefined : options.resume;
+
   function scheduleDraft() {
-    const drafts = options.drafts;
-    if (!drafts) return;
+    if (!draftsOn()) return;
     if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
     draftTimer = scheduler.setTimeout(() => {
       draftTimer = null;
-      // Where files are stored apart, never a file's bytes: they would fill the browser's store (uploads.ts). Without, kept as always.
-      // A store that is full anyway keeps no draft.
-      const values = options.dataSource?.upload ? draftOf(state.values) : state.values;
-      try {
-        drafts.store.setItem(draftKey(), JSON.stringify({ savedAt: new Date().toISOString(), values }));
-      } catch {
-        // The draft is a convenience: the form goes on without it.
-      }
-    }, drafts.delayMs ?? 400);
+      // On the server, a failure is kept in the browser's store instead, where there is one: the form goes on.
+      void track(keepDraft(false).catch(() => keepHere(draftNow())));
+    }, options.drafts?.delayMs ?? (onServer() ? 1500 : 400));
+  }
+
+  /** The draft of what is typed now: the answers, the wizard's step and the steps passed over, text that does not read. */
+  function draftNow(): StoredDraft {
+    // Where files are stored apart, never a file's bytes: they would fill the browser's store (uploads.ts). Without, kept as always.
+    const values = options.dataSource?.upload ? draftOf(state.values) : structuredCopy(state.values as Values);
+    return {
+      values,
+      ...(steps.length ? { step: state.step, skipped: [...state.skipped] } : {}),
+      ...(Object.keys(state.unread).length ? { unread: structuredCopy(state.unread as Record<string, UnreadText>) } : {}),
+      answered: Object.keys(fields).filter((name) => state.dirty.includes(name)),
+      savedAt: new Date(clock()).toISOString(),
+    };
+  }
+
+  /** A draft in the browser's store, where the app gave one: a store that is full keeps none. */
+  function keepHere(kept: StoredDraft | { savedAt: string; key: string }) {
+    try {
+      options.drafts?.store.setItem(storeKey(), JSON.stringify(kept));
+    } catch {
+      // The draft is a convenience: the form goes on without it.
+    }
+  }
+
+  /**
+   * Keep what is typed now: on the server where the source keeps drafts — one at a time, each carrying the key the last
+   * was given; its key in the browser's store — else in the browser's store. The server's answer, or null.
+   */
+  function keepDraft(later: boolean): Promise<SavedDraft | null> {
+    const draft = draftNow();
+    const source = options.dataSource;
+    if (!onServer() || !source?.saveDraft) {
+      keepHere(draft);
+      return Promise.resolve(null);
+    }
+    const shown = shownNow();
+    const epoch = draftEpoch;
+    keeping++;
+    const going = draftGoing.then(() => source.saveDraft!({ pageId: page.id, model: page.data.kind === 'record' ? page.data.model : '', recordId: state.recordId, key: epoch === draftEpoch ? serverKey : null, draft, ...(later ? { later } : {}) }));
+    draftGoing = going.then(
+      () => void keeping--,
+      () => void keeping--
+    );
+    return going.then((saved) => {
+      // Kept for a record no longer shown, or for answers sent or let go meanwhile: the source has it; nothing is laid here.
+      if (!shown() || epoch !== draftEpoch) return saved;
+      serverKey = saved.key;
+      if (state.resume?.key !== saved.key || state.resume.missing) set({ resume: { key: saved.key } });
+      keepHere({ savedAt: draft.savedAt, key: saved.key });
+      emit('draft', { key: saved.key, savedAt: draft.savedAt, later, saved });
+      return saved;
+    });
   }
 
   /** The values with a draft's over them: a field it left out — a file's bytes — as the record holds it, in a saved form placed here too. */
@@ -2229,26 +2355,163 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return values;
   }
 
+  /** A draft laid on the form: its answers as a starting point, its wizard step (or the nearest before it that applies), its text that does not read. */
+  function applyDraft(draft: StoredDraft) {
+    found = null;
+    writeValues(withDraft(draft.values ?? {}), { draft: null }, true);
+    const known = (draft.skipped ?? []).filter((id) => steps.includes(id));
+    // Text typed that did not read stays as typed, said as it was, where its field is still on the page.
+    const unread = Object.fromEntries(Object.entries(draft.unread ?? {}).filter(([path]) => !!page.fields[path.split('.')[0]] && typeof draft.unread?.[path]?.text === 'string'));
+    const patch: Partial<FormState> = {
+      ...(steps.length ? { skipped: known, step: resumeStep(steps, form.steps(), draft.step) } : {}),
+      ...(Object.keys(unread).length ? { unread: { ...state.unread, ...unread } } : {}),
+      // Its boxes were left with it: why each does not read is said at once, as it was where it was typed.
+      ...(Object.keys(unread).length ? { errors: { ...state.errors, ...Object.fromEntries(Object.entries(unread).map(([path, kept]) => [path, kept.message])) } } : {}),
+    };
+    if (Object.keys(patch).length) set(patch);
+  }
+
   function forgetDraft() {
     if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
     draftTimer = null;
-    options.drafts?.store.removeItem(draftKey());
+    found = null;
+    draftEpoch++;
+    serverKey = null;
+    if (state.resume) set({ resume: null });
+    options.drafts?.store.removeItem(storeKey());
   }
 
-  function offerDraft() {
-    const drafts = options.drafts;
-    if (!drafts) return;
-    const raw = drafts.store.getItem(draftKey());
-    if (!raw) return;
-    let draft: { savedAt: string; values: Values };
+  /** A draft found: laid at once (`restore: "auto"`, or a draft continued from its key over nothing typed), else offered. */
+  function offer(draft: StoredDraft, auto = options.drafts?.restore === 'auto') {
+    // What the person typed while it was asked for is theirs: the draft is offered, never laid over it.
+    if (auto && !state.dirty.length && !Object.keys(state.unread).length) return applyDraft(draft);
+    found = draft;
+    set({ draft: { savedAt: draft.savedAt } });
+  }
+
+  /**
+   * The draft kept for the record shown, offered as it opens: the one the form was given to continue from (`resume`),
+   * else the browser's store's — on the server by its key, or in the store. A draft asked of the server is laid only
+   * on the record it was asked for.
+   */
+  function offerDraft(): Promise<void> | void {
+    const source = options.dataSource;
+    const given = resumeKey;
+    resumeKey = undefined;
+    const kept = given ? null : draftRead(options.drafts?.store.getItem(storeKey()) ?? null);
+    if (!given && !kept) return;
+    if (kept && !('key' in kept)) return offer(kept);
+    const key = given ?? (kept as { key: string }).key;
+    if (!source?.loadDraft || !onServer()) return;
+    const shown = shownNow();
+    if (given) set({ status: 'loading' });
+    return track(
+      source.loadDraft({ pageId: page.id, key }).then(
+        (draft) => {
+          if (!shown()) return;
+          if (given) set({ status: 'ready' });
+          if (!draft) {
+            // Sent, or gone: the form starts empty, and says so where it was asked to continue it.
+            options.drafts?.store.removeItem(storeKey());
+            if (given) set({ resume: { key, missing: true } });
+            return;
+          }
+          serverKey = key;
+          set({ resume: { key } });
+          offer(draft, given ? true : undefined);
+        },
+        (error: unknown) => {
+          if (shown() && given) set({ status: 'error', error: (error as Error)?.message ?? String(error) });
+        }
+      )
+    );
+  }
+
+  /** The source's last answer to `limits`: null until it told. */
+  let counted: LimitsResult | null = null;
+  let limitsTimer: unknown = null;
+  /** The choice fields whose own options have places. */
+  const seated = seatedFields(page);
+  /** A choice's options as shown: its own, or its app's list's once loaded. */
+  const optionsOf = (name: string): readonly Option[] => {
+    const def = page.fields[name];
+    if (def?.type !== 'selection') return [];
+    return def.optionsFrom ? ((started ? state.choices[name]?.options : null) ?? []) : (def.options ?? []);
+  };
+  /** The choice fields with places now: those of the page's own, and of the app's lists whose options loaded with them. */
+  const seatedNow = () => [...seated, ...Object.keys(started ? state.choices : {}).filter((name) => !seated.includes(name) && optionsOf(name).some((option) => option.seats !== undefined))];
+  /** Whether the form asks the source for counts: the page shown (never a saved form placed in it), a source that tells them, and something to count. */
+  const asksLimits = () => !outer && !!options.dataSource?.limits && (countsAsked(page) || seatedNow().length > 0);
+  /** The page's counts asked as it opens and not told yet: nothing is typed meanwhile. */
+  let askingFirst = asksLimits() && countsAsked(page);
+  /** The limits as they are now: none for a saved form placed in another, which takes answers as its record does. */
+  const limitsHere = (): FormLimits | null => (outer ? null : limitsNow(page, clock(), counted, askingFirst, optionsOf));
+
+  /** The limits shown as they are now, and the next moment they change of themselves — the page opening, closing — awaited. */
+  function showLimits() {
+    const limits = limitsHere();
+    if (JSON.stringify(limits) !== JSON.stringify(state.limits ?? null)) set({ limits });
+    if (limitsTimer !== null) scheduler.clearTimeout(limitsTimer);
+    limitsTimer = null;
+    const next = [limits?.opens, limits?.closes].map((at) => (at ? Date.parse(at) - clock() : -1)).filter((ms) => ms > 0).sort((a, b) => a - b)[0];
+    // Within the longest wait a timer keeps (24 days), while something listens: a page left open as it opens or closes
+    // says so then. (A form no one listens to keeps no timer that would hold a process open.)
+    if (next !== undefined && next < 2 ** 31 - 1 && !disposed && listeners.size) limitsTimer = scheduler.setTimeout(showLimits, next + 50);
+  }
+
+  /** Ask the source's `limits` again and show what it tells, on the record it was asked for; without it, the dates alone. */
+  async function askLimits(): Promise<void> {
+    const source = options.dataSource;
+    if (!asksLimits() || !source?.limits) return showLimits();
+    const shown = shownNow();
+    const user = options.user ? { user: { id: options.user.id, ...(options.user.name ? { name: options.user.name } : {}) } } : {};
+    // A source that never answers keeps no one from the questions for long: past 10 seconds they show, and its submit decides.
+    const waited = askingFirst
+      ? scheduler.setTimeout(() => {
+          if (!askingFirst || !shown()) return;
+          askingFirst = false;
+          showLimits();
+        }, 10000)
+      : null;
     try {
-      draft = JSON.parse(raw);
+      const told = await source.limits({ pageId: page.id, model: page.data.kind === 'record' ? page.data.model : '', recordId: state.recordId, fields: seatedNow(), ...user });
+      if (!shown()) return;
+      counted = told ?? {};
     } catch {
-      drafts.store.removeItem(draftKey());
-      return;
+      // Not told: the page keeps to its dates alone, and the source's submit refuses as it would.
+      if (!shown()) return;
+    } finally {
+      if (waited !== null) scheduler.clearTimeout(waited);
     }
-    if (drafts.restore === 'auto') writeValues(withDraft(draft.values), { draft: null }, true);
-    else set({ draft: { savedAt: draft.savedAt } });
+    askingFirst = false;
+    showLimits();
+  }
+
+  /**
+   * Whether the page takes these answers now, asked of the source again just before they go: why not, as a save's
+   * problem, or null. A choice that filled up meanwhile is the check's to say, under its field.
+   */
+  async function stillTaking(asked: number): Promise<Stopped | null> {
+    if (outer || (!page.limits && !seatedNow().length)) return null;
+    await askLimits();
+    if (asked !== generation) return { reason: 'save', message: named(messages.recordReplacedNoun, messages.recordReplaced) };
+    const limits = limitsHere();
+    const why = limits && limits.state !== 'open' && limits.state !== 'asking' ? takingWords(page, limits, messages) : null;
+    if (!why) return null;
+    const problem: SaveProblem = { kind: 'rule', message: why };
+    set({ status: 'error', error: why, saveProblem: problem, conflict: null, limits });
+    return { reason: 'save', message: why };
+  }
+
+  /** A choice of a full option, picked by the person, refused under its field: the field keeps what it held. */
+  function refusedFull(name: string, value: Value): boolean {
+    const full = fullChosen(page.fields[name], state.limits?.seats[name], value, state.values[name]);
+    if (!full.length) return false;
+    const message = fill(messages.choiceFull, { option: full.map((option) => option.label).join(', ') });
+    // Said until the field changes from what it holds, as a refused save's words are.
+    serverErrors[name] = { message, value: JSON.stringify(state.values[name] ?? null) };
+    set({ errors: { ...state.errors, [name]: message } });
+    return true;
   }
 
   function scheduleAutosave() {
@@ -2419,6 +2682,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         return { reason: 'save', ...(before.message !== undefined ? { message: before.message } : {}) };
       }
     }
+    // Whether the page still takes answers — its dates, its counts asked again — and each choice held still has room.
+    const refused = await stillTaking(asked);
+    if (refused) return refused;
     // A file that did not reach the store stops it, under its field, with the form's own checks.
     const errors = { ...collectErrors(), ...fileProblems() };
     if (Object.keys(errors).length) {
@@ -2428,6 +2694,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const source = options.dataSource;
     serverErrors = {};
     set({ status: 'saving', errors: {}, error: null, saveProblem: null, conflict: null });
+    // A draft being kept on the server goes first, so the send names the draft it ends; none is kept after it.
+    if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
+    draftTimer = null;
+    if (keeping) await draftGoing;
+    const draft = serverKey ? { draft: serverKey } : {};
     /** The generation the record was in when this save went to the source. */
     let at = generation;
     try {
@@ -2447,7 +2718,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const resetAt = resets;
         const seen = botReport();
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
-        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}) })) ?? {};
+        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft })) ?? {};
         // The captcha's token is spent once sent: the next send waits for a new one.
         if (seen?.captcha) bot.captcha = null;
         // Answered for answers no longer shown — the form was started again meanwhile: the source has them, the form lays nothing.
@@ -2459,6 +2730,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         // Started again meanwhile (`reset`): a new response is on screen, and no ending is the old one's.
         set({ status: 'saved', unsent: unsentNow(), ...(resets === resetAt ? { sent: { id: answer.id ?? null, values: { ...structuredCopy(sent), ...added } } } : {}) });
         emit('send', { values: sent, ...(seen ? { bot: seen } : {}) });
+        // Counted again: one response fewer to take, this person's sent.
+        if (asksLimits()) void track(askLimits());
         void track(moment('on.afterSave', page.on?.afterSave, chain, false));
         return null;
       }
@@ -2475,6 +2748,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         values: sentValues(),
         // The version it was opened at, for a source that refuses a save over someone else's.
         ...(state.recordId != null && state.version ? { version: state.version } : {}),
+        ...draft,
       });
       // Answered for a record no longer shown — another opened, or this one loaded again: the source has it, and the
       // form lays nothing of it over the record it shows now.
@@ -2747,6 +3021,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Lines load in their tables' orders; where a person moves them after, they stay.
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {}, takenOut: {} });
+      // Each choice's places, for this record: its own choices are its own.
+      if (asksLimits()) void track(askLimits());
       if (again) return;
       offerDraft();
       void track(opening());
@@ -2773,7 +3049,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     told = null;
     showing = false;
     clearFiles();
-    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {} };
+    // The draft kept for the record shown before is that one's.
+    found = null;
+    serverKey = null;
+    draftEpoch++;
+    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {}, resume: null };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
       await load();
@@ -2783,6 +3063,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     baseline = startFrom(startingValues(true, false));
     const values = syncParts(structuredCopy(baseline), 'start');
     set({ ...fresh, recordId: null, status: 'ready', values, warnings: withValues(values, collectWarnings) });
+    if (asksLimits()) void track(askLimits());
     offerDraft();
     await opening();
     return true;
@@ -3137,7 +3418,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     subscribe(listener) {
       listeners.add(listener);
-      return () => listeners.delete(listener);
+      // Listened to: the page opening or closing is said as it comes.
+      if (listeners.size === 1 && limitsTimer === null && (state.limits?.opens || state.limits?.closes)) showLimits();
+      return () => {
+        listeners.delete(listener);
+        if (listeners.size || limitsTimer === null) return;
+        scheduler.clearTimeout(limitsTimer);
+        limitsTimer = null;
+      };
     },
 
     load() {
@@ -3147,6 +3435,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     setValue(name, value, how) {
       fieldDef(name);
+      // A choice whose places are all taken is shown, and refused when the person picks it: said under its field.
+      if ((how?.by ?? 'person') === 'person' && refusedFull(name, value)) return;
       writeValues({ ...(state.values as Values), [name]: structuredCopy(value) });
       afterEdit(name);
       changed(name, how?.by ?? 'person');
@@ -3365,6 +3655,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       bot = { ...bot, honeypot: false, since: clock() };
       const values = syncParts(structuredCopy(baseline), 'start');
       set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null });
+      // Started again: whether the page takes another response, and each choice's places, asked again.
+      if (asksLimits()) void track(askLimits());
     },
 
     words: (text) => wordsNow(text),
@@ -3624,16 +3916,28 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     restoreDraft() {
-      const raw = options.drafts?.store.getItem(draftKey());
-      if (!raw) return;
-      const draft = JSON.parse(raw) as { values: Values };
-      writeValues(withDraft(draft.values), { draft: null }, true);
+      const kept = found ?? draftRead(options.drafts?.store.getItem(storeKey()) ?? null);
+      if (kept && 'values' in kept) applyDraft(kept);
     },
 
     discardDraft() {
       forgetDraft();
       set({ draft: null });
     },
+
+    canContinueLater: () => page.continueLater === true && onServer() && page.layout.type !== 'list',
+
+    async continueLater() {
+      if (!form.canContinueLater()) throw new Error('No continueLater, or no saveDraft and loadDraft');
+      // What is typed is read first, as a save reads it: text that does not read is kept as typed, said again as it opens.
+      await (readTyped() ?? Promise.resolve());
+      if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
+      draftTimer = null;
+      const saved = await track(keepDraft(true));
+      return saved as SavedDraft;
+    },
+
+    refreshLimits: () => askLimits(),
 
     async reloadTheirs() {
       // A save on its way first: its answer is not dropped by the load.
@@ -3787,6 +4091,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       clearFiles();
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
       if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
+      if (limitsTimer !== null) scheduler.clearTimeout(limitsTimer);
       listeners.clear();
       events.clear();
       for (const part of attached.values()) part.inner.form.dispose();
@@ -3795,9 +4100,16 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   // A record's starting values may already break a warning rule; nothing listens yet.
   state = { ...state, warnings: collectWarnings() };
-  if (state.recordId == null) offerDraft();
-  // A new form has its values now: it opens once whoever made it has had the chance to listen.
-  if (state.recordId == null) void track(Promise.resolve().then(opening));
+  // When the page takes answers, at once; its counts and each choice's places as the source tells them.
+  showLimits();
+  // A record's own counts are asked once it is loaded: its own choices are not counted against it.
+  if (asksLimits() && state.recordId == null) void track(askLimits());
+  // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
+  // has had the chance to listen.
+  if (state.recordId == null) {
+    const continued = offerDraft();
+    void track(Promise.resolve(continued).then(opening));
+  }
   return {
     form,
     take(values, how) {

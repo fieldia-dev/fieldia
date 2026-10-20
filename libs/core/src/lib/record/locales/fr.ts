@@ -78,5 +78,11 @@ export const fr: Messages = {
   notWorkedOut: '{label} n’a pas pu être calculé : {problem}',
   notOfferedNow: '{name} n’est plus proposé, il a donc été retiré',
   notOfferedNowMany: '{name} ne sont plus proposés, ils ont donc été retirés',
+  formOpens: 'Ce formulaire ouvre le {when}.',
+  formClosed: 'Ce formulaire a fermé le {when}.',
+  formFull: 'Ce formulaire a reçu toutes les réponses qu’il accepte.',
+  formSent: 'Vous avez déjà envoyé vos réponses à ce formulaire.',
+  choiceFull: '{option} est complet',
+  choiceFilled: '{option} est maintenant complet : choisissez autre chose',
   locale: 'fr',
 };

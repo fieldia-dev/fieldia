@@ -140,6 +140,25 @@ export interface DataSource {
    * (thrown), the browser keeps it instead, as without this.
    */
   markNotDuplicate?(request: MarkNotDuplicateRequest): Promise<void>;
+  /**
+   * How many answers a page has taken, for its `limits` and its options' `seats`: the responses sent so far (what
+   * `maxResponses` counts), this person's (what `onePerPerson` counts), and for each choice field asked how many hold
+   * each of its options. Asked as the page opens — a closed or full form says so before anything is typed — and again
+   * just before its answers are sent. Without it, the page keeps to its dates alone and shows no places left; its
+   * `submit` (or `save`) refuses as it would.
+   */
+  limits?(request: LimitsRequest): Promise<LimitsResult>;
+  /**
+   * Keep a page's answers so far on the app's server, to continue from on this device or another: as they are typed
+   * (a moment after typing stops), as a wizard's step is entered, and when the person presses "Continue later"
+   * (`later`). The first time `key` is null: answer with the key the draft is kept under, and on "Continue later" a
+   * `link` to continue from (the app makes it, with the key in it) and words of the app's own ("We emailed you the
+   * link"). The answers kept are the app's to see — where people stopped, what they had written. Without it, drafts
+   * stay in the browser's store (`drafts`), as before, and no "Continue later" shows.
+   */
+  saveDraft?(request: SaveDraftRequest): Promise<SavedDraft>;
+  /** A draft kept by `saveDraft`, by its key: what the viewer's `resume` opens. Null when there is none (sent, or gone). */
+  loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>;
 }
 
 /** Whose possible duplicates were let be: what `notDuplicates` is asked. */
@@ -156,6 +175,74 @@ export interface MarkNotDuplicateRequest {
   recordId: RecordId;
   /** The record found like it, which is someone else. */
   matchId: RecordId;
+}
+
+/** What `limits` is asked: the page, the record (whose own choice is no other's place) and the choice fields with places. */
+export interface LimitsRequest {
+  pageId: string;
+  /** The page's model; empty for a page of responses. */
+  model: string;
+  /** The record edited, whose own choices are not counted as another's; null for a new one or a response. */
+  recordId: RecordId | null;
+  /** The choice fields whose options have `seats`, by name: count how many hold each option. */
+  fields: string[];
+  /** The person as the app told the form (`user`), where it did: a server knows them by its own sign-in first. */
+  user?: { id: RecordId | null; name?: string };
+}
+
+/** How many answers a page has taken. Each part is told where the source knows it; one left out is not kept to. */
+export interface LimitsResult {
+  /** The responses (or records) sent so far: what the page's `maxResponses` counts. */
+  responses?: number;
+  /** Those this person sent: one or more refuses another where the page says `onePerPerson`. */
+  mine?: number;
+  /** For each field asked, by option value: how many answers hold it (the record edited not counted). */
+  perChoice?: Record<string, Record<string, number>>;
+}
+
+/** A page's answers so far, as a draft keeps them: on the app's server (`saveDraft`) or in the browser's store. */
+export interface StoredDraft {
+  /** The answers, as typed so far: where files are stored apart, no file's bytes. */
+  values: Values;
+  /** The wizard's step on screen, which the draft opens at again. */
+  step?: string | null;
+  /** The optional steps passed over with Skip. */
+  skipped?: string[];
+  /** Text typed that does not read yet, by its box's path, kept as it was typed and said again as the draft opens. */
+  unread?: Record<string, { text: string; message: string }>;
+  /** The fields the person answered (changed), in the page's order: where they got to. */
+  answered?: string[];
+  /** When it was kept, as ISO. */
+  savedAt: string;
+}
+
+/** What `saveDraft` is asked: the draft, and the key it was kept under before. */
+export interface SaveDraftRequest {
+  pageId: string;
+  /** The page's model; empty for a page of responses. */
+  model: string;
+  /** The record edited; null for a new one or a response. */
+  recordId: RecordId | null;
+  /** The key the source gave this draft before; null the first time: answer with a new one. */
+  key: string | null;
+  draft: StoredDraft;
+  /** The person pressed "Continue later": the app may send them the link now, and answers with it. */
+  later?: boolean;
+}
+
+/** A draft kept on the server: its key, and after "Continue later" the link to continue from and the app's own words. */
+export interface SavedDraft {
+  key: string;
+  /** The address to continue from, with the key in it, as the app makes it: shown with Copy. */
+  link?: string;
+  /** Words of the app's own, said as they are: "We emailed the link to mona@example.com." */
+  message?: string;
+}
+
+/** What `loadDraft` is asked: the page, and the key the draft was kept under. */
+export interface LoadDraftRequest {
+  pageId: string;
+  key: string;
 }
 
 /** Many records made at once, each with its own values: a list's Import. */
@@ -423,6 +510,8 @@ export interface SaveRequest {
    * the record as it is now.
    */
   version?: RecordVersion;
+  /** The key of the draft these changes were kept in on the server (`saveDraft`): the source may let it go. */
+  draft?: string;
 }
 
 export interface SaveResult {
@@ -662,6 +751,8 @@ export interface SubmitRequest {
   values: Values;
   /** On a page with a bot check (`botCheck`): what it saw, for the app to decide on. The page never refuses a send for it. */
   bot?: BotReport;
+  /** The key of the draft these answers were kept in on the server (`saveDraft`): the source may let it go, or mark it sent. */
+  draft?: string;
 }
 
 /**

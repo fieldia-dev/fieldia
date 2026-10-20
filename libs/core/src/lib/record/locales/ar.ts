@@ -78,5 +78,11 @@ export const ar: Messages = {
   notWorkedOut: 'تعذّر حساب {label}: {problem}',
   notOfferedNow: '{name} لم يعد متاحًا، فأُزيل',
   notOfferedNowMany: '{name} لم تعد متاحة، فأُزيلت',
+  formOpens: 'يُفتح هذا النموذج في {when}.',
+  formClosed: 'أُغلق هذا النموذج في {when}.',
+  formFull: 'اكتمل عدد الردود التي يقبلها هذا النموذج.',
+  formSent: 'لقد أرسلت إجاباتك على هذا النموذج من قبل.',
+  choiceFull: 'لا أماكن متبقية في {option}',
+  choiceFilled: 'امتلأ {option} الآن: اختر غيره',
   locale: 'ar',
 };

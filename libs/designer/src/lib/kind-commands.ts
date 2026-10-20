@@ -23,6 +23,8 @@ export interface OptionDetails {
   fixed?: boolean | null;
   /** A choice's option hidden while this condition holds (its `invisible`); `null` shows it always. */
   invisible?: string | null;
+  /** How many may choose it, its places left shown once the app counts them; `null` takes them away. */
+  seats?: number | null;
 }
 
 export interface KindCommandsDeps {
@@ -111,6 +113,13 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
             if (details.score === null) delete option.score;
             else if (!Number.isFinite(details.score)) throw new Refusal((w) => w.refusals.pointsNumber);
             else option.score = details.score;
+          }
+          // A choice's places: a matrix's columns are no choice of seats.
+          if (details.seats !== undefined) {
+            if (field.type !== 'selection') throw new Refusal((w) => w.refusals.seatsForChoices);
+            if (details.seats === null) delete (option as Option).seats;
+            else if (!Number.isInteger(details.seats) || details.seats < 0) throw new Refusal((w) => w.refusals.seatsNumber);
+            else (option as Option).seats = details.seats;
           }
         },
         // Typing a picture's address or points is one undo step.

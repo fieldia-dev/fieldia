@@ -844,3 +844,72 @@ In plain words:
 - The memory source: a `lists` function is given the request after the values,
   `(values, request) => …`, so a line's list may read `request.parent`.
   Tests: `libs/core/src/lib/record/line-choices.spec.ts`.
+
+## 18. Opening, closing, limiting; save and resume (Wave 4, lane w4-limits)
+
+Three more members, each optional as everything here: without `limits` a page keeps to its dates alone and shows no
+places left; without `saveDraft` and `loadDraft` no "Continue later" shows and drafts stay in the browser's store.
+
+```ts
+limits?(request: LimitsRequest): Promise<LimitsResult>;
+saveDraft?(request: SaveDraftRequest): Promise<SavedDraft>;
+loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>;
+
+interface LimitsRequest {
+  pageId: string;
+  model: string;                 // empty for a page of responses
+  recordId: RecordId | null;     // the record edited: its own choices are not counted against it
+  fields: string[];              // the choice fields whose options have `seats`
+  user?: { id: RecordId | null; name?: string };   // as the app told the form; a server knows its own sign-in first
+}
+interface LimitsResult {
+  responses?: number;                               // sent so far: what `limits.maxResponses` counts
+  mine?: number;                                    // this person's: what `limits.onePerPerson` counts
+  perChoice?: Record<string, Record<string, number>>;   // by field, by option value: how many hold it
+}
+
+interface StoredDraft {
+  values: Values;                // the answers so far; where files are stored apart, no file's bytes
+  step?: string | null;          // the wizard's step on screen
+  skipped?: string[];            // the optional steps passed over
+  unread?: Record<string, { text: string; message: string }>;   // text typed that does not read, as typed
+  answered?: string[];           // the fields the person changed: where they got to
+  savedAt: string;               // ISO
+}
+interface SaveDraftRequest { pageId: string; model: string; recordId: RecordId | null; key: string | null; draft: StoredDraft; later?: boolean }
+interface SavedDraft { key: string; link?: string; message?: string }
+interface LoadDraftRequest { pageId: string; key: string }
+
+// SubmitRequest and SaveRequest gain draft?: string — the key of the draft the answers end.
+```
+
+In plain words:
+
+- **The page asks** (`limits` on a page of responses: `opens`, `closes`, `maxResponses`, `onePerPerson`, `message`;
+  `seats` on any page's options). `opens` and `closes` are the page's own, on its clock, read with no source at all;
+  a day alone closes at its end. The form asks `limits` as it opens — and holds its questions back while it asks
+  where the page counts responses (`FormState.limits.state` `asking`) — once a record is loaded, after every send, as
+  it starts again, and again just before its answers go; an answer is laid only on the form it was asked for
+  (`form.recordShown()`). Without `limits`, `maxResponses` and `onePerPerson` are not drawn on: the source's `submit`
+  refuses as it would.
+- **Places.** An option with `seats` shows the places left once `perChoice` tells how many took it ("3 left",
+  "Full"); one the source told nothing of shows nothing. A full option is shown, and refused when the person picks it
+  ("Afternoon workshop is full", under the field, the field keeping what it held); one that filled up while held
+  stops the send ("… is full now: choose another"). The app's own `setValues` is never refused: the check says it.
+- **Drafts on the server** are kept on a page with `continueLater` (or a form given `resume`), where the source has
+  both members: a moment after typing stops (1.5 s unless `drafts.delayMs`), as a wizard's step is entered with
+  answers typed, and on "Continue later" (`later: true`, answered with the app's `link` and `message`). One at a time:
+  each carries the key the last was given. The browser's store (`drafts.store`), where the app gave one, keeps only
+  `{ savedAt, key }`; a failure keeps the draft itself there instead. A page without `continueLater` keeps its drafts
+  where it always did, whatever its source has.
+- **Opening a draft** by its key (`FormOptions.resume`, the viewer's and the wrappers' `resume`): `loadDraft` as the
+  form opens (`status` `loading`), its answers laid as a starting point, its step — or the nearest before it that
+  still applies — and its text that does not read, kept unread with its words so the next check refuses it. Typed
+  over meanwhile, it is offered (`state.draft`), never laid over what was typed. A key that names none:
+  `resume.missing`, and the form starts empty.
+- **Sent.** The send carries the draft's key (`draft`) once a draft on its way has gone; the memory source deletes
+  it, as a server would. Nothing is kept as a draft after a send.
+- The memory source: `limits` counts its responses (and `answeredElsewhere(pageId, values)`, someone else's) over the
+  `limits` option's starting counts, a record page's model's records but the one edited; `saveDraft` keys drafts
+  `draft-1`, `draft-2`… (`drafts` shows them, with `later`), with `draftLink(key)`'s link on "Continue later";
+  `loadDraft` finds them, and the `drafts` option's. Tests: `libs/core/src/lib/record/taking.spec.ts`, `drafts.spec.ts`.

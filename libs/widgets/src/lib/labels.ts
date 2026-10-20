@@ -397,6 +397,10 @@ export interface WidgetLabels {
   isAnOption: string;
   /** A press past the most choices (`{max}`), and past the most ranked. */
   chooseUpTo: string;
+  /** An option's places left (`{n}`), beside its words — `…One`, the words for one — and one whose places are all taken. */
+  seatsLeft: string;
+  seatsLeftOne: string;
+  seatsFull: string;
   rankTop: string;
   /** A total that cannot be added up while line `{n}` holds text that does not read. */
   totalWaits: string;
@@ -763,6 +767,9 @@ const en: WidgetLabels = {
   lookingUp: '{label}: still looking for “{text}”',
   isAnOption: '“{text}” is one of the choices, so it is ticked',
   chooseUpTo: 'You can choose {max}; untick one to choose another',
+  seatsLeft: '{n} left',
+  seatsLeftOne: '{n} left',
+  seatsFull: 'Full',
   rankTop: 'Only the top {max} are ranked; take one out to rank another',
   totalWaits: 'Fix line {n} to see this total',
   cellWaits: 'Fix {column} to see this line’s {own}',

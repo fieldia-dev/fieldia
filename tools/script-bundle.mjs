@@ -905,9 +905,19 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // their checks as a page is shown (references.ts 1.2); a value asked shown as an ellipsis, said (viewer.ts 0.4); an
 // app function's numbers tidied as Fieldia's own arithmetic tidies them: 503.41 measured before, 516.94 after — 13.5
 // more, to 517.0.
+// Opening, closing and limiting a page, and save and resume (0.27, w4-limits): the form's limits — open and close
+// dates read on the page's clock, the data source's counts asked as it opens, again before its answers go and after,
+// its questions held while they are asked, each choice's places and a full one refused when picked or held, the
+// answers refused once it closed (taking.ts, 2.7; form.ts) — drafts on the app's server, one at a time under one key,
+// with the wizard's step and text that does not read, a draft opened by its key and never laid over typing, Continue
+// later (form.ts, drafts.ts), the memory source's counts and drafts, the page checks of both, their six English
+// sentences, an option's places drawn beside its words in the radios, checkboxes and the browser's list (seats.ts),
+// and the viewer placing the limits part's screen, banner and button — the screen and Continue later's words in
+// fieldia.limits.js — and a draft's text that did not read said again as it opens, the questions shown after 10 seconds
+// of a source that never answers: 503.41 measured before, 515.71 after — 12.3 more, to 515.8.
 // All merged for 0.27.0 (provisional until the merged build is measured): 503.41 + 1.11 + 2.68 + 1.74 + 2.16 + 4.00 +
-// 4.31 + 13.53, to 533.0.
-const BUDGET_KB = 533.0;
+// 4.31 + 13.53 + 12.30, to 545.3.
+const BUDGET_KB = 545.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1119,8 +1129,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // — 1.5 more, to 164.5.
 // More functions, the app's own, and options that follow the answers (listed with the raw budget above): 162.94
 // measured before, 167.70 after — 4.76 more, to 167.8.
-// All merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86 + 0.51 + 0.83 + 1.52 + 1.47 + 4.76, to 173.3.
-const GZIP_BUDGET_KB = 173.3;
+// Opening, closing and limiting a page, and save and resume (listed with the raw budget above): 162.94 measured
+// before, 167.38 after — 4.4 more, to 167.4. A page with limits or Continue later takes 2.41 more in fieldia.limits.js.
+// All merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86 + 0.51 + 0.83 + 1.52 + 1.47 + 4.76 + 4.44, to 177.7.
+const GZIP_BUDGET_KB = 177.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1289,11 +1301,16 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // w4-rules): five words of the form's messages and two of the viewer's, in each language: Arabic's 68.38 and 11.83
 // measured before, 69.14 and 11.96 after, to 69.2 and 12.0; German's 32.03 and 10.44 to 32.44 and 10.55, to 32.5 and
 // 10.6; French's 32.37 and 10.43 to 32.81 and 10.55, to 32.9 and 10.6.
-// All merged for 0.27.0 (provisional): Arabic's 68.38 + 2.96 + 0.91 + 1.76 + 0.12 + 0.76 and 11.83 + 0.38 + 0.19 + 0.29 +
-// 0.01 + 0.13, to 74.9 and 12.9; German's 32.03 + 1.30 + 0.48 + 0.79 + 0.06 + 0.41 and 10.44 + 0.31 + 0.15 + 0.23 + 0.01
-// + 0.11, to 35.1 and 11.3; French's 32.37 + 1.26 + 0.53 + 0.84 + 0.06 + 0.44 and 10.43 + 0.34 + 0.17 + 0.25 + 0.02 +
-// 0.12, to 35.6 and 11.4.
-const ADD_ON_BUDGET_KB = { ar: [74.9, 12.9], de: [35.1, 11.3], fr: [35.6, 11.4] };
+// Opening, closing and limiting a page, and save and resume (0.27, w4-limits) — why a form takes no answers now, a
+// choice full, its places left, the answers that can no longer be sent, Continue later, what it kept and its link, a
+// draft not found: 21 in each — Arabic's 68.38 and 11.83 measured before, 71.21 and 12.24 after, to 71.3 and 12.3;
+// German's 32.03 and 10.44 to 33.15 and 10.78, to 33.2 and 10.8; French's 32.37 and 10.43 to 33.53 and 10.79, to 33.6
+// and 10.8.
+// All merged for 0.27.0 (provisional): Arabic's 68.38 + 2.96 + 0.91 + 1.76 + 0.12 + 0.76 + 2.83 and 11.83 + 0.38 + 0.19
+// + 0.29 + 0.01 + 0.13 + 0.41, to 77.8 and 13.3; German's 32.03 + 1.30 + 0.48 + 0.79 + 0.06 + 0.41 + 1.12 and 10.44 + 0.31
+// + 0.15 + 0.23 + 0.01 + 0.11 + 0.34, to 36.2 and 11.6; French's 32.37 + 1.26 + 0.53 + 0.84 + 0.06 + 0.44 + 1.16 and
+// 10.43 + 0.34 + 0.17 + 0.25 + 0.02 + 0.12 + 0.36, to 36.7 and 11.7.
+const ADD_ON_BUDGET_KB = { ar: [77.8, 13.3], de: [36.2, 11.6], fr: [36.7, 11.7] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1638,10 +1655,16 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // groups and filters by their labels — list 110.61 and 35.49 measured before, 110.71 and 35.52 after, to 110.8 and
 // 35.6; Import reading such a choice's every option, and only a list's from the app — import 37.59 and 14.77 to 37.65
 // and 14.80, to 37.7 and 14.9.
+// Opening, closing and limiting a page, and save and resume (0.27, w4-limits), a part of its own — a closed form's
+// words in place of its questions, the banner of answers it closed on, Continue later's button, what it kept, the link
+// with Copy, a draft's key that names none, and their sheet — new, in fieldia.limits.js (limits 5.4, 2.5, as measured
+// 5.37 and 2.41), loaded with the page's parts where it has limits or Continue later. In the main script it would have
+// added them to every page. The survey kinds' picture cards draw an option's places too, and name a card whose words
+// are out of sight with them: survey 36.31 and 12.62 measured before, 36.61 and 12.75 after, to 36.7 and 12.8.
 // Both lanes' lines, merged for 0.27.0 (provisional): 40.51 + 0.26 + 1.75 and 13.97 + 0.05 + 0.60, to 42.6 and 14.7;
 // list's 110.61 + 6.90 + 0.10 and 35.49 + 2.36 + 0.03, to 117.7 and 37.9; import's 37.59 + 0.43 + 0.06 and 14.77 + 0.22 +
 // 0.03, to 38.1 and 15.1.
-const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.1, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], print: [16.9, 5.4] };
+const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.1, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [5.4, 2.5], print: [16.9, 5.4] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1667,9 +1690,10 @@ const PART_GIVES = {
   duplicates: ['watchDuplicates', 'openMergeScreen', 'installDuplicateStyles'],
   answers: ['sentenceValue', 'orderedDay', 'wordedWidget', 'drawEnding', 'linkedValueWords'],
   print: ['printLook', 'printPage', 'printAlone', 'installPrintStyles'],
+  limits: ['drawLimits', 'installLimitsStyles'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', print: 'printPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -2013,9 +2037,22 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (inPage.evidencePart.asksAgain !== true || inPage.filesPart.asksAgain !== true) throw new Error("in a page, the one-tag script's parts do not say they may be asked for again");
   consent.destroy();
   gone('consent');
+  // An event's sign-up that closed (its page's limits): the limits part, the page drawn once it came — its questions
+  // never shown first — the closed form's words in their place, its sheet in its place; the survey kinds' part, in
+  // already, draws nothing of it.
+  const closed = inPage.mountViewer(host, { page: { ...read('event-signup.page.json'), limits: { closes: '2020-01-31' } }, dataSource: inPage.createMemoryDataSource() });
+  waits(closed, 'a sign-up that closed');
+  await closed.drawn;
+  hasIn("an event's sign-up, closed", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
+  if (!host.querySelector('.fd-closed:not([hidden]) .fd-closed-title')?.textContent?.startsWith('This form closed on')) throw new Error("in a page, a closed form's words are not said in place of its questions");
+  if ([...host.querySelectorAll('.fd-field')].some((field) => !field.closest('[hidden]')) || !host.querySelector('.fd-page-title')?.closest('.fd-content:not([hidden])')) throw new Error("in a page, a closed form's questions are shown, or its title is not");
+  if (!doc.getElementById('fieldia-limits-styles')) throw new Error("in a page, the limits part's sheet was never put in");
+  closed.destroy();
+  gone('closed');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
-  // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25), before the themes so a theme still
+  // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
+  // and a page's limits' (0.27), before the themes so a theme still
   // reshapes them, the themes' and the quiet look's before the pickers', the head's and the text's, the survey kinds'
   // own looks last; a list's own sheet, its cards' and its columns' after them all, unranked.
   const styles = [...doc.head.querySelectorAll('style[id]')];
@@ -2026,7 +2063,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
   if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
     const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
@@ -2034,7 +2071,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

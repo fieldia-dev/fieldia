@@ -137,6 +137,17 @@ export interface Messages {
   /** A choice taken out of an answer because a change of other answers no longer offers it: `{name}`, its label; several (`notOfferedNowMany`), their labels joined. */
   notOfferedNow: string;
   notOfferedNowMany: string;
+  /**
+   * Why a page takes no answers now (`limits`): before it opens and after it closed (`{when}`, its day, or its day and
+   * time), all its responses taken, this person's one sent already.
+   */
+  formOpens: string;
+  formClosed: string;
+  formFull: string;
+  formSent: string;
+  /** A choice whose places are all taken (an option's `seats`): picked now (`choiceFull`), or held as it filled up. */
+  choiceFull: string;
+  choiceFilled: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -237,6 +248,12 @@ const en: Messages = {
   notWorkedOut: '{label} could not be worked out: {problem}',
   notOfferedNow: '{name} is no longer offered, so it was taken out',
   notOfferedNowMany: '{name} are no longer offered, so they were taken out',
+  formOpens: 'This form opens on {when}.',
+  formClosed: 'This form closed on {when}.',
+  formFull: 'This form has all the responses it takes.',
+  formSent: 'You have sent your answers to this form already.',
+  choiceFull: '{option} is full',
+  choiceFilled: '{option} is full now: choose another',
   locale: 'en',
 };
 

@@ -12,6 +12,7 @@ import { settingNumber } from './number-box';
 import { zoneBox } from './zone-setting';
 import { recordsSettings } from './records-settings';
 import { endingsEditor } from './endings-editor';
+import { limitsSettings } from './limits-settings';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
@@ -85,6 +86,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const sameOnRow = setting(el, 'rules', 'Duplicates asked for', sameOn, { words: w.duplicatesOn });
   // What its records are called in Fieldia's own sentences (records-settings.ts).
   const records = recordsSettings(el, designer);
+  // When a form of responses takes answers, how many, and Continue later (limits-settings.ts).
+  const limits = limitsSettings(el, designer);
   // Its phone numbers: as typed, or checked by their country — the country they start on, and how they are shown.
   const phones = el('select', { class: 'fd-input fd-select', 'aria-label': w.phones }, el('option', { value: '' }, w.phonesAs.typed), el('option', { value: 'checked' }, w.phonesAs.checked)) as HTMLSelectElement;
   phones.addEventListener('change', () => designer.setPhone({ on: phones.value === 'checked' }));
@@ -144,13 +147,17 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     trapRow,
     secondsRow,
     captchaRow,
+    ...limits.rows,
     sameRow,
     sameOnRow,
     moments.element
   );
   return {
     element,
-    destroy: () => seconds.destroy(),
+    destroy: () => {
+      seconds.destroy();
+      limits.destroy();
+    },
     update(page) {
       if (!focused(description)) description.value = page.description ?? '';
       phones.value = page.phone ? 'checked' : '';
@@ -166,6 +173,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       records.update(page);
       endingsRow.hidden = page.data.kind !== 'responses';
       if (!endingsRow.hidden) endings.update(page);
+      limits.update(page);
       look.update(page);
       moments.update(page);
       head.update(page);

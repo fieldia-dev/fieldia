@@ -134,6 +134,18 @@ const pricing: Page = {
   },
 };
 
+/** A clinic's intake continued from the link Continue later gave: the draft's key, and each draft kept told. */
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<fieldia-form [page]="page" [dataSource]="dataSource" resume="abc" (draft)="heard.push('draft ' + $event.key + ($event.later ? ' later' : ''))" (ready)="handle = $event" />`,
+})
+class ResumeHostComponent {
+  page = page('clinic-intake');
+  dataSource = createMemoryDataSource({ drafts: { abc: { pageId: 'clinic-intake', values: { full_name: 'Mona Adel' }, step: 'visit', savedAt: '2026-10-19T10:42:00Z' } } });
+  heard: string[] = [];
+  handle!: ViewerHandle;
+}
+
 @Component({
   imports: [FieldiaFormComponent],
   template: `<fieldia-form
@@ -355,6 +367,17 @@ describe('<fieldia-form> for Angular', () => {
     await sending.whenStable();
     await sending.componentInstance.handle.save();
     expect(sending.componentInstance.heard).toEqual(['send']);
+  });
+
+  it('opens a draft by its key ([resume]) at its step, and tells each draft Continue later kept as a draft output', async () => {
+    const fixture = TestBed.createComponent(ResumeHostComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const host = fixture.componentInstance;
+    await host.handle.form.settled();
+    expect(host.handle.form.getState().step).toBe('visit');
+    await host.handle.form.continueLater();
+    expect(host.heard).toEqual(['draft abc later']);
   });
 
   it('passes a list’s opened row on as an openRecord output', async () => {

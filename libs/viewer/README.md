@@ -380,6 +380,33 @@ any is drawn; where it cannot come, the words show each value as its field
 does at rest, and a page sent says the plain thanks. See
 [endings](https://fieldia.dev/pages/#endings).
 
+## Opening, closing and limiting a form; Continue later
+
+A page of responses with `limits` says, as it opens, when it takes no answers —
+"This form opens on 1 November 2026 at 09:00.", "This form closed on 20
+November 2026.", full, or this person's one sent — with the page's own words,
+under its title and in place of its questions: nothing is typed in a form that
+would refuse it, and while its counts are asked of the data source its
+questions wait. A form left open as it opens or closes says so then; answers
+typed when it closed stay, a banner over them saying they can no longer be
+sent. A page of one response from each person offers no Submit another. A
+choice's options with `seats` show their places left beside their words ("3
+left", "Full") in radios, checkboxes, the browser's list and picture cards; a
+full one is never hidden, and refused when picked.
+
+A page with `continueLater`, whose source has `saveDraft` and `loadDraft`, has
+**Continue later** beside Submit (and a wizard's Next): the answers read and
+kept, then "Your answers are saved", the link the app made with Copy, the app's
+own words and Keep going. `resume` (the key in that link) opens the draft at its
+step; a key that names none says so, and the form starts empty. The screen,
+the banner and Continue later come in a part of their own (`limitsPart`,
+`fieldia.limits.js`), loaded with the page's parts where it has `limits` or
+`continueLater`. Their words are the viewer's labels (`closedTyped`,
+`laterButton`, `laterSaved`, …); why a form takes no answers is the form's
+messages (`formOpens`, `formClosed`, …). See
+[opening, closing and limiting a form](https://fieldia.dev/data/#limits) and
+[save and resume](https://fieldia.dev/data/#drafts).
+
 ## Lists
 
 A page whose layout is a `list` shows its records as a table: pages, sorting,
@@ -715,10 +742,10 @@ Firefox), else once after the rows. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 164 KB gzipped). What a page uses beyond
+(core, widgets and viewer; about 173 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a link to
 another record, a phone, a theme, possible duplicates, a page on paper, the
-answers said in a page's words… — comes in 22 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
+answers said in a page's words, a form's limits… — comes in 24 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
 `fieldia.relations.js`, `fieldia.print.js`, …), each loaded from the same
 folder the first time a page uses it:
 
