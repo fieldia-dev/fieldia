@@ -49,6 +49,27 @@ export function functionNameProblem(name: string): string | undefined {
   return undefined;
 }
 
+/** A function no table names, read where any may be called: it gives nothing. */
+const UNKNOWN: ExpressionFunction = { takes: [0, Infinity], call: () => null };
+
+/**
+ * A table reading a call of any function: for what reads a page's conditions apart from its form — the fields an
+ * amount's look reads, a designer's outline — where the app's functions are not at hand. A call of one gives
+ * nothing there; the page's checks, given the app's functions, say which are not.
+ */
+export const ANY_FUNCTION: FunctionTable = {
+  get: (name: string) => (FUNCTIONS.has(name) ? undefined : UNKNOWN),
+  has: (name: string) => !FUNCTIONS.has(name),
+  get size() {
+    return 0;
+  },
+  keys: () => [][Symbol.iterator](),
+  values: () => [][Symbol.iterator](),
+  entries: () => [][Symbol.iterator](),
+  forEach: () => undefined,
+  [Symbol.iterator]: () => [][Symbol.iterator](),
+} as unknown as FunctionTable;
+
 const isThenable = (value: unknown): value is PromiseLike<unknown> => value !== null && (typeof value === 'object' || typeof value === 'function') && typeof (value as { then?: unknown }).then === 'function';
 
 const tables = new WeakMap<object, FunctionTable>();

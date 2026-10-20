@@ -79,5 +79,6 @@ export const de: Messages = {
   stillWorkedOut: '{label} wird noch berechnet',
   notWorkedOut: '{label} konnte nicht berechnet werden: {problem}',
   notOfferedNow: '{name} steht nicht mehr zur Wahl und wurde entfernt',
+  notOfferedNowMany: '{name} stehen nicht mehr zur Wahl und wurden entfernt',
   locale: 'de',
 };

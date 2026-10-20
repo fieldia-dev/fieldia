@@ -1,5 +1,6 @@
 import type { ActionStep } from '../format/actions';
-import type { DefinitionsFrom, Field, Fields, LineField, Option, OptionsFrom, PropertyDefinition } from '../format/field';
+import type { DefinitionsFrom, Field, Fields, LineField, Option, PropertyDefinition, SelectionOption } from '../format/field';
+import { optionsField, optionsList } from '../format/choice-options';
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { JsonValue } from '../format/json';
@@ -132,6 +133,12 @@ export interface FormState {
    * why it did not come (`failed`), which a save asks again and, failing, is stopped by under its field.
    */
   readonly asked: Readonly<Record<string, AskedFor>>;
+  /**
+   * Words said under a choice whose chosen options a change of other answers no longer offers — hidden by their
+   * condition, or no longer picked where they are carried from — by field: they were taken out of its answer. Until
+   * the field is written again, or another record is shown.
+   */
+  readonly takenOut: Readonly<Record<string, string>>;
 }
 
 /** How a search for a link's records is asked (`form.search`, `form.searchLine`). */
@@ -487,6 +494,14 @@ export interface Form {
    * when a field they change with changes; the latest answer wins.
    */
   loadChoices(field: string): void;
+  /**
+   * The options a choice offers now: its own — or those its list gave (`optionsFrom.list`), or those picked in the
+   * question they are carried from (`optionsFrom.field`), its own after them — less those whose condition hides them
+   * (`options[].invisible`). Null for a field that is no choice.
+   */
+  offered(field: string): readonly Option[] | null;
+  /** Whether a choice's options change with the record's answers: a condition on one, or carried from another question. */
+  offersChange(field: string): boolean;
   /**
    * Load, or load again, the definitions of a properties field whose
    * definitions come from a linked record (`definitionsFrom`). Once loaded,
@@ -1025,6 +1040,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     leaving: false,
     unread: {},
     asked: Object.fromEntries(askedNow),
+    takenOut: {},
   };
   started = true;
   /**
@@ -1227,7 +1243,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     for (const listener of [...listeners]) listener(state);
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
-      for (const name in state.choices) if (fromList(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadChoices(name);
+      for (const name in state.choices) if (fromList(name)?.dependsOn?.some((other) => was[other] !== state.values[other])) loadChoices(name);
       for (const name in state.definitions) if (fromRecord(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadDefinitions(name);
     }
     if (showing && state.step !== told) tellStep(entering);
@@ -1372,10 +1388,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     }
   }
 
-  const fromList = (name: string) => (page.fields[name] as Extract<Field, { type: 'selection' }>).optionsFrom as OptionsFrom;
+  /** The app's list a choice's options come from; none for one whose options are its own or carried. */
+  const fromList = (name: string) => optionsList((page.fields[name] as Extract<Field, { type: 'selection' }> | undefined)?.optionsFrom);
 
   function loadChoices(name: string) {
-    const { list } = fromList(name);
+    const from = fromList(name);
+    if (!from) throw new Error(`"${name}" takes no choices from the app's lists`);
+    const { list } = from;
     const load = (choiceLoads[name] = (choiceLoads[name] ?? 0) + 1);
     const put = (choices: Choices) => load === choiceLoads[name] && set({ choices: { ...state.choices, [name]: choices } });
     // What was shown stays while the next ones load, so the list does not flash empty.
@@ -1425,7 +1444,83 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const definitions = state.definitions[name]?.definitions;
       return definitions ? { ...def, definitions } : def;
     }
-    return def.type === 'selection' && def.optionsFrom && loaded ? { ...def, options: loaded, optionsFrom: undefined } : def;
+    // Carried from an earlier question: any of its options, and its own after them, is one of this one's.
+    if (def.type === 'selection' && optionsField(def.optionsFrom)) return { ...def, options: everyOption(name), optionsFrom: undefined };
+    return def.type === 'selection' && optionsList(def.optionsFrom) && loaded ? { ...def, options: loaded, optionsFrom: undefined } : def;
+  }
+
+  /** Every option a choice may hold, whatever its conditions: its own, its list's once loaded, or those of the question it carries them from and its own. */
+  function everyOption(name: string, seen: readonly string[] = []): Option[] {
+    const def = page.fields[name];
+    if (def?.type !== 'selection') return [];
+    const carried = optionsField(def.optionsFrom);
+    if (carried && !seen.includes(carried.field)) return [...everyOption(carried.field, [...seen, name]).filter((o) => !o.exclusive), ...def.options];
+    return [...((fromList(name) && state.choices[name]?.options) || def.options)];
+  }
+
+  /** Each choice's options that show or hide by a condition, read once: by the field, by each option's value. */
+  const optionRules = new Map<string, Map<Option['value'], CompiledModifier>>();
+  for (const [name, def] of Object.entries(page.fields)) {
+    if (def.type !== 'selection') continue;
+    const rules = new Map<Option['value'], CompiledModifier>();
+    for (const option of def.options as SelectionOption[]) if (option.invisible !== undefined && option.invisible !== false) rules.set(option.value, compileModifier(option.invisible, table));
+    if (rules.size) optionRules.set(name, rules);
+  }
+  /** The choices whose options change with the record's answers. */
+  const changing = Object.keys(page.fields).filter((name) => optionRules.has(name) || (page.fields[name].type === 'selection' && !!optionsField((page.fields[name] as Extract<Field, { type: 'selection' }>).optionsFrom)));
+
+  /** A choice's options as they are offered for these values, read with `read`: see `Form.offered`. */
+  function offeredIn(name: string, values: Readonly<Values>, read: { context: Record<string, unknown>; env: ExpressionEnv }, seen: readonly string[] = []): Option[] {
+    const def = page.fields[name] as Extract<Field, { type: 'selection' }>;
+    const carried = optionsField(def.optionsFrom);
+    let options: readonly Option[];
+    if (carried && page.fields[carried.field]?.type === 'selection' && !seen.includes(carried.field)) {
+      const picked = new Set([values[carried.field]].flat().filter((value) => value !== null && value !== undefined));
+      // A "None of these" goes alone: it is no choice to carry.
+      const from = offeredIn(carried.field, values, read, [...seen, name]).filter((o) => !o.exclusive && picked.has(o.value) === (carried.picked !== false));
+      options = [...from.map(({ invisible: _, ...option }: SelectionOption) => option), ...def.options];
+    } else options = (fromList(name) && state.choices[name]?.options) || def.options;
+    const rules = optionRules.get(name);
+    return rules ? options.filter((o) => !rules.get(o.value)?.evaluate(read.context, read.env)) : [...options];
+  }
+
+  /** Options in words, as a sentence joins them: "Garden and Pool". */
+  function listedLabels(labels: string[]): string {
+    try {
+      return new Intl.ListFormat(messages.locale, { type: 'conjunction' }).format(labels);
+    } catch {
+      return labels.join(', ');
+    }
+  }
+
+  /**
+   * The chosen options a write no longer offers — hidden by their condition, or no longer picked where they are
+   * carried from — taken out of their answers, with what is said: those offered before it and not after, so a record
+   * opened holding one keeps it, and says so. Again while one taken out takes another's away. Null when none goes.
+   */
+  function takeOut(before: Readonly<Values>, after: Values): { values: Values; said: Record<string, string> } | null {
+    if (!changing.length) return null;
+    const was = before === state.values ? reading() : { context: recordContext(before as Values, page.fields, about()), env: expressionEnv(before as Values, page.fields, today, app) };
+    const said: Record<string, string> = {};
+    let values = after;
+    for (let round = 0; round < 4; round++) {
+      const now = { context: recordContext(values, page.fields, about()), env: expressionEnv(values, page.fields, today, app) };
+      let next = values;
+      for (const name of changing) {
+        const chosen: unknown[] = [values[name]].flat().filter((value) => value !== null && value !== undefined);
+        if (!chosen.length) continue;
+        const offeredBefore = new Map(offeredIn(name, before, was).map((o) => [o.value, o.label]));
+        const offeredNow = new Set(offeredIn(name, values, now).map((o) => o.value));
+        const gone = chosen.filter((value) => offeredBefore.has(value as Option['value']) && !offeredNow.has(value as Option['value']));
+        if (!gone.length) continue;
+        const held = values[name];
+        next = { ...next, [name]: Array.isArray(held) ? ((held as unknown[]).filter((value) => !gone.includes(value)) as Value) : null };
+        said[name] = fillMessage(messages, gone.length > 1 ? messages.notOfferedNowMany : messages.notOfferedNow, { name: listedLabels(gone.map((value) => offeredBefore.get(value as Option['value']) ?? String(value))) });
+      }
+      if (next === values) break;
+      values = settle(next);
+    }
+    return Object.keys(said).length ? { values, said } : null;
   }
 
   /** A properties field's problems, each at its property's path (`field.property`), as its row shows them. */
@@ -1778,7 +1873,16 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /** Write values someone or something changed. `fresh` values are a starting point instead (a restored draft). */
   function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false) {
-    const values = syncParts(fresh ? startFrom(written) : settle(written), fresh ? 'fresh' : 'edit');
+    let settled = fresh ? startFrom(written) : settle(written);
+    // A choice written again says no more what was taken out of it; options a change no longer offers are taken out now.
+    let takenOut = fresh ? {} : Object.fromEntries(Object.entries(state.takenOut).filter(([name]) => written[name] === state.values[name]));
+    const out = fresh ? null : takeOut(state.values, settled);
+    if (out) {
+      settled = out.values;
+      takenOut = { ...takenOut, ...out.said };
+    }
+    if (Object.keys(takenOut).length || Object.keys(state.takenOut).length) extra = { takenOut, ...extra };
+    const values = syncParts(settled, fresh ? 'fresh' : 'edit');
     // Text left unread in a box goes once its field is written another way, and its words with it.
     const unread = unreadKept(values);
     const before = state;
@@ -2356,7 +2460,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (seq !== loads) return;
       // Lines load in their tables' orders; where a person moves them after, they stay.
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
-      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {} });
+      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {}, takenOut: {} });
       if (again) return;
       offerDraft();
       void track(opening());
@@ -2383,7 +2487,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     told = null;
     showing = false;
     clearFiles();
-    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {} };
+    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {} };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
       await load();
@@ -2796,6 +2900,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     loadDefinitions,
     addDefinition,
 
+    offered(name) {
+      return page.fields[name]?.type === 'selection' ? offeredIn(name, state.values, reading()) : null;
+    },
+    offersChange: (name) => changing.includes(name),
+
     waitsFor(name) {
       const found = state.asked[name];
       if (found) return { field: name, asking: true, ...(found.failed !== undefined ? { failed: found.failed } : {}) };
@@ -2945,7 +3054,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Started again: a new response, timed from now.
       bot = { ...bot, honeypot: false, since: clock() };
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {} });
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {} });
     },
 
     changes,
@@ -3374,7 +3483,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       filed.clear();
       baseline = startFrom({ ...initialValues(page.fields, today()), ...structuredCopy(values) });
       const start = syncParts(structuredCopy(baseline), 'start');
-      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null, unread: {} });
+      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null, unread: {}, takenOut: {} });
     },
     errorsNow: () => collectErrors(),
     typing: typingNow,

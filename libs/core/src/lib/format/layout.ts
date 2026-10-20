@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { FIELD_NAME, FilterItemSchema, LinkedFieldSchema, MoneyLookSchema, type FilterItem, type LinkedField, type MoneyLook } from './field';
+import { FIELD_NAME, FilterItemSchema, LinkedFieldSchema, ModifierSchema, MoneyLookSchema, type FilterItem, type LinkedField, type MoneyLook } from './field';
 import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
 import { HOTKEY } from './hotkeys';
@@ -1502,7 +1502,7 @@ export type RootLayout = SheetNode | SectionsNode | TabsNode | WizardNode | List
 // layout.types.ts proves these schemas and the interfaces above agree.
 // ---------------------------------------------------------------------------
 
-export const ModifierSchema = z.union([z.boolean(), z.string().min(1)]).meta({ id: 'Modifier' });
+export { ModifierSchema };
 
 const id = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
 const fieldName = z.string().regex(FIELD_NAME);

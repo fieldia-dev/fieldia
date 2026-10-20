@@ -943,7 +943,7 @@
             "options": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/Option"
+                "$ref": "#/$defs/SelectionOption"
               }
             },
             "multiple": {
@@ -1733,7 +1733,7 @@
         "UTC"
       ]
     },
-    "Option": {
+    "SelectionOption": {
       "type": "object",
       "properties": {
         "value": {
@@ -1760,6 +1760,9 @@
         },
         "fixed": {
           "type": "boolean"
+        },
+        "invisible": {
+          "$ref": "#/$defs/Modifier"
         }
       },
       "required": [
@@ -1768,7 +1771,28 @@
       ],
       "additionalProperties": false
     },
+    "Modifier": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
     "OptionsFrom": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OptionsFromList"
+        },
+        {
+          "$ref": "#/$defs/OptionsFromField"
+        }
+      ]
+    },
+    "OptionsFromList": {
       "type": "object",
       "properties": {
         "list": {
@@ -1786,6 +1810,22 @@
       },
       "required": [
         "list"
+      ],
+      "additionalProperties": false
+    },
+    "OptionsFromField": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "picked": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "field"
       ],
       "additionalProperties": false
     },
@@ -2507,6 +2547,41 @@
           "additionalProperties": false
         }
       ]
+    },
+    "Option": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string",
+          "minLength": 1
+        },
+        "score": {
+          "type": "number"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "exclusive": {
+          "type": "boolean"
+        },
+        "fixed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "label"
+      ],
+      "additionalProperties": false
     },
     "LineField": {
       "oneOf": [
@@ -6346,17 +6421,6 @@
         "text"
       ],
       "additionalProperties": false
-    },
-    "Modifier": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "type": "string",
-          "minLength": 1
-        }
-      ]
     },
     "LineOrder": {
       "type": "object",

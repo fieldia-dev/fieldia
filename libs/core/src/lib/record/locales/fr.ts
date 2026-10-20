@@ -77,5 +77,6 @@ export const fr: Messages = {
   stillWorkedOut: '{label} est encore en cours de calcul',
   notWorkedOut: '{label} n’a pas pu être calculé : {problem}',
   notOfferedNow: '{name} n’est plus proposé, il a donc été retiré',
+  notOfferedNowMany: '{name} ne sont plus proposés, ils ont donc été retirés',
   locale: 'fr',
 };

@@ -77,5 +77,6 @@ export const ar: Messages = {
   stillWorkedOut: 'ما زال {label} قيد الحساب',
   notWorkedOut: 'تعذّر حساب {label}: {problem}',
   notOfferedNow: '{name} لم يعد متاحًا، فأُزيل',
+  notOfferedNowMany: '{name} لم تعد متاحة، فأُزيلت',
   locale: 'ar',
 };

@@ -134,8 +134,9 @@ export interface Messages {
   /** A value worked out from an app's function that asks its server: still asked, and its answer not come (`{problem}`, the app's words). */
   stillWorkedOut: string;
   notWorkedOut: string;
-  /** A choice taken out of an answer because a change of other answers no longer offers it: `{name}`, its label. */
+  /** A choice taken out of an answer because a change of other answers no longer offers it: `{name}`, its label; several (`notOfferedNowMany`), their labels joined. */
   notOfferedNow: string;
+  notOfferedNowMany: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -235,6 +236,7 @@ const en: Messages = {
   stillWorkedOut: '{label} is still being worked out',
   notWorkedOut: '{label} could not be worked out: {problem}',
   notOfferedNow: '{name} is no longer offered, so it was taken out',
+  notOfferedNowMany: '{name} are no longer offered, so they were taken out',
   locale: 'en',
 };
 
