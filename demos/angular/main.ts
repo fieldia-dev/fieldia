@@ -156,6 +156,7 @@ class NoteComponent implements OnInit {
     [user]="options.user"
     [records]="options.records"
     [context]="options.context"
+    [functions]="options.functions"
     [breadcrumbs]="options.breadcrumbs"
     [user]="options.user"
     (ready)="ready($event)"

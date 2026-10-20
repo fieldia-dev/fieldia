@@ -1,0 +1,103 @@
+{
+  "fieldia": "0.5",
+  "id": "listing",
+  "title": "A listing by its type",
+  "description": "A home put up for sale: its features follow its type, its price per square metre and its handover work themselves out, and the district's average comes from the app's server.",
+  "data": { "kind": "record", "model": "listing" },
+  "records": { "one": "listing", "other": "listings", "a": "a listing" },
+  "fields": {
+    "name": { "type": "char", "label": "Listing", "required": true },
+    "unit_type": {
+      "type": "selection",
+      "label": "Unit type",
+      "required": true,
+      "options": [
+        { "value": "villa", "label": "Villa" },
+        { "value": "apartment", "label": "Apartment" },
+        { "value": "studio", "label": "Studio" }
+      ]
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        { "value": "new_cairo", "label": "New Cairo" },
+        { "value": "sheikh_zayed", "label": "Sheikh Zayed" },
+        { "value": "maadi", "label": "Maadi" },
+        { "value": "zamalek", "label": "Zamalek" }
+      ]
+    },
+    "features": {
+      "type": "selection",
+      "label": "Features",
+      "multiple": true,
+      "options": [
+        { "value": "garden", "label": "Garden", "invisible": "unit_type != 'villa'" },
+        { "value": "pool", "label": "Private pool", "invisible": "unit_type != 'villa'" },
+        { "value": "garage", "label": "Garage", "invisible": "unit_type != 'villa'" },
+        { "value": "balcony", "label": "Balcony", "invisible": "unit_type == 'villa'" },
+        { "value": "roof", "label": "Roof terrace", "invisible": "unit_type != 'apartment'" },
+        { "value": "lift", "label": "Lift", "invisible": "unit_type == 'villa'" },
+        { "value": "security", "label": "24-hour security" }
+      ]
+    },
+    "bedrooms": { "type": "integer", "label": "Bedrooms", "min": 0 },
+    "area": { "type": "float", "label": "Area (m²)", "min": 0, "digits": [8, 1] },
+    "price": { "type": "monetary", "label": "Price", "currency": "EGP", "min": 0, "digits": [14, 0] },
+    "price_per_meter": { "type": "monetary", "label": "Price per m²", "currency": "EGP", "compute": "roundMoney(price / area, 'EGP')" },
+    "district_price": { "type": "monetary", "label": "The district’s average per m²", "currency": "EGP", "compute": "districtPrice(district)", "help": "Asked of the app’s server as the district is picked: it waits for the answer." },
+    "against_district": { "type": "integer", "label": "Against the district (%)", "compute": "if(price_per_meter and district_price, round((price_per_meter - district_price) / district_price * 100), None)" },
+    "listed_on": { "type": "date", "label": "Listed on", "default": "today" },
+    "handover_months": { "type": "integer", "label": "Handover in (months)", "min": 0 },
+    "handover": { "type": "date", "label": "Handed over by", "compute": "if(handover_months, addMonths(listed_on, handover_months), None)" },
+    "built_on": { "type": "date", "label": "Built on", "max": "today" },
+    "building_age": { "type": "integer", "label": "The building’s age (years)", "compute": "years(built_on, today())" },
+    "reference": { "type": "char", "label": "Reference", "compute": "upper(join('-', unit_type, bedrooms))" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "placeholder": "The home, in a few words" },
+    "children": [
+      {
+        "type": "section",
+        "id": "home",
+        "title": "The home",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-unit-type", "field": "unit_type", "widget": "radio", "options": { "columns": "row" } },
+          { "type": "field", "id": "f-district", "field": "district" },
+          { "type": "field", "id": "f-features", "field": "features", "widget": "checkboxes", "colspan": 2, "options": { "columns": 3 } },
+          { "type": "field", "id": "f-bedrooms", "field": "bedrooms" },
+          { "type": "field", "id": "f-area", "field": "area" },
+          { "type": "field", "id": "f-reference", "field": "reference" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "price",
+        "title": "Price",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-price", "field": "price" },
+          { "type": "field", "id": "f-price-per-meter", "field": "price_per_meter" },
+          { "type": "field", "id": "f-district-price", "field": "district_price" },
+          { "type": "field", "id": "f-against-district", "field": "against_district" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "dates",
+        "title": "Dates",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-listed-on", "field": "listed_on" },
+          { "type": "field", "id": "f-handover-months", "field": "handover_months" },
+          { "type": "field", "id": "f-handover", "field": "handover" },
+          { "type": "field", "id": "f-built-on", "field": "built_on" },
+          { "type": "field", "id": "f-building-age", "field": "building_age" }
+        ]
+      }
+    ]
+  }
+}

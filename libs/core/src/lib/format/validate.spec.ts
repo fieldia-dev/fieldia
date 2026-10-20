@@ -8,9 +8,12 @@ function example(name: string): Record<string, any> {
   return JSON.parse(readFileSync(join(EXAMPLES, `${name}.page.json`), 'utf8'));
 }
 
+/** The demos' own function its pages call, as the demos give it (demos/shared/functions.ts): a district's average price. */
+const DEMO_FUNCTIONS = { districtPrice: { takes: [1, 1] as const, values: ['text'] as const, gives: 'number' as const } };
+
 /** Messages for every issue, so a failing assertion shows what the validator said. */
 function messages(input: unknown): string[] {
-  const result = validatePage(input);
+  const result = validatePage(input, { functions: DEMO_FUNCTIONS });
   return result.ok ? [] : result.issues.map((i) => `${i.path}: ${i.message}`);
 }
 

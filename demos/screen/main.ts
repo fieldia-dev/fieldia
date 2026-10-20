@@ -1,5 +1,6 @@
 import { localizePage, type Field, type Locale, type Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
+import { demoFunctions } from '../shared/functions';
 import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
 import { codeWidgets } from '@fieldia/code';
@@ -156,7 +157,8 @@ const opened = timeFirstPaint('screen');
 const lists = arabic ? APP_LISTS_AR : APP_LISTS;
 /** “Open it” on a saved form: the editor closes, and opens that form from the store. */
 const openForm = (id: string) => void reopen(id);
-const designer = createDesigner({ page: first, store, model, lists, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
+// The app's own functions, offered in a formula's list after Fieldia's: a district's average price (shared/functions.ts).
+const designer = createDesigner({ page: first, store, model, lists, functions: demoFunctions, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
 // The app's lists' choices, for Try it.
 const dataSource = sampleDataSource();
 const skin = (params.get('skin') as Skin) ?? 'outlined';
@@ -176,7 +178,7 @@ designer.subscribe(named);
 /** Close the editor and open the page again from the store, as an app does the next day — or another page, a saved form opened. */
 async function reopen(id = demo.designer.getPage().id) {
   demo.handle.destroy();
-  demo.designer = await createDesigner.open(id, store, { model, lists, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
+  demo.designer = await createDesigner.open(id, store, { model, lists, functions: demoFunctions, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
   demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets, assistant, ...onMaps });
   named();
   demo.designer.subscribe(named);
