@@ -14,13 +14,13 @@ import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
 import { checkButtonParts, checkHead } from './head-checks';
 import { checkSectionTracks } from './section-checks';
 import { fieldPattern } from './pattern';
-import { BULK_KINDS, bulkSettable } from './bulk-edit';
 import { DUPLICATE_KINDS } from './duplicate-kinds';
-import { IMPORT_KINDS, importable } from './import-fields';
 import { isTimeZone } from '../record/zones';
 import { fill, MESSAGES } from '../record/messages';
 import { autofillGroupProblem } from './autofill-group';
-import { checkLimits, checkSeats } from './limits-checks';
+import { checkLimits } from './limits-checks';
+import { checkSeats } from './seats-checks';
+import { checkList, type ListTools } from './list-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -30,34 +30,21 @@ export interface PageIssue {
 
 /**
  * What a check found. `warnings`, where pages are made (`validatePage`): what does not stop a page — a value of a kind
- * a function does not take, which gives nothing there — said beside it; left out when there are none.
+ * a function does not take, which gives nothing there — said beside it; left out when there are none. `later`, in the
+ * one-tag script alone: the parts whose checks of what they draw (a list page's settings) were not run, not come yet —
+ * the viewer runs the check again once they have; the packages' checks run them all at once.
  */
-export type PageValidation = { ok: true; page: Page; warnings?: PageIssue[] } | { ok: false; issues: PageIssue[]; warnings?: PageIssue[] };
+export type PageValidation = { ok: true; page: Page; warnings?: PageIssue[]; later?: string[] } | { ok: false; issues: PageIssue[]; warnings?: PageIssue[]; later?: string[] };
 
 const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
 
 /** The kinds of field an expression can give a value to: the rest hold records, lines or files. */
 const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'json']);
 const EXPRESSIBLE_WORDS = 'text, numbers, yes or no, dates, choices and json can';
-/** The kinds of field a list's filter bar can list the values of. */
-const LISTS_ITS_VALUES = new Set(['selection', 'many2one', 'many2many', 'boolean', 'char', 'integer']);
-/** The kinds of field a list's filter bar filters by their range, From and To: a whole number where the page says so. */
-const HAS_A_RANGE: ReadonlySet<string> = new Set(['integer', 'float', 'monetary', 'date', 'datetime']);
-/** The kinds whose range is all a filter can take of them: no list of their values. */
-const RANGE_ONLY: ReadonlySet<string> = new Set(['float', 'monetary', 'date', 'datetime']);
 /** Kinds of field a list's card shows as its picture: a picture held, or text holding a picture's address. */
 const PICTURES: ReadonlySet<string> = new Set(['image', 'binary', 'char']);
-/** What a calendar's start and end can be: a day, or a day and a time. */
-const CALENDAR_TIMES: ReadonlySet<string> = new Set(['date', 'datetime']);
-/** What a record's words on a calendar can be. */
-const CALENDAR_WORDS: ReadonlySet<string> = new Set(['char', 'text', 'selection', 'many2one', 'integer', 'float', 'monetary', 'date', 'datetime']);
-/** What a calendar's columns come from: a value that repeats. */
-const CALENDAR_COLUMNS: ReadonlySet<string> = new Set(['many2one', 'selection', 'char', 'integer']);
-/** What a record's colour comes from. */
-const CALENDAR_COLOURS: ReadonlySet<string> = new Set(['many2one', 'selection', 'char', 'integer', 'boolean']);
-
 /** Where an expression's names are looked up: the page's fields, or the fields of one one2many's lines. */
-interface Scope {
+export interface Scope {
   fields: Record<string, Field | LineField>;
   /** The one2many whose lines these are; none for the page's own fields. */
   lines?: string;
@@ -100,6 +87,8 @@ export class ReferenceCheck {
   private readonly issues: PageIssue[] = [];
   /** What does not stop the page, said beside it: the kinds an expression hands its functions (`CheckOptions.kinds`). */
   readonly warnings: PageIssue[] = [];
+  /** The parts whose checks are owed, not come yet (the one-tag script's: later-checks.ts): run once they have. */
+  readonly later = new Set<string>();
   private readonly ids = new Map<string, string>();
   /** Where the answers of each saved form placed here go, by name: the path of the part that took it first. */
   private readonly formNames = new Map<string, string>();
@@ -140,13 +129,15 @@ export class ReferenceCheck {
       checkPress: (button, path) => this.checkPress(button, path, true),
       isPart: (id) => this.ids.has(id),
       isPlace: (id) => this.places.has(id),
+      owe: (part) => this.later.add(part),
     });
     if (this.page.on) this.checkEvents(this.page.on, 'on');
     if (this.page.botCheck !== undefined && !this.line) this.checkBotCheck(this.page);
     if (this.page.duplicates !== undefined && !this.line) this.checkDuplicates(this.page);
     if (this.page.records !== undefined && !this.line) this.checkRecords(this.page.records);
     if (this.page.endings !== undefined && !this.line) this.checkEndings(this.page);
-    if (!this.line) checkLimits(this.page, (path, message) => this.report(path, message));
+    // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
+    if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
     this.checkGoingTo();
     return this.issues;
   }
@@ -630,6 +621,23 @@ export class ReferenceCheck {
   }
 
   /** A page's own buttons at its foot: buttons as any. */
+  /** The tools a list page's own checks are handed (list-checks.ts). */
+  private listTools(): ListTools {
+    return {
+      page: this.page,
+      need: (name, path, scope) => this.need(name, path, scope),
+      report: (path, message) => this.report(path, message),
+      claim: (id, path) => this.claim(id, path),
+      checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
+      checkPress: (button, path) => this.checkPress(button, path),
+      checkListed: (list, fields, path) => this.checkListed(list, fields, path),
+      checkListCard: (card, at, fields) => this.checkListCard(card, at, fields),
+      checkPlace: (at, path, scope, pin, card) => this.checkPlace(at, path, scope, pin, card),
+      here: () => this.here(),
+      owe: (part) => this.later.add(part),
+    };
+  }
+
   private walkFooter(footer: ButtonNode[] | undefined, path: string) {
     footer?.forEach((button, i) => {
       this.claim(button.id, `${path}.footer[${i}]`);
@@ -644,7 +652,7 @@ export class ReferenceCheck {
     if (root.type === 'sheet' || root.type === 'sections') this.walkFooter(root.footer, path);
     if (root.type === 'sheet') return this.walkSheet(root, path);
     if (root.type === 'sections') return this.walkChildren(root.children, path);
-    if (root.type === 'list') return this.walkList(root, path);
+    if (root.type === 'list') return checkList(root, path, this.listTools());
     // A wizard's own buttons' words, and each step's title and words, may show the answers given: "Your visit to {branch}".
     this.checkWords(root, path, ['nextLabel', 'backLabel', 'finishLabel']);
     root.children.forEach((step, i) => {
@@ -654,67 +662,6 @@ export class ReferenceCheck {
       this.checkModifiers(step, stepPath);
       this.checkWords(step, stepPath, ['label', 'description']);
       this.walkChildren(step.children, stepPath);
-    });
-  }
-
-  private walkList(list: ListNode, path: string) {
-    if (this.page.data.kind !== 'record') this.report('data', 'a list shows records: its data needs kind "record" and a model');
-    this.checkListed(list, this.page.fields, path);
-    list.groupBy?.forEach((name, i) => this.need(name, `${path}.groupBy[${i}]`));
-    // A list's filters are about its own records: their fields are the page's, and there is no record to take a value from.
-    const walk = (item: FilterItem, at: string): void => {
-      if ('any' in item) return item.any.forEach((inner, i) => walk(inner, `${at}.any[${i}]`));
-      if ('all' in item) return item.all.forEach((inner, i) => walk(inner, `${at}.all[${i}]`));
-      this.need(item.field, `${at}.field`);
-      if (item.valueFrom !== undefined) this.report(`${at}.valueFrom`, "a list's filter compares with values, not with another field");
-    };
-    const named = new Set<string>();
-    list.filters?.forEach((filter, i) => {
-      this.claim(filter.id, `${path}.filters[${i}]`);
-      named.add(filter.id);
-      filter.filter?.forEach((item, j) => walk(item, `${path}.filters[${i}].filter[${j}]`));
-      // A period is of a date, or a date and time.
-      const dated = filter.period ? this.need(filter.period.field, `${path}.filters[${i}].period.field`) : undefined;
-      if (dated && dated.type !== 'date' && dated.type !== 'datetime') this.report(`${path}.filters[${i}].period.field`, `"${filter.period?.field}" is a ${dated.type}; a period is of a date, or a date and time`);
-    });
-    list.defaultFilters?.forEach((id, i) => {
-      if (!named.has(id)) this.report(`${path}.defaultFilters[${i}]`, `no filter "${id}" in this list`);
-    });
-    list.actions?.forEach((button, i) => {
-      this.claim(button.id, `${path}.actions[${i}]`);
-      this.checkPress(button, `${path}.actions[${i}]`);
-    });
-    if (list.map) this.walkListMap(list.map, `${path}.map`);
-    if (list.calendar) this.walkListCalendar(list, `${path}.calendar`);
-    this.checkListCells(list, path);
-    this.checkListRows(list, path);
-  }
-
-  /**
-   * A list's cards, gallery, columns people choose and rows' own rules: a
-   * card's fields the page's, its picture one that can hold a picture; the
-   * optional columns among the columns; a row's tones, bold and buttons
-   * reading the list's record (its fields, `id`, `user`); and the list
-   * opening on one thing.
-   */
-  private checkListRows(list: ListNode, path: string) {
-    if (list.card) this.checkListCard(list.card, `${path}.card`, this.page.fields);
-    for (const column of Object.keys(list.optionalColumns ?? {})) {
-      if (!list.columns.includes(column)) this.report(`${path}.optionalColumns.${column}`, `"${column}" is no column of this list: a person shows or hides its columns`);
-    }
-    // A column a person may hide, every one hidden at first: the list would open with no column but its own.
-    if (list.optionalColumns && list.columns.every((column) => list.optionalColumns?.[column] === 'hide')) this.report(`${path}.optionalColumns`, 'every column starts hidden: show one at least, as the list opens');
-    if (list.gallery?.opens === 'gallery') {
-      if (list.map?.view && list.map.view !== 'list') this.report(`${path}.gallery.opens`, 'the list opens on its map (map.view) and on its gallery: say one');
-      if (list.calendar?.opens === 'calendar') this.report(`${path}.gallery.opens`, 'the list opens on its calendar and on its gallery: say one');
-    }
-    list.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when']));
-    this.checkModifiers(list, path, ['rowBold']);
-    list.rowButtons?.forEach((button, i) => {
-      this.claim(button.id, `${path}.rowButtons[${i}]`);
-      this.checkPress(button, `${path}.rowButtons[${i}]`);
-      // Shown by a condition on each row's record.
-      this.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible']);
     });
   }
 
@@ -731,86 +678,6 @@ export class ReferenceCheck {
     card.fields?.forEach((line, i) =>
       (Array.isArray(line) ? line : [line]).forEach((part, j) => this.need(typeof part === 'string' ? part : part.field, `${at}.fields[${i}]${Array.isArray(line) ? `[${j}]` : ''}${typeof part === 'string' ? '' : '.field'}`, fields))
     );
-  }
-
-  /**
-   * A list's calendar: when each record starts (a date, or a date and time)
-   * and ends (the same kind), its words, its colour and its columns, each
-   * from a field that can; the view it opens on is one it offers, its hours
-   * run forward, and the list opens on one thing.
-   */
-  private walkListCalendar(list: ListNode, path: string) {
-    const calendar = list.calendar as NonNullable<ListNode['calendar']>;
-    const typed = (name: string | undefined, key: string, ok: ReadonlySet<string>, says: string) => {
-      if (name === undefined) return undefined;
-      const def = this.need(name, `${path}.${key}`);
-      if (def && !ok.has(def.type)) this.report(`${path}.${key}`, `"${name}" is a ${def.type}; ${says}`);
-      return def;
-    };
-    const start = typed(calendar.start, 'start', CALENDAR_TIMES, "a calendar's start is a date, or a date and time");
-    const end = typed(calendar.end, 'end', CALENDAR_TIMES, "a calendar's end is a date, or a date and time");
-    if (start && end && CALENDAR_TIMES.has(start.type) && CALENDAR_TIMES.has(end.type) && start.type !== end.type) {
-      this.report(`${path}.end`, `"${calendar.end}" is a ${end.type}; an end is the same kind of field as its start, a ${start.type}`);
-    }
-    typed(calendar.title, 'title', CALENDAR_WORDS, "a record's words on a calendar are a field that can be said");
-    typed(calendar.colour, 'colour', CALENDAR_COLOURS, 'a colour comes from a link, a choice, text, a whole number or a yes or no');
-    typed(calendar.resource, 'resource', CALENDAR_COLUMNS, 'a column for each comes from a link, a choice, text or a whole number');
-    const views = calendar.views ?? ['day', 'week', 'month', 'agenda'];
-    views.forEach((view, i) => {
-      if (views.indexOf(view) !== i) this.report(`${path}.views[${i}]`, `"${view}" is offered twice`);
-    });
-    if (calendar.view && !views.includes(calendar.view)) this.report(`${path}.view`, `"${calendar.view}" is not one of its views (${views.join(', ')})`);
-    if (calendar.hours && calendar.hours.end <= calendar.hours.start) this.report(`${path}.hours`, `the hours end at ${calendar.hours.end}, before they start at ${calendar.hours.start}`);
-    if (calendar.opens === 'calendar' && list.map?.view && list.map.view !== 'list') this.report(`${path}.opens`, 'the list opens on its map (map.view) and on its calendar: say one');
-  }
-
-  /**
-   * A list drawn as a backlog: each column's cells are a column's, a lead's
-   * icon is by a field's values; the filter bar's fields can list their
-   * values; rows nest under a link to the list's own records; and buttons for
-   * the rows chosen need a box to choose one.
-   */
-  private checkListCells(list: ListNode, path: string) {
-    if (list.filterFields && list.search !== 'fields') this.report(`${path}.filterFields`, 'the filter fields are for the "fields" search: add "search": "fields"');
-    list.filterFields?.forEach((name, i) => {
-      const def = this.need(name, `${path}.filterFields[${i}]`);
-      if (def && !LISTS_ITS_VALUES.has(def.type) && !RANGE_ONLY.has(def.type)) {
-        this.report(`${path}.filterFields[${i}]`, `"${name}" is a ${def.type}; a filter lists the values of a choice, a link, links, a yes or no, text or a whole number, or takes the range of a number or a date`);
-      }
-    });
-    // A filter's own name is for a filter the bar offers.
-    for (const name of Object.keys(list.filterLabels ?? {})) {
-      if (!list.filterFields?.includes(name)) this.report(`${path}.filterLabels.${name}`, `"${name}" is no field of filterFields: its name is for a filter the bar offers`);
-    }
-    // A range is a number's or a date's the bar offers; the presses for its least values are a number's, in order.
-    for (const [name, range] of Object.entries(list.filterRanges ?? {})) {
-      const at = `${path}.filterRanges.${name}`;
-      if (!list.filterFields?.includes(name)) {
-        this.report(at, `"${name}" is no field of filterFields: a range is for a filter the bar offers`);
-        continue;
-      }
-      const def = this.page.fields[name];
-      if (!def) continue;
-      if (!HAS_A_RANGE.has(def.type)) {
-        this.report(at, `"${name}" is a ${def.type}; a range is a number's or a date's`);
-        continue;
-      }
-      const least = range.atLeast ?? [];
-      if (least.length && (def.type === 'date' || def.type === 'datetime')) this.report(`${at}.atLeast`, `"${name}" is a ${def.type}; the presses for a least value are a number's`);
-      else if (def.type === 'integer' && least.some((n) => !Number.isInteger(n))) this.report(`${at}.atLeast`, `"${name}" holds whole numbers: each least value is one`);
-      else if (least.some((n, i) => i > 0 && n <= least[i - 1])) this.report(`${at}.atLeast`, 'the least values go from the smallest to the largest, each once');
-    }
-    if (list.filterSheet && list.search !== 'fields') this.report(`${path}.filterSheet`, 'the filter sheet is the filter bar\'s on a phone: add "search": "fields"');
-    if (list.parentField !== undefined) {
-      const def = this.need(list.parentField, `${path}.parentField`);
-      const model = this.page.data.kind === 'record' ? this.page.data.model : '';
-      if (def && (def.type !== 'many2one' || def.relation !== model)) {
-        this.report(`${path}.parentField`, `"${list.parentField}" ${def.type === 'many2one' ? `links to ${def.relation}` : `is a ${def.type}`}; a parent is a many2one to the list’s own model, ${model}`);
-      }
-    }
-    if (list.choose === false && list.actions?.length) this.report(`${path}.actions`, 'a list’s buttons act on the rows chosen: with "choose": false there is no way to choose one');
-    this.checkBulkEdit(list, path);
-    this.checkImport(list, path);
   }
 
   /**
@@ -837,56 +704,6 @@ export class ReferenceCheck {
       if (def?.type !== 'selection') continue;
       const values = new Set(def.options.map((option) => String(option.value)));
       for (const value of Object.keys(cell.lead.looks)) if (!values.has(value)) this.report(`${at}.lead.looks.${value}`, `"${value}" is no value of "${cell.lead.field}"`);
-    }
-  }
-
-  /** A list's Edit: each field it names one value can set in many records, and rows to choose to set it on. */
-  private checkBulkEdit(list: ListNode, path: string) {
-    if (!list.bulkEdit) return;
-    if (list.choose === false) this.report(`${path}.bulkEdit`, 'Edit changes the rows chosen: with "choose": false there is no way to choose one');
-    if (list.bulkEdit === true) {
-      if (!list.columns.some((name) => bulkSettable(this.page.fields[name]))) this.report(`${path}.bulkEdit`, 'Edit offers the columns one value can set, and none of these can: name the fields it offers');
-      return;
-    }
-    const named = list.bulkEdit;
-    named.forEach((name, i) => {
-      const at = `${path}.bulkEdit[${i}]`;
-      if (named.indexOf(name) !== i) this.report(at, `"${name}" is offered twice`);
-      const def = this.need(name, at);
-      if (!def) return;
-      if (!BULK_KINDS.has(def.type)) this.report(at, `"${name}" is a ${def.type}; one value set in many records is words, a number, money, a yes or no, a date, a choice or a link`);
-      else if (def.readonly === true || def.compute) this.report(at, `"${name}" is ${def.compute ? 'worked out from other fields' : 'read-only'}; Edit sets a field people can change`);
-    });
-  }
-
-  /** A list's Import: each field it names one a file's cell can fill, and at least one such field on the page. */
-  private checkImport(list: ListNode, path: string) {
-    if (!list.import) return;
-    if (list.import === true) {
-      if (!Object.values(this.page.fields).some((def) => importable(def))) this.report(`${path}.import`, 'Import fills the fields a file’s cell can, and this page has none: words, a number, money, yes or no, a date, a choice or a link people can change');
-      return;
-    }
-    const named = list.import;
-    named.forEach((name, i) => {
-      const at = `${path}.import[${i}]`;
-      if (named.indexOf(name) !== i) this.report(at, `"${name}" is offered twice`);
-      const def = this.need(name, at);
-      if (!def) return;
-      if (!IMPORT_KINDS.has(def.type)) this.report(at, `"${name}" is a ${def.type}; a file's cell fills words, a number, money, a yes or no, a date, a choice, or a link or links by name`);
-      else if (def.readonly === true || def.compute) this.report(at, `"${name}" is ${def.compute ? 'worked out from other fields' : 'read-only'}; Import fills a field people can change`);
-    });
-  }
-
-  /** A list's map: where each record is, and the fields its pin and its card show, each of a type that can. */
-  private walkListMap(map: NonNullable<ListNode['map']>, path: string) {
-    const pair = map.latitude !== undefined || map.longitude !== undefined;
-    if (map.point !== undefined && pair) this.report(path, 'a map takes point, or latitude and longitude, not both');
-    else if (map.point === undefined && (map.latitude === undefined || map.longitude === undefined)) this.report(path, 'a map needs where each record is: point, or latitude and longitude');
-    this.checkPlace(map, path, this.here(), map.pin, map.card);
-    if (map.regions) this.need(map.regions.field, `${path}.regions.field`);
-    if (typeof map.heat === 'object' && map.heat.weight !== undefined) {
-      const def = this.need(map.heat.weight, `${path}.heat.weight`);
-      if (def && def.type !== 'float' && def.type !== 'integer' && def.type !== 'monetary') this.report(`${path}.heat.weight`, `"${map.heat.weight}" is a ${def.type}; a weight is a number field`);
     }
   }
 

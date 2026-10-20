@@ -296,7 +296,8 @@ export interface ViewerHandle {
    * Settled once the page is drawn: at once, unless it draws from a part not loaded yet (a record's head, a filter bar, a
    * work item's text, a path picker, its own look's theme: parts.ts), which it waits for — its element empty and busy
    * meanwhile. A theme or the quiet skin given by the app is worn as its part comes, the page drawn at once: settled
-   * once that has come too.
+   * once that has come too. In the one-tag script, a list page's own settings are checked once its part has come: a
+   * mistake there rejects this with what the mount throws for the rest, and nothing is drawn.
    */
   readonly drawn: Promise<void>;
   destroy(): void;
@@ -370,10 +371,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const doc = host.ownerDocument;
   // The quick check of names and conditions: the full one, with its validation library, belongs where pages are made.
   // A line's own form reads the record the line is on as parent.
-  const checked = checkPage(options.page, { ...(options.parent ? { parent: options.parent.fields } : {}), ...(options.functions ? { functions: options.functions } : {}) });
-  if (!checked.ok) {
-    throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
-  }
+  const checks = { ...(options.parent ? { parent: options.parent.fields } : {}), ...(options.functions ? { functions: options.functions } : {}) };
+  const checked = checkPage(options.page, checks);
+  if (!checked.ok) throw unshown(checked);
   // The page's own words in its language first; the app's translator over what is left.
   const tag = options.locale ?? checked.page.language;
   const localized = tag ? localizePage(checked.page, tag) : checked.page;
@@ -2471,6 +2471,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     root.setAttribute('aria-busy', 'true');
     drawn = settleParts(awaited).then(() => {
       if (gone) return;
+      // The one-tag script's checks of what a part draws (a list page's settings) came with it: run now, before the page
+      // is drawn. Where they find a mistake, nothing is drawn, and what is drawn settles with it, as the mount would have
+      // thrown it.
+      const again = checked.later?.length ? checkPage(options.page, checks) : checked;
+      if (!again.ok) {
+        root.remove();
+        throw unshown(again);
+      }
       drawPage();
       // Drawn after the status took its place in a corner or across the top: the page's Save took it back beside itself.
       placeStatus();
@@ -2928,4 +2936,9 @@ export function onelineRuns(children: readonly LayoutNode[]): LayoutNode[][] {
     runs.push(run);
   }
   return runs;
+}
+
+/** Why a page cannot be shown, as the viewer throws it: each problem its check found, by its path. */
+function unshown(checked: { issues: readonly { path: string; message: string }[] }): Error {
+  return new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
 }

@@ -155,6 +155,37 @@ const asksForParts = (table, parts) => ({
   },
 });
 
+/**
+ * The checks of a page the one-tag script carries in the part that draws what they check, not in its main script: a
+ * list page's own settings in the list part, a record's head in the head part, a page's limits and Continue later in
+ * the limits part. The packages' `checkPage` runs them at once. Here the main script is built
+ * with each module below standing in — its checks owed (`owe`, the reference check's `later`) until its part has come,
+ * and the viewer running the check again then, before the page is drawn — and each part's script puts its module's
+ * checks in `LATER_CHECKS` (libs/core/src/lib/format/later-checks.ts) as it comes.
+ */
+const CHECKS_IN_PARTS = {
+  list: { file: 'libs/core/src/lib/format/list-checks.ts', names: ['checkList'] },
+  head: { file: 'libs/core/src/lib/format/sheet-head-checks.ts', names: ['checkSheetHead'] },
+  limits: { file: 'libs/core/src/lib/format/limits-checks.ts', names: ['checkLimits'] },
+};
+const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
+const checksLater = {
+  name: 'checks-later',
+  setup(builder) {
+    for (const [part, { file, names }] of Object.entries(CHECKS_IN_PARTS)) {
+      builder.onLoad({ filter: new RegExp(`${file.replace(/[./]/g, (c) => `\\${c}`)}$`) }, () => ({
+        contents: [
+          `import { LATER_CHECKS } from ${JSON.stringify(LATER_CHECKS_FILE)};`,
+          // The tools a check is handed come last: they are told it is owed.
+          ...names.map((name) => `export const ${name} = (...args) => { const real = LATER_CHECKS[${JSON.stringify(part)}]?.${name}; return real ? real(...args) : args[args.length - 1].owe(${JSON.stringify(part)}); };`),
+        ].join('\n'),
+        resolveDir: WORKSPACE,
+        loader: 'js',
+      }));
+    }
+  },
+};
+
 /** The package a module of the workspace is in: core, widgets or viewer. */
 const packageOf = (file) => /libs\/([a-z]+)\//.exec(file)?.[1];
 
@@ -196,7 +227,7 @@ const mainScript = async (table) => {
   const { metafile } = await build({
     ...common,
     entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
-    plugins: [minifiedStyles, englishOnly, partWordsOut, asksForParts(table, parts)],
+    plugins: [minifiedStyles, englishOnly, partWordsOut, checksLater, asksForParts(table, parts)],
     globalName: 'Fieldia',
     banner: { js: `/*! Fieldia ${version} · MIT · https://fieldia.dev */` },
     outfile: OUT,
@@ -206,6 +237,8 @@ const mainScript = async (table) => {
   // packages' memory source, which only its part's members use: the one-tag script's own source stands in for it).
   const [, written] = Object.entries(metafile.outputs).find(([file]) => file.endsWith('/fieldia.js'));
   const inMain = new Set(Object.keys(written.inputs).filter((input) => input.startsWith('libs/') || input.startsWith('tools/')).map((input) => join(WORKSPACE, input)));
+  // A part's checks stand in for themselves here: the part carries them.
+  for (const { file } of Object.values(CHECKS_IN_PARTS)) inMain.delete(join(WORKSPACE, file));
   for (const [part, files] of parts) PART_SOURCES[part] = [...files].sort();
   return { inMain, parts: [...parts.keys()].sort(), metafile };
 };
@@ -246,7 +279,12 @@ const wordsLiteral = (tables) => {
   return object(Object.entries(tables).map(([table, words]) => [table, object(Object.entries(words).map(([key, text]) => [key, ascii(text)]))]));
 };
 /** A part's script's own module: each of its modules' exports (a part may have one in each package). */
-const partEntry = (part) => PART_SOURCES[part].map((file) => `export * from ${JSON.stringify(file)};`).join('\n');
+const partEntry = (part) =>
+  [
+    ...PART_SOURCES[part].map((file) => `export * from ${JSON.stringify(file)};`),
+    // The checks it carries, put where the main script's reference check finds them as it comes.
+    ...(CHECKS_IN_PARTS[part] ? [`import * as checks from ${JSON.stringify(join(WORKSPACE, CHECKS_IN_PARTS[part].file))};`, `import { LATER_CHECKS } from ${JSON.stringify(LATER_CHECKS_FILE)};`, `LATER_CHECKS[${JSON.stringify(part)}] = checks;`] : []),
+  ].join('\n');
 const partScript = (part, inMain, table) =>
   build({
     ...common,
@@ -946,8 +984,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // after, a full choice refused, and why it takes none now in words — a page with limits or places waiting for it, 529.28
 // after; options shown by a condition and carried from an earlier question in @fieldia/core's options part
 // (fieldia.options.js, 3.93) — what a choice offers, a chosen one a change no longer offers taken out — a page with any
-// waiting for it, 527.69 after, to 527.7.
-const BUDGET_KB = 527.7;
+// waiting for it, 527.69 after; the page checks of what a part draws carried by that part, run once it came before the
+// page is drawn — a list page's own settings in the list part, a record's head in the head part, a page's limits and
+// Continue later in the limits part (the packages' checkPage and validatePage whole as ever) — 517.55 after, to 517.6.
+const BUDGET_KB = 517.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1169,8 +1209,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // functions' bodies in fieldia.functions.js (1.88), loaded before a page whose formulas call one is drawn, 173.40
 // after; a form's limits in fieldia.limits.js, with the viewer's (2.00 more there), loaded before a page with limits or
 // places is drawn, 172.39 after; options by condition and carried in fieldia.options.js (1.80), loaded before a page
-// with any is drawn, 171.75 after, to 171.8.
-const GZIP_BUDGET_KB = 171.8;
+// with any is drawn, 171.75 after; a list page's, a record head's and a page's limits' checks in their parts (2.59 more
+// in the list part, 0.69 in the head part's, 0.52 in the limits part's), 169.07 after, to 169.1.
+const GZIP_BUDGET_KB = 169.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1714,8 +1755,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 2.41 measured before, 10.23 and 4.41 after — a form's limits, @fieldia/core's (form-limits.ts), in the same script as
 // the viewer's: when the page takes answers and each choice's places, the counts asked, a full choice refused, and its
 // six sentences — to 10.3 and 4.5; options new, 3.93 and 1.80 — each option's condition read once, a page's choice's
-// and a table line's, the options carried from an earlier question, and what a change takes out — to 4.0 and 1.9.
-const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [10.3, 4.5], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [4.4, 1.9], options: [4.0, 1.9] };
+// and a table line's, the options carried from an earlier question, and what a change takes out — to 4.0 and 1.9. The
+// page checks of what a part draws, carried by it: list 117.51 and 37.90 measured before, 125.94 and 40.49 after (a list
+// page's filters, buttons, calendar, map, filter bar, rows' cards and rules, Edit and Import), to 126.0 and 40.5; head
+// 34.53 and 10.10 to 36.48 and 10.79 (a record's head), to 36.5 and 10.8; limits 10.23 and 4.41 to 11.50 and 4.93 (a
+// page's limits and Continue later), to 11.6 and 5.0.
+const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [126.0, 40.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [11.6, 5.0], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [4.4, 1.9], options: [4.0, 1.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1833,7 +1878,33 @@ for (const part of PARTS) {
   const later = await host.Fieldia.headPart.load().then((gives) => typeof gives.recordHead === 'function', () => false);
   if (!failed || !later) throw new Error('a part that could not come is not asked for again');
 }
+// The checks a part carries (`CHECKS_IN_PARTS`): owed by the main script's check until the part came — a list page
+// grouped by a field it does not have passes as it is mounted, its check saying the list part's are owed — then run,
+// the same mistake found as the packages' check finds it at once.
+{
+  const listPage = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/customers.page.json'), 'utf8'));
+  const wrong = { ...listPage, layout: { ...listPage.layout, groupBy: ['nowhere'] } };
+  const { Fieldia: alone } = runTogether([OUT]);
+  const before = alone.checkPage(wrong);
+  if (!before.ok || before.later?.join() !== 'list') throw new Error(`a list page's own checks are not owed to the list part before it came: ${JSON.stringify(before.later ?? before.issues)}`);
+  if (alone.checkPage(listPage).later?.join() !== 'list') throw new Error("a list page's own checks are not owed to the list part");
+  const { Fieldia: withList } = runTogether([OUT, partFiles.list]);
+  await withList.listPart.load();
+  const after = withList.checkPage(wrong);
+  if (after.ok || after.later || !after.issues.some((issue) => issue.path === 'layout.groupBy[0]' && issue.message === 'no field "nowhere"')) throw new Error(`a list page's own checks are not run once the list part came: ${JSON.stringify(after)}`);
+  if (alone.checkPage({ ...wrong, layout: { type: 'sections', id: 's', children: [] } }).later) throw new Error('a page with no list owes the list part its checks');
+  // In a page: such a list mounted before its part came draws nothing, and what is drawn rejects with the mount's words.
+  const { JSDOM } = await import('jsdom');
+  const dom = new JSDOM('<!doctype html><html><head><script src="fieldia.js"></script></head><body><div id="app"></div></body></html>', { url: pathToFileURL(join(BUNDLE, 'page.html')).href, runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true });
+  await new Promise((done) => dom.window.addEventListener('load', done));
+  const host = dom.window.document.getElementById('app');
+  const view = dom.window.Fieldia.mountViewer(host, { page: wrong, dataSource: { list: async () => ({ records: [], total: 0 }) } });
+  const said = await view.drawn.then(() => null, (error) => error.message);
+  if (!said?.startsWith('This page cannot be shown') || !said.includes('layout.groupBy[0]: no field "nowhere"') || host.childElementCount) throw new Error(`in a page, a list page whose own checks came with its part is drawn, or not refused: ${said}`);
+  dom.window.close();
+}
 console.log(`parts: ${partSizes.join('; ')}`);
+console.log("a part's checks: a list page's own owed to the list part until it came, then run as the packages' check runs them — in a page, one that finds a mistake draws nothing, and its drawn rejects with the mount's words");
 
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
