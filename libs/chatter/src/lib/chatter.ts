@@ -364,7 +364,7 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     const parent = message.parentId != null ? byId.get(message.parentId) : undefined;
     if (parent) content.append(el('p', { class: 'fd-message-parent' }, fill(labels.replyingTo, { name: parent.author?.name ?? '' })));
     if (message.body) content.append(body);
-    const failure = part?.failureLine(context, message);
+    const failure = part?.failureLine(context, message, retry);
     if (failure) content.append(failure);
     if (message.tracking?.length) {
       content.append(
@@ -398,7 +398,7 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     item.querySelector('.fd-message-failure')?.remove();
     const mark = part?.messageMark(context, message, channels);
     if (mark) head?.append(mark);
-    const failure = part?.failureLine(context, message);
+    const failure = part?.failureLine(context, message, retry);
     if (failure) (item.querySelector('.fd-message-body') ?? head)?.after(failure);
   }
 
@@ -442,6 +442,29 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   /** Being fetched, or a message being posted: what is pushed meanwhile waits for it (the source's echo of a post never said as arriving). */
   let fetching = 0;
   let posting = false;
+
+  /** A message's delivery laid as told here: on its way again, or failed again with why. */
+  function deliveryOf(id: ChatterMessage['id'], delivery: ChatterMessage['delivery'], failure: string | null) {
+    lay(current.map((one) => (key(one.id) === key(id) ? { ...one, delivery, failure } : one)));
+  }
+  /**
+   * A failed message sent again (Retry): on its way at once, the focus kept in the message (on its ↩); how far it
+   * gets is told as any delivery is. Refused, the failure is said again, with why — on the record still shown only.
+   */
+  async function retry(message: ChatterMessage) {
+    const asked = record;
+    if (!asked || !options.source.resend) return;
+    const still = shown();
+    const item = drawn.get(key(message.id))?.item;
+    const focused = !!item?.contains(doc.activeElement);
+    deliveryOf(message.id, 'pending', null);
+    if (focused) drawn.get(key(message.id))?.item.querySelector<HTMLElement>('.fd-message-reply')?.focus();
+    try {
+      await options.source.resend(asked, message.id);
+    } catch (error) {
+      if (still()) deliveryOf(message.id, 'failed', (error as Error).message || message.failure || null);
+    }
+  }
 
   /** The channels this record can be written to by: the source's answer, or every one of the app's. */
   async function loadChannels(asked: RecordRef) {

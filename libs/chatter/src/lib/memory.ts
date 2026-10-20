@@ -18,6 +18,12 @@ export interface MemoryChatterOptions {
   live?: boolean;
   /** A message sent by a channel is delivered this many ms after it is sent, as a gateway tells; left sent without it. */
   deliverAfter?: number;
+  /**
+   * Why a channel refuses a message sent by it, as a gateway says it — "This number does not take text messages" —, or
+   * null where it takes it: refused, a message posted or sent again (`resend`) fails with these words, `deliverAfter`
+   * ms after it goes (at once without it).
+   */
+  refuse?: (message: ChatterMessage, record: RecordRef) => string | null;
 }
 
 /** What a demo or a test hands `receive`: a message from outside, its id and time given unless said. */
@@ -83,6 +89,15 @@ export function createMemoryChatter(options: MemoryChatterOptions): ChatterSourc
     message.failure = delivery === 'failed' ? failure : null;
     tell(record, { type: 'delivery', id, delivery, failure: message.failure });
   }
+  /** A message gone out by a channel: refused, or delivered, as the gateway tells after `deliverAfter`. */
+  function goOut(record: RecordRef, message: ChatterMessage) {
+    const refused = options.refuse?.(message, record) ?? null;
+    if (refused === null && options.deliverAfter === undefined) return;
+    setTimeout(() => {
+      if (message.delivery !== 'sent' && message.delivery !== 'pending') return;
+      deliver(record, message.id, refused === null ? 'delivered' : 'failed', refused);
+    }, options.deliverAfter ?? 0);
+  }
   const channelled = !!options.replyChannels || Object.values(options.records ?? {}).some((start) => start.replyChannels);
 
   return {
@@ -127,8 +142,15 @@ export function createMemoryChatter(options: MemoryChatterOptions): ChatterSourc
         ...(message.channel ? { channel: message.channel } : {}),
         ...(out ? { direction: 'out' as const, delivery: 'sent' as const } : {}),
       });
-      if (out && options.deliverAfter !== undefined) setTimeout(() => made.delivery === 'sent' && deliver(record, made.id, 'delivered'), options.deliverAfter);
+      if (out) goOut(record, made);
       return { ...made };
+    },
+    async resend(record, messageId) {
+      const message = of(record).messages.find((one) => one.id === messageId);
+      if (!message) throw new Error(`No message ${messageId}`);
+      // On its way again: refused once more, or delivered, as the gateway tells.
+      deliver(record, messageId, 'pending');
+      goOut(record, message);
     },
     async upload(_record, file, how) {
       if (how?.signal?.aborted) throw Object.assign(new Error('The upload was stopped'), { name: 'AbortError' });

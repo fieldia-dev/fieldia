@@ -24,7 +24,7 @@ The chatter reaches your server only through a `source` you write for your
 backend, as you write a data source. `messages` and `post` are all it needs;
 each other method adds a part — `upload` (each file stored as it is chosen, with a bar, Cancel and Retry; Send waits for them), `react`, `people` (mentions,
 assignees, followers), `activityTypes` / `activities` / `schedule` / `markDone`
-/ `cancel`, `followers` / `follow` / `unfollow`, `replyChannels`, `subscribe` —
+/ `cancel`, `followers` / `follow` / `unfollow`, `replyChannels`, `subscribe`, `resend` —
 and a part whose method is missing is not shown. `createMemoryChatter` keeps everything in memory, for
 demos and tests.
 
@@ -55,7 +55,10 @@ here), `delivery` (`pending`, `sent`, `delivered`, `read`, `failed`) and
 `failure`; a post carries the `channel` picked and `to`. The source's
 `replyChannels(record)` gives the channels a record can be written to by,
 `[{ id: 'whatsapp', to: '+20 10 0482 1937' }]` — none, and Send message is
-hidden; without it, every channel is offered.
+hidden; without it, every channel is offered. With `resend(record,
+messageId)`, a failed message offers Retry under its failure: it goes back on
+its way at once, its ticks follow what the channel tells next, and a second
+failure is said again (without the member, no Retry).
 
 **Live.** `subscribe(record, push)` pushes new messages and delivery changes
 as they happen (`{ type: 'message', message }`, `{ type: 'delivery', id,
@@ -77,7 +80,7 @@ Scheduling takes a time beside the day; one given is posted as its instant.
 
 Channels, ticks and live messages come in a part of their own, loaded the
 first time a chatter has channels, is live, or shows a message that came by
-a channel. `createMemoryChatter({ live: true, deliverAfter, replyChannels })`
+a channel. `createMemoryChatter({ live: true, deliverAfter, replyChannels, refuse })`
 pushes, delivers and answers them for demos and tests, with `receive` and
 `deliver` to play the customer's side.
 

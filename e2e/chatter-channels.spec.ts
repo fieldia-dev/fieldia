@@ -33,6 +33,16 @@ for (const variant of VARIANTS) {
       await expect(chatter(page).locator('.fd-activity-due')).toHaveText(['Overdue since 19 Oct 2026, 17:00', 'Today at 15:30', 'Due 22 Oct 2026, 18:30']);
       await chatter(page).locator('.fd-activities').scrollIntoViewIfNeeded();
       await screen(page, `${variant}-chatter-channels`, { viewport: true });
+      // The text message sent again: on its way, the focus kept in it, then refused again by the gateway, said again.
+      const sms = message(page, 'Your viewing link');
+      await sms.getByRole('button', { name: 'Retry' }).click();
+      await expect(ticks(page, 'Your viewing link')).toHaveAttribute('aria-label', 'Sending');
+      await expect(sms.locator('.fd-message-failure')).toHaveCount(0);
+      await expect(sms.getByRole('button', { name: 'Reply' })).toBeFocused();
+      await expect(ticks(page, 'Your viewing link')).toHaveAttribute('aria-label', 'Not delivered');
+      await expect(sms.locator('.fd-message-failure')).toHaveText('Not delivered: This number does not take text messagesRetry');
+      await sms.scrollIntoViewIfNeeded();
+      await screen(page, `${variant}-chatter-channels-retried`, { viewport: true });
       expect(problems).toEqual([]);
     });
 

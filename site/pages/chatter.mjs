@@ -51,12 +51,13 @@ function Chatter({ form }: SlotComponentProps) {
     <tr><td>${c('followers(record)')} · ${c('follow')} · ${c('unfollow')}</td><td>Who follows the record.</td></tr>
     <tr><td>${c('replyChannels(record)')}</td><td>The channels this record can be written to by, and to whom — a channel left out is not offered for it.</td></tr>
     <tr><td>${c('subscribe(record, push)')}</td><td>New messages and their delivery pushed as they happen, over your socket; it returns what stops it.</td></tr>
+    <tr><td>${c('resend(record, messageId)')}</td><td>Retry under a failed message: it goes again, its ticks following, a second failure said again.</td></tr>
   </tbody>
 </table>
 <p>${c('createMemoryChatter({ me, people, activityTypes, records })')} keeps everything in memory, for demos, tests and prototypes — it is what the <a href="/demos/">demos</a> run on.</p>
 
 <h2 id="channels">WhatsApp, e-mail, SMS and the team's notes</h2>
-<p>Give the chatter your app's ${c('channels')} — each with your icon and words — and each message says the one it came or went by, with ticks on what went out: a clock on its way, one tick sent, two delivered, two in the accent read; a failed one says why under it. A reply chooses its channel: the customer's last by default, the channel of the message answered, and who it goes to beside it; a channel the record cannot be written to by is not offered, and the team's note is always there. What is typed is kept as another channel is picked.</p>
+<p>Give the chatter your app's ${c('channels')} — each with your icon and words — and each message says the one it came or went by, with ticks on what went out: a clock on its way, one tick sent, two delivered, two in the accent read; a failed one says why under it, with Retry where your source can send it again (${c('resend')}): it goes back on its way at once, and a second failure is said again. A reply chooses its channel: the customer's last by default, the channel of the message answered, and who it goes to beside it; a channel the record cannot be written to by is not offered, and the team's note is always there. What is typed is kept as another channel is picked.</p>
 ${code(
   'ts',
   `

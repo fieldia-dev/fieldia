@@ -116,4 +116,30 @@ describe('createMemoryChatter', () => {
       jest.useRealTimers();
     }
   });
+
+  it('sends a failed message again: on its way, then refused once more or delivered, as the gateway tells', async () => {
+    jest.useFakeTimers();
+    try {
+      const enquiry = { model: 'enquiry', id: 1 };
+      const source = createMemoryChatter({ me, live: true, deliverAfter: 1000, refuse: (message) => (message.channel === 'sms' ? 'No text messages' : null) });
+      const pushed: unknown[] = [];
+      source.subscribe!(enquiry, (change) => pushed.push(change));
+      const sms = await source.post(enquiry, { kind: 'message', body: '<p>Your link</p>', channel: 'sms' });
+      jest.advanceTimersByTime(1000);
+      expect((await source.messages(enquiry))[0]).toEqual(expect.objectContaining({ delivery: 'failed', failure: 'No text messages' }));
+      await source.resend!(enquiry, sms.id);
+      expect((await source.messages(enquiry))[0]).toEqual(expect.objectContaining({ delivery: 'pending', failure: null }));
+      jest.advanceTimersByTime(1000);
+      expect(pushed).toEqual([
+        { type: 'delivery', id: sms.id, delivery: 'failed', failure: 'No text messages' },
+        { type: 'delivery', id: sms.id, delivery: 'pending', failure: null },
+        { type: 'delivery', id: sms.id, delivery: 'failed', failure: 'No text messages' },
+      ]);
+      const whatsapp = await source.post(enquiry, { kind: 'message', body: '<p>Hello</p>', channel: 'whatsapp' });
+      jest.advanceTimersByTime(1000);
+      expect((await source.messages(enquiry))[0]).toEqual(expect.objectContaining({ id: whatsapp.id, delivery: 'delivered' }));
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });

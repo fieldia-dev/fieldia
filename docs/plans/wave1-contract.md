@@ -917,7 +917,7 @@ In plain words:
 
 ## 19. A conversation that knows its channels (Wave 5, lane w5-channels)
 
-Two more members — of `ChatterSource` (@fieldia/chatter), the chatter's own source, not `DataSource` — each optional
+Three more members — of `ChatterSource` (@fieldia/chatter), the chatter's own source, not `DataSource` — each optional
 as everything here, and four optional fields on a message. A chatter given no `channels` and a source with neither
 member behaves as in 0.28: no channel, no ticks, no asking again.
 
@@ -926,6 +926,7 @@ interface ChatterSource {
   /* …as before… */
   replyChannels?(record: RecordRef): Promise<ReplyChannel[]>;
   subscribe?(record: RecordRef, push: (change: ChatterChange) => void): () => void;
+  resend?(record: RecordRef, messageId: ChatterId): Promise<void>;   // a failed message sent again (Retry)
 }
 interface ReplyChannel { id: string; to?: string | null }       // a channel of the app's, and who it reaches: "+20 10 0482 1937"
 type ChatterChange =
@@ -955,7 +956,13 @@ In plain words:
   (`note: true`) names it; `post` gets `channel` and `to` as the person saw them.
 - **Delivery.** `delivery` is how far an outgoing message got; `failure`, why one failed, is said under it. A delivery
   never goes back in the chatter: of two answers, the further (pending → sent → failed → delivered → read) is kept,
-  so a late answer saying "delivered" of a message read leaves it read.
+  so a late answer saying "delivered" of a message read leaves it read — but a failed message is at no place on the
+  way: sent again, here or elsewhere, what is told next of it is laid.
+- **Retry.** Where the source has `resend`, a failed outgoing message offers Retry under its failure (without the
+  member, none: hide, never disable). Pressed, the message is on its way (`pending`, its clock) at once, the focus kept
+  in it (on its ↩), and `resend(record, id)` is asked; how far it gets is then told as any delivery is — pushed, or
+  found asking again — and a second failure is said again, with Retry again. A `resend` that throws says the failure
+  again with the error's words, on the record still shown only.
 - **Live.** With `subscribe`, the chatter subscribes as a record is shown and stops as another is, or it goes; what
   is pushed for a record no longer shown is laid nowhere, and what is pushed while the conversation is fetched — or a
   message posted (a server's echo of it is never said as arriving) — is laid once it has come. Without it, a chatter
@@ -969,6 +976,8 @@ In plain words:
   instant in UTC, a day alone as before.
 - The memory source (`createMemoryChatter`): `replyChannels` from each record's `replyChannels` or the option of that
   name (the member is there only where one is given); `subscribe` with `live: true`; a message posted by a channel
-  is `direction: 'out'`, `delivery: 'sent'`, delivered `deliverAfter` ms later where that is given; `receive(record,
-  message)` and `deliver(record, id, delivery, failure?)` play the customer's side and push it. Tests:
+  is `direction: 'out'`, `delivery: 'sent'`, delivered `deliverAfter` ms later where that is given — or failed with
+  the words `refuse(message, record)` gives; `resend` puts a message back on its way (`pending`), then refused or
+  delivered alike; `receive(record, message)` and `deliver(record, id, delivery, failure?)` play the customer's side
+  and push it. Tests:
   `libs/chatter/src/lib/channels.spec.ts`, `memory.spec.ts`, `parts-lazy.spec.ts`; `e2e/chatter-channels.spec.ts`.

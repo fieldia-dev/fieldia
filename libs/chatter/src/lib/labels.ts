@@ -103,6 +103,8 @@ export interface ChatterLabels {
   read: string;
   notDelivered: string;
   notDeliveredWhy: string;
+  /** A failed message sent again (the source's `resend`). */
+  retry: string;
   /** Messages arriving while the conversation is shown, said politely: from `{name}`, by `{channel}`; `{n}` of them. */
   newMessage: string;
   newMessageBy: string;
@@ -210,6 +212,7 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     read: 'Read',
     notDelivered: 'Not delivered',
     notDeliveredWhy: 'Not delivered: {reason}',
+    retry: 'Retry',
     newMessage: 'New message from {name}',
     newMessageBy: 'New {channel} message from {name}',
     newMessages: '{n} new messages',
@@ -300,6 +303,7 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     read: 'قُرئت',
     notDelivered: 'لم تصل',
     notDeliveredWhy: 'لم تصل: {reason}',
+    retry: 'إعادة المحاولة',
     newMessage: 'رسالة جديدة من {name}',
     newMessageBy: 'رسالة جديدة عبر {channel} من {name}',
     newMessages: 'رسائل جديدة: {n}',
@@ -390,6 +394,7 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     read: 'Gelesen',
     notDelivered: 'Nicht zugestellt',
     notDeliveredWhy: 'Nicht zugestellt: {reason}',
+    retry: 'Erneut versuchen',
     newMessage: 'Neue Nachricht von {name}',
     newMessageBy: 'Neue Nachricht per {channel} von {name}',
     newMessages: '{n} neue Nachrichten',
@@ -480,6 +485,7 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     read: 'Lu',
     notDelivered: 'Non distribué',
     notDeliveredWhy: 'Non distribué : {reason}',
+    retry: 'Réessayer',
     newMessage: 'Nouveau message de {name}',
     newMessageBy: 'Nouveau message par {channel} de {name}',
     newMessages: '{n} nouveaux messages',

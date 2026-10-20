@@ -35,6 +35,11 @@ export function enquiryChatterOptions(params: URLSearchParams): Pick<ChatterOpti
   return params.get('page') === 'enquiry' ? { channels: ENQUIRY_CHANNELS, icons: ENQUIRY_ICONS, now: demoNow } : {};
 }
 
+/** What the agency's gateways refuse: a text message to Yasmin's number, which takes none — sent again, refused again. */
+export function enquiryRefuses(message: ChatterMessage, record: { model: string; id: string | number }): string | null {
+  return record.model === 'enquiry' && String(record.id) === '1' && message.channel === 'sms' ? 'This number does not take text messages' : null;
+}
+
 /** The buyers. */
 const yasmin = { id: 41, name: 'Yasmin Farouk' };
 const omar = { id: 42, name: 'Omar Said' };

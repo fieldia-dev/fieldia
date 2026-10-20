@@ -47,19 +47,34 @@ export function messageMark(context: ChatterContext, message: ChatterMessage, ch
   return parts.length ? el('span', { class: 'fd-message-mark' }, ...parts) : null;
 }
 
-/** Why a message was not delivered, under it: "Not delivered: The number is not on WhatsApp". Null for one that was not refused. */
-export function failureLine(context: ChatterContext, message: ChatterMessage): HTMLElement | null {
-  const { el, labels, doc, icons } = context;
+/**
+ * Why a message was not delivered, under it — "Not delivered: The number is not on WhatsApp" — with Retry where the
+ * source can send it again (`resend`, handed in as `retry`). Null for one that was not refused.
+ */
+export function failureLine(context: ChatterContext, message: ChatterMessage, retry?: (message: ChatterMessage) => void): HTMLElement | null {
+  const { el, labels, doc, icons, source } = context;
   if (message.delivery !== 'failed') return null;
   const icon = drawIcon(doc, 'warning', icons);
-  return el('p', { class: 'fd-message-failure' }, ...(icon ? [icon] : []), message.failure ? fill(labels.notDeliveredWhy, { reason: message.failure }) : labels.notDelivered);
+  // The channel's own words in a run of their own: an English reason reads whole in an Arabic sentence.
+  const [before, after = ''] = labels.notDeliveredWhy.split('{reason}');
+  const words = message.failure ? el('span', {}, before, el('bdi', {}, message.failure), after) : el('span', {}, labels.notDelivered);
+  const line = el('p', { class: 'fd-message-failure' }, ...(icon ? [icon] : []), words);
+  if (source.resend && retry && message.direction !== 'in') {
+    const again = el('button', { type: 'button', class: 'fd-button fd-button-link fd-message-retry' }, labels.retry);
+    again.addEventListener('click', () => retry(message));
+    line.append(again);
+  }
+  return line;
 }
 
 /** A delivery's place on the way: a message never goes back on it (a late answer saying "delivered" of one read). */
 const RANK: Record<Delivery, number> = { pending: 0, sent: 1, failed: 2, delivered: 3, read: 4 };
-/** The further of two deliveries of one message: what one answer says, unless another already told it got further. */
+/**
+ * The further of two deliveries of one message: what one answer says, unless another already told it got further.
+ * A failed message is at no place on the way: sent again (Retry, here or elsewhere), it is on its way once more.
+ */
 export function furthest(now: Delivery | null | undefined, told: Delivery | null | undefined): Delivery | null | undefined {
-  if (!now || !told) return told ?? now;
+  if (!now || !told || now === 'failed') return told ?? now;
   return RANK[told] >= RANK[now] ? told : now;
 }
 
@@ -341,8 +356,10 @@ export const CHANNEL_STYLES = `
 .fd-delivery .fd-icon { width: 14px; height: 14px; }
 .fd-delivery[data-delivery="read"] { color: var(--fd-accent); }
 .fd-delivery[data-delivery="failed"] { color: var(--fd-error); }
-.fd-message-failure { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--fd-error); font-size: 13px; }
-.fd-message-failure .fd-icon { width: 14px; height: 14px; flex: none; }
+/* Its words wrap under the warning as one line of text does, Retry after them. */
+.fd-message-failure { margin: 0; color: var(--fd-error); font-size: 13px; line-height: 1.45; }
+.fd-message-failure .fd-icon { display: inline-block; width: 14px; height: 14px; margin-inline-end: 6px; vertical-align: -2px; }
+.fd-message-retry { min-height: 0; margin-inline-start: 8px; padding: 0 2px; font-size: 13px; vertical-align: baseline; }
 /*
  * What came from outside, marked at its start whatever is behind the chatter — the page's grey, a sheet's white — on
  * a shade laid on the surface (never on transparency: a colour an arriving message fades to).

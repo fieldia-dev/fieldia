@@ -96,7 +96,9 @@ describe('each message says its channel and how far it got', () => {
     // What came in has no ticks: they are for what went out.
     expect(ticks(4)).toBeNull();
     expect(item(host, 4).getAttribute('data-direction')).toBe('in');
-    expect(item(host, 2).querySelector('.fd-message-failure')?.textContent).toBe('Not delivered: The number cannot take SMS');
+    expect(item(host, 2).querySelector('.fd-message-failure span')?.textContent).toBe('Not delivered: The number cannot take SMS');
+    // The channel's own words isolated, so they read whole in a right-to-left sentence.
+    expect(item(host, 2).querySelector('.fd-message-failure bdi')?.textContent).toBe('The number cannot take SMS');
   });
 
   it('writes each message’s time as the page’s date boxes write a moment, on the page’s clock', async () => {
@@ -122,6 +124,55 @@ describe('each message says its channel and how far it got', () => {
     button(host, 'Send message')!.click();
     expect(host.querySelector('.fd-send-by')).toBeNull();
     expect((host.querySelector('.fd-composer textarea') as HTMLTextAreaElement).placeholder).toBe('Write to the followers…');
+  });
+});
+
+describe('a failed message sent again', () => {
+  const refuseSms = (message: ChatterMessage) => (message.channel === 'sms' ? 'This number does not take text messages' : null);
+
+  it('offers Retry under the failure: the message on its way at once, the focus kept in it, and a second failure said again', async () => {
+    const chatter = source({ live: true, refuse: refuseSms });
+    const host = await mount(chatter, { live: undefined });
+    const again = item(host, 2).querySelector('.fd-message-retry') as HTMLButtonElement;
+    expect(again.textContent).toBe('Retry');
+    // A message that came in is no one's to send again; one delivered has nothing to retry.
+    expect(host.querySelectorAll('.fd-message-retry')).toHaveLength(1);
+    again.focus();
+    again.click();
+    expect(item(host, 2).querySelector('.fd-delivery')?.getAttribute('aria-label')).toBe('Sending');
+    expect(item(host, 2).querySelector('.fd-message-failure')).toBeNull();
+    expect(document.activeElement).toBe(item(host, 2).querySelector('.fd-message-reply'));
+    // The gateway refuses it once more: said again, with Retry again.
+    await until(() => item(host, 2).querySelector('.fd-message-failure'));
+    expect(item(host, 2).querySelector('.fd-delivery')?.getAttribute('data-delivery')).toBe('failed');
+    expect(item(host, 2).querySelector('.fd-message-failure')?.textContent).toBe('Not delivered: This number does not take text messagesRetry');
+  });
+
+  it('follows the ticks of one sent again that gets there', async () => {
+    const chatter = source({ live: true });
+    const host = await mount(chatter, { live: undefined });
+    (item(host, 2).querySelector('.fd-message-retry') as HTMLButtonElement).click();
+    await flush();
+    expect(item(host, 2).querySelector('.fd-delivery')?.getAttribute('data-delivery')).toBe('pending');
+    chatter.deliver(enquiry, 2, 'sent');
+    expect(item(host, 2).querySelector('.fd-delivery')?.getAttribute('data-delivery')).toBe('sent');
+    chatter.deliver(enquiry, 2, 'delivered');
+    expect(item(host, 2).querySelector('.fd-delivery')?.getAttribute('aria-label')).toBe('Delivered');
+    expect(item(host, 2).querySelector('.fd-message-failure')).toBeNull();
+  });
+
+  it('says why where the source could not send it again', async () => {
+    const chatter: ChatterSource = { ...source(), resend: async () => Promise.reject(new Error('The SMS gateway is down')) };
+    const host = await mount(chatter);
+    (item(host, 2).querySelector('.fd-message-retry') as HTMLButtonElement).click();
+    await until(() => item(host, 2).querySelector('.fd-message-failure'));
+    expect(item(host, 2).querySelector('.fd-message-failure span')?.textContent).toBe('Not delivered: The SMS gateway is down');
+  });
+
+  it('offers no Retry where the source cannot send again (hidden, never disabled)', async () => {
+    const host = await mount({ ...source(), resend: undefined });
+    expect(item(host, 2).querySelector('.fd-message-failure')?.textContent).toBe('Not delivered: The number cannot take SMS');
+    expect(host.querySelector('.fd-message-retry')).toBeNull();
   });
 });
 

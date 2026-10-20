@@ -194,6 +194,12 @@ export interface ChatterSource {
    */
   replyChannels?(record: RecordRef): Promise<ReplyChannel[]>;
   /**
+   * Send a message that failed again, by its channel: Retry under its failure. The chatter shows it on its way
+   * (`pending`) at once; how far it gets then is told as any delivery is (`subscribe`, or asked again). Throw to say
+   * it could not be sent again: the failure is said again, with why. Without it, no Retry is offered.
+   */
+  resend?(record: RecordRef, messageId: ChatterId): Promise<void>;
+  /**
    * New messages and changes to those shown, pushed as they happen — over the app's own socket, server-sent events,
    * a database's listener: call `push` with each, and return what stops it. Asked as a record is shown, stopped as
    * another is shown or the chatter goes; what is pushed after is laid on none. Without it, the chatter asks

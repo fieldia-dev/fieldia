@@ -369,7 +369,7 @@ export const DEMOS = [
       'Press Send message: the reply goes by WhatsApp, the channel Yasmin last wrote on, to her number. Type a few words and press Send by WhatsApp: one tick, then two as her phone gets it.',
       'Press Yasmin reads your WhatsApp messages over the page: the grey ticks on what you sent her turn blue.',
       'Start a reply, then press Yasmin writes on WhatsApp: her message arrives at the top of the conversation, and what you are typing stays as it is.',
-      'Look at the conversation: her first e-mail, your answer with the floor plan (read), a text message that failed and why, Karim’s team note — each says its channel.',
+      'Look at the conversation: her first e-mail, your answer with the floor plan (read), a text message that failed and why, Karim’s team note — each says its channel. Press Retry under the text message: it goes again, and is refused again.',
       'Look at Activities: Call Yasmin to confirm Thursday is due at 15:30 today on the office’s clock in Cairo, wherever you look from; Schedule activity takes a time as well as a day.',
       '[Open Omar Said’s enquiry](?record=2): he has no e-mail, so a reply goes by WhatsApp or SMS, and E-mail is not offered.',
     ],

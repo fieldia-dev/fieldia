@@ -1,6 +1,6 @@
 import { createMemoryChatter } from '@fieldia/chatter';
 import { demoNow } from './calendar';
-import { enquiryChatter } from './enquiry';
+import { enquiryChatter, enquiryRefuses } from './enquiry';
 
 /**
  * A chatter for the demos: Nile Traders' conversation, to-dos and followers, and the property enquiries' — WhatsApp,
@@ -36,7 +36,7 @@ export function sampleChatter(params: URLSearchParams = new URLSearchParams(type
     me: salma,
     people: [salma, mona, karim, youssef],
     activityTypes: [call, todo, meeting],
-    ...(enquiry ? { live: true, deliverAfter: 2500, now: demoNow } : {}),
+    ...(enquiry ? { live: true, deliverAfter: 2500, now: demoNow, refuse: enquiryRefuses } : {}),
     records: {
       ...enquiryChatter({ me: salma, karim }, { call, todo, meeting }),
       // The vendor bill's conversation: what was tracked as it was confirmed, and the vendor's own word.
