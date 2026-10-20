@@ -602,6 +602,12 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     if (!designer.setListOptions({ bulkEdit: bulk.checked })) bulk.checked = !!pageList().bulkEdit;
   });
   const bulkRow = el('div', { class: 'fd-prop', 'data-part': 'bulk-edit' }, el('label', { class: 'fd-q-required' }, bulk, el('span', {}, w.bulkEdit)), el('p', { class: 'fd-properties-hint' }, w.bulkEditHint));
+  // Cells changed in place, off unless asked: a price list, a week's hours, a pipeline's stages.
+  const inPlace = el('input', { type: 'checkbox', 'aria-label': w.editInPlace }) as HTMLInputElement;
+  inPlace.addEventListener('change', () => {
+    if (!designer.setListOptions({ editable: inPlace.checked })) inPlace.checked = !!pageList().editable;
+  });
+  const inPlaceRow = el('div', { class: 'fd-prop', 'data-part': 'editable' }, el('label', { class: 'fd-q-required' }, inPlace, el('span', {}, w.editInPlace)), el('p', { class: 'fd-properties-hint' }, w.editInPlaceHint));
   // Import from Excel and CSV, off unless asked, after Export and Edit.
   const imports = el('input', { type: 'checkbox', 'aria-label': w.importRows }) as HTMLInputElement;
   imports.addEventListener('change', () => {
@@ -662,6 +668,8 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     // What goes out — Export, Edit, Print — then what comes in.
     printRow,
     importRow,
+    // Then what is changed where it stands.
+    inPlaceRow,
     prop(el, w.searchWay, searchWay),
     filterFieldsRow,
     sheetRow,
@@ -725,6 +733,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
       sorts.checked = list.sortable !== false;
       exports.checked = list.export === true;
       bulk.checked = !!list.bulkEdit;
+      inPlace.checked = !!list.editable;
       imports.checked = !!list.import;
       prints.checked = list.print === true;
       searchWay.value = list.search ?? 'bar';

@@ -1,4 +1,4 @@
-import { bulkSettable, importable, type ButtonNode, type Field, type FilterCondition, type FilterRange, type FilterItem, type FilterPeriod, type FunctionsKnown, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Modifier, type Page, type ToneWhen } from '@fieldia/core';
+import { bulkSettable, cellChangeable, importable, type ButtonNode, type Field, type FilterCondition, type FilterRange, type FilterItem, type FilterPeriod, type FunctionsKnown, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Modifier, type Page, type ToneWhen } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { allIds, fieldReads, keptFields, listCalendarFields, listCardFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
@@ -54,6 +54,8 @@ export interface ListOptionsPatch extends RowRulesPatch {
   import?: boolean | string[];
   /** Print of every record the search finds: true offers it, false takes it away. */
   print?: boolean;
+  /** Its cells changed in place: true for every column a cell can change (keeping what it names, if it says more), false for none. */
+  editable?: boolean;
   /** What each record's card shows, on a phone and in the gallery ({} for the columns'); null for no cards. */
   card?: ListCard | null;
   /** A gallery of cards on the switcher; null for none. */
@@ -308,6 +310,11 @@ export function listCommands(context: {
         else if (options.export === false) delete list.export;
         if (options.print === true) list.print = true;
         else if (options.print === false) delete list.print;
+        if (options.editable === false) delete list.editable;
+        else if (options.editable === true && !list.editable) {
+          if (!list.columns.some((name) => cellChangeable(draft.fields[name]))) throw new Refusal((w) => w.refusals.noneChangeable);
+          list.editable = true;
+        }
         if (options.bulkEdit === false) delete list.bulkEdit;
         else if (options.bulkEdit === true) {
           if (!Array.isArray(list.bulkEdit)) list.bulkEdit = true;
