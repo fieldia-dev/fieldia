@@ -8,6 +8,7 @@ import { PageDuplicatesSchema, type PageDuplicates } from './duplicates';
 import { PageRecordsSchema, type PageRecords } from './records';
 import { PageEndingsSchema, type PageEnding } from './endings';
 import { PageLimitsSchema, type PageLimits } from './limits';
+import { PageSuggestSchema, type PageSuggest } from './assist';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -210,6 +211,15 @@ export interface Page {
    * sees where people stopped. Hidden where the source has no `saveDraft`.
    */
   continueLater?: boolean;
+  /**
+   * AI help: a "Fill from text" button over the page's fields. The person pastes words — an e-mail signature, a
+   * message — or picks files, or the words a record holds are read (`fromField`: a buyer's message, a visit's notes),
+   * and the data source's `suggest` (the app's own model: Fieldia ships none) proposes values
+   * for the fields named (those shown that a person can set, when left out), a table of lines' as lines to add. Each is
+   * shown on its field, the old value and the new, with Accept and Reject, and Accept all; nothing is kept until it is
+   * accepted, and Undo puts back what was there. Hidden where the source has no `suggest`. See `PageSuggest`.
+   */
+  suggest?: PageSuggest;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -297,6 +307,7 @@ export const PageSchema = z
     endings: PageEndingsSchema.optional(),
     limits: PageLimitsSchema.optional(),
     continueLater: z.boolean().optional(),
+    suggest: PageSuggestSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

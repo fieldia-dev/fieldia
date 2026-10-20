@@ -24,6 +24,7 @@ import { checkList, checkRelated, type ListTools } from './list-checks';
 import type { FieldTools } from './part-checks';
 import { checkSlots } from './slots-checks';
 import { checkSignature } from './signature-checks';
+import { checkRewrite, checkSuggest } from './assist-checks';
 import { checkEndings } from './endings-checks';
 import { checkAddressSearch, checkMap, checkPlace, type MapTools } from './map-checks';
 import { checkLineKinds, checkTable, type TableTools } from './table-checks';
@@ -148,6 +149,8 @@ export class ReferenceCheck {
     }
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
+    // AI help's fill from text: in the one-tag script, its checks come with the assist part, which a page with it asks for.
+    if (this.page.suggest !== undefined && !this.line) checkSuggest(this.page, this.fieldTools());
     this.checkGoingTo();
     return this.issues;
   }
@@ -852,6 +855,8 @@ export class ReferenceCheck {
     else if (node.widget === 'slots') checkSlots(node, path, this.fieldTools());
     if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
+    // A text field's AI tools (`options.rewrite`), drawn by the assist part, whose checks come with it in the one-tag script.
+    if (node.options?.['rewrite'] !== undefined) checkRewrite(node, def, path, this.fieldTools());
     if (def) this.checkPicker(node, def, path);
     // The order lines load in: fields of its lines.
     if (def && node.order && def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);

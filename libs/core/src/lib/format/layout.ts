@@ -1236,6 +1236,13 @@ export interface ListNode {
    * counted as they change. Off unless true.
    */
   filterSheet?: boolean;
+  /**
+   * A search typed in plain words turned into filters — "villas in New Cairo under 15M" into Type: Villa, District:
+   * New Cairo, Price: up to 15,000,000 — by the data source's `searchToFilter` (the app's own model: Fieldia ships
+   * none): a ✦ button beside the search box while it holds words. Each filter made is shown, to take away as any, with
+   * the app's why and Undo, which puts the words back. Hidden where the source has no `searchToFilter`. Off unless true.
+   */
+  searchToFilter?: boolean;
   /** Rows nested under their parent by this many2one (to the list's own model), with Expand all and Collapse all in the header. */
   parentField?: string;
   /**
@@ -2258,6 +2265,7 @@ export const ListNodeSchema = z.strictObject({
   filterRanges: z.record(fieldName, FilterRangeSchema).optional(),
   filterCounts: z.boolean().optional(),
   filterSheet: z.boolean().optional(),
+  searchToFilter: z.boolean().optional(),
   parentField: fieldName.optional(),
   export: z.boolean().optional(),
   bulkEdit: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
