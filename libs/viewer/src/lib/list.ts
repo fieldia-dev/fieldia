@@ -1537,7 +1537,10 @@ export function listView(context: ListContext): ListView {
     return names;
   }
 
-  const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, importButton, exportBox, printButton, views, ...(fieldsSearch ? (found ? [found] : []) : [pager]));
+  const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, importButton, exportBox, printButton, views, ...(fieldsSearch ? [] : [pager]));
+  // How many it finds, in the filter bar's own row beside the keyword it filters by: no row of its own.
+  const fieldsBox = found ? search.element.querySelector(':scope > .fd-filter-fields') : null;
+  if (found) (fieldsBox ? fieldsBox.before(found) : bar.append(found));
   const key = rowsKey();
   const element = el(
     'div',

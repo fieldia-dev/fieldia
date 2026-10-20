@@ -42,7 +42,7 @@ async function mount(page: Page = homes) {
   await until(() => host.querySelector('.fd-list-table tbody tr.fd-list-row'));
   return host;
 }
-const count = (host: Element) => host.querySelector('.fd-list-bar .fd-list-found') as HTMLElement | null;
+const count = (host: Element) => host.querySelector('.fd-filter-bar .fd-list-found') as HTMLElement | null;
 
 describe('a list’s count beside its search', () => {
   it('says how many records its filters leave, in the page’s words, as they change', async () => {

@@ -62,7 +62,7 @@ test.describe('the homes to buy', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     const { problems } = await open(page, 'plain', HOMES);
     const homes = await homesToBuy(page);
-    const found = page.locator('.fd-list-bar .fd-list-found');
+    const found = page.locator('.fd-filter-bar .fd-list-found');
     await expect(found).toHaveText(`${homes.length} homes`);
     await expect(found).toBeVisible();
     await page.locator('.fd-list-views').getByRole('button', { name: 'Gallery' }).click();
