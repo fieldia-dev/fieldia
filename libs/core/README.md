@@ -546,7 +546,7 @@ messages)` says why it takes none ("This form closed on 20 Nov 2026."). Every
 message that names a day writes it as the page's date boxes do — its
 `look.dateOrder` (the form puts it on its messages, `messages.dateOrder`), its
 language, a time on its clock: "can’t be after 20 Oct 2026", "Oct 20, 2026"
-month first; `dayWords(value, messages, zone?)` is that rule. A full option the person picks is refused,
+month first; `dayWords(day, messages, order?)` is that rule (a time after it: `whenWords`). A full option the person picks is refused,
 said under its field ("Afternoon workshop is full"); one that filled up while
 held, or a page closed since it was opened, stops the send. The app's own
 `setValues` is never refused: the check says it. Without `limits` in the
