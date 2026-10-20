@@ -2,6 +2,7 @@
   "fieldia": "0.6",
   "id": "backlog",
   "data": { "kind": "record", "model": "work.item" },
+  "records": { "one": "work item", "other": "work items", "a": "a work item" },
   "look": { "theme": "fluent", "density": "compact" },
   "maxWidth": "full",
   "fields": {
