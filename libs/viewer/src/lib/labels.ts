@@ -462,6 +462,21 @@ export interface ViewerLabels {
   rowsKey: string;
   relatedShownNoun?: string;
   /**
+   * A list whose cells are changed in place (`editable`): what a screen reader is told of a cell that takes a change,
+   * Add a line (`rowAddNoun`: "Add a service"), a row added taken away, why a row was not saved (`{why}`, its
+   * problems), a row saved (`{name}`, the record's name), a row's Open and a card's sheet's title (`{name}`), and a
+   * cell named in what a paste did (`{column}`, its header; `{name}`).
+   */
+  rowEditHint: string;
+  rowAdd: string;
+  rowAddNoun?: string;
+  rowDrop: string;
+  rowNotSaved: string;
+  rowSaved: string;
+  rowOpen: string;
+  rowChange: string;
+  rowCell: string;
+  /**
    * Over a record: the gear menu (`actions`, its `print` group and its
    * built-in items), the trail to it (`breadcrumbs`, a new record's crumb
    * `newRecord`), and the pager (`records`, `recordAt` with `{n}` and
@@ -912,6 +927,15 @@ const en: ViewerLabels = {
   relatedShown: '{n} of {total}',
   rowsKey: 'Key to the rows',
   relatedShownNoun: '{n} of {total} {records}',
+  rowEditHint: 'Enter changes the cell, Tab moves on, Escape puts it back; a row is saved as you leave it.',
+  rowAdd: 'Add a line',
+  rowAddNoun: 'Add {aRecord}',
+  rowDrop: 'Remove',
+  rowNotSaved: 'Not saved: {why}.',
+  rowSaved: '{name} saved',
+  rowOpen: 'Open {name}',
+  rowChange: 'Change {name}',
+  rowCell: '{column} of {name}',
   actions: 'Actions',
   print: 'Print',
   archive: 'Archive',

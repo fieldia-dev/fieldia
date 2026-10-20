@@ -443,15 +443,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const sentenceWords: SentenceWords = { order: dateOrderOf({ page }), yes: widgetLabels.yes, no: widgetLabels.no };
   /** So, once the answers part has come (a page that says the answers loads it first); else as each field shows its value. */
   const asSaid: ValueWriter = (def, value, values) => answersPart.loaded?.sentenceValue(def, value, values, locale, sentenceWords) ?? displayValue(def, value, values, locale);
-  const form =
-    options.form ??
-    createForm({
-      ...options,
-      page,
-      host: actionHost,
-      messages: options.messages ?? MESSAGES[locale],
-      valueWords: options.valueWords ?? ((def, value, values) => asSaid(def as LineField, value, values as Values)),
-    });
+  /** What the page's form is made with; and each row's of a list whose cells change in place, but its drafts, autosave and record. */
+  const formOptions: FormOptions = {
+    ...options,
+    page,
+    host: actionHost,
+    messages: options.messages ?? MESSAGES[locale],
+    valueWords: options.valueWords ?? ((def, value, values) => asSaid(def as LineField, value, values as Values)),
+  };
+  const form = options.form ?? createForm(formOptions);
   /** A part that failed: said to the console, and to the app's onError, which may not throw the page down either. */
   const report: ErrorHandler = (error, where) => {
     console.error(`[Fieldia] ${describeFailure(where)}`, error);
@@ -2438,6 +2438,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         editValues: (request) => dialogs.editValues(request),
         // A phone column's call and WhatsApp links, in the phone field's own words.
         widgetLabels,
+        // A list whose cells change in place: each row a form of its own, made as this page's is — its words, its clock,
+        // the person, the app's functions; never its drafts or autosave — its boxes drawn as this page draws a field's.
+        ...(layout.editable && !locked
+          ? {
+              newForm: (made: Parameters<NonNullable<ListContext['newForm']>>[0]) => createForm({ ...formOptions, drafts: undefined, autosave: undefined, resume: undefined, values: undefined, ...made }),
+              drawField: (given: WidgetContext) => createWidget({ ...given, onError: report }, options.widgets),
+              dialogs,
+              letGo: letGoAsked,
+            }
+          : {}),
       };
       // The list comes in its part, which the page waited for; "Loading…" in its place where it could not come.
       const list = listPart.loaded ? listPart.loaded.listView(context) : waitingList(listPart, context);

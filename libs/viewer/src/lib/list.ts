@@ -26,7 +26,7 @@ import {
   type Tone,
   type Values,
 } from '@fieldia/core';
-import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
+import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type Widget, type WidgetContext, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import { filterKit } from './filter-range';
@@ -42,7 +42,8 @@ import { listTotals } from './list-totals';
 import { keepFootRoom, printout, PRINT_MOST } from './list-print';
 import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
-import { cardsPart, columnsPart, filtersPart, importPart, type ColumnsPart } from './viewer-parts';
+import { cardsPart, columnsPart, editablePart, filtersPart, importPart, type ColumnsPart } from './viewer-parts';
+import type { EditableRows, NewForm } from './list-editable';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
 
 export interface ListContext {
@@ -102,6 +103,15 @@ export interface ListContext {
   none?: string;
   /** The widgets' words, for what a cell draws as a field would: a phone's call and WhatsApp links. Without them, a cell has no links. */
   widgetLabels?: WidgetLabels;
+  /**
+   * What a list whose cells are changed in place (`editable`) draws with: a row's own form, as the viewer makes one, a
+   * field's box, as it draws one, and the dialogs its boxes open. Without the first two, its rows are read and opened.
+   */
+  newForm?: NewForm;
+  drawField?: (context: WidgetContext) => Widget;
+  dialogs?: WidgetDialogs;
+  /** "Discard your changes?", worded Discard, the focus on Cancel. */
+  letGo?: (message: string) => Promise<boolean>;
 }
 
 /**
@@ -219,7 +229,7 @@ export function listView(context: ListContext): ListView {
   let rows: Row[] = [];
   /** Each record's row, for the records on show however they are grouped. */
   const recordOf = new WeakMap<Element, Row>();
-  const visible = () => [...body.querySelectorAll('.fd-list-row')].map((tr) => recordOf.get(tr) as Row);
+  const visible = () => [...body.querySelectorAll('.fd-list-row:not([data-new])')].map((tr) => recordOf.get(tr) as Row);
   // Only a page of records gets this far: the page check refuses a list of anything else.
   const model = page.data.kind === 'record' ? page.data.model : '';
   let facets: Facet[] = context.search ? [...context.search] : startingFacets(node, context.preferences, page);
@@ -268,6 +278,16 @@ export function listView(context: ListContext): ListView {
   // The columns, and what an amount needs to be read: its currency, from the record, and what its money look's conditions read ("/month" on a rent);
   // the fields the cells' icons come from, each row's parent, what its card shows and what its own rules read.
   const fields = [...new Set([...node.columns.flatMap((name) => [name, ...moneyReads(page.fields[name])]), ...leads, ...(parentField ? [parentField] : []), ...(cards?.cardReads(spec) ?? []), ...rules.reads])];
+  /**
+   * Its cells changed in place, where it says `editable` (the editable part, which the page waited for), with a row's own
+   * form and a field's box to draw them with, a column a cell can change and a source to save to; else its rows are
+   * read and opened, as a list's always were.
+   */
+  const editPart = node.editable ? editablePart.loaded : undefined;
+  // What its worked-out columns are worked out from, asked with the rest: a row's total follows its cells.
+  if (editPart) fields.push(...editPart.rowReads(page, node, fields, form.functions));
+  /** Its rows' cells changed in place (the editable part's), made with the list's element. */
+  let rowEdits: EditableRows | null = null;
   /** Its words keep to the end: a number's, unless its cell says otherwise. */
   const atEnd = (name: string) => (cellOf(name)?.align ? cellOf(name)?.align === 'end' : NUMBERS.has(page.fields[name].type));
   /** Its words one thing, kept on one line on paper: a number, an amount, a day, a phone number. */
@@ -395,7 +415,7 @@ export function listView(context: ListContext): ListView {
   const collapseAll = el('button', { type: 'button', class: 'fd-list-fold', 'aria-label': labels.collapseAll, title: labels.collapseAll }, el('span', { 'aria-hidden': 'true' }, '\u2212'));
   const body = el('tbody');
   /** The column after the fields': each row's own buttons, and the header's Columns menu. */
-  const trailing = choices || node.rowButtons?.length ? 1 : 0;
+  const trailing = choices || node.rowButtons?.length || editPart?.opens(node, context) ? 1 : 0;
   const tail = el(
     'th',
     { class: 'fd-list-tail', scope: 'col' },
@@ -466,7 +486,7 @@ export function listView(context: ListContext): ListView {
   /** The row shown next to this one, down or up, past those folded under a parent. */
   const shownBeside = (tr: Element, down: boolean) => {
     let next = down ? tr.nextElementSibling : tr.previousElementSibling;
-    while (next && (next as HTMLElement).hidden) next = down ? next.nextElementSibling : next.previousElementSibling;
+    while (next && ((next as HTMLElement).hidden || next.classList.contains('fd-list-note'))) next = down ? next.nextElementSibling : next.previousElementSibling;
     return next as HTMLElement | null;
   };
 
@@ -548,7 +568,7 @@ export function listView(context: ListContext): ListView {
     drawShape();
     if (!kept || drawnColumns === shownColumns().join()) return;
     drawnColumns = shownColumns().join();
-    for (const cell of body.querySelectorAll<HTMLTableCellElement>(':scope > :is(.fd-list-group, .fd-list-more) > td')) cell.colSpan = span();
+    for (const cell of body.querySelectorAll<HTMLTableCellElement>(':scope > :is(.fd-list-group, .fd-list-more, .fd-list-note) > td')) cell.colSpan = span();
     if (!totals) return;
     const next = makeTotals();
     if (!next) return;
@@ -603,7 +623,7 @@ export function listView(context: ListContext): ListView {
       ),
       // Its card, which the table hides and a narrow list or its gallery shows in place of the columns.
       ...(spec && cards ? [cards.drawCard({ page, node, el, locale, cells }, spec, record.values, name)] : []),
-      ...(trailing ? [el('td', { class: 'fd-list-tail' }, ...own.map((button) => rowButton(button, record)))] : [])
+      ...(trailing ? [el('td', { class: 'fd-list-tail' }, ...(rowEdits?.openButton(record, name) ?? []), ...own.map((button) => rowButton(button, record)))] : [])
     );
     arrangeRow(tr);
     tr.addEventListener('click', (event) => {
@@ -614,6 +634,8 @@ export function listView(context: ListContext): ListView {
         return;
       }
       if ((event.target as Element).closest('.fd-list-twisty')) return;
+      // A cell changed in place, a card's sheet, a row not made yet: never the record opened.
+      if (rowEdits?.pressed(tr, event) || tr.hasAttribute('data-new')) return;
       void openRow(record.id, true, name);
     });
     tr.addEventListener('keydown', (event) => {
@@ -621,8 +643,9 @@ export function listView(context: ListContext): ListView {
       const forward = tr.closest('[dir]')?.getAttribute('dir') === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
       if (event.key === 'Enter') {
         event.preventDefault();
-        void openRow(record.id, true, name);
-      } else if (event.key === ' ' && box) {
+        // A row whose cells change in place: its first cell opened.
+        if (!rowEdits?.enter(tr) && !tr.hasAttribute('data-new')) void openRow(record.id, true, name);
+      } else if (event.key === ' ' && box && !tr.hasAttribute('data-new')) {
         event.preventDefault();
         box.click();
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -644,6 +667,7 @@ export function listView(context: ListContext): ListView {
     tr.addEventListener('mouseleave', () => viewParts.highlight(null));
     tr.addEventListener('focus', () => viewParts.highlight(record.id));
     recordOf.set(tr, record);
+    rowEdits?.wire(tr, record);
     return tr;
   }
 
@@ -910,6 +934,11 @@ export function listView(context: ListContext): ListView {
 
   async function load(): Promise<void> {
     const mine = ++asking;
+    // The rows the person changed, saved as they are left, before the list asks again: what it shows then is saved.
+    if (rowEdits) {
+      await rowEdits.settle();
+      if (mine !== asking || destroyed) return;
+    }
     // What the answer is for (a related list's record shown), taken as it is asked.
     const shown = context.shown?.();
     const stale = () => mine !== asking || destroyed || (shown !== undefined && !shown());
@@ -954,7 +983,9 @@ export function listView(context: ListContext): ListView {
       failed.hidden = false;
     }
     body.replaceChildren(...drawn);
-    empty.hidden = drawn.length > 0 || !failed.hidden;
+    // The person's work kept on rows, drawn on them or kept in sight; then whether it holds none.
+    rowEdits?.drawn();
+    empty.hidden = drawn.length > 0 || !failed.hidden || !!body.querySelector(':scope > .fd-list-row');
     empty.textContent = context.none && !facets.length ? context.none : sentence(labels.noRecordsNoun, labels.noRecords);
     table.removeAttribute('aria-busy');
     drawShape();
@@ -1563,6 +1594,43 @@ export function listView(context: ListContext): ListView {
     ...(key ? [key] : []),
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
+  // Its cells changed in place: Add a line and what a paste did under the table.
+  if (editPart) {
+    rowEdits = editPart.editableRows({
+      list: context,
+      page,
+      model,
+      reads: fields,
+      functions: form.functions,
+      cells,
+      nameColumn,
+      element,
+      body,
+      columns: shownColumns,
+      span,
+      row,
+      saved(record, made) {
+        known.set(String(record.id), { ...(record.version ? { version: record.version } : {}), ...(record.can ? { can: record.can } : {}) });
+        const at = rows.findIndex((one) => String(one.id) === String(record.id));
+        if (at >= 0) rows[at] = record;
+        else if (made) rows.push(record);
+        if (made) {
+          total++;
+          matching++;
+          drawPager();
+          context.onCount?.(matching, facets.length > 0);
+        }
+        totals?.refresh(currentFilter());
+        totals?.ticked([...chosen], currentFilter());
+        void viewParts.reload();
+      },
+      reload: load,
+      changed: () => void (empty.hidden = !!body.firstElementChild || !failed.hidden),
+      grouped: () => groupedNow,
+      open: context.onOpenRecord ? openRow : undefined,
+    });
+    if (rowEdits) element.querySelector('.fd-list-records > .fd-list-scroll')?.after(rowEdits.element);
+  }
   // Scrolled sideways, the first column and the Columns menu's cell, held at its ends, are parted from those going under them.
   choices?.scrolls(element.querySelector('.fd-list-scroll') as HTMLElement);
   showAs(view);
@@ -1578,6 +1646,7 @@ export function listView(context: ListContext): ListView {
     open: (id, options) => openRow(id, options?.lit !== false),
     destroy() {
       destroyed = true;
+      rowEdits?.destroy();
       doc.removeEventListener('pointerdown', outsideExport, true);
       search.destroy();
       widths?.disconnect();
