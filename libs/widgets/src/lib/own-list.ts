@@ -1,7 +1,8 @@
-import { describeState, maker, setAttr, setText } from './kind-parts';
+import { describeState, maker, setAttr, setText, wordsFor } from './kind-parts';
 import { pickRow, scrollToRow, typeAhead, typedKey } from './pick-list';
 import { popup } from './popup';
 import { shownOptions } from './shuffle';
+import { seatMarks } from './seats';
 import { installChoiceStyles } from './styles-choice';
 import type { WidgetFactory } from './widgets';
 
@@ -18,12 +19,15 @@ import type { WidgetFactory } from './widgets';
  *
  * Drawn as a state's box is (`fd-dot-box`): in the quiet look its words are
  * the value, its box shows when pointed at, and it says what to add while
- * empty; in a boxed skin it is a box as a choice's.
+ * empty; in a boxed skin it is a box as a choice's. An option's places left
+ * show after its words, as a radio's do ("3 left", "Full"); a full one picked
+ * is refused by the form, the box keeping what it held.
  */
-export const ownListWidget: WidgetFactory = ({ form, name, field, node, id, document }) => {
+export const ownListWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
   installChoiceStyles(document);
   const make = maker(document);
   const choices = shownOptions(field.type === 'selection' ? field.options : [], form, name, node);
+  const seats = seatMarks(document, form, name, wordsFor(labels, locale), choices.map((option) => option.value));
   const listId = `${id}-list`;
   const wordsId = `${id}-words`;
   // Named by its field's label, which the viewer gives the id `<id>-label`, and by the value it shows.
@@ -31,6 +35,7 @@ export const ownListWidget: WidgetFactory = ({ form, name, field, node, id, docu
   const words = make('span', { class: 'fd-dot-label fd-own-words', id: wordsId, 'data-placeholder': node.placeholder });
   const rows = choices.map((option, at) => {
     const row = pickRow(make, { role: 'option', id: `${listId}-${at}`, 'aria-selected': 'false' }, option.label);
+    row.append(seats.marks[at]);
     row.addEventListener('mousedown', (event) => event.preventDefault()); // the list keeps the focus
     row.addEventListener('click', () => pick(at));
     return row;
@@ -132,6 +137,7 @@ export const ownListWidget: WidgetFactory = ({ form, name, field, node, id, docu
       required = state.required;
       setText(words, at < 0 ? '' : choices[at].label);
       rows.forEach((row, i) => setAttr(row, 'aria-selected', String(i === at)));
+      seats.update();
       if (button.disabled !== state.readonly) button.disabled = state.readonly;
       if (state.readonly) close(false);
       describeState(button, state);

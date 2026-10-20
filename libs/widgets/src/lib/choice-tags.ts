@@ -3,6 +3,7 @@ import { withAlone } from './choice-rules';
 import { floatUnder } from './float';
 import { quoted, refusalHint } from './input-rules';
 import { fillIn, maker, setAttr, wordsFor } from './kind-parts';
+import { seatWords } from './seats';
 import type { WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -29,6 +30,10 @@ import type { WidgetContext, WidgetFactory } from './widgets';
  * field holds what it held, and a save is refused rather than made with it.
  * Escape puts it back. A save, a check or a step forward made while words are
  * still typed reads them as leaving would (`form.settling`).
+ *
+ * An option's places left show after its words in the list, as a radio's do
+ * ("3 left", "Full"); a full one taken is refused by the form, and the box
+ * keeps the choice it held — a tag is never added.
  */
 export const choiceTagsWidget: WidgetFactory = (context) => combo(context, false);
 export const searchWidget: WidgetFactory = (context) => combo(context, true);
@@ -72,9 +77,17 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   let readonly = false;
 
   function draw() {
+    const places = form.getState().limits?.seats?.[name];
     list.replaceChildren(
       ...found.map((option, i) => {
-        const item = make('li', { id: `${listId}-${i}`, role: 'option', class: `fd-option${i === active ? ' fd-active' : ''}`, 'aria-selected': String(i === active) }, option.label);
+        const shown = places?.[String(option.value)];
+        const left = seatWords(shown, words);
+        const item = make(
+          'li',
+          { id: `${listId}-${i}`, role: 'option', class: `fd-option${i === active ? ' fd-active' : ''}`, 'aria-selected': String(i === active) },
+          option.label,
+          ...(left ? [make('small', { class: 'fd-seats', ...(shown?.left === 0 ? { 'data-full': '' } : {}) }, left)] : [])
+        );
         // The box keeps the focus; the click adds it.
         item.addEventListener('mousedown', (event) => event.preventDefault());
         item.addEventListener('click', () => add(option));
@@ -106,8 +119,9 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   function add(option: Option) {
     letGo();
     if (single) {
-      input.value = option.label;
       write(option.value);
+      // Refused — a full option — the box shows the choice it still holds.
+      input.value = labelOf(current());
       return close();
     }
     input.value = '';

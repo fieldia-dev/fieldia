@@ -391,8 +391,9 @@ questions wait. A form left open as it opens or closes says so then; answers
 typed when it closed stay, a banner over them saying they can no longer be
 sent. A page of one response from each person offers no Submit another. A
 choice's options with `seats` show their places left beside their words ("3
-left", "Full") in radios, checkboxes, the browser's list and picture cards; a
-full one is never hidden, and refused when picked.
+left", "Full") in radios, checkboxes, the browser's list, picture cards,
+Fieldia's own list, a list that searches and tags; a full one is never hidden,
+and refused when picked, whichever draws it — the choice kept as it was.
 
 A page with `continueLater`, whose source has `saveDraft` and `loadDraft`, has
 **Continue later** beside Submit (and a wizard's Next): the answers read and

@@ -323,6 +323,7 @@ const SKINS_CSS = /* css */ `
 .fd-seats { font-size: 0.85em; color: var(--fd-muted); white-space: nowrap; }
 .fd-seats[data-full] { color: var(--fd-error); font-weight: 600; }
 .fd-image-card-words .fd-seats { display: block; }
+.fd-option > .fd-seats { margin-inline-start: 6px; }
 /* "Other:", with a box for an answer of one's own, a choice like the others. */
 .fd-choice-other { cursor: default; flex: 1 1 260px; max-width: 420px; min-width: 0; }
 .fd-choice-other-pick { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; flex: none; }

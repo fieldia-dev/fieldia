@@ -1,10 +1,13 @@
 import { createForm, createMemoryDataSource, type FieldNode, type Form, type Page } from '@fieldia/core';
-import { createWidget } from './widgets';
+import { createWidget, type WidgetFactory } from './widgets';
+import { ownListWidget } from './own-list';
+import { choiceTagsWidget, searchWidget } from './choice-tags';
 
 /**
  * A choice's places, drawn: "2 left" beside an option's words and "Full" on one whose places are all taken, once the
- * data source told how many took them — in a radio group, checkboxes, the browser's list and picture cards alike. A
- * full option is never hidden nor turned off: the form refuses it, said under the field.
+ * data source told how many took them — in a radio group, checkboxes, the browser's list, picture cards, Fieldia's own
+ * list, a list that searches and tags alike. A full option is never hidden nor turned off: the form refuses it, said
+ * under the field, and every way of drawing a choice keeps what it held.
  */
 
 const page = (multiple = false): Page =>
@@ -73,5 +76,67 @@ describe('a choice’s places, drawn', () => {
     const element = await draw('radio', createForm({ page: page(), dataSource: source }));
     expect(marks(element)).toEqual(['', '', '']);
     expect(element.querySelector('label[for="fd-session-1"]')?.textContent).toBe('Afternoon workshop');
+  });
+});
+
+describe('a choice’s places in the choice part’s lists: its own list, a search, tags', () => {
+  /** A widget of the choice part, drawn as the viewer draws it once the part has come. */
+  async function drawn(factory: WidgetFactory, form: Form) {
+    const node: FieldNode = { type: 'field', id: 'n', field: 'session' };
+    const made = factory({ form, name: 'session', field: form.page.fields['session'], node, id: 'fd-session', document });
+    document.body.replaceChildren(made.element);
+    const refresh = () => made.update({ value: form.getState().values['session'], values: form.getState().values, readonly: false, required: false, invalid: !!form.getState().errors['session'] });
+    form.subscribe(refresh);
+    await form.settled();
+    refresh();
+    return made;
+  }
+
+  it('beside the own list’s options, a full one picked refused and the box keeping what it held', async () => {
+    const form = createForm({ page: page(), dataSource: counted() });
+    const { element } = await drawn(ownListWidget, form);
+    expect(marks(element)).toEqual(['1 left', 'Full!', '']);
+    const rows = [...element.querySelectorAll<HTMLElement>('[role="option"]')];
+    expect(rows[1].textContent).toBe('Afternoon workshopFull');
+    (element.querySelector('button') as HTMLButtonElement).click();
+    rows[1].click();
+    expect(form.getState().values['session']).toBeNull();
+    expect(form.getState().errors['session']).toBe('Afternoon workshop is full');
+    expect(element.querySelector('.fd-own-words')?.textContent).toBe('');
+    (element.querySelector('button') as HTMLButtonElement).click();
+    rows[0].click();
+    expect(element.querySelector('.fd-own-words')?.textContent).toBe('Morning workshop');
+  });
+
+  it('beside a searched list’s options, a full one taken refused, the box showing the choice it holds', async () => {
+    const form = createForm({ page: page(), dataSource: counted() });
+    const { element } = await drawn(searchWidget, form);
+    const input = element.querySelector('input') as HTMLInputElement;
+    input.focus();
+    input.click();
+    const items = () => [...element.querySelectorAll<HTMLElement>('[role="option"]')];
+    expect(items().map((item) => item.textContent)).toEqual(['Morning workshop1 left', 'Afternoon workshopFull', 'Evening talk']);
+    expect(marks(element)).toEqual(['1 left', 'Full!']);
+    items()[0].click();
+    expect(input.value).toBe('Morning workshop');
+    input.click();
+    items()[1].click();
+    expect(form.getState().values['session']).toBe('am');
+    expect(form.getState().errors['session']).toBe('Afternoon workshop is full');
+    expect(input.value).toBe('Morning workshop');
+  });
+
+  it('beside tags’ options, a full one never added as a tag', async () => {
+    const form = createForm({ page: page(true), dataSource: counted() });
+    const { element } = await drawn(choiceTagsWidget, form);
+    const input = element.querySelector('input') as HTMLInputElement;
+    input.focus();
+    input.click();
+    const items = () => [...element.querySelectorAll<HTMLElement>('[role="option"]')];
+    expect(marks(element)).toEqual(['1 left', 'Full!']);
+    items()[1].click();
+    expect(form.getState().values['session']).toEqual([]);
+    expect(element.querySelectorAll('.fd-chip')).toHaveLength(0);
+    expect(form.getState().errors['session']).toBe('Afternoon workshop is full');
   });
 });

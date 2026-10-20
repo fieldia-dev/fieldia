@@ -23,6 +23,9 @@ export const CHOICE_CSS = /* css */ `
 }
 .fd-own-box:has(> .fd-own-button:disabled) { cursor: default; color: var(--fd-muted); }
 .fd-own-box:has(> .fd-own-button:disabled)::after { content: none; }
+/* An option's places left after its words, as a radio's: a column of their own, the words cut before them. */
+.fd-own-list .fd-pick-row:has(> .fd-seats) { grid-template-columns: 26px minmax(0, 1fr) auto; }
+.fd-own-list .fd-pick-row > .fd-seats { align-self: center; padding-inline-start: 6px; }
 `;
 
 /** The sheet in a document, once, in its place among Fieldia's. */
