@@ -57,7 +57,7 @@
             "columns": ["product_id", "lot", "expiry", "units"],
             "help": "Add a line, press Scan beside its lot and hold the box’s DataMatrix code to the camera: the product, the lot and the expiry fill in.",
             "cells": {
-              "lot": { "options": { "scan": { "formats": ["data_matrix"], "part": "10", "fills": { "expiry": "17", "product_id": { "part": "01", "by": "gtin" } } } } }
+              "lot": { "width": 14, "options": { "scan": { "formats": ["data_matrix"], "part": "10", "fills": { "expiry": "17", "product_id": { "part": "01", "by": "gtin" } } } } }
             }
           }
         ]

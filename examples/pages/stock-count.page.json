@@ -11,7 +11,7 @@
     "counted_by": { "type": "char", "label": "Counted by" },
     "line_ids": {
       "type": "one2many",
-      "label": "Counted",
+      "label": "Products",
       "relation": "stock.count.line",
       "fields": {
         "product_id": { "type": "many2one", "label": "Product", "relation": "stock.product", "required": true },
@@ -36,7 +36,7 @@
       {
         "type": "section",
         "id": "count",
-        "title": "Counted",
+        "title": "Products counted",
         "children": [
           {
             "type": "field",

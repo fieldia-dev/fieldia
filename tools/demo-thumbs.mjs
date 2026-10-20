@@ -17,7 +17,8 @@ import { pathToFileURL } from 'node:url';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'demos/thumbs');
-const PORT = 4397;
+// Its own port, or the one a lane running beside others is given (FIELDIA_THUMBS_PORT).
+const PORT = Number(process.env['FIELDIA_THUMBS_PORT'] ?? 4397);
 const { DEMOS, demoHref } = await import(pathToFileURL(join(WORKSPACE, 'demos/catalog.mjs')).href);
 const { DESIGNER_DEMOS } = await import(pathToFileURL(join(WORKSPACE, 'demos/designer-catalog.mjs')).href);
 
