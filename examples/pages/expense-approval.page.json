@@ -56,6 +56,8 @@
         "type": "section",
         "id": "s-main",
         "columns": { "wide": 2, "medium": 1 },
+        "readonly": "state == 'approved'",
+        "readonlyReason": "An expense is kept as it was approved",
         "children": [
           { "type": "field", "id": "f-employee", "field": "employee" },
           { "type": "field", "id": "f-date", "field": "date" },

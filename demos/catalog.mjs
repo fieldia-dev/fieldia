@@ -46,7 +46,7 @@ export const AREAS = [
 /** Each area's demos, by id: every demo of the catalog in exactly one. */
 const AREA_OF = {
   sales: ['order', 'contract-fees', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive', 'test-drives'],
-  accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
+  accounting: ['reading', 'vendor-bill', 'purchase-approval', 'expense-approval', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
   crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'leads-queue', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
@@ -123,6 +123,8 @@ const SEARCH_WORDS = {
   'customer-locked': 'read only readonly edit lock locked view mode customer',
   reading: 'invoice bill dense read only accounting counters alerts tags keyboard shortcuts',
   'vendor-bill': 'vendor bill bills supplier purchase invoice pdf next previous archive duplicate delete print debit note',
+  'purchase-approval': 'purchase order po buying buyer vendor supplier approval approvals approve approver reject sign off sign-off limit over budget finance cfo levels chain waiting pending locked lock history audit decision workflow',
+  'expense-approval': 'expense expenses claim claims reimbursement receipt approval approve reject rejected refused reason why manager finance policy resubmit submit again history audit employee staff',
   'customers-arabic': 'customers clients list arabic right to left rtl',
   'customer-arabic': 'customer client arabic right to left rtl translation',
   'signup-french': 'translation translations french language languages localisation localization i18n',
@@ -997,6 +999,34 @@ export const DEMOS = [
       'Press Duplicate: the copy shows as “… (copy)”, a draft, and the count beside the arrows is five.',
       'On BILL/2026/10/0002, press Archive and say yes: an Archived banner crosses it and the menu offers Unarchive.',
       'Make the window narrow: the PDF goes under the sheet, the conversation stays beside it until a phone’s width.',
+    ],
+  },
+  {
+    id: 'purchase-approval',
+    name: 'A purchase order waiting for approval',
+    category: 'records',
+    query: 'page=purchase-approval&record=1&skin=outlined',
+    blurb: 'A purchase order over its limit, waiting for Finance, then the CFO: said on the order — who it waits for, and why — with Approve and Reject for those who may decide, the order locked meanwhile but its notes, and who decided what and when, beside it and in its conversation. Your app, or its approval engine, decides who is asked.',
+    howTo: [
+      'You are Mona Adel, in Finance: “Waiting for Finance: Mona Adel or Hany Lotfy”. Try to change a quantity: the order is locked while it waits, and its lock says why. Notes for the vendor stay open.',
+      'Press Approve: Finance has approved it, and it waits for the CFO — nothing for you to decide now.',
+      '[Sign in as Sara Nabil, the CFO](?as=sara) and press Approve: the order is approved, and its status moves on to Purchase order.',
+      'Open Approval history, and read the conversation beside the order: who asked, who approved, and when.',
+      '[Sign in as Omar Said, the buyer](?as=omar): he sees where it stands, and decides nothing.',
+      '[Open an order under the limit](?record=2): it needs no approval, and nothing is said.',
+    ],
+  },
+  {
+    id: 'expense-approval',
+    name: 'An expense rejected, with why',
+    category: 'records',
+    query: 'page=expense-approval&record=1&skin=outlined',
+    blurb: 'An expense claim its manager approved and Finance rejected: the reason said on it, quoted, and in its conversation. Rejected, it is open again — put it right and submit it again, and it goes back to the manager. Reject always asks why.',
+    howTo: [
+      'You are Omar Said: “Rejected by Mona Adel (Finance)”, her reason under it. The claim is open again: change the amount to 3,200 and press Submit for approval.',
+      'It waits for your manager again — “Waiting for Manager: Karim Fathy” — and every field but the notes is locked.',
+      '[Sign in as Karim Fathy, the manager](?as=karim), press Reject, then Reject again with nothing written: it asks why. Write why, and reject it.',
+      'Open Approval history: the first round and the second — who, when, and why.',
     ],
   },
   {

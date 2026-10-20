@@ -60,3 +60,6 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
    display would beat [hidden]. */
 .demo-meanwhile-bar [hidden] { display: none; }
 .demo-meanwhile-said { flex: 1 1 24em; font-size: 13.5px; color: var(--dh-muted, #5b6470); }
+/* An approvals demo's bar (shared/approvals.ts): who uses it, and the others to sign in as — the shell's own colours. */
+.demo-signed-in { background: var(--dh-surface, #fff); border-color: var(--dh-line, #e3e6ea); color: var(--dh-ink, #1f2933); }
+.demo-signed-in-said { font-weight: 600; }

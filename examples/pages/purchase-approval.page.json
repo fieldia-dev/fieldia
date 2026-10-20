@@ -57,6 +57,8 @@
         "type": "section",
         "id": "s-main",
         "columns": { "wide": 2, "medium": 1 },
+        "readonly": "state == 'purchase'",
+        "readonlyReason": "A purchase order is kept as it was approved",
         "children": [
           { "type": "field", "id": "f-partner", "field": "partner_id" },
           { "type": "field", "id": "f-requested", "field": "requested_by" },
@@ -68,6 +70,7 @@
         "type": "section",
         "id": "s-lines",
         "title": "Products",
+        "readonly": "state == 'purchase'",
         "children": [
           { "type": "field", "id": "f-lines", "field": "line_ids", "labels": "hidden" },
           { "type": "field", "id": "f-total", "field": "amount_total" }
