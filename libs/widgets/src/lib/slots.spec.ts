@@ -43,10 +43,11 @@ const settle = () => new Promise((done) => setTimeout(done, 0));
 const named = (year: number, month: number, day: number) => new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' }).format(new Date(year, month - 1, day));
 const said = (el: HTMLElement) => el.querySelector('.fd-slots-said')?.textContent;
 
-async function mount(more: { dataSource?: DataSource; values?: Record<string, unknown>; readonly?: boolean } = {}) {
+async function mount(more: { dataSource?: DataSource; values?: Record<string, unknown>; readonly?: boolean; page?: Page } = {}) {
   const dataSource = more.dataSource ?? createMemoryDataSource({ slots: scheduleSlots({ showroom: SHOWROOM }, { now: NOW }) });
-  const form = createForm({ page: PAGE, dataSource, now: NOW, values: { car: { id: 1, label: 'Model 3' }, ...more.values } as never });
-  const node = (PAGE.layout as { children: FieldNode[] }).children[0];
+  const page = more.page ?? PAGE;
+  const form = createForm({ page, dataSource, now: NOW, values: { car: { id: 1, label: 'Model 3' }, ...more.values } as never });
+  const node = (page.layout as { children: FieldNode[] }).children[0];
   const widget = createWidget({ form, name: 'start', field: form.page.fields['start'], node, id: 'fd-start', document, labels: WIDGET_LABELS.en, locale: 'en' });
   document.body.replaceChildren(widget.element);
   const refresh = () => widget.update({ value: form.getState().values['start'], values: form.getState().values, readonly: more.readonly ?? false, required: false, invalid: false });
@@ -143,6 +144,30 @@ describe('booking slots', () => {
     await settle();
     expect((dataSource as ReturnType<typeof createMemoryDataSource>).calls.filter((call) => call.method === 'slots').length).toBe(asked + 1);
     expect(times()).toEqual(['10:00', '11:00']);
+  });
+
+  it('asks again once a response is sent: the next one, started over, is never offered the time the last one booked', async () => {
+    // A page of responses whose source keeps each booking sent, as a clinic's server does.
+    const page: Page = { ...PAGE, id: 'book', data: { kind: 'responses' } };
+    const memory = createMemoryDataSource({
+      slots: scheduleSlots({ showroom: { ...SHOWROOM, bookings: { model: 'drive', field: 'start', endField: 'stop' } } }, { now: NOW }),
+      submitted: (request, count) => {
+        memory.records['drive'] = { ...memory.records['drive'], [count]: request.values };
+        return { id: count };
+      },
+    });
+    const { form, day, chips, times } = await mount({ dataSource: memory, page });
+    day(19).click();
+    expect(times()).toEqual(['09:00', '10:00', '11:00']);
+    chips()[1].click();
+    await settle();
+    expect(form.getState().values['start']).toBe('2026-10-19T08:00:00.000Z');
+    expect(await form.save()).toBe(true);
+    // Booked; Book another: 10:00 is gone from the 19th's times, without anything pressed.
+    form.reset();
+    await settle();
+    day(19).click();
+    expect(times()).toEqual(['09:00', '11:00']);
   });
 
   it('opens on the day of a booking held, its time pressed though no longer free to others', async () => {

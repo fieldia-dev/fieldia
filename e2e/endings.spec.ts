@@ -14,26 +14,37 @@ const box = (page: Page, id: string) => node(page, id).locator('input, select, t
 const ending = (page: Page) => page.locator('.fd-done');
 
 test.describe('a booking that ends with its reference', () => {
-  async function book(page: Page, visit: 'In person' | 'Video call') {
-    await open(page, 'plain', 'page=template-appointment-booking&theme=apple');
+  // "Now" pinned, on Cairo's clock: Wednesday 14 October 2026, 09:40, so the clinic's free times are the same each run.
+  test.use({ timezoneId: 'Africa/Cairo', locale: 'en-GB' });
+  const BOOKING = 'page=template-appointment-booking&theme=apple&now=2026-10-14T09:40';
+  const slots = (page: Page) => node(page, 'f-when');
+  const day = (page: Page, n: number) => slots(page).locator('.fd-slots-days button:not(.fd-outside)').filter({ hasText: new RegExp(`^${n}$`) });
+  const chips = (page: Page) => slots(page).locator('.fd-slots-chip');
+  /** The month asked of the clinic's schedule: no day still waiting for its state. */
+  const settled = (page: Page) => expect(slots(page).locator('.fd-slots-days')).not.toHaveAttribute('aria-busy', 'true');
+
+  /** A service, a day and one of its free times, then who is coming, as a person books: from the times the clinic has free. */
+  async function book(page: Page, visit: 'In person' | 'Video call', who = { name: 'Sara Hassan', email: 'sara@example.com' }) {
     await node(page, 'f-service').getByLabel('First consultation, 30 min').check();
-    await box(page, 'f-date').fill('2026-10-15');
-    await box(page, 'f-date').press('Tab');
-    await box(page, 'f-time').selectOption({ label: '10:00' });
+    await settled(page);
+    await day(page, 15).click();
+    await chips(page).filter({ hasText: /^10:00$/ }).click();
+    await expect(chips(page).filter({ hasText: /^10:00$/ })).toHaveAttribute('aria-pressed', 'true');
     await node(page, 'f-visit').getByLabel(visit).check();
-    await box(page, 'f-name').fill('Sara Hassan');
+    await box(page, 'f-name').fill(who.name);
     await box(page, 'f-phone').fill('+20 100 123 4567');
-    await box(page, 'f-email').fill('sara@example.com');
+    await box(page, 'f-email').fill(who.email);
     await page.getByRole('button', { name: 'Submit' }).click();
   }
 
   test('says the reference the server gave, with what was booked, and takes the focus so it is read out', async ({ page }) => {
+    await open(page, 'plain', BOOKING);
     await book(page, 'In person');
     await expect(ending(page)).toBeVisible();
     const title = ending(page).locator('.fd-done-title');
     await expect(title).toHaveText('You are booked, Sara Hassan');
     await expect(title).toBeFocused();
-    await expect(ending(page).locator('.fd-done-words')).toHaveText(['Your booking is B-1043: First consultation, 30 min on 15 Oct 2026 at 10:00.', 'We have sent the details to sara@example.com.']);
+    await expect(ending(page).locator('.fd-done-words')).toHaveText(['Your booking is B-1043: First consultation, 30 min.', 'See you on 15 Oct 2026, 10:00. We have sent the details to sara@example.com.']);
     await screen(page, 'endings-booking');
     expect(await axeFindings(page, 'a booking’s ending')).toEqual([]);
     // Its own button starts again: the next booking has the next reference.
@@ -43,9 +54,71 @@ test.describe('a booking that ends with its reference', () => {
   });
 
   test('says the ending its answers choose: a video call’s', async ({ page }) => {
+    await open(page, 'plain', BOOKING);
     await book(page, 'Video call');
-    await expect(ending(page).locator('.fd-done-words').first()).toHaveText('Your booking is B-1043: First consultation, 30 min on 15 Oct 2026 at 10:00, by video call.');
-    await expect(ending(page).locator('.fd-done-words').nth(1)).toHaveText('The link to join comes to sara@example.com an hour before.');
+    await expect(ending(page).locator('.fd-done-words')).toHaveText(['Your booking is B-1043: First consultation, 30 min, by video call.', 'We call you on 15 Oct 2026, 10:00: the link to join comes to sara@example.com an hour before.']);
+  });
+
+  test('books only a time the clinic has free: never a day gone by, never a time already booked', async ({ page }) => {
+    const { problems } = await open(page, 'plain', BOOKING);
+    await node(page, 'f-service').getByLabel('First consultation, 30 min').check();
+    await settled(page);
+    // The days before today, and today's times gone by, are not offered.
+    await expect(day(page, 13)).toHaveAttribute('data-state', 'past');
+    await day(page, 14).click();
+    await expect(chips(page).first()).toHaveText('10:00');
+    await screen(page, 'endings-booking-free-times');
+    // Booked once…
+    await page.reload();
+    await book(page, 'In person');
+    await expect(ending(page).locator('.fd-done-words').first()).toContainText('B-1043');
+    // …that time is no one else's: the next booking is never offered it, the times round it still are.
+    await page.getByRole('button', { name: 'Book another' }).click();
+    await node(page, 'f-service').getByLabel('First consultation, 30 min').check();
+    await settled(page);
+    await day(page, 15).click();
+    await expect(chips(page).filter({ hasText: /^09:30$/ })).toHaveCount(1);
+    await expect(chips(page).filter({ hasText: /^10:00$/ })).toHaveCount(0);
+    await expect(chips(page).filter({ hasText: /^10:30$/ })).toHaveCount(1);
+    // A full review is an hour, its times an hour apart: 10:00 is taken for it too, the hours either side free.
+    await node(page, 'f-service').getByLabel('Full review, 60 min').check();
+    await settled(page);
+    await day(page, 15).click();
+    await expect(chips(page).filter({ hasText: /^10:00$/ })).toHaveCount(0);
+    await expect(chips(page).filter({ hasText: /^09:00$/ })).toHaveCount(1);
+    await expect(chips(page).filter({ hasText: /^11:00$/ })).toHaveCount(1);
+    await expect(chips(page).filter({ hasText: /^10:30$/ })).toHaveCount(0);
+    await screen(page, 'endings-booking-taken');
+    expect(problems).toEqual([]);
+  });
+});
+
+test.describe('a registration that ends with the ticket and where it goes', () => {
+  test('names the ticket and its price, the workshops picked, and the email the ticket goes to', async ({ page }) => {
+    await open(page, 'plain', 'page=template-event-registration&theme=material');
+    await box(page, 'f-name').fill('Sara Hassan');
+    await box(page, 'f-email').fill('sara@example.com');
+    await node(page, 'f-ticket').getByLabel('VIP, with the dinner').check();
+    await node(page, 'f-sessions').getByLabel('Data you can trust').check();
+    await node(page, 'f-sessions').getByLabel('Growing a small team').check();
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(ending(page).locator('.fd-done-title')).toHaveText('You are registered, Sara Hassan');
+    await expect(ending(page).locator('.fd-done-words')).toHaveText([
+      // Money as its box writes it: the currency's sign, then the amount.
+      /^Your ticket: VIP, with the dinner, \$\s250\.00\.$/,
+      'Your workshops: Data you can trust, Growing a small team.',
+      'Your ticket goes to sara@example.com, with how to get there. See you in Cairo on 14 November.',
+    ]);
+    await screen(page, 'endings-registration');
+    // Someone else registered next: no workshop picked, none said.
+    await page.getByRole('button', { name: 'Register someone else' }).click();
+    await box(page, 'f-name').fill('Omar Said');
+    await box(page, 'f-email').fill('omar@example.com');
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(ending(page).locator('.fd-done-words')).toHaveText([
+      /^Your ticket: Standard, \$\s120\.00\.$/,
+      'Your ticket goes to omar@example.com, with how to get there. See you in Cairo on 14 November.',
+    ]);
   });
 });
 

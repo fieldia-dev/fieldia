@@ -2230,11 +2230,11 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   gone('consent');
   // An event's sign-up that closed (its page's limits): the limits part, the page drawn once it came — its questions
   // never shown first — the closed form's words in their place, its sheet in its place; the survey kinds' part, in
-  // already, draws nothing of it.
+  // already, draws nothing of it. Its endings name the place kept: the answers part comes with it.
   const closed = inPage.mountViewer(host, { page: { ...read('event-signup.page.json'), limits: { closes: '2020-01-31' } }, dataSource: inPage.createMemoryDataSource() });
   waits(closed, 'a sign-up that closed');
   await closed.drawn;
-  hasIn("an event's sign-up, closed", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
+  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
   if (!host.querySelector('.fd-closed:not([hidden]) .fd-closed-title')?.textContent?.startsWith('This form closed on')) throw new Error("in a page, a closed form's words are not said in place of its questions");
   if ([...host.querySelectorAll('.fd-field')].some((field) => !field.closest('[hidden]')) || !host.querySelector('.fd-page-title')?.closest('.fd-content:not([hidden])')) throw new Error("in a page, a closed form's questions are shown, or its title is not");
   if (!doc.getElementById('fieldia-limits-styles')) throw new Error("in a page, the limits part's sheet was never put in");
@@ -2246,7 +2246,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const visit = inPage.mountViewer(host, { page: read('visit-feedback.page.json'), dataSource: inPage.createMemoryDataSource(), values: { birth_date: '1990-10-20' }, now: () => new dom.window.Date('2026-10-20T12:00:00Z') });
   waits(visit, 'a page whose formula counts an age');
   await visit.drawn;
-  hasIn("a visit's feedback counting an age", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, print, quiet, relations, slots, survey, text, themes');
+  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, print, quiet, relations, slots, survey, text, themes');
   if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
   visit.destroy();
   gone('visit');

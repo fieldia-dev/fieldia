@@ -389,8 +389,8 @@ under its title and in place of its questions: nothing is typed in a form that
 would refuse it, and while its counts are asked of the data source its
 questions wait. A form left open as it opens or closes says so then; answers
 typed when it closed stay, a banner over them saying they can no longer be
-sent. A page of one response from each person offers no Submit another. A
-choice's options with `seats` show their places left beside their words ("3
+sent. A page of one response from each person offers no Submit another, nor an
+ending's own button to start again. A choice's options with `seats` show their places left beside their words ("3
 left", "Full") in radios, checkboxes, the browser's list, picture cards,
 Fieldia's own list, a list that searches and tags; a full one is never hidden,
 and refused when picked, whichever draws it — the choice kept as it was.

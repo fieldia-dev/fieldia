@@ -383,7 +383,7 @@ export const DEMOS = [
       'Look at the sessions: the morning workshop has 2 places left, the afternoon one is Full, and so is the parking.',
       'Pick the afternoon workshop: “… is full”, under the question, and your choice stays as it was.',
       'Pick the morning workshop, press “Two people sign up for the morning workshop” over the form, then fill in your name and email and press Submit: the morning is “full now: choose another”, and nothing is sent.',
-      'Pick the evening talk and Submit: Thank you — with no second response offered, as the page takes one from each person. Reload to start again.',
+      'Pick the evening talk and Submit: the page says your place and the email your ticket goes to — with no second response offered, as the page takes one from each person. Reload to start again.',
       '[Open it before sign-ups open](?now=2020-01-01T08:00:00Z): it says when it opens, in place of its questions.',
       '[Open it after they close](?now=2099-01-01T08:00:00Z): it says when it closed, and who to write to.',
     ],

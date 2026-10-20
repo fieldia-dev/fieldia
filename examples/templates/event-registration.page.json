@@ -202,5 +202,18 @@
         ]
       }
     ]
-  }
+  },
+  "endings": [
+    {
+      "when": "len(sessions) > 0",
+      "title": "You are registered, {full_name}",
+      "text": "Your ticket: {ticket}, {price}.\nYour workshops: {sessions}.\nYour ticket goes to {email}, with how to get there. See you in Cairo on 14 November.",
+      "again": "Register someone else"
+    },
+    {
+      "title": "You are registered, {full_name}",
+      "text": "Your ticket: {ticket}, {price}.\nYour ticket goes to {email}, with how to get there. See you in Cairo on 14 November.",
+      "again": "Register someone else"
+    }
+  ]
 }

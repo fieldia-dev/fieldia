@@ -56,7 +56,8 @@
     },
     "start": {
       "type": "date",
-      "label": "Earliest start date"
+      "label": "Earliest start date",
+      "min": "today"
     },
     "salary": {
       "type": "monetary",

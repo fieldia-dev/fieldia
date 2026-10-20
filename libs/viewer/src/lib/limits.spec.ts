@@ -135,6 +135,22 @@ describe('a page that takes no answers now says so as it opens', () => {
     expect(handle?.form.getState().limits?.state).toBe('sent');
   });
 
+  it('takes one from each person: its own ending too offers no other response, whatever its button would say', async () => {
+    for (const again of [undefined, 'Sign up someone else']) {
+      handle?.destroy();
+      const endings = [{ title: 'You are signed up, {name}', text: 'Your place is kept.', ...(again ? { again } : {}) }];
+      await mount(signup({ limits: { onePerPerson: true }, endings }), { dataSource: createMemoryDataSource() });
+      type('name', 'Mona Adel');
+      button('Submit')?.click();
+      await pass(0);
+      await pass(0);
+      await pass(0);
+      expect(shown('.fd-done-title')?.textContent).toBe('You are signed up, Mona Adel');
+      expect(button('Submit another response')).toBeUndefined();
+      expect(button('Sign up someone else')).toBeUndefined();
+    }
+  });
+
   it('shows each choice’s places as the source tells them', async () => {
     const source = createMemoryDataSource({ limits: { 'event-signup': { perChoice: { session: { pm: 20 } } } } });
     await mount(signup({ limits: undefined }), { dataSource: source });
