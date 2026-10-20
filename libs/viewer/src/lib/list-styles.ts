@@ -64,6 +64,16 @@ export const LIST_STYLES = `
 .fd-search-option::before { content: ''; width: 14px; flex: none; text-align: center; color: var(--fd-accent); font-weight: 700; }
 .fd-search-option[aria-pressed="true"]::before { content: '✓'; }
 .fd-search-option:hover, .fd-search-option:focus-visible { background: var(--fd-page); }
+/* How many records a filter finds (filterCounts) — a named filter, a favourite, a filter bar's value: at its end, quieter
+   than its words, its digits lined up — "Late 5". */
+.fd-search-count { display: contents; }
+.fd-filter-count { margin-inline-start: auto; padding-inline-start: 12px; color: var(--fd-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* A range's From and To (filter-range.ts), a custom filter's "is between" and a filter bar's: side by side, what is wrong said under them. */
+.fd-filter-range-boxes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 8px; }
+.fd-filter-range-end { display: grid; gap: 4px; min-width: 0; }
+.fd-filter-range-word { font-size: 12px; color: var(--fd-muted); }
+.fd-filter-range-box { width: 100%; min-width: 0; box-sizing: border-box; }
+.fd-filter-range-boxes > .fd-refusal-hint { grid-column: 1 / -1; }
 .fd-search-add { color: var(--fd-muted); margin-block-start: 4px; }
 .fd-search-add::before { content: '+'; color: var(--fd-muted); font-weight: 400; }
 .fd-custom-filter, .fd-favourite-form { display: grid; gap: 6px; padding: 6px; }

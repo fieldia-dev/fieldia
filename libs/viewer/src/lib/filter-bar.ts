@@ -1,11 +1,13 @@
-import { labelAt, suggestions, type DataSource, type Facet, type JsonValue, type ListNode, type Locale, type Page, type ResolvedFilter } from '@fieldia/core';
+import { facetsToFilter, labelAt, suggestions, type DataSource, type Facet, type Field, type Group, type ListNode, type Locale, type Page, type ResolvedFilter } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
+import type { FilterKit, RangeEnds } from './filter-range';
+import { rangeControl, type RangeControl } from './filter-range-control';
+import { copyState, openFilterSheet, type BarState, type Pick } from './filter-sheet';
 import { installFilterStyles } from './filter-styles';
 import type { ViewerLabels } from './labels';
 
 type FieldFacet = Extract<Facet, { kind: 'field' }>;
-type Pick = { value: JsonValue; label: string };
 
 export interface FilterBarContext {
   page: Page;
@@ -24,10 +26,22 @@ export interface FilterBarContext {
   model: string;
   /** Conditions every search keeps: a field's values are listed from the records they let through. */
   fixedFilter: () => ResolvedFilter[];
+  /**
+   * Every condition a search of these facets makes, the fixed ones with them, as the list asks for its records (a date
+   * and time's days in its zone): what a count is asked with. The fixed ones and the facets' own unless given.
+   */
+  searchFilter?: (facets: Facet[]) => ResolvedFilter[];
+  /** How many records a filter finds, where the source can count; null where it cannot: the phone's sheet's Show. */
+  count?: (filter: ResolvedFilter[]) => Promise<number | null>;
   /** What the list starts with: a field's values of `filterFields` show picked in its list; the rest apply as they are. */
   facets: Facet[];
   onChange: (facets: Facet[]) => void;
+  /** A range's boxes and words and a count's mark, the list part's (filter-range.ts): handed, never carried twice. */
+  kit: FilterKit;
 }
+
+/** Neither end of a range: nothing filtered. */
+const OPEN: RangeEnds = { from: null, to: null };
 
 /** How long typing rests before the keyword is looked for. */
 const KEYWORD_PAUSE = 250;
@@ -41,9 +55,17 @@ const KEYWORD_PAUSE = 250;
  * page gives one (`filterLabels`). A field's values are its
  * choices, yes and no, or those its records hold (a link's, through the data
  * source). Keys: ↓ opens a list, the arrows move, Space ticks, Escape closes.
+ *
+ * A number's or a date's field (`filterRanges`; a decimal's, an amount's and a date's always) is filtered by its
+ * range — a press for each least value it names, From and To — its button saying it ("Price: 1,000,000 – 3,000,000"),
+ * one chip. With `filterCounts`, each value says how many records it finds among the rest of the search ("Villa 12"),
+ * asked of the source as it groups the field. With `filterSheet`, on a phone the fields are behind a Filters button, in
+ * a sheet that shows them all and takes them together with "Show 37 homes".
  */
 export function filterBar(context: FilterBarContext) {
   const { page, node, doc, el, labels, fill, uid } = context;
+  const { rangeValue, rangeWords, endsOf, countMark, rangeOnly } = context.kit;
+  const locale = context.locale ?? 'en';
   installFilterStyles(doc);
   const fields = (node.filterFields ?? []).filter((name) => page.fields[name]);
   const icon = (name: string, className?: string) => {
@@ -52,17 +74,32 @@ export function filterBar(context: FilterBarContext) {
     if (className) drawn?.classList.add(className);
     return drawn ? [drawn] : [];
   };
+  /** A field by the name its filter goes by: its own on the bar where the page gives one ("Iteration" for Iteration Path). */
+  const defOf = (field: string): Field => ({ ...page.fields[field], label: node.filterLabels?.[field] ?? page.fields[field].label }) as Field;
+  /** Whether a field is filtered by its range: a decimal's, an amount's and a date's always, a whole number's where the page says. */
+  const ranged = (field: string) => rangeOnly.has(page.fields[field].type) || (page.fields[field].type === 'integer' && !!node.filterRanges?.[field]);
+  const counting = node.filterCounts === true;
+  const searchFilter = context.searchFilter ?? ((of: Facet[]) => [...context.fixedFilter(), ...facetsToFilter(of, node)]);
 
-  // ---- what is asked for: a keyword, each field's values ticked, and anything else the list started with ----
+  // ---- what is asked for: a keyword, each field's values ticked or its range, and anything else the list started with ----
 
   let keyword = '';
-  const picks = new Map<string, Pick[]>();
+  const state: BarState = { picks: new Map(), ranges: new Map() };
   /** Searches this bar does not draw (the list's default filters, a map's area): they apply until cleared. */
   let others: Facet[] = [];
   for (const facet of context.facets) {
-    const own = facet.kind === 'field' && fields.includes(facet.field) && facet.values.every((v) => v.op === '=' || v.op === 'contains');
-    if (own) picks.set(facet.field, facet.values.map((v) => ({ value: v.value, label: v.label })));
-    else others.push(facet);
+    if (facet.kind === 'field' && fields.includes(facet.field)) {
+      const ends = ranged(facet.field) && facet.values.length === 1 ? endsOf(facet.values[0]) : null;
+      if (ends && !state.ranges.has(facet.field)) {
+        state.ranges.set(facet.field, ends);
+        continue;
+      }
+      if (!ranged(facet.field) && !state.picks.has(facet.field) && facet.values.every((v) => v.op === '=' || v.op === 'contains')) {
+        state.picks.set(facet.field, facet.values.map((v) => ({ value: v.value, label: v.label })));
+        continue;
+      }
+    }
+    others.push(facet);
   }
 
   const opFor = (field: string) => (page.fields[field]?.type === 'many2many' ? 'contains' : '=');
@@ -71,14 +108,23 @@ export function filterBar(context: FilterBarContext) {
     const found = suggestions(text, page, node, undefined, context.locale).map((s) => ({ field: s.field, op: s.op, value: s.value }));
     return [{ any: found }];
   };
-  const facets = (): Facet[] => [
+  /** The search the bar makes of what its fields hold — of every field but `but`, for that field's counts — with the keyword and the rest. */
+  const facetsOf = (of: BarState, but?: string): Facet[] => [
     ...others,
-    ...fields.flatMap((field): FieldFacet[] => {
-      const ticked = picks.get(field) ?? [];
-      return ticked.length ? [{ kind: 'field', field, label: page.fields[field].label, values: ticked.map((p) => ({ op: opFor(field), value: p.value, label: p.label })) }] : [];
-    }),
+    ...fields
+      .filter((field) => field !== but)
+      .flatMap((field): FieldFacet[] => {
+        const def = page.fields[field];
+        if (ranged(field)) {
+          const value = rangeValue(def, of.ranges.get(field) ?? OPEN, labels, locale);
+          return value ? [{ kind: 'field', field, label: def.label, values: [value] }] : [];
+        }
+        const ticked = of.picks.get(field) ?? [];
+        return ticked.length ? [{ kind: 'field', field, label: def.label, values: ticked.map((p) => ({ op: opFor(field), value: p.value, label: p.label })) }] : [];
+      }),
     ...(keyword ? [{ kind: 'custom' as const, label: keyword, filter: keywordFilter(keyword) }] : []),
   ];
+  const facets = () => facetsOf(state);
   const changed = () => {
     drawButtons();
     context.onChange(facets());
@@ -114,7 +160,7 @@ export function filterBar(context: FilterBarContext) {
     }
   });
 
-  // ---- a list of values to tick, for each field ---------------------------------------------------------
+  // ---- a list of values to tick, or a range, for each field ----------------------------------------------------------
 
   /** Which fields the bar offers: all unless the person took some away with the gear. */
   const shownKey = `filters:${page.id}:${node.id}`;
@@ -123,31 +169,54 @@ export function filterBar(context: FilterBarContext) {
     return Array.isArray(kept) ? kept.filter((name): name is string => typeof name === 'string') : [];
   };
 
-  /** A field's values to tick: its choices, yes and no, or those its records hold. */
-  async function valuesOf(field: string): Promise<Pick[]> {
+  /**
+   * A field's values to tick: its choices, yes and no, or those its records hold. With `filterCounts`, each with how
+   * many records it finds among the rest of `of`'s search, as the source groups the field — none where it cannot.
+   */
+  async function valuesOf(field: string, of: BarState): Promise<Pick[]> {
     const def = page.fields[field];
-    if (def.type === 'selection') return def.options.map((option) => ({ value: option.value, label: option.label }));
-    if (def.type === 'boolean') return [{ value: true, label: labels.yes }, { value: false, label: labels.no }];
     const source = context.dataSource;
-    if (def.type === 'many2many') {
+    const fixed = context.fixedFilter();
+    const grouped = (filter: ResolvedFilter[]): Promise<Group[]> => source?.groups?.({ model: context.model, field, filter }) ?? Promise.resolve([]);
+    // Its values are those the fixed conditions let through; its counts, those the rest of the search does.
+    const listedByGroups = def.type !== 'selection' && def.type !== 'boolean' && def.type !== 'many2many';
+    const listing = listedByGroups ? grouped(fixed) : null;
+    const narrowed = counting && source?.groups ? searchFilter(facetsOf(of, field)) : null;
+    const counts = narrowed ? (listing && JSON.stringify(narrowed) === JSON.stringify(fixed) ? listing : grouped(narrowed)).catch(() => null) : null;
+    let values: Pick[];
+    if (def.type === 'selection') values = def.options.map((option) => ({ value: option.value, label: option.label }));
+    else if (def.type === 'boolean') values = [{ value: true, label: labels.yes }, { value: false, label: labels.no }];
+    else if (def.type === 'many2many') {
       const found = (await source?.search?.({ model: def.relation, query: '', limit: 100 })) ?? [];
-      return found.map((record) => ({ value: record.id, label: record.label }));
+      values = found.map((record) => ({ value: record.id, label: record.label }));
+    } else {
+      const groups = await (listing as Promise<Group[]>);
+      values = groups.filter((group) => group.value !== null && group.label !== '').map((group) => ({ value: group.value, label: group.label || String(group.value) }));
     }
-    const groups = (await source?.groups?.({ model: context.model, field, filter: context.fixedFilter() })) ?? [];
-    return groups.filter((group) => group.value !== null && group.label !== '').map((group) => ({ value: group.value, label: group.label || String(group.value) }));
+    const told = await counts;
+    if (!told) return values;
+    const by = new Map(told.map((group) => [JSON.stringify(group.value), group.count]));
+    return values.map((value) => ({ ...value, count: by.get(JSON.stringify(value.value)) ?? 0 }));
   }
 
-  const same = (a: JsonValue, b: JsonValue) => JSON.stringify(a) === JSON.stringify(b);
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const openMenus: (() => void)[] = [];
   /** Close every list but `keep`. */
   const closeOthers = (keep?: () => void) => {
     for (const close of openMenus) if (close !== keep) close();
   };
 
-  function menuFor(button: HTMLButtonElement, menu: HTMLElement, load: () => Promise<void> | void) {
+  /**
+   * A button and what it opens: a menu of values (the arrows move in it, Space and Enter tick, Tab leaves) or, for a
+   * range, a small dialog of presses and boxes (Tab moves in it; leaving it takes what its boxes read). Escape closes
+   * either, the focus back on its button.
+   */
+  function menuFor(button: HTMLButtonElement, menu: HTMLElement, load: () => Promise<void> | void, range?: RangeControl) {
     const items = () => [...menu.querySelectorAll<HTMLElement>('[role^="menuitem"]')];
-    const close = (focusBack = false) => {
+    const close = (focusBack = false, escaped = false) => {
       if (menu.hidden) return;
+      // Leaving a range takes what its boxes read, as leaving a box does; Escape leaves them as typed, untaken.
+      if (range && !escaped) range.commit();
       menu.hidden = true;
       button.setAttribute('aria-expanded', 'false');
       if (focusBack) button.focus();
@@ -156,6 +225,8 @@ export function filterBar(context: FilterBarContext) {
       closeOthers(closer);
       menu.hidden = false;
       button.setAttribute('aria-expanded', 'true');
+      // A range has nothing to wait for: its press that is on, else From, takes the focus at once.
+      if (range) return range.focus();
       await load();
       if (menu.hidden) return;
       const all = items();
@@ -172,6 +243,15 @@ export function filterBar(context: FilterBarContext) {
       }
     });
     menu.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        // Only the list closes: not a dialog the list is in.
+        event.stopPropagation();
+        close(true, true);
+        return;
+      }
+      // A range's keys are its boxes' and presses' own.
+      if (range) return;
       const all = items();
       const at = all.indexOf(doc.activeElement as HTMLElement);
       const to = ({ ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: all.length - 1 } as Record<string, number>)[event.key];
@@ -181,70 +261,113 @@ export function filterBar(context: FilterBarContext) {
       } else if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault();
         (doc.activeElement as HTMLElement | null)?.click();
-      } else if (event.key === 'Escape') {
-        event.preventDefault();
-        // Only the list closes: not a dialog the list is in.
-        event.stopPropagation();
-        close(true);
       } else if (event.key === 'Tab') close();
     });
     return { close };
   }
 
-  /** A row of the list: a box ticked or not, and the value's words. */
-  const tickRow = (text: string, checked: boolean, onClick: () => void) => {
-    const row = el('div', { role: 'menuitemcheckbox', class: 'fd-filter-option', tabindex: '-1', 'aria-checked': String(checked) }, el('span', { class: 'fd-filter-box', 'aria-hidden': 'true' }, ...icon('check')), el('span', { class: 'fd-filter-option-text' }, text));
+  /** A row of the list: a box ticked or not, the value's words, and how many records it finds where the list counts. */
+  const tickRow = (text: string, checked: boolean, onClick: () => void, count?: number) => {
+    const row = el(
+      'div',
+      { role: 'menuitemcheckbox', class: 'fd-filter-option', tabindex: '-1', 'aria-checked': String(checked) },
+      el('span', { class: 'fd-filter-box', 'aria-hidden': 'true' }, ...icon('check')),
+      el('span', { class: 'fd-filter-option-text' }, text),
+      ...(count === undefined ? [] : countMark(el, count, page, labels, fill, locale))
+    );
     row.addEventListener('click', onClick);
     return row;
   };
 
+  /** A field's range taken: the bar's, its button's words, the list's search. */
+  const setRange = (field: string, ends: RangeEnds) => {
+    if (ends.from === null && ends.to === null) state.ranges.delete(field);
+    else state.ranges.set(field, ends);
+    changed();
+  };
+
   const dropdowns = fields.map((field) => {
     // Its own name where the page gives one ("Iteration" for Iteration Path): on its button, its list and the gear's.
-    const def = { ...page.fields[field], label: node.filterLabels?.[field] ?? page.fields[field].label };
+    const def = defOf(field);
     const menuId = uid(`${node.id}-filter-${field}`);
     const words = el('span', { class: 'fd-filter-words' });
-    const button = el('button', { type: 'button', class: 'fd-filter-pick', 'data-field': field, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': menuId }, words, ...icon('chevron-down', 'fd-filter-chevron'));
-    const menu = el('div', { class: 'fd-filter-menu', role: 'menu', id: menuId, 'aria-label': fill(labels.filterNamed, { label: labelAt(labels.filterNamed, 'label', page.lowerLabels, context.locale)(def.label) }), hidden: '' });
+    const button = el('button', { type: 'button', class: 'fd-filter-pick', 'data-field': field, 'aria-haspopup': ranged(field) ? 'dialog' : 'menu', 'aria-expanded': 'false', 'aria-controls': menuId }, words, ...icon('chevron-down', 'fd-filter-chevron'));
+    const named = fill(labels.filterNamed, { label: labelAt(labels.filterNamed, 'label', page.lowerLabels, context.locale)(def.label) });
+    if (ranged(field)) {
+      const menu = el('div', { class: 'fd-filter-menu fd-filter-range-menu', role: 'dialog', id: menuId, 'aria-label': named, hidden: '' });
+      const control = rangeControl({ kit: context.kit, page, def, el, labels, locale, range: node.filterRanges?.[field], ends: state.ranges.get(field) ?? OPEN, onChange: (ends) => setRange(field, ends) });
+      menu.append(control.element);
+      const { close } = menuFor(button, menu, () => undefined, control);
+      const holder = el('span', { class: 'fd-filter-field', 'data-field': field }, button, menu);
+      return { field, def, button, words, holder, close, control };
+    }
+    const menu = el('div', { class: 'fd-filter-menu', role: 'menu', id: menuId, 'aria-label': named, hidden: '' });
     let known: Pick[] = [];
     const draw = () => {
-      const ticked = picks.get(field) ?? [];
+      const ticked = state.picks.get(field) ?? [];
       // What is ticked first, though the records no longer hold it; then the rest, in their order.
       const all = [...ticked.filter((p) => !known.some((k) => same(k.value, p.value))), ...known];
       menu.replaceChildren(
         ...all.map((option) => {
           const on = ticked.some((p) => same(p.value, option.value));
-          return tickRow(option.label, on, () => {
-            const now = picks.get(field) ?? [];
-            const next = on ? now.filter((p) => !same(p.value, option.value)) : [...now, option];
-            if (next.length) picks.set(field, next);
-            else picks.delete(field);
-            const focused = [...menu.children].indexOf(doc.activeElement as Element);
-            changed();
-            draw();
-            (menu.children[focused] as HTMLElement | undefined)?.focus();
-          });
+          const count = known.find((k) => same(k.value, option.value))?.count;
+          return tickRow(
+            option.label,
+            on,
+            () => {
+              const now = state.picks.get(field) ?? [];
+              const next = on ? now.filter((p) => !same(p.value, option.value)) : [...now, { value: option.value, label: option.label }];
+              if (next.length) state.picks.set(field, next);
+              else state.picks.delete(field);
+              const focused = [...menu.children].indexOf(doc.activeElement as Element);
+              changed();
+              draw();
+              (menu.children[focused] as HTMLElement | undefined)?.focus();
+            },
+            count
+          );
         })
       );
     };
     const { close } = menuFor(button, menu, async () => {
-      known = await valuesOf(field);
+      known = await valuesOf(field, state);
       draw();
     });
     const holder = el('span', { class: 'fd-filter-field', 'data-field': field }, button, menu);
-    return { field, def, button, words, holder, close };
+    return { field, def, button, words, holder, close, control: null };
   });
 
   function drawButtons() {
     const hidden = new Set(hiddenFields());
     for (const { field, def, button, words, holder } of dropdowns) {
       holder.hidden = hidden.has(field);
-      const ticked = picks.get(field) ?? [];
+      if (ranged(field)) {
+        // A range says itself whole, its field's name with it: "Price: 1,000,000 – 3,000,000".
+        const range = rangeWords(def, state.ranges.get(field) ?? OPEN, labels, locale);
+        button.toggleAttribute('data-picked', !!range);
+        words.textContent = range ? `${def.label}: ${range}` : def.label;
+        continue;
+      }
+      const ticked = state.picks.get(field) ?? [];
       button.toggleAttribute('data-picked', ticked.length > 0);
       // The field's name read out before what is ticked, which alone shows: "Work Item Type: Bug".
       words.replaceChildren(...(ticked.length ? [el('span', { class: 'fd-sr-only' }, `${def.label}: `), ticked.map((p) => p.label).join(', ')] : [def.label]));
     }
-    clear.hidden = !keyword && !others.length && ![...picks.values()].some((p) => p.length);
+    const on = onCount();
+    clear.hidden = !keyword && !others.length && !on;
+    if (sheetButton) {
+      sheetBadge.textContent = on ? String(on) : '';
+      sheetBadge.hidden = !on;
+      sheetButton.toggleAttribute('data-picked', on > 0);
+      if (on) sheetButton.setAttribute('aria-label', fill(labels.filtersOn, { n: on }));
+      else sheetButton.removeAttribute('aria-label');
+    }
   }
+  /** How many of the bar's fields filter now: values ticked, or a range. */
+  const onCount = () => {
+    const hidden = new Set(hiddenFields());
+    return fields.filter((field) => !hidden.has(field) && (ranged(field) ? state.ranges.has(field) : !!state.picks.get(field)?.length)).length;
+  };
 
   // ---- the gear: which fields the bar offers ------------------------------------------------------------
 
@@ -254,13 +377,16 @@ export function filterBar(context: FilterBarContext) {
   const drawSettings = () => {
     const hidden = new Set(hiddenFields());
     settings.replaceChildren(
-      ...dropdowns.map(({ field, def }) =>
+      ...dropdowns.map(({ field, def, control }) =>
         tickRow(def.label, !hidden.has(field), () => {
           const next = hidden.has(field) ? [...hidden].filter((f) => f !== field) : [...hidden, field];
           context.preferences.set(shownKey, next);
           // A field taken away from the bar no longer filters the list.
-          if (!hidden.has(field) && picks.delete(field)) changed();
-          else drawButtons();
+          const taken = !hidden.has(field) && (state.picks.delete(field) || state.ranges.delete(field));
+          if (taken) {
+            control?.show(OPEN);
+            changed();
+          } else drawButtons();
           const focused = [...settings.children].indexOf(doc.activeElement as Element);
           drawSettings();
           (settings.children[focused] as HTMLElement | undefined)?.focus();
@@ -272,13 +398,47 @@ export function filterBar(context: FilterBarContext) {
   const gearHolder = el('span', { class: 'fd-filter-field' }, gear, settings);
   gearHolder.hidden = dropdowns.length === 0;
 
+  // ---- on a phone: every field in a sheet, behind Filters ----------------------------------------------------------
+
+  const sheetBadge = el('span', { class: 'fd-filter-badge', 'aria-hidden': 'true', hidden: '' });
+  const sheetButton = node.filterSheet && dropdowns.length ? el('button', { type: 'button', class: 'fd-filter-sheet-open', 'aria-haspopup': 'dialog' }, ...icon('filter-lines', 'fd-filter-sheet-icon'), el('span', {}, labels.filters), sheetBadge) : null;
+  let sheet: { close(): void } | null = null;
+  sheetButton?.addEventListener('click', () => {
+    closeOthers();
+    const hidden = new Set(hiddenFields());
+    sheet = openFilterSheet({
+      kit: context.kit,
+      doc,
+      el,
+      page,
+      labels,
+      fill,
+      locale,
+      from: element,
+      fields: dropdowns.filter(({ field }) => !hidden.has(field)).map(({ field, def }) => ({ field, def, range: ranged(field) ? (node.filterRanges?.[field] ?? {}) : null })),
+      state,
+      valuesOf,
+      ...(context.count ? { count: (of: BarState) => (context.count as NonNullable<FilterBarContext['count']>)(searchFilter(facetsOf(of))) } : {}),
+      apply: (of) => {
+        const taken = copyState(of);
+        state.picks = taken.picks;
+        state.ranges = taken.ranges;
+        for (const { field, control } of dropdowns) control?.show(state.ranges.get(field) ?? OPEN);
+        changed();
+      },
+      opener: sheetButton,
+    });
+  });
+
   // ---- × clears every filter ------------------------------------------------------------------------------
 
   const clear = el('button', { type: 'button', class: 'fd-filter-tool fd-filter-clear', 'aria-label': labels.clearFilters, title: labels.clearFilters }, ...icon('close'));
   clear.addEventListener('click', () => {
     keyword = '';
     input.value = '';
-    picks.clear();
+    state.picks.clear();
+    state.ranges.clear();
+    for (const { control } of dropdowns) control?.show(OPEN);
     others = [];
     changed();
     input.focus();
@@ -286,9 +446,9 @@ export function filterBar(context: FilterBarContext) {
 
   const element = el(
     'div',
-    { class: 'fd-filter-bar', role: 'search', 'data-node': `${node.id}-filters` },
+    { class: 'fd-filter-bar', role: 'search', 'data-node': `${node.id}-filters`, ...(sheetButton ? { 'data-sheet': '' } : {}) },
     el('label', { class: 'fd-filter-search' }, ...icon('filter-lines', 'fd-filter-icon'), input),
-    el('div', { class: 'fd-filter-fields' }, ...dropdowns.map((d) => d.holder), gearHolder, clear)
+    el('div', { class: 'fd-filter-fields' }, ...dropdowns.map((d) => d.holder), gearHolder, ...(sheetButton ? [sheetButton] : []), clear)
   );
   // A press anywhere else closes an open list.
   const outside = (event: Event) => {
@@ -312,7 +472,11 @@ export function filterBar(context: FilterBarContext) {
       if (pause) clearTimeout(pause);
       doc.removeEventListener('pointerdown', outside);
       gearMenu.close();
-      for (const dropdown of dropdowns) dropdown.close();
+      sheet?.close();
+      for (const dropdown of dropdowns) {
+        dropdown.close();
+        dropdown.control?.destroy();
+      }
     },
   };
 }

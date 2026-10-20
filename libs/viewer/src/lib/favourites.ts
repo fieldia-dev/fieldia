@@ -30,7 +30,18 @@ export function startingFacets(node: ListNode, preferences: PreferenceStore, pag
  * with a click or deleted, and the search on screen kept as a new one, used by
  * default if the person says so. Kept where the page keeps its preferences.
  */
-export function favouritesPart(context: { page: Page; el: El; labels: ViewerLabels; fill: (template: string, values: Record<string, string>) => string; preferences: PreferenceStore; current: () => Facet[]; apply: (facets: Facet[]) => void }) {
+export function favouritesPart(context: {
+  page: Page;
+  el: El;
+  labels: ViewerLabels;
+  fill: (template: string, values: Record<string, string>) => string;
+  preferences: PreferenceStore;
+  current: () => Facet[];
+  apply: (facets: Facet[]) => void;
+  /** Where a favourite's count goes after its name, where the list counts (`filterCounts`); and what is told once the favourites are drawn. */
+  slot?: () => HTMLElement;
+  drawn?: () => void;
+}) {
   const { page, el, labels, fill, preferences } = context;
   const list = el('ul', { class: 'fd-favourite-list' });
   const none = el('p', { class: 'fd-favourites-none' }, labels.noFavourites);
@@ -41,13 +52,18 @@ export function favouritesPart(context: { page: Page; el: El; labels: ViewerLabe
   const open = el('button', { type: 'button', class: 'fd-search-option fd-search-add', 'aria-expanded': 'false' }, labels.saveSearch);
 
   const write = (favourites: Favourite[]) => preferences.set(key(page), favourites as unknown as JsonValue);
+  /** Each favourite drawn, and where its count goes. */
+  let slots: { slot: HTMLElement; facets: Facet[] }[] = [];
 
   function draw() {
     const favourites = readFavourites(preferences, page);
     none.hidden = favourites.length > 0;
+    slots = [];
     list.replaceChildren(
       ...favourites.map((favourite) => {
-        const use = el('button', { type: 'button', class: 'fd-search-option', 'data-default': favourite.isDefault ? 'true' : undefined }, favourite.name);
+        const slot = context.slot?.();
+        if (slot) slots.push({ slot, facets: favourite.facets });
+        const use = el('button', { type: 'button', class: 'fd-search-option', 'data-default': favourite.isDefault ? 'true' : undefined }, favourite.name, ...(slot ? [slot] : []));
         use.addEventListener('click', () => context.apply(favourite.facets));
         const remove = el('button', { type: 'button', class: 'fd-favourite-remove', 'aria-label': fill(labels.deleteFavourite, { name: favourite.name }) }, '×');
         remove.addEventListener('click', () => {
@@ -57,6 +73,7 @@ export function favouritesPart(context: { page: Page; el: El; labels: ViewerLabe
         return el('li', { class: 'fd-favourite' }, use, remove);
       })
     );
+    context.drawn?.();
   }
 
   open.addEventListener('click', () => {
@@ -81,5 +98,5 @@ export function favouritesPart(context: { page: Page; el: El; labels: ViewerLabe
   });
 
   draw();
-  return { list, none, open, form };
+  return { list, none, open, form, slots: () => slots };
 }
