@@ -57,7 +57,7 @@ handle from `(ready)` has `on`, `setValues` and `run`.
 handle.form.leave()` in a route's `canDeactivate`, before removing
 `<fieldia-form>`, and before changing an input that mounts it again (`page`,
 `form`, `dataSource`, `recordId`, `user`, `context`, `dir`, `locale`,
-`labels`, `fieldTypes`). Angular destroys it at once, so nothing else can keep
+`labels`, `fieldTypes`, the names in `functions`). Angular destroys it at once, so nothing else can keep
 the person there. It waits for a save on its way, then asks "Discard your
 changes?" only when their work is at risk, and answers false when they choose to
 stay. `[warnOnLeave]="true"` has the browser's own Back, Reload or a closed tab

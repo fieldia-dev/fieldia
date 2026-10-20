@@ -46,7 +46,8 @@ handle from `ref` or `onReady` has `on`, `setValues` and `run`.
 **Before your app leaves the form**, ask its one check: `await
 handle.form.leave()` before a route change, before unmounting `<FieldiaForm>`,
 and before changing a prop that mounts it again (`page`, `form`, `dataSource`,
-`recordId`, `user`, `context`, `dir`, `labels`, `fieldTypes`, `slots`). React
+`recordId`, `user`, `context`, `dir`, `labels`, `fieldTypes`, `slots`, the names
+in `functions`). React
 unmounts at once, so nothing else can keep the person there. It waits for a save
 on its way, then asks "Discard your changes?" only when their work is at risk,
 and answers false when they choose to stay. `warnOnLeave` has the browser's own

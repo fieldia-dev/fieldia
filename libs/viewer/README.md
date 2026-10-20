@@ -23,6 +23,36 @@ const viewer = mountViewer(document.getElementById('app')!, {
 // later: viewer.destroy()
 ```
 
+## Your app's own functions
+
+`functions` gives a page's formulas your app's own functions, beside Fieldia's —
+`compute`, `setWhen` and every condition call them by name (see `@fieldia/core`).
+A page calling one is checked with them as it is mounted, and so are its dialogs,
+side panels and saved forms placed in it:
+
+```ts
+mountViewer(host, {
+  page,
+  functions: {
+    districtPrice: { asks: true, call: (district) => api.average(district) },   // a promise: it asks your server
+    vatRate: (country) => RATES[country] ?? 0,
+  },
+});
+```
+
+A value worked out from one that asks shows an ellipsis while it is asked, said in
+words ("Working out Total…", `labels.valueAsking`), and its answer when it comes;
+one whose answer did not come says why, in sight ("Total could not be worked out:
+…. Saving tries again.", `labels.valueNotWorkedOut`). Save waits for every answer.
+React, Vue and Angular take the same `functions`; each call reaches the newest
+object given (`newestFunctions`), and a name added or taken away mounts the form
+again.
+
+A choice whose options follow the other answers — an option's `invisible`, or
+`optionsFrom: { "field": … }` — is drawn again as they change, and a chosen option
+a change no longer offers is taken out and said under its field ("Garden is no
+longer offered, so it was taken out").
+
 ## A part that fails
 
 A widget (yours, or one of Fieldia's given what it cannot draw), a slot's content,
