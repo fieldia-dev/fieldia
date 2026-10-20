@@ -1017,11 +1017,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
 // AI help (0.29, lane w5-ai), all of it in fieldia.assist.js but what a page needs to ask for it and place what it draws:
 // the part's handle and whether a page asks for it — a Fill from text, a text field's tools, a list's words read as
-// filters (viewer-parts, 0.15) — the kit made as the page is drawn, its bar over the questions, its hook as a field is
-// drawn and the app's own `propose` (viewer, 0.45); the two checks the part carries, owed until it came, as every
-// part's checks are (assist-checks' stand-ins and their calls, 0.30); a memory source's AI members only where its
-// `assist` answers them (0.07): 506.76 measured before, 507.74 after, to 507.8.
-const BUDGET_KB = 507.8;
+// filters (viewer-parts, 0.15) — the kit made as the page is drawn, its bar over the questions (a sheet's over its card,
+// Fill from text among its buttons), its hook as a field is drawn and the app's own `propose` (viewer, 0.51); the two
+// checks the part carries, owed until it came, as every part's checks are (assist-checks' stand-ins and their calls,
+// 0.30); a memory source's AI members only where its `assist` answers them (0.07): 506.76 measured before, 507.80
+// after, to 507.9.
+const BUDGET_KB = 507.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1256,7 +1257,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
 // AI help (0.29, lane w5-ai; listed with the raw budget above): the part's handle, the kit's making and placing, the
-// field's hook, `propose`, the checks owed to the part, a memory source's AI members — 166.15 measured before, 166.43
+// field's hook, `propose`, the checks owed to the part, a memory source's AI members — 166.15 measured before, 166.47
 // after, to 166.5.
 const GZIP_BUDGET_KB = 166.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
@@ -1836,15 +1837,15 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-// AI help (0.29, w5-ai) in a part of its own, fieldia.assist.js (32.33 and 11.15, to 32.4 and 11.2): Fill from text
-// and its dialog, the review of what was proposed, a proposal under its field with Accept, Reject and Undo, a text
+// AI help (0.29, w5-ai) in a part of its own, fieldia.assist.js (34.28 and 11.66, to 34.3 and 11.7): Fill from text
+// and its dialog, or from a field's own words, the review of what was proposed, a proposal under its field with Accept, Reject and Undo, a text
 // field's Draft and Polish, a proposed value read as its field holds one, a list's words read as filters, its sheet
 // and its checks — waited for by a page with a Fill from text or a text field's tools, asked for as a list's ✦ is
 // pressed and by the app's own `propose`. The list part draws the ✦ beside its box and takes a search in its bar's
 // place (search-bar's `take`): list 129.48 and 41.62 measured before, 130.82 and 42.06 after, to 130.9 and 42.1; the
 // filter bar takes one as well — filters 22.70 and 7.84 to 22.91 and 7.88, to 23.0 and 7.9; a memory source's AI
 // members where its `assist` answers them — memory 16.10 and 5.72 to 16.46 and 5.81, to 16.5 and 5.9.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [130.9, 42.1], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.5, 5.9], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], assist: [34.0, 11.6] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [130.9, 42.1], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.5, 5.9], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], assist: [34.3, 11.7] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
