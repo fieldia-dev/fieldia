@@ -235,6 +235,49 @@ test('the gallery opens in a business owner’s words, a demo is found by what i
   expect(problems).toEqual([]);
 });
 
+test('the gallery finds a demo by the words an owner types, whole words before near ones', async ({ page }) => {
+  const problems = watch(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(SITE + '/demos/');
+  const find = page.getByRole('searchbox', { name: 'Find a demo' });
+  const shown = page.locator('.gallery-body a.demo-card:visible');
+  const names = page.locator('.gallery-body a.demo-card:visible .demo-name');
+  /** The business areas of the demos a search shows. */
+  const areasShown = () => shown.evaluateAll((cards) => [...new Set(cards.map((card) => (card as HTMLElement).dataset['area']))].sort());
+  // As the walk typed them, a word at a time: each finds the demos of its business, and says how many.
+  for (const [typed, demo, areas] of [
+    ['dentist', 'A clinic’s appointments', ['clinic']],
+    ['tenant', 'A property and its viewings', ['real-estate']],
+    ['lease', 'Homes for sale, as a gallery', ['real-estate']],
+    ['whatsapp', 'Contacts to bring in, take away, change in bulk and shape', null],
+    ['payroll', 'New employee', ['people']],
+    ['gym', 'An event’s sign-up, with places and a closing date', null],
+    ['membership', 'An event’s sign-up, with places and a closing date', null],
+    ['hotel', 'The booking desk’s week', null],
+  ] as const) {
+    await find.fill(typed);
+    await expect(names.filter({ hasText: demo }), typed).toHaveCount(1);
+    await expect(page.locator('#gallery-said'), typed).toHaveText(/^\d+ demos? match(es)?\.$/);
+    if (areas) expect(await areasShown(), typed).toEqual(areas);
+  }
+  // A word that holds in some demos never brings those one letter off it: "lease" is not "leave", time off stays out.
+  await find.fill('lease');
+  await expect(names.filter({ hasText: 'Time off, to approve' })).toHaveCount(0);
+  // A word is found at its start, never inside another: "dent" is not in "dependent".
+  await find.fill('dent');
+  await expect(names.filter({ hasText: 'An AI agent’s tools' })).toHaveCount(0);
+  await expect(names.filter({ hasText: 'A clinic’s appointments' })).toHaveCount(1);
+  // Typed as it goes: the start of a word already finds it.
+  await find.fill('whats');
+  await expect(names.filter({ hasText: 'Contacts to bring in, take away, change in bulk and shape' })).toHaveCount(1);
+  await screen(page, 'gallery-search-owner-words', { viewport: true });
+  // A slip of the keys still finds, where nothing holds the word as typed.
+  await find.fill('dentsit');
+  await expect(names.filter({ hasText: 'A clinic’s appointments' })).toHaveCount(1);
+  await expect(page.locator('#gallery-said')).toContainText('words close to them');
+  expect(problems).toEqual([]);
+});
+
 test('the gallery on a phone: a compact list, each demo its name and one line', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(SITE + '/demos/');

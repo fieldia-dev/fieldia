@@ -67,11 +67,11 @@ export const AREA_IDS = AREA_OF;
  * them with the card's name, blurb, area and feature; every demo has some (a browser test holds each to it).
  */
 const SEARCH_WORDS = {
-  customer: 'client account contact company blocked block status sales invoices counters conversation messages notes team',
+  customer: 'client account contact company blocked block status sales invoices counters conversation messages notes team phone whatsapp',
   order: 'sale sales order quotation quote lines products items spreadsheet totals tax discount',
   customers: 'clients accounts contacts list search filter group favourites sort archive table',
   invoices: 'invoice bill bills billing accounts receivable payments overdue unpaid due totals sum currency dollars pounds month quarter print printout paper pdf phone mobile cards',
-  contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize reorder drag move rearrange print cards',
+  contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize reorder drag move rearrange print cards whatsapp',
   'homes-gallery': 'homes houses property properties real estate listings photos pictures gallery grid cards tiles book viewing',
   'homes-search': 'homes houses property properties real estate buy buyer portal search filter filters facets count counts price range from to min max area bedrooms beds 2+ amenities phone mobile sheet show results',
   'leads-queue': 'leads queue sales team crm follow up follow-up late overdue today this week counts count filters saved searches favourites agent pipeline',
@@ -81,7 +81,7 @@ const SEARCH_WORDS = {
   'visit-feedback': 'feedback survey clinic patient treatments follow up carry forward picked earlier question age birthday options conditions aesthetic botox filler',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
   'clinic-consent': 'consent form signature sign signed esign e-signature evidence proof audit trail fingerprint hash tamper locked patient clinic treatment contract agreement',
-  'event-signup': 'event sign up signup register registration rsvp tickets seats places capacity limit limited full sold out session workshop close closes closing deadline open opens one per person quota',
+  'event-signup': 'event sign up signup register registration rsvp tickets seats places capacity limit limited full sold out session workshop close closes closing deadline open opens one per person quota gym club membership members class classes',
   'clinic-intake': 'patient intake clinic long form wizard steps save continue later resume draft link phone laptop another device partial answers drop off',
   'test-drives': 'calendar week schedule planner test drives cars showroom time zone berlin diary agenda drag',
   backlog: 'bug bugs issue issues ticket tickets tracker jira azure devops work item sprint popup dialog window backlog',
@@ -91,7 +91,7 @@ const SEARCH_WORDS = {
   kinds: 'survey questionnaire slider tags address picture choice ranking repeat quiz score signature sign moving day time weight hearts nps net promoter recommend scale',
   business: 'fields task project priority stars status timer stopwatch hours timesheet date range tags copy pdf analytic accounts tax payments properties',
   code: 'code editor programming json python sql javascript syntax highlight vs code codemirror developer',
-  signup: 'sign up signup register registration form workshop event attendee phone mobile number telephone autofill bot spam captcha honeypot',
+  signup: 'sign up signup register registration form workshop event attendee phone mobile number telephone autofill bot spam captcha honeypot whatsapp membership members club',
   layout: 'employee staff hire hiring hr personnel columns tabs photo bank pay contract',
   survey: 'survey questionnaire feedback poll steps wizard skip branching product',
   delivery: 'address shipping billing reuse saved form twice nested',
@@ -111,7 +111,7 @@ const SEARCH_WORDS = {
   'map-zones': 'orders districts areas regions map shaded legend count delivery week cairo',
   'map-heat': 'orders heat map heatmap revenue money where sales',
   'clinic-calendar': 'clinic doctor doctors appointment appointments booking bookings reservation schedule calendar diary agenda patients visits week month',
-  'booking-week': 'booking bookings appointment appointments reservation reservations schedule calendar week agent viewings meetings diary',
+  'booking-week': 'booking bookings appointment appointments reservation reservations schedule calendar week agent viewings meetings diary hotel room rooms guest guests stay stays check in',
   'booking-week-arabic': 'booking appointment calendar week schedule arabic right to left rtl',
   'test-drive': 'booking book booked appointment appointments reservation reserve schedule slot slots time times calendar car cars dealer showroom drive time zone berlin',
   'map-kitchen': 'kitchen restaurant delivery fee districts map courier zone geofence food',
@@ -129,13 +129,13 @@ const SEARCH_WORDS = {
   'signup-keys': 'keyboard keys enter tab next field fast typing data entry',
   'customer-toast': 'save saving saved toast notification message',
   script: 'script tag html no build plain web page cdn embed call back callback',
-  'template-contact-us': 'contact us enquiry inquiry message email phone mobile form website',
-  'template-newsletter': 'newsletter subscribe subscription mailing list email marketing',
+  'template-contact-us': 'contact us enquiry inquiry message email phone mobile form website whatsapp',
+  'template-newsletter': 'newsletter subscribe subscription mailing list email marketing members membership club',
   'template-customer-feedback': 'feedback review rating stars satisfaction nps recommend survey branch visit thank you ending',
-  'template-event-registration': 'event registration register tickets conference attendee sessions sign up',
+  'template-event-registration': 'event registration register tickets conference attendee sessions sign up gym membership members',
   'template-job-application': 'job application apply career careers hiring recruitment cv resume candidate',
   'template-support-request': 'support help ticket issue bug problem helpdesk screenshot urgent',
-  'template-appointment-booking': 'appointment booking book reservation schedule time slot service reminder reference confirmation thank you ending',
+  'template-appointment-booking': 'appointment booking book reservation schedule time slot slots free times taken service reminder reference confirmation thank you ending hotel salon spa',
   'template-patient-intake': 'patient intake clinic medical health history allergies consent signature doctor hospital',
   'template-course-evaluation': 'course evaluation training class feedback rating grid teacher school',
   'template-quote-request': 'quote quotation estimate request enquiry services budget brief proposal',
@@ -155,7 +155,7 @@ const SEARCH_WORDS = {
   'real-invoice': 'invoice bill credit note journal entry accounting payment tax customer vendor',
   'real-register-payment': 'payment pay paid register bank cash cheque check postdated currency',
   'real-expense': 'expense expenses report claim reimbursement vat receipts approve employee',
-  'real-contact': 'contact customer supplier vendor client company person address phone mobile number telephone tax bank credit limit',
+  'real-contact': 'contact customer supplier vendor client company person address phone mobile number telephone tax bank credit limit whatsapp',
   'real-opportunity': 'opportunity lead deal pipeline crm sales won lost probability revenue',
   'real-tender': 'tender bid bidding government procurement lots compliance competitors',
   'real-clinic-appointment': 'clinic appointment booking patient doctor aesthetic session check in deposit no show',
@@ -168,8 +168,22 @@ const SEARCH_WORDS = {
   'real-legal-case': 'legal case law firm lawyer court hearing matter dispute trust billing',
   'real-survey': 'survey settings questions questionnaire exam quiz certification scoring',
 };
-/** A demo's own search words, as the gallery reads them. */
-export const wordsOf = (id) => SEARCH_WORDS[id] ?? '';
+/**
+ * The words an owner of each business types for it, which none of its demos may say: a dentist's for a clinic, a
+ * landlord's for real estate. Every demo of the area is found by them, beside its own.
+ */
+const AREA_WORDS = {
+  sales: 'shop store retail wholesale seller selling sell dealer dealership',
+  accounting: 'bookkeeping bookkeeper accountant accountants ledger finance vat',
+  crm: 'prospects pipeline deals relationships',
+  people: 'payroll salary salaries wages staff workers employees personnel',
+  operations: 'jobs field service logistics dispatch',
+  clinic: 'dentist dentists dental doctor doctors physio physiotherapy therapist therapy vet veterinary medical health patient patients',
+  'real-estate': 'tenant tenants landlord landlords lease leases leasing letting rent rental rentals renting realtor broker brokers apartment apartments flat flats',
+  surveys: 'questionnaire questionnaires poll polls',
+};
+/** A demo's search words, as the gallery reads them: its own, and its business area's. */
+export const wordsOf = (id) => [SEARCH_WORDS[id] ?? '', AREA_WORDS[areaOf(id)] ?? ''].filter(Boolean).join(' ');
 
 /** The flagships, first in the gallery and in the menu. */
 export const FEATURED = ['customer', 'order', 'customers', 'fields'];
