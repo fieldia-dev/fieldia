@@ -816,7 +816,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
       // A row added and left with nothing in it is no record: it goes. Another, nothing to save: at rest.
       if (!edit.record && state.recordId === null) drop(edit);
       // Nothing changed: its form let go, the row as it stands; one refused before and put right, drawn again at rest.
-      else if (!edit.editor) (edit.refused ? done(edit) : release(edit));
+      else if (!edit.editor && edit.refused) done(edit);
+      else if (!edit.editor) release(edit);
       return true;
     }
     const ok = await form.save();
