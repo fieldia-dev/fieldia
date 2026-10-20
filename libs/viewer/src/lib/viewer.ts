@@ -76,7 +76,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, duplicatesPart, headPart, limitsPart, listPart, partsFor, type HeadPart } from './viewer-parts';
+import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, type HeadPart } from './viewer-parts';
 import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
@@ -2461,24 +2461,35 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     return { onNewRecord: (values) => dialogs.openRecord(model, { values, title: sentence(labels.newRecordNoun, labels.newRecord) }) };
   }
   let pageDrawn = false;
+  /**
+   * The one-tag script's checks of what a part draws (a list page's settings, a map's) came with it: run now, before the
+   * page is drawn — and those they owe in turn asked for, each once. Where they find a mistake, nothing is drawn, and what
+   * is drawn settles with it, as the mount would have thrown it.
+   */
+  async function checkedWhole(): Promise<void> {
+    const asked = new Set<Part>(awaited);
+    for (let now = checkPage(options.page, checks); ; now = checkPage(options.page, checks)) {
+      if (!now.ok) {
+        root.remove();
+        throw unshown(now);
+      }
+      const owed = owedParts(now.later).filter((part) => !asked.has(part));
+      if (!owed.length || gone) return;
+      for (const part of owed) asked.add(part);
+      await settleParts(owed);
+    }
+  }
   /** What needs the page drawn — a list's rows to open or ask for again — at once when it is, else once it is. */
   const afterDrawing = <T>(then: () => Promise<T>): Promise<T> => (pageDrawn ? then() : drawn.then(then));
   // A draft opened by its key (`resume`) may name none: the limits part says so.
-  const awaited = [...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : [])].filter((part) => !part.loaded);
+  // The parts its check owes (the one-tag script's), with the page's own: the check runs again once they came.
+  const awaited = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...owedParts(checked.later)])].filter((part) => !part.loaded);
   let drawn: Promise<void> = Promise.resolve();
   if (!awaited.length) drawPage();
   else {
     root.setAttribute('aria-busy', 'true');
-    drawn = settleParts(awaited).then(() => {
+    const drawWaited = () => {
       if (gone) return;
-      // The one-tag script's checks of what a part draws (a list page's settings) came with it: run now, before the page
-      // is drawn. Where they find a mistake, nothing is drawn, and what is drawn settles with it, as the mount would have
-      // thrown it.
-      const again = checked.later?.length ? checkPage(options.page, checks) : checked;
-      if (!again.ok) {
-        root.remove();
-        throw unshown(again);
-      }
       drawPage();
       // Drawn after the status took its place in a corner or across the top: the page's Save took it back beside itself.
       placeStatus();
@@ -2486,7 +2497,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       render(form.getState());
       // A record that opened meanwhile: its focused field takes the focus now, as it would have then.
       if (opened) focusAsOpened(true);
-    });
+    };
+    drawn = settleParts(awaited).then(() => (checked.later?.length ? checkedWhole().then(drawWaited) : drawWaited()));
   }
   // A theme or the quiet skin the app gives, not the page, is worn as its part comes, the page drawn meanwhile
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.

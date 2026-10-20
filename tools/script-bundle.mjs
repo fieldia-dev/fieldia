@@ -159,7 +159,8 @@ const asksForParts = (table, parts) => ({
  * The checks of a page the one-tag script carries in the part that draws what they check, not in its main script: a
  * list page's own settings and a related list's in the list part, a record's head in the head part, a page's limits and
  * Continue later in the limits part, booking slots' settings in the slots part, a signature's in the files part, a page's
- * endings in the answers part. The packages' `checkPage` runs them at once. Here the main script is built
+ * endings in the answers part, and a map's in a part of their own (fieldia.mapchecks.js), which the viewer asks for as
+ * the check owes it. The packages' `checkPage` runs them at once. Here the main script is built
  * with each module below standing in — its checks owed (`owe`, the reference check's `later`) until its part has come,
  * and the viewer running the check again then, before the page is drawn — and each part's script puts its module's
  * checks in `LATER_CHECKS` (libs/core/src/lib/format/later-checks.ts) as it comes.
@@ -171,6 +172,7 @@ const CHECKS_IN_PARTS = {
   slots: { file: 'libs/core/src/lib/format/slots-checks.ts', names: ['checkSlots'] },
   files: { file: 'libs/core/src/lib/format/signature-checks.ts', names: ['checkSignature'] },
   answers: { file: 'libs/core/src/lib/format/endings-checks.ts', names: ['checkEndings'] },
+  mapchecks: { file: 'libs/core/src/lib/format/map-checks.ts', names: ['checkMap', 'checkPlace'] },
 };
 const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
 const checksLater = {
@@ -992,8 +994,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // page is drawn — a list page's own settings in the list part, a record's head in the head part, a page's limits and
 // Continue later in the limits part (the packages' checkPage and validatePage whole as ever) — 517.55 after; a related
 // list's in the list part, booking slots' settings in the slots part, a signature's in the files part and a page's
-// endings in the answers part, 515.34 after, to 515.4.
-const BUDGET_KB = 515.4;
+// endings in the answers part, 515.34 after; a map's checks — a form's map and a list's on one — in a part of their own
+// (fieldia.mapchecks.js, 5.76), asked for by the viewer as the check owes them, 511.39 after, to 511.4.
+const BUDGET_KB = 511.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1217,8 +1220,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // places is drawn, 172.39 after; options by condition and carried in fieldia.options.js (1.80), loaded before a page
 // with any is drawn, 171.75 after; a list page's, a record head's and a page's limits' checks in their parts (2.59 more
 // in the list part, 0.69 in the head part's, 0.52 in the limits part's), 169.07 after; a related list's, booking slots',
-// a signature's and endings' checks in their parts, 168.42 after, to 168.5.
-const GZIP_BUDGET_KB = 168.5;
+// a signature's and endings' checks in their parts, 168.42 after; a map's checks in fieldia.mapchecks.js (2.24), asked
+// for by a page with a map as its check owes them, 167.32 after, to 167.4.
+const GZIP_BUDGET_KB = 167.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1769,8 +1773,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // page's limits and Continue later), to 11.6 and 5.0; then a related list's checks — list 125.94 and 40.49 to 127.54 and
 // 40.96, to 127.6 and 41.0 — booking slots' — slots 15.27 and 5.83 to 15.92 and 6.12, to 16.0 and 6.2 — a signature's —
 // files 36.15 and 13.26 to 36.95 and 13.59, to 37.0 and 13.6 — and a page's endings — answers 4.13 and 2.07 to 4.65 and
-// 2.32, to 4.7 and 2.4.
-const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [127.6, 41.0], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [37.0, 13.6], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.6, 5.0], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [4.4, 1.9], options: [4.0, 1.9] };
+// 2.32, to 4.7 and 2.4; mapchecks new, 5.76 and 2.24 — a map's layers, places, routes, reachable areas and fences, and
+// the fields a pin and a card show, a form's map's and a list's — to 5.8 and 2.3.
+const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [127.6, 41.0], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [37.0, 13.6], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.6, 5.0], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [4.4, 1.9], options: [4.0, 1.9], mapchecks: [5.8, 2.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1800,9 +1805,10 @@ const PART_GIVES = {
   memory: ['createMemoryDataSource', 'memorySource'],
   functions: ['functionBody'],
   options: ['optionRules'],
+  mapchecks: ['checkMap', 'checkPlace'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -1903,6 +1909,11 @@ for (const part of PARTS) {
   const after = withList.checkPage(wrong);
   if (after.ok || after.later || !after.issues.some((issue) => issue.path === 'layout.groupBy[0]' && issue.message === 'no field "nowhere"')) throw new Error(`a list page's own checks are not run once the list part came: ${JSON.stringify(after)}`);
   if (alone.checkPage({ ...wrong, layout: { type: 'sections', id: 's', children: [] } }).later) throw new Error('a page with no list owes the list part its checks');
+  // A map's checks owed to a part of their own: a form's map at once, and a list's on a map once the list part ran them.
+  const mapOrder = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/map-order.page.json'), 'utf8'));
+  if (alone.checkPage(mapOrder).later?.join() !== 'mapchecks') throw new Error(`a form's map's checks are not owed to their part: ${JSON.stringify(alone.checkPage(mapOrder).later)}`);
+  const homes = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/map-homes.page.json'), 'utf8'));
+  if (withList.checkPage(homes).later?.join() !== 'mapchecks') throw new Error("a list on a map does not owe its map's checks once the list part ran its own");
   // In a page: such a list mounted before its part came draws nothing, and what is drawn rejects with the mount's words.
   const { JSDOM } = await import('jsdom');
   const dom = new JSDOM('<!doctype html><html><head><script src="fieldia.js"></script></head><body><div id="app"></div></body></html>', { url: pathToFileURL(join(BUNDLE, 'page.html')).href, runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true });
@@ -1911,10 +1922,16 @@ for (const part of PARTS) {
   const view = dom.window.Fieldia.mountViewer(host, { page: wrong, dataSource: { list: async () => ({ records: [], total: 0 }) } });
   const said = await view.drawn.then(() => null, (error) => error.message);
   if (!said?.startsWith('This page cannot be shown') || !said.includes('layout.groupBy[0]: no field "nowhere"') || host.childElementCount) throw new Error(`in a page, a list page whose own checks came with its part is drawn, or not refused: ${said}`);
+  // A list of homes on a map whose pins' photo is words: the list part's checks, in already, owe the map's, asked for
+  // then — the mistake said as the packages' check says it, nothing drawn.
+  const worded = { ...homes, layout: { ...homes.layout, map: { ...homes.layout.map, pin: { ...homes.layout.map.pin, image: 'name' } } } };
+  const mapped = dom.window.Fieldia.mountViewer(host, { page: worded, dataSource: { list: async () => ({ records: [], total: 0 }) } });
+  const saidOfMap = await mapped.drawn.then(() => null, (error) => error.message);
+  if (!saidOfMap?.includes('layout.map.pin.image: "name" is a char; a pin\'s photo is an image or binary field') || host.childElementCount || !dom.window.Fieldia.mapChecksPart.loaded) throw new Error(`in a page, a list on a map whose map's checks came in their part is drawn, or not refused: ${saidOfMap}`);
   dom.window.close();
 }
 console.log(`parts: ${partSizes.join('; ')}`);
-console.log("a part's checks: a list page's own owed to the list part until it came, then run as the packages' check runs them — in a page, one that finds a mistake draws nothing, and its drawn rejects with the mount's words");
+console.log("a part's checks: a list page's own owed to the list part until it came, a map's to theirs, then run as the packages' check runs them — in a page, one that finds a mistake draws nothing, and its drawn rejects with the mount's words");
 
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no

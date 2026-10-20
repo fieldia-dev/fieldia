@@ -304,3 +304,5 @@ export { fieldPattern } from './lib/format/pattern';
 export { lazyPart, partWith, partsOf, partsComeByScriptTag, settleParts, type Part } from './lib/parts';
 // The bodies of Fieldia's functions beyond the plain ones, loaded before a page that calls one is drawn.
 export { callsPartFunctions, functionsPart, type FunctionsPart } from './lib/expression/functions';
+// The checks a page owes a part of the one-tag script (`PageValidation.later`): a map's come in a part of their own.
+export { mapChecksPart } from './lib/format/later-checks';

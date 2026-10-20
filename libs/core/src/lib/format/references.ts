@@ -1,7 +1,7 @@
 import type { ActionStep, PageEvents } from './actions';
 import type { Field, Fields, FilterItem, LineField, LineKinds, SelectionOption } from './field';
 import { optionsField, optionsList } from './choice-options';
-import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListCard, ListNode, MapCard, MapNode, Pin, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
+import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListCard, ListNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
 import type { Page } from './page';
 import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
@@ -25,6 +25,7 @@ import type { FieldTools } from './part-checks';
 import { checkSlots } from './slots-checks';
 import { checkSignature } from './signature-checks';
 import { checkEndings } from './endings-checks';
+import { checkMap, checkPlace, type MapTools } from './map-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -617,6 +618,19 @@ export class ReferenceCheck {
     return { page: this.page, need: (name, path) => this.need(name, path), report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) };
   }
 
+  /** The tools a map's checks are handed (map-checks.ts). */
+  private mapTools(): MapTools {
+    return {
+      page: this.page,
+      need: (name, path, scope) => this.need(name, path, scope),
+      report: (path, message) => this.report(path, message),
+      checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
+      checkSteps: (steps, path) => this.checkSteps(steps, path),
+      here: () => this.here(),
+      owe: (part) => this.later.add(part),
+    };
+  }
+
   /** The tools a list page's own checks are handed (list-checks.ts). */
   private listTools(): ListTools {
     return {
@@ -628,7 +642,7 @@ export class ReferenceCheck {
       checkPress: (button, path) => this.checkPress(button, path),
       checkListed: (list, fields, path) => this.checkListed(list, fields, path),
       checkListCard: (card, at, fields) => this.checkListCard(card, at, fields),
-      checkPlace: (at, path, scope, pin, card) => this.checkPlace(at, path, scope, pin, card),
+      checkPlace: (at, path, scope, pin, card) => checkPlace(at, path, scope, pin, card, this.mapTools()),
       here: () => this.here(),
       onLine: !!this.line,
       checkCurrency: (name, path, fields, lines, parent) => this.checkCurrency(name, path, fields, lines, parent),
@@ -707,120 +721,6 @@ export class ReferenceCheck {
     }
   }
 
-  /**
-   * Where a place is kept, and the fields its pin and its card show, each of a
-   * type that can: a page's fields, or a line's when the place is a line's.
-   */
-  private checkPlace(at: { point?: string; latitude?: string; longitude?: string }, path: string, scope: Scope, pin?: Pin, card?: MapCard) {
-    const typed = (name: string | undefined, where: string, ok: (type: string) => boolean, says: string) => {
-      if (name === undefined) return;
-      const def = this.need(name, where, scope.fields);
-      if (def && !ok(def.type)) this.report(where, `"${name}" is a ${def.type}; ${says}`);
-    };
-    const number = (type: string) => type === 'float' || type === 'integer';
-    const picture = (type: string) => type === 'image' || type === 'binary';
-    typed(at.point, `${path}.point`, (type) => type === 'json', 'a point is kept in a json field');
-    typed(at.latitude, `${path}.latitude`, number, 'a latitude is a number field (float or integer)');
-    typed(at.longitude, `${path}.longitude`, number, 'a longitude is a number field (float or integer)');
-    if (pin) {
-      typed(pin.image, `${path}.pin.image`, picture, "a pin's photo is an image or binary field");
-      typed(pin.turn, `${path}.pin.turn`, number, 'a turn is a number field, in degrees');
-      if (pin.iconField !== undefined) this.need(pin.iconField, `${path}.pin.iconField`, scope.fields);
-      if (pin.label !== undefined) this.need(pin.label, `${path}.pin.label`, scope.fields);
-      pin.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.pin.tones[${i}]`, ['when'], scope));
-      pin.money?.per?.forEach((item, i) => this.checkModifiers(item, `${path}.pin.money.per[${i}]`, ['when'], scope));
-    }
-    if (card) {
-      if (card.title !== undefined) this.need(card.title, `${path}.card.title`, scope.fields);
-      typed(card.image, `${path}.card.image`, picture, "a card's picture is an image or binary field");
-      // A line is a part, or several on one line; a part a field's name, or a field with its words.
-      card.fields?.forEach((line, i) =>
-        (Array.isArray(line) ? line : [line]).forEach((part, j) => {
-          const at = `${path}.card.fields[${i}]${Array.isArray(line) ? `[${j}]` : ''}${typeof part === 'string' ? '' : '.field'}`;
-          this.need(typeof part === 'string' ? part : part.field, at, scope.fields);
-        })
-      );
-      typed(card.href, `${path}.card.href`, (type) => type === 'char' || type === 'text', "a card's link is a text field holding a web address");
-    }
-  }
-
-  /**
-   * A form's map: each layer one kind — the record's place, a place for each
-   * of its lines, a route between layers, or the reader's own place — its
-   * fields where that kind keeps them, and a route's ends layers it can join.
-   */
-  private walkMap(node: MapNode, path: string) {
-    const layers = new Map<string, { lines: boolean; place: boolean }>();
-    node.layers.forEach((layer, i) => {
-      const at = `${path}.layers[${i}]`;
-      if (layers.has(layer.id)) this.report(`${at}.id`, `two layers are called "${layer.id}"`);
-      const pair = layer.latitude !== undefined || layer.longitude !== undefined;
-      const placed = layer.point !== undefined || pair;
-      const kinds = [placed, !!layer.route, !!layer.myLocation, !!layer.regions, !!layer.reachable].filter(Boolean).length;
-      if (kinds !== 1) this.report(at, 'a layer is one of: a place (point, or latitude and longitude, for the record or for each of its lines), a route, myLocation, regions, or reachable');
-      if (layer.regions?.choose !== undefined) this.need(layer.regions.choose, `${at}.regions.choose`);
-      if (layer.point !== undefined && pair) this.report(at, 'a layer takes point, or latitude and longitude, not both');
-      else if (layer.point === undefined && pair && (layer.latitude === undefined || layer.longitude === undefined)) this.report(at, 'a layer needs both latitude and longitude');
-      if (layer.lines !== undefined && !placed) this.report(`${at}.lines`, "a layer of lines needs where each line is: point, or latitude and longitude, of the line's fields");
-      if (layer.live && (!placed || layer.lines !== undefined)) this.report(`${at}.live`, "live is for a layer of the record's own place: it moves as its fields change");
-      this.checkModifiers(layer, at, ['invisible']);
-      layers.set(layer.id, { lines: layer.lines !== undefined, place: placed || !!layer.myLocation });
-      if (!placed) return;
-      if (layer.lines === undefined) return this.checkPlace(layer, at, this.here(), layer.pin, layer.card);
-      const def = this.need(layer.lines, `${at}.lines`);
-      if (!def) return;
-      if (def.type !== 'one2many') return this.report(`${at}.lines`, `"${layer.lines}" is a ${def.type}; a layer of lines is a one2many field`);
-      this.checkPlace(layer, at, { fields: def.fields as Record<string, LineField>, lines: layer.lines, parent: this.page.fields }, layer.pin, layer.card);
-    });
-    node.layers.forEach((layer, i) => {
-      const route = layer.route;
-      if (!route) return;
-      const at = `${path}.layers[${i}].route`;
-      const end = (id: string | undefined, key: 'from' | 'to') => {
-        if (id === undefined) return;
-        const found = layers.get(id);
-        if (!found) this.report(`${at}.${key}`, `no layer "${id}" on this map`);
-        else if (!found.place || found.lines) this.report(`${at}.${key}`, `a route's ${key} is a layer of one place, or the reader's own; "${id}" is not`);
-      };
-      end(route.from, 'from');
-      end(route.to, 'to');
-      if (route.through !== undefined) {
-        const found = layers.get(route.through);
-        if (!found) this.report(`${at}.through`, `no layer "${route.through}" on this map`);
-        else if (!found.lines) this.report(`${at}.through`, `a route goes through a layer of lines; "${route.through}" is not one`);
-      }
-      if (route.to === undefined && route.through === undefined) this.report(at, 'a route needs where it goes: to, or through');
-      const written = (name: string | undefined, key: string, ok: (type: string) => boolean, says: string) => {
-        if (name === undefined) return;
-        const def = this.need(name, `${at}.write.${key}`);
-        if (def && !ok(def.type)) this.report(`${at}.write.${key}`, `"${name}" is a ${def.type}; ${says}`);
-      };
-      const number = (type: string) => type === 'float' || type === 'integer';
-      written(route.write?.seconds, 'seconds', number, 'seconds are a number field');
-      written(route.write?.metres, 'metres', number, 'metres are a number field');
-      written(route.write?.line, 'line', (type) => type === 'json', 'a line is kept in a json field');
-    });
-    node.layers.forEach((layer, i) => {
-      if (!layer.reachable) return;
-      const found = layers.get(layer.reachable.from);
-      const at = `${path}.layers[${i}].reachable.from`;
-      if (!found) this.report(at, `no layer "${layer.reachable.from}" on this map`);
-      else if (!found.place || found.lines) this.report(at, `a reachable area is worked out from a layer of one place, or the reader's own; "${layer.reachable.from}" is not`);
-    });
-    node.fences?.forEach((fence, i) => {
-      const at = `${path}.fences[${i}]`;
-      const watched = node.layers.find((layer) => layer.id === fence.layer);
-      if (!watched) this.report(`${at}.layer`, `no layer "${fence.layer}" on this map`);
-      else if (!watched.live && !watched.myLocation) this.report(`${at}.layer`, `a fence watches a place that moves: a live layer, or the reader's own; "${fence.layer}" is not`);
-      if (fence.area !== undefined) {
-        const def = this.need(fence.area, `${at}.area`);
-        if (def && def.type !== 'json') this.report(`${at}.area`, `"${fence.area}" is a ${def.type}; an area is kept in a json field`);
-      }
-      if (fence.within !== undefined && !node.layers.some((layer) => layer.id === fence.within && layer.reachable)) this.report(`${at}.within`, `a fence is within a reachable area of this map; "${fence.within}" is not one`);
-      this.checkSteps(fence.steps, `${at}.steps`);
-    });
-  }
-
   private walkChildren(children: LayoutNode[], path: string) {
     children.forEach((child, i) => this.walkNode(child, `${path}.children[${i}]`));
   }
@@ -852,7 +752,7 @@ export class ReferenceCheck {
       case 'text':
         return this.checkValuesIn(node.text, `${path}.text`);
       case 'map':
-        return this.walkMap(node, path);
+        return checkMap(node, path, this.mapTools());
       case 'related':
         return checkRelated(node, path, this.listTools());
       case 'slot':

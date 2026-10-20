@@ -1,4 +1,4 @@
-import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, hasOptionRules, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -218,6 +218,15 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
+}
+
+/**
+ * The parts whose checks a page's check owes (`PageValidation.later`, in the one-tag script alone: they come with the
+ * part that draws what they check): asked for with the page's own, the check run again once they came.
+ */
+export function owedParts(later: readonly string[] | undefined): Part[] {
+  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, slots: slotsPart, files: filesPart, mapchecks: mapChecksPart };
+  return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 
 /** A list's columns whose numbers it writes as people read them: those it shows as a phone (`cells.<field>.widget`), where its page or the cell's options say so. */
