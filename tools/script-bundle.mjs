@@ -944,8 +944,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // that asks — 532.31 after; a form's limits beside the viewer's in the limits part (fieldia.limits.js) — when the page
 // takes answers and each choice's places worked out, its counts asked as it opens, again before its answers go and
 // after, a full choice refused, and why it takes none now in words — a page with limits or places waiting for it, 529.28
-// after, to 529.3.
-const BUDGET_KB = 529.3;
+// after; options shown by a condition and carried from an earlier question in @fieldia/core's options part
+// (fieldia.options.js, 3.93) — what a choice offers, a chosen one a change no longer offers taken out — a page with any
+// waiting for it, 527.69 after, to 527.7.
+const BUDGET_KB = 527.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1166,8 +1168,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // whose app gives its own source, as an app's real one does — 178.21 measured before, 174.04 after; the sixteen
 // functions' bodies in fieldia.functions.js (1.88), loaded before a page whose formulas call one is drawn, 173.40
 // after; a form's limits in fieldia.limits.js, with the viewer's (2.00 more there), loaded before a page with limits or
-// places is drawn, 172.39 after, to 172.4.
-const GZIP_BUDGET_KB = 172.4;
+// places is drawn, 172.39 after; options by condition and carried in fieldia.options.js (1.80), loaded before a page
+// with any is drawn, 171.75 after, to 171.8.
+const GZIP_BUDGET_KB = 171.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1710,8 +1713,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // roundMoney, empty and firstOf, their bodies alone, and the days they count (dates.ts) — to 4.4 and 1.9; limits 5.37 and
 // 2.41 measured before, 10.23 and 4.41 after — a form's limits, @fieldia/core's (form-limits.ts), in the same script as
 // the viewer's: when the page takes answers and each choice's places, the counts asked, a full choice refused, and its
-// six sentences — to 10.3 and 4.5.
-const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [10.3, 4.5], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [4.4, 1.9] };
+// six sentences — to 10.3 and 4.5; options new, 3.93 and 1.80 — each option's condition read once, a page's choice's
+// and a table line's, the options carried from an earlier question, and what a change takes out — to 4.0 and 1.9.
+const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [10.3, 4.5], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [4.4, 1.9], options: [4.0, 1.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1740,9 +1744,10 @@ const PART_GIVES = {
   limits: ['drawLimits', 'installLimitsStyles', 'formLimits'],
   memory: ['createMemoryDataSource', 'memorySource'],
   functions: ['functionBody'],
+  options: ['optionRules'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -2113,12 +2118,13 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (!doc.getElementById('fieldia-limits-styles')) throw new Error("in a page, the limits part's sheet was never put in");
   closed.destroy();
   gone('closed');
-  // A visit's feedback whose formula counts an age: the form's functions part (@fieldia/core's), the page drawn once
-  // it came — nothing of it before — the age worked out at once, never waiting in sight.
+  // A visit's feedback whose formula counts an age, and whose follow-up offers the treatments ticked before: the form's
+  // functions and options parts (@fieldia/core's), the page drawn once they came — nothing of it before — the age worked
+  // out at once, never waiting in sight.
   const visit = inPage.mountViewer(host, { page: read('visit-feedback.page.json'), dataSource: inPage.createMemoryDataSource(), values: { birth_date: '1990-10-20' }, now: () => new dom.window.Date('2026-10-20T12:00:00Z') });
   waits(visit, 'a page whose formula counts an age');
   await visit.drawn;
-  hasIn("a visit's feedback counting an age", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
+  hasIn("a visit's feedback counting an age", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, print, quiet, relations, slots, survey, text, themes');
   if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
   visit.destroy();
   gone('visit');
@@ -2144,7 +2150,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age, worked out by the form's functions part — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

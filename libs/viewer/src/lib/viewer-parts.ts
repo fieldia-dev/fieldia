@@ -1,4 +1,4 @@
-import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, hasOptionRules, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -88,7 +88,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -133,7 +133,8 @@ const markdownAlone = (node: SectionNode) => {
  * in the one-tag script, the same script.
  *
  * A page whose formulas call one of Fieldia's functions beyond the plain ones (`age`, `addMonths`, `contains`, `join`,
- * `average`, …) asks for @fieldia/core's functions part, their bodies (`callsPartFunctions`).
+ * `average`, …) asks for @fieldia/core's functions part, their bodies (`callsPartFunctions`); one whose choices' options
+ * show by a condition, or are carried from an earlier question, its options part (`hasOptionRules`).
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
@@ -213,6 +214,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (page.limits || page.continueLater) found.add(limitsPart);
   if (hasLimits(page)) found.add(formLimitsPart);
   if (callsPartFunctions(page)) found.add(functionsPart);
+  if (hasOptionRules(page)) found.add(optionRulesPart);
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
