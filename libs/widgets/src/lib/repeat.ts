@@ -179,7 +179,9 @@ export const repeatWidget = (widgetFor: (context: WidgetContext) => Widget): Wid
   );
   const until = box('until', { type: 'date', label: words.repeatUntilDay });
   const count = box('count', { type: 'integer', label: words.repeatCount });
-  const timesWord = make('span', { class: 'fd-repeat-unit' }, words.repeatCount);
+  // How many times named by the word after it; the last day, which has none beside it, by its own.
+  const timesWord = make('label', { class: 'fd-repeat-unit', for: `${id}-count` }, words.repeatCount);
+  (until.element.matches('input') ? until.element : until.element.querySelector('input'))?.setAttribute('aria-label', words.repeatUntilDay);
   const untilPart = make('span', { class: 'fd-repeat-end-part' }, until.element);
   const countPart = make('span', { class: 'fd-repeat-end-part fd-repeat-count' }, count.element, timesWord);
   const endsPart = make('div', { class: 'fd-repeat-ends' }, label(words.repeatEndsLabel, ends), untilPart, countPart);

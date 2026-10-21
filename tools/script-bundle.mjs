@@ -1850,12 +1850,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // A record's daily comforts (Wave 6, w6-records): Undo after a row's press lists the records again — list 129.50 and
 // 41.60 measured before, 129.58 and 41.64 after, to 129.6; a repeat field and a week's opening hours, a part of their own
 // with the date part beside it — the rule read, written and said in words in four languages' ways (ordinals, weekdays by
-// Intl), its boxes, a week's rows, shifts checked, copied and split, their sheet — schedule new, 20.41 and 7.83, to 20.5
+// Intl), its boxes, a week's rows, shifts checked, copied and split, their sheet — schedule new, 20.54 and 7.86, to 20.6
 // and 7.9; record templates' menu, its dialogs and where they are kept, templates new, 6.44 and 2.89, to 6.5 and 2.9; a
 // record's watch, who else is here and their sheet, live new, 4.43 and 2.20, to 4.5 and 2.3; a press's words said with
 // Undo and taken back, undo new, 3.10 and 1.55, to 3.2 and 1.6; the memory source's templates and its live pushes,
 // memory 16.08 and 5.71 to 17.75 and 6.30, to 17.8 and 6.4.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.6, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], schedule: [20.5, 7.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], templates: [6.5, 2.9], live: [4.5, 2.3], undo: [3.2, 1.6], print: [16.9, 5.4], memory: [17.8, 6.4], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.6, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], schedule: [20.6, 7.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], templates: [6.5, 2.9], live: [4.5, 2.3], undo: [3.2, 1.6], print: [16.9, 5.4], memory: [17.8, 6.4], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

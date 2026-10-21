@@ -70,6 +70,10 @@ describe('a repeat field', () => {
     pick(el.querySelector('select[aria-label="Ends"]') as HTMLSelectElement, 'count');
     expect(value()).toBe('FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;COUNT=6');
     expect(el.querySelector('.fd-repeat-words')?.textContent).toBe('Every 2 weeks on Tuesday and Thursday, 6 times');
+    // Every box named: how many times by the word after it, the last day by its own.
+    expect(el.querySelector('label[for="fd-sessions-count"]')?.textContent).toBe('times');
+    expect(el.querySelector('#fd-sessions-count')).not.toBeNull();
+    expect(el.querySelector('.fd-repeat-end-part:not(.fd-repeat-count) input')?.getAttribute('aria-label')).toBe('Last day');
   });
 
   it('refuses an interval of none, kept as typed and said, the rule as it was', async () => {
