@@ -134,6 +134,14 @@ the quiz away), `designer.setOptionDetails(id, index, { correct })` and
 number's answers are numbers, refused in words otherwise. Try it shows the
 results the person will see.
 
+## How a form is gone through
+
+A form of responses' Rules tab offers **Review before sending** — every answer
+shown, by step, each with Edit, before it is sent — and once on, the **Review's
+heading** in place of "Check your answers". `designer.setReview({ title, text })`
+sets it (`{}` in Fieldia's words, `null` takes it away; a record's screen is
+refused in words).
+
 ## Trying a field's rules
 
 Under a field's answer rules — on the panel's Rules tab, and in a survey

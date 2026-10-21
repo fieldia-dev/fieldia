@@ -70,6 +70,7 @@ const SAMPLES: Record<string, unknown[][]> = {
   'changes.duplicates': ['on', 'off', 'changed'].map((now) => [now]),
   'changes.limits': ['on', 'off', 'changed'].map((now) => [now]),
   'changes.quiz': ['on', 'off', 'changed'].map((now) => [now]),
+  'changes.review': ['on', 'off', 'changed'].map((now) => [now]),
   'changes.continueLater': [[true], [false]],
   'questions.size': [[512], [1024 * 1024], [7.3 * 1024 * 1024], [2 * 1024 ** 3]],
   'outline.atEdgeOfPage': [[true, 'top'], [false, 'bottom']],

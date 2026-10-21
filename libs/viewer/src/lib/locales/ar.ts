@@ -358,4 +358,9 @@ export const ar: ViewerLabels = {
   quizYourAnswer: 'إجابتك: {answer}',
   quizRightAnswer: 'الإجابة الصحيحة: {answer}',
   quizLater: 'ستظهر نتيجتك بعد مراجعة إجاباتك.',
+  reviewAnswers: 'راجع إجاباتك',
+  reviewTitle: 'تحقّق من إجاباتك',
+  reviewEdit: 'تعديل',
+  reviewNotAnswered: 'لم تُجب',
+  backToReview: 'العودة إلى المراجعة',
 };

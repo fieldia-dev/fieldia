@@ -426,6 +426,12 @@ export const panel = {
   quizPointsEach: 'Points for a right answer',
   quizPointsEachHint: 'Where a question gives none of its own. 1 unless said.',
   quizShowRight: 'Show the right answer to one missed',
+  // ---- a review before sending
+  review: 'Review before sending',
+  reviewOn: 'Show every answer, with Edit, before it is sent',
+  reviewHint: 'The last step’s button reads “Review your answers”: every answer shows by step, each with Edit, then Send.',
+  reviewHeading: 'Review’s heading',
+  reviewHeadingPlaceholder: 'Check your answers',
   // ---- a record page's possible duplicates
   duplicates: 'Possible duplicates',
   duplicatesHint: 'As a record is typed and saved, records with the same value in a field ticked — or a name close to its own — are named under that field, to open instead, let be or merge. Your app’s data source finds them.',

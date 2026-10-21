@@ -26,6 +26,8 @@ async function answer(page: Page) {
   await page.getByRole('button', { name: 'Next' }).click();
   await box(page, 'q-wait').fill('45');
   await node(page, 'q-consent').getByLabel('Before the treatment, after the risks are explained').check();
+  // Every answer shown first, then sent.
+  await page.getByRole('button', { name: 'Review your answers' }).click();
   await page.getByRole('button', { name: 'Send my answers' }).click();
 }
 

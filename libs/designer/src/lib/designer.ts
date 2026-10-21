@@ -413,6 +413,11 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    */
   setPageQuiz(patch: { results?: 'now' | 'later' | null; points?: number | null; rightAnswers?: boolean | null } | null): boolean;
   /**
+   * A review of the answers before a form of responses is sent (`review`): `{}` turns it on in Fieldia's words, its own
+   * `title` and `text` (empty or `null` takes one away), `null` takes it away. A form of responses only.
+   */
+  setReview(patch: { title?: string | null; text?: string | null } | null): boolean;
+  /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
    * home's — `null` takes either away.
@@ -1568,6 +1573,22 @@ export function createDesigner(options: {
           draft.quiz = quiz as Page['quiz'];
         },
         `quiz:${patch ? Object.keys(patch).join(',') : 'off'}`
+      );
+    },
+
+    setReview(patch) {
+      return apply(
+        (draft) => {
+          if (patch === null) return void delete draft.review;
+          if (draft.data.kind !== 'responses' || draft.layout.type === 'list') throw new Refusal((w) => w.refusals.reviewForResponses);
+          const review: Record<string, string> = typeof draft.review === 'object' ? { ...draft.review } : {};
+          for (const [key, value] of Object.entries(patch)) {
+            if (value === null || value === undefined || !value.trim()) delete review[key];
+            else review[key] = value;
+          }
+          draft.review = Object.keys(review).length ? review : true;
+        },
+        `review:${patch ? Object.keys(patch).join(',') : 'off'}`
       );
     },
 

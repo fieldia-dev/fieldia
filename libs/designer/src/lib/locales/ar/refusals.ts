@@ -123,6 +123,7 @@ export const refusals: DesignerWords['refusals'] = {
   rightAnswersForChoices: 'الإجابات الصحيحة خيارات السؤال: أعمدة المصفوفة بلا إجابات صحيحة',
   answersForTyped: 'الإجابات المقبولة لسؤال يُكتب: كلمة أو رقم',
   answersNumbers: 'إجابات الرقم أرقام، مثل 20 أو 2.5',
+  reviewForResponses: 'المراجعة قبل الإرسال لنموذج يجمع الإجابات: السجل يُحفظ عند تعديله',
   rowsFromModel: (label) => `صفوف ${q(label)} تأتي من نموذج البيانات`,
   matrixColumnsFromModel: (label) => `أعمدة ${q(label)} تأتي من نموذج البيانات`,
   onlyMatrix: 'الشبكة وحدها لها صفوف وأعمدة',

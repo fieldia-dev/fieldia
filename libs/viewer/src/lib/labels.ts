@@ -593,6 +593,16 @@ export interface ViewerLabels {
   quizYourAnswer: string;
   quizRightAnswer: string;
   quizLater: string;
+  /**
+   * A review before sending (`review`): the last step's button, or the page's Submit, while it is still to come; its
+   * heading where the page gives none; each answer's Edit (the question named after it, for a screen reader) and an
+   * answer not given; and, on a step before the last after an Edit, the way back to it.
+   */
+  reviewAnswers: string;
+  reviewTitle: string;
+  reviewEdit: string;
+  reviewNotAnswered: string;
+  backToReview: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1016,6 +1026,11 @@ const en: ViewerLabels = {
   quizYourAnswer: 'Your answer: {answer}',
   quizRightAnswer: 'Right answer: {answer}',
   quizLater: 'Your results will be shown once your answers have been reviewed.',
+  reviewAnswers: 'Review your answers',
+  reviewTitle: 'Check your answers',
+  reviewEdit: 'Edit',
+  reviewNotAnswered: 'Not answered',
+  backToReview: 'Back to review',
 };
 
 /**

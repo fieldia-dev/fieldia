@@ -81,6 +81,7 @@ import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
 import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, surveyFlowPart, type HeadPart } from './viewer-parts';
 import type { LimitsKit } from './limits';
+import type { FlowKit } from './survey-flow';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
 import { steadyPresses } from './steady-press';
@@ -1874,6 +1875,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    */
   const limitsAsked = !!(page.limits || page.continueLater || options.resume);
   let limitsKit: LimitsKit | null = null;
+  /** A survey's flow, from the survey part — a review before sending — made as the page is drawn (survey-flow.ts). */
+  let flowKit: FlowKit | null = null;
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
 
@@ -1896,8 +1899,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   async function submitOrSave() {
     // A record only to read has nothing to save: Ctrl+Enter there does nothing.
     if (form.getState().can?.edit === false) return;
+    // A survey that reviews its answers first shows them in place of sending, until they are shown.
+    if (flowKit && !(await flowKit.sending())) return;
     const saved = await form.save();
     if (!saved) {
+      flowKit?.refused();
       // Stopped by the page's own checks: say which fields; a refused save says so above.
       if (!form.getState().saveProblem) announce(checkText(form.getState()));
       focusFirstProblem();
@@ -2107,7 +2113,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       back.hidden = index === 0;
       skip.hidden = last || !node.children.find((step) => step.id === state.step)?.optional;
       // Its words as they read now: a page's own may name the answers given ("Send to {branch}").
-      const words = last ? node.finishLabel ?? labels.submit : node.nextLabel ?? labels.next;
+      const words = last ? flowKit?.finishWords() ?? node.finishLabel ?? labels.submit : node.nextLabel ?? labels.next;
       forward.textContent = words.includes('{') ? form.words(words) : words;
       for (const [id, go] of stepButtons) {
         const at = steps.indexOf(id);
@@ -2460,6 +2466,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);
     else content.append(...drawnParts);
+    // A survey's flow, once its questions are in the page: what stands in their place, and the buttons it adds.
+    const flow = surveyFlowPart.loaded;
+    if (flow?.flows(page)) {
+      const kit = flow.surveyFlow({ doc, el, page, form, labels, locale, questions: body, uid, announce, focusFirstProblem, submit: submitOrSave });
+      flowKit = kit;
+      updaters.push((state) => kit.update(state));
+      cleanups.push(() => kit.destroy());
+    }
     pageDrawn = true;
   }
   /** How a list's other view makes a record: the app's way, else the model's page in a dialog, else none. */

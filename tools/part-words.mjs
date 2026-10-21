@@ -93,7 +93,7 @@ export const PART_WORDS = {
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {
     widgets: ['notAnswered', 'addressStreet', 'addressCity', 'addressLine2', 'addressRegion', 'addressPostcode', 'addressCountry', 'keepOrder', 'addProperty', 'propertyName', 'propertyType', 'propertyTypes', 'colourCode', 'colourCodeBox', 'noColour', 'rankTop', 'moveUp', 'moveDown', 'movedTo', 'removed'],
-    viewer: ['quizTitle', 'quizScore', 'quizRight', 'quizWrong', 'quizNotAnswered', 'quizPoints', 'quizYourAnswer', 'quizRightAnswer', 'quizLater'],
+    viewer: ['quizTitle', 'quizScore', 'quizRight', 'quizWrong', 'quizNotAnswered', 'quizPoints', 'quizYourAnswer', 'quizRightAnswer', 'quizLater', 'reviewAnswers', 'reviewTitle', 'reviewEdit', 'reviewNotAnswered', 'backToReview'],
   },
   text: {
     widgets: ['textColour', 'linkRecordNamed', 'moreTools', 'switchToMarkdown', 'switchToRich', 'markdownSupported', 'pasteOrSelect', 'editNamed', 'doneEditing', 'addLink', 'existingItem', 'newItem', 'formattingLost', 'cursorInLink', 'attachFile', 'switchAnyway', 'headingLevel',

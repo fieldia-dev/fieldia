@@ -1,7 +1,8 @@
 import { installPartStyles, PART_RANK } from '@fieldia/widgets';
 
 /**
- * The look of what the viewer's survey part draws: a quiz's results under the thanks. On the form's tokens, so dark and
+ * The look of what the viewer's survey part draws: a quiz's results under the thanks, a review of the answers before
+ * they are sent. On the form's tokens, so dark and
  * the themes follow; logical sides, so right to left follows. Its sheet takes the survey part's own rank
  * (PART_RANK.survey), beside the survey kinds' sheet: it names only its own parts and the wizard's, which no part's
  * sheet between it and the themes' names, and a theme still reshapes its buttons and type after it.
@@ -26,6 +27,24 @@ const FLOW_CSS = /* css */ `
 .fd-quiz-answer, .fd-quiz-right-answer, .fd-quiz-feedback { margin: 0; padding-inline-start: calc(1.2em + 8px); line-height: 1.45; overflow-wrap: anywhere; }
 .fd-quiz-answer, .fd-quiz-feedback { color: var(--fd-muted); }
 .fd-quiz-right-answer { color: var(--fd-text); }
+.fd-review { display: grid; gap: 14px; }
+.fd-review[hidden] { display: none; }
+.fd-review-title { margin: 0; font-size: 20px; font-weight: 650; color: var(--fd-text); }
+.fd-review-title:focus { outline: none; }
+.fd-review-text { margin: 0; color: var(--fd-muted); line-height: 1.5; }
+.fd-review-groups { display: grid; gap: 16px; }
+.fd-review-group { display: grid; gap: 6px; }
+.fd-review-group-title { margin: 0; font-size: 15px; font-weight: 650; color: var(--fd-text); }
+.fd-review-list { margin: 0; border-block-start: 1px solid var(--fd-border); }
+.fd-review-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto; gap: 4px 16px; align-items: baseline; padding: 10px 0; border-block-end: 1px solid var(--fd-border); }
+.fd-review-question { color: var(--fd-muted); overflow-wrap: anywhere; }
+.fd-review-answer { margin: 0; color: var(--fd-text); overflow-wrap: anywhere; white-space: pre-line; }
+.fd-review-answer[data-empty] { color: var(--fd-muted); font-style: italic; }
+.fd-review-tools { margin: 0; justify-self: end; }
+.fd-review-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fd-review-actions > .fd-spacer { flex: 1 1 auto; }
+.fd-review-send[aria-busy="true"] { opacity: 0.7; cursor: progress; }
+@container (max-width: 520px) { .fd-review-row { grid-template-columns: minmax(0, 1fr) auto; } .fd-review-question { grid-column: 1 / -1; } }
 `;
 
 /** The viewer's survey part's sheet in a document, once, in the survey part's place among Fieldia's (PART_RANK.survey). */

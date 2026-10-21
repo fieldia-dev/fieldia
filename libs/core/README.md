@@ -318,6 +318,17 @@ of the page, marks the answers on your server and answers the send with them —
 page's. `quizResults(page, values, asked?)` marks answers the page's way for
 your own code.
 
+## A review before sending
+
+`review` on a page of responses shows every answer before it is sent — by step
+on a wizard, by titled group on a page of sections — each with Edit back to its
+question, then Send: `true` in Fieldia's words ("Check your answers"), or
+`{ "title": "Before you send", "text": "Press Edit to change one." }` in the
+page's. The viewer draws it (its survey part); the answers are checked as a
+step's are before they show. `form.validate(within)` checks the answers inside
+one part alone — a step, a question — as the review and one question at a time
+do.
+
 ## Files stored as they are picked
 
 Give the data source `upload(file, request)` and a file or picture field sends

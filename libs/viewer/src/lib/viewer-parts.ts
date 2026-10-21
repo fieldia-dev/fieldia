@@ -227,6 +227,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     found.add(surveyFlowPart);
     found.add(formSurveyPart);
   }
+  // How a survey is gone through — a review before sending — drawn by the viewer's survey part.
+  if (page.review && page.data.kind === 'responses' && page.layout.type !== 'list') found.add(surveyFlowPart);
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);
   if (page.look?.theme) found.add(themesPart);

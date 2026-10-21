@@ -155,6 +155,8 @@ const NAMES: Record<string, string> = {
   'Quiz results': 'نتيجة الاختبار',
   'Points for a right answer': 'نقاط الإجابة الصحيحة',
   'Show the right answer to one missed': 'عرض الإجابة الصحيحة لما أخطأ فيه',
+  'Review before sending': 'المراجعة قبل الإرسال',
+  'Review’s heading': 'عنوان المراجعة',
   'Records of': 'سجلات من',
   'Cards on a phone': 'بطاقات على الهاتف',
   'Row tones and buttons': 'ألوان الصفوف وأزرارها',
@@ -568,6 +570,12 @@ export const panel: DesignerWords['panel'] = {
   quizPointsEach: 'نقاط الإجابة الصحيحة',
   quizPointsEachHint: 'حيث لا يحدد السؤال نقاطه. 1 ما لم يُذكر غير ذلك.',
   quizShowRight: 'عرض الإجابة الصحيحة لما أخطأ فيه',
+  // ---- المراجعة قبل الإرسال
+  review: 'المراجعة قبل الإرسال',
+  reviewOn: 'عرض كل إجابة، مع تعديل، قبل إرسالها',
+  reviewHint: 'يصبح زر الخطوة الأخيرة «راجع إجاباتك»: تظهر كل إجابة حسب خطوتها، لكل منها تعديل، ثم الإرسال.',
+  reviewHeading: 'عنوان المراجعة',
+  reviewHeadingPlaceholder: 'تحقّق من إجاباتك',
   // ---- السجلات المكررة المحتملة في صفحة سجل
   duplicates: 'السجلات المكررة المحتملة',
   duplicatesHint: 'أثناء كتابة السجل وحفظه، تُذكر تحت الحقل السجلات التي فيها القيمة نفسها في حقل محدد — أو اسم قريب من اسمه — لفتحها بدلًا منه أو تركها أو دمجها. مصدر بيانات تطبيقك هو الذي يجدها.',

@@ -9,6 +9,7 @@ import { PageRecordsSchema, type PageRecords } from './records';
 import { PageEndingsSchema, type PageEnding } from './endings';
 import { PageLimitsSchema, type PageLimits } from './limits';
 import { PageQuizSchema, type PageQuiz } from './quiz';
+import { PageReviewSchema, type PageReview } from './flow';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -219,6 +220,12 @@ export interface Page {
    * `PageQuiz`. Without it, a page whose options carry points (`score`) shows no results, as before.
    */
   quiz?: PageQuiz;
+  /**
+   * A review before a page of responses is sent: every answer shown — by step on a wizard, by titled group on a page of
+   * sections — each with Edit back to its question, then Send. `true` in Fieldia's words ("Check your answers"), or the
+   * page's own heading and words. See `PageReview`.
+   */
+  review?: boolean | PageReview;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -307,6 +314,7 @@ export const PageSchema = z
     limits: PageLimitsSchema.optional(),
     continueLater: z.boolean().optional(),
     quiz: PageQuizSchema.optional(),
+    review: PageReviewSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

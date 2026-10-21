@@ -395,6 +395,21 @@ loaded before a page with a quiz is drawn. Their words are the viewer's labels
 `quizPoints`, `quizYourAnswer`, `quizRightAnswer`, `quizLater`). See
 [a quiz's results](https://fieldia.dev/pages/#quiz).
 
+## A review before sending
+
+A page of responses with `review` reads "Review your answers" on its last
+step's button (a page of sections', on its Submit): pressed, the step's answers
+are checked as Next checks them, and the questions give way to every answer —
+by step, or by titled group — each with Edit (the question named after it, for
+a screen reader) and "Not answered" for one left empty; Back, and the page's own
+words to send. Edit goes to that question in its step, focused; from a step
+before the last, **Back to review** checks the steps on the way and shows the
+answers again. Ctrl+Enter reviews as the button does, and sends from the
+review. A send refused goes back to the question it names. It comes in the
+survey part; its words are the viewer's labels (`reviewAnswers`, `reviewTitle`,
+`reviewEdit`, `reviewNotAnswered`, `backToReview`). See
+[a review before sending](https://fieldia.dev/pages/#review).
+
 ## Opening, closing and limiting a form; Continue later
 
 A page of responses with `limits` says, as it opens, when it takes no answers —

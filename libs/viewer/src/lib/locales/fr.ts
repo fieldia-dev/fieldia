@@ -390,4 +390,9 @@ export const fr: ViewerLabels = {
   quizYourAnswer: 'Votre réponse : {answer}',
   quizRightAnswer: 'Bonne réponse : {answer}',
   quizLater: 'Vos résultats s’afficheront une fois vos réponses examinées.',
+  reviewAnswers: 'Relire mes réponses',
+  reviewTitle: 'Vérifiez vos réponses',
+  reviewEdit: 'Modifier',
+  reviewNotAnswered: 'Sans réponse',
+  backToReview: 'Retour à la relecture',
 };

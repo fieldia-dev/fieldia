@@ -21,6 +21,7 @@ export function checkSurveyFlow(page: Page, tools: FlowTools): void {
   const report = (path: string, message: string) => tools.report(path, message);
   // A quiz with no question to mark yet is one being made: it shows no results until one has right answers or points.
   if (page.quiz !== undefined && page.data.kind !== 'responses') report('quiz', 'a quiz’s results are for a page of responses, shown once its answers are sent');
+  if (page.review !== undefined && page.review !== false && (page.data.kind !== 'responses' || page.layout.type === 'list')) report('review', 'a review before sending is for a page of responses: a record is saved as it is changed');
   for (const [name, field] of Object.entries(page.fields)) {
     if (field.type === 'one2many') {
       for (const [column, sub] of Object.entries(field.fields)) if ((sub as { quiz?: unknown }).quiz !== undefined) report(`fields.${name}.fields.${column}.quiz`, 'a quiz’s question is a page’s own field, not a column of a table');

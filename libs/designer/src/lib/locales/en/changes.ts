@@ -131,6 +131,7 @@ export const changes = {
   limits: (now: 'on' | 'off' | 'changed') => ({ on: 'It takes answers only when and as many as it says', off: 'It takes answers at any time, as many as come', changed: 'When it takes answers, and how many, changed' })[now],
   continueLater: (on: boolean): string => (on ? 'It offers Continue later' : 'It no longer offers Continue later'),
   quiz: (now: 'on' | 'off' | 'changed') => ({ on: 'It shows a quiz’s results', off: 'It no longer shows a quiz’s results', changed: 'How it shows the quiz’s results changed' })[now],
+  review: (now: 'on' | 'off' | 'changed') => ({ on: 'It shows every answer before it is sent', off: 'It no longer shows the answers before they are sent', changed: 'Its review before sending changed' })[now],
   thePage: 'the page',
   // ---- the look
   look: {

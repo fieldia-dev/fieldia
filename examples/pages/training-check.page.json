@@ -5,6 +5,7 @@
   "description": "Six questions for the clinic’s staff before they assist with fillers. You see your score and the right answers once you send.",
   "data": { "kind": "responses" },
   "quiz": { "results": "now" },
+  "review": true,
   "fields": {
     "name": { "type": "char", "label": "Your name", "required": true },
     "role": {

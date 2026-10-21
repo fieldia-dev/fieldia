@@ -401,4 +401,9 @@ export const de: ViewerLabels = {
   quizYourAnswer: 'Ihre Antwort: {answer}',
   quizRightAnswer: 'Richtige Antwort: {answer}',
   quizLater: 'Ihr Ergebnis wird angezeigt, sobald Ihre Antworten geprüft wurden.',
+  reviewAnswers: 'Antworten prüfen',
+  reviewTitle: 'Prüfen Sie Ihre Antworten',
+  reviewEdit: 'Ändern',
+  reviewNotAnswered: 'Nicht beantwortet',
+  backToReview: 'Zurück zur Übersicht',
 };

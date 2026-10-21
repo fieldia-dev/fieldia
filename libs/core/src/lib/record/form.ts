@@ -501,7 +501,11 @@ export interface Form {
    * now refuses its text with "still looking", so a caller that can wait for it (`settle`) checks again after.
    */
   reading(): boolean;
-  validate(): boolean;
+  /**
+   * Check the answers — or, given a part's id, those inside it alone (a step, a question shown on its own): what is typed
+   * read first, each problem said under its field, true when there is none. The problems said are those it found.
+   */
+  validate(within?: string): boolean;
   save(): Promise<boolean>;
   reset(): void;
   /**
@@ -3616,9 +3620,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
     reading: () => readingNow > 0 || [...attached.values()].some((part) => part.inner.form.reading()),
 
-    validate() {
+    validate(within) {
       readTyped();
-      const errors = collectErrors();
+      const errors = collectErrors(within);
       set({ errors });
       return Object.keys(errors).length === 0;
     },

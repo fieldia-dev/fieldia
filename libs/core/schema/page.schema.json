@@ -392,6 +392,9 @@
     },
     "quiz": {
       "$ref": "#/$defs/PageQuiz"
+    },
+    "review": {
+      "$ref": "#/$defs/PageReview"
     }
   },
   "required": [
@@ -10354,6 +10357,29 @@
         }
       },
       "additionalProperties": false
+    },
+    "PageReview": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "maxLength": 300,
+              "pattern": "\\S"
+            },
+            "text": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "\\S"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     }
   }
 }

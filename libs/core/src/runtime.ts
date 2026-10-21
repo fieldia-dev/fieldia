@@ -87,6 +87,7 @@ export type { SignatureOptions } from './lib/format/signature-options';
 export type { PageDuplicates } from './lib/format/duplicates';
 export type { PageLimits } from './lib/format/limits';
 export type { PageQuiz, QuizQuestion } from './lib/format/quiz';
+export type { PageReview } from './lib/format/flow';
 export type { PageRecords } from './lib/format/records';
 export type { PageEnding } from './lib/format/endings';
 // `quotedLabel` here, not in index.ts alone: the widgets' messages read it, and a package's module taking a name only
