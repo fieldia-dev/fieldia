@@ -228,7 +228,8 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     span = spanOf(planned, now(), zoom, firstDay, Math.max(0, body.clientWidth - names - 2));
     const width = span.days * dayWidth;
     const groups = groupsOf(tasks, spec, page, labels.noGroup);
-    const scroll = make('div', { class: 'fd-gantt-scroll' }, make('div', { class: 'fd-gantt-sheet' }, axis(width), rows(groups, width)));
+    // No stop of its own for the keys (Firefox gives a box that scrolls one): its bars are, each brought into view.
+    const scroll = make('div', { class: 'fd-gantt-scroll', tabindex: '-1' }, make('div', { class: 'fd-gantt-sheet' }, axis(width), rows(groups, width)));
     body.replaceChildren(scroll);
     if (scrolled) [scroll.scrollLeft, scroll.scrollTop] = scrolled;
     // The keys' one stop: where they stood, else the first bar.

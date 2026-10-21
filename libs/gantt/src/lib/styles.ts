@@ -26,6 +26,7 @@ export const GANTT_CSS = `
 .fd-gantt-failed, .fd-gantt-empty { margin: 0; padding: 32px 16px; text-align: center; }
 .fd-gantt-empty { color: var(--fd-muted); }
 .fd-gantt-scroll { overflow: auto; max-height: min(70vh, 720px); overscroll-behavior-x: contain; }
+.fd-gantt-scroll:focus { outline: none; }
 .fd-gantt-sheet { position: relative; width: max-content; min-width: 100%; }
 
 /* The axis: months over days or weeks, years over months; it stays in sight as the rows scroll under it. */
