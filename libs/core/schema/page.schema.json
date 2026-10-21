@@ -5092,6 +5092,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -5365,6 +5380,21 @@
                     "confirm": {
                       "type": "string"
                     },
+                    "undo": {
+                      "anyOf": [
+                        {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActionStep"
+                          }
+                        }
+                      ]
+                    },
                     "icon": {
                       "type": "string"
                     },
@@ -5625,6 +5655,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -5761,6 +5806,21 @@
               },
               "confirm": {
                 "type": "string"
+              },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
               },
               "icon": {
                 "type": "string"
@@ -6077,6 +6137,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -6186,6 +6261,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -6294,6 +6384,21 @@
               },
               "confirm": {
                 "type": "string"
+              },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
               },
               "icon": {
                 "type": "string"
@@ -7292,6 +7397,21 @@
         "confirm": {
           "type": "string"
         },
+        "undo": {
+          "anyOf": [
+            {
+              "type": "boolean",
+              "const": true
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ActionStep"
+              }
+            }
+          ]
+        },
         "icon": {
           "type": "string"
         },
@@ -7373,6 +7493,21 @@
             },
             "confirm": {
               "type": "string"
+            },
+            "undo": {
+              "anyOf": [
+                {
+                  "type": "boolean",
+                  "const": true
+                },
+                {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/ActionStep"
+                  }
+                }
+              ]
             },
             "icon": {
               "type": "string"
@@ -8582,6 +8717,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -9109,6 +9259,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -9417,6 +9582,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -9663,6 +9843,21 @@
               },
               "confirm": {
                 "type": "string"
+              },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
               },
               "icon": {
                 "type": "string"

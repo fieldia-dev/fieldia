@@ -47,6 +47,8 @@ export const fr: ViewerLabels = {
   countOf: '{label}, {count}',
   discardChanges: 'Abandonner vos modifications ?',
   dismiss: 'Masquer',
+  undoPress: 'Annuler',
+  pressUndone: 'Annulé.',
   helpFor: 'Aide sur {label}',
   quietHint: 'Ajouter {label}',
   quietAnswer: 'Votre réponse',

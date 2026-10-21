@@ -726,6 +726,11 @@ export function listView(context: ListContext): ListView {
     drawFolds();
   });
 
+  // A row's or the chosen rows' press taken back by its toast's Undo: the records again, as they are now.
+  const undone = form.on('run', ({ id }) => {
+    if (id.endsWith('.undo') && !destroyed) void Promise.all([load(), viewParts.reload()]);
+  });
+
   // ---- what is chosen, and the buttons for it --------------------------------------
 
   const chosenCount = el('span', { class: 'fd-list-count', role: 'status' });
@@ -1578,6 +1583,7 @@ export function listView(context: ListContext): ListView {
     open: (id, options) => openRow(id, options?.lit !== false),
     destroy() {
       destroyed = true;
+      undone();
       doc.removeEventListener('pointerdown', outsideExport, true);
       search.destroy();
       widths?.disconnect();

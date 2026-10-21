@@ -1,4 +1,4 @@
-import type { OpenRequest, OpenResult, Page, PostedMessage, Tone, Values } from '@fieldia/core';
+import type { OpenRequest, OpenResult, Page, PostedMessage, SayUndo, Tone, Values } from '@fieldia/core';
 import { FIRST_FIELD, focusField, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
 import { stayed } from './discard';
 import type { Breadcrumb } from './record-bar';
@@ -19,7 +19,7 @@ export interface Opener {
   /** Why a page cannot be opened: the app has none by that id. */
   missing(page: string): string;
   /** Words said as this viewer says them: a page opened over it says its own here, so they show over it and outlive it. */
-  say(message: string, tone: Tone): void;
+  say(message: string, tone: Tone, undo?: SayUndo): void;
   /** Words posted in this record's conversation: a page opened over it posts its own here. */
   post(message: PostedMessage): Promise<boolean>;
   /** This record's name, for the crumb a page opened in its place goes back by. */

@@ -12,6 +12,7 @@ import { openMenu } from './menu';
 import type { PropertiesView } from './screen-properties';
 import { whenClicked } from './steps-panel';
 import { settingNumber, type SettingNumberOptions } from './number-box';
+import { switchControl } from './panel-controls';
 
 /**
  * The panels of a list page: the list's own — the rows a page holds, its
@@ -1049,6 +1050,7 @@ export function listActionProperties(el: ElementFactory, designer: Designer, id:
   look.addEventListener('change', () => designer.updateListAction(id, { style: look.value as ButtonNode['style'] }));
   const asks = el('input', { class: 'fd-input', 'aria-label': p.asksFirst, placeholder: p.actsAtOnce }) as HTMLInputElement;
   asks.addEventListener('input', () => designer.updateListAction(id, { confirm: asks.value }));
+  const undo = switchControl(el, p.undoAfter, (on) => designer.updateListAction(id, { undo: on }));
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.delete);
   remove.addEventListener('click', () => designer.removeListAction(id));
   const element = el(
@@ -1058,6 +1060,7 @@ export function listActionProperties(el: ElementFactory, designer: Designer, id:
     pressed.element,
     prop(el, w.look, look),
     prop(el, p.asksFirst, asks),
+    el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, p.undoAfter), undo.element, el('p', { class: 'fd-properties-hint' }, p.undoAfterHint)),
     el('div', { class: 'fd-props-actions' }, remove)
   );
   return {
@@ -1069,6 +1072,7 @@ export function listActionProperties(el: ElementFactory, designer: Designer, id:
       pressed.update(page);
       look.value = button.style ?? 'secondary';
       if (!focused(asks)) asks.value = button.confirm ?? '';
+      undo.set(button.undo !== undefined);
     },
   };
 }

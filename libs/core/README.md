@@ -918,6 +918,37 @@ onAction: async ({ action, values }) => {
 warning. Nothing answered means go on: an `onAction` that returns nothing
 works as it always did.
 
+### Undo after a one-tap press
+
+A button or a gear menu item with `"undo": true` offers Undo in place of
+asking first: once its press has run whole, the words it said — its last `say`,
+or the app's — are given to the host's `say` with a third argument, `{ undo }`
+(else "Done: {label}", the built-in Archive's "Archived."); the words before
+them are said plainly. `undo()` takes the press back and resolves to a
+`RunResult`: the app's own undos (an answer's `undo`, latest first, each
+answered as a call is), the record archived brought back (or the reverse), and
+the values its steps and answers wrote put back — each only while it holds what
+they left — saved again where the press saved. It is offered only where all of
+it can be taken back: a copy, a delete, a post, a page opened, an address, a
+form put back or closed, or a call answered without `undo` say plainly. Steps in
+place of `true` are what Undo runs instead. A call's answer with `undo` offers it
+by itself, for what the app did:
+
+```ts
+onAction: async ({ action, recordId }) => {
+  if (action === 'mark_done') {
+    await api.done(recordId);
+    return { say: { message: 'Follow-up marked done', tone: 'success' }, undo: () => api.reopen(recordId).then(() => ({ reload: true })) };
+  }
+},
+```
+
+Undo's run is told as `run` with the press's id and `.undo` after it
+(`b-done.undo`); a built-in Archive or Delete with `undo` asks nothing first
+unless it says `confirm`. Saying it with Undo and taking it back come in a part
+of their own (`pressUndoPart`, `fieldia.undo.js`): asked for with a page whose
+buttons offer Undo, else as an answer first brings one.
+
 ### The moments
 
 - `open` runs once the form has its values: as soon as a new one is made, and

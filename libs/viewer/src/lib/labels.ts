@@ -77,6 +77,10 @@ export interface ViewerLabels {
   discardChangesNoun?: string;
   /** The × on an alert that may be dismissed. */
   dismiss: string;
+  /** Beside the words a one-tap press said, for a few seconds (a button's `undo`, or the app answering with one): pressed, it takes the press back. */
+  undoPress: string;
+  /** What the toast says once its Undo has taken the press back. */
+  pressUndone: string;
   /** The (?) beside a label that shows its help: its name, as a screen reader says it. */
   helpFor: string;
   /**
@@ -636,6 +640,8 @@ const en: ViewerLabels = {
   discardChanges: 'Discard your changes?',
   discardChangesNoun: 'Discard your changes to this {record}?',
   dismiss: 'Dismiss',
+  undoPress: 'Undo',
+  pressUndone: 'Undone.',
   helpFor: 'Help for {label}',
   quietHint: 'Add {label}',
   quietAnswer: 'Your answer',

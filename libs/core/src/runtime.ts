@@ -41,6 +41,7 @@ export type {
   Alert,
   Badge,
   MenuItem,
+  PressUndo,
   RecordToolbar,
   AttachmentPreview,
   ColumnCount,
@@ -261,7 +262,7 @@ export {
 } from './lib/record/form';
 export type { HistoryStep } from './lib/record/history';
 export type { WaitsFor } from './lib/record/waits';
-export type { ActionFile, ActionHost, ActionResult, AskHow, ChosenLines, OnAction, OpenRequest, OpenResult, PostedMessage, RunContext, RunResult, RunStop } from './lib/record/run';
+export type { ActionFile, ActionHost, ActionResult, AppUndo, AskHow, ChosenLines, OnAction, OpenRequest, OpenResult, PostedMessage, RunContext, RunResult, RunStop, SayUndo } from './lib/record/run';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';
 export {
   stripMarks,
@@ -308,5 +309,7 @@ export { fieldPattern } from './lib/format/pattern';
 export { lazyPart, partWith, partsOf, partsComeByScriptTag, settleParts, type Part } from './lib/parts';
 // The bodies of Fieldia's functions beyond the plain ones, loaded before a page that calls one is drawn.
 export { callsPartFunctions, functionsPart, type FunctionsPart } from './lib/expression/functions';
+// A press said with Undo, and taken back: loaded with a page whose buttons offer it, or as an answer first brings one.
+export { pressUndoPart, type PressUndoPart } from './lib/record/undo-later';
 // The checks a page owes a part of the one-tag script (`PageValidation.later`): a map's come in a part of their own.
 export { mapChecksPart } from './lib/format/later-checks';

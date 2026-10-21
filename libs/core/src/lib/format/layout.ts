@@ -339,6 +339,16 @@ export interface ButtonNode {
   style?: 'primary' | 'secondary' | 'danger' | 'link';
   /** Ask before running the action. */
   confirm?: string;
+  /**
+   * Undo after a one-tap press — Done, Archive, Send — in place of asking first: once it has run, what it said (its
+   * last `say`, or the app's answer's words; else "Done: {label}") shows with **Undo** for a few seconds. `true`:
+   * Fieldia takes back what it did — the values its steps and the app's answers set, put back and saved again where
+   * it saved; the record archived, brought back (or the reverse); what the app answered with an `undo` for, through
+   * it — offered only where it can take back all of it (never after a copy, a delete, a post, a page opened, or the
+   * app's call answered with no `undo`). Steps: what Undo runs instead, as the person's press (a stage set back and
+   * saved, the app's own `call`). The app's answer with an `undo` offers it too, for what the app did.
+   */
+  undo?: PressUndo;
   icon?: string;
   /**
    * A key that presses it with Alt, as Flectra's data-hotkey: a letter or a
@@ -991,12 +1001,25 @@ export interface MenuItem {
   /** The app's action's name, run after the steps, such as a server action (Debit Note). */
   action?: string;
   params?: { [key: string]: JsonValue };
-  /** Ask before running it. */
+  /** Ask before running it. A built-in Archive or Delete with `undo` asks nothing unless it says so. */
   confirm?: string;
+  /**
+   * Undo after a one-tap press — Archive, Mark done — in place of asking first: once it has run, what it said (its
+   * last `say`, or the app's answer's words; else "Done: {label}") shows with **Undo** for a few seconds. `true`:
+   * Fieldia takes back what it did — the values its steps and the app's answers set, put back and saved again where
+   * it saved; the record archived, brought back (or the reverse); what the app answered with an `undo` for, through
+   * it — offered only where it can take back all of it (never after a copy, a delete, a post, a page opened, or the
+   * app's call answered with no `undo`). Steps: what Undo runs instead, as the person's press (a stage set back and
+   * saved, the app's own `call`). The app's answer with an `undo` offers it too, for what the app did.
+   */
+  undo?: PressUndo;
   icon?: string;
   invisible?: Modifier;
   roles?: Roles;
 }
+
+/** What Undo after a press takes back: what the press did, as Fieldia knows it (`true`), or these steps. */
+export type PressUndo = true | ActionStep[];
 
 /**
  * What sits over a record, around its sheet: the gear menu the page fills,
@@ -1672,6 +1695,7 @@ export const ButtonNodeSchema = z.strictObject({
   params: z.record(z.string(), JsonValueSchema).optional(),
   style: z.enum(['primary', 'secondary', 'danger', 'link']).optional(),
   confirm: z.string().optional(),
+  undo: z.union([z.literal(true), ActionStepsSchema]).optional(),
   icon: z.string().optional(),
   hotkey: z.string().regex(HOTKEY, 'a hotkey is a letter or a digit, in small letters, with shift+ before it for Alt+Shift: "v", "shift+g"').optional(),
   colspan: span,
@@ -2073,6 +2097,7 @@ export const MenuItemSchema = z
     action: z.string().min(1).optional(),
     params: z.record(z.string(), JsonValueSchema).optional(),
     confirm: z.string().optional(),
+    undo: z.union([z.literal(true), ActionStepsSchema]).optional(),
     icon: z.string().optional(),
     invisible,
     roles,

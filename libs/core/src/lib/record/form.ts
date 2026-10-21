@@ -2,7 +2,7 @@ import type { ActionStep } from '../format/actions';
 import type { DefinitionsFrom, Field, Fields, LineField, Option, PropertyDefinition } from '../format/field';
 import { changesOptions, hasOptionRules, optionRulesPart, optionsField, optionsList, type OptionRulesPart } from '../format/choice-options';
 import type { OptionRules, TakenOption } from './option-rules';
-import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
+import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, PressUndo, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { PageEnding } from '../format/endings';
 import { fillValues } from '../format/words';
@@ -54,7 +54,8 @@ import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpl
 import { hostScheduler, type Scheduler } from './scheduler';
 import { signedBy, type SignedBy } from './signed';
 import { createHistory, type HistoryStep } from './history';
-import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
+import { pressUndoPart, type PressUndoPart } from './undo-later';
+import { createMoments, createRunner, takenNow, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
   initialValues,
@@ -3456,8 +3457,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // A built-in item of the gear menu with nothing of its own: its step, asked about first when it archives or deletes.
     const builtin = 'builtin' in source && !list.length ? source.builtin : undefined;
     if (builtin) list.push({ do: builtin });
-    const asked = builtin === 'archive' ? named(messages.archiveConfirmNoun, messages.archiveConfirm) : builtin === 'delete' ? named(messages.deleteConfirmNoun, messages.deleteConfirm) : undefined;
+    // Undo after it, in place of asking first: a built-in with `undo` asks nothing unless it says so.
+    const offers = 'undo' in source ? source.undo : undefined;
+    const asked = offers !== undefined ? undefined : builtin === 'archive' ? named(messages.archiveConfirmNoun, messages.archiveConfirm) : builtin === 'delete' ? named(messages.deleteConfirmNoun, messages.deleteConfirm) : undefined;
     const confirm = 'confirm' in source && source.confirm !== undefined ? source.confirm : asked;
+    if (offers !== undefined) scope.taken = takenNow();
     // On the record it was pressed on: another shown while its question is asked, it does nothing to that one.
     scope.generation ??= generation;
     // Pressed by the person: what is typed is read before a step reads the form or hands its values on.
@@ -3490,9 +3494,25 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
             return result;
           }
         }
-        return runTop(list, scope);
+        const result = await runTop(list, scope);
+        if (scope.taken) offerUndo(source, scope, result, offers);
+        return result;
       })()
     );
+  }
+
+  /**
+   * A press that offers Undo has ended: its words said — the last with Undo, where what it did can be taken back — by
+   * the undo part (press-undo.ts), at once where it has come (a page whose buttons offer Undo asks for it first); its
+   * words said plainly where it cannot come.
+   */
+  function offerUndo(source: ButtonNode | StatButton | MenuItem, scope: RunScope, result: RunResult, offers: PressUndo | undefined) {
+    const taken = scope.taken as NonNullable<RunScope['taken']>;
+    scope.taken = undefined;
+    const offer = (part: PressUndoPart) =>
+      part.offerUndo({ kit: runner.kit, source, scope, taken, result, offers, host: options.host, messages, generation: () => generation, track, replaced, told: (id, steps, ended) => emit('run', { id, steps, result: ended }) });
+    if (pressUndoPart.loaded) return offer(pressUndoPart.loaded);
+    void track(pressUndoPart.load().then(offer, () => taken.said.forEach((words) => options.host?.say(words.message, words.tone))));
   }
 
   const form: Form = {

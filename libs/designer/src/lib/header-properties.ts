@@ -5,7 +5,7 @@ import type { Designer } from './designer';
 import { builtinKind, findHeaderPart, wordsOf } from './header-commands';
 import { allSections } from './page-tree';
 import { whenClicked } from './steps-panel';
-import { setting } from './panel-controls';
+import { setting, switchControl } from './panel-controls';
 import type { PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
 import { hotkeyShown } from './hotkey-setting';
@@ -53,6 +53,8 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const asks = el('input', { class: 'fd-input', 'aria-label': w.asksFirst, placeholder: w.actsAtOnce }) as HTMLInputElement;
   asks.addEventListener('input', () => designer.updateHeaderPart(id, { confirm: asks.value }));
   const asksRow = prop(el, w.asksFirst, asks);
+  const undo = switchControl(el, w.undoAfter, (on) => designer.updateHeaderPart(id, { undo: on }));
+  const undoRow = el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.undoAfter), undo.element, el('p', { class: 'fd-properties-hint' }, w.undoAfterHint));
   // A key that presses it with Alt, as Flectra's hotkeys.
   const hotkey = el('input', { class: 'fd-input fd-hotkey-input', 'aria-label': w.hotkey, placeholder: 'V', autocomplete: 'off', spellcheck: 'false', maxlength: '11' }) as HTMLInputElement;
   hotkey.addEventListener('change', () => designer.updateHeaderPart(id, { hotkey: hotkey.value }));
@@ -127,6 +129,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
     ...(pressed ? [pressed.element] : []),
     lookRow,
     asksRow,
+    undoRow,
     hotkeyRow,
     ...parts.rows,
     countRow,
@@ -153,7 +156,8 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       pressed?.update(page);
       parts.update(page);
       lookRow.hidden = hotkeyRow.hidden = kind !== 'button';
-      asksRow.hidden = kind !== 'button' && kind !== 'menu';
+      asksRow.hidden = undoRow.hidden = kind !== 'button' && kind !== 'menu';
+      if (kind === 'button' || kind === 'menu') undo.set((part as ButtonNode | MenuItem).undo !== undefined);
       builtinRow.hidden = groupRow.hidden = kind !== 'menu';
       if (kind === 'menu') {
         const item = part as MenuItem;

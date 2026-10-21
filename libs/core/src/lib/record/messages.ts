@@ -109,6 +109,11 @@ export interface Messages {
   discardChanges: string;
   /** Why a run of steps stopped: the record it ran on was replaced by another while it went on, and its steps are not for that one. */
   recordReplaced: string;
+  /** Said with Undo after a one-tap press that offers it and said nothing of its own: `{label}`, the button's. */
+  pressDone: string;
+  /** The same, for the menu's own Archive and Unarchive. */
+  pressArchived: string;
+  pressUnarchived: string;
   /**
    * The same sentences in the words a page names its records by (`Page.records`): `{record}` for one, `{records}` for
    * more, `{aRecord}` for one with its article. Where a language leaves one out, it says its own sentence above.
@@ -238,6 +243,9 @@ const en: Messages = {
   theirsUnread: 'Their version could not be read, so yours was not saved over it. Try Keep mine again, or Reload.',
   discardChanges: 'Discard your changes?',
   recordReplaced: 'Another record is shown now: the rest of these steps did not run.',
+  pressDone: 'Done: {label}',
+  pressArchived: 'Archived.',
+  pressUnarchived: 'Brought back from the archive.',
   archiveConfirmNoun: 'Are you sure that you want to archive this {record}?',
   deleteConfirmNoun: 'Are you sure you want to delete this {record}?',
   mayNotEditNoun: 'You can read this {record}, but not change it.',

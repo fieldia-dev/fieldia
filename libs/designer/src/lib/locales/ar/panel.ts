@@ -463,6 +463,8 @@ export const panel: DesignerWords['panel'] = {
   actionHint: 'الاسم الذي يتلقاه التطبيق عند الضغط؛ والتطبيق يقرر ما يفعل.',
   buttonLooks: { secondary: 'عادي', primary: 'رئيسي', danger: 'خطر', link: 'رابط' },
   asksFirst: 'يسأل أولًا',
+  undoAfter: 'تراجع بعده',
+  undoAfterHint: 'بدلًا من السؤال أولًا: يُقال ما فعله مع «تراجع» لبضع ثوانٍ.',
   hotkey: 'المفتاح مع Alt',
   hotkeyHint: 'حرف أو رقم: يضغط الزر مع Alt. ‏Shift+G لـ Alt+Shift+G.',
   actsAtOnce: 'لا شيء: ينفّذ فورًا',

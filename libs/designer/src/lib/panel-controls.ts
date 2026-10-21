@@ -92,3 +92,10 @@ export function shownWithin(element: Element, scope: Element): boolean {
   for (let at: Element | null = element; at && at !== scope; at = at.parentElement) if ((at as HTMLElement).hidden) return false;
   return true;
 }
+
+/** A switch, on or off, named `label`: `set` shows what the page holds, a press says the other. */
+export function switchControl(el: ElementFactory, label: string, change: (on: boolean) => void): { element: HTMLButtonElement; set(on: boolean): void } {
+  const button = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': label }) as HTMLButtonElement;
+  button.addEventListener('click', () => change(button.getAttribute('aria-checked') !== 'true'));
+  return { element: button, set: (on) => button.setAttribute('aria-checked', String(on)) };
+}

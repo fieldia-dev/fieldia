@@ -418,7 +418,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           title: (other) => shownAs(other).title || other.id,
           back: labels.back,
           missing: (id) => fill(labels.pageMissing, { page: id }),
-          say: (message, tone) => actionHost.say(message, tone),
+          say: (message, tone, undo) => actionHost.say(message, tone, undo),
           post: (message) => form.post(message),
           name: () => recordName() || sentence(labels.newRecordNoun, labels.newRecord),
           leave: () => form.leave(),
@@ -426,7 +426,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         },
         request
       ),
-    say: (message, tone) => say(message, tone),
+    say: (message, tone, undo) => say(message, tone, undo),
     // A question that lets the person's work go is the viewer's own, worded Discard, the focus on Cancel.
     ask: (message, how) => (how?.discard ? letGoAsked(message) : confirm(message)),
     show: (target) => {
@@ -535,7 +535,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
   const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
-  const say = sayer(root, el, labels.dismiss);
+  const say = sayer(root, el, labels.dismiss, labels);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
   /** For each field in a tab, how to show its tab: a problem there is shown before the focus goes to it. */

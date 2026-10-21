@@ -47,6 +47,8 @@ export const ar: ViewerLabels = {
   countOf: '{label}، {count}',
   discardChanges: 'هل تريد تجاهل تعديلاتك؟',
   dismiss: 'إخفاء',
+  undoPress: 'تراجع',
+  pressUndone: 'تم التراجع.',
   helpFor: 'مساعدة حول {label}',
   quietHint: 'أضف {label}',
   quietAnswer: 'إجابتك',

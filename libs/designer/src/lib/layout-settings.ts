@@ -210,6 +210,8 @@ export interface BlockPatch {
   caption?: string;
   /** A button's question before it acts; empty asks nothing. */
   confirm?: string;
+  /** A button's Undo after it, in place of asking first (`undo: true`); off takes it away. */
+  undo?: boolean;
   /** Words in an alert's box: its colour. */
   tone?: Tone;
   /** A button's key, as typed: "v", "Shift+G"; empty for none. */
@@ -222,7 +224,7 @@ export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
   const node = locate(page, id)?.node;
   if (!node) throw new Refusal((w) => w.layout.noPart(id));
   if (node.type === 'text') {
-    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined || patch.caption !== undefined || patch.confirm !== undefined || patch.hotkey !== undefined) throw new Refusal((w) => w.layout.wordsNotLabel);
+    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined || patch.caption !== undefined || patch.confirm !== undefined || patch.undo !== undefined || patch.hotkey !== undefined) throw new Refusal((w) => w.layout.wordsNotLabel);
     if (patch.text !== undefined) node.text = patch.text;
     if (patch.style !== undefined) node.style = patch.style as TextNode['style'];
     // A colour is an alert's: words that are no longer one lose it.
@@ -246,13 +248,16 @@ export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
       if (patch.confirm.trim()) node.confirm = patch.confirm;
       else delete node.confirm;
     }
+    // Steps of its own for Undo (written in the page's JSON) are kept while it stays on.
+    if (patch.undo === true) node.undo ??= true;
+    else if (patch.undo === false) delete node.undo;
     if (patch.hotkey !== undefined) {
       const key = hotkeyFrom(patch.hotkey);
       if (key) node.hotkey = key;
       else delete node.hotkey;
     }
   } else if (node.type === 'image') {
-    if (patch.text !== undefined || patch.label !== undefined || patch.confirm !== undefined || patch.hotkey !== undefined) throw new Refusal((w) => w.layout.pictureWords);
+    if (patch.text !== undefined || patch.label !== undefined || patch.confirm !== undefined || patch.undo !== undefined || patch.hotkey !== undefined) throw new Refusal((w) => w.layout.pictureWords);
     if (patch.src !== undefined) {
       if (!patch.src.trim()) throw new Refusal((w) => w.layout.pictureAddress);
       node.src = patch.src.trim();
