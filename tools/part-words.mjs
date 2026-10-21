@@ -90,6 +90,14 @@ export const PART_WORDS = {
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
   print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },
+  schedule: {
+    widgets: [
+      'repeatLabel', 'repeatNever', 'repeatKinds', 'repeatEveryLabel', 'repeatUnits', 'repeatUnitsMany', 'repeatOnDays', 'repeatMonthHow', 'repeatMonthDay', 'repeatNth', 'repeatWeekday', 'repeatEndsLabel', 'repeatEnds', 'repeatUntilDay', 'repeatCount', 'repeatSaidEveryN', 'repeatSaidDays', 'repeatSaidMonthDay', 'repeatSaidLastDay', 'repeatSaidNth', 'repeatSaidTimes', 'repeatSaidOnce', 'repeatSaidUntil', 'repeatOrdinals', 'repeatKept', 'repeatAtLeastOne', 'hoursOpenOn', 'hoursOpen', 'hoursClosed', 'hoursOpens', 'hoursCloses', 'hoursAddBreak', 'hoursRemove', 'hoursCopyAll', 'hoursCopied', 'hoursEndsFirst', 'hoursOverlap', 'hoursNoTime', 'hoursAllClosed', 'hoursDays',
+    ],
+  },
+  live: { messages: ['deletedElsewhere', 'deletedBy'], viewer: ['presentHere', 'presentEditing'] },
+  undo: { messages: ['pressDone', 'pressArchived', 'pressUnarchived'] },
+  templates: { viewer: ['templatesButton', 'templatesStart', 'templateSave', 'templateName', 'templateKeeps', 'templateKeep', 'templateSaved', 'templateReplaced', 'templateUsed', 'templatesDelete', 'templatesChosen', 'templatesDeleteNow', 'templatesDeleted'] },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {
     widgets: ['notAnswered', 'addressStreet', 'addressCity', 'addressLine2', 'addressRegion', 'addressPostcode', 'addressCountry', 'keepOrder', 'addProperty', 'propertyName', 'propertyType', 'propertyTypes', 'colourCode', 'colourCodeBox', 'noColour', 'rankTop', 'moveUp', 'moveDown', 'movedTo', 'removed'],

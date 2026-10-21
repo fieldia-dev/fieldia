@@ -1449,7 +1449,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The owner's walk of 0.27 mended: a question's required message, and a refused signature's "ready to sign" and Sign
 // now — Arabic's 77.58 and 13.24 measured before, 77.88 and 13.29 after, to 77.9 and 13.3; German's 36.14 and 11.60 to
 // 36.27 and 11.64, to 36.3 and 11.7; French's 36.60 and 11.64 to 36.75 and 11.70, to 36.8 and 11.7.
-const ADD_ON_BUDGET_KB = { ar: [77.9, 13.3], de: [36.3, 11.7], fr: [36.8, 11.7] };
+// A record's daily comforts (Wave 6, w6-records): Undo and Redo said (2), Undo on a toast and what it says (5 of the
+// messages and the viewer's), record templates' menu and dialogs (13), a repeat field's and opening hours' words (40),
+// who else is here and a change laid (5) — Arabic's 77.88 and 13.29 measured before, 83.19 and 14.25 after, to 83.2 and
+// 14.3; German's 36.27 and 11.64 to 38.82 and 12.51, to 38.9 and 12.6; French's 36.75 and 11.70 to 39.33 and 12.55, to
+// 39.4 and 12.6.
+const ADD_ON_BUDGET_KB = { ar: [83.2, 14.3], de: [38.9, 12.6], fr: [39.4, 12.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1842,7 +1847,15 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// A record's daily comforts (Wave 6, w6-records): Undo after a row's press lists the records again — list 129.50 and
+// 41.60 measured before, 129.58 and 41.64 after, to 129.6; a repeat field and a week's opening hours, a part of their own
+// with the date part beside it — the rule read, written and said in words in four languages' ways (ordinals, weekdays by
+// Intl), its boxes, a week's rows, shifts checked, copied and split, their sheet — schedule new, 20.41 and 7.83, to 20.5
+// and 7.9; record templates' menu, its dialogs and where they are kept, templates new, 6.44 and 2.89, to 6.5 and 2.9; a
+// record's watch, who else is here and their sheet, live new, 4.43 and 2.20, to 4.5 and 2.3; a press's words said with
+// Undo and taken back, undo new, 3.10 and 1.55, to 3.2 and 1.6; the memory source's templates and its live pushes,
+// memory 16.08 and 5.71 to 17.75 and 6.30, to 17.8 and 6.4.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.6, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], schedule: [20.5, 7.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], templates: [6.5, 2.9], live: [4.5, 2.3], undo: [3.2, 1.6], print: [16.9, 5.4], memory: [17.8, 6.4], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1864,22 +1877,26 @@ const PART_GIVES = {
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
+  schedule: ['repeatWidget', 'hoursWidget', 'repeatWords', 'hoursWords', 'readRule', 'writeRule', 'ruleWords', 'installScheduleStyles'],
   relations: ['many2oneWidget', 'tagsWidget', 'charTagsWidget', 'linkCheckboxesWidget', 'referenceWidget'],
   duplicates: ['watchDuplicates', 'openMergeScreen', 'installDuplicateStyles'],
   answers: ['sentenceValue', 'orderedDay', 'wordedWidget', 'drawEnding', 'linkedValueWords'],
   print: ['printLook', 'printPage', 'printAlone', 'installPrintStyles'],
   limits: ['drawLimits', 'installLimitsStyles', 'formLimits'],
+  templates: ['templatesMenu', 'templateValues', 'templateFields', 'startFrom'],
+  live: ['liveRecord', 'presenceStrip', 'installLiveStyles'],
+  undo: ['offerUndo', 'takeBack'],
   memory: ['createMemoryDataSource', 'memorySource'],
   functions: ['functionBody', 'appCall'],
   options: ['optionRules'],
   mapchecks: ['checkMap', 'checkPlace'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
-// source's slots.
-const PART_BESIDE = { slots: ['date'] };
+// source's slots; a repeat field and a week's hours too, whose days and times are its boxes.
+const PART_BESIDE = { slots: ['date'], schedule: ['date'] };
 /** Every Arabic word of the three tables, as the packages have them. */
 const ARABIC = await sourceWords('ar');
 /** A part's own words (PART_WORDS) Fieldia's tables in `locale` do not hold as `words` have them, by table and key. */
@@ -2293,6 +2310,34 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
   visit.destroy();
   gone('visit');
+  // A treatment course: its sessions' repeat rule in the schedule part (with the date part, in already), said in
+  // words; its Templates menu in the templates part; its buttons' Undo in the undo part — each asked for by the page,
+  // the page drawn once they came.
+  const course = inPage.mountViewer(host, { page: read('treatment-course.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.course': { 1: { patient: 'Mona Adel', state: 'running', first_session: '2026-11-03', sessions: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=TU;COUNT=3' } } } }) });
+  waits(course, "a treatment course's repeat rule and templates");
+  await course.drawn;
+  hasIn("a treatment course's repeat rule and templates", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, print, quiet, relations, schedule, slots, survey, templates, text, themes, undo');
+  if (!(await until(() => host.querySelector('.fd-repeat-words')?.textContent === 'Every 2 weeks on Tuesday, 3 times')) || !host.querySelector('.fd-templates-button')) throw new Error(`in a page, a course's repeat rule or its templates are not drawn from their parts: ${host.querySelector('.fd-repeat-words')?.textContent ?? 'none'}`);
+  course.destroy();
+  gone('course');
+  // A branch's opening hours, from the schedule part already in, said in words.
+  const branch = inPage.mountViewer(host, { page: read('clinic-branch.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.branch': { 1: { name: 'Zamalek', hours: { 6: [['10:00', '14:00']] } } } } }) });
+  await branch.drawn;
+  if (host.querySelector('.fd-hours-words')?.textContent !== 'Sat 10:00–14:00 · Sun–Fri closed') throw new Error(`in a page, a branch's hours are not said: ${host.querySelector('.fd-hours-words')?.textContent ?? 'none'}`);
+  branch.destroy();
+  gone('branch');
+  // A course whose source tells who else has it open and its changes made elsewhere: the live part asked for as the
+  // record is shown — its core half — and its strip drawn as someone else comes; a change laid on the record.
+  const liveSource = inPage.createMemoryDataSource({ live: true, records: { 'clinic.course': { 1: { patient: 'Mona Adel', state: 'running', price: 9500 } } } });
+  const watched = inPage.mountViewer(host, { page: read('treatment-course.page.json'), recordId: 1, user: { id: 7, name: 'Sara Hassan' }, dataSource: liveSource });
+  await watched.drawn;
+  liveSource.arrive('clinic.course', 1, { id: 9, name: 'Mona Adel' });
+  if (!(await until(() => host.querySelector('.fd-presence-words')?.textContent === 'Also here: Mona Adel'))) throw new Error(`in a page, who else has a record open is not said: ${host.querySelector('.fd-presence')?.textContent ?? 'none'}`);
+  hasIn('a course someone else has open', 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, live, options, path, phone, print, quiet, relations, schedule, slots, survey, templates, text, themes, undo');
+  liveSource.changeElsewhere('clinic.course', 1, { price: 10000 }, { by: 'Mona Adel' });
+  if (!(await until(() => watched.form.getState().values.price === 10000))) throw new Error('in a page, a change made elsewhere is not laid on the record');
+  watched.destroy();
+  gone('watched');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
@@ -2307,7 +2352,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
   if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-schedule-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
     const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
@@ -2315,7 +2360,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a course's repeat rule and its templates, a branch's opening hours, someone else with a course open and their change — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**
