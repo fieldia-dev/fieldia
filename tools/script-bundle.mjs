@@ -1837,7 +1837,7 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-// AI help (0.29, w5-ai) in a part of its own, fieldia.assist.js (34.28 and 11.66, to 34.3 and 11.7): Fill from text
+// AI help (0.29, w5-ai) in a part of its own, fieldia.assist.js (34.42 and 11.71, to 34.5 and 11.8; values kept in their direction right to left): Fill from text
 // and its dialog, or from a field's own words, the review of what was proposed, a proposal under its field with Accept, Reject and Undo, a text
 // field's Draft and Polish, a proposed value read as its field holds one, a list's words read as filters, its sheet
 // and its checks — waited for by a page with a Fill from text or a text field's tools, asked for as a list's ✦ is
@@ -1845,7 +1845,7 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // place (search-bar's `take`): list 129.48 and 41.62 measured before, 130.82 and 42.06 after, to 130.9 and 42.1; the
 // filter bar takes one as well — filters 22.70 and 7.84 to 22.91 and 7.88, to 23.0 and 7.9; a memory source's AI
 // members where its `assist` answers them — memory 16.10 and 5.72 to 16.46 and 5.81, to 16.5 and 5.9.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [130.9, 42.1], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.5, 5.9], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], assist: [34.3, 11.7] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [130.9, 42.1], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.5, 5.9], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], assist: [34.5, 11.8] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
