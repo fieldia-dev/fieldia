@@ -46,6 +46,8 @@ export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'tick', label: 'Tick box', field: (label) => ({ type: 'boolean', label }), widget: 'tick' },
   { id: 'email', label: 'Email', field: (label) => ({ type: 'char', label, pattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$' }), widget: 'email' },
   { id: 'phone', label: 'Phone', field: (label) => ({ type: 'char', label }), widget: 'phone' },
+  // A code sent by SMS or email, its boxes filled by the phone's autofill: six digits unless its settings say.
+  { id: 'one-time-code', label: 'One-time code', field: (label) => ({ type: 'char', label }), widget: 'one-time-code' },
   { id: 'file', label: 'File upload', field: (label) => ({ type: 'binary', label, maxSize: 10 * 1024 * 1024 }) },
   { id: 'signature', label: 'Signature', field: (label) => ({ type: 'binary', label }), widget: 'signature' },
   { id: 'slider', label: 'Slider', field: (label) => ({ type: 'integer', label, min: 0, max: 10 }), widget: 'slider' },
@@ -135,6 +137,7 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
       if (node.widget === 'code') return 'code';
       if (node.widget === 'monaco') return 'vscode';
       if (node.widget === 'copy' || node.widget === 'embed') return node.widget;
+      if (node.widget === 'one-time-code') return 'one-time-code';
       return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : node.widget === 'url' ? 'website' : node.widget === 'tags' ? 'keywords' : node.widget === 'time' ? 'time' : 'short-answer';
     case 'text':
       return node.widget === 'copy' ? 'copy' : node.widget === 'code' ? 'code' : node.widget === 'monaco' ? 'vscode' : 'paragraph';

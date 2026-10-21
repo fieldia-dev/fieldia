@@ -77,6 +77,38 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     return { element: word(w.mostCharacters, box.input), refresh: (page, node) => box.show(page.fields[node.field], own(page.fields[node.field], 'size')) };
   }
 
+  /**
+   * A short answer typed to a mask — a national ID, an IBAN, a plate: 9 a digit, a a letter, * either, the rest written
+   * in as people type — and whether its letters are written in capitals. Emptied, no mask.
+   */
+  function mask(): Part {
+    const input = el('input', { class: 'fd-inline-input fd-inline-mask', 'aria-label': w.mask, placeholder: '9 999999 99 99999', autocomplete: 'off', spellcheck: 'false', title: w.maskHelp }) as HTMLInputElement;
+    input.addEventListener('change', () => designer.setWidgetOptions(id, { mask: input.value.trim() || null, ...(input.value.trim() ? {} : { upper: null, maskKeeps: null }) }));
+    const upper = toggle(w.inCapitals, (on) => designer.setWidgetOptions(id, { upper: on || null }));
+    return {
+      element: row(word(w.mask, input), upper.element),
+      refresh(_page, node) {
+        show(input, node.options?.['mask']);
+        upper.element.hidden = typeof node.options?.['mask'] !== 'string';
+        upper.button.setAttribute('aria-checked', String(node.options?.['upper'] === true));
+      },
+    };
+  }
+
+  /** A one-time code's boxes: how many digits, 4 to 8, and whether letters are in it too. */
+  function code(): Part {
+    const count = select(w.codeLength, ['4', '5', '6', '7', '8'].map((n): [string, string] => [n, n]));
+    count.addEventListener('change', () => designer.setWidgetOptions(id, { length: count.value === '6' ? null : Number(count.value) }));
+    const letters = toggle(w.codeLetters, (on) => designer.setWidgetOptions(id, { letters: on || null }));
+    return {
+      element: row(word(w.codeLength, count), letters.element),
+      refresh(_page, node) {
+        show(count, node.options?.['length'] ?? 6);
+        letters.button.setAttribute('aria-checked', String(node.options?.['letters'] === true));
+      },
+    };
+  }
+
   /** A paragraph's rows, and whether it grows as people type. */
   function rows(): Part {
     const count = select(w.rows, Array.from({ length: 11 }, (_, i) => [String(i + 2), String(i + 2)]));
@@ -511,6 +543,8 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'code' || kind === 'vscode') parts.push(codeLanguage());
   if (kind === 'phone') parts.push(phone());
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
+  if (kind === 'short-answer') parts.push(mask());
+  if (kind === 'one-time-code') parts.push(code());
   if (kind === 'paragraph') parts.push(rows());
   if (kind === 'number' || kind === 'amount') parts.push(range());
   if (kind === 'number') parts.push(units());

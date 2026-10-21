@@ -406,6 +406,23 @@ export interface WidgetLabels {
   hijriLabel: string;
   hijriShape: string;
   hijriUnfinished: string;
+  /**
+   * A box typed to a mask: what a place wants where a character does not fit there (`{char}`), a mask full (`{n}`
+   * characters), and how many are still to type where it is left before it is whole (one, and `{n}`).
+   */
+  maskDigit: string;
+  maskLetter: string;
+  maskEither: string;
+  maskFull: string;
+  maskShort: string;
+  maskShortOne: string;
+  /** A one-time code's boxes: how many it has (`{n}`), said with its label; a character no code has; a code full. */
+  codeDigits: string;
+  codeCharacters: string;
+  codeDigitOnly: string;
+  codeLetterOrDigit: string;
+  codeFull: string;
+  codeFullCharacters: string;
   /** Hours typed with a decimal mark and two digits (`{text}`), read as hours with a decimal: `{time}` in hours and minutes. */
   hoursDecimal: string;
   /** Typed words no choice is called (`{text}`), with a way to create one where the field can. */
@@ -799,6 +816,18 @@ const en: WidgetLabels = {
   hijriLabel: '{label} (Hijri)',
   hijriShape: '{shape} AH',
   hijriUnfinished: '{label}: “{text}” is not a whole Hijri date yet; write it like {example}',
+  maskDigit: '{label}: a digit goes here, not “{char}”',
+  maskLetter: '{label}: a letter goes here, not “{char}”',
+  maskEither: '{label}: a letter or a digit goes here, not “{char}”',
+  maskFull: '{label} takes {n} characters: there is no room for more',
+  maskShort: '{label} is not whole yet: {n} more to type',
+  maskShortOne: '{label} is not whole yet: 1 more to type',
+  codeDigits: '{n} digits',
+  codeCharacters: '{n} characters',
+  codeDigitOnly: '{label}: the code is digits only, not “{char}”',
+  codeLetterOrDigit: '{label}: the code is letters and digits only, not “{char}”',
+  codeFull: '{label} has {n} digits: there is no room for more',
+  codeFullCharacters: '{label} has {n} characters: there is no room for more',
   hoursDecimal: '{label}: “{text}” is hours with a decimal: {time}',
   noMatch: '{label}: nothing is called “{text}”; pick one from the list',
   noMatchCreate: '{label}: nothing is called “{text}” yet; pick one or create it',

@@ -38,6 +38,8 @@ export const LATIN_KEPT = [
   ...['contact', 'confirm', 'open_invoices', 'archive', 'active', 'home', 'street', 'res', 'users'],
   // A related list's model and its link, as its panel's hints give them to type.
   ...['invoice', 'partner_id'],
+  // A mask's slot for a letter, as it is typed in a mask (9 a digit, a a letter).
+  'a',
 ];
 
 /** Code an example writes as it is typed: a formula's function and the fields it reads, as in round(price * qty, 2); an escape; and a place in a sentence that something is drawn in, as {language}. */

@@ -5,6 +5,7 @@ import type * as PathModule from './path-part';
 import type * as ChoiceModule from './choice-part';
 import type * as DateModule from './date-part';
 import type * as MonthsModule from './months-part';
+import type * as TypedModule from './typed-part';
 import type * as LinesModule from './lines-part';
 import type * as BusinessModule from './business-part';
 import type * as FilesModule from './files-part';
@@ -26,6 +27,8 @@ export type ChoicePart = typeof ChoiceModule;
 export type DatePart = typeof DateModule;
 /** The months part: a date of a month alone or a year alone, and the Hijri calendar beside a day — their boxes, calendars and sheet. */
 export type MonthsPart = typeof MonthsModule;
+/** The typed part: a text box typed to a mask (a national ID, an IBAN, a plate) and a one-time code's boxes. */
+export type TypedPart = typeof TypedModule;
 /** The lines part: a one2many's table of lines, a many2many's table of records, and their stylesheet. */
 export type LinesPart = typeof LinesModule;
 /** The business part: a statusbar, priority stars, hours and a per cent's boxes, an analytic distribution, tax totals, payments. */
@@ -74,6 +77,11 @@ export const monthsPart: Part<MonthsPart> = lazyPart('months', () => import('./m
 export function monthsPartIn(): MonthsPart | undefined {
   return monthsPart.loaded;
 }
+/**
+ * A text box typed to a mask (`options.mask` on a char field) and a one-time code's boxes (`"widget": "one-time-code"`),
+ * loaded the first time a page shows one.
+ */
+export const typedPart: Part<TypedPart> = lazyPart('typed', () => import('./typed-part'));
 /** A table of lines and a many2many's table of records, loaded the first time a page shows one. */
 export const linesPart: Part<LinesPart> = lazyPart('lines', () => import('./lines-part'));
 /**

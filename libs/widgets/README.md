@@ -125,7 +125,36 @@ months a month spans in its title; a list's cell writes both days ("13 Oct
 2026 · 2 Jumada I 1448 AH"). The value stays the Gregorian day, as every
 backend keeps it. Both come in the date part with the date box.
 
-`"widget": "slots"` on a date and time books a time from those free: a month
+A char field's node may type it to a mask — a national ID, an IBAN, a car
+plate: `"options": { "mask": "9 999 999 999" }`, where `9` is a digit (in any
+script, kept as 0-9), `a` a letter, `*` a letter or a digit, `\` before a
+character that character itself, and `[ ]` round the end of it what may be
+left out (an IBAN's last groups, as long as its country's); every other
+character is the mask's own, written in as the person types — "2 104 " as the
+fifth digit is due — and Backspace over one takes the character before it. A
+key no slot takes there is refused with why ("a digit goes here, not “x”"),
+the keys after it held (the input rules); a paste is laid out against it or
+refused whole, saying why. The field takes the characters typed
+(`"2104556789"`) once every slot it needs is filled, or as shown
+(`"maskKeeps": "shown"`: `"4821 RKA"`); `"upper": true` writes its letters in
+capitals. Left before it is whole, what was typed stays, marked, with how many
+are still to type, and the field keeps what it held. A value from outside that
+the mask does not fit is shown as it came.
+
+```json
+{ "type": "field", "id": "f-iban", "field": "iban", "options": { "mask": "aa99 **** **** **** **** **[** **** **** **]", "upper": true } }
+```
+
+`"widget": "one-time-code"` on a char field draws a box for each of a code's
+digits (`options.length`, 4 to 12, 6 unless said; `options.letters` for
+letters too) over one text box with `autocomplete="one-time-code"`, so the
+phone's autofill of a code sent by SMS fills it whole, a screen reader reads
+one box by its label ("6 digits"), and a code pasted with its spaces or dashes
+lands across the boxes at once. The field takes the code once it is whole — a
+step on its change can send it; left before then, it says how many are still to
+type. Both come in the typed part (`typedPart`), the text box meanwhile.
+
+: a month
 whose days are shaded by how they are booked (free times left, fully booked,
 closed, a holiday by its name), beside the chosen day's free times as chips,
 asked of the data source's `slots` — a month at a time, again when a field in

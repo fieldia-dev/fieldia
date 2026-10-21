@@ -2,12 +2,16 @@
   "fieldia": "0.7",
   "id": "lease",
   "title": "A flat let in Riyadh",
-  "description": "A Saudi lease: its days shown and typed in the Hijri calendar beside the Gregorian they keep, its first rent's month, and the building's year.",
+  "description": "A Saudi lease: its days shown and typed in the Hijri calendar beside the Gregorian they keep, its first rent's month, the building's year, the tenant's ID, IBAN and plate typed to their shapes, and the code the tenant confirms with.",
   "data": { "kind": "record", "model": "lease" },
   "records": { "one": "lease", "other": "leases", "a": "a lease" },
   "fields": {
     "name": { "type": "char", "label": "Lease", "required": true },
     "tenant": { "type": "char", "label": "Tenant", "required": true },
+    "national_id": { "type": "char", "label": "Tenant’s national ID", "required": true, "help": "Ten digits, as on the ID card." },
+    "iban": { "type": "char", "label": "Rent paid from (IBAN)" },
+    "plate": { "type": "char", "label": "Car plate for the parking", "help": "Four digits and three letters." },
+    "confirm_code": { "type": "char", "label": "Code sent to the tenant’s phone", "help": "The tenant reads out the six digits we sent by SMS." },
     "unit": { "type": "char", "label": "Flat" },
     "starts_on": { "type": "date", "label": "Starts on", "required": true, "hijri": true, "help": "Type the day in either calendar: the other follows." },
     "ends_on": { "type": "date", "label": "Ends on", "hijri": true },
@@ -26,6 +30,9 @@
         "columns": 2,
         "children": [
           { "type": "field", "id": "f-tenant", "field": "tenant" },
+          { "type": "field", "id": "f-national-id", "field": "national_id", "options": { "mask": "9 999 999 999" } },
+          { "type": "field", "id": "f-iban", "field": "iban", "colspan": 2, "options": { "mask": "aa99 **** **** **** **** **[** **** **** **]", "upper": true } },
+          { "type": "field", "id": "f-plate", "field": "plate", "options": { "mask": "9999 aaa", "upper": true, "maskKeeps": "shown" } },
           { "type": "field", "id": "f-unit", "field": "unit" },
           { "type": "field", "id": "f-built", "field": "built" }
         ]
@@ -40,6 +47,12 @@
           { "type": "field", "id": "f-ends", "field": "ends_on", "colspan": 2 },
           { "type": "field", "id": "f-first-rent", "field": "first_rent" }
         ]
+      },
+      {
+        "type": "section",
+        "id": "confirm",
+        "title": "Confirmed by the tenant",
+        "children": [{ "type": "field", "id": "f-code", "field": "confirm_code", "widget": "one-time-code" }]
       }
     ]
   }

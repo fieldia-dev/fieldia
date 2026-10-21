@@ -18,6 +18,7 @@ export const kinds: DesignerWords['kinds'] = {
     tick: 'مربع اختيار واحد',
     email: 'البريد الإلكتروني',
     phone: 'الهاتف',
+    'one-time-code': 'رمز لمرة واحدة',
     file: 'تحميل ملف',
     signature: 'توقيع',
     slider: 'شريط تمرير',

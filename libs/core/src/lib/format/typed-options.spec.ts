@@ -1,0 +1,34 @@
+import { validatePage } from './validate';
+
+/** A mask and a one-time code's settings, as the format takes and refuses them. */
+
+const page = (node: Record<string, unknown>): unknown => ({
+  fieldia: '0.7',
+  id: 'typed',
+  data: { kind: 'responses' },
+  fields: { id_number: { type: 'char', label: 'National ID' } },
+  layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f', field: 'id_number', ...node }] },
+});
+const messages = (node: Record<string, unknown>) => {
+  const checked = validatePage(page(node));
+  return checked.ok ? [] : checked.issues.map((issue) => `${issue.path}: ${issue.message}`);
+};
+
+describe('a mask and a one-time code in the format', () => {
+  it('takes a mask, its capitals and what it keeps', () => {
+    expect(messages({ options: { mask: '9 999 999 999' } })).toEqual([]);
+    expect(messages({ options: { mask: 'aa99 **** [** ****]', upper: true, maskKeeps: 'shown' } })).toEqual([]);
+    expect(messages({ options: { mask: '\\9-99' } })).toEqual([]);
+  });
+
+  it('refuses a mask that names nothing to type, a part left out that is not its end, and a word written wrong', () => {
+    expect(messages({ options: { mask: '---' } })[0]).toMatch(/a mask names what goes in it/);
+    expect(messages({ options: { mask: '99 [99] 99' } })[0]).toMatch(/what may be left out is the end of a mask/);
+    expect(messages({ options: { mask: '99', maskKeeps: 'all' } })[0]).toMatch(/maskKeeps is "typed"/);
+  });
+
+  it('takes a code of 4 to 12 characters, letters too, and refuses one longer', () => {
+    expect(messages({ widget: 'one-time-code', options: { length: 8, letters: true } })).toEqual([]);
+    expect(messages({ widget: 'one-time-code', options: { length: 20 } })[0]).toMatch(/options\.length/);
+  });
+});

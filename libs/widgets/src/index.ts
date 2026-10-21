@@ -70,8 +70,10 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // Booking slots (`"widget": "slots"`) come in the slots part, with the date part.
 // A month alone, a year alone and the Hijri calendar (a date's `precision`, `hijri`) come in the months part, with the
 // date part: `(await monthsPart.load()).readHijriText(…)`, `.gregorianOf(…)`.
+// A text box typed to a mask (`options.mask`) and a one-time code's boxes (`"widget": "one-time-code"`) come in the
+// typed part: `(await typedPart.load()).conform(…)`.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-export { textPart, pathPart, choicePart, datePart, monthsPart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type MonthsPart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type MonthsPart, type TypedPart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type PartFactory } from './lib/widget-parts';
 export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.

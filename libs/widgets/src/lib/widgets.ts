@@ -38,7 +38,7 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { businessPart, choicePart, datePart, filesPart, linesPart, monthsPart, partFactory, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { businessPart, choicePart, datePart, filesPart, linesPart, monthsPart, typedPart, partFactory, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTimer, plainTotal } from './business-plain';
 import { plainAddress, plainChosen, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
@@ -1010,8 +1010,13 @@ const later = (factory: () => WidgetFactory): WidgetFactory =>
     partOf: (node: FieldNode, page?: Page, field?: Field) => (factory() as Partial<PartFactory>).partOf?.(node, page, field),
   });
 
+/** A char field typed to a mask (`options.mask`): the typed part's box (mask-box.ts); the text box it was meanwhile. */
+const hasMask = (node: FieldNode) => typeof node.options?.['mask'] === 'string' && !!node.options['mask'];
+
 export const builtInWidgets: Record<string, WidgetFactory> = {
-  char: textWidget('text'),
+  char: partFactory(typedPart, (part) => part.maskWidget, textWidget('text'), hasMask),
+  // A one-time code's boxes, one text box under them that the phone's autofill fills whole (code-box.ts, the typed part).
+  'char.one-time-code': partFactory(typedPart, (part) => part.codeWidget, textWidget('text')),
   'char.email': textWidget('email'),
   // A phone read the world over where its page or its own options say so (phone-box.ts, in the phone part): its
   // country picked or typed, checked, kept as E.164, shown at rest with its links. Else, and before the part comes, the

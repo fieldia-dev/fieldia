@@ -13,6 +13,7 @@ export const questions = {
     paragraph: 'Long answer text',
     email: 'Email address',
     phone: 'Phone number',
+    'one-time-code': 'A code of 6 digits',
     website: 'Web address',
     number: 'A number',
     amount: 'An amount',
@@ -184,6 +185,12 @@ export const questions = {
   notSatSun: 'Not Saturday or Sunday',
   notFriSat: 'Not Friday or Saturday',
   someDays: 'Some days only',
+  // ---- a short answer typed to a mask, and a one-time code's boxes
+  mask: 'Mask',
+  maskHelp: '9 a digit, a a letter, * either; the rest is written in: 9999 9999',
+  inCapitals: 'Letters in capitals',
+  codeLength: 'Digits',
+  codeLetters: 'Letters too',
   // ---- what a date keeps, and the Hijri calendar beside a day
   dateKeeps: 'Keeps',
   keepsDay: 'A day',

@@ -14,6 +14,7 @@ const SHAPES: Record<string, string> = {
   paragraph: '<path d="M4 6h16M4 10h16M4 14h16M4 18h10"/>',
   email: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
   phone: '<path d="M6 3h3l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z"/>',
+  'one-time-code': '<rect x="2.5" y="7" width="5" height="10" rx="1.2"/><rect x="9.5" y="7" width="5" height="10" rx="1.2"/><rect x="16.5" y="7" width="5" height="10" rx="1.2"/><path d="M5 12h.01M12 12h.01"/>',
   website: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
   keywords: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>',
   number: '<path d="M9 4L7 20M17 4l-2 16M4 9h16M3 15h16"/>',

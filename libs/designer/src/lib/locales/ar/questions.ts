@@ -9,6 +9,7 @@ export const questions: DesignerWords['questions'] = {
     paragraph: 'نص إجابة طويلة',
     email: 'عنوان البريد الإلكتروني',
     phone: 'رقم الهاتف',
+    'one-time-code': 'رمز من 6 أرقام',
     website: 'عنوان الموقع',
     number: 'رقم',
     amount: 'مبلغ',
@@ -176,6 +177,12 @@ export const questions: DesignerWords['questions'] = {
   notSatSun: 'ليس السبت أو الأحد',
   notFriSat: 'ليس الجمعة أو السبت',
   someDays: 'بعض الأيام فقط',
+  // ---- إجابة قصيرة بقالب، وخانات رمز لمرة واحدة
+  mask: 'القالب',
+  maskHelp: '9 رقم، a حرف، * أيهما؛ والباقي يُكتب تلقائيًا: 9999 9999',
+  inCapitals: 'الحروف كبيرة',
+  codeLength: 'الأرقام',
+  codeLetters: 'وحروف أيضًا',
   // ---- ما يحفظه التاريخ، والتقويم الهجري بجانب اليوم
   dateKeeps: 'يحفظ',
   keepsDay: 'يومًا',

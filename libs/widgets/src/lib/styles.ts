@@ -986,8 +986,13 @@ export function installStyles(document: Document): void {
  * slots' (rank 8: the booking slots' month is the date part's calendar's, and names none of these) and before the
  * themes', so a theme still reshapes the months' and years' buttons as it does the days', their corners and their
  * focus. The ranks from Import's on move on by one.
+ *
+ * The typed part's (0.30, `styles-typed`): a one-time code's boxes, each a character's, drawn under the text box typed
+ * in — cut from no rule: it lays out its own boxes alone, their look borrowed from a text box's. It goes after the
+ * months part's (rank 9; neither names the other's parts) and before the themes', so a theme still reshapes the boxes'
+ * corners and their focus as it does a text box's. The ranks from Import's on move on by one again.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, months: 8, import: 9, duplicates: 10, limits: 11, themes: 12, quiet: 13, picker: 14, head: 15, groups: 16, text: 17, surveyLooks: 18, cards: 19 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, months: 8, typed: 9, import: 10, duplicates: 11, limits: 12, themes: 13, quiet: 14, picker: 15, head: 16, groups: 17, text: 18, surveyLooks: 19, cards: 20 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

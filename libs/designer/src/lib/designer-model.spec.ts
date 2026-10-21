@@ -81,7 +81,7 @@ describe('fields the backend already has', () => {
     const designer = customer();
     const email = designer.addModelField('email') as string;
     // Text may also be code (in either editor), a colour as #rrggbb, a value to copy, or a page shown inline.
-    expect(designer.kindsFor(email).map((k) => k.id)).toEqual(['short-answer', 'email', 'phone', 'code', 'vscode', 'keywords', 'website', 'colour', 'copy', 'embed']);
+    expect(designer.kindsFor(email).map((k) => k.id)).toEqual(['short-answer', 'email', 'phone', 'one-time-code', 'code', 'vscode', 'keywords', 'website', 'colour', 'copy', 'embed']);
     expect(designer.changeKind(email, 'email')).toBe(true);
     const page = designer.getPage();
     expect(nodeOf(page, email).widget).toBe('email');

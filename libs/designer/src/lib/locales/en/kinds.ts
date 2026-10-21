@@ -16,6 +16,7 @@ export const kinds = {
     tick: 'Tick box',
     email: 'Email',
     phone: 'Phone',
+    'one-time-code': 'One-time code',
     file: 'File upload',
     signature: 'Signature',
     slider: 'Slider',

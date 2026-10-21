@@ -2,7 +2,7 @@ import { SIZES } from '../facts.mjs';
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), one-time-code (a box per digit), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint'],
   ['text', 'Several lines of text', 'copy, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size'],
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', ''],
   ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],
@@ -54,6 +54,17 @@ ${code(
 "starts_on": { "type": "date", "label": "Starts on", "hijri": true }`
 )}
 <p>In the designer: a date's Keeps (a day, a month, a year) and Hijri date beside it. Open <a href="/demos/plain/?page=lease&amp;skin=underline">the lease demo</a>.</p>
+
+<h2 id="masks">Masks and one-time codes</h2>
+<p>A char field's node may type it to a mask — a national ID, an IBAN, a car plate: ${c('9')} is a digit, in any script, ${c('a')} a letter, ${c('*')} either, ${c('\\')} before a character that character itself, and ${c('[ ]')} round its end what may be left out; every other character is the mask's own, written in as the person types, and Backspace over one takes the character before it. A key no slot takes there is refused with why — <em>a digit goes here, not “x”</em> — and the keys after it wait with it; a paste is laid out against the mask or refused whole. The field takes the characters typed once every slot it needs is filled, or as shown with ${c('"maskKeeps": "shown"')}; ${c('"upper": true')} writes its letters in capitals. Left before it is whole, what was typed stays, marked, with how many are still to type.</p>
+${code(
+  'json',
+  `{ "type": "field", "id": "f-id", "field": "national_id", "options": { "mask": "9 999 999 999" } },
+{ "type": "field", "id": "f-iban", "field": "iban", "options": { "mask": "aa99 **** **** **** **** **[** **** **** **]", "upper": true } },
+{ "type": "field", "id": "f-plate", "field": "plate", "options": { "mask": "9999 aaa", "upper": true, "maskKeeps": "shown" } },
+{ "type": "field", "id": "f-code", "field": "code", "widget": "one-time-code", "options": { "length": 6 } }`
+)}
+<p>${c('"widget": "one-time-code"')} draws a box for each digit — ${c('length')} 4 to 12, 6 unless said; ${c('letters')} for letters too — over one text box the phone's autofill of a code sent by SMS fills whole (${c('autocomplete="one-time-code"')}); a code pasted with its spaces or dashes lands across the boxes, and a screen reader reads one box by its label. The field takes the code once it is whole, so a step on its change can send it. In the designer: a short answer's Mask and Letters in capitals; the kind One-time code, with its Digits and Letters too.</p>
 
 <h2 id="phone">Phone numbers the world over</h2>
 <p>A phone field is a text box until its page says how phone numbers are read: ${c('"phone"')}, with the ${c('country')} a number typed without its + is read in, and whether a number is ${c('shown')} at rest abroad's way, ${c('"international"')} (the default), or at home's, ${c('"national"')}. A field can say it for itself in its ${c('options')}, which win over the page's.</p>
