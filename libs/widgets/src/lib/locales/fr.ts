@@ -294,7 +294,7 @@ export const fr: WidgetLabels = {
   repeatEndsLabel: 'Se termine',
   repeatEnds: 'Jamais|À une date|Après',
   repeatUntilDay: 'Dernier jour',
-  repeatCount: 'Fois',
+  repeatCount: 'fois',
   repeatSaidEveryN: 'Tous les {n} {units}',
   repeatSaidDays: '{every} le {days}',
   repeatSaidMonthDay: '{every} le {day}',

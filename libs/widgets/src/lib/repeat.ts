@@ -181,7 +181,7 @@ export const repeatWidget = (widgetFor: (context: WidgetContext) => Widget): Wid
   const count = box('count', { type: 'integer', label: words.repeatCount });
   const timesWord = make('span', { class: 'fd-repeat-unit' }, words.repeatCount);
   const untilPart = make('span', { class: 'fd-repeat-end-part' }, until.element);
-  const countPart = make('span', { class: 'fd-repeat-end-part' }, count.element, timesWord);
+  const countPart = make('span', { class: 'fd-repeat-end-part fd-repeat-count' }, count.element, timesWord);
   const endsPart = make('div', { class: 'fd-repeat-ends' }, label(words.repeatEndsLabel, ends), untilPart, countPart);
 
   // ---- in words ------------------------------------------------------------------------------------

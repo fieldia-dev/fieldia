@@ -656,7 +656,7 @@ const en: ViewerLabels = {
   templatesStart: 'Start from',
   templateSave: 'Save as template…',
   templateName: 'Template name',
-  templateKeeps: 'Keeps what this record holds now, but its name and its files, to start new ones from.',
+  templateKeeps: 'Keeps this record’s values, except its name and files, to start new ones from.',
   templateKeep: 'Save template',
   templateSaved: 'Template “{name}” saved.',
   templateReplaced: 'Template “{name}” replaced.',

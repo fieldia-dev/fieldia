@@ -159,7 +159,7 @@ export const hoursWidget = (widgetFor: (context: WidgetContext) => Widget): Widg
       { class: 'fd-hours-day', role: 'group', 'aria-label': dayName(day), 'data-day': String(day) },
       make('span', { class: 'fd-hours-name', 'aria-hidden': 'true' }, dayName(day)),
       make('label', { class: 'fd-hours-open' }, open, make('span', {}, words.hoursOpen)),
-      make('div', {}, closed, shifts, tools),
+      make('div', { class: 'fd-hours-times' }, closed, shifts, tools),
       error
     );
     return { day, open, shifts, closed, addBreak, copy, tools, error, element, boxes: [] as { key: string; widget: Widget; remove: HTMLButtonElement; line: HTMLElement }[], drawn: -1 };
@@ -175,7 +175,8 @@ export const hoursWidget = (widgetFor: (context: WidgetContext) => Widget): Widg
         const key = `${row.day}-${i}-${end}`;
         const field: Field = { type: 'char', label: fillIn(end === 'from' ? words.hoursOpens : words.hoursCloses, { day: dayName(row.day) }) };
         const widget = widgetFor({ ...context, form: times, name: key, field, node: { type: 'field', id: `${node.id}.${key}`, field: key, widget: 'time' } as FieldNode, id: `${id}-${key}` });
-        widget.element.querySelector('input')?.setAttribute('aria-label', field.label);
+        // Named by its day and end: the box itself, or the input in it.
+        (widget.element.matches('input') ? widget.element : widget.element.querySelector('input'))?.setAttribute('aria-label', field.label);
         return { key, widget };
       });
       const remove = make('button', { type: 'button', class: 'fd-alert-close fd-hours-remove' }, '×');

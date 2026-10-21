@@ -13,7 +13,7 @@ export const SCHEDULE_CSS = /* css */ `
 .fd-repeat-every, .fd-repeat-end-part, .fd-repeat-part { display: inline-flex; align-items: center; gap: 6px; }
 .fd-repeat-every[hidden], .fd-repeat-end-part[hidden], .fd-repeat-days[hidden], .fd-repeat-month[hidden], .fd-repeat-ends[hidden],
 .fd-repeat-month > [hidden] { display: none; }
-.fd-repeat-every .fd-input, .fd-repeat-end-part .fd-input[inputmode="numeric"] { width: 5em; }
+.fd-repeat-every .fd-input, .fd-repeat-count .fd-input { width: 5em; }
 .fd-repeat-month > .fd-select, .fd-repeat-ends .fd-select { width: auto; }
 .fd-repeat-name, .fd-repeat-unit { color: var(--fd-muted); font-size: 13px; }
 .fd-repeat-days { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -35,9 +35,10 @@ export const SCHEDULE_CSS = /* css */ `
 .fd-hours-day:last-of-type { border-block-end: none; }
 .fd-hours-name { font-weight: 600; padding-block-start: 6px; }
 .fd-hours-open { display: inline-flex; align-items: center; gap: 6px; padding-block-start: 6px; white-space: nowrap; }
+.fd-hours-times { min-width: 0; }
 .fd-hours-shifts { display: grid; gap: 6px; min-width: 0; }
 .fd-hours-shift { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.fd-hours-shift .fd-field-box, .fd-hours-shift .fd-date-box { flex: 0 1 8em; min-width: 6.5em; }
+.fd-hours-shift > .fd-input, .fd-hours-shift .fd-field-box, .fd-hours-shift .fd-date-box { flex: 0 1 8em; min-width: 6.5em; }
 .fd-hours-closed { color: var(--fd-muted); padding-block-start: 6px; }
 .fd-hours-tools { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .fd-hours-tools[hidden], .fd-hours-shifts[hidden], .fd-hours-closed[hidden] { display: none; }
@@ -45,7 +46,7 @@ export const SCHEDULE_CSS = /* css */ `
 .fd-hours-words { margin: 0 0 4px; font-size: 13px; color: var(--fd-muted); }
 @media (max-width: 520px) {
   .fd-hours-day { grid-template-columns: 1fr auto; }
-  .fd-hours-shifts, .fd-hours-closed { grid-column: 1 / -1; }
+  .fd-hours-times { grid-column: 1 / -1; }
 }
 `;
 

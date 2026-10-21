@@ -130,7 +130,9 @@ describe("a week's opening hours", () => {
 
   it('adds a break in the last shift, an hour at its middle', async () => {
     const { el, value } = await mount('hours', { hours: { '3': [['09:00', '17:00']] } });
-    const add = [...el.querySelectorAll<HTMLButtonElement>('[data-day="3"] button')].find((button) => button.textContent === 'Add a break') as HTMLButtonElement;
+    // Each box named by its day and end.
+    expect([...el.querySelectorAll('[data-day="3"] .fd-hours-shift input')].map((box) => box.getAttribute('aria-label'))).toEqual(['Wednesday: opens', 'Wednesday: closes']);
+    const add =[...el.querySelectorAll<HTMLButtonElement>('[data-day="3"] button')].find((button) => button.textContent === 'Add a break') as HTMLButtonElement;
     add.click();
     expect(value()).toEqual({ '3': [['09:00', '12:30'], ['13:30', '17:00']] });
   });

@@ -838,7 +838,7 @@ const en: WidgetLabels = {
   repeatEndsLabel: 'Ends',
   repeatEnds: 'Never|On a day|After',
   repeatUntilDay: 'Last day',
-  repeatCount: 'Times',
+  repeatCount: 'times',
   repeatSaidEveryN: 'Every {n} {units}',
   repeatSaidDays: '{every} on {days}',
   repeatSaidMonthDay: '{every} on the {day}',
