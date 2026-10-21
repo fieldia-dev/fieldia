@@ -327,6 +327,10 @@ record (`model` and `recordId` are the record's, `field` is where it sits:
 `consent.deed`), and the record's save waits for them. A file picked while a save
 is on its way stays a change, to save next. A draft never keeps a file's bytes
 where the source has `upload`; without it, a draft keeps them, as before.
+The sending itself — each file made ready and sent, its link put in its field —
+is a part of its own (`formUploadsPart`), which comes with @fieldia/widgets'
+files part, or the first time a form sends a file: `form.upload` gives its ids
+at once, each file waiting its turn until the part is in.
 
 ```ts
 import { uploadTo } from '@fieldia/core';
