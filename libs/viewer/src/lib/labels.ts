@@ -579,6 +579,37 @@ export interface ViewerLabels {
   laterBack: string;
   laterFailed: string;
   resumeMissing: string;
+  /**
+   * Proof of an email or a phone by a code (`options.verify`, the verify part): Send a code, by a way (`{by}`: SMS,
+   * WhatsApp, a call, email), while it is sent and once sent (`{value}`), how long it works, the code's box's name,
+   * Confirm and while it is checked, a code not typed, wrong (the tries left), too late, Send again and its wait
+   * (`{time}`, 0:25), Confirmed, and a code that could not be sent or checked.
+   */
+  verifySend: string;
+  verifySendBy: string;
+  verifyBySms: string;
+  verifyByWhatsapp: string;
+  verifyByCall: string;
+  verifyByEmail: string;
+  verifySending: string;
+  verifySent: string;
+  verifySentBy: string;
+  verifyWorksFor: string;
+  verifyWorksForOne: string;
+  verifyCodeName: string;
+  verifyCheck: string;
+  verifyChecking: string;
+  verifyTypeCode: string;
+  verifyWrong: string;
+  verifyWrongOne: string;
+  verifyWrongSome: string;
+  verifyWrongNone: string;
+  verifyExpired: string;
+  verifyAgain: string;
+  verifyAgainIn: string;
+  verifyDone: string;
+  verifyNotSent: string;
+  verifyNotChecked: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -993,6 +1024,31 @@ const en: ViewerLabels = {
   laterBack: 'Keep going',
   laterFailed: 'Your answers could not be saved: {why}',
   resumeMissing: 'These saved answers could not be found: they may have been sent already. The form starts empty.',
+  verifySend: 'Send a code',
+  verifySendBy: 'Send a code by {by}',
+  verifyBySms: 'SMS',
+  verifyByWhatsapp: 'WhatsApp',
+  verifyByCall: 'phone call',
+  verifyByEmail: 'email',
+  verifySending: 'Sending a code…',
+  verifySent: 'We sent a code to {value}.',
+  verifySentBy: 'We sent a code to {value} by {by}.',
+  verifyWorksFor: 'It works for {minutes} minutes.',
+  verifyWorksForOne: 'It works for 1 minute.',
+  verifyCodeName: 'Code sent to {value}',
+  verifyCheck: 'Confirm',
+  verifyChecking: 'Checking the code…',
+  verifyTypeCode: 'Type the code you were sent.',
+  verifyWrong: 'That code is not right.',
+  verifyWrongOne: 'That code is not right: 1 try left.',
+  verifyWrongSome: 'That code is not right: {tries} tries left.',
+  verifyWrongNone: 'That code is not right, and no tries are left: send a new one.',
+  verifyExpired: 'The code has expired: send a new one.',
+  verifyAgain: 'Send again',
+  verifyAgainIn: 'Send again in {time}',
+  verifyDone: 'Confirmed',
+  verifyNotSent: 'The code could not be sent: try again.',
+  verifyNotChecked: 'The code could not be checked: try again.',
 };
 
 /**

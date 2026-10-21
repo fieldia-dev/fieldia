@@ -15,7 +15,7 @@ export const memoryPart: Part<MemoryPart> = lazyPart('memory', () => import('./m
 /** Every member of a data source a memory source answers, as its members do once they have come. */
 export const MEMORY_MEMBERS = [
   'load', 'save', 'onchange', 'search', 'create', 'submit', 'list', 'groups', 'options', 'definitions', 'saveDefinitions', 'archive', 'copy', 'delete',
-  'attachments', 'totals', 'upload', 'slots', 'writeMany', 'createMany', 'duplicates', 'merge', 'notDuplicates', 'markNotDuplicate', 'limits', 'saveDraft', 'loadDraft',
+  'attachments', 'totals', 'upload', 'slots', 'writeMany', 'createMany', 'duplicates', 'merge', 'notDuplicates', 'markNotDuplicate', 'limits', 'saveDraft', 'loadDraft', 'sendCode', 'checkCode',
 ] as const;
 
 /**
@@ -30,7 +30,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   const kept = memoryKept(options);
   let made: MemoryDataSource | undefined;
   const members = (): Promise<MemoryDataSource> => memoryPart.load().then((loaded) => (made ??= loaded.memorySource(options, kept)));
-  const source = { records: kept.records, notDuplicatePairs: kept.notDuplicatePairs, responses: kept.responses, calls: kept.calls, drafts: kept.drafts, changeElsewhere: kept.changeElsewhere, answeredElsewhere: kept.answeredElsewhere } as Record<string, unknown>;
+  const source = { records: kept.records, notDuplicatePairs: kept.notDuplicatePairs, responses: kept.responses, calls: kept.calls, drafts: kept.drafts, codes: kept.codes, changeElsewhere: kept.changeElsewhere, answeredElsewhere: kept.answeredElsewhere } as Record<string, unknown>;
   for (const name of MEMORY_MEMBERS) {
     source[name] = (...args: unknown[]) => {
       const call = (from: MemoryDataSource) => (from[name] as (...given: unknown[]) => Promise<unknown>)(...args);

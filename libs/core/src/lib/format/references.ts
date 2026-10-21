@@ -30,6 +30,7 @@ import { checkLineKinds, checkTable, type TableTools } from './table-checks';
 import { checkStatusbar } from './statusbar-checks';
 import { checkOptionRules } from './option-checks';
 import { checkPrefill } from './prefill-checks';
+import { checkVerify } from './verify-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -855,6 +856,8 @@ export class ReferenceCheck {
     else if (node.widget === 'slots') checkSlots(node, path, this.fieldTools());
     if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
+    // Proof of an email or a phone by a code (`options.verify`), drawn by the verify part, whose checks come with it in the one-tag script.
+    if (node.options?.['verify'] !== undefined) checkVerify(node, def, path, !!this.line, this.fieldTools());
     if (def) this.checkPicker(node, def, path);
     // The order lines load in: fields of its lines.
     if (def && node.order && def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);

@@ -87,5 +87,6 @@ export const de: Messages = {
   formSent: 'Sie haben Ihre Antworten auf dieses Formular bereits gesendet.',
   choiceFull: '{option} ist ausgebucht',
   choiceFilled: '{option} ist jetzt ausgebucht: Wählen Sie etwas anderes',
+  notVerified: '{label} ist nicht bestätigt: Lassen Sie sich einen Code senden und geben Sie ihn ein',
   locale: 'de',
 };

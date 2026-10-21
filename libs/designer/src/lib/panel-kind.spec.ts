@@ -61,9 +61,11 @@ describe('a field’s own settings in the side panel', () => {
     expect([...panel(lines.host).querySelectorAll('button')].filter((b) => b.textContent === 'Add column')).toHaveLength(1);
   });
 
-  it('an email has none, and a field from the model keeps its own', () => {
-    const text = picked('email');
+  it('a website has none, an email its code’s, and a field from the model keeps its own', () => {
+    const text = picked('website');
     expect((panel(text.host).querySelector('[data-setting="Settings for its kind"]') as HTMLElement | null)?.hidden ?? true).toBe(true);
+    const email = picked('email');
+    expect(panel(email.host).querySelector('[data-setting="Settings for its kind"] [role="switch"]')?.getAttribute('aria-label')).toBe('Confirmed by a code');
     const model: Record<string, Field> = { score: { type: 'integer', label: 'Score', min: 1, max: 5 } };
     const designer = createDesigner({ page: blankPage('screen', 'Visit'), model });
     const id = designer.addModelField('score', { parent: 'section-1' }) as string;

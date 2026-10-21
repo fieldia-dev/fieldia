@@ -1,4 +1,4 @@
-import type { Form, Page, Values } from '@fieldia/core';
+import type { Form, MemoryDataSource, Page, SendCodeRequest, Values } from '@fieldia/core';
 import unitEnquiry from '../../examples/pages/unit-enquiry.page.json';
 
 /**
@@ -51,4 +51,32 @@ export function sentLog(doc: Document, form: Form, page: Page): HTMLElement {
     list.append(item);
   });
   return element;
+}
+
+/** How a code's message reads on the phone, by the way it was sent. */
+const APPS: Record<string, string> = { whatsapp: 'WhatsApp', sms: 'Messages' };
+
+/**
+ * A stand-in for the person's phone, over the form: each code the app sends (`sendCode`) arrives here as its WhatsApp
+ * or SMS message would — "Palm Valley: your code is 482913" — for a person trying the demo to type, as an app's own
+ * gateway would deliver it. The demo's memory source makes a new code each time, as a real one does.
+ */
+export function phoneBar(doc: Document, dataSource: MemoryDataSource): HTMLElement {
+  const bar = doc.createElement('div');
+  bar.className = 'demo-bar demo-panel-bar demo-meanwhile-bar fd-theme demo-phone-bar';
+  const title = doc.createElement('strong');
+  title.textContent = 'Your phone';
+  const said = doc.createElement('span');
+  said.className = 'demo-meanwhile-said demo-phone-message';
+  said.setAttribute('role', 'status');
+  said.textContent = 'A stand-in for WhatsApp and SMS: the codes the app sends arrive here.';
+  bar.append(title, said);
+  const send = dataSource.sendCode.bind(dataSource);
+  dataSource.sendCode = async (request: SendCodeRequest) => {
+    const answer = await send(request);
+    const code = dataSource.codes[dataSource.codes.length - 1];
+    if (code) said.textContent = `${APPS[request.by ?? ''] ?? 'Messages'} · Palm Valley: your code is ${code.code}. Do not share it.`;
+    return answer;
+  };
+  return bar;
 }

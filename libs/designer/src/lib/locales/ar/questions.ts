@@ -218,6 +218,10 @@ export const questions: DesignerWords['questions'] = {
   startsOn: 'يبدأ بـ',
   noCountry: 'لا بلد',
   // ---- هاتف يُقرأ في أي بلد: بلده وطريقة عرضه، وإلا فما تقوله الصفحة
+  verifyCode: 'يُؤكَّد برمز',
+  verifyBy: 'يُرسل عبر',
+  verifyByWhatsapp: 'واتساب',
+  verifyBySms: 'رسالة نصية',
   phoneCountry: 'البلد عند البدء',
   phoneShown: 'طريقة العرض',
   thePages: 'كما في الصفحة',

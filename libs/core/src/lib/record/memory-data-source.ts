@@ -1,7 +1,12 @@
 import type { Field, Fields, Option, PropertyDefinition } from '../format/field';
 import { foldForSearch } from './input-rules';
 import type { JsonValue } from '../format/json';
+import { memoryCodes, type MemoryCodes, type SentCodeKept } from './memory-codes';
 import type {
+  CheckCodeRequest,
+  CodeChecked,
+  SendCodeRequest,
+  SentCode,
   DataSource,
   Group,
   GroupInterval,
@@ -155,6 +160,12 @@ export interface MemoryDataSourceOptions {
   drafts?: Record<string, StoredDraft & { pageId: string }>;
   /** The link "Continue later" answers with, made from the draft's key — the app's own address with it: none without it. */
   draftLink?: (key: string, request: SaveDraftRequest) => string;
+  /**
+   * How the codes that prove an email or a phone are made and checked (`sendCode`, `checkCode`), as an app's own
+   * service would: their digits, how long each works, how soon another may be asked for, the wrong ones taken. Each
+   * code sent is kept in `codes`, where a demo shows it as the message would. See `MemoryCodes`.
+   */
+  codes?: MemoryCodes;
 }
 
 /**
@@ -182,6 +193,8 @@ export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecor
   readonly drafts: Record<string, StoredDraft & { pageId: string; later?: boolean }>;
   /** Take a response to a page as someone else would, on another screen: counted by `limits`, never as this person's. */
   answeredElsewhere(pageId: string, values: Values): void;
+  /** The codes `sendCode` sent, in order: each with the value it proves and the code itself, as its message would say it. */
+  readonly codes: SentCodeKept[];
 }
 
 /**
@@ -195,7 +208,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
 
 /** A memory source's members, working on what it keeps (`memoryKept`): the one-tag script's memory part. */
 export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept): MemoryDataSource {
-  const { records, notDuplicatePairs, responses, calls, elsewhere, drafts, table, versionOf, moveOn } = kept;
+  const { records, notDuplicatePairs, responses, calls, elsewhere, drafts, codes, table, versionOf, moveOn } = kept;
+  const proving = memoryCodes(options.codes, codes);
   let draftIds = 0;
   /** Properties added in place, by the list and the definitions the app gave for the record they were added to. */
   const addedDefinitions = new Map<string, PropertyDefinition[]>();
@@ -329,8 +343,21 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     responses,
     calls,
     drafts,
+    codes,
     answeredElsewhere: kept.answeredElsewhere,
     changeElsewhere: kept.changeElsewhere,
+
+    async sendCode(request: SendCodeRequest): Promise<SentCode> {
+      calls.push({ method: 'sendCode', request });
+      await pause();
+      return proving.sendCode(request);
+    },
+
+    async checkCode(request: CheckCodeRequest): Promise<CodeChecked> {
+      calls.push({ method: 'checkCode', request });
+      await pause();
+      return proving.checkCode(request);
+    },
 
     async limits(request: LimitsRequest): Promise<LimitsResult> {
       calls.push({ method: 'limits', request });

@@ -85,5 +85,6 @@ export const ar: Messages = {
   formSent: 'لقد أرسلت إجاباتك على هذا النموذج من قبل.',
   choiceFull: 'لا أماكن متبقية في {option}',
   choiceFilled: 'امتلأ {option} الآن: اختر غيره',
+  notVerified: 'لم يُؤكَّد {label}: أرسل رمزًا واكتبه',
   locale: 'ar',
 };

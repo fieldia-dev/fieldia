@@ -2,7 +2,7 @@
   "fieldia": "0.7",
   "id": "unit-enquiry",
   "title": "Ask about a unit",
-  "description": "Palm Valley, New Cairo: tell us how to reach you, and an agent calls within the hour.",
+  "description": "Palm Valley, New Cairo: tell us how to reach you, and an agent calls within the hour. We confirm your mobile with a code first.",
   "data": { "kind": "responses" },
   "maxWidth": "narrow",
   "phone": { "country": "EG" },
@@ -35,7 +35,7 @@
         "title": "About you",
         "children": [
           { "type": "field", "id": "f-name", "field": "full_name", "autocomplete": "name" },
-          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "autocomplete": "tel" }
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "autocomplete": "tel", "options": { "verify": { "by": ["whatsapp", "sms"] } } }
         ]
       },
       {

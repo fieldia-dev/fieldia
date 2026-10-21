@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Page } from '@fieldia/core';
+import type { Field, FieldNode, JsonValue, Page } from '@fieldia/core';
 import { countriesIn } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -484,8 +484,43 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /**
+   * Proof the person owns the email or the phone (`options.verify`): a code the app's data source sends and checks;
+   * for a phone, the ways it may be sent — by WhatsApp, by SMS — none ticked, the app's own one way.
+   */
+  function verify(phone: boolean): Part {
+    let given: unknown = undefined;
+    const ways = () => (given && typeof given === 'object' && Array.isArray((given as { by?: unknown }).by) ? ((given as { by: unknown[] }).by as unknown[]) : []);
+    /** The setting as asked: off, on with the app's own way, or on with the ways ticked (the app's own kept after them). */
+    const set = (on: boolean, by: unknown[]) => designer.setWidgetOptions(id, { verify: !on ? null : by.length ? { by: by as JsonValue[] } : true });
+    const on = toggle(w.verifyCode, (yes) => set(yes, yes ? ways() : []));
+    const way = (value: string, label: string) => {
+      const tick = toggle(label, (yes) => {
+        const own = ways().filter((one) => one !== 'whatsapp' && one !== 'sms');
+        const both = (['whatsapp', 'sms'] as const).filter((one) => (one === value ? yes : ways().includes(one)));
+        set(true, [...both, ...own]);
+      });
+      return tick;
+    };
+    const whatsapp = way('whatsapp', w.verifyByWhatsapp);
+    const sms = way('sms', w.verifyBySms);
+    const byRow = row(el('span', { class: 'fd-inline-setting' }, w.verifyBy), whatsapp.element, sms.element);
+    return {
+      element: el('div', {}, row(on.element), ...(phone ? [byRow] : [])),
+      refresh(_page, node) {
+        given = node.options?.['verify'];
+        const asked = given !== undefined && given !== false && given !== null;
+        on.button.setAttribute('aria-checked', String(asked));
+        byRow.hidden = !asked;
+        whatsapp.button.setAttribute('aria-checked', String(ways().includes('whatsapp')));
+        sms.button.setAttribute('aria-checked', String(ways().includes('sms')));
+      },
+    };
+  }
+
   const parts: Part[] = [];
   if (kind === 'code' || kind === 'vscode') parts.push(codeLanguage());
+  if (kind === 'email' || kind === 'phone') parts.push(verify(kind === 'phone'));
   if (kind === 'phone') parts.push(phone());
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
   if (kind === 'paragraph') parts.push(rows());

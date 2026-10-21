@@ -159,6 +159,85 @@ export interface DataSource {
   saveDraft?(request: SaveDraftRequest): Promise<SavedDraft>;
   /** A draft kept by `saveDraft`, by its key: what the viewer's `resume` opens. Null when there is none (sent, or gone). */
   loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>;
+  /**
+   * Send a code that proves the person owns an email or a phone, for a field whose node says `options.verify`: by
+   * email, SMS, WhatsApp — your app's own way (its mail service, Twilio, a WhatsApp gateway); Fieldia sends nothing and
+   * holds no keys. Answer with how long it works, how soon another may be asked for and how many digits it has; throw
+   * `saveRefused({ kind: 'rule', message })` to refuse it in your words ("Too many codes for this number: try in an
+   * hour"). With `checkCode`; without both, no field asks for a code.
+   */
+  sendCode?(request: SendCodeRequest): Promise<SentCode>;
+  /**
+   * Check the code the person typed for the value it was sent to: right, wrong (with the tries left), or expired. Answer
+   * right with a `proof` of your own — a signed token — and every send carries it (`verified`), so your server trusts
+   * the value without asking again. With `sendCode`.
+   */
+  checkCode?(request: CheckCodeRequest): Promise<CodeChecked>;
+}
+
+/** What `sendCode` is asked: the field, the value to prove, and how the person asked to get the code. */
+export interface SendCodeRequest {
+  pageId: string;
+  /** The page's model; empty for a page of responses. */
+  model: string;
+  /** The record edited; null for a new one or a response. */
+  recordId: RecordId | null;
+  /** The email or phone field, by name. */
+  field: string;
+  /** What it holds now: an email address, or a phone number (E.164 where the page reads phones the world over). */
+  value: string;
+  /** What the value is: an email, or a phone. */
+  kind: 'email' | 'phone';
+  /** The way the person picked to get it — `sms`, `whatsapp`, `call`, `email`, or one of the page's own — where the page offers more than one. */
+  by?: string;
+  /** The page's language, by tag: the code's message is written in it. */
+  language: string;
+}
+
+/** A code on its way. Each part is told where the app knows it. */
+export interface SentCode {
+  /** When it stops working, as ISO: said ("The code works for 10 minutes"), and after it, a new one is asked for. */
+  expiresAt?: string;
+  /** Seconds before another may be asked for: Send again waits so long, its count said. */
+  retryAfter?: number;
+  /** How many digits it has: its box takes so many, and checks it once they are all typed. 6 unless said. */
+  length?: number;
+  /** Your own id for it, handed back to `checkCode`. */
+  id?: string;
+  /** Words of your own, said as they are: "We sent a code to +20 10 1234 5678 on WhatsApp." */
+  message?: string;
+}
+
+/** What `checkCode` is asked: the code typed, for the value it was sent to. */
+export interface CheckCodeRequest {
+  pageId: string;
+  model: string;
+  recordId: RecordId | null;
+  field: string;
+  value: string;
+  /** What the person typed, its digits as 0-9, without spaces. */
+  code: string;
+  /** The id `sendCode` gave it, where it gave one. */
+  id?: string;
+}
+
+/** Whether a code was right. */
+export interface CodeChecked {
+  ok: boolean;
+  /** Right: a proof of your own (a signed token), sent with the answers so your server trusts the value as proved. */
+  proof?: string;
+  /** Wrong: how many tries are left; 0, a new code must be asked for. */
+  triesLeft?: number;
+  /** Too late: the code no longer works, and a new one must be asked for. */
+  expired?: boolean;
+  /** Words of your own, said as they are, in place of Fieldia's. */
+  message?: string;
+}
+
+/** An email or a phone the person proved they own, by a code: the value proved, and the app's proof of it. */
+export interface VerifiedValue {
+  value: string;
+  proof?: string;
 }
 
 /** Whose possible duplicates were let be: what `notDuplicates` is asked. */
@@ -512,6 +591,8 @@ export interface SaveRequest {
   version?: RecordVersion;
   /** The key of the draft these changes were kept in on the server (`saveDraft`): the source may let it go. */
   draft?: string;
+  /** The emails and phones proved by a code (`options.verify`), by field: the value and the app's own proof, to trust it by. */
+  verified?: Record<string, VerifiedValue>;
 }
 
 export interface SaveResult {
@@ -753,6 +834,8 @@ export interface SubmitRequest {
   bot?: BotReport;
   /** The key of the draft these answers were kept in on the server (`saveDraft`): the source may let it go, or mark it sent. */
   draft?: string;
+  /** The emails and phones proved by a code (`options.verify`), by field: the value and the app's own proof, to trust it by. */
+  verified?: Record<string, VerifiedValue>;
 }
 
 /**

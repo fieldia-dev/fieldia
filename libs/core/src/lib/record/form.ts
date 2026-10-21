@@ -45,6 +45,7 @@ import {
   type MergeResult,
   type SavedDraft,
   type StoredDraft,
+  type VerifiedValue,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
 import type { Limits } from './form-limits';
@@ -55,6 +56,8 @@ import { hostScheduler, type Scheduler } from './scheduler';
 import { signedBy, type SignedBy } from './signed';
 import type { PageLink } from './link-values';
 import { prefilledNames, prefillPart, type PrefillPart } from './prefill';
+import { asksForCodes, formVerifyPart, type FormVerifyPart } from './verify';
+import type { FormVerify } from './verify-form';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
@@ -173,6 +176,11 @@ export interface FormState {
    * starts empty. Null while none is.
    */
   readonly resume?: { readonly key: string; readonly missing?: boolean } | null;
+  /**
+   * The emails and phones the person proved they own by a code (`options.verify`), by field: the value proved and the
+   * app's proof. One counts while its field still holds that value; each send carries those that do (`verified`).
+   */
+  readonly verified: Readonly<Record<string, VerifiedValue>>;
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -500,6 +508,18 @@ export interface Form {
    * the time the answers took, as `bot` (`SubmitRequest`); a token goes once it is sent, as a captcha's is spent.
    */
   botCheck(seen: { honeypot?: boolean; captcha?: string | null }): void;
+  /**
+   * Whether a field asks for a code before the answers go: shown, its node saying `options.verify`, where the data
+   * source has `sendCode` and `checkCode` (hidden, never asked, without them).
+   */
+  asksCode(field: string): boolean;
+  /**
+   * Keep that the person proved a field's value by a code — what the verify part does once `checkCode` said right — or
+   * forget it (null). Laid only while the field still holds that value: an answer for one changed meanwhile is let go.
+   * At once where the verify part's form code has come (a page with a field asking for a code loads it as its form is
+   * made), else as it comes.
+   */
+  markVerified(field: string, proved: VerifiedValue | null): void;
   /**
    * Whether a box's reading of what was typed still waits (a name being looked up): a check or a step forward made
    * now refuses its text with "still looking", so a caller that can wait for it (`settle`) checks again after.
@@ -1202,6 +1222,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Worked out once the form has its state, as the limits part comes (`limitsCode`).
     limits: null,
     resume: null,
+    verified: {},
   };
   started = true;
   /**
@@ -2643,6 +2664,23 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return (await saving(chain)) === null;
   }
 
+  /** The form's side of proof by a code (`options.verify`), from the verify part, as it comes (`verifyCode`). */
+  let verifyKit: FormVerify | null = null;
+  function verifyCode(): Promise<FormVerify | null> {
+    const made = (part: FormVerifyPart) =>
+      (verifyKit ??= part.formVerify({
+        dataSource: options.dataSource,
+        messages,
+        shown: (field) => visibleFieldNodes(undefined, 'field', field).map((node) => node.source as FieldNode),
+        state: () => state,
+        set,
+        label: (node) => wordsNow(node.label ?? page.fields[node.field].label),
+      }));
+    if (formVerifyPart.loaded) return Promise.resolve(made(formVerifyPart.loaded));
+    return formVerifyPart.load().then(made, () => null);
+  }
+
+
   /** Every value, for a source that saves whole records: those of fields hidden from the person, which they never had, left out. */
   function sentValues(): Values {
     const values = structuredCopy(state.values as Values);
@@ -2740,8 +2778,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Whether the page still takes answers — its dates, its counts asked again — and each choice held still has room.
     const refused = await stillTaking(asked);
     if (refused) return refused;
-    // A file that did not reach the store stops it, under its field, with the form's own checks.
-    const errors = { ...collectErrors(), ...fileProblems() };
+    // An email or a phone that asks for a code: the verify part's code waited for where it has not come.
+    if (!verifyKit && asksForCodes(page)) {
+      await verifyCode();
+      if (asked !== generation) return elsewhere();
+    }
+    // A file that did not reach the store stops it, under its field, with the form's own checks; and an email or a phone
+    // that asks for a code, not proved by one.
+    const errors = { ...collectErrors(), ...fileProblems(), ...verifyKit?.unverified() };
     if (Object.keys(errors).length) {
       set({ errors, ...unstored(errors) });
       return { reason: 'save', message: Object.values(errors)[0] };
@@ -2773,7 +2817,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const resetAt = resets;
         const seen = botReport();
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
-        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft })) ?? {};
+        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...verifyKit?.proved() })) ?? {};
         // The captcha's token is spent once sent: the next send waits for a new one.
         if (seen?.captcha) bot.captcha = null;
         // Answered for answers no longer shown — the form was started again meanwhile: the source has them, the form lays nothing.
@@ -2804,6 +2848,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         // The version it was opened at, for a source that refuses a save over someone else's.
         ...(state.recordId != null && state.version ? { version: state.version } : {}),
         ...draft,
+        ...verifyKit?.proved(),
       });
       // Answered for a record no longer shown — another opened, or this one loaded again: the source has it, and the
       // form lays nothing of it over the record it shows now.
@@ -3086,7 +3131,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (seq !== loads) return;
       // Lines load in their tables' orders; where a person moves them after, they stay.
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
-      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {}, takenOut: {} });
+      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {}, takenOut: {}, verified: {} });
       // Each choice's places, for this record: its own choices are its own.
       loadedOnce = true;
       if (asksLimits()) void track(askLimits());
@@ -3120,7 +3165,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     found = null;
     serverKey = null;
     draftEpoch++;
-    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {}, resume: null };
+    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {}, resume: null, verified: {} };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
       await load();
@@ -3630,6 +3675,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (seen.honeypot !== undefined) bot.honeypot = seen.honeypot;
       if (seen.captcha !== undefined) bot.captcha = seen.captcha;
     },
+
+    asksCode: (field) => !!verifyKit?.asks(field),
+
+    markVerified(field, proved) {
+      fieldDef(field);
+      // At once where the verify part's code has come (a page asking for codes loads it as its form is made), else as it comes.
+      if (verifyKit) verifyKit.mark(field, proved);
+      else void track(verifyCode().then((kit) => kit?.mark(field, proved)));
+    },
     reading: () => readingNow > 0 || [...attached.values()].some((part) => part.inner.form.reading()),
 
     validate() {
@@ -3729,7 +3783,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Started again: a new response, timed from now.
       bot = { ...bot, honeypot: false, since: clock() };
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null });
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null, verified: {} });
       // Started again: whether the page takes another response, and each choice's places, asked again.
       if (asksLimits()) void track(askLimits());
     },
@@ -4178,6 +4232,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
   // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
   if (keepsLimits()) void track(limitsCode());
+  // A page with a field asking for a code: the verify part's form code, at once where it has come, else as it does.
+  if (asksForCodes(page)) void track(verifyCode());
   // A page filling fields from its link, before the prefill part came: they are laid as it comes.
   if (page.prefill && !prefillPart.loaded && state.recordId == null) void track(prefillPart.load().then(layLink, () => undefined));
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it

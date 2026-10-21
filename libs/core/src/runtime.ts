@@ -227,12 +227,18 @@ export type {
   SaveDraftRequest,
   SavedDraft,
   LoadDraftRequest,
+  SendCodeRequest,
+  SentCode,
+  CheckCodeRequest,
+  CodeChecked,
+  VerifiedValue,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
 export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
+export type { MemoryCodes, SentCodeKept } from './lib/record/memory-codes';
 // Time zones: a page's or a field's `timeZone`, its clock, its day, the hour its clocks skip or repeat.
 export { clocksSkip, dayIn, instantsAt, isOwnZone, isTimeZone, ownZone, wallClock, wallDay, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './lib/record/zones';
 export { zonedPage } from './lib/format/zoned';
@@ -301,6 +307,8 @@ export { dayOf } from './lib/record/limits';
 // The fields a page fills from the link it is opened with (`prefill`): read in a part of their own, as a form asks for it.
 export { prefillPart, prefilledNames, type PrefillPart } from './lib/record/prefill';
 export type { PageLink } from './lib/record/link-values';
+// Proof of an email or a phone by a code (`options.verify`): the form's side in a part, with the viewer's.
+export { asksForCodes, formVerifyPart, type FormVerifyPart } from './lib/record/verify';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
 // (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)

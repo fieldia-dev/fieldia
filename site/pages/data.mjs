@@ -40,6 +40,8 @@ interface DataSource {
   limits?(request: LimitsRequest): Promise<LimitsResult>;    // responses taken, this person's, each choice's takers
   saveDraft?(request: SaveDraftRequest): Promise<SavedDraft>; // keep the answers so far, to continue later
   loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>; // a draft, by its key
+  sendCode?(request: SendCodeRequest): Promise<SentCode>;    // send a code that proves an email or a phone
+  checkCode?(request: CheckCodeRequest): Promise<CodeChecked>; // check the code typed
 }`
 )}
 
@@ -71,6 +73,7 @@ interface DataSource {
     <tr><td>${c('merge')}</td><td>Someone merges a record with one like it, a value picked for each field</td><td>Merge, beside a possible duplicate — without it, none is offered</td></tr>
     <tr><td>${c('notDuplicates')} · ${c('markNotDuplicate')}</td><td>A saved record with possible duplicates is shown; someone presses <em>It's someone new</em></td><td>What was let be kept on your server, so every device lets it be — without both, the person's browser keeps it. See <a href="#duplicates">possible duplicates</a></td></tr>
     <tr><td>${c('limits')}</td><td>A page with ${c('limits')} or options with ${c('seats')} opens, and again just before its answers go and after</td><td>The most responses, one from each person, each choice's places left — see <a href="#limits">opening, closing and limiting a form</a>; without it, a page keeps to its dates alone</td></tr>
+    <tr><td>${c('sendCode')} · ${c('checkCode')}</td><td>Someone presses <em>Send a code</em> under an email or a phone whose node says ${c('options.verify')}; types the code</td><td>Proof the person owns it, before the answers go — see <a href="#verify">proof of an email or a phone</a>; without both, no field asks for a code</td></tr>
     <tr><td>${c('saveDraft')} · ${c('loadDraft')}</td><td>Someone types on a page with ${c('continueLater')}, enters a wizard's step, or presses Continue later; a page opens with a draft's key</td><td>Answers kept on your server, continued on any device — see <a href="#drafts">save and resume</a>; without them, no Continue later shows</td></tr>
   </tbody>
 </table>
@@ -138,6 +141,34 @@ ${code(
 )}
 ${code('text', 'https://homes.example/enquiry?utm_source=whatsapp&utm_campaign=autumn&agent=mona&unit=B-12')}
 <p>Opened so, the form starts with those values — and again after <em>Submit another</em>. A field placed nowhere is a <em>hidden field</em>: seen by no one, sent with the answers to ${c('submit')} (or in a new record's ${c('save')}). One placed on the page shows the value, for the person to keep or change. Each is read as its field reads words — a number, ${c('yes')}/${c('no')}/${c('1')}/${c('0')}, a choice by one of its options' values, a day as ${c('2026-10-20')}, a day and time with its offset — and words that do not read so, or that the field's own checks would refuse, are left out: a hidden field no one can put right never stops a send. The link never writes over an answer: what the person types, and a draft opened over it, are theirs; a stored record opened is never filled. The viewer reads the browser's own address unless it is given ${c('url')}. In the designer, <em>Filled from the link</em> on a page's Rules tab names each parameter and the field it fills, or its own hidden field.</p>
+
+<h2 id="verify">Proof of an email or a phone</h2>
+<p>A lead form pays for every fake number. A field drawn as an email or a phone whose node says ${c('options.verify')} asks the person to prove it is theirs before the answers go: <em>Send a code</em> under its box — one button for each way the page offers — then the code's box (${c('autocomplete="one-time-code"')}, so a phone offers the code from its message), <em>Confirm</em>, how long the code works and when another may be asked for. Right, the field says <em>Confirmed</em>; a send before that is refused under it (<em>Mobile is not confirmed: send a code and type it in</em>), and a number changed afterwards asks again. Fieldia sends nothing itself and holds no keys: your data source sends the code its own way — your mail service, Twilio, a WhatsApp gateway — and checks it.</p>
+${code(
+  'json',
+  `
+{ "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "options": { "verify": { "by": ["whatsapp", "sms"] } } }
+{ "type": "field", "id": "f-email", "field": "email", "widget": "email", "options": { "verify": true } }`
+)}
+${code(
+  'ts',
+  `
+async sendCode({ field, value, kind, by, language }) {
+  // value: "+201012345678" (a phone read the world over) or "mona@example.com"
+  const { id, expiresAt } = await myCodes.send(value, { via: by ?? (kind === 'email' ? 'email' : 'sms'), language });
+  return { id, expiresAt, retryAfter: 30, length: 6 }; // or throw saveRefused({ kind: 'rule', message: 'Too many codes: try in an hour' })
+},
+async checkCode({ value, code, id }) {
+  const result = await myCodes.check(id, value, code);
+  return result.ok ? { ok: true, proof: result.signedToken } : { ok: false, triesLeft: result.triesLeft, expired: result.expired };
+},
+async submit({ values, verified }) {
+  // verified: { phone: { value: "+201012345678", proof: "eyJ…" } } — trust a value only by its proof
+  if (!(await myCodes.trusts(verified?.phone))) throw saveRefused({ kind: 'fields', message: 'Confirm your mobile', fields: { phone: 'Confirm your mobile' } });
+  return { id: await store(values) };
+}`
+)}
+<p>Each send — ${c('submit')}, or ${c('save')} on a record's page — carries ${c('verified')}: the values proved and your proof of each, so your server trusts a value only by a proof it signed. ${c('form.getState().verified')} holds them; ${c('form.asksCode(field)')} says whether a field asks for one, ${c('form.markVerified(field, { value, proof })')} keeps one your app proved its own way. In the designer, an email's or a phone's settings have <em>Confirmed by a code</em>, and a phone's the ways it is sent. The <a href="/demos/plain/?page=unit-enquiry&amp;skin=outlined">enquiry demo</a> sends its codes to a stand-in phone over the form.</p>
 
 <h2 id="upload">Files stored as they are picked</h2>
 <p>A phone's photo is 3 to 12 MB. Twenty of them inside one save fail on mobile data, and one in a draft fills the browser's store. Give your data source ${c('upload')}, and a file or picture field sends each file to your store <em>as soon as it is picked</em>: photos are made smaller first, each shows on its way with a bar, × to cancel it and Retry when it failed, and the field keeps only what ${c('upload')} returns — ${c('{ url, name, size, type, fileId }')}, never the bytes. Three go at once, the rest wait their turn; a field of several keeps them in the order they were picked.</p>

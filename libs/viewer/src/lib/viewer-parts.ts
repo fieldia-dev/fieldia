@@ -1,4 +1,4 @@
-import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, prefillPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { asksForCodes, callsPartFunctions, formLimitsPart, formVerifyPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, prefillPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -11,6 +11,7 @@ import type * as HeadModule from './head-part';
 import type * as ImportModule from './import-part';
 import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
+import type * as VerifyModule from './verify-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -31,6 +32,8 @@ export type DuplicatesPart = typeof DuplicatesModule;
 export type AnswersPart = typeof AnswersModule;
 /** The limits part: a closed form's words in place of its questions, and Continue later. */
 export type LimitsPart = typeof LimitsModule;
+/** The verify part: proof of an email or a phone by a code the app's source sends and checks. */
+export type VerifyPart = typeof VerifyModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -71,6 +74,15 @@ const showsAnswers = (page: Page): boolean =>
 export const limitsPart: Part<LimitsPart> = lazyPart('limits', () => import('./limits-part'));
 
 /**
+ * Proof of an email or a phone by a code, loaded with the page's parts where a field's node says `options.verify`, so
+ * Send a code is drawn with the page.
+ */
+export const verifyPart: Part<VerifyPart> = lazyPart('verify', () => import('./verify-part'));
+
+/** Whether a page has a field that asks for a code (`options.verify`, not false): what the verify part draws. */
+export const asksVerify = (page: Page): boolean => asksForCodes(page);
+
+/**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
  * else as soon as it comes (settled then; a part that cannot come puts none). For what draws a list's look without the
  * list: the designer's canvas.
@@ -88,7 +100,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, prefillPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, verifyPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, prefillPart, formVerifyPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -137,7 +149,9 @@ const markdownAlone = (node: SectionNode) => {
  * show by a condition, or are carried from an earlier question, its options part (`hasOptionRules`).
  *
  * A page that fills fields from its link (`prefill`) asks for @fieldia/core's prefill part: its form lays them as it
- * comes, before the page is drawn.
+ * comes, before the page is drawn. One with a field that asks for a code (`options.verify`) asks for the verify part,
+ * which draws Send a code under it, and its form's, @fieldia/core's (`formVerifyPart`) — in the one-tag script, the
+ * same script.
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
@@ -219,6 +233,10 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);
   if (page.prefill) found.add(prefillPart);
+  if (asksVerify(page)) {
+    found.add(verifyPart);
+    found.add(formVerifyPart);
+  }
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
@@ -229,7 +247,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, prefill: prefillPart };
+  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, verify: verifyPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, prefill: prefillPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 

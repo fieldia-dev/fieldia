@@ -914,3 +914,54 @@ In plain words:
   `limits` option's starting counts, a record page's model's records but the one edited; `saveDraft` keys drafts
   `draft-1`, `draft-2`… (`drafts` shows them, with `later`), with `draftLink(key)`'s link on "Continue later";
   `loadDraft` finds them, and the `drafts` option's. Tests: `libs/core/src/lib/record/taking.spec.ts`, `drafts.spec.ts`.
+
+## 19. Proof of an email or a phone by a code (Wave 6, lane w6-public-forms)
+
+Two more members, a pair, each optional as everything here: with both, a field whose node says `options.verify` asks
+the person to prove the email or phone is theirs before the answers go; without both, nothing is drawn and nothing is
+asked. Fieldia sends nothing itself and holds no keys: the app sends the code its own way (its mail service, Twilio, a
+WhatsApp gateway) and checks it.
+
+```ts
+sendCode?(request: SendCodeRequest): Promise<SentCode>;
+checkCode?(request: CheckCodeRequest): Promise<CodeChecked>;
+
+interface SendCodeRequest {
+  pageId: string;
+  model: string;                 // empty for a page of responses
+  recordId: RecordId | null;
+  field: string;                 // the email or phone field
+  value: string;                 // what it holds: E.164 where the page reads phones the world over
+  kind: 'email' | 'phone';
+  by?: string;                   // the way picked, where the node offers several: sms, whatsapp, call, email, or its own
+  language: string;              // the page's language, by tag
+}
+interface SentCode { expiresAt?: string; retryAfter?: number; length?: number; id?: string; message?: string }
+interface CheckCodeRequest { pageId: string; model: string; recordId: RecordId | null; field: string; value: string; code: string; id?: string }
+interface CodeChecked { ok: boolean; proof?: string; triesLeft?: number; expired?: boolean; message?: string }
+
+// SubmitRequest and SaveRequest gain verified?: Record<string, VerifiedValue> — by field, the value proved and the proof.
+interface VerifiedValue { value: string; proof?: string }
+```
+
+In plain words:
+
+- **The page asks** (`"options": { "verify": true }`, or `{ "by": ["whatsapp", "sms"] }`, on a text field drawn as an
+  email or a phone; `checkPage` refuses it on any other, on a table's line, and ways no one can read). The verify part
+  draws Send a code under the field once it holds a value that reads, one button for each way offered.
+- **Sending.** `sendCode` answers how long the code works (`expiresAt`, said in minutes), how soon another may be asked
+  for (`retryAfter` seconds, 30 unless said: Send again waits, its count said), how many digits it has (`length`, 6:
+  the box checks the code once they are all typed) and its own `id`, handed back to `checkCode`; `message` is said in
+  place of Fieldia's words. Throwing `saveRefused({ kind: 'rule', message })` says the message as it is ("Too many
+  codes: try in an hour"); any other failure, "The code could not be sent: try again".
+- **Checking.** `checkCode` answers `ok` with the app's `proof` (a signed token), or not: the tries left, or `expired`
+  (too late, or none left: a new code is asked for). The code's box is `autocomplete="one-time-code"`, its digits read
+  however written (Arabic-Indic too), Enter confirms and never sends the form.
+- **The form keeps the proof** while the field holds the value proved (`state.verified`, `form.markVerified`), and
+  refuses a send while a shown field asking for a code holds a value not proved — under the field, "Mobile is not
+  confirmed: send a code and type it in" (`messages.notVerified`). An empty field asks for none (its `required` says
+  whether one is needed). Every send carries `verified`: the server trusts a value only by a proof it signed. Started
+  again, or another record shown, the proofs go.
+- The memory source sends and checks codes as a service would (`codes` option: `code`, `length`, `expiresIn`,
+  `retryAfter`, `tries`, `refuse`, `now`), keeping each code sent in `codes` for a demo to show and a test to read.
+  Tests: `libs/core/src/lib/record/verify.spec.ts`, `libs/viewer/src/lib/verify.spec.ts`, `e2e/verify.spec.ts`.

@@ -79,7 +79,8 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, type HeadPart } from './viewer-parts';
+import { answersPart, asksVerify, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, verifyPart, type HeadPart } from './viewer-parts';
+import type { VerifyKit } from './verify';
 import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
@@ -824,6 +825,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
       const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
       wrapper.append(...(labelsAt === 'after' ? [widget.element, label] : [label, widget.element]), ...(help ? [help] : []), error, warning);
+      // Proof of an email or a phone by a code: Send a code, the code's box and what is said, under it.
+      if (scope.root && verifyKit && node.options?.['verify'] !== undefined && node.options['verify'] !== false) verifyKit.field(node, wrapper);
       // Read-only, as words in place of the box, when the page draws them so.
       const asText = page.look?.readonlyShown === 'text' && readsAsText(def, node, page) ? readText({ document: doc, field: def, node, id, locale, labels: widgetLabels, dialogs }) : null;
       if (asText) widget.element.after(asText.element);
@@ -1876,6 +1879,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    */
   const limitsAsked = !!(page.limits || page.continueLater || options.resume);
   let limitsKit: LimitsKit | null = null;
+  /**
+   * Proof of an email or a phone by a code (`options.verify`), from the verify part: made as the page is drawn where a
+   * field asks for one and the source can send and check codes (the part waited for with the page's).
+   */
+  let verifyKit: VerifyKit | null = null;
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
 
@@ -2402,6 +2410,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * nothing moves as a part arrives, and no focus is lost: there was nothing to have it.
    */
   function drawPage() {
+    const verify = asksVerify(page) && options.dataSource?.sendCode && options.dataSource.checkCode ? verifyPart.loaded : undefined;
+    if (verify && options.dataSource) {
+      const kit = verify.watchVerify({ form, page, doc, el, labels, fill, dataSource: options.dataSource, tag: page.language ?? locale, icons: options.icons, announce, editable: () => !locked });
+      updaters.push(kit.update);
+      cleanups.push(kit.destroy);
+      verifyKit = kit;
+    }
     const limits = limitsAsked ? limitsPart.loaded : undefined;
     if (limits) {
       const kit = limits.drawLimits({ form, page, doc, el, labels, messages: options.messages ?? MESSAGES[locale], fill, content: () => questions, done: () => !done.hidden, announce });

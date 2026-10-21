@@ -85,5 +85,6 @@ export const fr: Messages = {
   formSent: 'Vous avez déjà envoyé vos réponses à ce formulaire.',
   choiceFull: '{option} est complet',
   choiceFilled: '{option} est maintenant complet : choisissez autre chose',
+  notVerified: '{label} n’est pas confirmé : demandez un code et saisissez-le',
   locale: 'fr',
 };

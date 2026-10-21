@@ -608,6 +608,24 @@ name); the viewer gives the browser's own address unless it is given one, and
 field it has not, a link's field, one worked out, a choice of the app's own
 list, and a field filled twice.
 
+## Proof of an email or a phone
+
+A field drawn as an email or a phone may ask the person to prove it is theirs
+before the answers go — `"options": { "verify": true }`, or `{ "by":
+["whatsapp", "sms"] }` for the ways a code may be sent — where the data source
+has `sendCode({ pageId, model, recordId, field, value, kind, by, language })`
+(answering `{ id, expiresAt, retryAfter, length, message }`) and
+`checkCode({ …, value, code, id })` (answering `{ ok, proof }`, or `{ ok:
+false, triesLeft, expired }`). Fieldia sends nothing and holds no keys: the app
+sends the code its own way. `form.markVerified(field, { value, proof })` keeps
+a proof while the field holds that value (`state.verified`); a send is refused
+while a shown field asking for a code holds a value not proved ("Mobile is not
+confirmed: send a code and type it in"), and every send carries `verified` — by
+field, the value and the proof — for the server to trust. `form.asksCode(field)`
+says whether a field asks for one: never where the source lacks either member.
+The memory source sends and checks codes as a service would (its `codes`
+option), each kept in `codes`.
+
 ## What a page's records are called
 
 A page may say what its records are, so Fieldia's own sentences name them as

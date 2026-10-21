@@ -118,6 +118,16 @@ as it starts — `?utm_source=whatsapp&agent=mona` — unless the viewer is give
 nowhere is a hidden field sent with the answers, one placed shows what the link
 gave, and nothing the person typed is written over.
 
+A field drawn as an email or a phone whose node says `"options": { "verify": {
+"by": ["whatsapp", "sms"] } }` (or `true`) asks for a code, in a part of its
+own (`fieldia.verify.js`), where the data source has `sendCode` and
+`checkCode`: Send a code under its box once the value reads — one button for
+each way — then the code's box (`one-time-code`, so a phone offers the code
+from its message; a whole code typed or pasted is checked at once), Confirm,
+how long it works and Send again after its wait, a wrong code's tries left,
+and Confirmed. A send before that is refused under the field, a value changed
+afterwards asks again, and each send carries the app's proof (`verified`).
+
 ## Saved forms placed in a page
 
 A page may place another saved page in it by its id — an address made once,

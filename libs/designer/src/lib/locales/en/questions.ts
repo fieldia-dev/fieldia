@@ -227,6 +227,10 @@ export const questions = {
   startsOn: 'Starts on',
   noCountry: 'No country',
   // ---- a phone read the world over: its own country and how it is shown, else the page's
+  verifyCode: 'Confirmed by a code',
+  verifyBy: 'Sent by',
+  verifyByWhatsapp: 'WhatsApp',
+  verifyBySms: 'SMS',
   phoneCountry: 'Country to start on',
   phoneShown: 'Shown',
   thePages: 'The page’s',

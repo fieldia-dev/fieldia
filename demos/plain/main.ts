@@ -22,7 +22,7 @@ import { photosBar } from '../shared/listing-photos';
 import { botLog, captchaSlot } from '../shared/captcha';
 import { meanwhileBar } from '../shared/test-drive';
 import { lastPlacesBar } from '../shared/event-signup';
-import { sentLog } from '../shared/unit-enquiry';
+import { phoneBar, sentLog } from '../shared/unit-enquiry';
 import { addressFollowsRecord } from '../shared/address';
 
 /**
@@ -212,6 +212,8 @@ if (name === 'test-drive') document.getElementById('app')?.before(meanwhileBar(d
 if (name === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
 // The enquiry says under it what the app was told with each response, its hidden fields marked (shared/unit-enquiry.ts).
 if (name === 'unit-enquiry') document.getElementById('app')?.after(sentLog(document, handle.form, page));
+// And a stand-in phone over it, where the codes the app sends arrive as WhatsApp or SMS would bring them.
+if (name === 'unit-enquiry') document.getElementById('app')?.before(phoneBar(document, dataSource));
 
 // `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `pages` themselves,
 // for the one that each draws the sample records' values as their kind is.
