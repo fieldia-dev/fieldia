@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import { cardLineFields, recordSentence, type JsonValue, type ListMap, type ListRequest, type ListResult, type RecordId, type ResolvedFilter, type Values } from '@fieldia/core';
+import { cardLineFields, recordSentence, type DataSource, type JsonValue, type ListMap, type ListRequest, type ListResult, type MapCluster, type RecordId, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
@@ -21,7 +21,9 @@ import { boxFilter, boxOf, type Box } from './view-box';
  * and a row its pin; a pin opens a card with the record's picture, a few of
  * its fields, a box to choose it and a button to open it. Pins that crowd
  * become a bubble with their count. After the map is moved, "Search this
- * area" puts the area into the search bar, as the person's own search.
+ * area" puts the area into the search bar, as the person's own search. A
+ * source that gathers them itself (`clusters`) is asked for the view's
+ * bubbles instead of loading the records: every record a search finds.
  *
  *     mountViewer(host, { page, listViews: mapListViews({ provider }) })
  */
@@ -67,6 +69,10 @@ const ROOM = 40;
 const PINS_FROM = 15;
 /** A place as an arrow points it out: "Nearest first". */
 const NEAREST_ICON = '<path d="M3 11l18-8-8 18-2-8z"/>';
+/** How long after the map stops its source is asked for the view's bubbles: a run of moves asks once. */
+const ASK_AFTER = 250;
+/** How near, in pixels, the source's bubbles may come: they count hundreds and thousands, drawn large (48, 58 with their ring). */
+const GATHERED = 60;
 /** Moves the person makes; a fit, a card's own pan and a resize are not: MOVE_KEYS. */
 
 interface Drawn {
@@ -264,12 +270,14 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
         },
       })
     );
-    const points = records.flatMap((record, i) => {
-      const at = places[i];
-      if (!at) return [];
-      const weight = heatSpec.weight ? Number(record.values[heatSpec.weight]) : 1;
-      return Number.isFinite(weight) && weight > 0 ? [{ lat: at.lat, lng: at.lng, weight }] : [];
-    });
+    const points = [
+      ...records.flatMap((record, i) => {
+        const at = places[i];
+        return at ? [{ lat: at.lat, lng: at.lng, weight: heatSpec.weight ? Number(record.values[heatSpec.weight]) : 1 }] : [];
+      }),
+      // The source's bubbles, each weighing its records: their count, or its weight field added up.
+      ...(served?.clusters ?? []).map((cluster) => ({ lat: cluster.lat, lng: cluster.lng, weight: heatSpec.weight ? Number(cluster.weight) : cluster.count })),
+    ].filter((point) => Number.isFinite(point.weight) && point.weight > 0);
     void heat.then((layer) => !destroyed && layer.draw(points, heatShown(map)));
   }
 
@@ -293,6 +301,17 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
   /** The search changed by the map's own "Search this area": the view stays where the person put it. */
   let ownSearch = false;
   let moving = false;
+
+  // ---- records gathered by the source: its bubbles for each view, their code with the first map whose source gathers ----
+  /** Whether the source is asked for the view's bubbles: it gathers (`clusters`), and the page gathers crowded pins. */
+  const gathers = spec.cluster !== false && !context.given && typeof context.dataSource?.clusters === 'function';
+  let gatherer: Promise<import('./server-clusters').ServerClusters> | null = null;
+  /** The same, once its code has come. */
+  let made: import('./server-clusters').ServerClusters | null = null;
+  /** The source's answer for the view, while it gathers this search's records: its bubbles, and `records` those standing alone. */
+  let served: import('./server-clusters').Served | null = null;
+  /** The search the source gathers none for (it answered false): its records loaded and gathered here, as without `clusters`. */
+  let gatheredHere: string | null = null;
 
   const dir = (): 'ltr' | 'rtl' => (doc.defaultView?.getComputedStyle(element).direction === 'rtl' ? 'rtl' : 'ltr');
   const placeOf = (values: Values): LatLng | null => {
@@ -349,7 +368,9 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
           ? (filter: ResolvedFilter[], signal: AbortSignal) => (source as Required<typeof source>).list({ model, fields: [], filter, sort: [], offset: 0, limit: 1, signal } as ListRequest).then((r) => r.total)
           : null;
     counter ??= import('./area-count').then(({ areaCounter }) => areaCounter(spec, ask, (n) => !here.hidden && !destroyed && sayHere(n)));
-    void counter.then((made) => !destroyed && !here.hidden && made.count(view, { filter: shownFilter, all: allShown, places }));
+    // The source's bubbles for this very view say how many it holds, with no question of their own.
+    const inView = served?.bbox && JSON.stringify(served.bbox) === JSON.stringify(view) ? { inView: served.count } : {};
+    void counter.then((made) => !destroyed && !here.hidden && made.count(view, { filter: shownFilter, all: allShown, places, ...inView }));
   }
 
   /** Where the map stands, once it stops: said to the app, once for each new view. */
@@ -407,10 +428,13 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
 
   function closeCard(map: Leaflet.Map, back: boolean) {
     if (!open) return;
-    const { popup, back: to } = open;
+    const { popup, back: to, id } = open;
     open = null;
     map.closePopup(popup);
-    if (back) to?.focus();
+    if (!back) return;
+    // Its mark drawn again meanwhile, with the source's bubbles for a view the card panned to: the record's new one, or the map.
+    if (served && !to?.isConnected) ((id !== null && drawnOf.get(id)?.marker.getElement()) || box.element).focus();
+    else to?.focus();
   }
 
   function showCard(map: Leaflet.Map, L: LeafletModule, at: LatLng, height: number, card: Card, id: RecordId | null, back: HTMLElement | null, keys: boolean) {
@@ -443,31 +467,45 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
   // ---- the pins -------------------------------------------------------------------
 
   function draw(map: Leaflet.Map, L: LeafletModule) {
-    layer ??= L.layerGroup().addTo(map);
-    layer.clearLayers();
-    drawn = [];
-    drawnOf.clear();
+    const marks = (layer ??= L.layerGroup().addTo(map));
     drawHeat(map, L);
     drawNote(map);
     // From afar, the heat map in place of the pins.
     if (heatShown(map)) {
+      marks.clearLayers();
+      drawn = [];
+      drawnOf.clear();
       ghost?.remove();
       ghost = null;
       return;
     }
     const placed = records.flatMap((record, i) => (places[i] ? [{ record, at: places[i] as LatLng }] : []));
+    // The source's bubbles, gathered again here with the records standing alone where they come too close.
+    const theirs = served?.clusters ?? [];
     const zoom = map.getZoom();
-    const groups =
-      spec.cluster === false
-        ? placed.map((_, i) => [i])
-        : clusterPoints(
-            placed.map(({ at }) => map.project([at.lat, at.lng], zoom)),
-            CROWD
-          );
+    const spots = [
+      ...placed.map(({ at }) => map.project([at.lat, at.lng], zoom)),
+      ...theirs.map((cluster) => ({ ...map.project([cluster.lat, cluster.lng], zoom), weighs: cluster.count })),
+    ];
+    const groups = spec.cluster === false ? spots.map((_, i) => [i]) : clusterPoints(spots, served ? GATHERED : CROWD);
+    // A mark the keys were on, drawn again with the source's next answer: the keys stay on its record.
+    const kept = served ? drawn.find((entry) => entry.marker.getElement()?.contains(doc.activeElement))?.ids[0] : undefined;
+    marks.clearLayers();
+    drawn = [];
+    drawnOf.clear();
     for (const group of groups) {
-      if (group.length === 1) single(map, L, placed[group[0]].record, placed[group[0]].at);
-      else bubble(map, L, group.map((i) => placed[i]));
+      const mine = group.filter((i) => i < placed.length).map((i) => placed[i]);
+      const gathered = group.filter((i) => i >= placed.length).map((i) => theirs[i - placed.length]);
+      // The record whose card is open keeps its own pin while it is read, the source's next bubbles beside it.
+      const reading = served && open && mine.length + gathered.length > 1 ? mine.findIndex((p) => p.record.id === open?.id) : -1;
+      if (reading >= 0) {
+        const [own] = mine.splice(reading, 1);
+        single(map, L, own.record, own.at);
+      }
+      if (mine.length === 1 && !gathered.length) single(map, L, mine[0].record, mine[0].at);
+      else if (mine.length || gathered.length) bubble(map, L, mine, gathered);
     }
+    if (kept !== undefined) drawnOf.get(kept)?.marker.getElement()?.focus({ preventScroll: true });
     restyle();
     light(map, L);
   }
@@ -498,34 +536,57 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
     element?.addEventListener('blur', () => context.highlight(null));
   }
 
-  function bubble(map: Leaflet.Map, L: LeafletModule, members: { record: MapRecord; at: LatLng }[]) {
-    const n = members.length;
+  /** A bubble: records close together — those on hand, and those of the source's bubbles (`gathered`), counted where they stand. */
+  function bubble(map: Leaflet.Map, L: LeafletModule, members: { record: MapRecord; at: LatLng }[], gathered: MapCluster[] = []) {
+    const n = members.length + gathered.reduce((sum, cluster) => sum + cluster.count, 0);
     const face = bubbleFace(doc, n, locale);
-    const centre: LatLng = { lat: members.reduce((sum, p) => sum + p.at.lat, 0) / n, lng: members.reduce((sum, p) => sum + p.at.lng, 0) / n };
+    // Their middle, a bubble of the source's weighing as many as it holds.
+    const middle = (of: 'lat' | 'lng') => (members.reduce((sum, p) => sum + p.at[of], 0) + gathered.reduce((sum, cluster) => sum + cluster[of] * cluster.count, 0)) / n;
+    const centre: LatLng = { lat: middle('lat'), lng: middle('lng') };
     const icon = L.divIcon({ className: 'fd-map-mark fd-map-middle', html: face, iconSize: SIZED_BY_FACE });
     const marker = L.marker([centre.lat, centre.lng], { icon, keyboard: true, riseOnHover: true }).addTo(layer as Leaflet.LayerGroup);
     const element = mark({ marker, face, ids: members.map((p) => p.record.id) }, fill(labels.cluster, { n: count(n) }));
+    // Where its records are: each on hand, and where the source's bubbles say theirs are (the chunk is in: they came through it).
+    const theirs = gathered.length ? made : null;
+    const spots = [...members.map((p) => p.at), ...(theirs?.corners(gathered) ?? [])];
     onPress(marker, (event) => {
       const fromKeys = byKeys(event);
       // Closer, until they part (the person's own move); on one spot (a tower's flats), a list of them.
       moving = true;
-      if (zoomToPart(map, L, members.map((p) => p.at), ROOM)) {
+      if (zoomToPart(map, L, spots, ROOM) || theirs?.closer(map, gathered, centre)) {
         if (fromKeys) box.element.focus();
         return;
       }
       moving = false;
-      const crowd = drawCrowd({
-        document: doc,
-        labels,
-        dir: dir(),
-        records: members.map((p) => ({ record: p.record, name: pins.name(p.record) })),
-        pick: (record) => {
-          const at = members.find((p) => p.record.id === record.id)?.at ?? centre;
-          openCard(map, L, record, at, 20, element ?? null, true);
-        },
-        close: () => closeCard(map, true),
-      });
-      showCard(map, L, centre, 20, crowd, null, element ?? null, fromKeys);
+      const crowd = (listed: { record: MapRecord; at: LatLng }[], total: number) =>
+        showCard(
+          map,
+          L,
+          centre,
+          20,
+          drawCrowd({
+            document: doc,
+            labels,
+            dir: dir(),
+            count: total,
+            records: [
+              ...listed.map((p) => ({ record: p.record, name: pins.name(p.record) })),
+              // More on the spot than a card lists: how many, said.
+              ...(total > listed.length ? [{ record: { id: '', values: {} }, name: fill(labels.crowdMore, { n: count(total - listed.length) }), plain: true }] : []),
+            ],
+            pick: (record) => {
+              const at = listed.find((p) => p.record.id === record.id)?.at ?? centre;
+              openCard(map, L, record, at, 20, element ?? null, true);
+            },
+            close: () => closeCard(map, true),
+          }),
+          null,
+          element ?? null,
+          fromKeys
+        );
+      // The source's records on that spot, asked for: the first of them listed.
+      if (theirs) theirs.crowd(shownFilter, spots, context.sort(), (found, total) => !destroyed && crowd(found, total));
+      else crowd(members, members.length);
     });
   }
 
@@ -533,14 +594,20 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
   function light(map: Leaflet.Map, L: LeafletModule) {
     ghost?.remove();
     ghost = null;
-    const entry = hot === null ? undefined : drawnOf.get(hot);
-    if (!entry || entry.ids.length === 1) return;
-    const i = records.findIndex((record) => record.id === hot);
-    const at = places[i];
+    const lit = hot;
+    const entry = lit === null ? undefined : drawnOf.get(lit);
+    if (entry?.ids.length === 1 || lit === null) return;
+    const i = records.findIndex((record) => record.id === lit);
+    if (entry) return ghostOf(map, L, records[i], places[i]);
+    // In one of the source's bubbles: where it is, asked once.
+    if (served && made && !heatShown(map)) void made.place(lit).then((found) => found && hot === lit && !ghost && !destroyed && served && ghostOf(map, L, found.record, found.at));
+  }
+
+  function ghostOf(map: Leaflet.Map, L: LeafletModule, record: MapRecord, at: LatLng | null) {
     if (!at) return;
-    const face = pins.face(records[i]);
+    const face = pins.face(record);
     face.element.toggleAttribute('data-hot', true);
-    face.element.toggleAttribute('data-chosen', context.isChosen(records[i].id));
+    face.element.toggleAttribute('data-chosen', context.isChosen(record.id));
     const icon = L.divIcon({ className: `fd-map-mark fd-map-ghost ${anchor(face)}`, html: face.element, iconSize: SIZED_BY_FACE });
     ghost = L.marker([at.lat, at.lng], { icon, interactive: false, keyboard: false, zIndexOffset: 2000 }).addTo(map);
     ghost.getElement()?.setAttribute('aria-hidden', 'true');
@@ -568,8 +635,8 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
     note.hidden = !words.length;
   }
 
-  function fit(map: Leaflet.Map) {
-    const at = places.filter((p): p is LatLng => !!p);
+  /** The map moved to show the records — those on hand, or where the source's are (`at`). */
+  function fit(map: Leaflet.Map, at = places.filter((p): p is LatLng => !!p)) {
     if (!at.length) return;
     fitted = true;
     // No closer than the page says (a neighbourhood, say), so a lone record is not shown on a road with nothing round it.
@@ -601,6 +668,8 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
       moving = false;
       if (!here.hidden) countHere(map);
       tellView(map, byPerson);
+      // The source's bubbles for where it stopped.
+      if (served && !fitting) void askView(ASK_AFTER, false);
     });
     // An open card is what the person is reading: Search this area steps out of its way (on a phone the card
     // fills the map's height, and the button sat over its picture) and is back when the card closes.
@@ -612,20 +681,97 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
     });
   });
 
+  const mapFailed = () => {
+    note.textContent = recordSentence(page.records, labels.mapFailedNoun, labels.mapFailed, locale);
+    note.hidden = false;
+  };
+
+  /** The map moving itself to show a new search's records, as the source says where they are: no ask of its own as it stops. */
+  let fitting = false;
+
+  /**
+   * The source's bubbles for the search and the view, `wait` milliseconds from now, the last ask winning: for a
+   * search (`search`), its areas drawn and a card whose record it no longer finds closed, and first the map fitted to
+   * where its records are (`refit`). True once answered or replaced; false when the source gathers none for this search.
+   */
+  function askView(wait: number, search: boolean, refit = false): Promise<boolean> {
+    gatherer ??= import('./server-clusters').then(
+      ({ serverClusters }) => (made = serverClusters({ source: context.dataSource as DataSource, model, spec, fields, radius: GATHERED, ...(heatSpec?.weight ? { weight: heatSpec.weight } : {}), placeOf }))
+    );
+    const filter = shownFilter;
+    let none = false;
+    return gatherer
+      .then(
+        (gathering) =>
+          new Promise<void>((done) =>
+            box.ready((map, L) => {
+              if (destroyed) return done();
+              const fitTo = (spots: LatLng[]) => {
+                fitting = true;
+                fit(map, spots);
+                fitting = false;
+                here.hidden = true;
+              };
+              void gathering
+                .ask(
+                  { filter, map, wait, ...(refit ? { fit: fitTo } : {}) },
+                  (answer) => (answer === false ? (none = true) : lay(answer, map, L, search)),
+                  () => !destroyed && mapFailed()
+                )
+                .then(done);
+            })
+          )
+      )
+      .then(() => !none);
+  }
+
+  /** The source's answer for the view, drawn: its bubbles, the records standing alone, those it says have no place. */
+  function lay(answer: import('./server-clusters').Served, map: Leaflet.Map, L: LeafletModule, search: boolean) {
+    if (destroyed) return;
+    served = answer;
+    records = answer.points;
+    places = records.map((record) => placeOf(record.values));
+    allShown = false;
+    noteWords = answer.unplaced ? [fill(labels.notOnMap, { n: count(answer.unplaced) })] : [];
+    draw(map, L);
+    if (search) drawSearched(map, L, shownFilter);
+    if (search && open?.id !== null && open && !records.some((r) => r.id === open?.id)) closeCard(map, false);
+    else open?.card.setChosen(open.id !== null && context.isChosen(open.id));
+    if (!here.hidden) countHere(map);
+  }
+
   async function reload() {
     const source = context.dataSource;
-    if (!source?.list) return;
+    if (!source?.list && !gathers) return;
     const asked = ++asking;
     const filter = context.filter();
     const key = JSON.stringify(filter);
+    if (gathers && gatheredHere !== key) {
+      // Gathered by the source: its bubbles for the view, the map first fitted to a new search's records.
+      const before = { lastFilter, ownSearch };
+      const refit = !fitted || (lastFilter !== null && key !== lastFilter && !ownSearch);
+      lastFilter = key;
+      ownSearch = false;
+      shownFilter = filter;
+      nearest?.setAttribute('aria-pressed', String(isNearest()));
+      void shadeRegions(filter, asked);
+      made?.forget();
+      if ((await askView(0, true, refit)) || asked !== asking || destroyed) return;
+      // It gathers none for this search: its records loaded and gathered here, as without `clusters`.
+      gatheredHere = key;
+      ({ lastFilter, ownSearch } = before);
+    }
+    if (!source?.list) return;
+    // The records on hand from here on: no bubble of the source's drawn with them, none asked for.
+    served = null;
+    made?.stop();
     let result: ListResult;
     try {
       // The list's order, so the map shows the same first records: nearest first, when asked.
       result = await source.list({ model, fields, filter, sort: context.sort(), offset: 0, limit: spec.limit ?? 500 });
     } catch {
       if (asked !== asking || destroyed) return;
-      note.textContent = recordSentence(page.records, labels.mapFailedNoun, labels.mapFailed, locale);
-      note.hidden = false;
+      mapFailed();
       return;
     }
     if (asked !== asking || destroyed) return;
@@ -674,12 +820,15 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
       box.refresh();
       box.ready((map) => {
         map.invalidateSize({ pan: false });
-        if (!fitted) fit(map);
+        // The source's records: asked again, to fit to where they are.
+        if (!fitted && served) void reload();
+        else if (!fitted) fit(map);
       });
     },
     destroy() {
       destroyed = true;
       stopCount();
+      made?.stop();
       void regions?.then((made) => made?.destroy());
       void heat?.then((layer) => layer.destroy());
       box.element.removeEventListener('pointerdown', pressed, { capture: true });

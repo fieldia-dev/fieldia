@@ -7,16 +7,19 @@
  * few milliseconds. A point that `leads` (a place that moves, on a form's
  * map) keeps its own spot: a group with one stands where it stands, not in
  * the middle, and is gathered again from there; put it first, so the points
- * round it gather to it. Returns the groups as indexes into `points`, each in
- * order.
+ * round it gather to it. A point that `weighs` more (a bubble the server
+ * gathered, its count) pulls a middle towards it as that many points would.
+ * Returns the groups as indexes into `points`, each in order.
  */
-export function clusterPoints(points: readonly { x: number; y: number; leads?: boolean }[], radius: number): number[][] {
+export function clusterPoints(points: readonly { x: number; y: number; leads?: boolean; weighs?: number }[], radius: number): number[][] {
   let groups = gather(points, radius);
   for (;;) {
     const middles = groups.map((group) => {
       const lead = group.find((i) => points[i].leads);
+      const weight = (i: number) => points[i].weighs ?? 1;
+      const all = group.reduce((sum, i) => sum + weight(i), 0);
       return lead === undefined
-        ? { x: group.reduce((sum, i) => sum + points[i].x, 0) / group.length, y: group.reduce((sum, i) => sum + points[i].y, 0) / group.length }
+        ? { x: group.reduce((sum, i) => sum + points[i].x * weight(i), 0) / all, y: group.reduce((sum, i) => sum + points[i].y * weight(i), 0) / all }
         : points[lead];
     });
     const merged = gather(middles, radius);

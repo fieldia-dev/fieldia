@@ -8,7 +8,7 @@ import type { FileValue, Values } from '@fieldia/core';
  */
 
 /** A seeded random number in [0, 1): mulberry32. */
-function seeded(seed: number) {
+export function seeded(seed: number) {
   let a = seed;
   return () => {
     a = (a + 0x6d2b79f5) | 0;

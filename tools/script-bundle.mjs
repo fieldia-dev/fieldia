@@ -1976,8 +1976,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // tools/zxing-readers.mjs), loaded only as Scan is pressed in a browser that reads no codes itself — to 153.8 and 39.0.
 // A number's total under its column read from the end, as the column's numbers are (lines 45.36 and 15.52 measured
 // before, 45.51 and 15.54 after, to 45.6 and 15.6).
+// A list's map whose data source gathers its records (Wave 5, w5-map-clusters): the memory source's `clusters`, there
+// where its option says how it answers (`gridClusters`, outside the one-tag script), each record standing alone as a
+// list's row is, by the row its `list` now shares — memory 16.08 and 5.72 measured before, 16.23 and 5.77 after, to
+// 16.3 and 5.8.
 // Merged (0.29.0): a part two lanes grew takes both growths until measured (list, memory).
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [132.0, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [28.8, 10.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [37.4, 13.8], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.0, 7.1], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [34.5, 11.8], scan: [18.7, 7.9], decode: [153.8, 39.0] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [132.0, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [28.8, 10.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [37.4, 13.8], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.1, 7.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [34.5, 11.8], scan: [18.7, 7.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

@@ -97,14 +97,16 @@ export interface OnHand {
   filter: readonly ResolvedFilter[];
   all: boolean;
   places: readonly (LatLng | null)[];
+  /** How many the search finds in this very view, where the source's bubbles for it say so. */
+  inView?: number;
 }
 
 /**
  * The count for a view: the records on hand say it when they are all the
- * search finds and the view lies within any area it already holds;
- * otherwise `ask` (the app's count, or its source's) is asked, for the
- * search with the view in the area's place, a moment after the map stops;
- * otherwise there is no number.
+ * search finds, or the source's bubbles for the view do, and the view lies
+ * within any area it already holds; otherwise `ask` (the app's count, or
+ * its source's) is asked, for the search with the view in the area's place,
+ * a moment after the map stops; otherwise there is no number.
  */
 export function areaCounter(spec: ListMap, ask: ((filter: ResolvedFilter[], signal: AbortSignal) => Promise<number>) | null, say: (n: number) => void) {
   const asker = lastAsk<number>(400);
@@ -112,7 +114,9 @@ export function areaCounter(spec: ListMap, ask: ((filter: ResolvedFilter[], sign
     count(view: Box, shown: OnHand) {
       asker.stop();
       const own = ownBox(spec, shown.filter);
-      if (shown.all && (!own || boxWithin(view, own.box))) return say(shown.places.filter((at) => at && inBox(at, view)).length);
+      const within = !own || boxWithin(view, own.box);
+      if (within && shown.inView !== undefined) return say(shown.inView);
+      if (shown.all && within) return say(shown.places.filter((at) => at && inBox(at, view)).length);
       if (ask) asker.ask((signal) => ask([...(own ? own.rest : shown.filter), ...boxFilter(spec, view)], signal), say);
     },
     stop: asker.stop,

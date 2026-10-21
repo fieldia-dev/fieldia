@@ -45,6 +45,7 @@ interface DataSource {
   suggest?(request: SuggestRequest): Promise<SuggestResult>;  // AI: values for a form, from words or files
   rewrite?(request: RewriteRequest): Promise<RewriteResult>;  // AI: a text field drafted or polished
   searchToFilter?(request: SearchToFilterRequest): Promise<SearchToFilterResult>; // AI: plain words as filters
+  clusters?(request: ClustersRequest): Promise<ClustersResult | false>; // a list's map: the view's bubbles, counted
 }`
 )}
 
@@ -79,6 +80,7 @@ interface DataSource {
     <tr><td>${c('saveDraft')} · ${c('loadDraft')}</td><td>Someone types on a page with ${c('continueLater')}, enters a wizard's step, or presses Continue later; a page opens with a draft's key</td><td>Answers kept on your server, continued on any device — see <a href="#drafts">save and resume</a>; without them, no Continue later shows</td></tr>
     <tr><td>${c('approvals')} · ${c('decide')}</td><td>A record of a page with ${c('approval')} is shown, saved, or decided on; someone presses Approve, or Reject with why</td><td>Who must approve it at which level, the record locked while it waits, Approve and Reject, its history — see <a href="#approvals">approvals on a record</a>; without them, nothing shows</td></tr>
     <tr><td>${c('suggest')} · ${c('rewrite')} · ${c('searchToFilter')}</td><td>Someone presses Fill from text (a page's ${c('suggest')}), a text field's Draft or Polish (its ${c('rewrite')}), or ✦ beside a list's search (${c('searchToFilter')})</td><td>AI help by your own model, each value shown to accept or reject — see <a href="#ai">AI help</a>; without one, what asks for it is hidden</td></tr>
+    <tr><td>${c('clusters')}</td><td>A list's map shows a search, and again a moment after it stops moving</td><td>Every record a search finds on the map, however many, as bubbles your server counts — see <a href="/lists/#map-clusters">thousands on a map</a>; without it, or answered ${c('false')}, the map loads at most 500 and gathers them itself</td></tr>
   </tbody>
 </table>
 </div>

@@ -11,6 +11,8 @@ export { scheduleSlots, type MemorySchedule } from './lib/record/memory-schedule
 export { alikeRecords, nameLikeness } from './lib/record/memory-duplicates';
 // A stand-in for an app's AI, no model and no keys, for a memory source's `assist`: for demos and tests, outside the one-tag script.
 export { assistStandIn, polishText, readSignature, standInNumber, type StandInFound, type StandInOptions } from './lib/record/memory-assist';
+// A memory source's map records gathered by a grid, as a server gathers them, for its `clusters`: outside the one-tag script.
+export { gridClusters } from './lib/record/memory-clusters';
 export {
   FieldSchema,
   FieldsSchema,

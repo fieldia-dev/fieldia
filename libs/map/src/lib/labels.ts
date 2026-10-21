@@ -356,6 +356,8 @@ export interface ListMapLabels {
   legendBubble: string;
   /** Pins on one spot, listed. */
   crowd: string;
+  /** More on one spot than its card lists (a data source's bubble): `{n}` how many more. */
+  crowdMore: string;
   notOnMap: string;
   /** More records than a map shows: `{n}` shown of `{total}`. */
   mapShowsFirst: string;
@@ -387,6 +389,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     cluster: '{n} here. Zoom in to see them.',
     legendBubble: 'How many are close together: zoom in to part them',
     crowd: '{n} in one place',
+    crowdMore: 'And {n} more here',
     notOnMap: '{n} without a place, not on the map',
     mapShowsFirst: 'The map shows {n} of {total}. Zoom in and search this area for the rest.',
     mapFailed: 'The map could not load the records.',
@@ -409,6 +412,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     cluster: '{n} هنا. كبّر الخريطة لرؤيتها.',
     legendBubble: 'كم منها متقارب: كبّر الخريطة لتفريقها',
     crowd: '{n} في مكان واحد',
+    crowdMore: 'و{n} غيرها هنا',
     notOnMap: '{n} بلا مكان، ليست على الخريطة',
     mapShowsFirst: 'تعرض الخريطة {n} من {total}. كبّر الخريطة وابحث في هذه المنطقة لرؤية البقية.',
     mapFailed: 'تعذّر تحميل السجلات على الخريطة.',
@@ -430,6 +434,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     cluster: '{n} ici. Zoomez pour les voir.',
     legendBubble: 'Combien sont proches : zoomez pour les séparer',
     crowd: '{n} au même endroit',
+    crowdMore: 'Et {n} de plus ici',
     notOnMap: '{n} sans lieu, absents de la carte',
     mapShowsFirst: 'La carte en montre {n} sur {total}. Zoomez et recherchez dans cette zone pour voir les autres.',
     mapFailed: 'La carte n’a pas pu charger les enregistrements.',
@@ -452,6 +457,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     cluster: '{n} hier. Hineinzoomen, um sie zu sehen.',
     legendBubble: 'Wie viele dicht beieinander liegen: hineinzoomen, um sie zu trennen',
     crowd: '{n} an einem Ort',
+    crowdMore: 'Und {n} weitere hier',
     notOnMap: '{n} ohne Ort, nicht auf der Karte',
     mapShowsFirst: 'Die Karte zeigt {n} von {total}. Hineinzoomen und in diesem Gebiet suchen, um die übrigen zu sehen.',
     mapFailed: 'Die Karte konnte die Datensätze nicht laden.',

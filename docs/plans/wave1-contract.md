@@ -1315,3 +1315,72 @@ In plain words:
   reads on.
 - The memory source answers it as it is (a filter on any field, the query matched against names). Tests:
   `libs/core/src/lib/record/search-by-code.spec.ts`, `libs/widgets/src/lib/scan.spec.ts`.
+
+## 26. A list's map, its records gathered on the server (Wave 5, lane w5-map-clusters)
+
+One more member, optional as everything here: without it — or where it answers `false` — a list's map loads at most
+its `limit` of the search's records (500) and gathers them in the browser, as before.
+
+```ts
+clusters?(request: ClustersRequest): Promise<ClustersResult | false>;
+
+interface GeoBox { south: number; west: number; north: number; east: number }   // degrees; west > east across the antimeridian
+
+interface ClustersRequest {
+  model: string;
+  filter: ResolvedFilter[];   // the list's search, as `list` gets it; the view is not in it
+  field: string;              // where each record is: a GeoJSON point field, or a latitude…
+  longitude?: string;         // …whose longitude is in this field (as a `near` order names them)
+  bbox: GeoBox;               // the view
+  zoom: number;               // the map's (Web Mercator, 256-pixel images: 0 is the world in one)
+  radius: number;             // how near pins come, in pixels at this zoom, before they crowd: a grid's square
+  fields: string[];           // what a record standing alone carries: its place, its pin's and its card's fields
+  weight?: string;            // a heat map's number field: added up in each bubble
+  signal?: UploadSignal;      // an AbortSignal: the map moved on; reject with an error named AbortError
+}
+interface ClustersResult {
+  clusters: MapCluster[];     // two records or more each
+  points?: ListedRecord[];    // the records standing alone, `{ id, values }` with `fields`, as a list's rows
+  unplaced?: number;          // found by the search with no place: said under the map
+}
+interface MapCluster {
+  lat: number; lng: number;   // where its bubble stands: its records' middle
+  count: number;
+  bbox?: GeoBox;              // the box its records lie in: a press zooms to it; a new search fits to the boxes
+  weight?: number;            // with `weight` asked: that field added up
+}
+```
+
+In plain words:
+
+- **When it is asked.** As a search changes (the page's search bar, a filter, Search this area, an area drawn, a
+  shaded area pressed, a row's button that changes records), for the view the map stands at; a new search the map has
+  not fitted to yet is first asked of the whole world at zoom 0 (`bbox` -90, -180, 90, 180), its bubbles' boxes and
+  points telling the map where to fit, then of the view the map fitted. Again a moment (250 ms) after the map stops
+  moving: a run of moves asks once. Each ask aborts the one before (`signal`), and an answer that comes after a newer
+  ask is dropped. Nothing is asked while the map draws a search's records itself (it answered `false`).
+- **What the map draws.** Each bubble with its count, written short ("1.2K", "1,204 here. Zoom in to see them." to a
+  screen reader); each point as its own pin and card. The map gathers again, in the browser, bubbles and points that
+  still come nearer than 60 pixels (a grid's squares meet at their edges), a bubble weighing as many records as it
+  holds; a point whose card is open keeps its own pin. A bubble pressed zooms to its `bbox` (two steps closer where it
+  has none); one whose records are on one spot lists the first 50 of them, asked of `list` with the search and the
+  spot's box, and says how many more.
+- **Counts.** The view's bubbles and points add up to the records the search finds in the view: "Search this area
+  (1,204)" says it with no ask of its own (`countArea` is asked only for a view past an area already searched).
+  `unplaced` is said under the map. Shaded areas count by `groups`, as before; the heat map from afar weighs a bubble
+  by its count, or its `weight`.
+- **A row lit** whose record is in a bubble is asked for by its id (`list` with `{ field: 'id', op: 'in', value:
+  [id] }`, once until the records change), and its pin drawn over the map where it is.
+- **`false`** — "load this search's records yourself" — for a search that finds few, or a model your server does not
+  gather: the map asks `list` (its `limit`), as without the member, until the search changes.
+- **A server** gathers by a grid of `radius`-pixel squares fixed to the world at `zoom` — PostGIS's `ST_SnapToGrid` on
+  the Web Mercator point, Elasticsearch's `geotile_grid` at `zoom` (its tiles are 256 pixels: a precision of
+  `zoom + log2(256 / radius)`), a geohash's prefix — each square of two records or more one bubble (`count`, `avg` of
+  the places, their `ST_Extent`), a square of one that record. Squares fixed to the world keep a record in its square
+  as the map pans.
+- The memory source has `clusters` where its option says how it answers: `createMemoryDataSource({ records, clusters:
+  gridClusters({ models }) })` gathers so (`gridClusters`, @fieldia/core, outside the one-tag script), each point as a
+  list's row is (the fields asked, as this person may read them, with its version); a model not named is answered
+  `false`. The one-tag script's memory source has no `clusters` (no map comes in the script). Tests:
+  `libs/core/src/lib/record/memory-clusters.spec.ts`, `libs/map/src/lib/server-clusters.spec.ts`,
+  `e2e/map-clusters.spec.ts`.

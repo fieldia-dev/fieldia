@@ -123,7 +123,7 @@ function within(values: Values, raw: unknown, area: JsonValue): boolean {
 }
 
 /** A record's place: a GeoJSON point (or a Feature holding one) in `raw`, or `raw` a latitude and `longitude` the field of its pair. */
-function placeOf(values: Values, raw: unknown, longitude: unknown): { lat: number; lng: number } | null {
+export function placeOf(values: Values, raw: unknown, longitude: unknown): { lat: number; lng: number } | null {
   let lat: unknown;
   let lng: unknown;
   if (typeof longitude === 'string') {

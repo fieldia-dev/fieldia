@@ -196,6 +196,15 @@ export interface DataSource {
    * take away, and Undo puts their words back. Without it, the list searches the words as typed, as before.
    */
   searchToFilter?(request: SearchToFilterRequest): Promise<SearchToFilterResult>;
+  /**
+   * A list's map, its records gathered on the server where they crowd: for the view the map shows (`bbox`, `zoom`),
+   * the bubbles — each where its records' middle is, how many it holds and the box they lie in — and the records that
+   * stand alone, with the fields their pins and cards show. Asked as a search changes and again a moment after the map
+   * stops moving, so a map shows every record a search finds, however many, never loading them: thousands of homes, a
+   * city's orders. Answer `false` to let the map load the search's records and gather them itself, as it does without
+   * this (a search that finds few, a model your server does not gather). To fail, throw: the map says so.
+   */
+  clusters?(request: ClustersRequest): Promise<ClustersResult | false>;
 }
 
 /** Whose approvals are asked: the record shown, and the person, as the app told the form. */
@@ -367,6 +376,59 @@ export interface SearchToFilterResult {
   text?: string;
   /** Why, in a sentence of the app's: shown with the filters made. */
   why?: string;
+}
+
+/** A box on the earth, its edges in degrees: west beyond east when it crosses the antimeridian, -180 and 180 the world round. */
+export interface GeoBox {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}
+
+/** What a list's map asks `clusters`: the search, where its records are, and the view it shows. */
+export interface ClustersRequest {
+  model: string;
+  /** The list's search, as `list` gets it; the view is not among it. */
+  filter: ResolvedFilter[];
+  /** Where each record is: a field holding a GeoJSON point, or a latitude whose longitude is in `longitude` — as a `near` order names them. */
+  field: string;
+  longitude?: string;
+  /** The view: the records within it are gathered. */
+  bbox: GeoBox;
+  /** The map's zoom: 0 the world in one 256-pixel image, each step twice as close (Web Mercator, every web map's). */
+  zoom: number;
+  /** How near two pins come, in pixels at this zoom, before they crowd: the cell of a grid a server gathers by. */
+  radius: number;
+  /** The fields a record standing alone carries: its place, its pin's and its card's. */
+  fields: string[];
+  /** A number field to add up in each bubble (`MapCluster.weight`): what a heat map from afar weighs its records by. */
+  weight?: string;
+  /** Aborted when the map moves on before the answer comes: stop, and reject with an error named `AbortError`. */
+  signal?: UploadSignal;
+}
+
+/** Records gathered where they crowd, for one view of a list's map. */
+export interface ClustersResult {
+  /** The bubbles: each two records or more, drawn with its count; pressed, the map zooms to its `bbox`. */
+  clusters: MapCluster[];
+  /** The records that stand alone, each drawn as its own pin, its card opened from it: `{ id, values }` with the fields asked. */
+  points?: ListedRecord[];
+  /** How many records the search finds that have no place: said under the map ("2 without a place, not on the map"). */
+  unplaced?: number;
+}
+
+/** A bubble: records close together, counted where they stand. */
+export interface MapCluster {
+  /** Where it is drawn: its records' middle. */
+  lat: number;
+  lng: number;
+  /** How many records it holds. */
+  count: number;
+  /** The box its records lie in: a press zooms there, and a new search fits the map to its bubbles' boxes. Without it, a press zooms two steps in. */
+  bbox?: GeoBox;
+  /** With `weight` asked: that field added up over its records. */
+  weight?: number;
 }
 
 /** Whose possible duplicates were let be: what `notDuplicates` is asked. */
