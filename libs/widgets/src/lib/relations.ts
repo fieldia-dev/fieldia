@@ -169,7 +169,8 @@ function combobox(options: {
       option.setAttribute('aria-selected', String(i === active));
       option.className = `fd-option${i === active ? ' fd-active' : ''}${record === creating || extras.has(record) ? ' fd-option-create' : ''}`;
       // What a record shows besides its name, where its source gives it: its picture or its colour before it, its first
-      // line of details under it (a staff member's role, a service's price), and its words at the row's end.
+      // line of details under it (a staff member's role, a service's price), and its words at the row's end. They
+      // describe the row, read after its name; the row is named by the record's name alone, as it always was.
       const avatar = record.avatar ? linkAvatar(doc, record) : null;
       const color = typeof record.color === 'number' && record.color >= 1 && record.color <= 11 ? doc.createElement('span') : null;
       if (color) {
@@ -183,9 +184,16 @@ function combobox(options: {
         const text = doc.createElement('span');
         text.className = 'fd-option-text';
         text.append(record.label);
-        if (details) text.append(Object.assign(doc.createElement('span'), { className: 'fd-option-caption', textContent: details }));
+        const more = (className: string, words: string, id: string) => {
+          const span = Object.assign(doc.createElement('span'), { className, textContent: words, id: `${option.id}-${id}` });
+          span.setAttribute('aria-hidden', 'true');
+          return span;
+        };
+        const said = [...(details ? [more('fd-option-caption', details, 'more')] : []), ...(record.aside ? [more('fd-option-aside', record.aside, 'aside')] : [])];
+        if (details) text.append(said[0]);
         option.append(...[avatar ?? color, text].filter((part): part is HTMLElement => !!part));
-        if (record.aside) option.append(Object.assign(doc.createElement('span'), { className: 'fd-option-aside', textContent: record.aside }));
+        if (record.aside) option.append(said[said.length - 1]);
+        if (said.length) option.setAttribute('aria-describedby', said.map((span) => span.id).join(' '));
       } else option.textContent = record.label;
       option.addEventListener('mousedown', (event) => event.preventDefault()); // keep focus in the box
       option.addEventListener('click', () => choose(i));

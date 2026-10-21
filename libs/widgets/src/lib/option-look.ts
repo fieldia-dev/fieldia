@@ -24,5 +24,9 @@ export function optionMark(make: Make, option: OptionLook): HTMLElement | null {
   return mark;
 }
 
-/** An option's second line, under its words; null where it has none. */
-export const optionCaption = (make: Make, option: OptionLook): HTMLElement | null => (option.caption ? make('span', { class: 'fd-option-caption' }, option.caption) : null);
+/**
+ * An option's second line, under its words; null where it has none. It describes the option, read after its name —
+ * its owner's `aria-describedby` names it by `id` — and never renames it: an option is named by its words alone, as a
+ * person's or a test's `getByRole('option', { name })` finds it.
+ */
+export const optionCaption = (make: Make, option: OptionLook, id: string): HTMLElement | null => (option.caption ? make('span', { class: 'fd-option-caption', id, 'aria-hidden': 'true' }, option.caption) : null);

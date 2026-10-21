@@ -132,7 +132,11 @@ checkboxes draw them (option-look.ts); a dropdown whose options have any is
 Fieldia's own list, never the browser's, which shows one line; a list that
 searches draws them too. A link's suggestions draw what the data source gives
 of each record: its picture, or its colour as Flectra numbers them, before its
-name, its first line of details under it, and its aside at the row's end.
+name, its first line of details under it, and its aside at the row's end. An
+option is named by its words alone, and a suggestion by its record's name, as
+a screen reader reads them and a test finds them (`getByRole('option', { name
+})`); the second line, the details and the aside describe it
+(`aria-describedby`), read after its name.
 
 A char field's node may type it to a mask — a national ID, an IBAN, a car
 plate: `"options": { "mask": "9 999 999 999" }`, where `9` is a digit (in any

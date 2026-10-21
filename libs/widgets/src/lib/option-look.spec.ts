@@ -24,8 +24,12 @@ describe('options that say more than their words', () => {
     expect(choices[0].querySelector('.fd-option-caption')?.textContent).toBe('30 min · EGP 4,500');
     expect((choices[1].querySelector('.fd-option-dot') as HTMLElement).style.getPropertyValue('--fd-option-color')).toBe('#d6145f');
     expect(choices[2].querySelector('.fd-option-caption, .fd-option-icon, .fd-option-dot')).toBeNull();
-    // Named as a person reads it: its words, then its second line.
-    expect(choices[0].textContent).toBe('Botox30 min · EGP 4,500');
+    // Named by its words, its second line describing it: read after its name, never part of it.
+    const input = choices[0].querySelector('input') as HTMLInputElement;
+    const caption = choices[0].querySelector('.fd-option-caption') as HTMLElement;
+    expect(caption.getAttribute('aria-hidden')).toBe('true');
+    expect(input.getAttribute('aria-describedby')).toBe(caption.id);
+    expect(choices[2].querySelector('input')?.hasAttribute('aria-describedby')).toBe(false);
   });
 
   it('are a dropdown drawn in Fieldia’s own list, its rows and its box showing them', () => {
@@ -36,6 +40,7 @@ describe('options that say more than their words', () => {
     const rows = [...el.querySelectorAll('[role=option]')];
     expect(rows.map((row) => row.querySelector('.fd-pick-words')?.firstChild?.textContent)).toEqual(['Botox', 'Filler', 'Chemical peel']);
     expect(rows[0].classList.contains('fd-pick-two')).toBe(true);
+    expect(rows[0].getAttribute('aria-describedby')).toBe(rows[0].querySelector('.fd-option-caption')?.id);
     expect(rows[1].querySelector('.fd-option-dot')).not.toBeNull();
     (rows[1] as HTMLElement).click();
     expect(form.getState().values['x']).toBe('filler');
@@ -59,6 +64,7 @@ describe('options that say more than their words', () => {
     const row = el.querySelector('[role=option]') as HTMLElement;
     expect(row.classList.contains('fd-option-rich')).toBe(true);
     expect(row.querySelector('.fd-option-caption')?.textContent).toBe('11 min');
+    expect(row.getAttribute('aria-describedby')).toBe(row.querySelector('.fd-option-caption')?.id);
   });
 });
 
@@ -90,6 +96,10 @@ describe('a link’s suggestions', () => {
     expect(mona.querySelector('.fd-option-dot')?.getAttribute('data-color')).toBe('9');
     expect(mona.querySelector('.fd-option-caption')?.textContent).toBe('Dermatologist');
     expect(mona.querySelector('.fd-option-aside')?.textContent).toBe('Free today');
+    // Named by the record's name alone, as it always was: its details and its words at the end describe it.
+    const described = (mona.getAttribute('aria-describedby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent);
+    expect(described).toEqual(['Dermatologist', 'Free today']);
+    expect([...mona.querySelectorAll('.fd-option-caption, .fd-option-aside')].every((span) => span.getAttribute('aria-hidden') === 'true')).toBe(true);
     const karim = rows.find((row) => row.textContent?.includes('Karim')) as HTMLElement;
     expect(karim.querySelector('.fd-link-avatar img')).not.toBeNull();
   });

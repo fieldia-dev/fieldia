@@ -706,7 +706,8 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       const input = make(document, 'input', { type: kind, name: id, value: String(i), id: `${id}-${i}` });
       optionWords.push(make(document, 'span', {}, option.label));
       // Its icon or colour before its words, and its second line under them, where the page gives them.
-      const caption = optionCaption(maker(document), option);
+      const caption = optionCaption(maker(document), option, `${id}-${i}-more`);
+      if (caption) input.setAttribute('aria-describedby', caption.id);
       const mark = optionMark(maker(document), option);
       const words = caption ? make(document, 'span', { class: 'fd-choice-text' }, optionWords[i], caption) : optionWords[i];
       group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, ...(mark ? [mark] : []), words, seats.marks[i]));

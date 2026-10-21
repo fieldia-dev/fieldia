@@ -85,10 +85,10 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
         const left = seatWords(shown, words);
         // Its icon or colour before its words and its second line under them, where the page gives them.
         const mark = optionMark(make, option);
-        const caption = optionCaption(make, option);
+        const caption = optionCaption(make, option, `${listId}-${i}-more`);
         const item = make(
           'li',
-          { id: `${listId}-${i}`, role: 'option', class: `fd-option${mark || caption ? ' fd-option-rich' : ''}${i === active ? ' fd-active' : ''}`, 'aria-selected': String(i === active) },
+          { id: `${listId}-${i}`, role: 'option', class: `fd-option${mark || caption ? ' fd-option-rich' : ''}${i === active ? ' fd-active' : ''}`, 'aria-selected': String(i === active), 'aria-describedby': caption?.id },
           ...(mark ? [mark] : []),
           caption ? make('span', { class: 'fd-option-text' }, option.label, caption) : option.label,
           ...(left ? [make('small', { class: 'fd-seats', ...(shown?.left === 0 ? { 'data-full': '' } : {}) }, left)] : [])

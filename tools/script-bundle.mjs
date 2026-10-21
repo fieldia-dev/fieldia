@@ -1035,7 +1035,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // Fieldia's own list's rows and a link's suggestions in their parts: 508.49 measured before, 509.63 after, to 509.7.
 // A checkbox tree (0.30, w6-inputs): a many2many drawn as one asking for the path part, where the tree is (widgets.ts,
 // 0.05): 509.63 measured before, 509.68 after, under 509.7.
-const BUDGET_KB = 509.7;
+// An option named by its words alone, its second line describing it (0.30, w6-inputs): a radio's or a checkbox's second
+// line hidden from its name and named by its input's aria-describedby (widgets.ts, option-look.ts, 0.09) — as a link's
+// suggestion is named by its record's name again, its details and aside describing it, in the relations part: 509.68
+// measured before, 509.77 after, to 509.8.
+const BUDGET_KB = 509.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1276,8 +1280,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // measured before, 166.71 after, to 166.8. Amounts in shorthand (listed with the raw budget above): 166.71 measured
 // before, 166.89 after, to 166.9. Options with a second line, an icon or a colour (listed with the raw budget above):
 // 166.89 measured before, 167.18 after, to 167.2. A checkbox tree (listed with the raw budget above): 167.18 measured
-// before, 167.19 after, under 167.2.
-const GZIP_BUDGET_KB = 167.2;
+// before, 167.19 after, under 167.2. An option named by its words alone (listed with the raw budget above): 167.19
+// measured before, 167.21 after, to 167.3.
+const GZIP_BUDGET_KB = 167.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1884,7 +1889,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // field keeps by `keeps`, its search asking the source beyond what it drew, an ARIA tree's keys, and its sheet — path
 // 16.06 and 6.31 to 23.40 and 8.60, to 23.5 and 8.7. A page with a path picker and no tree loads it too: 2.29 gzipped,
 // against a part of its own and the path part's sheet loaded twice.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [23.5, 8.7], choice: [12.5, 5.0], filters: [22.7, 7.9], date: [23.8, 9.0], months: [14.7, 6.0], typed: [14.4, 6.1], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.9, 7.9], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// An option named by its words alone, its second line describing it (0.30, w6-inputs): Fieldia's own list's rows and a
+// list that searches — choice 12.46 and 4.92 to 12.56 and 4.96, to 12.6 and 5.0 — and a link's suggestion named by its
+// record's name, its details and its aside describing it — relations 20.88 and 7.89 to 21.05 and 7.96, to 21.1 and 8.0.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [23.5, 8.7], choice: [12.6, 5.0], filters: [22.7, 7.9], date: [23.8, 9.0], months: [14.7, 6.0], typed: [14.4, 6.1], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [21.1, 8.0], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

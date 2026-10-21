@@ -40,9 +40,12 @@ export const ownListWidget: WidgetFactory = ({ form, name, field, node, id, docu
     const row = pickRow(make, { role: 'option', id: `${listId}-${at}`, 'aria-selected': 'false' }, option.label);
     // Its icon or colour before its words, and its second line under them, where the page gives them.
     const mark = optionMark(make, option);
-    const caption = optionCaption(make, option);
+    const caption = optionCaption(make, option, `${listId}-${at}-more`);
     if (mark) row.querySelector('.fd-pick-tick')?.after(mark);
-    if (caption) row.querySelector('.fd-pick-words')?.append(caption);
+    if (caption) {
+      row.querySelector('.fd-pick-words')?.append(caption);
+      row.setAttribute('aria-describedby', caption.id);
+    }
     row.classList.toggle('fd-pick-marked', !!mark);
     row.classList.toggle('fd-pick-two', !!caption);
     row.append(seats.marks[at]);
