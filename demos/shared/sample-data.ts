@@ -593,8 +593,9 @@ export function sampleDataSource() {
       'home.amenity': Object.fromEntries(Object.entries(AMENITIES).map(([id, name]) => [id, { name }])),
       // A sales team's buyer leads, made round now (shared/leads.ts).
       lead: sampleLeads(),
-      // Buyers' enquiries to read and answer with AI help (shared/enquiries.ts).
-      enquiry: sampleEnquiries(),
+      // Buyers' enquiries to read and answer with AI help (shared/enquiries.ts): a model of their own, apart from the
+      // enquiry beside its conversation (shared/enquiry.ts).
+      'buyer.enquiry': sampleEnquiries(),
       // The homes' viewings and the agents who show them; the customers' quotations (shared/related-lists.ts).
       viewing: sampleViewings(sampleHomes()),
       agent: Object.fromEntries(Object.entries(AGENTS).map(([id, name]) => [id, { name }])),
@@ -636,7 +637,8 @@ export function sampleDataSource() {
       ...approvalRecords(),
       // A portal's listings and a clinic's services, typed in Arabic and English (shared/languages.ts).
       'portal.listing': bilingualListings(),
-      'clinic.service': bilingualServices(),
+      // A model of their own, apart from the price list's services (shared/editable-lists.ts).
+      'clinic.menu': bilingualServices(),
       // The agent's listings and a clinic's treatment photos, drawn only for the pages that show them (shared/photo-sets.ts).
       ...(['listing-photo-set', 'agent-listings', 'clinic-before-after'].includes(params.get('page') ?? '') ? photoSetRecords() : {}),
       // A clinic's patients and injectables, a treatment, a shop's shelf and its count (shared/scan.ts).

@@ -32,7 +32,7 @@ export function enquiryDraft(values: Values, request: RewriteRequest): string {
 }
 
 /** What the demos' memory source answers AI help with. */
-export const demoAssist: MemoryAssist = assistStandIn({ drafts: { 'enquiry.reply': enquiryDraft } });
+export const demoAssist: MemoryAssist = assistStandIn({ drafts: { 'buyer.enquiry.reply': enquiryDraft } });
 
 /** Two buyers' enquiries: Hana's as it came in, nothing read from it yet; Omar's read, a rough reply typed. */
 export function sampleEnquiries(): Record<string, Values> {

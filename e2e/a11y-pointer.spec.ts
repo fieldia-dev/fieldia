@@ -177,6 +177,33 @@ function smallTargets(page: Page, scope: string): Promise<string[]> {
   }, scope);
 }
 
+/**
+ * The controls of the part picked, each reached as a person reaches it — focused, the browser scrolling it into view as
+ * it does on focus — and none hidden there under a bar kept at the foot of the screen: its centre is its own (or a
+ * label's of its own). What it names: each control left under something else.
+ */
+async function coveredWhenReached(page: Page, picked: string): Promise<string[]> {
+  const count = await page.locator(`${picked} :is(button, a[href], select, input:not([type="hidden"]), textarea, [role="switch"], [role="checkbox"], [role="button"])`).count();
+  const covered: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const control = page.locator(`${picked} :is(button, a[href], select, input:not([type="hidden"]), textarea, [role="switch"], [role="checkbox"], [role="button"])`).nth(i);
+    if (!(await control.isVisible()) || (await control.isDisabled())) continue;
+    await control.focus();
+    // The browser's own scroll on focus, settled.
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+    const over = await control.evaluate((e) => {
+      const r = e.getBoundingClientRect();
+      const x = Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1);
+      const y = Math.min(Math.max(r.top + r.height / 2, 0), innerHeight - 1);
+      const hit = document.elementFromPoint(x, y);
+      if (!hit || hit === e || e.contains(hit) || hit.contains(e) || (hit.closest('label') && hit.closest('label') === e.closest('label'))) return null;
+      return `${e.tagName.toLowerCase()} "${(e.getAttribute('aria-label') ?? e.textContent ?? '').trim().slice(0, 24)}" under ${hit.tagName.toLowerCase()}.${[...hit.classList].slice(0, 2).join('.')} "${(hit.getAttribute('aria-label') ?? '').slice(0, 30)}"`;
+    });
+    if (over) covered.push(over);
+  }
+  return covered;
+}
+
 test.describe('2.5.8 targets 24 by 24, or room round them', () => {
   for (const [size, viewport] of [['desktop', DESKTOP], ['phone', PHONE]] as const) {
     for (const url of ['/screen/?start=layout', '/designer/?start=survey', '/screen/?start=list']) {
@@ -187,8 +214,21 @@ test.describe('2.5.8 targets 24 by 24, or room round them', () => {
         await page.locator('.fd-canvas-field, .fd-q-closed, .fd-list-table th[data-node]').first().click();
         await page.waitForTimeout(200);
         expect(await smallTargets(page, '.fd-designer')).toEqual([]);
+        // Each of the part's own controls as a person reaches it: never under the bar at the foot of a phone's screen.
+        expect(await coveredWhenReached(page, '.fd-q-selected, .fd-canvas-field.fd-editing')).toEqual([]);
       });
     }
+  }
+  // Try it's drawer, kept at the foot of the screen as the page is filled: no field reached is left under it.
+  for (const url of ['/designer/?start=survey', '/screen/?start=layout']) {
+    test(`${url} · phone, tried: each field reached clear of the drawer`, async ({ page }) => {
+      await page.setViewportSize(PHONE);
+      await inAdvanced(page);
+      await page.goto(url);
+      await page.getByRole('button', { name: 'Try it' }).first().click();
+      await expect(page.locator('.fd-try-drawer')).toBeVisible();
+      expect(await coveredWhenReached(page, '.fd-try-frame')).toEqual([]);
+    });
   }
   for (const url of ['/plain/?page=fields&skin=outlined', '/plain/?page=customer&skin=underline', '/plain/?page=customers&skin=underline', '/plain/?page=kinds&skin=outlined', '/plain/?page=work-item&skin=quiet', '/plain/?page=fields&skin=quiet']) {
     test(`${url} · phone`, async ({ page }) => {

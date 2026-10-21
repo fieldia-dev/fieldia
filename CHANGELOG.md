@@ -140,7 +140,12 @@ answers it from a memory source. Demo: 20,000 homes across Egypt.
 
 **Fixes:** a number's total under a plain table lines up under its column (it
 read from the left); the tender's lots test reads the days the demo counts from
-today, and runs on two other days' clocks as well (it held on 20 Oct alone).
+today, and runs on two other days' clocks as well (it held on 20 Oct alone). On
+a phone, a bar kept at the foot of the screen — the survey editor's add bar, Try
+it's drawer — never hides what is worked on: a question picked is scrolled so
+its controls end above the bar, and a control reached by Tab stops above it; a
+field's settings on its card go under their words in a narrow column, never over
+the field beside it.
 
 **And:** the page format is **0.8** (`FORMAT_VERSION`): it only added — a
 record's `approval`, a list's `editable` and `searchToFilter`, a text's
@@ -162,7 +167,9 @@ about 120 KB gzipped, lazily); ids in a server's bubbles.
   `fieldia.decode.js` (the package's `bundle` folder has them, with
   `THIRD_PARTY_NOTICES.md`, which the decode part's banner names). The uploads'
   work is in `fieldia.files.js` now: a form that sends a file loads it, as a page
-  with a file field always did.
+  with a file field always did. An app's own bundler makes the files part two
+  chunks, `files-part` from @fieldia/widgets and from @fieldia/core (the uploads'
+  work, `formUploadsPart`), both asked for by a page with a file field.
 - **The conversation writes a time one way**: a message's time and a follow-up's
   day as the page's date boxes write them — "1 Oct 2026, 10:00" (0.28: "Oct 1,
   2026, 10:00 AM"), "Due 22 Oct 2026" (0.28: "Due Oct 22, 2026") — and, inside a

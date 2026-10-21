@@ -2,6 +2,7 @@ import { createForm, type DataSource, type Field, type FieldNode, type Form, typ
 import { uncalled } from './uncalled';
 import type { Skin } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget, type WidgetFactory } from '@fieldia/widgets';
+import { barRoom, clearOfBar, keepClearOfBar } from './bottom-bar';
 import { branchMap, drawBranchMap } from './branch-map';
 import { canvasDrag } from './canvas-drag';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, putDownOnClickOutside, type ElementFactory, type OptionsEditor } from './chrome';
@@ -172,6 +173,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const endings = endingsEditor(el, designer);
   const endingsCard = el('section', { class: 'fd-survey-endings', 'aria-label': own.endings.heading }, el('h2', { class: 'fd-survey-endings-head' }, own.endings.heading), endings.element);
   const column = el('div', { class: 'fd-survey-column' }, head, start.element, map, pages, addPage, endingsCard, rail);
+  // On a narrow screen the bar sits at the foot of the screen: nothing a person works on is left under it.
+  const unclear = keepClearOfBar(rail, column);
   const editor = el('div', { class: 'fd-designer-editor fd-survey-canvas' }, column);
   const tools = toolbox({
     el,
@@ -679,6 +682,20 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     ruleMarks(pages, page, designer);
     endings.update(page);
     placeRail();
+    keepPickedInSight(state.selected);
+  }
+
+  /** The card picked last: one picked anew while the bar is at the foot of the screen is scrolled clear of it. */
+  let picked: string | null = designer.getState().selected;
+  function keepPickedInSight(selected: string | null) {
+    if (selected === picked) return;
+    picked = selected;
+    const card = selected ? cardViews.get(selected)?.element : null;
+    if (!card || !barRoom(column)) return;
+    // Its own controls end above the bar: the card in sight, then moved up from behind the bar — its top never under
+    // the bar at the top, which wins where the card is taller than the room between them.
+    card.scrollIntoView?.({ block: 'nearest' });
+    clearOfBar(rail, card);
   }
 
   /** The bar beside the card picked, level with its top: a question's card, a page's, or the form's own. */
@@ -702,6 +719,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       leave();
       look.destroy();
       watcher?.disconnect();
+      unclear();
       stopPuttingDown();
       bar.destroy();
       drag.destroy();
