@@ -116,6 +116,9 @@ export const PART_WORDS = {
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
   print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },
+  scan: {
+    widgets: ['scanButton', 'scanInto', 'scanCountInto', 'scanTitle', 'scanStarting', 'scanAim', 'scanAimCount', 'scanTypeInstead', 'scanDone', 'scanLookingUp', 'scanNoneFound', 'scanSeveral', 'scanLookUpFailed', 'scanNoPart', 'scanRead', 'scanCounted', 'scanRefused', 'scanNoCamera', 'scanCameraBusy', 'scanUnavailable', 'scanNoReader'],
+  },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {
     widgets: ['notAnswered', 'addressStreet', 'addressCity', 'addressLine2', 'addressRegion', 'addressPostcode', 'addressCountry', 'keepOrder', 'addProperty', 'propertyName', 'propertyType', 'propertyTypes', 'colourCode', 'colourCodeBox', 'noColour', 'rankTop', 'moveUp', 'moveDown', 'movedTo', 'removed'],
@@ -187,11 +190,13 @@ export function readerSource(root, file) {
  * What is wrong with `declared` (PART_WORDS) for the modules each script carries — `main`, the main script's files, and
  * `parts`, each part's own — as `read(file)` gives their code; and the words only parts read that it does not name
  * (`unnamed`: what the main script could leave out still). Files are paths from the workspace; a module that is no
- * TypeScript or JavaScript file (a table of names the build makes) is passed over.
+ * TypeScript or JavaScript file (a table of names the build makes), or another project's (node_modules), is passed over.
  */
 export function partWordsProblems({ main, parts, read, tables, declared = PART_WORDS }) {
   const problems = [];
-  const code = (file) => /\.[cm]?[jt]s$/.test(file) && !/\/locales\//.test(file);
+  // Another project's code (a package a part carries: the decode part's ZXing) never reads Fieldia's tables, whatever
+  // names it uses.
+  const code = (file) => /\.[cm]?[jt]s$/.test(file) && !/\/locales\//.test(file) && !/(^|\/)node_modules\//.test(file);
   const names = new Map();
   const namesOf = (file) => {
     if (!names.has(file)) names.set(file, namesIn(read(file), file));

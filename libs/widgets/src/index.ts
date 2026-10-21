@@ -73,8 +73,11 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // Booking slots (`"widget": "slots"`) come in the slots part, with the date part.
 // A text kept in several languages (`translate`) comes in the languages part, with the form's code for it:
 // `(await languagesPart.load()).languageWords(…)`. A widget drawn before it came reads its first text.
+// A code scanned with the camera (`options.scan`) comes in the scan part, loaded with a page that has one — its Scan
+// button, the camera's sheet — and where the browser reads no codes itself, the decode part, as Scan is pressed. An app
+// reads codes its own way with `(await scanPart.load()).useCodeReader(reader)`.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type PhotosPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type LanguagesPart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, decodePart, loadDecodePart, scans, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type PhotosPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type LanguagesPart, type ScanPart, type DecodePart, type PartFactory } from './lib/widget-parts';
 export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.

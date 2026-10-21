@@ -155,6 +155,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     columns.forEach((column, i) => {
       const td = document.createElement('td');
       td.dataset['column'] = column;
+      // A number's total reads from the end, under its column's numbers.
+      if (FIXED_WIDTH.has(def.fields[column].type)) td.dataset['fit'] = def.fields[column].type;
       footCells.set(column, td);
       if (totals.includes(column)) sums.set(column, td);
       else if (i === 0) td.textContent = labels.total;

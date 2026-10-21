@@ -152,6 +152,15 @@ is left (a refused paste's words going, a name found to be none). Those words wa
 is the button's — Apply, Save — never lost on what moved under it.
 The search bar, the filter bar, the map's search box and a chatter's composer are not saved with the record.
 
+### A code scanned
+
+A code read with the camera (`options.scan`, the scan part's `scan.ts`) is a pick, not typing: what it names — words,
+a GS1 code's part, a link's record found by its code — is written at once (`setValue`, a person's change), the fields
+its GS1 code fills first, and text left unread in those boxes goes with it (`setUnread(path, null)`), as a record picked
+from a link's list takes the words typed. A code that names none, or several, or holds no part the field takes, writes
+nothing: it is said in the camera's sheet, which reads on. An answer for a record no longer shown is laid on none. A
+scanner gun is typing: its keys and its Enter are the box's, every row of the table above as it stands.
+
 ## 3. The hold: every way text arrives
 
 A box with the shared guard (`libs/widgets/src/lib/input-rules.ts` `guard`, `rules.hold`) holds the keys typed after a
@@ -202,6 +211,7 @@ typed. Leaving and every save in §1 take them into the box and read all of it.
 | A press is the button's | widgets `press.spec.ts` | `e2e/rules-custom-filter-apply-after-refused-paste.spec.ts` |
 | A signature signs the answers as read: typed text read first, one that does not read or is still to give said, a save waiting for it | widgets `signature-signs.spec.ts` | `e2e/signature-evidence.spec.ts` (Chromium, Firefox, WebKit) |
 | A part's box takes what was typed in its stand-in | widgets `part-swap-lazy.spec.ts`, `business-lazy.spec.ts` | `e2e/rules-part-swap-keeps-typing.spec.ts` (Chromium, Firefox, WebKit) |
+| A code scanned: written as a pick, unread text in its boxes replaced, none or several said, a record gone laid on none | widgets `scan.spec.ts`, `scan-lazy.spec.ts` | `e2e/scan.spec.ts` (Chromium, Firefox, WebKit) |
 | Read, never rewritten: hours and a per cent passed through, money's currency changed, JSON numbers, a zone's clocks | widgets `read-not-rewrite.spec.ts`, core `clock-changes.spec.ts` | `e2e/rules-hours-percent-*.spec.ts`, `rules-money-*`, `rules-datetime-clock-change-time-said.spec.ts` |
 
 ## 5. Known limits

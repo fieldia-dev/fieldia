@@ -835,6 +835,21 @@ fields); `importFields(page, list)` says which fields a file's columns may fill.
 `createMemoryDataSource` gives `createMany`. See [many records made at
 once](https://fieldia.dev/data/#import).
 
+## A record found by a code a scanner read
+
+A link scanned into with the camera (`options.scan` on a many2one or a table's
+link column, drawn by @fieldia/widgets' scan part) finds the record a code names
+through the data source's `search`, with no member of its own:
+`form.search(field, code, 2, { field: 'barcode' })` asks for the records whose
+`barcode` holds the code exactly — the field's own filter kept, the condition
+added to it, the query empty — and `form.searchLine(…)` the same for a line's
+link. Without a field named, the code is searched as a name, the exact name
+first. The page check holds `options.scan` to a kind a code is written into —
+a char, a text, a many2one, or a one2many counted by a column (`field`) and a
+number (`count`) — and the fields a GS1 code fills (`fills`) to fields of the
+page, or of the line, that take a code's part; `ScanOptionSchema`
+gives its shape. See [scanning a code](https://fieldia.dev/fields/#scan).
+
 ## A saved form placed in another
 
 A block made once — an address, a contact person, a consent — is a page of its

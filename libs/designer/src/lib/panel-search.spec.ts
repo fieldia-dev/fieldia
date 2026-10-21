@@ -65,7 +65,7 @@ describe('the search box over the settings', () => {
     const { panel, search, groups } = picked();
     search('s');
     expect(groups()).toEqual([
-      ['Content', 'Shown as', 'Filled in by the browser as', 'Focused as the record opens', 'Access key, with Alt'],
+      ['Content', 'Scan with the camera', 'Shown as', 'Filled in by the browser as', 'Focused as the record opens', 'Access key, with Alt'],
       // In a tab's group, the best first: a name with an s anywhere in it last.
       ['Layout', 'Section', 'Labels', 'Quiet'],
       ['Rules', 'Shown only to', 'Shown while', 'Starts with', 'Set when', 'When it shows', 'Answer rules', 'When it changes'],
@@ -91,16 +91,17 @@ describe('the search box over the settings', () => {
     const { panel, box, search, chosen } = picked();
     search('s');
     const active = () => panel.querySelector(`#${box.getAttribute('aria-activedescendant')}`)?.querySelector('.fd-insp-found-name')?.textContent;
-    expect(active()).toBe('Shown as');
+    expect(active()).toBe('Scan with the camera');
     // Down the list as it is drawn, tab by tab.
     const drawn: (string | null | undefined)[] = [active()];
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 15; i++) {
       press('ArrowDown', {}, box);
       drawn.push(active());
     }
     expect(drawn).toEqual([...panel.querySelectorAll('.fd-insp-found-name')].map((n) => n.textContent));
     press('ArrowDown', {}, box);
-    expect(active()).toBe('Shown as');
+    expect(active()).toBe('Scan with the camera');
+    press('ArrowDown', {}, box);
     press('ArrowDown', {}, box);
     press('ArrowDown', {}, box);
     press('ArrowDown', {}, box);

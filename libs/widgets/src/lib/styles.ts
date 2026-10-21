@@ -1010,8 +1010,15 @@ export function installStyles(document: Document): void {
  * each style only their own parts and name none of another's, so their order among them changes nothing (the one
  * order the 0.29 merge gave the four lanes that each took 11); all four go before the themes', which reshape them. The
  * ranks from the themes' on move on by four.
+ *
+ * A code scanned with the camera (0.29, the scan part) is new too, cut from no rule: a field's box and its Scan button
+ * side by side, a table's button under it, the camera's picture, its frame and its words — laid out alone, the button,
+ * the dialog round the camera and its words drawn by the main sheet's rules, which a theme and the quiet look reshape.
+ * It names no class a theme, the quiet look, a picker's, the head's, the text's or the cards' sheet names, nor do they
+ * name its own: placed after them all it overrides nothing of theirs, and they nothing of its. So it goes last, rank
+ * 23 (after 0.29's four before the themes moved the cards' to 22), and no other rank moves.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, themes: 15, quiet: 16, picker: 17, head: 18, groups: 19, text: 20, surveyLooks: 21, cards: 22 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, themes: 15, quiet: 16, picker: 17, head: 18, groups: 19, text: 20, surveyLooks: 21, cards: 22, scan: 23 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

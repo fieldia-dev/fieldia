@@ -86,6 +86,7 @@ export type { PagePhone, PhoneOptions } from './lib/format/phone';
 export type { SlotsOptions } from './lib/format/slots-options';
 export type { SignatureOptions } from './lib/format/signature-options';
 export type { PhotosOptions } from './lib/format/photos-options';
+export type { ScanFill, ScanFormat, ScanOption, ScanSettings } from './lib/format/scan-options';
 export type { PageDuplicates } from './lib/format/duplicates';
 export type { PageLimits } from './lib/format/limits';
 export type { PageApproval } from './lib/format/approval';

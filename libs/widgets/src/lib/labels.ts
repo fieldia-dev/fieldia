@@ -542,6 +542,36 @@ export interface WidgetLabels {
   slotChecking: string;
   slotTaken: string;
   slotsZone: string;
+  /**
+   * A code scanned with the camera (the scan part): the Scan button, named by the field's `{label}` it scans into (or the
+   * table it counts by scanning); the
+   * camera's sheet — its title, the camera starting, where to hold the code (or, counting a table's lines, that each
+   * code read counts one), Type it instead and Done; a code (`{code}`) looked up, naming nothing, or several, or not
+   * looked up; a GS1 code holding no part for the field; what was read (`{value}`) and what a table counted (`{name}`
+   * and `{n}`); and why the camera did not open: not allowed, none found, in use, none on this page, or no reader of
+   * codes here — each saying to type the code.
+   */
+  scanButton: string;
+  scanInto: string;
+  scanCountInto: string;
+  scanTitle: string;
+  scanStarting: string;
+  scanAim: string;
+  scanAimCount: string;
+  scanTypeInstead: string;
+  scanDone: string;
+  scanLookingUp: string;
+  scanNoneFound: string;
+  scanSeveral: string;
+  scanLookUpFailed: string;
+  scanNoPart: string;
+  scanRead: string;
+  scanCounted: string;
+  scanRefused: string;
+  scanNoCamera: string;
+  scanCameraBusy: string;
+  scanUnavailable: string;
+  scanNoReader: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -913,6 +943,27 @@ const en: WidgetLabels = {
   slotChecking: 'Checking {time}…',
   slotTaken: '{time} was just booked by someone else. Pick another time.',
   slotsZone: 'Times are {zone}',
+  scanButton: 'Scan',
+  scanInto: 'Scan a code into {label}',
+  scanCountInto: 'Count {label} by scanning',
+  scanTitle: 'Scan {label}',
+  scanStarting: 'Starting the camera…',
+  scanAim: 'Hold the code inside the frame.',
+  scanAimCount: 'Scan each item: every code read counts one.',
+  scanTypeInstead: 'Type it instead',
+  scanDone: 'Done',
+  scanLookingUp: 'Looking up {code}…',
+  scanNoneFound: 'Nothing has the code {code}. Scan another, or type it.',
+  scanSeveral: 'More than one record has the code {code}. Type it to choose one.',
+  scanLookUpFailed: '{code} could not be looked up just now. Scan it again.',
+  scanNoPart: 'This code has no {label} in it. Scan the code on the pack.',
+  scanRead: '{label}: {value}',
+  scanCounted: '{name}: {n} counted',
+  scanRefused: 'The camera is not allowed here. Allow it in the browser’s settings and press Scan again, or type the code.',
+  scanNoCamera: 'No camera was found. Type the code instead.',
+  scanCameraBusy: 'The camera is in use by another app. Close it and press Scan again, or type the code.',
+  scanUnavailable: 'This page cannot use a camera. Type the code instead.',
+  scanNoReader: 'Codes cannot be read in this browser just now. Type the code instead.',
 };
 
 /**

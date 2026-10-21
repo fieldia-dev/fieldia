@@ -103,6 +103,11 @@ const OPTION_WORDS: Record<string, Words> = {
   add: (v, _now, kind, w) => (kind !== 'properties' ? null : v ? w.canAddProperty : w.cannotAddProperty),
   language: (v, _now, kind, w) => (kind !== 'code' && kind !== 'vscode' ? null : v ? w.writtenIn(CODE_LANGUAGE_CHOICES.find(([id]) => id === v)?.[1] ?? String(v)) : w.plainText),
   step: (v, _now, kind, w) => (kind === 'time' || kind === 'date-time' ? (v ? w.everyMinutes(v as number) : w.anyMinute) : kind === 'slider' ? w.stepsBy((v as number | undefined) ?? 1) : null),
+  // Scanned with the camera, a link's record by a field of its records.
+  scan: (v, _now, _kind, w) => {
+    const by = v && typeof v === 'object' ? (v as { by?: unknown }).by : undefined;
+    return !v ? w.notScanned : typeof by === 'string' ? w.scannedBy(by) : w.scanned;
+  },
 };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);

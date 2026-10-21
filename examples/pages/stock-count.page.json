@@ -1,0 +1,55 @@
+{
+  "fieldia": "0.7",
+  "id": "stock-count",
+  "title": "Stock count",
+  "description": "Count a shelf by scanning: each barcode read adds one to its product’s line, or starts a line for it.",
+  "data": { "kind": "record", "model": "stock.count" },
+  "records": { "one": "stock count", "other": "stock counts", "a": "a stock count" },
+  "fields": {
+    "location": { "type": "char", "label": "Location", "required": true },
+    "counted_on": { "type": "date", "label": "Counted on" },
+    "counted_by": { "type": "char", "label": "Counted by" },
+    "line_ids": {
+      "type": "one2many",
+      "label": "Products",
+      "relation": "stock.count.line",
+      "fields": {
+        "product_id": { "type": "many2one", "label": "Product", "relation": "stock.product", "required": true },
+        "counted": { "type": "integer", "label": "Counted", "min": 0 }
+      }
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "children": [
+      {
+        "type": "section",
+        "id": "where",
+        "columns": 3,
+        "children": [
+          { "type": "field", "id": "f-location", "field": "location" },
+          { "type": "field", "id": "f-counted-on", "field": "counted_on" },
+          { "type": "field", "id": "f-counted-by", "field": "counted_by" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "count",
+        "title": "Products counted",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-lines",
+            "field": "line_ids",
+            "labels": "hidden",
+            "columns": ["product_id", "counted"],
+            "totals": ["counted"],
+            "help": "Press Scan and read each item’s barcode in turn: every read counts one. Press Done when the shelf is counted.",
+            "options": { "scan": { "field": "product_id", "count": "counted", "by": "barcode", "formats": ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] } }
+          }
+        ]
+      }
+    ]
+  }
+}

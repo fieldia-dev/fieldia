@@ -63,6 +63,9 @@ for (const variant of variants) {
     ...(split ? { splitting: true, outdir: join(OUT, variant), entryNames: '[name]', chunkNames: 'chunks/[name]-[hash]', assetNames: 'chunks/[name]-[hash]', loader: { '.ttf': 'file' } } : { outfile: join(OUT, variant, 'main.js') }),
     tsconfig: existsSync(ownConfig) ? ownConfig : join(WORKSPACE, 'tsconfig.base.json'),
     logLevel: 'warning',
+    // The decode part's readers of codes alone, as the one-tag script carries them (tools/zxing-readers.mjs): the
+    // library's index would bring every reader it has, about three times the code, to a phone that presses Scan.
+    plugins: [{ name: 'zxing-readers', setup: (builder) => builder.onResolve({ filter: /^@zxing\/library$/ }, () => ({ path: join(WORKSPACE, 'tools/zxing-readers.mjs') })) }],
     define: {
       'process.env.NODE_ENV': '"production"',
       // Vue's bundler build reads these compile-time flags.

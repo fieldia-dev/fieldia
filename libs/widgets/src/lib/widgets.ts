@@ -38,7 +38,7 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { anyText, businessPart, choicePart, datePart, filesPart, languagesPart, linesPart, partFactory, partWidget, pathPart, phonePart, photosPart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { anyText, businessPart, choicePart, datePart, filesPart, languagesPart, linesPart, partFactory, partWidget, pathPart, phonePart, photosPart, relationsPart, scanPart, scans, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTimer, plainTotal } from './business-plain';
 import { plainAddress, plainChosen, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
@@ -210,9 +210,11 @@ export function createWidget(given: WidgetContext, registry: Record<string, Widg
     // A text kept in several languages: a box of its own kind for each, under a switch between them (the languages part),
     // its first text read until that comes where something did not wait for it, as the viewer does.
     if (factory && languagesOf(field)) return partWidget(languagesPart, own, (module) => module.languagesWidget(factory, own), pendingWidget);
+    if (!factory) return pendingWidget(own);
     // Choices from the app's list, shown by conditions or carried from another question: the same widget, drawn again as they change.
-    if (factory) return field.type === 'selection' && (field.optionsFrom || own.form.offersChange?.(own.name)) ? listChoices(factory, own) : factory(own);
-    return pendingWidget(own);
+    const draw: WidgetFactory = (context) => (field.type === 'selection' && (field.optionsFrom || context.form.offersChange?.(context.name)) ? listChoices(factory, context) : factory(context));
+    // Scanned into with the camera: the scan part's Scan button beside it, the box typed in meanwhile.
+    return scans(own.node) ? partWidget(scanPart, own, (part) => part.scanning(draw(own), own), draw) : draw(own);
   }, context);
 }
 

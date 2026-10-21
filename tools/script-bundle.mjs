@@ -182,6 +182,7 @@ const CHECKS_IN_PARTS = {
   options: { file: 'libs/core/src/lib/format/option-checks.ts', names: ['checkOptionRules'] },
   languages: { file: 'libs/core/src/lib/format/languages-checks.ts', names: ['checkLanguages'] },
   assist: { file: 'libs/core/src/lib/format/assist-checks.ts', names: ['checkSuggest', 'checkRewrite'] },
+  scan: { file: 'libs/core/src/lib/format/scan-checks.ts', names: ['checkScan'] },
 };
 const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
 const checksLater = {
@@ -261,7 +262,21 @@ const mainScript = async (table) => {
  * What a part carries of another project's work, named in its banner: the phone part's table of countries is made from
  * libphonenumber's metadata (Apache-2.0), its notice in libs/widgets/THIRD_PARTY_NOTICES.md, beside the bundle too.
  */
-const NOTICES = { phone: " · its phone numbers' table derived from libphonenumber's metadata, (C) 2009 The Libphonenumber Authors, Apache-2.0: see THIRD_PARTY_NOTICES.md" };
+const NOTICES = {
+  phone: " · its phone numbers' table derived from libphonenumber's metadata, (C) 2009 The Libphonenumber Authors, Apache-2.0: see THIRD_PARTY_NOTICES.md",
+  decode: ' · carries ZXing\'s readers of codes, @zxing/library 0.23.0, (C) ZXing authors, Apache-2.0: see THIRD_PARTY_NOTICES.md',
+};
+/**
+ * The decode part's `@zxing/library`: the readers it uses alone, from the library's own modules (tools/zxing-readers.mjs)
+ * — its index brings every reader the library has, which no bundler can leave out (459 KB where these are 155).
+ */
+const ZXING_READERS = join(WORKSPACE, 'tools/zxing-readers.mjs');
+const zxingReaders = {
+  name: 'zxing-readers',
+  setup(builder) {
+    builder.onResolve({ filter: /^@zxing\/library$/ }, () => ({ path: ZXING_READERS }));
+  },
+};
 /** Every English word of the three tables, as the packages have them. */
 const ENGLISH = await (async () => {
   const { outputFiles } = await build({
@@ -304,7 +319,7 @@ const partScript = (part, inMain, table) =>
   build({
     ...common,
     stdin: { contents: partEntry(part), resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
-    plugins: [minifiedStyles, englishOnly, takesShared(inMain, table)],
+    plugins: [minifiedStyles, englishOnly, zxingReaders, takesShared(inMain, table)],
     globalName: 'part',
     // It hands itself to the main script (tools/script-parts.ts), or waits for it in the queue.
     banner: { js: `/*! Fieldia ${version} · ${part} · MIT · https://fieldia.dev${NOTICES[part] ?? ''} */\n(globalThis.FieldiaParts = globalThis.FieldiaParts || []).push([${JSON.stringify(part)}, ${JSON.stringify(version)}, function (__fieldia) {` },
@@ -322,7 +337,7 @@ const partNeeds = async (part, inMain) => {
     sourcemap: false,
     write: false,
     stdin: { contents: partEntry(part), resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
-    plugins: [minifiedStyles, englishOnly, takesShared(inMain, null)],
+    plugins: [minifiedStyles, englishOnly, zxingReaders, takesShared(inMain, null)],
     outfile: join(BUNDLE, `fieldia.${part}.mjs`),
   });
   return namesUsed(outputFiles[0].text);
@@ -1055,8 +1070,16 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // is drawn and before any part is asked for, as a signature's and booking slots' are; and a file stored for bytes the
 // field holds, its link in their place with the words beside them as they stand then — a caption typed meanwhile —
 // in the form's uploads (0.07), which every page with a file field has: 506.77 measured before, 507.20 after, to 507.3.
-// Merged (0.29.0), Wave 5's lanes together: to 512.1 until measured.
-const BUDGET_KB = 512.1;
+// A code scanned with the camera (0.29, w5-scan): every page carries only what knows a field is scanned into and asks
+// for the scan part — the parts' two holders, the decode part's for the scan part (0.12), a field's widget drawn by the
+// scan part once it came, as a part's widget is (`scans`, 0.04 in widgets.ts), the reference check owing the scan
+// part's checks of a page that scans (0.21 with its stand-in), the viewer asking for the scan part (0.02), a link's
+// search by the field holding its records' codes (`SearchOptions.field`, 0.06), their names on the global (0.07) —
+// 506.77 measured before, 507.32 after, to 507.4. The Scan button, the camera's sheet, the codes read and written, a
+// table counted and the page's checks of them are the scan part's (fieldia.scan.js), the reader of codes for a browser
+// with none the decode part's (fieldia.decode.js), asked for only as Scan is pressed there.
+// Merged (0.29.0), Wave 5's lanes together: to 512.7 until measured.
+const BUDGET_KB = 512.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1302,8 +1325,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // after, to 166.5.
 // A photo set (0.29, w5-photos; listed with the raw budget above): 166.15 measured before, 166.28 after, to 166.3. A
 // page with one takes its photos part, fieldia.photos.js, besides the files part.
-// Merged (0.29.0): to 168.3 until measured.
-const GZIP_BUDGET_KB = 168.3;
+// A code scanned with the camera (0.29, w5-scan; listed with the raw budget above): what knows a field is scanned into
+// and asks for the scan part, 166.15 measured before, 166.38 after, to 166.4.
+// Merged (0.29.0): to 168.6 until measured.
+const GZIP_BUDGET_KB = 168.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1505,8 +1530,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // back, and the crop and turn dialog's words — 32 in each: Arabic's 77.88 and 13.29 measured before, 81.73 and 13.87
 // after, to 81.8 and 13.9; German's 36.27 and 11.64 to 37.96 and 12.13, to 38.0 and 12.2; French's 36.75 and 11.70 to
 // 38.46 and 12.18, to 38.5 and 12.2.
-// Merged (0.29.0): to Arabic's 91.3 and 15.5, German's 42.6 and 13.6, French's 43.0 and 13.5 until measured.
-const ADD_ON_BUDGET_KB = { ar: [91.3, 15.5], de: [42.6, 13.6], fr: [43.0, 13.5] };
+// A code scanned with the camera (0.29, w5-scan): the Scan button's, the camera sheet's and why it did not open's 21
+// words — Arabic's 77.88 and 13.29 measured before, 81.55 and 13.79 after, to 81.6 and 13.8; German's 36.27 and 11.64
+// to 37.69 and 12.08, to 37.7 and 12.1; French's 36.75 and 11.70 to 38.18 and 12.14, to 38.2 and 12.2.
+// Merged (0.29.0): to Arabic's 95.0 and 16.0, German's 44.1 and 14.0, French's 44.5 and 14.0 until measured.
+const ADD_ON_BUDGET_KB = { ar: [95.0, 16.0], de: [44.1, 14.0], fr: [44.5, 14.0] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1938,8 +1966,18 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // (`takeFiles`, the file field's own now), a picture read for drawing (`readPicture`, shrinking's own), a picture's
 // preview, and a photo's caption as its dialog's title — files 36.99 and 13.62 measured before, 37.36 and 13.77 after,
 // to 37.4 and 13.8.
+// A code scanned with the camera (0.29, w5-scan): scan new, 18.63 and 7.87 — a field's widget with its Scan button and
+// why the camera did not open beside it, the camera's sheet reading its frames (the back camera, stopped as it closes,
+// an item still in sight read once, a beep and a buzz), the reader it reads with (an app's own, the browser's
+// BarcodeDetector, else the decode part), a code written into words, a link's record found by its code, a GS1 code's
+// parts and the fields they fill, a table's lines counted, a grid cell's sheet outliving its editor, the page's checks
+// of it, its words and its sheet — to 18.7 and 7.9; decode new, 153.78 and 38.94 — ZXing's readers of QR codes,
+// DataMatrix, the UPC and EAN family, Code 128 and Code 39 (@zxing/library 0.23.0, its readers alone:
+// tools/zxing-readers.mjs), loaded only as Scan is pressed in a browser that reads no codes itself — to 153.8 and 39.0.
+// A number's total under its column read from the end, as the column's numbers are (lines 45.36 and 15.52 measured
+// before, 45.51 and 15.54 after, to 45.6 and 15.6).
 // Merged (0.29.0): a part two lanes grew takes both growths until measured (list, memory).
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [132.0, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [28.8, 10.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.4, 13.8], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.0, 7.1], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [34.5, 11.8] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [132.0, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [28.8, 10.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [37.4, 13.8], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.0, 7.1], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [34.5, 11.8], scan: [18.7, 7.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1975,9 +2013,11 @@ const PART_GIVES = {
   options: ['optionRules'],
   mapchecks: ['checkMap', 'checkPlace'],
   languages: ['languagesWidget', 'languageWords', 'languageText', 'installLanguagesStyles', 'checkTranslated', 'languagesAtFault', 'languageName', 'textIn'],
+  scan: ['scanning', 'openScanSheet', 'useCodeReader', 'codeReaderFor', 'readGs1', 'installScanStyles'],
+  decode: ['codeReader'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots; a photo set the files part, whose taking, files on their way, dialog and sheet it draws with.
@@ -2470,12 +2510,34 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (covers.join('; ') !== 'Kitchen.png, the cover, photo 1 of 2 (cover); Hall.png, photo 2 of 2') throw new Error(`in a page, a listing's photo set is not drawn in its order, its cover first: ${covers.join('; ')}`);
   listing.destroy();
   gone('listing');
+  // A clinic's treatment whose patient is scanned by the card's code and whose lines' lots by their boxes' (`options.scan`):
+  // the scan part, the page drawn once it came — nothing of it before — the Scan button beside the patient's box, its
+  // sheet in its place. A camera's picture read by the app's own reader (`useCodeReader`): the patient found by the
+  // card's code, the camera's sheet gone once it was — and the decode part, a reader for browsers with none, never asked.
+  Object.defineProperty(dom.window.navigator, 'mediaDevices', { value: { getUserMedia: async () => ({ getTracks: () => [{ stop: () => undefined }] }) }, configurable: true });
+  Object.defineProperty(dom.window.HTMLMediaElement.prototype, 'readyState', { get: () => 4, configurable: true });
+  dom.window.HTMLMediaElement.prototype.play = async () => undefined;
+  const clinic = { 'clinic.treatment': { 1: { treated_on: '2026-10-20', line_ids: [] } }, 'clinic.patient': { 1: { name: 'Mona Adel', card: 'P-1042' }, 2: { name: 'Hana Fouad', card: 'P-1043' } } };
+  const treatment = inPage.mountViewer(host, { page: read('clinic-treatment.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: clinic }) });
+  waits(treatment, "a treatment's fields scanned into");
+  await treatment.drawn;
+  hasIn("a clinic's treatment scanned into", 'answers, approvals, assist, business, cards, choice, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, options, path, phone, photos, print, quiet, relations, scan, slots, survey, text, themes');
+  const scanButton = host.querySelector('[data-node="f-patient"] .fd-scan > .fd-scan-button');
+  if (scanButton?.textContent !== 'Scan' || scanButton.getAttribute('aria-label') !== 'Scan a code into Patient') throw new Error(`in a page, a field scanned into has no Scan button beside its box: ${scanButton?.outerHTML ?? 'none'}`);
+  (await inPage.scanPart.load()).useCodeReader({ detect: async () => [{ rawValue: 'P-1043', format: 'qr_code' }] });
+  scanButton.click();
+  if (!(await until(() => treatment.form.getState().values.patient_id?.label === 'Hana Fouad' && !doc.querySelector('.fd-scan-sheet')))) throw new Error(`in a page, a patient's card scanned does not name her: ${JSON.stringify(treatment.form.getState().values.patient_id)}, ${doc.querySelector('.fd-scan-said')?.textContent ?? 'no sheet'}`);
+  if (inPage.decodePart.loaded) throw new Error('in a page, the decode part was asked for where the app reads codes itself');
+  (await inPage.scanPart.load()).useCodeReader(null);
+  treatment.destroy();
+  gone('treatment');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
   // and a page's limits' (0.27), a record's approvals', AI help's, a photo set's and a text's languages' (0.29), before
   // the themes so a theme still reshapes them, the themes' and the quiet look's before the pickers', the head's and the
-  // text's, the survey kinds' own looks last; a list's own sheet, its cards' and its columns' after them all, unranked.
+  // text's, the survey kinds' own looks, a repeating group's cards', and a code scanned's (0.29) last; a list's own
+  // sheet, its cards' and its columns' after them all, unranked.
   const styles = [...doc.head.querySelectorAll('style[id]')];
   const ids = styles.map((style) => style.id);
   const ranked = styles.filter((style) => style.hasAttribute('data-fd-rank'));
@@ -2484,7 +2546,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
   if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-approvals-styles', 'fieldia-assist-styles', 'fieldia-photos-styles', 'fieldia-languages-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-approvals-styles', 'fieldia-assist-styles', 'fieldia-photos-styles', 'fieldia-languages-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks', 'fieldia-scan-styles']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
     const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
@@ -2492,7 +2554,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place; a listing in Arabic and English; a customer filled from an e-mail, AI help drawn with it and a proposal laid; a listing's photo set, with the files part — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place; a listing in Arabic and English; a customer filled from an e-mail, AI help drawn with it and a proposal laid; a listing's photo set, with the files part; a treatment's patient scanned by her card, never with the decode part where the app reads codes — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

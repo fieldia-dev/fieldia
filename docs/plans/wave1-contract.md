@@ -1281,3 +1281,37 @@ In plain words:
 - The memory source keeps the value as it is given; its `upload` answers a crop as any file. Tests:
   `libs/core/src/lib/record/uploads.spec.ts` (replaces), `libs/core/src/lib/format/photos-options.spec.ts`,
   `libs/widgets/src/lib/photos.spec.ts`, `e2e/photos.spec.ts`.
+
+## 25. A record found by a code a scanner read (Wave 5, lane w5-scan)
+
+No new member: a link scanned into with the camera (`options.scan` on a many2one, a table's link column, or a table
+counted by scanning) finds the record the code names through the existing `search`, and a source that searches as
+the contract says already answers it.
+
+```ts
+// By the field of the linked records that holds their codes (`options.scan.by`, "barcode"): the field's own filter
+// kept, the code asked as a condition on that field, the query empty — whatever the records' names.
+search({ model, query: '', filter: [...fieldFilter, { field: 'barcode', op: '=', value: '6224000123451' }], limit: 2 })
+// Without `by`: the code as a name — exactly first, then as the source searches names.
+search({ model, query: 'LOT-7', exact: true, limit: 2 })
+search({ model, query: '6224000123451', limit: 2 })
+
+// The form's own: SearchOptions gains `field`, which asks so.
+form.search('product_id', '6224000123451', 2, { field: 'barcode' })
+form.searchLine('line_ids', null, 'product_id', '6224000123451', 2, { field: 'barcode' })
+```
+
+In plain words:
+
+- **One record is taken**, as a name typed that names one; none, or more than one (the limit of 2 tells), is said in
+  the camera's sheet — "Nothing has the code …", "More than one record has the code …" — and nothing is written.
+- **A GTIN of 14 digits** (a GS1 code's part `01`) that finds nothing is asked again as the 13 and 12 digits a shop's
+  system may keep (its leading zeros dropped): an EAN-13, a UPC-A.
+- **A name search that finds a product by its barcode** (an ERP's `name_search` that reads `barcode` and
+  `default_code` too) needs no `by`: the code asked as a name is enough, the exact name first.
+- **Late answers**: an answer for a record no longer shown (`form.recordShown()`) is laid on none, and the camera's
+  sheet closes.
+- **A search that throws** is said in the sheet ("… could not be looked up just now. Scan it again."), and the camera
+  reads on.
+- The memory source answers it as it is (a filter on any field, the query matched against names). Tests:
+  `libs/core/src/lib/record/search-by-code.spec.ts`, `libs/widgets/src/lib/scan.spec.ts`.

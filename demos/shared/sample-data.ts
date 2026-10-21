@@ -93,6 +93,7 @@ import listingLanguages from '../../examples/pages/listing-languages.page.json';
 import servicesLanguages from '../../examples/pages/services-languages.page.json';
 import serviceLanguages from '../../examples/pages/service-languages.page.json';
 import { bilingualListings, bilingualServices } from './languages';
+import { scanRecords, stockCountPage, treatmentPage } from './scan';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -125,6 +126,10 @@ export const pages: Record<string, Page> = {
   'listing-photo-set': photoSetPages['listing-photo-set'],
   'agent-listings': photoSetPages['agent-listings'],
   'clinic-before-after': photoSetPages['clinic-before-after'],
+  // A clinic's treatment, its injectables' lots read from their boxes' DataMatrix codes, and a shelf counted by its
+  // barcodes: codes scanned with the camera (shared/scan.ts).
+  'clinic-treatment': treatmentPage,
+  'stock-count': stockCountPage,
   fields: fields as Page,
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
@@ -621,6 +626,8 @@ export function sampleDataSource() {
       'clinic.service': bilingualServices(),
       // The agent's listings and a clinic's treatment photos, drawn only for the pages that show them (shared/photo-sets.ts).
       ...(['listing-photo-set', 'agent-listings', 'clinic-before-after'].includes(params.get('page') ?? '') ? photoSetRecords() : {}),
+      // A clinic's patients and injectables, a treatment, a shop's shelf and its count (shared/scan.ts).
+      ...scanRecords(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

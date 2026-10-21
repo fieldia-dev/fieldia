@@ -34,6 +34,7 @@ export const LINES_CSS = /* css */ `
 /* Numbers and money read from the end, as Flectra's lists align them. */
 .fd-lines-table th:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) { text-align: end; }
 .fd-lines-table td:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) input { text-align: end; }
+.fd-lines-totals td:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) { text-align: end; }
 /* A table reads as a table, as a grid does: a line shows its boxes and buttons where the pointer or the cursor is.
    Only colours and visibility change, never a size: a line left for a click elsewhere must not move what is clicked.
    A touch screen has no pointer to hover with: there the boxes always show. */

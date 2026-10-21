@@ -284,7 +284,7 @@ for (const locale of ['ar', 'de', 'fr']) {
 }
 // Each part beside it: after the main script, Fieldia draws from it (the main script asks for it from beside itself) —
 // booking slots with the date part, which they come with.
-for (const [part, holder, gives, beside = []] of [['head', 'headPart', 'recordHead'], ['text', 'textPart', 'modernHtml'], ['path', 'pathPart', 'pathPickerWidget'], ['choice', 'choicePart', 'ownListWidget'], ['filters', 'filtersPart', 'filterBar'], ['date', 'datePart', 'dateBoxWidget'], ['list', 'listPart', 'listView'], ['cards', 'cardsPart', 'drawCard'], ['columns', 'columnsPart', 'columnChoices'], ['import', 'importPart', 'openImport'], ['editable', 'editablePart', 'editableRows'], ['themes', 'themesPart', 'installThemeStyles'], ['quiet', 'quietPart', 'installQuietStyles'], ['lines', 'linesPart', 'linesWidget'], ['files', 'filesPart', 'binaryWidget'], ['evidence', 'evidencePart', 'signingFor'], ['photos', 'photosPart', 'photosWidget', ['files']], ['survey', 'surveyPart', 'rankingWidget'], ['business', 'businessPart', 'statusbarWidget'], ['phone', 'phonePart', 'phoneWidget'], ['slots', 'slotsPart', 'slotsWidget', ['date']], ['duplicates', 'duplicatesPart', 'watchDuplicates'], ['answers', 'answersPart', 'drawEnding'], ['limits', 'limitsPart', 'drawLimits'], ['approvals', 'approvalsPart', 'drawApprovals'], ['assist', 'assistPart', 'watchAssist'], ['print', 'printPart', 'printLook'], ['relations', 'relationsPart', 'many2oneWidget'], ['memory', 'memoryPart', 'memorySource'], ['functions', 'functionsPart', 'functionBody'], ['options', 'optionRulesPart', 'optionRules'], ['mapchecks', 'mapChecksPart', 'checkMap'], ['languages', 'languagesPart', 'languagesWidget']]) {
+for (const [part, holder, gives, beside = []] of [['head', 'headPart', 'recordHead'], ['text', 'textPart', 'modernHtml'], ['path', 'pathPart', 'pathPickerWidget'], ['choice', 'choicePart', 'ownListWidget'], ['filters', 'filtersPart', 'filterBar'], ['date', 'datePart', 'dateBoxWidget'], ['list', 'listPart', 'listView'], ['cards', 'cardsPart', 'drawCard'], ['columns', 'columnsPart', 'columnChoices'], ['import', 'importPart', 'openImport'], ['editable', 'editablePart', 'editableRows'], ['themes', 'themesPart', 'installThemeStyles'], ['quiet', 'quietPart', 'installQuietStyles'], ['lines', 'linesPart', 'linesWidget'], ['files', 'filesPart', 'binaryWidget'], ['evidence', 'evidencePart', 'signingFor'], ['photos', 'photosPart', 'photosWidget', ['files']], ['survey', 'surveyPart', 'rankingWidget'], ['business', 'businessPart', 'statusbarWidget'], ['phone', 'phonePart', 'phoneWidget'], ['slots', 'slotsPart', 'slotsWidget', ['date']], ['duplicates', 'duplicatesPart', 'watchDuplicates'], ['answers', 'answersPart', 'drawEnding'], ['limits', 'limitsPart', 'drawLimits'], ['approvals', 'approvalsPart', 'drawApprovals'], ['assist', 'assistPart', 'watchAssist'], ['print', 'printPart', 'printLook'], ['relations', 'relationsPart', 'many2oneWidget'], ['memory', 'memoryPart', 'memorySource'], ['functions', 'functionsPart', 'functionBody'], ['options', 'optionRulesPart', 'optionRules'], ['mapchecks', 'mapChecksPart', 'checkMap'], ['languages', 'languagesPart', 'languagesWidget'], ['scan', 'scanPart', 'scanning'], ['decode', 'decodePart', 'codeReader']]) {
   const file = join(SMOKE, `node_modules/@fieldia/viewer/bundle/fieldia.${part}.js`);
   if (!existsSync(file)) fail(`@fieldia/viewer has no bundle/fieldia.${part}.js`);
   const page = {};
@@ -292,13 +292,17 @@ for (const [part, holder, gives, beside = []] of [['head', 'headPart', 'recordHe
   const given = await runInNewContext(`Fieldia.${holder}.load()`, page);
   if (typeof given?.[gives] !== 'function') fail(`the packed fieldia.${part}.js does not give the script bundle its part`);
 }
-// The phone part's table is derived from libphonenumber's metadata (Apache-2.0): its notice ships with the package whose
-// source carries the table, and beside the bundle, whose phone part names it in its first line.
+// The phone part's table is derived from libphonenumber's metadata (Apache-2.0), and the decode part carries ZXing's
+// readers (@zxing/library, Apache-2.0): their notices ship with the package whose source carries or imports them, and
+// beside the bundle, whose phone and decode parts name it in their first line.
 for (const notice of ['@fieldia/widgets/THIRD_PARTY_NOTICES.md', '@fieldia/viewer/bundle/THIRD_PARTY_NOTICES.md']) {
   const file = join(SMOKE, 'node_modules', notice);
-  if (!existsSync(file) || !/libphonenumber/.test(readFileSync(file, 'utf8')) || !/Apache License, Version 2\.0/.test(readFileSync(file, 'utf8'))) fail(`${notice} is not packed, or does not name libphonenumber and its licence`);
+  const text = existsSync(file) ? readFileSync(file, 'utf8') : '';
+  if (!/libphonenumber/.test(text) || !/@zxing\/library/.test(text) || !/Apache License, Version 2\.0/.test(text)) fail(`${notice} is not packed, or does not name libphonenumber, @zxing/library and their licence`);
 }
-if (!readFileSync(join(SMOKE, 'node_modules/@fieldia/viewer/bundle/fieldia.phone.js'), 'utf8').split('\n')[0].includes('THIRD_PARTY_NOTICES.md')) fail('the packed fieldia.phone.js does not name its third-party notice');
+for (const part of ['phone', 'decode']) {
+  if (!readFileSync(join(SMOKE, `node_modules/@fieldia/viewer/bundle/fieldia.${part}.js`), 'utf8').split('\n')[0].includes('THIRD_PARTY_NOTICES.md')) fail(`the packed fieldia.${part}.js does not name its third-party notice`);
+}
 
 console.log(`  installed ${fromRegistry ? 'from npm' : 'the packs'} into an empty project: require, import, types (.mts and .cts), the script bundle, its language add-ons and its parts all check`);
 

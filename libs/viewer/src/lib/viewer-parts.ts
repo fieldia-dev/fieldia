@@ -1,5 +1,5 @@
 import { callsPartFunctions, formApprovalsPart, editableColumns, formLimitsPart, functionsPart, hasLanguages, hasLimits, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
-import { businessPart, choicePart, datePart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, choicePart, datePart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, relationsPart, scanPart, scans, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as AnswersModule from './answers-part';
@@ -121,8 +121,11 @@ export function installListStyles(doc: Document): Promise<void> {
 /** A list's cell's widget its box takes where the cell is changed in place: hours, a per cent, a phone, links as tags. */
 export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage', 'phone', 'tags']);
 
-/** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
+/**
+ * Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing —
+ * but the decode part, which reads codes only where a browser reads none itself, as Scan is pressed.
+ */
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -160,6 +163,9 @@ const markdownAlone = (node: SectionNode) => {
  * a choice of many options, searched: one of its own definitions, or any its data source gives (never a file or a
  * link: a property holds none).
  *
+ * A field scanned into with the camera (`options.scan`) — a table's column, a table counted — asks for the scan part,
+ * its Scan button's (never the decode part, which comes as Scan is pressed where the browser reads no codes itself).
+ *
  * A phone field is read the world over where its page's `phone` or its own options say so, and a list's phone column
  * then writes its numbers as people read them: both ask for the phone part.
  *
@@ -193,6 +199,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     add(part);
     // A signature that signs answers, drawn by the files part: its evidence's part beside it.
     if (part === filesPart && node.widget === 'signature' && signsAnswers(node)) add(evidencePart);
+    // Scanned into with the camera — a field, a table's column, a table counted: its Scan button's part beside it.
+    if (scans(node)) add(scanPart);
     // Its rows are drawn with each kind's widget: a date's, unless the app draws dates; and a long choice's, searched —
     // one of the page's own, or any of those the data source gives.
     if (field.type === 'properties') {
@@ -291,7 +299,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, editable: editablePart, head: headPart, limits: limitsPart, approvals: approvalsPart, answers: answersPart, assist: assistPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, languages: languagesPart };
+  const by: Record<string, Part> = { list: listPart, editable: editablePart, head: headPart, limits: limitsPart, approvals: approvalsPart, answers: answersPart, assist: assistPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, languages: languagesPart, scan: scanPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 
@@ -304,7 +312,8 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
 
 /**
  * The parts a page draws from, loaded — or, with no page, every part, the
- * print part too (which a page loads as a person means to print: print.ts). The
+ * print part too (which a page loads as a person means to print: print.ts), but
+ * the decode part (`decodePart`, a reader of codes for browsers with none). The
  * viewer and its dialogs wait for a page's parts themselves before they draw
  * it; this is for an app that wants them in before it mounts, so the page is
  * drawn whole the moment it is mounted. Rejects when one could not come (the
