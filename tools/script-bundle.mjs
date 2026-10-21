@@ -1903,8 +1903,8 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // Sends kept without signal (0.30, w6-public-forms) in a part of their own, fieldia.outbox.js (8.89 and 3.94, to 8.9 and
 // 4.0): the items kept in IndexedDB (or the app's store, or memory), each claimed by one sender, sent in order with their
 // photos stored first, a refusal kept to try again or discard, and the bar over the form saying it — under a kept
-// response's ending too — with its sheet and its check, waited for by a page with `outbox`. A memory source fails as a network does at its `offline` — memory
-// 17.61 and 6.37 measured before, 17.69 and 6.41 after, to 17.8 and 6.5.
+// response's ending too — with its sheet and its check, waited for by a page with `outbox`. A memory source fails as a
+// network does at its `offline` — memory 17.61 and 6.37 measured before, 17.69 and 6.41 after, to 17.8 and 6.5.
 const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.8, 6.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], prefill: [3.8, 1.9], verify: [10.9, 4.7], pay: [7.6, 3.3], element: [4.9, 2.3], outbox: [8.9, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
