@@ -41,6 +41,13 @@ ${code(
     <tr><td>${c('print')}</td><td>Under Print, as <em>This record</em> (<em>This invoice</em> where the page names its records): the record on paper, alone, as <a href="#print">the page prints</a>.</td></tr>
   </tbody>
 </table>
+<p>A line between items is ${c('{ "type": "divider", "id": "m-rule" }')}, left out where nothing shows on one side of it. An item with a ${c('menu')} of its own opens it beside it, shown with ›: pointed at, pressed, or with Enter, Space or → (← right to left); ← and Escape close it. With ${c('menuFrom')}, your app gives more items as the menu opens — a bug's templates, which depend on the bug — through its ${c('onAction')}, asked with that action's name, the item's ${c('params')}, the record and its values, and answering ${c('{ menu: [...] }')}; each runs its steps, then its action, asking its ${c('confirm')} first. An item whose menu has nothing to show is not shown. A button's own ${c('menu')} takes both too.</p>
+${code(
+  'json',
+  `
+{ "id": "m-templates", "label": "Templates", "menuFrom": "templates",
+  "menu": [{ "id": "m-capture", "label": "Capture…", "action": "capture-template" }, { "id": "m-rule-t", "type": "divider" }] }`
+)}
 <p>Give a built-in steps of its own and they run instead, without its question: Flectra's employee form, whose Archive opens the departure wizard, is ${c('{ "id": "m-archive", "builtin": "archive", "steps": [{ "do": "open", "page": "hr-departure-wizard", "record": "id" }] }')}. The same steps — ${c('archive')}, ${c('unarchive')}, ${c('duplicate')}, ${c('delete')} — run from any button or moment, as <a href="/actions/#steps">Actions</a> says.</p>
 <p>Where the record's data source says the person may not archive, duplicate or delete it (${c('can')}, see <a href="/data/#permissions">what this person may do</a>), those items are not in the menu, nor the buttons whose steps would do it; the menu's foot says why, and the steps refuse if run from elsewhere.</p>
 
@@ -82,6 +89,7 @@ ${code(
 }`
 )}
 <ul>
+  <li>Tags in the row — a ${c('many2many')} drawn as tags, with ${c('"adder": "button"')} or its box — sit inline after the comments' link, what adds one after the last chip; out of room, the chips wrap in a slot of their own and the row's other parts keep its first line.</li>
   <li>A button takes ${c('iconOnly')} (its label its name and tooltip), ${c('pressed')} with ${c('pressedLabel')} for a toggle, ${c('menu')} for a split button — or a menu button with no steps of its own — and ${c('primaryWhenChanged')}: quiet but usable with nothing changed, when Save and Close simply closes. Undo with nothing to put back says “Nothing has changed.”</li>
   <li>Your app answers Follow with ${c('{ stored: { following: true } }')}: values the server keeps, written as loaded ones are, never a change to save — ${c('form.setValues(values, { stored: true })')} does the same.</li>
   <li>A field's ${c('hotkey')} underlines that letter of its label; Alt with it takes the focus there. The page's ${c('"lockAt": "value"')} puts a locked field's lock at its value's start.</li>

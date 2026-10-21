@@ -208,6 +208,79 @@ panel sits above it; a panel opened from a panel stacks over it, the older one
 stepped back from its own edge. A panel slides in from its edge only when the
 reader's system welcomes motion.
 
+## A work item's tags, menus and texts
+
+Three things a work tracker's bug has, in a sheet with a `head`, in
+`mountViewer` and in `openFormDialog` alike.
+
+**Tags in the head's row.** A `many2many` of tags in `head.meta` sits inline
+in the row: its chips after the comments' link, what adds one — its Add Tag
+button (`"adder": "button"`) or the box typed in, its words still showing —
+after the last chip. The row's other parts keep its first line: out of room,
+the chips wrap in a slot of their own (never narrower than 200 pixels), so
+the row is as tall with two tags as with none, and grows only by the lines
+its chips take. Nothing to set: it is how a head draws tags.
+
+```json
+"meta": [
+  { "type": "field", "id": "h-assigned", "field": "assigned_to", "labels": "hidden", "placeholder": "No one selected", "options": { "avatar": true } },
+  { "type": "link", "id": "h-comments", "icon": "chat", "field": "comment_count", "words": { "one": "Comment", "other": "Comments" }, "target": "g-discussion" },
+  { "type": "field", "id": "h-tags", "field": "tags", "widget": "tags", "labels": "hidden", "placeholder": "Add Tag", "options": { "adder": "button" } }
+]
+```
+
+**Dividers and menus inside menus.** An item of the record's menu
+(`toolbar.menu`, ⋮ in a head) or of a button's own `menu` may be a line
+between items — `{ "type": "divider", "id": … }`, left out where nothing
+shows on one side of it — or open a `menu` of its own beside it, shown with
+›: pointed at, pressed, or with Enter, Space or → (← right to left); ← and
+Escape close it, the focus back on its item. It stands beside the menu on the
+side with room, on the screen, over everything. Its items run as the menu's
+own do. With `menuFrom`, your app gives more items as the menu opens: its
+`onAction` is asked with that action's name, the item's `params`, the record
+and its values, and answers `{ menu: [...] }` — each of those runs its steps,
+then its action, asking its `confirm` first. An item whose menu has nothing to
+show is not shown.
+
+```json
+"toolbar": {
+  "menu": [
+    { "id": "m-copy", "label": "Create copy of work item…", "icon": "copy", "builtin": "duplicate" },
+    { "id": "m-delete", "label": "Delete", "builtin": "delete" },
+    { "id": "m-copy-link", "label": "Copy link", "icon": "link", "action": "copy-link" },
+    { "id": "m-rule-1", "type": "divider" },
+    { "id": "m-templates", "label": "Templates", "menuFrom": "templates", "params": { "project": "Portal" },
+      "menu": [{ "id": "m-capture", "label": "Capture…", "action": "capture-template" }, { "id": "m-rule-t", "type": "divider" }] },
+    { "id": "m-rule-2", "type": "divider" },
+    { "id": "m-branch", "label": "New branch…", "icon": "branch", "action": "new-branch" }
+  ]
+}
+```
+
+```ts
+onAction: async ({ action, params, values }) => {
+  if (action === 'templates') return { menu: (await templatesFor(values.work_type, params?.project)).map((t) => ({ id: `tpl-${t.id}`, label: t.name, action: 'apply-template', params: { id: t.id } })) };
+  if (action === 'apply-template') return { values: await templateValues(params?.id) };
+},
+```
+
+**A formatted text read first.** `"edit": "button"` on an `html` field with
+the rich editor shows its text formatted — links that open in a tab of their
+own, pictures in place — and Edit (✎, named "Edit Description") in its
+group's heading, beside ⤢ and ^ (in its own box where it is not alone in a
+titled group). Edit, Enter on the text or a press on its words opens the
+editor, its toolbar where `toolbarAt` says and the focus in it; Done (✓), a
+press or the focus outside it keeps what was typed, Escape puts back what it
+held — the record changed only where the text is. Empty, it is its editor at
+rest, its placeholder saying what to add; read-only, its text with no Edit.
+The Markdown editor (`"editor": "markdown"`) was read first already.
+
+```json
+{ "type": "section", "id": "g-description", "title": "Description", "style": "line", "collapsible": true, "foldAt": "end", "maximise": true,
+  "children": [{ "type": "field", "id": "f-description", "field": "description", "labels": "hidden", "placeholder": "Click to add Description.",
+    "options": { "editor": "rich", "edit": "button", "toolbar": "focus", "toolbarAt": "top", "tools": ["bold", "italic", "link", "image", "mention"], "mention": { "model": "res.users" } } }] }
+```
+
 ## What a page's steps ask of the screen
 
 A page's buttons and moments run steps (see `@fieldia/core`'s “What a press or
