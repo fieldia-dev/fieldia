@@ -2809,7 +2809,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // A first paint the server drew in the host (@fieldia/viewer/server): in sight until this form is drawn and its record
   // in, then this form in its place in one step, what was typed in it carried over (first-paint-over.ts).
   let loaded!: () => void;
-  overFirstPaint(host, root, Promise.all([dressed, new Promise<void>((resolve) => (loaded = resolve))]));
+  // Settled either way — a page its later checks refuse rejects `drawn`, for the app to hear, never this one.
+  overFirstPaint(host, root, Promise.all([dressed, new Promise<void>((resolve) => (loaded = resolve))]).then(() => undefined, () => undefined));
   host.append(root);
   // A press lands on what the person aimed at: never on a button that slid under a pointer that did not move.
   cleanups.push(steadyPresses(root));
