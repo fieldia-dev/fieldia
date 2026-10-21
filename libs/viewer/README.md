@@ -292,7 +292,8 @@ time across fields — a field written, a cell typed in, a line added, taken awa
 or moved; typing on in one box is one change until the box is left — and
 **Ctrl+Shift+Z** or **Ctrl+Y** makes it again. Inside a box whose text was
 changed since it was entered, the browser's own undo goes first; once the box
-shows what it showed as it was entered, the next press is the record's. The
+shows what it showed as it was entered, the next press is the record's; a
+formatted text keeps its own undo always (its table and list tools too). The
 field taken back takes the focus, and “Undone: Price” is said to a screen
 reader. `keys: { undo: false }` leaves the keys to the browser alone; your own
 Undo button calls `form.undo()` (see `@fieldia/core`).

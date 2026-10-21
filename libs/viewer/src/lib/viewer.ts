@@ -2677,7 +2677,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // Ctrl+Z (⌘Z) takes back the person's last change to the record — a field, a cell, a line added, taken away or moved
   // (`form.undo()`) — and Ctrl+Shift+Z or Ctrl+Y (⌘⇧Z) makes it again. In a box whose text was changed since it was
   // entered, the browser's own undo goes through it first; once the box shows what it showed as it was entered, the
-  // record's. The field taken back takes the focus, and what was done is said politely.
+  // record's. In a formatted text, always its own. The field taken back takes the focus, and what was done is said politely.
 
   /** What a box showed as it was entered, and the browser's own undos in it since its last typing: what its redo has. */
   const boxEdits = new WeakMap<EventTarget, { text: string; undone: number }>();
@@ -2703,6 +2703,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // An app's own content in a slot keeps its keys, and so do its own boxes outside the form and a form inside this one
     // (a dialog's); pressed on nothing, the keys are the first form's on the page, as a button's key is.
     if ((editable(target) && !root.contains(target)) || target.closest('.fd-slot') || !hotkeysHere(target)) return;
+    // A formatted text keeps its own undo: its tools (a table's rows, a header row) change it as typing does, and the
+    // browser's history holds both, across leaving it for a menu and coming back.
+    if (editable(target) && target.isContentEditable) return;
     // A box whose text is not what it showed as it was entered: the browser's own undo has typing to take back there;
     // its own redo, its undos since.
     const edits = editable(target) ? boxEdits.get(target) : undefined;
