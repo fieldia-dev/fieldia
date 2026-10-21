@@ -8,6 +8,7 @@ import { openMenu } from './menu';
 import { setHidden } from './writes';
 import { widgetWords } from './chrome-language';
 import { canvasHead } from './canvas-head';
+import { isDivider, opensMenu } from './menu-items';
 
 /**
  * A record's header on the canvas, drawn the way the viewer draws it: the
@@ -18,7 +19,8 @@ import { canvasHead } from './canvas-head';
  * picked in a menu of the fields that can be steps. Over them, the record's
  * gear menu: its items in a row, each picked and typed in the same way, and
  * "Add to the gear menu" offering the record's own items, the app's action,
- * or a report under Print.
+ * a report under Print, an item that opens a menu of its own — its words
+ * then › — and a line between items, drawn as a short line with no words.
  */
 
 export interface CanvasHeader {
@@ -44,8 +46,13 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     button.addEventListener('click', () => (kind === 'statusbar' ? pickStatusField(button) : kind === 'menu' ? pickMenuItem(button) : add(kind)));
     return button;
   };
-  /** An item of the gear menu's words: its own, or the built-in's in the designer's language. */
-  const itemWords = (part: HeaderPart) => wordsOf(part) || ((part as MenuItem).builtin ? w.menuKinds[builtinKind((part as MenuItem).builtin as NonNullable<MenuItem['builtin']>)] : '');
+  /** An item of the gear menu's words: its own, or the built-in's in the designer's language; a divider's, what it is. */
+  const itemWords = (part: HeaderPart) =>
+    isDivider(part as MenuItem) ? w.menuKinds.divider : wordsOf(part) || ((part as MenuItem).builtin ? w.menuKinds[builtinKind((part as MenuItem).builtin as NonNullable<MenuItem['builtin']>)] : '');
+  /** A divider of the gear menu: a short line, with no words to type. */
+  const ruleOf = (kind: HeaderPartKind, part: HeaderPart) => kind === 'menu' && isDivider(part as MenuItem);
+  /** The › after an item that opens a menu of its own, pointing the way the words run. */
+  const opensMark = (kind: HeaderPartKind, part: HeaderPart) => (kind === 'menu' && opensMenu(part as MenuItem) ? [el('span', { class: 'fd-canvas-menu-more', 'aria-hidden': 'true' }, '›')] : []);
   const actions = el('div', { class: 'fd-actions fd-canvas-header-actions' });
   const steps = el('div', { class: 'fd-canvas-header-steps' });
   // The gear menu over the record, its items in a row after its gear.
@@ -67,16 +74,17 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     if (created) focus(created);
   }
   function pickMenuItem(anchor: HTMLElement) {
-    const kinds: MenuItemKind[] = ['archive', 'unarchive', 'duplicate', 'delete', 'printPage', 'action', 'print'];
+    const kinds: MenuItemKind[] = ['archive', 'unarchive', 'duplicate', 'delete', 'printPage', 'action', 'print', 'submenu', 'divider'];
     openMenu({
       el,
       anchor,
       title: w.addMenuItem,
       actions: true,
-      items: kinds.map((kind) => ({ id: kind, label: w.menuKinds[kind], divider: kind === 'action' })),
+      // The record's own, then the app's, then the menu's own shape: a menu inside it, a line between items.
+      items: kinds.map((kind) => ({ id: kind, label: w.menuKinds[kind], divider: kind === 'action' || kind === 'submenu' })),
       note: w.menuNote,
       onPick: (kind) => {
-        const made = designer.addMenuItem(kind as MenuItemKind, kind === 'action' ? d.newMenuAction : kind === 'print' ? d.newReport : undefined);
+        const made = designer.addMenuItem(kind as MenuItemKind, kind === 'action' ? d.newMenuAction : kind === 'print' ? d.newReport : kind === 'submenu' ? d.newSubmenu : undefined);
         if (made) focus(made);
       },
     });
@@ -113,19 +121,22 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     if (kind === 'stat') return 'fd-stat';
     if (kind === 'ribbon') return `fd-badge fd-canvas-ribbon fd-tone-${(part as Ribbon).tone ?? 'muted'}`;
     if (kind === 'alert') return `fd-alert fd-tone-${(part as Alert).tone ?? 'info'}`;
+    if (ruleOf(kind, part)) return 'fd-canvas-menu-divider';
     if (kind === 'menu') return `fd-badge fd-canvas-menu-item${((part as MenuItem).group ?? ((part as MenuItem).builtin === 'print' ? 'print' : 'actions')) === 'print' ? ' fd-canvas-menu-print' : ''}`;
     return `fd-badge fd-tone-${(part as Badge).tone ?? 'muted'}`;
   }
 
   function closedPart(kind: HeaderPartKind, part: HeaderPart, page: Page): HTMLElement {
     const tag = kind === 'badge' || kind === 'ribbon' ? 'span' : kind === 'alert' ? 'div' : 'button';
-    const element = el(tag, { class: `${looks(kind, part)} fd-canvas-part`, 'data-part': part.id, ...(tag === 'button' ? { type: 'button' } : { role: 'button', tabindex: '0' }) });
+    const rule = ruleOf(kind, part);
+    const element = el(tag, { class: `${looks(kind, part)} fd-canvas-part`, 'data-part': part.id, ...(tag === 'button' ? { type: 'button' } : { role: 'button', tabindex: '0' }), ...(rule ? { 'aria-label': itemWords(part) } : {}) });
     if (kind === 'stat') {
       const { field: count, unit } = part as StatButton;
       const value = el('span', { class: 'fd-stat-value' }, [count ? '12' : '', unit ?? ''].filter(Boolean).join(' '));
       element.append(el('span', { class: 'fd-stat-words' }, value, el('span', { class: 'fd-stat-label' }, wordsOf(part))));
       if (count) element.title = w.shows(page.fields[count]?.label ?? count);
-    } else element.append(kind === 'menu' ? itemWords(part) : wordsOf(part));
+    } else if (rule) element.append(el('span', { class: 'fd-canvas-menu-rule', 'aria-hidden': 'true' }));
+    else element.append(kind === 'menu' ? itemWords(part) : wordsOf(part), ...opensMark(kind, part));
     const pick = () => {
       designer.select(part.id);
       focus(part.id, false);
@@ -141,7 +152,21 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     return element;
   }
 
+  /** The small bar on a part picked: move it left or right, or take it away. */
+  function partBar(part: HeaderPart) {
+    const tool = (label: string, icon: string, run: () => void) => {
+      const button = el('button', { type: 'button', class: 'fd-bar-button', 'aria-label': label, title: label }, designerIcon(doc, icon));
+      button.addEventListener('click', run);
+      return button;
+    };
+    const left = tool(w.moveLeft, 'left', () => designer.moveHeaderPart(part.id, -1));
+    const right = tool(w.moveRight, 'right', () => designer.moveHeaderPart(part.id, 1));
+    const bar = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': itemWords(part) }, left, right, tool(w.delete, 'delete', () => designer.removeHeaderPart(part.id)));
+    return { bar, left, right };
+  }
+
   function openPart(kind: HeaderPartKind, part: HeaderPart): PartView {
+    if (ruleOf(kind, part)) return openRule(kind, part);
     const input = el('input', { class: 'fd-part-input', 'aria-label': w.words, autocomplete: 'off', size: String(Math.max(4, itemWords(part).length + 1)), placeholder: kind === 'menu' ? itemWords(part) : undefined }) as HTMLInputElement;
     input.addEventListener('input', () => {
       input.size = Math.max(4, input.value.length + 1);
@@ -153,25 +178,25 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
         input.blur();
       }
     });
-    const tool = (label: string, icon: string, run: () => void) => {
-      const button = el('button', { type: 'button', class: 'fd-bar-button', 'aria-label': label, title: label }, designerIcon(doc, icon));
-      button.addEventListener('click', run);
-      return button;
-    };
-    const left = tool(w.moveLeft, 'left', () => designer.moveHeaderPart(part.id, -1));
-    const right = tool(w.moveRight, 'right', () => designer.moveHeaderPart(part.id, 1));
-    const bar = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': itemWords(part) }, left, right, tool(w.delete, 'delete', () => designer.removeHeaderPart(part.id)));
+    const { bar, left, right } = partBar(part);
     const words = kind === 'stat' ? el('span', { class: 'fd-stat-words' }, el('span', { class: 'fd-stat-value' }, (part as StatButton).field ? '12' : ''), input) : input;
-    const element = el('span', { class: `${looks(kind, part)} fd-canvas-part fd-editing`, 'data-part': part.id }, bar, words);
+    const element = el('span', { class: `${looks(kind, part)} fd-canvas-part fd-editing`, 'data-part': part.id }, bar, words, ...opensMark(kind, part));
     return { element, key: '', input, left, right };
+  }
+
+  /** A divider picked: its line and the bar on it, moving it or taking it away; no words to type. */
+  function openRule(kind: HeaderPartKind, part: HeaderPart): PartView {
+    const { bar, left, right } = partBar(part);
+    const element = el('span', { class: `${looks(kind, part)} fd-canvas-part fd-editing`, 'data-part': part.id, role: 'group', 'aria-label': itemWords(part) }, bar, el('span', { class: 'fd-canvas-menu-rule', 'aria-hidden': 'true' }));
+    return { element, key: '', input: null, left, right };
   }
 
   function drawPart(kind: HeaderPartKind, part: HeaderPart, index: number, count: number, page: Page, selected: string | null): HTMLElement {
     const editing = selected === part.id;
     const key = `${editing}:${JSON.stringify(part)}`;
     let view = views.get(part.id);
-    // The part being typed in stays the same box, focused; anything else is drawn again when it changes.
-    const keep = view && (editing ? view.input !== null : view.key === key);
+    // The part being typed in stays the same box, focused; anything else — a divider picked too — is drawn again when it changes.
+    const keep = view && (editing && !ruleOf(kind, part) ? view.input !== null : view.key === key);
     if (!keep) {
       view = editing ? openPart(kind, part) : { element: closedPart(kind, part, page), key, input: null, left: null, right: null };
       views.set(part.id, view);

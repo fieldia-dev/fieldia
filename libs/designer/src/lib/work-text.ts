@@ -121,8 +121,9 @@ const record = (value: unknown): Record<string, JsonValue> | null => (value !== 
 
 /**
  * A formatted text's toolbar — always, or while it is worked in — at its top
- * or foot, its tools, its editor and the switch between editors, the
- * people @mentioned in it and the records linked by a key.
+ * or foot, its tools, its editor and the switch between editors, the rich
+ * editor read first (`edit: "button"`), the people @mentioned in it and the
+ * records linked by a key.
  */
 export function richTextPart(el: ElementFactory, designer: Designer, id: string): WorkPart {
   const w = designer.words.workText;
@@ -141,6 +142,8 @@ export function richTextPart(el: ElementFactory, designer: Designer, id: string)
     return { button, element: el('span', { class: 'fd-inline-setting fd-inline-toggle' }, button, el('span', { 'aria-hidden': 'true' }, label)) };
   };
   const switching = toggle(w.switchEditor, (on) => widget({ switchEditor: on || null }));
+  // The rich editor read first, as Markdown always is: its text formatted, the editor opened from Edit.
+  const reading = toggle(w.readFirst, (on) => widget({ edit: on ? 'button' : null }));
   // Its tools, in the order a toolbar keeps them: each one on or off.
   let tools: TextTool[] | null = null;
   const toolChips = TEXT_TOOLS.map((tool) => {
@@ -181,7 +184,7 @@ export function richTextPart(el: ElementFactory, designer: Designer, id: string)
     'div',
     { class: 'fd-kind-block fd-work-text' },
     barRow,
-    el('div', { class: 'fd-inline-row' }, editor.element, switching.element),
+    el('div', { class: 'fd-inline-row' }, editor.element, switching.element, reading.element),
     el('div', { class: 'fd-inline-setting' }, el('span', {}, w.tools), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.tools }, ...toolChips)),
     el('div', { class: 'fd-inline-row' }, word(w.mentions, mention)),
     el('div', { class: 'fd-inline-setting' }, el('span', {}, w.references), list, add)
@@ -197,6 +200,8 @@ export function richTextPart(el: ElementFactory, designer: Designer, id: string)
       where.seg.set(options['toolbarAt'] === 'top' || options['toolbarAt'] === 'bottom' ? options['toolbarAt'] : bar === 'focus' ? 'bottom' : 'top');
       editor.seg.set(options['editor'] === 'markdown' ? 'markdown' : 'rich');
       switching.button.setAttribute('aria-checked', String(options['switchEditor'] === true));
+      reading.element.hidden = options['editor'] === 'markdown';
+      reading.button.setAttribute('aria-checked', String(options['edit'] === 'button'));
       tools = Array.isArray(options['tools']) ? (options['tools'].filter((t) => TEXT_TOOLS.includes(t as TextTool)) as TextTool[]) : null;
       for (const chip of toolChips) chip.setAttribute('aria-pressed', String(!!tools?.includes(chip.dataset['tool'] as TextTool)));
       if (mention.ownerDocument.activeElement !== mention) mention.value = String(record(options['mention'])?.['model'] ?? '');

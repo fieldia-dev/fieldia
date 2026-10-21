@@ -38,6 +38,7 @@ export const workText = {
   richText: 'Rich text',
   markdown: 'Markdown',
   switchEditor: 'People can switch editors',
+  readFirst: 'Read first, changed from its Edit',
   tools: 'Tools',
   mentions: 'People mentioned with @ are of',
   mentionsPlaceholder: 'res.users',

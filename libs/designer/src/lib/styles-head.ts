@@ -2,7 +2,8 @@
  * A record's head on the canvas and in the panel: the head drawn by the
  * viewer's own stylesheet (styles-head.ts in @fieldia/widgets), in place of
  * the classic header and the title card; and the panel's lists of the head's
- * parts — a part's name, what it has of its own, earlier, later and remove.
+ * parts — a part's name, what it has of its own, earlier, later and remove —
+ * and of a menu's items, a divider among them as a line.
  */
 export const DESIGNER_HEAD_CSS = /* css */ `
 .fd-canvas-header-card[data-head] > :not(.fd-head) { display: none; }
@@ -19,6 +20,11 @@ export const DESIGNER_HEAD_CSS = /* css */ `
 .fd-head-line-name { flex: 1 1 8em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fd-head-line .fd-input, .fd-head-look .fd-input { flex: 1 1 7em; min-width: 0; }
 .fd-head-line .fd-hotkey-input { flex: 0 0 3.2em; text-align: center; text-transform: uppercase; }
+/* A menu's list: a divider's row a line where an item's words would be, an item that opens a menu its words then ›; the adders side by side under it. */
+.fd-head-rule { flex: 1 1 7em; height: 0; border-block-start: 1px solid var(--fd-border-strong); }
+.fd-head-line-more { color: var(--fd-muted); }
+.fd-head-line-more:dir(rtl) { display: inline-block; transform: scaleX(-1); }
+.fd-head-adders { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .fd-head-look input[type="color"] { flex: 0 0 40px; padding: 2px; }
 .fd-head-looks { display: grid; gap: 6px; }
 `;

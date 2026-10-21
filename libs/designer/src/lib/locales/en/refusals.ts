@@ -191,6 +191,11 @@ export const refusals = {
   onlyMenuBuiltin: 'Only an item of the gear menu archives, duplicates or deletes the record itself',
   onlyMenuGroup: 'Only an item of the gear menu goes under Print',
   menuNeedsWords: 'An item of the gear menu needs words, unless it is one of the record’s own (Archive, Duplicate, Delete)',
+  dividerIsALine: 'A divider is a line between items: it has no words and does nothing',
+  openerNeedsWords: 'An item that opens a menu needs words',
+  openerDoesNothing: 'An item that opens a menu does nothing of its own: each item in its menu does',
+  openerNeedsItems: 'An item that opens a menu needs an item in it, or the app’s action that gives its items',
+  onlyOpenerItems: 'Only an item that opens a menu has items of its own: add one from Add to the gear menu',
   previewNeedsFile: (label: string, stored: string) => `The attachment beside the sheet comes from a file or a picture; ${label} holds ${stored}`,
   noSidePanel: 'The sheet has no side panel to keep beside it',
   // ---- a list

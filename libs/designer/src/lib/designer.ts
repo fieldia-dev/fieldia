@@ -105,6 +105,7 @@ export type { AppKind, AppKindContext, AppKindPreviewContext, AppKindSettings } 
 export { isBlank, SCREEN_TEMPLATES, SURVEY_TEMPLATES, type PageTemplate } from './templates';
 export { askAssistant, type AssistantResult, type AssistantRun, type DesignerAssistant } from './assistant';
 export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
+export type { MenuRow } from './menu-items';
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
 export type { BlockKind, Drop, NewPart } from './layout-ops';
@@ -918,6 +919,7 @@ export function createDesigner(options: {
       notify();
     },
     model,
+    words,
   });
 
   const list = listCommands({

@@ -62,6 +62,8 @@ export const head = {
   menu: 'Menu beside it',
   menuHint: 'Each choice’s words and the app’s action; a button with no steps or action of its own opens it.',
   addChoice: 'Add a choice',
+  addDivider: 'Add a divider',
+  removeDivider: 'Remove the divider',
   choiceWords: 'Choice’s words',
   choiceAction: 'Its action',
   newChoice: 'New choice',

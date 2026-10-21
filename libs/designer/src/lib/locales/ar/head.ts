@@ -59,6 +59,8 @@ export const head: DesignerWords['head'] = {
   menu: 'قائمة بجانبه',
   menuHint: 'كلمات كل خيار وإجراء التطبيق؛ والزر الذي لا خطوات ولا إجراء له يفتحها.',
   addChoice: 'إضافة خيار',
+  addDivider: 'إضافة خط فاصل',
+  removeDivider: 'إزالة الخط الفاصل',
   choiceWords: 'كلمات الخيار',
   choiceAction: 'إجراؤه',
   newChoice: 'خيار جديد',

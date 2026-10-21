@@ -17,6 +17,7 @@ export const defaults: DesignerWords['defaults'] = {
   newButton: 'زر جديد',
   counter: 'عدّاد',
   newMenuAction: 'إجراء جديد',
+  newSubmenu: 'قائمة جديدة',
   newReport: 'تقرير',
   badge: 'شارة',
   ribbon: 'شريط',

@@ -1,4 +1,4 @@
-import type { ButtonNode, Field, FieldNode, HeadLink, LayoutNode, Page, RelatedNode, SheetNode } from '@fieldia/core';
+import type { ButtonNode, Field, FieldNode, HeadLink, LayoutNode, MenuItem, Page, RelatedNode, SheetNode } from '@fieldia/core';
 import { ICONS } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -6,6 +6,7 @@ import { findNode, findTab, tabsNodes } from './page-tree';
 import { setting } from './panel-controls';
 import { tracksFrom } from './head-commands';
 import { settingNumber } from './number-box';
+import { isDivider, opensMenu, type MenuRow } from './menu-items';
 
 /**
  * A record's head in the panel: the sheet's "Record head" settings — on or
@@ -277,8 +278,6 @@ export function buttonPartsSettings(el: ElementFactory, designer: Designer, id: 
   pressedWords.addEventListener('input', () => designer.setButtonParts(id, { pressedLabel: pressedWords.value }));
   const primary = tick(el, w.primaryWhenChanged);
   primary.addEventListener('change', () => designer.setButtonParts(id, { primaryWhenChanged: primary.checked }));
-  const menuList = el('div', { class: 'fd-head-list' });
-  const addChoice = el('button', { type: 'button', class: 'fd-button fd-button-link' }, w.addChoice);
   const menuIcon = pick(el, w.chevronIcon);
   menuIcon.addEventListener('change', () => designer.setButtonParts(id, { menuIcon: menuIcon.value || null }));
   const menuName = box(el, w.chevronName);
@@ -290,8 +289,11 @@ export function buttonPartsSettings(el: ElementFactory, designer: Designer, id: 
     if (node?.type === 'button') return node;
     return root.type === 'sheet' ? [...(root.head?.actions ?? []), ...(root.buttons ?? [])].find((b) => b.id === id) : undefined;
   };
-  const items = () => (current()?.menu ?? []).map((item) => ({ id: item.id, label: item.label ?? item.id, action: item.action ?? '' }));
-  addChoice.addEventListener('click', () => designer.setButtonParts(id, { menu: [...items(), { label: w.newChoice, action: '' }] }));
+  const menu = menuList(el, designer, {
+    current: () => current()?.menu,
+    save: (rows) => designer.setButtonParts(id, { menu: rows }),
+    words: { words: w.choiceWords, action: w.choiceAction, add: w.addChoice, newItem: w.newChoice },
+  });
   const pressedRow = setting(el, 'content', 'Words while pressed', pressedWords, { words: w.pressedWords });
   const chevronRows = [setting(el, 'content', 'Chevron’s icon', menuIcon, { words: w.chevronIcon }), setting(el, 'content', 'Chevron’s name', menuName, { words: w.chevronName })];
   const rows = [
@@ -300,10 +302,9 @@ export function buttonPartsSettings(el: ElementFactory, designer: Designer, id: 
     setting(el, 'content', 'Pressed while', toggle, { words: w.toggle }),
     pressedRow,
     setting(el, 'content', 'Primary while the record has changes', primary, { words: w.primaryWhenChanged }),
-    setting(el, 'content', 'Menu beside it', [menuList, addChoice], { hint: w.menuHint, words: w.menu }),
+    setting(el, 'content', 'Menu beside it', [menu.list, menu.adders], { hint: w.menuHint, words: w.menu }),
     ...chevronRows,
   ];
-  let drawn = '';
   return {
     rows,
     update(page) {
@@ -321,20 +322,66 @@ export function buttonPartsSettings(el: ElementFactory, designer: Designer, id: 
       for (const row of chevronRows) row.hidden = !button.menu?.length;
       fill(el, menuIcon, [['', w.noIcon], ...ICON_NAMES().map((name) => [name, name] as [string, string])], button.menuIcon ?? '');
       if (!focused(menuName)) menuName.value = button.menuLabel ?? '';
-      const key = JSON.stringify(button.menu ?? []);
-      if (key === drawn || menuList.contains(menuList.ownerDocument.activeElement)) return;
+      menu.update();
+    },
+  };
+}
+
+/** The words a menu's list is drawn with: an item's words and its action, numbered; its adder, and a new item's words. */
+export interface MenuListWords {
+  words: string;
+  action: string;
+  add: string;
+  newItem: string;
+}
+
+/**
+ * A menu's items as a list in the panel — a button's menu beside it, the menu an item of the gear menu opens — each
+ * with its ×: an item's words and the app's action; a divider, a line; an item that opens a menu of its own, its
+ * words alone (its menu kept, set in JSON). Under it, an item and a divider to add. A row is saved as a box of it is
+ * left, each item's other keys kept (menu-items.ts); the list is drawn again only when the menu changes and nothing
+ * in it has the focus.
+ */
+export function menuList(el: ElementFactory, designer: Designer, options: { current: () => readonly MenuItem[] | undefined; save: (rows: MenuRow[]) => boolean; words: MenuListWords }) {
+  const w = designer.words.head;
+  const said = options.words;
+  const list = el('div', { class: 'fd-head-list' });
+  const rowOf = (item: MenuItem): MenuRow => (isDivider(item) ? { id: item.id, type: 'divider' } : opensMenu(item) ? { id: item.id, label: item.label ?? '' } : { id: item.id, label: item.label ?? item.id, action: item.action ?? '' });
+  const rows = () => (options.current() ?? []).map(rowOf);
+  const addItem = el('button', { type: 'button', class: 'fd-button fd-button-link' }, said.add);
+  addItem.addEventListener('click', () => options.save([...rows(), { label: said.newItem, action: '' }]));
+  const addDivider = el('button', { type: 'button', class: 'fd-button fd-button-link' }, w.addDivider);
+  addDivider.addEventListener('click', () => options.save([...rows(), { type: 'divider' }]));
+  const adders = el('div', { class: 'fd-head-adders' }, addItem, addDivider);
+  let drawn = '';
+  const removing = (item: MenuItem, name: string) => {
+    const remove = el('button', { type: 'button', class: 'fd-icon-button', 'aria-label': name, title: name }, '×');
+    remove.addEventListener('click', () => options.save(rows().filter((one) => one.id !== item.id)));
+    return remove;
+  };
+  return {
+    list,
+    adders,
+    update() {
+      const menu = options.current() ?? [];
+      const key = JSON.stringify(menu);
+      if (key === drawn || list.contains(list.ownerDocument.activeElement)) return;
       drawn = key;
-      const list = items();
-      menuList.replaceChildren(
-        ...list.map((item, i) => {
-          const words = box(el, `${w.choiceWords} ${i + 1}`, { value: item.label });
-          const action = box(el, `${w.choiceAction} ${i + 1}`, { value: item.action, spellcheck: 'false' });
-          const save = () => designer.setButtonParts(id, { menu: items().map((one) => (one.id === item.id ? { ...one, label: words.value, action: action.value } : one)) });
+      // Items are counted as they are read out, a divider not among them.
+      let n = 0;
+      list.replaceChildren(
+        ...menu.map((item) => {
+          if (isDivider(item)) return el('div', { class: 'fd-head-line', 'data-part': item.id }, el('span', { class: 'fd-head-rule', role: 'separator' }), removing(item, w.removeDivider));
+          n++;
+          const name = item.label ?? item.id;
+          const words = box(el, `${said.words} ${n}`, { value: name });
+          // An item that opens a menu does nothing itself: no action, and a › after its words.
+          const action = opensMenu(item) ? null : box(el, `${said.action} ${n}`, { value: item.action ?? '', spellcheck: 'false' });
+          const save = () => options.save(rows().map((one) => (one.id === item.id ? { ...one, label: words.value, ...(action ? { action: action.value } : {}) } : one)));
           words.addEventListener('change', save);
-          action.addEventListener('change', save);
-          const remove = el('button', { type: 'button', class: 'fd-icon-button', 'aria-label': w.removeNamed(item.label), title: w.removeNamed(item.label) }, '×');
-          remove.addEventListener('click', () => designer.setButtonParts(id, { menu: items().filter((one) => one.id !== item.id) }));
-          return el('div', { class: 'fd-head-line', 'data-part': item.id }, words, action, remove);
+          action?.addEventListener('change', save);
+          const more = action ? [] : [el('span', { class: 'fd-head-line-more', 'aria-hidden': 'true' }, '›')];
+          return el('div', { class: 'fd-head-line', 'data-part': item.id }, words, ...(action ? [action] : more), removing(item, w.removeNamed(name)));
         })
       );
     },

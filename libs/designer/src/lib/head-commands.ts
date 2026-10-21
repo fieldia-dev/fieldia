@@ -1,7 +1,8 @@
-import { foldDigits, relatedInTab, type ButtonNode, type Field, type FieldNode, type HeadLink, type LayoutNode, type MenuItem, type Page, type SheetHead, type SheetNode, type TabCount, type TabNode, type TabsNode } from '@fieldia/core';
+import { foldDigits, relatedInTab, type ButtonNode, type Field, type FieldNode, type HeadLink, type LayoutNode, type Page, type SheetHead, type SheetNode, type TabCount, type TabNode, type TabsNode } from '@fieldia/core';
 import { allIds, findNode, findTab, keptFields, nextName, tabsNodes } from './page-tree';
 import { Refusal } from './refusal';
 import type { DesignerWords } from './designer-words';
+import { actionName, menuOfRows, type MenuRow } from './menu-items';
 
 /**
  * A record's head (`SheetHead`), as the designer edits it: turned on with a
@@ -51,8 +52,11 @@ export interface ButtonPartsPatch {
   primaryWhenChanged?: boolean | null;
   menuIcon?: string | null;
   menuLabel?: string | null;
-  /** Its menu's items, in order (words and an action each); null or none takes the menu away. */
-  menu?: { id?: string; label: string; action: string }[] | null;
+  /**
+   * Its menu's items, in order: words and an action each, a divider, an item that opens a menu of its own by its
+   * words — each item's other keys kept (menu-items.ts). Null or none takes the menu away.
+   */
+  menu?: MenuRow[] | null;
 }
 
 export interface HeadCommands {
@@ -129,15 +133,6 @@ export function starterActions(ids: Set<string>, words: { saveClose: string; sav
     { type: 'button', id: id('undo'), label: words.undo, icon: 'undo', iconOnly: true, steps: [{ do: 'reset' }] },
   ];
 }
-
-/** Words as an action's name: "Follow all changes" is `follow_all_changes`. */
-const actionName = (label: string) =>
-  label
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '') || 'action';
 
 /** Where a new count takes the reader: the first of the tabs in the head, else the first tab, else the first group with a title. */
 function firstPlace(page: Page): string | undefined {
@@ -430,16 +425,7 @@ export function headCommands(deps: HeadCommandsDeps): HeadCommands {
           delete button.menuIcon;
           delete button.menuLabel;
           if (!button.steps && button.action === undefined) button.action = actionName(button.label);
-        } else if (patch.menu !== undefined) {
-          const ids = allIds(draft);
-          for (const item of button.menu ?? []) ids.delete(item.id);
-          button.menu = patch.menu.map((item): MenuItem => {
-            const own = item.id && button.menu?.find((one) => one.id === item.id);
-            const id = own ? own.id : nextName((name) => ids.has(name), `${button.id}-menu`, '-');
-            ids.add(id);
-            return { ...(own ? own : {}), id, label: item.label, action: item.action.trim() || actionName(item.label) };
-          });
-        }
+        } else if (patch.menu !== undefined) button.menu = menuOfRows(patch.menu, button.menu ?? [], allIds(draft), `${button.id}-menu`);
         if (patch.menuIcon === null || patch.menuIcon === '') delete button.menuIcon;
         else if (patch.menuIcon !== undefined) {
           if (!button.menu?.length) throw new Refusal((w) => w.head.chevronNeedsMenu);

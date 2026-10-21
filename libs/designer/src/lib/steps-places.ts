@@ -1,5 +1,6 @@
 import type { ActionStep, ButtonNode, CallStep, MapFence, MapNode, MenuItem, Page, PageEvents, StatButton } from '@fieldia/core';
 import { findHeaderPart } from './header-commands';
+import { isDivider, opensMenu } from './menu-items';
 import { locate } from './layout-tree';
 import { containers, tabsNodes } from './page-tree';
 import { Refusal } from './refusal';
@@ -37,11 +38,15 @@ export function placeKey(place: StepsPlace): string {
 
 export const samePlace = (a: StepsPlace, b: StepsPlace) => placeKey(a) === placeKey(b);
 
-/** A button anywhere on the page, by its id: in the body, a record's header (a button, a counter, an item of its gear menu), or a list's. */
+/**
+ * A button anywhere on the page, by its id: in the body, a record's header (a button, a counter, an item of its gear
+ * menu), or a list's. A divider of the gear menu is none, nor is an item that opens a menu: neither does anything.
+ */
 export function pressOf(page: Page, id: string): ButtonNode | StatButton | MenuItem | null {
   const node = locate(page, id)?.node;
   if (node?.type === 'button') return node;
   const header = findHeaderPart(page, id);
+  if (header?.kind === 'menu' && (isDivider(header.part as MenuItem) || opensMenu(header.part as MenuItem))) return null;
   if (header && header.kind !== 'badge') return header.part as ButtonNode | StatButton | MenuItem;
   const root = page.layout;
   if (root.type === 'list') return root.actions?.find((a) => a.id === id) ?? null;

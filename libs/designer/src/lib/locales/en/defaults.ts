@@ -21,6 +21,8 @@ export const defaults = {
   newButton: 'New button',
   counter: 'Counter',
   newMenuAction: 'New action',
+  /** An item of the gear menu that opens a menu of its own. */
+  newSubmenu: 'New menu',
   newReport: 'Report',
   badge: 'Badge',
   ribbon: 'Ribbon',

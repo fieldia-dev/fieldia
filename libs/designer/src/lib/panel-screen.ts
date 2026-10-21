@@ -1,8 +1,9 @@
-import type { Page } from '@fieldia/core';
+import type { MenuItem, Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { settingItems, type FindItem } from './find-anything';
 import type { Designer, DesignerState } from './designer';
 import { findHeaderPart, wordsOf } from './header-commands';
+import { isDivider } from './menu-items';
 import { headerPartProperties, statusbarProperties } from './header-properties';
 import { kindById, kindName, kindOfField } from './kinds';
 import { locate, nameOf, seenAs, type Part } from './layout-tree';
@@ -90,6 +91,8 @@ export function headOf(page: Page, kind: PartKind, picked: readonly string[], fr
     case 'header': {
       const part = findHeaderPart(page, id);
       const kinds = { button: h.button, stat: h.counter, badge: h.badge, ribbon: h.ribbon, alert: h.alert, menu: h.menuItem } as const;
+      // A line between the gear menu's items is a divider, as a line between a page's parts is.
+      if (part?.kind === 'menu' && isDivider(part.part as MenuItem)) return { icon: 'play', kind: h.divider, name: '' };
       return { icon: 'play', kind: part ? kinds[part.kind] : h.button, name: part ? wordsOf(part.part) : '' };
     }
     case 'statusbar': {

@@ -3,6 +3,8 @@ import { storedAs } from './kinds';
 import { allIds, keptFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
 import { hotkeyFrom } from './hotkey-setting';
+import { actionName, isDivider, menuOfRows, opensMenu, type MenuRow } from './menu-items';
+import type { DesignerWords } from './designer-words';
 
 /**
  * A record's header, as the designer edits it: the status steps, the
@@ -21,9 +23,10 @@ export const wordsOf = (part: HeaderPart): string => ('message' in part ? part.m
 
 /**
  * What a new item of the gear menu is: one of the record's own — `printPage`, the record as the page prints it (the
- * built-in `print`) — the app's action, or a report under Print (the app's own, `print`).
+ * built-in `print`) — the app's action, a report under Print (the app's own, `print`), an item that opens a menu of
+ * its own beside it (`submenu`), or a line between items (`divider`).
  */
-export type MenuItemKind = Exclude<NonNullable<MenuItem['builtin']>, 'print'> | 'printPage' | 'action' | 'print';
+export type MenuItemKind = Exclude<NonNullable<MenuItem['builtin']>, 'print'> | 'printPage' | 'action' | 'print' | 'submenu' | 'divider';
 
 /** The kind of a gear menu's built-in item, as the designer names it: the built-in Print is `printPage`, apart from a report. */
 export const builtinKind = (builtin: NonNullable<MenuItem['builtin']>): MenuItemKind => (builtin === 'print' ? 'printPage' : builtin);
@@ -62,6 +65,14 @@ export interface HeaderPartPatch {
   /** An item of the gear menu: one of the record's own it is (empty for none), and whether it goes under Print. */
   builtin?: MenuItem['builtin'] | '';
   group?: 'actions' | 'print';
+  /**
+   * An item of the gear menu that opens a menu of its own: that menu's items, in order — each one's words and the
+   * app's action, a divider, an item that opens a menu of its own by its words — each item's other keys kept. None
+   * takes the menu away, while the app gives items (`menuFrom`).
+   */
+  menu?: MenuRow[] | null;
+  /** The app's action asked for more items as that menu opens, shown after its own; empty for none. */
+  menuFrom?: string;
 }
 
 /** How the status steps behave: clicked, where they sit, the time spent per step, folded stages, a click that saves. */
@@ -92,7 +103,10 @@ export interface HeaderCommands {
   /**
    * An item at the end of the gear menu over the record: one of the record's
    * own (Archive, Unarchive, Duplicate, Delete) in the page's words, or the
-   * app's action, or a report under Print, with these words. Returns its id, picked.
+   * app's action, or a report under Print, with these words; an item that
+   * opens a menu of its own, with these words, its menu's first item the
+   * app's action in the designer's words for a new one; or a line between
+   * items, with none. Returns its id, picked.
    */
   addMenuItem(kind: MenuItemKind, label?: string): string | false;
   /** Whether the pager and the breadcrumbs the app gives show over the record: true takes the page's "no" away. */
@@ -129,19 +143,12 @@ export function findHeaderPart(page: Page, id: string): { kind: HeaderPartKind; 
   return null;
 }
 
-/** Words as an action's name: "Send by email" is `send_by_email`. */
-const actionName = (label: string) =>
-  label
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '') || 'action';
-
 export interface HeaderContext {
   apply(edit: (draft: Page) => void, merge?: string | null): boolean;
   select(id: string): void;
   model: Record<string, Field>;
+  /** The designer's words, for what it writes into a new part: in its language. */
+  words: DesignerWords;
 }
 
 export function headerCommands(context: HeaderContext): HeaderCommands {
@@ -234,11 +241,18 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
       return apply(
         (draft) => {
           const { kind, part } = partOf(draft, id);
+          // A divider is a line between items: no words, nothing it does. An item that opens a menu does nothing itself.
+          const menuItem = kind === 'menu' ? (part as MenuItem) : null;
+          if (menuItem && isDivider(menuItem) && ((['label', 'action', 'builtin', 'menu', 'menuFrom'] as const).some((key) => patch[key] !== undefined) || !!patch.confirm?.trim() || !!patch.icon)) {
+            throw new Refusal((w) => w.refusals.dividerIsALine);
+          }
+          if (menuItem && opensMenu(menuItem) && (patch.action !== undefined || patch.builtin !== undefined || !!patch.confirm?.trim())) throw new Refusal((w) => w.refusals.openerDoesNothing);
           if (patch.label !== undefined) {
             if (kind === 'alert') (part as Alert).message = patch.label;
             else (part as Exclude<HeaderPart, Alert>).label = patch.label;
           }
           if (patch.label !== undefined && kind === 'menu' && !patch.label.trim()) {
+            if (menuItem && opensMenu(menuItem)) throw new Refusal((w) => w.refusals.openerNeedsWords);
             // A built-in item's words may go: its own come back, in the page's language.
             if (!(part as MenuItem).builtin) throw new Refusal((w) => w.refusals.menuNeedsWords);
             delete (part as MenuItem).label;
@@ -266,6 +280,22 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
             const own = item.builtin === 'print' ? 'print' : 'actions';
             if (patch.group === own) delete item.group;
             else item.group = patch.group;
+          }
+          if (patch.menu !== undefined || patch.menuFrom !== undefined) {
+            // The items of the menu an item opens: its own, then the app's as it opens. It keeps one or the other.
+            if (!menuItem || !opensMenu(menuItem)) throw new Refusal((w) => w.refusals.onlyOpenerItems);
+            if (patch.menuFrom !== undefined) {
+              const from = patch.menuFrom.trim();
+              if (from) menuItem.menuFrom = from;
+              else {
+                delete menuItem.menuFrom;
+                // Its params go too: the app's action that gives the items is what they are asked with.
+                delete menuItem.params;
+              }
+            }
+            if (patch.menu === null || patch.menu?.length === 0) delete menuItem.menu;
+            else if (patch.menu) menuItem.menu = menuOfRows(patch.menu, menuItem.menu ?? [], allIds(draft), `${menuItem.id}-item`);
+            if (!menuItem.menu?.length && menuItem.menuFrom === undefined) throw new Refusal((w) => w.refusals.openerNeedsItems);
           }
           if (patch.style !== undefined) {
             if (kind !== 'button') throw new Refusal((w) => w.refusals.onlyButtonStyle);
@@ -415,10 +445,19 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
       const ok = apply((draft) => {
         const root = sheetOf(draft);
         const ids = allIds(draft);
-        created = nextName((id) => ids.has(id), kind === 'action' || kind === 'print' ? 'menu' : `menu-${kind}`, '-');
+        created = nextName((id) => ids.has(id), kind === 'action' || kind === 'print' ? 'menu' : kind === 'submenu' ? 'submenu' : `menu-${kind}`, '-');
+        ids.add(created);
         const words = (label ?? '').trim();
         let item: MenuItem;
-        if (kind === 'action' || kind === 'print') {
+        if (kind === 'divider') {
+          if (words) throw new Refusal((w) => w.refusals.dividerIsALine);
+          item = { id: created, type: 'divider' };
+        } else if (kind === 'submenu') {
+          if (!words) throw new Refusal((w) => w.refusals.openerNeedsWords);
+          // Its menu starts with an item, as a new item of the gear menu is: the app's action, in the designer's words for one.
+          const first = context.words.defaults.newMenuAction;
+          item = { id: created, label: words, menu: [{ id: nextName((one) => ids.has(one), `${created}-item`, '-'), label: first, action: actionName(first) }] };
+        } else if (kind === 'action' || kind === 'print') {
           if (!words) throw new Refusal((w) => w.refusals.menuNeedsWords);
           item = { id: created, label: words, ...(kind === 'print' ? { group: 'print' as const } : {}), action: actionName(words) };
         } else item = { id: created, ...(words ? { label: words } : {}), builtin: kind === 'printPage' ? 'print' : kind };

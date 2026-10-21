@@ -88,6 +88,48 @@ describe('a record’s header on the canvas', () => {
     expect(designer.getState().selected).toBe(badge);
   });
 
+  it('draws the gear menu’s divider as a short line and an item that opens a menu with ›, its other items as they were', () => {
+    const { designer, q, sheet } = setup();
+    const archive = designer.addMenuItem('archive') as string;
+    const rule = designer.addMenuItem('divider') as string;
+    const more = designer.addMenuItem('submenu', 'Templates') as string;
+    designer.select(null);
+    // The record's own item looks as it did: a chip with its words.
+    expect(q(`[data-part="${archive}"]`).className).toBe('fd-badge fd-canvas-menu-item fd-canvas-part');
+    expect(q(`[data-part="${archive}"]`).textContent).toBe('Archive');
+    const line = q(`[data-part="${rule}"]`);
+    expect(line.className).toBe('fd-canvas-menu-divider fd-canvas-part');
+    expect(line.textContent).toBe('');
+    expect(line.getAttribute('aria-label')).toBe('A line between items');
+    expect(line.querySelector('.fd-canvas-menu-rule')?.getAttribute('aria-hidden')).toBe('true');
+    const opener = q(`[data-part="${more}"]`);
+    expect(opener.className).toBe('fd-badge fd-canvas-menu-item fd-canvas-part');
+    expect(opener.textContent).toBe('Templates›');
+    expect(opener.querySelector('.fd-canvas-menu-more')?.getAttribute('aria-hidden')).toBe('true');
+    // Picked, the divider has the bar on it and no words to type; it moves and goes as any part.
+    line.click();
+    expect(designer.getState().selected).toBe(rule);
+    const picked = q(`[data-part="${rule}"]`);
+    expect(picked.classList.contains('fd-editing')).toBe(true);
+    expect(picked.querySelector('input')).toBeNull();
+    expect(picked.querySelector('.fd-canvas-menu-rule')).not.toBeNull();
+    q<HTMLButtonElement>(`[data-part="${rule}"] [aria-label="Move left"]`).click();
+    expect(sheet().toolbar?.menu?.map((item) => item.id)).toEqual([rule, archive, more]);
+    // The same box, still picked, its bar knowing it is first now.
+    expect(q(`[data-part="${rule}"]`)).toBe(picked);
+    expect(q(`[data-part="${rule}"] [aria-label="Move left"]`).hidden).toBe(true);
+    q<HTMLButtonElement>(`[data-part="${rule}"] [aria-label="Delete"]`).click();
+    expect(sheet().toolbar?.menu?.map((item) => item.id)).toEqual([archive, more]);
+    // Picked, an item that opens a menu has its words to type, then ›.
+    q(`[data-part="${more}"]`).click();
+    const input = q<HTMLInputElement>(`[data-part="${more}"] input`);
+    expect(input.value).toBe('Templates');
+    expect(q(`[data-part="${more}"] .fd-canvas-menu-more`)).not.toBeNull();
+    input.value = 'Letters';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(sheet().toolbar?.menu?.[1]).toMatchObject({ id: more, label: 'Letters', menu: [{ label: 'New action' }] });
+  });
+
   it('moves and deletes the part picked from the bar on it', () => {
     const { q, add, sheet } = setup();
     add('button');

@@ -32,6 +32,7 @@ export const workText: DesignerWords['workText'] = {
   richText: 'نص منسّق',
   markdown: 'Markdown',
   switchEditor: 'يمكن التبديل بين المحررين',
+  readFirst: 'يُقرأ أولًا، ويُغيَّر من زر التحرير',
   tools: 'الأدوات',
   mentions: 'الأشخاص المشار إليهم بـ @ من',
   mentionsPlaceholder: 'res.users',

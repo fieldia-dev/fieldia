@@ -1,12 +1,13 @@
-import { validatePage, type ButtonNode, type Field, type Page, type SheetNode, type TabsNode } from '@fieldia/core';
+import { checkPage, validatePage, type ButtonNode, type Field, type MenuItem, type Page, type SheetNode, type TabsNode } from '@fieldia/core';
 import { createDesigner, type Designer } from './designer';
-import { button, choose, field, mount, openTab, type } from './test-editor';
+import { button, choose, field, mount, openTab, type, typeAndLeave } from './test-editor';
 
 /**
  * A record's head in the designer: turned on with a work item's buttons, its
  * kind from a field with each kind's colour and icon, its number, its row's
  * fields and counts, its band's fields with their access keys and columns,
- * "Updated by"; a button's icon alone, toggle and menu; a tab's icon and
+ * "Updated by"; a button's icon alone, toggle and menu — its dividers and the
+ * menus its items open kept as another item is edited; a tab's icon and
  * count, the tabs put in the head; a field's access key. Each edit keeps the
  * page valid, an edit elsewhere never drops a field the head shows, the panel
  * sets them as a person would, and the canvas draws the head.
@@ -160,6 +161,67 @@ describe('a record head’s commands', () => {
     d.setHead(null);
     expect((sheet(d).children[0] as TabsNode).place).toBeUndefined();
     valid(d);
+  });
+});
+
+/** A work item with a head whose Save and Close's menu has a divider and an item that opens a menu, as JSON would bring them. */
+function withButtonMenu(menu: MenuItem[]): { d: Designer; id: string } {
+  const d = designer();
+  d.setHead({});
+  const page = JSON.parse(JSON.stringify(d.getPage())) as ReturnType<typeof d.getPage>;
+  const save = (page.layout as SheetNode).head?.actions?.[0] as ButtonNode;
+  save.menu = menu;
+  return { d: createDesigner({ page, model: MODEL }), id: save.id };
+}
+const menuOfButton = (d: Designer, id: string) => sheet(d).head?.actions?.find((b) => b.id === id)?.menu;
+const RULE: MenuItem = { id: 'm-rule', type: 'divider' };
+const MORE: MenuItem = { id: 'm-more', label: 'More', menu: [{ id: 'm-link', label: 'Copy link', icon: 'link', action: 'copy_link' }], menuFrom: 'share_targets' };
+const checked = (d: Designer) => {
+  const found = checkPage(d.getPage());
+  expect(found.ok ? [] : found.issues.map((i) => `${i.path}: ${i.message}`)).toEqual([]);
+};
+
+describe('a button’s menu with a divider and an item that opens a menu', () => {
+  it('keeps the divider a line and the item’s menu as another row is edited, and adds a divider', () => {
+    const { d, id } = withButtonMenu([{ id: 'm-all', label: 'All changes', icon: 'eye', action: 'all_changes' }, RULE, MORE]);
+    checked(d);
+    // Another row's words: the divider stays as it is, the item that opens a menu gets no action and keeps its menu.
+    expect(d.setButtonParts(id, { menu: [{ id: 'm-all', label: 'Every change', action: 'all_changes' }, { id: 'm-rule', type: 'divider' }, { id: 'm-more', label: 'More' }] })).toBe(true);
+    expect(menuOfButton(d, id)).toEqual([{ id: 'm-all', label: 'Every change', icon: 'eye', action: 'all_changes' }, RULE, MORE]);
+    checked(d);
+    // Its own words change, its menu kept; a divider added at the end.
+    expect(d.setButtonParts(id, { menu: [{ id: 'm-all', label: 'Every change', action: 'all_changes' }, { id: 'm-rule', type: 'divider' }, { id: 'm-more', label: 'Share' }, { type: 'divider' }] })).toBe(true);
+    const [, , more, added] = menuOfButton(d, id) as MenuItem[];
+    expect(more).toEqual({ ...MORE, label: 'Share' });
+    expect(added).toEqual({ id: `${id}-menu-1`, type: 'divider' });
+    checked(d);
+  });
+
+  it('shows the divider as a line and the item that opens a menu by its words alone in the panel, each kept as a row is left', () => {
+    const { d, id } = withButtonMenu([{ id: 'm-all', label: 'All changes', action: 'all_changes' }, RULE, MORE]);
+    const { host } = mount(d, { mode: 'advanced' });
+    d.select(id);
+    const row = (part: string) => host.querySelector(`[data-setting="Menu beside it"] [data-part="${part}"]`) as HTMLElement;
+    expect(row('m-rule').querySelector('[role="separator"]')).not.toBeNull();
+    expect(row('m-rule').querySelector('input')).toBeNull();
+    expect(button(row('m-rule'), 'Remove the divider')).toBeDefined();
+    // The item that opens a menu: its words, no action, and a › after them; counted after the first.
+    expect([...row('m-more').querySelectorAll('input')].map((box) => box.getAttribute('aria-label'))).toEqual(['Choice’s words 2']);
+    expect(row('m-more').textContent).toContain('›');
+    typeAndLeave(field(host, 'Choice’s words 1'), 'Every change');
+    expect(menuOfButton(d, id)).toEqual([{ id: 'm-all', label: 'Every change', action: 'all_changes' }, RULE, MORE]);
+    typeAndLeave(field(host, 'Choice’s words 2'), 'Share');
+    expect(menuOfButton(d, id)?.[2]).toEqual({ ...MORE, label: 'Share' });
+    checked(d);
+    button(host, 'Add a divider')?.click();
+    expect(menuOfButton(d, id)?.map((item) => item.type ?? item.id)).toEqual(['m-all', 'divider', 'm-more', 'divider']);
+    button(host, 'Add a choice')?.click();
+    expect(menuOfButton(d, id)?.[4]).toEqual({ id: `${id}-menu-2`, label: 'New choice', action: 'new_choice' });
+    checked(d);
+    // A divider's × takes it alone away.
+    button(row('m-rule'), 'Remove the divider')?.click();
+    expect(menuOfButton(d, id)?.map((item) => item.type ?? item.id)).toEqual(['m-all', 'm-more', 'divider', `${id}-menu-2`]);
+    checked(d);
   });
 });
 

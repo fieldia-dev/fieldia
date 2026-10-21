@@ -1,4 +1,4 @@
-import { ANY_FUNCTION, cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListCalendar, type ListCard, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { ANY_FUNCTION, cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListCalendar, type ListCard, type ListMap, type MapNode, type MenuItem, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { headFields, headParts, tabCountFields } from './head-parts';
@@ -92,6 +92,9 @@ export function allIds(page: Page): Set<string> {
   // A sheet's header parts have ids of their own.
   const root = page.layout;
   if (root.type === 'sheet') for (const part of sheetParts(root)) ids.add(part.id);
+  // A menu's items too, at any depth: a button's menu's, the gear menu's, and the menus their items open.
+  if (root.type === 'sheet') for (const part of sheetParts(root)) for (const id of menuIds((part as { menu?: MenuItem[] }).menu)) ids.add(id);
+  for (const c of containers(page)) for (const child of c.children) if (child.type === 'button') for (const id of menuIds(child.menu)) ids.add(id);
   // A list's filters and buttons too, a row's own among them; and a related list's rows' buttons.
   if (root.type === 'list') for (const part of [...(root.filters ?? []), ...(root.actions ?? []), ...(root.rowButtons ?? [])]) ids.add(part.id);
   for (const c of containers(page)) for (const child of c.children) if (child.type === 'related') for (const button of child.rowButtons ?? []) ids.add(button.id);
@@ -263,6 +266,9 @@ export function tabHolds(tab: TabNode, id: string | null): boolean {
   const walk = (nodes: LayoutNode[]): boolean => nodes.some((n) => n.id === id || ('children' in n && Array.isArray(n.children) && walk(n.children as LayoutNode[])));
   return walk(tab.children);
 }
+
+/** The ids of a menu's items at any depth: those of the menus its items open too. */
+export const menuIds = (items: readonly MenuItem[] | undefined): string[] => (items ?? []).flatMap((item) => [item.id, ...menuIds(item.menu)]);
 
 /** A sheet's own parts outside its sections, each with an id: buttons, stat buttons, badges, alerts and their buttons, ribbons. */
 export function sheetParts(root: SheetNode): { id: string }[] {

@@ -393,6 +393,12 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-menu-items { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .fd-canvas-menu-item { font: inherit; font-size: 12.5px; }
 .fd-canvas-menu-print { border-style: dashed; }
+/* A divider of the gear menu: a short upright line between its neighbours; an item that opens a menu of its own, its words then ›. */
+.fd-canvas-menu-divider { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; align-self: stretch; padding: 2px 5px; border-radius: 4px; }
+.fd-canvas-menu-rule { display: block; width: 1px; height: 18px; background: var(--fd-border-strong); }
+.fd-canvas-menu-divider:focus-visible { outline: 2px solid var(--fd-focus, var(--fd-accent)); outline-offset: 1px; }
+.fd-canvas-menu-more { margin-inline-start: 4px; color: var(--fd-muted); }
+.fd-canvas-menu-more:dir(rtl) { display: inline-block; transform: scaleX(-1); }
 .fd-canvas-header-card { display: grid; gap: 10px; justify-items: stretch; }
 /* Not at the card's edge here, as the viewer's are: no reaching out to it. */
 .fd-canvas .fd-canvas-stats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; margin: 0; border-block-end: 0; }

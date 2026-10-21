@@ -10,14 +10,17 @@ import type { PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
 import { hotkeyShown } from './hotkey-setting';
 import { shownWhileSetting } from './shown-while';
-import { buttonPartsSettings } from './head-properties';
+import { buttonPartsSettings, menuList } from './head-properties';
+import { isDivider, opensMenu } from './menu-items';
 
 /**
  * The panel for a part of a record's header: a button, a counter, a badge or
  * an item of the gear menu — its words, what it does, how it looks and when
  * it shows (an item: whether it is one of the record's own, and whether it
- * goes under Print) — and for the status steps: which field, whether a step
- * can be clicked, and where they sit.
+ * goes under Print; one that opens a menu of its own: that menu's items and
+ * the app's action that gives more; a divider: only when it shows, moved or
+ * taken away) — and for the status steps: which field, whether a step can be
+ * clicked, and where they sit.
  */
 
 const prop = (el: ElementFactory, text: string, control: HTMLElement) => el('label', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, text), control);
@@ -37,6 +40,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const w = designer.words.panel;
   const words = el('input', { class: 'fd-input', 'aria-label': w.words }) as HTMLInputElement;
   words.addEventListener('input', () => designer.updateHeaderPart(id, { label: words.value }));
+  const wordsRow = prop(el, w.words, words);
   // steps lane: what a button or a counter does when clicked, its app action one of the steps.
   const kindNow = findHeaderPart(designer.getPage(), id)?.kind;
   const pressed = kindNow === 'button' || kindNow === 'stat' || kindNow === 'menu' ? whenClicked(el, designer, id) : null;
@@ -47,6 +51,16 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const group = select(el, w.menuGroup, [['actions', w.menuGroups.actions], ['print', w.menuGroups.print]]);
   group.addEventListener('change', () => designer.updateHeaderPart(id, { group: group.value as 'actions' | 'print' }));
   const groupRow = setting(el, 'content', 'Under', group, { words: w.menuGroup });
+  // An item of the gear menu that opens a menu of its own: that menu's items, and the app's action that gives more as it opens.
+  const items = menuList(el, designer, {
+    current: () => (findHeaderPart(designer.getPage(), id)?.part as MenuItem | undefined)?.menu,
+    save: (rows) => designer.updateHeaderPart(id, { menu: rows }),
+    words: { words: w.itemWords, action: w.itemAction, add: w.addItem, newItem: designer.words.defaults.newMenuAction },
+  });
+  const itemsRow = setting(el, 'content', 'Its menu', [items.list, items.adders], { hint: w.itsMenuHint, words: w.itsMenu });
+  const from = el('input', { class: 'fd-input', 'aria-label': w.menuFrom, placeholder: w.optional, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+  from.addEventListener('change', () => designer.updateHeaderPart(id, { menuFrom: from.value }));
+  const fromRow = setting(el, 'content', 'Items the app gives as it opens', from, { hint: w.menuFromHint, words: w.menuFrom });
   const look = select(el, w.look, [['secondary', w.buttonLooks.secondary], ['primary', w.buttonLooks.primary], ['danger', w.buttonLooks.danger], ['link', w.buttonLooks.link]]);
   look.addEventListener('change', () => designer.updateHeaderPart(id, { style: look.value as ButtonNode['style'] }));
   const lookRow = prop(el, w.look, look);
@@ -121,9 +135,11 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const element = el(
     'div',
     { class: 'fd-props' },
-    prop(el, w.words, words),
+    wordsRow,
     builtinRow,
     groupRow,
+    itemsRow,
+    fromRow,
     ...(pressed ? [pressed.element] : []),
     lookRow,
     asksRow,
@@ -153,8 +169,18 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       pressed?.update(page);
       parts.update(page);
       lookRow.hidden = hotkeyRow.hidden = kind !== 'button';
-      asksRow.hidden = kind !== 'button' && kind !== 'menu';
-      builtinRow.hidden = groupRow.hidden = kind !== 'menu';
+      // A divider of the gear menu has no words and does nothing; an item that opens a menu does nothing itself.
+      const rule = kind === 'menu' && isDivider(part as MenuItem);
+      const opens = kind === 'menu' && opensMenu(part as MenuItem);
+      wordsRow.hidden = rule;
+      asksRow.hidden = (kind !== 'button' && kind !== 'menu') || rule || opens;
+      builtinRow.hidden = groupRow.hidden = kind !== 'menu' || rule || opens;
+      if (pressed) pressed.element.hidden = rule || opens;
+      itemsRow.hidden = fromRow.hidden = !opens;
+      if (opens) {
+        items.update();
+        if (!focused(from)) from.value = (part as MenuItem).menuFrom ?? '';
+      }
       if (kind === 'menu') {
         const item = part as MenuItem;
         builtin.value = item.builtin ?? 'none';
