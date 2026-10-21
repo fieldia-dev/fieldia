@@ -77,6 +77,8 @@ import { EVENT_COUNTS, eventSignupPage } from './event-signup';
 import clinicIntake from '../../examples/pages/clinic-intake.page.json';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 import { keepViews, keptViews } from './saved-views';
+import ordersReview from '../../examples/pages/orders-review.page.json';
+import { reviewOrders } from './orders-review';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -88,6 +90,8 @@ export const pages: Record<string, Page> = {
   invoices: invoices as Page,
   // 1,284 contacts to select all of, export and change in bulk, and the page each opens: shared/contacts.ts.
   contacts: contacts as Page,
+  // Orders whose rows open in place to their lines, and the order each opens: shared/orders-review.ts.
+  'orders-review': ordersReview as Page,
   contact: contactPage,
   // A customer with its invoices and quotations listed inside it, and a home with its viewings: shared/related-lists.ts.
   'customer-account': customerAccount as Page,
@@ -239,6 +243,7 @@ const RECORD_PAGES: Record<string, string> = {
   'homes-gallery': 'map-home',
   'homes-search': 'map-home',
   'leads-queue': 'lead',
+  'orders-review': 'order',
   'map-couriers': 'map-courier',
   'map-zones': 'map-week-order',
   'map-heat': 'map-week-order',
@@ -750,8 +755,9 @@ export function sampleDataSource() {
     },
   });
   // What this tab saved in the demos, in place of the samples (shared/kept.ts) — the customer typed twice's second Nile
-  // Traders, someone else's, to find and merge (shared/duplicates.ts), back unless it was merged away.
-  const extra: Record<string, Record<string, Values>> = params.get('page') === 'customer-card' ? { partner: duplicateCustomers() } : {};
+  // Traders, someone else's, to find and merge (shared/duplicates.ts), back unless it was merged away; the orders to
+  // review, on their list and on the order's page each row opens (shared/orders-review.ts).
+  const extra: Record<string, Record<string, Values>> = params.get('page') === 'customer-card' ? { partner: duplicateCustomers() } : ['orders-review', 'order'].includes(params.get('page') ?? '') ? { 'sale.order': reviewOrders() } : {};
   // The sales team's queue keeps its saved views on its server, the team's shared ones among them (shared/saved-views.ts).
   const views = params.get('page') === 'leads-queue' ? { views: keptViews() } : {};
   const source = createMemoryDataSource({ ...options, ...views, records: keptOver(options?.records ?? {}, extra), notDuplicatePairs: keptApart() });

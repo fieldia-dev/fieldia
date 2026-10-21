@@ -1239,6 +1239,12 @@ export interface ListNode {
   /** Rows nested under their parent by this many2one (to the list's own model), with Expand all and Collapse all in the header. */
   parentField?: string;
   /**
+   * What a row opens in place to show, under it, without leaving the list: its record's lines (a table of lines of the
+   * page's) or another model's records pointing at it, a page at a time, to read — a toggle before its name, Right and
+   * Left on the row, several open at once. None unless given.
+   */
+  detail?: ListDetail;
+  /**
    * Export, in the list's bar: the rows ticked — or, none ticked, every
    * record the search finds — as an Excel workbook or a CSV file, the
    * columns as the list shows them. Off unless true, as Edit is: an app
@@ -1342,6 +1348,32 @@ export interface ListCard {
   labels?: boolean;
   /** The first line leads: larger and bold, as a home's price heads its card. */
   lead?: boolean;
+}
+
+/**
+ * What a list's row opens in place to show (`ListNode.detail`): its record's lines — a table of lines of the page's
+ * (`lines`), as the source loads the record — or another model's records that point at it (`model`, `field` and their
+ * `fields`, as a related list's), a page at a time, to read.
+ */
+export interface ListDetail {
+  /** Words over them, and the toggle's name with the row's ("Lines of SO-0012"): the lines' label unless said. */
+  title?: string;
+  /** A table of lines of the page's (a one2many field): the row's record's lines, its columns of the lines' fields. */
+  lines?: string;
+  /** Or another model's records that point at the row's record: their model ("invoice")… */
+  model?: string;
+  /** …their link to it, a many2one of theirs ("partner_id")… */
+  field?: string;
+  /** …and their fields its columns show: plain values, as a related list's. */
+  fields?: { [name: string]: LinkedField };
+  /** The fields shown, in order: the lines' or the records'. */
+  columns: string[];
+  /** Each column's cells, as a list's: a widget, a width, a side, a total. */
+  cells?: { [column: string]: ListCell };
+  /** Their order: by the first, then the next. */
+  sort?: { field: string; desc?: boolean }[];
+  /** How many a page holds: 5 unless said. */
+  limit?: number;
 }
 
 /** A list's gallery: its records as cards in a grid on any width. */
@@ -1883,6 +1915,26 @@ export const FilterRangeSchema = z
   .meta({ id: 'FilterRange' });
 
 /** A list's gallery: whether the list opens on it, and how wide a card is at least. */
+export const ListDetailSchema = z
+  .strictObject({
+    title: z.string().min(1).optional(),
+    lines: fieldName.optional(),
+    model: z.string().min(1).optional(),
+    field: fieldName.optional(),
+    fields: z.record(fieldName, LinkedFieldSchema).optional(),
+    columns: z.array(fieldName).min(1),
+    cells: z.record(fieldName, ListCellSchema).optional(),
+    sort: z.array(z.strictObject({ field: fieldName, desc: z.boolean().optional() })).optional(),
+    limit: z.int().min(1).max(100).optional(),
+  })
+  .refine((detail) => (detail.lines !== undefined) !== (detail.model !== undefined || detail.field !== undefined || detail.fields !== undefined), {
+    message: 'a row opens to its lines (lines), or to the records pointing at it (model, field and fields): one of them',
+  })
+  .refine((detail) => detail.lines !== undefined || (detail.model !== undefined && detail.field !== undefined && detail.fields !== undefined), {
+    message: 'the records a row opens to need their model, their link to it (field) and their fields',
+  })
+  .meta({ id: 'ListDetail' });
+
 export const ListGallerySchema = z
   .strictObject({
     opens: z.enum(['list', 'gallery']).optional(),
@@ -2259,6 +2311,7 @@ export const ListNodeSchema = z.strictObject({
   filterCounts: z.boolean().optional(),
   filterSheet: z.boolean().optional(),
   parentField: fieldName.optional(),
+  detail: ListDetailSchema.optional(),
   export: z.boolean().optional(),
   bulkEdit: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
   import: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),

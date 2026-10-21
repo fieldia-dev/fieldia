@@ -657,6 +657,22 @@ saveView?({ pageId, model, list, view: { id?, name, state: { facets, sort?, colu
 deleteView?({ pageId, model, list, id }): Promise<void>;
 ```
 
+**A row opened in place.** With `detail`, each row opens under itself to what
+its record holds — its lines, a table of lines of the page's (`lines`), loaded
+with the record through `load` — or to another model's records pointing at it
+(`model`, `field` and their `fields`, as a related list's, asked of `list`), a
+page at a time (`limit`, 5 unless said), read only: an arrow before the row's
+name (with its words in the card on a phone), Right and Left on the row,
+several open at once, each kept open as the list asks again; the row's press
+still opens the record. A section's heading or a note among the lines
+(`lineKinds`) reads across the row. Without `load` (lines) or `list` (records),
+no arrow. It comes in the rows part (`fieldia.rows.js`).
+
+```json
+"detail": { "lines": "line_ids", "columns": ["product_id", "name", "qty", "price", "subtotal"], "sort": [{ "field": "sequence" }], "limit": 5 }
+"detail": { "title": "Invoices", "model": "invoice", "field": "partner_id", "fields": { … }, "columns": ["name", "amount"] }
+```
+
 ## On paper
 
 Every page prints — Ctrl+P, the browser's menu, or the page's own Print — as a

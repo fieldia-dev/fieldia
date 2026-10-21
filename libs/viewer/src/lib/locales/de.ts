@@ -280,6 +280,8 @@ export const de: ViewerLabels = {
   loadMore: '{n} weitere anzeigen',
   sortKeyUp: 'Sortierung {n} von {total}, aufsteigend',
   sortKeyDown: 'Sortierung {n} von {total}, absteigend',
+  detailOf: '{title} von {name}',
+  detailTitle: 'Details',
   viewShared: 'Mit dem Team geteilt',
   viewSharedBy: 'Geteilt von {name}',
   shareView: 'Mit dem Team teilen',

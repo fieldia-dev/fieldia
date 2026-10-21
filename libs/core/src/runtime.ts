@@ -54,6 +54,7 @@ export type {
   ListCell,
   ListCard,
   ListGallery,
+  ListDetail,
   MapCard,
   CardLine,
   CardPart,

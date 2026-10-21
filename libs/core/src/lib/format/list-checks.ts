@@ -4,6 +4,7 @@ import type { Page } from './page';
 import { BULK_KINDS, bulkSettable } from './bulk-edit';
 import { IMPORT_KINDS, importable } from './import-fields';
 import type { Scope } from './references';
+import { checkListWork } from './list-rows-checks';
 
 /**
  * The checks of a list page's own settings (`layout.type: "list"`): its filters, buttons, calendar, map, filter bar,
@@ -81,6 +82,8 @@ export function checkList(list: ListNode, path: string, tools: ListTools): void 
   if (list.calendar) checkListCalendar(list, `${path}.calendar`, tools);
   checkListCells(list, path, tools);
   checkListRows(list, path, tools);
+  // Its rows a person works in: opened in place (list-rows-checks.ts).
+  checkListWork(list, path, tools, checkListed);
 }
 
 /**

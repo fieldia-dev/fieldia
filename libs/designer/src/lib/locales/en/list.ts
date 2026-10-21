@@ -249,4 +249,12 @@ export const list = {
     slots: { 15: '15 minutes', 30: '30 minutes', 60: 'An hour' } as Record<15 | 30 | 60, string>,
     note: 'The app shows the calendar and opens the records made on it. A record outside the hours stretches them.',
   },
+  // ---- rows a person works in
+  work: {
+    title: 'Rows people work in',
+    opensTo: 'A row opens to',
+    opensToHint: 'Its arrow before the name shows them under the row, a page at a time; the row’s press still opens the record.',
+    opensToNothing: 'Nothing: a press opens the record',
+    opensToRecords: 'The records pointing at it (in the JSON)',
+  },
 };

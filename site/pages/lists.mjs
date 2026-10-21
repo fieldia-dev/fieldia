@@ -59,6 +59,7 @@ ${code(
     <tr><td>${c('search')} · ${c('filterFields')} · ${c('filterLabels')}</td><td>${c('"fields"')}: a keyword box and a list of values to tick for each of ${c('filterFields')}, in place of the search bar; ${c('filterLabels')} gives a filter its own, shorter name on the bar, by field (${c('{ "iteration": "Iteration" }')} for Iteration Path), translated with the page's words.</td></tr>
     <tr><td>${c('filterRanges')} · ${c('filterCounts')} · ${c('filterSheet')}</td><td>A number's or a date's range on the filter bar — From and To, a press for each least value (${c('{ "bedrooms": { "atLeast": [1, 2, 3, 4] } }')}) — one chip; how many records each value, named filter and favourite finds, beside it; and on a phone the filter bar's fields in a sheet with <em>Show 37 homes</em>: see <a href="#filters">filters a buyer and a sales team expect</a>.</td></tr>
     <tr><td>${c('parentField')}</td><td>Rows nested under their parent by this link to the list's own records, with Expand all and Collapse all.</td></tr>
+    <tr><td>${c('detail')}</td><td>What a row opens to in place, under it: its record's lines, or the records pointing at it, a page at a time — see <a href="#work">lists people work in</a>.</td></tr>
     <tr><td>${c('export')}</td><td>${c('true')}: Export in the list's bar. Off unless said, as Edit is: see <a href="#bulk">taking records away</a>.</td></tr>
     <tr><td>${c('bulkEdit')}</td><td>Edit, for the rows chosen: ${c('true')} offers the columns one value can set, a list of fields offers those. Off unless said: see <a href="#bulk">changing many at once</a>.</td></tr>
     <tr><td>${c('card')} · ${c('gallery')}</td><td>Each record as a card where the list is as narrow as a phone, and a gallery of cards on the switcher on any width: see <a href="#shape">cards, a gallery, and columns people shape</a>.</td></tr>
@@ -342,6 +343,25 @@ mountViewer(host, {
 
 <h2 id="work">Lists people work in all day</h2>
 <p><strong>Several orders at once.</strong> A header's press puts its column first, then the other way. With <kbd>Shift</kbd> held, a press adds its column after those already chosen — <em>by agent, then by date</em> — pressed again with <kbd>Shift</kbd>, the other way, and a third time it goes. Each column in the order shows its place beside its arrow (1, 2, 3) once there is more than one; a screen reader hears it after the header's name (<em>sorted 2 of 3, descending</em>), and the first carries ${c('aria-sort')}, as a table says one. The page's own ${c('sort')} breaks the ties after them; your source gets them all in ${c('sort')}, in order — nothing new to answer.</p>
+
+<h3 id="detail">A row opened in place</h3>
+<p>With ${c('detail')}, an arrow before each row's name opens the row under itself to what its record holds — its lines — or to the records that point at it, a page at a time, to read: an order's lines checked without leaving the list, an approval's items, a booking's contents. Several stay open at once, and stay open as the list asks again; <kbd>→</kbd> opens a row from the keys and <kbd>←</kbd> closes it (the other way round right to left), <kbd>↑</kbd> <kbd>↓</kbd> pass over what is open, and the row's own press still opens the record. On a phone the arrow is under the card, with its words.</p>
+${code(
+  'json',
+  `
+"detail": {
+  "lines": "line_ids",
+  "columns": ["product_id", "name", "qty", "price", "discount", "subtotal"],
+  "sort": [{ "field": "sequence" }],
+  "limit": 5
+}`
+)}
+<ul>
+  <li><strong>Its lines</strong> (${c('lines')}: a table of lines of the page's) come with the record, asked once of the source's ${c('load')} as the row first opens; a section's heading or a note among them (${c('lineKinds')}) reads across the row.</li>
+  <li><strong>The records pointing at it</strong> — ${c('"model": "invoice", "field": "partner_id", "fields": { … }')}, as a related list names them — are asked of ${c('list')} a page at a time, with ${c('{ field: "partner_id", op: "=", value: id }')} as their filter.</li>
+  <li>${c('columns')}, ${c('cells')}, ${c('sort')} and ${c('limit')} (5 unless said) as a list's; ${c('title')} names them — <em>Lines of S00118</em> — the lines' label unless said.</li>
+  <li>Without ${c('load')} (for lines) or ${c('list')} (for records), no arrow: the rows are read and opened as ever. It comes in the rows part (${c('fieldia.rows.js')}), only where a list asks for it. In the designer: a list's <em>A row opens to</em>, one of the page's tables of lines. <a href="/demos/plain/?page=orders-review&amp;skin=underline">Try the orders to review</a>.</li>
+</ul>
 
 <h3 id="views">Saved views, kept for the team</h3>
 <p>Where your data source keeps views, the search bar's menu lists them in place of the favourites the browser keeps: the person's own and those the team shares — <em>Shared by Mona Adel</em> beside another's — each put on with a press: its search, its order and, where people shape the columns, its columns. <em>Save current search</em> takes a name, <em>Use by default</em> and <em>Share with the team</em>; the list opens on the person's own default, else the team's, asked before its records so they come once, already in it. A person's own view has its × (one shared with the team asked first: it goes for everyone); another's is only put on. The same on every device: nothing of it is kept in the browser.</p>

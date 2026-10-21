@@ -248,6 +248,8 @@ export const ar: ViewerLabels = {
   loadMore: 'عرض {n} أخرى',
   sortKeyUp: 'مرتب {n} من {total}، تصاعديًا',
   sortKeyDown: 'مرتب {n} من {total}، تنازليًا',
+  detailOf: '{title}: {name}',
+  detailTitle: 'التفاصيل',
   viewShared: 'مشترك مع الفريق',
   viewSharedBy: 'شاركه {name}',
   shareView: 'مشاركة مع الفريق',

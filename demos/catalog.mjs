@@ -45,7 +45,7 @@ export const AREAS = [
 
 /** Each area's demos, by id: every demo of the catalog in exactly one. */
 const AREA_OF = {
-  sales: ['order', 'contract-fees', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive', 'test-drives'],
+  sales: ['order', 'orders-review', 'contract-fees', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive', 'test-drives'],
   accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
   crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'leads-queue', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
@@ -70,6 +70,7 @@ const SEARCH_WORDS = {
   customer: 'client account contact company blocked block status sales invoices counters conversation messages notes team phone whatsapp',
   order: 'sale sales order quotation quote lines products items spreadsheet totals tax discount',
   customers: 'clients accounts contacts list search filter group favourites sort multi sort several columns shift archive table',
+  'orders-review': 'orders sales order lines review check approve master detail expand open in place inside rows sections quotation products quantities',
   invoices: 'invoice bill bills billing accounts receivable payments overdue unpaid due totals sum currency dollars pounds month quarter print printout paper pdf phone mobile cards',
   contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize reorder drag move rearrange print cards whatsapp',
   'homes-gallery': 'homes houses property properties real estate listings photos pictures gallery grid cards tiles book viewing',
@@ -231,6 +232,18 @@ export const DEMOS = [
       'Tick two customers and press Archive: you are asked first, then the app is given those two, and a note says so.',
       'Save the search as a favourite used by default, and reload: it opens that way.',
       'Click a row to open that customer on its own page.',
+    ],
+  },
+  {
+    id: 'orders-review',
+    name: 'Orders to review, their lines in place',
+    category: 'lists',
+    query: 'page=orders-review&skin=underline',
+    blurb: 'A sales manager’s orders this month: each opens in place to its lines — five at a time, its sections across the rows — so an order is checked without leaving the list, and several stay open side by side.',
+    howTo: [
+      'Press the arrow before an order’s number: its lines open under it, five at a time; › shows the next five.',
+      'Open another order too: both stay open. On a row, Right opens it and Left closes it.',
+      'Press an order’s row anywhere else: the order opens on its own page.',
     ],
   },
   {

@@ -45,7 +45,7 @@ import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
 import { markSort, pressedSort, sortWith } from './list-sort';
 import type { SavedViews, ViewsSource } from './saved-views';
-import { cardsPart, columnsPart, filtersPart, importPart, viewsPart, type ColumnsPart } from './viewer-parts';
+import { cardsPart, columnsPart, filtersPart, importPart, rowsPart, viewsPart, type ColumnsPart } from './viewer-parts';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
 
 export interface ListContext {
@@ -483,7 +483,7 @@ export function listView(context: ListContext): ListView {
   /** The row shown next to this one, down or up, past those folded under a parent. */
   const shownBeside = (tr: Element, down: boolean) => {
     let next = down ? tr.nextElementSibling : tr.previousElementSibling;
-    while (next && (next as HTMLElement).hidden) next = down ? next.nextElementSibling : next.previousElementSibling;
+    while (next && ((next as HTMLElement).hidden || next.hasAttribute('data-aside'))) next = down ? next.nextElementSibling : next.previousElementSibling;
     return next as HTMLElement | null;
   };
 
@@ -555,6 +555,13 @@ export function listView(context: ListContext): ListView {
 
   /** How many columns a heading's row spans: the leading ones, those shown, the buttons'. */
   const span = () => leading + shownColumns().length + trailing;
+  /**
+   * The rows part, which the page waited for where the list's rows open in place (`detail`); where it could not come,
+   * its rows are read and opened, as a list's always were. What a row opens to, drawn as the list draws its cells.
+   */
+  const rowsKit = node.detail ? rowsPart.loaded : undefined;
+  const details = rowsKit?.detailRows({ page, node, model, dataSource: context.dataSource, el, labels, locale, fill, number, span, cellsOf: (of, list) => listCells({ page: of, node: list, doc, el, locale, icons: context.icons, fill, ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) }) }) ?? null;
+  if (rowsKit) rowsKit.installRowsStyles(doc);
   /** The columns as last drawn, to know when the totals must follow. */
   let drawnColumns = shownColumns().join();
 
@@ -566,6 +573,7 @@ export function listView(context: ListContext): ListView {
     if (!kept || drawnColumns === shownColumns().join()) return;
     drawnColumns = shownColumns().join();
     for (const cell of body.querySelectorAll<HTMLTableCellElement>(':scope > :is(.fd-list-group, .fd-list-more) > td')) cell.colSpan = span();
+    details?.spread(body);
     if (!totals) return;
     const next = makeTotals();
     if (!next) return;
@@ -654,6 +662,9 @@ export function listView(context: ListContext): ListView {
         // A parent opens towards the line's end, closes towards its start: flipped right to left.
         event.preventDefault();
         fold(String(record.id), event.key !== forward);
+      } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && details?.key(tr, event.key === forward)) {
+        // What it opens to, opened towards the line's end and closed towards its start.
+        event.preventDefault();
       }
     });
     // Under the pointer or the focus: its pin on the map lights up.
@@ -661,6 +672,7 @@ export function listView(context: ListContext): ListView {
     tr.addEventListener('mouseleave', () => viewParts.highlight(null));
     tr.addEventListener('focus', () => viewParts.highlight(record.id));
     recordOf.set(tr, record);
+    details?.wire(tr, record, name);
     return tr;
   }
 
@@ -968,6 +980,8 @@ export function listView(context: ListContext): ListView {
       failed.hidden = false;
     }
     body.replaceChildren(...drawn);
+    // What the rows open was open before stays so, under them.
+    details?.drawn(body);
     empty.hidden = drawn.length > 0 || !failed.hidden;
     empty.textContent = context.none && !facets.length ? context.none : sentence(labels.noRecordsNoun, labels.noRecords);
     table.removeAttribute('aria-busy');

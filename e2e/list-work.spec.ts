@@ -1,7 +1,7 @@
 import { type Page } from '@playwright/test';
 import { axeFindings } from './a11y-support';
 import { expect, test } from './fixtures';
-import { open, screen } from './support';
+import { expectNoSidewaysScroll, open, screen } from './support';
 
 /**
  * Lists people work in all day, as they use them: the customers ordered by several headers (Shift and a press, or Shift
@@ -146,5 +146,68 @@ test.describe('a sales team’s saved views', () => {
     await expect(header(page, 'Budget')).toHaveAttribute('aria-sort', 'descending');
     const leads = await records(page, 'lead');
     await expect(names(page).first()).toHaveText(ordered(leads, [{ field: 'budget', desc: true }])[0]['name'] as string);
+  });
+});
+
+test.describe('orders whose rows open in place', () => {
+  const ORDERS = `page=orders-review&skin=underline&${NOW}`;
+  type Order = Values & { name: string; line_ids: { values: Values }[] };
+  /** An order's lines in their order, as its row opens to them: each one's description (a section's heading too). */
+  const linesOf = (order: Order) => [...order.line_ids].sort((a, b) => compare(a.values['sequence'], b.values['sequence'])).map((line) => line.values['name'] as string);
+  const shownLines = (page: Page, name: string) => page.getByRole('table', { name: `Order lines of ${name}` }).locator('[role="rowgroup"]:last-child > [role="row"]');
+
+  test('opens an order to its lines, five at a time, sections across, several at once, and its row still opens the order', async ({ page }) => {
+    const { problems } = await open(page, 'plain', ORDERS);
+    const orders = ordered((await records(page, 'sale.order')) as Order[], [{ field: 'date_order', desc: true }]) as Order[];
+    const [first, second] = orders;
+    await expect(names(page).first()).toHaveText(first.name);
+    const toggle = page.locator('.fd-list-row').first().getByRole('button', { name: `Order lines of ${first.name}` });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const lines = linesOf(first);
+    await expect(shownLines(page, first.name)).toHaveCount(Math.min(5, lines.length));
+    for (const [at, words] of lines.slice(0, 5).entries()) await expect(shownLines(page, first.name).nth(at)).toContainText(words);
+    // A section's heading across the row.
+    await expect(page.getByRole('table', { name: `Order lines of ${first.name}` }).locator('[data-kind="section"]').first()).toHaveText('Workstations');
+    if (lines.length > 5) {
+      await page.getByRole('group', { name: `Order lines of ${first.name}` }).getByRole('button', { name: 'Next page' }).click();
+      await expect(shownLines(page, first.name).first()).toContainText(lines[5]);
+    }
+    // Another open too, from the keys: Right opens it, Left closes it.
+    const secondRow = page.locator('.fd-list-row').nth(1);
+    await secondRow.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(shownLines(page, second.name)).toHaveCount(Math.min(5, linesOf(second).length));
+    await expect(shownLines(page, first.name).first()).toBeVisible();
+    await screen(page, 'list-work-detail', { viewport: true });
+    expect(await axeFindings(page, 'orders opened in place')).toEqual([]);
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByRole('table', { name: `Order lines of ${second.name}` })).toHaveCount(0);
+    // Down from the first passes over what it opened.
+    await page.locator('.fd-list-row').first().focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(secondRow).toBeFocused();
+    // The row's own press opens the order.
+    await page.locator('.fd-list-row').first().locator('td').nth(2).click();
+    await expect(page).toHaveURL(/page=order&.*record=\d+/);
+    await expect(page.locator('[data-node="#title"] textarea, [data-node="#title"] input').first()).toHaveValue(first.name);
+    expect(problems).toEqual([]);
+  });
+
+  test('opens an order’s card on a phone to its lines, under the card', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, 'plain', ORDERS);
+    const orders = ordered((await records(page, 'sale.order')) as Order[], [{ field: 'date_order', desc: true }]) as Order[];
+    await expect(page.locator('.fd-list')).toHaveAttribute('data-as', 'cards');
+    const toggle = page.locator('.fd-list-row').first().locator('.fd-list-detail-words');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveText('Order lines');
+    await toggle.click();
+    await expect(shownLines(page, orders[0].name)).toHaveCount(Math.min(5, linesOf(orders[0]).length));
+    await expect(page.getByRole('table', { name: `Order lines of ${orders[0].name}` })).toBeVisible();
+    // Its lines scroll sideways in their own box: the page never does.
+    await expectNoSidewaysScroll(page);
+    await screen(page, 'list-work-detail-phone', { viewport: true });
   });
 });

@@ -87,6 +87,7 @@ export const PART_WORDS = {
     ],
   },
   path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds'] },
+  rows: { viewer: ['previousPage', 'nextPage', 'relatedNone', 'detailOf', 'detailTitle'] },
   views: { viewer: ['saveSearch', 'searchName', 'useByDefault', 'deleteFavourite', 'noFavourites', 'viewShared', 'viewSharedBy', 'shareView', 'viewsFailed', 'viewNotSaved', 'viewNotDeleted', 'viewDeleteAsk'] },
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
   print: { viewer: ['printedOn'] },

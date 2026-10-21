@@ -390,6 +390,12 @@ export interface ViewerLabels {
   sortKeyUp: string;
   sortKeyDown: string;
   /**
+   * What a list's row opens to in place (`detail`): its toggle's name and its table's (`{title}`, the lines' label or
+   * the page's own; `{name}`, the row's record's), and its title where neither names one (`detailTitle`).
+   */
+  detailOf: string;
+  detailTitle: string;
+  /**
    * A list's views kept on the app's server (its source's `views`), in the search bar's menu: a view shared with the
    * team, the person's own (`viewShared`) or another's (`{name}`, who made it); Save current search's Share with the
    * team; why the views could not be asked, a view not saved (`{why}`) or not deleted (`{name}`, `{why}`); and the
@@ -888,6 +894,8 @@ const en: ViewerLabels = {
   loadMore: 'Show {n} more',
   sortKeyUp: 'sorted {n} of {total}, ascending',
   sortKeyDown: 'sorted {n} of {total}, descending',
+  detailOf: '{title} of {name}',
+  detailTitle: 'Details',
   viewShared: 'Shared with the team',
   viewSharedBy: 'Shared by {name}',
   shareView: 'Share with the team',

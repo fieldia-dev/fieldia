@@ -12,6 +12,7 @@ import type * as ImportModule from './import-part';
 import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
 import type * as ViewsModule from './views-part';
+import type * as RowsModule from './rows-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -34,6 +35,8 @@ export type AnswersPart = typeof AnswersModule;
 export type LimitsPart = typeof LimitsModule;
 /** The views part: a list's views kept on the app's server. */
 export type ViewsPart = typeof ViewsModule;
+/** The rows part: a list's rows a person works in — opened in place. */
+export type RowsPart = typeof RowsModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -49,6 +52,8 @@ export const columnsPart: Part<ColumnsPart> = lazyPart('columns', () => import('
 export const importPart: Part<ImportPart> = lazyPart('import', () => import('./import-part'));
 /** A list's views kept on the app's server, loaded as a list whose data source keeps views (`views`) opens: never waited for by the page. */
 export const viewsPart: Part<ViewsPart> = lazyPart('views', () => import('./views-part'));
+/** A list's rows a person works in — opened in place — loaded the first time a page draws a list that asks for any. */
+export const rowsPart: Part<RowsPart> = lazyPart('rows', () => import('./rows-part'));
 /**
  * Possible duplicates and the merge's screen, loaded the first time a page naming fields in `duplicates` is shown with
  * a source that has `duplicates` — never waited for: what it says comes with the source's answer.
@@ -93,7 +98,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, viewsPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -192,6 +197,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       // Its rows as cards, on a phone or in its gallery; the columns a person shapes.
       if (node['card'] || node['gallery']) found.add(cardsPart);
       if (node['optionalColumns']) found.add(columnsPart);
+      // Its rows a person works in: opened in place.
+      if (node['detail']) found.add(rowsPart);
       if (node['search'] === 'fields') found.add(filtersPart);
       if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
     }
