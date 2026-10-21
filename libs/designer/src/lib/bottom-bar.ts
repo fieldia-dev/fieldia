@@ -1,21 +1,20 @@
-/** The air left between a control scrolled into view and the bar over it. */
+/** The air left between a control and the bar at the foot of the screen. */
 const AIR = 8;
 
 /**
- * A bar kept at the foot of the screen (`position: sticky` with a `bottom`) never hides what a person works on. The
- * area it floats over is told the room the bar takes — its height, its gap above the screen's edge with the screen's
- * safe area (its `bottom`), and a little air over it (`--fd-foot-room`) — and keeps its own controls clear of it as they
- * are scrolled into view, by the browser on focus (Tab to a switch) or by the editor (a card picked): each stops above
- * the bar (`.fd-bar-clear`'s `scroll-margin`). The bar stays where it is; the area's end is the bar's own place in the
- * flow, where it rests once the area is scrolled to its end. Where the bar is not at the foot (sticky no longer: a wide
- * screen's rail beside its card), the room is none.
+ * A bar kept at the foot of the screen (`position: sticky` with a `bottom`) never hides what a person works on, and
+ * keeping it clear never hides it under the bar at the top instead (WCAG 2.4.11, both ways). A control focused in the
+ * area the bar floats over — by Tab or Shift+Tab, by a press — is moved up from behind the bar once the engine's own
+ * scroll on focus is done (that scroll knows nothing of it), but never so far that its top goes under the room the
+ * top bar keeps (the scroller's `scroll-padding-top`, the designer bar's): where it cannot fit between the two, its
+ * top wins. The bar stays where it is; the area's end is the bar's own place in the flow, where it rests once the area
+ * is scrolled to its end. Where the bar is not at the foot (sticky no longer: a wide screen's rail beside its card),
+ * nothing is moved.
  *
- * The scroll area is the page's, the app's: its `scroll-padding` is not the editor's to set, so the room is kept on
- * what is scrolled into view (`scroll-margin`), which `scrollIntoView` honours as it would `scroll-padding`; a control
- * an engine's own scroll on focus leaves behind the bar is scrolled out by the area itself.
+ * No `scroll-margin-bottom` on what is focused: an element taller than the room between the bars would then be
+ * aligned by its end as the engine scrolls to it — walking up by Shift+Tab, its top under the top bar.
  */
 export function keepClearOfBar(bar: HTMLElement, area: HTMLElement): () => void {
-  area.classList.add('fd-bar-clear');
   const view = bar.ownerDocument.defaultView;
   /** Whether the bar has been in the page: once taken out of it (a new drawer in its place), the watch ends. */
   let placed = false;
@@ -27,15 +26,12 @@ export function keepClearOfBar(bar: HTMLElement, area: HTMLElement): () => void 
     const room = atFoot ? Math.ceil(bar.getBoundingClientRect().height + (parseFloat(style.bottom) || 0) + AIR) : 0;
     area.style.setProperty('--fd-foot-room', `${room}px`);
   };
-  // A control focused behind the bar — where the engine's own scroll on focus, which comes after the focus event and
-  // knows nothing of the bar, left it (WebKit's text boxes, Chromium's lists) — is scrolled out from under it once that
-  // scroll is done, its scroll margin stopping it above.
   const onFocus = (event: FocusEvent) => {
     const control = event.target as HTMLElement | null;
     if (!control?.getBoundingClientRect || !view) return;
+    // After the engine's own scroll on focus, which comes after the focus event.
     view.requestAnimationFrame(() => {
-      if (!barRoom(area) || view.document.activeElement !== control) return;
-      if (underBar(bar, control)) control.scrollIntoView?.({ block: 'end' });
+      if (barRoom(area) && view.document.activeElement === control) clearOfBar(bar, control);
     });
   };
   area.addEventListener('focusin', onFocus);
@@ -54,10 +50,39 @@ export function keepClearOfBar(bar: HTMLElement, area: HTMLElement): () => void 
 }
 
 /**
- * Whether an element ends behind the bar (or below it): scrolled to `end` — never `nearest`, which Chromium leaves as it
- * is while the element itself is in the window, under the bar or not — its scroll margin then stops it above the bar.
+ * The scroller that can move an element up by `by`: its nearest ancestor that scrolls up and down with that much room
+ * left — a row of tabs that scrolls sideways is no such scroller, though its `overflow-y` reads `auto` — else the page.
  */
-export const underBar = (bar: HTMLElement, element: HTMLElement): boolean => element.getBoundingClientRect().bottom > bar.getBoundingClientRect().top;
+function scrollerOf(element: HTMLElement, by: number): HTMLElement | null {
+  const doc = element.ownerDocument;
+  const view = doc.defaultView;
+  for (let at = element.parentElement; at && at !== doc.body && at !== doc.documentElement; at = at.parentElement) {
+    const overflow = view?.getComputedStyle(at).overflowY ?? 'visible';
+    if ((overflow === 'auto' || overflow === 'scroll') && at.scrollHeight - at.clientHeight - at.scrollTop >= by) return at;
+  }
+  return null;
+}
+
+/**
+ * An element moved up from behind the bar at the foot (with a little air), as far as that takes — but its top never
+ * under the room its scroller keeps at its top (`scroll-padding-top`: the designer bar's, on the page). Where both
+ * cannot hold, the top wins. Nothing moves for an element clear of the bar already.
+ */
+export function clearOfBar(bar: HTMLElement, element: HTMLElement): void {
+  const box = element.getBoundingClientRect();
+  const limit = bar.getBoundingClientRect().top - AIR;
+  if (box.bottom <= limit) return;
+  const doc = element.ownerDocument;
+  const view = doc.defaultView;
+  const want = box.bottom - limit;
+  const own = scrollerOf(element, want);
+  const scroller = own ?? ((doc.scrollingElement as HTMLElement | null) ?? doc.documentElement);
+  const top = (own ? own.getBoundingClientRect().top : 0) + (parseFloat(view?.getComputedStyle(scroller).scrollPaddingTop ?? '') || 0);
+  const by = Math.min(want, box.top - top);
+  if (by <= 0) return;
+  if (own) own.scrollTop += by;
+  else view?.scrollBy(0, by);
+}
 
 /** The room the bar takes now, as `keepClearOfBar` measured it: 0 where it is not at the foot. */
 export const barRoom = (area: HTMLElement): number => parseFloat(area.style.getPropertyValue('--fd-foot-room')) || 0;

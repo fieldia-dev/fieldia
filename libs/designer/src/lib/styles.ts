@@ -640,10 +640,6 @@ export const DESIGNER_CSS = /* css */ `
   .fd-survey-canvas .fd-q-kind { min-width: 0; justify-self: start; }
   .fd-q-rail { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); inset-inline-start: auto; justify-self: center; display: flex; transform: none; }
 }
-/* A bar at the foot of the screen hides nothing a person works on (bottom-bar.ts): what is scrolled into view in the
-   area it floats over — a card picked, a switch reached by Tab — stops above it (its room counts its height, its gap
-   and the screen's safe area, which its bottom holds). */
-.fd-bar-clear, .fd-bar-clear * { scroll-margin-bottom: var(--fd-foot-room, 0px); }
 @media (prefers-reduced-motion: reduce) { .fd-line::after, .fd-q-rail, .fd-survey-canvas .fd-q-grip { transition: none; } }
 .fd-props > .fd-prop > .fd-button { justify-self: start; }
 /* Rows 24px apart at least, so each small box has room round it (WCAG 2.5.8). */

@@ -2,7 +2,7 @@ import { createForm, type DataSource, type Field, type FieldNode, type Form, typ
 import { uncalled } from './uncalled';
 import type { Skin } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget, type WidgetFactory } from '@fieldia/widgets';
-import { barRoom, keepClearOfBar, underBar } from './bottom-bar';
+import { barRoom, clearOfBar, keepClearOfBar } from './bottom-bar';
 import { branchMap, drawBranchMap } from './branch-map';
 import { canvasDrag } from './canvas-drag';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, putDownOnClickOutside, type ElementFactory, type OptionsEditor } from './chrome';
@@ -692,11 +692,10 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     picked = selected;
     const card = selected ? cardViews.get(selected)?.element : null;
     if (!card || !barRoom(column)) return;
-    // Its own controls end above the bar: the card in sight, then — its foot behind the bar or under it — down to its
-    // foot, which its scroll margin stops above the bar.
+    // Its own controls end above the bar: the card in sight, then moved up from behind the bar — its top never under
+    // the bar at the top, which wins where the card is taller than the room between them.
     card.scrollIntoView?.({ block: 'nearest' });
-    const foot = card.querySelector<HTMLElement>(':scope > .fd-q-foot') ?? card;
-    if (underBar(rail, foot)) foot.scrollIntoView?.({ block: 'end' });
+    clearOfBar(rail, card);
   }
 
   /** The bar beside the card picked, level with its top: a question's card, a page's, or the form's own. */
