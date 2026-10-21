@@ -15,6 +15,95 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.30.0 — 2026-10-21
+
+**A work item as a work tracker draws one: tags inline in its head's row,
+menus inside its menus with lines between their items, and its formatted text
+read first, edited from its Edit.** The page format is 0.9; a page of 0.1 to
+0.8 is read as it is.
+
+**Tags in a record head's row.** A tags field in `head.meta` sits in the row
+itself: its chips after the comments' link, what adds one — Add Tag
+(`"adder": "button"`), or the box typed in, its words still showing — after
+the last chip. The row's other parts keep its first line; out of room, the
+chips wrap in a slot of their own (never narrower than 200 pixels), so the row
+is as tall with two tags as with none and grows only by the lines its chips
+take. Nothing to set: it is how a head draws tags. On a phone the row's parts
+stand each on their own line, as before.
+
+**Lines between a menu's items, and menus inside it.** An item of the record's
+menu (`toolbar.menu`, ⋮ in a head) or of a button's own `menu` may be a line
+between items — `{ "type": "divider", "id": … }`, left out where nothing shows
+on one side of it — or open a `menu` of its own beside it, shown with ›:
+pointed at, pressed, or with Enter, Space or → (← right to left); ← and Escape
+close it, the focus back on its item. It stands beside the menu on the side
+with room, on the screen and over everything — under its item where neither
+side has room, as on a phone — and its items run as the menu's own do. With
+`menuFrom`, your app gives more items as the menu opens — a bug's templates,
+which depend on the bug: its `onAction` is asked with that action's name, the
+item's `params`, the record and its values, and answers `{ menu: [...] }`; each
+of those runs its steps, then its action, asking its `confirm` first, and an
+answer for a record no longer shown is dropped. An item whose menu has nothing
+to show is not shown. They come in the head part. In the designer: the gear
+menu's A menu of its own (its items, and the app's action that gives more) and
+A line between items; a button's menu keeps both as its other choices are
+changed, and adds a divider.
+
+**A formatted text read first** (`options.edit: "button"`). A rich text shows
+its text formatted — links that open in a tab of their own, pictures in place
+— with Edit (✎, named "Edit Description") in its group's heading beside ⤢ and
+^, or in its own box where it is not alone in a titled group. Edit, Enter on
+the text or a press on its words opens the editor, its toolbar where
+`toolbarAt` says and the focus in it; Done (✓), or a press or the focus
+outside it, keeps what was typed, Escape puts back what it held — the record
+changed only where the text is, ⤢ working while it is edited. Empty, it is its
+editor at rest, its placeholder saying what to add; read-only, its text with no
+Edit. In the designer: Read first, changed from its Edit. Demos: the backlog's
+bug, its ⋮ as a work tracker's — New linked work item to Customize, Templates ›
+with the bug's own — its tags in its row and its System Info read first; and a
+bug's tags, menus and texts on their own (`?page=wi-more`), mounted and in the
+inset dialog.
+
+**Smaller things:**
+
+- **A menu's built-in Archive and Unarchive follow the record wherever the menu
+  stands** — inside a menu of the gear menu's, or a button's — as the gear
+  menu's own do.
+
+**And:** the page format is **0.9** (`FORMAT_VERSION`): it only added — a menu
+item's `type: "divider"`, its own `menu` and `menuFrom` — so a 0.1 to 0.8 page
+is read as it is, and `upgradePage` writes 0.9 in it.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- A record head's row, and its people and links, stand on its first line
+  (`align-items: flex-start`), where they were centred; a link in `head.meta`
+  has 6px above and below it, the middle of the row's 32px line.
+- In a quiet head, a tags box is 32px tall, as the row's other boxes are (36
+  with no Add Tag button), its lines of chips 30px; the box typed in shows its
+  words ("Add Tag") after the chips too, where the quiet look hid them.
+- An item of `toolbar.menu` or of a button's `menu` may be a divider, with no
+  words, or open a menu (`menu`, `menuFrom`): code that reads a page's menus
+  takes both. The check of an item that does nothing says "a menu item needs
+  steps, an action, a built-in, or a menu of its own".
+- `ActionResult` gains `menu`. The head part gives `submenus`, and core's head
+  checks `checkMenuOpener` (in the one-tag script, owed to the head part by a
+  page whose menus have a divider or a menu inside them). From the viewer's
+  record bar: `MenuEntry`, `MenuTree`, `Submenus`, `SubmenuMaker`,
+  `menuEntries`, `opensMenu`; `RecordBarContext.submenus?`.
+- A Markdown text's `.fd-md-field` carries `data-editor`, as a rich text read
+  first does.
+- A page the designer saves says `"fieldia": "0.9"`: Fieldia 0.29 refuses it as
+  newer than it reads. An app that keeps pages for older Fieldias keeps them in
+  0.8 (nothing 0.9 adds is in them).
+
+**Size:** `fieldia.js` 511.2 KB, 167.8 gzipped (0.29.0: 510.6, 167.4): a menu's
+hooks for its lines and the menus inside it, the head part asked for and its
+checks owed. Of the parts, the head's grew with the menus inside a menu, their
+checks and tags in a head's row (13.2 KB gzipped, from 10.8), the text part's
+with a rich text read first (24.8, from 24.6); the rest are as they were. A
+language's add-on is 13.8 to 15.9 KB gzipped, as in 0.29.
+
 ## 0.29.0 — 2026-10-21
 
 **What apps need as they move over: a conversation that knows its channels,
