@@ -1023,7 +1023,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 //   saying it and taking it back in fieldia.undo.js, asked for with a page whose buttons offer it, to 512.1.
 // - Record templates: the Templates menu's place over a record and the part asked for (0.52), the page's `templates`
 //   checked (0.20); the menu and its dialogs in fieldia.templates.js, to 512.8.
-const BUDGET_KB = 512.8;
+// - A repeat field: its kind checked (0.26), a list's cell of it said in words once its part came (0.12), its widget's
+//   holder and a box of its refusing as a field's (0.30); in fieldia.schedule.js, to 513.5.
+const BUDGET_KB = 513.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1258,8 +1260,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
 // Wave 6, w6-records (each listed with the raw budget above): Undo and Redo while filling, 1.25 more, to 167.4; Undo
-// after a one-tap press, 0.85 more, to 168.3; record templates' place, 0.30 more, to 168.6.
-const GZIP_BUDGET_KB = 168.6;
+// after a one-tap press, 0.85 more, to 168.3; record templates' place, 0.30 more, to 168.6; a repeat field's check and
+// holder, 0.22 more, to 168.9.
+const GZIP_BUDGET_KB = 168.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

@@ -4,6 +4,8 @@ import { writeMoney } from './money';
 import { shownNumber } from './duration';
 import { distributionWords } from './distribution';
 import { restingText } from './date-text';
+import { WIDGET_LABELS } from './labels';
+import { schedulePartIn } from './widget-parts';
 
 
 /** A date field's day, at the browser's midnight. */
@@ -101,6 +103,9 @@ export interface ShownWith {
 export function cellText(def: LineField, value: Value | undefined, values: Record<string, Value> = {}, locale: Locale = 'en', parent?: Readonly<Record<string, Value>>, shown: ShownWith = {}): string {
   // An analytic distribution in a cell: its shares, "60% · 40%".
   if (shown.widget === 'distribution' && def.type === 'json') return distributionWords(value, locale);
+  // A repeat rule in words, once the schedule part has come (the page asks for it first).
+  const schedule = shown.widget === 'repeat' ? schedulePartIn() : undefined;
+  if (schedule && shown.widget === 'repeat') return schedule.repeatWords(value, locale, WIDGET_LABELS[locale] ?? WIDGET_LABELS.en);
   return shownNumber(shown.widget, def as never, value, locale, shown.options as Record<string, unknown>) ?? displayValue(def, value, values, locale, parent);
 }
 

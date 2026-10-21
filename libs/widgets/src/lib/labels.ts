@@ -402,6 +402,43 @@ export interface WidgetLabels {
   seatsLeft: string;
   seatsLeftOne: string;
   seatsFull: string;
+  /** A repeat field (`"widget": "repeat"`, the schedule part): its choices, its boxes' names, and the rule in words. */
+  repeatLabel: string;
+  repeatNever: string;
+  /** The choices after Does not repeat, by `|`: daily, weekly, monthly, yearly. */
+  repeatKinds: string;
+  repeatEveryLabel: string;
+  /** What one of them is, by `|`, and many: day, week, month, year. */
+  repeatUnits: string;
+  repeatUnitsMany: string;
+  repeatOnDays: string;
+  /** A month's day, by `|`: a day of the month, its last, or a weekday's place in it. */
+  repeatMonthHow: string;
+  repeatMonthDay: string;
+  /** A weekday's place in its month, by `|`: first, second, third, fourth, last. */
+  repeatNth: string;
+  repeatWeekday: string;
+  repeatEndsLabel: string;
+  /** How it ends, by `|`: never, on a day, after a number of times. */
+  repeatEnds: string;
+  repeatUntilDay: string;
+  repeatCount: string;
+  /** The rule in words: every `{n}` `{units}` (every one, its kind's own words: `repeatKinds`); `{every}` that, with `{days}`, `{day}` (a month's, "15th"; a weekday) and `{nth}`; then its end, `{rule}` with `{n}` times or until `{date}`. */
+  repeatSaidEveryN: string;
+  repeatSaidDays: string;
+  repeatSaidMonthDay: string;
+  repeatSaidLastDay: string;
+  repeatSaidNth: string;
+  repeatSaidTimes: string;
+  repeatSaidOnce: string;
+  repeatSaidUntil: string;
+  /** A month's day's endings by the language's ordinal kinds — one, two, few, other — `-` for none: 1st, 2nd, 3rd, 4th. */
+  repeatOrdinals: string;
+  /** A rule this box cannot change, kept as it is: `{rule}` as written. */
+  repeatKept: string;
+  /** Every how many, or how many times: a whole number, 1 or more. */
+  repeatAtLeastOne: string;
+  /** Days in a row with the same hours: `{first}` to `{last}`. */
   rankTop: string;
   /** A total that cannot be added up while line `{n}` holds text that does not read. */
   totalWaits: string;
@@ -772,6 +809,32 @@ const en: WidgetLabels = {
   seatsLeft: '{n} left',
   seatsLeftOne: '{n} left',
   seatsFull: 'Full',
+  repeatLabel: 'Repeats',
+  repeatNever: 'Does not repeat',
+  repeatKinds: 'Every day|Every week|Every month|Every year',
+  repeatEveryLabel: 'Every',
+  repeatUnits: 'day|week|month|year',
+  repeatUnitsMany: 'days|weeks|months|years',
+  repeatOnDays: 'On',
+  repeatMonthHow: 'On day|On the last day|On the',
+  repeatMonthDay: 'Day of the month',
+  repeatNth: 'first|second|third|fourth|last',
+  repeatWeekday: 'Weekday',
+  repeatEndsLabel: 'Ends',
+  repeatEnds: 'Never|On a day|After',
+  repeatUntilDay: 'Last day',
+  repeatCount: 'Times',
+  repeatSaidEveryN: 'Every {n} {units}',
+  repeatSaidDays: '{every} on {days}',
+  repeatSaidMonthDay: '{every} on the {day}',
+  repeatSaidLastDay: '{every} on the last day',
+  repeatSaidNth: '{every} on the {nth} {day}',
+  repeatSaidTimes: '{rule}, {n} times',
+  repeatSaidOnce: '{rule}, once',
+  repeatSaidUntil: '{rule}, until {date}',
+  repeatOrdinals: 'st nd rd th',
+  repeatKept: 'Kept as it is, which this box cannot change: {rule}',
+  repeatAtLeastOne: 'A whole number, 1 or more',
   rankTop: 'Only the top {max} are ranked; take one out to rank another',
   totalWaits: 'Fix line {n} to see this total',
   cellWaits: 'Fix {column} to see this line’s {own}',

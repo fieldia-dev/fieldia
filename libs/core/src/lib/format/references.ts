@@ -854,6 +854,8 @@ export class ReferenceCheck {
     // with them in the one-tag script.
     if (node.widget === 'slots' && def && def.type !== 'datetime') this.report(`${path}.widget`, `slots is for a datetime field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'slots') checkSlots(node, path, this.fieldTools());
+    // A repeat rule is kept as text (the schedule part's).
+    if (node.widget === 'repeat' && def && def.type !== 'char') this.report(`${path}.widget`, `repeat is for a char field; "${node.field}" is a ${def.type}`);
     if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
     if (def) this.checkPicker(node, def, path);

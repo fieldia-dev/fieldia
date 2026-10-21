@@ -1,5 +1,5 @@
 import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, pressUndoPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
-import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as AnswersModule from './answers-part';
@@ -93,7 +93,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, pressUndoPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, pressUndoPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -196,6 +196,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       if (node['optionalColumns']) found.add(columnsPart);
       if (node['search'] === 'fields') found.add(filtersPart);
       if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
+      // A column of repeat rules, said in words.
+      if (scheduleColumns(node as { cells?: unknown })) found.add(schedulePart);
     }
     // A related list is drawn by the list part's table, its records' phones as its own fields say, its rows as cards
     // on a phone as a list's.
@@ -238,6 +240,9 @@ export function owedParts(later: readonly string[] | undefined): Part[] {
 }
 
 /** A list's columns whose numbers it writes as people read them: those it shows as a phone (`cells.<field>.widget`), where its page or the cell's options say so. */
+/** Whether a list's cells say a repeat rule in words: the schedule part's. */
+const scheduleColumns = (list: { cells?: unknown }) => Object.values((list.cells ?? {}) as Record<string, { widget?: string } | undefined>).some((cell) => cell?.widget === 'repeat');
+
 export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unknown }): string[] {
   const cells = (list.cells ?? {}) as Record<string, { widget?: string; options?: Record<string, unknown> } | undefined>;
   const columns = Array.isArray(list.columns) ? (list.columns as unknown[]).filter((name): name is string => typeof name === 'string') : [];

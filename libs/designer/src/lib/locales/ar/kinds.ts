@@ -46,6 +46,7 @@ export const kinds: DesignerWords['kinds'] = {
     timer: 'مؤقّت',
     'date-range': 'نطاق تواريخ',
     'booking-slots': 'مواعيد للحجز',
+    repeat: 'قاعدة التكرار',
     colour: 'لون',
     copy: 'نص للنسخ',
     pdf: 'ملف PDF معروض',

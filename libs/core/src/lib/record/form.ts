@@ -3615,8 +3615,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
       if (state.unread[name]) return state.unread[name].message;
-      // A property's text left unread answers for its field.
-      if (page.fields[name].type === 'properties') {
+      // A property's text left unread answers for its field, and so does a box of a value drawn in parts (a repeat
+      // rule's number, an opening hour's time: `field.part`).
+      if (['properties', 'json', 'char'].includes(page.fields[name].type)) {
         const row = Object.keys(state.unread).find((path) => path.startsWith(`${name}.`));
         if (row) return state.unread[row].message;
       }
@@ -3631,7 +3632,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const field = path.split('.')[0];
       // A line's cell (`field.lineKey.subfield`), or a property (`field.property`).
       const def = fieldDef(field);
-      if (path.includes('.') && def.type !== 'properties') lineField(field);
+      // A line's cell, a property, or one of the boxes a value is drawn in (a repeat rule's number, an opening hour's
+      // time: `field.part`, of a char or a json field).
+      if (path.includes('.') && def.type !== 'properties' && !((def.type === 'json' || def.type === 'char') && path.split('.').length === 2)) lineField(field);
       const had = state.unread[path];
       if (!unread && !had) return;
       // A line taken away takes its cells' text with it: a box of it still reading (a name looked up) keeps none.

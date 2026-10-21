@@ -111,6 +111,18 @@ one. `options.endField` takes the booking's end. It comes in a part of its own,
 `fieldia.slots.js` (`slotsPart`), with the date part; without `slots` in the
 data source it is the date and time box.
 
+`"widget": "repeat"` on a char field says how often something comes back:
+every day, every week on the days ticked, every month on a day, its last, or
+its first Monday, every so many; never ending, until a day, or a number of
+times. Its value is an iCalendar rule (`FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;
+COUNT=6`), said in words under its boxes and at rest — "Every 2 weeks on
+Tuesday and Thursday, 6 times" — in a list's column too. `options.startField`
+names the date it starts from. A rule it cannot change is kept as written,
+and said so. It comes in a part of its own, `fieldia.schedule.js`
+(`schedulePart`), with the date part, whose box its end day is;
+`(await schedulePart.load()).repeatWords(rule, locale, labels)` says a rule in
+words for your own code.
+
 What is pasted into a formatted text (`html`) from Word, Excel, Google Docs or
 Google Sheets — or copied from any page — comes in plain, in the field's own
 look, in either editor: its headings, bold, italic, underlined and struck

@@ -2,7 +2,7 @@ import { SIZES } from '../facts.mjs';
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), repeat (an iCalendar repeat rule), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint'],
   ['text', 'Several lines of text', 'copy, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size'],
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', ''],
   ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],
@@ -93,6 +93,15 @@ ${code(
   "options": { "schedule": "showroom", "length": 45, "between": 15, "endField": "stop", "dependsOn": ["car"] } }`
 )}
 <p>${c('schedule')} names what the app is asked for (the field's name unless said); ${c('length')} and ${c('between')} are the minutes a booking lasts and those kept free after it, unless the app says; ${c('endField')}, a date and time, takes the booking's end; ${c('dependsOn')}, the fields whose change asks again. In the designer: the kind Booking slots, with its Schedule, Minutes a booking lasts, Minutes kept free after one, Its end in, Asked again when, and Time zone.</p>
+
+<h2 id="repeat">A repeat rule</h2>
+<p>${c('"widget": "repeat"')} on a char field says how often something comes back — a treatment course, a hearing, a check: every day, every week on the days ticked, every month on a day, on its last, or on the first Monday; every so many; never ending, until a day, or a number of times. Its value is an iCalendar rule (RFC 5545's RRULE), which a calendar or your server reads as it is, said in words under its boxes, at rest and in a list's column: <em>Every 2 weeks on Tuesday and Thursday, 6 times</em>. ${c('startField')} names the date it starts from: a new week's day and a month's day come from it. A rule the box cannot change (an hour, several days of a month) is kept as it is and said so. Its numbers and its end day are Fieldia's own boxes, with their input rules. In the designer: the kind Repeat rule.</p>
+${code(
+  'json',
+  `
+{ "type": "field", "id": "f-sessions", "field": "sessions", "widget": "repeat", "options": { "startField": "first_session" } }
+// "sessions": "FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;COUNT=6"`
+)}
 
 <h2 id="options">Widget options</h2>
 <p>A node's ${c('options')} tune its widget. An option whose name ends in ${c('Field')} names another field of the page, and the format checks that it exists.</p>

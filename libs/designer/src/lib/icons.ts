@@ -53,6 +53,7 @@ const SHAPES: Record<string, string> = {
   percentage: '<path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',
   timer: '<circle cx="12" cy="13" r="8"/><path d="M12 13l3-3M10 2h4M19 5l1.5-1.5"/>',
   'date-range': '<rect x="2.5" y="5" width="8" height="8" rx="1.5"/><rect x="13.5" y="11" width="8" height="8" rx="1.5"/><path d="M10.5 9h3v6"/>',
+  repeat: '<path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/>',
   'booking-slots': '<rect x="3" y="3.5" width="18" height="10" rx="1.5"/><path d="M3 7h18M7 2v3M17 2v3"/><rect x="3" y="16" width="5" height="4" rx="2"/><rect x="9.5" y="16" width="5" height="4" rx="2" fill="currentColor"/><rect x="16" y="16" width="5" height="4" rx="2"/>',
   colour: '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 2-2 0-1.6-1.5-1.8-1.5-3.2 0-1.1.9-1.8 2-1.8h2.2A4.3 4.3 0 0 0 21 9.7C21 6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2" fill="currentColor"/><circle cx="10" cy="7" r="1.2" fill="currentColor"/><circle cx="15" cy="7" r="1.2" fill="currentColor"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><path d="M11 13h6M11 16h4"/>',
