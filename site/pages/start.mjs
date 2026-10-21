@@ -27,7 +27,7 @@ ${code(
   'json',
   `
 {
-  "fieldia": "0.8",
+  "fieldia": "0.9",
   "id": "signup",
   "title": "Workshop sign-up",
   "data": { "kind": "responses" },

@@ -13,7 +13,7 @@ const lineFields = {
 };
 
 export const emptyGridsPage = {
-  fieldia: '0.8',
+  fieldia: '0.9',
   id: 'empty-grids',
   title: 'Tables of lines with nothing on them yet',
   data: { kind: 'record', model: 'demo.lines' },

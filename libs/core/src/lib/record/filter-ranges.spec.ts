@@ -71,7 +71,7 @@ describe('the page says which filters take a range, count, and fold into a sheet
     met_at: { type: 'datetime', label: 'Met at' },
     notes: { type: 'html', label: 'Notes' },
   };
-  const page = (more: Record<string, unknown>) => ({ fieldia: '0.8', id: 'homes', data: { kind: 'record', model: 'home' }, fields, layout: { type: 'list', id: 'homes', columns: ['name'], ...more } });
+  const page = (more: Record<string, unknown>) => ({ fieldia: '0.9', id: 'homes', data: { kind: 'record', model: 'home' }, fields, layout: { type: 'list', id: 'homes', columns: ['name'], ...more } });
   const problems = (input: unknown) => {
     const r = validatePage(input);
     return r.ok ? [] : r.issues.map((i) => `${i.path}: ${i.message}`);

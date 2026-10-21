@@ -469,7 +469,7 @@ describe('a follow-up due at an hour, on the page’s clock', () => {
 
 describe('in a sheet’s chatter slot', () => {
   const page = {
-    fieldia: '0.8',
+    fieldia: '0.9',
     id: 'enquiry',
     title: 'Enquiry',
     data: { kind: 'record', model: 'enquiry' },

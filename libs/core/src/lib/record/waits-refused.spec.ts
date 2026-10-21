@@ -31,7 +31,7 @@ function listing(extra: Record<string, unknown> = {}): Page {
     ...extra,
   };
   return {
-    fieldia: '0.8',
+    fieldia: '0.9',
     id: 'listing',
     data: { kind: 'record', model: 'listing' },
     fields,
@@ -97,7 +97,7 @@ describe('a value worked out from an answer the form refuses waits for it', () =
 
   it('a birth date in 2030, then "yesterday" typed over it: the age waits for the date through both', () => {
     const visit = form({
-      fieldia: '0.8',
+      fieldia: '0.9',
       id: 'visit',
       data: { kind: 'responses' },
       fields: { birth_date: { type: 'date', label: 'Your date of birth', max: 'today' }, age_now: { type: 'integer', label: 'Your age', compute: 'age(birth_date)' } },
@@ -132,7 +132,7 @@ describe('a value worked out from an answer the form refuses waits for it', () =
 
   it('a table’s line whose cell the form refuses: the sum over the lines waits for that line, as for text that does not read', () => {
     const order = form({
-      fieldia: '0.8',
+      fieldia: '0.9',
       id: 'order',
       data: { kind: 'record', model: 'sale.order' },
       fields: {

@@ -7,7 +7,7 @@ const SIGNATURE = ['Best regards,', '', 'Mona Adel', 'Sales Director | Nile Trad
 
 /** A company's card: its name, its ways to reach it, where it is, and its people as lines. */
 const company: Page = {
-  fieldia: '0.8',
+  fieldia: '0.9',
   id: 'company',
   data: { kind: 'record', model: 'partner' },
   fields: {

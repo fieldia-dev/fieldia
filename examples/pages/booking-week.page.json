@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.8",
+  "fieldia": "0.9",
   "id": "booking-week",
   "title": "Bookings",
   "description": "The booking desk's week, Saturday first: each booking in its day at its time, coloured by its service, with the agent it is with; a slot pressed or dragged across for a new one.",

@@ -8,7 +8,7 @@ import { PageSchema } from './page';
  */
 
 const page = (more: Record<string, unknown> = {}, options?: Record<string, unknown>) => ({
-  fieldia: '0.8',
+  fieldia: '0.9',
   id: 'contact',
   data: { kind: 'responses' },
   fields: { mobile: { type: 'char', label: 'Mobile' } },

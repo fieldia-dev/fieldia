@@ -10,7 +10,7 @@ import type { Page } from '../format/page';
  */
 describe('a search by a code', () => {
   const page = {
-    fieldia: '0.8',
+    fieldia: '0.9',
     id: 'p',
     data: { kind: 'record', model: 'treatment' },
     fields: {

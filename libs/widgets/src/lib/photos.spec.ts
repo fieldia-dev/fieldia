@@ -20,7 +20,7 @@ const ROOMS = ['Living room.jpg', 'Kitchen.jpg', 'Hall.jpg'];
 
 function setup(options: { readonly?: boolean; node?: Record<string, unknown>; dir?: string; locale?: 'en' | 'ar'; value?: FileValue[]; field?: Record<string, unknown>; source?: DataSource } = {}) {
   const page = {
-    fieldia: '0.8',
+    fieldia: '0.9',
     id: 'listing',
     data: { kind: 'record', model: 'listing' },
     fields: { photos: { type: 'image', label: 'Photos', multiple: true, maxFiles: 6, ...options.field } as Field },

@@ -13,7 +13,7 @@ import { WIDGET_LABELS } from './labels';
 
 const page = (options: Record<string, unknown> = {}) =>
   ({
-    fieldia: '0.8',
+    fieldia: '0.9',
     id: 'order',
     data: { kind: 'record', model: 'sale.order' },
     fields: {
@@ -158,7 +158,7 @@ describe('a block pasted on a table of lines', () => {
 
 describe('a block pasted on lines with a link: each row its own line, names read as typing reads them', () => {
   const linked = {
-    fieldia: '0.8',
+    fieldia: '0.9',
     id: 'order',
     data: { kind: 'record', model: 'sale.order' },
     fields: {

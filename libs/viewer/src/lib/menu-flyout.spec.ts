@@ -277,7 +277,7 @@ describe('menus inside a head button’s menu and the gear menu', () => {
 
   it('opens one in the gear menu over a plain record, which asks for the head part to draw it', async () => {
     const plain: Page = {
-      fieldia: '0.8',
+      fieldia: '0.9',
       id: 'plain',
       title: 'Bug',
       data: { kind: 'record', model: 'work.item' },

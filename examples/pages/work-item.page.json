@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.8",
+  "fieldia": "0.9",
   "id": "work-item",
   "title": "Bug 5140",
   "description": "A work item as Azure DevOps draws one. In the quiet look each value reads as plain words until it is pointed at or clicked; Underline and Outlined put every field in a box.",
