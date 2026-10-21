@@ -79,7 +79,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, type HeadPart } from './viewer-parts';
+import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, templatesPart, type HeadPart } from './viewer-parts';
 import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
@@ -1937,11 +1937,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** The bar over a record — its breadcrumbs, its gear menu, its pager — or null when it would hold nothing. */
   function topBar(toolbar: SheetNode['toolbar']): HTMLElement | null {
     if (page.data.kind !== 'record') return null;
+    // Record templates people save and name (`templates`): their menu, from the part the page waited for.
+    const kit = page.templates ? templatesPart.loaded : undefined;
+    const extra = kit?.templatesMenu({ doc, el, form, page, labels, locale, preferences, ...(options.dataSource ? { dataSource: options.dataSource } : {}), fill, say: (message, tone) => actionHost.say(message, tone), ask: (request) => dialogs.editValues(request) });
     const bar = recordBar({
       doc,
       el,
       form,
       toolbar,
+      ...(extra ? { extra } : {}),
       records: options.records,
       breadcrumbs: options.breadcrumbs,
       labels,

@@ -389,6 +389,31 @@
     },
     "continueLater": {
       "type": "boolean"
+    },
+    "templates": {
+      "anyOf": [
+        {
+          "type": "boolean",
+          "const": true
+        },
+        {
+          "type": "object",
+          "properties": {
+            "fields": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "fields"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "required": [

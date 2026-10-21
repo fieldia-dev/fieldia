@@ -117,6 +117,7 @@ export const refusals: DesignerWords['refusals'] = {
   pointsNumber: 'النقاط رقم، مثل 1 أو 0.5',
   seatsNumber: 'الأماكن عدد صحيح، 0 أو أكثر',
   seatsForChoices: 'الأماكن لاختيارات السؤال: أعمدة المصفوفة بلا أماكن',
+  templatesForRecords: 'القوالب تُحفظ للسجلات: النموذج الذي يجمع الإجابات ليس له قوالب',
   limitsForResponses: 'مواعيد الفتح والإغلاق والحدود لنموذج يجمع الإجابات: شاشة التطبيق تُفتح وتُغلق مع التطبيق',
   closesBeforeOpens: 'سيُغلق قبل أن يُفتح: اختر وقت إغلاق بعد وقت الفتح',
   rowsFromModel: (label) => `صفوف ${q(label)} تأتي من نموذج البيانات`,

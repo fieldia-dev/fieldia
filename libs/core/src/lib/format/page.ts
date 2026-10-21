@@ -210,6 +210,14 @@ export interface Page {
    * sees where people stopped. Hidden where the source has no `saveDraft`.
    */
   continueLater?: boolean;
+  /**
+   * Record templates people save and name ("Botox package", "Standard lease"): a record's values kept by a name, and a
+   * new record started from one. `true` keeps every field a person fills in — not the record's name (its sheet's title),
+   * a file, a value worked out or locked; `fields` keeps those named alone. Kept by the data source's `templates`,
+   * `saveTemplate` and `deleteTemplate` where it has them, shared as the app shares them; else in the viewer's
+   * `preferences`, this person's. A page of a record's.
+   */
+  templates?: true | { fields: string[] };
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -297,6 +305,7 @@ export const PageSchema = z
     endings: PageEndingsSchema.optional(),
     limits: PageLimitsSchema.optional(),
     continueLater: z.boolean().optional(),
+    templates: z.union([z.literal(true), z.strictObject({ fields: z.array(z.string().min(1)).min(1) })]).optional(),
   })
   .meta({
     title: 'Fieldia page',

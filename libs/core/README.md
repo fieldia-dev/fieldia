@@ -651,6 +651,14 @@ change whose field one of them wrote since — or that is locked now — is pass
 over, never written over theirs. Another record shown, a reload, or `reset()`
 starts with nothing to take back; a form not being edited takes nothing back.
 
+## Record templates
+
+A record page's `templates` (`true`, or `{ fields }`) keeps a record's values
+by a name, to start new records from. The data source's `templates`,
+`saveTemplate` and `deleteTemplate` keep them on your server
+(`RecordTemplate`: `{ id, name, values, by? }`); the viewer keeps them in its
+`preferences` without them. The memory source keeps them by page id.
+
 ## Two people, one record
 
 A source that keeps versions returns each record with its version, and what this

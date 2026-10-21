@@ -914,3 +914,33 @@ In plain words:
   `limits` option's starting counts, a record page's model's records but the one edited; `saveDraft` keys drafts
   `draft-1`, `draft-2`… (`drafts` shows them, with `later`), with `draftLink(key)`'s link on "Continue later";
   `loadDraft` finds them, and the `drafts` option's. Tests: `libs/core/src/lib/record/taking.spec.ts`, `drafts.spec.ts`.
+
+## 19. Record templates people save (Wave 6, lane w6-records)
+
+Three more members, each optional: a page with `templates` keeps its templates through them where the source has all
+three; without them, the viewer keeps them in its `preferences` (this person's own, `templates:<page id>`). The menu
+shows either way.
+
+```ts
+templates?(request: TemplatesRequest): Promise<RecordTemplate[]>;
+saveTemplate?(request: SaveTemplateRequest): Promise<RecordTemplate>;
+deleteTemplate?(request: TemplateRequest): Promise<void>;
+
+interface TemplatesRequest { model: string; pageId: string }
+interface TemplateRequest extends TemplatesRequest { id: RecordId }
+interface SaveTemplateRequest extends TemplatesRequest { template: { id?: RecordId; name: string; values: Values } }
+interface RecordTemplate { id: RecordId; name: string; values: Values; by?: string }
+```
+
+In plain words:
+
+- **What is kept**: the page's `templates.fields`, else every field a person fills in — never the record's name (its
+  sheet's title), a file or a picture, a value worked out (`compute`) or `readonly`, nor a field the source hides from
+  this person — and of those only what holds a value. A table's lines are kept as `{ values }`, without their ids.
+- **Saved again under a name it has** (in any case), the template is replaced: `saveTemplate` with its `id`.
+- **Started from** (a new record): each value written as the person's own change — the page's `change` steps run,
+  the source's onchange, Ctrl+Z takes each back — a table's lines as new lines.
+- **Shared or own** is the app's: `templates` answers what this person may start from, `by` names who saved one.
+- The memory source keeps them by page id (`templates` option to start from). Tests:
+  `libs/viewer/src/lib/templates.spec.ts`.
+

@@ -227,6 +227,10 @@ export type {
   SaveDraftRequest,
   SavedDraft,
   LoadDraftRequest,
+  RecordTemplate,
+  TemplatesRequest,
+  TemplateRequest,
+  SaveTemplateRequest,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';

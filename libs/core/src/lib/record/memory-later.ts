@@ -16,6 +16,7 @@ export const memoryPart: Part<MemoryPart> = lazyPart('memory', () => import('./m
 export const MEMORY_MEMBERS = [
   'load', 'save', 'onchange', 'search', 'create', 'submit', 'list', 'groups', 'options', 'definitions', 'saveDefinitions', 'archive', 'copy', 'delete',
   'attachments', 'totals', 'upload', 'slots', 'writeMany', 'createMany', 'duplicates', 'merge', 'notDuplicates', 'markNotDuplicate', 'limits', 'saveDraft', 'loadDraft',
+  'templates', 'saveTemplate', 'deleteTemplate',
 ] as const;
 
 /**

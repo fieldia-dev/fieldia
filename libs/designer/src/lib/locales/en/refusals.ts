@@ -124,6 +124,7 @@ export const refusals = {
   pointsNumber: 'Points are a number, such as 1 or 0.5',
   seatsNumber: 'Places are a whole number, 0 or more',
   seatsForChoices: 'Places are for a choice’s options: a matrix’s columns take none',
+  templatesForRecords: 'Templates are kept of a record: a form that collects responses has none',
   limitsForResponses: 'Open and close dates and limits are for a form that collects responses: an app’s own screen opens and closes with the app',
   closesBeforeOpens: 'It would close before it opens: pick a closing time after the opening',
   rowsFromModel: (label: string) => `The rows of ${label} come from the model`,

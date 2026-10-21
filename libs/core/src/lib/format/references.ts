@@ -147,6 +147,10 @@ export class ReferenceCheck {
       if (Array.isArray(this.page.endings) && this.page.endings.length) checkEndings(this.page, { ...this.fieldTools(), checkModifiers: (owner, path, keys) => this.checkModifiers(owner, path, keys), checkWords: (owner, path, keys, sent) => this.checkWords(owner, path, keys, sent) });
     }
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
+    // Templates people save: a record's page's, each field it keeps the page's own.
+    const templates = this.line ? undefined : this.page.templates;
+    if (templates && this.page.data.kind !== 'record') this.report('templates', 'templates are kept of records: a page of responses has none');
+    if (templates && templates !== true) templates.fields.forEach((name, i) => this.need(name, `templates.fields[${i}]`));
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
     this.checkGoingTo();
     return this.issues;

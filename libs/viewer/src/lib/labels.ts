@@ -67,6 +67,20 @@ export interface ViewerLabels {
   copyTitle: string;
   titleCopied: string;
   moreActions: string;
+  /** Record templates (`templates` on the page, the templates part): its menu, its dialogs and what they say. `{name}` a template's; `{n}` how many. */
+  templatesButton: string;
+  templatesStart: string;
+  templateSave: string;
+  templateName: string;
+  templateKeeps: string;
+  templateKeep: string;
+  templateSaved: string;
+  templateReplaced: string;
+  templateUsed: string;
+  templatesDelete: string;
+  templatesChosen: string;
+  templatesDeleteNow: string;
+  templatesDeleted: string;
   /** A split button's chevron, named for the button it opens more of (`{label}`), unless it has a name of its own. */
   optionsFor: string;
   updatedBy: string;
@@ -633,6 +647,19 @@ const en: ViewerLabels = {
   copyTitle: 'Copy title',
   titleCopied: 'Title copied',
   moreActions: 'More actions',
+  templatesButton: 'Templates',
+  templatesStart: 'Start from',
+  templateSave: 'Save as template…',
+  templateName: 'Template name',
+  templateKeeps: 'Keeps what this record holds now, but its name and its files, to start new ones from.',
+  templateKeep: 'Save template',
+  templateSaved: 'Template “{name}” saved.',
+  templateReplaced: 'Template “{name}” replaced.',
+  templateUsed: 'Started from “{name}”.',
+  templatesDelete: 'Delete templates…',
+  templatesChosen: 'Templates to delete',
+  templatesDeleteNow: 'Delete',
+  templatesDeleted: 'Templates deleted: {n}',
   optionsFor: '{label} options',
   updatedBy: 'Updated by {name}: {date}',
   nothingChanged: 'Nothing has changed.',

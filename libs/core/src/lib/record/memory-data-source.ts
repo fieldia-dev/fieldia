@@ -50,6 +50,10 @@ import type {
   SaveDraftRequest,
   SavedDraft,
   LoadDraftRequest,
+  RecordTemplate,
+  TemplatesRequest,
+  TemplateRequest,
+  SaveTemplateRequest,
 } from './data-source';
 import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
@@ -103,6 +107,8 @@ export interface MemoryDataSourceOptions {
    * `changeElsewhere` changes a record as someone else would.
    */
   versions?: boolean | { by?: string };
+  /** Record templates saved before, by page id: what `templates` answers first ("Botox package"), as an app's server keeps them. */
+  templates?: Record<string, RecordTemplate[]>;
   /**
    * What the person may do with each record, by model: given with its load
    * and its row in a list, and kept to as a backend would — a save, a
@@ -222,6 +228,10 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   const told = (version: RecordVersion | undefined, can: RecordPermissions | undefined) => ({ ...(version ? { version } : {}), ...(can ? { can } : {}) });
 
   const pause = () => (options.delayMs ? wait(options.delayMs, options.scheduler) : Promise.resolve());
+  /** Each page's record templates, as saved: those given first, then each kept, numbered on. */
+  const savedTemplates: Record<string, RecordTemplate[]> = structuredCopy(options.templates ?? {});
+  const templatesOf = (pageId: string) => (savedTemplates[pageId] ??= []);
+  let templateIds = 0;
   const labelOf = (model: string, id: RecordId) => {
     const value = table(model)[String(id)]?.[options.labelField?.[model] ?? 'name'];
     return typeof value === 'string' ? value : String(id);
@@ -354,6 +364,31 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       drafts[key] = { ...structuredCopy(request.draft), pageId: request.pageId, ...(request.later ? { later: true } : {}) };
       const link = request.later && options.draftLink ? options.draftLink(key, request) : undefined;
       return { key, ...(link ? { link } : {}) };
+    },
+
+    async templates(request: TemplatesRequest): Promise<RecordTemplate[]> {
+      calls.push({ method: 'templates', request });
+      await pause();
+      return structuredCopy(templatesOf(request.pageId));
+    },
+
+    async saveTemplate(request: SaveTemplateRequest): Promise<RecordTemplate> {
+      calls.push({ method: 'saveTemplate', request });
+      await pause();
+      const list = templatesOf(request.pageId);
+      const kept: RecordTemplate = { id: request.template.id ?? `template-${++templateIds}`, name: request.template.name, values: structuredCopy(request.template.values) };
+      const at = list.findIndex((one) => String(one.id) === String(kept.id));
+      if (at >= 0) list[at] = kept;
+      else list.push(kept);
+      return structuredCopy(kept);
+    },
+
+    async deleteTemplate(request: TemplateRequest): Promise<void> {
+      calls.push({ method: 'deleteTemplate', request });
+      await pause();
+      const list = templatesOf(request.pageId);
+      const at = list.findIndex((one) => String(one.id) === String(request.id));
+      if (at >= 0) list.splice(at, 1);
     },
 
     async loadDraft(request: LoadDraftRequest): Promise<StoredDraft | null> {

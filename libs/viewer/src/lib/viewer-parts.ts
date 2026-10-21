@@ -11,6 +11,7 @@ import type * as HeadModule from './head-part';
 import type * as ImportModule from './import-part';
 import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
+import type * as TemplatesModule from './templates-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -31,6 +32,8 @@ export type DuplicatesPart = typeof DuplicatesModule;
 export type AnswersPart = typeof AnswersModule;
 /** The limits part: a closed form's words in place of its questions, and Continue later. */
 export type LimitsPart = typeof LimitsModule;
+/** The templates part: record templates people save and name, and start a new record from. */
+export type TemplatesPart = typeof TemplatesModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -69,6 +72,8 @@ const showsAnswers = (page: Page): boolean =>
  * has `limits` or `continueLater`: waited for, so a closed form never shows its questions first.
  */
 export const limitsPart: Part<LimitsPart> = lazyPart('limits', () => import('./limits-part'));
+/** Record templates people save and name — their menu over a record — loaded with the page's parts where it has `templates`. */
+export const templatesPart: Part<TemplatesPart> = lazyPart('templates', () => import('./templates-part'));
 
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
@@ -88,7 +93,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, pressUndoPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, pressUndoPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -214,6 +219,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (showsAnswers(page)) found.add(answersPart);
   // A page's opening, closing and limits, and Continue later: said before its questions, so in before it is drawn.
   if (page.limits || page.continueLater) found.add(limitsPart);
+  if (page.templates && page.data.kind === 'record') found.add(templatesPart);
   if (hasLimits(page)) found.add(formLimitsPart);
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);

@@ -297,6 +297,17 @@ field taken back takes the focus, and “Undone: Price” is said to a screen
 reader. `keys: { undo: false }` leaves the keys to the browser alone; your own
 Undo button calls `form.undo()` (see `@fieldia/core`).
 
+## Record templates people save
+
+A page with `"templates": true` has a **Templates** menu over its record:
+**Save as template…** keeps what the record holds by a name ("Botox
+package") — never its name, its files, a value worked out or locked; a name
+already kept is replaced — and on a new record each template starts it, its
+values written as the person's own changes (Ctrl+Z takes each back).
+**Delete templates…** lets some go. Kept by the data source's `templates`,
+`saveTemplate` and `deleteTemplate`, else in the viewer's `preferences`. It
+comes in a part of its own, `fieldia.templates.js` (`templatesPart`).
+
 ## Two people, one record
 
 When a save is refused because someone else saved the record first (the data

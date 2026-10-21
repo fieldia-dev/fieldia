@@ -159,9 +159,40 @@ export interface DataSource {
   saveDraft?(request: SaveDraftRequest): Promise<SavedDraft>;
   /** A draft kept by `saveDraft`, by its key: what the viewer's `resume` opens. Null when there is none (sent, or gone). */
   loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>;
+  /**
+   * The record templates people saved for a page (`templates` on the page): each by its id, its name and the values it
+   * keeps — this person's own and those the team shares, as the app decides. With `saveTemplate` and `deleteTemplate`,
+   * a template saved and named, or let go, on the app's server; without the three, the viewer keeps them in its
+   * `preferences`, the person's own.
+   */
+  templates?(request: TemplatesRequest): Promise<RecordTemplate[]>;
+  /** Keep a template — a new one, or one again by its `id` (renamed, its values replaced) — answered with it as kept. */
+  saveTemplate?(request: SaveTemplateRequest): Promise<RecordTemplate>;
+  deleteTemplate?(request: TemplateRequest): Promise<void>;
 }
 
 /** Whose possible duplicates were let be: what `notDuplicates` is asked. */
+/** The templates of a page's records, as `templates` is asked. */
+export interface TemplatesRequest {
+  model: string;
+  pageId: string;
+}
+/** One template, by its id. */
+export interface TemplateRequest extends TemplatesRequest {
+  id: RecordId;
+}
+/** A template kept as `saveTemplate` is asked: without `id`, a new one. */
+export interface SaveTemplateRequest extends TemplatesRequest {
+  template: { id?: RecordId; name: string; values: Values };
+}
+/** A record's values kept by a name, to start a new one from: "Botox package". `by`, who saved it, where it is shared. */
+export interface RecordTemplate {
+  id: RecordId;
+  name: string;
+  values: Values;
+  by?: string;
+}
+
 export interface NotDuplicatesRequest {
   model: string;
   /** The record shown, saved. */

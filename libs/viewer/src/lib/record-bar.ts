@@ -49,6 +49,8 @@ export interface RecordBarContext {
   leave(): Promise<boolean>;
   /** Draw the form again: the pager's records changed, the record shown perhaps not. */
   render(): void;
+  /** A menu of the page's own before the gear: its record templates (the templates part). */
+  extra?: { element: HTMLElement; update(): void };
 }
 
 const GEAR: IconSet = {
@@ -72,7 +74,7 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
   const menuItems = toolbar?.menu ?? [];
   const trail = toolbar?.breadcrumbs === false ? undefined : context.breadcrumbs;
   const given = toolbar?.pager === false ? undefined : context.records;
-  if (!menuItems.length && !trail?.length && !given) return null;
+  if (!menuItems.length && !trail?.length && !given && !context.extra) return null;
   const updaters: (() => void)[] = [];
   const cleanups: (() => void)[] = [];
   const bar = el('div', { class: 'fd-record-bar' });
@@ -116,7 +118,11 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
     updaters.push(() => setText(current, context.name() || newRecord));
   }
 
-  // ---- the gear menu ----
+  // ---- the page's templates, then the gear menu ----
+  if (context.extra) {
+    bar.append(context.extra.element);
+    updaters.push(context.extra.update);
+  }
   if (menuItems.length) bar.append(recordMenu(context, menuItems, updaters, cleanups));
 
   // ---- the pager ----
