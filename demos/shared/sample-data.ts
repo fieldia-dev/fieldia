@@ -4,6 +4,7 @@ import address from '../../examples/pages/address.page.json';
 import listing from '../../examples/pages/listing.page.json';
 import lease from '../../examples/pages/lease.page.json';
 import { LEASE, LEASE_AGENTS, LEASE_SHOWS } from './lease';
+import { AREAS, AREA_SHOWS } from './areas';
 import visitFeedback from '../../examples/pages/visit-feedback.page.json';
 import { demoFunctions } from './functions';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -505,7 +506,7 @@ export function sampleDataSource() {
     // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's.
     can: { 'crm.contact': contactPermissions },
     // What links show of their records besides their names: an address, a picture, a colour.
-    shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' }, ...wiPicker.shows, ...LEASE_SHOWS },
+    shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' }, ...wiPicker.shows, ...LEASE_SHOWS, ...AREA_SHOWS },
     records: {
       ...READING,
       ...WI_HEAD_RECORDS,
@@ -532,6 +533,8 @@ export function sampleDataSource() {
       listing: { 1: LISTING },
       lease: { 1: LEASE },
       'lease.agent': LEASE_AGENTS,
+      // Areas of Greater Cairo as a tree, for a lead's areas wanted (shared/areas.ts).
+      area: AREAS,
       // The contacts, and the people who own them (shared/contacts.ts).
       'crm.contact': sampleContacts(),
       'res.users': Object.fromEntries(Object.entries(OWNERS).map(([id, name]) => [id, { name }])),

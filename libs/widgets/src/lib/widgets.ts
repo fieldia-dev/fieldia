@@ -1112,6 +1112,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   many2many: tagsWidget,
   'many2many.tags': tagsWidget,
   'many2many.checkboxes': linkCheckboxesWidget,
+  // Several records of a tree, each a row with a box to tick, a branch's ticking all under it (check-tree.ts, path part).
+  'many2many.tree': partFactory(pathPart, (part) => part.checkTreeWidget, plainTagsWidget),
   // A table of the records it links to, in the lines part: their names as plain words meanwhile.
   'many2many.table': partFactory(linesPart, (part) => part.linksTableWidget, plainLinksWidget),
   // The links box comes with the text part, whose menus and words it shares; the tags meanwhile.

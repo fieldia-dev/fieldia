@@ -362,4 +362,7 @@ export const ar: WidgetLabels = {
   codeFullCharacters: '{label} من {n} خانات: لا مكان لأكثر',
   shorthandIs: '{typed} تعني {amount}',
   shorthandOnly: '{label}: أرقام فقط، أو اختصار للآلاف والملايين، مثل {example}',
+  treeSearch: 'البحث في {label}',
+  treeChosen: 'اختير {n}',
+  treeChosenOne: 'اختير واحد',
 };

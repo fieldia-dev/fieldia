@@ -426,6 +426,10 @@ export interface WidgetLabels {
   /** An amount typed in shorthand (`{typed}`, "3.5m"), said as it reads (`{amount}`); a key no number or shorthand has (`{example}`, "3.5M"). */
   shorthandIs: string;
   shorthandOnly: string;
+  /** A checkbox tree's search box, named by its field (`{label}`), and how many are chosen under it. */
+  treeSearch: string;
+  treeChosen: string;
+  treeChosenOne: string;
   /** Hours typed with a decimal mark and two digits (`{text}`), read as hours with a decimal: `{time}` in hours and minutes. */
   hoursDecimal: string;
   /** Typed words no choice is called (`{text}`), with a way to create one where the field can. */
@@ -833,6 +837,9 @@ const en: WidgetLabels = {
   codeFullCharacters: '{label} has {n} characters: there is no room for more',
   shorthandIs: '{typed} is {amount}',
   shorthandOnly: '{label}: numbers only, or short for thousands and millions, like {example}',
+  treeSearch: 'Search {label}',
+  treeChosen: '{n} chosen',
+  treeChosenOne: '1 chosen',
   hoursDecimal: '{label}: “{text}” is hours with a decimal: {time}',
   noMatch: '{label}: nothing is called “{text}”; pick one from the list',
   noMatchCreate: '{label}: nothing is called “{text}” yet; pick one or create it',

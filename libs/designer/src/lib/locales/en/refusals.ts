@@ -106,6 +106,7 @@ export const refusals = {
   onlyAlertCloses: 'Only an alert can be closed',
   onlySomeIcons: 'A ribbon or an alert has no icon',
   onlyOneChoiceBadge: 'Only a field that holds one choice of a list shows as a coloured badge',
+  onlyLinksTree: 'Only a field that links to several records shows as a tree to tick',
   onlyLinkPath: 'Only a field that links to one record shows as a path picker',
   onlyStateDotColours: 'Only a field shown as a state’s dot takes a colour for each state',
   colourAsHex: 'A colour is written as #rrggbb, such as #007acc',

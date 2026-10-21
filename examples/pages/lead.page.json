@@ -21,6 +21,7 @@
     },
     "agent": { "type": "char", "label": "Agent" },
     "budget": { "type": "monetary", "label": "Budget", "currency": "EGP", "digits": [12, 0] },
+    "areas": { "type": "many2many", "label": "Areas wanted", "relation": "area", "help": "Tick a whole district, or some of its neighbourhoods." },
     "commission": { "type": "float", "label": "Commission, %", "digits": [4, 1] },
     "notes": { "type": "text", "label": "Notes" },
     "active": { "type": "boolean", "label": "Active", "default": true }
@@ -48,8 +49,9 @@
           { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
           { "type": "field", "id": "f-email", "field": "email", "widget": "email" },
           { "type": "field", "id": "f-agent", "field": "agent" },
-          { "type": "field", "id": "f-budget", "field": "budget" },
+          { "type": "field", "id": "f-budget", "field": "budget", "options": { "shorthand": true } },
           { "type": "field", "id": "f-commission", "field": "commission" },
+          { "type": "field", "id": "f-areas", "field": "areas", "widget": "tree", "colspan": 2, "options": { "keeps": "top" } },
           { "type": "field", "id": "f-notes", "field": "notes", "colspan": 2 }
         ]
       }

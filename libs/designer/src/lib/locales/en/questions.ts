@@ -149,6 +149,12 @@ export const questions = {
   colourFor: (label: string) => `Colour for ${label}`,
   // ---- the work tracker's pickers
   pathPicker: 'Path in a tree',
+  checkTree: 'A tree to tick: a branch ticks all under it',
+  treeKeeps: 'Keeps',
+  treeKeepsAll: 'Every one ticked',
+  treeKeepsTop: 'A whole branch as itself',
+  treeKeepsLeaves: 'The last ones alone',
+  treeSearchShown: 'A search over it',
   joinedBy: 'Names joined by',
   suggestionsShown: 'Suggestions',
   treeShown: 'The tree under them',

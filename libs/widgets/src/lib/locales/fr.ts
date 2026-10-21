@@ -362,4 +362,7 @@ export const fr: WidgetLabels = {
   codeFullCharacters: '{label} a {n} caractères : il n’y a plus de place',
   shorthandIs: '{typed} font {amount}',
   shorthandOnly: '{label} : des chiffres seulement, ou en abrégé pour les milliers et les millions, comme {example}',
+  treeSearch: 'Rechercher dans {label}',
+  treeChosen: '{n} choisis',
+  treeChosenOne: '1 choisi',
 };

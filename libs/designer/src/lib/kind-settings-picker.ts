@@ -67,6 +67,31 @@ export function pickerSettings(el: ElementFactory, designer: Designer, id: strin
     };
   }
 
+  /**
+   * Links to several records of a tree drawn as a tree to tick — areas, permissions — what it keeps (every one ticked,
+   * a whole branch as itself, the last ones alone), and whether a search is over it.
+   */
+  function checkTree(): StructurePart {
+    const made = toggle(w.checkTree, (on) => designer.setCheckTree(id, on));
+    const keeps = el('select', { class: 'fd-inline-select', 'aria-label': w.treeKeeps }, el('option', { value: '' }, w.treeKeepsAll), el('option', { value: 'top' }, w.treeKeepsTop), el('option', { value: 'leaves' }, w.treeKeepsLeaves)) as HTMLSelectElement;
+    keeps.addEventListener('change', () => widget({ keeps: keeps.value || null }));
+    const search = toggle(w.treeSearchShown, (on) => widget({ search: on ? null : false }));
+    const more = el('div', { class: 'fd-inline-row' }, word(w.treeKeeps, keeps), search.element);
+    return {
+      element: el('div', { class: 'fd-kind-block fd-tree-settings' }, made.element, more),
+      refresh(_page, node) {
+        const on = node.widget === 'tree';
+        made.button.setAttribute('aria-checked', String(on));
+        // Its own look, or tags: a tree to tick only where the field is drawn as neither else (checkboxes, a table).
+        made.element.hidden = !!node.widget && !on;
+        more.hidden = !on;
+        if (!on) return;
+        if (!focused(keeps)) keeps.value = option(node, 'keeps') === 'top' || option(node, 'keeps') === 'leaves' ? String(option(node, 'keeps')) : '';
+        search.button.setAttribute('aria-checked', String(option(node, 'search') !== false));
+      },
+    };
+  }
+
   /** Tags added from a button, as a work tracker's "Add Tag": its words are the field's placeholder. */
   function adder(): StructurePart {
     const made = toggle(w.addedFromButton, (on) => widget({ adder: on ? 'button' : null }));
@@ -111,6 +136,7 @@ export function pickerSettings(el: ElementFactory, designer: Designer, id: strin
 
   const parts: StructurePart[] = [];
   if (kind === 'link' || kind === 'model:link') parts.push(path());
+  if (kind === 'links' || kind === 'model:links') parts.push(checkTree());
   if (kind === 'links' || kind === 'model:links' || kind === 'keywords') parts.push(adder());
   if (kind === 'dropdown') parts.push(ownList());
   if (kind === 'state-dot') parts.push(dots());

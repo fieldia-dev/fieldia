@@ -1033,6 +1033,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // in radios and checkboxes, which every survey draws (option-look.ts, widgets.ts), a dropdown of such options asking
 // for Fieldia's own list, and their look in the main sheet, where radios' and lists' rows are (styles.ts, 0.73 of it);
 // Fieldia's own list's rows and a link's suggestions in their parts: 508.49 measured before, 509.63 after, to 509.7.
+// A checkbox tree (0.30, w6-inputs): a many2many drawn as one asking for the path part, where the tree is (widgets.ts,
+// 0.05): 509.63 measured before, 509.68 after, under 509.7.
 const BUDGET_KB = 509.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1273,7 +1275,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // A mask and a one-time code (listed with the raw budget above): such a field asking for the typed part — 166.64
 // measured before, 166.71 after, to 166.8. Amounts in shorthand (listed with the raw budget above): 166.71 measured
 // before, 166.89 after, to 166.9. Options with a second line, an icon or a colour (listed with the raw budget above):
-// 166.89 measured before, 167.18 after, to 167.2.
+// 166.89 measured before, 167.18 after, to 167.2. A checkbox tree (listed with the raw budget above): 167.18 measured
+// before, 167.19 after, under 167.2.
 const GZIP_BUDGET_KB = 167.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -1466,7 +1469,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Amounts in shorthand (0.30): what is said as one reads, and what a box taking it refuses — two in each: Arabic's 80.88
 // and 13.66 before, 81.19 and 13.72 after, to 81.2 and 13.8; German's 37.81 and 11.99 to 37.94 and 12.03, to 38.0 and
 // 12.1; French's 38.41 and 12.04 to 38.56 and 12.10, to 38.6 and 12.1.
-const ADD_ON_BUDGET_KB = { ar: [81.2, 13.8], de: [38.0, 12.1], fr: [38.6, 12.1] };
+// A checkbox tree (0.30, w6-inputs): its search's name and how many are chosen, one and more — three in each: Arabic's
+// 81.19 and 13.72 before, 81.37 and 13.75 after, to 81.4 and 13.8; German's 37.94 and 12.03 to 38.03 and 12.06, to
+// 38.1 and 12.1; French's 38.56 and 12.10 to 38.64 and 12.12, to 38.7 and 12.2.
+const ADD_ON_BUDGET_KB = { ar: [81.4, 13.8], de: [38.1, 12.1], fr: [38.7, 12.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1873,12 +1879,17 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // colour and second line, and a list that searches showing them — choice 11.16 and 4.56 to 12.46 and 4.92, to 12.5
 // and 5.0 — and a link's suggestions with each record's picture or colour, its first line of details and its words at
 // the end — relations 20.08 and 7.59 to 20.88 and 7.89, to 20.9 and 7.9.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [12.5, 5.0], filters: [22.7, 7.9], date: [23.8, 9.0], months: [14.7, 6.0], typed: [14.4, 6.1], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.9, 7.9], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// A checkbox tree (0.30, w6-inputs), in the path part with the path picker, both a record of a tree placed by its path:
+// a many2many's records drawn as a tree of boxes, a branch ticked, part-ticked or not by what is under it, what the
+// field keeps by `keeps`, its search asking the source beyond what it drew, an ARIA tree's keys, and its sheet — path
+// 16.06 and 6.31 to 23.40 and 8.60, to 23.5 and 8.7. A page with a path picker and no tree loads it too: 2.29 gzipped,
+// against a part of its own and the path part's sheet loaded twice.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [23.5, 8.7], choice: [12.5, 5.0], filters: [22.7, 7.9], date: [23.8, 9.0], months: [14.7, 6.0], typed: [14.4, 6.1], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.9, 7.9], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
   text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu', 'cleanPasted', 'pasteHtml', 'putHtml'],
-  path: ['pathPickerWidget'],
+  path: ['pathPickerWidget', 'checkTreeWidget'],
   choice: ['ownListWidget', 'searchWidget', 'choiceTagsWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
@@ -2339,6 +2350,15 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (host.querySelector('[data-node="f-national-id"] input')?.placeholder !== '_ ___ ___ ___' || host.querySelectorAll('[data-node="f-code"] .fd-code-cell').length !== 6) throw new Error('in a page, a mask or a one-time code is not drawn from its part');
   lease.destroy();
   gone('lease');
+  // A lead's areas wanted, a many2many drawn as a checkbox tree from the path part (in already): a whole district ticked,
+  // the one of two neighbourhoods ticked part-ticking theirs, and how many are chosen said under it.
+  const areas = { 1: { name: 'Nasr City', path: ['Nasr City'] }, 2: { name: 'District 7', path: ['Nasr City', 'District 7'] }, 3: { name: 'New Cairo', path: ['New Cairo'] }, 4: { name: 'Rehab', path: ['New Cairo', 'Rehab'] }, 5: { name: 'Madinaty', path: ['New Cairo', 'Madinaty'] } };
+  const lead = inPage.mountViewer(host, { page: read('lead.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { lead: { 1: { name: 'Omar Nabil', areas: [{ id: 1, label: 'Nasr City' }, { id: 4, label: 'Rehab' }] } }, area: areas }, shows: { area: { path: 'path' } } }) });
+  await lead.drawn;
+  const treeRow = (name) => [...host.querySelectorAll('[data-node="f-areas"] [role=treeitem]')].find((row) => row.querySelector('.fd-tree-name')?.textContent === name);
+  if (!(await until(() => treeRow('New Cairo')?.getAttribute('aria-checked') === 'mixed')) || treeRow('Nasr City')?.getAttribute('aria-checked') !== 'true' || host.querySelector('[data-node="f-areas"] .fd-tree-count')?.textContent !== '2 chosen') throw new Error(`in a page, a many2many is not drawn as a checkbox tree from its part: ${host.querySelector('[data-node="f-areas"]')?.innerHTML.slice(0, 300)}`);
+  lead.destroy();
+  gone('lead');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
@@ -2361,7 +2381,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a lease's Hijri days, a month alone, its masks and its code — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a lease's Hijri days, a month alone, its masks and its code; a lead's areas as a checkbox tree — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

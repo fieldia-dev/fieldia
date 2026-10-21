@@ -2,7 +2,8 @@ import { installPartStyles, PART_RANK } from './styles';
 
 /**
  * A path picker (path-picker.ts): its chevron, its list of suggestions and its
- * tree, measured from a work tracker's. The path part's sheet, put in its
+ * tree, measured from a work tracker's; and a checkbox tree (check-tree.ts), its
+ * rows each with a box to tick. The path part's sheet, put in its
  * place among Fieldia's — after the pickers' — the first time a page draws one
  * (installPartStyles, PART_RANK.picker).
  */
@@ -67,6 +68,36 @@ export const PATH_CSS = /* css */ `
 .fd-path-row[data-active] > :is(.fd-path-name, .fd-path-aside) {
   outline: 1px solid var(--fd-focus); outline-offset: -1px; box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--fd-focus) 14%, transparent);
 }
+
+/* ---- a checkbox tree (check-tree.ts): its search, its rows each with a box to tick, a count of those chosen ---- */
+.fd-tree-box { display: grid; gap: 6px; min-width: 0; }
+.fd-check-tree {
+  max-height: 320px; overflow-y: auto; padding: 4px 0; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius);
+  background: var(--fd-surface); font-size: 14px; line-height: 20px;
+}
+.fd-tree-row {
+  display: grid; grid-template-columns: 20px 18px minmax(0, 1fr) auto; align-items: center; gap: 6px; min-height: 30px;
+  padding-inline: calc(6px + var(--fd-depth, 0) * 20px) 10px; cursor: pointer; outline: none;
+}
+.fd-tree-row[aria-disabled="true"] { cursor: default; color: var(--fd-muted); }
+@media (hover: hover) { .fd-tree-row:hover { background: color-mix(in srgb, var(--fd-text) 5%, transparent); } }
+.fd-tree-row:focus-visible { background: var(--fd-accent-soft); outline: 2px solid var(--fd-focus); outline-offset: -2px; }
+.fd-tree-twist { display: grid; place-items: center; width: 20px; height: 20px; color: var(--fd-muted); }
+.fd-tree-twist .fd-icon { width: 18px; height: 18px; margin: 0; stroke-width: 1.4; }
+.fd-tree-twist .fd-icon[data-icon="chevron-right"]:dir(rtl) { transform: scaleX(-1); }
+/* Its box: empty, ticked, or a dash when some under it are ticked. */
+.fd-tree-check {
+  display: grid; place-items: center; width: 16px; height: 16px; border: 1.5px solid var(--fd-border-strong, var(--fd-muted)); border-radius: 3px;
+  background: var(--fd-surface); color: var(--fd-accent-text);
+}
+.fd-tree-row:is([aria-checked="true"], [aria-checked="mixed"]) > .fd-tree-check { border-color: var(--fd-accent); background: var(--fd-accent); }
+.fd-tree-check .fd-icon { width: 14px; height: 14px; margin: 0; stroke-width: 2.4; }
+.fd-tree-row[aria-checked="mixed"] > .fd-tree-check::after { content: ""; width: 8px; height: 2px; border-radius: 1px; background: currentColor; }
+.fd-tree-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-tree-aside { font-size: 12.5px; color: var(--fd-muted); white-space: nowrap; }
+.fd-tree-count { font-size: 12.5px; color: var(--fd-muted); }
+.fd-tree-count:empty, .fd-tree-empty[hidden] { display: none; }
+.fd-tree-empty { padding: 6px 10px; }
 
 /* A list too narrow for both side by side (a phone's): the words at the end go under the name, smaller. */
 .fd-path-callout { container-type: inline-size; }

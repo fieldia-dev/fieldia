@@ -100,6 +100,7 @@ export const refusals: DesignerWords['refusals'] = {
   onlyAlertCloses: 'التنبيه وحده يمكن إغلاقه',
   onlySomeIcons: 'لا أيقونة للشريط أو التنبيه',
   onlyOneChoiceBadge: 'الحقل الذي يحمل اختيارًا واحدًا من قائمة وحده يُعرض شارةً ملوّنة',
+  onlyLinksTree: 'الحقل الذي يربط بعدة سجلات وحده يُعرض شجرةً للتأشير',
   onlyLinkPath: 'الحقل الذي يربط بسجل واحد وحده يُعرض منتقيًا للمسار',
   onlyStateDotColours: 'الحقل المعروض نقطةَ حالة وحده يأخذ لونًا لكل حالة',
   colourAsHex: 'يُكتب اللون بالصيغة #rrggbb، مثل #007acc',

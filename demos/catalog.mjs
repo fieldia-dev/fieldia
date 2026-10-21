@@ -74,7 +74,7 @@ const SEARCH_WORDS = {
   contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize reorder drag move rearrange print cards whatsapp',
   'homes-gallery': 'homes houses property properties real estate listings photos pictures gallery grid cards tiles book viewing',
   'homes-search': 'homes houses property properties real estate buy buyer portal search filter filters facets count counts price range from to min max area bedrooms beds 2+ amenities phone mobile sheet show results',
-  'leads-queue': 'leads queue sales team crm follow up follow-up late overdue today this week counts count filters saved searches favourites agent pipeline',
+  'leads-queue': 'leads queue sales team crm follow up follow-up late overdue today this week counts count filters saved searches favourites agent pipeline areas districts neighbourhoods coverage tree tick checkbox tree multi select hierarchy',
   'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print tab count badge route router own page',
   property: 'property home house real estate listing viewings visits appointments related records inside agent client',
   lease: 'lease rent rental tenant landlord tenancy contract flat apartment saudi riyadh ksa hijri umm al-qura islamic calendar arabic month year billing period year built mask input mask national id iban bank account car plate number otp one-time code sms verification verify confirm shorthand 120k 1.2m thousand million amount price',
@@ -282,6 +282,7 @@ export const DEMOS = [
       'Type “Mona” in the search and pick Search Agent for: Mona: every filter counts Mona’s leads alone.',
       'Save the search as “Mona’s” under Favourites: it says how many it finds too.',
       'Add a custom filter: Budget, is between, 5,000,000 and 15,000,000 — one chip, “Budget: E£ 5,000,000 – E£ 15,000,000”.',
+      'Open Omar Nabil’s lead: his areas wanted are a tree to tick — all of Nasr City, two neighbourhoods of New Cairo. Tick New Cairo whole, or search for a neighbourhood; type a budget as 6.5m.',
     ],
   },
   {

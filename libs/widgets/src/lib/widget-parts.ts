@@ -19,7 +19,7 @@ import type { TypedText, Widget, WidgetContext, WidgetFactory, WidgetState } fro
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
 export type TextPart = typeof TextModule;
-/** The path part: a path picker, with its suggestions and its tree. */
+/** The path part: a path picker, with its suggestions and its tree; a checkbox tree of several records of a tree. */
 export type PathPart = typeof PathModule;
 /** The choice part: a choice in Fieldia's own list, a long one searched as it is typed, and several chosen as tags. */
 export type ChoicePart = typeof ChoiceModule;

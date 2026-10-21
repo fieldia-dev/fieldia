@@ -86,7 +86,7 @@ export const PART_WORDS = {
       'importFailedNoun', 'importUndoAskNoun', 'importUndoAskNounOne', 'importUndoneNoun', 'importUndoneNounOne', 'importUndoSomeNoun', 'relatedAllNoun', 'relatedNewNoun', 'relatedUnsavedNoun', 'relatedNoneNoun', 'relatedShownNoun', 'groupCountNoun', 'groupCountNounOne',
     ],
   },
-  path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds'] },
+  path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds', 'treeSearch', 'treeChosen', 'treeChosenOne'] },
   months: {
     widgets: [
       'chooseDate', 'notPastedDate', 'previousMonth', 'nextMonth',

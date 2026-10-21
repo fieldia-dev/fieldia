@@ -1,5 +1,6 @@
 import type { Values } from '@fieldia/core';
 import { demoNow } from './calendar';
+import { area } from './areas';
 
 /**
  * A sales team's buyer leads, for the queue that counts its filters (leads-queue): each with its next follow-up counted
@@ -56,6 +57,8 @@ export function sampleLeads(now = demoNow()): Record<number, Values> {
         source: SOURCES[i % SOURCES.length],
         email: null,
         commission: 2.5,
+        // What the first lead wants: all of Nasr City, and two neighbourhoods of New Cairo (shared/areas.ts).
+        areas: i === 0 ? ['Nasr City', 'Rehab', 'Madinaty'].map(area) : [],
         notes: null,
         active: true,
       },

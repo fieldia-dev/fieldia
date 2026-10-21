@@ -37,3 +37,18 @@ describe('a mask and a one-time code in the format', () => {
     expect(messages({ options: { shorthand: 'yes' } })[0]).toMatch(/shorthand is true/);
   });
 });
+
+describe('a checkbox tree in the format', () => {
+  const tree = (options: Record<string, unknown>): unknown => ({
+    fieldia: '0.7',
+    id: 'alert',
+    data: { kind: 'responses' },
+    fields: { areas: { type: 'many2many', label: 'Areas', relation: 'area' } },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f', field: 'areas', widget: 'tree', options }] },
+  });
+  it('takes what it keeps and its search, and refuses a word written wrong', () => {
+    expect(validatePage(tree({ keeps: 'top', search: false })).ok).toBe(true);
+    const wrong = validatePage(tree({ keeps: 'branches' }));
+    expect(wrong.ok ? '' : wrong.issues[0].message).toMatch(/keeps is "all", "top"/);
+  });
+});

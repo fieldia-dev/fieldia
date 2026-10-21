@@ -29,7 +29,7 @@ export { pageWarnings, validatePage } from './lib/format/validate';
 export { kindProblems, kindProblemWords, kindWords, fieldKind, writtenAs, type KindProblem, type KindScope } from './lib/expression/kinds';
 export { parseExpression } from './lib/expression/expression';
 export { AddressSearchOptionsSchema } from './lib/format/address-search';
-export { PathPickerOptionsSchema, StateDotOptionsSchema } from './lib/format/picker-options';
+export { PathPickerOptionsSchema, StateDotOptionsSchema, CheckTreeOptionsSchema } from './lib/format/picker-options';
 export { PagePhoneSchema, PhoneOptionsSchema } from './lib/format/phone';
 export { SlotsOptionsSchema } from './lib/format/slots-options';
 export { SignatureOptionsSchema } from './lib/format/signature-options';

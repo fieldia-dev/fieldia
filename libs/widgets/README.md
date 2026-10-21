@@ -175,6 +175,28 @@ lands across the boxes at once. The field takes the code once it is whole — a
 step on its change can send it; left before then, it says how many are still to
 type. Both come in the typed part (`typedPart`), the text box meanwhile.
 
+`"widget": "tree"` on a many2many picks several records of a tree at once —
+the areas a buyer wants, a doctor's specialties, a role's permissions — as a
+tree of boxes to tick: a branch's box is ticked when all under it are and
+part-ticked (`aria-checked="mixed"`) when some are, and ticking it ticks all
+under it. Its records are the link's, each placed by its `path` as the path
+picker's are (its names from the top down: see what a link shows), the first
+500 the source finds and any a search finds beyond them. What the field keeps
+is `options.keeps`: every record ticked (`"all"`, unless said — a branch's own
+record too once all under it are), a whole branch as its own record alone
+(`"top"`: all of Nasr City kept as Nasr City), or the records with none under
+them alone (`"leaves"`); a record the value holds that the tree does not show
+is kept as it is. A search over it (`options.search`, shown unless `false`)
+keeps the rows whose names have the words, with the branches they are in, open;
+how many are chosen is said under it. It is an ARIA tree, several picked: ↓ ↑
+move, → opens a branch or goes into it, ← closes it or goes up (the other way
+round right to left), Home and End, Space ticks, typing a name's first letters
+goes to it. It comes in the path part (`pathPart`), the tags meanwhile.
+
+```json
+{ "type": "field", "id": "f-areas", "field": "areas", "widget": "tree", "options": { "keeps": "top" } }
+```
+
 `"widget": "slots"` on a date and time books a time from those free: a month
 whose days are shaded by how they are booked (free times left, fully booked,
 closed, a holiday by its name), beside the chosen day's free times as chips,
