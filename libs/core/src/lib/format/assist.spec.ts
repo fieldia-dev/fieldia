@@ -51,6 +51,20 @@ describe('AI help in the page format', () => {
     ]);
   });
 
+  it('refuses a photo set as it refuses a file, a list changed in place as any list, and fills a scanned text as any text', () => {
+    // A photo set is a picture field's: no proposal fills it, as none fills a file or a logo.
+    const photos = customer({ suggest: { fields: ['photos', 'name'] } });
+    photos.fields['photos'] = { type: 'image', label: 'Photos', multiple: true };
+    (photos.layout as { children: unknown[] }).children.push({ type: 'field', id: 'f-photos', field: 'photos', widget: 'photos' });
+    expect(issues(photos)).toEqual(['suggest.fields[0]: "photos" is a image: a proposal fills words, numbers, money, yes or no, a choice, a day, links or a table of lines']);
+    // A list whose cells change in place has no form for a proposal to fill: its rows are its records' own.
+    const list = { ...customer({ suggest: {} }), layout: { type: 'list', id: 'list', columns: ['name', 'email'], editable: true } };
+    expect(issues(list)).toEqual(['suggest: suggest fills a form’s fields; a list of records has none to fill: put it on the record’s page']);
+    // A field scanned into with the camera is a text a proposal fills, and its tools stay beside the Scan button.
+    const scanned = customer({ suggest: { fields: ['email', 'notes'] } }, { rewrite: ['polish'], scan: true });
+    expect(issues(scanned)).toEqual([]);
+  });
+
   it('reads a record’s own words where it says, a text of the page’s it does not fill', () => {
     expect(issues(customer({ suggest: { fromField: 'notes', fields: ['name'] } }))).toEqual([]);
     expect(issues(customer({ suggest: { fromField: 'stage' } }))).toEqual(['suggest.fromField: "stage" is a selection: the words read are a char, text or html field\'s']);
