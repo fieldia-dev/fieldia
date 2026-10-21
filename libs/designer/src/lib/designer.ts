@@ -420,6 +420,14 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   /** One question at a time on a form of responses (`flow: "one"`); false takes it away. Refused on a record's screen. */
   setFlowOne(on: boolean): boolean;
   /**
+   * A step's or a group's draw on a form of responses: its questions in an order drawn for each respondent (`order`),
+   * how many of them each is asked (`draw`, `null` all), and — a step, where the form's pages are drawn — keeping its
+   * place (`fixed`). Refused on a record's screen, and a draw of more questions than it holds.
+   */
+  setDraw(id: string, patch: { order?: boolean; draw?: number | null; fixed?: boolean }): boolean;
+  /** A wizard's pages in an order drawn for each respondent (`order: "random"` on it); false keeps them in theirs. */
+  setPagesOrder(random: boolean): boolean;
+  /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
    * home's — `null` takes either away.
@@ -1592,6 +1600,40 @@ export function createDesigner(options: {
         },
         `review:${patch ? Object.keys(patch).join(',') : 'off'}`
       );
+    },
+
+    setDraw(id, patch) {
+      return apply(
+        (draft) => {
+          const node = (findContainer(draft, id) ?? findNode(draft, id)?.node) as { type?: string; order?: 'random'; draw?: number; fixed?: boolean; children?: { type: string; fixed?: boolean }[] } | undefined;
+          if (!node || (node.type !== 'step' && node.type !== 'section')) throw new Refusal((w) => w.refusals.noQuestion(id));
+          if (draft.data.kind !== 'responses') throw new Refusal((w) => w.refusals.drawForResponses);
+          if (patch.order !== undefined) {
+            if (patch.order) node.order = 'random';
+            else delete node.order;
+          }
+          if (patch.fixed !== undefined) {
+            if (patch.fixed) node.fixed = true;
+            else delete node.fixed;
+          }
+          if (patch.draw !== undefined) {
+            const questions = (node.children ?? []).filter((child) => (child.type === 'field' || child.type === 'form' || child.type === 'section') && child.fixed !== true).length;
+            if (patch.draw === null) delete node.draw;
+            else if (!Number.isInteger(patch.draw) || patch.draw < 1 || patch.draw > questions) throw new Refusal((w) => w.refusals.drawCount(questions));
+            else node.draw = patch.draw;
+          }
+        },
+        `draw:${id}:${Object.keys(patch).join(',')}`
+      );
+    },
+
+    setPagesOrder(random) {
+      return apply((draft) => {
+        if (draft.layout.type !== 'wizard') throw new Refusal((w) => w.refusals.drawForResponses);
+        if (random && draft.data.kind !== 'responses') throw new Refusal((w) => w.refusals.drawForResponses);
+        if (random) draft.layout.order = 'random';
+        else delete draft.layout.order;
+      }, 'pagesOrder');
     },
 
     setFlowOne(on) {

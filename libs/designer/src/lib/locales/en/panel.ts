@@ -435,6 +435,13 @@ export const panel = {
   flowOne: 'One question at a time',
   flowOneOn: 'Ask one question at a time',
   flowOneHint: 'Each question on a screen of its own, as Typeform asks: Enter goes on, a choice goes on by itself, ↑ and ↓ move between them.',
+  drawRandom: 'Questions in random order',
+  drawCount: 'Ask',
+  drawAll: 'all',
+  drawFixed: 'Keeps its place',
+  pagesRandom: 'Pages in random order',
+  pagesRandomOn: 'Show the pages in an order drawn for each person',
+  pagesRandomHint: 'Each person sees the pages in an order of their own, kept in their draft. A page that keeps its place stays where it is: set it on the page.',
   // ---- a record page's possible duplicates
   duplicates: 'Possible duplicates',
   duplicatesHint: 'As a record is typed and saved, records with the same value in a field ticked — or a name close to its own — are named under that field, to open instead, let be or merge. Your app’s data source finds them.',

@@ -287,6 +287,17 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
   if (JSON.stringify(before.quiz ?? null) !== JSON.stringify(after.quiz ?? null)) out.push(w.quiz(!after.quiz ? 'off' : !before.quiz ? 'on' : 'changed'));
   if (JSON.stringify(before.review ?? null) !== JSON.stringify(after.review ?? null)) out.push(w.review(!after.review ? 'off' : !before.review ? 'on' : 'changed'));
   if ((before.flow === 'one') !== (after.flow === 'one')) out.push(w.flowOne(after.flow === 'one'));
+  // Each part's draw alone — its order, how many, kept in place — never where it stands.
+  const draws = (page: Page) => {
+    const out: unknown[] = [];
+    JSON.stringify(page.layout, (key, value) => {
+      const node = value as { id?: string; order?: unknown; draw?: unknown; fixed?: unknown } | null;
+      if (node && typeof node === 'object' && node.id && (node.order === 'random' || node.draw !== undefined || node.fixed !== undefined)) out.push([node.id, node.order === 'random', node.draw, node.fixed]);
+      return value;
+    });
+    return JSON.stringify(out.sort());
+  };
+  if (draws(before) !== draws(after)) out.push(w.questionsDrawn);
   out.push(...lookChanges(before, after, words));
   const layout = layoutChanges(before, after, words);
   const at = (id: string) => layout.placed.get(id) ?? '';

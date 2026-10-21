@@ -47,8 +47,9 @@ import {
   type StoredDraft,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
-import { formSurveyPart, surveyFlow } from './survey';
+import { drawsOrder, formSurveyPart, surveyFlow } from './survey';
 import type { QuizResults } from './quiz';
+import type { DrawnOrder } from './order';
 import type { Limits } from './form-limits';
 import { draftRead, resumeStep } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
@@ -173,6 +174,12 @@ export interface FormState {
    * starts empty. Null while none is.
    */
   readonly resume?: { readonly key: string; readonly missing?: boolean } | null;
+  /**
+   * The order drawn for this respondent, where the page draws one (`order: "random"`, `draw`): for each wizard, step
+   * or group drawn, its parts' ids in the order shown — those not drawn left out, and never asked. Kept in drafts, and
+   * sent with the answers (`SubmitRequest.order`). Null where the page draws nothing, or before its survey part came.
+   */
+  readonly order?: Readonly<Record<string, readonly string[]>> | null;
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -366,6 +373,12 @@ export interface FormOptions {
    * (`resume.missing`). Without the source's `loadDraft`, it is let be.
    */
   resume?: string;
+  /**
+   * The respondent's own seed for a page that draws its questions' order or some of them (`order: "random"`, `draw`):
+   * the same seed, the same draw — an invitation's code, a candidate's id. Left out, the person's id (`user.id`), else
+   * one of the browser's for each response.
+   */
+  seed?: string;
   autosave?: { delayMs: number };
   scheduler?: Scheduler;
   /** Validation messages in the page's language. English by default. */
@@ -1027,7 +1040,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   if (page.layout.type === 'sheet' && page.layout.title) placeholderOf('#title', page.layout.title);
   /** Whether any rule only warns: without one, there are never warnings to look for. */
   const warns = [...nodeRules.values()].some((rules) => rules.some((compiled) => compiled.rule.level === 'warning'));
-  const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
+  const layoutSteps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
+  /** The wizard's steps in the order shown: the page's, or the order drawn for this respondent (`state.order`). */
+  let steps = layoutSteps;
+  /** The parts a draw left out, never asked: worked out with the order drawn. */
+  let undrawn = new Set<string>();
   const storeKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
   /** Today, on the clock of the page's time zone (the browser's own when it names none). */
   const today = () => dayIn(options.now?.() ?? new Date(), page.timeZone);
@@ -1169,6 +1186,20 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let baseline: Values = computed.apply(startingValues(), askedNow);
   /** The setWhen conditions holding for the values as they last settled: one starts to hold only against these. */
   let holding = setWhen.holding(baseline);
+  /** A page drawing its order, or some of its questions, for each respondent: worked out by the survey part (order.ts). */
+  const drawn = drawsOrder(page);
+  /** The respondent's seed: the app's, the person's id, else one of this browser's for this response. */
+  const seedOf = () => options.seed ?? (options.user?.id != null ? String(options.user.id) : Math.random().toString(36).slice(2));
+  /** An order drawn now, where the survey part has come. */
+  const draw = (): DrawnOrder | null => (drawn && formSurveyPart.loaded ? formSurveyPart.loaded.drawOrder(page, seedOf()) : null);
+  /** The steps in the order drawn, and the parts a draw left out, never asked. */
+  function takeOrder(order: Readonly<Record<string, readonly string[]>> | null) {
+    steps = (page.layout.type === 'wizard' && (order?.[page.layout.id] as string[] | undefined)) || layoutSteps;
+    undrawn = new Set();
+    if (order) for (const node of index.values()) if (node.parent && order[node.parent] && !order[node.parent].includes(node.id)) undrawn.add(node.id);
+  }
+  const firstOrder = draw();
+  takeOrder(firstOrder);
   let state: FormState = {
     status: options.recordId != null ? 'idle' : 'ready',
     recordId: options.recordId ?? null,
@@ -1199,6 +1230,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Worked out once the form has its state, as the limits part comes (`limitsCode`).
     limits: null,
     resume: null,
+    order: firstOrder,
   };
   started = true;
   /**
@@ -1932,7 +1964,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const node = index.get(id);
     if (!node) throw new Error(`The page has no element "${id}"`);
     const { context: ctx, env } = reading();
-    const hidden = (at: IndexedNode | undefined) => (at ? !rolesAllow(at.roles, userRoles) || at.invisible.evaluate(ctx, env) : false);
+    const hidden = (at: IndexedNode | undefined) => (at ? undrawn.has(at.id) || !rolesAllow(at.roles, userRoles) || at.invisible.evaluate(ctx, env) : false);
     let invisible = hidden(node);
     for (let parent = node.parent; !invisible && parent; parent = index.get(parent)?.parent ?? null) {
       invisible = hidden(index.get(parent));
@@ -2369,6 +2401,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return {
       values,
       ...(steps.length ? { step: state.step, skipped: [...state.skipped] } : {}),
+      ...(state.order ? { order: state.order as Record<string, string[]> } : {}),
       ...(Object.keys(state.unread).length ? { unread: structuredCopy(state.unread as Record<string, UnreadText>) } : {}),
       answered: Object.keys(fields).filter((name) => state.dirty.includes(name)),
       savedAt: new Date(clock()).toISOString(),
@@ -2427,6 +2460,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** A draft laid on the form: its answers as a starting point, its wizard step (or the nearest before it that applies), its text that does not read. */
   function applyDraft(draft: StoredDraft) {
     found = null;
+    // The draw it was answered in, where the page still has it: its steps and questions as they were.
+    const kept = drawn && draft.order && typeof draft.order === 'object' ? Object.entries(draft.order).filter(([id, list]) => index.has(id) && Array.isArray(list) && list.every((one) => index.get(one)?.parent === id)) : [];
+    if (kept.length) {
+      takeOrder(Object.fromEntries(kept));
+      set({ order: Object.fromEntries(kept) });
+    }
     writeValues(withDraft(draft.values ?? {}), { draft: null }, true);
     const known = (draft.skipped ?? []).filter((id) => steps.includes(id));
     // Text typed that did not read stays as typed, said as it was, where its field is still on the page.
@@ -2770,7 +2809,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         // A quiz's marking, in before the answers go: what the person sees of their results.
         const marking = page.quiz ? await formSurveyPart.load().catch(() => undefined) : undefined;
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
-        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft })) ?? {};
+        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...(state.order ? { order: state.order as Record<string, string[]> } : {}) })) ?? {};
         // The captcha's token is spent once sent: the next send waits for a new one.
         if (seen?.captcha) bot.captcha = null;
         // Answered for answers no longer shown — the form was started again meanwhile: the source has them, the form lays nothing.
@@ -2781,7 +2820,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const added = answer.values && typeof answer.values === 'object' ? structuredCopy(answer.values) : {};
         // Started again meanwhile (`reset`): a new response is on screen, and no ending is the old one's.
         // A quiz's results: the source's marking, else the page's, on the answers as sent.
-        const quiz = answer.quiz ?? marking?.quizResults(page, sent) ?? undefined;
+        const quiz = answer.quiz ?? marking?.quizResults(page, sent, marking.askedInOrder(page, (state.order ?? null) as DrawnOrder | null, sent)) ?? undefined;
         set({ status: 'saved', unsent: unsentNow(), ...(resets === resetAt ? { sent: { id: answer.id ?? null, values: { ...structuredCopy(sent), ...added }, ...(quiz ? { quiz } : {}) } } : {}) });
         emit('send', { values: sent, ...(seen ? { bot: seen } : {}) });
         // Counted again: one response fewer to take, this person's sent.
@@ -3717,7 +3756,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Started again: a new response, timed from now.
       bot = { ...bot, honeypot: false, since: clock() };
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null });
+      // A new respondent draws anew, unless the app or the person's id is the seed.
+      const order = state.order && options.seed === undefined && options.user?.id == null ? draw() ?? state.order : state.order ?? null;
+      takeOrder(order);
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null, order });
       // Started again: whether the page takes another response, and each choice's places, asked again.
       if (asksLimits()) void track(askLimits());
     },
@@ -4166,8 +4208,19 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
   // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
   if (keepsLimits()) void track(limitsCode());
-  // A page's survey code — a quiz's marking — asked for as the form opens, so it is in as the answers go.
-  if (surveyFlow(page)) void formSurveyPart.load().catch(() => undefined);
+  // A page's survey code — a quiz's marking, its draw — asked for as the form opens: a draw not made yet is made once it
+  // came, the first step the drawn one's while the person has not moved.
+  if (surveyFlow(page))
+    void formSurveyPart.load().then(
+      () => {
+        if (state.order || disposed || !drawn) return;
+        const first = steps[0];
+        const order = draw();
+        takeOrder(order);
+        set({ order, ...(state.step === first ? { step: steps[0] ?? null } : {}) });
+      },
+      () => undefined
+    );
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

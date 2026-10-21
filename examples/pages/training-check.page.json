@@ -2,7 +2,7 @@
   "fieldia": "0.7",
   "id": "training-check",
   "title": "Injectables safety check",
-  "description": "Six questions for the clinic’s staff before they assist with fillers. You see your score and the right answers once you send.",
+  "description": "Eight questions for the clinic’s staff before they assist with fillers, two of them drawn from the clinic’s bank. You see your score and the right answers once you send.",
   "data": { "kind": "responses" },
   "quiz": { "results": "now" },
   "review": true,
@@ -77,6 +77,42 @@
         { "value": "after", "label": "After the treatment, with the bill" }
       ]
     },
+    "bank_kit": {
+      "type": "selection",
+      "label": "Where is the emergency kit kept?",
+      "options": [
+        { "value": "room", "label": "In each treatment room", "correct": true },
+        { "value": "reception", "label": "At reception" },
+        { "value": "store", "label": "In the storeroom" }
+      ]
+    },
+    "bank_record": {
+      "type": "selection",
+      "label": "What is written on the treatment record for every syringe used?",
+      "options": [
+        { "value": "batch", "label": "Its batch number", "correct": true },
+        { "value": "price", "label": "Its price" },
+        { "value": "colour", "label": "Its colour" }
+      ]
+    },
+    "bank_left": {
+      "type": "selection",
+      "label": "What happens to an opened syringe that is left over?",
+      "options": [
+        { "value": "discard", "label": "It is thrown away safely", "correct": true },
+        { "value": "next", "label": "It is kept for the next patient" },
+        { "value": "stock", "label": "It goes back to stock" }
+      ]
+    },
+    "bank_signs": {
+      "type": "selection",
+      "label": "Who signs the treatment record?",
+      "options": [
+        { "value": "practitioner", "label": "The practitioner who treated", "correct": true },
+        { "value": "reception", "label": "The receptionist" },
+        { "value": "patient", "label": "The patient alone" }
+      ]
+    },
     "confidence": {
       "type": "selection",
       "label": "How sure are you about handling a blocked vessel?",
@@ -120,6 +156,20 @@
           { "type": "field", "id": "q-wait", "field": "wait_minutes" },
           { "type": "field", "id": "q-consent", "field": "consent", "widget": "radio" },
           { "type": "field", "id": "q-confidence", "field": "confidence", "widget": "radio" }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-bank",
+        "label": "From the question bank",
+        "description": "Two of the clinic’s questions, drawn for you.",
+        "order": "random",
+        "draw": 2,
+        "children": [
+          { "type": "field", "id": "q-bank-kit", "field": "bank_kit", "widget": "radio" },
+          { "type": "field", "id": "q-bank-record", "field": "bank_record", "widget": "radio" },
+          { "type": "field", "id": "q-bank-left", "field": "bank_left", "widget": "radio" },
+          { "type": "field", "id": "q-bank-signs", "field": "bank_signs", "widget": "radio" }
         ]
       }
     ]

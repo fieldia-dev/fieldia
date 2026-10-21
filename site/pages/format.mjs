@@ -228,6 +228,15 @@ ${code('json', `"review": { "title": "Before you send", "text": "Press Edit to c
 <p>${c('"flow": "one"')} asks a page of responses' questions one at a time, as Typeform does: each question on a screen of its own with the words before it, its group's or step's title over it. Enter or <em>OK</em> goes on once its answer is checked; a choice of one picked by the pointer or by its letter (A, B, C… beside each option) goes on by itself; ↑ and ↓ (and Page Up, Page Down) go back and on where no box takes those keys; <em>Question 3 of 12</em> and a bar say how far. A question an answer hides is passed over. On a wizard its steps are entered, checked and kept in drafts as ever; a form opened with answers starts at the first still to answer. With ${c('review')}, the last screen reviews the answers, and <em>Edit</em> comes back to its question's screen.</p>
 ${code('json', `{ "data": { "kind": "responses" }, "flow": "one", "review": true }`)}
 
+<h3 id="draw">Questions in an order drawn, and N of M</h3>
+<p>On a page of responses, a wizard's ${c('"order": "random"')} shows its steps in an order drawn for each respondent, a step ${c('"fixed": true')} keeping its place; a step's or a group's ${c('"order": "random"')} its questions — words, pictures and a question ${c('fixed')} keep their places. ${c('"draw": 5')} asks 5 of its questions, drawn: the others are not asked, not required and not sent. The draw is seeded — your app's ${c('seed')} (an invitation's code), else the person's id, else one of the browser's — so a person who comes back to their draft finds the same questions; it is sent with the answers as ${c('order')}, by part, the ids in the order shown.</p>
+${code(
+  'json',
+  `{ "type": "step", "id": "bank", "label": "From the question bank", "order": "random", "draw": 2,
+  "children": [ { "type": "field", "id": "q1", "field": "kit" }, { "type": "field", "id": "q2", "field": "record" },
+                { "type": "field", "id": "q3", "field": "left" }, { "type": "field", "id": "q4", "field": "signs" } ] }`
+)}
+
 <h3 id="columns">Columns at each width</h3>
 <p>${c('columns')} can give a count for each width of the form: ${c('wide')} above 760px, ${c('medium')} up to 760px, ${c('narrow')} up to 520px. A width left out stacks the way the skin does by itself — the outlined skin keeps its columns until the form is narrow, the underline skin, whose labels sit beside their values, stacks at medium. On a narrow form — a phone — every label goes above its value, the page's or a group's ${c('"labels": "beside"')} too, in every theme: the value has the whole width, never cut to <em>+20 100 912 4…</em>; a title gives its picture the line under it rather than break its words.</p>
 ${code('json', `{ "type": "section", "id": "header", "columns": { "wide": 2, "medium": 2 }, "children": [] }`)}

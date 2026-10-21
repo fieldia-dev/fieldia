@@ -6016,6 +6016,9 @@
           "type": "string",
           "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
         },
+        "fixed": {
+          "type": "boolean"
+        },
         "label": {
           "type": "string"
         },
@@ -7999,6 +8002,20 @@
         },
         "maximise": {
           "type": "boolean"
+        },
+        "order": {
+          "type": "string",
+          "enum": [
+            "random"
+          ]
+        },
+        "draw": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "fixed": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -9291,6 +9308,12 @@
         "clickable": {
           "type": "boolean"
         },
+        "order": {
+          "type": "string",
+          "enum": [
+            "random"
+          ]
+        },
         "nextLabel": {
           "type": "string",
           "minLength": 1
@@ -9340,6 +9363,20 @@
           "minLength": 1
         },
         "optional": {
+          "type": "boolean"
+        },
+        "order": {
+          "type": "string",
+          "enum": [
+            "random"
+          ]
+        },
+        "draw": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "fixed": {
           "type": "boolean"
         },
         "invisible": {

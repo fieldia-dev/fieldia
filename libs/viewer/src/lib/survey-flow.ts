@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Form, FormState, LayoutNode, LineField, Locale, Page, StepNode, TabNode, Value } from '@fieldia/core';
+import { drawsOrder, type Field, type FieldNode, type Form, type FormState, type LayoutNode, type LineField, type Locale, type Page, type StepNode, type TabNode, type Value } from '@fieldia/core';
 import { displayValue } from '@fieldia/widgets';
 import { setHidden, setText, type El } from './dom';
 import { installFlowStyles } from './flow-styles';
@@ -61,8 +61,37 @@ interface Asked {
   step: StepNode | null;
 }
 
-/** Whether a page has a survey flow the viewer's survey part draws: a review before sending, one question at a time. */
-export const flows = (page: Page): boolean => page.data.kind === 'responses' && page.layout.type !== 'list' && (!!page.review || page.flow === 'one');
+/** Whether a page has a survey flow the viewer's survey part draws: a review before sending, one question at a time, a draw. */
+export const flows = (page: Page): boolean => page.data.kind === 'responses' && page.layout.type !== 'list' && (!!page.review || page.flow === 'one' || drawsOrder(page));
+
+/** A part's parts in the order the form shows them: drawn for this respondent where the page draws, those not drawn left out. */
+export function inOrder<N extends { id: string }>(form: Form, owner: string, children: readonly N[]): readonly N[] {
+  const order = form.getState().order?.[owner];
+  return order ? order.flatMap((id) => children.filter((child) => child.id === id)) : children;
+}
+
+/**
+ * The page's parts laid in the order drawn (`state.order`): each drawn part's own, by its id — a step's or a group's
+ * questions in their grid, a wizard's steps in its list of steps. Those not drawn are hidden by the form already.
+ */
+export function layOrder(questions: HTMLElement, order: Readonly<Record<string, readonly string[]>>): void {
+  for (const [owner, ids] of Object.entries(order)) {
+    const box = questions.querySelector<HTMLElement>(`[data-node="${owner}"]`) ?? (questions.getAttribute('data-node') === owner ? questions : null);
+    if (!box) continue;
+    const list = box.querySelector<HTMLElement>(':scope .fd-steps-list');
+    if (list) {
+      const items = ids.map((id) => [...list.children].find((li) => li.getAttribute('data-step') === id)).filter((li): li is Element => !!li);
+      if (items.some((li, i) => list.children[i] !== li)) list.append(...items);
+      continue;
+    }
+    const parts = ids.map((id) => box.querySelector<HTMLElement>(`[data-node="${id}"]`)).filter((part): part is HTMLElement => !!part);
+    const grid = parts[0]?.parentElement;
+    if (!grid || parts.some((part) => part.parentElement !== grid)) continue;
+    // Each where the draw puts it, among its own: moved only where it is not there yet.
+    const shown = [...grid.children].filter((child) => parts.includes(child as HTMLElement));
+    if (shown.some((child, i) => child !== parts[i])) grid.append(...parts);
+  }
+}
 
 export function surveyFlow(context: FlowContext): FlowKit {
   const { doc, el, page, form, labels, locale, questions } = context;
@@ -82,7 +111,7 @@ export function surveyFlow(context: FlowContext): FlowKit {
       if (form.node(node.id).invisible) continue;
       if (node.type === 'field') {
         if (page.fields[node.field]) out.push({ node, field: node.field, step });
-      } else if (node.type === 'section' || node.type === 'tab' || node.type === 'tabs') fieldsIn(node.children, step, out);
+      } else if (node.type === 'section' || node.type === 'tab' || node.type === 'tabs') fieldsIn(inOrder(form, node.id, node.children as (LayoutNode | TabNode)[]), step, out);
     }
     return out;
   }
@@ -97,7 +126,7 @@ export function surveyFlow(context: FlowContext): FlowKit {
   }
   /** The questions shown now, by step on a wizard, by titled group on a page of sections. */
   function groupsAsked(): { title: string | null; step: StepNode | null; asked: Asked[] }[] {
-    if (wizard) return stepsShown().map((step) => ({ title: words(step.label), step, asked: fieldsIn(step.children, step) }));
+    if (wizard) return stepsShown().map((step) => ({ title: words(step.label), step, asked: fieldsIn(inOrder(form, step.id, step.children), step) }));
     const groups: { title: string | null; step: StepNode | null; asked: Asked[] }[] = [];
     const loose = (): Asked[] => {
       const last = groups[groups.length - 1];
@@ -106,10 +135,10 @@ export function surveyFlow(context: FlowContext): FlowKit {
       groups.push(fresh);
       return fresh.asked;
     };
-    const top = layout.type === 'sections' ? layout.children : layout.type === 'tabs' ? [layout] : layout.type === 'sheet' ? layout.children : [];
+    const top = layout.type === 'sections' ? inOrder(form, layout.id, layout.children) : layout.type === 'tabs' ? [layout] : layout.type === 'sheet' ? layout.children : [];
     for (const node of top) {
       if (form.node(node.id).invisible) continue;
-      if (node.type === 'section' && node.title) groups.push({ title: words(node.title), step: null, asked: fieldsIn(node.children, null) });
+      if (node.type === 'section' && node.title) groups.push({ title: words(node.title), step: null, asked: fieldsIn(inOrder(form, node.id, node.children), null) });
       else loose().push(...fieldsIn([node], null));
     }
     return groups.filter((group) => group.asked.length);
@@ -143,6 +172,8 @@ export function surveyFlow(context: FlowContext): FlowKit {
   );
   if (review) questions.after(panel);
   let reviewing = false;
+  /** The draw last laid out. */
+  let laidOrder: FormState['order'] = null;
   /** Edit was pressed on the review: a step before the last offers "Back to review". */
   let editing = false;
   const backToReview = el('button', { type: 'button', class: 'fd-button fd-back-to-review', hidden: '' }, labels.backToReview);
@@ -254,6 +285,11 @@ export function surveyFlow(context: FlowContext): FlowKit {
       context.focusFirstProblem();
     },
     update(state) {
+      // The parts in the order drawn, before one at a time marks the screen shown.
+      if (state.order && state.order !== laidOrder) {
+        laidOrder = state.order;
+        layOrder(questions, state.order);
+      }
       one?.update(state);
       // A page of sections' own Submit reviews them first, as a wizard's last button does.
       if (submitButton) setText(submitButton, review && !reviewing ? labels.reviewAnswers : labels.submit);

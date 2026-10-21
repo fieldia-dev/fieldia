@@ -1023,8 +1023,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // refused one going back to its question (0.28), the last button's words the flow's own (0.03), the survey part named for
 // a page with a review (0.07) — 507.75 after, to 507.8; one question at a time — the page's submit and Ctrl+Enter going
 // on through the survey's flow where it asks one at a time (0.03 less than the two ways they went), the survey part named
-// for it (0.02) and its check owed (0.02) — 507.83 after, to 507.9.
-const BUDGET_KB = 507.9;
+// for it (0.02) and its check owed (0.02) — 507.83 after, to 507.9; questions in an order drawn and N of M — the form
+// drawing as it opens or as its survey part comes, its steps following the draw, a part not drawn hidden and never
+// asked, the draw kept in drafts and laid again, sent with the answers and drawn anew for another response (0.94), the
+// page's draw found (0.10), its checks owed (0.07), a step's place in the list of steps (0.02) — 508.96 after, to 509.0.
+const BUDGET_KB = 509.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1259,8 +1262,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
 // Wave 6's survey flow (listed with the raw budget above): a quiz's results, 166.15 measured before, 166.42 after, to 166.5;
-// a review before sending, 166.61 after, to 166.7; one question at a time, 166.68 after, under it.
-const GZIP_BUDGET_KB = 166.7;
+// a review before sending, 166.61 after, to 166.7; one question at a time, 166.68 after, under it; questions in an order
+// drawn and N of M, 167.11 after, to 167.2.
+const GZIP_BUDGET_KB = 167.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1849,8 +1853,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // review, a refused send back at its question (4.45 and 1.95), its sheet (1.22 and 0.30), its check (0.19 and 0.07) —
 // 51.33 and 17.47, to 51.4 and 17.5; one question at a time — its screens, its bar, a pick going on by itself, letters
 // and arrows (6.11 and 2.65), its sheet (2.71 and 0.65), the review's Edit to its screen (0.29 and 0.11), its check (0.23
-// and 0.07) — 60.57 and 20.27, to 60.6 and 20.3.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [60.6, 20.3], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// and 0.07) — 60.57 and 20.27, to 60.6 and 20.3; questions in an order drawn and N of M — the seeded draw and the
+// questions asked in the order shown (1.66 and 0.88), laid in the page in that order, the review and one at a time
+// following it (0.93 and 0.39), its checks (0.55 and 0.23) — 63.59 and 21.57, to 63.6 and 21.6.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [63.6, 21.6], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1869,7 +1875,7 @@ const PART_GIVES = {
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget', 'copyWidget', 'timerWidget'],
   files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
-  survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget', 'quizResults', 'drawQuizResults', 'showQuiz', 'installFlowStyles', 'surveyFlow', 'flows', 'oneAtATime'],
+  survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget', 'quizResults', 'drawQuizResults', 'showQuiz', 'installFlowStyles', 'surveyFlow', 'flows', 'oneAtATime', 'drawOrder', 'askedInOrder'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
   relations: ['many2oneWidget', 'tagsWidget', 'charTagsWidget', 'linkCheckboxesWidget', 'referenceWidget'],

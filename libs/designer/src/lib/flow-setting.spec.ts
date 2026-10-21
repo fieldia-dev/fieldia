@@ -1,6 +1,8 @@
 import { validatePage } from '@fieldia/core';
 import { blankPage, createDesigner, pageChanges } from './designer';
-import { mount, openTab } from './test-editor';
+import { mount, openTab, typeAndLeave } from './test-editor';
+import { mountSurveyEditor } from './survey-editor';
+import type { StepNode, WizardNode } from '@fieldia/core';
 
 /**
  * How a form of responses is gone through, as the designer sets it on its Rules tab: a review of the answers before
@@ -56,5 +58,32 @@ describe('how a form is gone through, in the designer', () => {
     expect(pageChanges(before, designer.getPage())).toContain('It asks one question at a time');
     (rowOf(panel, 'One question at a time').querySelector('input') as HTMLInputElement).click();
     expect(designer.getPage().flow).toBeUndefined();
+  });
+
+  it('draws a page’s questions in an order of each person’s own, and how many of them each is asked, in its card', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Staff check') });
+    for (let i = 0; i < 4; i++) designer.addQuestion('short-answer');
+    const step = () => (designer.getPage().layout as WizardNode).children[0] as StepNode;
+    const host = document.createElement('div');
+    document.body.append(host);
+    const survey = mountSurveyEditor(host, { designer });
+    const card = host.querySelector('.fd-design-step') as HTMLElement;
+    (card.querySelector('[role="switch"][aria-label="Questions in random order"]') as HTMLButtonElement).click();
+    expect(step().order).toBe('random');
+    typeAndLeave(card.querySelector('[aria-label="Ask"]') as HTMLInputElement, '2');
+    expect(step().draw).toBe(2);
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    // More than it holds: refused, said; emptied, every question is asked.
+    expect(designer.setDraw(step().id, { draw: 9 })).toBe(false);
+    expect(designer.getState().issues[0]).toBe('Ask a whole number of its questions, from 1 to 4');
+    typeAndLeave(card.querySelector('[aria-label="Ask"]') as HTMLInputElement, '');
+    expect(step()).not.toHaveProperty('draw');
+    // Pages drawn too: a page may keep its place.
+    expect(designer.setPagesOrder(true)).toBe(true);
+    expect((designer.getPage().layout as WizardNode).order).toBe('random');
+    expect(designer.setDraw(step().id, { fixed: true })).toBe(true);
+    expect(step().fixed).toBe(true);
+    expect(pageChanges(blankPage('survey', 'Staff check'), designer.getPage())).toContain('Which questions each person is asked, or their order, changed');
+    survey.destroy();
   });
 });

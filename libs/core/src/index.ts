@@ -3,6 +3,8 @@ export * from './runtime';
 export { takingWords, whenWords } from './lib/record/form-limits';
 // A quiz's results for answers sent: the survey part's (`formSurveyPart`), whole here — for an app's own marking.
 export { quizResults } from './lib/record/quiz';
+// The order drawn for a respondent: the survey part's (`formSurveyPart`), whole here — for an app's own server or tests.
+export { drawOrder } from './lib/record/order';
 export { isQuestion } from './lib/record/record-words';
 export { dayWords } from './lib/record/day-words';
 // A memory source's free times from booking schedules: for demos and tests, outside the one-tag script.

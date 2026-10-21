@@ -19,7 +19,10 @@ export function flowSettings(el: ElementFactory, designer: Designer): { rows: HT
   const one = el('input', { type: 'checkbox', class: 'fd-check', 'aria-label': w.flowOneOn }) as HTMLInputElement;
   one.addEventListener('change', () => designer.setFlowOne(one.checked));
   const oneRow = setting(el, 'rules', 'One question at a time', one, { hint: w.flowOneHint, words: w.flowOne });
-  const rows = [reviewRow, headingRow, oneRow];
+  const pages = el('input', { type: 'checkbox', class: 'fd-check', 'aria-label': w.pagesRandomOn }) as HTMLInputElement;
+  pages.addEventListener('change', () => designer.setPagesOrder(pages.checked));
+  const pagesRow = setting(el, 'rules', 'Pages in random order', pages, { hint: w.pagesRandomHint, words: w.pagesRandom });
+  const rows = [reviewRow, headingRow, oneRow, pagesRow];
   return {
     rows,
     destroy: () => undefined,
@@ -31,6 +34,8 @@ export function flowSettings(el: ElementFactory, designer: Designer): { rows: HT
       if (!focused(heading)) heading.value = typeof page.review === 'object' ? page.review.title ?? '' : '';
       oneRow.hidden = !responses || page.layout.type === 'sheet';
       one.checked = page.flow === 'one';
+      pagesRow.hidden = !responses || page.layout.type !== 'wizard';
+      pages.checked = page.layout.type === 'wizard' && page.layout.order === 'random';
     },
   };
 }

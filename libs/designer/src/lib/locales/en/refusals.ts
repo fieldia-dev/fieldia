@@ -132,6 +132,8 @@ export const refusals = {
   answersNumbers: 'A number’s answers are numbers, such as 20 or 2.5',
   reviewForResponses: 'A review before sending is for a form that collects responses: a record is saved as it is changed',
   flowForResponses: 'One question at a time is for a form that collects responses, in sections or pages',
+  drawForResponses: 'An order drawn for each person is for a form that collects responses, and its pages',
+  drawCount: (n: number) => `Ask a whole number of its questions, from 1 to ${n}`,
   rowsFromModel: (label: string) => `The rows of ${label} come from the model`,
   matrixColumnsFromModel: (label: string) => `The columns of ${label} come from the model`,
   onlyMatrix: 'Only a matrix has rows and columns',

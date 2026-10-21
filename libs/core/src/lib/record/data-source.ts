@@ -213,6 +213,8 @@ export interface StoredDraft {
   unread?: Record<string, { text: string; message: string }>;
   /** The fields the person answered (changed), in the page's order: where they got to. */
   answered?: string[];
+  /** On a page that draws its order or some of its questions: the draw they were answering, kept so it opens the same. */
+  order?: Record<string, string[]>;
   /** When it was kept, as ISO. */
   savedAt: string;
 }
@@ -754,6 +756,11 @@ export interface SubmitRequest {
   bot?: BotReport;
   /** The key of the draft these answers were kept in on the server (`saveDraft`): the source may let it go, or mark it sent. */
   draft?: string;
+  /**
+   * On a page that draws its order or some of its questions (`order: "random"`, `draw`): for each part drawn, its parts'
+   * ids in the order this person was shown — those not drawn left out, their answers not among `values`.
+   */
+  order?: Record<string, string[]>;
 }
 
 /**

@@ -24,6 +24,7 @@ async function answer(page: Page) {
   await page.getByRole('button', { name: 'Next' }).click();
   await box(page, 'q-wait').fill('30');
   await node(page, 'q-consent').getByLabel('Before the treatment, after the risks are explained').check();
+  await page.getByRole('button', { name: 'Next' }).click();
 }
 
 test.describe('a review before sending', () => {
@@ -34,7 +35,7 @@ test.describe('a review before sending', () => {
     await page.getByRole('button', { name: 'Review your answers' }).click();
     await expect(review(page)).toBeVisible();
     await expect(review(page).getByRole('heading', { name: 'Check your answers' })).toBeFocused();
-    await expect(review(page).locator('.fd-review-group-title')).toHaveText(['About you', 'Fillers', 'Care and consent']);
+    await expect(review(page).locator('.fd-review-group-title')).toHaveText(['About you', 'Fillers', 'Care and consent', 'From the question bank']);
     await expect(row(page, 'enzyme').locator('.fd-review-answer')).toHaveText('collagenase');
     await expect(row(page, 'signs').locator('.fd-review-answer')).toHaveText('Blanching of the skin');
     await expect(row(page, 'confidence').locator('.fd-review-answer')).toHaveText('Not answered');
@@ -56,7 +57,7 @@ test.describe('a review before sending', () => {
     await open(page, 'plain', CHECK);
     await answer(page);
     // Ctrl+Enter on the last step reviews, as its button does.
-    await box(page, 'q-wait').focus();
+    await node(page, 'step-bank').locator('input:visible').first().focus();
     await page.keyboard.press('Control+Enter');
     await expect(review(page)).toBeVisible();
     await page.keyboard.press('Tab');

@@ -337,6 +337,22 @@ OK going on once its answer is checked (`form.validate(within)`, the question's
 part alone), a choice picked going on by itself. A wizard's steps are entered,
 checked and kept as ever. A record's sheet, and a list, are refused it.
 
+## Questions in an order drawn, and N of M
+
+On a page of responses, a wizard's `"order": "random"` shows its steps in an
+order drawn for each respondent — a step `"fixed": true` keeps its place (a
+welcome first, a page about you last) — and a step's or a group's shows its
+questions so: words and pictures, and a question `fixed`, keep their places.
+`"draw": 5` asks 5 of its questions, drawn, the rest never asked (nor
+required, nor sent). The draw is seeded — `createForm`'s `seed` (an
+invitation's code, a candidate's id), else the person's `user.id`, else one of
+the browser's for each response — so the same seed draws the same in every
+engine. The form keeps it as `state.order` (by part, its parts' ids in the
+order shown), in its drafts — a page opened again shows the same questions —
+and sends it with the answers (`SubmitRequest.order`). A quiz's results follow
+the order shown. The draw comes in the survey part (`formSurveyPart`, asked for
+as the form opens; a form made before it came draws once it has).
+
 ## Files stored as they are picked
 
 Give the data source `upload(file, request)` and a file or picture field sends

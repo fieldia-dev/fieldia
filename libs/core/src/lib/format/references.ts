@@ -151,7 +151,7 @@ export class ReferenceCheck {
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, owing);
     // A quiz, and each question's own quiz: checked where the page has any (in the one-tag script, by the survey part it asks for).
-    if (!this.line && (this.page.quiz !== undefined || this.page.review !== undefined || this.page.flow !== undefined || JSON.stringify(this.page.fields).includes('"quiz":'))) checkSurveyFlow(this.page, owing);
+    if (!this.line && (this.page.quiz !== undefined || this.page.review !== undefined || this.page.flow !== undefined || /"(order":"random|draw":)/.test(JSON.stringify(this.page.layout)) || JSON.stringify(this.page.fields).includes('"quiz":'))) checkSurveyFlow(this.page, owing);
     this.checkGoingTo();
     return this.issues;
   }

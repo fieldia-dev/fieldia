@@ -164,7 +164,8 @@ export { checkValue, checkProperties, decimalsWords, formatBytes, fileProblem, d
 export { scoreOf, type Score } from './lib/record/score';
 // A quiz's results (`quiz` on a page): worked out by the survey part as the answers are sent; their shape.
 export type { QuizResults, QuizMark } from './lib/record/quiz';
-export { formSurveyPart, surveyFlow, type FormSurveyPart } from './lib/record/survey';
+export { drawsOrder, formSurveyPart, surveyFlow, type FormSurveyPart } from './lib/record/survey';
+export type { DrawnOrder } from './lib/record/order';
 export type {
   DataSource,
   LoadRequest,

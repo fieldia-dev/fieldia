@@ -26,6 +26,8 @@ async function answer(page: Page) {
   await page.getByRole('button', { name: 'Next' }).click();
   await box(page, 'q-wait').fill('45');
   await node(page, 'q-consent').getByLabel('Before the treatment, after the risks are explained').check();
+  // Two of the bank's questions drawn: left unanswered.
+  await page.getByRole('button', { name: 'Next' }).click();
   // Every answer shown first, then sent.
   await page.getByRole('button', { name: 'Review your answers' }).click();
   await page.getByRole('button', { name: 'Send my answers' }).click();
@@ -37,7 +39,7 @@ test.describe('a quiz’s results under the thanks', () => {
     await answer(page);
     await expect(results(page)).toBeVisible();
     await expect(results(page).locator('.fd-quiz-title')).toBeFocused();
-    await expect(results(page).locator('.fd-quiz-score')).toHaveText('You scored 4 of 8 (50%)');
+    await expect(results(page).locator('.fd-quiz-score')).toHaveText('You scored 4 of 10 (40%)');
     await expect(item(page, 'reversible')).toHaveAttribute('data-mark', 'wrong');
     await expect(item(page, 'reversible').locator('.fd-quiz-verdict')).toHaveText('Wrong');
     await expect(item(page, 'reversible').locator('.fd-quiz-answer')).toHaveText('Your answer: Calcium hydroxylapatite');
@@ -53,8 +55,9 @@ test.describe('a quiz’s results under the thanks', () => {
     await expect(item(page, 'confidence')).toHaveAttribute('data-mark', 'points');
     await expect(item(page, 'confidence').locator('.fd-quiz-verdict')).toHaveCount(0);
     await expect(item(page, 'confidence').locator('.fd-quiz-points')).toHaveText('0 of 2');
-    // Questions that ask nothing to mark — a name, a role — are not listed.
-    await expect(results(page).locator('.fd-quiz-item')).toHaveCount(6);
+    // Questions that ask nothing to mark — a name, a role — are not listed; of the bank's four, the two drawn.
+    await expect(results(page).locator('.fd-quiz-item')).toHaveCount(8);
+    await expect(results(page).locator('.fd-quiz-item[data-field^="bank_"]')).toHaveCount(2);
     await screen(page, 'survey-quiz-results');
     expect(await axeFindings(page, 'a quiz’s results')).toEqual([]);
     // Another response starts with none in sight.

@@ -429,6 +429,15 @@ in the survey part; its words are the viewer's labels (`flowQuestionOf`,
 `flowPrevious`, `flowNext`, `flowOk`, `flowEnterHint`). See
 [one question at a time](https://fieldia.dev/pages/#flow-one).
 
+## Questions in an order drawn
+
+A page that draws its order (`order: "random"`) or some of its questions
+(`draw`) shows each respondent the parts the form drew, in its order: a step's or
+a group's questions laid in their grid as drawn, a wizard's steps in its list
+of steps; the questions not drawn are hidden and never asked. The review and
+one question at a time follow the same order. See
+[questions in an order drawn](https://fieldia.dev/pages/#draw).
+
 ## Opening, closing and limiting a form; Continue later
 
 A page of responses with `limits` says, as it opens, when it takes no answers —

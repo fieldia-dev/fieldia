@@ -1,6 +1,6 @@
 import { fill, type FieldNode, type FormState, type LayoutNode, type StepNode, type TabNode } from '@fieldia/core';
 import { setAttr, setHidden, setText } from './dom';
-import type { FlowContext } from './survey-flow';
+import { inOrder, type FlowContext } from './survey-flow';
 
 /**
  * One question at a time (`flow: "one"` on a page of responses), as Typeform asks: each question on a screen of its
@@ -64,7 +64,7 @@ export function oneAtATime(context: FlowContext, hooks: OneHooks): OneKit {
       if ((node.type === 'field' && page.fields[node.field]) || node.type === 'form') {
         out.push({ key: node.id, step, question: node, field: node.type === 'field' ? node.field : null, nodes: [...waiting, node] });
         waiting = [];
-      } else if (node.type === 'section' || node.type === 'tab' || node.type === 'tabs') waiting = screensIn(node.children, step, out, waiting);
+      } else if (node.type === 'section' || node.type === 'tab' || node.type === 'tabs') waiting = screensIn(inOrder(form, node.id, node.children as (LayoutNode | TabNode)[]), step, out, waiting);
       else if (node.type !== 'button' || !waiting.length) waiting = [...waiting, node as LayoutNode];
     }
     return waiting;
@@ -83,9 +83,9 @@ export function oneAtATime(context: FlowContext, hooks: OneHooks): OneKit {
     if (wizard) {
       for (const id of form.steps()) {
         const step = wizard.children.find((one) => one.id === id);
-        if (step && !state.skipped.includes(id)) place(step.children, step);
+        if (step && !state.skipped.includes(id)) place(inOrder(form, step.id, step.children), step);
       }
-    } else place(layout.type === 'sections' ? layout.children : layout.type === 'sheet' ? layout.children : layout.type === 'tabs' ? [layout] : [], null);
+    } else place(layout.type === 'sections' ? inOrder(form, layout.id, layout.children) : layout.type === 'sheet' ? layout.children : layout.type === 'tabs' ? [layout] : [], null);
     return out;
   }
 

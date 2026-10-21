@@ -125,6 +125,8 @@ export const refusals: DesignerWords['refusals'] = {
   answersNumbers: 'إجابات الرقم أرقام، مثل 20 أو 2.5',
   reviewForResponses: 'المراجعة قبل الإرسال لنموذج يجمع الإجابات: السجل يُحفظ عند تعديله',
   flowForResponses: 'سؤال واحد في كل مرة لنموذج يجمع الإجابات، في أقسام أو صفحات',
+  drawForResponses: 'الترتيب المسحوب لكل شخص لنموذج يجمع الإجابات وصفحاته',
+  drawCount: (n) => `اطرح عددًا صحيحًا من أسئلتها، من 1 إلى ${n}`,
   rowsFromModel: (label) => `صفوف ${q(label)} تأتي من نموذج البيانات`,
   matrixColumnsFromModel: (label) => `أعمدة ${q(label)} تأتي من نموذج البيانات`,
   onlyMatrix: 'الشبكة وحدها لها صفوف وأعمدة',

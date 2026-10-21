@@ -2057,7 +2057,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           focusStep();
         });
         stepButtons.set(step.id, go);
-        list.append(el('li', {}, go));
+        list.append(el('li', { 'data-step': step.id }, go));
       }
       box.append(el('nav', { class: 'fd-steps', 'aria-label': labels.steps }, list));
     }
