@@ -347,7 +347,9 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-field .fd-q-option-box { padding-block: 2px; }
 /* A kind's own settings, in the picked field: words and a line to type or pick on — no boxes in it. */
 .fd-inline-settings { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding-block: 4px 2px; font-size: 13px; color: var(--fd-muted); }
-.fd-inline-setting { display: inline-flex; align-items: center; gap: 6px; }
+/* In a narrow column (a phone's grid of three) its box goes under its words, never over the field beside it. */
+.fd-inline-setting { display: inline-flex; flex-wrap: wrap; max-width: 100%; align-items: center; gap: 6px; }
+.fd-inline-setting > :is(.fd-inline-select, .fd-inline-input) { max-width: 100%; min-width: 0; }
 .fd-inline-select, .fd-inline-input, .fd-inline-settings .fd-column > .fd-input {
   font: inherit; font-size: 13.5px; color: var(--fd-text); background: none; border: 0; border-bottom: 1px solid var(--fd-border-strong);
   border-radius: 0; box-shadow: none; padding: 2px 0; min-height: 0;
@@ -636,8 +638,12 @@ export const DESIGNER_CSS = /* css */ `
   /* A question's words the width of its card, its kind under them. */
   .fd-survey-canvas .fd-q-head { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .fd-survey-canvas .fd-q-kind { min-width: 0; justify-self: start; }
-  .fd-q-rail { position: sticky; bottom: 12px; inset-inline-start: auto; justify-self: center; display: flex; transform: none; }
+  .fd-q-rail { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); inset-inline-start: auto; justify-self: center; display: flex; transform: none; }
 }
+/* A bar at the foot of the screen hides nothing a person works on (bottom-bar.ts): what is scrolled into view in the
+   area it floats over — a card picked, a switch reached by Tab — stops above it (its room counts its height, its gap
+   and the screen's safe area, which its bottom holds). */
+.fd-bar-clear, .fd-bar-clear * { scroll-margin-bottom: var(--fd-foot-room, 0px); }
 @media (prefers-reduced-motion: reduce) { .fd-line::after, .fd-q-rail, .fd-survey-canvas .fd-q-grip { transition: none; } }
 .fd-props > .fd-prop > .fd-button { justify-self: start; }
 /* Rows 24px apart at least, so each small box has room round it (WCAG 2.5.8). */

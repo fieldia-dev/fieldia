@@ -1,5 +1,6 @@
 import { fill, isEmpty, type FieldNode, type FormState, type LayoutNode, type Page } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
+import { keepClearOfBar } from './bottom-bar';
 import type { ElementFactory } from './chrome';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
@@ -20,6 +21,8 @@ type Tab = 'data' | 'problems';
 
 /** Which tab is open and whether the drawer is folded, kept while the same Try it draws the page again. */
 const kept = new WeakMap<HTMLElement, { tab: Tab; folded: boolean }>();
+/** Each frame's drawer's watch at the foot of the screen (bottom-bar.ts), let go as a new drawer takes its place. */
+const clearing = new WeakMap<HTMLElement, () => void>();
 let drawers = 0;
 
 /** The step a field is asked on, for a survey of several pages. */
@@ -52,6 +55,8 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   const mine = kept.get(frame) ?? { tab: 'data', folded: true };
   kept.set(frame, mine);
   frame.parentElement?.querySelector(':scope > .fd-try-drawer')?.remove();
+  clearing.get(frame)?.();
+  clearing.delete(frame);
   // A list holds no answers of its own to show.
   if (page.layout.type === 'list') return null;
 
@@ -172,5 +177,7 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
     draw(state);
   });
   frame.after(drawer);
+  // At the foot of the screen as the page is filled: nothing the person fills in is left under it.
+  clearing.set(frame, keepClearOfBar(drawer, frame));
   return drawer;
 }
