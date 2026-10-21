@@ -157,6 +157,25 @@ mountScreenEditor(element, { designer, nonce: 'r4nd0m' });     // and the survey
 )}
 <p>Left out, Fieldia takes the page's ${c('<meta property="csp-nonce" nonce="…">')}, as Vite writes it, and the one-tag script takes its own tag's: give ${c('<script nonce="…" src="…/fieldia.js">')} the nonce and it carries it to every part's tag it adds and every sheet. A formatted text keeps its own looks — a line centred, a word's colour, highlight and size — in its value as style attributes, the HTML you store and e-mail; Fieldia never has the browser read one as HTML (a policy would refuse it), and puts each on through the element's style object, so the text looks the same under the policy as without it. Pictures and files shown in place need ${c('img-src data: blob:')} (and ${c('frame-src blob:')} for a PDF's preview). Two add-ons bring code of their own that a policy may refuse: VS Code's editor (${c('@fieldia/monaco')}) adds sheets Monaco makes with no nonce — under a strict policy use ${c('@fieldia/code')}, which carries it — and a map draws Leaflet and your map provider's tiles, which ${c('img-src')} must allow.</p>
 
+<h2 id="testing">Testing your forms</h2>
+<p>${c('@fieldia/testing')} tests the forms in your app as people use them: a field found by the words of its label, typed in and left, picked from, ticked; a button pressed by its words; then what a person sees read back — a field's problems, what its box shows. The same helpers for Testing Library (any DOM, under Jest or Vitest) and for Playwright:</p>
+${code(
+  'js',
+  `
+import { fieldia } from '@fieldia/testing';            // Testing Library, jsdom, a browser
+// import { fieldia } from '@fieldia/testing/playwright'; // Playwright: fieldia(page)
+
+const form = fieldia(host);
+await form.fill('Email', 'mona@');
+expect(form.errorsOf('Email')).toEqual(['Enter an email address, like name@example.com']);
+await form.fill('Email', 'mona@example.com');
+await form.pick('Country', 'Egypt');
+await form.check('I agree to the terms');
+await form.press('Submit');
+expect(form.valueOf('Email')).toBe('mona@example.com');`
+)}
+<p>Each step sends the events a person's would — a key at a time, so a box that refuses a letter refuses it in your test too — and leaves the box, where Fieldia says a problem. And one line of CI keeps the pages your app stores valid after an upgrade: ${c('npx fieldia-check pages/')} checks each as Fieldia reads it, says what is wrong with each, and fails the build when one is refused. See the package's README for every helper.</p>
+
 <h2 id="next">Next</h2>
 <p>The memory data source keeps everything in the browser — right for trying things, not for keeping them. <a href="/data/">Data sources</a> shows how to connect your own backend; <a href="/fields/">Fields</a> lists every field type and how it can be shown.</p>
 <p>Moving to a newer Fieldia? The <a href="https://github.com/fieldia-dev/fieldia/blob/main/CHANGELOG.md">changelog</a> says what changed in each release, in plain words, with what to change in your app under <strong>Upgrading</strong>; pages your app keeps are brought up to date as they are read (<a href="/pages/#versions">versions</a>).</p>

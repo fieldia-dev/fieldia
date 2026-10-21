@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    // The ONLY difference from the CommonJS build. `@nx/js:tsc` picks its
+    // output format by reading `module` out of the tsconfig it is handed, so a
+    // second format needs a second tsconfig and nothing else.
+    //
+    // Deliberately absent from the `references` in tsconfig.json: a second
+    // project emitting the same declarations into the same outDir is a race,
+    // not a check.
+    "module": "es2022"
+  }
+}

@@ -27,6 +27,7 @@ and save through a small data-source interface that your app implements.
 | `@fieldia/viewer` | Framework-neutral mount — render a saved page and fill it in | on npm |
 | `@fieldia/designer` | Authoring: an editing model with undo and versions, the survey editor, and the screen editor — the page drawn as the viewer draws it, edited where it stands | on npm |
 | `@fieldia/angular` · `react` · `vue` | Thin bindings over the viewer | on npm |
+| `@fieldia/testing` | Your app's forms tested as people use them — fill, pick, check, press, `errorsOf`, `valueOf` — for Testing Library and Playwright, and `fieldia-check`, which keeps stored pages valid in CI | on npm from 0.30 |
 
 ### The screen editor
 

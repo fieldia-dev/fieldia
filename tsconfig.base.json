@@ -31,7 +31,10 @@
       "@fieldia/designer": ["libs/designer/src/index.ts"],
       "@fieldia/designer/react": ["libs/designer/src/react.ts"],
       "@fieldia/designer/vue": ["libs/designer/src/vue.ts"],
-      "@fieldia/designer/angular": ["libs/designer/angular/index.ts"]
+      "@fieldia/designer/angular": ["libs/designer/angular/index.ts"],
+      "@fieldia/testing": ["libs/testing/src/index.ts"],
+      "@fieldia/testing/playwright": ["libs/testing/src/playwright.ts"],
+      "@fieldia/testing/pages": ["libs/testing/src/pages.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

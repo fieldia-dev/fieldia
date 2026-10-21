@@ -1,6 +1,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { node, open, screen } from './support';
+import { fieldia } from '../libs/testing/src/playwright';
 import { VARIANTS } from './variants';
 
 /** Behaviour around the fields: the ✓ of a field filled in right, a refused save, the save's status. */
@@ -46,15 +47,20 @@ for (const variant of VARIANTS) {
     test('a server’s field errors land on their fields, and the refusal is said and announced', async ({ page }) => {
       await open(page, variant, 'page=customer&skin=underline');
       await refuse(page, { kind: 'fields', message: 'Check the email', fields: { email: 'This email is already a customer’s' } });
-      await node(page, 'f-phone').locator('input').fill('+20 2 1111 2222');
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
-      await expect(node(page, 'f-email').locator('.fd-error')).toHaveText('This email is already a customer’s');
+      // As an app's own test would write it, with @fieldia/testing: fields by their labels, a button by its words.
+      const form = fieldia(page);
+      await form.fill('Phone', '+20 2 1111 2222');
+      await form.press('Save');
+      await expect(await form.error('Email')).toHaveText('This email is already a customer’s');
+      expect(await form.errorsOf('Email')).toEqual(['This email is already a customer’s']);
       await expect(page.locator('.fd-status')).toHaveText('Not saved. Check: Email');
       await expect(page.locator('.fd-announce')).toHaveText('Not saved. Check: Email');
-      await expect(node(page, 'f-email').locator('input')).toBeFocused();
+      await expect(await form.box('Email')).toBeFocused();
       await screen(page, `${variant}-save-refused-fields`, { viewport: true });
-      await node(page, 'f-email').locator('input').fill('sales@niletraders.example');
-      await expect(node(page, 'f-email').locator('.fd-error')).toBeHidden();
+      await form.fill('Email', 'sales@niletraders.example');
+      await expect(await form.error('Email')).toBeHidden();
+      expect(await form.valueOf('Email')).toBe('sales@niletraders.example');
+      expect(await form.errorsOf('Email')).toEqual([]);
     });
 
     test('a business rule appears in a dialog', async ({ page }) => {
