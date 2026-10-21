@@ -13,10 +13,10 @@
  * @fieldia/core's, whatever draws them; so is a sheet's attachment preview,
  * which shows a file with the main script's `fileShown` (file-shown.ts).
  */
-export { binaryWidget, imageWidget, readFile, viewFiles, INLINE_FILE_WARNING, type ViewFiles } from './files';
+export { binaryWidget, imageWidget, readFile, viewFiles, takeFiles, preview, INLINE_FILE_WARNING, type ViewFiles, type FilesTaking, type FileField } from './files';
 export { showAppFile, type AppFileContext } from './files-app';
 export { goingItem, goingList, goingWords } from './files-going';
-export { shrinkPhoto, shrinkFor, shrinkable, SHRINK_DEFAULTS } from './shrink';
+export { shrinkPhoto, shrinkFor, shrinkable, readPicture, SHRINK_DEFAULTS, type Picture } from './shrink';
 export { signatureWidget } from './signature';
 export { pdfWidget } from './pdf';
 export { installFilesStyles } from './styles-files';

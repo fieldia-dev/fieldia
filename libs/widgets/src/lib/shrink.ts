@@ -39,10 +39,11 @@ export function shrinkFor(field: Field | LineField, storing: boolean): Required<
   return storing && field.type === 'image' ? SHRINK_DEFAULTS : null;
 }
 
-type Picture = { width: number; height: number; source: CanvasImageSource; free(): void };
+/** A picture read, to draw: its size as it stands, what draws it, and what lets it go once drawn. */
+export type Picture = { width: number; height: number; source: CanvasImageSource; free(): void };
 
-/** The picture as it stands: its EXIF turn applied, by the browser's own decoder. */
-async function read(file: File, doc: Document): Promise<Picture> {
+/** The picture as it stands: its EXIF turn applied, by the browser's own decoder. A photo set's crop reads its photo so too. */
+export async function readPicture(file: Blob, doc: Document): Promise<Picture> {
   const view = doc.defaultView as (Window & typeof globalThis) | null;
   if (typeof view?.createImageBitmap === 'function') {
     try {
@@ -72,7 +73,7 @@ export async function shrinkPhoto(file: File, options: ShrinkOptions = {}, doc: 
   const quality = options.quality ?? SHRINK_DEFAULTS.quality;
   let picture: Picture;
   try {
-    picture = await read(file, doc);
+    picture = await readPicture(file, doc);
   } catch {
     return file;
   }

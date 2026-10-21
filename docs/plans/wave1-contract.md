@@ -1237,3 +1237,47 @@ In plain words:
   app's template (`drafts`, by `model.field`) — whose every `why` begins "Stand-in AI, no model:". Tests:
   `libs/core/src/lib/record/memory-assist.spec.ts`, `libs/viewer/src/lib/assist.spec.ts`, `assist-words.spec.ts`,
   `e2e/ai-help.spec.ts`.
+
+## 24. A photo set: order, cover, captions, a crop and its original, kept in the value (Wave 5, lane w5-photos)
+
+No new member: a photo set (`"widget": "photos"` on an `image` field with `multiple`) keeps all it is in the value a
+picture field already has — a list of file values — so every source that keeps a file value keeps it. A cropped photo
+goes to the store through `upload`, as a photo picked does.
+
+```ts
+interface FileValue { /* …as before… */ caption?: string; original?: FileValue; edit?: PhotoEdit }
+interface PhotoEdit {
+  turn: 0 | 90 | 180 | 270;                                   // turned clockwise, first
+  crop: { x: number; y: number; width: number; height: number }; // then the part kept: fractions (0 to 1) of the turned original
+}
+// UploadHow (form.upload's third argument) gains replaces?: FileValue — the file stored stands for these bytes the field holds.
+```
+
+In plain words:
+
+- **Order and cover.** The list's order is the order a person put the photos in; the first is the cover (unless the
+  page's `options.cover` is false, which marks none). A list's card (`card.image`), a gallery and a map's pin
+  (`pin.image`) show the first file of an image field already, so they show the cover with no change. An adapter keeps
+  the order as its store keeps one: Flectra's `ir.attachment` by a `sequence`, a JSON column as it is, a gallery table
+  by a position column.
+- **Captions** (`options.captions`): a photo's `caption`, as typed (trimmed; none when empty). Flectra keeps it as an
+  attachment's `description`.
+- **A crop and its original.** Applied, the picture made takes the photo's place in the list — `name` kept where its
+  kind is, `type`, `size`, and its bytes, which go to the store at once where the source has `upload`
+  (`form.upload(field, [file], { replaces: photo })`: once stored, its `{ url, fileId }` take the bytes' place, with
+  whatever stands beside them by then — a caption typed meanwhile). Beside it, unless `options.keepOriginal` is false:
+  `original`, the photo as it was before any crop — its link and `fileId` where it was stored, its bytes where files
+  travel inside the record — and `edit`, what was done to it. A crop again starts from `original` with `edit` shown,
+  so cropping twice loses nothing; Put back the original makes `original` the photo again (its caption kept). An
+  `original` holds no `original` of its own. The store may let go of a picture no record names any more (one cropped
+  again, or put back): the form never deletes a stored file.
+- **Saving.** A save waits for a crop on its way and stops, under the field, for one that failed (Retry on its tile),
+  as for a photo picked. Without `upload`, both the picture made and the original travel inside the record as base64.
+- **Reading a stored photo to crop it.** The dialog reads the photo's bytes: its `data`, a `data:` link, or `fetch` of
+  its `url` — which the store must allow from the page's origin (CORS). A photo it cannot read is said ("This photo
+  cannot be cropped here: the page is not allowed to read it"), with nothing to apply.
+- **Checks.** `validatePage` refuses `photos` on a field that is not an `image` with `multiple`, and options written
+  wrong (`aspect` a shape "W:H" no longer than five to one either way); `checkPage` (and the one-tag script) the first.
+- The memory source keeps the value as it is given; its `upload` answers a crop as any file. Tests:
+  `libs/core/src/lib/record/uploads.spec.ts` (replaces), `libs/core/src/lib/format/photos-options.spec.ts`,
+  `libs/widgets/src/lib/photos.spec.ts`, `e2e/photos.spec.ts`.

@@ -7,6 +7,7 @@ const PART = { page: 'الصفحة', tab: 'علامة التبويب', section: 
 const HEADER = { button: 'الزر', counter: 'العدّاد', badge: 'الشارة', ribbon: 'الشريط', alert: 'التنبيه' } as const;
 const columns = (n: number) => plural('ar', n, { zero: '# أعمدة', one: 'عمود واحد', two: 'عمودان', few: '# أعمدة', many: '# عمودًا', other: '# عمود' });
 const files = (n: number) => plural('ar', n, { zero: '# ملفات', one: 'ملف واحد', two: 'ملفان', few: '# ملفات', many: '# ملفًا', other: '# ملف' });
+const photos = (n: number) => plural('ar', n, { zero: '# صور', one: 'صورة واحدة', two: 'صورتان', few: '# صور', many: '# صورة', other: '# صورة' });
 const LABELS: Record<string, string> = { above: 'فوق مربعاتها', beside: 'بجانب مربعاتها', hidden: 'داخل مربعاتها' };
 
 /** The Publish dialog's lines, as Arabic software lists changes: each a noun phrase — إضافة، إزالة، إعادة تسمية — so no verb need agree with a name. */
@@ -49,6 +50,10 @@ export const changes: DesignerWords['changes'] = {
   filesUpTo: (name, most) => `${q(name)}: حتى ${files(most)}`,
   filesAtLeast: (name, least) => `${q(name)}: ${files(least)} على الأقل`,
   filesAny: (name) => `${q(name)}: أي عدد من الملفات`,
+  photosFromTo: (name, least, most) => `${q(name)}: من ${least} إلى ${photos(most)}`,
+  photosUpTo: (name, most) => `${q(name)}: حتى ${photos(most)}`,
+  photosAtLeast: (name, least) => `${q(name)}: ${photos(least)} على الأقل`,
+  photosAny: (name) => `${q(name)}: أي عدد من الصور`,
   filesShownAs: (name, as) => `${q(name)}: تُعرض الملفات المختارة ${{ list: 'قائمةً', thumbnails: 'صورًا مصغّرة', cards: 'بطاقاتٍ' }[as]}`,
   filesSwitch: (name, on) => `${q(name)}: ${on ? 'يمكن للناس' : 'لم يعد بإمكان الناس'} تبديل طريقة عرض الملفات المختارة`,
   camera: (name, front) => `${q(name)}: تعرض الهواتف الكاميرا ${front ? 'الأمامية' : 'الخلفية'}`,
@@ -56,6 +61,11 @@ export const changes: DesignerWords['changes'] = {
   photosSmaller: (name, side, percent) => `${q(name)}: تصغير الصور إلى ${side} بكسل بجودة ${percent}%`,
   photosAsTaken: (name) => `${q(name)}: حفظ الصور كما التُقطت`,
   photosUsual: (name) => `${q(name)}: تصغير الصور كالمعتاد`,
+  photoCover: (name, on) => `${q(name)}: ${on ? 'الصورة الأولى هي الغلاف' : 'لا صورة تُعلَّم غلافًا'}`,
+  photoCaptions: (name, on) => `${q(name)}: ${on ? 'تعليق تحت كل صورة' : 'لا تعليق تحت الصور'}`,
+  photoEdit: (name, on) => `${q(name)}: ${on ? 'يمكن قص الصور وتدويرها' : 'لم يعد ممكنًا قص الصور وتدويرها'}`,
+  photoOriginal: (name, on) => `${q(name)}: ${on ? 'تحتفظ الصورة المقصوصة بأصلها' : 'لم تعد الصورة المقصوصة تحتفظ بأصلها'}`,
+  photoShape: (name, shape) => `${q(name)}: تُقص الصور ${shape ? `بشكل ${shape}` : 'بأي شكل'}`,
   addedHeader: (kind, label) => `إضافة ${HEADER[kind]} ${q(label)}`,
   removedHeader: (kind, label) => `إزالة ${HEADER[kind]} ${q(label)}`,
   renamedHeader: (kind, was, now) => `إعادة تسمية ${HEADER[kind]} ${q(was)} إلى ${q(now)}`,

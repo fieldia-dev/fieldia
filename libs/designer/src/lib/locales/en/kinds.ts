@@ -37,6 +37,7 @@ export const kinds = {
     keywords: 'Keywords',
     website: 'Website',
     image: 'Image',
+    photos: 'Photo set',
     priority: 'Priority stars',
     'state-dot': 'State dot',
     duration: 'Hours and minutes',

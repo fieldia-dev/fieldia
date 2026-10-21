@@ -133,7 +133,7 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         if (own && !focused(target)) target.value = 'relation' in def ? def.relation : '';
         looks.refresh(node);
       };
-    } else if (kind === 'file' || kind === 'image') {
+    } else if (kind === 'file' || kind === 'image' || kind === 'photos') {
       // Which kinds of file it takes — none picked, any; an image takes images — and the largest.
       const types = FILE_TYPES.map(([label, accept]) => {
         const button = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'false' }, w.fileTypes[label]) as HTMLButtonElement;
@@ -206,15 +206,21 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
       const camera = select(w.cameraOnPhones, ['', 'environment', 'user']);
       [w.no, w.rearCamera, w.frontCamera].forEach((words, i) => (camera.options[i].textContent = words));
       camera.addEventListener('change', () => designer.setWidgetOptions(id, { camera: camera.value === 'user' ? 'user' : camera.value ? true : null }));
+      // A photo set is always several photos, drawn as its tiles: neither is a choice there.
+      const set = kind === 'photos';
       element.replaceChildren(
         ...(kind === 'file' ? [el('div', { class: 'fd-inline-row' }, el('span', {}, w.takesOnly), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.kindsOfFile }, ...types.map((t) => t.button)))] : []),
-        el('div', { class: 'fd-inline-row' }, word(w.largestFile, largest), el('span', { class: 'fd-inline-setting fd-inline-toggle' }, several, el('span', { 'aria-hidden': 'true' }, w.severalFiles))),
+        el('div', { class: 'fd-inline-row' }, word(w.largestFile, largest), ...(set ? [] : [el('span', { class: 'fd-inline-setting fd-inline-toggle' }, several, el('span', { 'aria-hidden': 'true' }, w.severalFiles))])),
         counts,
-        el('div', { class: 'fd-inline-row' }, el('span', {}, w.showFilesAs), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.showFilesAs }, ...asChips)),
-        el('span', { class: 'fd-inline-setting fd-inline-toggle' }, switchable, el('span', { 'aria-hidden': 'true' }, w.peopleCanSwitch)),
+        ...(set
+          ? []
+          : [
+              el('div', { class: 'fd-inline-row' }, el('span', {}, w.showFilesAs), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.showFilesAs }, ...asChips)),
+              el('span', { class: 'fd-inline-setting fd-inline-toggle' }, switchable, el('span', { 'aria-hidden': 'true' }, w.peopleCanSwitch)),
+            ]),
         word(w.smallerPhotos, smaller),
         qualityRow,
-        ...(kind === 'image' ? [word(w.cameraOnPhones, camera)] : [])
+        ...(kind !== 'file' ? [word(w.cameraOnPhones, camera)] : [])
       );
       refresh = (page, node) => {
         const def = page.fields[node.field];

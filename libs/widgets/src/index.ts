@@ -14,6 +14,9 @@ export { fileShown, readFile, INLINE_FILE_WARNING, SHRINK_DEFAULTS } from './lib
 // A signature's evidence — the canonical form of the answers it signs, their SHA-256, its line under the signature —
 // comes in the evidence part, loaded only for a signature that signs answers: `(await evidencePart.load()).answersMatch(…)`.
 export type { SignedText } from './lib/signature-evidence';
+// A photo set — tiles in the order a person puts them, the cover, captions, a photo cropped and turned — comes in the
+// photos part, with the files part, loaded only for a picture field drawn as `"widget": "photos"`.
+export type { Crop, Edited, PhotoEditing } from './lib/photo-editor';
 export type { Signing, SigningContext } from './lib/signature-signing';
 export type { Going, GoingItem } from './lib/files-going';
 export type { ShrinkOptions } from './lib/shrink';
@@ -71,7 +74,7 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // A text kept in several languages (`translate`) comes in the languages part, with the form's code for it:
 // `(await languagesPart.load()).languageWords(…)`. A widget drawn before it came reads its first text.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type LanguagesPart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type PhotosPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type LanguagesPart, type PartFactory } from './lib/widget-parts';
 export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.

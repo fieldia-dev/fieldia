@@ -1705,6 +1705,8 @@ export function createDesigner(options: {
         }
         if (rules.multiple === true) field.multiple = true;
         else if (rules.multiple === false) {
+          // A photo set is several photos: one has no order, no cover.
+          if (fieldNode(draft, id).widget === 'photos') throw new Refusal((w) => w.refusals.photoSetSeveral);
           delete field.multiple;
           delete field.minFiles;
           delete field.maxFiles;

@@ -1,0 +1,144 @@
+{
+  "fieldia": "0.7",
+  "id": "clinic-before-after",
+  "title": "Treatment photos",
+  "description": "A clinic's photos of a treatment, before and after: each set square, each photo named by its angle, a photo taken sideways turned upright and cropped to the face, the original kept for the patient's record.",
+  "records": {
+    "one": "treatment",
+    "other": "treatments",
+    "a": "a treatment"
+  },
+  "data": {
+    "kind": "record",
+    "model": "clinic.photos"
+  },
+  "fields": {
+    "patient": {
+      "type": "char",
+      "label": "Patient",
+      "required": true
+    },
+    "treatment": {
+      "type": "selection",
+      "label": "Treatment",
+      "options": [
+        {
+          "value": "botox",
+          "label": "Botox"
+        },
+        {
+          "value": "filler",
+          "label": "Filler"
+        },
+        {
+          "value": "peel",
+          "label": "Chemical peel"
+        },
+        {
+          "value": "laser",
+          "label": "Laser"
+        }
+      ]
+    },
+    "visit_on": {
+      "type": "date",
+      "label": "Visit"
+    },
+    "before": {
+      "type": "image",
+      "label": "Before",
+      "help": "Front, left and right, as the clinic takes them.",
+      "multiple": true,
+      "maxFiles": 6,
+      "maxSize": 8388608
+    },
+    "after": {
+      "type": "image",
+      "label": "After",
+      "help": "The same angles, at the review.",
+      "multiple": true,
+      "maxFiles": 6,
+      "maxSize": 8388608
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "clinic-before-after",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-visit",
+        "title": "The visit",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-patient",
+            "field": "patient"
+          },
+          {
+            "type": "field",
+            "id": "f-treatment",
+            "field": "treatment"
+          },
+          {
+            "type": "field",
+            "id": "f-visit",
+            "field": "visit_on"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-photos",
+        "title": "Photos",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-before",
+            "field": "before",
+            "widget": "photos",
+            "options": {
+              "cover": false,
+              "captions": true,
+              "aspect": "1:1",
+              "camera": true
+            }
+          },
+          {
+            "type": "field",
+            "id": "f-after",
+            "field": "after",
+            "widget": "photos",
+            "options": {
+              "cover": false,
+              "captions": true,
+              "aspect": "1:1",
+              "camera": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Treatment photos": "صور العلاج",
+      "Patient": "المريض",
+      "Treatment": "العلاج",
+      "Botox": "بوتوكس",
+      "Filler": "فيلر",
+      "Chemical peel": "تقشير كيميائي",
+      "Laser": "ليزر",
+      "Visit": "الزيارة",
+      "Before": "قبل",
+      "After": "بعد",
+      "Front, left and right, as the clinic takes them.": "من الأمام واليسار واليمين، كما تلتقطها العيادة.",
+      "The same angles, at the review.": "الزوايا نفسها، عند المراجعة.",
+      "The visit": "الزيارة",
+      "Photos": "الصور",
+      "A clinic's photos of a treatment, before and after: each set square, each photo named by its angle, a photo taken sideways turned upright and cropped to the face, the original kept for the patient's record.": "صور عيادة لعلاج قبله وبعده: كل مجموعة مربعة، وكل صورة باسم زاويتها، وصورة التُقطت بالعرض تُدار وتُقص على الوجه، مع حفظ الأصل في ملف المريض."
+    }
+  }
+}

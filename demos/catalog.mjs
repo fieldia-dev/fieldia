@@ -50,8 +50,8 @@ const AREA_OF = {
   crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'leads-queue', 'customer-account', 'customer-card', 'deal-stages', 'customer-from-email'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee', 'staff-hours'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
-  clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake', 'service-prices', 'services-languages'],
-  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'enquiry', 'listing-languages', 'enquiry-reply'],
+  clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake', 'service-prices', 'services-languages', 'clinic-before-after'],
+  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'listing-photo-set', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'enquiry', 'listing-languages', 'enquiry-reply'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -96,6 +96,8 @@ const SEARCH_WORDS = {
   'work-item': 'bug issue ticket tracker azure devops work item quiet look state reason locked workflow',
   fields: 'every field kinds inputs text number money currency choice dropdown date calendar file upload attachment picture image rich text tags',
   'listing-photos': 'photos pictures images upload uploads camera phone property real estate listing gallery retry cancel slow',
+  'listing-photo-set': 'photos pictures images gallery order reorder drag drop sort arrange cover main photo first thumbnail card pin map crop rotate turn edit caption captions original property real estate listing portal camera phone',
+  'clinic-before-after': 'before after photos pictures clinic patient treatment aesthetic face skin crop rotate turn sideways upright square caption captions angle record original consent progress',
   kinds: 'survey questionnaire slider tags address picture choice ranking repeat quiz score signature sign moving day time weight hearts nps net promoter recommend scale',
   business: 'fields task project priority stars status timer stopwatch hours timesheet date range tags copy pdf analytic accounts tax payments properties',
   code: 'code editor programming json python sql javascript syntax highlight vs code codemirror developer',
@@ -604,6 +606,34 @@ export const DEMOS = [
       'Press Save while photos are still going: it waits, and says how many are left. Press × on one still going to cancel it.',
       'Pick photos of your own with Add photos, or take one with a phone’s camera.',
       'Open the Code drawer: this store is the memory source slowed down; your app gives upload(), with uploadTo({ url }) for a plain endpoint or a signed address for Azure Blob.',
+    ],
+  },
+  {
+    id: 'listing-photo-set',
+    name: 'A listing’s photos, in the order buyers see them',
+    category: 'fields',
+    query: 'page=listing-photo-set&skin=outlined',
+    blurb: 'A home’s listing whose photos are a set: put in the order a buyer sees them by dragging — a finger resting on a photo first, on a phone — or with the keys; the first the cover, which the listing’s card and its pin on the map show; each cropped to the portal’s 4:3 and turned in place, its original kept; each with its caption.',
+    howTo: [
+      'Drag the kitchen’s photo before the living room’s: it is the cover now, marked Cover. Make cover on a photo does the same.',
+      'Press Alt and an arrow key on a photo to move it a place; Alt and Home makes it the cover.',
+      'Press Crop and turn on the balcony’s photo: drag the part kept or a corner, turn it, then Apply. Crop it again: it starts from the original, as you cropped it, and Put back the original undoes it.',
+      'Type a caption under a photo, press Save, then [open the agent’s listings](?page=agent-listings): the listing’s card shows its cover.',
+      'Add photos of your own, up to 12, or take them with a phone’s camera.',
+    ],
+  },
+  {
+    id: 'clinic-before-after',
+    name: 'Before and after, photographed',
+    category: 'fields',
+    query: 'page=clinic-before-after&skin=outlined',
+    blurb: 'A clinic’s photos of a treatment, before and after: each set square, each photo named by its angle, no cover; a photo taken with the phone on its side turned upright and cropped to the face, its original kept for the patient’s record.',
+    howTo: [
+      'Press Crop and turn on Right side: it was taken with the phone on its side. Press Turn right, then Apply.',
+      'Crop Right side again: it starts from the original, as you cropped it; Put back the original brings back the photo as it was taken.',
+      'Add the after photos, up to six, and name each by its angle under it.',
+      'Drag a photo to put the angles in the order of the ones before, or press Alt and an arrow key.',
+      'Open a photo: it is shown whole, its caption its title.',
     ],
   },
   {
@@ -1274,7 +1304,7 @@ export function demoHref(demo, framework = 'plain') {
 
 /**
  * The pages a demo opens that are no demo of their own — a record opened from its list's row, a map's pin or a
- * calendar's booking — each with its own name, for the frame's heading and the browser's tab, and the demo it is
+ * calendar's booking, or the list a record's demo shows its record in — each with its own name, for the frame's heading and the browser's tab, and the demo it is
  * opened from. A page opened this way is never named after the framework that draws it.
  */
 export const OPENED = [
@@ -1285,6 +1315,7 @@ export const OPENED = [
   { page: 'booking', name: 'A booking', from: 'booking-week' },
   { page: 'contact', name: 'A contact', from: 'contacts' },
   { page: 'invoice', name: 'An invoice', from: 'customer-account' },
+  { page: 'agent-listings', name: 'An agent’s listings', from: 'listing-photo-set' },
   { page: 'quotation', name: 'A quotation', from: 'customer-account' },
   { page: 'viewing', name: 'A viewing', from: 'property' },
   { page: 'lead', name: 'A lead', from: 'leads-queue' },

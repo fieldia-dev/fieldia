@@ -50,7 +50,7 @@ export const TOOLBOX_GROUPS: readonly [string, readonly string[]][] = [
   ['Numbers and dates', ['number', 'amount', 'rating', 'scale', 'slider', 'progress', 'date', 'date-time', 'time']],
   ['Choices', ['dropdown', 'multiple-choice', 'checkboxes', 'image-choice', 'tags', 'ranking', 'matrix', 'status', 'yes-no', 'tick']],
   ['Records', ['link', 'links', 'lines']],
-  ['More', ['rich-text', 'code', 'vscode', 'image', 'file', 'signature', 'address', 'repeating']],
+  ['More', ['rich-text', 'code', 'vscode', 'image', 'photos', 'file', 'signature', 'address', 'repeating']],
   ['Business', ['priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties']],
 ];
 

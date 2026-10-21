@@ -49,6 +49,11 @@ export const changes = {
   filesUpTo: (name: string, most: number) => `“${name}”: up to ${most} files`,
   filesAtLeast: (name: string, least: number) => `“${name}”: at least ${least} files`,
   filesAny: (name: string) => `“${name}”: any number of files`,
+  // A photo set's counts, said as photos (the field's own noun).
+  photosFromTo: (name: string, least: number, most: number) => `“${name}”: from ${least} to ${most} photos`,
+  photosUpTo: (name: string, most: number) => `“${name}”: up to ${most} photos`,
+  photosAtLeast: (name: string, least: number) => `“${name}”: at least ${least} photos`,
+  photosAny: (name: string) => `“${name}”: any number of photos`,
   filesShownAs: (name: string, as: 'list' | 'thumbnails' | 'cards') => `“${name}”: chosen files shown as ${as === 'list' ? 'a list' : as}`,
   filesSwitch: (name: string, on: boolean) => `“${name}”: people can ${on ? '' : 'no longer '}switch how chosen files show`,
   camera: (name: string, front: boolean) => `“${name}”: phones offer the ${front ? 'front' : 'rear'} camera`,
@@ -56,6 +61,12 @@ export const changes = {
   photosSmaller: (name: string, side: number, percent: number) => `“${name}”: photos are made smaller, to ${side} px at ${percent}%`,
   photosAsTaken: (name: string) => `“${name}”: photos are kept as they were taken`,
   photosUsual: (name: string) => `“${name}”: photos are made smaller as usual`,
+  /** A photo set's own: its cover, its captions, crop and turn, the original kept, the shape of a crop (null: any). */
+  photoCover: (name: string, on: boolean) => `“${name}”: ${on ? 'the first photo is the cover' : 'no photo is marked the cover'}`,
+  photoCaptions: (name: string, on: boolean) => `“${name}”: ${on ? 'a caption under each photo' : 'no caption under the photos'}`,
+  photoEdit: (name: string, on: boolean) => `“${name}”: photos ${on ? 'can be' : 'can no longer be'} cropped and turned`,
+  photoOriginal: (name: string, on: boolean) => `“${name}”: a photo cropped ${on ? 'keeps' : 'no longer keeps'} its original`,
+  photoShape: (name: string, shape: string | null) => `“${name}”: photos are cropped to ${shape ?? 'any shape'}`,
   // ---- a sheet's header, a list
   addedHeader: (kind: HeaderKind, label: string) => `Added the ${kind} “${label}”`,
   removedHeader: (kind: HeaderKind, label: string) => `Removed the ${kind} “${label}”`,

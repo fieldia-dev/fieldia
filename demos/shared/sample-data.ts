@@ -71,6 +71,7 @@ import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings
 import { customerCardPage, duplicateCustomers } from './duplicates';
 import { keepWrites, keptApart, keptApprovals, keptOver } from './kept';
 import { consentPage, sampleConsents } from './consents';
+import { photoSetPages, photoSetRecords } from './photo-sets';
 import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
@@ -119,6 +120,11 @@ export const pages: Record<string, Page> = {
   'customer-card': customerCardPage,
   // A clinic's consent to treatment, signed: who, when and the answers' fingerprint kept, the answers locked (shared/consents.ts).
   'clinic-consent': consentPage,
+  // A listing's photos as a set, the agent's listings showing each one's cover, and a clinic's before and after
+  // (shared/photo-sets.ts).
+  'listing-photo-set': photoSetPages['listing-photo-set'],
+  'agent-listings': photoSetPages['agent-listings'],
+  'clinic-before-after': photoSetPages['clinic-before-after'],
   fields: fields as Page,
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
@@ -272,6 +278,7 @@ const RECORD_PAGES: Record<string, string> = {
   contacts: 'contact',
   'map-homes': 'map-home',
   'homes-gallery': 'map-home',
+  'agent-listings': 'listing-photo-set',
   'homes-search': 'map-home',
   'leads-queue': 'lead',
   'map-couriers': 'map-courier',
@@ -612,6 +619,8 @@ export function sampleDataSource() {
       // A portal's listings and a clinic's services, typed in Arabic and English (shared/languages.ts).
       'portal.listing': bilingualListings(),
       'clinic.service': bilingualServices(),
+      // The agent's listings and a clinic's treatment photos, drawn only for the pages that show them (shared/photo-sets.ts).
+      ...(['listing-photo-set', 'agent-listings', 'clinic-before-after'].includes(params.get('page') ?? '') ? photoSetRecords() : {}),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

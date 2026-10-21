@@ -1,0 +1,181 @@
+{
+  "fieldia": "0.7",
+  "id": "listing-photo-set",
+  "title": "Listing",
+  "description": "A home's listing and its photos as a set: put in the order a buyer sees them, the first the cover its card and its pin on the map show, each cropped and turned in place with its original kept, and each with a caption.",
+  "records": {
+    "one": "listing",
+    "other": "listings",
+    "a": "a listing"
+  },
+  "data": {
+    "kind": "record",
+    "model": "agent.listing"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Title",
+      "required": true
+    },
+    "offer": {
+      "type": "selection",
+      "label": "Offer",
+      "options": [
+        {
+          "value": "sale",
+          "label": "For sale"
+        },
+        {
+          "value": "rent",
+          "label": "For rent"
+        }
+      ]
+    },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currency": "EGP",
+      "digits": [
+        12,
+        0
+      ]
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        {
+          "value": "zamalek",
+          "label": "Zamalek"
+        },
+        {
+          "value": "maadi",
+          "label": "Maadi"
+        },
+        {
+          "value": "new_cairo",
+          "label": "New Cairo"
+        },
+        {
+          "value": "sheikh_zayed",
+          "label": "Sheikh Zayed"
+        }
+      ]
+    },
+    "bedrooms": {
+      "type": "integer",
+      "label": "Bedrooms",
+      "min": 0
+    },
+    "photos": {
+      "type": "image",
+      "label": "Photos",
+      "help": "The first photo is the cover: the listing's card and its pin on the map show it.",
+      "multiple": true,
+      "maxFiles": 12,
+      "maxSize": 8388608,
+      "shrink": {
+        "maxSide": 1600,
+        "quality": 0.85
+      }
+    },
+    "lat": {
+      "type": "float",
+      "label": "Latitude",
+      "digits": [
+        9,
+        6
+      ]
+    },
+    "lng": {
+      "type": "float",
+      "label": "Longitude",
+      "digits": [
+        9,
+        6
+      ]
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "listing",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-photos",
+        "title": "Photos",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-photos",
+            "field": "photos",
+            "widget": "photos",
+            "options": {
+              "captions": true,
+              "aspect": "4:3",
+              "camera": true
+            }
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-home",
+        "title": "The home",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "name",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-offer",
+            "field": "offer",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-price",
+            "field": "price"
+          },
+          {
+            "type": "field",
+            "id": "f-district",
+            "field": "district"
+          },
+          {
+            "type": "field",
+            "id": "f-bedrooms",
+            "field": "bedrooms"
+          }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Listing": "إعلان",
+      "Title": "العنوان",
+      "Offer": "العرض",
+      "For sale": "للبيع",
+      "For rent": "للإيجار",
+      "Price": "السعر",
+      "District": "الحي",
+      "Zamalek": "الزمالك",
+      "Maadi": "المعادي",
+      "New Cairo": "القاهرة الجديدة",
+      "Sheikh Zayed": "الشيخ زايد",
+      "Bedrooms": "غرف النوم",
+      "Photos": "الصور",
+      "The first photo is the cover: the listing's card and its pin on the map show it.": "الصورة الأولى هي الغلاف: تظهر في بطاقة الإعلان وفي دبوسه على الخريطة.",
+      "The home": "المنزل",
+      "Latitude": "خط العرض",
+      "Longitude": "خط الطول",
+      "A home's listing and its photos as a set: put in the order a buyer sees them, the first the cover its card and its pin on the map show, each cropped and turned in place with its original kept, and each with a caption.": "إعلان منزل وصوره مجموعةً واحدة: مرتبةً كما يراها المشتري، والأولى هي الغلاف الذي تظهره بطاقته ودبوسه على الخريطة، وكل صورة تُقص وتُدار في مكانها مع حفظ أصلها، ولكلٍّ تعليقها."
+    }
+  }
+}

@@ -151,6 +151,55 @@ describe('a file picked is stored at once, where the source stores files', () =>
     expect(store.sent.slice(4).map((s) => s.file.name)).toEqual(['plan-5.pdf']);
   });
 
+  it('stores bytes the field holds at once where asked (a photo cropped): its link in their place, the caption typed meanwhile kept', async () => {
+    const store = handStore();
+    const { form, photos, state } = setup({ upload: store.upload, recordId: 1 });
+    await form.load();
+    const original: FileValue = { name: 'Kitchen.jpg', type: 'image/jpeg', size: 9, url: 'https://files.example/Kitchen.jpg', fileId: 7 };
+    const cropped: FileValue = { name: 'Kitchen.jpg', type: 'image/jpeg', size: 3, data: 'AQID', original, edit: { turn: 90, crop: { x: 0, y: 0.1, width: 1, height: 0.75 } } };
+    const hall: FileValue = { name: 'Hall.jpg', type: 'image/jpeg', size: 3, url: 'https://files.example/Hall.jpg' };
+    form.setValue('photos', [hall, cropped]);
+    const [id] = form.upload('photos', [photo('Kitchen.jpg', 3)], { replaces: cropped });
+    await tick();
+    expect(state().uploads).toEqual([expect.objectContaining({ id, name: 'Kitchen.jpg', status: 'uploading' })]);
+    // Moved first and given a caption while it goes: both kept, its link in place of its bytes, its original and edit beside it.
+    form.setValue('photos', [{ ...cropped, caption: 'The kitchen, newly fitted' }, hall]);
+    store.sent[0].end();
+    await form.settled();
+    expect(photos()).toEqual([
+      { url: 'https://files.example/Kitchen.jpg', name: 'Kitchen.jpg', size: 3, type: 'image/jpeg', fileId: 1, original, edit: cropped.edit, caption: 'The kitchen, newly fitted' },
+      hall,
+    ]);
+    expect(state().dirty).toEqual(['photos']);
+  });
+
+  it('lays a file stored for bytes nowhere once those changed meanwhile — cropped again, taken away — and stops no pick on a field of one', async () => {
+    const store = handStore();
+    const { form, photos, state } = setup({ upload: store.upload, recordId: 1 });
+    await form.load();
+    const first: FileValue = { name: 'Kitchen.jpg', type: 'image/jpeg', size: 3, data: 'AQID' };
+    const again: FileValue = { name: 'Kitchen.jpg', type: 'image/jpeg', size: 3, data: 'BAUG' };
+    form.setValue('photos', [first]);
+    form.upload('photos', [photo('Kitchen.jpg', 3)], { replaces: first });
+    form.setValue('photos', [again]);
+    await tick();
+    store.sent[0].end();
+    await form.settled();
+    expect(photos()).toEqual([again]);
+    // A signature's picture stored for its bytes, while a plan is picked: neither stops the other.
+    const signature: FileValue = { name: 'signature.png', type: 'image/png', size: 3, data: 'AQID' };
+    form.setValue('signature', signature);
+    form.upload('plan', [photo('plan.pdf')]);
+    form.upload('signature', [photo('signature.png', 3)], { replaces: signature });
+    form.upload('plan', [photo('plan.pdf')], { replaces: { name: 'none.pdf', type: 'application/pdf', size: 1, data: 'AA==' } });
+    await tick();
+    expect(state().uploads.map((u) => u.name)).toEqual(['plan.pdf', 'signature.png', 'plan.pdf']);
+    store.sent.slice(1).forEach((s) => s.end());
+    await form.settled();
+    expect(state().values['signature']).toMatchObject({ url: 'https://files.example/signature.png', fileId: 3 });
+    expect((state().values['plan'] as FileValue).name).toBe('plan.pdf');
+  });
+
   it('stops one when cancelled: its file is dropped, with no failure', async () => {
     const store = handStore();
     const { form, state, photos } = setup({ upload: store.upload });

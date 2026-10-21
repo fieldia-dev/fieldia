@@ -38,7 +38,7 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { anyText, businessPart, choicePart, datePart, filesPart, languagesPart, linesPart, partFactory, partWidget, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { anyText, businessPart, choicePart, datePart, filesPart, languagesPart, linesPart, partFactory, partWidget, pathPart, phonePart, photosPart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTimer, plainTotal } from './business-plain';
 import { plainAddress, plainChosen, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
@@ -947,6 +947,11 @@ const filesOf = (real: (part: FilesPart) => WidgetFactory) => partFactory(filesP
 /** A file field's and a picture field's widgets, as 0.22 gave them: the files part's, the files' names meanwhile. */
 export const binaryWidget: WidgetFactory = filesOf((part) => part.binaryWidget);
 export const imageWidget: WidgetFactory = filesOf((part) => part.imageWidget);
+/**
+ * A photo set (`"widget": "photos"` on a picture field of several photos: the page's check refuses it on one), in the
+ * photos part with the files part: the photos' names meanwhile.
+ */
+const photosWidget: PartFactory = partFactory(photosPart, (part) => part.photosWidget, plainFilesWidget);
 // The survey kinds come in the survey part (survey-part.ts), each shown plainly meanwhile (survey-plain.ts): a slider's
 // number in the number box, pictures to choose from as the choices' own radios or boxes, a progress bar's number in words.
 // A property's rows and an editable progress bar's box are drawn by createWidget, handed to the part rather than imported
@@ -1097,6 +1102,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   binary: binaryWidget,
   'binary.signature': filesOf((part) => part.signatureWidget),
   image: imageWidget,
+  'image.photos': photosWidget,
   html: htmlWidget,
   json: jsonWidget,
   'json.address': surveyKind((part) => part.addressWidget, plainAddress),

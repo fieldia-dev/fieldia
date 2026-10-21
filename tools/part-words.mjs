@@ -106,6 +106,13 @@ export const PART_WORDS = {
     ],
   },
   path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds'] },
+  photos: {
+    widgets: [
+      'photosMove', 'photosMoveCover', 'photosMoveTouch', 'photosMoveTouchCover', 'photoCover', 'makeCover', 'coverNow', 'editPhoto', 'photoCaption', 'captionPlaceholder', 'photoNamed', 'photoNamedCover', 'photoCount', 'photoCountOne', 'photoCountOf', 'upToPhotos',
+      'photoUploaded', 'photosUploaded', 'photoChanged', 'photoChangedKept', 'originalBack', 'turnLeft', 'turnRight', 'cropShape', 'cropAny', 'cropArea', 'cropKeys', 'applyEdit', 'putBackOriginal', 'photoLoading', 'photoUnreadable', 'photoNotMade',
+      'addPhotos', 'dropThem', 'upToEach', 'removeAsk', 'removed', 'movedTo', 'uploadingNamed', 'retryUploadNamed', 'notUploadedNamed',
+    ],
+  },
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
   print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },

@@ -800,6 +800,8 @@ export interface Form {
    * makes each ready first, one at a time (a photo made smaller). A field of
    * one file keeps the last one picked. Gives each upload's id. A save waits
    * for those still going, and stops, under the field, for one that failed.
+   * `how.replaces`: the file is stored for bytes the field holds (a photo
+   * cropped), its link taking their place once stored, as a save's would.
    */
   upload(field: string, files: readonly UploadFile[], how?: UploadHow): string[];
   /**

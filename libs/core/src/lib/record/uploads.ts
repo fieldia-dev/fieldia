@@ -44,6 +44,12 @@ export interface UploadHow {
   line?: { field: string; key: string };
   /** Each file made ready before it goes, one at a time: a photo made smaller. A file it cannot make ready goes as it is. */
   prepare?: (file: UploadFile) => Promise<UploadFile>;
+  /**
+   * The file the field holds as its bytes that this one is stored for, as a save stores bytes — a photo cropped in a
+   * photo set, stored at once: once stored, its link takes that file's place, the words beside it then (a caption)
+   * kept. Changed meanwhile (cropped again, taken away), the stored file is laid nowhere.
+   */
+  replaces?: FileValue;
 }
 
 /** How many files go to the store at once; the rest wait their turn. */
@@ -162,19 +168,27 @@ export function fileBytesIn(fields: Fields, values: Readonly<Values>, changed: r
   return found;
 }
 
+/** A stored file with the words its bytes had beside them as they stand now — a caption, a signature's evidence — never their link's. */
+const keeping = (stored: FileValue, was: FileValue): FileValue => {
+  const file: FileValue = { ...stored };
+  for (const [key, value] of Object.entries(was)) if (!['data', 'url', 'name', 'size', 'type', 'fileId'].includes(key)) (file as unknown as Record<string, unknown>)[key] = value;
+  return file;
+};
+
 /**
  * A field's files with a stored one put in: in place of the bytes it was
- * stored for (nothing, when those are gone), in place of a field's one file,
- * or among several before the first that was picked after it.
+ * stored for (nothing, when those are gone), with what stands beside them
+ * now; in place of a field's one file; or among several before the first
+ * that was picked after it.
  */
 function placed(current: Value | undefined, stored: FileValue, how: { several: boolean; replaces?: FileValue; pickedAfter: (file: FileValue) => boolean }): Value | undefined {
   if (how.replaces) {
     const was = how.replaces;
     if (Array.isArray(current)) {
       const at = (current as unknown[]).findIndex((file) => isFile(file) && sameFile(file, was));
-      return at < 0 ? undefined : ((current as unknown[]).map((file, i) => (i === at ? stored : file)) as unknown as Value);
+      return at < 0 ? undefined : ((current as unknown[]).map((file, i) => (i === at ? keeping(stored, file as FileValue) : file)) as unknown as Value);
     }
-    return isFile(current) && sameFile(current, was) ? (stored as unknown as Value) : undefined;
+    return isFile(current) && sameFile(current, was) ? (keeping(stored, current) as unknown as Value) : undefined;
   }
   if (!how.several) return stored as unknown as Value;
   const files = filesIn(current);
@@ -301,12 +315,10 @@ export function createUploads(host: UploadsHost) {
     }
   }
 
-  /** The stored file in its field: exactly what the store gave — its other words kept, for bytes it stands in for. */
+  /** The stored file in its field: exactly what the store gave — the words beside the bytes it stands in for kept. */
   function put(entry: Entry, stored: UploadedFile) {
     const def = host.fileField(entry.field, entry.line);
-    const extra: Partial<FileValue> = {};
-    if (entry.replaces) for (const [key, value] of Object.entries(entry.replaces)) if (!['data', 'url', 'name', 'size', 'type', 'fileId'].includes(key)) (extra as Record<string, unknown>)[key] = value;
-    const file: FileValue = { ...stored, ...extra };
+    const file: FileValue = { ...stored };
     order.set(file.url ?? '', entry.seq);
     const value = placed(host.read(entry.field, entry.line), file, {
       several: (def as { multiple?: boolean } | null)?.multiple === true,
@@ -333,16 +345,17 @@ export function createUploads(host: UploadsHost) {
 
   return {
     /** Send files picked for a field: its ids. */
-    start(field: string, files: readonly UploadFile[], how: { line?: Entry['line']; prepare?: Entry['prepare'] } = {}): string[] {
+    start(field: string, files: readonly UploadFile[], how: UploadHow = {}): string[] {
       if (!host.source()?.upload) throw new Error('The data source has no upload: files go inside the record');
       const def = host.fileField(field, how.line);
       if (!def) throw new Error(how.line ? `The lines of "${how.line.field}" have no file field "${field}"` : `"${field}" is not a file or picture field`);
-      // A field of one file: the last one picked is the one it keeps; one still on its way is stopped.
-      if ((def as { multiple?: boolean }).multiple !== true) {
+      // A field of one file: the last one picked is the one it keeps; one still on its way is stopped. A file stored for
+      // bytes the field holds stops none: it is no pick.
+      if ((def as { multiple?: boolean }).multiple !== true && !how.replaces) {
         for (const entry of entries.filter((e) => e.field === field && e.line?.key === how.line?.key && e.line?.field === how.line?.field && !e.replaces)) drop(entry);
         files = files.slice(-1);
       }
-      const started = files.map((file) => begin(field, how.line, file, { prepare: how.prepare }));
+      const started = (how.replaces ? files.slice(0, 1) : files).map((file) => begin(field, how.line, file, { prepare: how.prepare, replaces: how.replaces }));
       tell();
       pump();
       return started.map((entry) => entry.id);

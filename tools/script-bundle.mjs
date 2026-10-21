@@ -1048,8 +1048,15 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // checks the part carries, owed until it came, as every part's checks are (assist-checks' stand-ins and their calls,
 // 0.30); a memory source's AI members only where its `assist` answers them (0.07): 506.76 measured before, 507.80
 // after, to 507.9.
-// Merged (0.29.0), Wave 5's lanes together: to 511.6 until measured.
-const BUDGET_KB = 511.6;
+// A photo set (0.29, w5-photos), all of it in fieldia.photos.js but what every page with a form needs to know of one:
+// the photos part's holder and the files part's for it (widget-parts.ts, 0.11), `image.photos` among the widgets (0.05),
+// its place among the parts' sheets (0.01), its name on the global and in the parts' shared table (0.03); a photo set on
+// a field that is not an image field of several photos refused by the page's check (0.17), which runs before anything
+// is drawn and before any part is asked for, as a signature's and booking slots' are; and a file stored for bytes the
+// field holds, its link in their place with the words beside them as they stand then — a caption typed meanwhile —
+// in the form's uploads (0.07), which every page with a file field has: 506.77 measured before, 507.20 after, to 507.3.
+// Merged (0.29.0), Wave 5's lanes together: to 512.1 until measured.
+const BUDGET_KB = 512.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1293,8 +1300,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // AI help (0.29, lane w5-ai; listed with the raw budget above): the part's handle, the kit's making and placing, the
 // field's hook, `propose`, the checks owed to the part, a memory source's AI members — 166.15 measured before, 166.47
 // after, to 166.5.
-// Merged (0.29.0): to 168.1 until measured.
-const GZIP_BUDGET_KB = 168.1;
+// A photo set (0.29, w5-photos; listed with the raw budget above): 166.15 measured before, 166.28 after, to 166.3. A
+// page with one takes its photos part, fieldia.photos.js, besides the files part.
+// Merged (0.29.0): to 168.3 until measured.
+const GZIP_BUDGET_KB = 168.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1491,8 +1500,13 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // field's Draft and Polish, a list's words read as filters — 44 words in each: Arabic's 77.88 and 13.29 measured before,
 // 82.78 and 14.01 after, to 82.8 and 14.1; German's 36.27 and 11.64 to 38.40 and 12.25, to 38.4 and 12.3; French's
 // 36.75 and 11.70 to 38.85 and 12.29, to 38.9 and 12.3.
-// Merged (0.29.0): to Arabic's 87.4 and 14.9, German's 40.9 and 13.1, French's 41.3 and 13.0 until measured.
-const ADD_ON_BUDGET_KB = { ar: [87.4, 14.9], de: [40.9, 13.1], fr: [41.3, 13.0] };
+// A photo set (0.29, w5-photos): how a photo is moved — by a mouse and keys, or by a finger — and said moved, the
+// cover, a photo's tools and caption by its name, the photos counted and uploaded, a photo changed and its original
+// back, and the crop and turn dialog's words — 32 in each: Arabic's 77.88 and 13.29 measured before, 81.73 and 13.87
+// after, to 81.8 and 13.9; German's 36.27 and 11.64 to 37.96 and 12.13, to 38.0 and 12.2; French's 36.75 and 11.70 to
+// 38.46 and 12.18, to 38.5 and 12.2.
+// Merged (0.29.0): to Arabic's 91.3 and 15.5, German's 42.6 and 13.6, French's 43.0 and 13.5 until measured.
+const ADD_ON_BUDGET_KB = { ar: [91.3, 15.5], de: [42.6, 13.6], fr: [43.0, 13.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1915,8 +1929,17 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // place (search-bar's `take`): list 129.48 and 41.62 measured before, 130.65 and 41.96 after, to 130.7 and 42.0; the
 // filter bar takes one as well — filters 22.70 and 7.84 to 22.91 and 7.88, to 23.0 and 7.9; a memory source's AI
 // members where its `assist` answers them — memory 16.10 and 5.72 to 16.46 and 5.81, to 16.5 and 5.9.
+// A photo set (0.29, w5-photos): a part of its own, asked for only by a page with a picture field drawn as
+// `"widget": "photos"`, and coming with the files part — photos new, 31.42 and 11.59: its tiles in the order a person
+// puts them, dragged by a pointer or a finger resting on one, moved by keys and said, the cover marked and made,
+// captions, a cropped photo's bar on its tile (photos.ts: 14.2 raw and 5.8 gzipped alone); the crop and turn dialog
+// and its geometry (photo-editor.ts: 7.0 and 3.0); its sheet (7.0 and 2.0); and its words — to 31.5 and 11.6. The
+// files part gives it what a picture field does already, never a second copy: its taking of photos picked or dropped
+// (`takeFiles`, the file field's own now), a picture read for drawing (`readPicture`, shrinking's own), a picture's
+// preview, and a photo's caption as its dialog's title — files 36.99 and 13.62 measured before, 37.36 and 13.77 after,
+// to 37.4 and 13.8.
 // Merged (0.29.0): a part two lanes grew takes both growths until measured (list, memory).
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [132.0, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [28.8, 10.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.0, 7.1], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [34.5, 11.8] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [132.0, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [28.8, 10.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.4, 13.8], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.0, 7.1], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [34.5, 11.8] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1936,6 +1959,7 @@ const PART_GIVES = {
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget', 'copyWidget', 'timerWidget'],
   files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
+  photos: ['photosWidget', 'editPhoto', 'drawEdited', 'fitted', 'moved', 'sized', 'turnedCrop', 'turnedSize', 'installPhotosStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
@@ -1953,11 +1977,11 @@ const PART_GIVES = {
   languages: ['languagesWidget', 'languageWords', 'languageText', 'installLanguagesStyles', 'checkTranslated', 'languagesAtFault', 'languageName', 'textIn'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
-// source's slots.
-const PART_BESIDE = { slots: ['date'] };
+// source's slots; a photo set the files part, whose taking, files on their way, dialog and sheet it draws with.
+const PART_BESIDE = { slots: ['date'], photos: ['files'] };
 /** Every Arabic word of the three tables, as the packages have them. */
 const ARABIC = await sourceWords('ar');
 /** A part's own words (PART_WORDS) Fieldia's tables in `locale` do not hold as `words` have them, by table and key. */
@@ -2434,12 +2458,24 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!doc.getElementById('fieldia-assist-styles')) throw new Error("in a page, AI help's sheet was never put in");
   filled.destroy();
   gone('filled');
+  // A listing whose photos are a set: the photos part asked for — the files part, whose taking and dialog it draws with,
+  // in already — the page drawn once it came, nothing of it before; its photos as tiles in their order, the first
+  // marked the cover; a plain picture field before it never asked for it.
+  const shot = (name) => ({ name, type: 'image/png', size: 4, data: 'QUJDRA==' });
+  const listing = inPage.mountViewer(host, { page: read('listing-photo-set.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'agent.listing': { 1: { name: 'Garden flat', photos: [shot('Kitchen.png'), shot('Hall.png')] } } } }) });
+  waits(listing, 'a listing whose photos are a set');
+  await listing.drawn;
+  hasIn("a listing's photo set", 'answers, approvals, assist, business, cards, choice, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, options, path, phone, photos, print, quiet, relations, slots, survey, text, themes');
+  const covers = [...host.querySelectorAll('.fd-photo')].map((tile) => `${tile.querySelector('.fd-photo-open')?.getAttribute('aria-label')}${tile.querySelector('.fd-photo-cover')?.hidden ? '' : ' (cover)'}`);
+  if (covers.join('; ') !== 'Kitchen.png, the cover, photo 1 of 2 (cover); Hall.png, photo 2 of 2') throw new Error(`in a page, a listing's photo set is not drawn in its order, its cover first: ${covers.join('; ')}`);
+  listing.destroy();
+  gone('listing');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
-  // and a page's limits' (0.27), a record's approvals', AI help's and a text's languages' (0.29), before the themes so a theme still
-  // reshapes them, the themes' and the quiet look's before the pickers', the head's and the text's, the survey kinds'
-  // own looks last; a list's own sheet, its cards' and its columns' after them all, unranked.
+  // and a page's limits' (0.27), a record's approvals', AI help's, a photo set's and a text's languages' (0.29), before
+  // the themes so a theme still reshapes them, the themes' and the quiet look's before the pickers', the head's and the
+  // text's, the survey kinds' own looks last; a list's own sheet, its cards' and its columns' after them all, unranked.
   const styles = [...doc.head.querySelectorAll('style[id]')];
   const ids = styles.map((style) => style.id);
   const ranked = styles.filter((style) => style.hasAttribute('data-fd-rank'));
@@ -2448,7 +2484,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
   if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-approvals-styles', 'fieldia-assist-styles', 'fieldia-languages-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-approvals-styles', 'fieldia-assist-styles', 'fieldia-photos-styles', 'fieldia-languages-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
     const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
@@ -2456,7 +2492,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place; a listing in Arabic and English; a customer filled from an e-mail, AI help drawn with it and a proposal laid — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place; a listing in Arabic and English; a customer filled from an e-mail, AI help drawn with it and a proposal laid; a listing's photo set, with the files part — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

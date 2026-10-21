@@ -86,6 +86,8 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
   { id: 'keywords', label: 'Keywords', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'tags' },
   { id: 'website', label: 'Website', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'url' },
   { id: 'image', label: 'Image', group: 'more', field: (label) => ({ type: 'image', label }) },
+  // Photos as a set: in the order people put them, the first the cover, each cropped and turned in place.
+  { id: 'photos', label: 'Photo set', group: 'more', field: (label) => ({ type: 'image', label, multiple: true, maxFiles: 20 }), widget: 'photos' },
   // The business widgets an ERP's screens lean on.
   {
     id: 'priority',
@@ -163,7 +165,7 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
     case 'binary':
       return node.widget === 'signature' ? 'signature' : node.widget === 'pdf' ? 'pdf' : 'file';
     case 'image':
-      return 'image';
+      return node.widget === 'photos' && field.multiple ? 'photos' : 'image';
     case 'many2one':
       return 'link';
     case 'many2many':
@@ -248,6 +250,8 @@ export function kindFits(kind: QuestionKind, field: Field): boolean {
   if (kind.app) return kind.app.fits ? kind.app.fits(field) : made.type === field.type;
   // Pictures to choose from, one or several.
   if (kind.id === 'image-choice') return field.type === 'selection';
+  // A photo set: a picture field of several photos.
+  if (kind.id === 'photos') return field.type === 'image' && field.multiple === true;
   // The business widgets, each on the data it reads: stars on one of a list or a yes or no, a timer on hours or a start, a range on dates…
   const suits = BUSINESS_FITS[kind.id];
   if (suits) return suits(field);

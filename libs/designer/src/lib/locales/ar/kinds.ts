@@ -39,6 +39,7 @@ export const kinds: DesignerWords['kinds'] = {
     keywords: 'كلمات مفتاحية',
     website: 'موقع إلكتروني',
     image: 'صورة',
+    photos: 'مجموعة صور',
     priority: 'نجوم الأولوية',
     'state-dot': 'نقطة الحالة',
     duration: 'ساعات ودقائق',

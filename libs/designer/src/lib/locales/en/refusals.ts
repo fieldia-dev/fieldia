@@ -70,6 +70,7 @@ export const refusals = {
   onlyFiles: 'Only a file upload takes files',
   filesFromModel: (label: string) => `The files ${label} takes come from the model`,
   imageOnly: 'An image takes images only',
+  photoSetSeveral: 'A photo set holds several photos',
   largestFile: 'The largest file is a size in bytes, more than nothing',
   smallerPhotos: 'Photos are made smaller to a whole number of pixels from 160 to 16384, at a quality from 0.3 to 1',
   severalFirst: 'Turn on More than one file first',

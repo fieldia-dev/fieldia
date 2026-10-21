@@ -8,6 +8,7 @@ import type * as LinesModule from './lines-part';
 import type * as BusinessModule from './business-part';
 import type * as FilesModule from './files-part';
 import type * as EvidenceModule from './evidence-part';
+import type * as PhotosModule from './photos-part';
 import type { ShrinkOptions } from './shrink';
 import type * as SurveyModule from './survey-part';
 import type * as PhoneModule from './phone-part';
@@ -35,6 +36,11 @@ export type FilesPart = typeof FilesModule;
  * their SHA-256, who and when said under it, whether the answers are still as signed, and Change answers.
  */
 export type EvidencePart = typeof EvidenceModule;
+/**
+ * The photos part: a photo set (`"widget": "photos"`) — its tiles in the order a person puts them, the cover, captions,
+ * a photo cropped and turned in its dialog.
+ */
+export type PhotosPart = typeof PhotosModule;
 /** The survey part: a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address and a progress bar. */
 export type SurveyPart = typeof SurveyModule;
 /** The phone part: a phone number read the world over — its country picked or typed, checked, kept as E.164, shown at rest with its links — and every country's numbers. */
@@ -92,6 +98,20 @@ export function loadEvidencePart(): Promise<EvidencePart> {
 /** Whether asking for the evidence part again, once it failed, can bring it (`Part.asksAgain`): a function, as above. */
 export function evidencePartAsksAgain(): boolean {
   return evidencePart.asksAgain === true;
+}
+
+/**
+ * A photo set (`"widget": "photos"` on a picture field of several photos), loaded the first time a page shows one —
+ * with the files part, whose taking of photos, files on their way, dialog and sheet it draws with: in when both are.
+ * Never for a plain picture field.
+ */
+export const photosPart: Part<PhotosPart> = lazyPart('photos', () => Promise.all([import('./photos-part'), filesPart.load()]).then(([module]) => module));
+/**
+ * The files part's code once it has come, for the photos part, which comes with it: a function, as `datePartIn` is, for
+ * a part takes the main script's names as they stood when it started.
+ */
+export function filesPartIn(): FilesPart | undefined {
+  return filesPart.loaded;
 }
 
 /**

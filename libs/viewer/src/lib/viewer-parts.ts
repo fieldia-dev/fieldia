@@ -1,5 +1,5 @@
 import { callsPartFunctions, formApprovalsPart, editableColumns, formLimitsPart, functionsPart, hasLanguages, hasLimits, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
-import { businessPart, choicePart, datePart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, choicePart, datePart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as AnswersModule from './answers-part';
@@ -122,7 +122,7 @@ export function installListStyles(doc: Document): Promise<void> {
 export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage', 'phone', 'tags']);
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -140,7 +140,8 @@ const markdownAlone = (node: SectionNode) => {
  * changed in place (`editable`), with each such column's box's own part; and the
  * widgets' own for the fields that need them (a work item's text, a links box,
  * a path picker, a choice in Fieldia's own list, a date's box and calendar, a table of lines or of a many2many's
- * records or its cards, a business widget, a file, a picture, a signature or a PDF field, the survey kinds, booking
+ * records or its cards, a business widget, a file, a picture, a signature or a PDF field, a photo set (the photos part,
+ * which comes with the files part), the survey kinds, booking
  * slots, a link to other records — a many2one, a many2many's tags, a reference — and an analytic distribution's links
  * with the business part; and beside the files part, for a signature that signs answers, its evidence's part) — unless the app's
  * `widgets` draw those fields; and those the app's `slots` name for the slots the page has (a Discussion's). The
