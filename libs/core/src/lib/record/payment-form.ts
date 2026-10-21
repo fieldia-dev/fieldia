@@ -1,97 +1,108 @@
-import type { Page } from '../format/page';
-import type { DataSource, PaidPayment, PaymentDue } from './data-source';
-import type { FormState } from './form';
-import type { ActionHost } from './run';
-import type { Values } from './values';
+import { functionTable } from '../expression/app-functions';
+import { compileModifier, type CompiledModifier } from '../expression/modifier';
+import type { PaidPayment, PaymentDue, PayRequest } from './data-source';
+import type { FormJoin, JoinHost } from './joins';
 
-/** What a form's payment code asks of the form it is made for. */
-export interface PayHost {
-  readonly page: Page;
-  readonly dataSource: DataSource | undefined;
-  readonly host: ActionHost | undefined;
-  state(): FormState;
-  set(patch: Partial<FormState>): void;
-  /** Whether a condition holds on the record now, as the form reads its conditions. */
-  holds(condition: string): boolean;
-  /** The answers as a send would carry them. */
-  values(): Values;
-  /** The page's language, by tag. */
-  language(): string;
-}
+/** A payment step that shows what is due and settles once it is paid, or with null once the person goes back. */
+export type PayStep = (due: PaymentDue, request: PayRequest) => Promise<PaidPayment | null>;
 
-/** A form's payment code, made for it (`formPayment`). */
-export interface FormPayment {
+/** A form's payment code, made for it (`join`; `form.joined('pay')`). */
+export interface FormPayment extends FormJoin {
   /** What is due now, or null: no payment asked, its condition not holding, nothing above 0, or no source to pay through. */
   due(): PaymentDue | null;
   /** Whether what was paid covers what is due now. */
   covered(due: PaymentDue): boolean;
   /**
-   * Pay what is due before a send: through the host's payment step (the viewer's), else the data source's `pay` itself.
-   * Paid, it is kept (`state.paid`) and the send carries it; else null — nothing is sent.
+   * Pay what is due before a send: through the payment step drawn with the page (`step`, the viewer's), else the host's
+   * (`ActionHost.pay`), else the data source's `pay` itself. Paid, it is kept (`state.paid`) and the send carries it;
+   * else null — nothing is sent.
    */
   pay(due: PaymentDue): Promise<PaidPayment | null>;
-  /** Started again: a new response, a new payment. */
-  reset(): void;
+  /** The payment step a viewer drew with the page: what `pay` shows. */
+  step(step: PayStep): void;
 }
 
 /** A key no other payment has: the provider's idempotency key, the same for every try of one response's payment. */
 const newKey = () => `pay-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
 /**
- * The form's side of a page's payment (`payment`): what is due — the amount, a number or a field's; its currency, a
- * code or a field's, else a money field's own; while `when` holds, above 0 — and paying it before the answers go.
+ * The pay part's side of a form (`payment` on its page): what is due — the amount, a number or a field's; its currency,
+ * a code or a field's, else a money field's own; while `when` holds, above 0 — taken before the answers go, once the
+ * form's own checks found nothing; not taken, nothing is sent; taken, the send carries it (`payment`).
  */
-export function formPayment(host: PayHost): FormPayment {
-  const payment = host.page.payment;
+export function join(host: JoinHost): FormPayment {
+  const { form, page, options, messages, set } = host;
+  const payment = page.payment;
+  const source = options.dataSource;
   let key = newKey();
+  let shown: PayStep | undefined;
+  let when: CompiledModifier | undefined;
   /** A field's value by name, where the page has that field; else the setting itself. */
-  const read = (setting: string | number | undefined) => {
-    if (typeof setting !== 'string' || !(setting in host.page.fields)) return setting;
-    return host.state().values[setting];
-  };
-  return {
+  const read = (setting: string | number | undefined) => (typeof setting === 'string' && setting in page.fields ? form.getState().values[setting] : setting);
+  const kit: FormPayment = {
     due() {
-      if (!payment || !host.dataSource?.pay) return null;
-      if (payment.when && !host.holds(payment.when)) return null;
+      if (!payment || !source?.pay) return null;
+      if (payment.when) {
+        const { context, env } = host.reading();
+        if (!(when ??= compileModifier(payment.when, functionTable(options.functions))).evaluate(context, env)) return null;
+      }
       const amount = read(payment.amount);
       if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) return null;
-      const field = typeof payment.amount === 'string' ? host.page.fields[payment.amount] : undefined;
-      const own = field?.type === 'monetary' ? field.currency ?? (field.currencyField ? host.state().values[field.currencyField] : undefined) : undefined;
+      const field = typeof payment.amount === 'string' ? page.fields[payment.amount] : undefined;
+      const own = field?.type === 'monetary' ? (field.currency ?? (field.currencyField ? form.getState().values[field.currencyField] : undefined)) : undefined;
       const written = payment.currency !== undefined ? read(payment.currency) : own;
       const currency = typeof written === 'string' ? written : written && typeof written === 'object' && 'label' in written ? String((written as { label: unknown }).label) : '';
       if (!/^[A-Z]{3}$/.test(currency)) return null;
       return { amount, currency, label: payment.label, ...(payment.description ? { description: payment.description } : {}), key };
     },
     covered(due) {
-      const paid = host.state().paid;
+      const paid = form.getState().paid;
       return !!paid && paid.key === due.key && paid.amount === due.amount && paid.currency === due.currency;
     },
     async pay(due) {
-      const state = host.state();
-      const request = {
-        pageId: host.page.id,
-        model: host.page.data.kind === 'record' ? host.page.data.model : '',
+      const state = form.getState();
+      const request: PayRequest = {
+        pageId: page.id,
+        model: page.data.kind === 'record' ? page.data.model : '',
         recordId: state.recordId ?? null,
         amount: due.amount,
         currency: due.currency,
         label: due.label,
         ...(due.description ? { description: due.description } : {}),
         key: due.key,
-        values: host.values(),
-        language: host.language(),
+        // The answers shown, as a send carries them: what a checkout may fill its own boxes from.
+        values: Object.fromEntries(form.shownFields().map((name) => [name, state.values[name] ?? null])),
+        language: page.language ?? messages.locale,
       };
       let paid: PaidPayment | null = null;
-      if (host.host?.pay) paid = await host.host.pay(due, request);
-      else if (host.dataSource?.pay) {
-        const answer = await host.dataSource.pay(request);
+      const step = shown ?? options.host?.pay;
+      if (step) paid = await step(due, request);
+      else if (source?.pay) {
+        const answer = await source.pay(request);
         paid = answer.status === 'paid' ? { amount: due.amount, currency: due.currency, key: due.key, ...(answer.reference ? { reference: answer.reference } : {}) } : null;
       }
-      if (paid) host.set({ paid });
+      if (paid) set({ paid });
       return paid;
     },
+    step(step) {
+      shown = step;
+    },
+    // Before a send the form's own checks let go: what is due taken, or nothing sent.
+    async before(problems) {
+      if (Object.keys(problems).length) return;
+      const due = kit.due();
+      if (due && !kit.covered(due) && !(await kit.pay(due))) return false;
+      return undefined;
+    },
+    around(kind, sent, go) {
+      const paid = form.getState().paid;
+      return go(kind !== 'upload' && paid ? { ...sent, payment: paid } : sent);
+    },
+    // Another response, or another record: a payment of its own, by a new key.
     reset() {
       key = newKey();
-      host.set({ paid: null });
+      set({ paid: null });
     },
   };
+  return kit;
 }

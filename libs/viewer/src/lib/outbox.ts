@@ -1,6 +1,5 @@
-import type { Form, FormState } from '@fieldia/core';
-import { setHidden, setText, type El } from './dom';
-import type { ViewerLabels } from './labels';
+import { setHidden, setText } from './dom';
+import type { JoinContext, PageJoin } from './joins';
 import { installOutboxStyles } from './outbox-styles';
 
 /**
@@ -9,38 +8,18 @@ import { installOutboxStyles } from './outbox-styles';
  * **Discard** (asked first). It is sent as the signal comes back (the browser's `online`), every half a minute while
  * something waits, as the page opens (what waited from before a reload), and right after another send went through.
  * "No signal" is said by the last try, never by the browser's `navigator.onLine`: some browsers say offline throughout
- * (WebKit on Linux), others online behind a network that answers nothing — a try costs one failed request. A response kept without signal ends with
- * "Kept on this device" in place of the thanks, the bar under it — so what is sent, or refused, is said there too — and
- * back over the form once another response is started.
+ * (WebKit on Linux), others online behind a network that answers nothing — a try costs one failed request. A response
+ * kept without signal ends with "Kept on this device" in place of the thanks (`state.outbox.kept`), the bar under it —
+ * so what is sent, or refused, is said there too — and back over the form once another response is started.
  */
-
-/** What the outbox part needs of the viewer that draws the page. */
-export interface OutboxContext {
-  form: Form;
-  doc: Document;
-  el: El;
-  labels: ViewerLabels;
-  fill(template: string, values: Record<string, string | number>): string;
-  /** Words said at once to a screen reader. */
-  announce(text: string): void;
-  /** A question answered Yes or No: Discard's. */
-  ask(message: string): Promise<boolean>;
-}
-
-/** What the viewer places of it. */
-export interface OutboxKit {
-  /** The bar over the form: what waits, Send now, what was refused. */
-  bar: HTMLElement;
-  update(state: FormState): void;
-  /** A response kept on the device: its ending's title and words in place of the thanks, the bar under them. */
-  ending(title: HTMLElement, words: HTMLElement): void;
-  destroy(): void;
-}
 
 /** How often what waits is tried again while it waits, in ms. */
 const AGAIN_MS = 30_000;
 
-export function watchOutbox(ctx: OutboxContext): OutboxKit {
+/** The outbox part's side of a page (joins.ts): its bar over the questions, and a kept response's ending. */
+export const draw = (ctx: JoinContext): PageJoin => watchOutbox(ctx);
+
+export function watchOutbox(ctx: JoinContext): PageJoin & { bar: HTMLElement } {
   const { form, el, labels, fill, doc } = ctx;
   installOutboxStyles(doc);
   const win = doc.defaultView;
@@ -48,14 +27,11 @@ export function watchOutbox(ctx: OutboxContext): OutboxKit {
   const now = el('button', { type: 'button', class: 'fd-button fd-button-link fd-outbox-send', hidden: '' }, labels.outboxSendNow);
   const refused = el('ul', { class: 'fd-outbox-refused', hidden: '' });
   const bar = el('div', { class: 'fd-outbox', role: 'status', 'aria-live': 'polite', hidden: '' }, el('div', { class: 'fd-outbox-row' }, said, now), refused);
-  const send = () => void form.outbox()?.send();
+  const send = () => void form.joined('outbox')?.send();
   now.addEventListener('click', send);
   // Back online: what waited goes; and every half a minute while something waits, in case the browser did not say so.
   const online = () => send();
   win?.addEventListener('online', online);
-  // Another send went through: there is signal, and what waited goes after it.
-  const went = (event: { queued?: unknown }) => !event.queued && send();
-  const offs = [form.on('send', went), form.on('save', went)];
   let timer: number | undefined;
   /** The refusals drawn, by key, so a redraw keeps the focus where it is. */
   let drawnRefused = '';
@@ -64,10 +40,14 @@ export function watchOutbox(ctx: OutboxContext): OutboxKit {
   let saidSent = false;
   /** Where the bar stands over the form while it is under a kept response's ending. */
   let home: Comment | null = null;
+  /** A kept response's words under its ending's title, and the title it had before. */
+  let mine: HTMLElement | null = null;
+  let thanks = '';
   // What waited from before a reload goes as the page opens.
   queueMicrotask(send);
   return {
     bar,
+    before: [bar],
     update(state) {
       // Another response started: the bar back over the form.
       if (home && !state.sent) {
@@ -100,14 +80,14 @@ export function watchOutbox(ctx: OutboxContext): OutboxKit {
         refused.replaceChildren(
           ...kept.map((one) => {
             const again = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.outboxRetry);
-            again.addEventListener('click', () => void form.outbox()?.retry(one.key));
+            again.addEventListener('click', () => void form.joined('outbox')?.retry(one.key));
             const discard = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.outboxDiscard);
             discard.addEventListener('click', () => {
               void ctx.ask(labels.outboxDiscardAsk).then((yes) => {
                 if (!yes) return;
                 // Let go, not sent: nothing is said to have gone.
                 waited = (form.getState().outbox?.waiting ?? 0) > 0;
-                void form.outbox()?.discard(one.key);
+                void form.joined('outbox')?.discard(one.key);
               });
             });
             return el('li', {}, el('span', {}, fill(labels.outboxRefused, { why: one.message })), again, discard);
@@ -119,19 +99,36 @@ export function watchOutbox(ctx: OutboxContext): OutboxKit {
       bar.classList.toggle('fd-outbox-problem', kept.length > 0);
     },
     ending(title, words) {
-      setText(title, labels.outboxKeptTitle);
+      // Sent as ever: the ending as it was, the page's own words back.
+      if (!form.getState().outbox?.kept) {
+        if (mine) {
+          mine.remove();
+          mine = null;
+          setText(title, thanks);
+          if (words) words.hidden = false;
+        }
+        return false;
+      }
+      // Kept on the device: said so in place of the thanks and any ending, the bar under it.
+      if (!mine) {
+        thanks = title.textContent ?? '';
+        mine = el('div', { class: 'fd-done-text' });
+        title.after(mine);
+      }
       if (!home) {
         home = doc.createComment('');
         bar.before(home);
       }
-      words.replaceChildren(el('p', {}, labels.outboxKeptWords), bar);
-      words.hidden = false;
+      setText(title, labels.outboxKeptTitle);
+      if (words) words.hidden = true;
+      mine.replaceChildren(el('p', {}, labels.outboxKeptWords), bar);
+      return true;
     },
     destroy() {
       win?.removeEventListener('online', online);
-      for (const off of offs) off();
       if (timer !== undefined) win?.clearInterval(timer);
       home?.remove();
+      mine?.remove();
       bar.remove();
     },
   };

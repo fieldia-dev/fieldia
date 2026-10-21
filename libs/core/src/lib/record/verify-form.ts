@@ -1,68 +1,74 @@
 import type { FieldNode } from '../format/layout';
-import type { DataSource, VerifiedValue } from './data-source';
-import type { FormState } from './form';
-import { fillMessage, type Messages } from './messages';
+import type { VerifiedValue } from './data-source';
+import type { FormJoin, JoinHost } from './joins';
+import { fillMessage } from './messages';
 
-/** What a form's verify code asks of the form it is made for. */
-export interface VerifyHost {
-  readonly dataSource: DataSource | undefined;
-  readonly messages: Messages;
-  /** The field nodes shown now, of one field when named. */
-  shown(field?: string): FieldNode[];
-  state(): FormState;
-  set(patch: Partial<FormState>): void;
-  /** A field's label as the page shows it now, its `{field}`s read. */
-  label(node: FieldNode): string;
-}
-
-/** A form's verify code, made for it (`formVerify`). */
-export interface FormVerify {
-  /** Whether a field shown asks for a code (all of them, with none named): never where the source cannot send and check one. */
+/** A form's verify code, made for it (`join`; `form.joined('verify')`). */
+export interface FormVerify extends FormJoin {
+  /** Whether a field shown asks for a code (any, with none named): never where the source cannot send and check one. */
   asks(field?: string): boolean;
   /** Each field asking for a code whose value is not the one proved, with why: said under it, and nothing sent. */
   unverified(): Record<string, string>;
-  /** Keep a field's value proved — laid only while the field holds it — or forget it (null); what said it was not goes. */
+  /**
+   * Keep that the person proved a field's value by a code — what the viewer's verify part does once `checkCode` said
+   * right — or forget it (null). Laid only while the field holds that value: an answer for one changed meanwhile is let go.
+   */
   mark(field: string, proved: VerifiedValue | null): void;
   /** The proofs a send carries: each field's that still holds the value proved. */
   proved(): { verified?: Record<string, VerifiedValue> };
 }
 
+/** The field nodes of a layout, at any depth. */
+const fieldNodes = (node: { type: string; children?: unknown }): FieldNode[] => [...(node.type === 'field' ? [node as FieldNode] : []), ...(Array.isArray(node.children) ? (node.children as { type: string }[]).flatMap(fieldNodes) : [])];
+
 /**
- * The form's side of proof by a code (`options.verify`): a shown field asks for one where the data source has
- * `sendCode` and `checkCode`; one holding a value not proved (`state.verified`) stops a send, an empty one asks none.
+ * The verify part's side of a form — proof by a code (`options.verify` on a field's node): a shown field asks for one
+ * where the data source has `sendCode` and `checkCode`; before a send, one holding a value not proved (`state.verified`)
+ * is said under it and nothing goes — an empty one asks none; a send carries the proofs (`verified`).
  */
-export function formVerify(host: VerifyHost): FormVerify {
+export function join(host: JoinHost): FormVerify {
+  const { form, page, options, messages, set } = host;
+  const asked = fieldNodes(page.layout).filter((node) => node.options?.['verify'] !== undefined && node.options['verify'] !== false);
   const asking = (field?: string): FieldNode[] => {
-    const source = host.dataSource;
+    const source = options.dataSource;
     if (!source?.sendCode || !source.checkCode) return [];
-    return host.shown(field).filter((node) => node.options?.['verify'] !== undefined && node.options['verify'] !== false);
+    const shown = form.shownFields();
+    return asked.filter((node) => (field === undefined || node.field === field) && shown.includes(node.field) && !form.node(node.id).invisible);
   };
-  return {
+  const verify: FormVerify = {
     asks: (field) => asking(field).length > 0,
     unverified() {
-      const state = host.state();
+      const state = form.getState();
       const out: Record<string, string> = {};
       for (const node of asking()) {
         const value = state.values[node.field];
-        if (typeof value !== 'string' || !value.trim() || state.verified[node.field]?.value === value) continue;
-        out[node.field] = fillMessage(host.messages, host.messages.notVerified, { label: host.label(node) });
+        if (typeof value !== 'string' || !value.trim() || state.verified?.[node.field]?.value === value) continue;
+        out[node.field] = fillMessage(messages, messages.notVerified, { label: form.words(node.label ?? page.fields[node.field]?.label ?? node.field) });
       }
       return out;
     },
     mark(field, proved) {
-      const state = host.state();
+      const state = form.getState();
       const verified = { ...state.verified };
       if (!proved) delete verified[field];
       else if (state.values[field] !== proved.value) return;
       else verified[field] = { value: proved.value, ...(proved.proof !== undefined ? { proof: proved.proof } : {}) };
       const errors = { ...state.errors };
       if (proved) delete errors[field];
-      host.set({ verified, errors });
+      set({ verified, errors });
     },
     proved() {
-      const state = host.state();
-      const kept = Object.entries(state.verified).filter(([name, proved]) => state.values[name] === proved.value);
+      const state = form.getState();
+      const kept = Object.entries(state.verified ?? {}).filter(([name, proved]) => state.values[name] === proved.value);
       return kept.length ? { verified: Object.fromEntries(kept.map(([name, proved]) => [name, { ...proved }])) } : {};
     },
+    // Before a send: a field not proved said under it, beside the form's own problems — its own one kept where it has one.
+    before(problems) {
+      for (const [field, why] of Object.entries(verify.unverified())) problems[field] ??= why;
+    },
+    around: (kind, sent, go) => go(kind === 'upload' ? sent : { ...sent, ...verify.proved() }),
+    // Another response, or another record: nothing proved yet.
+    reset: () => set({ verified: {} }),
   };
+  return verify;
 }

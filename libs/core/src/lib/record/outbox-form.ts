@@ -1,26 +1,51 @@
 import type { Fields } from '../format/field';
-import { saveProblemOf, type DataSource, type SaveRequest, type SaveResult, type SubmitRequest, type UploadedFile, type UploadFile } from './data-source';
-import type { FormState } from './form';
-import type { OutboxItem, OutboxStore } from './outbox';
+import { saveProblemOf, type DataSource, type SaveProblem, type SaveRequest, type SubmitRequest, type UploadedFile, type UploadFile } from './data-source';
+import type { FormJoin, JoinHost } from './joins';
 import { fileBytesIn, fileFromBytes } from './uploads';
 import { structuredCopy, type FileValue } from './values';
 
-/** What a form's outbox asks of the form it is made for. */
-export interface OutboxHost {
-  readonly pageId: string;
-  readonly fields: Fields;
-  readonly dataSource: DataSource | undefined;
-  /** Where the items are kept: the app's own store, else the browser's IndexedDB, else memory (`memoryOutbox`). */
-  readonly store: OutboxStore | undefined;
-  set(patch: Partial<FormState>): void;
-  /** A new record whose save waited here went: its id, for the form still showing it (by its own key). */
-  saved(record: string, result: SaveResult): void;
-  /** Now, in ms. */
-  now(): number;
+/**
+ * An offline outbox (`outbox` on a page), the form's side — the outbox part's, which joins a form whose page has one
+ * (joins.ts): a send that finds no network is kept on the device — its answers and its photos' bytes — and sent in order
+ * when the signal comes back. In the one-tag script, one script with the viewer's outbox part (fieldia.outbox.js).
+ */
+
+/** A send kept on the device until it can go: what it was, its answers, how far it got. */
+export interface OutboxItem {
+  /** Its own key, the same for every try: sent with it (`queued.key`), so a server can tell a second try from a new send. */
+  key: string;
+  pageId: string;
+  /** A response's `submit`, or a record's `save`. */
+  kind: 'submit' | 'save';
+  /** The send as it would have gone, its files' bytes in its values where they were not stored yet. */
+  request: SubmitRequest | SaveRequest;
+  /** When it was kept, as ISO: its place in the order they go. */
+  at: string;
+  /** A new record's own key on the form that kept it: a later save of the same record while this waits takes its place. */
+  record?: string;
+  /** How many times it was tried. */
+  tries: number;
+  /** Refused when it was sent (not the network's doing): why, kept for the person to see, and nothing sent after it waits on it. */
+  refused?: { message: string; problem?: SaveProblem };
+  /** Who is sending it now, and until when: no other tab or page sends it meanwhile. */
+  claim?: { by: string; until: number };
 }
 
-/** A form's outbox, made for it (`formOutbox`). */
-export interface FormOutbox {
+/**
+ * Where an outbox keeps its items: the browser's IndexedDB in the viewer (the outbox part's), a memory store in tests
+ * (`memoryOutbox`), or the app's own. Every call is the store's to make atomic: `claim` takes an item for one sender only.
+ */
+export interface OutboxStore {
+  /** The items of a page, in the order they were kept. */
+  list(pageId: string): Promise<OutboxItem[]>;
+  put(item: OutboxItem): Promise<void>;
+  delete(key: string): Promise<void>;
+  /** Take an item to send it, unless another sender holds it still: whether it was taken. */
+  claim(key: string, by: string, until: number): Promise<boolean>;
+}
+
+/** A form's outbox, made for it (`join`; `form.joined('outbox')`). */
+export interface FormOutbox extends FormJoin {
   /** Keep a send that found no network, in order — a new record's later save in place of its earlier one still waiting. */
   keep(kind: OutboxItem['kind'], request: SubmitRequest | SaveRequest, record?: string): Promise<OutboxItem>;
   /** Send what waits, in order: a network's failure stops it there (tried again later), a refusal is kept and said. */
@@ -33,6 +58,13 @@ export interface FormOutbox {
   retry(key: string): Promise<void>;
   /** A file the network could not take, as its field keeps it until the send goes: its bytes, in base64. */
   bytes(file: UploadFile): Promise<FileValue>;
+}
+
+/** What the outbox's sending needs of the form: its page's, its source, and where the items are kept. */
+interface OutboxHost {
+  readonly pageId: string;
+  readonly fields: Fields;
+  readonly dataSource: DataSource | undefined;
 }
 
 /** How long a sender holds an item it took: past this, another may take it (a tab closed while it sent). */
@@ -184,24 +216,42 @@ async function withFilesStored(item: OutboxItem, host: OutboxHost): Promise<Subm
   return swap(request) as SubmitRequest | SaveRequest;
 }
 
+/** A new record's own key while it has no id: a later save of it, while its first waits, takes that one's place. */
+const recordKey = () => `record-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
 /**
- * The form's side of an offline outbox (`outbox` on a page): a send that found no network kept on the device in order,
- * and sent — each taken by one sender only, its photos stored first — when the signal comes back; a refusal kept and
- * said; what waits told in the form's state.
+ * The outbox part's side of a form (`outbox` on its page): around each send, one that finds no network kept on the
+ * device in order — the form going on as though it went, its ending saying so (`state.outbox.kept`) — and a file the
+ * network could not take kept as its bytes; what waits sent — each taken by one sender only, its photos stored first —
+ * when the signal comes back, and right after a send of this form went through; a refusal kept and said; what waits
+ * told in the form's state (`outbox`).
  */
-export function formOutbox(host: OutboxHost): FormOutbox {
-  const store = host.store ?? indexedOutbox() ?? memoryOutbox();
+export function join(joined: JoinHost): FormOutbox {
+  const { form, page, options, set } = joined;
+  const host: OutboxHost = { pageId: page.id, fields: page.fields, dataSource: options.dataSource };
+  const store = options.outbox ?? indexedOutbox() ?? memoryOutbox();
   const me = `sender-${++sender}-${Math.random().toString(36).slice(2, 8)}`;
   let sending: Promise<void> | null = null;
   /** Whether the last try found no network: a send kept, or one of those kept tried and not taken. */
   let offline = false;
+  /** Whether this form's last send was kept, not sent: its ending says so. */
+  let kept = false;
+  /** This form's new record's own key, while it has no id. */
+  let record = recordKey();
+  /** Whether this form's last send was kept, said at once: its ending reads it as the send ends. */
+  const keptNow = (now: boolean) => {
+    kept = now;
+    const told = form.getState().outbox;
+    if (told && told.kept !== now) set({ outbox: { ...told, kept } });
+  };
   const refresh = async () => {
     const items = await store.list(host.pageId);
-    host.set({
+    set({
       outbox: {
         waiting: items.filter((item) => !item.refused).length,
         sending: sending !== null,
         offline,
+        kept,
         refused: items.filter((item) => item.refused).map((item) => ({ key: item.key, message: item.refused?.message ?? '', at: item.at })),
       },
     });
@@ -211,7 +261,7 @@ export function formOutbox(host: OutboxHost): FormOutbox {
     if (!source) return;
     await refresh();
     for (const item of await store.list(host.pageId)) {
-      if (item.refused || !(await store.claim(item.key, me, host.now() + CLAIM_MS))) continue;
+      if (item.refused || !(await store.claim(item.key, me, Date.now() + CLAIM_MS))) continue;
       const tries = item.tries + 1;
       try {
         const request = { ...(await withFilesStored(item, host)), queued: { key: item.key, at: item.at } };
@@ -221,32 +271,33 @@ export function formOutbox(host: OutboxHost): FormOutbox {
         } else {
           if (!source.save) throw new Error('This page has no data source to save to');
           const result = await source.save(request as SaveRequest);
-          if (item.record) host.saved(item.record, result);
+          // The new record this form still shows went: it has its id now.
+          if (item.record === record && form.getState().recordId == null) set({ recordId: result.id, version: result.version ?? null });
         }
         offline = false;
         await store.delete(item.key);
       } catch (error) {
         const problem = saveProblemOf(error);
-        const { claim: _claim, ...kept } = item;
+        const { claim: _claim, ...again } = item;
         // No signal again: it waits where it was, and so does every send after it.
         offline = problem.kind === 'network';
         if (offline) {
-          await store.put({ ...kept, tries });
+          await store.put({ ...again, tries });
           break;
         }
-        await store.put({ ...kept, tries, refused: { message: problem.message, problem } });
+        await store.put({ ...again, tries, refused: { message: problem.message, problem } });
       }
       await refresh();
     }
   };
-  return {
-    async keep(kind, request, record) {
+  const outbox: FormOutbox = {
+    async keep(kind, request, own) {
       const items = await store.list(host.pageId);
       // A new record saved again while its first save waits: one save, of the record as it is now.
-      const same = record ? items.find((item) => item.record === record && item.kind === kind && !item.refused && !(item.claim && item.claim.until > host.now())) : undefined;
+      const same = own ? items.find((item) => item.record === own && item.kind === kind && !item.refused && !(item.claim && item.claim.until > Date.now())) : undefined;
       const item: OutboxItem = same
         ? { ...same, request: structuredCopy(request) }
-        : { key: newKey(host.now()), pageId: host.pageId, kind, request: structuredCopy(request), at: new Date(host.now()).toISOString(), ...(record ? { record } : {}), tries: 0 };
+        : { key: newKey(Date.now()), pageId: host.pageId, kind, request: structuredCopy(request), at: new Date().toISOString(), ...(own ? { record: own } : {}), tries: 0 };
       await store.put(item);
       offline = true;
       await refresh();
@@ -277,7 +328,33 @@ export function formOutbox(host: OutboxHost): FormOutbox {
       if (!item) return;
       const { refused: _refused, ...again } = item;
       await store.put(again);
-      await this.send();
+      await outbox.send();
+    },
+    async around(kind, sent, go) {
+      try {
+        const answer = await go(sent);
+        // It went: there is signal, and what waited goes after it.
+        if (kind !== 'upload') {
+          keptNow(false);
+          void outbox.send();
+        }
+        return answer;
+      } catch (error) {
+        if (saveProblemOf(error).kind !== 'network') throw error;
+        // No signal: a photo kept as its bytes in its field; a send kept on the device, the form going on as though it went.
+        if (kind === 'upload') return (await outbox.bytes(sent as UploadFile)) as never;
+        kept = true;
+        await outbox.keep(kind, sent as SubmitRequest | SaveRequest, kind === 'save' && form.getState().recordId == null ? record : undefined);
+        return null;
+      }
+    },
+    reset() {
+      // Started again, or another record: a new record's own key, and its ending its own.
+      record = recordKey();
+      keptNow(false);
     },
   };
+  // What waits from before — a reload, another tab — told at once.
+  void refresh();
+  return outbox;
 }

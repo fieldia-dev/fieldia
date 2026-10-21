@@ -147,14 +147,14 @@ ${code(
 )}
 
 <h2 id="element">One tag: &lt;fieldia-form&gt;</h2>
-<p>The script defines an element as it starts, so a page needs no code of its own: ${c('<fieldia-form>')} fetches its page (${c('src')}), draws its form in itself and sends the answers to its ${c('action')} as JSON — ${c('{ pageId, values, … }')}, answered with ${c('{ id }')}, or refused with ${c('{ message, fields }')}. ${c('locale')}, ${c('theme')}, ${c('skin')}, ${c('record')} and ${c('resume')} say the rest; changing one draws it again (a theme or a skin in place). What it does comes in a part of its own, fetched the first time one is on a page.</p>
+<p>The script defines an element as it starts, so a page needs no code of its own: ${c('<fieldia-form>')} fetches its page (${c('src')}), draws its form in itself and sends the answers to its ${c('action')} as JSON — ${c('{ pageId, values, … }')}, answered with ${c('{ id }')}, or refused with ${c('{ message, fields }')}. ${c('locale')}, ${c('theme')}, ${c('skin')}, ${c('record')} and ${c('resume')} say the rest; changing one draws it again (a theme or a skin in place). What it does comes in a part of its own, fetched the first time one is on a page: until then the element is a stub, made what it is in place as it comes. ${c('action')} takes a page of responses' answers; a record's page saves through your own ${c('source')}.</p>
 ${code(
   'html',
   `
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
 <fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" locale="ar" skin="outlined"></fieldia-form>`
 )}
-<p>It tells what happens as events that bubble: ${c('fieldia-ready')} once drawn, ${c('fieldia-send')} (the reference your server gave, and the answers), ${c('fieldia-save')}, ${c('fieldia-step')} and ${c('fieldia-error')} when its page cannot be read. With a little code, its properties take the rest of the viewer: ${c('page')} (given whole), ${c('source')} (your own data source, for a record's page, codes, payments) and ${c('options')}; ${c('handle')} is the viewer once drawn. An app built with a bundler calls ${c('defineFieldiaForm()')} from ${c('@fieldia/viewer')} once.</p>
+<p>It tells what happens as events that bubble: ${c('fieldia-ready')} once drawn, ${c('fieldia-send')} (the reference your server gave, and the answers), ${c('fieldia-save')}, ${c('fieldia-step')} and ${c('fieldia-error')} when its page, or its part, cannot be had. With a little code, its properties take the rest of the viewer: ${c('page')} (given whole), ${c('source')} (your own data source, for a record's page, codes, payments) and ${c('options')} — set before its part came, they are kept; ${c('handle')} is the viewer once drawn. An app built with a bundler calls ${c('defineFieldiaForm()')} from ${c('@fieldia/viewer')} once.</p>
 ${code(
   'js',
   `

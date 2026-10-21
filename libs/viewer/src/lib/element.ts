@@ -3,9 +3,6 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 import { elementPart } from './viewer-parts';
 export { elementPart, type ElementPart } from './viewer-parts';
 
-/** The attributes `<fieldia-form>` reads; a change of one draws the form again (a theme or a skin, in place). */
-export const FORM_ATTRIBUTES = ['src', 'locale', 'theme', 'skin', 'record', 'action', 'resume', 'frame'] as const;
-
 /**
  * `<fieldia-form>`: a page's form on any web page, with no code — `<fieldia-form src="enquiry.page.json"
  * action="/api/enquiries" locale="ar" theme="material"></fieldia-form>` — or with a little: its `page`, `source` (a
@@ -21,58 +18,31 @@ export interface FieldiaFormElement extends HTMLElement {
   source: DataSource | null;
   /** More of the viewer's options: labels, slots, widgets, functions… */
   options: Partial<ViewerOptions>;
-  /** The viewer drawing it, once drawn; null before, and once it is taken off the page. */
+  /** The viewer drawing it, once drawn; null before (undefined until its part came), and once it is taken off the page. */
   readonly handle: ViewerHandle | null;
 }
 
 /**
  * Define `<fieldia-form>` (or under another name) in a page's custom elements: the one-tag script does it as it starts;
- * an app built with a bundler calls it once. A name already defined is left as it is.
+ * an app built with a bundler calls it once. A name already defined is left as it is. What is defined is a stub: put on
+ * a page, it asks for its part (fieldia.element.js), which makes it what it is in place — its `page`, `source`,
+ * `options` and `handle`, what was set on it before kept, its attributes watched — and draws its form; a page with none
+ * never downloads it.
  */
 export function defineFieldiaForm(name = 'fieldia-form', registry: CustomElementRegistry | undefined = globalThis.customElements): void {
-  if (!registry || registry.get(name)) return;
-  /** Its properties kept until the part comes; set after, the form drawn again. */
-  class FieldiaForm extends HTMLElement implements FieldiaFormElement {
-    static get observedAttributes(): readonly string[] {
-      return FORM_ATTRIBUTES;
-    }
-    private given: { page: Page | null; source: DataSource | null; options: Partial<ViewerOptions> } = { page: null, source: null, options: {} };
-    get page() {
-      return this.given.page;
-    }
-    set page(page: Page | null) {
-      this.given.page = page;
-      elementPart.loaded?.changed(this, mountViewer);
-    }
-    get source() {
-      return this.given.source;
-    }
-    set source(source: DataSource | null) {
-      this.given.source = source;
-      elementPart.loaded?.changed(this, mountViewer);
-    }
-    get options() {
-      return this.given.options;
-    }
-    set options(options: Partial<ViewerOptions>) {
-      this.given.options = options ?? {};
-      elementPart.loaded?.changed(this, mountViewer);
-    }
-    get handle(): ViewerHandle | null {
-      return elementPart.loaded?.handleOf(this) ?? null;
-    }
-    connectedCallback() {
-      elementPart.load().then(
-        (part) => this.isConnected && part.connect(this, mountViewer),
-        (error: unknown) => this.dispatchEvent(new CustomEvent('fieldia-error', { bubbles: true, detail: { error } }))
-      );
-    }
-    disconnectedCallback() {
-      elementPart.loaded?.disconnect(this);
-    }
-    attributeChangedCallback(name: string, before: string | null, after: string | null) {
-      if (before !== after) elementPart.loaded?.changed(this, mountViewer, name);
-    }
-  }
-  registry.define(name, FieldiaForm);
+  if (registry && !registry.get(name))
+    registry.define(
+      name,
+      class extends HTMLElement {
+        connectedCallback() {
+          elementPart.load().then(
+            (part) => part.connect(this as unknown as FieldiaFormElement, mountViewer),
+            () => this.dispatchEvent(new Event('fieldia-error', { bubbles: true }))
+          );
+        }
+        disconnectedCallback() {
+          elementPart.loaded?.disconnect(this as unknown as FieldiaFormElement);
+        }
+      }
+    );
 }

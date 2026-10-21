@@ -6,6 +6,9 @@ import type { mountViewer, ViewerHandle, ViewerOptions } from './viewer';
 /** What draws a form: the viewer's `mountViewer`, handed over by the element (the main script's, in the one-tag script). */
 export type Mount = typeof mountViewer;
 
+/** The attributes `<fieldia-form>` reads; a change of one draws the form again (a theme or a skin, in place). */
+const FORM_ATTRIBUTES = ['src', 'locale', 'theme', 'skin', 'record', 'action', 'resume', 'frame'];
+
 /** What a `<fieldia-form>` holds once drawn: its viewer, what it was drawn from, and what stops what it listens to. */
 interface Drawn {
   handle: ViewerHandle | null;
@@ -168,13 +171,69 @@ function letGo(kept: Drawn) {
   kept.handle = null;
 }
 
-/** An element put on a page: its form drawn. */
+/** What each element was given — its page, its source, its options — once its part came (`upgrade`). */
+const given = new WeakMap<FieldiaFormElement, { page: Page | null; source: DataSource | null; options: Partial<ViewerOptions> }>();
+const held = (element: FieldiaFormElement) => given.get(element) ?? given.set(element, { page: null, source: null, options: {} }).get(element)!;
+/** The stubs made what they are: their prototypes, given their properties once. */
+const upgraded = new WeakSet<object>();
+
+/**
+ * The element's stub (element.ts) made what it is, in place: `page`, `source` and `options` — set after, its form drawn
+ * again — and `handle`; what was set on it before its part came, kept.
+ */
+function upgrade(element: FieldiaFormElement, mount: Mount) {
+  const proto = Object.getPrototypeOf(element) as object;
+  if (!upgraded.has(proto)) {
+    upgraded.add(proto);
+    for (const key of ['page', 'source', 'options'] as const)
+      Object.defineProperty(proto, key, {
+        configurable: true,
+        get(this: FieldiaFormElement) {
+          return held(this)[key];
+        },
+        set(this: FieldiaFormElement, value: never) {
+          held(this)[key] = key === 'options' ? ((value ?? {}) as never) : value;
+          changed(this, mount);
+        },
+      });
+    Object.defineProperty(proto, 'handle', {
+      configurable: true,
+      get(this: FieldiaFormElement) {
+        return handleOf(this);
+      },
+    });
+  }
+  // Set on it before its part came: an own property, taken in.
+  for (const key of ['page', 'source', 'options'] as const) {
+    if (!Object.prototype.hasOwnProperty.call(element, key)) continue;
+    const value = element[key];
+    delete (element as Partial<FieldiaFormElement>)[key];
+    held(element)[key] = (key === 'options' ? (value ?? {}) : value) as never;
+  }
+}
+
+/** Each element's watch on its attributes while it is on a page. */
+const watching = new WeakMap<FieldiaFormElement, { disconnect(): void }>();
+
+/** An element put on a page: made what it is, its attributes watched, its form drawn. */
 export function connect(element: FieldiaFormElement, mount: Mount): void {
+  upgrade(element, mount);
+  if (!element.isConnected) return;
+  const Observer = element.ownerDocument.defaultView?.MutationObserver;
+  if (Observer && !watching.has(element)) {
+    const observer = new Observer((changes) => {
+      for (const name of new Set(changes.map((change) => change.attributeName as string))) changed(element, mount, name);
+    });
+    observer.observe(element, { attributes: true, attributeFilter: FORM_ATTRIBUTES });
+    watching.set(element, observer);
+  }
   void draw(element, mount);
 }
 
-/** An element taken off the page: its form let go. */
+/** An element taken off the page: its form let go, its attributes no longer watched. */
 export function disconnect(element: FieldiaFormElement): void {
+  watching.get(element)?.disconnect();
+  watching.delete(element);
   const kept = drawn.get(element);
   if (!kept) return;
   kept.turn++;

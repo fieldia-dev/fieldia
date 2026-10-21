@@ -46,21 +46,21 @@ function host(answer: (due: PaymentDue) => PaidPayment | null) {
 describe('a payment the answers wait for', () => {
   it('asks what is due only while its condition holds, in its currency, with a key of its own', () => {
     const form = createForm({ page: enquiry(), dataSource: createMemoryDataSource() });
-    expect(form.paymentDue()).toBeNull();
+    expect(form.joined('pay')?.due()).toBeNull();
     form.setValue('visit', 'reserve');
-    expect(form.paymentDue()).toMatchObject({ amount: 10000, currency: 'EGP', label: 'Reservation fee' });
-    expect(form.paymentDue()?.key).toMatch(/^pay-/);
+    expect(form.joined('pay')?.due()).toMatchObject({ amount: 10000, currency: 'EGP', label: 'Reservation fee' });
+    expect(form.joined('pay')?.due()?.key).toMatch(/^pay-/);
     // A field's amount, a money field's own currency; another field's currency; nothing above 0, nothing due.
     const deposit = createForm({ page: enquiry({ label: 'Deposit', amount: 'deposit' }), dataSource: createMemoryDataSource() });
-    expect(deposit.paymentDue()).toBeNull();
+    expect(deposit.joined('pay')?.due()).toBeNull();
     deposit.setValue('deposit', 250);
-    expect(deposit.paymentDue()).toMatchObject({ amount: 250, currency: 'USD' });
+    expect(deposit.joined('pay')?.due()).toMatchObject({ amount: 250, currency: 'USD' });
     const nights = createForm({ page: enquiry({ label: 'Stay', amount: 'nights', currency: 'currency' }), dataSource: createMemoryDataSource() });
     nights.setValues({ nights: 3, currency: 'EUR' });
-    expect(nights.paymentDue()).toMatchObject({ amount: 3, currency: 'EUR' });
+    expect(nights.joined('pay')?.due()).toMatchObject({ amount: 3, currency: 'EUR' });
     // No `pay` in the source: nothing is asked.
     const none = createForm({ page: enquiry({ label: 'Fee', amount: 5, currency: 'EGP' }), dataSource: { submit: async () => ({}) } });
-    expect(none.paymentDue()).toBeNull();
+    expect(none.joined('pay')?.due()).toBeNull();
   });
 
   it('sends nothing until it is paid, and sends the payment taken with the answers', async () => {
@@ -84,7 +84,7 @@ describe('a payment the answers wait for', () => {
     form.reset();
     expect(form.getState().paid).toBeNull();
     form.setValues({ name: 'Sara', visit: 'reserve' });
-    expect(form.paymentDue()?.key).not.toBe(asked[0].due.key);
+    expect(form.joined('pay')?.due()?.key).not.toBe(asked[0].due.key);
   });
 
   it('sends again without paying twice where the send failed after the payment', async () => {

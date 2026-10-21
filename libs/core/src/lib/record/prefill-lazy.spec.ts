@@ -1,7 +1,7 @@
 import type { Page } from '../format/page';
 import { createForm } from './form';
 import { createMemoryDataSource } from './memory-data-source';
-import { prefillPart } from './prefill';
+import { formJoins } from './joins';
 
 /**
  * A form whose page fills fields from its link, made before the prefill part came (an app's own form, with no viewer
@@ -17,6 +17,9 @@ const enquiry: Page = {
   layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-unit', field: 'unit' }] },
   prefill: { fromUrl: ['unit', 'utm_source', { param: 'agent', field: 'agent_code' }] },
 };
+
+/** The prefill part, the one part this page asks to join its form. */
+const [prefillPart] = formJoins(enquiry);
 
 describe('a form filled from its link before the prefill part came', () => {
   it('lays what the link fills as the part comes, keeping what was typed and given meanwhile', async () => {
@@ -40,5 +43,7 @@ describe('a form filled from its link before the prefill part came', () => {
     form.setValue('name', 'Omar');
     expect(await form.save()).toBe(true);
     expect(dataSource.responses[0].values).toEqual({ name: 'Omar', unit: null, agent_code: 'karim', utm_source: null });
+    // What the response went with, as its ending reads it ("Your agent will call you"): the hidden fields in it.
+    expect(form.getState().sent?.values).toMatchObject({ agent_code: 'karim' });
   });
 });

@@ -1,7 +1,9 @@
 import type { Field } from '../format/field';
 import type { Page } from '../format/page';
 import { checkValue } from './check';
-import type { Value, Values } from './values';
+import type { SubmitRequest } from './data-source';
+import type { FormJoin, JoinHost } from './joins';
+import { structuredCopy, type Value, type Values } from './values';
 
 /**
  * The link a page is opened with: its whole address, or only its `?…` part (`location.href`, `location.search`) — or
@@ -94,4 +96,35 @@ export function linkValues(page: Page, link: PageLink | undefined): Values {
     if (value !== undefined && checkValue(field, value, false) === undefined) values[name] = value;
   }
   return values;
+}
+
+/**
+ * The prefill part's side of a form (`prefill` on its page, joins.ts): the fields the link fills laid where a new record
+ * or response starts — as loaded ones are, never a change to save, never over what the form was given (`values`) or
+ * what the person changed — and laid again as another starts; the hidden ones, placed nowhere and seen by no one, sent
+ * with the answers all the same. The link is the form's `url`, else the page's own address.
+ */
+export function join(host: JoinHost): FormJoin {
+  const { form, page, options } = host;
+  const placed = new Set((JSON.stringify(page.layout).match(/"field":"[^"]+"/g) ?? []).map((one) => one.slice(9, -1)));
+  const lay = () => {
+    const state = form.getState();
+    if (state.recordId != null) return;
+    const link = linkValues(page, options.url ?? (globalThis as { location?: { href: string } }).location?.href);
+    for (const name of Object.keys(link)) if (state.dirty.includes(name) || (options.values && name in options.values)) delete link[name];
+    form.setValues(link, { stored: true });
+  };
+  lay();
+  return {
+    reset: lay,
+    around(kind, sent, go) {
+      // In the answers themselves: what the response is sent with is what its ending reads, and what the form tells.
+      if (kind === 'submit') {
+        const answers = (sent as SubmitRequest).values;
+        const values = form.getState().values;
+        for (const name of prefilledFields(page).keys()) if (!placed.has(name) && !(name in answers)) answers[name] = structuredCopy(values[name] ?? null);
+      }
+      return go(sent);
+    },
+  };
 }

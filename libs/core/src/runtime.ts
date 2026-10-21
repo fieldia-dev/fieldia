@@ -308,17 +308,14 @@ export {
   type TimeRead,
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
-// The fields a page fills from the link it is opened with (`prefill`): read in a part of their own, as a form asks for it.
-export { prefillPart, prefilledNames, type PrefillPart } from './lib/record/prefill';
+// The parts that join a form where its page asks — an offline outbox, the fields its link fills (`prefill`), proof of an
+// email or a phone by a code, a payment — each with one hook into its send, the form knowing only that its page asks.
+export { formJoins, type FormJoin, type FormJoins, type JoinHost, type JoinPart, type SendKind, type Sent } from './lib/record/joins';
 export type { PageLink } from './lib/record/link-values';
-// Proof of an email or a phone by a code (`options.verify`): the form's side in a part, with the viewer's.
-export { asksForCodes, formVerifyPart, type FormVerifyPart } from './lib/record/verify';
-// A payment the answers wait for (`payment`): the form's side in a part, with the viewer's payment step.
-export { asksPayment, formPayPart, type FormPayPart } from './lib/record/payment';
+export type { FormVerify } from './lib/record/verify-form';
+export type { FormPayment, PayStep } from './lib/record/payment-form';
 export type { PagePayment } from './lib/format/payment';
-// An offline outbox (`outbox`): sends kept without signal, the form's side in a part, with the viewer's bar.
-export { formOutboxPart, keepsOffline, type FormOutboxPart, type OutboxItem, type OutboxStore } from './lib/record/outbox';
-export type { FormOutbox } from './lib/record/outbox-form';
+export type { FormOutbox, OutboxItem, OutboxStore } from './lib/record/outbox-form';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
 // (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)

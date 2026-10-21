@@ -1,9 +1,9 @@
-import { asksForCodes, asksPayment, callsPartFunctions, formLimitsPart, formOutboxPart, formPayPart, formVerifyPart, keepsOffline, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, prefillPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formJoins, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as ElementModule from './element-part';
-import type * as OutboxModule from './outbox-part';
+import type { JoinDrawing } from './joins';
 import type * as AnswersModule from './answers-part';
 import type * as CardsModule from './cards-part';
 import type * as ColumnsModule from './columns-part';
@@ -13,8 +13,6 @@ import type * as HeadModule from './head-part';
 import type * as ImportModule from './import-part';
 import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
-import type * as VerifyModule from './verify-part';
-import type * as PayModule from './pay-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -35,14 +33,8 @@ export type DuplicatesPart = typeof DuplicatesModule;
 export type AnswersPart = typeof AnswersModule;
 /** The limits part: a closed form's words in place of its questions, and Continue later. */
 export type LimitsPart = typeof LimitsModule;
-/** The verify part: proof of an email or a phone by a code the app's source sends and checks. */
-export type VerifyPart = typeof VerifyModule;
-/** The pay part: the payment step a page's answers wait for, paid through the app's own source. */
-export type PayPart = typeof PayModule;
 /** The element part: what `<fieldia-form>` does once it is on a page (element-part.ts). */
 export type ElementPart = typeof ElementModule;
-/** The outbox part: what waits on this device to be sent, said over the form (outbox.ts). */
-export type OutboxPart = typeof OutboxModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -83,25 +75,21 @@ const showsAnswers = (page: Page): boolean =>
 export const limitsPart: Part<LimitsPart> = lazyPart('limits', () => import('./limits-part'));
 
 /**
- * Proof of an email or a phone by a code, loaded with the page's parts where a field's node says `options.verify`, so
- * Send a code is drawn with the page.
+ * What the parts that join a form draw with its page (joins.ts), by the name of @fieldia/core's part (`formJoins`):
+ * Send a code under a field that asks for one, the payment step, an outbox's bar — each loaded with the page's parts
+ * where it asks, so it is drawn with the page. The fields a link fills draw nothing.
  */
-export const verifyPart: Part<VerifyPart> = lazyPart('verify', () => import('./verify-part'));
-
-/** Whether a page has a field that asks for a code (`options.verify`, not false): what the verify part draws. */
-export const asksVerify = (page: Page): boolean => asksForCodes(page);
-
-/** The payment step a page's answers wait for (`payment`), loaded with the page's parts where it asks for one. */
-export const payPart: Part<PayPart> = lazyPart('pay', () => import('./pay-part'));
+export const joinDrawings: Record<string, Part<JoinDrawing>> = {
+  verify: lazyPart('verify', () => import('./verify-part')),
+  pay: lazyPart('pay', () => import('./pay-part')),
+  outbox: lazyPart('outbox', () => import('./outbox-part')),
+};
 
 /**
  * What `<fieldia-form>` does — its page fetched, its form drawn in it, its events told — loaded the first time one is
  * put on a page (element.ts): a page with none never downloads it.
  */
 export const elementPart: Part<ElementPart> = lazyPart('element', () => import('./element-part'));
-
-/** An offline outbox said over the form (`outbox`), loaded with the page's parts where it has one. */
-export const outboxPart: Part<OutboxPart> = lazyPart('outbox', () => import('./outbox-part'));
 
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
@@ -121,7 +109,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', the print part (print.ts), which draws nothing, and what `<fieldia-form>` does (element.ts). */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, verifyPart, payPart, elementPart, outboxPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, prefillPart, formVerifyPart, formPayPart, formOutboxPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, ...Object.values(joinDrawings), elementPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -169,11 +157,8 @@ const markdownAlone = (node: SectionNode) => {
  * `average`, …) asks for @fieldia/core's functions part, their bodies (`callsPartFunctions`); one whose choices' options
  * show by a condition, or are carried from an earlier question, its options part (`hasOptionRules`).
  *
- * A page that fills fields from its link (`prefill`) asks for @fieldia/core's prefill part: its form lays them as it
- * comes, before the page is drawn. One with a field that asks for a code (`options.verify`) asks for the verify part,
- * which draws Send a code under it, and its form's, @fieldia/core's (`formVerifyPart`) — in the one-tag script, the
- * same script. One asking for a payment (`payment`) asks for the pay part, its payment step, and its form's
- * (`formPayPart`) alike; one with an offline outbox (`outbox`), the outbox part and its form's (`formOutboxPart`).
+ * The parts that join a page's form (@fieldia/core's `formJoins`: an outbox, the fields its link fills, proof by a code,
+ * a payment) are asked for with what each draws (`joinDrawings`) — in the one-tag script, the same script.
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
@@ -254,19 +239,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (hasLimits(page)) found.add(formLimitsPart);
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);
-  if (page.prefill) found.add(prefillPart);
-  if (asksVerify(page)) {
-    found.add(verifyPart);
-    found.add(formVerifyPart);
-  }
-  if (asksPayment(page)) {
-    found.add(payPart);
-    found.add(formPayPart);
-  }
-  if (keepsOffline(page)) {
-    found.add(outboxPart);
-    found.add(formOutboxPart);
-  }
+  // The parts that join its form, and what each draws with the page.
+  for (const part of formJoins(page)) found.add(joinDrawings[part.name] ?? part).add(part);
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
@@ -277,7 +251,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, verify: verifyPart, pay: payPart, outbox: outboxPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, prefill: prefillPart };
+  // The checks of the parts that join a form come with them, asked for with the page's own (`partsFor`).
+  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 
@@ -299,5 +274,6 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * `themesPart` or `quietPart` (@fieldia/widgets), `.load()`ed the same way.
  */
 export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {
-  await Promise.all((page ? partsFor(page, widgets, slots) : EVERY_PART).map((part) => part.load()));
+  // With the parts that join a form, asked for as they are loaded: their module may come after this one's.
+  await Promise.all((page ? partsFor(page, widgets, slots) : [...EVERY_PART, ...formJoins()]).map((part) => part.load()));
 }

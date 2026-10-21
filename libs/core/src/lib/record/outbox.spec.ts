@@ -7,7 +7,7 @@ import type { FileValue } from './values';
 
 /**
  * An offline outbox (`outbox`), as the form keeps it: a send that finds no network kept on the device — the form as
- * though it went, said kept, no signal said until a try goes through — and sent in order once the signal is back, each taken by one sender only, its key sent
+ * though it went, its ending told it was kept, no signal said until a try goes through — and sent in order once the signal is back, each taken by one sender only, its key sent
  * with it; a refusal then kept to try again or discard; a new record saved twice without signal saved once, and given
  * its id; a photo taken without signal kept as its bytes and stored before its send.
  */
@@ -37,18 +37,42 @@ describe('an offline outbox', () => {
     set(false);
     form.setValues({ unit: 'B-12', notes: 'Cracked tile in the kitchen' });
     expect(await form.save()).toBe(true);
-    expect(form.getState().sent).toEqual({ id: null, values: { unit: 'B-12', notes: 'Cracked tile in the kitchen', photos: [] }, queued: true });
+    expect(form.getState().sent).toEqual({ id: null, values: { unit: 'B-12', notes: 'Cracked tile in the kitchen', photos: [] } });
     expect(form.getState().saveProblem).toBeNull();
-    expect(form.getState().outbox).toEqual({ waiting: 1, sending: false, offline: true, refused: [] });
+    expect(form.getState().outbox).toEqual({ waiting: 1, sending: false, offline: true, kept: true, refused: [] });
     expect(dataSource.responses).toEqual([]);
     // Still no signal: it waits where it was.
-    await form.outbox()?.send();
+    await form.joined('outbox')?.send();
     expect(form.getState().outbox).toMatchObject({ waiting: 1, offline: true });
     set(true);
-    await form.outbox()?.send();
+    await form.joined('outbox')?.send();
     expect(dataSource.responses).toHaveLength(1);
     expect(dataSource.responses[0]).toMatchObject({ pageId: 'site-visit', values: { unit: 'B-12' }, queued: { key: expect.stringMatching(/^outbox-/), at: expect.any(String) } });
-    expect(form.getState().outbox).toEqual({ waiting: 0, sending: false, offline: false, refused: [] });
+    expect(form.getState().outbox).toEqual({ waiting: 0, sending: false, offline: false, kept: true, refused: [] });
+    // Another response, sent with signal: its ending is the plain thanks.
+    form.reset();
+    expect(form.getState().outbox?.kept).toBe(false);
+    form.setValues({ unit: 'C-3' });
+    expect(await form.save()).toBe(true);
+    expect(form.getState().outbox?.kept).toBe(false);
+    expect(dataSource.responses).toHaveLength(2);
+  });
+
+  it('sends what waited right after another send goes through, whatever the browser says of its connection', async () => {
+    const { dataSource, set } = signal();
+    const store = memoryOutbox();
+    const form = createForm({ page: visit(), dataSource, outbox: store });
+    set(false);
+    form.setValues({ unit: 'A-1' });
+    await form.save();
+    set(true);
+    form.reset();
+    form.setValues({ unit: 'A-2' });
+    await form.save();
+    await form.settle();
+    await new Promise((done) => setTimeout(done, 0));
+    expect(dataSource.responses.map((response) => response.values['unit'])).toEqual(['A-2', 'A-1']);
+    expect(store.items).toEqual([]);
   });
 
   it('sends in the order they were kept, stopping where the signal goes, each by one sender only', async () => {
@@ -64,10 +88,10 @@ describe('an offline outbox', () => {
     expect(store.items.map((item) => item.request.values['unit'])).toEqual(['A-1', 'A-2', 'A-3']);
     // Two forms on the same device — two tabs — send at once: each send goes once.
     const second = createForm({ page: visit(), dataSource, outbox: store });
-    await second.outbox()?.refresh();
+    await second.joined('outbox')?.refresh();
     expect(second.getState().outbox?.waiting).toBe(3);
     set(true);
-    await Promise.all([first.outbox()?.send(), second.outbox()?.send()]);
+    await Promise.all([first.joined('outbox')?.send(), second.joined('outbox')?.send()]);
     expect(dataSource.responses.map((response) => response.values['unit'])).toEqual(['A-1', 'A-2', 'A-3']);
   });
 
@@ -88,10 +112,10 @@ describe('an offline outbox', () => {
     form.setValues({ unit: 'Z-9' });
     await form.save();
     online = true;
-    await form.outbox()?.send();
-    expect(form.getState().outbox).toEqual({ waiting: 0, sending: false, offline: false, refused: [{ key: store.items[0].key, message: 'This unit is no longer listed', at: store.items[0].at }] });
+    await form.joined('outbox')?.send();
+    expect(form.getState().outbox).toEqual({ waiting: 0, sending: false, offline: false, kept: true, refused: [{ key: store.items[0].key, message: 'This unit is no longer listed', at: store.items[0].at }] });
     refuse = false;
-    await form.outbox()?.retry(store.items[0].key);
+    await form.joined('outbox')?.retry(store.items[0].key);
     expect(memory.responses).toHaveLength(1);
     expect(store.items).toEqual([]);
     // A refusal let go: nothing kept, nothing sent.
@@ -101,8 +125,8 @@ describe('an offline outbox', () => {
     form.setValues({ unit: 'Z-8' });
     await form.save();
     online = true;
-    await form.outbox()?.send();
-    await form.outbox()?.discard(store.items[0].key);
+    await form.joined('outbox')?.send();
+    await form.joined('outbox')?.discard(store.items[0].key);
     expect(store.items).toEqual([]);
     expect(form.getState().outbox?.refused).toEqual([]);
   });
@@ -123,7 +147,7 @@ describe('an offline outbox', () => {
     expect(store.items[0].request.values).toMatchObject({ unit: 'C-3', notes: 'Second look' });
     expect(form.getState().recordId).toBeNull();
     set(true);
-    await form.outbox()?.send();
+    await form.joined('outbox')?.send();
     expect(form.getState().recordId).toBe(1);
     expect(dataSource.records['visit']['1']).toMatchObject({ unit: 'C-3', notes: 'Second look' });
   });
@@ -143,7 +167,7 @@ describe('an offline outbox', () => {
     form.setValues({ unit: 'D-4' });
     expect(await form.save()).toBe(true);
     set(true);
-    await form.outbox()?.send();
+    await form.joined('outbox')?.send();
     const sent = dataSource.responses[0].values['photos'] as FileValue[];
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({ name: 'kitchen.jpg', type: 'image/jpeg' });

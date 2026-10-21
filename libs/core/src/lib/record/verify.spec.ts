@@ -31,9 +31,9 @@ describe('a phone or an email proved by a code', () => {
   it('refuses a send while the value is not proved, and sends the proof once it is', async () => {
     const dataSource = createMemoryDataSource({ codes: { code: () => '482913' } });
     const form = createForm({ page: enquiry(), dataSource });
-    expect(form.asksCode('phone')).toBe(true);
+    expect(form.joined('verify')?.asks('phone')).toBe(true);
     // A hidden field asks for nothing; neither does a field with nothing in it.
-    expect(form.asksCode('email')).toBe(false);
+    expect(form.joined('verify')?.asks('email')).toBe(false);
     form.setValues({ name: 'Mona', phone: '+201012345678' });
     expect(await form.save()).toBe(false);
     expect(form.getState().errors).toEqual({ phone: 'Mobile is not confirmed: send a code and type it in' });
@@ -44,7 +44,7 @@ describe('a phone or an email proved by a code', () => {
     expect(await dataSource.checkCode({ pageId: 'enquiry', model: '', recordId: null, field: 'phone', value: '+201012345678', code: '111111', id: 'code-1' })).toEqual({ ok: false, triesLeft: 2 });
     const right = await dataSource.checkCode({ pageId: 'enquiry', model: '', recordId: null, field: 'phone', value: '+201012345678', code: '482913', id: 'code-1' });
     expect(right).toEqual({ ok: true, proof: 'proved:code-1' });
-    form.markVerified('phone', { value: '+201012345678', proof: right.proof });
+    form.joined('verify')?.mark('phone', { value: '+201012345678', proof: right.proof });
     // Proved: what said it was not is said no more.
     expect(form.getState().errors).toEqual({});
     expect(await form.save()).toBe(true);
@@ -58,25 +58,25 @@ describe('a phone or an email proved by a code', () => {
     const dataSource = createMemoryDataSource();
     const form = createForm({ page: enquiry(true), dataSource });
     form.setValues({ phone: '+201012345678' });
-    form.markVerified('phone', { value: '+201012345678', proof: 'p1' });
+    form.joined('verify')?.mark('phone', { value: '+201012345678', proof: 'p1' });
     form.setValues({ phone: '+201099999999' });
     expect(await form.save()).toBe(false);
     expect(form.getState().errors['phone']).toBe('Mobile is not confirmed: send a code and type it in');
     // A proof for a value the field no longer holds is let go.
-    form.markVerified('phone', { value: '+201000000000', proof: 'late' });
-    expect(form.getState().verified['phone']).toEqual({ value: '+201012345678', proof: 'p1' });
+    form.joined('verify')?.mark('phone', { value: '+201000000000', proof: 'late' });
+    expect(form.getState().verified?.['phone']).toEqual({ value: '+201012345678', proof: 'p1' });
     // Back to the value proved: proved again, and sent with its proof.
     form.setValues({ phone: '+201012345678' });
     expect(await form.save()).toBe(true);
     expect(dataSource.responses[0].verified).toEqual({ phone: { value: '+201012345678', proof: 'p1' } });
-    form.markVerified('phone', null);
+    form.joined('verify')?.mark('phone', null);
     expect(form.getState().verified).toEqual({});
   });
 
   it('asks nothing where the source cannot send and check codes, and sends as before', async () => {
     const memory = createMemoryDataSource();
     const form = createForm({ page: enquiry(), dataSource: { submit: (request) => memory.submit(request) } });
-    expect(form.asksCode('phone')).toBe(false);
+    expect(form.joined('verify')?.asks('phone')).toBe(false);
     form.setValues({ phone: '+201012345678' });
     expect(await form.save()).toBe(true);
     expect(memory.responses[0]).not.toHaveProperty('verified');
@@ -87,7 +87,7 @@ describe('a phone or an email proved by a code', () => {
     const page: Page = { ...enquiry(true), data: { kind: 'record', model: 'lead' } };
     const form = createForm({ page, dataSource });
     form.setValues({ phone: '+201012345678' });
-    form.markVerified('phone', { value: '+201012345678' });
+    form.joined('verify')?.mark('phone', { value: '+201012345678' });
     expect(await form.save()).toBe(true);
     const saved = dataSource.calls.find((call) => call.method === 'save')?.request as { verified?: unknown };
     expect(saved.verified).toEqual({ phone: { value: '+201012345678' } });

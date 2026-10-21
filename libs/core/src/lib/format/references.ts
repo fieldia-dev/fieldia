@@ -145,16 +145,18 @@ export class ReferenceCheck {
     if (this.page.botCheck !== undefined && !this.line) this.checkBotCheck(this.page);
     if (this.page.duplicates !== undefined && !this.line) this.checkDuplicates(this.page);
     if (this.page.records !== undefined && !this.line) this.checkRecords(this.page.records);
-    // The fields a link fills: in the one-tag script, their checks come with the prefill part, which a page with it asks for.
-    // A payment the answers wait for: in the one-tag script, its checks come with the pay part, which a page with one asks for.
-    if (this.page.payment !== undefined && !this.line) checkPayment(this.page, { ...this.fieldTools(), checkModifiers: (owner, path, keys) => this.checkModifiers(owner, path, keys) });
-    // An offline outbox: in the one-tag script, its check comes with the outbox part, which a page with one asks for.
-    if (this.page.outbox !== undefined && !this.line) checkOutbox(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
-    if (this.page.prefill !== undefined && !this.line) checkPrefill(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
+    // The settings of the parts that join a form — its link's fields, its payment, its outbox: in the one-tag script, each
+    // one's checks come with its part, which a page with it asks for.
+    if (!this.line) {
+      const tools = this.fieldTools();
+      if (this.page.prefill !== undefined) checkPrefill(this.page, tools);
+      if (this.page.payment !== undefined) checkPayment(this.page, tools);
+      if (this.page.outbox) checkOutbox(this.page, tools);
+    }
     if (this.page.endings !== undefined && !this.line) {
       if (this.page.data.kind !== 'responses') this.report('endings', 'endings are for a page of responses, shown once it is sent');
       // Each ending: in the one-tag script, its checks come with the answers part, which a page with any asks for.
-      if (Array.isArray(this.page.endings) && this.page.endings.length) checkEndings(this.page, { ...this.fieldTools(), checkModifiers: (owner, path, keys) => this.checkModifiers(owner, path, keys), checkWords: (owner, path, keys, sent) => this.checkWords(owner, path, keys, sent) });
+      if (Array.isArray(this.page.endings) && this.page.endings.length) checkEndings(this.page, { ...this.fieldTools(), checkWords: (owner, path, keys, sent) => this.checkWords(owner, path, keys, sent) });
     }
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
@@ -495,7 +497,7 @@ export class ReferenceCheck {
     optionsList(def.optionsFrom)?.dependsOn?.forEach((other, i) => this.checkDependsOn(name, other, `${path}.optionsFrom.dependsOn[${i}]`, fields, scope.lines, scope.parent));
     // Options by condition, or carried from an earlier question: in the one-tag script, checked by the options part a
     // page with any asks for.
-    if (changesOptions(def)) checkOptionRules(name, def, path, fields, scope, { ...this.fieldTools(), checkModifiers: (owner, at, keys, inside) => this.checkModifiers(owner, at, keys, inside) });
+    if (changesOptions(def)) checkOptionRules(name, def, path, fields, scope, this.fieldTools());
   }
 
   private checkFields(fields: Fields | Record<string, LineField>, base: string, lines?: string, parent?: Record<string, Field | LineField>) {
@@ -595,14 +597,19 @@ export class ReferenceCheck {
     return {
       ...this.fieldTools(),
       claim: (id, path) => this.claim(id, path),
-      checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
       checkPress: (button, path) => this.checkPress(button, path),
     };
   }
 
-  /** The tools a part's checks of a field are handed (part-checks.ts). */
+  /** The tools a part's checks are handed (part-checks.ts): a field's, and the reading of conditions. */
   private fieldTools(): FieldTools {
-    return { page: this.page, need: (name, path, scope) => this.need(name, path, scope), report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) };
+    return {
+      page: this.page,
+      need: (name, path, scope) => this.need(name, path, scope),
+      report: (path, message) => this.report(path, message),
+      owe: (part) => this.later.add(part),
+      checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
+    };
   }
 
   /** The tools a map's checks are handed (map-checks.ts). */
@@ -740,7 +747,7 @@ export class ReferenceCheck {
       sheet.title.placeholderWhen?.forEach((item, i) => this.checkModifiers(item, `${path}.title.placeholderWhen[${i}]`, ['when']));
     }
     // A statusbar, drawn by the business part, whose checks come with it in the one-tag script.
-    if (sheet.statusbar) checkStatusbar(sheet.statusbar, path, { ...this.fieldTools(), checkModifiers: (owner, at, keys) => this.checkModifiers(owner, at, keys) });
+    if (sheet.statusbar) checkStatusbar(sheet.statusbar, path, this.fieldTools());
     sheet.buttons?.forEach((button, i) => {
       this.claim(button.id, `${path}.buttons[${i}]`);
       this.checkModifiers(button, `${path}.buttons[${i}]`);
@@ -863,7 +870,8 @@ export class ReferenceCheck {
     if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
     // Proof of an email or a phone by a code (`options.verify`), drawn by the verify part, whose checks come with it in the one-tag script.
-    if (node.options?.['verify'] !== undefined) checkVerify(node, def, path, !!this.line, this.fieldTools());
+    // Asked as the page asks for the verify part (`formJoins`): `false` asks for none, and needs no check.
+    if (node.options?.['verify'] !== undefined && node.options['verify'] !== false) checkVerify(node, def, path, !!this.line, this.fieldTools());
     if (def) this.checkPicker(node, def, path);
     // The order lines load in: fields of its lines.
     if (def && node.order && def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);

@@ -1024,32 +1024,18 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
-// Fields filled from a page's link (0.30, lane w6-public-forms), the reading and its checks in fieldia.prefill.js but
-// what a form needs to ask for it: the part's handle and the names it fills (0.11), the form laying what the part reads
-// as it comes on fields no one changed, and its hidden fields sent with the answers (0.40), the viewer giving the
-// browser's address and asking for the part (0.14), the checks owed to it (0.09): 506.76 measured before, 507.63
-// after, to 507.7.
-// Proof of an email or a phone by a code (0.30, w6-public-forms), all of it in fieldia.verify.js — Send a code, the
-// code's box, the form's side of which fields ask and which are not proved, their checks — but what a form and a page
-// need to ask for it: the form's proofs kept by field, its verify code asked for and waited for before a send, the
-// proofs it carries, `asksCode` and `markVerified` (0.52 in the form), the kit made as the page is drawn and placed
-// under a field (0.37, viewer), the parts' handles and whether a page asks (0.18), the checks owed (0.16), a memory
-// source's two members named (0.04): 507.63 measured before, 508.96 after, to 509.0.
-// A payment the answers wait for (0.30, w6-public-forms), its step and its form's side in fieldia.pay.js but what a form
-// and a page need to wait for it: the pay code asked for and waited for at the send's choke point, its conditions read,
-// the payment carried, `paymentDue` and the paid state (0.60 in the form), the step made and placed and the host's `pay`
-// handed to the form (0.44, viewer), the parts' handles (0.12), the checks owed (0.21), the memory member named (0.03):
-// 508.96 measured before, 510.35 after, to 510.4.
-// `<fieldia-form>` (0.30, w6-public-forms), defined as the script starts so a page needs no code of its own: the element's
-// class — its attributes watched, its page, source and options kept until its part comes and drawn again when set after
-// — the part's handle, and the call that defines it (1.08); what it does is in fieldia.element.js: 510.35 measured
-// before, 511.43 after, to 511.5.
-// Sends kept without signal (0.30, w6-public-forms), the store, the sending and the bar in fieldia.outbox.js but what a
-// send needs where the network fails it — at the choke point: the send kept in place of its failure, the form going on
-// as though it went, a new record's own key and its id once it went (0.91 in the form), a photo's bytes kept where the
-// network could not take it (0.11, uploads), the bar placed and a kept response's ending (0.22, viewer), the parts'
-// handles and whether a page keeps them (0.12), the check owed (0.20): 511.43 measured before, 513.21 after, to 513.3.
-const BUDGET_KB = 513.3;
+// The parts that join a form (0.30, lane w6-public-forms: the fields a page's link fills, proof of an email or a phone
+// by a code, a payment the answers wait for, sends kept without signal) and `<fieldia-form>`: all they do in their parts,
+// the main script carrying what every page needs to ask for them and no more. The one point they join through, shared
+// (1.16 measured by attribute.cjs: the form's hooks at its send — what it waits for, `before`, `around`, `reset` —
+// `form.joined`, the parts made as they come, an upload sent through them (0.64); the viewer's — what each draws made
+// with the page, placed over and under the questions, a kept response's ending (0.35); `formJoins` and the parts asked
+// with the page's (0.17)); then each its own, measured by taking it out: the prefill part's handle, what asks for it and
+// its check owed (0.18); the verify part's, its check owed, the memory source's two members and kept codes, its sheet's
+// rank, the viewer's handle (0.35); the pay part's, likewise (0.24); the outbox part's (0.21); `<fieldia-form>` defined
+// as the script starts — a stub with no more than its two callbacks asking for its part — its part's handle and its two
+// names (0.36): 506.76 measured before, 513.21 at the lane's first cut, 509.26 after, to 509.3.
+const BUDGET_KB = 509.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1283,19 +1269,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
-// Fields filled from a page's link (0.30, w6-public-forms; listed with the raw budget above): the part's handle, the form
-// laying what it reads, the hidden fields sent, the viewer's address, the checks owed — 166.15 measured before, 166.40
-// after, to 166.5.
-// Proof by a code (0.30, w6-public-forms; listed with the raw budget above): the proofs kept and sent, the verify code
-// waited for, the kit placed, the handles, the checks owed — 166.40 measured before, 166.86 after, to 166.9.
-// A payment the answers wait for (0.30, w6-public-forms; listed with the raw budget above): the pay code waited for at the
-// send, the payment carried, the step placed, the host's pay, the handles, the checks owed — 166.86 measured before,
-// 167.36 after, to 167.4.
-// `<fieldia-form>` defined as the script starts (0.30, w6-public-forms; listed with the raw budget above): 167.36
-// measured before, 167.72 after, to 167.8.
-// Sends kept without signal (0.30, w6-public-forms; listed with the raw budget above): the send kept at the choke point,
-// a photo's bytes kept, the bar placed, the handles, the check owed — 167.72 measured before, 168.56 after, to 168.6.
-const GZIP_BUDGET_KB = 168.6;
+// The parts that join a form and `<fieldia-form>` (0.30, w6-public-forms; listed with the raw budget above): the one
+// point they join through, shared (about 0.74), then each its own, taken out one by one — prefill 0.04, verify 0.10, pay
+// 0.07, outbox 0.06, `<fieldia-form>` 0.14 — 166.15 measured before, 168.56 at the lane's first cut, 167.30 after, to
+// 167.4.
+const GZIP_BUDGET_KB = 167.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1883,29 +1861,24 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-// The fields a page's link fills (0.30, w6-public-forms) in a part of their own, fieldia.prefill.js (3.78 and 1.83, to
-// 3.8 and 1.9): a link's parameters read as each field reads words, those its checks would refuse left out, and the
-// page's own checks of its `prefill` — asked for by a form whose page fills fields from its link, waited for by the viewer.
-// Proof of an email or a phone by a code (0.30, w6-public-forms) in a part of its own, fieldia.verify.js (10.87 and 4.61,
-// to 10.9 and 4.7): Send a code by each way, the code's box, Confirm, how long it works, Send again after its wait, the
-// tries left, Confirmed, its sheet and its checks — and the form's side, which fields ask and which are not proved, the
-// proofs kept and sent — waited for by a page with a field asking for a code. A memory source sends and checks codes as
-// a service would — memory 16.10 and 5.72 measured before, 17.34 and 6.26 after, to 17.4 and 6.3.
-// A payment the answers wait for (0.30, w6-public-forms) in a part of its own, fieldia.pay.js (7.51 and 3.25, to 7.6 and
-// 3.3): the payment step — what for, the amount in its currency, the app's slot, Pay inside the press, waiting and Cancel,
-// paid, failed or cancelled and Pay again, Back to the answers — its sheet and its checks, and the form's side: what is
-// due, the payment taken once, a new key started again. A memory source pays as a provider would — memory 17.34 and 6.26
-// measured before, 17.61 and 6.37 after, to 17.7 and 6.4.
-// What `<fieldia-form>` does (0.30, w6-public-forms) in a part of its own, fieldia.element.js (4.82 and 2.20, to 4.9 and
-// 2.3): its page given or fetched from `src`, its form drawn with its attributes' language and look, its events told,
-// drawn again as an attribute changes, its answers posted to its `action` as JSON, and in a frame its height and events
+// The parts that join a form (0.30, w6-public-forms), each with its side of the form (`join`: its hooks into the send,
+// its state, its words) and, but the prefill part, what it draws with the page (`draw`), its checks and its sheet:
+// fieldia.prefill.js (4.37 and 2.12, to 4.4 and 2.2) — a link's parameters read as each field reads words, those its
+// checks would refuse left out, laid where a form starts, its hidden fields put in the answers; fieldia.verify.js (11.70
+// and 4.94, to 11.8 and 5.0) — Send a code by each way, the code's box, Confirm, how long it works, Send again after its
+// wait, the tries left, Confirmed, found under each field that asks; which fields ask and which are not proved, the
+// proofs kept and sent; fieldia.pay.js (8.19 and 3.59, to 8.2 and 3.6) — the payment step, what is due, the payment
+// taken once, before the send, and carried, a new key started again; fieldia.outbox.js (9.66 and 4.23, to 9.7 and 4.3) —
+// the items kept in IndexedDB (or the app's store, or memory), each claimed by one sender, sent in order with their
+// photos stored first, a refusal kept to try again or discard, the bar saying it — over the form, under a kept response's
+// ending. A memory source sends and checks codes, pays, and fails as a network does at its `offline`, as a service would
+// — memory 16.10 and 5.72 measured before, 17.69 and 6.41 after, to 17.8 and 6.5.
+// What `<fieldia-form>` does (0.30, w6-public-forms) in a part of its own, fieldia.element.js (5.71 and 2.53, to 5.8 and
+// 2.6): the stub made what it is in place — its page, source, options and handle, what was set before kept — its
+// attributes watched, its page given or fetched from `src`, its form drawn with their language and look, its events
+// told, drawn again as one changes, its answers posted to its `action` as JSON, and in a frame its height and events
 // told to the page round it — asked for the first time one is put on a page.
-// Sends kept without signal (0.30, w6-public-forms) in a part of their own, fieldia.outbox.js (8.89 and 3.94, to 8.9 and
-// 4.0): the items kept in IndexedDB (or the app's store, or memory), each claimed by one sender, sent in order with their
-// photos stored first, a refusal kept to try again or discard, and the bar over the form saying it — under a kept
-// response's ending too — with its sheet and its check, waited for by a page with `outbox`. A memory source fails as a
-// network does at its `offline` — memory 17.61 and 6.37 measured before, 17.69 and 6.41 after, to 17.8 and 6.5.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.8, 6.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], prefill: [3.8, 1.9], verify: [10.9, 4.7], pay: [7.6, 3.3], element: [4.9, 2.3], outbox: [8.9, 4.0] };
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.8, 6.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], prefill: [4.4, 2.2], verify: [11.8, 5.0], pay: [8.2, 3.6], element: [5.8, 2.6], outbox: [9.7, 4.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1936,14 +1909,23 @@ const PART_GIVES = {
   functions: ['functionBody', 'appCall'],
   options: ['optionRules'],
   mapchecks: ['checkMap', 'checkPlace'],
-  prefill: ['linkValues', 'linkParams', 'linkValue'],
-  verify: ['watchVerify', 'verifyWays', 'installVerifyStyles', 'formVerify'],
-  pay: ['drawPay', 'amountWords', 'installPayStyles', 'formPayment'],
+  prefill: ['join', 'linkValues', 'linkParams', 'linkValue'],
+  verify: ['join', 'draw', 'watchVerify', 'verifyWays', 'installVerifyStyles'],
+  pay: ['join', 'draw', 'drawPay', 'amountWords', 'installPayStyles'],
   element: ['connect', 'disconnect', 'changed', 'handleOf', 'actionSource'],
-  outbox: ['watchOutbox', 'installOutboxStyles', 'formOutbox', 'memoryOutbox', 'indexedOutbox'],
+  outbox: ['join', 'draw', 'watchOutbox', 'installOutboxStyles', 'memoryOutbox', 'indexedOutbox'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', prefill: 'prefillPart', verify: 'verifyPart', pay: 'payPart', element: 'elementPart', outbox: 'outboxPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', element: 'elementPart' };
+/**
+ * A part's handle in a page's `Fieldia`: its own export (PART_OF) — or, for the parts that join a form (the fields a
+ * link fills, proof by a code, a payment, an outbox: 0.30), named on no export of their own, the one of that name among
+ * the form's (`formJoins`), which in the one-tag script is the viewer's of that name too.
+ */
+const HANDLE = `(Fieldia, part) => Fieldia[${JSON.stringify(PART_OF)}[part]] ?? Fieldia.formJoins().find((one) => one.name === part)`;
+const handleIn = (Fieldia, part) => Fieldia[PART_OF[part]] ?? Fieldia.formJoins().find((one) => one.name === part);
+/** The code that loads a part in a page run apart (runInNewContext). */
+const loadIn = (part) => `(${HANDLE})(Fieldia, ${JSON.stringify(part)}).load()`;
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -1970,10 +1952,10 @@ for (const part of PARTS) {
   for (const order of [[OUT, ...beside, file], [file, ...beside, OUT], [OUT, file, ...beside, file]]) {
     const { Fieldia: withIt, warnings } = runTogether(order);
     const loaded = order.map((f) => f.replace(BUNDLE + '/', '')).join(', then ');
-    const gives = await runInNewContext(`Fieldia.${PART_OF[part]}.load()`, withIt ? { Fieldia: withIt } : {});
+    const gives = await runInNewContext(loadIn(part), withIt ? { Fieldia: withIt } : {});
     const missing = PART_GIVES[part].filter((one) => typeof gives?.[one] !== 'function');
     if (missing.length) throw new Error(`${loaded}: ${name} does not give ${missing.join(', ')}`);
-    if (withIt[PART_OF[part]].loaded !== gives) throw new Error(`${loaded}: Fieldia.${PART_OF[part]} does not hold what ${name} gave`);
+    if (handleIn(withIt, part).loaded !== gives) throw new Error(`${loaded}: Fieldia's ${part} part does not hold what ${name} gave`);
     if (warnings.length) throw new Error(`${loaded}: ${warnings.join(' ')}`);
     const wrong = wordsNotIn(withIt, 'en', part, ENGLISH);
     if (wrong.length) throw new Error(`${loaded}: Fieldia's English lacks ${name}'s own words once it came: ${wrong.join(', ')}`);
@@ -1984,7 +1966,7 @@ for (const part of PARTS) {
     const arabic = join(BUNDLE, 'fieldia.ar.js');
     for (const order of [[OUT, arabic, ...beside, file], [OUT, ...beside, file, arabic], [file, ...beside, arabic, OUT]]) {
       const { Fieldia: withIt, warnings } = runTogether(order);
-      await runInNewContext(`Fieldia.${PART_OF[part]}.load()`, { Fieldia: withIt });
+      await runInNewContext(loadIn(part), { Fieldia: withIt });
       const loaded = order.map((f) => f.replace(BUNDLE + '/', '')).join(', then ');
       const wrong = wordsNotIn(withIt, 'ar', part, ARABIC);
       if (wrong.length || warnings.length) throw new Error(`${loaded}: Fieldia's Arabic does not have ${name}'s own words in Arabic: ${[...wrong, ...warnings].join(', ')}`);
@@ -1995,7 +1977,7 @@ for (const part of PARTS) {
     const [key] = Object.keys(words);
     alone[GLOBAL_OF[table]].en[key] = 'The app’s own';
     runTogether([file], page);
-    await runInNewContext(`Fieldia.${PART_OF[part]}.load()`, page);
+    await runInNewContext(loadIn(part), page);
     if (alone[GLOBAL_OF[table]].en[key] !== 'The app’s own') throw new Error(`${name} put its own English over an app's word for ${table}.${key}, set before it came`);
   }
   // A part of another version: refused with a warning, and the part asked for fails, so the page draws plainly.
@@ -2005,7 +1987,7 @@ for (const part of PARTS) {
   const host = { console: { warn: (message) => warned.push(message) } };
   runInNewContext(readFileSync(OUT, 'utf8'), host);
   runInNewContext(older, host);
-  const refused = await host.Fieldia[PART_OF[part]].load().then(() => false, () => true);
+  const refused = await handleIn(host.Fieldia, part).load().then(() => false, () => true);
   if (!refused || warned.length !== 1 || !warned[0].includes(`${name} is version 0.0.0`)) throw new Error(`${name} of another version is not refused with a warning`);
   partSizes.push(`${part} ${(partBytes / 1024).toFixed(1)} KB, ${(partGzipped / 1024).toFixed(1)} KB gzipped`);
 }
@@ -2096,7 +2078,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   await new Promise((done) => dom.window.addEventListener('load', done));
   const { Fieldia: inPage, document: doc } = dom.window;
   // The memory part is a data source's, never a page's: said apart below.
-  const loaded = () => PARTS.filter((part) => part !== 'memory' && inPage[PART_OF[part]].loaded).join(', ');
+  const loaded = () => PARTS.filter((part) => part !== 'memory' && handleIn(inPage, part).loaded).join(', ');
   /** The parts in after a step, every one so far — as one run of this check found them, each part's first use clear. */
   const hasIn = (step, want) => {
     const now = loaded();
@@ -2378,7 +2360,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   // It takes a reservation fee (`payment`) where the visit reserves, the source paying: the pay part, its step drawn with
   // the page, hidden until a send waits on it; due once the visit reserves.
   enquiry.form.setValue('visit', 'reserve');
-  if (!host.querySelector('.fd-pay[hidden]') || enquiry.form.paymentDue()?.amount !== 10000) throw new Error("in a page, a page asking for a payment draws no payment step, or asks no fee");
+  if (!host.querySelector('.fd-pay[hidden]') || enquiry.form.joined('pay')?.due()?.amount !== 10000) throw new Error("in a page, a page asking for a payment draws no payment step, or asks no fee");
   if (!doc.getElementById('fieldia-pay-styles')) throw new Error("in a page, the pay part's sheet was never put in");
   enquiry.destroy();
   gone('enquiry');
@@ -2404,9 +2386,9 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   await siteVisit.drawn;
   hasIn('a site visit with an outbox', 'answers, business, cards, choice, columns, date, duplicates, element, evidence, files, filters, functions, head, import, limits, lines, list, options, outbox, path, pay, phone, prefill, print, quiet, relations, slots, survey, text, themes, verify');
   if (!host.querySelector('.fd-outbox[hidden]') || !doc.getElementById('fieldia-outbox-styles')) throw new Error("in a page, a page with an outbox draws no bar over its questions, or its sheet was never put in");
-  if (!(await siteVisit.save()) || !siteVisit.form.getState().sent?.queued || siteVisit.form.getState().outbox?.waiting !== 1) throw new Error(`in a page, a send without signal is not kept on the device: ${JSON.stringify(siteVisit.form.getState().outbox)}`);
+  if (!(await siteVisit.save()) || !siteVisit.form.getState().outbox?.kept || siteVisit.form.getState().outbox?.waiting !== 1) throw new Error(`in a page, a send without signal is not kept on the device: ${JSON.stringify(siteVisit.form.getState().outbox)}`);
   off = false;
-  await siteVisit.form.outbox()?.send();
+  await siteVisit.form.joined('outbox')?.send();
   if (siteVisit.form.getState().outbox?.waiting !== 0) throw new Error('in a page, what waited is not sent once the signal is back');
   siteVisit.destroy();
   gone('site visit');

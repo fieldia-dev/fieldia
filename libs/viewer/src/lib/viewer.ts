@@ -7,9 +7,8 @@ import {
   localizePage,
   translatePage,
   wideColumns,
+  formJoins,
   type ActionHost,
-  type PaymentDue,
-  type PayRequest,
   type ActionStep,
   type ButtonNode,
   type FieldNode,
@@ -81,10 +80,8 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, asksVerify, duplicatesPart, headPart, limitsPart, listPart, outboxPart, owedParts, partsFor, payPart, verifyPart, type HeadPart } from './viewer-parts';
-import type { OutboxKit } from './outbox';
-import type { PayKit } from './pay';
-import type { VerifyKit } from './verify';
+import { answersPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, owedParts, partsFor, type HeadPart } from './viewer-parts';
+import type { PageJoin } from './joins';
 import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
@@ -441,8 +438,6 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // This form on paper, alone; the app's file shown over it, or saved — by the files part, which shows a file field's.
     print: () => paper.print(),
     file: (file) => filesPart.load().then((part) => part.showAppFile({ doc, labels: widgetLabels, home: root, file })),
-    // A payment the answers wait for: the pay part's payment step, drawn with the page (none drawn, none taken).
-    ...(page.payment ? { pay: (due: PaymentDue, request: PayRequest) => payKit?.pay(due, request) ?? Promise.resolve(null) } : {}),
     ...options.host,
   };
   const widgetLabels = WIDGET_LABELS[locale];
@@ -458,8 +453,6 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       host: actionHost,
       messages: options.messages ?? MESSAGES[locale],
       valueWords: options.valueWords ?? ((def, value, values) => asSaid(def as LineField, value, values as Values)),
-      // A page filling fields from its link (`prefill`) reads the browser's own address, unless the app gives one.
-      ...(page.prefill && options.url === undefined && doc.defaultView ? { url: doc.defaultView.location.href } : {}),
     });
   /** A part that failed: said to the console, and to the app's onError, which may not throw the page down either. */
   const report: ErrorHandler = (error, where) => {
@@ -831,8 +824,6 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
       const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
       wrapper.append(...(labelsAt === 'after' ? [widget.element, label] : [label, widget.element]), ...(help ? [help] : []), error, warning);
-      // Proof of an email or a phone by a code: Send a code, the code's box and what is said, under it.
-      if (scope.root && verifyKit && node.options?.['verify'] !== undefined && node.options['verify'] !== false) verifyKit.field(node, wrapper);
       // Read-only, as words in place of the box, when the page draws them so.
       const asText = page.look?.readonlyShown === 'text' && readsAsText(def, node, page) ? readText({ document: doc, field: def, node, id, locale, labels: widgetLabels, dialogs }) : null;
       if (asText) widget.element.after(asText.element);
@@ -1886,14 +1877,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const limitsAsked = !!(page.limits || page.continueLater || options.resume);
   let limitsKit: LimitsKit | null = null;
   /**
-   * Proof of an email or a phone by a code (`options.verify`), from the verify part: made as the page is drawn where a
-   * field asks for one and the source can send and check codes (the part waited for with the page's).
+   * What the parts that join the form draw with the page (`joinDrawings`: Send a code, a payment step, an outbox's bar),
+   * each made as the page is drawn — its part waited for with the page's.
    */
-  let verifyKit: VerifyKit | null = null;
-  /** The payment step a page's answers wait for (`payment`), from the pay part: made as the page is drawn, where its source can `pay`. */
-  let payKit: PayKit | null = null;
-  /** An offline outbox said over the form (`outbox`), from the outbox part: made as the page is drawn. */
-  let outboxKit: OutboxKit | null = null;
+  const joins: PageJoin[] = [];
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
 
@@ -1902,22 +1889,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * the id the app gave the response (`{id}`), its button to start again or none — else the plain thanks. An ending
    * takes the focus, so what it says, the reference with it, is read out.
    */
-  /** What a response kept on the device says under its title, in place of the thanks. */
-  let keptWords: HTMLElement | null = null;
   function showDone() {
     content.hidden = true;
     done.hidden = false;
-    // Kept on the device without signal: said so, in place of the thanks and any ending; sent, as ever.
-    keptWords?.remove();
-    keptWords = null;
-    if (form.getState().sent?.queued && outboxKit) {
-      if (doneWords) doneWords.hidden = true;
-      keptWords = el('div', { class: 'fd-done-text' });
-      doneTitle.after(keptWords);
-      return outboxKit.ending(doneTitle, keptWords);
-    }
-    setText(doneTitle, labels.submitted);
-    if (doneWords) doneWords.hidden = false;
+    // An ending a part that joins the form says in place of the page's: a response kept on the device.
+    if (joins.some((join) => join.ending?.(doneTitle, doneWords))) return;
     const answers = doneWords && answersPart.loaded;
     if (!answers || !doneWords) return;
     answers.drawEnding({ doc, page, form, locale, write: asSaid, title: doneTitle, words: doneWords, again, thanks: labels.submitted, another: labels.submitAnother })?.focus();
@@ -2433,26 +2409,18 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * nothing moves as a part arrives, and no focus is lost: there was nothing to have it.
    */
   function drawPage() {
-    const verify = asksVerify(page) && options.dataSource?.sendCode && options.dataSource.checkCode ? verifyPart.loaded : undefined;
-    if (verify && options.dataSource) {
-      const kit = verify.watchVerify({ form, page, doc, el, labels, fill, dataSource: options.dataSource, tag: page.language ?? locale, icons: options.icons, announce, editable: () => !locked });
-      updaters.push(kit.update);
-      cleanups.push(kit.destroy);
-      verifyKit = kit;
-    }
-    const pays = page.payment && options.dataSource?.pay ? payPart.loaded : undefined;
-    if (pays && options.dataSource) {
-      payKit = pays.drawPay({ doc, el, labels, fill, dataSource: options.dataSource, tag: page.language ?? locale, content: () => questions, announce });
-      cleanups.push(payKit.destroy);
-    }
-    if (page.outbox && outboxPart.loaded) {
-      outboxKit = outboxPart.loaded.watchOutbox({ form, doc, el, labels, fill, announce, ask: (message) => actionHost.ask(message) });
-      updaters.push(outboxKit.update);
-      cleanups.push(outboxKit.destroy);
+    // What the page's parts draw with it are handed the same: the form, the page, its words, its questions once drawn.
+    const drawing = { form, page, doc, el, labels, fill, announce, content: () => questions };
+    for (const part of formJoins(page)) {
+      const join = joinDrawings[part.name]?.loaded?.draw({ ...drawing, dataSource: options.dataSource, tag: page.language ?? locale, icons: options.icons, editable: () => !locked, ask: (message) => actionHost.ask(message) });
+      if (!join) continue;
+      joins.push(join);
+      if (join.update) updaters.push(join.update);
+      if (join.destroy) cleanups.push(join.destroy);
     }
     const limits = limitsAsked ? limitsPart.loaded : undefined;
     if (limits) {
-      const kit = limits.drawLimits({ form, page, doc, el, labels, messages: options.messages ?? MESSAGES[locale], fill, content: () => questions, done: () => !done.hidden, announce });
+      const kit = limits.drawLimits({ ...drawing, messages: options.messages ?? MESSAGES[locale], done: () => !done.hidden });
       updaters.push((state) => kit.update(state));
       limitsKit = kit;
     }
@@ -2502,7 +2470,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
     questions = body;
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...(outboxKit ? [outboxKit.bar] : []), ...safety.elements, draft, body, ...(payKit ? [payKit.step] : []), ...(limitsKit?.after ?? [])];
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...joins.flatMap((join) => join.before ?? []), ...safety.elements, draft, body, ...joins.flatMap((join) => join.after ?? []), ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);

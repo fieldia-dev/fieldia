@@ -114,7 +114,8 @@ Nothing is refused on the page for what the check saw: the app decides.
 A page that fills fields from its link (`"prefill": { "fromUrl": ["utm_source",
 { "param": "agent", "field": "agent_code" }] }`) reads the browser's own address
 as it starts — `?utm_source=whatsapp&agent=mona` — unless the viewer is given
-`url` (an address, its `?…` part, or the parameters by name): a field placed
+`url` (an address, its `?…` part, or the parameters by name; the React, Vue and
+Angular components take it too): a field placed
 nowhere is a hidden field sent with the answers, one placed shows what the link
 gave, and nothing the person typed is written over.
 
@@ -837,8 +838,11 @@ own: it fetches its page (`src`), draws its form and sends the answers to its
 rest, and changing one draws it again. Its `page`, `source` and `options`
 properties take the rest of the viewer, `handle` is the viewer once drawn, and it
 tells `fieldia-ready`, `fieldia-send`, `fieldia-save`, `fieldia-step` and
-`fieldia-error` as events that bubble. Its work comes in `fieldia.element.js`. An
-app built with a bundler calls `defineFieldiaForm()` once.
+`fieldia-error` as events that bubble. Its work comes in `fieldia.element.js`:
+until then the element is a stub, made what it is in place as it comes (what was
+set on it before is kept). `action` takes a page of responses' answers; a
+record's page saves through its `source`. An app built with a bundler calls
+`defineFieldiaForm()` once.
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>

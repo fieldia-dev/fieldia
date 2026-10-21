@@ -1,6 +1,6 @@
 import { saveProblemOf, type DataSource, type PaidPayment, type PaymentDue, type PayRequest } from '@fieldia/core';
-import { setHidden, setText, type El } from './dom';
-import type { ViewerLabels } from './labels';
+import { setHidden, setText } from './dom';
+import type { JoinContext, PageJoin } from './joins';
 import { installPayStyles } from './pay-styles';
 
 /**
@@ -12,28 +12,28 @@ import { installPayStyles } from './pay-styles';
  * the answers**. Fieldia holds no keys and no provider's code.
  */
 
-/** What the pay part needs of the viewer that draws the page. */
-export interface PayContext {
-  doc: Document;
-  el: El;
-  labels: ViewerLabels;
-  fill(template: string, values: Record<string, string | number>): string;
-  dataSource: DataSource;
-  /** The page's language, by tag: how the amount is written. */
-  tag: string;
-  /** The page's questions and their buttons, once drawn: given way to while the payment step shows. */
-  content(): HTMLElement | null;
-  /** Words said at once to a screen reader. */
-  announce(text: string): void;
-}
+/** What the pay part needs of the viewer that draws the page: its source can pay. */
+type PayContext = Pick<JoinContext, 'doc' | 'el' | 'labels' | 'fill' | 'tag' | 'content' | 'announce'> & { dataSource: DataSource };
 
-/** What the viewer places of it, and what its host's `pay` does. */
+/** What the viewer places of it, and what the form's payment shows (`FormPayment.step`). */
 export interface PayKit {
   /** The payment step, after the questions: hidden until a send waits on it. */
   step: HTMLElement;
-  /** The host's payment step (`ActionHost.pay`): shown, settled once paid — or null once the person goes back to the answers. */
+  /** The payment step shown: settled once paid — or null once the person goes back to the answers. */
   pay(due: PaymentDue, request: PayRequest): Promise<PaidPayment | null>;
   destroy(): void;
+}
+
+/**
+ * The pay part's side of a page (joins.ts): its payment step under the questions, what the form's payment shows — where
+ * the source can pay; none drawn without it.
+ */
+export function draw(ctx: JoinContext): PageJoin | null {
+  const source = ctx.dataSource;
+  if (!source?.pay) return null;
+  const kit = drawPay({ ...ctx, dataSource: source });
+  ctx.form.joined('pay')?.step(kit.pay);
+  return { after: [kit.step], destroy: kit.destroy };
 }
 
 /** An amount in its currency, as the page's language writes money: its digits Latin, as everywhere in Fieldia. */

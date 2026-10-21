@@ -1,7 +1,7 @@
-import { foldDigits, saveProblemOf, type DataSource, type FieldNode, type Form, type FormState, type Page } from '@fieldia/core';
-import { drawIcon, type IconSet } from '@fieldia/widgets';
-import { setAttr, setHidden, setText, type El } from './dom';
-import type { ViewerLabels } from './labels';
+import { foldDigits, saveProblemOf, type DataSource, type FieldNode, type FormState } from '@fieldia/core';
+import { drawIcon } from '@fieldia/widgets';
+import { setAttr, setHidden, setText } from './dom';
+import type { JoinContext, PageJoin } from './joins';
 import { installVerifyStyles } from './verify-styles';
 
 /**
@@ -9,37 +9,14 @@ import { installVerifyStyles } from './verify-styles';
  * `sendCode` and `checkCode`): under the field's box, once it holds an address or a number that reads, **Send a code**
  * (one button for each way the page offers: by WhatsApp, by SMS); then the code's box (`one-time-code`, so a phone
  * offers the code from its message), **Confirm**, how long the code works and when another may be asked for, each said
- * as it changes; right, the field is **Confirmed** (`form.markVerified`) while it holds that value, and its answers go
+ * as it changes; right, the field is **Confirmed** (`form.joined('verify').mark`) while it holds that value, and its answers go
  * with the app's proof. Wrong: the tries left; too late, or none left: a new code. Fieldia sends nothing itself and
  * holds no keys: the app's source sends and checks. Without both members, nothing of this is drawn, and the form asks
  * for no code.
  */
 
-/** What the verify part needs of the viewer that draws the page. */
-export interface VerifyContext {
-  form: Form;
-  /** The page as shown: its words in the page's language. */
-  page: Page;
-  doc: Document;
-  el: El;
-  labels: ViewerLabels;
-  fill(template: string, values: Record<string, string | number>): string;
-  dataSource: DataSource;
-  /** The page's language, by tag: what the code's message is written in. */
-  tag: string;
-  icons?: IconSet;
-  /** Words said at once to a screen reader. */
-  announce(text: string): void;
-  /** Whether the form may be changed now: a locked one asks for no code. */
-  editable(): boolean;
-}
-
-/** What the viewer places of it: under each field that asks for a code, its box. */
-export interface VerifyKit {
-  field(node: FieldNode, wrapper: HTMLElement): void;
-  update(state: FormState): void;
-  destroy(): void;
-}
+/** What the verify part needs of the viewer that draws the page: its source can send and check codes. */
+type VerifyContext = JoinContext & { dataSource: DataSource };
 
 /** The ways a field's code may be sent, as its node offers them (`options.verify.by`): none named, the app's one way. */
 export function verifyWays(node: FieldNode): { value: string; label?: string }[] {
@@ -53,17 +30,34 @@ export function verifyWays(node: FieldNode): { value: string; label?: string }[]
   });
 }
 
-export function watchVerify(ctx: VerifyContext): VerifyKit {
+/**
+ * The verify part's side of a page (joins.ts): under each field whose node asks for a code, its box — where the source
+ * can send and check codes; none drawn without them.
+ */
+export function draw(ctx: JoinContext): PageJoin | null {
+  const source = ctx.dataSource;
+  return source?.sendCode && source.checkCode ? watchVerify({ ...ctx, dataSource: source }) : null;
+}
+
+/** The field nodes of a layout, at any depth. */
+const fieldNodes = (node: { type: string; children?: unknown }): FieldNode[] => [...(node.type === 'field' ? [node as FieldNode] : []), ...(Array.isArray(node.children) ? (node.children as { type: string }[]).flatMap(fieldNodes) : [])];
+
+export function watchVerify(ctx: VerifyContext): PageJoin {
   installVerifyStyles(ctx.doc);
-  const fields: { update(state: FormState): void; destroy(): void }[] = [];
+  const asking = fieldNodes(ctx.page.layout).filter((node) => node.options?.['verify'] !== undefined && node.options['verify'] !== false);
+  /** Each field's box under it, by its node: placed once the page's questions are drawn. */
+  const fields = new Map<string, { update(state: FormState): void; destroy(): void }>();
   return {
-    field: (node, wrapper) => void fields.push(fieldVerify(ctx, node, wrapper)),
     update(state) {
-      for (const one of fields) one.update(state);
+      for (const node of asking) {
+        const wrapper = fields.has(node.id) ? null : ctx.content()?.querySelector<HTMLElement>(`[data-node="${node.id}"]`);
+        if (wrapper) fields.set(node.id, fieldVerify(ctx, node, wrapper));
+      }
+      for (const one of fields.values()) one.update(state);
     },
     destroy() {
-      for (const one of fields) one.destroy();
-      fields.length = 0;
+      for (const one of fields.values()) one.destroy();
+      fields.clear();
     },
   };
 }
@@ -197,7 +191,7 @@ function fieldVerify(ctx: VerifyContext, node: FieldNode, wrapper: HTMLElement):
         sent = null;
         stopTicking();
         say('');
-        form.markVerified(name, { value: out.value, ...(answer.proof !== undefined ? { proof: answer.proof } : {}) });
+        form.joined('verify')?.mark(name, { value: out.value, ...(answer.proof !== undefined ? { proof: answer.proof } : {}) });
         ctx.announce(labels.verifyDone);
         return;
       }
@@ -233,7 +227,7 @@ function fieldVerify(ctx: VerifyContext, node: FieldNode, wrapper: HTMLElement):
   function render(state: FormState) {
     const value = state.values[name];
     const text = typeof value === 'string' ? value.trim() : '';
-    const proved = !!text && state.verified[name]?.value === value;
+    const proved = !!text && state.verified?.[name]?.value === value;
     // A value changed since its code was sent: that code is no longer the field's.
     if (sent && sent.value !== value) {
       sent = null;
@@ -241,7 +235,7 @@ function fieldVerify(ctx: VerifyContext, node: FieldNode, wrapper: HTMLElement):
       say('');
     }
     // Asked for once the field holds an address or a number that reads, on a form that may be changed.
-    const ready = !!text && !state.unread[name] && form.problem(name) === null && ctx.editable() && form.asksCode(name);
+    const ready = !!text && !state.unread[name] && form.problem(name) === null && ctx.editable() && !!form.joined('verify')?.asks(name);
     setHidden(box, !proved && !ready && !sent);
     setHidden(done, !proved);
     setHidden(sendRow, proved || !ready || (!!sent && !sent.spent));
