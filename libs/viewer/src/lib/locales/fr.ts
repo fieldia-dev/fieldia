@@ -270,6 +270,8 @@ export const fr: ViewerLabels = {
   no: 'Non',
   none: 'Aucun',
   loadMore: 'Afficher {n} de plus',
+  sortKeyUp: 'tri {n} sur {total}, croissant',
+  sortKeyDown: 'tri {n} sur {total}, décroissant',
   groupCount: '{n} enregistrements',
   groupCountNoun: '{n} {records}',
   groupCountOne: '{n} enregistrement',

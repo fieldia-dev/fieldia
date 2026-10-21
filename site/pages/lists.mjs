@@ -45,7 +45,7 @@ ${code(
   <thead><tr><th>Key</th><th>What it does</th></tr></thead>
   <tbody>
     <tr><td>${c('columns')}</td><td>The fields shown, in order. Each value reads as the form shows it: a choice by its label, a link by its record's name, an amount in its currency — a ${c('currencyField')} is fetched though it is not a column.</td></tr>
-    <tr><td>${c('sort')}</td><td>The order the list opens in. A header click puts its column first, then the other way; this order breaks the ties.</td></tr>
+    <tr><td>${c('sort')}</td><td>The order the list opens in. A header click puts its column first, then the other way; with <kbd>Shift</kbd> a click adds its column after those chosen — again, the other way; a third time, it goes — a number beside each header saying its place. This order breaks the ties.</td></tr>
     <tr><td>${c('pageSize')}</td><td>Records to a page, 1 to 500; 40 when left out.</td></tr>
     <tr><td>${c('searchFields')}</td><td>The fields typed text is looked for in; the columns when left out.</td></tr>
     <tr><td>${c('filters')} · ${c('defaultFilters')}</td><td>Named filters for the menu, and the ones the list starts with. A filter compares with values, never with another field; or names a ${c('period')} a date falls in, counted from today — see <a href="#totals">lists that add up</a>.</td></tr>
@@ -340,9 +340,12 @@ mountViewer(host, {
 <p>The calendar is on the clock of the zone its start field names (${c('timeZone')} on a date and time), else its page's, else the reader's own: on a page of ${c('"timeZone": "Europe/Berlin"')}, its week, today, the hours each record is drawn at and the line for now are Berlin's wherever it is looked at from, the zone's short name (CEST) beside the span; a slot pressed, a drag, a stretch and Move to… write the instant that time is in Berlin, and a record moved keeps the time it really lasts across a change of the clocks. In the hour the clocks repeat, a time is its first; in the hour they skip, it is as far past the change.</p>
 <p>The calendar asks ${c('list')} for the records of the span it shows: those starting before it ends and ending after it starts, as ${c('date')} keys or ISO instants, with the list's own search. Its code loads the first time a calendar is shown, in a chunk of its own. A list's switcher takes an app's own views the same way: a function by name in ${c('listViews')}, offered on a list with the page option of its name, or where its ${c('offers(node)')} says, in its own words (${c('label(locale)')}). <a href="/demos/plain/?page=clinic-calendar&skin=outlined">Try the clinic</a> · <a href="/demos/plain/?page=booking-week&skin=outlined">try the booking desk</a> · <a href="/demos/plain/?page=test-drives&skin=outlined">try the showroom's test drives, on Berlin's clock</a>.</p>
 
+<h2 id="work">Lists people work in all day</h2>
+<p><strong>Several orders at once.</strong> A header's press puts its column first, then the other way. With <kbd>Shift</kbd> held, a press adds its column after those already chosen — <em>by agent, then by date</em> — pressed again with <kbd>Shift</kbd>, the other way, and a third time it goes. Each column in the order shows its place beside its arrow (1, 2, 3) once there is more than one; a screen reader hears it after the header's name (<em>sorted 2 of 3, descending</em>), and the first carries ${c('aria-sort')}, as a table says one. The page's own ${c('sort')} breaks the ties after them; your source gets them all in ${c('sort')}, in order — nothing new to answer.</p>
+
 <h2 id="details">What it takes care of</h2>
 <ul>
-  <li><strong>A plain table.</strong> Headers that sort say so with ${c('aria-sort')}; rows take the focus, <kbd>↑</kbd> <kbd>↓</kbd> move between them and <kbd>Space</kbd> chooses one. It reads the same in every binding and in the script bundle.</li>
+  <li><strong>A plain table.</strong> Headers that sort say so with ${c('aria-sort')} — the first of several, each one's place in words after its name; rows take the focus, <kbd>↑</kbd> <kbd>↓</kbd> move between them and <kbd>Space</kbd> chooses one. It reads the same in every binding and in the script bundle.</li>
   <li><strong>Each value in its own direction.</strong> On a right-to-left page a phone number or an amount still reads left to right.</li>
   <li><strong>A narrow screen.</strong> The table scrolls inside its own box; the menu's groups stack.</li>
   <li><strong>Four languages</strong>, as all of Fieldia's own words are.</li>

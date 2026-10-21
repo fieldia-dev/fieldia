@@ -631,6 +631,16 @@ the columns come in parts of their own (`fieldia.cards.js`,
 `fieldia.columns.js`), only where a list asks. See
 [lists people shape](https://fieldia.dev/lists/#shape).
 
+### Lists people work in all day
+
+**Several orders at once.** A header's press puts its column first; with
+Shift held, a press adds its column after those chosen ("by agent, then by
+date"), Shift again turns it the other way and a third time takes it away.
+Each column in the order shows its place (1, 2, 3) beside its arrow once there
+is more than one, a screen reader hearing it after the header's name ("sorted
+2 of 3, descending"); the first carries `aria-sort`. The page's `sort` breaks
+the ties after them; the source gets them in `sort`, in order.
+
 ## On paper
 
 Every page prints — Ctrl+P, the browser's menu, or the page's own Print — as a

@@ -26,7 +26,7 @@ export const CARD_STYLES = `
 .fd-list[data-as] .fd-list-check-all { display: inline-flex; align-items: center; gap: 8px; box-sizing: border-box; min-height: 32px; padding-inline: 10px 12px; border: 1px solid var(--fd-border); border-radius: 999px; background: var(--fd-surface); font-size: 13.5px; font-weight: 400; cursor: pointer; }
 .fd-list[data-as] .fd-list-check-words { display: inline; }
 .fd-list[data-as] .fd-list-sort { width: auto; box-sizing: border-box; min-height: 32px; padding-inline: 12px; border: 1px solid var(--fd-border); border-radius: 999px; background: var(--fd-surface); color: var(--fd-text); }
-.fd-list[data-as] th[aria-sort] .fd-list-sort { border-color: var(--fd-accent); background: var(--fd-accent-soft); color: var(--fd-accent); }
+.fd-list[data-as] th:is([aria-sort], [data-sort]) .fd-list-sort { border-color: var(--fd-accent); background: var(--fd-accent-soft); color: var(--fd-accent); }
 .fd-list[data-as] .fd-list-table th.fd-num .fd-list-sort { justify-content: flex-start; }
 .fd-list[data-as] .fd-list-table th.fd-num .fd-list-sort::after { order: 0; }
 .fd-list[data-as] .fd-list-sort .fd-list-head { font-size: 13.5px; font-weight: 500; color: inherit; }

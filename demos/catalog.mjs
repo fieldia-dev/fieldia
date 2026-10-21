@@ -69,7 +69,7 @@ export const AREA_IDS = AREA_OF;
 const SEARCH_WORDS = {
   customer: 'client account contact company blocked block status sales invoices counters conversation messages notes team phone whatsapp',
   order: 'sale sales order quotation quote lines products items spreadsheet totals tax discount',
-  customers: 'clients accounts contacts list search filter group favourites sort archive table',
+  customers: 'clients accounts contacts list search filter group favourites sort multi sort several columns shift archive table',
   invoices: 'invoice bill bills billing accounts receivable payments overdue unpaid due totals sum currency dollars pounds month quarter print printout paper pdf phone mobile cards',
   contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize reorder drag move rearrange print cards whatsapp',
   'homes-gallery': 'homes houses property properties real estate listings photos pictures gallery grid cards tiles book viewing',
@@ -227,6 +227,7 @@ export const DEMOS = [
       'Type "egy" in the search box and pick "Search Country for: egy" with the arrow keys and Enter.',
       'Open the menu at the end of the box: turn on Active, then group by Country and Status, and open the groups.',
       'Click the Credit limit header, twice: the list goes one way, then the other.',
+      'Hold Shift and click the Country header: by credit limit, then by country — a 1 and a 2 beside the two headers.',
       'Tick two customers and press Archive: you are asked first, then the app is given those two, and a note says so.',
       'Save the search as a favourite used by default, and reload: it opens that way.',
       'Click a row to open that customer on its own page.',

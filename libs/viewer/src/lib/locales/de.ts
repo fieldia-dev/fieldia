@@ -278,6 +278,8 @@ export const de: ViewerLabels = {
   no: 'Nein',
   none: 'Ohne Angabe',
   loadMore: '{n} weitere anzeigen',
+  sortKeyUp: 'Sortierung {n} von {total}, aufsteigend',
+  sortKeyDown: 'Sortierung {n} von {total}, absteigend',
   groupCount: '{n} Einträge',
   groupCountNoun: '{n} {records}',
   groupCountOne: '{n} Eintrag',

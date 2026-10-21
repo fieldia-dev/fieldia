@@ -42,6 +42,7 @@ import { listTotals } from './list-totals';
 import { keepFootRoom, printout, PRINT_MOST } from './list-print';
 import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
+import { markSort, pressedSort, sortWith } from './list-sort';
 import { cardsPart, columnsPart, filtersPart, importPart, type ColumnsPart } from './viewer-parts';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
 
@@ -213,6 +214,8 @@ export function listView(context: ListContext): ListView {
   const pageSize = node.pageSize ?? 40;
   const defaultSort = node.sort ?? [];
   let sort: SortOrder[] = defaultSort;
+  /** The keys a person chose from the headers, the first leading (list-sort.ts); none while the list keeps its own order. */
+  let keys: SortOrder[] = [];
   let offset = 0;
   let total = 0;
   /** The page of records, when the list is not grouped. */
@@ -373,12 +376,19 @@ export function listView(context: ListContext): ListView {
       if (UNSORTABLE.has(def.type) || !sortable) th.append(head);
       else {
         const button = el('button', { type: 'button', class: 'fd-list-sort' }, head);
-        button.addEventListener('click', () => {
-          // The header's field leads; the list's own order breaks the ties.
-          const desc = sort[0]?.field === name ? !sort[0].desc : false;
-          sort = [{ field: name, ...(desc ? { desc } : {}) }, ...defaultSort.filter((order) => order.field !== name)];
+        // The header's field leads — with Shift, it joins the keys chosen — and the list's own order breaks the ties.
+        const press = (adding: boolean) => {
+          keys = pressedSort(keys.length ? keys : sort.slice(0, 1), name, adding);
+          sort = sortWith(keys, defaultSort);
           offset = 0;
           void load();
+        };
+        button.addEventListener('click', (event) => press(event.shiftKey));
+        // Shift with Enter or Space, from the keys: a press made of keys carries no Shift in every browser.
+        button.addEventListener('keydown', (event) => {
+          if (!event.shiftKey || (event.key !== 'Enter' && event.key !== ' ')) return;
+          event.preventDefault();
+          press(true);
         });
         th.append(button);
       }
@@ -859,12 +869,9 @@ export function listView(context: ListContext): ListView {
   }
 
   function drawSort() {
-    for (const th of headers.values()) {
-      // Nearest a place is no column's order.
-      const order = !sort[0]?.near && sort[0]?.field === th.dataset['field'] ? sort[0] : null;
-      if (order) th.setAttribute('aria-sort', order.desc ? 'descending' : 'ascending');
-      else th.removeAttribute('aria-sort');
-    }
+    // The keys chosen, else the list's own first; nearest a place is no column's order.
+    const marked = keys.length ? keys : sort.slice(0, 1).filter((order) => !order.near);
+    markSort(headers, marked, (n, of, desc) => fill(desc ? labels.sortKeyDown : labels.sortKeyUp, { n: number(n), total: number(of) }), number);
   }
 
   // ---- asking for the records ------------------------------------------------------
@@ -1072,6 +1079,7 @@ export function listView(context: ListContext): ListView {
       sort: () => sort,
       sortBy(order) {
         sort = order ?? defaultSort;
+        keys = order ? order.filter((one) => !one.near) : [];
         offset = 0;
         void load();
         void viewParts.reload();

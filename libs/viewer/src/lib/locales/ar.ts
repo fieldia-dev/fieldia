@@ -246,6 +246,8 @@ export const ar: ViewerLabels = {
   no: 'لا',
   none: 'بلا قيمة',
   loadMore: 'عرض {n} أخرى',
+  sortKeyUp: 'مرتب {n} من {total}، تصاعديًا',
+  sortKeyDown: 'مرتب {n} من {total}، تنازليًا',
   groupCount: 'عدد السجلات: {n}',
   groupCountOne: 'سجل واحد',
   filterByKeyword: 'تصفية بكلمة',

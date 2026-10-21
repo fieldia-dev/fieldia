@@ -384,6 +384,12 @@ export interface ViewerLabels {
   none: string;
   loadMore: string;
   /**
+   * A list ordered by several of its headers (Shift and a header's press): what a screen reader hears after a key's
+   * header, its place among them (`{n}` of `{total}`) and its way — its number shows beside its words.
+   */
+  sortKeyUp: string;
+  sortKeyDown: string;
+  /**
    * How many records a list's group holds, in words (`{n}`: more, or one), said with its name by its heading's button:
    * "Cairo, 12 records" where the heading shows "Cairo (12)".
    */
@@ -867,6 +873,8 @@ const en: ViewerLabels = {
   no: 'No',
   none: 'None',
   loadMore: 'Show {n} more',
+  sortKeyUp: 'sorted {n} of {total}, ascending',
+  sortKeyDown: 'sorted {n} of {total}, descending',
   groupCount: '{n} records',
   groupCountNoun: '{n} {records}',
   groupCountOne: '{n} record',
