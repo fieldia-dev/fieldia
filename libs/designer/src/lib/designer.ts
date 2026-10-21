@@ -9,6 +9,7 @@ import {
   wideColumns,
   type AnswerRule,
   type BotCheck,
+  type PrefillParam,
   type ColumnCount,
   type ColumnsByWidth,
   type Field,
@@ -406,6 +407,13 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setPageLimits(patch: { opens?: string | null; closes?: string | null; maxResponses?: number | null; onePerPerson?: boolean | null; message?: string | null }): boolean;
   /** "Continue later" (`continueLater`): the answers kept on the app's server with a link to carry on; false takes it away. */
   setContinueLater(on: boolean): boolean;
+  /**
+   * The fields the link a page is opened with fills (`prefill.fromUrl`): each of the link's parameters and the field it
+   * fills — one of the page's that a link's words can fill, or, with `field` null, a hidden field of the parameter's
+   * own name, made placed nowhere (a line of text). None takes the setting away, and with it the hidden fields it made
+   * that nothing else names. Refused on a list of records, and for a parameter written as no link writes one.
+   */
+  setPrefill(rows: { param: string; field: string | null }[]): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
@@ -1540,6 +1548,31 @@ export function createDesigner(options: {
         if (on) draft.continueLater = true;
         else delete draft.continueLater;
       }, 'continueLater');
+    },
+
+    setPrefill(rows) {
+      return apply(
+        (draft) => {
+          const placed = shownFields(draft);
+          const before = (draft.prefill?.fromUrl ?? []).map((one) => (typeof one === 'string' ? one : one.field));
+          const fromUrl: PrefillParam[] = [];
+          for (const row of rows) {
+            const param = row.param.trim();
+            if (!/^[A-Za-z0-9_.~-]{1,100}$/.test(param)) throw new Refusal((w) => w.refusals.prefillParam(param));
+            // Its own hidden field: the field of its name where the page has one a link fills, else one made, placed nowhere.
+            const field = row.field ?? (FIELD_NAME.test(param) ? param : param.replace(/[^A-Za-z0-9_]/g, '_').replace(/^(?=\d)/, '_'));
+            if (!draft.fields[field]) draft.fields[field] = { type: 'char', label: param };
+            fromUrl.push(param === field ? field : { param, field });
+          }
+          if (fromUrl.length && draft.layout.type === 'list') throw new Refusal((w) => w.refusals.prefillOnList);
+          if (fromUrl.length) draft.prefill = { fromUrl };
+          else delete draft.prefill;
+          // A hidden field it made that nothing names now goes with its parameter.
+          const named = new Set(fromUrl.map((one) => (typeof one === 'string' ? one : one.field)));
+          for (const name of before) if (!named.has(name) && !placed.has(name)) delete draft.fields[name];
+        },
+        'prefill'
+      );
     },
 
     setDuplicates(patch) {

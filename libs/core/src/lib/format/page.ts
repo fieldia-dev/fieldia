@@ -8,6 +8,7 @@ import { PageDuplicatesSchema, type PageDuplicates } from './duplicates';
 import { PageRecordsSchema, type PageRecords } from './records';
 import { PageEndingsSchema, type PageEnding } from './endings';
 import { PageLimitsSchema, type PageLimits } from './limits';
+import { PagePrefillSchema, type PagePrefill } from './prefill';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -210,6 +211,12 @@ export interface Page {
    * sees where people stopped. Hidden where the source has no `saveDraft`.
    */
   continueLater?: boolean;
+  /**
+   * Fields filled from the link the page is opened with — `?utm_source=whatsapp&agent=mona` — as it starts, with no
+   * code of the app's: a campaign's, a broker's, a listing's. A field placed nowhere on the page is a hidden field, sent
+   * with the answers; one placed shows what the link gave. Never over what the person typed. See `PagePrefill`.
+   */
+  prefill?: PagePrefill;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -297,6 +304,7 @@ export const PageSchema = z
     endings: PageEndingsSchema.optional(),
     limits: PageLimitsSchema.optional(),
     continueLater: z.boolean().optional(),
+    prefill: PagePrefillSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

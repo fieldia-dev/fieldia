@@ -74,6 +74,7 @@ import { consentPage, sampleConsents } from './consents';
 import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
+import { unitEnquiryPage } from './unit-enquiry';
 import clinicIntake from '../../examples/pages/clinic-intake.page.json';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 
@@ -182,6 +183,8 @@ export const pages: Record<string, Page> = {
   ...listingHandover.pages,
   // An event's sign-up with open and close dates, places for each session, one from each person: shared/event-signup.ts.
   'event-signup': eventSignupPage(),
+  // A property enquiry shared as a broker's link: the unit filled from it, who sent the person in hidden fields (shared/unit-enquiry.ts).
+  'unit-enquiry': unitEnquiryPage(),
   // A clinic's long intake, Continue later on any device: shared/clinic-intake.ts.
   'clinic-intake': clinicIntake as Page,
   // A test drive booked at a showroom in Berlin, on Berlin's clock, from the times its schedule has free: shared/test-drive.ts.

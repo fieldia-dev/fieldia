@@ -126,6 +126,8 @@ export const refusals = {
   seatsForChoices: 'Places are for a choice’s options: a matrix’s columns take none',
   limitsForResponses: 'Open and close dates and limits are for a form that collects responses: an app’s own screen opens and closes with the app',
   closesBeforeOpens: 'It would close before it opens: pick a closing time after the opening',
+  prefillParam: (param: string) => (param ? `“${param}” is no link’s parameter: letters, digits and _ . ~ - only, at most 100` : 'Name the link’s parameter first'),
+  prefillOnList: 'A link fills the answers of a record or a response as it starts: a list of records has none',
   rowsFromModel: (label: string) => `The rows of ${label} come from the model`,
   matrixColumnsFromModel: (label: string) => `The columns of ${label} come from the model`,
   onlyMatrix: 'Only a matrix has rows and columns',

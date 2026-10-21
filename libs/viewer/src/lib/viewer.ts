@@ -451,6 +451,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       host: actionHost,
       messages: options.messages ?? MESSAGES[locale],
       valueWords: options.valueWords ?? ((def, value, values) => asSaid(def as LineField, value, values as Values)),
+      // A page filling fields from its link (`prefill`) reads the browser's own address, unless the app gives one.
+      ...(page.prefill && options.url === undefined && doc.defaultView ? { url: doc.defaultView.location.href } : {}),
     });
   /** A part that failed: said to the console, and to the app's onError, which may not throw the page down either. */
   const report: ErrorHandler = (error, where) => {

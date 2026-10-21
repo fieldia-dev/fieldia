@@ -86,6 +86,7 @@ export type { SlotsOptions } from './lib/format/slots-options';
 export type { SignatureOptions } from './lib/format/signature-options';
 export type { PageDuplicates } from './lib/format/duplicates';
 export type { PageLimits } from './lib/format/limits';
+export type { PagePrefill, PrefillParam } from './lib/format/prefill';
 export type { PageRecords } from './lib/format/records';
 export type { PageEnding } from './lib/format/endings';
 // `quotedLabel` here, not in index.ts alone: the widgets' messages read it, and a package's module taking a name only
@@ -297,6 +298,9 @@ export {
   type TimeRead,
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
+// The fields a page fills from the link it is opened with (`prefill`): read in a part of their own, as a form asks for it.
+export { prefillPart, prefilledNames, type PrefillPart } from './lib/record/prefill';
+export type { PageLink } from './lib/record/link-values';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
 // (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)

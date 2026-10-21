@@ -123,6 +123,22 @@ slots: {
 )}
 <p>A page without ${c('botCheck')} sends what it always did. In the designer, a page of responses has <em>Bot check</em> on its Rules tab. The <a href="/demos/plain/?page=signup&amp;skin=outlined">sign-up demo</a> has one, with a stand-in for a captcha, and shows under the form what the app was told.</p>
 
+<h2 id="prefill">Fields filled from the link</h2>
+<p>A form shared as a link — in a WhatsApp campaign, by a broker, beside a listing — can say who sent the person and what they asked about, with no code of your app's: ${c('prefill.fromUrl')} names the link's parameters, each filling the field of its name, or the ${c('field')} it names.</p>
+${code(
+  'json',
+  `
+"prefill": { "fromUrl": ["utm_source", "utm_campaign", { "param": "agent", "field": "agent_code" }, "unit"] },
+"fields": {
+  "utm_source": { "type": "char", "label": "Source" },
+  "utm_campaign": { "type": "char", "label": "Campaign" },
+  "agent_code": { "type": "char", "label": "Agent" },
+  "unit": { "type": "char", "label": "Unit" }
+}`
+)}
+${code('text', 'https://homes.example/enquiry?utm_source=whatsapp&utm_campaign=autumn&agent=mona&unit=B-12')}
+<p>Opened so, the form starts with those values — and again after <em>Submit another</em>. A field placed nowhere is a <em>hidden field</em>: seen by no one, sent with the answers to ${c('submit')} (or in a new record's ${c('save')}). One placed on the page shows the value, for the person to keep or change. Each is read as its field reads words — a number, ${c('yes')}/${c('no')}/${c('1')}/${c('0')}, a choice by one of its options' values, a day as ${c('2026-10-20')}, a day and time with its offset — and words that do not read so, or that the field's own checks would refuse, are left out: a hidden field no one can put right never stops a send. The link never writes over an answer: what the person types, and a draft opened over it, are theirs; a stored record opened is never filled. The viewer reads the browser's own address unless it is given ${c('url')}. In the designer, <em>Filled from the link</em> on a page's Rules tab names each parameter and the field it fills, or its own hidden field.</p>
+
 <h2 id="upload">Files stored as they are picked</h2>
 <p>A phone's photo is 3 to 12 MB. Twenty of them inside one save fail on mobile data, and one in a draft fills the browser's store. Give your data source ${c('upload')}, and a file or picture field sends each file to your store <em>as soon as it is picked</em>: photos are made smaller first, each shows on its way with a bar, × to cancel it and Retry when it failed, and the field keeps only what ${c('upload')} returns — ${c('{ url, name, size, type, fileId }')}, never the bytes. Three go at once, the rest wait their turn; a field of several keeps them in the order they were picked.</p>
 <ul>

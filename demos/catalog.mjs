@@ -51,7 +51,7 @@ const AREA_OF = {
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
-  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing'],
+  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'unit-enquiry'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -81,6 +81,7 @@ const SEARCH_WORDS = {
   'visit-feedback': 'feedback survey clinic patient treatments follow up carry forward picked earlier question age birthday options conditions aesthetic botox filler',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
   'clinic-consent': 'consent form signature sign signed esign e-signature evidence proof audit trail fingerprint hash tamper locked patient clinic treatment contract agreement',
+  'unit-enquiry': 'enquiry inquiry lead leads link url campaign utm source whatsapp broker agent referral referrer tracking attribution hidden field fields prefill pre-filled prefilled unit property real estate apartment flat villa viewing',
   'event-signup': 'event sign up signup register registration rsvp tickets seats places capacity limit limited full sold out session workshop close closes closing deadline open opens one per person quota gym club membership members class classes',
   'clinic-intake': 'patient intake clinic long form wizard steps save continue later resume draft link phone laptop another device partial answers drop off',
   'test-drives': 'calendar week schedule planner test drives cars showroom time zone berlin diary agenda drag',
@@ -400,6 +401,18 @@ export const DEMOS = [
       'Pick the evening talk and Submit: the page says your place and the email your ticket goes to — with no second response offered, as the page takes one from each person. Reload to start again.',
       '[Open it before sign-ups open](?now=2020-01-01T08:00:00Z): it says when it opens, in place of its questions.',
       '[Open it after they close](?now=2099-01-01T08:00:00Z): it says when it closed, and who to write to.',
+    ],
+  },
+  {
+    id: 'unit-enquiry',
+    name: 'An enquiry from a broker’s link',
+    category: 'forms',
+    query: 'page=unit-enquiry&skin=outlined',
+    blurb: 'A property enquiry shared as a link — a broker’s WhatsApp message, a campaign, a listing’s button. The link fills the unit asked about, for the person to keep or change, and hidden fields no one sees say who sent them — the campaign and the broker’s code — sent with the answers. Nothing the person types is written over.',
+    howTo: [
+      '[Open it as Mona’s WhatsApp link](?utm_source=whatsapp&utm_campaign=autumn-launch&agent=mona&unit=B-12): the unit says B-12.',
+      'Fill in your name and mobile, pick a viewing and Submit: under the form, what the app was told — the campaign, the source and the agent among the answers, marked hidden.',
+      '[Open Karim’s Instagram link for C-3](?utm_source=instagram&utm_campaign=open-day&agent=karim&unit=C-3), change the unit to C-4 and Submit: the unit you typed is sent, and Karim is still the agent.',
     ],
   },
   {

@@ -389,6 +389,9 @@
     },
     "continueLater": {
       "type": "boolean"
+    },
+    "prefill": {
+      "$ref": "#/$defs/PagePrefill"
     }
   },
   "required": [
@@ -10241,6 +10244,45 @@
           "pattern": "\\S"
         }
       },
+      "additionalProperties": false
+    },
+    "PagePrefill": {
+      "type": "object",
+      "properties": {
+        "fromUrl": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "param": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_.~-]{1,100}$"
+                  },
+                  "field": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                  }
+                },
+                "required": [
+                  "param",
+                  "field"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "fromUrl"
+      ],
       "additionalProperties": false
     }
   }

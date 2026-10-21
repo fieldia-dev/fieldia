@@ -37,6 +37,9 @@ export { PageDuplicatesSchema } from './lib/format/duplicates';
 export { PageRecordsSchema } from './lib/format/records';
 export { PageEndingSchema } from './lib/format/endings';
 export { PageLimitsSchema } from './lib/format/limits';
+export { PagePrefillSchema } from './lib/format/prefill';
+// A link's parameters read as the fields a page's `prefill` fills: the prefill part's, whole here.
+export { linkParams, linkValue, linkValues } from './lib/record/link-values';
 export { DUPLICATE_KINDS, comparable } from './lib/format/duplicate-kinds';
 export { pageJsonSchema } from './lib/format/json-schema';
 // The purposes a browser fills a box in with, from the HTML standard, as the format checks them.

@@ -119,6 +119,8 @@ export const refusals: DesignerWords['refusals'] = {
   seatsForChoices: 'الأماكن لاختيارات السؤال: أعمدة المصفوفة بلا أماكن',
   limitsForResponses: 'مواعيد الفتح والإغلاق والحدود لنموذج يجمع الإجابات: شاشة التطبيق تُفتح وتُغلق مع التطبيق',
   closesBeforeOpens: 'سيُغلق قبل أن يُفتح: اختر وقت إغلاق بعد وقت الفتح',
+  prefillParam: (param) => (param ? `${q(param)} ليس معاملًا لرابط: حروف وأرقام و _ . ~ - فقط، 100 على الأكثر` : 'اكتب اسم معامل الرابط أولًا'),
+  prefillOnList: 'يملأ الرابط إجابات سجل أو رد عند بدئه: قائمة السجلات لا إجابات لها',
   rowsFromModel: (label) => `صفوف ${q(label)} تأتي من نموذج البيانات`,
   matrixColumnsFromModel: (label) => `أعمدة ${q(label)} تأتي من نموذج البيانات`,
   onlyMatrix: 'الشبكة وحدها لها صفوف وأعمدة',

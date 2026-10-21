@@ -53,6 +53,8 @@ import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { signedBy, type SignedBy } from './signed';
+import type { PageLink } from './link-values';
+import { prefilledNames, prefillPart, type PrefillPart } from './prefill';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
@@ -362,6 +364,12 @@ export interface FormOptions {
    * (`resume.missing`). Without the source's `loadDraft`, it is let be.
    */
   resume?: string;
+  /**
+   * The link the page is opened with — its address, its `?…` part, or its parameters by name — for a page that fills
+   * fields from it (`prefill.fromUrl`): read as a new record or response starts, before what the form is given
+   * (`values`). The viewer gives the browser's own address unless this says. Without `prefill`, never read.
+   */
+  url?: PageLink;
   autosave?: { delayMs: number };
   scheduler?: Scheduler;
   /** Validation messages in the page's language. English by default. */
@@ -1094,6 +1102,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (isNew) {
       const about = { recordId: null, user: options.user, context: options.context, parent: parentContext };
       Object.assign(values, firstValues(page.fields, mapScope(values, page.fields, recordContext(values, page.fields, about), expressionEnv(values, page.fields, today, app))));
+      // The fields the link the page was opened with fills (`prefill`): a campaign's, a broker's — over their defaults;
+      // laid as the prefill part comes where it has not yet (`layLink`).
+      if (page.prefill && prefillPart.loaded) Object.assign(values, prefillPart.loaded.linkValues(page, options.url));
     }
     return given ? ordered({ ...values, ...structuredCopy(options.values ?? {}) }) : values;
   }
@@ -2623,6 +2634,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const part = attached.get(node.id);
       if (part) shown[part.name] = structuredCopy(state.values[part.name]) as Value;
     }
+    // And the hidden fields the link fills (`prefill`): placed nowhere, seen by no one, sent all the same.
+    for (const name of prefilledNames(page)) if (!(name in shown) && ![...index.values()].some((node) => node.field === name)) shown[name] = structuredCopy(state.values[name]) as Value;
     return shown;
   }
 
@@ -2885,6 +2898,17 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     baseline = { ...baseline, ...copy };
     writeValues({ ...(state.values as Values), ...copy });
     for (const name of names) changed(name, 'app');
+  }
+
+  /**
+   * The fields the page's link fills (`prefill`), laid as the prefill part comes on a new record or response: where the
+   * form starts, never over what it was given (`values`) or what the person changed.
+   */
+  function layLink(part: PrefillPart) {
+    if (disposed || state.recordId != null) return;
+    const link = part.linkValues(page, options.url);
+    for (const name of Object.keys(link)) if (state.dirty.includes(name) || (options.values && name in options.values)) delete link[name];
+    store(link);
   }
 
   /** Write fields — a step's or the app's — worked out once, and tell each; `keep`, a write working the person's change out. */
@@ -4154,6 +4178,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
   // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
   if (keepsLimits()) void track(limitsCode());
+  // A page filling fields from its link, before the prefill part came: they are laid as it comes.
+  if (page.prefill && !prefillPart.loaded && state.recordId == null) void track(prefillPart.load().then(layLink, () => undefined));
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

@@ -130,6 +130,7 @@ export const changes = {
   smallLabels: (on: boolean): string => (on ? 'Field names are written small inside Fieldia’s sentences' : 'Field names are written as they are inside Fieldia’s sentences'),
   limits: (now: 'on' | 'off' | 'changed') => ({ on: 'It takes answers only when and as many as it says', off: 'It takes answers at any time, as many as come', changed: 'When it takes answers, and how many, changed' })[now],
   continueLater: (on: boolean): string => (on ? 'It offers Continue later' : 'It no longer offers Continue later'),
+  prefill: (count: number): string => (count ? `The link it is opened with fills ${count === 1 ? 'a field' : `${count} fields`}` : 'The link it is opened with fills no field'),
   thePage: 'the page',
   // ---- the look
   look: {

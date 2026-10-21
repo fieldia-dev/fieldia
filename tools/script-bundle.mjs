@@ -160,7 +160,7 @@ const asksForParts = (table, parts) => ({
  * list page's own settings and a related list's in the list part, a record's head in the head part, a page's limits and
  * Continue later in the limits part, booking slots' settings in the slots part, a signature's in the files part, a page's
  * endings in the answers part, a table of lines' in the lines part, a sheet's statusbar in the business part, options
- * by condition and carried in the options part, and a map's in a part of their own
+ * by condition and carried in the options part, the fields a page's link fills in the prefill part, and a map's in a part of their own
  * (fieldia.mapchecks.js), which the viewer asks for as the check owes it. The packages' `checkPage` runs them at once. Here the main script is built
  * with each module below standing in — its checks owed (`owe`, the reference check's `later`) until its part has come,
  * and the viewer running the check again then, before the page is drawn — and each part's script puts its module's
@@ -177,6 +177,7 @@ const CHECKS_IN_PARTS = {
   lines: { file: 'libs/core/src/lib/format/table-checks.ts', names: ['checkTable', 'checkLineKinds'] },
   business: { file: 'libs/core/src/lib/format/statusbar-checks.ts', names: ['checkStatusbar'] },
   options: { file: 'libs/core/src/lib/format/option-checks.ts', names: ['checkOptionRules'] },
+  prefill: { file: 'libs/core/src/lib/format/prefill-checks.ts', names: ['checkPrefill'] },
 };
 const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
 const checksLater = {
@@ -1014,7 +1015,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
-const BUDGET_KB = 506.8;
+// Fields filled from a page's link (0.30, lane w6-public-forms), the reading and its checks in fieldia.prefill.js but
+// what a form needs to ask for it: the part's handle and the names it fills (0.11), the form laying what the part reads
+// as it comes on fields no one changed, and its hidden fields sent with the answers (0.40), the viewer giving the
+// browser's address and asking for the part (0.14), the checks owed to it (0.09): 506.76 measured before, 507.63
+// after, to 507.7.
+const BUDGET_KB = 507.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1248,7 +1254,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
-const GZIP_BUDGET_KB = 166.2;
+// Fields filled from a page's link (0.30, w6-public-forms; listed with the raw budget above): the part's handle, the form
+// laying what it reads, the hidden fields sent, the viewer's address, the checks owed — 166.15 measured before, 166.40
+// after, to 166.5.
+const GZIP_BUDGET_KB = 166.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1822,7 +1831,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// The fields a page's link fills (0.30, w6-public-forms) in a part of their own, fieldia.prefill.js (3.78 and 1.83, to
+// 3.8 and 1.9): a link's parameters read as each field reads words, those its checks would refuse left out, and the
+// page's own checks of its `prefill` — asked for by a form whose page fills fields from its link, waited for by the viewer.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], prefill: [3.8, 1.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1853,9 +1865,10 @@ const PART_GIVES = {
   functions: ['functionBody', 'appCall'],
   options: ['optionRules'],
   mapchecks: ['checkMap', 'checkPlace'],
+  prefill: ['linkValues', 'linkParams', 'linkValue'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', prefill: 'prefillPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -2273,6 +2286,17 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
   visit.destroy();
   gone('visit');
+  // A property enquiry opened from a broker's link (its page's `prefill`): the prefill part (@fieldia/core's), the page
+  // drawn once it came — nothing of it before — the unit filled from the link, the broker's code in a hidden field.
+  const enquiry = inPage.mountViewer(host, { page: read('unit-enquiry.page.json'), dataSource: inPage.createMemoryDataSource(), url: '?unit=B-12&agent=mona&utm_source=whatsapp' });
+  waits(enquiry, 'a page filled from its link');
+  await enquiry.drawn;
+  hasIn("an enquiry from a broker's link", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, prefill, print, quiet, relations, slots, survey, text, themes');
+  const linked = enquiry.form.getState().values;
+  if (linked.unit !== 'B-12' || linked.agent_code !== 'mona' || linked.utm_source !== 'whatsapp' || enquiry.form.getState().dirty.length) throw new Error(`in a page, the fields a link fills are not where the form starts once the prefill part came: ${JSON.stringify(linked)}`);
+  if (host.querySelector('[data-field="agent_code"]')) throw new Error('in a page, a hidden field the link fills is drawn');
+  enquiry.destroy();
+  gone('enquiry');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
@@ -2295,7 +2319,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; an enquiry filled from a broker's link, by the prefill part — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

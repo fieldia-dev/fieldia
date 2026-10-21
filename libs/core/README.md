@@ -577,6 +577,37 @@ const form = createForm({ page, dataSource, resume: new URLSearchParams(location
 form.on('draft', ({ key, later, saved }) => later && console.log('Continue from', saved.link));
 ```
 
+## Fields filled from the link
+
+A page may fill fields from the link it is opened with — a campaign's, a
+broker's, a unit's — with no code of the app's:
+
+```json
+{
+  "prefill": { "fromUrl": ["utm_source", "utm_campaign", { "param": "agent", "field": "agent_code" }, "unit"] },
+  "fields": { "utm_source": { "type": "char", "label": "Source" }, "agent_code": { "type": "char", "label": "Agent" }, "unit": { "type": "char", "label": "Unit" } }
+}
+```
+
+`https://homes.example/enquiry?utm_source=whatsapp&agent=mona&unit=B-12` starts
+the form with those values: each parameter named fills the field of its name, or
+the `field` it names, as a new record or response starts — and again after
+Submit another. A field the page fills so and places nowhere is a hidden field:
+sent with the answers (a page of responses otherwise sends only what its
+questions show), seen by no one. One placed on the page shows the value, for the
+person to keep or change. Words are read as the field reads them — a number as a
+number, `yes`/`no`/`1`/`0` for a yes or no, a choice by one of its options'
+values, a day as 2026-10-20, a day and time with its offset — and one that does
+not read so, or that the field's own checks would refuse (its most characters,
+its pattern, its least and most), is left out: a hidden field no one can put
+right never stops a send. The link never writes over an answer: a draft opened
+over it, and what the person types, are theirs; a stored record opened is never
+filled. The form reads `url` (the address, its `?…` part, or the parameters by
+name); the viewer gives the browser's own address unless it is given one, and
+`linkValues(page, url)` is the reading, exported. The page's checks refuse a
+field it has not, a link's field, one worked out, a choice of the app's own
+list, and a field filled twice.
+
 ## What a page's records are called
 
 A page may say what its records are, so Fieldia's own sentences name them as

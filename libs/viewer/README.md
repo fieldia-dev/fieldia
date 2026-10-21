@@ -111,6 +111,13 @@ mountViewer(host, {
 
 Nothing is refused on the page for what the check saw: the app decides.
 
+A page that fills fields from its link (`"prefill": { "fromUrl": ["utm_source",
+{ "param": "agent", "field": "agent_code" }] }`) reads the browser's own address
+as it starts — `?utm_source=whatsapp&agent=mona` — unless the viewer is given
+`url` (an address, its `?…` part, or the parameters by name): a field placed
+nowhere is a hidden field sent with the answers, one placed shows what the link
+gave, and nothing the person typed is written over.
+
 ## Saved forms placed in a page
 
 A page may place another saved page in it by its id — an address made once,

@@ -1,4 +1,4 @@
-import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, prefillPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -88,7 +88,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, prefillPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -135,6 +135,9 @@ const markdownAlone = (node: SectionNode) => {
  * A page whose formulas call one of Fieldia's functions beyond the plain ones (`age`, `addMonths`, `contains`, `join`,
  * `average`, …) asks for @fieldia/core's functions part, their bodies (`callsPartFunctions`); one whose choices' options
  * show by a condition, or are carried from an earlier question, its options part (`hasOptionRules`).
+ *
+ * A page that fills fields from its link (`prefill`) asks for @fieldia/core's prefill part: its form lays them as it
+ * comes, before the page is drawn.
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
@@ -215,6 +218,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (hasLimits(page)) found.add(formLimitsPart);
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);
+  if (page.prefill) found.add(prefillPart);
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
@@ -225,7 +229,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart };
+  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, prefill: prefillPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 

@@ -419,6 +419,13 @@ export const panel = {
   continueLater: 'Continue later',
   continueLaterOn: 'Offer Continue later',
   continueLaterHint: 'The answers kept on your server as they are typed, with a link to carry on from any device (the data source’s saveDraft and loadDraft). Hidden where it has none.',
+  prefill: 'Filled from the link',
+  prefillHint: 'A link’s parameters fill fields as the page opens — ?utm_source=whatsapp&agent=mona — a campaign’s, a broker’s, a unit’s. A hidden field is sent with the answers and seen by no one; one on the page shows what the link gave. Never over what the person typed.',
+  prefillParam: 'The link’s parameter',
+  prefillField: 'The field it fills',
+  prefillHidden: 'Its own hidden field',
+  prefillRemove: 'Take this parameter away',
+  prefillAdd: 'Add a parameter',
   // ---- a record page's possible duplicates
   duplicates: 'Possible duplicates',
   duplicatesHint: 'As a record is typed and saved, records with the same value in a field ticked — or a name close to its own — are named under that field, to open instead, let be or merge. Your app’s data source finds them.',

@@ -29,6 +29,7 @@ import { checkAddressSearch, checkMap, checkPlace, type MapTools } from './map-c
 import { checkLineKinds, checkTable, type TableTools } from './table-checks';
 import { checkStatusbar } from './statusbar-checks';
 import { checkOptionRules } from './option-checks';
+import { checkPrefill } from './prefill-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -141,6 +142,8 @@ export class ReferenceCheck {
     if (this.page.botCheck !== undefined && !this.line) this.checkBotCheck(this.page);
     if (this.page.duplicates !== undefined && !this.line) this.checkDuplicates(this.page);
     if (this.page.records !== undefined && !this.line) this.checkRecords(this.page.records);
+    // The fields a link fills: in the one-tag script, their checks come with the prefill part, which a page with it asks for.
+    if (this.page.prefill !== undefined && !this.line) checkPrefill(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
     if (this.page.endings !== undefined && !this.line) {
       if (this.page.data.kind !== 'responses') this.report('endings', 'endings are for a page of responses, shown once it is sent');
       // Each ending: in the one-tag script, its checks come with the answers part, which a page with any asks for.
