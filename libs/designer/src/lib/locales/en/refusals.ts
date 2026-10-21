@@ -211,5 +211,6 @@ export const refusals = {
   sheetNeedsFilterBar: 'The sheet on a phone is the filter bar’s: choose “A keyword and each field’s values” first',
   chooseHasButtons: 'The list has buttons for the rows chosen: take them away before the box to choose a row',
   notBulkSettable: (label: string) => `Edit cannot set ${label} in many rows at once: it is read-only, worked out, or not a value one word, number, date, choice or link can give`,
+  noneChangeable: 'No column of this list can be changed in a cell: words, a number, money, yes or no, a date, a choice or a link people can change',
   notImportable: (label: string) => `Import cannot fill ${label} from a file: it is read-only, worked out, or not a value a cell’s words, number, date, choice or link can give`,
 };

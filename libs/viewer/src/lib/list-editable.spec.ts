@@ -1,0 +1,216 @@
+import { createMemoryDataSource, saveRefused, type MemoryDataSource, type Page, type SaveRequest } from '@fieldia/core';
+import { relationsPart } from '@fieldia/widgets';
+import { rowReads } from './list-editable';
+import { until } from './test-list';
+import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
+import { editablePart, partsFor } from './viewer-parts';
+
+/**
+ * A list whose cells are changed in place (`editable`): a press opens a cell in its field's own box, each row is saved
+ * as it is left — the fields it changed alone, with the version it was listed at — one refused says why under it and
+ * keeps the typing, a row whose record may not be changed stays as it is, a row is added at the end, and rows given
+ * the same change by a paste are written in one `writeMany`. A list without `editable`, or a source without `save`,
+ * is read and opened as ever.
+ */
+
+const prices: Page = {
+  fieldia: '0.7',
+  id: 'prices',
+  title: 'Prices',
+  records: { one: 'service', other: 'services', a: 'a service' },
+  data: { kind: 'record', model: 'service' },
+  fields: {
+    name: { type: 'char', label: 'Service', required: true },
+    minutes: { type: 'integer', label: 'Minutes', min: 5 },
+    price: { type: 'monetary', label: 'Price', currency: 'EGP', min: 0 },
+    per_hour: { type: 'float', label: 'Per hour', compute: 'price / minutes * 60' },
+    code: { type: 'char', label: 'Code', readonly: true },
+  },
+  layout: { type: 'list', id: 'list', columns: ['name', 'minutes', 'price', 'per_hour', 'code'], sort: [{ field: 'name' }], editable: true },
+};
+const records = () => ({
+  service: {
+    1: { name: 'Chemical peel', minutes: 45, price: 2200, per_hour: 2933, code: 'CP' },
+    2: { name: 'Hydrafacial', minutes: 60, price: 2800, per_hour: 2800, code: 'HF' },
+    3: { name: 'Microneedling', minutes: 60, price: 3200, per_hour: 3200, code: 'MN' },
+  },
+});
+
+let handle: ViewerHandle | null = null;
+afterEach(() => {
+  handle?.destroy();
+  handle = null;
+  document.body.replaceChildren();
+});
+
+async function mount(options: Partial<ViewerOptions> = {}, page: Page = prices) {
+  await Promise.all(partsFor(page).map((part) => part.load()));
+  const host = document.createElement('div');
+  document.body.append(host);
+  handle = mountViewer(host, { page, dataSource: createMemoryDataSource({ records: records(), versions: true }), ...options });
+  await until(() => host.querySelector('.fd-list-table tbody tr.fd-list-row'));
+  return host;
+}
+const row = (host: Element, id: number) => host.querySelector(`.fd-list-row[data-id="${id}"]`) as HTMLTableRowElement;
+const cell = (host: Element, id: number, column: string) => row(host, id).querySelector(`td[data-col="${column}"]`) as HTMLTableCellElement;
+const saves = (source: MemoryDataSource) => source.calls.filter((call) => call.method === 'save').map((call) => call.request as SaveRequest);
+/** A box in a cell typed in and read, as leaving it reads it. */
+function type(td: HTMLElement, text: string) {
+  const box = td.querySelector('input') as HTMLInputElement;
+  box.value = text;
+  box.dispatchEvent(new Event('input', { bubbles: true }));
+  box.dispatchEvent(new Event('change', { bubbles: true }));
+}
+/** A row left: the focus on another row's cell. */
+const leaveTo = (td: HTMLElement) => td.focus();
+
+describe('a list whose cells are changed in place', () => {
+  it('marks the cells a box can change, and offers a row at the end in the words its records go by', async () => {
+    const host = await mount();
+    expect([...row(host, 2).querySelectorAll('td[data-edit]')].map((td) => td.getAttribute('data-col'))).toEqual(['name', 'minutes', 'price']);
+    expect(host.querySelector('.fd-list-add')?.textContent).toBe('+ Add a service');
+    expect(document.getElementById('fd-list-editable-styles')).not.toBeNull();
+  });
+
+  it('opens a pressed cell in its field’s own box, and saves the row as it is left: its changes alone, with its version', async () => {
+    const source = createMemoryDataSource({ records: records(), versions: true });
+    const host = await mount({ dataSource: source });
+    cell(host, 2, 'price').click();
+    await until(() => cell(host, 2, 'price').querySelector('input'));
+    expect(cell(host, 2, 'price').hasAttribute('data-editing')).toBe(true);
+    expect(document.activeElement).toBe(cell(host, 2, 'price').querySelector('input'));
+    type(cell(host, 2, 'price'), '3000');
+    // Worked out from the row as it is typed.
+    expect(cell(host, 2, 'per_hour').textContent).toBe('3,000.00');
+    expect(saves(source)).toEqual([]);
+    leaveTo(cell(host, 3, 'name'));
+    await until(() => saves(source).length === 1);
+    const [save] = saves(source);
+    expect(save).toMatchObject({ id: 2, partial: true, values: { price: 3000, per_hour: 3000 } });
+    expect(Object.keys(save.fields).sort()).toEqual(['per_hour', 'price']);
+    expect(save.version?.token).toBeTruthy();
+    await until(() => !row(host, 2).hasAttribute('data-changed'));
+    expect(source.records['service']['2']['price']).toBe(3000);
+    expect(cell(host, 2, 'price').textContent).toContain('3,000');
+  });
+
+  it('keeps a row its page refuses as typed, says why under it, and puts it back on Put back', async () => {
+    const source = createMemoryDataSource({ records: records(), versions: true });
+    const host = await mount({ dataSource: source });
+    cell(host, 1, 'minutes').click();
+    await until(() => cell(host, 1, 'minutes').querySelector('input'));
+    type(cell(host, 1, 'minutes'), '2');
+    leaveTo(cell(host, 3, 'name'));
+    const note = () => row(host, 1).nextElementSibling as HTMLElement;
+    await until(() => note().classList.contains('fd-list-note') && !note().hidden);
+    expect(note().querySelector('.fd-list-note-words')?.textContent).toBe('Not saved: Minutes must be at least 5.');
+    expect(cell(host, 1, 'minutes').textContent).toBe('2');
+    expect(cell(host, 1, 'minutes').getAttribute('aria-invalid')).toBe('true');
+    // A value worked out from an answer refused waits, said in words.
+    expect(cell(host, 1, 'per_hour').textContent).toBe('—Fix Minutes to see Per hour');
+    expect(saves(source)).toEqual([]);
+    (note().querySelector('.fd-list-put-back') as HTMLButtonElement).click();
+    expect(cell(host, 1, 'minutes').textContent).toBe('45');
+    expect(row(host, 1).nextElementSibling?.classList.contains('fd-list-note')).toBe(false);
+  });
+
+  it('says why the source refused a row, under it', async () => {
+    const source = createMemoryDataSource({ records: records() });
+    const save = source.save.bind(source);
+    source.save = async (request) => (request.changes.values['price'] === 9999 ? Promise.reject(saveRefused({ kind: 'rule', message: 'Prices over 5,000 need the manager.' })) : save(request));
+    const host = await mount({ dataSource: source });
+    cell(host, 3, 'price').click();
+    await until(() => cell(host, 3, 'price').querySelector('input'));
+    type(cell(host, 3, 'price'), '9999');
+    leaveTo(cell(host, 1, 'name'));
+    await until(() => row(host, 3).nextElementSibling?.querySelector('.fd-list-note-words')?.textContent);
+    expect(row(host, 3).nextElementSibling?.querySelector('.fd-list-note-words')?.textContent).toBe('Not saved: Prices over 5,000 need the manager.');
+  });
+
+  it('says someone else’s save first under the row, as a record’s page says it', async () => {
+    const source = createMemoryDataSource({ records: records(), versions: true });
+    const host = await mount({ dataSource: source });
+    source.changeElsewhere('service', 2, { price: 2900 }, { by: 'Mona Adel' });
+    cell(host, 2, 'minutes').click();
+    await until(() => cell(host, 2, 'minutes').querySelector('input'));
+    type(cell(host, 2, 'minutes'), '50');
+    leaveTo(cell(host, 3, 'name'));
+    await until(() => row(host, 2).nextElementSibling?.querySelector('.fd-conflict:not([hidden])'));
+    expect(row(host, 2).nextElementSibling?.querySelector('.fd-conflict-title')?.textContent).toMatch(/^Mona Adel changed this service/);
+  });
+
+  it('leaves a row its record lets no one change here as it was, and opens it as a list’s row', async () => {
+    const opened: unknown[] = [];
+    const source = createMemoryDataSource({ records: records(), can: { service: (values) => (values['code'] === 'MN' ? { edit: false, reason: 'Kept by the manager.' } : undefined) } });
+    const host = await mount({ dataSource: source, onOpenRecord: (id) => void opened.push(id) });
+    expect(row(host, 3).querySelectorAll('td[data-edit]')).toHaveLength(0);
+    cell(host, 3, 'price').click();
+    expect(opened).toEqual([3]);
+    // A cell that cannot change opens the record, as before; one that can is opened for typing.
+    cell(host, 1, 'code').click();
+    cell(host, 1, 'name').click();
+    expect(opened).toEqual([3, 1]);
+  });
+
+  it('adds a row at the end, saved as a new record once it is left; one left empty goes', async () => {
+    const source = createMemoryDataSource({ records: records() });
+    const host = await mount({ dataSource: source });
+    (host.querySelector('.fd-list-add') as HTMLButtonElement).click();
+    const added = () => host.querySelector('.fd-list-row[data-new]') as HTMLTableRowElement;
+    await until(() => added()?.querySelector('td[data-col="name"] input'));
+    type(added().querySelector('td[data-col="name"]') as HTMLElement, 'Laser, back');
+    leaveTo(cell(host, 1, 'name'));
+    await until(() => saves(source).length === 1);
+    expect(saves(source)[0]).toMatchObject({ id: null, values: { name: 'Laser, back' } });
+    await until(() => !added() && row(host, 4));
+    expect(cell(host, 4, 'name').textContent).toBe('Laser, back');
+    (host.querySelector('.fd-list-add') as HTMLButtonElement).click();
+    await until(() => added()?.querySelector('td[data-col="name"] input'));
+    leaveTo(cell(host, 1, 'name'));
+    await until(() => !added());
+    expect(saves(source)).toHaveLength(1);
+  });
+
+  it('writes rows a paste gave the same change in one writeMany, each with its version', async () => {
+    const source = createMemoryDataSource({ records: records(), versions: true });
+    const host = await mount({ dataSource: source });
+    // The same name in every row: a change nothing else in the row is worked out from.
+    const td = cell(host, 1, 'name');
+    td.focus();
+    td.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }));
+    const catcher = host.querySelector('.fd-list-paste-catcher') as HTMLTextAreaElement;
+    expect(document.activeElement).toBe(catcher);
+    const paste = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(paste, 'clipboardData', { value: { getData: () => 'Facial\nFacial\nFacial\n' } });
+    catcher.dispatchEvent(paste);
+    await until(() => source.calls.some((call) => call.method === 'writeMany'));
+    const many = source.calls.filter((call) => call.method === 'writeMany').map((call) => call.request as { ids: unknown[]; values: unknown; versions: Record<string, unknown> });
+    expect(many).toHaveLength(1);
+    expect(many[0].ids).toEqual([1, 2, 3]);
+    expect(Object.keys(many[0].versions)).toEqual(['1', '2', '3']);
+    await until(() => host.querySelector('.fd-list-paste-note')?.textContent === 'Pasted into 3 cells.');
+    expect(Object.values(source.records['service']).map((one) => one['name'])).toEqual(['Facial', 'Facial', 'Facial']);
+  });
+
+  it('is read and opened as ever without `editable`, or where the source cannot save', async () => {
+    const plain: Page = { ...prices, layout: { ...prices.layout, editable: undefined } as Page['layout'] };
+    let host = await mount({}, plain);
+    expect(host.querySelectorAll('td[data-edit]')).toHaveLength(0);
+    expect(host.querySelector('.fd-list-add')).toBeNull();
+    handle?.destroy();
+    document.body.replaceChildren();
+    const source = createMemoryDataSource({ records: records() }) as unknown as Record<string, unknown>;
+    delete source['save'];
+    host = await mount({ dataSource: source as never });
+    expect(host.querySelectorAll('td[data-edit]')).toHaveLength(0);
+    expect(host.querySelector('.fd-list-add')).toBeNull();
+  });
+
+  it('asks for its part and its cells’ boxes’ parts before it is drawn, and for what its worked-out columns read', () => {
+    const linked: Page = { ...prices, fields: { ...prices.fields, done_by: { type: 'many2one', label: 'Done by', relation: 'role' } }, layout: { ...prices.layout, columns: ['name', 'done_by'] } as Page['layout'] };
+    expect(partsFor(linked)).toEqual(expect.arrayContaining([editablePart, relationsPart]));
+    expect(partsFor({ ...linked, layout: { ...linked.layout, editable: undefined } as Page['layout'] })).not.toContain(editablePart);
+    const list = { ...prices.layout, columns: ['name', 'per_hour'] } as never;
+    expect(rowReads(prices, list, ['name', 'per_hour'])).toEqual(['price', 'minutes']);
+  });
+});

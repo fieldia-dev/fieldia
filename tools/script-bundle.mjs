@@ -157,8 +157,9 @@ const asksForParts = (table, parts) => ({
 
 /**
  * The checks of a page the one-tag script carries in the part that draws what they check, not in its main script: a
- * list page's own settings and a related list's in the list part, a record's head in the head part, a page's limits and
- * Continue later in the limits part, booking slots' settings in the slots part, a signature's in the files part, a page's
+ * list page's own settings and a related list's in the list part, a list's cells changed in place in the editable
+ * part, a record's head in the head part, a page's limits and Continue later in the limits part, a record's approvals
+ * in the approvals part, booking slots' settings in the slots part, a signature's in the files part, a page's
  * endings in the answers part, a table of lines' in the lines part, a sheet's statusbar in the business part, options
  * by condition and carried in the options part, and a map's in a part of their own
  * (fieldia.mapchecks.js), which the viewer asks for as the check owes it. The packages' `checkPage` runs them at once. Here the main script is built
@@ -168,6 +169,7 @@ const asksForParts = (table, parts) => ({
  */
 const CHECKS_IN_PARTS = {
   list: { file: 'libs/core/src/lib/format/list-checks.ts', names: ['checkList', 'checkRelated'] },
+  editable: { file: 'libs/core/src/lib/format/editable-checks.ts', names: ['checkEditable'] },
   head: { file: 'libs/core/src/lib/format/sheet-head-checks.ts', names: ['checkSheetHead'] },
   limits: { file: 'libs/core/src/lib/format/limits-checks.ts', names: ['checkLimits'] },
   approvals: { file: 'libs/core/src/lib/format/approval-checks.ts', names: ['checkApproval'] },
@@ -1021,7 +1023,15 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // band under a sheet's alerts and a lock saying why (0.34); the parts' declarations, partsFor and the page's checks owed
 // until the part comes (0.31); the memory source's two members named (0.02): 506.76 measured before, 507.99 after, to
 // 508.0.
-const BUDGET_KB = 508.0;
+// A list's cells changed in place (Wave 5, w5-editable-list): its code, its sheet and its page checks in the editable
+// part (fieldia.editable.js); in the main script only what every page's drawing asks before it draws — partsFor knowing
+// a list changes its cells, so it asks for the editable part and each such column's box's own part (a link's, a day's)
+// and the page is drawn whole (viewer-parts 0.37), by the one rule of which columns a cell changes, which the part's
+// check reads too (list-editable 0.26); a list page's viewer handing its list a row's form and a field's box, made as
+// the page's own (viewer 0.18); the reference check owing the part its checks (0.14); the names the parts take from the
+// main script and the global's (0.23) — 506.77 measured before, 507.91 after, to 508.0.
+// Merged (0.29.0), Wave 5's lanes together: to 509.2 until measured.
+const BUDGET_KB = 509.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1259,7 +1269,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // and a save, fields locked while one waits, the form's three methods, the band placed and a lock's words, the parts
 // declared and their checks owed — 166.15 measured before, 166.77 after, to 166.8. A page with approval takes 6.83 more
 // in fieldia.approvals.js.
-const GZIP_BUDGET_KB = 166.8;
+// A list's cells changed in place (listed with the raw budget above): 166.15 measured before, 166.57 after, to 166.6.
+// Merged (0.29.0): to 167.2 until measured.
+const GZIP_BUDGET_KB = 167.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1444,7 +1456,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // stays open, its history, a field's lock and a rejection with no reason — 37 words in each — Arabic's 77.88 and 13.29
 // measured before, 81.25 and 13.82 after, to 81.3 and 13.9; German's 36.27 and 11.64 to 38.01 and 12.11, to 38.1 and
 // 12.2; French's 36.75 and 11.70 to 38.53 and 12.16, to 38.6 and 12.2.
-const ADD_ON_BUDGET_KB = { ar: [81.3, 13.9], de: [38.1, 12.2], fr: [38.6, 12.2] };
+// A list's cells changed in place (Wave 5, w5-editable-list): what a cell that takes a change is, Add a line, Remove,
+// why a row was not saved, a row saved, Open, Change and a cell named in a paste's note — 8 words in each (Add {aRecord}
+// in English alone): Arabic's 77.88 and 13.29 measured before, 78.52 and 13.42 after, to 78.6 and 13.5; German's 36.27
+// and 11.64 to 36.60 and 11.75, to 36.7 and 11.8; French's 36.75 and 11.70 to 37.09 and 11.80, to 37.1 and 11.9.
+// Merged (0.29.0): to Arabic's 81.9 and 14.0, German's 38.4 and 12.3, French's 38.9 and 12.3 until measured.
+const ADD_ON_BUDGET_KB = { ar: [81.9, 14.0], de: [38.4, 12.3], fr: [38.9, 12.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1846,7 +1863,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The memory source's approvals and decide, an approval engine in small (in turn or together, any or all, a rejection
 // ending a round, a round each time a record is sent again) — memory 16.07 and 5.71 measured before, 18.68 and 6.68 after,
 // to 18.7 and 6.7.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [18.7, 6.7], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// A list's cells changed in place (Wave 5, w5-editable-list), in a part of its own — editable 28.70 and 10.57, to 28.8
+// and 10.6: a cell opened in its field's own box, Tab, Escape and Enter, each row a form saved as it is left, one refused
+// or met by someone else's save said under it, a row added, a paste across the rows and writeMany, a card's sheet, its
+// sheet and its checks — and in the list part only the list's hooks for it (its rows wired, a press and Enter handed
+// over, the saves waited for before it asks again, a row saved counted): list 129.50 and 41.60 to 130.54 and 41.96, to
+// 130.6 and 42.0. In the list part it would have added 28.7 and 10.6 to every list's.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [130.6, 42.0], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [28.8, 10.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [18.7, 6.7], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1859,6 +1882,7 @@ const PART_GIVES = {
   cards: ['cardSpec', 'cardReads', 'drawCard', 'installCardStyles'],
   columns: ['columnChoices', 'columnsKey', 'installColumnStyles'],
   import: ['openImport', 'installImportStyles'],
+  editable: ['editableRows', 'opens', 'rowReads', 'installEditableStyles'],
   themes: ['installThemeStyles'],
   quiet: ['installQuietStyles'],
   lines: ['linesWidget', 'linksTableWidget', 'cardsWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],
@@ -1880,7 +1904,7 @@ const PART_GIVES = {
   mapchecks: ['checkMap', 'checkPlace'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -1981,6 +2005,15 @@ for (const part of PARTS) {
   const after = withList.checkPage(wrong);
   if (after.ok || after.later || !after.issues.some((issue) => issue.path === 'layout.groupBy[0]' && issue.message === 'no field "nowhere"')) throw new Error(`a list page's own checks are not run once the list part came: ${JSON.stringify(after)}`);
   if (alone.checkPage({ ...wrong, layout: { type: 'sections', id: 's', children: [] } }).later) throw new Error('a page with no list owes the list part its checks');
+  // A list whose cells change in place owes the editable part its checks — beside the list part's — then a column it
+  // names that no cell can change is said, as the packages' check says it.
+  const prices = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/service-prices.page.json'), 'utf8'));
+  const unchangeable = { ...prices, layout: { ...prices.layout, editable: { fields: ['per_hour'] } } };
+  if (alone.checkPage(unchangeable).later?.join() !== 'editable,list') throw new Error(`a list's cells changed in place do not owe the editable part their checks: ${JSON.stringify(alone.checkPage(unchangeable).later)}`);
+  const { Fieldia: withEditable } = runTogether([OUT, partFiles.list, partFiles.editable]);
+  await Promise.all([withEditable.listPart.load(), withEditable.editablePart.load()]);
+  const refusedCells = withEditable.checkPage(unchangeable);
+  if (refusedCells.ok || refusedCells.later || !refusedCells.issues.some((issue) => issue.path === 'layout.editable.fields[0]' && issue.message.includes('worked out from other fields'))) throw new Error(`a list's cells changed in place are not checked once the editable part came: ${JSON.stringify(refusedCells)}`);
   // A map's checks owed to a part of their own: a form's map at once, and a list's on a map once the list part ran them.
   const mapOrder = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/map-order.page.json'), 'utf8'));
   if (!alone.checkPage(mapOrder).later?.includes('mapchecks')) throw new Error(`a form's map's checks are not owed to their part: ${JSON.stringify(alone.checkPage(mapOrder).later)}`);
@@ -2003,7 +2036,7 @@ for (const part of PARTS) {
   dom.window.close();
 }
 console.log(`parts: ${partSizes.join('; ')}`);
-console.log("a part's checks: a list page's own owed to the list part until it came, a map's to theirs, then run as the packages' check runs them — in a page, one that finds a mistake draws nothing, and its drawn rejects with the mount's words");
+console.log("a part's checks: a list page's own owed to the list part until it came, a list's cells changed in place to the editable part, a map's to theirs, then run as the packages' check runs them — in a page, one that finds a mistake draws nothing, and its drawn rejects with the mount's words");
 
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
@@ -2318,6 +2351,16 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!doc.getElementById('fieldia-approvals-styles')) throw new Error("in a page, the approvals part's sheet was never put in");
   approving.destroy();
   gone('approving');
+  // A clinic's price list whose cells change in place: the editable part beside the list part, the page drawn once both
+  // came — nothing of it before — its cells marked to change, Add a line under it, its sheet after the list's own.
+  const prices = inPage.mountViewer(host, { page: read('service-prices.page.json'), dataSource: inPage.createMemoryDataSource({ records: { 'clinic.service': { 1: { name: 'Hydrafacial', category: 'skin', minutes: 60, price: 2800, active: true } } } }) });
+  waits(prices, 'a list whose cells change in place');
+  await prices.drawn;
+  hasIn("a price list changed in place", 'answers, approvals, business, cards, choice, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, print, quiet, relations, slots, survey, text, themes');
+  if (!(await until(() => host.querySelector('.fd-list-row td[data-edit][data-col="price"]'))) || !host.querySelector('.fd-list-add')) throw new Error("in a page, a list's cells changed in place are not drawn from their part");
+  if (doc.getElementById('fd-list-styles')?.nextElementSibling?.id !== 'fd-list-editable-styles' && doc.getElementById('fd-list-columns-styles')?.nextElementSibling?.id !== 'fd-list-editable-styles' && doc.getElementById('fd-list-cards-styles')?.nextElementSibling?.id !== 'fd-list-editable-styles') throw new Error(`in a page, the editable part's sheet is not after the list's own: ${[...doc.head.querySelectorAll('style[id]')].map((style) => style.id).join(', ')}`);
+  prices.destroy();
+  gone('prices');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
@@ -2340,7 +2383,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

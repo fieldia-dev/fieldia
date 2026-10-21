@@ -1,4 +1,4 @@
-import { callsPartFunctions, formApprovalsPart, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formApprovalsPart, editableColumns, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -7,6 +7,7 @@ import type * as ApprovalsModule from './approvals-part';
 import type * as CardsModule from './cards-part';
 import type * as ColumnsModule from './columns-part';
 import type * as DuplicatesModule from './duplicates-part';
+import type * as EditableModule from './editable-part';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
 import type * as ImportModule from './import-part';
@@ -26,6 +27,8 @@ export type CardsPart = typeof CardsModule;
 export type ColumnsPart = typeof ColumnsModule;
 /** The import part: a list's Import, its dialog and its stylesheet. */
 export type ImportPart = typeof ImportModule;
+/** The editable part: a list whose cells are changed in place, each row saved as it is left. */
+export type EditablePart = typeof EditableModule;
 /** The duplicates part: possible duplicates said under the fields they matched on, and the merge's screen. */
 export type DuplicatesPart = typeof DuplicatesModule;
 /** The answers part: a page's own words that show the answers given, as a sentence says them, and a page of responses' ending. */
@@ -47,6 +50,8 @@ export const cardsPart: Part<CardsPart> = lazyPart('cards', () => import('./card
 export const columnsPart: Part<ColumnsPart> = lazyPart('columns', () => import('./columns-part'));
 /** A list's Import — a file read, its columns matched, its rows checked and written — loaded the first time Import is pressed. */
 export const importPart: Part<ImportPart> = lazyPart('import', () => import('./import-part'));
+/** A list's cells changed in place, loaded the first time a page draws a list with `editable`. */
+export const editablePart: Part<EditablePart> = lazyPart('editable', () => import('./editable-part'));
 /**
  * Possible duplicates and the merge's screen, loaded the first time a page naming fields in `duplicates` is shown with
  * a source that has `duplicates` — never waited for: what it says comes with the source's answer.
@@ -97,8 +102,11 @@ export function installListStyles(doc: Document): Promise<void> {
   );
 }
 
+/** A list's cell's widget its box takes where the cell is changed in place: hours, a per cent, a phone, links as tags. */
+export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage', 'phone', 'tags']);
+
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -111,8 +119,9 @@ const markdownAlone = (node: SectionNode) => {
  * a record's head, a button split, toggled or shown by its icon alone, or a
  * group's work heading; the list part for a list or a related list, and beside
  * a list the filters part for its filter bar, the cards part for its cards
- * (`card`, `gallery`; a related list's `card` too) and the columns part for the
- * columns a person shapes (`optionalColumns`); and the
+ * (`card`, `gallery`; a related list's `card` too), the columns part for the
+ * columns a person shapes (`optionalColumns`) and the editable part for cells
+ * changed in place (`editable`), with each such column's box's own part; and the
  * widgets' own for the fields that need them (a work item's text, a links box,
  * a path picker, a choice in Fieldia's own list, a date's box and calendar, a table of lines or of a many2many's
  * records or its cards, a business widget, a file, a picture, a signature or a PDF field, the survey kinds, booking
@@ -201,6 +210,14 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       if (node['card'] || node['gallery']) found.add(cardsPart);
       if (node['optionalColumns']) found.add(columnsPart);
       if (node['search'] === 'fields') found.add(filtersPart);
+      // Its cells changed in place: the part that opens them, and each such column's box's own, as a form's field draws it.
+      const changed = node['editable'] ? editableColumns(page, node as unknown as ListNode) : [];
+      if (changed.length) found.add(editablePart);
+      const looks = (node['cells'] ?? {}) as Record<string, { widget?: string; options?: FieldNode['options'] } | undefined>;
+      for (const name of changed) {
+        const look = looks[name]?.widget && CELL_BOXES.has(looks[name]?.widget as string) ? looks[name] : undefined;
+        fieldParts(page.fields[name], { type: 'field', id: `${String(node['id'])}.${name}`, field: name, ...(look ? { widget: look.widget, ...(look.options ? { options: look.options } : {}) } : {}) });
+      }
       if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
     }
     // A related list is drawn by the list part's table, its records' phones as its own fields say, its rows as cards
@@ -243,7 +260,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, approvals: approvalsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart };
+  const by: Record<string, Part> = { list: listPart, editable: editablePart, head: headPart, limits: limitsPart, approvals: approvalsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 

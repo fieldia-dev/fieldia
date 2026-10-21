@@ -1,0 +1,42 @@
+{
+  "fieldia": "0.7",
+  "id": "deal-stages",
+  "title": "Deal stages",
+  "description": "A sales pipeline's stages as a settings list: each stage's name, order, chance of winning and days expected changed in place, a stage added at the end, and the won stage the sales manager's alone.",
+  "records": {
+    "one": "stage",
+    "other": "stages",
+    "a": "a stage"
+  },
+  "data": {
+    "kind": "record",
+    "model": "deal.stage"
+  },
+  "fields": {
+    "sequence": { "type": "integer", "label": "Order", "min": 1 },
+    "name": { "type": "char", "label": "Stage", "required": true, "size": 40 },
+    "probability": { "type": "float", "label": "Chance of winning", "min": 0, "max": 1, "digits": [5, 2] },
+    "days": { "type": "integer", "label": "Days expected", "min": 0 },
+    "folded": { "type": "boolean", "label": "Folded" },
+    "won": { "type": "boolean", "label": "Won", "readonly": true },
+    "requirements": { "type": "text", "label": "What it takes" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "stages",
+    "columns": ["sequence", "name", "probability", "days", "folded", "won", "requirements"],
+    "sort": [{ "field": "sequence" }],
+    "sortable": false,
+    "choose": false,
+    "cells": {
+      "sequence": { "width": 6 },
+      "probability": { "widget": "percentage" },
+      "requirements": { "width": 30 }
+    },
+    "card": {
+      "title": "name",
+      "fields": [["probability", "days"], "requirements"]
+    },
+    "editable": true
+  }
+}

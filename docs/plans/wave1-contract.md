@@ -1081,3 +1081,44 @@ who, when and why. A timed-out step is the engine's to say: a `rejected` with it
   rejection with no reason; the person is the request's `user`, by id, else by name. `approvalHistory` (by `model:id`)
   is what it starts from. Tests: `libs/core/src/lib/record/approvals.spec.ts`, `form-approvals-lazy.spec.ts`,
   `libs/viewer/src/lib/approvals.spec.ts`, `libs/chatter/src/lib/approvals.spec.ts`, `e2e/approvals.spec.ts`.
+
+## 21. A list's cells changed in place (Wave 5, lane w5-editable-list)
+
+No new member: a list whose cells are changed in place (`ListNode.editable`) saves each row through `save`, writes the
+same change to several rows by `writeMany`, and reads a row again by `load` — every one a member the source already
+has, asked as below.
+
+```ts
+// Each row a record's own form: the page's fields the list reads (and what its worked-out columns read), its values as
+// the list has them — no load for what the list shows already — with the row's version and permissions.
+list({ model, fields, filter, sort, offset, limit })        // ListedRecord.version and .can, as before
+// The row left: the fields the person changed alone, as a save made outside a form (§2).
+save({ model, id, fields, changes, values, partial: true, version })   // values and fields: the changed ones alone
+// A row added at the end: a new record, whole.
+save({ model, id: null, fields, changes, values })
+// Rows of records given exactly the same change at once (one value pasted down a column), each passing the page's rules.
+writeMany({ model, ids, values, fields, versions })
+// A conflict's Reload and Keep mine reading theirs: the row as the source has it now.
+load({ model, id, fields })                                 // else list({ filter: [{ field: 'id', op: '=', value: id }], limit: 1 })
+```
+
+In plain words:
+
+- **Versions.** Each row's save carries the version it was listed at, or the one its last save answered: one changed
+  since is refused with `ConflictError`, and said under the row as a record's page says it (save-safety: who and when,
+  Reload, Keep mine, the changes set aside). A source with no versions is not checked.
+- **Permissions.** A row whose `can.edit` is false is not opened; a cell of `can.readonlyFields` or `can.hiddenFields`
+  neither. The source still refuses a save as it would.
+- **Refused.** `saveRefused` and the page's own rules are said under the row, the typing kept until it is saved, put back
+  (the row as listed or last saved), or the row left with nothing changed. A row with work kept that a new search, page
+  or order no longer shows stays in sight at the end of the list until then.
+- **`writeMany` where it helps**: rows of records given the same change (no lines, no links), none open for typing, each
+  checked by its form; those it refuses are saved one by one, so each says why as a row does; then the list is asked
+  again, for their versions. Without `writeMany`, each row is a `save`.
+- **Worked out.** A computed column's fields are asked with the list's (`rowReads`), worked out as the cells are typed;
+  `SaveResult.values` replace them. A value worked out from an answer the form refuses waits (0.28), said in the cell.
+- **Late answers.** Each row's form keeps its own generation (§10): a save answered for a row put back or released lays
+  nothing on it; a paste's names looked up after the list asked again write on none.
+- **The memory source** answers all of it as it is; nothing new. Tests: `libs/core/src/lib/format/list-editable.spec.ts`,
+  `libs/viewer/src/lib/list-editable.spec.ts`, `e2e/list-editable.spec.ts`.
+

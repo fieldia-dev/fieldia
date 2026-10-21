@@ -54,6 +54,7 @@ export type {
   ListCell,
   ListCard,
   ListGallery,
+  ListEditable,
   MapCard,
   CardLine,
   CardPart,
@@ -96,6 +97,8 @@ export { labelAt, quotedLabel, recordSentence } from './lib/record/record-words'
 export { wideColumns } from './lib/format/columns';
 export { relatedInTab } from './lib/format/head-checks';
 export { BULK_KINDS, bulkEditFields, bulkSettable } from './lib/format/bulk-edit';
+// Which of a list's columns its cells change in place: what a page's parts are known by before it is drawn.
+export { EDIT_KINDS, cellChangeable, editableColumns } from './lib/format/list-editable';
 export { IMPORT_KINDS, importFields, importable } from './lib/format/import-fields';
 export { cardLines, cardLineFields, cardPart, type CardLinePart } from './lib/format/card-lines';
 export type {

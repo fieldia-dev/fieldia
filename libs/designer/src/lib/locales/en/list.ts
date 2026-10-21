@@ -41,6 +41,8 @@ export const list = {
   exportHint: 'People take the rows they tick, or every one the search finds, away as a file: the columns as the list shows them.',
   bulkEdit: 'Edit many rows at once',
   bulkEditHint: 'With rows ticked, Edit sets one field to one value in each, after a question: any column that can be changed.',
+  editInPlace: 'Change cells in place',
+  editInPlaceHint: 'A press on a cell changes it in its field’s own box, Tab goes on to the next; each row is saved as it is left, and a row is added at the end: a price list, a week’s hours, a pipeline’s stages.',
   importRows: 'Import from Excel and CSV',
   importHint: 'People make records from a file of their own: its columns matched to the fields, each row checked by the page’s rules before anything is saved, and Undo after.',
   printRows: 'Print every row found',

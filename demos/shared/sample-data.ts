@@ -81,6 +81,10 @@ import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 import purchaseApproval from '../../examples/pages/purchase-approval.page.json';
 import expenseApproval from '../../examples/pages/expense-approval.page.json';
 import { APPROVAL_ROUTES, approvalHistory, approvalRecords, approvalUser } from './approvals';
+import servicePrices from '../../examples/pages/service-prices.page.json';
+import staffHours from '../../examples/pages/staff-hours.page.json';
+import dealStages from '../../examples/pages/deal-stages.page.json';
+import { CLINIC_ROLES, sampleServices, sampleStaffWeeks, sampleStages, servicePerHour, stagePermissions, staffWeekRule } from './editable-lists';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -146,6 +150,11 @@ export const pages: Record<string, Page> = {
   'homes-search': homesSearch as Page,
   // A sales team's buyer leads, its filters counted ("Late 5"), and each lead's own page (shared/leads.ts).
   'leads-queue': leadsQueue as Page,
+  // Lists whose cells are changed in place, each row saved as it is left: a clinic's prices, a week's hours, a
+  // pipeline's stages (shared/editable-lists.ts).
+  'service-prices': servicePrices as Page,
+  'staff-hours': staffHours as Page,
+  'deal-stages': dealStages as Page,
   lead: lead as Page,
   // A work item's body: groups with tools at their heading's end, Markdown and rich text, a discussion, links (shared/wi-text.ts).
   'wi-text': wiText as Page,
@@ -267,8 +276,14 @@ const HOMES_TO_BUY: ResolvedFilter[] = [
   { field: 'currency', op: '=', value: 'EGP' },
 ];
 
+/** Lists whose rows are changed where they stand, with no page of a record to open: the app opens none of their records. */
+const CHANGED_IN_PLACE = new Set(['service-prices', 'staff-hours', 'deal-stages']);
+/** Whether a list's rows open a record of their own: not those changed in place, whose rows are the whole of it. */
+export const opensRows = (params: URLSearchParams): boolean => !CHANGED_IN_PLACE.has(params.get('page') ?? '');
+
 /** A list's row opens its record on its own page, keeping the skin, language and direction. */
 export function openRecord(params: URLSearchParams, id: string | number): void {
+  if (!opensRows(params)) return;
   const next = new URLSearchParams(params);
   next.set('page', RECORD_PAGES[params.get('page') ?? ''] ?? 'customer');
   next.set('record', String(id));
@@ -516,7 +531,9 @@ export function sampleDataSource() {
     draftLink,
     attachments: billAttachments(),
     // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's.
-    can: { 'crm.contact': contactPermissions },
+    can: { 'crm.contact': contactPermissions, 'deal.stage': stagePermissions },
+    // The price list keeps versions: a price someone else changes meanwhile is said under its row (shared/editable-lists.ts).
+    ...(params.get('page') === 'service-prices' ? { versions: { by: 'Sara Ali' } } : {}),
     // What links show of their records besides their names: an address, a picture, a colour.
     shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' }, ...wiPicker.shows },
     records: {
@@ -545,6 +562,11 @@ export function sampleDataSource() {
       listing: { 1: LISTING },
       // The contacts, and the people who own them (shared/contacts.ts).
       'crm.contact': sampleContacts(),
+      // A clinic's prices, a week's hours, a pipeline's stages: lists changed in place (shared/editable-lists.ts).
+      'clinic.service': sampleServices(),
+      'clinic.role': CLINIC_ROLES,
+      'staff.week': sampleStaffWeeks(),
+      'deal.stage': sampleStages(),
       'res.users': Object.fromEntries(Object.entries(OWNERS).map(([id, name]) => [id, { name }])),
       // The calendars' appointments and bookings, made round now (shared/calendar.ts).
       ...calendarDemo.records(),
@@ -788,6 +810,9 @@ export function sampleDataSource() {
   keepWrites(source);
   // Each draft kept in this browser, for the link opened in another tab (shared/clinic-intake.ts).
   keepDrafts(source);
+  // The clinic's server: a week over 48 hours refused, a service's price per hour worked out again (shared/editable-lists.ts).
+  staffWeekRule(source);
+  servicePerHour(source);
   return source;
 }
 

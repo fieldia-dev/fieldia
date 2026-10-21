@@ -9726,6 +9726,16 @@
             ],
             "additionalProperties": false
           }
+        },
+        "editable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ListEditable"
+            }
+          ]
         }
       },
       "required": [
@@ -10024,6 +10034,26 @@
             "medium",
             "large"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "ListEditable": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          }
+        },
+        "add": {
+          "type": "boolean"
+        },
+        "open": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false

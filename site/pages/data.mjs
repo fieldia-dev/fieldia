@@ -63,7 +63,7 @@ interface DataSource {
     <tr><td>${c('saveDefinitions')}</td><td>Someone adds a property in place</td><td>Keeping it on that record</td></tr>
     <tr><td>${c('archive')} · ${c('copy')} · ${c('delete')}</td><td>The gear menu's Archive, Unarchive, Duplicate or Delete, or those steps, run</td><td>The record's own operations — without one, your app's action of the step's name is called. See <a href="/record/#toolbar">Around a record</a></td></tr>
     <tr><td>${c('attachments')}</td><td>A sheet that shows the record's attachment beside it opens a record</td><td>The PDF or picture beside the sheet</td></tr>
-    <tr><td>${c('writeMany')}</td><td>Someone presses Edit for many records of a list, and says Yes</td><td>Changing many at once in one call — without it, the list saves each in turn. See <a href="#many">many records at once</a></td></tr>
+    <tr><td>${c('writeMany')}</td><td>Someone presses Edit for many records of a list, and says Yes; a block pasted on a list whose cells change in place gives several rows the same change</td><td>Changing many at once in one call — without it, the list saves each in turn. See <a href="#many">many records at once</a> and <a href="#in-place">a list changed in place</a></td></tr>
     <tr><td>${c('exportRecords')}</td><td>Someone exports a list</td><td>An export written on your server — without it, the browser writes it</td></tr>
     <tr><td>${c('createMany')}</td><td>Someone imports a file's rows into a list</td><td>Making many records in one call — without it, the list saves each as a new record. See <a href="#import">many records made at once</a></td></tr>
     <tr><td>${c('importRecords')}</td><td>Someone has matched a file's columns, before its rows are checked</td><td>An import taken on your server, a file of any size — without it, the browser imports it</td></tr>
@@ -434,6 +434,28 @@ exportRecords?({ model, format: 'xlsx' | 'csv', columns: [{ field, label }], ids
   <li>${c('allIds')} shorter than ${c('total')} means you stopped early: the list says <em>1,000 of 1,284 could be selected</em> rather than claim all. Each row's ${c('version')} and ${c('can')} are what an Edit sends and keeps to.</li>
   <li>${c('writeMany')} is asked a thousand ids at a time. Every id not in ${c('failed')} is taken as changed; a failure's ${c('message')} is said beside the record's name, and its ${c('problem')} (a ${c('ConflictError')}'s, say) lets the list name who changed it. A call that throws counts each of its records as not changed, with its words. Without ${c('writeMany')}, each record is a ${c('save')} with ${c('partial: true')}: ${c('values')} and ${c('changes')} hold the one field.</li>
   <li>${c('exportRecords')} gets the list's columns and words, the ticked ${c('ids')} (none: every record ${c('filter')} finds), the order and the file's name. Answer with the file and the browser saves it; with ${c('{ message }')} — <em>it will be emailed to you</em> — and the list says it; or with ${c('false')} to let the browser write this one after all, as for a small export.</li>
+</ul>
+
+<h2 id="in-place">A list changed in place</h2>
+<p>A list whose cells are changed in place (${c('editable')}, see <a href="/lists/#editable">lists</a>) asks nothing new of your source. Each row is a record's own form, its values as the list read them — no ${c('load')} for what the list shows already — and it is saved as the person leaves it:</p>
+${code(
+  'ts',
+  `
+// A row left: the fields the person changed alone, with the version it was listed at.
+save({ model, id, fields, changes, values, partial: true, version })   // values and fields: the changed ones alone
+// A row added at the end: a new record, whole.
+save({ model, id: null, fields, changes, values })
+// Rows given the same change at once (one value pasted down a column): one call, each with its version.
+writeMany?({ model, ids, values, fields, versions })
+// A conflict's Reload, Keep mine reading theirs: the row as you have it now (else list, by its id).
+load?({ model, id, fields })`
+)}
+<ul>
+  <li><strong>Versions.</strong> Each row's ${c('version')} (${c('ListedRecord.version')}) goes with its save; one changed since is refused with ${c('ConflictError')} and said under the row as a record's page says it, with Reload and Keep mine. A source that tells no versions is not checked.</li>
+  <li><strong>Permissions.</strong> A row whose ${c('can.edit')} is false is not opened for typing, nor a cell of ${c('can.readonlyFields')} or ${c('can.hiddenFields')}; your ${c('save')} still refuses as it would.</li>
+  <li><strong>Refused.</strong> ${c('saveRefused({ kind, message })')} — a rule of yours, a field's own words — is said under the row, the person's typing kept for them to put right or put back.</li>
+  <li><strong>Worked out.</strong> What a worked-out column reads is asked for with the list's fields, and worked out as the cells are typed; the values your save answers with replace them.</li>
+  <li>A row's links, choices and files ask ${c('search')}, ${c('create')}, ${c('options')}, ${c('onchange')} and ${c('upload')} as a form does. Without ${c('save')}, the list is read and opened as ever.</li>
 </ul>
 
 <h2 id="import">Many records made at once: a list's Import</h2>

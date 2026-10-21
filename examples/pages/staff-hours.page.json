@@ -1,0 +1,57 @@
+{
+  "fieldia": "0.7",
+  "id": "staff-hours",
+  "title": "Staff hours this week",
+  "description": "A front desk's week: each person's hours by day changed in place as hours and minutes, the week added up as they are typed, and a week over 48 hours refused by the server with why, under its row.",
+  "records": {
+    "one": "person",
+    "other": "people",
+    "a": "a person"
+  },
+  "data": {
+    "kind": "record",
+    "model": "staff.week"
+  },
+  "fields": {
+    "name": { "type": "char", "label": "Name", "readonly": true },
+    "role": {
+      "type": "selection",
+      "label": "Role",
+      "readonly": true,
+      "options": [
+        { "value": "doctor", "label": "Doctor" },
+        { "value": "nurse", "label": "Nurse" },
+        { "value": "desk", "label": "Front desk" }
+      ]
+    },
+    "sat": { "type": "float", "label": "Sat", "min": 0, "max": 12 },
+    "sun": { "type": "float", "label": "Sun", "min": 0, "max": 12 },
+    "mon": { "type": "float", "label": "Mon", "min": 0, "max": 12 },
+    "tue": { "type": "float", "label": "Tue", "min": 0, "max": 12 },
+    "wed": { "type": "float", "label": "Wed", "min": 0, "max": 12 },
+    "thu": { "type": "float", "label": "Thu", "min": 0, "max": 12 },
+    "week": { "type": "float", "label": "Week", "compute": "sat + sun + mon + tue + wed + thu" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "hours",
+    "columns": ["name", "role", "sat", "sun", "mon", "tue", "wed", "thu", "week"],
+    "sort": [{ "field": "role" }, { "field": "name" }],
+    "choose": false,
+    "cells": {
+      "sat": { "widget": "duration" },
+      "sun": { "widget": "duration" },
+      "mon": { "widget": "duration" },
+      "tue": { "widget": "duration" },
+      "wed": { "widget": "duration" },
+      "thu": { "widget": "duration" },
+      "week": { "widget": "duration" }
+    },
+    "card": {
+      "title": "name",
+      "subtitle": "role",
+      "fields": [["sat", "sun", "mon"], ["tue", "wed", "thu"], "week"]
+    },
+    "editable": { "add": false }
+  }
+}

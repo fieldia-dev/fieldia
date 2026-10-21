@@ -11,7 +11,7 @@ import { sampleChatter } from '../shared/sample-chatter';
 import { buyerBar, enquiryChatterOptions } from '../shared/enquiry';
 import { historySlot } from '@fieldia/chatter';
 import { wiHistoryChatter } from '../shared/wi-history';
-import { appPages, openRecord, optionsFromQuery, pageFromQuery, pages, recordFromQuery, sampleDataSource } from '../shared/sample-data';
+import { appPages, openRecord, opensRows, optionsFromQuery, pageFromQuery, pages, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { openByRoute, valuesFromQuery } from '../shared/related-lists';
 import { panelBar } from '../shared/panel-demo';
 import { answerAction } from '../shared/order-desk';
@@ -25,6 +25,7 @@ import { meanwhileBar } from '../shared/test-drive';
 import { lastPlacesBar } from '../shared/event-signup';
 import { signedInBar } from '../shared/approvals';
 import { addressFollowsRecord } from '../shared/address';
+import { priceListBar } from '../shared/editable-lists';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -82,7 +83,8 @@ const options: ViewerOptions = {
   recordId: recordFromQuery(params, page),
   // A new record its address fills in: a customer's quotation made with New, by the app's own route.
   values: valuesFromQuery(params),
-  onOpenRecord: (id) => openRecord(params, id),
+  // A list's row opens its record's page; a list changed in place has none to open.
+  ...(opensRows(params) ? { onOpenRecord: (id: string | number) => openRecord(params, id) } : {}),
   // The app's own route for a customer's invoices (View all): the list's address, kept to that customer's.
   onOpen: (request) => openByRoute(params, request),
   skin: (params.get('skin') as Skin | null) ?? undefined,
@@ -209,6 +211,8 @@ if (name === 'listing-photos') document.getElementById('app')?.before(photosBar(
 
 // The test drive has a bar over it: someone else books a time on another screen (shared/test-drive.ts).
 if (name === 'test-drive') document.getElementById('app')?.before(meanwhileBar(dataSource));
+// The price list has a bar over it: someone else changes a price on another screen (shared/editable-lists.ts).
+if (name === 'service-prices') document.getElementById('app')?.before(priceListBar(dataSource));
 // The sign-up has a bar over it: two people take the morning's last places on other screens (shared/event-signup.ts).
 if (name === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
 // The enquiry has a bar over it: the buyer's phone reads what was sent and writes back (shared/enquiry.ts).
