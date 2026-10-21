@@ -52,6 +52,7 @@ export const kinds: DesignerWords['kinds'] = {
     embed: 'صفحة معروضة',
     'qr-code': 'رمز الاستجابة السريعة',
     barcode: 'رمز شريطي',
+    pins: 'دبابيس على صورة',
     distribution: 'التوزيع التحليلي',
     'tax-totals': 'إجماليات الضرائب',
     payments: 'المدفوعات',

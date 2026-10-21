@@ -114,6 +114,8 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
   // A value shown as a code to scan: a ticket's QR, an asset's label (the codes part's).
   { id: 'qr-code', label: 'QR code', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'qrcode' },
   { id: 'barcode', label: 'Barcode', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'barcode' },
+  // Pins with notes on a picture: a face chart, a floor plan, a car's damage (the pins part's).
+  { id: 'pins', label: 'Pins on a picture', group: 'more', field: (label) => ({ type: 'json', label }), widget: 'pins' },
   { id: 'distribution', label: 'Analytic distribution', group: 'more', field: (label) => ({ type: 'json', label }), widget: 'distribution' },
   { id: 'tax-totals', label: 'Tax totals', group: 'more', field: (label) => ({ type: 'json', label, readonly: true }), widget: 'tax-totals' },
   { id: 'payments', label: 'Payments', group: 'more', field: (label) => ({ type: 'json', label, readonly: true }), widget: 'payments' },
@@ -121,7 +123,7 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
 ];
 
 /** The business kinds whose own settings are the widget's alone: shown for a field of the model too, which keeps what it holds. */
-export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['code', 'vscode', 'priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'colour', 'copy', 'pdf', 'embed', 'qr-code', 'barcode', 'distribution', 'tax-totals', 'payments', 'properties']);
+export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['code', 'vscode', 'priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'colour', 'copy', 'pdf', 'embed', 'qr-code', 'barcode', 'pins', 'distribution', 'tax-totals', 'payments', 'properties']);
 
 /** The kind a field was made as, from its type and widget — an app's kind by the widget that draws it; null for one no kind makes. */
 export function kindOfField(field: Field, node: FieldNode): string | null {
@@ -180,7 +182,7 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
     case 'json':
       if (node.widget === 'code') return 'code';
       if (node.widget === 'monaco') return 'vscode';
-      return node.widget === 'address' || node.widget === 'distribution' || node.widget === 'tax-totals' || node.widget === 'payments' ? node.widget : null;
+      return node.widget === 'address' || node.widget === 'distribution' || node.widget === 'tax-totals' || node.widget === 'payments' || node.widget === 'pins' ? node.widget : null;
     case 'properties':
       return 'properties';
     default:
@@ -279,6 +281,7 @@ const BUSINESS_FITS: Record<string, (field: Field) => boolean> = {
   embed: (field) => field.type === 'char',
   'qr-code': (field) => field.type === 'char' || field.type === 'text',
   barcode: (field) => field.type === 'char' || field.type === 'integer',
+  pins: (field) => field.type === 'json',
   distribution: (field) => field.type === 'json',
   'tax-totals': (field) => field.type === 'json',
   payments: (field) => field.type === 'json',

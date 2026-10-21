@@ -225,6 +225,34 @@ export interface WidgetLabels {
   barcodeOf: string;
   qrTooLong: string;
   barcodeRefused: string;
+  /**
+   * Pins with notes on a picture (`"widget": "pins"`): how they are put and moved; the picture's group (`{label}`), none
+   * yet, no pins yet; where a pin is (`{area}`, one of the nine, `{x}` and `{y}` per cent across and down); a pin's name
+   * (`{n}`, `{at}`, `{note}`), its note's box and Remove; what is said as one is added, moved, removed; the most it takes.
+   */
+  pinsHelp: string;
+  pinsOn: string;
+  pinsNoPicture: string;
+  pinsNone: string;
+  pinAt: string;
+  pinTopLeft: string;
+  pinTop: string;
+  pinTopRight: string;
+  pinLeft: string;
+  pinCentre: string;
+  pinRight: string;
+  pinBottomLeft: string;
+  pinBottom: string;
+  pinBottomRight: string;
+  pinNamed: string;
+  pinNamedNote: string;
+  pinNote: string;
+  pinNotePlaceholder: string;
+  pinRemove: string;
+  pinAdded: string;
+  pinMoved: string;
+  pinRemoved: string;
+  pinsFull: string;
   /** The switch over the files, when the page offers one: the files as a list, as cards, or as thumbnails. */
   showFilesAs: string;
   asList: string;
@@ -709,6 +737,29 @@ const en: WidgetLabels = {
   barcodeOf: 'Barcode: {value}',
   qrTooLong: 'Too long for a QR code: shorten it, or show a link to it instead.',
   barcodeRefused: 'A barcode cannot hold “{character}”: only letters without accents, digits and signs.',
+  pinsHelp: 'Click the picture to add a pin, or reach it with Tab, move the cross with the arrow keys and press Enter. Drag a pin, or move it with the arrow keys; Delete takes it away.',
+  pinsOn: '{label}: put pins on it',
+  pinsNoPicture: 'No picture to put pins on yet.',
+  pinsNone: 'No pins yet.',
+  pinAt: '{area}, {x}% across, {y}% down',
+  pinTopLeft: 'top left',
+  pinTop: 'top',
+  pinTopRight: 'top right',
+  pinLeft: 'left',
+  pinCentre: 'centre',
+  pinRight: 'right',
+  pinBottomLeft: 'bottom left',
+  pinBottom: 'bottom',
+  pinBottomRight: 'bottom right',
+  pinNamed: 'Pin {n}, {at}',
+  pinNamedNote: 'Pin {n}, {at}: {note}',
+  pinNote: 'Note for pin {n}',
+  pinNotePlaceholder: 'What was done here',
+  pinRemove: 'Remove pin {n}',
+  pinAdded: 'Pin {n} added: {at}.',
+  pinMoved: 'Pin {n} moved: {at}.',
+  pinRemoved: 'Pin {n} removed.',
+  pinsFull: 'No more pins: {max} at most.',
   showFilesAs: 'Show files as',
   asList: 'List',
   asCards: 'Cards',

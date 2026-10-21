@@ -990,8 +990,12 @@ export function installStyles(document: Document): void {
  * be drawn, under the field's own box — cut from no rule. After the recorder's (neither names the other's parts) and
  * before the themes', so a theme still reshapes the box over it, its words' type and the note; the code keeps its own
  * black on white under every theme and scheme: rank 12, the ranks from the themes' on moving on by one.
+ *
+ * Pins on a picture's (0.30, the pins part): the picture, its numbered pins, the keyboard's cross and the list of notes
+ * under it — cut from no rule. After the codes' (none names another's parts) and before the themes', so a theme still
+ * reshapes the note boxes, the buttons and their focus: rank 13, the ranks from the themes' on moving on by one.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, record: 11, codes: 12, themes: 13, quiet: 14, picker: 15, head: 16, groups: 17, text: 18, surveyLooks: 19, cards: 20 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, record: 11, codes: 12, pins: 13, themes: 14, quiet: 15, picker: 16, head: 17, groups: 18, text: 19, surveyLooks: 20, cards: 21 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

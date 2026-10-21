@@ -56,3 +56,34 @@ export function codeOptionIssues(node: { widget?: string; options?: Record<strin
   if (node.widget === 'barcode' && node.options?.['level'] !== undefined) issues.push({ message: 'level is a QR code\'s error correction: a barcode has none', path: ['options', 'level'] });
   return issues;
 }
+
+/**
+ * Pins with notes on a picture (`"widget": "pins"` on a json field): a face chart, a floor plan, a car's damage. The
+ * picture is `image` (its address: a web address, or a picture of the page's own as `data:`), or `imageField`, a
+ * field holding it (a picture or a file field, or a web address); `alt` says what it is ("Face, from the front"), for
+ * those who cannot see it; `maxPins` the most pins it takes (1 to 200); `noteLabel` the words in an empty note's box.
+ * The value is the pins: `[{ "x": 0.42, "y": 0.31, "note": "Botox, 4 units" }]`, each where it is as a share of the
+ * picture's width and height from its top left corner.
+ *
+ *   { "field": "injections", "widget": "pins", "options": { "image": "https://…/face.svg", "alt": "Face, from the front" } }
+ */
+export const PinsOptionsSchema = z
+  .object({
+    image: z.string().min(1).optional(),
+    imageField: z.string().min(1).optional(),
+    alt: z.string().optional(),
+    maxPins: z.int({ error: 'maxPins is a whole number of pins, 1 to 200' }).min(1, 'maxPins is a whole number of pins, 1 to 200').max(200, 'maxPins is a whole number of pins, 1 to 200').optional(),
+    noteLabel: z.string().optional(),
+  })
+  .meta({ id: 'PinsOptions' });
+
+export type PinsOptions = z.infer<typeof PinsOptionsSchema>;
+
+/** The issues of pins' settings, each at its path under `options`: one picture to place them on, the page's or a field's. */
+export function pinsOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
+  if (node.widget !== 'pins') return [];
+  const issues = (PinsOptionsSchema.safeParse(node.options ?? {}).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] }));
+  // A picture of its own or a field's, never both: with neither, the field says it has no picture yet.
+  if (node.options?.['image'] !== undefined && node.options?.['imageField'] !== undefined) issues.push({ message: 'pins are placed on one picture: its address (image) or the field holding it (imageField), not both', path: ['options', 'imageField'] });
+  return issues;
+}

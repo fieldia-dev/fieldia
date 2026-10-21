@@ -2,7 +2,7 @@
   "fieldia": "0.7",
   "id": "site-visit",
   "title": "Site visit",
-  "description": "An agent's visit to a flat before it is listed: the video tour plays in place, voice notes and short videos are recorded on the visit, and listened to where they are.",
+  "description": "An agent's visit to a flat before it is listed: the video tour plays in place, voice notes and short videos are recorded on the visit, and what to mend is pinned on the floor plan.",
   "data": {
     "kind": "record",
     "model": "property.visit"
@@ -74,6 +74,15 @@
         "video/*"
       ],
       "maxSize": 31457280
+    },
+    "floor_plan": {
+      "type": "image",
+      "label": "Floor plan"
+    },
+    "snags": {
+      "type": "json",
+      "label": "Snags",
+      "help": "Put a pin where each thing to mend is, and say what it is."
     }
   },
   "layout": {
@@ -142,6 +151,29 @@
             "field": "condition",
             "widget": "radio",
             "colspan": 2
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-plan",
+        "title": "Floor plan",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-snags",
+            "field": "snags",
+            "widget": "pins",
+            "options": {
+              "imageField": "floor_plan",
+              "alt": "The flat's floor plan",
+              "noteLabel": "What to mend"
+            }
+          },
+          {
+            "type": "field",
+            "id": "f-plan",
+            "field": "floor_plan"
           }
         ]
       }

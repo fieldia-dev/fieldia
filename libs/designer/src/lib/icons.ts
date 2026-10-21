@@ -59,6 +59,7 @@ const SHAPES: Record<string, string> = {
   pdf: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 16v-4h1.3a1.2 1.2 0 0 1 0 2.4H8.5M13 12v4h.8a2 2 0 0 0 0-4z"/>',
   embed: '<rect x="2.5" y="4" width="19" height="16" rx="2"/><path d="M2.5 8h19M9 12l-2.5 2.5L9 17M15 12l2.5 2.5L15 17"/>',
   'qr-code': '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20v1M20 14v1"/>',
+  pins: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 9.5a2 2 0 1 1 0 .01M9 11.5v3M15 13a2 2 0 1 1 0 .01M15 15v2"/>',
   barcode: '<path d="M3 5v14M6 5v14M10 5v14M13 5v14M17 5v14M21 5v14M8 5v14M19 5v14"/>',
   distribution: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12l6 6"/>',
   'tax-totals': '<path d="M5 4h14v16l-2.3-1.5L14.3 20 12 18.5 9.7 20l-2.4-1.5L5 20z"/><path d="M9 9h6M9 13h3M14.5 13h.5"/>',

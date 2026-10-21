@@ -18,7 +18,7 @@ const ROWS = [
   ['reference', 'A link to a record of one of several models', '', 'models'],
   ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', 'pdf (shown inline)', 'accept, maxSize, multiple, minFiles, maxFiles, shrink'],
   ['image', 'An image, with a preview; several with multiple, as thumbnails, cards or a list', '', 'maxSize, multiple, minFiles, maxFiles, shrink'],
-  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), monaco (with @fieldia/monaco), place and area (with @fieldia/map), address, distribution, tax-totals, payments', ''],
+  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), monaco (with @fieldia/monaco), place and area (with @fieldia/map), address, pins (on a picture), distribution, tax-totals, payments', ''],
   ['properties', 'Extra values, each edited with the field for its type', '', 'definitions, definitionsFrom'],
 ];
 
@@ -221,6 +221,26 @@ ${code(
   <li>In the designer: <em>QR code</em> and <em>Barcode</em> among a screen's kinds, with a QR code's <em>Error correction</em> and <em>Its words under it</em>.</li>
 </ul>
 <p>The legal codes on an invoice or a receipt (ZATCA's, an e-receipt's) belong on the printed document, which your report engine makes; this is for the screen.</p>
+
+<h2 id="pins">Pins on a picture</h2>
+<p>A clinic's face chart, a floor plan's snags, a car's damage at its return: ${c('"widget": "pins"')} on a ${c('json')} field puts pins with notes on a picture. A click or a tap puts a pin there and goes to its note; a pin is dragged to move it. By the keyboard, Tab reaches the picture, the arrow keys move a cross over it (Shift: further) and Enter puts a pin under it; on a pin, the arrow keys move it, Delete takes it away and Enter goes to its note. Under the picture the pins are a numbered list — each one's place in words, its note's box and Remove — which is what a screen reader reads, each pin a button named "Pin 2, top left, 18% across, 22% down: Botox, 4 units".</p>
+${code(
+  'json',
+  `
+"injections": { "type": "json", "label": "Injection points" }
+
+{ "type": "field", "id": "f-injections", "field": "injections", "widget": "pins",
+  "options": { "image": "/charts/face.svg", "alt": "Face, from the front", "noteLabel": "Product and units", "maxPins": 30 } }`
+)}
+<p>The value is the pins, each where it is on the picture as a share of its width and height from its top left corner, so they stand where they were put at any size the picture is drawn:</p>
+${code('json', `[{ "x": 0.4, "y": 0.29, "note": "Botox, 4 units" }, { "x": 0.5, "y": 0.68, "note": "Filler, 0.5 ml" }]`)}
+<ul>
+  <li>${c('image')}: the picture's address — a web address, or the page's own as ${c('data:')}; or ${c('imageField')}: a field holding it — a picture or file field (a floor plan uploaded with the record), or a web address. One of the two. ${c('alt')}: what the picture is, for those who cannot see it. ${c('maxPins')}: the most it takes (1 to 200), said when a person tries one more. ${c('noteLabel')}: the words in an empty note's box.</li>
+  <li>An app's own keys on a pin (an id, a product's code) are kept as it is moved or its note changed; a pin with no place on the picture is not shown.</li>
+  <li>Read-only, the pins and their notes are shown and nothing moves. The picture is never mirrored right to left: left is the picture's left.</li>
+  <li>It comes in a part of its own, ${c('fieldia.pins.js')}, loaded the first time a page shows pins; their notes in order meanwhile.</li>
+  <li>In the designer: <em>Pins on a picture</em> among a screen's kinds, with its <em>Picture</em> and <em>What it shows</em>.</li>
+</ul>
 
 <h2 id="signature">A signature that signs the answers</h2>
 <p>A consent, an engagement letter, a reservation contract: a signature's picture alone is weak evidence in a dispute. A signature whose node says ${c('signs')} — ${c('"form"')}, every answer shown, or the fields by name — keeps beside its picture who signed, when, and a fingerprint (SHA-256) of the answers it signed, and locks those answers while it is kept. ${c('signerField')} names the field holding the signer's name; left out, the name typed on the pad, else the person the app says is using the form.</p>

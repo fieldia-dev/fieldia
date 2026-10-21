@@ -38,7 +38,7 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { businessPart, choicePart, codesPart, datePart, filesPart, linesPart, partFactory, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { businessPart, choicePart, codesPart, datePart, pinsPart, filesPart, linesPart, partFactory, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTimer, plainTotal } from './business-plain';
 import { plainAddress, plainChosen, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
@@ -958,6 +958,20 @@ export const propertiesWidget: WidgetFactory = surveyKind((part) => part.propert
 /** A value shown as a code (codes.ts, in the codes part), drawn under the field's own box: that box until the part comes. */
 const codeKind = (plain: WidgetFactory): PartFactory => partFactory(codesPart, (part) => part.codeWidget(createWidget), plain);
 
+/** Pins on a picture before their part came: their notes in order, "1. Botox, 4 units · 2. Filler", as read-only words. */
+function plainPins({ id, document }: WidgetContext): Widget {
+  const output = make(document, 'output', { id, class: 'fd-value-text', 'data-fd-plain': 'pins' });
+  output.tabIndex = -1;
+  return {
+    element: output,
+    focus: () => output.focus(),
+    update(state) {
+      const pins = Array.isArray(state.value) ? (state.value as { note?: unknown }[]) : [];
+      setText(output, pins.map((pin, i) => `${i + 1}.${typeof pin?.note === 'string' && pin.note ? ` ${pin.note}` : ''}`).join(' · '));
+    },
+  };
+}
+
 /** Until a type has its own editor (Phase 5), show what it holds. */
 function pendingWidget({ field, id, document }: WidgetContext): Widget {
   const span = make(document, 'span', { id, class: 'fd-pending', 'data-fd-pending': field.type });
@@ -1097,6 +1111,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   html: htmlWidget,
   json: jsonWidget,
   'json.address': surveyKind((part) => part.addressWidget, plainAddress),
+  // Pins with notes on a picture (pins.ts), in the pins part: their notes meanwhile.
+  'json.pins': partFactory(pinsPart, (part) => part.pinsWidget, plainPins),
   properties: later(() => propertiesWidget),
   matrix: surveyKind((part) => part.matrixWidget, plainMatrix),
   // A value shown as a code to scan — a QR code of words, a Code 128 barcode of words or a number — in the codes part

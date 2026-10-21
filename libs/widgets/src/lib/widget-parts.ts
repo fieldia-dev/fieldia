@@ -10,6 +10,7 @@ import type * as FilesModule from './files-part';
 import type * as EvidenceModule from './evidence-part';
 import type * as RecordModule from './record-part';
 import type * as CodesModule from './codes-part';
+import type * as PinsModule from './pins-part';
 import type { ShrinkOptions } from './shrink';
 import type * as SurveyModule from './survey-part';
 import type * as PhoneModule from './phone-part';
@@ -43,6 +44,8 @@ export type EvidencePart = typeof EvidenceModule;
 export type RecordPart = typeof RecordModule;
 /** The codes part: a value shown as a QR code or a Code 128 barcode, by Fieldia's own encoders. */
 export type CodesPart = typeof CodesModule;
+/** The pins part: pins with notes on a picture — a face chart, a floor plan, a car's damage. */
+export type PinsPart = typeof PinsModule;
 /** The survey part: a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address and a progress bar. */
 export type SurveyPart = typeof SurveyModule;
 /** The phone part: a phone number read the world over — its country picked or typed, checked, kept as E.164, shown at rest with its links — and every country's numbers. */
@@ -106,6 +109,8 @@ export function loadRecordPart(): Promise<RecordPart> {
 }
 /** A value shown as a QR code or a barcode, loaded the first time a page shows one (`"widget": "qrcode"`, `"barcode"`). */
 export const codesPart: Part<CodesPart> = lazyPart('codes', () => import('./codes-part'));
+/** Pins with notes on a picture, loaded the first time a page shows them (`"widget": "pins"`). */
+export const pinsPart: Part<PinsPart> = lazyPart('pins', () => import('./pins-part'));
 /** Whether asking for the evidence part again, once it failed, can bring it (`Part.asksAgain`): a function, as above. */
 export function evidencePartAsksAgain(): boolean {
   return evidencePart.asksAgain === true;

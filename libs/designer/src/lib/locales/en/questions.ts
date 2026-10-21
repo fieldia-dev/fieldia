@@ -322,6 +322,10 @@ export const questions = {
   qrLevel: 'Error correction',
   qrLevels: { L: 'Low (7%)', M: 'Medium (15%)', Q: 'Quartile (25%)', H: 'High (30%)' } as Record<string, string>,
   codeWordsUnder: 'Its words under it',
+  /** Pins on a picture: its address, or the field holding it, and what it shows. */
+  pinsPicture: 'Picture',
+  pinsPictureFrom: 'Picture from',
+  pinsShows: 'What it shows',
   accountsFrom: 'Accounts from',
   currencyFrom: 'Currency from',
   taxTyped: 'Tax amounts can be typed',

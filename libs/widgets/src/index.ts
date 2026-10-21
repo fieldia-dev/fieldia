@@ -21,6 +21,8 @@ export type { Recorder, RecorderContext } from './lib/recorder';
 // A value shown as a QR code or a barcode, its encoders Fieldia's own, comes in the codes part:
 // `(await codesPart.load()).qrCode(words, 'M')`, `.code128(words)`.
 export type { QrCode, QrLevel } from './lib/qr';
+// Pins with notes on a picture come in the pins part: `(await pinsPart.load()).pinsOf(value)`.
+export type { Pin } from './lib/pins';
 export type { Going, GoingItem } from './lib/files-going';
 export type { ShrinkOptions } from './lib/shrink';
 export * from './lib/extras';
@@ -75,7 +77,7 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // country's numbers: `(await phonePart.load()).readPhone(…)`, `.writePhone(…)`. Whether a field reads so is here.
 // Booking slots (`"widget": "slots"`) come in the slots part, with the date part.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, recordPart, codesPart, surveyPart, phonePart, slotsPart, relationsPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type RecordPart, type CodesPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, surveyPart, phonePart, slotsPart, relationsPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type RecordPart, type CodesPart, type PinsPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type PartFactory } from './lib/widget-parts';
 export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.

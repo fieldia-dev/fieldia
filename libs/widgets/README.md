@@ -91,6 +91,15 @@ and the words under it. Words a code cannot hold are said in its place. The
 encoders are Fieldia's own, in `codesPart` (`fieldia.codes.js`):
 `(await codesPart.load()).qrCode(words, 'M')`, `.code128(words)`.
 
+Pins with notes go on a picture with `"widget": "pins"` on a json field — a
+face chart, a floor plan, a car's damage: `options.image` (its address) or
+`options.imageField` (a field holding it), `alt`, `maxPins`, `noteLabel`. The
+value is the pins, `[{ "x": 0.42, "y": 0.31, "note": "Botox, 4 units" }]`, each
+as shares of the picture's width and height from its top left. A click or a tap
+puts a pin, a pin is dragged, and the keyboard does both (a cross moved by the
+arrows, Enter; on a pin, the arrows, Delete); the pins are a numbered list under
+the picture for a screen reader. It comes in `pinsPart` (`fieldia.pins.js`).
+
 A phone field (`"widget": "phone"`) is read the world over where its page says
 `"phone": { "country": "EG", "shown": "national" }` — or the field itself, with
 `"options": { "country": "AE" }` or `"shown"`. Its country is picked before the

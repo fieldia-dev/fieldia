@@ -31,7 +31,7 @@ describe('the business kinds', () => {
     expect(kinds('request_date_from')).toEqual(['date', 'date-range']);
     // A date and time from the model may be booked from the times free, too.
     expect(kinds('timer_start')).toEqual(['date-time', 'timer', 'date-range', 'booking-slots']);
-    expect(kinds('tax_totals')).toEqual(['address', 'code', 'vscode', 'distribution', 'tax-totals', 'payments']);
+    expect(kinds('tax_totals')).toEqual(['address', 'code', 'vscode', 'pins', 'distribution', 'tax-totals', 'payments']);
   });
 
   it('show a model’s field as one, keeping what it holds, as one undo step', () => {

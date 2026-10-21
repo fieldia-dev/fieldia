@@ -69,3 +69,25 @@ describe('a value shown as a code', () => {
     expect(issues(coded('barcode', undefined, 'float')).quick).toEqual([`${at}.widget: barcode is for a char or integer field; "code" is a float`]);
   });
 });
+
+describe('pins on a picture', () => {
+  const pinned = (options: Record<string, unknown> | undefined, type = 'json'): Page =>
+    ({
+      fieldia: '0.7',
+      id: 'chart',
+      data: { kind: 'record', model: 'treatment' },
+      fields: { points: { type, label: 'Injection points' }, plan: { type: 'image', label: 'Plan' } },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-points', field: 'points', widget: 'pins', ...(options ? { options } : {}) }] },
+    }) as unknown as Page;
+
+  it('puts pins on the page’s own picture or a field’s, as many as it says', () => {
+    for (const page of [pinned({ image: 'https://charts.example/face.svg', alt: 'Face', maxPins: 30, noteLabel: 'Product and units' }), pinned({ imageField: 'plan' }), pinned(undefined)]) expect(issues(page)).toEqual({ full: [], quick: [] });
+  });
+
+  it('refuses two pictures, a field that is none, a number of pins out of range, and pins on anything but json', () => {
+    expect(issues(pinned({ image: 'a.svg', imageField: 'plan' })).full).toEqual([`${at}.options.imageField: pins are placed on one picture: its address (image) or the field holding it (imageField), not both`]);
+    expect(issues(pinned({ imageField: 'nothing' })).quick).toEqual([`${at}.options.imageField: no field "nothing"`]);
+    expect(issues(pinned({ image: 'a.svg', maxPins: 0 })).full).toEqual([`${at}.options.maxPins: maxPins is a whole number of pins, 1 to 200`]);
+    expect(issues(pinned({ image: 'a.svg' }, 'char')).quick).toEqual([`${at}.widget: pins is for a json field; "points" is a char`]);
+  });
+});

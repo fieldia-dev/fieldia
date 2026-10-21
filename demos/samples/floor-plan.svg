@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" width="640" height="420" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" fill="#3c4650">
+  <rect width="640" height="420" fill="#fbfaf7"/>
+  <g fill="#eef2f5"><rect x="30" y="30" width="330" height="220"/><rect x="360" y="30" width="250" height="140"/><rect x="360" y="170" width="250" height="200"/><rect x="30" y="250" width="160" height="120"/><rect x="190" y="250" width="170" height="120"/></g>
+  <rect x="30" y="370" width="330" height="30" fill="#e3ecd9"/>
+  <g fill="none" stroke="#2f3a44" stroke-width="8" stroke-linecap="square">
+    <path d="M30 30h580v340H30z"/>
+    <path d="M360 30v40M360 120v170M360 330v40"/>
+    <path d="M30 250h70M150 250h120M320 250h40"/>
+    <path d="M190 250v120"/>
+    <path d="M360 170h70M480 170h130"/>
+  </g>
+  <g fill="none" stroke="#2f3a44" stroke-width="3"><path d="M30 370v30h330v-30"/></g>
+  <g fill="none" stroke="#8fa3b4" stroke-width="2"><path d="M100 250a50 50 0 0 1 50-50"/><path d="M270 250a50 50 0 0 1 50-50"/><path d="M360 70a50 50 0 0 1 50 50"/><path d="M430 170a50 50 0 0 1 50-50"/><path d="M360 290a40 40 0 0 1 40 40"/></g>
+  <g fill="#9eb0bf"><rect x="60" y="60" width="120" height="56" rx="8"/><rect x="230" y="150" width="80" height="50" rx="6"/><rect x="390" y="196" width="120" height="150" rx="6"/><rect x="420" y="50" width="160" height="26"/><rect x="580" y="50" width="22" height="110"/><rect x="214" y="330" width="60" height="30" rx="12"/><rect x="300" y="270" width="44" height="80" rx="6"/></g>
+  <g text-anchor="middle" font-weight="600">
+    <text x="195" y="230">Living room</text><text x="485" y="110">Kitchen</text><text x="560" y="300">Bedroom 1</text><text x="110" y="315">Bedroom 2</text><text x="250" y="300">Bath</text><text x="195" y="392" font-weight="400">Balcony</text>
+  </g>
+</svg>

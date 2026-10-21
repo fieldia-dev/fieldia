@@ -75,6 +75,8 @@ import siteVisit from '../../examples/pages/site-visit.page.json';
 import { siteVisits } from './site-visit';
 import eventTicket from '../../examples/pages/event-ticket.page.json';
 import { eventTickets } from './event-ticket';
+import faceChart from '../../examples/pages/face-chart.page.json';
+import { treatments } from './face-chart';
 import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
@@ -111,6 +113,8 @@ export const pages: Record<string, Page> = {
   'site-visit': siteVisit as Page,
   // A ticket's link as a QR code and its number as a barcode, to scan from the screen (shared/event-ticket.ts).
   'event-ticket': eventTicket as Page,
+  // A treatment's injection points as pins on a face chart (shared/face-chart.ts).
+  'face-chart': faceChart as Page,
   fields: fields as Page,
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
@@ -553,6 +557,8 @@ export function sampleDataSource() {
       'property.visit': siteVisits(),
       // A ticket to an event, its codes to scan (shared/event-ticket.ts).
       'event.ticket': eventTickets(),
+      // A clinic's treatment, its injection points on a face chart (shared/face-chart.ts).
+      'clinic.treatment': treatments(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

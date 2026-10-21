@@ -53,6 +53,12 @@ export const PART_WORDS = {
     ],
   },
   codes: { widgets: ['qrCodeOf', 'barcodeOf', 'qrTooLong', 'barcodeRefused'] },
+  pins: {
+    widgets: [
+      'pinsHelp', 'pinsOn', 'pinsNoPicture', 'pinsNone', 'pinAt', 'pinTopLeft', 'pinTop', 'pinTopRight', 'pinLeft', 'pinCentre', 'pinRight', 'pinBottomLeft', 'pinBottom', 'pinBottomRight',
+      'pinNamed', 'pinNamedNote', 'pinNote', 'pinNotePlaceholder', 'pinRemove', 'pinAdded', 'pinMoved', 'pinRemoved', 'pinsFull',
+    ],
+  },
   evidence: { widgets: ['signedByName', 'signedAt', 'answersAsSigned', 'answersChanged', 'changeAnswers', 'changeAnswersAsk', 'signatureTakenAway', 'notSignedYet', 'readyToSign', 'signNow'] },
   filters: { viewer: ['filterByKeyword', 'clearFilters', 'filterNamed', 'filterSettings', 'rangeAny', 'rangeOrMore', 'filtersOn', 'filtersClearAll', 'showResults', 'showResultsNoun', 'showResultsOne', 'showResultsNounOne', 'showResultsSome'] },
   head: {

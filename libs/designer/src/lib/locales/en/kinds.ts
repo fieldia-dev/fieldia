@@ -50,6 +50,7 @@ export const kinds = {
     embed: 'Page shown inline',
     'qr-code': 'QR code',
     barcode: 'Barcode',
+    pins: 'Pins on a picture',
     distribution: 'Analytic distribution',
     'tax-totals': 'Tax totals',
     payments: 'Payments',
