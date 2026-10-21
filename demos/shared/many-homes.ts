@@ -54,8 +54,15 @@ const KIND_WORDS: Record<string, string> = { flat: 'flat', duplex: 'duplex', pen
 /** A home's picture: one of the drawings beside the demos (demos/samples/homes), by its kind. */
 const picture = (kind: string, n: number): FileValue => ({ name: `${kind}.svg`, type: 'image/svg+xml', size: 1200, url: `../samples/homes/${kind}-${1 + (n % 3)}.svg` });
 
-/** The homes, by id from 1: each place's share of them, spread round its middle, closer in towards it. */
-export function manyHomes(): Record<number, Values> {
+/**
+ * The homes, by id from 1: each place's share of them, spread round its middle, closer in towards it. Each links to
+ * its own page in the demo's look and language (`search`, the demo's address), as a site keeps one for each listing.
+ */
+export function manyHomes(search = ''): Record<number, Values> {
+  const to = new URLSearchParams(search);
+  to.set('page', 'map-many-home');
+  to.delete('record');
+  const link = `?${to}&record=`;
   const random = seeded(20_000);
   const places = Object.entries(PLACES);
   const shares = places.reduce((sum, [, place]) => sum + place.share, 0);
@@ -95,6 +102,7 @@ export function manyHomes(): Record<number, Values> {
       lat: placed ? Math.round(lat * 1e6) / 1e6 : null,
       lng: placed ? Math.round(lng * 1e6) / 1e6 : null,
       photo: picture(kind, i),
+      link: `${link}${i + 1}`,
       listed_on: `${month > 10 ? 2025 : 2026}-${String(month).padStart(2, '0')}-${String(1 + ((i * 7) % 27)).padStart(2, '0')}`,
     };
   }

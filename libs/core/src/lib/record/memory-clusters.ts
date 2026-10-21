@@ -27,7 +27,7 @@ export function gridClusters(
     let unplaced = 0;
     for (const [key, values] of Object.entries(records[request.model] ?? {})) {
       const id: RecordId = Number.isFinite(Number(key)) ? Number(key) : key;
-      if (!matchesFilter({ id, ...values }, request.filter)) continue;
+      if (request.filter.length && !matchesFilter({ id, ...values }, request.filter)) continue;
       const at = placeOf(values, values[request.field], request.longitude);
       if (!at || Math.abs(at.lat) > 90 || Math.abs(at.lng) > 180) {
         unplaced++;

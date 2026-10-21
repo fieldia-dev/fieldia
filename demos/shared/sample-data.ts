@@ -456,11 +456,11 @@ const CURRENCIES: Record<number, string> = { 1: 'EGP', 2: 'JOD', 3: 'SAR' };
  * its page in the demo's look and language, so a card's link opens it here,
  * in a new tab, or is copied, as a link is.
  */
-function linkedHomes(homes: Record<number, Values>, page = 'map-home'): Record<number, Values> {
+function linkedHomes(homes: Record<number, Values>): Record<number, Values> {
   const here = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
   for (const [id, home] of Object.entries(homes)) {
     const to = new URLSearchParams(here);
-    to.set('page', page);
+    to.set('page', 'map-home');
     to.set('record', id);
     home['link'] = `?${to}`;
   }
@@ -515,7 +515,7 @@ export function sampleDataSource() {
       ...emptyGridsRecords,
       'account.move': BILLS,
       home: linkedHomes(sampleHomes()),
-      ...(many ? { 'home.egypt': linkedHomes(manyHomes(), 'map-many-home') } : {}),
+      ...(many ? { 'home.egypt': manyHomes(params.toString()) } : {}),
       'home.amenity': Object.fromEntries(Object.entries(AMENITIES).map(([id, name]) => [id, { name }])),
       // A sales team's buyer leads, made round now (shared/leads.ts).
       lead: sampleLeads(),
