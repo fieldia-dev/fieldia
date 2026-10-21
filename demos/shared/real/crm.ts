@@ -13,9 +13,15 @@ import type { RealLane } from './lane';
  * Ids run from 7001 so they never meet another lane's or the samples' own.
  */
 
-/** A day counted from today, as YYYY-MM-DD, so the sample's dates stay ahead of whoever opens it. */
+/**
+ * A day counted from today, as YYYY-MM-DD, so the sample's dates stay ahead of whoever opens it — or from the day the
+ * demo's address pins (`?now=2026-10-20T09:00`, as demoNow in shared/calendar.ts reads it), so a browser test sees the
+ * same days whichever day it runs. Read here, not imported: the real lanes load in Node, without the calendar.
+ */
 function day(offset: number): string {
-  const d = new Date();
+  const given = typeof location === 'undefined' ? null : new URLSearchParams(location.search).get('now');
+  const pinned = given ? new Date(given) : null;
+  const d = pinned && !Number.isNaN(pinned.getTime()) ? pinned : new Date();
   d.setDate(d.getDate() + offset);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;

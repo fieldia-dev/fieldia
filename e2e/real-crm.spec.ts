@@ -348,7 +348,8 @@ test('the properties line up with the fields round them: their labels as the she
 });
 
 test('the tender’s lots: a delivery date whole at every laptop’s and desktop’s width, its pattern too, and no box cut', async ({ page }) => {
-  const { problems } = await open(page, 'plain', 'page=real-tender&record=7801&skin=underline');
+  // The lots' days are counted from the day the demo opens: pinned, so they are the days below whichever day this runs.
+  const { problems } = await open(page, 'plain', 'page=real-tender&record=7801&skin=underline&now=2026-10-20T09:00');
   const lots = node(page, 'f-lots');
   /** Each box of the lots whose words run past it — what it holds, or the pattern it asks for, in its own type: its column and those words. */
   const cut = () =>
