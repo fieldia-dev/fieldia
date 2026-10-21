@@ -1,4 +1,4 @@
-import { ANY_FUNCTION, cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListCalendar, type ListCard, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { ANY_FUNCTION, cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListCalendar, type ListCard, type ListGantt, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { headFields, headParts, tabCountFields } from './head-parts';
@@ -136,6 +136,7 @@ export function shownFields(page: Page): Set<string> {
     for (const name of [...root.columns, ...(root.sort ?? []).map((s) => s.field), ...(root.searchFields ?? []), ...(root.groupBy ?? []), ...(root.filters ?? []).flatMap((f) => [...read(f.filter ?? []), ...(f.period ? [f.period.field] : [])])]) shown.add(name);
     if (root.map) for (const name of listMapFields(root.map)) shown.add(name);
     if (root.calendar) for (const name of listCalendarFields(root.calendar)) shown.add(name);
+    if (root.gantt) for (const name of listGanttFields(root.gantt)) shown.add(name);
     if (root.card) for (const name of listCardFields(root.card)) shown.add(name);
     // And in what its rows' own tones, bold and buttons read.
     for (const when of [...(root.rowTones ?? []).map((tone) => tone.when), root.rowBold, ...(root.rowButtons ?? []).map((button) => button.invisible)]) {
@@ -201,6 +202,11 @@ export function listCardFields(card: ListCard): string[] {
 /** The fields a list's calendar names: when each record starts and ends, its words, its colour and its column. */
 export function listCalendarFields(calendar: ListCalendar): string[] {
   return [calendar.start, calendar.end, calendar.title, calendar.colour, calendar.resource].filter((name): name is string => !!name);
+}
+
+/** The fields a list's timeline names: when each record starts and ends or how long it lasts, its words, its group, its colour and what it waits for. */
+export function listGanttFields(gantt: ListGantt): string[] {
+  return [gantt.start, gantt.end, gantt.duration, gantt.title, gantt.group, gantt.colour, gantt.dependsOn].filter((name): name is string => !!name);
 }
 
 /** The fields a list's map names: where each record is, what its pin and its card show and link to, what its pin's tones and money look read, its areas' field and its heat's weight. */

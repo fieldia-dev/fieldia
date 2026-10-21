@@ -6,6 +6,7 @@ import type { DesignerWords } from './designer-words';
 import { storedAs } from './kinds';
 import { FILTERABLE, RANGE_ONLY, RANGEABLE, ruleIsGood, widthIsGood } from './list-commands';
 import { calendarSection } from './list-calendar';
+import { ganttSection } from './list-gantt';
 import { cardsSection } from './list-cards-settings';
 import { rowsSection } from './list-rows-settings';
 import { openMenu } from './menu';
@@ -644,6 +645,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
 
   const onMap = mapSection(el, designer);
   const onCalendar = calendarSection(el, designer);
+  const onGantt = ganttSection(el, designer);
   const asCards = cardsSection(el, designer);
   const rowRules = rowsSection(el, designer);
   // What the list's records are called in Fieldia's own sentences, first: the screen's own words (records-settings.ts).
@@ -674,6 +676,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     asCards.element,
     onMap.element,
     onCalendar.element,
+    onGantt.element,
     el('p', { class: 'fd-properties-hint' }, w.rowOpens)
   );
 
@@ -803,6 +806,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
       asCards.update(page);
       onMap.update(page);
       onCalendar.update(page);
+      onGantt.update(page);
     },
     focus() {
       const filters = element.querySelector<HTMLElement>('[data-part="filters"]');

@@ -1,4 +1,4 @@
-import { createMemoryDataSource, isRightToLeft, scoreOf, type AppFunctions, type DataSource, type ListCalendar, type MapNode, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, isRightToLeft, scoreOf, type AppFunctions, type DataSource, type ListCalendar, type ListGantt, type MapNode, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type ListViewFactory, type MapPartFactory, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
@@ -69,6 +69,7 @@ function madeUp(page: Page, centre = { lat: 0, lng: 0 }): Record<string, Record<
     });
   }
   if (page.layout.calendar) madeUpTimes(page.layout.calendar, page, rows);
+  if (page.layout.gantt) madeUpPlan(page.layout.gantt, page, rows);
   return { [page.data.model]: Object.fromEntries(rows.map((values, i) => [String(i + 1), values as Values])) };
 }
 
@@ -90,6 +91,25 @@ export function madeUpTimes(calendar: ListCalendar, page: Page, rows: Record<str
     const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 9, ((i * 75) % 480) - (((i * 75) % 480) % 15));
     values[calendar.start] = start.toISOString();
     if (calendar.end) values[calendar.end] = new Date(start.getTime() + (30 + (i % 3) * 30) * 60000).toISOString();
+  });
+}
+
+/**
+ * On a list's timeline, each made-up record a bar in the weeks round today, a day after the one before it, each third
+ * waiting for the one before it: a timeline opens on today, and one of last January's records would be far off.
+ */
+export function madeUpPlan(gantt: ListGantt, page: Page, rows: Record<string, unknown>[], now = new Date()) {
+  const date = page.fields[gantt.start]?.type === 'date';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const key = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const write = (d: Date) => (date ? key(d) : d.toISOString());
+  rows.forEach((values, i) => {
+    const days = 2 + (i % 4);
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 10 + i, date ? 0 : 9);
+    values[gantt.start] = write(start);
+    if (gantt.end) values[gantt.end] = write(new Date(start.getFullYear(), start.getMonth(), start.getDate() + days - (date ? 1 : 0), date ? 0 : 17));
+    if (gantt.duration) values[gantt.duration] = days;
+    if (gantt.dependsOn) values[gantt.dependsOn] = i > 0 && i % 3 === 0 ? [{ id: String(i), label: String(i) }] : [];
   });
 }
 
