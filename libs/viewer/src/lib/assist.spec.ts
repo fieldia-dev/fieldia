@@ -342,3 +342,91 @@ describe('the app’s own proposal', () => {
     expect(await handle?.propose({ name: 'x' })).toBe(0);
   });
 });
+
+describe('AI help on a text kept in two languages', () => {
+  // A company's name and notes typed in English and Arabic (`translate`): a proposal fills the language the person is
+  // looking at — the reader's, until they switch — never the other: each language is typed by a person.
+  const bilingual = (): Page => {
+    const shown = page();
+    shown.fields['name'] = { type: 'char', label: 'Company', translate: ['en', 'ar'] } as Page['fields'][string];
+    shown.fields['notes'] = { type: 'text', label: 'Notes', translate: ['en', 'ar'] } as Page['fields'][string];
+    return shown;
+  };
+  const twoLanguages = () => ({ partner: { 1: { name: { ar: 'نيل تريدرز' }, notes: { en: 'met them at the fair pls call', ar: 'قابلناهم في المعرض' } } }, country: records().country });
+  const tab = (field: string, lang: string) => host.querySelector<HTMLButtonElement>(`.fd-field[data-path="${field}"] .fd-lang-tab[lang="${lang}"]`);
+
+  it('fills the reader’s language alone, says which, and leaves the other as it was', async () => {
+    const ds = source({ records: twoLanguages() });
+    await mount({ dataSource: ds, recordId: 1 }, bilingual());
+    await fillFrom(SIGNATURE);
+    const asked = ds.calls.find((call) => call.method === 'suggest')?.request as SuggestRequest;
+    expect(asked.languages).toEqual({ name: 'en', notes: 'en' });
+    expect(proposal('name')?.querySelector('strong')?.textContent).toBe('Proposed in English: ');
+    expect(proposal('name')?.querySelector('ins')?.getAttribute('lang')).toBe('en');
+    expect(proposal('name')?.querySelector('ins')?.textContent).toBe('Nile Traders');
+    // Nothing in English yet: no old value struck through — the Arabic is not this language's.
+    expect(proposal('name')?.querySelector('del')).toBeNull();
+    // The stand-in says it filled one language alone.
+    expect(review()?.querySelector('.fd-assist-review-why')?.textContent).toContain("Company in English only: each other language is a person's to type.");
+    button('Accept', proposal('name') as HTMLElement)?.click();
+    expect(values()['name']).toEqual({ ar: 'نيل تريدرز', en: 'Nile Traders' });
+  });
+
+  it('fills the language the person switched to, and takes no other from an answer that gives both', async () => {
+    const answer = jest.fn(async (request: SuggestRequest): Promise<SuggestResult> => ({ values: { name: { ar: 'شركة النيل', en: 'Nile Company' } }, why: `Filled ${JSON.stringify(request.languages)}` }));
+    const ds = createMemoryDataSource({ records: twoLanguages(), assist: { suggest: answer } });
+    await mount({ dataSource: ds, recordId: 1 }, bilingual());
+    tab('name', 'ar')?.click();
+    await pass(0);
+    await fillFrom('Nile Company, Cairo');
+    expect(answer.mock.calls[0][0].languages).toEqual({ name: 'ar', notes: 'en' });
+    expect(proposal('name')?.querySelector('strong')?.textContent).toBe('Proposed in Arabic: ');
+    expect(proposal('name')?.querySelector('del')?.textContent).toBe('نيل تريدرز');
+    expect(proposal('name')?.querySelector('ins')?.textContent).toBe('شركة النيل');
+    button('Accept all')?.click();
+    // The English the answer gave too is never taken: a person types it.
+    expect(values()['name']).toEqual({ ar: 'شركة النيل' });
+  });
+
+  it('polishes the words of the language shown, and fills that language alone', async () => {
+    const ds = source({ records: twoLanguages() });
+    await mount({ dataSource: ds, recordId: 1 }, bilingual());
+    button('Polish')?.click();
+    await pass(0);
+    await pass(0);
+    const asked = ds.calls.find((call) => call.method === 'rewrite')?.request as RewriteRequest;
+    expect([asked.text, asked.language]).toEqual(['met them at the fair pls call', 'en']);
+    expect(proposal('notes')?.querySelector('strong')?.textContent).toBe('Proposed in English: ');
+    expect(proposal('notes')?.querySelector('.fd-proposal-why')?.textContent).toContain('Written in English only');
+    button('Accept', proposal('notes') as HTMLElement)?.click();
+    expect(values()['notes']).toEqual({ en: 'Met them at the fair please call.', ar: 'قابلناهم في المعرض' });
+  });
+});
+
+describe('AI help beside the other 0.29 fields', () => {
+  it('fills a field scanned into with the camera as any text, its Scan button kept beside its box', async () => {
+    const scanned = page();
+    const children = (scanned.layout as { children: { children: { field?: string; options?: Record<string, unknown> }[] }[] }).children[0].children;
+    children.find((node) => node.field === 'email')!.options = { scan: true };
+    await mount({ dataSource: source(), recordId: 1 }, scanned);
+    expect(host.querySelector('.fd-field[data-path="email"] .fd-scan-button')).not.toBeNull();
+    await fillFrom(SIGNATURE);
+    expect(proposal('email')?.querySelector('ins')?.textContent).toBe('mona.adel@niletraders.example');
+    button('Accept', proposal('email') as HTMLElement)?.click();
+    expect(values()['email']).toBe('mona.adel@niletraders.example');
+    expect(host.querySelector('.fd-field[data-path="email"] .fd-scan-button')).not.toBeNull();
+    expect((host.querySelector('.fd-field[data-path="email"] input') as HTMLInputElement).value).toBe('mona.adel@niletraders.example');
+  });
+
+  it('never proposes a photo set’s photos, as it never proposes a file', async () => {
+    const withPhotos = page({ suggest: {} });
+    withPhotos.fields['photos'] = { type: 'image', label: 'Photos', multiple: true } as Page['fields'][string];
+    (withPhotos.layout as { children: { children: unknown[] }[] }).children[0].children.push({ type: 'field', id: 'f-photos', field: 'photos', widget: 'photos' });
+    const ds = source();
+    await mount({ dataSource: ds, recordId: 1 }, withPhotos);
+    await fillFrom(SIGNATURE);
+    expect((ds.calls.find((call) => call.method === 'suggest')?.request as SuggestRequest).fields).not.toContain('photos');
+    expect(await handle?.propose({ photos: [{ name: 'a.jpg' }] })).toBe(0);
+    expect(proposal('photos')).toBeNull();
+  });
+});

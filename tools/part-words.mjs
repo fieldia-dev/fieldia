@@ -37,7 +37,7 @@ export const PART_WORDS = {
   assist: {
     viewer: [
       'assistFill', 'assistFillHint', 'assistFillBox', 'assistFillPlaceholder', 'assistFiles', 'assistFillGo', 'assistReading', 'assistFailed', 'assistNothing', 'assistProposed', 'assistProposedOne',
-      'assistReview', 'assistAcceptAll', 'assistRejectAll', 'assistAccept', 'assistReject', 'assistProposal', 'assistProposedText', 'assistInPlaceOf', 'assistEmpty', 'assistLines', 'assistLinesOne',
+      'assistReview', 'assistAcceptAll', 'assistRejectAll', 'assistAccept', 'assistReject', 'assistProposal', 'assistProposedText', 'assistProposedIn', 'assistInPlaceOf', 'assistEmpty', 'assistLines', 'assistLinesOne',
       'assistKept', 'assistKeptAll', 'assistKeptAllOne', 'assistUndo', 'assistUndone', 'assistLeftTyped', 'assistNotUsed', 'assistOutOfSight', 'assistNoneCalled', 'assistSeveralCalled',
       'assistNotOffered', 'assistNotRead', 'assistDraft', 'assistPolish', 'assistWriting', 'assistRewriteFailed', 'assistWordsReading', 'assistWordsMade',
       'assistWordsNone', 'assistWordsFailed',

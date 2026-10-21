@@ -662,6 +662,8 @@ export interface ViewerLabels {
   assistReject: string;
   assistProposal: string;
   assistProposedText: string;
+  /** A proposal for a text kept in several languages: the one language it fills, by its name (`{language}`). */
+  assistProposedIn: string;
   assistInPlaceOf: string;
   assistEmpty: string;
   assistLines: string;
@@ -1163,6 +1165,7 @@ const en: ViewerLabels = {
   assistReject: 'Reject',
   assistProposal: 'Proposed',
   assistProposedText: 'Proposed text',
+  assistProposedIn: 'Proposed in {language}',
   assistInPlaceOf: 'in place of {value}',
   assistEmpty: 'empty',
   assistLines: '{n} lines to add',

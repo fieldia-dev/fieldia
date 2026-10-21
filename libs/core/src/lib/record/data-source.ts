@@ -310,6 +310,12 @@ export interface SuggestRequest {
   from: { text?: string; files?: UploadFile[] };
   /** The page's language, by tag: what the values proposed are written in. */
   language: string;
+  /**
+   * For each field it may fill that keeps its text in several languages (`translate`), the one language a proposal
+   * fills, by tag — the one shown in its switch, else the reader's: answer that language's text alone, as a string.
+   * Never the others: each language is typed by a person, never translated by a machine.
+   */
+  languages?: Record<string, string>;
 }
 
 /** Values proposed for a form, each shown on its field to accept or reject. */
@@ -339,7 +345,10 @@ export interface RewriteRequest {
   how: string;
   /** The field's words now: empty for a draft of an empty field. */
   text: string;
-  /** The page's language, by tag. */
+  /**
+   * The page's language, by tag — for a text kept in several languages (`translate`), the one shown in its switch: the
+   * words given are that language's, and the words answered fill it alone, never another (each typed by a person).
+   */
   language: string;
 }
 

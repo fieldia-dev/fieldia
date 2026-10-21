@@ -1,4 +1,4 @@
-import { isEmpty, labelAt, type DataSource, type Field, type FieldNode, type Form, type FormState, type LineField, type Line, type Locale, type Page, type RecordId, type UploadFile, type Value, type Values } from '@fieldia/core';
+import { formLanguagesPart, isEmpty, labelAt, languagesOf, type DataSource, type Field, type FieldNode, type Form, type FormState, type LineField, type Line, type Locale, type Page, type RecordId, type UploadFile, type Value, type Values } from '@fieldia/core';
 import { displayValue, drawIcon, keepTabIn, type IconSet } from '@fieldia/widgets';
 import { readLines, readProposed, sameValue, type ReadHow } from './assist-read';
 import { SPARKLE } from './assist-icon';
@@ -68,6 +68,9 @@ interface Proposal {
   /** A batch of values (Fill from text, the app's), or one text field's tool's. */
   batch: number;
   why?: string;
+  /** A text kept in several languages: the one language it fills, and its text there (`value` is the whole, the rest as it was). */
+  language?: string;
+  text?: string;
 }
 
 /** A proposal kept: what was there, what it wrote, the lines it added — what Undo puts back. */
@@ -86,6 +89,8 @@ let kits = 0;
 
 /** The kinds a text field's tools rewrite; the rest have no tools. */
 const TEXT_KINDS = new Set(['char', 'text', 'html']);
+/** The kinds a proposal fills (assist-read.ts): never a file, a picture or a photo set, JSON, properties or a matrix. */
+const FILLED = new Set([...TEXT_KINDS, 'integer', 'float', 'monetary', 'boolean', 'selection', 'date', 'datetime', 'many2one', 'many2many', 'one2many']);
 
 /** The tools a field's `options.rewrite` gives: true for Draft and Polish, else those it lists that read. */
 function toolsOf(given: unknown): { how: string; label?: string }[] {
@@ -98,6 +103,20 @@ function toolsOf(given: unknown): { how: string; label?: string }[] {
 
 /** Words of text with nothing in them: a rich text's tags alone. */
 const blankText = (value: Value | undefined) => typeof value !== 'string' || !value.replace(/<[^>]*>/g, '').trim();
+
+const primary = (tag: string) => tag.toLowerCase().split('-')[0];
+/** A text kept in several languages, in one of them: its text there; a plain text is its first language's. */
+function textIn(value: Value | undefined, language: string, languages: readonly string[]): string {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return typeof (value as Record<string, unknown>)[language] === 'string' ? ((value as Record<string, string>)[language] as string) : '';
+  return typeof value === 'string' && language === languages[0] ? value : '';
+}
+/** The whole of a text kept in several languages with one language's text given: the others as they were, never touched. */
+function withLanguage(value: Value | undefined, language: string, text: string, languages: readonly string[]): Value {
+  const all: Record<string, string> = value && typeof value === 'object' && !Array.isArray(value) ? { ...(value as Record<string, string>) } : typeof value === 'string' && value ? { [languages[0]]: value } : {};
+  if (text.replace(/<[^>]*>/g, '').trim()) all[language] = text;
+  else delete all[language];
+  return Object.keys(all).length ? all : null;
+}
 
 export function watchAssist(context: AssistContext): AssistKit {
   const { form, page, doc, el, labels, fill, locale } = context;
@@ -135,14 +154,29 @@ export function watchAssist(context: AssistContext): AssistKit {
 
   // ---- what may be filled -----------------------------------------------------------------------------------------
 
+  /**
+   * A text kept in several languages (`translate`): the one language a proposal fills — the one shown in its switch,
+   * else the reader's (or the field's first) — never another: each language is typed by a person. Null for any other.
+   */
+  const languageOf = (field: string): string | null => {
+    const tags = languagesOf(page.fields[field]);
+    if (!tags) return null;
+    const switched = placeOf(field)?.wrapper.querySelector('.fd-lang-tab[aria-selected="true"]')?.getAttribute('lang');
+    if (switched && tags.includes(switched)) return switched;
+    return tags.find((one) => one.toLowerCase() === tag.toLowerCase()) ?? tags.find((one) => primary(one) === primary(tag)) ?? tags[0];
+  };
+  const languagesIn = (field: string) => languagesOf(page.fields[field]) ?? [];
+  /** A language by its name, in the page's language: "English", "العربية". */
+  const languageName = (language: string) => formLanguagesPart.loaded?.languageName(language, tag) ?? language.toUpperCase();
+
   const editable = () => context.editable() && form.getState().can?.edit !== false;
   /** A field a proposal may fill: on the page, of a kind it fills, one the person can set now. */
   const settable = (name: string) => {
     const def = page.fields[name];
     return !!def && def.readonly !== true && def.compute === undefined && !form.fieldReadonly(name);
   };
-  /** The fields Fill from text may fill: the page's `suggest.fields`, else those shown that a person can set. */
-  const suggestFields = () => (page.suggest?.fields ?? form.shownFields()).filter((name) => !name.includes('.') && settable(name));
+  /** The fields Fill from text may fill: the page's `suggest.fields`, else those shown that a person can set, of a kind a proposal fills. */
+  const suggestFields = () => (page.suggest?.fields ?? form.shownFields()).filter((name) => !name.includes('.') && settable(name) && FILLED.has(page.fields[name].type));
   const canSuggest = () => !!page.suggest && !!source?.suggest && page.layout.type !== 'list';
   /** The field the person is in now: what a late proposal leaves as they type it. */
   const typingIn = (): string | null => {
@@ -270,19 +304,25 @@ export function watchAssist(context: AssistContext): AssistKit {
       const head = fill(proposal.lines.length === 1 ? labels.assistLinesOne : labels.assistLines, { n: proposal.lines.length });
       body = el('div', { class: 'fd-proposal-words', id: wordsId }, el('strong', {}, `${labels.assistProposal}: `), label, head, el('ul', { class: 'fd-proposal-lines' }, ...proposal.lines.map((line) => el('li', {}, el('bdi', {}, lineWords(def, line))))));
     } else {
-      const now = words(def, proposal.value, values);
-      const before = words(def, proposal.was, values);
-      const long = TEXT_KINDS.has(def.type) && (now.length > 60 || /\n/.test(String(proposal.value ?? '')));
+      // A text kept in several languages: its one language's text, said by that language's name, written its own way.
+      const language = proposal.language;
+      const inText = (value: Value | undefined) => (language ? words(def, textIn(value, language, languagesIn(proposal.field)), values) : words(def, value, values));
+      const now = language ? inText(proposal.value) : words(def, proposal.value, values);
+      const before = inText(proposal.was);
+      const nothingBefore = language ? !textIn(proposal.was, language, languagesIn(proposal.field)).replace(/<[^>]*>/g, '').trim() : isEmpty(def, proposal.was ?? null) || (def.type === 'html' && blankText(proposal.was));
+      const lang = language ? { lang: language } : {};
+      const long = TEXT_KINDS.has(def.type) && (now.length > 60 || /\n/.test(language ? (proposal.text ?? '') : String(proposal.value ?? '')));
+      const head = language ? fill(labels.assistProposedIn, { language: languageName(language) }) : null;
       body = long
-        ? el('div', { class: 'fd-proposal-words', id: wordsId }, el('strong', {}, labels.assistProposedText), label, el('div', { class: 'fd-proposal-text', dir: 'auto' }, now))
+        ? el('div', { class: 'fd-proposal-words', id: wordsId }, el('strong', {}, head ?? labels.assistProposedText), label, el('div', { class: 'fd-proposal-text', dir: 'auto', ...lang }, now))
         : el(
             'div',
             { class: 'fd-proposal-words', id: wordsId },
-            el('strong', {}, `${labels.assistProposal}: `),
+            el('strong', {}, `${head ?? labels.assistProposal}: `),
             label,
-            ...(isEmpty(def, proposal.was ?? null) || (def.type === 'html' && blankText(proposal.was)) ? [] : [el('del', {}, el('bdi', {}, before)), el('span', { class: 'fd-proposal-arrow', 'aria-hidden': 'true' }, ' → '), el('span', { class: 'fd-sr-only' }, ` ${fill(labels.assistInPlaceOf, { value: before })}: `)]),
+            ...(nothingBefore ? [] : [el('del', lang, el('bdi', {}, before)), el('span', { class: 'fd-proposal-arrow', 'aria-hidden': 'true' }, ' → '), el('span', { class: 'fd-sr-only' }, ` ${fill(labels.assistInPlaceOf, { value: before })}: `)]),
             // Each value in its own direction: a phone, a tax id, a street keep their order on a right-to-left page.
-            el('ins', {}, el('bdi', {}, now))
+            el('ins', lang, el('bdi', {}, now))
           );
     }
     const why = proposal.why && proposal.batch !== review?.batch ? [el('p', { class: 'fd-proposal-why', dir: 'auto' }, proposal.why)] : [];
@@ -434,7 +474,7 @@ export function watchAssist(context: AssistContext): AssistKit {
    * person typed in since (`asked.before`) left as typed, those that do not read said — and laid as a batch: the last
    * batch's proposals waiting go. How many were laid.
    */
-  async function lay(values: Values, allowed: (name: string) => boolean, asked: { shown: () => boolean; before: Readonly<Values>; why?: string }): Promise<number> {
+  async function lay(values: Values, allowed: (name: string) => boolean, asked: { shown: () => boolean; before: Readonly<Values>; why?: string; languages?: Record<string, string> }): Promise<number> {
     const read: Proposal[] = [];
     const leftTyped: string[] = [];
     const notUsed: string[] = [];
@@ -451,6 +491,14 @@ export function watchAssist(context: AssistContext): AssistKit {
         if (lines.length) read.push({ field: name, lines, was: asked.before[name], batch, why: asked.why });
         continue;
       }
+      // A text kept in several languages: the one language asked for, never the others (each typed by a person).
+      const language = asked.languages?.[name] ?? languageOf(name);
+      if (language) {
+        const own = given && typeof given === 'object' && !Array.isArray(given) ? (given as Record<string, unknown>)[language] : given;
+        if (typeof own === 'string' || typeof own === 'number') read.push({ field: name, language, text: String(own), was: asked.before[name], batch, why: asked.why });
+        else notUsed.push(`${def.label} (${labels.assistNotRead})`);
+        continue;
+      }
       const got = await readProposed(def, given, name, readHow);
       if ('refused' in got) notUsed.push(`${def.label} (${got.refused})`);
       else read.push({ field: name, value: got.value, was: asked.before[name], batch, why: asked.why });
@@ -463,6 +511,8 @@ export function watchAssist(context: AssistContext): AssistKit {
         continue;
       }
       proposal.was = form.getState().values[proposal.field];
+      // One language's text laid over the others as they stand now.
+      if (proposal.language) proposal.value = withLanguage(proposal.was, proposal.language, proposal.text ?? '', languagesIn(proposal.field));
     }
     const laid = read.filter((proposal) => !leftTyped.includes(proposal.field) && (proposal.lines ? true : !sameValue(proposal.value, proposal.was)));
     // Nothing to show: the last batch's review stays as it was.
@@ -495,6 +545,7 @@ export function watchAssist(context: AssistContext): AssistKit {
       const state = form.getState();
       const asked = { shown: form.recordShown(), before: { ...state.values } };
       const fields = suggestFields();
+      const languages = Object.fromEntries(fields.flatMap((name) => (languageOf(name) ? [[name, languageOf(name) as string]] : [])));
       const answer = await (source as Required<Pick<DataSource, 'suggest'>>).suggest({
         pageId: page.id,
         model: page.data.kind === 'record' ? page.data.model : '',
@@ -504,9 +555,10 @@ export function watchAssist(context: AssistContext): AssistKit {
         fields,
         from,
         language: tag,
+        ...(Object.keys(languages).length ? { languages } : {}),
       });
       if (mine !== asking || gone) return undefined;
-      const laid = await lay(answer?.values ?? {}, (name) => fields.includes(name), { ...asked, ...(answer?.why ? { why: answer.why } : {}) });
+      const laid = await lay(answer?.values ?? {}, (name) => fields.includes(name), { ...asked, languages, ...(answer?.why ? { why: answer.why } : {}) });
       if (mine !== asking || gone) return undefined;
       return laid || review?.leftTyped.length ? null : labels.assistNothing;
     } catch (error) {
@@ -517,7 +569,8 @@ export function watchAssist(context: AssistContext): AssistKit {
   /** A record's own words read (`suggest.fromField`): asked at once, the button busy, why nothing came said over the page. */
   async function fillFromField(field: string) {
     if (fillButton.hasAttribute('aria-busy')) return;
-    const held = form.getState().values[field];
+    const language = languageOf(field);
+    const held = language ? textIn(form.getState().values[field], language, languagesIn(field)) : form.getState().values[field];
     const text = typeof held === 'string' ? (page.fields[field]?.type === 'html' ? held.replace(/<[^>]*>/g, ' ') : held).trim() : '';
     if (!text) return say(labels.assistNothing);
     const words = fillButton.lastElementChild as HTMLElement;
@@ -618,7 +671,9 @@ export function watchAssist(context: AssistContext): AssistKit {
       for (const place of drawn) {
         if (!place.tools.length) continue;
         const readonly = !changeable || form.node(place.node.id).readonly;
-        for (const { how, button } of place.tools) setHidden(button, readonly || (how === 'polish' && blankText(state.values[field])));
+        const language = languageOf(field);
+        const held = language ? textIn(state.values[field], language, languagesIn(field)) : state.values[field];
+        for (const { how, button } of place.tools) setHidden(button, readonly || (how === 'polish' && blankText(held)));
         setHidden(place.tools[0].button.parentElement as HTMLElement, place.tools.every(({ button }) => button.hidden));
       }
     }
@@ -636,6 +691,9 @@ export function watchAssist(context: AssistContext): AssistKit {
       await form.settle();
       const state = form.getState();
       const asked = { shown: form.recordShown(), before: { ...state.values } };
+      // A text kept in several languages: the language shown in its switch, its words alone, filled alone.
+      const language = languageOf(field);
+      const held = language ? textIn(state.values[field], language, languagesIn(field)) : state.values[field];
       const answer = await source.rewrite({
         pageId: page.id,
         model: page.data.kind === 'record' ? page.data.model : '',
@@ -644,17 +702,18 @@ export function watchAssist(context: AssistContext): AssistKit {
         values: { ...state.values },
         field,
         how,
-        text: typeof state.values[field] === 'string' ? (state.values[field] as string) : '',
-        language: tag,
+        text: typeof held === 'string' ? held : '',
+        language: language ?? tag,
       });
       // Another record, the person's Discard, or typing in the field meanwhile: their words win.
       if (gone || !asked.shown() || typedSince(field, asked.before) || typeof answer?.text !== 'string') return;
       const was = form.getState().values[field];
-      if (sameValue(answer.text, was)) return;
+      const value = language ? withLanguage(was, language, answer.text, languagesIn(field)) : answer.text;
+      if (sameValue(value, was)) return;
       const batch = ++batches;
       kept.delete(field);
       shown = asked.shown;
-      pending.set(field, { field, value: answer.text, was, batch, ...(answer.why ? { why: answer.why } : {}) });
+      pending.set(field, { field, value, was, batch, ...(language ? { language, text: answer.text } : {}), ...(answer.why ? { why: answer.why } : {}) });
       draw();
       say(`${labels.assistProposedText}: ${labelOf(field)}`);
       notes.get(field)?.note.querySelector<HTMLElement>('.fd-proposal-accept')?.focus();
@@ -703,6 +762,8 @@ export function watchAssist(context: AssistContext): AssistKit {
         return { how, button };
       });
       if (made.length) box.after(el('div', { class: 'fd-assist-tools' }, ...made.map(({ button }) => button)));
+      // A text kept in several languages: Polish follows the language its switch shows.
+      if (made.length && languagesOf(def)) for (const type of ['click', 'keyup']) wrapper.addEventListener(type, (event) => (event.target as Element).closest?.('.fd-lang-tab') && queueMicrotask(drawTools));
       places.set(node.field, [...(places.get(node.field) ?? []).filter((place) => place.wrapper.isConnected), { node, wrapper, box, tools: made }]);
       // Drawn again (a tab shown, a record's part drawn anew): its note, if any, goes back under it.
       if (pending.has(node.field) || kept.has(node.field)) queueMicrotask(draw);

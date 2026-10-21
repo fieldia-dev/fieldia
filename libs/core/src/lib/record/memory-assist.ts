@@ -2,6 +2,7 @@ import type { Field, LineField, Option } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type { ResolvedFilterCondition, RewriteRequest, RewriteResult, SearchToFilterRequest, SearchToFilterResult, SuggestRequest, SuggestResult, UploadFile } from './data-source';
 import { foldForSearch } from './input-rules';
+import { languagesOf } from './languages';
 import type { MemoryAssist } from './memory-data-source';
 import type { Values } from './values';
 
@@ -258,6 +259,17 @@ async function fileText(file: UploadFile): Promise<string | null> {
 /** The kinds found, in words: "a name, a job title and an e-mail". */
 const listed = (items: string[]) => (items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
 
+/** A language by its English name, as the stand-in says it: "English", "Arabic". */
+function english(tag: string): string {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'language' }).of(tag) ?? tag;
+  } catch {
+    return tag;
+  }
+}
+/** What a text kept in several languages was filled in: one language alone — the others are each a person's to type. */
+const inOneLanguage = (filled: string[]) => (filled.length ? ` ${listed(filled)} only: each other language is a person's to type.` : '');
+
 async function suggest(request: SuggestRequest, records: Records): Promise<SuggestResult> {
   const unread: string[] = [];
   const texts = [request.from.text ?? ''];
@@ -291,7 +303,9 @@ async function suggest(request: SuggestRequest, records: Records): Promise<Sugge
     values[name] = value;
     said.add(role && words[role] ? words[role] : `the ${def.label.toLowerCase()}`);
   }
-  const why = [`${STAND_IN} read by its patterns${said.size ? ` — ${listed([...said])}` : ''}.`, unread.length ? `It reads text files only: ${unread.join(', ')} not read.` : ''].filter(Boolean).join(' ');
+  // A text kept in several languages: the language asked for alone, said so.
+  const filledIn = Object.entries(request.languages ?? {}).filter(([name]) => values[name] !== undefined).map(([name, tag]) => `${request.page.fields[name]?.label ?? name} in ${english(tag)}`);
+  const why = [`${STAND_IN} read by its patterns${said.size ? ` — ${listed([...said])}` : ''}.${inOneLanguage(filledIn)}`, unread.length ? `It reads text files only: ${unread.join(', ')} not read.` : ''].filter(Boolean).join(' ');
   return { values, why };
 }
 
@@ -377,14 +391,17 @@ function plainDraft(request: RewriteRequest): string {
 }
 
 async function rewrite(request: RewriteRequest, options: StandInOptions): Promise<RewriteResult> {
-  const html = request.page.fields[request.field]?.type === 'html';
+  const def = request.page.fields[request.field];
+  const html = def?.type === 'html';
+  // A text kept in several languages: written in the language asked for alone, said so.
+  const one = languagesOf(def) ? inOneLanguage([`Written in ${english(request.language)}`]) : '';
   if (request.how === 'draft') {
     const own = options.drafts?.[`${request.model}.${request.field}`] ?? options.drafts?.[`${request.pageId}.${request.field}`];
     const text = own ? own(request.values, request) : plainDraft(request);
-    return { text: html ? toHtml(text) : text, why: `${STAND_IN} written from this record’s fields by a template.` };
+    return { text: html ? toHtml(text) : text, why: `${STAND_IN} written from this record’s fields by a template.${one}` };
   }
   const { text, did } = polishText(html ? fromHtml(request.text) : request.text);
-  return { text: html ? toHtml(text) : text, why: `${STAND_IN} ${did.length ? `${listed(did)}.` : 'nothing to make clearer.'}` };
+  return { text: html ? toHtml(text) : text, why: `${STAND_IN} ${did.length ? `${listed(did)}.` : 'nothing to make clearer.'}${one}` };
 }
 
 // ---- a search in plain words ------------------------------------------------------------------------------------

@@ -451,6 +451,7 @@ export const de: ViewerLabels = {
   assistReject: 'Ablehnen',
   assistProposal: 'Vorgeschlagen',
   assistProposedText: 'Vorgeschlagener Text',
+  assistProposedIn: 'Vorgeschlagen auf {language}',
   assistInPlaceOf: 'statt {value}',
   assistEmpty: 'leer',
   assistLines: '{n} Zeilen hinzufügen',

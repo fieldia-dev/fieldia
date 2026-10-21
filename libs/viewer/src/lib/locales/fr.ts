@@ -440,6 +440,7 @@ export const fr: ViewerLabels = {
   assistReject: 'Refuser',
   assistProposal: 'Proposé',
   assistProposedText: 'Texte proposé',
+  assistProposedIn: 'Proposé en {language}',
   assistInPlaceOf: 'à la place de {value}',
   assistEmpty: 'vide',
   assistLines: '{n} lignes à ajouter',

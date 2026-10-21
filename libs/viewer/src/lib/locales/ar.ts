@@ -408,6 +408,7 @@ export const ar: ViewerLabels = {
   assistReject: 'رفض',
   assistProposal: 'مقترح',
   assistProposedText: 'نص مقترح',
+  assistProposedIn: 'مقترح باللغة {language}',
   assistInPlaceOf: 'بدلًا من {value}',
   assistEmpty: 'فارغ',
   assistLines: 'أسطر للإضافة: {n}',
