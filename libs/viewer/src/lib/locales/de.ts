@@ -411,4 +411,13 @@ export const de: ViewerLabels = {
   flowNext: 'Nächste Frage',
   flowOk: 'OK',
   flowEnterHint: 'oder Enter drücken',
+  timeLimitTitle: 'Für dieses Formular gilt ein Zeitlimit',
+  timeLimitIntro: 'Sie haben {time} Zeit, ab dem Moment, in dem Sie auf Starten drücken.',
+  timeStart: 'Starten',
+  timeLeft: 'Verbleibende Zeit: {time}',
+  stepTimeLeft: 'Verbleibende Zeit für diesen Schritt: {time}',
+  timeWarn: 'Noch {time}.',
+  timeUpSent: 'Die Zeit ist um: Ihre Antworten wurden so gesendet, wie sie waren.',
+  timeUpLocked: 'Die Zeit ist um: Ihre Antworten sind gesperrt. Drücken Sie {send}, um sie zu senden.',
+  stepTimeUp: 'Die Zeit für diesen Schritt ist um: Seine Antworten bleiben, wie sie sind.',
 };

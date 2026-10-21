@@ -438,6 +438,22 @@ of steps; the questions not drawn are hidden and never asked. The review and
 one question at a time follow the same order. See
 [questions in an order drawn](https://fieldia.dev/pages/#draw).
 
+## A time limit
+
+A page with `timeLimit` says it before its questions — "You have 20 minutes to
+answer, from when you press Start." — with **Start**; once pressed, "Time left:
+19:59" stands over the questions (a `role="timer"`, read when asked, never every
+second aloud), its warning said once as it nears its end ("2 minutes left."),
+and as it runs out the page says what happened: "Time is up: your answers were
+sent as they were." (`send`, then the thanks says so too), or "…are locked.
+Press Submit to send them." (`lock`). A step's own limit counts from when it is
+first entered — "Time left for this step: 4:59" — and as it runs out its answers
+stay as they are while the form goes on. No review stands in the way of a send
+on time. It comes in the survey part; its words are the viewer's labels
+(`timeLimitTitle`, `timeLimitIntro`, `timeStart`, `timeLeft`, `stepTimeLeft`,
+`timeWarn`, `timeUpSent`, `timeUpLocked`, `stepTimeUp`). See
+[a time limit](https://fieldia.dev/pages/#time-limit).
+
 ## Opening, closing and limiting a form; Continue later
 
 A page of responses with `limits` says, as it opens, when it takes no answers —

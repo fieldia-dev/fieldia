@@ -2,7 +2,7 @@ import { installPartStyles, PART_RANK } from '@fieldia/widgets';
 
 /**
  * The look of what the viewer's survey part draws: a quiz's results under the thanks, a review of the answers before
- * they are sent, one question at a time. On the form's tokens, so dark and
+ * they are sent, one question at a time, a time limit's Start and countdown. On the form's tokens, so dark and
  * the themes follow; logical sides, so right to left follows. Its sheet takes the survey part's own rank
  * (PART_RANK.survey), beside the survey kinds' sheet: it names only its own parts and the wizard's, which no part's
  * sheet between it and the themes' names, and a theme still reshapes its buttons and type after it.
@@ -71,6 +71,19 @@ const FLOW_CSS = /* css */ `
 @container (max-width: 520px) { .fd-flow-hint { display: none; } .fd-flow-one [data-fd-current] > .fd-label { font-size: 19px; } }
 @keyframes fd-flow-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .fd-flow-one [data-fd-current] { animation: none; } .fd-flow-bar-fill { transition: none; } }
+/* ---- a time limit (flow-timer.ts) ---- */
+.fd-time-start { display: grid; gap: 10px; justify-items: center; padding: 40px 16px; text-align: center; }
+.fd-time-start[hidden], .fd-time-bar[hidden] { display: none; }
+.fd-time-start-title { margin: 0; font-size: 20px; font-weight: 650; color: var(--fd-text); }
+.fd-time-start-words { margin: 0; max-width: 36em; color: var(--fd-muted); line-height: 1.5; }
+.fd-time-bar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; padding: 8px 12px; margin-block-end: 12px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius, 6px); background: var(--fd-surface); font-variant-numeric: tabular-nums; }
+.fd-time-clock { font-weight: 600; color: var(--fd-text); }
+.fd-time-clock:empty { display: none; }
+.fd-time-bar[data-stage="warning"] { border-color: var(--fd-warning); background: var(--fd-warning-soft, var(--fd-surface)); }
+.fd-time-bar[data-stage="up"] { border-color: var(--fd-error); background: var(--fd-error-soft, var(--fd-surface)); }
+.fd-time-said { color: var(--fd-text); }
+.fd-time-said:empty { display: none; }
+.fd-time-done { margin: 0; color: var(--fd-muted); }
 `;
 
 /** The viewer's survey part's sheet in a document, once, in the survey part's place among Fieldia's (PART_RANK.survey). */

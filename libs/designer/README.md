@@ -141,7 +141,14 @@ shown, by step, each with Edit, before it is sent — and once on, the **Review'
 heading** in place of "Check your answers". `designer.setReview({ title, text })`
 sets it (`{}` in Fieldia's words, `null` takes it away; a record's screen is
 refused in words). **One question at a time** asks the form's questions one by
-one, as Typeform does (`designer.setFlowOne(on)`).
+one, as Typeform does (`designer.setFlowOne(on)`). **Pages in random order**
+draws a survey's pages for each person (`designer.setPagesOrder(on)`); each
+page's card offers **Questions in random order**, **Ask** — how many of its
+questions each person is asked — **Keeps its place** where pages are drawn, and
+**Minutes for this page** (`designer.setDraw(id, { order, draw, fixed })`,
+`designer.setTimeLimit(id, { minutes })`); a group's Rules tab the same draw.
+**Time limit** gives the form its minutes, then **Warn before the end** and
+**When the time runs out** (`designer.setTimeLimit(null, { minutes, warn, then })`).
 
 ## Trying a field's rules
 

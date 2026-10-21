@@ -134,6 +134,7 @@ export const changes = {
   review: (now: 'on' | 'off' | 'changed') => ({ on: 'It shows every answer before it is sent', off: 'It no longer shows the answers before they are sent', changed: 'Its review before sending changed' })[now],
   flowOne: (on: boolean): string => (on ? 'It asks one question at a time' : 'It asks its questions together again'),
   questionsDrawn: 'Which questions each person is asked, or their order, changed',
+  timeLimit: 'Its time limits changed',
   thePage: 'the page',
   // ---- the look
   look: {

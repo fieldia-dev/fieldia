@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { TimeLimitSchema, type TimeLimit } from './flow';
 import { FIELD_NAME, FilterItemSchema, LinkedFieldSchema, ModifierSchema, MoneyLookSchema, type FilterItem, type LinkedField, type MoneyLook } from './field';
 import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
@@ -838,6 +839,12 @@ export interface StepNode {
   icon?: string;
   /** Can be skipped: its answers are then left out, and its required fields not asked for. */
   optional?: boolean;
+  /**
+   * A time limit for this step, on a page of responses: its clock starts as the step is first entered, a countdown at
+   * its head; as it runs out its answers are locked and the form goes on to the next step (`then: "lock"`, the default),
+   * or the whole page's answers are sent as they stand (`send`). See `TimeLimit`.
+   */
+  timeLimit?: TimeLimit;
   /**
    * Its parts in an order drawn for each respondent (`random`), on a page of responses: its questions change places among
    * themselves — words, pictures and a part `fixed` in its place keep theirs. The same person's order is kept in their
@@ -2042,6 +2049,7 @@ export const StepNodeSchema = z.strictObject({
   order: z.enum(['random']).optional(),
   draw: z.int().min(1).max(1000).optional(),
   fixed: z.boolean().optional(),
+  timeLimit: TimeLimitSchema.optional(),
   invisible, roles,
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);

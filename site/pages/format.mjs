@@ -237,6 +237,10 @@ ${code(
                 { "type": "field", "id": "q3", "field": "left" }, { "type": "field", "id": "q4", "field": "signs" } ] }`
 )}
 
+<h3 id="time-limit">A time limit</h3>
+<p>${c('timeLimit')} on a page of responses gives it a time limit: said before its questions with <em>Start</em>, a countdown over them once started, a warning ${c('warn')} minutes before its end (1 unless said), and as it runs out the answers sent as they stand (${c('"then": "send"')}, the default) or locked for the person to send (${c('"lock"')}) — the page says which. A step may have its own: it counts from when the step is first entered and, as it runs out, keeps that step's answers as they are while the form goes on (${c('lock')}, a step's default), or sends the whole page (${c('send')}). Answers sent on time are sent as they stood: a required one not given goes empty. The clocks are kept in drafts, so a page opened again goes on counting, and the send tells ${c('started')} and ${c('timeUp')} — the browser's clock; a server that must be sure keeps its own.</p>
+${code('json', `"timeLimit": { "minutes": 20, "warn": 2, "then": "send" }`)}
+
 <h3 id="columns">Columns at each width</h3>
 <p>${c('columns')} can give a count for each width of the form: ${c('wide')} above 760px, ${c('medium')} up to 760px, ${c('narrow')} up to 520px. A width left out stacks the way the skin does by itself — the outlined skin keeps its columns until the form is narrow, the underline skin, whose labels sit beside their values, stacks at medium. On a narrow form — a phone — every label goes above its value, the page's or a group's ${c('"labels": "beside"')} too, in every theme: the value has the whole width, never cut to <em>+20 100 912 4…</em>; a title gives its picture the line under it rather than break its words.</p>
 ${code('json', `{ "type": "section", "id": "header", "columns": { "wide": 2, "medium": 2 }, "children": [] }`)}

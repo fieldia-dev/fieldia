@@ -1,9 +1,10 @@
-import { drawsOrder, type Field, type FieldNode, type Form, type FormState, type LayoutNode, type LineField, type Locale, type Page, type StepNode, type TabNode, type Value } from '@fieldia/core';
+import { drawsOrder, timed, type Field, type FieldNode, type Form, type FormState, type LayoutNode, type LineField, type Locale, type Page, type StepNode, type TabNode, type Value } from '@fieldia/core';
 import { displayValue } from '@fieldia/widgets';
 import { setHidden, setText, type El } from './dom';
 import { installFlowStyles } from './flow-styles';
 import type { ViewerLabels } from './labels';
 import { oneAtATime } from './flow-one';
+import { timeKeeper } from './flow-timer';
 
 /**
  * A survey's flow — the survey part's (survey-part.ts), made as a page of responses that asks for it is drawn:
@@ -15,6 +16,7 @@ import { oneAtATime } from './flow-one';
  *   refuses goes back to the question it names.
  * - **One question at a time** (`flow: "one"`, flow-one.ts): each question on a screen of its own; Edit on the review
  *   goes to its screen.
+ * - **A time limit** (`timeLimit`, flow-timer.ts): Start, the countdown, its warning, and what happened as it ran out.
  */
 
 /** What a survey's flow needs of the viewer that draws the page. */
@@ -62,7 +64,7 @@ interface Asked {
 }
 
 /** Whether a page has a survey flow the viewer's survey part draws: a review before sending, one question at a time, a draw. */
-export const flows = (page: Page): boolean => page.data.kind === 'responses' && page.layout.type !== 'list' && (!!page.review || page.flow === 'one' || drawsOrder(page));
+export const flows = (page: Page): boolean => page.data.kind === 'responses' && page.layout.type !== 'list' && (!!page.review || page.flow === 'one' || drawsOrder(page) || timed(page));
 
 /** A part's parts in the order the form shows them: drawn for this respondent where the page draws, those not drawn left out. */
 export function inOrder<N extends { id: string }>(form: Form, owner: string, children: readonly N[]): readonly N[] {
@@ -206,7 +208,7 @@ export function surveyFlow(context: FlowContext): FlowKit {
   }
   function showReview(on: boolean) {
     reviewing = on;
-    setHidden(questions, on);
+    setHidden(questions, on || !!timer?.waiting());
     setHidden(panel, !on);
     if (on) {
       editing = false;
@@ -237,6 +239,9 @@ export function surveyFlow(context: FlowContext): FlowKit {
   /** One question at a time: its screens, made once the review's own buttons are in the page. */
   const one = page.flow === 'one' ? oneAtATime(context, { finishWords: () => (review && !reviewing ? labels.reviewAnswers : words(wizard?.finishLabel ?? labels.submit)), finish: context.submit, reviewing: () => reviewing }) : null;
   if (one) cleanups.push(() => one.destroy());
+  /** A time limit's Start and countdown; as the page's runs out with `send`, its answers sent as they stand. */
+  const timer = timed(page) ? timeKeeper(context, { sendNow: () => context.submit(), words }) : null;
+  if (timer) cleanups.push(() => timer.destroy());
 
   /** A question's box, focused: on its step, the review put away. */
   function editAt(asked: Asked) {
@@ -270,7 +275,8 @@ export function surveyFlow(context: FlowContext): FlowKit {
     finishWords: () => (review && !reviewing ? labels.reviewAnswers : undefined),
     ...(one ? { forward: () => one.forward() } : {}),
     async sending() {
-      if (!review || reviewing) return true;
+      // A page whose time ran out goes as it stands: no review in its way.
+      if (!review || reviewing || form.getState().timeUp.length) return true;
       await openReview();
       return false;
     },
@@ -291,6 +297,10 @@ export function surveyFlow(context: FlowContext): FlowKit {
         layOrder(questions, state.order);
       }
       one?.update(state);
+      if (timer) {
+        timer.update(state);
+        setHidden(questions, reviewing || timer.waiting());
+      }
       // A page of sections' own Submit reviews them first, as a wizard's last button does.
       if (submitButton) setText(submitButton, review && !reviewing ? labels.reviewAnswers : labels.submit);
       const steps = form.steps();

@@ -612,6 +612,20 @@ export interface ViewerLabels {
   flowNext: string;
   flowOk: string;
   flowEnterHint: string;
+  /**
+   * A time limit (`timeLimit`): a page's said before its questions with Start ({time}: "20 minutes"), the countdown
+   * over them — the page's, or a step's — its warning said once ({time} left), and what happened as it ran out: the
+   * answers sent as they stood, locked for the person to send ({send}: the page's own words to send), or a step's kept.
+   */
+  timeLimitTitle: string;
+  timeLimitIntro: string;
+  timeStart: string;
+  timeLeft: string;
+  stepTimeLeft: string;
+  timeWarn: string;
+  timeUpSent: string;
+  timeUpLocked: string;
+  stepTimeUp: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1045,6 +1059,15 @@ const en: ViewerLabels = {
   flowNext: 'Next question',
   flowOk: 'OK',
   flowEnterHint: 'or press Enter',
+  timeLimitTitle: 'This form has a time limit',
+  timeLimitIntro: 'You have {time} to answer, from when you press Start.',
+  timeStart: 'Start',
+  timeLeft: 'Time left: {time}',
+  stepTimeLeft: 'Time left for this step: {time}',
+  timeWarn: '{time} left.',
+  timeUpSent: 'Time is up: your answers were sent as they were.',
+  timeUpLocked: 'Time is up: your answers are locked. Press {send} to send them.',
+  stepTimeUp: 'Time is up for this step: its answers are kept as they are.',
 };
 
 /**

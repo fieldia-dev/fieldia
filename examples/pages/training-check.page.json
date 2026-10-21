@@ -6,6 +6,7 @@
   "data": { "kind": "responses" },
   "quiz": { "results": "now" },
   "review": true,
+  "timeLimit": { "minutes": 10, "warn": 2 },
   "fields": {
     "name": { "type": "char", "label": "Your name", "required": true },
     "role": {

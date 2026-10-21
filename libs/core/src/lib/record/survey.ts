@@ -16,5 +16,8 @@ export const formSurveyPart: Part<FormSurveyPart> = lazyPart('survey', () => imp
 /** Whether a page of responses draws its order, or some of its questions, for each respondent (`order: "random"`, `draw`). */
 export const drawsOrder = (page: Page): boolean => page.data.kind === 'responses' && /"(order":"random|draw":)/.test(JSON.stringify(page.layout));
 
-/** Whether a page's form needs the survey part's code: a quiz whose results the person sees, a draw. */
-export const surveyFlow = (page: Page): boolean => !!page.quiz || drawsOrder(page);
+/** Whether a page of responses has a time limit: its own (`timeLimit`), or a step's. */
+export const timed = (page: Page): boolean => page.data.kind === 'responses' && (!!page.timeLimit || (page.layout.type === 'wizard' && page.layout.children.some((step) => !!step.timeLimit)));
+
+/** Whether a page's form needs the survey part's code: a quiz whose results the person sees, a draw, a time limit. */
+export const surveyFlow = (page: Page): boolean => !!page.quiz || drawsOrder(page) || timed(page);

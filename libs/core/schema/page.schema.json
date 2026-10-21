@@ -401,6 +401,9 @@
       "enum": [
         "one"
       ]
+    },
+    "timeLimit": {
+      "$ref": "#/$defs/TimeLimit"
     }
   },
   "required": [
@@ -9379,6 +9382,9 @@
         "fixed": {
           "type": "boolean"
         },
+        "timeLimit": {
+          "$ref": "#/$defs/TimeLimit"
+        },
         "invisible": {
           "$ref": "#/$defs/Modifier"
         },
@@ -9397,6 +9403,32 @@
         "id",
         "label",
         "children"
+      ],
+      "additionalProperties": false
+    },
+    "TimeLimit": {
+      "type": "object",
+      "properties": {
+        "minutes": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1440
+        },
+        "warn": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1440
+        },
+        "then": {
+          "type": "string",
+          "enum": [
+            "send",
+            "lock"
+          ]
+        }
+      },
+      "required": [
+        "minutes"
       ],
       "additionalProperties": false
     },

@@ -15,6 +15,8 @@ const review = (page: Page) => page.locator('.fd-review');
 const row = (page: Page, field: string) => review(page).locator(`.fd-review-row[data-field="${field}"]`);
 
 async function answer(page: Page) {
+  // Ten minutes, from Start.
+  await page.getByRole('button', { name: 'Start' }).click();
   await box(page, 'q-name').fill('Mona Adel');
   await node(page, 'q-role').getByLabel('Nurse').check();
   await page.getByRole('button', { name: 'Next' }).click();

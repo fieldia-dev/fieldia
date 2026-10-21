@@ -215,6 +215,8 @@ export interface StoredDraft {
   answered?: string[];
   /** On a page that draws its order or some of its questions: the draw they were answering, kept so it opens the same. */
   order?: Record<string, string[]>;
+  /** On a page with time limits: when each started, as ISO — the page's under `#form`, a step's by its id. */
+  timers?: Record<string, string>;
   /** When it was kept, as ISO. */
   savedAt: string;
 }
@@ -761,6 +763,13 @@ export interface SubmitRequest {
    * ids in the order this person was shown — those not drawn left out, their answers not among `values`.
    */
   order?: Record<string, string[]>;
+  /**
+   * On a page with a time limit (`timeLimit`): when the person pressed Start, as ISO, and whether the time ran out — the
+   * answers then sent as they stood. A step's limit run out says `timeUp: false` with no `started`. The browser's clock:
+   * a server that must be sure keeps its own.
+   */
+  started?: string;
+  timeUp?: boolean;
 }
 
 /**

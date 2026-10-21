@@ -400,4 +400,13 @@ export const fr: ViewerLabels = {
   flowNext: 'Question suivante',
   flowOk: 'OK',
   flowEnterHint: 'ou appuyez sur Entrée',
+  timeLimitTitle: 'Ce formulaire a une limite de temps',
+  timeLimitIntro: 'Vous avez {time} pour répondre, à partir du moment où vous appuyez sur Commencer.',
+  timeStart: 'Commencer',
+  timeLeft: 'Temps restant : {time}',
+  stepTimeLeft: 'Temps restant pour cette étape : {time}',
+  timeWarn: 'Plus que {time}.',
+  timeUpSent: 'Le temps est écoulé : vos réponses ont été envoyées telles quelles.',
+  timeUpLocked: 'Le temps est écoulé : vos réponses sont verrouillées. Appuyez sur {send} pour les envoyer.',
+  stepTimeUp: 'Le temps de cette étape est écoulé : ses réponses sont gardées telles quelles.',
 };

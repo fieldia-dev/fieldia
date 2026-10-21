@@ -428,6 +428,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   /** A wizard's pages in an order drawn for each respondent (`order: "random"` on it); false keeps them in theirs. */
   setPagesOrder(random: boolean): boolean;
   /**
+   * A time limit (`timeLimit`) for a form of responses (`id` null) or one of its pages (a step's id): its minutes, the
+   * minutes before its end it warns, and what happens as it runs out (`send` or `lock`) — each `null` taking that one
+   * away; `null` alone, or no minutes, takes the limit away. Refused on a record's screen, and a warning not before the end.
+   */
+  setTimeLimit(id: string | null, patch: { minutes?: number | null; warn?: number | null; then?: 'send' | 'lock' | null } | null): boolean;
+  /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
    * home's — `null` takes either away.
@@ -1634,6 +1640,27 @@ export function createDesigner(options: {
         if (random) draft.layout.order = 'random';
         else delete draft.layout.order;
       }, 'pagesOrder');
+    },
+
+    setTimeLimit(id, patch) {
+      return apply(
+        (draft) => {
+          const owner = (id === null ? draft : findContainer(draft, id)) as { type?: string; timeLimit?: Record<string, unknown> } | undefined;
+          if (!owner || (id !== null && owner.type !== 'step')) throw new Refusal((w) => w.refusals.noQuestion(id ?? ''));
+          if (patch === null) return void delete owner.timeLimit;
+          if (draft.data.kind !== 'responses') throw new Refusal((w) => w.refusals.timeForResponses);
+          const limit: Record<string, unknown> = { ...(owner.timeLimit ?? {}) };
+          for (const [key, value] of Object.entries(patch)) {
+            if (value === null || value === undefined) delete limit[key];
+            else if (key !== 'then' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0)) throw new Refusal((w) => w.refusals.timeMinutes);
+            else limit[key] = value;
+          }
+          if (typeof limit['warn'] === 'number' && typeof limit['minutes'] === 'number' && limit['warn'] >= limit['minutes']) throw new Refusal((w) => w.refusals.timeWarnBefore);
+          if (typeof limit['minutes'] === 'number') owner.timeLimit = limit;
+          else delete owner.timeLimit;
+        },
+        `time:${id ?? 'page'}:${patch ? Object.keys(patch).join(',') : 'off'}`
+      );
     },
 
     setFlowOne(on) {

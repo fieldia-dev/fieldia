@@ -30,10 +30,24 @@ export function drawSettings(el: ElementFactory, designer: Designer, id: string)
     commit: (n) => designer.setDraw(id, { draw: n }),
   });
   const countBox = el('label', { class: 'fd-inline-setting' }, el('span', {}, w.drawCount), count.input);
-  const element = el('div', { class: 'fd-inline-row fd-draw-settings' }, random.element, countBox, fixed.element);
+  // A step's own time limit, its minutes: the page's limit is on the screen's panel.
+  let minutes: number | null = null;
+  const time = settingNumber(el, designer, {
+    label: w.stepTime,
+    attrs: { class: 'fd-inline-input fd-inline-number', 'aria-label': w.stepTime, placeholder: w.noTimeLimit },
+    above: 0,
+    optional: true,
+    saved: () => minutes,
+    commit: (n) => designer.setTimeLimit(id, n === null ? null : { minutes: n }),
+  });
+  const timeBox = el('label', { class: 'fd-inline-setting' }, el('span', {}, w.stepTime), time.input);
+  const element = el('div', { class: 'fd-inline-row fd-draw-settings' }, random.element, countBox, fixed.element, timeBox);
   return {
     element,
-    destroy: () => count.destroy(),
+    destroy() {
+      count.destroy();
+      time.destroy();
+    },
     update(page) {
       const node = own(page);
       element.hidden = page.data.kind !== 'responses' || !node;
@@ -44,6 +58,9 @@ export function drawSettings(el: ElementFactory, designer: Designer, id: string)
       // A step keeps its place where the form's pages are drawn: a welcome first, a page about you last.
       fixed.element.hidden = !(node.type === 'step' && page.layout.type === 'wizard' && page.layout.order === 'random');
       fixed.button.setAttribute('aria-checked', String(node.fixed === true));
+      timeBox.hidden = node.type !== 'step';
+      minutes = node.type === 'step' ? node.timeLimit?.minutes ?? null : null;
+      time.refresh();
     },
   };
 }

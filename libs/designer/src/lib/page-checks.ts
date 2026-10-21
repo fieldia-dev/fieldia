@@ -298,6 +298,8 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
     return JSON.stringify(out.sort());
   };
   if (draws(before) !== draws(after)) out.push(w.questionsDrawn);
+  const times = (page: Page) => JSON.stringify([page.timeLimit ?? null, page.layout.type === 'wizard' ? page.layout.children.filter((step) => step.timeLimit).map((step) => [step.id, step.timeLimit]) : []]);
+  if (times(before) !== times(after)) out.push(w.timeLimit);
   out.push(...lookChanges(before, after, words));
   const layout = layoutChanges(before, after, words);
   const at = (id: string) => layout.placed.get(id) ?? '';

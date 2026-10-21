@@ -15,6 +15,7 @@ test.describe('a question bank', () => {
   test('asks two of its four questions, in an order drawn, the same again from the draft on the same device', async ({ page }) => {
     await open(page, 'plain', `${CHECK}&drafts=1`);
     await page.evaluate(() => localStorage.clear());
+    await page.getByRole('button', { name: 'Start' }).click();
     await box(page, 'q-name').fill('Mona Adel');
     await node(page, 'q-role').getByLabel('Nurse').check();
     const asked = node(page, 'step-bank').locator('[data-node^="q-bank-"]:visible');

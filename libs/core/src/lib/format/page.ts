@@ -9,7 +9,7 @@ import { PageRecordsSchema, type PageRecords } from './records';
 import { PageEndingsSchema, type PageEnding } from './endings';
 import { PageLimitsSchema, type PageLimits } from './limits';
 import { PageQuizSchema, type PageQuiz } from './quiz';
-import { PageReviewSchema, type PageReview } from './flow';
+import { PageReviewSchema, TimeLimitSchema, type PageReview, type TimeLimit } from './flow';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -233,6 +233,12 @@ export interface Page {
    * Left out, every question of a step (or of the page) at once, as before.
    */
   flow?: 'one';
+  /**
+   * A time limit for the whole page of responses: said before its questions with Start, a countdown over them once
+   * started, a warning before its end, then the answers sent as they stand (`then: "send"`, the default) or locked for
+   * the person to send (`lock`) — the page says which. A step may have its own (`timeLimit` on the step). See `TimeLimit`.
+   */
+  timeLimit?: TimeLimit;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -323,6 +329,7 @@ export const PageSchema = z
     quiz: PageQuizSchema.optional(),
     review: PageReviewSchema.optional(),
     flow: z.enum(['one']).optional(),
+    timeLimit: TimeLimitSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

@@ -16,6 +16,8 @@ const item = (page: Page, field: string) => results(page).locator(`.fd-quiz-item
 
 /** The check answered as a nurse who misses the filler and the minutes, and leaves the last question unanswered. */
 async function answer(page: Page) {
+  // Ten minutes, from Start.
+  await page.getByRole('button', { name: 'Start' }).click();
   await box(page, 'q-name').fill('Mona Adel');
   await node(page, 'q-role').getByLabel('Nurse').check();
   await page.getByRole('button', { name: 'Next' }).click();

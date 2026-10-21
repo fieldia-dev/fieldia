@@ -1026,7 +1026,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // for it (0.02) and its check owed (0.02) — 507.83 after, to 507.9; questions in an order drawn and N of M — the form
 // drawing as it opens or as its survey part comes, its steps following the draw, a part not drawn hidden and never
 // asked, the draw kept in drafts and laid again, sent with the answers and drawn anew for another response (0.94), the
-// page's draw found (0.10), its checks owed (0.07), a step's place in the list of steps (0.02) — 508.96 after, to 509.0.
+// page's draw found (0.10), its checks owed (0.07), a step's place in the list of steps (0.02) — 508.96 after, to 509.0;
+// a time limit, and the draw with it behind one hook the survey part fills (survey-kit.ts): the form asks its kit
+// whether a part is left out or locked, what a draft keeps and lays, what a send tells, a response started again, a
+// step entered, Start and the countdown — the draw's working out (its steps, the parts left out, a draft's draw checked)
+// moved into the part with the clocks — 508.90 after, to 509.0 (the draw alone measured 508.96).
 const BUDGET_KB = 509.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1263,7 +1267,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
 // Wave 6's survey flow (listed with the raw budget above): a quiz's results, 166.15 measured before, 166.42 after, to 166.5;
 // a review before sending, 166.61 after, to 166.7; one question at a time, 166.68 after, under it; questions in an order
-// drawn and N of M, 167.11 after, to 167.2.
+// drawn and N of M, 167.11 after, to 167.2; a time limit with the draw behind one hook, 167.10 after, under it.
 const GZIP_BUDGET_KB = 167.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -1452,8 +1456,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // sending — its button, heading, Edit, an answer not given, Back to review: 5 in each — Arabic's 78.94 and 13.50 after,
 // to 79.0 and 13.6; German's 36.80 and 11.81, to 36.9 and 11.9; French's 37.28 and 11.90, to 37.3 and 12.0. One
 // question at a time — how far, back, on, OK and Enter: 5 in each — Arabic's 79.29 and 13.55, to 79.3 and 13.6; German's
-// 36.95 and 11.85, to 37.0 and 11.9; French's 37.45 and 11.92, to 37.5 and 12.0.
-const ADD_ON_BUDGET_KB = { ar: [79.3, 13.6], de: [37.0, 11.9], fr: [37.5, 12.0] };
+// 36.95 and 11.85, to 37.0 and 11.9; French's 37.45 and 11.92, to 37.5 and 12.0. A time limit — its title, what it
+// allows and Start, the time left (a step's too), its warning, and what happened as it ran out: 9 in each — Arabic's
+// 80.59 and 13.75, to 80.6 and 13.8; German's 37.50 and 12.03, to 37.5 and 12.1; French's 38.06 and 12.10, to 38.1 and
+// 12.1.
+const ADD_ON_BUDGET_KB = { ar: [80.6, 13.8], de: [37.5, 12.1], fr: [38.1, 12.1] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1855,8 +1862,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and arrows (6.11 and 2.65), its sheet (2.71 and 0.65), the review's Edit to its screen (0.29 and 0.11), its check (0.23
 // and 0.07) — 60.57 and 20.27, to 60.6 and 20.3; questions in an order drawn and N of M — the seeded draw and the
 // questions asked in the order shown (1.66 and 0.88), laid in the page in that order, the review and one at a time
-// following it (0.93 and 0.39), its checks (0.55 and 0.23) — 63.59 and 21.57, to 63.6 and 21.6.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [63.6, 21.6], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// following it (0.93 and 0.39), its checks (0.55 and 0.23) — 63.59 and 21.57, to 63.6 and 21.6; a time limit — its
+// Start, countdown, warning and what happened as it ran out (2.78 and 1.37) with its sheet (1.03 and 0.18), its clocks
+// kept on the form's (1.64 and 0.85), the draw's and the clocks' hook the form asks (1.59 and 0.80), its checks (0.29
+// and 0.04) — 71.51 and 24.19, to 71.6 and 24.2.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [71.6, 24.2], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1875,7 +1885,7 @@ const PART_GIVES = {
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget', 'copyWidget', 'timerWidget'],
   files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
-  survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget', 'quizResults', 'drawQuizResults', 'showQuiz', 'installFlowStyles', 'surveyFlow', 'flows', 'oneAtATime', 'drawOrder', 'askedInOrder'],
+  survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget', 'quizResults', 'drawQuizResults', 'showQuiz', 'installFlowStyles', 'surveyFlow', 'flows', 'oneAtATime', 'drawOrder', 'askedInOrder', 'timeKeeper', 'limitsOf', 'countdownNow', 'keepTime', 'surveyKit'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
   relations: ['many2oneWidget', 'tagsWidget', 'charTagsWidget', 'linkCheckboxesWidget', 'referenceWidget'],

@@ -47,9 +47,11 @@ import {
   type StoredDraft,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
-import { drawsOrder, formSurveyPart, surveyFlow } from './survey';
+import { formSurveyPart, surveyFlow } from './survey';
+import type { SurveyKit } from './survey-kit';
 import type { QuizResults } from './quiz';
 import type { DrawnOrder } from './order';
+import type { Countdown } from './timing';
 import type { Limits } from './form-limits';
 import { draftRead, resumeStep } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
@@ -180,6 +182,13 @@ export interface FormState {
    * sent with the answers (`SubmitRequest.order`). Null where the page draws nothing, or before its survey part came.
    */
   readonly order?: Readonly<Record<string, readonly string[]>> | null;
+  /**
+   * A page's time limits (`timeLimit` on the page and on its steps): when each started, by the form's clock (ms) — the
+   * page's under `#form`, a step's by its id — kept in drafts so a page opened again goes on counting.
+   */
+  readonly timers: Readonly<Record<string, number>>;
+  /** The time limits that ran out: their answers are locked, and their checks refuse nothing — they go as they stood. */
+  readonly timeUp: readonly string[];
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -670,6 +679,10 @@ export interface Form {
   back(): boolean;
   /** Pass over the step on screen, when it is optional and not the last one. */
   skip(): boolean;
+  /** A page's time limit started — its Start pressed: its clock runs from now, and runs out on time (`timeUp`). */
+  startTimer(): void;
+  /** The time limit's countdown showing now — the page's while it runs, else the step's on screen — or null; read on the form's clock. */
+  countdown(): Countdown | null;
   /**
    * Go to a step that applies. Back, at once; forward, only past steps that are
    * complete: it stops at the first one with a problem and shows it, and skips
@@ -1043,8 +1056,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const layoutSteps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
   /** The wizard's steps in the order shown: the page's, or the order drawn for this respondent (`state.order`). */
   let steps = layoutSteps;
-  /** The parts a draw left out, never asked: worked out with the order drawn. */
-  let undrawn = new Set<string>();
+  /** A survey's draw and clocks, kept by the survey part (survey-kit.ts) once it came; a draft laid before, laid then. */
+  let surveyKit: SurveyKit | null = null;
+  let draftForKit: StoredDraft | null = null;
   const storeKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
   /** Today, on the clock of the page's time zone (the browser's own when it names none). */
   const today = () => dayIn(options.now?.() ?? new Date(), page.timeZone);
@@ -1186,20 +1200,6 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let baseline: Values = computed.apply(startingValues(), askedNow);
   /** The setWhen conditions holding for the values as they last settled: one starts to hold only against these. */
   let holding = setWhen.holding(baseline);
-  /** A page drawing its order, or some of its questions, for each respondent: worked out by the survey part (order.ts). */
-  const drawn = drawsOrder(page);
-  /** The respondent's seed: the app's, the person's id, else one of this browser's for this response. */
-  const seedOf = () => options.seed ?? (options.user?.id != null ? String(options.user.id) : Math.random().toString(36).slice(2));
-  /** An order drawn now, where the survey part has come. */
-  const draw = (): DrawnOrder | null => (drawn && formSurveyPart.loaded ? formSurveyPart.loaded.drawOrder(page, seedOf()) : null);
-  /** The steps in the order drawn, and the parts a draw left out, never asked. */
-  function takeOrder(order: Readonly<Record<string, readonly string[]>> | null) {
-    steps = (page.layout.type === 'wizard' && (order?.[page.layout.id] as string[] | undefined)) || layoutSteps;
-    undrawn = new Set();
-    if (order) for (const node of index.values()) if (node.parent && order[node.parent] && !order[node.parent].includes(node.id)) undrawn.add(node.id);
-  }
-  const firstOrder = draw();
-  takeOrder(firstOrder);
   let state: FormState = {
     status: options.recordId != null ? 'idle' : 'ready',
     recordId: options.recordId ?? null,
@@ -1230,7 +1230,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Worked out once the form has its state, as the limits part comes (`limitsCode`).
     limits: null,
     resume: null,
-    order: firstOrder,
+    order: null,
+    timers: {},
+    timeUp: [],
   };
   started = true;
   /**
@@ -1583,6 +1585,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (step === told || step === null) return;
     told = step;
     emit('step', { step });
+    // A step with a time limit: its clock starts as it is first entered.
+    surveyKit?.entered(step);
     const list = page.on?.show?.[step];
     if (list) void track(moment(`on.show.${step}`, list, chain, true));
   }
@@ -1964,13 +1968,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const node = index.get(id);
     if (!node) throw new Error(`The page has no element "${id}"`);
     const { context: ctx, env } = reading();
-    const hidden = (at: IndexedNode | undefined) => (at ? undrawn.has(at.id) || !rolesAllow(at.roles, userRoles) || at.invisible.evaluate(ctx, env) : false);
+    const hidden = (at: IndexedNode | undefined) => (at ? !!surveyKit?.hidden(at.id) || !rolesAllow(at.roles, userRoles) || at.invisible.evaluate(ctx, env) : false);
     let invisible = hidden(node);
     for (let parent = node.parent; !invisible && parent; parent = index.get(parent)?.parent ?? null) {
       invisible = hidden(index.get(parent));
     }
-    // A section read-only right now makes everything inside it read-only too.
-    let readonly = node.readonly.evaluate(ctx, env);
+    // A section read-only right now makes everything inside it read-only too; a page's, or a step's, time run out too.
+    let readonly = node.readonly.evaluate(ctx, env) || !!surveyKit?.locked(id);
     for (let parent = node.parent; !readonly && parent; parent = index.get(parent)?.parent ?? null) {
       readonly = index.get(parent)?.readonly.evaluate(ctx, env) ?? false;
     }
@@ -2121,6 +2125,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const errors: Record<string, string> = {};
     const seen = new Set<string>();
     for (const node of visibleFieldNodes(root)) {
+      // The answers of a time run out go as they stood: their checks refuse nothing.
+      if (surveyKit?.locked(node.id)) continue;
       const name = node.field as string;
       seen.add(name);
       const end = rangeEnd(node);
@@ -2401,7 +2407,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return {
       values,
       ...(steps.length ? { step: state.step, skipped: [...state.skipped] } : {}),
-      ...(state.order ? { order: state.order as Record<string, string[]> } : {}),
+      ...surveyKit?.draft(),
       ...(Object.keys(state.unread).length ? { unread: structuredCopy(state.unread as Record<string, UnreadText>) } : {}),
       answered: Object.keys(fields).filter((name) => state.dirty.includes(name)),
       savedAt: new Date(clock()).toISOString(),
@@ -2460,12 +2466,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** A draft laid on the form: its answers as a starting point, its wizard step (or the nearest before it that applies), its text that does not read. */
   function applyDraft(draft: StoredDraft) {
     found = null;
-    // The draw it was answered in, where the page still has it: its steps and questions as they were.
-    const kept = drawn && draft.order && typeof draft.order === 'object' ? Object.entries(draft.order).filter(([id, list]) => index.has(id) && Array.isArray(list) && list.every((one) => index.get(one)?.parent === id)) : [];
-    if (kept.length) {
-      takeOrder(Object.fromEntries(kept));
-      set({ order: Object.fromEntries(kept) });
-    }
+    // Its draw and its clocks, by the survey part: now, or once it came.
+    if (surveyKit) surveyKit.lay(draft);
+    else if (surveyFlow(page)) draftForKit = draft;
     writeValues(withDraft(draft.values ?? {}), { draft: null }, true);
     const known = (draft.skipped ?? []).filter((id) => steps.includes(id));
     // Text typed that did not read stays as typed, said as it was, where its field is still on the page.
@@ -2542,6 +2545,28 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Whether the record shown was loaded once: its counts are asked then, its own choices not counted against it. */
   let loadedOnce = false;
   /** Whether the form keeps limits: a page with them or with places of its own, or a list's choices that came with places. */
+  /** A survey's draw and clocks, made from the survey part as it came: the draw made, a draft laid meanwhile laid on it. */
+  function surveyCode() {
+    if (surveyKit || disposed || !formSurveyPart.loaded) return;
+    const kit = formSurveyPart.loaded.surveyKit({
+      page,
+      scheduler,
+      seed: options.seed ?? (options.user?.id != null ? String(options.user.id) : null),
+      clock,
+      state: () => state,
+      set,
+      steps: () => form.steps(),
+      order: (list) => void (steps = list ?? layoutSteps),
+      parentOf: (id) => index.get(id)?.parent ?? null,
+      disposed: () => disposed,
+      keep: () => void ((options.drafts || onServer()) && scheduleDraft()),
+    });
+    surveyKit = kit;
+    kit.open();
+    if (draftForKit) kit.lay(draftForKit);
+    draftForKit = null;
+  }
+
   const keepsLimits = () => !outer && (hasLimits(page) || Object.values(state.choices).some((choices) => choices.options?.some((option) => option.seats !== undefined)));
   /**
    * The limits, made from their part as it comes — at once where it has come — shown, and asked of the source as the
@@ -2809,7 +2834,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         // A quiz's marking, in before the answers go: what the person sees of their results.
         const marking = page.quiz ? await formSurveyPart.load().catch(() => undefined) : undefined;
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
-        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...(state.order ? { order: state.order as Record<string, string[]> } : {}) })) ?? {};
+        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...surveyKit?.sent() })) ?? {};
         // The captcha's token is spent once sent: the next send waits for a new one.
         if (seen?.captcha) bot.captcha = null;
         // Answered for answers no longer shown — the form was started again meanwhile: the source has them, the form lays nothing.
@@ -3756,10 +3781,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Started again: a new response, timed from now.
       bot = { ...bot, honeypot: false, since: clock() };
       const values = syncParts(structuredCopy(baseline), 'start');
-      // A new respondent draws anew, unless the app or the person's id is the seed.
-      const order = state.order && options.seed === undefined && options.user?.id == null ? draw() ?? state.order : state.order ?? null;
-      takeOrder(order);
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null, order });
+      // A new respondent: drawn anew (unless the app or the person's id is the seed), no clock running.
+      surveyKit?.reset();
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null });
       // Started again: whether the page takes another response, and each choice's places, asked again.
       if (asksLimits()) void track(askLimits());
     },
@@ -3893,6 +3917,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       set({ step: previous, errors: {} });
       return true;
     },
+
+    startTimer: () => surveyKit?.start(),
+    countdown: () => surveyKit?.countdown() ?? null,
 
     skip() {
       const current = state.step;
@@ -4208,19 +4235,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
   // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
   if (keepsLimits()) void track(limitsCode());
-  // A page's survey code — a quiz's marking, its draw — asked for as the form opens: a draw not made yet is made once it
-  // came, the first step the drawn one's while the person has not moved.
-  if (surveyFlow(page))
-    void formSurveyPart.load().then(
-      () => {
-        if (state.order || disposed || !drawn) return;
-        const first = steps[0];
-        const order = draw();
-        takeOrder(order);
-        set({ order, ...(state.step === first ? { step: steps[0] ?? null } : {}) });
-      },
-      () => undefined
-    );
+  // A page's survey code — a quiz's marking, its draw and its clocks — made at once where it came, else once it has:
+  // before a draft is laid, which lays its own draw over it.
+  if (surveyFlow(page)) {
+    surveyCode();
+    if (!surveyKit) void formSurveyPart.load().then(surveyCode, () => undefined);
+  }
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

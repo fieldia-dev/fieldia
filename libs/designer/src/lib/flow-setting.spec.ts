@@ -86,4 +86,30 @@ describe('how a form is gone through, in the designer', () => {
     expect(pageChanges(blankPage('survey', 'Staff check'), designer.getPage())).toContain('Which questions each person is asked, or their order, changed');
     survey.destroy();
   });
+
+  it('gives the form a time limit — its minutes, its warning, what happens as it runs out — and a page its own', () => {
+    const { designer, panel } = responses();
+    const before = designer.getPage();
+    expect(rowOf(panel, 'Warn before the end').hidden).toBe(true);
+    typeAndLeave(rowOf(panel, 'Time limit').querySelector('input') as HTMLInputElement, '20');
+    expect(designer.getPage().timeLimit).toEqual({ minutes: 20 });
+    expect(rowOf(panel, 'Warn before the end').hidden).toBe(false);
+    typeAndLeave(rowOf(panel, 'Warn before the end').querySelector('input') as HTMLInputElement, '2');
+    const then = rowOf(panel, 'When the time runs out').querySelector('select') as HTMLSelectElement;
+    then.value = 'lock';
+    then.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(designer.getPage().timeLimit).toEqual({ minutes: 20, warn: 2, then: 'lock' });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(pageChanges(before, designer.getPage())).toContain('Its time limits changed');
+    // A warning not before the end: refused, said.
+    expect(designer.setTimeLimit(null, { warn: 25 })).toBe(false);
+    expect(designer.getState().issues[0]).toBe('It warns before the end: fewer minutes than the limit');
+    typeAndLeave(rowOf(panel, 'Time limit').querySelector('input') as HTMLInputElement, '');
+    expect(designer.getPage().timeLimit).toBeUndefined();
+    // A page of a survey has its own, in its card.
+    const survey = createDesigner({ page: blankPage('survey', 'Staff check') });
+    const step = (survey.getPage().layout as WizardNode).children[0];
+    expect(survey.setTimeLimit(step.id, { minutes: 5 })).toBe(true);
+    expect(((survey.getPage().layout as WizardNode).children[0] as StepNode).timeLimit).toEqual({ minutes: 5 });
+  });
 });

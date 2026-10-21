@@ -353,6 +353,23 @@ and sends it with the answers (`SubmitRequest.order`). A quiz's results follow
 the order shown. The draw comes in the survey part (`formSurveyPart`, asked for
 as the form opens; a form made before it came draws once it has).
 
+## A time limit
+
+`"timeLimit": { "minutes": 20, "warn": 2, "then": "send" }` on a page of
+responses, or on one of its steps. A page's clock starts with
+`form.startTimer()` (the viewer's Start), a step's as it is first entered; each
+runs on the form's clock (`now`, `scheduler`) and runs out on time
+(`state.timeUp`, by scope: `#form`, or the step's id). Its answers are then
+locked, and their checks refuse nothing: they go as they stood — a required
+answer not given goes empty. `then: "send"` (a page's default) leaves the send
+to the viewer, at once; a headless app calls `form.save()` as `timeUp` changes.
+`lock` (a step's default) keeps them for the person to send; a step's that
+locks gives way to the next step. `form.countdown()` is the countdown showing
+now (`{ scope, left, ends, stage: 'running' | 'warning' | 'up', … }`). Their
+starts are kept in drafts (`StoredDraft.timers`), so a page opened again goes on
+counting; the send tells `started` and `timeUp`. The clock is the browser's: a
+server that must be sure keeps its own.
+
 ## Files stored as they are picked
 
 Give the data source `upload(file, request)` and a file or picture field sends

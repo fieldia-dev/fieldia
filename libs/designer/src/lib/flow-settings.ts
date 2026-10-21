@@ -2,6 +2,7 @@ import type { Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { setting } from './panel-controls';
+import { settingNumber } from './number-box';
 
 /**
  * How a form of responses is gone through, on the screen's panel (panel-page.ts) beside its quiz: a review of the
@@ -22,10 +23,21 @@ export function flowSettings(el: ElementFactory, designer: Designer): { rows: HT
   const pages = el('input', { type: 'checkbox', class: 'fd-check', 'aria-label': w.pagesRandomOn }) as HTMLInputElement;
   pages.addEventListener('change', () => designer.setPagesOrder(pages.checked));
   const pagesRow = setting(el, 'rules', 'Pages in random order', pages, { hint: w.pagesRandomHint, words: w.pagesRandom });
-  const rows = [reviewRow, headingRow, oneRow, pagesRow];
+  const limit = () => designer.getPage().timeLimit;
+  const minutes = settingNumber(el, designer, { label: w.timeMinutes, attrs: { class: 'fd-input', 'aria-label': w.timeMinutes, placeholder: w.noTimeLimit }, above: 0, optional: true, saved: () => limit()?.minutes ?? null, commit: (n) => designer.setTimeLimit(null, n === null ? null : { minutes: n }) });
+  const warn = settingNumber(el, designer, { label: w.timeWarn, attrs: { class: 'fd-input', 'aria-label': w.timeWarn, placeholder: '1' }, above: 0, optional: true, saved: () => limit()?.warn ?? null, commit: (n) => designer.setTimeLimit(null, { warn: n }) });
+  const then = el('select', { class: 'fd-input fd-select', 'aria-label': w.timeThen }, el('option', { value: 'send' }, w.timeThenAs.send), el('option', { value: 'lock' }, w.timeThenAs.lock)) as HTMLSelectElement;
+  then.addEventListener('change', () => designer.setTimeLimit(null, { then: then.value === 'lock' ? 'lock' : null }));
+  const minutesRow = setting(el, 'rules', 'Time limit', minutes.input, { hint: w.timeMinutesHint, words: w.timeLimit });
+  const warnRow = setting(el, 'rules', 'Warn before the end', warn.input, { words: w.timeWarn });
+  const thenRow = setting(el, 'rules', 'When the time runs out', then, { words: w.timeThen });
+  const rows = [reviewRow, headingRow, oneRow, pagesRow, minutesRow, warnRow, thenRow];
   return {
     rows,
-    destroy: () => undefined,
+    destroy() {
+      minutes.destroy();
+      warn.destroy();
+    },
     update(page) {
       const responses = page.data.kind === 'responses' && page.layout.type !== 'list';
       reviewRow.hidden = !responses;
@@ -36,6 +48,11 @@ export function flowSettings(el: ElementFactory, designer: Designer): { rows: HT
       one.checked = page.flow === 'one';
       pagesRow.hidden = !responses || page.layout.type !== 'wizard';
       pages.checked = page.layout.type === 'wizard' && page.layout.order === 'random';
+      minutesRow.hidden = !responses;
+      warnRow.hidden = thenRow.hidden = !responses || !page.timeLimit;
+      minutes.refresh();
+      warn.refresh();
+      then.value = page.timeLimit?.then ?? 'send';
     },
   };
 }

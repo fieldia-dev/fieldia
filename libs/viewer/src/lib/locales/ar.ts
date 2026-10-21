@@ -368,4 +368,13 @@ export const ar: ViewerLabels = {
   flowNext: 'السؤال التالي',
   flowOk: 'موافق',
   flowEnterHint: 'أو اضغط Enter',
+  timeLimitTitle: 'لهذا النموذج وقت محدد',
+  timeLimitIntro: 'لديك {time} للإجابة، من لحظة الضغط على ابدأ.',
+  timeStart: 'ابدأ',
+  timeLeft: 'الوقت المتبقي: {time}',
+  stepTimeLeft: 'الوقت المتبقي لهذه الخطوة: {time}',
+  timeWarn: 'بقي {time}.',
+  timeUpSent: 'انتهى الوقت: أُرسلت إجاباتك كما كانت.',
+  timeUpLocked: 'انتهى الوقت: قُفلت إجاباتك. اضغط {send} لإرسالها.',
+  stepTimeUp: 'انتهى وقت هذه الخطوة: تُحفظ إجاباتها كما هي.',
 };

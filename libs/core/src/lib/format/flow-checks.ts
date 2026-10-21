@@ -24,9 +24,11 @@ export function checkSurveyFlow(page: Page, tools: FlowTools): void {
   if (page.quiz !== undefined && page.data.kind !== 'responses') report('quiz', 'a quiz’s results are for a page of responses, shown once its answers are sent');
   if (page.review !== undefined && page.review !== false && (page.data.kind !== 'responses' || page.layout.type === 'list')) report('review', 'a review before sending is for a page of responses: a record is saved as it is changed');
   if (page.flow !== undefined && (page.data.kind !== 'responses' || page.layout.type === 'list' || page.layout.type === 'sheet')) report('flow', 'one question at a time is for a page of responses in sections or steps: a record’s sheet shows its fields together');
+  if (page.timeLimit !== undefined && page.data.kind !== 'responses') report('timeLimit', 'a time limit is for a page of responses: a record is saved as it is changed');
   // A draw: on a page of responses, of no more questions than it holds.
   const visit = (node: { type?: string; order?: unknown; draw?: unknown; children?: unknown[] }, path: string) => {
     const children = Array.isArray(node.children) ? (node.children as { type?: string; fixed?: boolean }[]) : [];
+    if ((node as { timeLimit?: unknown }).timeLimit !== undefined && page.data.kind !== 'responses') report(`${path}.timeLimit`, 'a time limit is for a page of responses: a record is saved as it is changed');
     if (node.order === 'random' || node.draw !== undefined) {
       if (page.data.kind !== 'responses') report(path, 'an order drawn for each respondent is for a page of responses: a record’s fields stay where its page puts them');
       const questions = children.filter((child) => (child.type === 'field' || child.type === 'form' || child.type === 'section') && child.fixed !== true).length;
