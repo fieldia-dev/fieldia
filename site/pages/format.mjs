@@ -302,6 +302,16 @@ if (!checked.ok) console.log(checked.issues);   // [{ path: 'layout.children[0].
 )}
 <p>${c('validatePage')} checks the shape, key by key, that every id is unique, that every field a node or a condition names exists, and that every condition parses. Run it where pages are made and tested: in a designer, in your tests, in CI — where ${c('npx fieldia-check pages/')}, from ${c('@fieldia/testing')}, checks every page your app keeps in one line (see <a href="/start/#testing">testing</a>). The viewer runs the lighter ${c('checkPage')} as it shows a page — the page's outline, then the same names and conditions — and refuses a page that fails with the same list of issues; it leaves the validation library out of your app. For editors and other languages the format is also a JSON Schema: ${c('@fieldia/core/page.schema.json')}.</p>
 
+<h2 id="from-a-schema">From a schema: JSON Schema, OpenAPI, a model's fields</h2>
+<p>An app with an API or a backend already describes its records. ${c('pageFromSchema(input, options)')} makes a starting page from that description — a JSON Schema, an OpenAPI document (an operation's request body and parameters, or a component's schema: ${c("schema: 'POST /enquiries'")}), or a model's fields (Fieldia's own, or a backend's field list such as Flectra's ${c('fields_get')}): each property a field of its kind, with its label, help, whether it is required or read-only, its limits, its pattern, its choices and its default; a date, an email, a link, a file by its ${c('format')}; a list of objects a table of lines; an object's properties a section of their own. What no field holds is kept as JSON, and said; what cannot be read is left out, and said — ${c('notes')} and ${c('unmapped')} beside the page, each with its property's path. In the designer it is <strong>Start from a schema…</strong> on a blank page, which shows all of this before anything changes.</p>
+${code(
+  'js',
+  `
+import { pageFromSchema } from '@fieldia/core';
+
+const { page, notes, unmapped } = pageFromSchema(openApi, { schema: 'POST /enquiries' });`
+)}
+
 <h2 id="versions">Versions: a page from an older Fieldia, or a newer one</h2>
 <p>${c('"fieldia"')} says which format a page is written in. This Fieldia writes format ${c('"0.7"')} (${c('FORMAT_VERSION')}), and reads a page in 0.1, 0.2, 0.3, 0.4, 0.5 or 0.6 as it is; ${c('FORMAT_VERSIONS')} lists every format Fieldia has had. When a release changes what a page may say, the format gets a new version, and every reader of a page brings one in an older format up to date before anything else: ${c('checkPage')}, ${c('validatePage')}, ${c('createForm')}, the viewer and the saved forms placed in a page, and the designer, which then edits and saves it in the new format. That is ${c('upgradePage')}, which you can call yourself — say, to bring the pages your app keeps up to date as it loads them:</p>
 ${code(

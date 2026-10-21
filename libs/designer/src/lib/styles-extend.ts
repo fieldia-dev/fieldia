@@ -64,4 +64,21 @@ export const DESIGNER_EXTEND_CSS = /* css */ `
 .fd-assist-problem { margin: 0; font-size: 13px; line-height: 1.45; color: var(--fd-error); }
 .fd-assist-dialog-body { padding: 16px 18px 18px; }
 @media (prefers-reduced-motion: reduce) { .fd-start-card { transition: none; } .fd-assist-spinner { animation-duration: 2400ms; } }
+/* Start from a schema: the JSON pasted or chosen, what it makes, what was kept with a change or left out. */
+.fd-schema-body { display: grid; gap: 10px; padding: 16px 18px 18px; min-width: 0; }
+.fd-schema-lead { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--fd-muted); }
+.fd-schema-label { font-size: 13.5px; font-weight: 600; color: var(--fd-text); }
+.fd-schema-dialog .fd-schema-text { width: 100%; box-sizing: border-box; min-height: 140px; resize: vertical; font: 12.5px/1.45 var(--fd-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
+.fd-schema-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.fd-schema-row[hidden], .fd-schema-preview[hidden], .fd-schema-problem[hidden] { display: none; }
+.fd-schema-choice { flex: 1 1 16em; min-width: 0; }
+.fd-schema-problem { margin: 0; font-size: 13px; line-height: 1.45; color: var(--fd-error); }
+.fd-schema-preview { display: grid; gap: 6px; max-height: 40vh; overflow: auto; padding: 10px 12px; border: 1px solid var(--fd-border); border-radius: 6px; background: var(--fd-page); }
+.fd-schema-count, .fd-schema-said { margin: 0; font-size: 13px; font-weight: 600; color: var(--fd-text); }
+.fd-schema-fields { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 6px; }
+.fd-schema-fields > li { display: inline-flex; gap: 6px; align-items: baseline; padding: 2px 8px; border-radius: 999px; background: var(--fd-surface); border: 1px solid var(--fd-border); font-size: 12.5px; }
+.fd-schema-kind { color: var(--fd-muted); font-size: 11.5px; }
+.fd-schema-notes { margin: 0; padding-inline-start: 18px; font-size: 12.5px; line-height: 1.45; color: var(--fd-muted); }
+.fd-schema-notes[hidden], .fd-schema-said[hidden] { display: none; }
+.fd-schema-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 `;

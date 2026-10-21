@@ -24,6 +24,8 @@ export const LATIN_KEPT = [
   ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G', 'E'],
   // Formats and currencies.
   ...['JSON', 'CSV', 'PDF', 'USD', 'EGP', 'IBAN', 'URL', 'https'],
+  // The standards a page starts from (Start from a schema), as people know them.
+  ...['Schema', 'OpenAPI'],
   // A formatted text's own format, and the units a column's width is written in.
   ...['Markdown', 'px', 'fr'],
   // JSON's own words, as they are typed in it.
