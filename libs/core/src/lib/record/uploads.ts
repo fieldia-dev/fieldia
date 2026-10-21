@@ -1,6 +1,8 @@
 import type { Field, Fields, LineField } from '../format/field';
-import { saveProblemOf, type DataSource, type UploadFile, type UploadRequest, type UploadSignal, type UploadedFile } from './data-source';
+import { lazyPart, type Part } from '../parts';
+import type { DataSource, UploadFile } from './data-source';
 import { fill, type Messages } from './messages';
+import type * as UploadsModule from './files-part';
 import type { FileValue, Line, RecordId, Value, Values } from './values';
 
 /**
@@ -55,7 +57,7 @@ export interface UploadHow {
 /** How many files go to the store at once; the rest wait their turn. */
 export const UPLOADS_AT_ONCE = 3;
 
-const going = (status: FileUpload['status']) => status !== 'failed' && status !== 'refused';
+export const going = (status: FileUpload['status']) => status !== 'failed' && status !== 'refused';
 /** Whether an upload is still going: waiting, being made ready, or on its way. */
 export const uploadGoing = (upload: FileUpload) => going(upload.status);
 
@@ -83,7 +85,8 @@ export interface UploadsHost {
   track<T>(promise: Promise<T>): Promise<T>;
 }
 
-interface Entry {
+/** A file on its way, as the uploads keep it (the state shows each as a `FileUpload`). */
+export interface Entry {
   id: string;
   /** Its place in the order files were picked. */
   seq: number;
@@ -104,27 +107,9 @@ interface Entry {
   end?: () => void;
 }
 
-/** The host's `AbortController`: every browser's, and Node's. Core names no DOM types. */
-const stopper = () => new (globalThis as unknown as { AbortController: new () => { signal: UploadSignal; abort(): void } }).AbortController();
-
-const sameFile = (a: FileValue, b: FileValue) => a.name === b.name && a.data === b.data && a.url === b.url;
-const isFile = (value: unknown): value is FileValue => !!value && typeof value === 'object' && typeof (value as FileValue).name === 'string' && typeof (value as FileValue).size === 'number';
-const filesIn = (value: Value | undefined): FileValue[] => (Array.isArray(value) ? (value as unknown[]).filter(isFile) : isFile(value) ? [value] : []);
+export const isFile = (value: unknown): value is FileValue => !!value && typeof value === 'object' && typeof (value as FileValue).name === 'string' && typeof (value as FileValue).size === 'number';
+export const filesIn = (value: Value | undefined): FileValue[] => (Array.isArray(value) ? (value as unknown[]).filter(isFile) : isFile(value) ? [value] : []);
 const holdsFiles = (def: Field | LineField | undefined) => def?.type === 'binary' || def?.type === 'image';
-
-/** The bytes a base64 text holds. */
-function bytesOf(data: string): Uint8Array {
-  const text = (globalThis as unknown as { atob(text: string): string }).atob(data);
-  const bytes = new Uint8Array(text.length);
-  for (let i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i);
-  return bytes;
-}
-
-/** A file held as its bytes, as the store takes a file: its name, size, kind and bytes. */
-export function fileFromBytes(file: FileValue): UploadFile {
-  const bytes = bytesOf(file.data ?? '');
-  return { name: file.name, size: bytes.length, type: file.type, arrayBuffer: async () => bytes.slice().buffer };
-}
 
 /**
  * The values as a draft keeps them: a file held as its bytes is left out —
@@ -168,43 +153,35 @@ export function fileBytesIn(fields: Fields, values: Readonly<Values>, changed: r
   return found;
 }
 
-/** A stored file with the words its bytes had beside them as they stand now — a caption, a signature's evidence — never their link's. */
-const keeping = (stored: FileValue, was: FileValue): FileValue => {
-  const file: FileValue = { ...stored };
-  for (const [key, value] of Object.entries(was)) if (!['data', 'url', 'name', 'size', 'type', 'fileId'].includes(key)) (file as unknown as Record<string, unknown>)[key] = value;
-  return file;
-};
+/**
+ * The run of one form's uploads, shared with the uploads part that makes each file ready and sends it, then puts its
+ * stored link in its field (files-part.ts): what the form gives, the files on their way, the order they were picked.
+ */
+export interface UploadsRun {
+  readonly host: UploadsHost;
+  entries: Entry[];
+  /** Where each stored file came in the order picked, by its link: a later one goes after it. */
+  readonly order: Map<string, number>;
+  tell(): void;
+  drop(entry: Entry): void;
+}
+
+/** The uploads part's code (files-part.ts). */
+export type FormUploadsPart = typeof UploadsModule;
 
 /**
- * A field's files with a stored one put in: in place of the bytes it was
- * stored for (nothing, when those are gone), with what stands beside them
- * now; in place of a field's one file; or among several before the first
- * that was picked after it.
+ * Files made ready and sent to the store, their links put in their fields — the uploads' work, a part of its own that
+ * comes with the files part (a page with a file or picture field asks for it before it is drawn), and the first time a
+ * form sends a file or stores the bytes it holds. Until it has come, a file picked waits its turn.
  */
-function placed(current: Value | undefined, stored: FileValue, how: { several: boolean; replaces?: FileValue; pickedAfter: (file: FileValue) => boolean }): Value | undefined {
-  if (how.replaces) {
-    const was = how.replaces;
-    if (Array.isArray(current)) {
-      const at = (current as unknown[]).findIndex((file) => isFile(file) && sameFile(file, was));
-      return at < 0 ? undefined : ((current as unknown[]).map((file, i) => (i === at ? keeping(stored, file as FileValue) : file)) as unknown as Value);
-    }
-    return isFile(current) && sameFile(current, was) ? (keeping(stored, current) as unknown as Value) : undefined;
-  }
-  if (!how.several) return stored as unknown as Value;
-  const files = filesIn(current);
-  const at = files.findIndex(how.pickedAfter);
-  const list = at < 0 ? [...files, stored] : [...files.slice(0, at), stored, ...files.slice(at)];
-  return list as unknown as Value;
-}
+export const formUploadsPart: Part<FormUploadsPart> = lazyPart('files', () => import('./files-part'));
 
 /** The uploads of one form. */
 export function createUploads(host: UploadsHost) {
-  let entries: Entry[] = [];
   let made = 0;
   let picked = 0;
-  /** Where each stored file came in the order picked, by its link: a later one goes after it. */
-  const order = new Map<string, number>();
   const waiters = new Set<() => void>();
+  const run: UploadsRun = { host, entries: [], order: new Map(), tell, drop };
 
   const shown = (entry: Entry): FileUpload => ({
     id: entry.id,
@@ -220,117 +197,40 @@ export function createUploads(host: UploadsHost) {
   });
 
   function tell() {
-    host.changed(entries.map(shown));
-    if (!entries.some((entry) => going(entry.status))) for (const done of [...waiters]) done();
+    host.changed(run.entries.map(shown));
+    if (!run.entries.some((entry) => going(entry.status))) for (const done of [...waiters]) done();
   }
 
   function drop(entry: Entry) {
-    entries = entries.filter((other) => other !== entry);
+    run.entries = run.entries.filter((other) => other !== entry);
     entry.stop?.();
     entry.end?.();
   }
 
-  /** The next to be made ready, one at a time, and the next to go, three at a time. */
+  /**
+   * The next files made ready and sent, by the uploads part — at once where it has come, else once it has: a file
+   * waits its turn meanwhile. One that cannot come fails the files going, said with why, each to be sent again.
+   */
   function pump() {
-    if (!entries.some((entry) => entry.status === 'preparing')) {
-      const next = entries.find((entry) => entry.status === 'waiting' && !entry.ready);
-      if (next) void prepare(next);
-    }
-    for (let next = nextToSend(); next && entries.filter((entry) => entry.status === 'uploading').length < UPLOADS_AT_ONCE; next = nextToSend()) void send(next);
-  }
-  const nextToSend = () => entries.find((entry) => entry.status === 'waiting' && entry.ready);
-
-  async function prepare(entry: Entry) {
-    entry.status = 'preparing';
-    tell();
-    const original = entry.file;
-    let refused: string | null = null;
-    try {
-      entry.file = await (entry.prepare as NonNullable<Entry['prepare']>)(original);
-    } catch (error) {
-      // A file that cannot be made ready goes as it is, never lost — unless the field refuses it as it is (too large still).
-      const problem = saveProblemOf(error);
-      if (problem.kind === 'rule') refused = problem.message;
-      entry.file = original;
-    }
-    entry.ready = true;
-    if (!entries.includes(entry)) return;
-    entry.status = refused === null ? 'waiting' : 'refused';
-    if (refused !== null) {
-      entry.error = refused;
-      entry.end?.();
-    }
-    tell();
-    pump();
-  }
-
-  async function send(entry: Entry) {
-    const source = host.source();
-    if (!source?.upload) return;
-    const stop = stopper();
-    entry.status = 'uploading';
-    entry.sent = 0;
-    entry.total = null;
-    delete entry.error;
-    entry.stop = () => stop.abort();
-    tell();
-    const lineId = entry.line ? host.lineId(entry.line.field, entry.line.key) : undefined;
-    const under = host.under ?? '';
-    const request: UploadRequest = {
-      model: host.model(),
-      // A line's field is named on its own, its table where it sits.
-      field: entry.line ? entry.field : `${under}${entry.field}`,
-      recordId: host.recordId(),
-      ...(entry.line ? { line: { ...entry.line, field: `${under}${entry.line.field}`, ...(lineId !== undefined ? { id: lineId } : {}) } } : {}),
-      signal: stop.signal,
-      onProgress: (sent, total) => {
-        if (entry.status !== 'uploading' || !entries.includes(entry)) return;
-        // Told when the bar would move: a whole per cent, or the end.
-        const was = entry.total ? Math.floor((entry.sent * 100) / entry.total) : -1;
-        const now = total ? Math.floor((sent * 100) / total) : -1;
-        entry.sent = sent;
-        entry.total = total;
-        if (now !== was || sent === total) tell();
-      },
-    };
-    try {
-      const stored = await source.upload(entry.file, request);
-      if (!entries.includes(entry)) return;
-      entries = entries.filter((other) => other !== entry);
-      put(entry, stored);
-      entry.end?.();
-    } catch (error) {
-      if (!entries.includes(entry) || stop.signal.aborted || (error as Error | null)?.name === 'AbortError') {
-        if (entries.includes(entry)) drop(entry);
-      } else {
-        const problem = saveProblemOf(error);
-        entry.status = problem.kind === 'rule' ? 'refused' : 'failed';
-        entry.error = problem.message;
-        entry.end?.();
+    const part = formUploadsPart.loaded;
+    if (part) return part.pumpUploads(run);
+    if (!run.entries.some((entry) => going(entry.status))) return;
+    formUploadsPart.load().then(
+      () => pump(),
+      (error: Error) => {
+        for (const entry of run.entries.filter((one) => going(one.status))) {
+          entry.status = 'failed';
+          entry.error = error.message;
+          entry.end?.();
+        }
+        tell();
       }
-    } finally {
-      delete entry.stop;
-      tell();
-      pump();
-    }
-  }
-
-  /** The stored file in its field: exactly what the store gave — the words beside the bytes it stands in for kept. */
-  function put(entry: Entry, stored: UploadedFile) {
-    const def = host.fileField(entry.field, entry.line);
-    const file: FileValue = { ...stored };
-    order.set(file.url ?? '', entry.seq);
-    const value = placed(host.read(entry.field, entry.line), file, {
-      several: (def as { multiple?: boolean } | null)?.multiple === true,
-      ...(entry.replaces ? { replaces: entry.replaces } : {}),
-      pickedAfter: (other) => (order.get(other.url ?? '') ?? -1) > entry.seq,
-    });
-    if (value !== undefined) host.write(entry.field, entry.line, value, !!entry.replaces);
+    );
   }
 
   function begin(field: string, line: Entry['line'], file: UploadFile, more: { prepare?: Entry['prepare']; replaces?: FileValue }): Entry {
     const entry: Entry = { id: `upload-${++made}`, seq: ++picked, field, ...(line ? { line } : {}), file, ...(more.prepare ? { prepare: more.prepare } : {}), ready: !more.prepare, ...(more.replaces ? { replaces: more.replaces } : {}), status: 'waiting', sent: 0, total: null };
-    entries = [...entries, entry];
+    run.entries = [...run.entries, entry];
     void host.track(new Promise<void>((resolve) => (entry.end = resolve)));
     return entry;
   }
@@ -338,7 +238,7 @@ export function createUploads(host: UploadsHost) {
   /** Wait until no file is still going: each one stored, failed, refused or cancelled. */
   const settled = () =>
     new Promise<void>((resolve) => {
-      if (!entries.some((entry) => going(entry.status))) return resolve();
+      if (!run.entries.some((entry) => going(entry.status))) return resolve();
       const done = () => (waiters.delete(done), resolve());
       waiters.add(done);
     });
@@ -352,7 +252,7 @@ export function createUploads(host: UploadsHost) {
       // A field of one file: the last one picked is the one it keeps; one still on its way is stopped. A file stored for
       // bytes the field holds stops none: it is no pick.
       if ((def as { multiple?: boolean }).multiple !== true && !how.replaces) {
-        for (const entry of entries.filter((e) => e.field === field && e.line?.key === how.line?.key && e.line?.field === how.line?.field && !e.replaces)) drop(entry);
+        for (const entry of run.entries.filter((e) => e.field === field && e.line?.key === how.line?.key && e.line?.field === how.line?.field && !e.replaces)) drop(entry);
         files = files.slice(-1);
       }
       const started = (how.replaces ? files.slice(0, 1) : files).map((file) => begin(field, how.line, file, { prepare: how.prepare, replaces: how.replaces }));
@@ -361,14 +261,14 @@ export function createUploads(host: UploadsHost) {
       return started.map((entry) => entry.id);
     },
     cancel(id: string) {
-      const entry = entries.find((e) => e.id === id);
+      const entry = run.entries.find((e) => e.id === id);
       if (!entry) return;
       drop(entry);
       tell();
       pump();
     },
     retry(id: string) {
-      const entry = entries.find((e) => e.id === id);
+      const entry = run.entries.find((e) => e.id === id);
       if (!entry || entry.status !== 'failed') return;
       entry.status = 'waiting';
       entry.sent = 0;
@@ -380,17 +280,20 @@ export function createUploads(host: UploadsHost) {
     },
     /** Stop every upload: the changes they were for are gone. */
     clear() {
-      if (!entries.length) return;
-      for (const entry of [...entries]) drop(entry);
+      if (!run.entries.length) return;
+      for (const entry of [...run.entries]) drop(entry);
       tell();
     },
     /** Whether any file is still going. */
-    going: () => entries.some((entry) => going(entry.status)),
+    going: () => run.entries.some((entry) => going(entry.status)),
     settled,
     /** Store each file still held as its bytes in the fields given, and wait for them all. */
     async storeBytes(found: { field: string; line?: Entry['line']; file: FileValue }[]) {
       if (!found.length || !host.source()?.upload) return;
-      for (const { field, line, file } of found) begin(field, line, fileFromBytes(file), { replaces: file });
+      // The bytes made a file by the uploads part; where it cannot come, they go inside the record, as without upload.
+      const part = await formUploadsPart.load().catch(() => null);
+      if (!part) return;
+      for (const { field, line, file } of found) begin(field, line, part.fileFromBytes(file), { replaces: file });
       tell();
       pump();
       await settled();
@@ -399,7 +302,7 @@ export function createUploads(host: UploadsHost) {
     problems(messages: Messages): Record<string, string> {
       const out: Record<string, string> = {};
       const by = new Map<string, Entry[]>();
-      for (const entry of entries.filter((e) => !going(e.status))) {
+      for (const entry of run.entries.filter((e) => !going(e.status))) {
         const key = entry.line ? `${entry.line.field}.${entry.line.key}.${entry.field}` : entry.field;
         by.set(key, [...(by.get(key) ?? []), entry]);
       }

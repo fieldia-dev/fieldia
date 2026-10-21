@@ -1,4 +1,4 @@
-import { formLanguagesPart, type Field, type FieldNode, type Page, type Value } from '@fieldia/core';
+import { formLanguagesPart, formUploadsPart, type Field, type FieldNode, type Page, type Value } from '@fieldia/core';
 import { lazyPart, type Part } from './parts';
 import type * as TextModule from './text-part';
 import type * as PathModule from './path-part';
@@ -85,8 +85,11 @@ export function loadLinesPart(): Promise<LinesPart> {
 }
 /** Flectra's business widgets — a statusbar, priority stars, hours, a per cent, a distribution, tax totals, payments — loaded the first time a page shows one. */
 export const businessPart: Part<BusinessPart> = lazyPart('business', () => import('./business-part'));
-/** A file field, a picture field, a signature's pad and a PDF under its file box, loaded the first time a page shows one. */
-export const filesPart: Part<FilesPart> = lazyPart('files', () => import('./files-part'));
+/**
+ * A file field, a picture field, a signature's pad and a PDF under its file box, loaded the first time a page shows one
+ * — with @fieldia/core's uploads' work (`formUploadsPart`), which sends the files it takes to the app's store.
+ */
+export const filesPart: Part<FilesPart> = lazyPart('files', () => Promise.all([import('./files-part'), formUploadsPart.load()]).then(([module]) => module));
 
 /**
  * A signature's evidence, loaded the first time a page shows a signature that signs answers (core's `signsAnswers`):

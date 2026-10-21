@@ -262,7 +262,7 @@ export type { MemoryApprovalRoute } from './lib/record/memory-approvals';
 export { clocksSkip, dayIn, instantsAt, isOwnZone, isTimeZone, ownZone, wallClock, wallDay, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './lib/record/zones';
 export { zonedPage } from './lib/format/zoned';
 // Files stored as they are picked: the form's uploads, and an upload for a plain endpoint or a signed address.
-export { uploadGoing, UPLOADS_AT_ONCE, type FileUpload, type UploadHow } from './lib/record/uploads';
+export { formUploadsPart, uploadGoing, UPLOADS_AT_ONCE, type FileUpload, type FormUploadsPart, type UploadHow } from './lib/record/uploads';
 export { uploadTo, type UploadAnswer, type UploadTarget, type UploadToOptions } from './lib/record/upload-to';
 export { hostScheduler, wait, type Scheduler } from './lib/record/scheduler';
 export {
