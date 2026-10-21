@@ -7418,6 +7418,10 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
         },
+        "type": {
+          "type": "string",
+          "const": "divider"
+        },
         "label": {
           "type": "string"
         },
@@ -7469,6 +7473,17 @@
         },
         "roles": {
           "$ref": "#/$defs/Roles"
+        },
+        "menu": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MenuItem"
+          }
+        },
+        "menuFrom": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [

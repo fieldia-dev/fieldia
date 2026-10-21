@@ -1,5 +1,5 @@
-import type { SheetNode } from './layout';
-import type { HeadTools } from './head-checks';
+import type { MenuItem, SheetNode } from './layout';
+import type { HeadTools, MenuTools } from './head-checks';
 
 /**
  * A record's head (`SheetHead`): its kind and number, the band's and the row's fields, its links and buttons, and when
@@ -55,4 +55,17 @@ export function checkSheetHead(sheet: SheetNode, path: string, tools: HeadTools)
     if (date && !DATED.has(date.type)) tools.report(`${at}.updated.atField`, `"${updated.atField}" is a ${date.type}; when it was updated is a date or a datetime`);
     if (updated.opens !== undefined && !tools.isPlace(updated.opens)) tools.report(`${at}.updated.opens`, `no tab "${updated.opens}" on this page`);
   }
+}
+
+/**
+ * An item that opens a menu of its own (`menu`), or the app's (`menuFrom`), drawn by the head part: named, doing nothing
+ * itself, each of its menu's items checked as the menu's are (`item`, head-checks.ts' own). In the one-tag script it
+ * comes with the head part, which a page with such an item asks for.
+ */
+export function checkMenuOpener(item: MenuItem, path: string, tools: MenuTools & { item(item: MenuItem, path: string, tools: MenuTools): void }): void {
+  if (item.label === undefined) tools.report(`${path}.label`, 'an item that opens a menu needs words');
+  const does = (['steps', 'action', 'builtin', 'confirm'] as const).find((key) => item[key] !== undefined);
+  if (does) tools.report(`${path}.${does}`, 'an item that opens a menu does nothing of its own: each item in its menu does');
+  if (item.params !== undefined && item.menuFrom === undefined) tools.report(`${path}.params`, 'params go with the app’s action that gives the menu (menuFrom)');
+  item.menu?.forEach((one, i) => tools.item(one, `${path}.menu[${i}]`, tools));
 }

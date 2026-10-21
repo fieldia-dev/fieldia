@@ -4485,9 +4485,11 @@ function indexLayout(root: RootLayout, functions?: FunctionTable): Map<string, I
     for (const button of head?.actions ?? []) add(button, root.id, 'button', { invisible: button.invisible });
     walk(head?.band?.children ?? [], root.id);
     if (root.sidePanel) add(root.sidePanel, root.id, 'other', { invisible: root.sidePanel.invisible });
-    // The gear menu's items are buttons of the record; Archive shows while it is active, Unarchive while it is not.
-    for (const item of root.toolbar?.menu ?? []) {
-      add(item, root.id, 'button', { invisible: item.invisible });
+    // The gear menu's items are buttons of the record — those of a menu inside it too, hidden with the item that opens
+    // it; Archive shows while it is active, Unarchive while it is not.
+    for (const item of root.toolbar?.menu ?? []) add(item, root.id, 'button', { invisible: item.invisible });
+    const inMenus = (items: readonly MenuItem[]): MenuItem[] => items.flatMap((item) => [item, ...inMenus(item.menu ?? [])]);
+    for (const item of inMenus(root.toolbar?.menu ?? [])) {
       if (item.builtin === 'archive' || item.builtin === 'unarchive') {
         const own = index.get(item.id) as IndexedNode;
         const mine = own.invisible;

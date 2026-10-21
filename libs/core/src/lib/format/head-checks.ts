@@ -1,7 +1,7 @@
 import type { ActionStep } from './actions';
 import type { Field, LineField } from './field';
 import type { ButtonNode, FieldNode, LayoutNode, MenuItem, RelatedNode, RootLayout, SheetNode, TabNode, TabsNode } from './layout';
-import { checkSheetHead } from './sheet-head-checks';
+import { checkMenuOpener, checkSheetHead } from './sheet-head-checks';
 
 /**
  * The checks of a record's head (`SheetHead`) and of the parts it brought to
@@ -36,7 +36,7 @@ const COUNTED = new Set(['integer', 'float', 'monetary', 'one2many', 'many2many'
  * condition that presses a toggle, and the items of its menu — each one
  * doing something, and with words.
  */
-export function checkButtonParts(button: ButtonNode, path: string, tools: Pick<HeadTools, 'claim' | 'report' | 'checkModifiers' | 'checkSteps'>): void {
+export function checkButtonParts(button: ButtonNode, path: string, tools: MenuTools): void {
   if (button.iconOnly && !button.icon) tools.report(`${path}.iconOnly`, 'a button shown by its icon alone needs an icon');
   if (button.pressedLabel !== undefined && button.pressed === undefined) tools.report(`${path}.pressedLabel`, 'words while pressed need the condition that presses it (pressed)');
   if ((button.menuIcon !== undefined || button.menuLabel !== undefined) && !button.menu?.length) tools.report(`${path}.menu`, 'a chevron of its own needs a menu to open');
@@ -44,11 +44,27 @@ export function checkButtonParts(button: ButtonNode, path: string, tools: Pick<H
   button.menu?.forEach((item, i) => checkMenuItem(item, `${path}.menu[${i}]`, tools));
 }
 
-/** An item of a button's menu, as one of the record's gear menu: its id, its condition, and what it does. */
-function checkMenuItem(item: MenuItem, path: string, tools: Pick<HeadTools, 'claim' | 'report' | 'checkModifiers' | 'checkSteps'>) {
+/** What a menu's checks use of the reference check's tools. */
+export type MenuTools = Pick<HeadTools, 'claim' | 'report' | 'checkModifiers' | 'checkSteps' | 'owe'>;
+
+/** What a divider may say: it is a line, shown by its condition and the items round it. */
+const DIVIDER = new Set(['id', 'type', 'group', 'invisible', 'roles']);
+
+/**
+ * An item of a menu — the record's gear menu, a button's — as a button of the record: its id, its condition, and what
+ * it does, with words unless it is a built-in; a divider, nothing more. One that opens a menu of its own, or the app's,
+ * is checked with the head part, which draws it (`checkMenuOpener`).
+ */
+export function checkMenuItem(item: MenuItem, path: string, tools: MenuTools): void {
   tools.claim(item.id, path);
   tools.checkModifiers(item, path);
-  if (!item.steps && item.action === undefined && !item.builtin) tools.report(path, 'a menu item needs steps, an action, or a built-in');
+  if (item.type === 'divider') {
+    const more = Object.keys(item).find((key) => !DIVIDER.has(key));
+    if (more) tools.report(`${path}.${more}`, 'a divider is a line between items: it has no words and does nothing');
+    return;
+  }
+  if (item.menu !== undefined || item.menuFrom !== undefined) return checkMenuOpener(item, path, { ...tools, item: checkMenuItem });
+  if (!item.steps && item.action === undefined && !item.builtin) tools.report(path, 'a menu item needs steps, an action, a built-in, or a menu of its own');
   if (item.label === undefined && !item.builtin) tools.report(`${path}.label`, 'a menu item needs words, unless it is a built-in');
   if (item.steps) tools.checkSteps(item.steps, `${path}.steps`);
 }

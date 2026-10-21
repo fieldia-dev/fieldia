@@ -975,9 +975,16 @@ export interface Statusbar {
  * that opens a departure wizard. The app's own report under Print is an
  * `action` whose answer hands the viewer its file (`ActionResult.file`): its
  * PDF shown over the record, or saved.
+ *
+ * An item with a `menu` of its own, or one the app gives (`menuFrom`), opens
+ * it beside it — "Templates ›" — rather than doing anything itself; a
+ * `divider` is a line between items, left out where nothing shows on one side
+ * of it.
  */
 export interface MenuItem {
   id: string;
+  /** A line between the items round it, with nothing else of its own: `{ "type": "divider", "id": "m-rule" }`. */
+  type?: 'divider';
   /** Its words; a built-in's own, in the page's language, when left out. */
   label?: string;
   /**
@@ -998,6 +1005,19 @@ export interface MenuItem {
   icon?: string;
   invisible?: Modifier;
   roles?: Roles;
+  /**
+   * A menu of its own, opened beside it — by pointing at it, a press, Enter or
+   * the arrow toward it — its items pressed as this menu's are. With
+   * `menuFrom`, these come first.
+   */
+  menu?: MenuItem[];
+  /**
+   * Items the app gives as the menu opens — templates that depend on the
+   * record — by the app's action of this name: `onAction` is asked with it and
+   * this item's `params`, and answers `{ menu: [...] }`. Each is pressed as a
+   * page's item is: its steps, then its action, its `confirm` asked first.
+   */
+  menuFrom?: string;
 }
 
 /**
@@ -2114,6 +2134,7 @@ export const AlertSchema = z.strictObject({
 export const MenuItemSchema = z
   .strictObject({
     id,
+    type: z.literal('divider').optional(),
     label: z.string().optional(),
     builtin: z.enum(['archive', 'unarchive', 'duplicate', 'delete', 'print']).optional(),
     group: z.enum(['actions', 'print']).optional(),
@@ -2124,6 +2145,10 @@ export const MenuItemSchema = z
     icon: z.string().optional(),
     invisible,
     roles,
+    get menu(): z.ZodOptional<z.ZodArray<typeof MenuItemSchema>> {
+      return z.array(MenuItemSchema).min(1).optional();
+    },
+    menuFrom: z.string().min(1).optional(),
   })
   .meta({ id: 'MenuItem' });
 

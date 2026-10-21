@@ -1,7 +1,7 @@
 import type { ActionStep, OpenStep, PanelSide, ValueMap } from '../format/actions';
 import type { Field, LineField } from '../format/field';
 import type { JsonValue } from '../format/json';
-import type { Modifier, Tone } from '../format/layout';
+import type { MenuItem, Modifier, Tone } from '../format/layout';
 import { compileExpression, type CompiledExpression, type ExpressionEnv } from '../expression/expression';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { FIELD_NAME } from '../format/names';
@@ -81,6 +81,11 @@ export interface ActionResult {
    */
   file?: ActionFile;
   stop?: boolean | string;
+  /**
+   * A menu's items, for an item whose menu the app gives as it opens (`MenuItem.menuFrom`): shown after the page's
+   * own, each pressed as theirs are. Read only by that menu; any other call's is left alone.
+   */
+  menu?: MenuItem[];
 }
 
 /**

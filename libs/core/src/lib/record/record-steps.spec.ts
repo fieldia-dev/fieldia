@@ -99,7 +99,7 @@ describe('the page format: a record toolbar and an attachment preview', () => {
     const issues = result.ok ? [] : result.issues.map((issue) => `${issue.path}: ${issue.message}`);
     expect(issues).toEqual(
       expect.arrayContaining([
-        'layout.toolbar.menu[0]: a menu item needs steps, an action, or a built-in',
+        'layout.toolbar.menu[0]: a menu item needs steps, an action, a built-in, or a menu of its own',
         'layout.toolbar.menu[1].label: a menu item needs words, unless it is a built-in',
         expect.stringMatching(/^layout\.children\[0\]: duplicate id "f-name"/),
         'layout.attachmentPreview.field: "name" is a char; the preview shows a file (binary or image)',
@@ -129,6 +129,33 @@ describe('a gear menu’s built-in items', () => {
     await form.runAction('m-unarchive');
     expect(source.records['hr.employee'][1]['active']).toBe(true);
     expect(asked).toHaveLength(1);
+  });
+
+  it('presses the items of a menu inside the gear menu as its own: hidden with the item that opens them, Archive by the record', async () => {
+    const page: Page = {
+      ...employee,
+      layout: {
+        ...(employee.layout as Extract<Page['layout'], { type: 'sheet' }>),
+        toolbar: {
+          menu: [
+            { id: 'm-badge', label: 'Badge', action: 'print_badge' },
+            { id: 'm-rule', type: 'divider' },
+            { id: 'm-more', label: 'More', invisible: "state == 'lost'", menu: [{ id: 'm-in-archive', builtin: 'archive' }, { id: 'm-in-unarchive', builtin: 'unarchive' }, { id: 'm-note', label: 'Note', steps: [{ do: 'set', field: 'name', value: "'noted'" }] }] },
+          ],
+        },
+      },
+    };
+    expect(validatePage(page).ok).toBe(true);
+    const form = createForm({ page, dataSource: people(), recordId: 1, confirm: () => true });
+    await form.load();
+    expect(['m-rule', 'm-more', 'm-in-archive', 'm-in-unarchive', 'm-note'].map((id) => form.node(id).invisible)).toEqual([false, false, false, true, false]);
+    expect(await form.runAction('m-note')).toEqual({ done: true });
+    expect(form.getState().values['name']).toBe('noted');
+    await form.runAction('m-in-archive');
+    expect([form.node('m-in-archive').invisible, form.node('m-in-unarchive').invisible]).toEqual([true, false]);
+    // The item that opens them hidden: every item of its menu with it.
+    form.setValue('state', 'lost');
+    expect(['m-more', 'm-in-unarchive', 'm-note'].map((id) => form.node(id).invisible)).toEqual([true, true, true]);
   });
 
   it('archives nothing when the question is answered No', async () => {

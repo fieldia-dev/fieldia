@@ -11,7 +11,7 @@ import type { FunctionTable } from '../expression/functions';
 import { dependencyOrder } from '../expression/order';
 import { valuesIn } from './words';
 import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
-import { checkButtonParts, checkHead } from './head-checks';
+import { checkButtonParts, checkHead, checkMenuItem, type MenuTools } from './head-checks';
 import { checkSectionTracks } from './section-checks';
 import { fieldPattern } from './pattern';
 import { DUPLICATE_KINDS } from './duplicate-kinds';
@@ -242,13 +242,18 @@ export class ReferenceCheck {
     }
   }
 
+  /** The tools a menu's items are checked with: a button's menu's, the gear menu's. */
+  private menuTools(): MenuTools {
+    return { claim: (id, at) => this.claim(id, at), report: (at, message) => this.report(at, message), checkModifiers: (owner, at, keys) => this.checkModifiers(owner, at, keys), checkSteps: (steps, at) => this.checkSteps(steps, at), owe: (part) => this.later.add(part) };
+  }
+
   /** A press: steps, an app action, or both — and its steps checked; on a button drawn on the record (`drawn`, not a list's row's), the `{field}`s its words show. */
   private checkPress(button: ButtonNode | StatButton, path: string, drawn = false) {
     if (drawn && 'type' in button) this.checkWords(button, path, ['label', 'pressedLabel']);
     // A button with a menu of its own and nothing else is a menu button.
     const menu = 'menu' in button && !!button.menu?.length;
     if (!button.steps && button.action === undefined && !menu) this.report(path, 'a button needs steps, an action, or both');
-    if ('type' in button && button.type === 'button') checkButtonParts(button, path, { claim: (id, at) => this.claim(id, at), report: (at, message) => this.report(at, message), checkModifiers: (owner, at, keys) => this.checkModifiers(owner, at, keys), checkSteps: (steps, at) => this.checkSteps(steps, at) });
+    if ('type' in button && button.type === 'button') checkButtonParts(button, path, this.menuTools());
     const key = 'hotkey' in button ? button.hotkey : undefined;
     if (typeof key === 'string' && BROWSER_HOTKEYS.includes(key.replace('shift+', ''))) this.report(`${path}.hotkey`, `${hotkeyWords(key)} is the browser’s own: pick another key`);
     if (button.steps) this.checkSteps(button.steps, `${path}.steps`);
@@ -790,14 +795,7 @@ export class ReferenceCheck {
       });
     });
     // The gear menu: buttons of the record, each doing something — its steps, an action, or a built-in — and named.
-    sheet.toolbar?.menu?.forEach((item, i) => {
-      const at = `${path}.toolbar.menu[${i}]`;
-      this.claim(item.id, at);
-      this.checkModifiers(item, at);
-      if (!item.steps && item.action === undefined && !item.builtin) this.report(at, 'a menu item needs steps, an action, or a built-in');
-      if (item.label === undefined && !item.builtin) this.report(`${at}.label`, 'a menu item needs words, unless it is a built-in');
-      if (item.steps) this.checkSteps(item.steps, `${at}.steps`);
-    });
+    sheet.toolbar?.menu?.forEach((item, i) => checkMenuItem(item, `${path}.toolbar.menu[${i}]`, this.menuTools()));
     const preview = sheet.attachmentPreview;
     if (preview) {
       this.checkModifiers(preview, `${path}.attachmentPreview`);
@@ -812,7 +810,7 @@ export class ReferenceCheck {
   }
 
 
-  /** A picker's own settings, on the kind of field each is for: a path on a link, Fieldia's own list on a choice, a button adding tags, a colour for each state. */
+  /** A picker's own settings, on the kind of field each is for: a path on a link, Fieldia's own list on a choice, a button adding tags, a colour for each state; a formatted text's Edit. */
   private checkPicker(node: FieldNode, def: Field | LineField, path: string) {
     const options = node.options ?? {};
     if (node.widget === 'path' && def.type !== 'many2one') this.report(`${path}.widget`, `path is for a many2one field; "${node.field}" is a ${def.type}`);
@@ -820,6 +818,8 @@ export class ReferenceCheck {
     if (options['list'] !== undefined && !single) this.report(`${path}.options.list`, `list "own" is for a choice of one drawn as a list, with no widget; "${node.field}" is ${def.type === 'selection' ? `a selection${def.multiple ? ' of several' : ` drawn as ${node.widget}`}` : `a ${def.type}`}`);
     const tags = (def.type === 'many2many' && (!node.widget || node.widget === 'tags') && !node.columns?.length) || (def.type === 'char' && node.widget === 'tags');
     if (options['adder'] !== undefined && !tags) this.report(`${path}.options.adder`, `adder is for tags: a many2many, or a char field drawn as tags; "${node.field}" is ${node.widget ? `a ${def.type} drawn as ${node.widget}` : `a ${def.type}`}`);
+    // A formatted text read first, changed from its Edit (a photo set's `edit` is its own: crop and turn).
+    if (def.type === 'html' && options['edit'] !== undefined && options['edit'] !== 'button') this.report(`${path}.options.edit`, 'edit is "button": the text read first, changed from its Edit');
     const colours = options['colours'];
     if (node.widget === 'dot' && def.type === 'selection' && colours && typeof colours === 'object' && !Array.isArray(colours)) {
       const values = new Set(def.options.map((option) => String(option.value)));

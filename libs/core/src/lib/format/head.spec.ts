@@ -147,8 +147,52 @@ describe('a record head in the page format', () => {
     expect(runtime(buttons([{ type: 'button', id: 'b-x', label: 'Refresh', iconOnly: true, steps: [{ do: 'reload' }] }]))).toEqual(['layout.head.actions[0].iconOnly: a button shown by its icon alone needs an icon']);
     expect(runtime(buttons([{ type: 'button', id: 'b-x', label: 'Follow', pressedLabel: 'Following', action: 'follow' }]))).toEqual(['layout.head.actions[0].pressedLabel: words while pressed need the condition that presses it (pressed)']);
     expect(runtime(buttons([{ type: 'button', id: 'b-x', label: 'Follow', action: 'follow', pressed: 'nobody_follows' }]))).toEqual([expect.stringMatching(/^layout\.head\.actions\[0\]\.pressed: .*nobody_follows/)]);
-    expect(runtime(buttons([{ type: 'button', id: 'b-x', label: 'X', menu: [{ id: 'm-x', label: 'X' }] }]))).toEqual(['layout.head.actions[0].menu[0]: a menu item needs steps, an action, or a built-in']);
+    expect(runtime(buttons([{ type: 'button', id: 'b-x', label: 'X', menu: [{ id: 'm-x', label: 'X' }] }]))).toEqual(['layout.head.actions[0].menu[0]: a menu item needs steps, an action, a built-in, or a menu of its own']);
     expect(runtime(buttons([{ type: 'button', id: 'b-x', label: 'X', action: 'x', menuIcon: 'gear' }]))).toEqual(['layout.head.actions[0].menu: a chevron of its own needs a menu to open']);
+  });
+
+  it('takes dividers and menus inside menus — its own items and the app’s — in the gear menu and a button’s', () => {
+    const tracker = [
+      { id: 'm-copy', label: 'Copy link', icon: 'link', action: 'copy-link' },
+      { id: 'd-1', type: 'divider' },
+      { id: 'm-templates', label: 'Templates', menuFrom: 'templates', params: { kind: 'bug' }, menu: [{ id: 'm-capture', label: 'Capture…', action: 'capture' }, { id: 'd-2', type: 'divider', invisible: "state == 'new'" }] },
+      { id: 'd-3', type: 'divider', group: 'actions' },
+      { id: 'm-delete', builtin: 'delete' },
+    ];
+    expect(problems(page({ toolbar: { menu: tracker } }))).toEqual([]);
+    expect(runtime(page({ toolbar: { menu: tracker } }))).toEqual([]);
+    const split = head({ actions: [{ type: 'button', id: 'b-save', label: 'Save', steps: [{ do: 'save' }], menu: [{ id: 'm-as', label: 'Save as', menu: [{ id: 'm-draft', label: 'Draft', action: 'draft' }] }, { id: 'd-s', type: 'divider' }] }] });
+    expect(problems(page({ head: split }))).toEqual([]);
+    expect(runtime(page({ head: split }))).toEqual([]);
+    // The shape: a menu of something, the app's action by its name, a divider as one.
+    const shaped = (item: Json) => problems(page({ toolbar: { menu: [item] } }));
+    expect(shaped({ id: 'm-x', label: 'X', menu: [] })).toEqual([expect.stringMatching(/^layout\.toolbar\.menu\[0\]\.menu:/)]);
+    expect(shaped({ id: 'm-x', label: 'X', menuFrom: '' })).toEqual([expect.stringMatching(/^layout\.toolbar\.menu\[0\]\.menuFrom:/)]);
+    expect(shaped({ id: 'm-x', type: 'line' })).toEqual([expect.stringMatching(/^layout\.toolbar\.menu\[0\]\.type:/)]);
+    // What each says, wherever it stands.
+    const said = (menu: Json[]) => runtime(page({ toolbar: { menu } }));
+    expect(said([{ id: 'd', type: 'divider', label: 'Line' }])).toEqual(['layout.toolbar.menu[0].label: a divider is a line between items: it has no words and does nothing']);
+    expect(said([{ id: 'd', type: 'divider', action: 'x' }])).toEqual(['layout.toolbar.menu[0].action: a divider is a line between items: it has no words and does nothing']);
+    expect(said([{ id: 'm-t', label: 'Templates', action: 'x', menu: [{ id: 'a', label: 'A', action: 'a' }] }])).toEqual(['layout.toolbar.menu[0].action: an item that opens a menu does nothing of its own: each item in its menu does']);
+    expect(said([{ id: 'm-t', menuFrom: 'templates' }])).toEqual(['layout.toolbar.menu[0].label: an item that opens a menu needs words']);
+    expect(said([{ id: 'm-t', label: 'T', params: { a: 1 }, menu: [{ id: 'a', label: 'A', action: 'a' }] }])).toEqual(['layout.toolbar.menu[0].params: params go with the app’s action that gives the menu (menuFrom)']);
+    expect(said([{ id: 'm-t', label: 'T', menu: [{ id: 'a', label: 'A' }, { id: 'm-t', label: 'Again', action: 'x', invisible: 'missing == 1' }] }])).toEqual([
+      'layout.toolbar.menu[0].menu[0]: a menu item needs steps, an action, a built-in, or a menu of its own',
+      'layout.toolbar.menu[0].menu[1]: duplicate id "m-t", also used at layout.toolbar.menu[0]',
+      expect.stringMatching(/^layout\.toolbar\.menu\[0\]\.menu\[1\]\.invisible: .*missing/),
+    ]);
+    const inButton = runtime(page({ head: head({ actions: [{ type: 'button', id: 'b-x', label: 'X', menu: [{ id: 'm-x', label: 'X', menu: [{ id: 'm-y', label: 'Y' }] }] }] }) }));
+    expect(inButton).toEqual(['layout.head.actions[0].menu[0].menu[0]: a menu item needs steps, an action, a built-in, or a menu of its own']);
+  });
+
+  it('takes a formatted text read first, edited from its Edit', () => {
+    const texts = { ...fields, description: { type: 'html', label: 'Description' } };
+    const others = (tabs() as { children: Json[] }).children.slice(1);
+    const withField = (node: Json) => ({ ...page({ children: [tabs({ children: [{ type: 'tab', id: 't-details', label: 'Details', children: [{ type: 'section', id: 'notes-group', title: 'Notes', children: [node] }] }, ...others] })] }), fields: texts });
+    expect(runtime(withField({ type: 'field', id: 'f-d', field: 'description', options: { editor: 'rich', edit: 'button', toolbar: 'focus', toolbarAt: 'top' } }))).toEqual([]);
+    expect(runtime(withField({ type: 'field', id: 'f-d', field: 'description', options: { edit: 'inline' } }))).toEqual(['layout.children[0].children[0].children[0].children[0].options.edit: edit is "button": the text read first, changed from its Edit']);
+    // Another kind's own `edit` is its own (a photo set's crop and turn): not this one's to judge.
+    expect(runtime(withField({ type: 'field', id: 'f-d', field: 'notes', options: { edit: true } }))).toEqual([]);
   });
 
   it('checks a button’s new parts wherever the button stands', () => {
