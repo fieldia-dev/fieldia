@@ -986,6 +986,13 @@ export function installStyles(document: Document): void {
  * and the limits' (none names another's parts) and before the themes', so a theme still reshapes their buttons, their
  * focus, the dialog's corners and their words' type: rank 11.
  *
+ * AI help's (0.29, the viewer's assist part) is new too, cut from no rule: Fill from text and the review of what was
+ * proposed over the fields, a proposal under its field, a text field's tools and a list's words read as filters, laid
+ * out alone, their buttons, boxes and dialog drawn by the main sheet's rules. It names none of the other parts' parts,
+ * so it goes with the parts of its kind, after the limits' (10) and before the themes' — a theme still reshapes its
+ * buttons' corners and focus, its dialog and its box, and the quiet look leaves it as it is (it quietens a field's
+ * box; a proposal holds none): rank 12.
+ *
  * A text kept in several languages (0.29, the languages part) is new too, cut from no rule: the switch between its
  * languages over its box, and a list's mark beside a text in another language than the reader's, laid out alone; each
  * language's box is the main sheet's. It goes after the limits' (none names another's parts) and before the themes',
@@ -993,11 +1000,11 @@ export function installStyles(document: Document): void {
  * look still quietens those boxes: rank 14.
  *
  * Those four of 0.29 — a record's approvals' (11), AI help's (12), a photo set's (13) and a text's languages' (14) —
- * each style only their own parts and name none of another's, so their order among them changes nothing (it is the
- * order their lanes were merged in); all four go before the themes', which reshape them. The ranks from the themes' on
- * move on by four.
+ * each style only their own parts and name none of another's, so their order among them changes nothing (the one
+ * order the 0.29 merge gave the four lanes that each took 11); all four go before the themes', which reshape them. The
+ * ranks from the themes' on move on by four.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, languages: 14, themes: 15, quiet: 16, picker: 17, head: 18, groups: 19, text: 20, surveyLooks: 21, cards: 22 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, languages: 14, themes: 15, quiet: 16, picker: 17, head: 18, groups: 19, text: 20, surveyLooks: 21, cards: 22 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

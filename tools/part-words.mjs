@@ -34,6 +34,15 @@ export const PART_WORDS = {
       'approvalApproveFailed', 'approvalRejectFailed', 'approvalRejectTitle', 'approvalRejectTitleNoun', 'approvalRejectAsk', 'approvalRejectReason', 'approvalHistoryCount', 'approvalAskedEntry', 'approvalApprovedEntry', 'approvalRejectedEntry',
     ],
   },
+  assist: {
+    viewer: [
+      'assistFill', 'assistFillHint', 'assistFillBox', 'assistFillPlaceholder', 'assistFiles', 'assistFillGo', 'assistReading', 'assistFailed', 'assistNothing', 'assistProposed', 'assistProposedOne',
+      'assistReview', 'assistAcceptAll', 'assistRejectAll', 'assistAccept', 'assistReject', 'assistProposal', 'assistProposedText', 'assistInPlaceOf', 'assistEmpty', 'assistLines', 'assistLinesOne',
+      'assistKept', 'assistKeptAll', 'assistKeptAllOne', 'assistUndo', 'assistUndone', 'assistLeftTyped', 'assistNotUsed', 'assistOutOfSight', 'assistNoneCalled', 'assistSeveralCalled',
+      'assistNotOffered', 'assistNotRead', 'assistDraft', 'assistPolish', 'assistWriting', 'assistRewriteFailed', 'assistWordsReading', 'assistWordsMade',
+      'assistWordsNone', 'assistWordsFailed',
+    ],
+  },
   business: {
     widgets: ['moreSteps', 'timeInStep', 'copyValue', 'addAccount', 'sharesOff', 'untaxed', 'amountDue', 'paymentOf', 'openPayment', 'hoursDecimal', 'account', 'deleteLine', 'stillHolds'],
   },
@@ -86,7 +95,7 @@ export const PART_WORDS = {
       'export', 'exportExcel', 'exportCsv', 'exportCurrency', 'exportAll', 'exportAllOne', 'exporting', 'exportCut', 'exportFailed', 'exported', 'exportedOne', 'printList', 'printing', 'printCut', 'printFailed', 'printFilters', 'printGroups', 'printCount', 'printCountOne', 'printedOn',
       'bulkTitle', 'bulkTitleOne', 'bulkField', 'bulkApply', 'bulkAsk', 'bulkAskOne', 'bulkSet', 'bulkClear', 'bulkProgress', 'bulkDone', 'bulkDoneOne', 'bulkSome', 'bulkWhy', 'bulkChangedSince',
       'importDone', 'importDoneOne', 'importStopped', 'importSome', 'importUndo', 'importUndoAsk', 'importUndoAskOne', 'importUndoing', 'importUndone', 'importUndoneOne', 'importUndoSome', 'importRow', 'importDownload', 'importFailed',
-      'searchLabel', 'searchOptions', 'favourites', 'removeFacet', 'addCustomFilter', 'saveSearch', 'searchName', 'useByDefault', 'deleteFavourite', 'noFavourites',
+      'assistWords', 'assistWordsTitle', 'searchLabel', 'searchOptions', 'favourites', 'removeFacet', 'addCustomFilter', 'saveSearch', 'searchName', 'useByDefault', 'deleteFavourite', 'noFavourites',
       'opIs', 'opIsNot', 'opContains', 'opGreater', 'opLess', 'opBetween', 'opSet', 'opNotSet', 'opPeriod',
       'rangeFrom', 'rangeTo', 'rangeBetween', 'rangeOrMore', 'rangeUpTo', 'rangeSince', 'rangeUntil', 'rangeOrder', 'rangeOrderDate', 'periodChip', 'periodToday', 'periodYesterday', 'periodThisWeek', 'periodLastWeek', 'periodThisMonth', 'periodLastMonth', 'periodThisYear', 'periodLast7Days', 'periodLast30Days', 'periodOverdue',
       'groupByYear', 'groupByQuarter', 'groupByMonth', 'groupByWeek', 'groupByDay', 'groupWeek', 'groupQuarter', 'totalAvg', 'totalMin', 'totalMax', 'totalCount', 'totalMixed', 'totalMixedShort', 'loadMore', 'groupCount', 'groupCountOne', 'expandAll', 'collapseAll',

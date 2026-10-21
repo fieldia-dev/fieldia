@@ -17,7 +17,7 @@ import { pathToFileURL } from 'node:url';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'demos/thumbs');
-// Its own port unless said: two copies of the repo take their thumbnails side by side (FIELDIA_THUMBS_PORT).
+// A port of its own, or the one the caller names (FIELDIA_THUMBS_PORT): two copies of the repo may take thumbnails at once.
 const PORT = Number(process.env['FIELDIA_THUMBS_PORT'] ?? 4397);
 const { DEMOS, demoHref } = await import(pathToFileURL(join(WORKSPACE, 'demos/catalog.mjs')).href);
 const { DESIGNER_DEMOS } = await import(pathToFileURL(join(WORKSPACE, 'demos/designer-catalog.mjs')).href);

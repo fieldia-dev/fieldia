@@ -169,6 +169,7 @@
     },
     "filterCounts": true,
     "filterSheet": true,
+    "searchToFilter": true,
     "cells": {
       "photo": {
         "widget": "image"

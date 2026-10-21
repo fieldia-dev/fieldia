@@ -87,20 +87,24 @@ export function filterBar(context: FilterBarContext) {
   const state: BarState = { picks: new Map(), ranges: new Map() };
   /** Searches this bar does not draw (the list's default filters, a map's area): they apply until cleared. */
   let others: Facet[] = [];
-  for (const facet of context.facets) {
-    if (facet.kind === 'field' && fields.includes(facet.field)) {
-      const ends = ranged(facet.field) && facet.values.length === 1 ? endsOf(facet.values[0]) : null;
-      if (ends && !state.ranges.has(facet.field)) {
-        state.ranges.set(facet.field, ends);
-        continue;
+  /** A search read into the bar: each field's values ticked or its range where the bar draws them, the rest as they are. */
+  const read = (given: readonly Facet[]) => {
+    for (const facet of given) {
+      if (facet.kind === 'field' && fields.includes(facet.field)) {
+        const ends = ranged(facet.field) && facet.values.length === 1 ? endsOf(facet.values[0]) : null;
+        if (ends && !state.ranges.has(facet.field)) {
+          state.ranges.set(facet.field, ends);
+          continue;
+        }
+        if (!ranged(facet.field) && !state.picks.has(facet.field) && facet.values.every((v) => v.op === '=' || v.op === 'contains')) {
+          state.picks.set(facet.field, facet.values.map((v) => ({ value: v.value, label: v.label })));
+          continue;
+        }
       }
-      if (!ranged(facet.field) && !state.picks.has(facet.field) && facet.values.every((v) => v.op === '=' || v.op === 'contains')) {
-        state.picks.set(facet.field, facet.values.map((v) => ({ value: v.value, label: v.label })));
-        continue;
-      }
+      others.push(facet);
     }
-    others.push(facet);
-  }
+  };
+  read(context.facets);
 
   const opFor = (field: string) => (page.fields[field]?.type === 'many2many' ? 'contains' : '=');
   /** The keyword in any of the search fields: their words, a choice by its label, a number as the page writes one. */
@@ -109,7 +113,7 @@ export function filterBar(context: FilterBarContext) {
     return [{ any: found }];
   };
   /** The search the bar makes of what its fields hold — of every field but `but`, for that field's counts — with the keyword and the rest. */
-  const facetsOf = (of: BarState, but?: string): Facet[] => [
+  const facetsOf = (of: BarState, but?: string, withKeyword = true): Facet[] => [
     ...others,
     ...fields
       .filter((field) => field !== but)
@@ -122,7 +126,7 @@ export function filterBar(context: FilterBarContext) {
         const ticked = of.picks.get(field) ?? [];
         return ticked.length ? [{ kind: 'field', field, label: def.label, values: ticked.map((p) => ({ op: opFor(field), value: p.value, label: p.label })) }] : [];
       }),
-    ...(keyword ? [{ kind: 'custom' as const, label: keyword, filter: keywordFilter(keyword) }] : []),
+    ...(keyword && withKeyword ? [{ kind: 'custom' as const, label: keyword, filter: keywordFilter(keyword) }] : []),
   ];
   const facets = () => facetsOf(state);
   const changed = () => {
@@ -465,6 +469,23 @@ export function filterBar(context: FilterBarContext) {
 
   return {
     element,
+    /** The keyword's box. */
+    input,
+    /** The search now, the keyword aside: each field's values ticked, its range, and the rest. */
+    current: () => facetsOf(state, undefined, false),
+    /** A search in place of this one — a person's words read as filters, or Undo putting them back — and the keyword. */
+    take(next: Facet[], typed: string) {
+      if (pause) clearTimeout(pause);
+      pause = null;
+      state.picks.clear();
+      state.ranges.clear();
+      others = [];
+      read(next);
+      input.value = typed;
+      keyword = typed.trim();
+      for (const { field, control } of dropdowns) control?.show(state.ranges.get(field) ?? OPEN);
+      changed();
+    },
     /** A search put in from outside (a map's "In this area"): it applies with the rest, one with the same words in its place. */
     add(facet: Facet) {
       const words = facet.kind === 'custom' ? facet.label : null;

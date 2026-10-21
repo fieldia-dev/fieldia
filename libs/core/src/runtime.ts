@@ -238,12 +238,18 @@ export type {
   ApprovalEntry,
   Approvals,
   DecideRequest,
+  SuggestRequest,
+  SuggestResult,
+  RewriteRequest,
+  RewriteResult,
+  SearchToFilterRequest,
+  SearchToFilterResult,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
 export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';
-export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
+export { createMemoryDataSource, type MemoryAssist, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
 export type { MemoryApprovalRoute } from './lib/record/memory-approvals';
 // Time zones: a page's or a field's `timeZone`, its clock, its day, the hour its clocks skip or repeat.
 export { clocksSkip, dayIn, instantsAt, isOwnZone, isTimeZone, ownZone, wallClock, wallDay, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './lib/record/zones';

@@ -637,6 +637,57 @@ export interface ViewerLabels {
   approvalAskedEntry: string;
   approvalApprovedEntry: string;
   approvalRejectedEntry: string;
+  /**
+   * AI help (the assist part), through the app's own model: a page's Fill from text (`suggest`) — its dialog's words,
+   * its box, its files, its button, while it reads, why nothing came (`{why}`) — the proposals' review over the page
+   * (`{n}` values, Accept all, Reject all, the fields left as typed, the values not used and why, those out of sight)
+   * and on each field (Proposed, the value it would take the place of, a table's lines to add), Undo once kept; a text
+   * field's tools (Draft, Polish) and why no words came; a list's words read as filters.
+   */
+  assistFill: string;
+  assistFillHint: string;
+  assistFillBox: string;
+  assistFillPlaceholder: string;
+  assistFiles: string;
+  assistFillGo: string;
+  assistReading: string;
+  assistFailed: string;
+  assistNothing: string;
+  assistProposed: string;
+  assistProposedOne: string;
+  assistReview: string;
+  assistAcceptAll: string;
+  assistRejectAll: string;
+  assistAccept: string;
+  assistReject: string;
+  assistProposal: string;
+  assistProposedText: string;
+  assistInPlaceOf: string;
+  assistEmpty: string;
+  assistLines: string;
+  assistLinesOne: string;
+  assistKept: string;
+  assistKeptAll: string;
+  assistKeptAllOne: string;
+  assistUndo: string;
+  assistUndone: string;
+  assistLeftTyped: string;
+  assistNotUsed: string;
+  assistOutOfSight: string;
+  assistNoneCalled: string;
+  assistSeveralCalled: string;
+  assistNotOffered: string;
+  assistNotRead: string;
+  assistDraft: string;
+  assistPolish: string;
+  assistWriting: string;
+  assistRewriteFailed: string;
+  assistWords: string;
+  assistWordsTitle: string;
+  assistWordsReading: string;
+  assistWordsMade: string;
+  assistWordsNone: string;
+  assistWordsFailed: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1094,6 +1145,50 @@ const en: ViewerLabels = {
   approvalAskedEntry: '{name} asked for approval',
   approvalApprovedEntry: '{name} approved for {level}',
   approvalRejectedEntry: '{name} rejected it for {level}',
+  assistFill: 'Fill from text',
+  assistFillHint: 'Paste an e-mail, a signature or a message. What is found in it is shown on each field for you to accept or reject: nothing is kept until you do.',
+  assistFillBox: 'Text to fill the form from',
+  assistFillPlaceholder: 'Paste the text here',
+  assistFiles: 'Add files',
+  assistFillGo: 'Propose values',
+  assistReading: 'Reading…',
+  assistFailed: 'Nothing could be proposed: {why}',
+  assistNothing: 'Nothing in it fills this form.',
+  assistProposed: '{n} values proposed',
+  assistProposedOne: '1 value proposed',
+  assistReview: 'Review each on its field, or accept them all. Nothing is kept until you accept it.',
+  assistAcceptAll: 'Accept all',
+  assistRejectAll: 'Reject all',
+  assistAccept: 'Accept',
+  assistReject: 'Reject',
+  assistProposal: 'Proposed',
+  assistProposedText: 'Proposed text',
+  assistInPlaceOf: 'in place of {value}',
+  assistEmpty: 'empty',
+  assistLines: '{n} lines to add',
+  assistLinesOne: '1 line to add',
+  assistKept: 'Proposal kept',
+  assistKeptAll: 'Kept {n} values',
+  assistKeptAllOne: 'Kept 1 value',
+  assistUndo: 'Undo',
+  assistUndone: 'Put back as it was.',
+  assistLeftTyped: 'Left as you typed: {fields}',
+  assistNotUsed: 'Not used: {items}',
+  assistOutOfSight: 'Also proposed, out of sight: {fields}',
+  assistNoneCalled: 'nothing is called “{name}”',
+  assistSeveralCalled: 'more than one is called “{name}”',
+  assistNotOffered: '“{name}” is not one of its choices',
+  assistNotRead: 'not a value it holds',
+  assistDraft: 'Draft',
+  assistPolish: 'Polish',
+  assistWriting: 'Writing…',
+  assistRewriteFailed: 'No words came back: {why}',
+  assistWords: 'Read as filters',
+  assistWordsTitle: 'Turn these words into filters',
+  assistWordsReading: 'Reading your words…',
+  assistWordsMade: 'Read as filters: {filters}',
+  assistWordsNone: 'No filter was found in these words.',
+  assistWordsFailed: 'Your words could not be read: {why}',
 };
 
 /**

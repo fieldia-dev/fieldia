@@ -170,6 +170,10 @@ const NAMES: Record<string, string> = {
   Approvals: 'الموافقات',
   'Locked while it waits': 'مقفل أثناء الانتظار',
   'Open while it waits': 'مفتوح أثناء الانتظار',
+  'Fill from text': 'الملء من نص',
+  'Its button’s words': 'كلمات زرّه',
+  'Fills from': 'يملأ من',
+  'Fields it may fill': 'الحقول التي يملؤها',
 };
 
 export const panel: DesignerWords['panel'] = {
@@ -575,6 +579,16 @@ export const panel: DesignerWords['panel'] = {
   approvalLockHint: 'إن أُوقف لا يُقفل شيء أثناء الانتظار، ويرفض حفظ تطبيقك ما يجب رفضه.',
   approvalOpen: 'مفتوح أثناء الانتظار',
   approvalOpenHint: 'تبقى الحقول المحددة مفتوحة ما دام السجل ينتظر قرارًا، ويُقفل كل حقل آخر ويذكر قفله السبب.',
+  suggest: 'الملء من نص (ذكاء اصطناعي)',
+  suggestOn: 'عرض الملء من نص',
+  suggestHint: 'زر يملأ النموذج من كلمات يلصقها الناس — بريد إلكتروني أو توقيع أو رسالة — أو من ملفات، بالذكاء الاصطناعي لتطبيقك عبر مصدر البيانات. تظهر كل قيمة عند حقلها لقبولها أو رفضها، مع إمكانية التراجع. يُخفى حيث لا يملكه المصدر.',
+  suggestLabel: 'كلمات زرّه',
+  suggestLabelExample: 'الملء من بريد إلكتروني',
+  suggestFrom: 'يملأ من',
+  suggestFromHint: 'كلمات يلصقها الناس أو ملفات يضيفونها، أو كلمات يحملها حقل في السجل — رسالة مشترٍ أو ملاحظات زيارة — تُقرأ بضغطة.',
+  suggestPasted: 'كلمات ملصوقة أو ملفات',
+  suggestFields: 'الحقول التي يملؤها',
+  suggestFieldsHint: 'إن لم يُحدَّد شيء: كل حقل ظاهر يستطيع الناس تغييره.',
   recordsCalled: 'اسم السجلات',
   recordsOne: 'اسم السجل الواحد',
   recordsOneExample: 'عميل',

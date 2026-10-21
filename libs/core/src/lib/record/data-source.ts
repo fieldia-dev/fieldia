@@ -1,5 +1,6 @@
 import type { FilterCondition, Fields, Option, PropertyDefinition } from '../format/field';
 import type { JsonValue } from '../format/json';
+import type { Page } from '../format/page';
 import type { FileValue, RecordId, RelatedRecord, Values } from './values';
 import type { RunStop } from './run';
 import type { DateInterval } from './periods';
@@ -174,6 +175,27 @@ export interface DataSource {
    * `saveRefused` (a `rule`, with why) and nothing is decided. Without it, no Approve or Reject shows.
    */
   decide?(request: DecideRequest): Promise<Approvals | void>;
+  /**
+   * Values for a form, read by the app's own model from words a person gives — an e-mail, a signature, a message — or
+   * from files: what a page's `suggest` (its "Fill from text") asks. Answer with the values proposed, by field — a
+   * table of lines' as the lines to add, each its values — and, if you like, why in a sentence. Nothing you answer is
+   * kept unasked: each value is shown on its field for the person to accept or reject first, and a field they typed
+   * in meanwhile keeps what they typed. Fieldia ships no model and no keys. Without it, no "Fill from text" shows.
+   */
+  suggest?(request: SuggestRequest): Promise<SuggestResult>;
+  /**
+   * A text field's words written by the app's own model: a draft of it from the record (`how: "draft"`), the words
+   * the person wrote made clearer (`polish`), or a tool of the app's own the page names. What you answer is shown
+   * under the field for the person to accept or reject; it is never kept unasked, and typing in the field meanwhile
+   * lets it go. Without it, a field's `rewrite` tools are hidden.
+   */
+  rewrite?(request: RewriteRequest): Promise<RewriteResult>;
+  /**
+   * A search typed in plain words — "villas in New Cairo under 15M" — read by the app's own model as conditions on
+   * the list's fields: what a list's `searchToFilter` asks. Each condition becomes a filter the person sees and may
+   * take away, and Undo puts their words back. Without it, the list searches the words as typed, as before.
+   */
+  searchToFilter?(request: SearchToFilterRequest): Promise<SearchToFilterResult>;
 }
 
 /** Whose approvals are asked: the record shown, and the person, as the app told the form. */
@@ -260,6 +282,91 @@ export interface DecideRequest {
   reason?: string;
   /** The person as the app told the form (`user`), where it did. */
   user?: { id: RecordId | null; name?: string };
+}
+
+/** What `suggest` is asked: the page and its values now, the fields a proposal may fill, and what the person gave. */
+export interface SuggestRequest {
+  pageId: string;
+  /** The page's model; empty for a page of responses. */
+  model: string;
+  /** The record shown; null while it is new. */
+  recordId: RecordId | null;
+  /** The page as it is shown, in the reader's words: its fields' labels, kinds and options, for the model to read. */
+  page: Page;
+  /** The record's values now. */
+  values: Values;
+  /** The fields a proposal may fill, by name: those the page's `suggest` names, else those shown that a person can set. */
+  fields: string[];
+  /** What the person gave: words pasted or typed, files picked. */
+  from: { text?: string; files?: UploadFile[] };
+  /** The page's language, by tag: what the values proposed are written in. */
+  language: string;
+}
+
+/** Values proposed for a form, each shown on its field to accept or reject. */
+export interface SuggestResult {
+  /**
+   * By field: a value as the field holds one — a link as `{ id, label }`, or its name, looked for as typing looks for
+   * it; a choice by its value or its label; a day as "2026-10-20" — and a table of lines' as the lines to add, each
+   * its values. A field not asked, or one the person cannot set, is left out.
+   */
+  values: Values;
+  /** Why, in a sentence of the app's: shown over the values proposed. */
+  why?: string;
+}
+
+/** What `rewrite` is asked: the text field, what was pressed, its words now and the record they belong to. */
+export interface RewriteRequest {
+  pageId: string;
+  model: string;
+  recordId: RecordId | null;
+  /** The page as it is shown, in the reader's words. */
+  page: Page;
+  /** The record's values now: what a draft is written from. */
+  values: Values;
+  /** The text field, by name. */
+  field: string;
+  /** `draft` (write it from the record), `polish` (make the words there clearer), or a tool of the app's own, by its `how`. */
+  how: string;
+  /** The field's words now: empty for a draft of an empty field. */
+  text: string;
+  /** The page's language, by tag. */
+  language: string;
+}
+
+/** A text field's words proposed: shown under it to accept or reject. */
+export interface RewriteResult {
+  text: string;
+  /** Why, in a sentence of the app's: shown with the words proposed. */
+  why?: string;
+}
+
+/** What `searchToFilter` is asked: the words typed, and the fields a condition may name. */
+export interface SearchToFilterRequest {
+  pageId: string;
+  model: string;
+  /** The page as it is shown, in the reader's words: its fields' labels, kinds and options. */
+  page: Page;
+  /** The words typed: "villas in New Cairo under 15M". */
+  text: string;
+  /** The fields a condition may name: the list's columns, search fields and filter fields. */
+  fields: string[];
+  /** The page's language, by tag. */
+  language: string;
+}
+
+/** A plain-words search as conditions, each shown as a filter the person may take away. */
+export interface SearchToFilterResult {
+  /**
+   * Conditions on the fields asked, all holding together: `=` a value (a choice by its value, a link by its id), `in`
+   * several, `>=`, `<=`, `>`, `<` or `between` [from, to] for a number or a day, `contains` for a record of links,
+   * `ilike` words in a text. One a field was not asked of, or an `op` the list cannot show, is left out and said.
+   */
+  filter: ResolvedFilterCondition[];
+  /** Words to search for as typed, besides: what was left of the words that names no field. */
+  text?: string;
+  /** Why, in a sentence of the app's: shown with the filters made. */
+  why?: string;
 }
 
 /** Whose possible duplicates were let be: what `notDuplicates` is asked. */

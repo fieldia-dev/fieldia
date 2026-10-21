@@ -32,7 +32,9 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   let made: MemoryDataSource | undefined;
   const members = (): Promise<MemoryDataSource> => memoryPart.load().then((loaded) => (made ??= loaded.memorySource(options, kept)));
   const source = { records: kept.records, notDuplicatePairs: kept.notDuplicatePairs, responses: kept.responses, calls: kept.calls, drafts: kept.drafts, changeElsewhere: kept.changeElsewhere, answeredElsewhere: kept.answeredElsewhere } as Record<string, unknown>;
-  for (const name of MEMORY_MEMBERS) {
+  // AI help's members, where the app gave what answers them: without, the source has none.
+  const assist = (['suggest', 'rewrite', 'searchToFilter'] as const).filter((name) => options.assist?.[name]);
+  for (const name of [...MEMORY_MEMBERS, ...assist]) {
     source[name] = (...args: unknown[]) => {
       const call = (from: MemoryDataSource) => (from[name] as (...given: unknown[]) => Promise<unknown>)(...args);
       return made ? call(made) : members().then(call);

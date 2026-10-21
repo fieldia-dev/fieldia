@@ -32,6 +32,7 @@ export const refusals = {
   botCheckForResponses: 'A bot check is for a form anyone may send, which collects responses: an app’s screen is behind its sign-in',
   recordsBoth: 'Records are named by two words: one for one record and one for more, such as customer and customers',
   duplicatesForRecords: 'Possible duplicates are found among a model’s records, as one is typed on its own page: a form of responses, or a list, keeps none to compare it with',
+  suggestForForms: 'Fill from text fills a form’s fields: a list of records has none to fill',
   onThePageAlready: (label: string) => `${label} is on the page already`,
   optionsFromModel: (label: string) => `The options of ${label} come from the model`,
   cannotMoveFurther: 'It cannot move further',

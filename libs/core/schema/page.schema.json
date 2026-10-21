@@ -392,6 +392,9 @@
     },
     "approval": {
       "$ref": "#/$defs/PageApproval"
+    },
+    "suggest": {
+      "$ref": "#/$defs/PageSuggest"
     }
   },
   "required": [
@@ -9706,6 +9709,9 @@
         "filterSheet": {
           "type": "boolean"
         },
+        "searchToFilter": {
+          "type": "boolean"
+        },
         "parentField": {
           "type": "string",
           "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
@@ -10450,6 +10456,45 @@
         },
         "lock": {
           "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PageSuggest": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "from": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "text",
+              "files"
+            ]
+          }
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "placeholder": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "fromField": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false

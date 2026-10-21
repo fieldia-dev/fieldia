@@ -434,6 +434,17 @@ export const panel = {
   approvalLockHint: 'Off: nothing is locked while it waits, and your app’s save refuses what it must.',
   approvalOpen: 'Open while it waits',
   approvalOpenHint: 'The fields ticked stay open while the record waits for a decision; every other one is locked, its lock saying why.',
+  // ---- AI help's Fill from text
+  suggest: 'Fill from text (AI)',
+  suggestOn: 'Offer Fill from text',
+  suggestHint: 'A button that fills the form from words people paste — an e-mail, a signature, a message — or files, by your app’s own AI (the data source’s suggest). Each value is shown on its field to accept or reject, with Undo. Hidden where the source has none.',
+  suggestLabel: 'Its button’s words',
+  suggestLabelExample: 'Fill from an e-mail',
+  suggestFrom: 'Fills from',
+  suggestFromHint: 'Words people paste or files they add, or the words a field of the record holds — a buyer’s message, a visit’s notes — read at a press.',
+  suggestPasted: 'Words pasted, or files',
+  suggestFields: 'Fields it may fill',
+  suggestFieldsHint: 'None ticked: every field shown that people can change.',
   // ---- what the screen's records are called
   recordsCalled: 'Records are called',
   recordsOne: 'One record is called',

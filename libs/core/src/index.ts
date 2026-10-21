@@ -9,6 +9,8 @@ export { dayWords } from './lib/record/day-words';
 export { scheduleSlots, type MemorySchedule } from './lib/record/memory-schedules';
 // A memory source's records like the one typed, for its `duplicates`: for demos and tests, outside the one-tag script.
 export { alikeRecords, nameLikeness } from './lib/record/memory-duplicates';
+// A stand-in for an app's AI, no model and no keys, for a memory source's `assist`: for demos and tests, outside the one-tag script.
+export { assistStandIn, polishText, readSignature, standInNumber, type StandInFound, type StandInOptions } from './lib/record/memory-assist';
 export {
   FieldSchema,
   FieldsSchema,

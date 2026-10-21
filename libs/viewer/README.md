@@ -361,6 +361,35 @@ source both ask, never waited for. Its words are the viewer's labels
 (`duplicateWith`, `openDuplicate`, `mergeTitle`, …). See
 [possible duplicates](https://fieldia.dev/data/#duplicates).
 
+## AI help: each value proposed reviewed before it is kept
+
+Through your data source, by your app's own model (Fieldia ships no model and no
+keys): a page's `suggest` draws **Fill from text** (among a sheet's buttons, else
+over the page) — words pasted, files picked, or a text field's own words
+(`suggest.fromField`), read by the source's `suggest`; a text field's
+`options.rewrite` draws **Draft** and **Polish** (and the app's own tools) under
+its box, asking the source's `rewrite`; a list's `searchToFilter` draws ✦ beside
+its search box, asking `searchToFilter`. Every value proposed is shown on its
+field — the value it would take the place of struck through, the new one,
+**Accept** and **Reject**, a table's lines to add listed — and over the page how
+many, the model's why, **Accept all** and **Reject all**. Nothing is written
+until it is accepted; **Undo** puts back what was there. A proposal for a record
+no longer shown (`form.recordShown()`) is laid nowhere; a field typed in while
+it was asked keeps what was typed, and typing in a field with a proposal lets it
+go. A value is read as its field holds one (a link by its name, looked for
+exactly; a choice among those offered), or not used and said. The app's own
+values, an agent's, are shown the same way with `handle.propose(values, { why })`.
+It comes in a part of its own (`assistPart`, `fieldia.assist.js`), loaded with a
+page that asks for it, as a list's ✦ is pressed, or as the app first proposes;
+hidden where the source has no member for it. Its words are the viewer's labels
+(`assistFill`, `assistAccept`, `assistUndo`, `assistDraft`, `assistWords`, …).
+See [AI help](https://fieldia.dev/data/#ai).
+
+```ts
+const handle = mountViewer(element, { page, dataSource });
+await handle.propose({ city: 'Amman', country_id: 'Jordan' }, { why: 'From the agent’s last call' });
+```
+
 ## Endings, and the answers in a page's words
 
 A page of responses sent shows its ending (`endings` on the page) in place of

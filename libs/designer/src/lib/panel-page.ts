@@ -14,6 +14,7 @@ import { recordsSettings } from './records-settings';
 import { endingsEditor } from './endings-editor';
 import { limitsSettings } from './limits-settings';
 import { approvalSettings } from './approval-settings';
+import { assistSettings } from './assist-settings';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
@@ -91,6 +92,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const limits = limitsSettings(el, designer);
   // A record's screen whose records wait for approval: whether it locks while one waits, what stays open (approval-settings.ts).
   const approval = approvalSettings(el, designer);
+  // AI help's Fill from text, on a form's screen (assist-settings.ts).
+  const assist = assistSettings(el, designer);
   // Its phone numbers: as typed, or checked by their country — the country they start on, and how they are shown.
   const phones = el('select', { class: 'fd-input fd-select', 'aria-label': w.phones }, el('option', { value: '' }, w.phonesAs.typed), el('option', { value: 'checked' }, w.phonesAs.checked)) as HTMLSelectElement;
   phones.addEventListener('change', () => designer.setPhone({ on: phones.value === 'checked' }));
@@ -154,6 +157,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     sameRow,
     sameOnRow,
     ...approval.rows,
+    ...assist.rows,
     moments.element
   );
   return {
@@ -178,6 +182,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       endingsRow.hidden = page.data.kind !== 'responses';
       if (!endingsRow.hidden) endings.update(page);
       limits.update(page);
+      assist.update(page);
       look.update(page);
       moments.update(page);
       head.update(page);

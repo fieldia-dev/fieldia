@@ -1,0 +1,187 @@
+{
+  "fieldia": "0.7",
+  "id": "customer-from-email",
+  "title": "New customer",
+  "description": "A customer filled from an e-mail: paste its signature, and each value read from it — the company, its phone, website, address and tax ID, the person who wrote as a contact — is shown on its field, the old value and the new, to accept or reject. Nothing is kept until you accept it. The AI here is a stand-in in the demo’s memory source: pattern matching, no model and no keys. Your app answers with its own model.",
+  "data": {
+    "kind": "record",
+    "model": "partner"
+  },
+  "records": {
+    "one": "customer",
+    "other": "customers",
+    "a": "a customer"
+  },
+  "lowerLabels": true,
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Company",
+      "required": true
+    },
+    "email": {
+      "type": "char",
+      "label": "Email"
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone"
+    },
+    "website": {
+      "type": "char",
+      "label": "Website"
+    },
+    "vat": {
+      "type": "char",
+      "label": "Tax ID"
+    },
+    "street": {
+      "type": "char",
+      "label": "Street"
+    },
+    "city": {
+      "type": "char",
+      "label": "City"
+    },
+    "country_id": {
+      "type": "many2one",
+      "label": "Country",
+      "relation": "country"
+    },
+    "child_ids": {
+      "type": "one2many",
+      "label": "Contacts",
+      "relation": "partner",
+      "fields": {
+        "name": {
+          "type": "char",
+          "label": "Name",
+          "required": true
+        },
+        "function": {
+          "type": "char",
+          "label": "Job position"
+        },
+        "email": {
+          "type": "char",
+          "label": "Email"
+        },
+        "mobile": {
+          "type": "char",
+          "label": "Mobile"
+        }
+      }
+    },
+    "comment": {
+      "type": "text",
+      "label": "Notes"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "placeholder": "Company’s name"
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "reach",
+        "title": "How to reach it",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-website",
+            "field": "website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-vat",
+            "field": "vat"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "where",
+        "title": "Address",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-street",
+            "field": "street"
+          },
+          {
+            "type": "field",
+            "id": "f-city",
+            "field": "city"
+          },
+          {
+            "type": "field",
+            "id": "f-country",
+            "field": "country_id"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "people",
+        "title": "People",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-contacts",
+            "field": "child_ids",
+            "labels": "hidden",
+            "columns": [
+              "name",
+              "function",
+              "email",
+              "mobile"
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-comment",
+            "field": "comment",
+            "options": {
+              "rewrite": [
+                "polish"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "suggest": {
+    "label": "Fill from an e-mail",
+    "placeholder": "Paste the e-mail, or its signature, here",
+    "fields": [
+      "name",
+      "email",
+      "phone",
+      "website",
+      "vat",
+      "street",
+      "city",
+      "country_id",
+      "child_ids"
+    ]
+  }
+}

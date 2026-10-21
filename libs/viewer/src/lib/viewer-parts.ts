@@ -4,6 +4,7 @@ import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as AnswersModule from './answers-part';
 import type * as ApprovalsModule from './approvals-part';
+import type * as AssistModule from './assist-part';
 import type * as CardsModule from './cards-part';
 import type * as ColumnsModule from './columns-part';
 import type * as DuplicatesModule from './duplicates-part';
@@ -37,6 +38,8 @@ export type AnswersPart = typeof AnswersModule;
 export type LimitsPart = typeof LimitsModule;
 /** The approvals part: a record's approvals drawn over it, Approve and Reject, and their history. */
 export type ApprovalsPart = typeof ApprovalsModule;
+/** The assist part: AI help — Fill from text, a text field's Draft and Polish, a list's words read as filters — each proposal reviewed. */
+export type AssistPart = typeof AssistModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -86,6 +89,19 @@ export const limitsPart: Part<LimitsPart> = lazyPart('limits', () => import('./l
 export const approvalsPart: Part<ApprovalsPart> = lazyPart('approvals', () => import('./approvals-part'));
 
 /**
+ * AI help through the app's own model, loaded with the page's parts where the page asks for a Fill from text
+ * (`suggest`) or a text field's tools (`options.rewrite`), so its button and tools are drawn with the page; as a list's
+ * ✦ is pressed, to read its words as filters (`searchToFilter`); and by the app's own `propose`, as it first proposes.
+ */
+export const assistPart: Part<AssistPart> = lazyPart('assist', () => import('./assist-part'));
+
+/**
+ * Whether a page asks for AI help drawn with it: a Fill from text, a text field's tools. (A list's words read as filters
+ * ask for the part as its ✦ is pressed: the list is drawn without it.)
+ */
+export const asksAssist = (page: Page): boolean => !!page.suggest || /"rewrite":(?!false)/.test(JSON.stringify(page.layout));
+
+/**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
  * else as soon as it comes (settled then; a part that cannot come puts none). For what draws a list's look without the
  * list: the designer's canvas.
@@ -106,7 +122,7 @@ export function installListStyles(doc: Document): Promise<void> {
 export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage', 'phone', 'tags']);
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -161,6 +177,9 @@ const markdownAlone = (node: SectionNode) => {
  * A page whose formulas call one of Fieldia's functions beyond the plain ones (`age`, `addMonths`, `contains`, `join`,
  * `average`, …) asks for @fieldia/core's functions part, their bodies (`callsPartFunctions`); one whose choices' options
  * show by a condition, or are carried from an earlier question, its options part (`hasOptionRules`).
+ *
+ * A page that asks for AI help — a Fill from text (`suggest`), a text field's tools (`options.rewrite`) — asks for the
+ * assist part, which draws them with the page.
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
@@ -255,6 +274,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     found.add(approvalsPart);
     found.add(formApprovalsPart);
   }
+  // AI help's button, tools and words read as filters: drawn with the page, so in before it is drawn.
+  if (asksAssist(page)) found.add(assistPart);
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);
   // A text kept in several languages: its switch where it is typed, the reader's language where a list or a card reads it.
@@ -269,7 +290,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, editable: editablePart, head: headPart, limits: limitsPart, approvals: approvalsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, languages: languagesPart };
+  const by: Record<string, Part> = { list: listPart, editable: editablePart, head: headPart, limits: limitsPart, approvals: approvalsPart, answers: answersPart, assist: assistPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, languages: languagesPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 

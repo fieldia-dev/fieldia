@@ -302,6 +302,16 @@ export function searchBar(context: SearchContext) {
   drawPanel();
   return {
     element,
+    /** The box words are typed in. */
+    input,
+    /** The search now, its chips. */
+    current: () => facets,
+    /** A search in place of this one — a person's words read as filters, or Undo putting them back — and the words left in the box. */
+    take(next: Facet[], typed: string) {
+      input.value = typed;
+      closeOffered();
+      change(next);
+    },
     /** A search put in from outside, as a person's own: one with the same words takes its place, as a map's "In this area" does. */
     add(facet: Facet) {
       const words = facet.kind === 'custom' ? facet.label : null;

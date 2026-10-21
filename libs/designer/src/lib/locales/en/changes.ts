@@ -131,6 +131,7 @@ export const changes = {
   limits: (now: 'on' | 'off' | 'changed') => ({ on: 'It takes answers only when and as many as it says', off: 'It takes answers at any time, as many as come', changed: 'When it takes answers, and how many, changed' })[now],
   continueLater: (on: boolean): string => (on ? 'It offers Continue later' : 'It no longer offers Continue later'),
   approval: (now: 'on' | 'off' | 'changed') => ({ on: 'Its records wait for approval', off: 'Its records no longer wait for approval', changed: 'What stays open while a record waits for approval changed' })[now],
+  suggest: (now: 'on' | 'off' | 'changed') => ({ on: 'It offers Fill from text, by your app’s AI', off: 'It no longer offers Fill from text', changed: 'How Fill from text fills the form changed' })[now],
   thePage: 'the page',
   // ---- the look
   look: {

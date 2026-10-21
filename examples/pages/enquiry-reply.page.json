@@ -1,0 +1,259 @@
+{
+  "fieldia": "0.7",
+  "id": "enquiry-reply",
+  "title": "Enquiry",
+  "description": "A buyer’s enquiry answered with AI help: what they want read from their message — the kind of home, the district, the budget, the bedrooms — each shown on its field to accept, then a reply drafted from the enquiry, and words you wrote yourself polished. Nothing is kept until you accept it, and Undo puts it back. The AI here is a stand-in in the demo’s memory source: pattern matching and a template, no model and no keys. Your app answers with its own model.",
+  "data": {
+    "kind": "record",
+    "model": "enquiry"
+  },
+  "records": {
+    "one": "enquiry",
+    "other": "enquiries",
+    "a": "an enquiry"
+  },
+  "lowerLabels": true,
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Enquiry",
+      "required": true
+    },
+    "partner_name": {
+      "type": "char",
+      "label": "Buyer’s name"
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone"
+    },
+    "email": {
+      "type": "char",
+      "label": "Email"
+    },
+    "received": {
+      "type": "datetime",
+      "label": "Received",
+      "readonly": true
+    },
+    "message": {
+      "type": "text",
+      "label": "Their message",
+      "readonly": true
+    },
+    "kind": {
+      "type": "selection",
+      "label": "Type",
+      "options": [
+        {
+          "value": "flat",
+          "label": "Flat"
+        },
+        {
+          "value": "duplex",
+          "label": "Duplex"
+        },
+        {
+          "value": "penthouse",
+          "label": "Penthouse"
+        },
+        {
+          "value": "villa",
+          "label": "Villa"
+        }
+      ]
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        {
+          "value": "zamalek",
+          "label": "Zamalek"
+        },
+        {
+          "value": "garden_city",
+          "label": "Garden City"
+        },
+        {
+          "value": "dokki",
+          "label": "Dokki"
+        },
+        {
+          "value": "mohandessin",
+          "label": "Mohandessin"
+        },
+        {
+          "value": "maadi",
+          "label": "Maadi"
+        },
+        {
+          "value": "heliopolis",
+          "label": "Heliopolis"
+        },
+        {
+          "value": "nasr_city",
+          "label": "Nasr City"
+        },
+        {
+          "value": "new_cairo",
+          "label": "New Cairo"
+        },
+        {
+          "value": "sheikh_zayed",
+          "label": "Sheikh Zayed"
+        },
+        {
+          "value": "october",
+          "label": "6th of October"
+        }
+      ]
+    },
+    "budget": {
+      "type": "monetary",
+      "label": "Budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        0
+      ]
+    },
+    "bedrooms": {
+      "type": "integer",
+      "label": "Bedrooms",
+      "min": 0
+    },
+    "reply": {
+      "type": "text",
+      "label": "Your reply"
+    },
+    "state": {
+      "type": "selection",
+      "label": "Stage",
+      "options": [
+        {
+          "value": "new",
+          "label": "New"
+        },
+        {
+          "value": "answered",
+          "label": "Answered"
+        }
+      ],
+      "default": "new"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "placeholder": "What they ask about"
+    },
+    "statusbar": {
+      "field": "state"
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "buyer",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-partner",
+            "field": "partner_name"
+          },
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "said",
+        "title": "What they wrote",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-received",
+            "field": "received"
+          },
+          {
+            "type": "field",
+            "id": "f-message",
+            "field": "message",
+            "labels": "hidden"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "wants",
+        "title": "What they look for",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-kind",
+            "field": "kind"
+          },
+          {
+            "type": "field",
+            "id": "f-district",
+            "field": "district"
+          },
+          {
+            "type": "field",
+            "id": "f-budget",
+            "field": "budget"
+          },
+          {
+            "type": "field",
+            "id": "f-bedrooms",
+            "field": "bedrooms"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "answer",
+        "title": "Your reply",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-reply",
+            "field": "reply",
+            "labels": "hidden",
+            "placeholder": "Write your reply, or press Draft",
+            "options": {
+              "rewrite": [
+                "draft",
+                "polish"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "suggest": {
+    "label": "Fill from their message",
+    "fromField": "message",
+    "fields": [
+      "kind",
+      "district",
+      "budget",
+      "bedrooms"
+    ]
+  }
+}
