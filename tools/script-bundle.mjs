@@ -1078,7 +1078,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 506.77 measured before, 507.32 after, to 507.4. The Scan button, the camera's sheet, the codes read and written, a
 // table counted and the page's checks of them are the scan part's (fieldia.scan.js), the reader of codes for a browser
 // with none the decode part's (fieldia.decode.js), asked for only as Scan is pressed there.
-// Merged (0.29.0), Wave 5's lanes together: to 512.7 until measured.
+// Merged (0.29.0), Wave 5's lanes together — the hooks above, every page's — 512.44 measured; then the size step: the
+// uploads' work (a file made ready and sent, its stored link put in its field, in place of bytes a save stores) out of
+// the main script into the files part, which a page with a file field loads before it is drawn and a form asks for as
+// it first sends a file (core's files-part.ts, the form keeping its queue and its ids): 510.59, to 510.6.
 const BUDGET_KB = 510.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1327,7 +1330,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // page with one takes its photos part, fieldia.photos.js, besides the files part.
 // A code scanned with the camera (0.29, w5-scan; listed with the raw budget above): what knows a field is scanned into
 // and asks for the scan part, 166.15 measured before, 166.38 after, to 166.4.
-// Merged (0.29.0): to 168.6 until measured.
+// Merged (0.29.0): the lanes together 168.16 measured; the uploads' work in the files part, 167.41, to 167.5.
 const GZIP_BUDGET_KB = 167.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -1533,7 +1536,8 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // A code scanned with the camera (0.29, w5-scan): the Scan button's, the camera sheet's and why it did not open's 21
 // words — Arabic's 77.88 and 13.29 measured before, 81.55 and 13.79 after, to 81.6 and 13.8; German's 36.27 and 11.64
 // to 37.69 and 12.08, to 37.7 and 12.1; French's 36.75 and 11.70 to 38.18 and 12.14, to 38.2 and 12.2.
-// Merged (0.29.0): to Arabic's 95.0 and 16.0, German's 44.1 and 14.0, French's 44.5 and 14.0 until measured.
+// Merged (0.29.0), every lane's words together and AI help's "Proposed in {language}": Arabic's 94.97 and 15.85, to
+// 95.0 and 15.9; German's 43.89 and 13.85, to 43.9 and 13.9; French's 44.42 and 13.84, to 44.5 and 13.9.
 const ADD_ON_BUDGET_KB = { ar: [95.0, 15.9], de: [43.9, 13.9], fr: [44.5, 13.9] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
@@ -1980,7 +1984,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // where its option says how it answers (`gridClusters`, outside the one-tag script), each record standing alone as a
 // list's row is, by the row its `list` now shares — memory 16.08 and 5.72 measured before, 16.23 and 5.77 after, to
 // 16.3 and 5.8.
-// Merged (0.29.0): a part two lanes grew takes both growths until measured (list, memory).
+// Merged (0.29.0), each part as measured: the list with the editable list's hooks, a text's languages and AI help's ✦
+// (131.86 and 42.39); the memory source with approvals, languages, AI help and clusters (20.07 and 7.11); the files part
+// with the uploads' work out of the main script (40.22 and 14.87, from 37.36 and 13.77); AI help with one language of a
+// text kept in several (36.27 and 12.36); the editable part never opening such a text's cell (28.94 and 10.66).
 const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.0, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.4], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.1, 7.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
