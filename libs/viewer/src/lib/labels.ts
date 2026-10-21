@@ -540,6 +540,11 @@ export interface ViewerLabels {
   readOnlyRecord: string;
   readOnlyRecordNoun?: string;
   fieldNotYours: string;
+  /** Who else has the record open (the source's `presence`): `{names}`, each one's name, `presentEditing` round whoever is changing it. */
+  presentHere: string;
+  presentEditing: string;
+  /** A change made elsewhere laid on the record shown (`subscribe`): who, and the fields it changed. */
+  arrivedChanged: string;
   /** Said by the lock of an answer a signature signed (`options.signs`): how to change it. */
   signedAnswer: string;
   notOffered: string;
@@ -991,6 +996,9 @@ const en: ViewerLabels = {
   readOnlyRecord: 'You can read this record, but not change it.',
   readOnlyRecordNoun: 'You can read this {record}, but not change it.',
   fieldNotYours: 'You can see this field, but not change it.',
+  presentHere: 'Also here: {names}',
+  presentEditing: '{name} (editing)',
+  arrivedChanged: '{name} changed {fields}.',
   signedAnswer: 'Signed. To change it, press Change answers under the signature.',
   notOffered: 'Not open to you here: {actions}.',
   duplicateWith: 'A record with this {fields} already exists: {name}',

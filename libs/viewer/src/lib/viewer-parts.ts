@@ -12,6 +12,7 @@ import type * as ImportModule from './import-part';
 import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
 import type * as TemplatesModule from './templates-part';
+import type * as LiveModule from './live-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -34,6 +35,8 @@ export type AnswersPart = typeof AnswersModule;
 export type LimitsPart = typeof LimitsModule;
 /** The templates part: record templates people save and name, and start a new record from. */
 export type TemplatesPart = typeof TemplatesModule;
+/** The live part's viewer half: who else has a record open, over it. */
+export type LivePart = typeof LiveModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -74,6 +77,8 @@ const showsAnswers = (page: Page): boolean =>
 export const limitsPart: Part<LimitsPart> = lazyPart('limits', () => import('./limits-part'));
 /** Record templates people save and name — their menu over a record — loaded with the page's parts where it has `templates`. */
 export const templatesPart: Part<TemplatesPart> = lazyPart('templates', () => import('./templates-part'));
+/** Who else has a record open, loaded the first time someone else has one open (the core's half beside it). */
+export const livePart: Part<LivePart> = lazyPart('live', () => import('./live-part'));
 
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
@@ -93,7 +98,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, pressUndoPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, pressUndoPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {

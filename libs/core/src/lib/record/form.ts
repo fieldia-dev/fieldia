@@ -45,6 +45,7 @@ import {
   type MergeResult,
   type SavedDraft,
   type StoredDraft,
+  type PresentPerson,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
 import type { Limits } from './form-limits';
@@ -55,6 +56,7 @@ import { hostScheduler, type Scheduler } from './scheduler';
 import { signedBy, type SignedBy } from './signed';
 import { createHistory, type HistoryStep } from './history';
 import { pressUndoPart, type PressUndoPart } from './undo-later';
+import { recordLivePart, type LiveRecord } from './live-later';
 import { createMoments, createRunner, takenNow, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
@@ -173,6 +175,8 @@ export interface FormState {
    * starts empty. Null while none is.
    */
   readonly resume?: { readonly key: string; readonly missing?: boolean } | null;
+  /** Who else has the record open, as the data source's `presence` pushed: never this person. Empty while none does, or without it. */
+  readonly present?: readonly PresentPerson[];
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -330,6 +334,12 @@ export interface FormEvents {
    * person pressed "Continue later" (`later`), with the source's answer.
    */
   draft: { key: string; savedAt: string; later: boolean; saved: SavedDraft };
+  /**
+   * A change made elsewhere arrived (the data source's `subscribe`): laid on the record where the person had changed
+   * nothing (`conflict` false), else waiting as a conflict, Reload or Keep mine — with who and when, and the fields it
+   * changed.
+   */
+  arrived: { recordId: RecordId; by?: string; at?: string; fields: string[]; conflict: boolean };
 }
 
 export interface FormOptions {
@@ -1391,6 +1401,42 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const listed = listedColumns(page.fields);
   /** Whether the values set now are a change someone made (`writeValues`), after which a line's choice no longer offered is cleared. */
   let edit = false;
+  // ---- live: changes made elsewhere, and who else has the record open (the live part) ------------------------
+  /** Whether the source tells either: a page of a record's, with `subscribe` or `presence`. */
+  const watching = page.data.kind === 'record' && !!(options.dataSource?.subscribe || options.dataSource?.presence);
+  let liveKit: LiveRecord | null = null;
+  let liveAsked = false;
+  /** The record shown watched, once it has an id: the live part asked for the first time, then told of each change. */
+  function watch() {
+    if (liveKit) return liveKit.watch();
+    if (liveAsked || state.recordId == null) return;
+    liveAsked = true;
+    void recordLivePart.load().then((part) => {
+      if (disposed) return;
+      liveKit = part.liveRecord({
+        page,
+        fields,
+        source: options.dataSource as DataSource,
+        ...(options.user ? { user: options.user } : {}),
+        state: () => state,
+        set,
+        baseline: () => baseline,
+        same: (name, one, other) => sameValue(fields[name], one, other),
+        conflictOf,
+        store,
+        settled: savesSettled,
+        track,
+        shownNow,
+        generation: () => generation,
+        atRisk: () => unsavedWork(state),
+        arrived: (event) => emit('arrived', event),
+        say: (message) => options.host?.say(message, 'warning'),
+        messages,
+      });
+      liveKit.watch();
+    }, () => undefined);
+  }
+
   /** The person's changes to the record shown, for Undo and Redo; and whether one is being taken back or made again now. */
   const history = createHistory((name, one, other) => sameValue(fields[name], one, other));
   let replaying = false;
@@ -1444,6 +1490,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // The problems found inside a saved form are shown on it, beside its own fields.
     if (state.errors !== shown) for (const part of attached.values()) part.inner.show(inside(state.errors, part.name));
     for (const listener of [...listeners]) listener(state);
+    // The record shown, watched for changes made elsewhere and for who else has it open; asked again as that changes.
+    if (watching && state.status !== 'loading') watch();
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
       // After someone's change, a choice its new choices do not offer is taken out and said, as a line's is.
@@ -4216,6 +4264,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     dispose() {
       // An answer that lands after is for no record shown.
       disposed = true;
+      liveKit?.stop();
       newGeneration();
       clearFiles();
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);

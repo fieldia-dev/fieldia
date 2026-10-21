@@ -651,6 +651,24 @@ change whose field one of them wrote since — or that is locked now — is pass
 over, never written over theirs. Another record shown, a reload, or `reset()`
 starts with nothing to take back; a form not being edited takes nothing back.
 
+## Changes pushed as they happen, and who else is here
+
+Two optional data source members make an open record live. `subscribe(record,
+push) → stop` is asked as a record is shown and stopped as another is; push
+`{ type: 'record', version?, values?, by?, at? }` as someone else saves it, or
+`{ type: 'deleted', by? }`. Where the person changed nothing, their values are
+laid on the record as stored (`arrived` is told, `conflict: false`); after a
+change of theirs it waits as the conflict a save would meet (`state.conflict`,
+with Reload and Keep mine), their typing untouched. A change without `values`
+is read with `load`; one carrying this form's own version is let go.
+`presence(request, push) → stop` is asked with the form's `user` and whether
+they have changes not saved (`editing`), asked again as that turns; what it
+pushes — the others with the record open — is `state.present`. Both are the
+same call as @fieldia/chatter's `subscribe`, with types that never meet: one
+function may serve both. It comes in a part of its own (`recordLivePart`),
+asked for only where the source has either member. The memory source does both
+with `live: true` (`changeElsewhere`, `arrive`, `leave`), and neither without.
+
 ## Record templates
 
 A record page's `templates` (`true`, or `{ fields }`) keeps a record's values

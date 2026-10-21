@@ -227,6 +227,9 @@ export type {
   SaveDraftRequest,
   SavedDraft,
   LoadDraftRequest,
+  RecordChange,
+  PresenceRequest,
+  PresentPerson,
   RecordTemplate,
   TemplatesRequest,
   TemplateRequest,
@@ -313,6 +316,8 @@ export { fieldPattern } from './lib/format/pattern';
 export { lazyPart, partWith, partsOf, partsComeByScriptTag, settleParts, type Part } from './lib/parts';
 // The bodies of Fieldia's functions beyond the plain ones, loaded before a page that calls one is drawn.
 export { callsPartFunctions, functionsPart, type FunctionsPart } from './lib/expression/functions';
+// A record made live — changes made elsewhere, who else has it open — loaded where the source tells them.
+export { recordLivePart, type RecordLivePart } from './lib/record/live-later';
 // A press said with Undo, and taken back: loaded with a page whose buttons offer it, or as an answer first brings one.
 export { pressUndoPart, type PressUndoPart } from './lib/record/undo-later';
 // The checks a page owes a part of the one-tag script (`PageValidation.later`): a map's come in a part of their own.

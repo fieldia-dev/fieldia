@@ -308,6 +308,15 @@ values written as the person's own changes (Ctrl+Z takes each back).
 `saveTemplate` and `deleteTemplate`, else in the viewer's `preferences`. It
 comes in a part of its own, `fieldia.templates.js` (`templatesPart`).
 
+## Who else is here, and changes as they happen
+
+Where the data source has `presence`, the people who have the record open show
+over it — their initials, a ring round whoever is changing it, "Also here:
+Mona Adel (editing)". Where it has `subscribe`, a change someone else saves
+arrives in the open record: laid on it where the person changed nothing, and
+said ("Mona Adel changed Price."); after a change of theirs, it is the
+conflict below, before they save. See `@fieldia/core`.
+
 ## Two people, one record
 
 When a save is refused because someone else saved the record first (the data

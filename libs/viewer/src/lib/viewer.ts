@@ -1813,6 +1813,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // Save safety, over the record: someone else's save first (Reload, Keep mine), the changes Reload set aside, a record only to read.
   const safety = saveSafety({ doc, el, form, page, labels, locale, tag, icons: options.icons, fill, announce, root: () => root, discard: () => letGoAsked() });
   updaters.push(safety.update);
+  // A change made elsewhere laid on the record, the person having changed nothing: who changed what, said. One that
+  // waits after a change of theirs is the conflict's, said over the record.
+  cleanups.push(
+    form.on('arrived', ({ by, fields, conflict }) => {
+      if (!conflict) actionHost.say(fill(labels.arrivedChanged, { name: by || labels.someoneElse, fields: fields.map((name) => page.fields[name]?.label ?? name).join(', ') }), 'info');
+    })
+  );
   // Possible duplicates (`duplicates`): records like this one, asked of the source as it is typed and saved, said under
   // the fields they matched on — in a part of their own, asked for where the page names fields and its source can
   // answer; the page is drawn meanwhile, and nothing is said before an answer comes.

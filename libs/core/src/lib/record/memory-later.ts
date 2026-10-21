@@ -38,5 +38,20 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       return made ? call(made) : members().then(call);
     };
   }
+  // A push asked for before the members came: answered once they have, unless stopped first.
+  for (const name of options.live ? (['subscribe', 'presence'] as const) : []) {
+    source[name] = (...args: unknown[]) => {
+      const start = (from: MemoryDataSource) => (from[name] as (...given: unknown[]) => () => void)(...args);
+      if (made) return start(made);
+      let stop: (() => void) | null = null;
+      let stopped = false;
+      void members().then((from) => (stopped ? undefined : (stop = start(from))));
+      return () => {
+        stopped = true;
+        stop?.();
+      };
+    };
+  }
+  for (const name of ['arrive', 'leave'] as const) source[name] = (...args: unknown[]) => void members().then((from) => (from[name] as (...given: unknown[]) => void)(...args));
   return source as unknown as MemoryDataSource;
 }

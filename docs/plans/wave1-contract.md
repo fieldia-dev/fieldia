@@ -944,3 +944,43 @@ In plain words:
 - The memory source keeps them by page id (`templates` option to start from). Tests:
   `libs/viewer/src/lib/templates.spec.ts`.
 
+## 20. Changes pushed, and who else is here (Wave 6, lane w6-records)
+
+Two more members, each optional. Without `subscribe`, a change made elsewhere is found as a save meets it (§2);
+without `presence`, nobody else is shown.
+
+```ts
+subscribe?(record: RecordRequest, push: (change: RecordChange) => void): () => void;
+presence?(request: PresenceRequest, push: (people: PresentPerson[]) => void): () => void;
+
+type RecordChange =
+  | { type: 'record'; version?: RecordVersion; values?: Values; by?: string; at?: string }
+  | { type: 'deleted'; by?: string; at?: string };
+interface PresenceRequest { model: string; id: RecordId; user?: { id: RecordId | null; name?: string }; editing: boolean }
+interface PresentPerson { id: RecordId; name: string; editing?: boolean; avatar?: string }
+// FormState gains present?: PresentPerson[]; FormEvents gains arrived: { recordId, by?, at?, fields, conflict }.
+```
+
+In plain words:
+
+- **Asked as a record is shown** (once it has an id, its load done), stopped as another is shown or the form goes. An
+  answer for a record no longer shown is laid on none.
+- **A change arriving** waits for a save of this form's on its way (its answer may be that very change); one whose
+  `version` is the form's own is let go. Without `values`, the form reads the record (`load`).
+- **The person changed nothing**: their values are laid on the record as stored (no change to save) with their
+  version, and said ("Mona Adel changed Price."). **After a change of the person's**: it waits as the conflict a
+  save would meet (§2) — the banner names who and when, what they changed and what both did, Reload and Keep mine —
+  and nothing typed is touched. `deleted` is said.
+- **Presence** is asked with `editing` (whether this person has changes not saved), and asked again as that turns:
+  the app stops the last and starts the next. What it pushes are the others: never this person (`user`).
+- **Beside @fieldia/chatter's `subscribe`.** The chatter's source has `subscribe(record, push) → stop` too, pushing
+  `{ type: 'message' }` and `{ type: 'delivery' }`. The two are the same call — `{ model, id }` first (the record's
+  request carries `fields` besides), a push, a stop — with types that never meet: one function of the app's, on one
+  socket, may serve both, each taking only its own `type` and letting the rest go.
+- **In a part of its own**, `fieldia.live.js` (`recordLivePart` in core, `livePart` in the viewer): the core's half
+  asked for as a record with an id is shown where the source has either member, the viewer's strip as someone else
+  first has the record open. An app whose source has neither never loads it.
+- The memory source with `live: true` has both members: it pushes `changeElsewhere`'s changes, and tells who has a
+  record open — each form that opens it with a `user`, and whoever `arrive` brings (`leave` takes them away). Without
+  `live` it has neither, as a source without a socket. Tests:
+  `libs/core/src/lib/record/live.spec.ts`, `libs/viewer/src/lib/live.spec.ts`.

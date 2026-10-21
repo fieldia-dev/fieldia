@@ -17,6 +17,8 @@ export interface MemoryKept extends Pick<MemoryDataSource, 'records' | 'notDupli
   versionOf(model: string, id: RecordId): RecordVersion | undefined;
   /** A record's version moved on, by someone, at a time. */
   moveOn(model: string, id: RecordId, by: string | undefined, at?: string): RecordVersion;
+  /** Told of each change made elsewhere, once the members have come (memory-live.ts): pushed to the pages that have it open. */
+  changed?: (model: string, id: RecordId, version: RecordVersion, by: string) => void;
 }
 
 export function memoryKept(options: Pick<MemoryDataSourceOptions, 'records' | 'notDuplicatePairs' | 'drafts' | 'versions'>): MemoryKept {
@@ -31,7 +33,7 @@ export function memoryKept(options: Pick<MemoryDataSourceOptions, 'records' | 'n
     versions.set(`${model}:${id}`, version);
     return version;
   };
-  return {
+  const kept: MemoryKept = {
     records,
     notDuplicatePairs: structuredCopy(options.notDuplicatePairs ?? {}),
     responses: [],
@@ -53,7 +55,10 @@ export function memoryKept(options: Pick<MemoryDataSourceOptions, 'records' | 'n
       const stored = table(model)[String(id)];
       if (!stored) throw new Error(`No ${model} record with id ${id}`);
       Object.assign(stored, structuredCopy(values));
-      return moveOn(model, id, who.by, who.at);
+      const version = moveOn(model, id, who.by, who.at);
+      kept.changed?.(model, id, version, who.by);
+      return version;
     },
   };
+  return kept;
 }

@@ -43,6 +43,8 @@ interface DataSource {
   templates?(request: TemplatesRequest): Promise<RecordTemplate[]>; // record templates people saved
   saveTemplate?(request: SaveTemplateRequest): Promise<RecordTemplate>;
   deleteTemplate?(request: TemplateRequest): Promise<void>;
+  subscribe?(record: RecordRequest, push: (change: RecordChange) => void): () => void; // changes made elsewhere
+  presence?(request: PresenceRequest, push: (people: PresentPerson[]) => void): () => void; // who else is here
 }`
 )}
 
@@ -75,6 +77,7 @@ interface DataSource {
     <tr><td>${c('notDuplicates')} · ${c('markNotDuplicate')}</td><td>A saved record with possible duplicates is shown; someone presses <em>It's someone new</em></td><td>What was let be kept on your server, so every device lets it be — without both, the person's browser keeps it. See <a href="#duplicates">possible duplicates</a></td></tr>
     <tr><td>${c('limits')}</td><td>A page with ${c('limits')} or options with ${c('seats')} opens, and again just before its answers go and after</td><td>The most responses, one from each person, each choice's places left — see <a href="#limits">opening, closing and limiting a form</a>; without it, a page keeps to its dates alone</td></tr>
     <tr><td>${c('templates')} · ${c('saveTemplate')} · ${c('deleteTemplate')}</td><td>The Templates menu of a page with ${c('templates')} opens; someone saves a record as a template, or lets some go</td><td>Templates kept on your server, shared as you share them — see <a href="#templates">record templates</a>; without them, the person's browser keeps their own</td></tr>
+    <tr><td>${c('subscribe')} · ${c('presence')}</td><td>A record is shown (once it has an id), and again as the person starts or stops changing it</td><td>Changes made elsewhere arriving in an open record, who else has it open — see <a href="#live">live records</a>; without them, a change elsewhere is found as a save meets it</td></tr>
     <tr><td>${c('saveDraft')} · ${c('loadDraft')}</td><td>Someone types on a page with ${c('continueLater')}, enters a wizard's step, or presses Continue later; a page opens with a draft's key</td><td>Answers kept on your server, continued on any device — see <a href="#drafts">save and resume</a>; without them, no Continue later shows</td></tr>
   </tbody>
 </table>
@@ -354,6 +357,20 @@ const dataSource: DataSource = {
 </ul>
 <p>Save pressed again while a save is on its way — Ctrl+Enter twice — waits for it, and saves with the version it got back: never a conflict with yourself. After Reload, the changes set aside count as unsaved until they are put back or let go — the list's × asks before it lets them go. A change made while a save is on its way stays a change to save, and the status says <em>Saved, but not all your changes</em>. Every way a form's values go passes one check inside the form, ${c('form.leave()')}: another record (the pager, an action's answer naming one, Duplicate's copy), the record loaded again (a ${c('reload')} step, an answer's ${c('reload: true')}), a ${c('reset')} step, and your host's ${c('close')}, which the form takes once where it is made. It first waits for a save on its way and files on theirs, the page saying what it waits for, so a save's answer never lands on another record; then it looks at the record as it is now. It asks "Discard your changes?", the focus on Cancel so Enter keeps the person where they are, only when their work is at risk: a change of theirs the last save did not send — typed while it was on its way, while the run that saved went on, or since; a value your page's steps, rules or app set is never theirs — a file not saved yet, changes set aside. A dialog, a panel and a page opened in place hold what was typed in them and nothing else saves it: their Escape, × and Back ask about every change not saved, before the record's first save too (since 0.26: a related list's New or row and a calendar's New closed unasked before). Once a save in a dialog, a panel or a page in place went through, it comes back saved however it is closed. Call ${c('form.leave()')} before your app's own ways out; ${c('unsavedWork(form.getState())')} answers for a browser's ${c('beforeunload')}. The question comes through your host's ${c('ask(message, { discard: true })')}.</p>
 <p>A new record, and a source that tells no version, are never checked. ${c('saveProblemOf(error)')} reads a ${c('ConflictError')} as ${c('{ kind: "conflict", conflict }')} without ${c('instanceof')}, so an app with two copies of core still shows it. Try it in the <a href="/demos/save-safety/">two tabs demo</a>.</p>
+
+<h2 id="live">Live records: changes pushed, and who else is here</h2>
+<p>Your app's socket — server-sent events, a database's listener — tells an open record what others do to it, through two members. ${c('subscribe(record, push)')} is asked as a record is shown and stopped as another is: push ${c("{ type: 'record', version, values, by, at }")} as someone else saves it. Where the person has changed nothing, their values are laid on the record at once — no change to save — and said: <em>Mona Adel changed Price.</em> After a change of theirs, it waits as the conflict a save would meet, the banner above saying who changed what, with Reload and Keep mine; their typing is never touched. A change without its ${c('values')} is read (${c('load')}); one whose ${c('version')} is this form's own save is let go. ${c("{ type: 'deleted' }")} is said.</p>
+<p>${c('presence(request, push)')} is asked with this person (${c('user')}) and whether they are changing the record (${c('editing')}), and asked again as that turns: push the others with it open, each ${c('{ id, name, editing? }')}. Over the record: their initials, a ring round whoever is editing, and <em>Also here: Mona Adel (editing)</em>.</p>
+${code(
+  'ts',
+  `
+const source: DataSource = {
+  ...rest,
+  subscribe: ({ model, id }, push) => socket.on(\`\${model}/\${id}\`, (change) => push({ type: 'record', ...change })),
+  presence: ({ model, id, user, editing }, push) => socket.join(\`\${model}/\${id}\`, { user, editing }, (people) => push(people)),
+};`
+)}
+<p>@fieldia/chatter's source has ${c('subscribe(record, push)')} too, pushing ${c("{ type: 'message' }")} and ${c("{ type: 'delivery' }")}: the same call with types that never meet, so one function of yours on one socket may serve both — each takes only its own ${c('type')}. The memory source does both with ${c('live: true')}: ${c('changeElsewhere')} pushes, ${c('arrive')} and ${c('leave')} bring others in and out. It all comes in a part of its own, ${c('fieldia.live.js')}, asked for only where your source has either member.</p>
 
 <h2 id="templates">Record templates</h2>
 <p>A page with ${c('"templates": true')} has a <strong>Templates</strong> menu over its record: <em>Save as template…</em> keeps what the record holds by a name — "Botox package", "Standard lease" — and a new record starts from one, its values written as the person's own changes (Ctrl+Z takes each back). Kept: every field a person fills in — never the record's name, a file, a value worked out or locked — or the page's ${c('templates.fields')} alone; a table's lines without their ids. A name already kept is replaced. Through your source's ${c('templates')}, ${c('saveTemplate')} and ${c('deleteTemplate')}, shared as you share them; without them, in the viewer's ${c('preferences')}: the person's own.</p>

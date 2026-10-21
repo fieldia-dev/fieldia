@@ -66,6 +66,8 @@ export const fr: Messages = {
   mayNotDuplicate: 'Vous ne pouvez pas dupliquer cet enregistrement.',
   mayNotDelete: 'Vous ne pouvez pas supprimer cet enregistrement.',
   theirsUnread: 'Leur version n’a pas pu être lue : la vôtre n’a donc pas été enregistrée par-dessus. Réessayez Garder les miennes, ou Recharger.',
+  deletedElsewhere: 'Cet enregistrement a été supprimé ailleurs.',
+  deletedBy: '{name} a supprimé cet enregistrement.',
   discardChanges: 'Abandonner vos modifications ?',
   recordReplaced: 'Un autre enregistrement est affiché : le reste de ces étapes n’a pas été exécuté.',
   pressDone: 'Fait : {label}',

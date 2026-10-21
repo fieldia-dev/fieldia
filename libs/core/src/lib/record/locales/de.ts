@@ -66,6 +66,8 @@ export const de: Messages = {
   mayNotDuplicate: 'Sie können diesen Datensatz nicht duplizieren.',
   mayNotDelete: 'Sie können diesen Datensatz nicht löschen.',
   theirsUnread: 'Die andere Fassung konnte nicht gelesen werden, darum wurde Ihre nicht darüber gespeichert. Versuchen Sie Meine behalten erneut, oder Neu laden.',
+  deletedElsewhere: 'Dieser Datensatz wurde anderswo gelöscht.',
+  deletedBy: '{name} hat diesen Datensatz gelöscht.',
   discardChanges: 'Ihre Änderungen verwerfen?',
   recordReplaced: 'Jetzt wird ein anderer Datensatz angezeigt: die übrigen Schritte wurden nicht ausgeführt.',
   pressDone: 'Erledigt: {label}',

@@ -66,6 +66,8 @@ export const ar: Messages = {
   mayNotDuplicate: 'لا يمكنك استنساخ هذا السجل.',
   mayNotDelete: 'لا يمكنك حذف هذا السجل.',
   theirsUnread: 'تعذّرت قراءة نسختهم، فلم تُحفظ تغييراتك فوقها. جرّب «إبقاء تغييراتي» مرة أخرى، أو «إعادة التحميل».',
+  deletedElsewhere: 'حُذف هذا السجل في مكان آخر.',
+  deletedBy: 'حذف {name} هذا السجل.',
   discardChanges: 'هل تريد تجاهل تعديلاتك؟',
   recordReplaced: 'يُعرض الآن سجل آخر: لم تُنفَّذ بقية هذه الخطوات.',
   pressDone: 'تم: {label}',
