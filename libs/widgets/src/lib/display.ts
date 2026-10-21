@@ -103,9 +103,10 @@ export interface ShownWith {
 export function cellText(def: LineField, value: Value | undefined, values: Record<string, Value> = {}, locale: Locale = 'en', parent?: Readonly<Record<string, Value>>, shown: ShownWith = {}): string {
   // An analytic distribution in a cell: its shares, "60% · 40%".
   if (shown.widget === 'distribution' && def.type === 'json') return distributionWords(value, locale);
-  // A repeat rule in words, once the schedule part has come (the page asks for it first).
-  const schedule = shown.widget === 'repeat' ? schedulePartIn() : undefined;
+  // A repeat rule and a week's hours in words, once the schedule part has come (the page asks for it first).
+  const schedule = shown.widget === 'repeat' || shown.widget === 'hours' ? schedulePartIn() : undefined;
   if (schedule && shown.widget === 'repeat') return schedule.repeatWords(value, locale, WIDGET_LABELS[locale] ?? WIDGET_LABELS.en);
+  if (schedule && shown.widget === 'hours') return value ? schedule.hoursWords(value, locale, WIDGET_LABELS[locale] ?? WIDGET_LABELS.en, Number(shown.options?.['weekStart'] ?? 1)) : '';
   return shownNumber(shown.widget, def as never, value, locale, shown.options as Record<string, unknown>) ?? displayValue(def, value, values, locale, parent);
 }
 

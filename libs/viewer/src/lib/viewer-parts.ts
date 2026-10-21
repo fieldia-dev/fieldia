@@ -196,7 +196,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       if (node['optionalColumns']) found.add(columnsPart);
       if (node['search'] === 'fields') found.add(filtersPart);
       if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
-      // A column of repeat rules, said in words.
+      // A column of repeat rules or of opening hours, said in words.
       if (scheduleColumns(node as { cells?: unknown })) found.add(schedulePart);
     }
     // A related list is drawn by the list part's table, its records' phones as its own fields say, its rows as cards
@@ -240,8 +240,8 @@ export function owedParts(later: readonly string[] | undefined): Part[] {
 }
 
 /** A list's columns whose numbers it writes as people read them: those it shows as a phone (`cells.<field>.widget`), where its page or the cell's options say so. */
-/** Whether a list's cells say a repeat rule in words: the schedule part's. */
-const scheduleColumns = (list: { cells?: unknown }) => Object.values((list.cells ?? {}) as Record<string, { widget?: string } | undefined>).some((cell) => cell?.widget === 'repeat');
+/** Whether a list's cells say a repeat rule or a week's hours in words: the schedule part's. */
+const scheduleColumns = (list: { cells?: unknown }) => Object.values((list.cells ?? {}) as Record<string, { widget?: string } | undefined>).some((cell) => cell?.widget === 'repeat' || cell?.widget === 'hours');
 
 export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unknown }): string[] {
   const cells = (list.cells ?? {}) as Record<string, { widget?: string; options?: Record<string, unknown> } | undefined>;

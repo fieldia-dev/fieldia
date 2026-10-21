@@ -107,8 +107,9 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
   { id: 'date-range', label: 'Range of dates', group: 'more', field: (label) => ({ type: 'date', label }), widget: 'daterange' },
   // A booking's time picked from the times the app has free (its data source's slots): the date and time box without them.
   { id: 'booking-slots', label: 'Booking slots', group: 'more', field: (label) => ({ type: 'datetime', label }), widget: 'slots' },
-  // How often something comes back, kept as an iCalendar rule.
+  // How often something comes back, kept as an iCalendar rule; a week's opening hours, as a booking schedule reads them.
   { id: 'repeat', label: 'Repeat rule', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'repeat' },
+  { id: 'opening-hours', label: 'Opening hours', group: 'more', field: (label) => ({ type: 'json', label }), widget: 'hours' },
   { id: 'colour', label: 'Colour', group: 'more', field: (label) => ({ type: 'integer', label }), widget: 'color' },
   { id: 'copy', label: 'Text to copy', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'copy' },
   { id: 'pdf', label: 'PDF shown inline', group: 'more', field: (label) => ({ type: 'binary', label, accept: ['application/pdf'] }), widget: 'pdf' },
@@ -120,7 +121,7 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
 ];
 
 /** The business kinds whose own settings are the widget's alone: shown for a field of the model too, which keeps what it holds. */
-export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['code', 'vscode', 'priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'repeat', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties']);
+export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['code', 'vscode', 'priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'repeat', 'opening-hours', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties']);
 
 /** The kind a field was made as, from its type and widget — an app's kind by the widget that draws it; null for one no kind makes. */
 export function kindOfField(field: Field, node: FieldNode): string | null {
@@ -177,6 +178,7 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
     case 'json':
       if (node.widget === 'code') return 'code';
       if (node.widget === 'monaco') return 'vscode';
+      if (node.widget === 'hours') return 'opening-hours';
       return node.widget === 'address' || node.widget === 'distribution' || node.widget === 'tax-totals' || node.widget === 'payments' ? node.widget : null;
     case 'properties':
       return 'properties';
@@ -271,6 +273,7 @@ const BUSINESS_FITS: Record<string, (field: Field) => boolean> = {
   'date-range': (field) => field.type === 'date' || field.type === 'datetime',
   'booking-slots': (field) => field.type === 'datetime',
   repeat: (field) => field.type === 'char',
+  'opening-hours': (field) => field.type === 'json',
   colour: (field) => field.type === 'integer' || field.type === 'char',
   copy: (field) => field.type === 'char' || field.type === 'text',
   pdf: (field) => field.type === 'binary' && !field.multiple,

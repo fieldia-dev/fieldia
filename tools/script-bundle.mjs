@@ -1025,7 +1025,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 //   checked (0.20); the menu and its dialogs in fieldia.templates.js, to 512.8.
 // - A repeat field: its kind checked (0.26), a list's cell of it said in words once its part came (0.12), its widget's
 //   holder and a box of its refusing as a field's (0.30); in fieldia.schedule.js, to 513.5.
-const BUDGET_KB = 513.5;
+// - A week's opening hours: its kind and its week's start checked (0.22), a list's cell of it said in words (0.09), its
+//   widget's holder (0.10); in fieldia.schedule.js beside the repeat field's, to 513.9.
+const BUDGET_KB = 513.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1261,8 +1263,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
 // Wave 6, w6-records (each listed with the raw budget above): Undo and Redo while filling, 1.25 more, to 167.4; Undo
 // after a one-tap press, 0.85 more, to 168.3; record templates' place, 0.30 more, to 168.6; a repeat field's check and
-// holder, 0.22 more, to 168.9.
-const GZIP_BUDGET_KB = 168.9;
+// holder, 0.22 more, to 168.9; opening hours' checks and holder, 0.18 more, to 169.0.
+const GZIP_BUDGET_KB = 169.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

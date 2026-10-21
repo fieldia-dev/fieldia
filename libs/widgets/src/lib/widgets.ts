@@ -1049,9 +1049,10 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'datetime.daterange': dateRangeOf('datetime'),
   // A booking's time picked from those free, asked of the data source's slots: the date and time box without them.
   'datetime.slots': partFactory(slotsPart, (part) => part.slotsWidget, plainDateWidget('datetime')),
-  // How often something comes back, kept as an iCalendar rule and said in words (the schedule part): the rule as
-  // written meanwhile.
+  // How often something comes back, kept as an iCalendar rule and said in words; a week's opening hours, a shift a
+  // row (the schedule part): the rule as written, the hours as JSON, meanwhile.
   'char.repeat': partFactory(schedulePart, (part) => part.repeatWidget(createWidget), textWidget('text')),
+  'json.hours': partFactory(schedulePart, (part) => part.hoursWidget(createWidget), jsonWidget),
   // A live timer, the time logged and the time running from a start: Flectra's mrp_timer.
   'float.timer': business((part) => part.timerWidget, plainTimer),
   'datetime.timer': business((part) => part.timerWidget, plainTimer),

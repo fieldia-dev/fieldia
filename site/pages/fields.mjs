@@ -18,7 +18,7 @@ const ROWS = [
   ['reference', 'A link to a record of one of several models', '', 'models'],
   ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', 'pdf (shown inline)', 'accept, maxSize, multiple, minFiles, maxFiles, shrink'],
   ['image', 'An image, with a preview; several with multiple, as thumbnails, cards or a list', '', 'maxSize, multiple, minFiles, maxFiles, shrink'],
-  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), monaco (with @fieldia/monaco), place and area (with @fieldia/map), address, distribution, tax-totals, payments', ''],
+  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), monaco (with @fieldia/monaco), place and area (with @fieldia/map), address, distribution, tax-totals, payments, hours (a week’s opening hours)', ''],
   ['properties', 'Extra values, each edited with the field for its type', '', 'definitions, definitionsFrom'],
 ];
 
@@ -101,6 +101,14 @@ ${code(
   `
 { "type": "field", "id": "f-sessions", "field": "sessions", "widget": "repeat", "options": { "startField": "first_session" } }
 // "sessions": "FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;COUNT=6"`
+)}
+
+<h2 id="hours">A week's opening hours</h2>
+<p>${c('"widget": "hours"')} on a json field is a week's opening hours: a row a weekday, open or closed, its shifts from and to — <em>Add a break</em> splits the last at its middle — a shift taken away, and a day's hours copied to every day. Its value is what a booking schedule reads (the memory source's ${c('scheduleSlots')} reads it as ${c('hours')}): by ISO weekday, ${c('"1"')} Monday to ${c('"7"')} Sunday, each day's shifts in order; a day not named is closed. A shift that ends before it starts, or overlaps another, is said under its day and the record is not saved until it is put right. ${c('weekStart')} (1 to 7) is the day its week starts on, Monday unless said. At rest and in a list's column: <em>Mon–Fri 09:00–13:00, 14:00–18:00 · Sat 10:00–14:00 · Sun closed</em>. In the designer: the kind Opening hours.</p>
+${code(
+  'json',
+  `
+{ "1": [["09:00", "13:00"], ["14:00", "18:00"]], "2": [["09:00", "18:00"]], "6": [["10:00", "14:00"]] }`
 )}
 
 <h2 id="options">Widget options</h2>

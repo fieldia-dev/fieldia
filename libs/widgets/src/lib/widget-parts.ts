@@ -41,7 +41,7 @@ export type SurveyPart = typeof SurveyModule;
 export type PhonePart = typeof PhoneModule;
 /** The slots part: a booking's time picked from the times free, on a month shaded by how its days are booked. */
 export type SlotsPart = typeof SlotsModule;
-/** The schedule part: a repeat field — its rule, its words. */
+/** The schedule part: a repeat field — its rule, its words — and a week's opening hours. */
 export type SchedulePart = typeof ScheduleModule;
 /** The relations part: links to other records — a many2one's and a reference's box, a many2many's tags and checkboxes, a char field's tags. */
 export type RelationsPart = typeof RelationsModule;
@@ -109,12 +109,12 @@ export const surveyPart: Part<SurveyPart> = lazyPart('survey', () => import('./s
 export const slotsPart: Part<SlotsPart> = lazyPart('slots', () => Promise.all([import('./slots-part'), datePart.load()]).then(([module]) => module));
 
 /**
- * A repeat field, loaded the first time a page shows one, or a list's column of them — with the date part, whose box
- * its end day is: in when both are.
+ * A repeat field and a week's opening hours, loaded the first time a page shows one, or a list's column of them — with
+ * the date part, whose boxes their days and times are: in when both are.
  */
 export const schedulePart: Part<SchedulePart> = lazyPart('schedule', () => Promise.all([import('./schedule-part'), datePart.load()]).then(([module]) => module));
 /**
- * The schedule part's code once it has come, for a cell's words (a repeat rule said): a function, as
+ * The schedule part's code once it has come, for a cell's words (a repeat rule said, a week's hours): a function, as
  * `datePartIn` is — a part takes the main script's names as they stood when it started.
  */
 export function schedulePartIn(): SchedulePart | undefined {

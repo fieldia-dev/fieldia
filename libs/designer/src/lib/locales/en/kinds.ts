@@ -45,6 +45,7 @@ export const kinds = {
     'date-range': 'Range of dates',
     'booking-slots': 'Booking slots',
     repeat: 'Repeat rule',
+    'opening-hours': 'Opening hours',
     colour: 'Colour',
     copy: 'Text to copy',
     pdf: 'PDF shown inline',

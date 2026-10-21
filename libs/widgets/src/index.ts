@@ -69,9 +69,10 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // country's numbers: `(await phonePart.load()).readPhone(…)`, `.writePhone(…)`. Whether a field reads so is here.
 // Booking slots (`"widget": "slots"`) come in the slots part, with the date part.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-// A repeat field comes in the schedule part, with the date part: `(await schedulePart.load()).repeatWords(…)`,
-// `.readRule(…)`.
+// A repeat field and a week's opening hours come in the schedule part, with the date part: `(await schedulePart.load())
+// .repeatWords(…)`, `.hoursWords(…)`, `.readRule(…)`.
 export type { RepeatRule, RepeatFrequency, Weekday } from './lib/repeat-rule';
+export type { Shift, WeekHours } from './lib/hours';
 export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type SurveyPart, type PhonePart, type SlotsPart, type SchedulePart, type RelationsPart, type PartFactory } from './lib/widget-parts';
 export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`

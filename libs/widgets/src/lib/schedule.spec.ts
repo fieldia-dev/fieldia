@@ -1,9 +1,11 @@
-import { createForm, type Field, type FieldNode, type Page, type Values } from '@fieldia/core';
+import { createForm, scheduleSlots, createMemoryDataSource, type Field, type FieldNode, type Page, type Values } from '@fieldia/core';
 import { WIDGET_LABELS } from './labels';
+import { hoursWords, shiftProblem, weekHours } from './hours';
 import { createWidget } from './widgets';
 
 /**
- * A repeat field, drawn and changed as a person does: the rule kept as iCalendar's RRULE and said in words.
+ * A repeat field and a week's opening hours, drawn and changed as a person does: the rule kept as iCalendar's RRULE
+ * and said in words; the hours as a booking schedule reads them, a day's shifts checked, copied to every day.
  */
 
 const page = {
@@ -13,18 +15,20 @@ const page = {
   fields: {
     first_session: { type: 'date', label: 'First session' },
     sessions: { type: 'char', label: 'Sessions' },
+    hours: { type: 'json', label: 'Opening hours' },
   },
   layout: {
     type: 'sections',
     id: 'root',
     children: [
       { type: 'field', id: 'f-sessions', field: 'sessions', widget: 'repeat', options: { startField: 'first_session' } },
+      { type: 'field', id: 'f-hours', field: 'hours', widget: 'hours' },
     ],
   },
 } as unknown as Page;
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-async function mount(field: 'sessions', values: Values = {}) {
+async function mount(field: 'sessions' | 'hours', values: Values = {}) {
   const form = createForm({ page, values: { first_session: '2026-11-03', ...values } });
   const node = (page.layout as { children: FieldNode[] }).children.find((one) => one.field === field) as FieldNode;
   const widget = createWidget({ form, name: field, field: page.fields[field] as Field, node, id: `fd-${field}`, document, labels: WIDGET_LABELS.en });
@@ -96,3 +100,53 @@ describe('a repeat field', () => {
   });
 });
 
+describe("a week's opening hours", () => {
+  const MONDAY = { '1': [['09:00', '13:00'], ['14:00', '18:00']] };
+
+  it('says the week in words, days in a row with the same hours together', () => {
+    const week = { '1': [['09:00', '17:00']], '2': [['09:00', '17:00']], '3': [['09:00', '17:00']], '6': [['10:00', '14:00']] };
+    expect(hoursWords(week, 'en', WIDGET_LABELS.en)).toBe('Mon–Wed 09:00–17:00 · Thu–Fri closed · Sat 10:00–14:00 · Sun closed');
+    expect(hoursWords({}, 'en', WIDGET_LABELS.en)).toBe('Closed every day');
+    expect(hoursWords(week, 'en', WIDGET_LABELS.en, 6)).toBe('Sat 10:00–14:00 · Sun closed · Mon–Wed 09:00–17:00 · Thu–Fri closed');
+  });
+
+  it('finds a shift ending before it starts, and two that overlap', () => {
+    expect(shiftProblem([['13:00', '09:00']], 'Monday', WIDGET_LABELS.en)).toBe('Monday: 13:00–09:00 ends before it starts');
+    expect(shiftProblem([['09:00', '13:00'], ['12:00', '15:00']], 'Monday', WIDGET_LABELS.en)).toBe('Monday: 09:00–13:00 and 12:00–15:00 overlap');
+    expect(shiftProblem([['09:00', '13:00'], ['14:00', '18:00']], 'Monday', WIDGET_LABELS.en)).toBeNull();
+  });
+
+  it('opens a day with the hours of the open day before it, closes it, and copies a day to every day', async () => {
+    const { el, value } = await mount('hours', { hours: MONDAY });
+    const tuesday = el.querySelector('[data-day="2"] input[type="checkbox"]') as HTMLInputElement;
+    tuesday.click();
+    expect(value()).toEqual({ ...MONDAY, '2': MONDAY['1'] });
+    tuesday.click();
+    expect(value()).toEqual(MONDAY);
+    const copy = [...el.querySelectorAll<HTMLButtonElement>('[data-day="1"] button')].find((button) => button.textContent === 'Copy to all days') as HTMLButtonElement;
+    copy.click();
+    expect(Object.keys(weekHours(value()))).toEqual(['1', '2', '3', '4', '5', '6', '7']);
+  });
+
+  it('adds a break in the last shift, an hour at its middle', async () => {
+    const { el, value } = await mount('hours', { hours: { '3': [['09:00', '17:00']] } });
+    const add = [...el.querySelectorAll<HTMLButtonElement>('[data-day="3"] button')].find((button) => button.textContent === 'Add a break') as HTMLButtonElement;
+    add.click();
+    expect(value()).toEqual({ '3': [['09:00', '12:30'], ['13:30', '17:00']] });
+  });
+
+  it('a shift that ends before it starts is said under its day, and the form refuses to save', async () => {
+    const { el, form } = await mount('hours', { hours: { '1': [['13:00', '09:00']] } });
+    await settle();
+    expect(el.querySelector('[data-day="1"] .fd-hours-error')?.textContent).toBe('Monday: 13:00–09:00 ends before it starts');
+    expect(form.validate()).toBe(false);
+  });
+
+  it('is what a booking schedule reads: the slots offered are within its hours', () => {
+    const slots = scheduleSlots({ branch: { timeZone: 'UTC', hours: { 1: [['09:00', '10:00']] } } }, { now: () => new Date('2026-11-01T00:00:00Z') });
+    const source = createMemoryDataSource({ slots });
+    return source.slots?.({ model: 'visit', field: 'at', recordId: null, schedule: 'branch', from: '2026-11-02', to: '2026-11-02', timeZone: 'UTC', length: 30, values: {} }).then((found) => {
+      expect(found.days['2026-11-02'].free).toEqual(['2026-11-02T09:00:00.000Z', '2026-11-02T09:30:00.000Z']);
+    });
+  });
+});

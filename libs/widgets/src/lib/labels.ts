@@ -438,7 +438,22 @@ export interface WidgetLabels {
   repeatKept: string;
   /** Every how many, or how many times: a whole number, 1 or more. */
   repeatAtLeastOne: string;
+  /** A week's opening hours (`"widget": "hours"`, the schedule part): a day's switch, its shifts' boxes and tools, what is wrong with them, and the week in words. `{day}` a weekday's name; `{from}`, `{to}` times. */
+  hoursOpenOn: string;
+  hoursOpen: string;
+  hoursClosed: string;
+  hoursOpens: string;
+  hoursCloses: string;
+  hoursAddBreak: string;
+  hoursRemove: string;
+  hoursCopyAll: string;
+  hoursCopied: string;
+  hoursEndsFirst: string;
+  hoursOverlap: string;
+  hoursNoTime: string;
+  hoursAllClosed: string;
   /** Days in a row with the same hours: `{first}` to `{last}`. */
+  hoursDays: string;
   rankTop: string;
   /** A total that cannot be added up while line `{n}` holds text that does not read. */
   totalWaits: string;
@@ -835,6 +850,20 @@ const en: WidgetLabels = {
   repeatOrdinals: 'st nd rd th',
   repeatKept: 'Kept as it is, which this box cannot change: {rule}',
   repeatAtLeastOne: 'A whole number, 1 or more',
+  hoursOpenOn: 'Open on {day}',
+  hoursOpen: 'Open',
+  hoursClosed: 'Closed',
+  hoursOpens: '{day}: opens',
+  hoursCloses: '{day}: closes',
+  hoursAddBreak: 'Add a break',
+  hoursRemove: 'Remove {from}–{to}',
+  hoursCopyAll: 'Copy to all days',
+  hoursCopied: '{day}’s hours copied to every day',
+  hoursEndsFirst: '{day}: {from}–{to} ends before it starts',
+  hoursOverlap: '{day}: {one} and {other} overlap',
+  hoursNoTime: '{day}: give each shift its start and its end',
+  hoursAllClosed: 'Closed every day',
+  hoursDays: '{first}–{last}',
   rankTop: 'Only the top {max} are ranked; take one out to rank another',
   totalWaits: 'Fix line {n} to see this total',
   cellWaits: 'Fix {column} to see this line’s {own}',

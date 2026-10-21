@@ -118,10 +118,16 @@ times. Its value is an iCalendar rule (`FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;
 COUNT=6`), said in words under its boxes and at rest — "Every 2 weeks on
 Tuesday and Thursday, 6 times" — in a list's column too. `options.startField`
 names the date it starts from. A rule it cannot change is kept as written,
-and said so. It comes in a part of its own, `fieldia.schedule.js`
-(`schedulePart`), with the date part, whose box its end day is;
-`(await schedulePart.load()).repeatWords(rule, locale, labels)` says a rule in
-words for your own code.
+and said so. `"widget": "hours"` on a json field is a week's opening hours: a
+row a weekday, open or closed, its shifts (Add a break splits the last), a
+day's hours copied to every day; its value is a booking schedule's hours —
+`{ "1": [["09:00", "13:00"], ["14:00", "18:00"]] }`, by ISO weekday, a day not
+named closed — and a shift ending before it starts, or overlapping another,
+keeps the record from being saved, said under its day. `options.weekStart`
+(1–7) starts its week. Both come in a part of their own, `fieldia.schedule.js`
+(`schedulePart`), with the date part, whose boxes their days and times are;
+`(await schedulePart.load()).repeatWords(rule, locale, labels)` and
+`.hoursWords(value, locale, labels)` say a value in words for your own code.
 
 What is pasted into a formatted text (`html`) from Word, Excel, Google Docs or
 Google Sheets — or copied from any page — comes in plain, in the field's own

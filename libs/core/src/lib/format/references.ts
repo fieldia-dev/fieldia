@@ -854,8 +854,11 @@ export class ReferenceCheck {
     // with them in the one-tag script.
     if (node.widget === 'slots' && def && def.type !== 'datetime') this.report(`${path}.widget`, `slots is for a datetime field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'slots') checkSlots(node, path, this.fieldTools());
-    // A repeat rule is kept as text (the schedule part's).
+    // A repeat rule is kept as text, a week's opening hours as JSON (the schedule part's).
     if (node.widget === 'repeat' && def && def.type !== 'char') this.report(`${path}.widget`, `repeat is for a char field; "${node.field}" is a ${def.type}`);
+    if (node.widget === 'hours' && def && def.type !== 'json') this.report(`${path}.widget`, `hours is for a json field; "${node.field}" is a ${def.type}`);
+    const weekStart = node.widget === 'hours' ? node.options?.['weekStart'] : undefined;
+    if (weekStart !== undefined && !(Number.isInteger(weekStart) && (weekStart as number) >= 1 && (weekStart as number) <= 7)) this.report(`${path}.options.weekStart`, 'weekStart is a weekday, 1 (Monday) to 7 (Sunday)');
     if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
     if (def) this.checkPicker(node, def, path);
