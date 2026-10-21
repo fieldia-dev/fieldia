@@ -15,7 +15,7 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  *
  * The times are Fieldia's time boxes, with their input rules; a shift that ends before it starts, or overlaps
  * another, is said under its day and the field refuses a save until it is put right — the times stay as typed. The
- * week starts on the page's `options.weekStart` (1 Monday … 7 Sunday), Monday unless it says. At rest, in words:
+ * week starts on the field's `options.weekStart` (1 Monday … 7 Sunday), Monday unless it says. At rest, in words:
  * "Mon–Fri 09:00–13:00, 14:00–18:00 · Sat 10:00–14:00 · Sun closed".
  *
  * Each time box is drawn by `widgetFor`, the main script's createWidget, as a property's row is. It comes in the
