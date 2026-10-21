@@ -165,6 +165,13 @@ without `bbox` zooms two steps in when pressed. `createMemoryDataSource({
 clusters: gridClusters() })` answers it from the records it keeps, as such a
 server does.
 
+The map gathers the source's bubbles at 60 pixels (`radius`, the request's too),
+wider than its own 48, so that bubbles with their counts never overlap. Not done
+yet, for 0.29: a bubble carries no ids, so a record chosen inside one shows its
+tick only once it stands alone; shaded areas without `groups` count only the
+records the map holds, here its points; and the one-tag script's memory source
+does not answer `clusters` (no map comes in that script).
+
 ## A list's map in a page of your own
 
 A page that is not Fieldia's — its own list, filters and address — shows a list's

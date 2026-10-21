@@ -224,6 +224,13 @@ taking of photos, files on their way and dialog it draws with; a plain picture
 field never asks for it. The crop's geometry is there for an app's own:
 `(await photosPart.load()).drawEdited(document, picture, { turn: 90, crop })`.
 
+Not done yet, for 0.29: a photo set inside a table line's cell is untested;
+pictures a second crop or Put back the original replaced stay in your store
+(the form never deletes a stored file: they are your store's to clean); a photo
+stored on another site is cropped only where that store lets the page read it
+(CORS) — else the dialog says it cannot be read, with nothing to apply. AI help
+never proposes a photo set's photos, as it never proposes a file.
+
 A line's choice from the app's lists (`optionsFrom` on a line's selection, its
 `dependsOn` naming a column of the line or `parent.` and a field of the record)
 draws each line's own choices: the cell's form (`lineForm`) gives the line's

@@ -385,6 +385,16 @@ hidden where the source has no member for it. Its words are the viewer's labels
 (`assistFill`, `assistAccept`, `assistUndo`, `assistDraft`, `assistWords`, …).
 See [AI help](https://fieldia.dev/data/#ai).
 
+A text kept in several languages (`translate`) is filled in one language alone:
+the one its switch shows, else the reader's — `suggest` is told which, by field
+(`languages`), and `rewrite` is given that language's words (`language`) — and
+the proposal says it ("Proposed in English"); the others stay as they were, each
+typed by a person, never translated by a machine. Fill from text asks for the
+kinds a proposal fills alone: a file, a picture or a photo set, JSON, properties
+and a matrix are never asked nor filled. A field scanned into with the camera
+(`options.scan`) takes a proposal as any text does, its Scan button kept beside
+it.
+
 ```ts
 const handle = mountViewer(element, { page, dataSource });
 await handle.propose({ city: 'Amman', country_id: 'Jordan' }, { why: 'From the agent’s last call' });
@@ -458,6 +468,11 @@ page's parts where it has `approval`. Their words are the viewer's labels
 (`approvalWaiting`, `approvalApprove`, `approvalReject`, …). See
 [approvals on a record](https://fieldia.dev/data/#approvals).
 
+The lock is a record page's. A list whose cells change in place (`editable`)
+knows nothing of approvals: a record waiting for one is locked in such a list
+only through the `can.edit` your source gives its row — say `edit: false` there
+for a record that waits, as your server refuses its save.
+
 ## One text in several languages
 
 A field with `translate` (`["ar", "en"]`, @fieldia/core's README) is drawn as a
@@ -467,6 +482,19 @@ cells and cards show the text in the page's language, else another's marked with
 it, written its own way. A save refused in a language shows that language and takes
 the focus to its box. A related list's or a many2many's records' fields may say
 `translate` too: their cells read the same way.
+
+A list whose cells change in place never opens such a field's cell — each language
+is typed under its switch, on the record's own page, and a press on its cell opens
+the record — and a page naming one in `editable.fields` is refused, with why. AI
+help fills the one language the person is looking at (the switch's, else the
+reader's), never the others: see AI help above.
+
+Not done yet, for 0.29: a table's line keeps one language (`translate` there is
+refused); the exported `matchesFilter` judges one text — only the memory source
+finds a record by any of its languages; Export writes the reader's language
+alone, and Import reads one text, taken as the first language; the quiet look
+leaves the switch's tabs boxed; a map's pins and cards show the reader's
+language without the mark.
 
 ## Lists
 
@@ -591,6 +619,16 @@ button where your app opens records. It comes in a part of its own
 (`editablePart`, `fieldia.editable.js`), loaded only for such a list; a row is
 a form made as the page's own (its words, clock, person and functions). See
 [cells changed in place](https://fieldia.dev/lists/#editable).
+
+A text kept in several languages (`translate`) is never changed in a cell: a
+cell holds one box, and each language is typed under its switch on the record's
+page — with `true` its column is read as ever and a press opens the record;
+named in `fields`, the page check refuses it, saying why. A row knows nothing of
+approvals: a record waiting for one is locked here only through its `can.edit`,
+which your source gives. Not done yet, for 0.29: the list page's own `on` steps
+do not run in a row's form; in someone else's save, a worked-out column counts
+as "you both changed", as on a record's page; `startValues` fills a new row from
+the list's fixed `=` conditions, but not a link.
 
 ### A related list inside a record
 

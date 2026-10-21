@@ -1081,6 +1081,10 @@ who, when and why. A timed-out step is the engine's to say: a `rejected` with it
   rejection with no reason; the person is the request's `user`, by id, else by name. `approvalHistory` (by `model:id`)
   is what it starts from. Tests: `libs/core/src/lib/record/approvals.spec.ts`, `form-approvals-lazy.spec.ts`,
   `libs/viewer/src/lib/approvals.spec.ts`, `libs/chatter/src/lib/approvals.spec.ts`, `e2e/approvals.spec.ts`.
+- **A list whose cells change in place** (§21) knows nothing of approvals: a record waiting for one is locked there only
+  through the `can.edit` the source gives its row. The lock, `approval.open` and the band are a record page's.
+- **In the conversation** (`chatterSlot`, §19): the history is told among the messages, each entry's time written as the
+  chatter writes a message's — the page's date boxes, on its clock: one way to write a time in the conversation.
 
 ## 21. A list's cells changed in place (Wave 5, lane w5-editable-list)
 
@@ -1119,6 +1123,14 @@ In plain words:
   `SaveResult.values` replace them. A value worked out from an answer the form refuses waits (0.28), said in the cell.
 - **Late answers.** Each row's form keeps its own generation (§10): a save answered for a row put back or released lays
   nothing on it; a paste's names looked up after the list asked again write on none.
+- **A text kept in several languages** (`translate`, §22) is no cell to change: a cell holds one box, and each language
+  is a person's to type under its switch, on the record's page. With `true` its column is read as any other, a press on
+  it opens the record; named in `fields`, the page check refuses it (`cellChangeable`, `checkEditable`).
+- **Approvals** (§20): a row knows nothing of them. A record waiting for approval is locked in such a list only through
+  its `can.edit`, the source's; `approval.open` and the band are a record page's.
+- **Not done yet (0.29)**: the list page's own `on` steps do not run in a row's form; in a conflict note a worked-out
+  column counts as "you both changed", as on a record's page; `startValues` fills a new row from the list's fixed `=`
+  conditions, never a link.
 - **The memory source** answers all of it as it is; nothing new. Tests: `libs/core/src/lib/format/list-editable.spec.ts`,
   `libs/viewer/src/lib/list-editable.spec.ts`, `e2e/list-editable.spec.ts`.
 
@@ -1158,6 +1170,11 @@ In plain words:
   list's order, a Group By's heading — in its `language` option's (the reader's tag: the demos pass the page's), else the
   first typed.
   `matchesFilter` itself judges one text, as before. Tests: `libs/core/src/lib/record/languages.spec.ts`.
+- **Elsewhere in 0.29**: a list whose cells change in place never opens such a field's cell (§21); AI help fills the one
+  language the person is looking at, never the others (§23).
+- **Not done yet (0.29)**: a table's line keeps one language (`translate` refused there); the exported `matchesFilter`
+  judges one text; Export writes the reader's language alone, Import reads one text, taken as the first language; the
+  quiet look leaves the switch's tabs boxed; a map's pins and cards show the reader's language without the mark.
 
 ## 23. AI help: values proposed, words written, a search read (Wave 5, lane w5-ai)
 
@@ -1232,6 +1249,16 @@ In plain words:
   agent's — the same way, with no `suggest` member; it answers how many were proposed.
 - **Failing.** A member that throws: its message is said (in the dialog, under the field's tools, or under the list's
   bar), and nothing changes.
+- **A text kept in several languages** (`translate`, §22) is filled in one language alone: the one its switch shows, else
+  the reader's (the field's first where neither is one of its own). `suggest` is told which, by field —
+  `SuggestRequest.languages?: Record<string, string>` — and answers that language's text, a string; given an object of
+  languages, only that one is read. `rewrite` gets that language's words and its tag as `language`, and its answer
+  fills it alone. The proposal says the language ("Proposed in English"); the others stay as they were, each typed by a
+  person, never translated by a machine. The stand-in says which language it filled, in its `why`.
+- **What is never asked.** `fields` holds the kinds a proposal fills alone: never a file, a picture or a photo set (§24),
+  JSON, properties or a matrix — the page check refuses one named in `suggest.fields`, as a list's `suggest` (a list
+  whose cells change in place, §21, too). A field scanned into with the camera (§25) is a text a proposal fills as any
+  other, its Scan button kept beside it.
 - The memory source has each member only where its `assist` option answers it: `assistStandIn()` (@fieldia/core, not in
   the one-tag script) is a stand-in with no model — words read by their patterns, the same every time, a draft from the
   app's template (`drafts`, by `model.field`) — whose every `why` begins "Stand-in AI, no model:". Tests:
@@ -1278,6 +1305,9 @@ In plain words:
   cannot be cropped here: the page is not allowed to read it"), with nothing to apply.
 - **Checks.** `validatePage` refuses `photos` on a field that is not an `image` with `multiple`, and options written
   wrong (`aspect` a shape "W:H" no longer than five to one either way); `checkPage` (and the one-tag script) the first.
+- **Not done yet (0.29)**: a photo set inside a table line's cell is untested; pictures replaced by a second crop or
+  Put back the original are the app's store's to clean (the form never deletes a stored file); a crop of a photo on
+  another site needs its store to allow the page to read it (CORS). AI help never proposes a photo set (§23).
 - The memory source keeps the value as it is given; its `upload` answers a crop as any file. Tests:
   `libs/core/src/lib/record/uploads.spec.ts` (replaces), `libs/core/src/lib/format/photos-options.spec.ts`,
   `libs/widgets/src/lib/photos.spec.ts`, `e2e/photos.spec.ts`.
@@ -1378,6 +1408,11 @@ In plain words:
   `zoom + log2(256 / radius)`), a geohash's prefix — each square of two records or more one bubble (`count`, `avg` of
   the places, their `ST_Extent`), a square of one that record. Squares fixed to the world keep a record in its square
   as the map pans.
+- **The map's own gathering** of the source's bubbles is at 60 pixels (the request's `radius` too), wider than its 48 for
+  records it gathers itself, so bubbles with their counts never overlap.
+- **Not done yet (0.29)**: a bubble carries no ids — a record chosen inside one shows its tick once it stands alone;
+  shaded areas without `groups` count only the records the map holds, here its points; the one-tag script's memory
+  source does not forward `clusters`.
 - The memory source has `clusters` where its option says how it answers: `createMemoryDataSource({ records, clusters:
   gridClusters({ models }) })` gathers so (`gridClusters`, @fieldia/core, outside the one-tag script), each point as a
   list's row is (the fields asked, as this person may read them, with its version); a model not named is answered
