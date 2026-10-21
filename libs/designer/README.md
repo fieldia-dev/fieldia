@@ -120,6 +120,18 @@ close before the open, or limits on a record's screen, are refused in words),
 `designer.setContinueLater(on)` and `designer.setOptionDetails(id, index, {
 seats })` the rest; Publish lists each change.
 
+## A record's daily comforts
+
+A button's or a menu item's settings offer **Undo after it** (`undo: true`): in
+place of asking first, what it did is said with Undo for a few seconds. A
+record's screen offers **Templates people save** (`templates: true`). The
+**Repeat rule** and **Opening hours** kinds draw a repeat field and a week's
+hours. What the designer does not set yet — set in the page's JSON, and kept
+as it is by the designer: steps of a button's own for Undo (`undo: [ … ]`), the
+fields a template keeps (`templates: { fields }`), the date a repeat rule starts
+from (`options.startField`) and the day a week's hours start on
+(`options.weekStart`).
+
 ## Trying a field's rules
 
 Under a field's answer rules — on the panel's Rules tab, and in a survey
