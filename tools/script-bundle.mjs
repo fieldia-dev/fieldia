@@ -161,7 +161,7 @@ const asksForParts = (table, parts) => ({
  * Continue later in the limits part, booking slots' settings in the slots part, a signature's in the files part, a page's
  * endings in the answers part, a table of lines' in the lines part, a sheet's statusbar in the business part, options
  * by condition and carried in the options part, the fields a page's link fills in the prefill part, a field's proof by a
- * code in the verify part, and a map's in a part of their own
+ * code in the verify part, a page's payment in the pay part, and a map's in a part of their own
  * (fieldia.mapchecks.js), which the viewer asks for as the check owes it. The packages' `checkPage` runs them at once. Here the main script is built
  * with each module below standing in — its checks owed (`owe`, the reference check's `later`) until its part has come,
  * and the viewer running the check again then, before the page is drawn — and each part's script puts its module's
@@ -180,6 +180,7 @@ const CHECKS_IN_PARTS = {
   options: { file: 'libs/core/src/lib/format/option-checks.ts', names: ['checkOptionRules'] },
   prefill: { file: 'libs/core/src/lib/format/prefill-checks.ts', names: ['checkPrefill'] },
   verify: { file: 'libs/core/src/lib/format/verify-checks.ts', names: ['checkVerify'] },
+  pay: { file: 'libs/core/src/lib/format/payment-checks.ts', names: ['checkPayment'] },
 };
 const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
 const checksLater = {
@@ -1028,7 +1029,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // proofs it carries, `asksCode` and `markVerified` (0.52 in the form), the kit made as the page is drawn and placed
 // under a field (0.37, viewer), the parts' handles and whether a page asks (0.18), the checks owed (0.16), a memory
 // source's two members named (0.04): 507.63 measured before, 508.96 after, to 509.0.
-const BUDGET_KB = 509.0;
+// A payment the answers wait for (0.30, w6-public-forms), its step and its form's side in fieldia.pay.js but what a form
+// and a page need to wait for it: the pay code asked for and waited for at the send's choke point, its conditions read,
+// the payment carried, `paymentDue` and the paid state (0.60 in the form), the step made and placed and the host's `pay`
+// handed to the form (0.44, viewer), the parts' handles (0.12), the checks owed (0.21), the memory member named (0.03):
+// 508.96 measured before, 510.35 after, to 510.4.
+const BUDGET_KB = 510.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1267,7 +1273,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // after, to 166.5.
 // Proof by a code (0.30, w6-public-forms; listed with the raw budget above): the proofs kept and sent, the verify code
 // waited for, the kit placed, the handles, the checks owed — 166.40 measured before, 166.86 after, to 166.9.
-const GZIP_BUDGET_KB = 166.9;
+// A payment the answers wait for (0.30, w6-public-forms; listed with the raw budget above): the pay code waited for at the
+// send, the payment carried, the step placed, the host's pay, the handles, the checks owed — 166.86 measured before,
+// 167.36 after, to 167.4.
+const GZIP_BUDGET_KB = 167.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1452,7 +1461,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // again, Confirmed, and a send refused while not confirmed — 26 words in each: Arabic's 77.88 and 13.29 measured before,
 // 81.19 and 13.75 after, to 81.2 and 13.8; German's 36.27 and 11.64 to 37.56 and 12.00, to 37.6 and 12.1; French's
 // 36.75 and 11.70 to 37.97 and 12.04, to 38.0 and 12.1.
-const ADD_ON_BUDGET_KB = { ar: [81.2, 13.8], de: [37.6, 12.1], fr: [38.0, 12.1] };
+// A payment the answers wait for (0.30, w6-public-forms): Pay and its amount, Back, Cancel, waiting, paid, Pay again,
+// cancelled, failed, not started — 13 words in each: Arabic's 81.19 and 13.75 measured before, 82.53 and 13.94 after,
+// to 82.6 and 14.0; German's 37.56 and 12.00 to 38.18 and 12.17, to 38.2 and 12.2; French's 37.97 and 12.04 to 38.61
+// and 12.21, to 38.7 and 12.3.
+const ADD_ON_BUDGET_KB = { ar: [82.6, 14.0], de: [38.2, 12.2], fr: [38.7, 12.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1853,7 +1866,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // tries left, Confirmed, its sheet and its checks — and the form's side, which fields ask and which are not proved, the
 // proofs kept and sent — waited for by a page with a field asking for a code. A memory source sends and checks codes as
 // a service would — memory 16.10 and 5.72 measured before, 17.34 and 6.26 after, to 17.4 and 6.3.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.4, 6.3], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], prefill: [3.8, 1.9], verify: [10.9, 4.7] };
+// A payment the answers wait for (0.30, w6-public-forms) in a part of its own, fieldia.pay.js (7.51 and 3.25, to 7.6 and
+// 3.3): the payment step — what for, the amount in its currency, the app's slot, Pay inside the press, waiting and Cancel,
+// paid, failed or cancelled and Pay again, Back to the answers — its sheet and its checks, and the form's side: what is
+// due, the payment taken once, a new key started again. A memory source pays as a provider would — memory 17.34 and 6.26
+// measured before, 17.61 and 6.37 after, to 17.7 and 6.4.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.7, 6.4], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], prefill: [3.8, 1.9], verify: [10.9, 4.7], pay: [7.6, 3.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1886,9 +1904,10 @@ const PART_GIVES = {
   mapchecks: ['checkMap', 'checkPlace'],
   prefill: ['linkValues', 'linkParams', 'linkValue'],
   verify: ['watchVerify', 'verifyWays', 'installVerifyStyles', 'formVerify'],
+  pay: ['drawPay', 'amountWords', 'installPayStyles', 'formPayment'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', prefill: 'prefillPart', verify: 'verifyPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', prefill: 'prefillPart', verify: 'verifyPart', pay: 'payPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -2311,7 +2330,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const enquiry = inPage.mountViewer(host, { page: read('unit-enquiry.page.json'), dataSource: inPage.createMemoryDataSource(), url: '?unit=B-12&agent=mona&utm_source=whatsapp' });
   waits(enquiry, 'a page filled from its link');
   await enquiry.drawn;
-  hasIn("an enquiry from a broker's link", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, prefill, print, quiet, relations, slots, survey, text, themes, verify');
+  hasIn("an enquiry from a broker's link", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, pay, phone, prefill, print, quiet, relations, slots, survey, text, themes, verify');
   const linked = enquiry.form.getState().values;
   if (linked.unit !== 'B-12' || linked.agent_code !== 'mona' || linked.utm_source !== 'whatsapp' || enquiry.form.getState().dirty.length) throw new Error(`in a page, the fields a link fills are not where the form starts once the prefill part came: ${JSON.stringify(linked)}`);
   if (host.querySelector('[data-field="agent_code"]')) throw new Error('in a page, a hidden field the link fills is drawn');
@@ -2320,6 +2339,11 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   enquiry.form.setValue('phone', '+201012345678');
   if ([...host.querySelectorAll('[data-node="f-phone"] .fd-verify-send')].map((button) => button.textContent).join() !== 'Send a code by WhatsApp,Send a code by SMS') throw new Error("in a page, a mobile that asks for a code draws no Send a code by its ways");
   if (!doc.getElementById('fieldia-verify-styles')) throw new Error("in a page, the verify part's sheet was never put in");
+  // It takes a reservation fee (`payment`) where the visit reserves, the source paying: the pay part, its step drawn with
+  // the page, hidden until a send waits on it; due once the visit reserves.
+  enquiry.form.setValue('visit', 'reserve');
+  if (!host.querySelector('.fd-pay[hidden]') || enquiry.form.paymentDue()?.amount !== 10000) throw new Error("in a page, a page asking for a payment draws no payment step, or asks no fee");
+  if (!doc.getElementById('fieldia-pay-styles')) throw new Error("in a page, the pay part's sheet was never put in");
   enquiry.destroy();
   gone('enquiry');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
@@ -2336,7 +2360,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
   if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-verify-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-verify-styles', 'fieldia-pay-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
     const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
@@ -2344,7 +2368,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; an enquiry filled from a broker's link, by the prefill part, its mobile asking for a code, by the verify part — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; an enquiry filled from a broker's link, by the prefill part, its mobile asking for a code, by the verify part, its fee, by the pay part — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

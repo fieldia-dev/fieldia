@@ -9,6 +9,7 @@ import { PageRecordsSchema, type PageRecords } from './records';
 import { PageEndingsSchema, type PageEnding } from './endings';
 import { PageLimitsSchema, type PageLimits } from './limits';
 import { PagePrefillSchema, type PagePrefill } from './prefill';
+import { PagePaymentSchema, type PagePayment } from './payment';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -217,6 +218,12 @@ export interface Page {
    * with the answers; one placed shows what the link gave. Never over what the person typed. See `PagePrefill`.
    */
   prefill?: PagePrefill;
+  /**
+   * A payment the answers wait for — a reservation fee, a deposit, a retainer — through the app's own provider (the data
+   * source's `pay`; Fieldia holds no keys): as Submit's checks pass, a payment step shows what is due, Pay hands it to
+   * the app, and nothing is sent until it is paid. Hidden where the source has no `pay`. See `PagePayment`.
+   */
+  payment?: PagePayment;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -305,6 +312,7 @@ export const PageSchema = z
     limits: PageLimitsSchema.optional(),
     continueLater: z.boolean().optional(),
     prefill: PagePrefillSchema.optional(),
+    payment: PagePaymentSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

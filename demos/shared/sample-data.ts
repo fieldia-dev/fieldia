@@ -74,7 +74,7 @@ import { consentPage, sampleConsents } from './consents';
 import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
-import { unitEnquiryPage } from './unit-enquiry';
+import { standInCheckout, unitEnquiryPage } from './unit-enquiry';
 import clinicIntake from '../../examples/pages/clinic-intake.page.json';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 
@@ -486,6 +486,8 @@ export function sampleDataSource() {
     // (shared/appointments.ts), and with its reference, which the page's ending says ("Your booking is B-1043"); every
     // other response with its number.
     submitted: (request, count) => {
+      // An enquiry that reserves a unit: its reservation's reference, which its ending says.
+      if (request.pageId === 'unit-enquiry') return { id: `R-${1200 + count}` };
       if (request.pageId !== 'appointment-booking') return { id: count };
       keepAppointment(source.records, request.values);
       return { id: `B-${1042 + count}` };
@@ -497,6 +499,8 @@ export function sampleDataSource() {
     duplicates: alikeRecords(),
     // The sign-ups already counted, as the server's limits answer (shared/event-signup.ts).
     limits: EVENT_COUNTS,
+    // A payment the answers wait for, through a stand-in for the app's provider's checkout (shared/unit-enquiry.ts).
+    pay: (request) => standInCheckout(request),
     // The drafts the server keeps, and the link Continue later gives (shared/clinic-intake.ts).
     drafts: keptDrafts(),
     draftLink,

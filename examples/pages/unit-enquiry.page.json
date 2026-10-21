@@ -6,6 +6,13 @@
   "data": { "kind": "responses" },
   "maxWidth": "narrow",
   "phone": { "country": "EG" },
+  "payment": {
+    "label": "Reservation fee",
+    "amount": 10000,
+    "currency": "EGP",
+    "when": "visit == 'reserve'",
+    "description": "Holds the unit for you for 7 days and is taken off its price; refunded in full if it is no longer available."
+  },
   "prefill": { "fromUrl": ["utm_source", "utm_campaign", { "param": "agent", "field": "agent_code" }, "unit"] },
   "fields": {
     "full_name": { "type": "char", "label": "Full name", "required": true, "size": 80 },
@@ -17,7 +24,8 @@
       "required": true,
       "options": [
         { "value": "viewing", "label": "Book a viewing" },
-        { "value": "call", "label": "A call about prices and plans" }
+        { "value": "call", "label": "A call about prices and plans" },
+        { "value": "reserve", "label": "Reserve the unit now" }
       ]
     },
     "message": { "type": "text", "label": "Anything else?", "size": 500 },
@@ -51,6 +59,11 @@
     ]
   },
   "endings": [
+    {
+      "when": "visit == 'reserve'",
+      "title": "{unit|The unit} is held for you, {full_name}",
+      "text": "Your reservation is {id}. An agent will call you within the hour to book the signing."
+    },
     {
       "when": "agent_code != null",
       "title": "Thank you, {full_name}",

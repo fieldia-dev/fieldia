@@ -3,6 +3,8 @@ import { foldForSearch } from './input-rules';
 import type { JsonValue } from '../format/json';
 import { memoryCodes, type MemoryCodes, type SentCodeKept } from './memory-codes';
 import type {
+  PayRequest,
+  PayResult,
   CheckCodeRequest,
   CodeChecked,
   SendCodeRequest,
@@ -166,6 +168,12 @@ export interface MemoryDataSourceOptions {
    * code sent is kept in `codes`, where a demo shows it as the message would. See `MemoryCodes`.
    */
   codes?: MemoryCodes;
+  /**
+   * How a payment the answers wait for ends (`pay`), as an app's provider would answer: paid, with a reference of its
+   * own, unless this says otherwise — a demo's stand-in checkout drawn in the request's `slot`, a test's decline. Each
+   * payment asked for is kept in `payments`.
+   */
+  pay?: (request: PayRequest, count: number) => PayResult | Promise<PayResult>;
 }
 
 /**
@@ -195,6 +203,8 @@ export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecor
   answeredElsewhere(pageId: string, values: Values): void;
   /** The codes `sendCode` sent, in order: each with the value it proves and the code itself, as its message would say it. */
   readonly codes: SentCodeKept[];
+  /** The payments `pay` was asked for, in order (without their slot and signal), and how each ended. */
+  readonly payments: (Omit<PayRequest, 'slot' | 'signal'> & { result: PayResult })[];
 }
 
 /**
@@ -208,7 +218,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
 
 /** A memory source's members, working on what it keeps (`memoryKept`): the one-tag script's memory part. */
 export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept): MemoryDataSource {
-  const { records, notDuplicatePairs, responses, calls, elsewhere, drafts, codes, table, versionOf, moveOn } = kept;
+  const { records, notDuplicatePairs, responses, calls, elsewhere, drafts, codes, payments, table, versionOf, moveOn } = kept;
   const proving = memoryCodes(options.codes, codes);
   let draftIds = 0;
   /** Properties added in place, by the list and the definitions the app gave for the record they were added to. */
@@ -344,7 +354,17 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     calls,
     drafts,
     codes,
+    payments,
     answeredElsewhere: kept.answeredElsewhere,
+
+    async pay(request: PayRequest): Promise<PayResult> {
+      const { slot: _slot, signal: _signal, ...asked } = request;
+      calls.push({ method: 'pay', request: asked });
+      await pause();
+      const result = options.pay ? await options.pay(request, payments.length + 1) : { status: 'paid' as const, reference: `PAY-${payments.length + 1}` };
+      payments.push({ ...structuredCopy(asked), result: structuredCopy(result) });
+      return result;
+    },
     changeElsewhere: kept.changeElsewhere,
 
     async sendCode(request: SendCodeRequest): Promise<SentCode> {

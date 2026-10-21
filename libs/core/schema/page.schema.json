@@ -392,6 +392,9 @@
     },
     "prefill": {
       "$ref": "#/$defs/PagePrefill"
+    },
+    "payment": {
+      "$ref": "#/$defs/PagePayment"
     }
   },
   "required": [
@@ -10282,6 +10285,54 @@
       },
       "required": [
         "fromUrl"
+      ],
+      "additionalProperties": false
+    },
+    "PagePayment": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "maxLength": 120,
+          "pattern": "\\S"
+        },
+        "amount": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            }
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            }
+          ]
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500,
+          "pattern": "\\S"
+        },
+        "when": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "label",
+        "amount"
       ],
       "additionalProperties": false
     }

@@ -415,6 +415,13 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    */
   setPrefill(rows: { param: string; field: string | null }[]): boolean;
   /**
+   * A payment the answers wait for (`payment`): `{}` asks for one (a payment of USD 100, "Payment", until said), null takes it
+   * away; else what it is for, how much — a number, or a number or money field's name ("" back to a number) — its
+   * currency (a code, null taking it away) and words under it ("" taking them away). Refused on a list of records, for a
+   * currency that is no code of three capitals nor a field, and for nothing to pay.
+   */
+  setPayment(patch: { label?: string; amount?: number | string | null; currency?: string | null; description?: string } | null): boolean;
+  /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
    * home's — `null` takes either away.
@@ -1548,6 +1555,36 @@ export function createDesigner(options: {
         if (on) draft.continueLater = true;
         else delete draft.continueLater;
       }, 'continueLater');
+    },
+
+    setPayment(patch) {
+      return apply(
+        (draft) => {
+          if (!patch) return void delete draft.payment;
+          if (draft.layout.type === 'list') throw new Refusal((w) => w.refusals.paymentOnList);
+          // A new payment starts at 100 US dollars, for the screen's panel to change at once: a currency is always said.
+          const was = draft.payment ?? { label: words.panel.paymentLabelDefault, amount: 100, currency: 'USD' };
+          const next = { ...was };
+          if (patch.label !== undefined && patch.label.trim()) next.label = patch.label.trim();
+          if (patch.amount === '') next.amount = 100;
+          else if (typeof patch.amount === 'string') next.amount = patch.amount;
+          else if (typeof patch.amount === 'number') {
+            if (!(patch.amount > 0)) throw new Refusal((w) => w.refusals.paymentAmount);
+            next.amount = patch.amount;
+          }
+          if (patch.currency === null) delete next.currency;
+          else if (patch.currency !== undefined) {
+            if (!/^[A-Z]{3}$/.test(patch.currency) && !draft.fields[patch.currency]) throw new Refusal((w) => w.refusals.paymentCurrency(patch.currency as string));
+            next.currency = patch.currency;
+          }
+          if (patch.description !== undefined) {
+            if (patch.description.trim()) next.description = patch.description.trim();
+            else delete next.description;
+          }
+          draft.payment = next;
+        },
+        'payment'
+      );
     },
 
     setPrefill(rows) {

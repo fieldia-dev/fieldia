@@ -46,6 +46,8 @@ import {
   type SavedDraft,
   type StoredDraft,
   type VerifiedValue,
+  type PaidPayment,
+  type PaymentDue,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
 import type { Limits } from './form-limits';
@@ -57,6 +59,8 @@ import { signedBy, type SignedBy } from './signed';
 import type { PageLink } from './link-values';
 import { prefilledNames, prefillPart, type PrefillPart } from './prefill';
 import { asksForCodes, formVerifyPart, type FormVerifyPart } from './verify';
+import { asksPayment, formPayPart, type FormPayPart } from './payment';
+import type { FormPayment } from './payment-form';
 import type { FormVerify } from './verify-form';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
@@ -181,6 +185,8 @@ export interface FormState {
    * app's proof. One counts while its field still holds that value; each send carries those that do (`verified`).
    */
   readonly verified: Readonly<Record<string, VerifiedValue>>;
+  /** The payment the answers waited for (a page's `payment`), once taken: what a send carries; null before, and once started again. */
+  readonly paid: PaidPayment | null;
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -520,6 +526,12 @@ export interface Form {
    * made), else as it comes.
    */
   markVerified(field: string, proved: VerifiedValue | null): void;
+  /**
+   * What the page's payment asks now (`payment`): the amount, its currency, what for, and its key — null where none is
+   * due (its condition not holding, nothing above 0) or the source has no `pay`, and before the pay part's code has come
+   * (a page asking for a payment loads it as its form is made).
+   */
+  paymentDue(): PaymentDue | null;
   /**
    * Whether a box's reading of what was typed still waits (a name being looked up): a check or a step forward made
    * now refuses its text with "still looking", so a caller that can wait for it (`settle`) checks again after.
@@ -1223,6 +1235,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     limits: null,
     resume: null,
     verified: {},
+    paid: null,
   };
   started = true;
   /**
@@ -2664,6 +2677,30 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return (await saving(chain)) === null;
   }
 
+  /** The form's side of a page's payment (`payment`), from the pay part, as it comes (`payCode`). */
+  let payKit: FormPayment | null = null;
+  const conditions = new Map<string, CompiledModifier>();
+  function payCode(): Promise<FormPayment | null> {
+    const made = (part: FormPayPart) =>
+      (payKit ??= part.formPayment({
+        page,
+        dataSource: options.dataSource,
+        host: options.host,
+        state: () => state,
+        set,
+        holds(condition) {
+          let compiled = conditions.get(condition);
+          if (!compiled) conditions.set(condition, (compiled = compileModifier(condition, table)));
+          const { context: ctx, env } = reading();
+          return compiled.evaluate(ctx, env);
+        },
+        values: () => (page.data.kind === 'responses' ? shownValues() : sentValues()),
+        language: () => page.language ?? messages.locale,
+      }));
+    if (formPayPart.loaded) return Promise.resolve(made(formPayPart.loaded));
+    return formPayPart.load().then(made, () => null);
+  }
+
   /** The form's side of proof by a code (`options.verify`), from the verify part, as it comes (`verifyCode`). */
   let verifyKit: FormVerify | null = null;
   function verifyCode(): Promise<FormVerify | null> {
@@ -2790,6 +2827,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       set({ errors, ...unstored(errors) });
       return { reason: 'save', message: Object.values(errors)[0] };
     }
+    // A payment the answers wait for: taken before anything is sent, through the host's payment step (the pay part's code
+    // waited for where it has not come). Not taken, nothing is sent; taken, the send carries it.
+    if (asksPayment(page)) {
+      const kit = payKit ?? (await payCode());
+      if (asked !== generation) return elsewhere();
+      const due = kit?.due();
+      if (kit && due && !kit.covered(due) && !(await kit.pay(due))) return { reason: 'save' };
+      if (asked !== generation) return elsewhere();
+    }
     const source = options.dataSource;
     serverErrors = {};
     set({ status: 'saving', errors: {}, error: null, saveProblem: null, conflict: null });
@@ -2817,7 +2863,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const resetAt = resets;
         const seen = botReport();
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
-        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...verifyKit?.proved() })) ?? {};
+        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...verifyKit?.proved(), ...(state.paid ? { payment: state.paid } : {}) })) ?? {};
         // The captcha's token is spent once sent: the next send waits for a new one.
         if (seen?.captcha) bot.captcha = null;
         // Answered for answers no longer shown — the form was started again meanwhile: the source has them, the form lays nothing.
@@ -2849,6 +2895,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         ...(state.recordId != null && state.version ? { version: state.version } : {}),
         ...draft,
         ...verifyKit?.proved(),
+        ...(state.paid ? { payment: state.paid } : {}),
       });
       // Answered for a record no longer shown — another opened, or this one loaded again: the source has it, and the
       // form lays nothing of it over the record it shows now.
@@ -3678,6 +3725,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     asksCode: (field) => !!verifyKit?.asks(field),
 
+    paymentDue: () => payKit?.due() ?? null,
+
     markVerified(field, proved) {
       fieldDef(field);
       // At once where the verify part's code has come (a page asking for codes loads it as its form is made), else as it comes.
@@ -3782,8 +3831,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       sentAs = null;
       // Started again: a new response, timed from now.
       bot = { ...bot, honeypot: false, since: clock() };
+      // Started again: a new response pays its own (a new key).
+      payKit?.reset();
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null, verified: {} });
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null, verified: {}, paid: null });
       // Started again: whether the page takes another response, and each choice's places, asked again.
       if (asksLimits()) void track(askLimits());
     },
@@ -4232,6 +4283,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
   // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
   if (keepsLimits()) void track(limitsCode());
+  // A page asking for a payment: the pay part's form code, at once where it has come, else as it does.
+  if (asksPayment(page)) void track(payCode());
   // A page with a field asking for a code: the verify part's form code, at once where it has come, else as it does.
   if (asksForCodes(page)) void track(verifyCode());
   // A page filling fields from its link, before the prefill part came: they are laid as it comes.

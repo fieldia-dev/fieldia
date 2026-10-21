@@ -38,6 +38,7 @@ export { PageRecordsSchema } from './lib/format/records';
 export { PageEndingSchema } from './lib/format/endings';
 export { PageLimitsSchema } from './lib/format/limits';
 export { PagePrefillSchema } from './lib/format/prefill';
+export { PagePaymentSchema } from './lib/format/payment';
 // A link's parameters read as the fields a page's `prefill` fills: the prefill part's, whole here.
 export { linkParams, linkValue, linkValues } from './lib/record/link-values';
 export { DUPLICATE_KINDS, comparable } from './lib/format/duplicate-kinds';

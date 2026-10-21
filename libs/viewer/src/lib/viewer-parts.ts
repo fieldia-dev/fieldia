@@ -1,4 +1,4 @@
-import { asksForCodes, callsPartFunctions, formLimitsPart, formVerifyPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, prefillPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { asksForCodes, asksPayment, callsPartFunctions, formLimitsPart, formPayPart, formVerifyPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, prefillPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -12,6 +12,7 @@ import type * as ImportModule from './import-part';
 import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
 import type * as VerifyModule from './verify-part';
+import type * as PayModule from './pay-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -34,6 +35,8 @@ export type AnswersPart = typeof AnswersModule;
 export type LimitsPart = typeof LimitsModule;
 /** The verify part: proof of an email or a phone by a code the app's source sends and checks. */
 export type VerifyPart = typeof VerifyModule;
+/** The pay part: the payment step a page's answers wait for, paid through the app's own source. */
+export type PayPart = typeof PayModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -82,6 +85,9 @@ export const verifyPart: Part<VerifyPart> = lazyPart('verify', () => import('./v
 /** Whether a page has a field that asks for a code (`options.verify`, not false): what the verify part draws. */
 export const asksVerify = (page: Page): boolean => asksForCodes(page);
 
+/** The payment step a page's answers wait for (`payment`), loaded with the page's parts where it asks for one. */
+export const payPart: Part<PayPart> = lazyPart('pay', () => import('./pay-part'));
+
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
  * else as soon as it comes (settled then; a part that cannot come puts none). For what draws a list's look without the
@@ -100,7 +106,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, verifyPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, prefillPart, formVerifyPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, verifyPart, payPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, prefillPart, formVerifyPart, formPayPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -151,7 +157,8 @@ const markdownAlone = (node: SectionNode) => {
  * A page that fills fields from its link (`prefill`) asks for @fieldia/core's prefill part: its form lays them as it
  * comes, before the page is drawn. One with a field that asks for a code (`options.verify`) asks for the verify part,
  * which draws Send a code under it, and its form's, @fieldia/core's (`formVerifyPart`) — in the one-tag script, the
- * same script.
+ * same script. One asking for a payment (`payment`) asks for the pay part, its payment step, and its form's
+ * (`formPayPart`) alike.
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
@@ -237,6 +244,10 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     found.add(verifyPart);
     found.add(formVerifyPart);
   }
+  if (asksPayment(page)) {
+    found.add(payPart);
+    found.add(formPayPart);
+  }
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
@@ -247,7 +258,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, verify: verifyPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, prefill: prefillPart };
+  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, verify: verifyPart, pay: payPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, prefill: prefillPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 

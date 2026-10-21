@@ -965,3 +965,55 @@ In plain words:
 - The memory source sends and checks codes as a service would (`codes` option: `code`, `length`, `expiresIn`,
   `retryAfter`, `tries`, `refuse`, `now`), keeping each code sent in `codes` for a demo to show and a test to read.
   Tests: `libs/core/src/lib/record/verify.spec.ts`, `libs/viewer/src/lib/verify.spec.ts`, `e2e/verify.spec.ts`.
+
+## 20. A payment the answers wait for (Wave 6, lane w6-public-forms)
+
+One more member, optional as everything here: with it, a page's `payment` is taken before the answers go; without it,
+no payment is asked and the page sends as before. Provider-agnostic (the owner's decision, 20 Oct): Fieldia holds no
+keys and no provider's code — the app's `pay` talks to its own provider (Stripe, Paymob, Fawry, PayPal…).
+
+```ts
+pay?(request: PayRequest): Promise<PayResult>;
+
+interface PayRequest {
+  pageId: string;
+  model: string;                 // empty for a page of responses
+  recordId: RecordId | null;
+  amount: number;                // in the currency's own units: 10000 for EGP 10,000.00
+  currency: string;              // ISO 4217
+  label: string;                 // what it is for: "Reservation fee"
+  description?: string;
+  key: string;                   // the same for every try of one response's payment: the provider's idempotency key
+  values: Values;                // the answers it pays for, as the send would carry them
+  language: string;
+  slot?: unknown;                // where the provider's checkout may be drawn in the payment step (an element)
+  signal?: UploadSignal;         // aborts on Cancel, or when the person leaves
+}
+interface PayResult { status: 'paid' | 'failed' | 'cancelled'; reference?: string; message?: string }
+
+// SubmitRequest and SaveRequest gain payment?: PaidPayment — the payment taken.
+interface PaidPayment { amount: number; currency: string; key: string; reference?: string }
+// ActionHost gains pay?(due: PaymentDue, request: PayRequest): Promise<PaidPayment | null> — the viewer's payment step.
+interface PaymentDue { amount: number; currency: string; label: string; description?: string; key: string }
+```
+
+In plain words:
+
+- **The page asks** (`"payment": { "label", "amount", "currency"?, "description"?, "when"? }`): the amount a number or a
+  number or money field's name, the currency a code or a field holding one (else a money field's own), `when` a
+  condition on the answers. Nothing is due while `when` does not hold, or the amount is empty or not above 0.
+- **At the choke point.** Every send — Submit, Ctrl+Enter, a wizard's finish, a `save` step, the app's `form.save()` —
+  checks the answers first (a payment is never taken for answers that would be refused), then, where something is due
+  and not paid, waits for the payment: through the host's payment step (`ActionHost.pay`, the viewer's pay part), else
+  the source's `pay` itself. Not paid, nothing is sent and no problem is said (the person went back, or the step said
+  why); paid, the send carries `payment`. A send that fails after paying (the network) is sent again without paying
+  twice: the payment is kept (`state.paid`) while what is due stays the same (its key, amount and currency). Started
+  again (Submit another), a new response has a new key.
+- **The viewer's payment step**: the questions give way to what it is for, the amount in its currency (Intl, Latin
+  digits), the page's words, the slot, and Pay — which calls `pay` inside the person's press, so the app may open its
+  provider's checkout in a window of its own (a popup is allowed in the press) or draw it in `slot`. Waiting: Cancel
+  aborts the signal. Paid: the answers go, the reference said. Failed (with the provider's words) or cancelled: "Nothing
+  was sent", with Pay again and Back to the answers.
+- The memory source answers paid with `PAY-n` unless its `pay` option says otherwise (a demo's stand-in checkout drawn in
+  the slot, a test's decline), keeping each in `payments`. Tests: `libs/core/src/lib/record/payment.spec.ts`,
+  `libs/viewer/src/lib/pay.spec.ts`, `e2e/payment.spec.ts`.

@@ -8,6 +8,8 @@ import {
   translatePage,
   wideColumns,
   type ActionHost,
+  type PaymentDue,
+  type PayRequest,
   type ActionStep,
   type ButtonNode,
   type FieldNode,
@@ -79,7 +81,8 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, asksVerify, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, verifyPart, type HeadPart } from './viewer-parts';
+import { answersPart, asksVerify, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, payPart, verifyPart, type HeadPart } from './viewer-parts';
+import type { PayKit } from './pay';
 import type { VerifyKit } from './verify';
 import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
@@ -437,6 +440,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // This form on paper, alone; the app's file shown over it, or saved — by the files part, which shows a file field's.
     print: () => paper.print(),
     file: (file) => filesPart.load().then((part) => part.showAppFile({ doc, labels: widgetLabels, home: root, file })),
+    // A payment the answers wait for: the pay part's payment step, drawn with the page (none drawn, none taken).
+    ...(page.payment ? { pay: (due: PaymentDue, request: PayRequest) => payKit?.pay(due, request) ?? Promise.resolve(null) } : {}),
     ...options.host,
   };
   const widgetLabels = WIDGET_LABELS[locale];
@@ -1884,6 +1889,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * field asks for one and the source can send and check codes (the part waited for with the page's).
    */
   let verifyKit: VerifyKit | null = null;
+  /** The payment step a page's answers wait for (`payment`), from the pay part: made as the page is drawn, where its source can `pay`. */
+  let payKit: PayKit | null = null;
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
 
@@ -2417,6 +2424,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       cleanups.push(kit.destroy);
       verifyKit = kit;
     }
+    const pays = page.payment && options.dataSource?.pay ? payPart.loaded : undefined;
+    if (pays && options.dataSource) {
+      payKit = pays.drawPay({ doc, el, labels, fill, dataSource: options.dataSource, tag: page.language ?? locale, content: () => questions, announce });
+      cleanups.push(payKit.destroy);
+    }
     const limits = limitsAsked ? limitsPart.loaded : undefined;
     if (limits) {
       const kit = limits.drawLimits({ form, page, doc, el, labels, messages: options.messages ?? MESSAGES[locale], fill, content: () => questions, done: () => !done.hidden, announce });
@@ -2469,7 +2481,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
     questions = body;
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, body, ...(limitsKit?.after ?? [])];
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, body, ...(payKit ? [payKit.step] : []), ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);

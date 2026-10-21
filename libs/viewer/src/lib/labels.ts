@@ -610,6 +610,24 @@ export interface ViewerLabels {
   verifyDone: string;
   verifyNotSent: string;
   verifyNotChecked: string;
+  /**
+   * A payment the answers wait for (`payment`, the pay part): Pay and its amount, back to the answers, Cancel while it
+   * waits, that nothing is sent until it is paid, while it waits, paid (with the provider's reference), Pay again, and a
+   * payment cancelled, failed (with the provider's `{why}`) or not started.
+   */
+  payAmount: string;
+  payBack: string;
+  payCancel: string;
+  payCancelling: string;
+  payNothingSent: string;
+  payWaiting: string;
+  payPaid: string;
+  payPaidReference: string;
+  payAgain: string;
+  payCancelled: string;
+  payFailed: string;
+  payFailedWhy: string;
+  payNotStarted: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1049,6 +1067,19 @@ const en: ViewerLabels = {
   verifyDone: 'Confirmed',
   verifyNotSent: 'The code could not be sent: try again.',
   verifyNotChecked: 'The code could not be checked: try again.',
+  payAmount: 'Pay {amount}',
+  payBack: 'Back to the answers',
+  payCancel: 'Cancel',
+  payCancelling: 'Cancelling…',
+  payNothingSent: 'Nothing is sent until it is paid.',
+  payWaiting: 'Waiting for the payment…',
+  payPaid: 'Paid',
+  payPaidReference: 'Paid: reference {reference}',
+  payAgain: 'Pay again',
+  payCancelled: 'The payment was cancelled: nothing was sent.',
+  payFailed: 'The payment did not go through: nothing was sent.',
+  payFailedWhy: 'The payment did not go through: {why} Nothing was sent.',
+  payNotStarted: 'The payment could not be started: try again.',
 };
 
 /**

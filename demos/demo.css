@@ -60,3 +60,7 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
    display would beat [hidden]. */
 .demo-meanwhile-bar [hidden] { display: none; }
 .demo-meanwhile-said { flex: 1 1 24em; font-size: 13.5px; color: var(--dh-muted, #5b6470); }
+/* A stand-in for a payment provider's checkout, drawn in a payment step's slot (shared/unit-enquiry.ts). */
+.demo-checkout { display: grid; gap: 8px; max-width: 26em; padding: 12px 14px; border: 1px dashed var(--fd-border, #c9ced6); border-radius: 8px; }
+.demo-checkout p { margin: 0; font-size: 13px; color: var(--fd-muted, #5b6470); }
+.demo-checkout-row { display: flex; flex-wrap: wrap; gap: 8px; }

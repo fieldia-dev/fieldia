@@ -985,8 +985,13 @@ export function installStyles(document: Document): void {
  * rules. It names none of the other parts' parts, so it goes with the parts of its kind, after the limits' (10) and
  * before the themes', so a theme still reshapes its buttons, its box and their focus: rank 11, the ranks from the
  * themes' on moving on by one.
+ *
+ * A payment the answers wait for (0.30, the viewer's pay part) is new as well, cut from no rule: the payment step in the
+ * questions' place, laid out alone, its buttons the main sheet's. Like the verify part's, it names no other part's parts:
+ * rank 12, after the verify part's, before the themes', so a theme still reshapes its buttons — the ranks from the
+ * themes' on moving on by one again.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, verify: 11, themes: 12, quiet: 13, picker: 14, head: 15, groups: 16, text: 17, surveyLooks: 18, cards: 19 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, verify: 11, pay: 12, themes: 13, quiet: 14, picker: 15, head: 16, groups: 17, text: 18, surveyLooks: 19, cards: 20 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

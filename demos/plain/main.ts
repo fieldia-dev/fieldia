@@ -211,7 +211,7 @@ if (name === 'test-drive') document.getElementById('app')?.before(meanwhileBar(d
 // The sign-up has a bar over it: two people take the morning's last places on other screens (shared/event-signup.ts).
 if (name === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
 // The enquiry says under it what the app was told with each response, its hidden fields marked (shared/unit-enquiry.ts).
-if (name === 'unit-enquiry') document.getElementById('app')?.after(sentLog(document, handle.form, page));
+if (name === 'unit-enquiry') document.getElementById('app')?.after(sentLog(document, handle.form, page, dataSource));
 // And a stand-in phone over it, where the codes the app sends arrive as WhatsApp or SMS would bring them.
 if (name === 'unit-enquiry') document.getElementById('app')?.before(phoneBar(document, dataSource));
 

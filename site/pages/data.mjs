@@ -42,6 +42,7 @@ interface DataSource {
   loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>; // a draft, by its key
   sendCode?(request: SendCodeRequest): Promise<SentCode>;    // send a code that proves an email or a phone
   checkCode?(request: CheckCodeRequest): Promise<CodeChecked>; // check the code typed
+  pay?(request: PayRequest): Promise<PayResult>;               // take a payment the answers wait for
 }`
 )}
 
@@ -74,6 +75,7 @@ interface DataSource {
     <tr><td>${c('notDuplicates')} · ${c('markNotDuplicate')}</td><td>A saved record with possible duplicates is shown; someone presses <em>It's someone new</em></td><td>What was let be kept on your server, so every device lets it be — without both, the person's browser keeps it. See <a href="#duplicates">possible duplicates</a></td></tr>
     <tr><td>${c('limits')}</td><td>A page with ${c('limits')} or options with ${c('seats')} opens, and again just before its answers go and after</td><td>The most responses, one from each person, each choice's places left — see <a href="#limits">opening, closing and limiting a form</a>; without it, a page keeps to its dates alone</td></tr>
     <tr><td>${c('sendCode')} · ${c('checkCode')}</td><td>Someone presses <em>Send a code</em> under an email or a phone whose node says ${c('options.verify')}; types the code</td><td>Proof the person owns it, before the answers go — see <a href="#verify">proof of an email or a phone</a>; without both, no field asks for a code</td></tr>
+    <tr><td>${c('pay')}</td><td>Someone presses <em>Pay</em> in a page's payment step, after its answers passed their checks</td><td>A reservation fee or a deposit taken through your own provider, before anything is sent — see <a href="#pay">a payment the answers wait for</a>; without it, no payment is asked</td></tr>
     <tr><td>${c('saveDraft')} · ${c('loadDraft')}</td><td>Someone types on a page with ${c('continueLater')}, enters a wizard's step, or presses Continue later; a page opens with a draft's key</td><td>Answers kept on your server, continued on any device — see <a href="#drafts">save and resume</a>; without them, no Continue later shows</td></tr>
   </tbody>
 </table>
@@ -169,6 +171,36 @@ async submit({ values, verified }) {
 }`
 )}
 <p>Each send — ${c('submit')}, or ${c('save')} on a record's page — carries ${c('verified')}: the values proved and your proof of each, so your server trusts a value only by a proof it signed. ${c('form.getState().verified')} holds them; ${c('form.asksCode(field)')} says whether a field asks for one, ${c('form.markVerified(field, { value, proof })')} keeps one your app proved its own way. In the designer, an email's or a phone's settings have <em>Confirmed by a code</em>, and a phone's the ways it is sent. The <a href="/demos/plain/?page=unit-enquiry&amp;skin=outlined">enquiry demo</a> sends its codes to a stand-in phone over the form.</p>
+
+<h2 id="pay">A payment the answers wait for</h2>
+<p>A reservation fee, a deposit, a retainer: a page's ${c('payment')} is taken before its answers go, through your own provider — Stripe, Paymob, Fawry, PayPal — with no key and no provider's code in Fieldia. Submit checks the answers first, then the payment step shows what is due and <em>Pay</em>; nothing is sent until it is paid.</p>
+${code(
+  'json',
+  `
+"payment": {
+  "label": "Reservation fee",
+  "amount": 10000,
+  "currency": "EGP",
+  "when": "visit == 'reserve'",
+  "description": "Held for 7 days and taken off the price; refunded if the unit is no longer available."
+}`
+)}
+<p>${c('amount')} is a number, or a number or money field's name; ${c('currency')} a code, or a field holding one — left out, a money field's own; ${c('when')}, a condition on the answers. Your data source's ${c('pay')} is called inside the person's press of Pay, so it may open the provider's checkout in a window of its own, or draw it in ${c('request.slot')}, the payment step's own place for it:</p>
+${code(
+  'ts',
+  `
+async pay({ amount, currency, label, key, values, slot, signal }) {
+  // key: the same for every try of this response's payment — your provider's idempotency key.
+  const session = await myServer.checkout({ amount, currency, label, key });
+  const result = await myProvider.mount(slot, session, { signal }); // or window.open(session.url) and wait for its webhook
+  return result.ok ? { status: 'paid', reference: result.id } : { status: result.cancelled ? 'cancelled' : 'failed', message: result.error };
+},
+async submit({ values, payment }) {
+  // payment: { amount: 10000, currency: 'EGP', key: 'pay-…', reference: 'pi_3Q…' } — check it with your provider
+  return { id: await store(values, payment) };
+}`
+)}
+<p>Paid, the answers go with ${c('payment')}; failed or cancelled, the step says nothing was sent, with <em>Pay again</em> and <em>Back to the answers</em>. A send that fails after paying is sent again without paying twice, and every send path — Ctrl+Enter, a wizard's finish, your own ${c('form.save()')} — waits for the payment the same way. In the designer, <em>Payment before sending</em> on a page's Rules tab. The <a href="/demos/plain/?page=unit-enquiry&amp;skin=outlined">enquiry demo</a> reserves a unit through a stand-in for a provider's checkout.</p>
 
 <h2 id="upload">Files stored as they are picked</h2>
 <p>A phone's photo is 3 to 12 MB. Twenty of them inside one save fail on mobile data, and one in a draft fills the browser's store. Give your data source ${c('upload')}, and a file or picture field sends each file to your store <em>as soon as it is picked</em>: photos are made smaller first, each shows on its way with a bar, × to cancel it and Retry when it failed, and the field keeps only what ${c('upload')} returns — ${c('{ url, name, size, type, fileId }')}, never the bytes. Three go at once, the rest wait their turn; a field of several keeps them in the order they were picked.</p>

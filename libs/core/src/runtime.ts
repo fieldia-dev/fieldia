@@ -232,6 +232,10 @@ export type {
   CheckCodeRequest,
   CodeChecked,
   VerifiedValue,
+  PayRequest,
+  PayResult,
+  PaymentDue,
+  PaidPayment,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
@@ -309,6 +313,9 @@ export { prefillPart, prefilledNames, type PrefillPart } from './lib/record/pref
 export type { PageLink } from './lib/record/link-values';
 // Proof of an email or a phone by a code (`options.verify`): the form's side in a part, with the viewer's.
 export { asksForCodes, formVerifyPart, type FormVerifyPart } from './lib/record/verify';
+// A payment the answers wait for (`payment`): the form's side in a part, with the viewer's payment step.
+export { asksPayment, formPayPart, type FormPayPart } from './lib/record/payment';
+export type { PagePayment } from './lib/format/payment';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
 // (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)

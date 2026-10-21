@@ -626,6 +626,23 @@ says whether a field asks for one: never where the source lacks either member.
 The memory source sends and checks codes as a service would (its `codes`
 option), each kept in `codes`.
 
+## A payment the answers wait for
+
+A page may take a payment before its answers go — a reservation fee, a deposit
+— through the app's own provider: `"payment": { "label": "Reservation fee",
+"amount": 10000, "currency": "EGP", "when": "visit == 'reserve'" }` (the amount
+a number or a number or money field's name, the currency a code or a field's,
+else a money field's own). Where the data source has `pay(request)` (answering
+`{ status: 'paid' | 'failed' | 'cancelled', reference, message }`), a send
+checks the answers, then waits for the payment — through the host's payment
+step (`ActionHost.pay`: the viewer's), else the source's `pay` itself — and
+sends nothing unpaid; paid, the send carries `payment` (`{ amount, currency,
+key, reference }`). `request.key` is the same for every try of one response's
+payment: the provider's idempotency key. A send that failed after paying is
+sent again without paying twice. `form.paymentDue()` says what is due now,
+`state.paid` what was taken. Fieldia holds no keys and no provider's code. The
+memory source answers paid unless its `pay` option says otherwise.
+
 ## What a page's records are called
 
 A page may say what its records are, so Fieldia's own sentences name them as

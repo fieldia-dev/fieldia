@@ -128,6 +128,14 @@ how long it works and Send again after its wait, a wrong code's tries left,
 and Confirmed. A send before that is refused under the field, a value changed
 afterwards asks again, and each send carries the app's proof (`verified`).
 
+A page with a `payment` (`{ "label": "Reservation fee", "amount": 10000,
+"currency": "EGP" }`) and a source with `pay` has a payment step, in a part of
+its own (`fieldia.pay.js`): Submit checks the answers, then they give way to
+what is due and **Pay**, which calls the source's `pay` inside the press — open
+your provider's checkout in a window, or draw it in `request.slot` — and waits:
+paid, the answers go with the reference; failed or cancelled, it says nothing
+was sent, with Pay again and Back to the answers.
+
 ## Saved forms placed in a page
 
 A page may place another saved page in it by its id — an address made once,

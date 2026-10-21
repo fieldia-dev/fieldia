@@ -1,4 +1,4 @@
-import type { Form, MemoryDataSource, Page, SendCodeRequest, Values } from '@fieldia/core';
+import type { Form, MemoryDataSource, Page, PayRequest, PayResult, SendCodeRequest, Values } from '@fieldia/core';
 import unitEnquiry from '../../examples/pages/unit-enquiry.page.json';
 
 /**
@@ -19,7 +19,7 @@ const shown = (value: unknown) => (value === null || value === undefined || valu
  * data source gets them (`SubmitRequest.values`). Opened plainly, the hidden fields are empty; opened from a broker's
  * link, they say who sent the person.
  */
-export function sentLog(doc: Document, form: Form, page: Page): HTMLElement {
+export function sentLog(doc: Document, form: Form, page: Page, dataSource?: Pick<MemoryDataSource, 'responses'>): HTMLElement {
   const element = doc.createElement('section');
   element.className = 'demo-error-log demo-sent-log';
   element.setAttribute('aria-labelledby', 'demo-sent-log-title');
@@ -45,6 +45,19 @@ export function sentLog(doc: Document, form: Form, page: Page): HTMLElement {
       term.textContent = `${page.fields[name]?.label ?? name}${placed.has(name) ? '' : ' (hidden)'}`;
       const said = doc.createElement('dd');
       said.textContent = shown(value);
+      rows.append(term, said);
+    }
+    // And beside the answers, as the app's source got them: the mobile's proof, and the payment taken.
+    const response = dataSource?.responses[dataSource.responses.length - 1];
+    const besides: [string, string][] = [
+      ...Object.entries(response?.verified ?? {}).map(([name, proved]): [string, string] => [`${page.fields[name]?.label ?? name} proved by a code`, proved.proof ?? 'yes']),
+      ...(response?.payment ? [['Payment taken', `${response.payment.currency} ${response.payment.amount.toLocaleString('en')} · ${response.payment.reference ?? ''}`] as [string, string]] : []),
+    ];
+    for (const [label, value] of besides) {
+      const term = doc.createElement('dt');
+      term.textContent = label;
+      const said = doc.createElement('dd');
+      said.textContent = value;
       rows.append(term, said);
     }
     item.append(rows);
@@ -79,4 +92,47 @@ export function phoneBar(doc: Document, dataSource: MemoryDataSource): HTMLEleme
     return answer;
   };
   return bar;
+}
+
+/**
+ * A stand-in for an app's payment provider's checkout (Stripe Elements, Paymob's iframe, Fawry…), drawn in the payment
+ * step's `slot` as an app draws its own: a test card, Pay or Decline. An app's own `pay` opens its provider's checkout
+ * the same way — in the slot, or in a window of its own — and answers once it is over. Cancel aborts the request's
+ * signal: the stand-in answers cancelled, as a provider's would.
+ */
+export function standInCheckout(request: PayRequest): Promise<PayResult> {
+  const slot = request.slot as HTMLElement | undefined;
+  if (!slot) return Promise.resolve({ status: 'paid', reference: `PAY-${Date.now().toString(36).toUpperCase()}` });
+  const doc = slot.ownerDocument;
+  return new Promise((settle) => {
+    const box = doc.createElement('div');
+    box.className = 'demo-checkout';
+    const note = doc.createElement('p');
+    note.textContent = 'A stand-in for your provider’s checkout (Stripe, Paymob, Fawry…). No card is charged.';
+    const card = doc.createElement('input');
+    card.className = 'fd-input';
+    card.value = '4242 4242 4242 4242';
+    card.setAttribute('aria-label', 'Card number');
+    card.autocomplete = 'cc-number';
+    const pay = doc.createElement('button');
+    pay.type = 'button';
+    pay.className = 'fd-button fd-button-primary';
+    pay.textContent = 'Pay with this card';
+    const decline = doc.createElement('button');
+    decline.type = 'button';
+    decline.className = 'fd-button';
+    decline.textContent = 'Decline the card';
+    const row = doc.createElement('div');
+    row.className = 'demo-checkout-row';
+    row.append(pay, decline);
+    box.append(note, card, row);
+    slot.append(box);
+    const end = (result: PayResult) => {
+      box.remove();
+      settle(result);
+    };
+    pay.addEventListener('click', () => end({ status: 'paid', reference: `PAY-${1000 + Math.floor(Math.random() * 9000)}` }));
+    decline.addEventListener('click', () => end({ status: 'failed', message: 'The card was declined.' }));
+    request.signal?.addEventListener('abort', () => end({ status: 'cancelled' }));
+  });
 }

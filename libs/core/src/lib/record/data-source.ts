@@ -173,6 +173,67 @@ export interface DataSource {
    * the value without asking again. With `sendCode`.
    */
   checkCode?(request: CheckCodeRequest): Promise<CodeChecked>;
+  /**
+   * Take a payment the answers wait for (a page's `payment`): a reservation fee, a deposit — your app's own way, through
+   * its own provider (Stripe, Paymob, Fawry, PayPal…); Fieldia holds no keys and no provider's code. Called inside the
+   * person's press of Pay, so you may open the provider's checkout in a window of its own; or draw it in `slot`, an
+   * element in the payment step. Answer once it is over: paid (with the provider's reference, which the send carries),
+   * failed (with why) or cancelled; nothing is sent until it is paid. Stop when `signal` aborts (the person pressed
+   * Cancel, or left). `key` is the same for every try of one response's payment: hand it to your provider as its
+   * idempotency key, so a payment is never taken twice. Without it, no payment is asked and the page sends as before.
+   */
+  pay?(request: PayRequest): Promise<PayResult>;
+}
+
+/** What `pay` is asked: what is due, what for, the answers it pays for, and where its checkout may be drawn. */
+export interface PayRequest {
+  pageId: string;
+  /** The page's model; empty for a page of responses. */
+  model: string;
+  recordId: RecordId | null;
+  /** How much, in the currency's own units (10000 for EGP 10,000.00). */
+  amount: number;
+  /** ISO 4217: "EGP". */
+  currency: string;
+  /** What it is for, in the page's words: "Reservation fee". */
+  label: string;
+  description?: string;
+  /** The same for every try of this response's payment: the provider's idempotency key. */
+  key: string;
+  /** The answers it pays for, as the send would carry them. */
+  values: Values;
+  /** The page's language, by tag. */
+  language: string;
+  /** Where the provider's checkout may be drawn in the payment step: an element, in a browser. */
+  slot?: unknown;
+  /** Aborts when the person presses Cancel or leaves: stop, and answer cancelled (or reject with an error named AbortError). */
+  signal?: UploadSignal;
+}
+
+/** How a payment ended. */
+export interface PayResult {
+  status: 'paid' | 'failed' | 'cancelled';
+  /** The provider's reference for a payment taken, sent with the answers. */
+  reference?: string;
+  /** Why it failed, in the person's words, said as it is: "The card was declined." */
+  message?: string;
+}
+
+/** What a page's payment asks now: the amount, its currency, what for, and its key. */
+export interface PaymentDue {
+  amount: number;
+  currency: string;
+  label: string;
+  description?: string;
+  key: string;
+}
+
+/** A payment taken, as a send carries it (`payment`). */
+export interface PaidPayment {
+  amount: number;
+  currency: string;
+  key: string;
+  reference?: string;
 }
 
 /** What `sendCode` is asked: the field, the value to prove, and how the person asked to get the code. */
@@ -593,6 +654,8 @@ export interface SaveRequest {
   draft?: string;
   /** The emails and phones proved by a code (`options.verify`), by field: the value and the app's own proof, to trust it by. */
   verified?: Record<string, VerifiedValue>;
+  /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
+  payment?: PaidPayment;
 }
 
 export interface SaveResult {
@@ -836,6 +899,8 @@ export interface SubmitRequest {
   draft?: string;
   /** The emails and phones proved by a code (`options.verify`), by field: the value and the app's own proof, to trust it by. */
   verified?: Record<string, VerifiedValue>;
+  /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
+  payment?: PaidPayment;
 }
 
 /**
