@@ -83,7 +83,7 @@ const root = read(join(WORKSPACE, 'package.json'));
 const pin = (name) => `${name}@${(root.dependencies ?? {})[name] ?? root.devDependencies[name]}`.replace(/@[~^]/, '@');
 mkdirSync(SMOKE, { recursive: true });
 writeFileSync(join(SMOKE, 'package.json'), JSON.stringify({ name: 'fieldia-smoke', private: true, version: '0.0.0' }, null, 2));
-const peers = ['react', 'react-dom', '@types/react', 'vue', '@angular/core', '@angular/compiler', 'rxjs', 'ag-grid-community', '@playwright/test'].map(pin);
+const peers = ['react', 'react-dom', '@types/react', 'vue', '@angular/core', '@angular/compiler', 'rxjs', 'ag-grid-community', '@playwright/test', '@types/node'].map(pin);
 run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', ...tarballs, ...peers], SMOKE);
 for (const { manifest } of packages) {
   const installed = read(join(SMOKE, 'node_modules', manifest.name, 'package.json')).version;
@@ -248,11 +248,8 @@ import { chatterSlot, createMemoryChatter, type ChatterSource } from '@fieldia/c
 import type { FieldiaFormProps } from '@fieldia/react';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor, type Designer } from '@fieldia/designer';
 import { fieldia } from '@fieldia/testing';
-import { fieldia as onPage, type FieldiaForm } from '@fieldia/testing/playwright';
 import { checkPageFiles, type PageCheckResult } from '@fieldia/testing/pages';
-import type { Page as BrowserPage } from '@playwright/test';
 declare const page: Page;
-declare const browserPage: BrowserPage;
 declare const host: HTMLElement;
 const form = createForm({ page, dataSource: createMemoryDataSource() });
 const source: ChatterSource = createMemoryChatter({ me: { id: 1, name: 'Sara' } });
@@ -264,9 +261,8 @@ const props: FieldiaFormProps = { page, skin: 'underline' };
 const designer: Designer = createDesigner({ page: blankPage('screen', 'Site visit'), store: createMemoryPageStore(), kinds: mapKinds({ locale: 'ar' }) });
 mountScreenEditor(host, { designer, nonce: 'r4nd0m' });
 const errors: string[] = fieldia(host).errorsOf('Email');
-const played: FieldiaForm = onPage(browserPage);
 const checked: PageCheckResult[] = checkPageFiles(['page.json']);
-export { viewer, props, designer, withWorkers, errors, played, checked };
+export { viewer, props, designer, withWorkers, errors, checked };
 `
 );
 writeFileSync(
@@ -285,6 +281,29 @@ try {
   run(join(WORKSPACE, 'node_modules/.bin/tsc'), ['-p', join(SMOKE, 'tsconfig.json')], SMOKE);
 } catch (error) {
   fail(`the packed types do not check in an empty project:\n${error.stdout}${error.stderr}`);
+}
+// @fieldia/testing's Playwright helpers, as a Playwright project checks them: Playwright's own types need Node's, whose
+// own declarations (not ours) are left unchecked here.
+writeFileSync(
+  join(SMOKE, 'playwright.mts'),
+  `import { test } from '@playwright/test';
+import { fieldia, type FieldiaForm } from '@fieldia/testing/playwright';
+test('a form', async ({ page }) => {
+  const form: FieldiaForm = fieldia(page);
+  await form.fill('Email', 'mona@example.com');
+  const errors: string[] = await form.errorsOf('Email');
+  if (errors.length) throw new Error(errors.join(' '));
+});
+`
+);
+writeFileSync(
+  join(SMOKE, 'tsconfig.playwright.json'),
+  JSON.stringify({ compilerOptions: { module: 'node16', moduleResolution: 'node16', target: 'es2022', lib: ['esnext', 'dom'], strict: true, noEmit: true, skipLibCheck: true, types: ['node'] }, files: ['playwright.mts'] }, null, 2)
+);
+try {
+  run(join(WORKSPACE, 'node_modules/.bin/tsc'), ['-p', join(SMOKE, 'tsconfig.playwright.json')], SMOKE);
+} catch (error) {
+  fail(`@fieldia/testing/playwright's types do not check in a Playwright project:\n${error.stdout}${error.stderr}`);
 }
 
 // @fieldia/testing's command, as an app's CI runs it: a valid page passes, a broken one fails with its reason.
