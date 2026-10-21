@@ -191,6 +191,7 @@ export const questions = {
   inCapitals: 'Letters in capitals',
   codeLength: 'Digits',
   codeLetters: 'Letters too',
+  shorthand: 'Typed in shorthand: 3.5m, 500k',
   // ---- what a date keeps, and the Hijri calendar beside a day
   dateKeeps: 'Keeps',
   keepsDay: 'A day',

@@ -145,6 +145,18 @@ the mask does not fit is shown as it came.
 { "type": "field", "id": "f-iban", "field": "iban", "options": { "mask": "aa99 **** **** **** **** **[** **** **** **]", "upper": true } }
 ```
 
+A number or an amount whose node says `"options": { "shorthand": true }` is
+typed as agents write big amounts: "3.5m", "500k", "1.2bn", "2 million",
+"٣٫٥ مليون", "3,5 Mio.", "1,5 Md" — the number read by the number reader in
+the page's way, its last word read as the power of ten it names, worked out on
+the digits (1.1m is 1,100,000, never 1,100,000.0000000002). The words are the
+page's language's own, as Intl writes compact numbers in it — short and long,
+each form it uses — and English's, beside the letters people type anywhere:
+k, m, mn, b, bn. While it is typed the box says what it reads ("3.5m is
+3,500,000.00"), and once left it shows the whole amount. A letter no such word
+begins with is refused, saying so; a paste in shorthand is taken as typed. It
+comes in the typed part, with masks.
+
 `"widget": "one-time-code"` on a char field draws a box for each of a code's
 digits (`options.length`, 4 to 12, 6 unless said; `options.letters` for
 letters too) over one text box with `autocomplete="one-time-code"`, so the

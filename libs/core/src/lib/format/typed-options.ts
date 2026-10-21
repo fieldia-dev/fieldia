@@ -2,12 +2,14 @@ import * as z from 'zod';
 
 /**
  * Boxes that read a value typed to a shape, as a field's node says (its `options`): a text box typed to a mask — a
- * national ID, an IBAN, a car plate — and a one-time code's boxes (`"widget": "one-time-code"`). Known to the format,
+ * national ID, an IBAN, a car plate — a one-time code's boxes (`"widget": "one-time-code"`), and a number or an amount
+ * typed in shorthand (`shorthand`: "3.5m", "500k"). Known to the format,
  * so a word written wrong is refused before anything draws.
  *
  *   { "field": "national_id", "options": { "mask": "9 999999 99 99999" } }
  *   { "field": "iban", "options": { "mask": "aa99 **** **** **** **** **[** **** **** **]", "upper": true } }
  *   { "field": "code", "widget": "one-time-code", "options": { "length": 6 } }
+ *   { "field": "price", "options": { "shorthand": true } }
  *
  * A mask's pattern: 9 a digit, a a letter, * a letter or a digit, \ before a character that character itself, [ ]
  * round the end of it what may be left out; every other character the mask's own, written in as the person types.
@@ -37,12 +39,15 @@ export const CodeOptionsSchema = z
   })
   .meta({ id: 'CodeOptions' });
 
+/** Amounts typed in shorthand on a number or an amount: "3.5m", "500k", "٣٫٥ مليون". */
+export const ShorthandOptionsSchema = z.object({ shorthand: z.boolean({ error: 'shorthand is true: amounts typed as 3.5m or 500k are read' }).optional() }).meta({ id: 'ShorthandOptions' });
+
 export type MaskOptions = z.infer<typeof MaskOptionsSchema>;
 export type CodeOptions = z.infer<typeof CodeOptionsSchema>;
 
 /** The issues of a field node's mask or code settings, each at its path under `options`. */
 export function typedOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
   const options = node.options ?? {};
-  const schemas = [...(node.widget === 'one-time-code' ? [CodeOptionsSchema] : []), ...('mask' in options || 'maskKeeps' in options ? [MaskOptionsSchema] : [])];
+  const schemas = [...(node.widget === 'one-time-code' ? [CodeOptionsSchema] : []), ...('mask' in options || 'maskKeeps' in options ? [MaskOptionsSchema] : []), ...('shorthand' in options ? [ShorthandOptionsSchema] : [])];
   return schemas.flatMap((schema) => (schema.safeParse(options).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] })));
 }

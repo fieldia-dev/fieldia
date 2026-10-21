@@ -360,4 +360,6 @@ export const ar: WidgetLabels = {
   codeLetterOrDigit: '{label}: الرمز حروف وأرقام فقط، لا «{char}»',
   codeFull: '{label} من {n} أرقام: لا مكان لأكثر',
   codeFullCharacters: '{label} من {n} خانات: لا مكان لأكثر',
+  shorthandIs: '{typed} تعني {amount}',
+  shorthandOnly: '{label}: أرقام فقط، أو اختصار للآلاف والملايين، مثل {example}',
 };

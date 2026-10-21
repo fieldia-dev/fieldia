@@ -27,6 +27,9 @@ export const TYPED_CSS = /* css */ `
 .fd-code-input::selection { background: transparent; }
 /* A masked box reads left to right, as its digits and groups are written, its text at the end of a right-to-left page. */
 [dir="rtl"] .fd-masked[dir="ltr"] { text-align: right; }
+/* ---- an amount in shorthand: what it reads, said under its box while it is typed -------------------------------- */
+.fd-shorthand-said { margin-block-start: 4px; font-size: 12.5px; line-height: 1.4; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
+.fd-shorthand-said[hidden] { display: none; }
 .fd-code-size { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 `;
 

@@ -31,4 +31,9 @@ describe('a mask and a one-time code in the format', () => {
     expect(messages({ widget: 'one-time-code', options: { length: 8, letters: true } })).toEqual([]);
     expect(messages({ widget: 'one-time-code', options: { length: 20 } })[0]).toMatch(/options\.length/);
   });
+
+  it('takes amounts in shorthand, and refuses a word for it', () => {
+    expect(messages({ options: { shorthand: true } })).toEqual([]);
+    expect(messages({ options: { shorthand: 'yes' } })[0]).toMatch(/shorthand is true/);
+  });
 });

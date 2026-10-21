@@ -546,7 +546,7 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'short-answer') parts.push(mask());
   if (kind === 'one-time-code') parts.push(code());
   if (kind === 'paragraph') parts.push(rows());
-  if (kind === 'number' || kind === 'amount') parts.push(range());
+  if (kind === 'number' || kind === 'amount') parts.push(range(), optionToggle(w.shorthand, 'shorthand'));
   if (kind === 'number') parts.push(units());
   if (kind === 'amount') parts.push(money());
   if (kind === 'rating') parts.push(look());

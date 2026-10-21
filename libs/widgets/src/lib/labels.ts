@@ -423,6 +423,9 @@ export interface WidgetLabels {
   codeLetterOrDigit: string;
   codeFull: string;
   codeFullCharacters: string;
+  /** An amount typed in shorthand (`{typed}`, "3.5m"), said as it reads (`{amount}`); a key no number or shorthand has (`{example}`, "3.5M"). */
+  shorthandIs: string;
+  shorthandOnly: string;
   /** Hours typed with a decimal mark and two digits (`{text}`), read as hours with a decimal: `{time}` in hours and minutes. */
   hoursDecimal: string;
   /** Typed words no choice is called (`{text}`), with a way to create one where the field can. */
@@ -828,6 +831,8 @@ const en: WidgetLabels = {
   codeLetterOrDigit: '{label}: the code is letters and digits only, not “{char}”',
   codeFull: '{label} has {n} digits: there is no room for more',
   codeFullCharacters: '{label} has {n} characters: there is no room for more',
+  shorthandIs: '{typed} is {amount}',
+  shorthandOnly: '{label}: numbers only, or short for thousands and millions, like {example}',
   hoursDecimal: '{label}: “{text}” is hours with a decimal: {time}',
   noMatch: '{label}: nothing is called “{text}”; pick one from the list',
   noMatchCreate: '{label}: nothing is called “{text}” yet; pick one or create it',

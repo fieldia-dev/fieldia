@@ -60,4 +60,17 @@ describe('masks and one-time codes in the designer', () => {
     expect(nodeOf(designer, id).options).toEqual({ length: 4, letters: true });
     expect(validatePage(designer.getPage()).ok).toBe(true);
   });
+
+  it('lets a number or an amount be typed in shorthand', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Listing') });
+    const id = designer.addQuestion('amount', { parent: 'section-1' }) as string;
+    designer.select(id);
+    const { host } = mount(designer, { mode: 'simple' });
+    const toggle = host.querySelector('.fd-canvas-field.fd-editing [role="switch"][aria-label="Typed in shorthand: 3.5m, 500k"]') as HTMLButtonElement;
+    toggle.click();
+    expect(nodeOf(designer, id).options).toEqual({ shorthand: true });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    toggle.click();
+    expect(nodeOf(designer, id).options).toBeUndefined();
+  });
 });

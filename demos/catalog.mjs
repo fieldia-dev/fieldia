@@ -77,8 +77,8 @@ const SEARCH_WORDS = {
   'leads-queue': 'leads queue sales team crm follow up follow-up late overdue today this week counts count filters saved searches favourites agent pipeline',
   'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print tab count badge route router own page',
   property: 'property home house real estate listing viewings visits appointments related records inside agent client',
-  lease: 'lease rent rental tenant landlord tenancy contract flat apartment saudi riyadh ksa hijri umm al-qura islamic calendar arabic month year billing period year built mask input mask national id iban bank account car plate number otp one-time code sms verification verify confirm',
-  listing: 'listing property home house villa apartment flat studio features garden pool balcony options conditions price per square metre meter district average server function formula handover months age building',
+  lease: 'lease rent rental tenant landlord tenancy contract flat apartment saudi riyadh ksa hijri umm al-qura islamic calendar arabic month year billing period year built mask input mask national id iban bank account car plate number otp one-time code sms verification verify confirm shorthand 120k 1.2m thousand million amount price',
+  listing: 'listing property home house villa apartment flat studio features garden pool balcony options conditions price per square metre meter district average server function formula handover months age building shorthand 3.5m 6m million',
   'visit-feedback': 'feedback survey clinic patient treatments follow up carry forward picked earlier question age birthday options conditions aesthetic botox filler',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
   'clinic-consent': 'consent form signature sign signed esign e-signature evidence proof audit trail fingerprint hash tamper locked patient clinic treatment contract agreement',
@@ -353,7 +353,7 @@ export const DEMOS = [
     blurb: 'A home put up for sale whose features follow its type — a garden and a pool only for a villa, a roof terrace only for an apartment — its price per m², handover and building’s age worked out as you type, and the district’s average asked of the app’s own server, the comparison waiting for its answer.',
     howTo: [
       'Pick Villa: Garden, Private pool and Garage are offered, Balcony and Lift are not. Tick Garden, then pick Apartment: Garden is taken out, and the form says so under Features.',
-      'Type an area of 123 and a price of 6,000,000: the price per m² is EGP 48,780.49, rounded to the piastre as the pound keeps it.',
+      'Type an area of 123 and a price of 6m, as agents write it (or 6,000,000): the price per m² is EGP 48,780.49, rounded to the piastre as the pound keeps it.',
       'Pick a district: its average per m² shows “…” while the app’s server is asked, then the listing against it in per cent.',
       'Type 18 in Handover in (months): Handed over by is a year and a half after today; a built-on date gives the building’s age in whole years.',
       'Save while the district’s average is still asked: the save waits for it.',
@@ -373,6 +373,7 @@ export const DEMOS = [
       'Type 1998 in Building built in: a year alone. Switch the language to Arabic: the Hijri months are written in Arabic.',
       'Type a car plate as 4821rka: the space and the capitals are written in, and a letter where a digit goes is refused, saying why.',
       'Paste a code such as 482 913 into the code boxes: it lands across them; leave it at four digits and it says two are still to type.',
+      'Type 120k in Yearly rent: it says “120k is 120,000”, and shows the whole amount once you leave it.',
     ],
   },
   {

@@ -15,6 +15,7 @@ export const LEASE: Values = {
   unit: 'Olaya Tower, 12th floor, flat 1204',
   starts_on: '2026-10-13',
   ends_on: '2027-10-02',
+  rent: 96000,
   first_rent: null,
   built: '2014-01-01',
 };

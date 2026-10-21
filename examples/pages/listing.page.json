@@ -79,7 +79,7 @@
         "title": "Price",
         "columns": 2,
         "children": [
-          { "type": "field", "id": "f-price", "field": "price" },
+          { "type": "field", "id": "f-price", "field": "price", "options": { "shorthand": true } },
           { "type": "field", "id": "f-price-per-meter", "field": "price_per_meter" },
           { "type": "field", "id": "f-district-price", "field": "district_price" },
           { "type": "field", "id": "f-against-district", "field": "against_district" }

@@ -1025,7 +1025,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // a code, asking for the typed part (widgets.ts, widget-parts.ts, 0.17), its rank among the parts' sheets and
 // `typedPart` on the global (0.03); their boxes, their reading and their sheet in fieldia.typed.js: 508.06 measured
 // before, 508.26 after, to 508.3.
-const BUDGET_KB = 508.3;
+// Amounts typed in shorthand (0.30, w6-inputs): a number box asking for the typed part where its node says
+// `shorthand`, reading what is typed through it (`readShort`, in the box's checks and on leaving) and taking its rules
+// and its saying round the number's (widgets.ts, input-rules.ts); the words for thousands and millions, the reading
+// on the digits, the rules and what is said, in fieldia.typed.js: 508.26 measured before, 508.49 after, to 508.5.
+const BUDGET_KB = 508.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1263,8 +1267,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a month, a year and a Hijri day written where values are read, such a date asking for the months part, the names
 // that part takes — 166.15 measured before, 166.64 after, to 166.7.
 // A mask and a one-time code (listed with the raw budget above): such a field asking for the typed part — 166.64
-// measured before, 166.71 after, to 166.8.
-const GZIP_BUDGET_KB = 166.8;
+// measured before, 166.71 after, to 166.8. Amounts in shorthand (listed with the raw budget above): 166.71 measured
+// before, 166.89 after, to 166.9.
+const GZIP_BUDGET_KB = 166.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1453,7 +1458,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // length, what it takes and a code full — 12 in each, as measured: Arabic's 79.44 and 13.47 before, 80.88 and 13.66
 // after, to 80.9 and 13.7; German's 37.02 and 11.81 to 37.81 and 11.99, to 37.9 and 12.0; French's 37.60 and 11.86 to
 // 38.41 and 12.04, to 38.5 and 12.1.
-const ADD_ON_BUDGET_KB = { ar: [80.9, 13.7], de: [37.9, 12.0], fr: [38.5, 12.1] };
+// Amounts in shorthand (0.30): what is said as one reads, and what a box taking it refuses — two in each: Arabic's 80.88
+// and 13.66 before, 81.19 and 13.72 after, to 81.2 and 13.8; German's 37.81 and 11.99 to 37.94 and 12.03, to 38.0 and
+// 12.1; French's 38.41 and 12.04 to 38.56 and 12.10, to 38.6 and 12.1.
+const ADD_ON_BUDGET_KB = { ar: [81.2, 13.8], de: [38.0, 12.1], fr: [38.6, 12.1] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1853,8 +1861,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // calendars, their sheet), loaded with the date part only for such a date: 14.62 and 5.90, to 14.7 and 6.0. The new
 // fieldia.typed.js (0.30, w6-inputs): a text box typed to a mask — its pattern read, what is typed laid out against it,
 // its own characters written in and Backspace over them — and a one-time code's boxes over one text box, with their
-// sheet: 11.70 and 4.85, to 11.7 and 4.9.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [23.8, 9.0], months: [14.7, 6.0], typed: [11.7, 4.9], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// sheet: 11.70 and 4.85, to 11.7 and 4.9; with amounts typed in shorthand (each language's words for thousands and
+// millions found in Intl, the reading on the digits, the number box's rules round its own, and what it reads said in a
+// line of its own under the box), 14.37 and 6.02, to 14.4 and 6.1.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [23.8, 9.0], months: [14.7, 6.0], typed: [14.4, 6.1], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1863,7 +1873,7 @@ const PART_GIVES = {
   choice: ['ownListWidget', 'searchWidget', 'choiceTagsWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
-  typed: ['maskWidget', 'maskOf', 'readMask', 'conform', 'masked', 'maskShape', 'codeWidget', 'codeLength', 'installTypedStyles'],
+  typed: ['maskWidget', 'maskOf', 'readMask', 'conform', 'masked', 'maskShape', 'codeWidget', 'codeLength', 'installTypedStyles', 'shorthandFor'],
   months: ['grainBox', 'readGrainText', 'hijriOf', 'gregorianOf', 'readHijriText', 'hijriBox', 'hijriPair', 'periodCalendar', 'hijriCalendar', 'installMonthsStyles'],
   list: ['listView', 'relatedList', 'relatedListPage', 'relatedCount', 'installListStyles'],
   cards: ['cardSpec', 'cardReads', 'drawCard', 'installCardStyles'],

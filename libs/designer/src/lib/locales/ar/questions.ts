@@ -183,6 +183,7 @@ export const questions: DesignerWords['questions'] = {
   inCapitals: 'الحروف كبيرة',
   codeLength: 'الأرقام',
   codeLetters: 'وحروف أيضًا',
+  shorthand: 'يُكتب مختصرًا: 3.5 مليون، 500 ألف',
   // ---- ما يحفظه التاريخ، والتقويم الهجري بجانب اليوم
   dateKeeps: 'يحفظ',
   keepsDay: 'يومًا',

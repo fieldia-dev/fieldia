@@ -360,4 +360,6 @@ export const de: WidgetLabels = {
   codeLetterOrDigit: '{label}: Der Code besteht nur aus Buchstaben und Ziffern, nicht „{char}“',
   codeFull: '{label} hat {n} Ziffern: Für mehr ist kein Platz',
   codeFullCharacters: '{label} hat {n} Zeichen: Für mehr ist kein Platz',
+  shorthandIs: '{typed} sind {amount}',
+  shorthandOnly: '{label}: nur Zahlen, oder kurz für Tausend und Millionen, z. B. {example}',
 };

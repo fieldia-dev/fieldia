@@ -15,6 +15,7 @@
     "unit": { "type": "char", "label": "Flat" },
     "starts_on": { "type": "date", "label": "Starts on", "required": true, "hijri": true, "help": "Type the day in either calendar: the other follows." },
     "ends_on": { "type": "date", "label": "Ends on", "hijri": true },
+    "rent": { "type": "monetary", "label": "Yearly rent", "currency": "SAR", "min": 0, "digits": [14, 0], "help": "Type it as agents write it: 120k, 1.2m." },
     "first_rent": { "type": "date", "label": "First rent’s month", "precision": "month", "min": "today", "help": "Rent is billed for the whole month: 10/2026, Oct 2026." },
     "built": { "type": "date", "label": "Building built in", "precision": "year", "min": "1900-01-01", "max": "today" }
   },
@@ -45,6 +46,7 @@
         "children": [
           { "type": "field", "id": "f-starts", "field": "starts_on", "colspan": 2 },
           { "type": "field", "id": "f-ends", "field": "ends_on", "colspan": 2 },
+          { "type": "field", "id": "f-rent", "field": "rent", "options": { "shorthand": true } },
           { "type": "field", "id": "f-first-rent", "field": "first_rent" }
         ]
       },

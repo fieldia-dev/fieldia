@@ -64,6 +64,7 @@ ${code(
 { "type": "field", "id": "f-plate", "field": "plate", "options": { "mask": "9999 aaa", "upper": true, "maskKeeps": "shown" } },
 { "type": "field", "id": "f-code", "field": "code", "widget": "one-time-code", "options": { "length": 6 } }`
 )}
+<p>A number or an amount with ${c('"shorthand": true')} in its node's options is typed as agents write big amounts: <em>3.5m</em>, <em>500k</em>, <em>1.2bn</em>, <em>٣٫٥ مليون</em>, <em>3,5 Mio.</em> — read on the digits, its word the power of ten it names in the page's language or English, and k, m and b anywhere. As it is typed the box says <em>3.5m is 3,500,000</em>; once left, it shows the whole amount. Open <a href="/demos/plain/?page=listing&amp;record=new&amp;skin=underline">the listing demo</a> and type a price of 6m.</p>
 <p>${c('"widget": "one-time-code"')} draws a box for each digit — ${c('length')} 4 to 12, 6 unless said; ${c('letters')} for letters too — over one text box the phone's autofill of a code sent by SMS fills whole (${c('autocomplete="one-time-code"')}); a code pasted with its spaces or dashes lands across the boxes, and a screen reader reads one box by its label. The field takes the code once it is whole, so a step on its change can send it. In the designer: a short answer's Mask and Letters in capitals; the kind One-time code, with its Digits and Letters too.</p>
 
 <h2 id="phone">Phone numbers the world over</h2>

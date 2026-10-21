@@ -33,7 +33,7 @@ export { PathPickerOptionsSchema, StateDotOptionsSchema } from './lib/format/pic
 export { PagePhoneSchema, PhoneOptionsSchema } from './lib/format/phone';
 export { SlotsOptionsSchema } from './lib/format/slots-options';
 export { SignatureOptionsSchema } from './lib/format/signature-options';
-export { MaskOptionsSchema, CodeOptionsSchema, type MaskOptions, type CodeOptions } from './lib/format/typed-options';
+export { MaskOptionsSchema, CodeOptionsSchema, ShorthandOptionsSchema, type MaskOptions, type CodeOptions } from './lib/format/typed-options';
 export { PageDuplicatesSchema } from './lib/format/duplicates';
 export { PageRecordsSchema } from './lib/format/records';
 export { PageEndingSchema } from './lib/format/endings';

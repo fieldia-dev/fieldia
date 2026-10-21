@@ -1,4 +1,4 @@
-import { foldForSearch, placesOf, placesOfCurrency, readNumber, type NumberLimits } from '@fieldia/core';
+import { foldForSearch, placesOf, placesOfCurrency, type NumberLimits } from '@fieldia/core';
 import type {
   Field,
   FieldNode,
@@ -17,7 +17,7 @@ import type {
 } from '@fieldia/core';
 import type { PreferenceStore } from './preferences';
 import { formatNumber, formatPlain, ungroup } from './numbers';
-import { guard, leftWords, numberFits, numberKeyboard, numberRules, refusalHint, unreadWords, type NumberBox } from './input-rules';
+import { guard, leftWords, numberFits, numberKeyboard, numberRules, readShort, refusalHint, unreadWords, type NumberBox, type Shorthand } from './input-rules';
 import { textBox, type TextKind } from './text-box';
 import type { WidgetLabels } from './labels';
 import { linkCheckboxesWidget, many2oneWidget, plainLinkWidget, plainTagsWidget, referenceWidget, tagsWidget } from './relations-plain';
@@ -424,7 +424,14 @@ const textareaWidget: WidgetFactory = (context) => {
  * keeps the value it held (`FormState.unread`). A save made with the box
  * still entered (Ctrl+Enter) reads it first, as leaving it would.
  */
-const numberWidget: WidgetFactory = (context) => {
+const numberWidget: WidgetFactory = (context) => numberBox(context);
+
+/**
+ * A number box, with amounts typed in shorthand where its node says (`options.shorthand`: "3.5m", "500k", the typed
+ * part's reader, `shorthand`): read on the digits as the box reads any number, the amount said under the box while it
+ * is typed — "3.5m is 3,500,000.00" — and shown whole at rest.
+ */
+function numberBox(context: WidgetContext, shorthand?: (locale: Locale, labels?: WidgetLabels) => Shorthand): Widget {
   const { form, name, field, node, id, document, labels, locale = 'en' } = context;
   const integer = field.type === 'integer';
   /** The box's currency now: a money box's places, and an amount pasted with it, follow it. */
@@ -474,9 +481,12 @@ const numberWidget: WidgetFactory = (context) => {
       : input;
 
   // The input rules: refused keystrokes and pastes are said under the box (after the units round it).
-  const box: NumberBox = { label: node.label ?? field.label, locale, labels, limits, currency: () => currencyNow, units: () => [prefix, suffix].map((u) => u?.textContent ?? '').filter(Boolean) };
+  const box: NumberBox = { label: node.label ?? field.label, locale, labels, limits, currency: () => currencyNow, units: () => [prefix, suffix].map((u) => u?.textContent ?? '').filter(Boolean), ...(shorthand ? { shorthand: shorthand(locale, labels) } : {}) };
+  const readBox = (text: string) => readShort(text, box);
   const hint = refusalHint(input, element);
-  const checks = guard(input, numberRules(box), hint);
+  // In shorthand, the typed part's rules round the number's, and the amount said under the box as it reads.
+  const checks = guard(input, box.shorthand ? box.shorthand.rules(numberRules(box), box) : numberRules(box), hint);
+  box.shorthand?.watch(input, shown);
   /** Unread text the form keeps for this box, and what the field held as the box was entered. */
   const unreadNow = () => form.getState().unread?.[name];
   let entered: Value | undefined;
@@ -500,7 +510,7 @@ const numberWidget: WidgetFactory = (context) => {
     // Written while the person is elsewhere — the browser's autofill, from a pick in another box: the field held this as
     // the write came, and keeps it should the text not read.
     if (document.activeElement !== input) entered = form.getState().values[name];
-    const reading = readNumber(input.value, locale);
+    const reading = readBox(input.value);
     // On its way to a number ("-", "1,", "12.345" on its way to "12.345,6"), or text that does not read: nothing is
     // set; leaving the box says why.
     if (!reading.ok || !numberFits(input.value, box)) return;
@@ -522,7 +532,7 @@ const numberWidget: WidgetFactory = (context) => {
       checks.accept();
     }
     const text = input.value;
-    const reading = readNumber(text, locale);
+    const reading = readBox(text);
     // A value the box held as it was entered (one from outside with more places) is let be: check names it.
     const words = !held && reading.ok && reading.value === (entered ?? null) ? unreadWords(text, box) : leftWords(text, box);
     if (words === null) {
@@ -555,7 +565,7 @@ const numberWidget: WidgetFactory = (context) => {
     const now = form.getState().values[name] ?? null;
     const text = kept?.text ?? (typed && typed.value === now ? typed.text : undefined);
     if (text === undefined) return;
-    const reading = readNumber(text, locale);
+    const reading = readBox(text);
     const words = leftWords(text, box);
     if (words === null && reading.ok) {
       if (kept) form.setUnread(name, null);
@@ -592,7 +602,7 @@ const numberWidget: WidgetFactory = (context) => {
       if (typed && (state.value ?? null) !== typed.value) typed = null;
       const unread = unreadNow();
       if (typing) {
-        const reading = readNumber(input.value, locale);
+        const reading = readBox(input.value);
         // A value changed under the person editing it shows as they edit: plain. Text the box did not set ("1.5" in
         // whole numbers, waiting to be said as the box is left) is theirs, and stays.
         if (reading.ok && numberFits(input.value, box) && reading.value !== (state.value ?? null)) {
@@ -1010,6 +1020,8 @@ const later = (factory: () => WidgetFactory): WidgetFactory =>
     partOf: (node: FieldNode, page?: Page, field?: Field) => (factory() as Partial<PartFactory>).partOf?.(node, page, field),
   });
 
+/** A number or an amount typed in shorthand (`options.shorthand`): the typed part's reader (shorthand.ts); the box without it meanwhile. */
+const amounts = partFactory(typedPart, (part) => (context) => numberBox(context, part.shorthandFor), numberWidget, (node) => node.options?.['shorthand'] === true);
 /** A char field typed to a mask (`options.mask`): the typed part's box (mask-box.ts); the text box it was meanwhile. */
 const hasMask = (node: FieldNode) => typeof node.options?.['mask'] === 'string' && !!node.options['mask'];
 
@@ -1027,9 +1039,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.time': dateBoxOf('time'),
   'char.tags': charTagsWidget,
   text: textareaWidget,
-  integer: numberWidget,
-  float: numberWidget,
-  monetary: numberWidget,
+  integer: amounts,
+  float: amounts,
+  monetary: amounts,
   'integer.rating': pointsWidget('rating'),
   'integer.scale': pointsWidget('scale'),
   'integer.slider': sliderKind,

@@ -93,7 +93,7 @@ export const PART_WORDS = {
       'monthShape', 'monthShapeYmd', 'yearShape', 'chooseMonth', 'chooseYear', 'previousYear', 'nextYear', 'earlierYears', 'laterYears', 'monthUnfinished', 'yearUnfinished', 'dayLeftOut', 'monthLeftOut', 'hijriLabel', 'hijriShape', 'hijriUnfinished',
     ],
   },
-  typed: { widgets: ['maskDigit', 'maskLetter', 'maskEither', 'maskFull', 'maskShort', 'maskShortOne', 'codeDigits', 'codeCharacters', 'codeDigitOnly', 'codeLetterOrDigit', 'codeFull', 'codeFullCharacters'] },
+  typed: { widgets: ['maskDigit', 'maskLetter', 'maskEither', 'maskFull', 'maskShort', 'maskShortOne', 'codeDigits', 'codeCharacters', 'codeDigitOnly', 'codeLetterOrDigit', 'codeFull', 'codeFullCharacters', 'shorthandIs', 'shorthandOnly'] },
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
   print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },
