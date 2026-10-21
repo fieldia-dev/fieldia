@@ -178,6 +178,45 @@ export interface WidgetLabels {
   close: string;
   fileAt: string;
   noPreview: string;
+  /**
+   * A film or a sound the browser cannot play (its format is not one it reads): said where its player would be.
+   */
+  cannotPlay: string;
+  /**
+   * A file field that records (`options.record`): its buttons, how long a recording may be (`{time}`, "2:00"), and the
+   * recorder that could not be loaded. Then the recorder: the browser asked for the microphone (and the camera); ready,
+   * recording, Start and Stop; stopped at the limit (`{time}`) or at the largest file the field takes; recorded (`{time}`)
+   * with Use and Record again; a recording asked about before it is let go; why the devices could not be had, with Try
+   * again; a browser that cannot record; and a recording's name (`{when}`, "2026-10-21 11.42.05").
+   */
+  recordVoice: string;
+  recordVideo: string;
+  recordVoiceUpTo: string;
+  recordVideoUpTo: string;
+  recorderNoPart: string;
+  recordAskMic: string;
+  recordAskCamera: string;
+  recordReady: string;
+  recordStart: string;
+  recordStop: string;
+  recordingNow: string;
+  recordStoppedAt: string;
+  recordStoppedSize: string;
+  recordDone: string;
+  recordUse: string;
+  recordAgain: string;
+  recordDiscardAsk: string;
+  recordDiscard: string;
+  recordGoBack: string;
+  recordMicRefused: string;
+  recordCameraRefused: string;
+  recordNoMic: string;
+  recordNoCamera: string;
+  recordBusy: string;
+  recordCannot: string;
+  recordTryAgain: string;
+  recordingNameVoice: string;
+  recordingNameVideo: string;
   /** The switch over the files, when the page offers one: the files as a list, as cards, or as thumbnails. */
   showFilesAs: string;
   asList: string;
@@ -629,6 +668,35 @@ const en: WidgetLabels = {
   close: 'Close',
   fileAt: '{n} of {total}',
   noPreview: 'No preview for this kind of file',
+  cannotPlay: 'This browser cannot play it: download it to play it.',
+  recordVoice: 'Record a voice note',
+  recordVideo: 'Record a video',
+  recordVoiceUpTo: 'voice notes up to {time}',
+  recordVideoUpTo: 'videos up to {time}',
+  recorderNoPart: 'The recorder could not be loaded. Press Record to try again.',
+  recordAskMic: 'Allow the microphone when your browser asks.',
+  recordAskCamera: 'Allow the camera and the microphone when your browser asks.',
+  recordReady: 'Ready. Press Start recording.',
+  recordStart: 'Start recording',
+  recordStop: 'Stop',
+  recordingNow: 'Recording…',
+  recordStoppedAt: 'Stopped at {time}, the longest a recording may be here.',
+  recordStoppedSize: 'Stopped: the recording reached the largest file this field takes.',
+  recordDone: 'Recorded {time}. Play it back, then use it or record again.',
+  recordUse: 'Use this recording',
+  recordAgain: 'Record again',
+  recordDiscardAsk: 'Discard this recording?',
+  recordDiscard: 'Discard',
+  recordGoBack: 'Go back',
+  recordMicRefused: 'The microphone was not allowed. Allow it for this site in your browser’s settings, then press Try again, or add a recording as a file.',
+  recordCameraRefused: 'The camera or the microphone was not allowed. Allow them for this site in your browser’s settings, then press Try again, or add a video as a file.',
+  recordNoMic: 'No microphone was found. Connect one, then press Try again.',
+  recordNoCamera: 'No camera or microphone was found. Connect one, then press Try again.',
+  recordBusy: 'The microphone or the camera could not be started: another app may be using it. Close it, then press Try again.',
+  recordCannot: 'This browser cannot record here. Add a recording as a file instead.',
+  recordTryAgain: 'Try again',
+  recordingNameVoice: 'Voice note {when}',
+  recordingNameVideo: 'Video {when}',
   showFilesAs: 'Show files as',
   asList: 'List',
   asCards: 'Cards',

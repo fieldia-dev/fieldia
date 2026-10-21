@@ -8,6 +8,7 @@ import type * as LinesModule from './lines-part';
 import type * as BusinessModule from './business-part';
 import type * as FilesModule from './files-part';
 import type * as EvidenceModule from './evidence-part';
+import type * as RecordModule from './record-part';
 import type { ShrinkOptions } from './shrink';
 import type * as SurveyModule from './survey-part';
 import type * as PhoneModule from './phone-part';
@@ -34,6 +35,11 @@ export type FilesPart = typeof FilesModule;
  * their SHA-256, who and when said under it, whether the answers are still as signed, and Change answers.
  */
 export type EvidencePart = typeof EvidenceModule;
+/**
+ * The record part: a voice note or a short film recorded on the page for a file field that says `options.record` — the
+ * recorder's dialog, the microphone and the camera asked for, the time against its limit, the recording played back.
+ */
+export type RecordPart = typeof RecordModule;
 /** The survey part: a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address and a progress bar. */
 export type SurveyPart = typeof SurveyModule;
 /** The phone part: a phone number read the world over — its country picked or typed, checked, kept as E.164, shown at rest with its links — and every country's numbers. */
@@ -85,6 +91,15 @@ export const evidencePart: Part<EvidencePart> = lazyPart('evidence', () => impor
  */
 export function loadEvidencePart(): Promise<EvidencePart> {
   return evidencePart.load();
+}
+/**
+ * The recorder, loaded the first time a person presses Record on a file field that records (`options.record`): never
+ * for a page that records nothing, nor before someone means to record.
+ */
+export const recordPart: Part<RecordPart> = lazyPart('record', () => import('./record-part'));
+/** The record part, asked for, for another part: the files part's Record. A function, as `loadEvidencePart` is. */
+export function loadRecordPart(): Promise<RecordPart> {
+  return recordPart.load();
 }
 /** Whether asking for the evidence part again, once it failed, can bring it (`Part.asksAgain`): a function, as above. */
 export function evidencePartAsksAgain(): boolean {

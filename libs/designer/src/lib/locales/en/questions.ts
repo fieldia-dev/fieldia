@@ -277,6 +277,12 @@ export const questions = {
   photoQuality: 'Photo quality',
   qualityUsual: 'As usual (85%)',
   qualityOf: (n: number) => `${n}%`,
+  /** A file upload that records on the page (`options.record`): what it records, and the longest a recording may be (`maxSeconds`). */
+  recordedOnPage: 'Recorded on the page',
+  recordKinds: { '': 'Nothing', audio: 'A voice note', video: 'A video', both: 'A voice note or a video' } as Record<string, string>,
+  longestRecording: 'Longest recording',
+  recordUsual: 'As usual (2 min, a video 1 min)',
+  recordFor: (seconds: number) => (seconds >= 60 && seconds % 60 === 0 ? (seconds === 60 ? '1 minute' : `${seconds / 60} minutes`) : `${seconds} seconds`),
   // ---- previews of the newer kinds
   addressLines: { street: 'Street address', line2: 'Address line 2', city: 'City', region: 'State or region', postcode: 'Postcode', country: 'Country' },
   entryOne: 'Entry 1',

@@ -1,0 +1,48 @@
+import { checkPage } from './check-page';
+import { validatePage } from './validate';
+import type { Page } from './page';
+
+/**
+ * A file field that records a voice note or a short film, in the page format: `options.record` is "audio", "video" or
+ * both, `maxSeconds` a whole number of seconds up to an hour; it is a binary field's, whose `accept` takes what it
+ * records; and `maxSeconds` goes with `record`. Refused before anything draws, by both checks.
+ */
+
+const page = (options: Record<string, unknown>, field: Record<string, unknown> = {}): Page =>
+  ({
+    fieldia: '0.7',
+    id: 'visit',
+    data: { kind: 'record', model: 'visit' },
+    fields: { notes: { type: 'binary', label: 'Voice notes', multiple: true, ...field }, unit: { type: 'char', label: 'Unit' } },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-notes', field: 'notes', options }] },
+  }) as unknown as Page;
+const issues = (given: Page) => {
+  const full = validatePage(given);
+  const quick = checkPage(given);
+  return { full: full.ok ? [] : full.issues.map((i) => `${i.path}: ${i.message}`), quick: quick.ok ? [] : quick.issues.map((i) => `${i.path}: ${i.message}`) };
+};
+const at = 'layout.children[0]';
+
+describe('a file field that records', () => {
+  it('records a voice note, a film or both, for as long as it says', () => {
+    for (const options of [{ record: 'audio' }, { record: 'video', maxSeconds: 30 }, { record: ['audio', 'video'], maxSeconds: 3600 }]) expect(issues(page(options))).toEqual({ full: [], quick: [] });
+    expect(issues(page({ record: 'audio' }, { accept: ['audio/*'] }))).toEqual({ full: [], quick: [] });
+    expect(issues(page({ record: ['audio', 'video'] }, { accept: ['audio/webm', 'video/mp4'] }))).toEqual({ full: [], quick: [] });
+  });
+
+  it('refuses a kind it cannot record and a length of no whole seconds or past an hour', () => {
+    expect(issues(page({ record: 'photo' })).full).toEqual([`${at}.options.record: record is "audio" (a voice note), "video" (a short film) or both: ["audio", "video"]`]);
+    expect(issues(page({ record: 'audio', maxSeconds: 0 })).full).toEqual([`${at}.options.maxSeconds: maxSeconds is a whole number of seconds, 1 to 3600`]);
+    expect(issues(page({ record: 'audio', maxSeconds: 7200 })).full).toEqual([`${at}.options.maxSeconds: maxSeconds is a whole number of seconds, 1 to 3600: an hour at most`]);
+    expect(issues(page({ record: 'audio', maxSeconds: 1.5 })).full).toEqual([`${at}.options.maxSeconds: maxSeconds is a whole number of seconds, 1 to 3600`]);
+  });
+
+  it('records on a binary field whose accept takes what it records, and a length only with something recorded', () => {
+    expect(issues(page({ record: 'audio' }, { accept: ['application/pdf'] })).quick).toEqual([`${at}.options.record: "notes" accepts application/pdf: a voice note is audio (audio/*), which it would refuse`]);
+    expect(issues(page({ record: ['audio', 'video'] }, { accept: ['audio/*'] })).quick).toEqual([`${at}.options.record: "notes" accepts audio/*: a film is video (video/*), which it would refuse`]);
+    expect(issues(page({ maxSeconds: 30 })).quick).toEqual([`${at}.options.maxSeconds: maxSeconds is how long a recording may be: say what the field records (record: "audio" or "video")`]);
+    const onWords = page({ record: 'audio' });
+    (onWords.layout as unknown as { children: Record<string, unknown>[] }).children[0]['field'] = 'unit';
+    expect(issues(onWords).quick).toEqual([`${at}.options.record: record is for a binary field; "unit" is a char`]);
+  });
+});

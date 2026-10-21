@@ -1,9 +1,10 @@
-import { describeTypes, fileProblem, fill, formatBytes, MESSAGES, saveRefused, uploadGoing, type Field, type FileUpload, type FileValue, type Form } from '@fieldia/core';
+import { describeTypes, fileProblem, fill, formatBytes, MESSAGES, saveRefused, uploadGoing, type Field, type FileUpload, type FileValue, type Form, type RecordedKind } from '@fieldia/core';
 import { keepTabIn } from './focus-trap';
 import { goingItem, type GoingItem } from './files-going';
 import { shrinkable, shrinkFor, shrinkPhoto } from './shrink';
 import { drawIcon } from './icons';
-import { bytesOf, extension, INLINE_FILE_WARNING, kindOf, readFile, source } from './file-shown';
+import { bytesOf, extension, INLINE_FILE_WARNING, readFile, source } from './file-shown';
+import { kindOfFile as kindOf, recordedKinds, recordSeconds } from './media';
 export { INLINE_FILE_WARNING, readFile };
 import { askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
@@ -11,6 +12,7 @@ import type { WidgetLabels } from './labels';
 import { formBehind } from './handed';
 import { stillShown } from './shown';
 import { installFilesStyles } from './styles-files';
+import { loadRecordPart } from './widget-parts';
 
 /**
  * File and image fields. A chosen or dropped file is read into the value as
@@ -30,6 +32,18 @@ import { installFilesStyles } from './styles-files';
  * `shrink`) — and shows on its way with a bar, × to cancel it and Retry once
  * it failed; the field then holds its link alone. Without it, a file larger
  * than a megabyte warns once in the console: it travels inside the record.
+ *
+ * A film or a sound plays in the browser's own player: in the dialog, a film
+ * with its poster frame — the app's own (`FileValue.poster`), else the frame
+ * half a second in — and a sound under its name in a list, where a voice note
+ * is listened to in place. A film's picture among the files is that frame.
+ *
+ * A field whose node says `options.record` — `"audio"`, `"video"` or both —
+ * records a voice note or a short film on the page, beside its picker: Record
+ * opens the recorder (the record part, recorder.ts, loaded as it is first
+ * pressed) and what is recorded is taken as a file picked is. Where the browser
+ * cannot record (no microphone to ask for: a page not served over https), the
+ * buttons are not shown.
  *
  * They come in the files part (files-part.ts), loaded the first time a page
  * shows one; the names of the files a value holds meanwhile.
@@ -60,6 +74,59 @@ function picture(make: Make, src: string, instead: () => HTMLElement, attrs: Rec
   image.addEventListener('error', () => image.parentNode?.replaceChild(instead(), image), { once: true });
   return image;
 }
+/**
+ * A film's picture among the files: the app's own poster frame (`poster`), else the frame half a second in, drawn by
+ * the browser from the film itself (a media fragment) — never played, never heard, never read aloud — with a play mark
+ * over it. Where the browser cannot read the film, `instead`.
+ */
+function filmFrame(make: Make, file: FileValue, src: string, instead: () => HTMLElement): HTMLElement {
+  const film = file.poster ? make('img', { src: file.poster, alt: '' }) : make('video', { src: `${src}#t=0.5`, preload: 'metadata', muted: '', playsinline: '', tabindex: '-1' });
+  if (!file.poster) {
+    const video = film as HTMLVideoElement;
+    // Muted as a property too: the attribute alone sets only where it starts.
+    video.muted = true;
+    // A browser that reads a film's length but no frame of it (Safari, told to load no more than that) is asked for the
+    // frame: seeking to it loads it.
+    video.addEventListener('loadedmetadata', () => video.readyState < 2 && (video.currentTime = Math.min(0.5, (video.duration || 1) / 2)), { once: true });
+  }
+  const frame = make('span', { class: 'fd-file-thumb fd-file-film', 'aria-hidden': 'true' }, film);
+  film.addEventListener('error', () => frame.replaceWith(instead()), { once: true });
+  return frame;
+}
+/** Where a film or a sound plays from: where it is stored, or its bytes held in the value, as an address `made` keeps to let go. */
+function playedFrom(file: FileValue, made: Set<string>): string {
+  const data = bytesOf(file);
+  if (!data) return file.url ?? '';
+  if (typeof URL.createObjectURL !== 'function') return source(file);
+  const url = URL.createObjectURL(new Blob([data], { type: file.type }));
+  made.add(url);
+  return url;
+}
+/**
+ * The browser's own player for a film or a sound, named by the file: a film starts on its poster frame (the app's, else
+ * its frame a tenth of a second in). One the browser cannot play says so in its place (`instead`).
+ */
+function player(make: Make, kind: 'video' | 'audio', file: FileValue, url: string, instead: () => HTMLElement, attrs: Record<string, string> = {}): HTMLElement {
+  const film = kind === 'video';
+  const media = make(kind, { ...attrs, src: film && !file.poster ? `${url}#t=0.1` : url, controls: '', preload: 'metadata', 'aria-label': file.name, ...(film ? { playsinline: '' } : {}), ...(film && file.poster ? { poster: file.poster } : {}) });
+  media.addEventListener('error', () => media.replaceWith(instead()), { once: true });
+  return media;
+}
+/** A microphone, and a film's camera, for the Record buttons. */
+const RECORDING: Record<string, string> = {
+  audio: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>',
+  video: '<rect x="3" y="6" width="12.5" height="12" rx="2"/><path d="M15.5 10.5 21 7.5v9l-5.5-3"/>',
+};
+/** "2:00" for two minutes: how long a recording may be. */
+const minutes = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+/**
+ * Whether the browser can record on this page: a microphone and a camera it may ask for — on a page served over https,
+ * or the machine's own — and a recorder.
+ */
+const canRecord = (doc: Document) => {
+  const win = doc.defaultView as (Window & { MediaRecorder?: unknown }) | null;
+  return typeof win?.navigator?.mediaDevices?.getUserMedia === 'function' && typeof win.MediaRecorder === 'function';
+};
 /** The pictures' ways in the switch: cards, a picture over a line of words; thumbnails, pictures alone. A list has the list's icon. */
 const VIEWS = {
   cards: '<path d="M3 3h8v8H3zM13 3h8v8h-8zM3 15h8M13 15h8M3 19h5M13 19h5"/>',
@@ -148,6 +215,10 @@ export function viewFiles(context: ViewFiles): void {
     download.download = file.name;
     const kind = kindOf(file);
     if (kind === 'image') return body.replaceChildren(picture(make, url, () => none(file), { alt: file.name }));
+    // A film in the browser's player; a sound under its name, the player beneath; either one the browser cannot play, said.
+    const unplayable = () => make('div', { class: 'fd-file-none' }, icon(make, file), make('strong', {}, file.name), sized(file), make('p', {}, words.cannotPlay));
+    if (kind === 'video') return body.replaceChildren(player(make, kind, file, url, unplayable));
+    if (kind === 'audio') return body.replaceChildren(make('div', { class: 'fd-file-none fd-file-sound' }, icon(make, file), make('strong', {}, file.name), sized(file), player(make, kind, file, url, () => make('p', {}, words.cannotPlay))));
     if (kind === 'pdf') return body.replaceChildren(make('iframe', { src: url, title: file.name }));
     if (!asText(file)) return body.replaceChildren(none(file));
     const pre = make('pre', { tabindex: '0' });
@@ -169,7 +240,8 @@ export function viewFiles(context: ViewFiles): void {
   box.addEventListener('keydown', (event) => {
     const by = ({ ArrowLeft: -1, ArrowRight: 1 } as Record<string, number>)[event.key];
     if (event.key === 'Escape') done();
-    else if (by && all.length > 1 && (event.target as Element).tagName !== 'PRE') show(at + (rightToLeft(context.home) ? -by : by));
+    // A player's own arrows move through the film or the sound; text's move its caret.
+    else if (by && all.length > 1 && !/^(PRE|VIDEO|AUDIO)$/.test((event.target as Element).tagName)) show(at + (rightToLeft(context.home) ? -by : by));
     else keepTabIn(box, event);
   });
   installFilesStyles(doc);
@@ -201,11 +273,14 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     const input = make('input', { type: 'file', id, class: 'fd-sr-only', accept: accept?.join(','), capture: camera ? (camera === 'user' ? 'user' : 'environment') : undefined });
     input.multiple = several;
 
+    // A voice note or a short film recorded on the page, where the node says and the browser can.
+    const recorded: RecordedKind[] = field.type === 'binary' && canRecord(doc) ? recordedKinds(node.options) : [];
     // The limits, said before anyone tries.
     const limits = [
       !image && accept ? describeTypes(accept, messages.or) : '',
       field.maxSize ? fill(several ? words.upToEach : words.upToSize, { size: formatBytes(field.maxSize) }) : '',
       several && field.maxFiles ? fill(words.upToFiles, { max: field.maxFiles }) : '',
+      ...recorded.map((kind) => fill(kind === 'audio' ? words.recordVoiceUpTo : words.recordVideoUpTo, { time: minutes(recordSeconds(node.options, kind)) })),
     ].filter(Boolean);
     // A tile after the pictures, a drop zone over the list.
     const pick = make(
@@ -231,7 +306,49 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     const switcher = switchable ? make('div', { class: 'fd-file-views', role: 'group', 'aria-label': words.showFilesAs }, way('list', words.asList), way(pictures, pictures === 'cards' ? words.asCards : words.asThumbnails)) : null;
     // Over the files: how many there are, and the switch.
     const bar = count || switcher ? make('div', { class: 'fd-file-bar' }, ...(count ? [count] : []), ...(switcher ? [switcher] : [])) : null;
-    const top = [input, pick, ...(limits.length ? [limited] : [])];
+    // Record a voice note, Record a video: beside the picker, the recorder opened over the form.
+    let recording: { close(): void } | null = null;
+    const record = (kind: RecordedKind, button: HTMLButtonElement) => {
+      if (readonly || recording) return;
+      // Asked for on the record shown now: what is recorded is laid on no other.
+      const shown = stillShown(form);
+      loadRecordPart().then(
+        (part) => {
+          if (!shown() || !button.isConnected || recording) return;
+          say([]);
+          recording = part.openRecorder({
+            doc,
+            words,
+            kind,
+            maxSeconds: recordSeconds(node.options, kind),
+            ...(field.maxSize ? { maxBytes: field.maxSize } : {}),
+            ...(accept ? { accept } : {}),
+            home: element,
+            now: () => form.now(),
+            ...(form.page.timeZone ? { timeZone: form.page.timeZone } : {}),
+            use: (file) => void (shown() && take([file])),
+            closed: () => {
+              recording = null;
+              if (button.isConnected && !button.hidden) button.focus();
+              else (list.querySelector('button') ?? input).focus();
+            },
+          });
+        },
+        () => say([words.recorderNoPart])
+      );
+    };
+    const recordRow = recorded.length
+      ? make(
+          'div',
+          { class: 'fd-file-records' },
+          ...recorded.map((kind) => {
+            const button = make('button', { type: 'button', class: 'fd-button fd-file-record', 'data-record': kind }, drawIcon(doc, kind, RECORDING) as SVGSVGElement, kind === 'audio' ? words.recordVoice : words.recordVideo);
+            button.addEventListener('click', () => record(kind, button));
+            return button;
+          })
+        )
+      : null;
+    const top = [input, pick, ...(recordRow ? [recordRow] : []), ...(limits.length ? [limited] : [])];
     element.append(...(bar ? [bar] : []), list, replace, confirm.element, note);
     let display = own;
     function showAs(as: string) {
@@ -399,8 +516,22 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       });
     });
 
-    /** The files, each opening, and each with × to remove it unless the field reads only. */
+    /** The addresses made for films and sounds held in the value, let go as they are drawn again, and as the field goes. */
+    const played = new Set<string>();
+    const letGo = () => {
+      for (const url of played) URL.revokeObjectURL(url);
+      played.clear();
+    };
+    /** A file's picture: a photo's own, a film's frame, else its kind's page. */
+    const shownOf = (file: FileValue) => {
+      const kind = kindOf(file);
+      if (kind === 'image' && source(file)) return picture(make, source(file), () => icon(make, file));
+      const src = kind === 'video' ? playedFrom(file, played) : '';
+      return kind === 'video' && (src || file.poster) ? filmFrame(make, file, src, () => icon(make, file)) : icon(make, file);
+    };
+    /** The files, each opening, and each with × to remove it unless the field reads only; a sound in a list with its player under it. */
     function draw() {
+      letGo();
       list.replaceChildren(
         ...files.map((file, at) =>
           make(
@@ -410,11 +541,13 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
               'button',
               // Named whole: the name's two parts would be read as two words.
               { type: 'button', class: 'fd-file-open', 'data-at': String(at), 'aria-haspopup': 'dialog', 'aria-label': `${file.name}, ${formatBytes(file.size)}` },
-              ...[kindOf(file) === 'image' && source(file) ? picture(make, source(file), () => icon(make, file)) : icon(make, file)].map((shown) => (display === 'cards' ? make('span', { class: 'fd-file-picture' }, shown) : shown)),
+              ...[shownOf(file)].map((shown) => (display === 'cards' ? make('span', { class: 'fd-file-picture' }, shown) : shown)),
               (display === 'cards' ? namedOnCard : named)(make, file.name),
               make('span', { class: 'fd-file-size' }, formatBytes(file.size))
             ),
-            ...(readonly ? [] : [make('button', { type: 'button', class: 'fd-file-remove', 'data-at': String(at), 'aria-label': fill(words.remove, { name: file.name }) }, '×')])
+            ...(readonly ? [] : [make('button', { type: 'button', class: 'fd-file-remove', 'data-at': String(at), 'aria-label': fill(words.remove, { name: file.name }) }, '×')]),
+            // A voice note listened to where it is, in the browser's own player.
+            ...(display === 'list' && kindOf(file) === 'audio' && (file.url || file.data) ? [player(make, 'audio', file, playedFrom(file, played), () => make('span'), { class: 'fd-file-player' })] : [])
           )
         ),
         // Those on their way stay after them, as they were.
@@ -438,6 +571,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         const going = goingNow();
         const full = files.length + (several ? going.length : 0) >= most;
         setHidden(pick, full || readonly);
+        if (recordRow) setHidden(recordRow, full || readonly);
         setHidden(limited, readonly);
         input.disabled = readonly;
         input.hidden = pick.hidden;
@@ -461,6 +595,8 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       destroy() {
         for (const preview of previews.values()) if (preview) URL.revokeObjectURL(preview);
         previews.clear();
+        letGo();
+        recording?.close();
       },
     };
   };

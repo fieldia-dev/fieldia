@@ -53,6 +53,12 @@ export interface FileValue {
   fileId?: RecordId;
   /** A signature that signs answers (its node's `options.signs`): when, by whom and the fingerprint of what it signed. */
   signed?: SignatureEvidence;
+  /**
+   * A film's poster frame, where the app has one (a picture its store made): the address of a picture shown for the film
+   * before it plays, and as its picture among the files. Without it, the frame half a second in. Fieldia reads it, never
+   * writes it.
+   */
+  poster?: string;
 }
 
 /**

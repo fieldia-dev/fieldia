@@ -71,6 +71,8 @@ import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings
 import { customerCardPage, duplicateCustomers } from './duplicates';
 import { keepWrites, keptApart, keptOver } from './kept';
 import { consentPage, sampleConsents } from './consents';
+import siteVisit from '../../examples/pages/site-visit.page.json';
+import { siteVisits } from './site-visit';
 import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
@@ -103,6 +105,8 @@ export const pages: Record<string, Page> = {
   'customer-card': customerCardPage,
   // A clinic's consent to treatment, signed: who, when and the answers' fingerprint kept, the answers locked (shared/consents.ts).
   'clinic-consent': consentPage,
+  // An agent's visit to a flat: its video tour and voice notes played in place (shared/site-visit.ts).
+  'site-visit': siteVisit as Page,
   fields: fields as Page,
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
@@ -541,6 +545,8 @@ export function sampleDataSource() {
       ...appointmentRecords(),
       // Two consents signed, one changed in the clinic's system after (shared/consents.ts).
       'clinic.consent': sampleConsents(),
+      // An agent's visit to a flat, with its films and voice notes (shared/site-visit.ts).
+      'property.visit': siteVisits(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

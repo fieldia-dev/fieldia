@@ -914,3 +914,27 @@ In plain words:
   `limits` option's starting counts, a record page's model's records but the one edited; `saveDraft` keys drafts
   `draft-1`, `draft-2`… (`drafts` shows them, with `later`), with `draftLink(key)`'s link on "Continue later";
   `loadDraft` finds them, and the `drafts` option's. Tests: `libs/core/src/lib/record/taking.spec.ts`, `drafts.spec.ts`.
+
+## 19. A film's poster frame, and a recording (Wave 6, lane w6-media)
+
+No new member: a film in a file field may carry the app's own poster frame in the value a file field already has, and
+a voice note or a short film recorded on the page (`options.record`) is a file picked, as §4 stores it.
+
+```ts
+interface FileValue { /* …as before… */ poster?: string }   // the address of a picture of the film, the app's own
+```
+
+In plain words:
+
+- **Read, never written.** A film's picture among the files, and the frame its player starts from, is `poster` where
+  the value has one — a picture the app's store made as the film was stored — else the film's own frame half a second
+  in, drawn by the browser. Fieldia never writes `poster` and never makes one.
+- **An upload may give one.** What `upload` answers is the field's value as it is (§4), so a store that makes a poster
+  frame as it keeps a film answers `{ url, name, size, type, fileId?, poster }` and the film shows it at once.
+- A sound has no picture: it plays in the browser's own player under its name. The memory source keeps the value as
+  it is given.
+- **A recording is a file.** Used, a recording reaches the field as a file picked does: `upload(file, request)` where
+  the source has it — `file.type` its plain media type (`audio/webm`, `video/mp4`, never with its codecs), `file.name`
+  "Voice note 2026-10-21 11.42.05.webm" on the page's clock — else inside the record as base64. A store that refuses
+  it (`saveRefused`, a kind it does not keep) is said under the field, as for any file. Nothing is sent while it is
+  being made: the bytes go once the person presses Use this recording.

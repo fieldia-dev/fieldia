@@ -51,7 +51,7 @@ const AREA_OF = {
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
-  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing'],
+  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'site-visit'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -88,6 +88,7 @@ const SEARCH_WORDS = {
   'work-item': 'bug issue ticket tracker azure devops work item quiet look state reason locked workflow',
   fields: 'every field kinds inputs text number money currency choice dropdown date calendar file upload attachment picture image rich text tags',
   'listing-photos': 'photos pictures images upload uploads camera phone property real estate listing gallery retry cancel slow',
+  'site-visit': 'site visit inspection video tour film movie clip play player poster audio sound voice note voice notes listen recording record recorder microphone mic camera webcam real estate property flat apartment agent snag',
   kinds: 'survey questionnaire slider tags address picture choice ranking repeat quiz score signature sign moving day time weight hearts nps net promoter recommend scale',
   business: 'fields task project priority stars status timer stopwatch hours timesheet date range tags copy pdf analytic accounts tax payments properties',
   code: 'code editor programming json python sql javascript syntax highlight vs code codemirror developer',
@@ -480,6 +481,21 @@ export const DEMOS = [
       'Press Save while photos are still going: it waits, and says how many are left. Press × on one still going to cancel it.',
       'Pick photos of your own with Add photos, or take one with a phone’s camera.',
       'Open the Code drawer: this store is the memory source slowed down; your app gives upload(), with uploadTo({ url }) for a plain endpoint or a signed address for Azure Blob.',
+    ],
+  },
+  {
+    id: 'site-visit',
+    name: 'A site visit’s films and voice notes',
+    category: 'fields',
+    query: 'page=site-visit&record=1&skin=outlined',
+    blurb: 'An agent’s visit to a flat before it is listed: its video tour plays in the browser’s own player, each film shown by its poster frame — the one the store made, or the film’s own frame — voice notes and short videos are recorded on the page, up to their limits, and each is listened to where it is.',
+    howTo: [
+      'Look at the Video tour: Living room shows the poster frame the store made, Walk-through its own first frame, each under a play mark.',
+      'Open Living room: it plays in the dialog, starting from its poster frame. The arrow keys on the player move through the film; elsewhere they go to the next file.',
+      'Press play on Kitchen and balcony under Voice notes: the voice note plays where it is.',
+      'Press Record a voice note and allow the microphone: Start recording, say a few words, Stop, play it back, then Use this recording. It is kept under Voice notes, named by when it was made.',
+      'Press Record a video: the camera’s picture shows live; it stops by itself at 30 seconds, saying so.',
+      'Refuse the microphone when the browser asks: the recorder says so, with Try again.',
     ],
   },
   {

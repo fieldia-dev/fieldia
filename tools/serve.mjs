@@ -17,6 +17,11 @@ const types = {
   '.map': 'application/json',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.webm': 'video/webm',
+  '.mp4': 'video/mp4',
+  '.m4a': 'audio/mp4',
+  '.ogg': 'audio/ogg',
 };
 
 /**
@@ -77,6 +82,18 @@ createServer((request, response) => {
     response.writeHead(404, { 'content-type': 'text/plain' }).end(`Not found: ${url.pathname}`);
     return;
   }
-  response.writeHead(200, { 'content-type': types[extname(path)] ?? 'application/octet-stream', 'cache-control': 'no-store' });
+  const type = types[extname(path)] ?? 'application/octet-stream';
+  // A part of the file where the browser asks for one, as a real host answers it: Safari plays a film or a sound only
+  // from a host that answers a range — and seeks to a film's frame with one.
+  const size = statSync(path).size;
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.range ?? '');
+  if (range && (range[1] || range[2])) {
+    const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+    const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+    if (start >= size || start > end) return response.writeHead(416, { 'content-range': `bytes */${size}` }).end();
+    response.writeHead(206, { 'content-type': type, 'cache-control': 'no-store', 'accept-ranges': 'bytes', 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': end - start + 1 });
+    return createReadStream(path, { start, end }).pipe(response);
+  }
+  response.writeHead(200, { 'content-type': type, 'cache-control': 'no-store', 'accept-ranges': 'bytes', 'content-length': size });
   createReadStream(path).pipe(response);
 }).listen(port, '127.0.0.1', () => console.log(`serving ${root} on http://127.0.0.1:${port}`));

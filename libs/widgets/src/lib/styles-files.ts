@@ -47,6 +47,19 @@ export const FILES_CSS = /* css */ `
 .fd-file-icon[data-kind="doc"] { --fd-kind: #1f5fbf; }
 .fd-file-icon[data-kind="sheet"] { --fd-kind: #1d7a3e; }
 .fd-file-icon[data-kind="zip"] { --fd-kind: #8a5300; }
+.fd-file-icon[data-kind="video"] { --fd-kind: #6d3fc0; }
+.fd-file-icon[data-kind="audio"] { --fd-kind: #0f766e; }
+/* A film's picture: its poster frame, filling its box, a play mark over it — a media mark, which never turns right to
+   left. A sound in a list: the browser's own player under its name, the whole line wide. */
+.fd-file-film { position: relative; display: grid; place-items: center; overflow: hidden; background: #14181d; }
+.fd-file-film > * { width: 100%; height: 100%; object-fit: cover; }
+.fd-file-film::after {
+  content: ""; position: absolute; width: 0; height: 0; border-style: solid; border-width: 7px 0 7px 12px; border-color: transparent transparent transparent #fff;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7)); translate: 2px 0;
+}
+:is(.fd-files-thumbs, .fd-files-cards) .fd-file-film::after { border-width: 13px 0 13px 22px; }
+.fd-file-item:has(> .fd-file-player) { flex-wrap: wrap; }
+.fd-file-player { flex-basis: 100%; min-width: 0; height: 40px; }
 .fd-file-name { flex: 1; display: flex; min-width: 0; white-space: pre; }
 .fd-file-name > span { overflow: hidden; text-overflow: ellipsis; }
 /* A size reads in its own direction, right to left too. */
@@ -107,7 +120,9 @@ export const FILES_CSS = /* css */ `
 .fd-file-step { min-width: 34px; }
 .fd-file-viewer a { text-decoration: none; }
 .fd-file-viewer-body { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: auto; background: var(--fd-page); }
-.fd-file-viewer-body img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.fd-file-viewer-body :is(img, video) { max-width: 100%; max-height: 100%; object-fit: contain; }
+.fd-file-viewer-body video { background: #000; }
+.fd-file-sound audio { width: min(420px, 100%); margin-block-start: 12px; }
 .fd-file-viewer-body :is(iframe, pre) { flex: 1; align-self: stretch; margin: 0; border: 0; background: var(--fd-surface); }
 .fd-file-viewer-body pre { padding: 14px 16px; overflow: auto; font: 13px/1.5 monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .fd-file-none { display: grid; justify-items: center; gap: 4px; padding: 24px; text-align: center; color: var(--fd-muted); }
