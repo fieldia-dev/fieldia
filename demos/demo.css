@@ -63,3 +63,4 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
 /* An approvals demo's bar (shared/approvals.ts): who uses it, and the others to sign in as — the shell's own colours. */
 .demo-signed-in { background: var(--dh-surface, #fff); border-color: var(--dh-line, #e3e6ea); color: var(--dh-ink, #1f2933); }
 .demo-signed-in-said { font-weight: 600; }
+.demo-signed-in .demo-links a { color: var(--dh-link, #0b5cad); }
