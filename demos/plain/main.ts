@@ -23,6 +23,7 @@ import { photosBar } from '../shared/listing-photos';
 import { botLog, captchaSlot } from '../shared/captcha';
 import { meanwhileBar } from '../shared/test-drive';
 import { lastPlacesBar } from '../shared/event-signup';
+import { signedInBar } from '../shared/approvals';
 import { addressFollowsRecord } from '../shared/address';
 
 /**
@@ -212,6 +213,9 @@ if (name === 'test-drive') document.getElementById('app')?.before(meanwhileBar(d
 if (name === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
 // The enquiry has a bar over it: the buyer's phone reads what was sent and writes back (shared/enquiry.ts).
 if (name === 'enquiry') document.getElementById('app')?.before(buyerBar(chatter));
+// A purchase order's and an expense's approvals: who uses the demo, and the others to sign in as (shared/approvals.ts).
+const signedIn = signedInBar(params);
+if (signedIn) document.getElementById('app')?.before(signedIn);
 
 // `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `pages` themselves,
 // for the one that each draws the sample records' values as their kind is.

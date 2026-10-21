@@ -577,6 +577,40 @@ const form = createForm({ page, dataSource, resume: new URLSearchParams(location
 form.on('draft', ({ key, later, saved }) => later && console.log('Continue from', saved.link));
 ```
 
+## Approvals on a record
+
+A record's page may say its records wait for approval:
+
+```json
+{ "approval": { "open": ["notes"] } }
+```
+
+The data source tells where a record stands, `approvals({ model, recordId,
+user })` answering `{ levels, history, mine, together, why }` — each level its
+`id`, `name`, `approvers` (each `{ id, name, decision, at }` in the round asked
+now), `needs` (`any`, the default, or `all`) and `state` (`waiting`, `later`,
+`approved`, `rejected`, `skipped`); `history` oldest first (`{ decision:
+'requested' | 'approved' | 'rejected', level, by, at, reason }`); `mine` the
+levels this person may decide now — and takes the decisions, `decide({ model,
+recordId, level, decision, reason, user })`, a rejection always with why. Who is
+asked, and in what order, is the app's, or its approval engine's: Fieldia never
+works it out. The form asks as a saved record is shown, after each save and each
+decision, keeping what it told in `state.approval` (`status`: `none`, `needed`,
+`waiting`, `approved`, `rejected`); an answer for a record no longer shown is
+laid on none. While it waits, every field is read-only but those `open` names
+(`form.node(id).readonly`, `form.fieldReadonly`), `form.approvalLock(name)`
+saying why; `"lock": false` locks none. `form.decide(level, decision, reason?)`
+reads and saves what is typed first, then decides, then loads the record again;
+it refuses a level not this person's and a rejection with no reason, in words.
+The memory source's `approvals` option routes records as an engine would (in
+turn or together, any or all, a rejection ending the round), keeping each
+decision; `approvalHistory` is what it starts from.
+
+```ts
+await form.decide('finance', 'rejected', 'Over the quarter’s budget');
+form.getState().approval?.status; // 'rejected'
+```
+
 ## What a page's records are called
 
 A page may say what its records are, so Fieldia's own sentences name them as

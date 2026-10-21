@@ -114,6 +114,10 @@ export interface ChatterLabels {
   overdueSince: string;
   /** The time box beside the due date, as an activity is scheduled. */
   dueTime: string;
+  /** A record's approval history, told among its messages (`chatterSlot`): sent for approval, and a decision at a `{level}`. */
+  approvalAsked: string;
+  approvalApproved: string;
+  approvalRejected: string;
 }
 
 /**
@@ -219,6 +223,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     todayAt: 'Today at {time}',
     overdueSince: 'Overdue since {when}',
     dueTime: 'Time',
+    approvalAsked: 'Asked for approval',
+    approvalApproved: 'Approved for {level}',
+    approvalRejected: 'Rejected for {level}',
   },
   ar: {
     conversation: 'المحادثة',
@@ -310,6 +317,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     todayAt: 'اليوم الساعة {time}',
     overdueSince: 'متأخر منذ {when}',
     dueTime: 'الوقت',
+    approvalAsked: 'طلب الموافقة',
+    approvalApproved: 'وافق عن {level}',
+    approvalRejected: 'رفض عن {level}',
   },
   de: {
     conversation: 'Unterhaltung',
@@ -401,6 +411,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     todayAt: 'Heute um {time}',
     overdueSince: 'Überfällig seit {when}',
     dueTime: 'Uhrzeit',
+    approvalAsked: 'Hat um Genehmigung gebeten',
+    approvalApproved: 'Für {level} genehmigt',
+    approvalRejected: 'Für {level} abgelehnt',
   },
   fr: {
     conversation: 'Conversation',
@@ -492,5 +505,8 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     todayAt: 'Aujourd’hui à {time}',
     overdueSince: 'En retard depuis {when}',
     dueTime: 'Heure',
+    approvalAsked: 'A demandé l’approbation',
+    approvalApproved: 'Approuvé pour {level}',
+    approvalRejected: 'Refusé pour {level}',
   },
 };

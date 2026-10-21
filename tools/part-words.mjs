@@ -26,6 +26,14 @@ export const WORD_TABLES = {
 
 /** By part, the keys of each table only that part's modules (and the other parts named with a key) read. */
 export const PART_WORDS = {
+  approvals: {
+    messages: ['approvalLocked', 'approvalReasonNeeded', 'approvalNotYours'],
+    viewer: [
+      'approvalWaiting', 'approvalWho', 'approvalNeeded', 'approvalThen', 'approvalApproved', 'approvalRejectedBy', 'approvalRejected', 'approvalFailed', 'approvalOpen', 'approvalLockedAll', 'approvalLevelApproved', 'approvalLevelRejected',
+      'approvalLevelWaiting', 'approvalLevelWaitingSome', 'approvalLevelLater', 'approvalLevelSkipped', 'approvalApprove', 'approvalReject', 'approvalApproveFor', 'approvalRejectFor', 'approvalApproving', 'approvalRejecting', 'approvalApprovedFor', 'approvalRejectedFor',
+      'approvalApproveFailed', 'approvalRejectFailed', 'approvalRejectTitle', 'approvalRejectTitleNoun', 'approvalRejectAsk', 'approvalRejectReason', 'approvalHistoryCount', 'approvalAskedEntry', 'approvalApprovedEntry', 'approvalRejectedEntry',
+    ],
+  },
   business: {
     widgets: ['moreSteps', 'timeInStep', 'copyValue', 'addAccount', 'sharesOff', 'untaxed', 'amountDue', 'paymentOf', 'openPayment', 'hoursDecimal', 'account', 'deleteLine', 'stillHolds'],
   },

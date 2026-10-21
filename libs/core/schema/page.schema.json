@@ -389,6 +389,9 @@
     },
     "continueLater": {
       "type": "boolean"
+    },
+    "approval": {
+      "$ref": "#/$defs/PageApproval"
     }
   },
   "required": [
@@ -10239,6 +10242,22 @@
           "type": "string",
           "maxLength": 1000,
           "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PageApproval": {
+      "type": "object",
+      "properties": {
+        "open": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "lock": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false

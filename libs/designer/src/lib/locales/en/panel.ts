@@ -425,6 +425,15 @@ export const panel = {
   duplicatesNone: 'No field here can find one: add words, a number, a date, a choice or a link.',
   duplicatesOn: 'Duplicates asked for',
   duplicatesOnAs: { type: 'As they are typed, and as saved', save: 'Only as the record is saved' },
+  // ---- a record page's approvals
+  approval: 'Approvals',
+  approvalOn: 'Its records wait for approval',
+  approvalHint: 'Who must approve a record at which level, Approve and Reject for those who may decide, and what was decided — said on the record and in its conversation. Your app’s data source, or its approval engine, says who is asked and in what order. Hidden where it tells none.',
+  approvalLock: 'Locked while it waits',
+  approvalLockOn: 'Lock the record while it waits',
+  approvalLockHint: 'Off: nothing is locked while it waits, and your app’s save refuses what it must.',
+  approvalOpen: 'Open while it waits',
+  approvalOpenHint: 'The fields ticked stay open while the record waits for a decision; every other one is locked, its lock saying why.',
   // ---- what the screen's records are called
   recordsCalled: 'Records are called',
   recordsOne: 'One record is called',

@@ -11,6 +11,7 @@ const salma = { id: 23, name: 'Salma Nabil' };
 const mona = { id: 21, name: 'Mona Adel' };
 const karim = { id: 22, name: 'Karim Fathy' };
 const youssef = { id: 24, name: 'Youssef Kamal' };
+const omar = { id: 27, name: 'Omar Said' };
 
 /** A day from today, as `YYYY-MM-DD`, so the demo's to-dos are always late, due or ahead. */
 function fromToday(days: number): string {
@@ -34,7 +35,7 @@ export function sampleChatter(params: URLSearchParams = new URLSearchParams(type
   const enquiry = params.get('page') === 'enquiry';
   return createMemoryChatter({
     me: salma,
-    people: [salma, mona, karim, youssef],
+    people: [salma, mona, karim, youssef, omar],
     activityTypes: [call, todo, meeting],
     ...(enquiry ? { live: true, deliverAfter: 2500, now: demoNow, refuse: enquiryRefuses } : {}),
     records: {
@@ -70,6 +71,21 @@ export function sampleChatter(params: URLSearchParams = new URLSearchParams(type
           { id: 72, person: karim },
         ],
       },
+      // A purchase order waiting for approval, and an expense rejected: their own words; who approved and who rejected
+      // them is told among these from the record's approval history (shared/approvals.ts).
+      'purchase.order:1': {
+        messages: [{ id: 302, kind: 'message', author: omar, date: hoursAgo(53), body: '<p>Nile Traders’ quote for the 12th floor: 40 chairs and 8 standing desks, delivered in three weeks.</p>' }],
+        followers: [{ id: 74, person: omar }],
+      },
+      'hr.expense:1': {
+        messages: [{ id: 402, kind: 'note', author: omar, date: hoursAgo(146), body: '<p>Dinner with Nile Traders after the site visit; the receipt is attached to the claim.</p>' }],
+        followers: [{ id: 75, person: omar }],
+      },
     },
   });
+}
+
+/** A moment so many hours before now, to the minute. */
+function hoursAgo(hours: number): string {
+  return new Date(Math.floor((Date.now() - hours * 3600000) / 60000) * 60000).toISOString();
 }

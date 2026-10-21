@@ -79,7 +79,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, type HeadPart } from './viewer-parts';
+import { answersPart, approvalsPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, type HeadPart } from './viewer-parts';
 import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
@@ -992,7 +992,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const mayNot = can?.readonlyFields?.includes(node.field);
         // An answer a signature signed says how to change it — by taking the signature away — unless the source locks it
         // for this person anyway; a value worked out, never typed, says nothing.
-        const why = !mayNot && !fixed && signedNow(state.values).has(node.field) ? labels.signedAnswer : (reason ?? (mayNot ? (can?.reason ?? labels.fieldNotYours) : undefined));
+        // One locked while the record waits for approval says so, unless the source locks it for this person anyway.
+        const awaiting = !mayNot && !fixed ? form.approvalLock(node.field) : null;
+        const why = !mayNot && !fixed && signedNow(state.values).has(node.field) ? labels.signedAnswer : (awaiting ?? reason ?? (mayNot ? (can?.reason ?? labels.fieldNotYours) : undefined));
         const showsLock = lockedNow && (!!why || (wrapper.hasAttribute('data-in-quiet') && !fixed));
         if (showsLock || lockMark) setHidden(lockFor(why), !showsLock);
         if (!lockedNow) point(false);
@@ -1874,6 +1876,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    */
   const limitsAsked = !!(page.limits || page.continueLater || options.resume);
   let limitsKit: LimitsKit | null = null;
+  /** A record's approvals over it (`approval`), from the approvals part, waited for with the page's parts: under its alerts. */
+  let approvalBand: HTMLElement | null = null;
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
 
@@ -2211,7 +2215,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       });
       card.append(stats);
     }
-    card.append(...alertBoxes(node));
+    card.append(...alertBoxes(node), ...(approvalBand ? [approvalBand] : []));
     if (node.badges?.length) {
       const badges = el('div', { class: 'fd-badges' });
       for (const badge of node.badges) {
@@ -2358,7 +2362,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     } finally {
       headNow = null;
     }
-    const body = el('div', { class: 'fd-head-body' }, ...alertBoxes(node), parts);
+    const body = el('div', { class: 'fd-head-body' }, ...alertBoxes(node), ...(approvalBand ? [approvalBand] : []), parts);
     // The side panel beside the body on a wide page; a dialog leaves it to the full page.
     const side = node.sidePanel ? el('aside', { class: 'fd-side' }, slotItem(node.sidePanel)) : null;
     const bar = topBar(node.toolbar ? { ...node.toolbar, menu: undefined } : undefined);
@@ -2406,6 +2410,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       updaters.push((state) => kit.update(state));
       limitsKit = kit;
     }
+    // A record's approvals: where it stands, Approve and Reject, its history — over the record, under its alerts.
+    const approvals = page.approval ? approvalsPart.loaded : undefined;
+    if (approvals) {
+      const kit = approvals.drawApprovals({ form, page, el, labels, locale, messages: options.messages ?? MESSAGES[locale], announce, root });
+      updaters.push((state) => kit.update(state));
+      approvalBand = kit.element;
+    }
     let body: HTMLElement;
     if (layout.type === 'sheet') body = sheetLayout(layout);
     else if (layout.type === 'wizard') body = wizardLayout(layout);
@@ -2452,7 +2463,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
     questions = body;
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, body, ...(limitsKit?.after ?? [])];
+    // Over the record's sections where no sheet placed it under its alerts.
+    const band = approvalBand && !approvalBand.parentElement ? [approvalBand] : [];
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, ...band, body, ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);

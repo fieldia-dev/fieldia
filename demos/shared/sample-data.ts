@@ -69,7 +69,7 @@ import { appointmentRecords, appointmentSlots, keepAppointment } from './appoint
 import { emptyGridsPage, emptyGridsRecords } from './empty-grids';
 import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings, searchFromQuery } from './related-lists';
 import { customerCardPage, duplicateCustomers } from './duplicates';
-import { keepWrites, keptApart, keptOver } from './kept';
+import { keepWrites, keptApart, keptApprovals, keptOver } from './kept';
 import { consentPage, sampleConsents } from './consents';
 import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
@@ -78,6 +78,9 @@ import clinicIntake from '../../examples/pages/clinic-intake.page.json';
 import enquiry from '../../examples/pages/enquiry.page.json';
 import { ENQUIRY_RECORDS } from './enquiry';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
+import purchaseApproval from '../../examples/pages/purchase-approval.page.json';
+import expenseApproval from '../../examples/pages/expense-approval.page.json';
+import { APPROVAL_ROUTES, approvalHistory, approvalRecords, approvalUser } from './approvals';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -193,6 +196,9 @@ export const pages: Record<string, Page> = {
   'test-drive': testDriveDemo.page,
   // The showroom's week of test drives on a calendar, on Berlin's clock wherever it is looked at from.
   'test-drives': testDriveDemo.list,
+  // A purchase order over its limit waiting for Finance, then the CFO; an expense rejected with why (shared/approvals.ts).
+  'purchase-approval': purchaseApproval as Page,
+  'expense-approval': expenseApproval as Page,
 };
 
 /**
@@ -315,6 +321,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both; the leads'
     // follow-ups too. The sign-up opens and closes on it: `?now=` before sign-ups open, or after they close.
     ...(params.get('page') === 'invoices' || params.get('page') === 'leads-queue' || params.get('page') === 'event-signup' ? { now: demoNow } : {}),
+    // Who decides on a purchase order or an expense, as the address signs them in (`as=`; shared/approvals.ts).
+    ...approvalUser(params),
     // A draft to continue from, by the key in the link Continue later gave (shared/clinic-intake.ts).
     ...(params.get('resume') ? { resume: params.get('resume') as string } : {}),
     // The vendor bill has the records round it and the trail to it, as an app gives them.
@@ -501,6 +509,10 @@ export function sampleDataSource() {
     limits: EVENT_COUNTS,
     // The drafts the server keeps, and the link Continue later gives (shared/clinic-intake.ts).
     drafts: keptDrafts(),
+    // How a purchase order and an expense are approved, and what was decided so far — this tab's decisions over the
+    // samples' (shared/approvals.ts, shared/kept.ts).
+    approvals: APPROVAL_ROUTES,
+    approvalHistory: keptApprovals(approvalHistory()),
     draftLink,
     attachments: billAttachments(),
     // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's.
@@ -548,6 +560,8 @@ export function sampleDataSource() {
       'clinic.consent': sampleConsents(),
       // Two buyers' enquiries about homes (shared/enquiry.ts).
       enquiry: ENQUIRY_RECORDS,
+      // A purchase order waiting for approval, one under its limit, an expense rejected (shared/approvals.ts).
+      ...approvalRecords(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

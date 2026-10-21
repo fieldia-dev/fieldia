@@ -119,6 +119,7 @@ export const refusals: DesignerWords['refusals'] = {
   seatsForChoices: 'الأماكن لاختيارات السؤال: أعمدة المصفوفة بلا أماكن',
   limitsForResponses: 'مواعيد الفتح والإغلاق والحدود لنموذج يجمع الإجابات: شاشة التطبيق تُفتح وتُغلق مع التطبيق',
   closesBeforeOpens: 'سيُغلق قبل أن يُفتح: اختر وقت إغلاق بعد وقت الفتح',
+  approvalForRecords: 'تُطلب الموافقات على سجلات نموذج، في شاشة السجل نفسه: نموذج الإجابات أو القائمة لا سجل فيه للموافقة',
   rowsFromModel: (label) => `صفوف ${q(label)} تأتي من نموذج البيانات`,
   matrixColumnsFromModel: (label) => `أعمدة ${q(label)} تأتي من نموذج البيانات`,
   onlyMatrix: 'الشبكة وحدها لها صفوف وأعمدة',

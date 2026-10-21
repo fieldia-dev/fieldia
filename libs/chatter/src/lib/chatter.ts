@@ -52,6 +52,11 @@ export interface ChatterOptions {
    * its activities, its followers, its channels — is laid only while it holds. The slot gives the form's.
    */
   recordShown?: () => () => boolean;
+  /**
+   * What happened to the record that the page knows of its own, told among its messages by when it happened, newest
+   * first, as events: its approval history (`chatterSlot`). Never posted to the source.
+   */
+  entries?: readonly ChatterMessage[];
 }
 
 export interface ChatterHandle {
@@ -60,6 +65,8 @@ export interface ChatterHandle {
   refresh(): Promise<void>;
   /** Follow another record, or none while one is not saved. */
   setRecord(record: RecordRef | null): Promise<void>;
+  /** What the page knows of the record shown, told among its messages by when it happened (`entries`), in place of what it told before. A Discussion has none. */
+  setEntries?(entries: readonly ChatterMessage[]): void;
   destroy(): void;
 }
 
@@ -346,6 +353,9 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   let drawn = new Map<string, { message: ChatterMessage; item: HTMLElement }>();
   /** The record whose conversation is drawn: changes pushed for it are laid once it is. */
   let drawnFor: RecordRef | null = null;
+  /** The page's own entries (`entries`: its approval history), told among the source's messages by when each happened. */
+  let entries: readonly ChatterMessage[] = options.entries ?? [];
+  const withEntries = (messages: ChatterMessage[]) => (entries.length ? [...messages, ...entries].sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0)) : messages);
 
   function messageItem(message: ChatterMessage): HTMLElement {
     const mark = part?.messageMark(context, message, channels) ?? null;
@@ -409,10 +419,12 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
    */
   function lay(messages: ChatterMessage[], arriving = false): ChatterMessage[] {
     current = messages;
-    byId = new Map(messages.map((message) => [message.id, message]));
+    // The page's own entries among them, by when each happened: events, never said as arriving.
+    const all = record ? withEntries(messages) : messages;
+    byId = new Map(all.map((message) => [message.id, message]));
     const next = new Map<string, { message: ChatterMessage; item: HTMLElement }>();
     const arrived: ChatterMessage[] = [];
-    const items = messages.map((message) => {
+    const items = all.map((message) => {
       const was = drawn.get(key(message.id));
       let item: HTMLElement;
       if (was && JSON.stringify(was.message) === JSON.stringify(message)) item = was.item;
@@ -435,7 +447,7 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
       if (at !== item) list.insertBefore(item, at ?? null);
     });
     while (list.children.length > items.length) list.lastElementChild?.remove();
-    empty.hidden = messages.length > 0;
+    empty.hidden = all.length > 0;
     return arrived;
   }
 
@@ -546,6 +558,11 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
       record = next;
       live?.follow(next);
       await load();
+    },
+    setEntries(next) {
+      entries = next;
+      // Laid in place on the conversation drawn; one still being fetched lays them as it comes.
+      if (record && !destroyed && drawnFor === record) lay(current);
     },
     destroy() {
       destroyed = true;

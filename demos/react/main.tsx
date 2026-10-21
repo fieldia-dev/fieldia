@@ -16,6 +16,7 @@ import { addressFollowsRecord } from '../shared/address';
 import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
 import { meanwhileBar } from '../shared/test-drive';
 import { lastPlacesBar } from '../shared/event-signup';
+import { signedInBar } from '../shared/approvals';
 
 /** The same demo as the plain one, mounted by React. StrictMode on, as apps run it. */
 const params = new URLSearchParams(location.search);
@@ -72,6 +73,9 @@ if (failures) document.getElementById('app')?.after(failures.element);
 if (params.get('page') === 'test-drive') document.getElementById('app')?.before(meanwhileBar(dataSource));
 // The sign-up has a bar over it: two people take the morning's last places on other screens (shared/event-signup.ts).
 if (params.get('page') === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
+// A purchase order's and an expense's approvals: who uses the demo, and the others to sign in as (shared/approvals.ts).
+const signedIn = signedInBar(params);
+if (signedIn) document.getElementById('app')?.before(signedIn);
 
 const chatter = sampleChatter();
 // The enquiry has a bar over it: the buyer's phone reads what was sent and writes back (shared/enquiry.ts).

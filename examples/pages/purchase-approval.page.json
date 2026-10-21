@@ -1,0 +1,83 @@
+{
+  "fieldia": "0.7",
+  "id": "purchase-approval",
+  "title": "Purchase order",
+  "data": { "kind": "record", "model": "purchase.order" },
+  "records": { "one": "purchase order", "other": "purchase orders", "a": "a purchase order" },
+  "timeZone": "Africa/Cairo",
+  "fields": {
+    "name": { "type": "char", "label": "Reference", "readonly": true },
+    "partner_id": { "type": "many2one", "label": "Vendor", "relation": "partner", "required": true },
+    "date_order": { "type": "date", "label": "Order date" },
+    "date_planned": { "type": "date", "label": "Deliver by" },
+    "requested_by": { "type": "char", "label": "Requested by" },
+    "line_ids": {
+      "type": "one2many",
+      "label": "Products",
+      "relation": "purchase.order.line",
+      "fields": {
+        "product": { "type": "char", "label": "Product", "required": true },
+        "qty": { "type": "integer", "label": "Quantity", "min": 1 },
+        "price": { "type": "monetary", "label": "Unit price", "currency": "EGP", "digits": [12, 2], "min": 0 },
+        "subtotal": { "type": "monetary", "label": "Subtotal", "currency": "EGP", "digits": [12, 2], "compute": "qty * price" }
+      }
+    },
+    "amount_total": { "type": "monetary", "label": "Total", "currency": "EGP", "digits": [12, 2], "compute": "sum(line_ids, 'subtotal')" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "draft", "label": "Request" },
+        { "value": "to_approve", "label": "To approve" },
+        { "value": "purchase", "label": "Purchase order" },
+        { "value": "rejected", "label": "Rejected" }
+      ],
+      "default": "draft"
+    },
+    "notes": { "type": "text", "label": "Notes for the vendor" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "label": "Purchase order" },
+    "statusbar": { "field": "state", "visibleStates": ["draft", "to_approve", "purchase"] },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "b-ask",
+        "label": "Ask for approval",
+        "style": "primary",
+        "invisible": "state not in ('draft', 'rejected')",
+        "steps": [{ "do": "set", "field": "state", "value": "'to_approve'" }, { "do": "save" }]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" },
+    "children": [
+      {
+        "type": "section",
+        "id": "s-main",
+        "columns": { "wide": 2, "medium": 1 },
+        "readonly": "state == 'purchase'",
+        "readonlyReason": "A purchase order is kept as it was approved",
+        "children": [
+          { "type": "field", "id": "f-partner", "field": "partner_id" },
+          { "type": "field", "id": "f-requested", "field": "requested_by" },
+          { "type": "field", "id": "f-date-order", "field": "date_order" },
+          { "type": "field", "id": "f-date-planned", "field": "date_planned" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-lines",
+        "title": "Products",
+        "readonly": "state == 'purchase'",
+        "children": [
+          { "type": "field", "id": "f-lines", "field": "line_ids", "labels": "hidden" },
+          { "type": "field", "id": "f-total", "field": "amount_total" }
+        ]
+      },
+      { "type": "field", "id": "f-notes", "field": "notes", "placeholder": "Delivery address, hours, who to ask for" }
+    ]
+  },
+  "approval": { "open": ["notes"] }
+}

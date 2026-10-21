@@ -19,6 +19,7 @@ import { isTimeZone } from '../record/zones';
 import { fill, MESSAGES } from '../record/messages';
 import { autofillGroupProblem } from './autofill-group';
 import { checkLimits } from './limits-checks';
+import { checkApproval } from './approval-checks';
 import { checkSeats } from './seats-checks';
 import { checkList, checkRelated, type ListTools } from './list-checks';
 import type { FieldTools } from './part-checks';
@@ -148,6 +149,8 @@ export class ReferenceCheck {
     }
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
+    // A record's approvals: checked where it has them (in the one-tag script, by the approvals part it asks for).
+    if (!this.line && this.page.approval !== undefined) checkApproval(this.page, this.fieldTools());
     this.checkGoingTo();
     return this.issues;
   }

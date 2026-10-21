@@ -1,0 +1,73 @@
+{
+  "fieldia": "0.7",
+  "id": "expense-approval",
+  "title": "Expense",
+  "data": { "kind": "record", "model": "hr.expense" },
+  "records": { "one": "expense", "other": "expenses", "a": "an expense" },
+  "timeZone": "Africa/Cairo",
+  "fields": {
+    "name": { "type": "char", "label": "What was it for?", "required": true },
+    "employee": { "type": "char", "label": "Employee", "readonly": true },
+    "date": { "type": "date", "label": "Spent on", "required": true },
+    "category": {
+      "type": "selection",
+      "label": "Category",
+      "options": [
+        { "value": "meals", "label": "Meals with clients" },
+        { "value": "travel", "label": "Travel" },
+        { "value": "hotel", "label": "Hotel" },
+        { "value": "taxi", "label": "Taxi" },
+        { "value": "other", "label": "Something else" }
+      ]
+    },
+    "total_amount": { "type": "monetary", "label": "Amount", "currency": "EGP", "digits": [12, 2], "min": 0, "required": true },
+    "guests": { "type": "char", "label": "Who was there" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "draft", "label": "To submit" },
+        { "value": "submitted", "label": "Submitted" },
+        { "value": "approved", "label": "Approved" },
+        { "value": "rejected", "label": "Rejected" }
+      ],
+      "default": "draft"
+    },
+    "notes": { "type": "text", "label": "Notes for the approvers" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "label": "Expense" },
+    "statusbar": { "field": "state", "visibleStates": ["draft", "submitted", "approved"] },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "b-submit",
+        "label": "Submit for approval",
+        "style": "primary",
+        "invisible": "state not in ('draft', 'rejected')",
+        "steps": [{ "do": "set", "field": "state", "value": "'submitted'" }, { "do": "save" }]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" },
+    "children": [
+      {
+        "type": "section",
+        "id": "s-main",
+        "columns": { "wide": 2, "medium": 1 },
+        "readonly": "state == 'approved'",
+        "readonlyReason": "An expense is kept as it was approved",
+        "children": [
+          { "type": "field", "id": "f-employee", "field": "employee" },
+          { "type": "field", "id": "f-date", "field": "date" },
+          { "type": "field", "id": "f-category", "field": "category" },
+          { "type": "field", "id": "f-amount", "field": "total_amount" },
+          { "type": "field", "id": "f-guests", "field": "guests" }
+        ]
+      },
+      { "type": "field", "id": "f-notes", "field": "notes", "placeholder": "Anything the approvers should know" }
+    ]
+  },
+  "approval": { "open": ["notes"] }
+}

@@ -13,6 +13,7 @@ import { zoneBox } from './zone-setting';
 import { recordsSettings } from './records-settings';
 import { endingsEditor } from './endings-editor';
 import { limitsSettings } from './limits-settings';
+import { approvalSettings } from './approval-settings';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
@@ -88,6 +89,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const records = recordsSettings(el, designer);
   // When a form of responses takes answers, how many, and Continue later (limits-settings.ts).
   const limits = limitsSettings(el, designer);
+  // A record's screen whose records wait for approval: whether it locks while one waits, what stays open (approval-settings.ts).
+  const approval = approvalSettings(el, designer);
   // Its phone numbers: as typed, or checked by their country — the country they start on, and how they are shown.
   const phones = el('select', { class: 'fd-input fd-select', 'aria-label': w.phones }, el('option', { value: '' }, w.phonesAs.typed), el('option', { value: 'checked' }, w.phonesAs.checked)) as HTMLSelectElement;
   phones.addEventListener('change', () => designer.setPhone({ on: phones.value === 'checked' }));
@@ -150,6 +153,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     ...limits.rows,
     sameRow,
     sameOnRow,
+    ...approval.rows,
     moments.element
   );
   return {
@@ -213,6 +217,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       noneBy.hidden = by.length > 0;
       sameOnRow.hidden = sameRow.hidden || !page.duplicates;
       sameOn.value = page.duplicates?.on ?? 'type';
+      approval.update(page);
       const root = page.layout;
       layout.value = root.type === 'sheet' ? 'sheet' : 'sections';
       titleRow.hidden = root.type !== 'sheet';

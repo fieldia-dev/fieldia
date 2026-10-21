@@ -408,6 +408,27 @@ messages (`formOpens`, `formClosed`, …). See
 [opening, closing and limiting a form](https://fieldia.dev/data/#limits) and
 [save and resume](https://fieldia.dev/data/#drafts).
 
+## Approvals on a record
+
+A record's page with `approval`, whose source has `approvals`, says over the
+record — under its alerts — where its approval stands: "Waiting for Finance:
+Mona Adel or Hany Lotfy" (those still to decide at each level waiting, joined
+by "or" where one is enough and "and" where all must), "Needs approval from
+Finance, then CFO", "Approved", or "Rejected by Mona Adel (Finance)" with the
+reason quoted, and the source's own words of why it needs approval. Its levels
+follow in their order, each with its state and who decided there. Those who may
+decide now (`mine`, where the source has `decide`) have **Approve** and
+**Reject**; Reject asks why in a dialog of its own — none given is refused under
+its box, a refusal of the source's said there — and Escape lets it go. While it
+waits, every field is locked but those `approval.open` names, each lock saying
+"Locked while it waits for approval", and the band says what stays open. Its
+history is folded under "Approval history (n)": who asked, who decided at which
+level, when, and why. The band and its dialog come in a part of their own
+(`approvalsPart`, `fieldia.approvals.js`, with the form's own), loaded with the
+page's parts where it has `approval`. Their words are the viewer's labels
+(`approvalWaiting`, `approvalApprove`, `approvalReject`, …). See
+[approvals on a record](https://fieldia.dev/data/#approvals).
+
 ## Lists
 
 A page whose layout is a `list` shows its records as a table: pages, sorting,
@@ -752,8 +773,8 @@ This package carries a `<script>` bundle that sets the global `Fieldia`
 (core, widgets and viewer; about 165 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a link to
 another record, a phone, a theme, possible duplicates, a page on paper, the
-answers said in a page's words, a form's limits, the functions beyond the plain
-ones… — comes in 28 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
+answers said in a page's words, a form's limits, a record's approvals, the
+functions beyond the plain ones… — comes in 29 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
 `fieldia.relations.js`, `fieldia.print.js`, …), each loaded from the same
 folder the first time a page uses it:
 

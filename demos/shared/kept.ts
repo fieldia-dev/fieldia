@@ -1,4 +1,4 @@
-import type { MemoryDataSource, RecordId, Values } from '@fieldia/core';
+import type { ApprovalEntry, Approvals, MemoryDataSource, RecordId, Values } from '@fieldia/core';
 
 /**
  * A demo's records kept while its tab is open, as an app's server keeps them: a page the demo goes to — a list's
@@ -12,6 +12,8 @@ export const KEPT = 'fieldia-demo-records:';
 export const KEPT_EVENT = 'fieldia-demo-kept';
 /** Where the records said to be someone else for one another ("It's someone new") are kept, as the server keeps them. */
 const APART = `${KEPT}#not-duplicates`;
+/** Where each record's approval history is kept, by `model:id`, as an approval engine keeps it: decisions taken as one person seen as the next. */
+const APPROVED = `${KEPT}#approvals`;
 
 type Tables = Record<string, Record<string, Values>>;
 /** A model as kept: its records, and the ids taken away (deleted, merged), which a page's own extra samples stay out of. */
@@ -48,7 +50,7 @@ export function keptOver(samples: Tables, extra: Tables = {}): Tables {
   if (!storage) return records;
   for (let at = 0; at < storage.length; at++) {
     const key = storage.key(at);
-    if (!key?.startsWith(KEPT) || key === APART) continue;
+    if (!key?.startsWith(KEPT) || key === APART || key === APPROVED) continue;
     const model = key.slice(KEPT.length);
     const kept = read(storage, model);
     if (!kept) continue;
@@ -66,6 +68,17 @@ export function keptApart(): Record<string, [RecordId, RecordId][]> {
     return kept && typeof kept === 'object' ? kept : {};
   } catch {
     return {};
+  }
+}
+
+/** Each record's approval history this tab kept, by `model:id`, over the demo's own: what the demo's source starts from. */
+export function keptApprovals(samples: Record<string, ApprovalEntry[]>): Record<string, ApprovalEntry[]> {
+  const storage = store();
+  try {
+    const kept = JSON.parse(storage?.getItem(APPROVED) ?? 'null') as Record<string, ApprovalEntry[]> | null;
+    return kept && typeof kept === 'object' ? { ...samples, ...kept } : samples;
+  } catch {
+    return samples;
   }
 }
 
@@ -88,7 +101,8 @@ export function keepWrites(source: MemoryDataSource): void {
   };
   const told = () => dispatchEvent(new CustomEvent(KEPT_EVENT));
   const own = source as unknown as Record<string, ((request: Request, ...rest: unknown[]) => Promise<unknown>) | undefined>;
-  for (const method of ['save', 'create', 'archive', 'copy', 'writeMany', 'createMany', 'delete']) {
+  // A decision moves its record on (its state), as a save does.
+  for (const method of ['save', 'create', 'archive', 'copy', 'writeMany', 'createMany', 'delete', 'decide']) {
     const write = own[method]?.bind(source);
     if (!write) continue;
     own[method] = async (request: Request, ...rest: unknown[]) => {
@@ -110,6 +124,30 @@ export function keepWrites(source: MemoryDataSource): void {
     }
     told();
   };
+  // Each record's approval history as the source answers it — a decision, a record sent for approval — kept as the
+  // engine keeps it: the next person signed in sees it.
+  const histories = (() => {
+    try {
+      return (JSON.parse(storage.getItem(APPROVED) ?? 'null') as Record<string, ApprovalEntry[]> | null) ?? {};
+    } catch {
+      return {};
+    }
+  })();
+  for (const method of ['approvals', 'decide'] as const) {
+    const ask = source[method].bind(source) as (request: { model: string; recordId: RecordId }) => Promise<Approvals | void>;
+    (source as unknown as Record<string, unknown>)[method] = async (request: { model: string; recordId: RecordId }) => {
+      const answer = await ask(request);
+      if (answer?.history) {
+        histories[`${request.model}:${request.recordId}`] = answer.history;
+        try {
+          storage.setItem(APPROVED, JSON.stringify(histories));
+        } catch {
+          // Storage full: kept while the page is open.
+        }
+      }
+      return answer;
+    };
+  }
   // A merge moves every link to the records it takes away: each model it changed is kept.
   const merge = own['merge']?.bind(source);
   if (merge) {

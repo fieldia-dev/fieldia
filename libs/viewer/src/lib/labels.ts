@@ -579,6 +579,49 @@ export interface ViewerLabels {
   laterBack: string;
   laterFailed: string;
   resumeMissing: string;
+  /**
+   * A record's approvals (`approval`): where it stands — waiting for those still to decide at each level waiting
+   * (`{who}`, each `approvalWho`: its `{level}` and `{names}`), needing approval from its levels before it is sent
+   * (`{levels}`, in turn joined by `approvalThen`), approved, rejected (by `{name}`, at `{level}`), or not read
+   * (`{why}`) — what stays open while it waits (`{fields}`) or that nothing does, each level's state (`{names}`, who
+   * decided there), Approve and Reject (for a `{level}` where there are several), while each goes and once done, why
+   * not (`{why}`), Reject's question (its title, what it asks for a `{level}`, its box's name), and its history
+   * (`{n}` entries: who asked, who approved, who rejected).
+   */
+  approvalWaiting: string;
+  approvalWho: string;
+  approvalNeeded: string;
+  approvalThen: string;
+  approvalApproved: string;
+  approvalRejectedBy: string;
+  approvalRejected: string;
+  approvalFailed: string;
+  approvalOpen: string;
+  approvalLockedAll: string;
+  approvalLevelApproved: string;
+  approvalLevelRejected: string;
+  approvalLevelWaiting: string;
+  approvalLevelWaitingSome: string;
+  approvalLevelLater: string;
+  approvalLevelSkipped: string;
+  approvalApprove: string;
+  approvalReject: string;
+  approvalApproveFor: string;
+  approvalRejectFor: string;
+  approvalApproving: string;
+  approvalRejecting: string;
+  approvalApprovedFor: string;
+  approvalRejectedFor: string;
+  approvalApproveFailed: string;
+  approvalRejectFailed: string;
+  approvalRejectTitle: string;
+  approvalRejectTitleNoun?: string;
+  approvalRejectAsk: string;
+  approvalRejectReason: string;
+  approvalHistoryCount: string;
+  approvalAskedEntry: string;
+  approvalApprovedEntry: string;
+  approvalRejectedEntry: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -993,6 +1036,40 @@ const en: ViewerLabels = {
   laterBack: 'Keep going',
   laterFailed: 'Your answers could not be saved: {why}',
   resumeMissing: 'These saved answers could not be found: they may have been sent already. The form starts empty.',
+  approvalWaiting: 'Waiting for {who}',
+  approvalWho: '{level}: {names}',
+  approvalNeeded: 'Needs approval from {levels}',
+  approvalThen: '{first}, then {next}',
+  approvalApproved: 'Approved',
+  approvalRejectedBy: 'Rejected by {name} ({level})',
+  approvalRejected: 'Rejected ({level})',
+  approvalFailed: 'The approvals could not be read: {why}',
+  approvalOpen: 'While it waits, only {fields} can be changed.',
+  approvalLockedAll: 'Nothing can be changed while it waits.',
+  approvalLevelApproved: 'Approved by {names}',
+  approvalLevelRejected: 'Rejected by {names}',
+  approvalLevelWaiting: 'Waiting',
+  approvalLevelWaitingSome: 'Waiting · approved by {names}',
+  approvalLevelLater: 'Later',
+  approvalLevelSkipped: 'Not needed',
+  approvalApprove: 'Approve',
+  approvalReject: 'Reject',
+  approvalApproveFor: 'Approve for {level}',
+  approvalRejectFor: 'Reject for {level}',
+  approvalApproving: 'Approving…',
+  approvalRejecting: 'Rejecting…',
+  approvalApprovedFor: 'Approved for {level}',
+  approvalRejectedFor: 'Rejected for {level}',
+  approvalApproveFailed: 'Not approved: {why}',
+  approvalRejectFailed: 'Not rejected: {why}',
+  approvalRejectTitle: 'Reject this record?',
+  approvalRejectTitleNoun: 'Reject this {record}?',
+  approvalRejectAsk: 'Say why it is rejected for {level}. The reason is kept in its history.',
+  approvalRejectReason: 'Reason',
+  approvalHistoryCount: 'Approval history ({n})',
+  approvalAskedEntry: '{name} asked for approval',
+  approvalApprovedEntry: '{name} approved for {level}',
+  approvalRejectedEntry: '{name} rejected it for {level}',
 };
 
 /**
