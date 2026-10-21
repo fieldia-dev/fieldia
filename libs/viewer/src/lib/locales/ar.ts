@@ -253,6 +253,7 @@ export const ar: ViewerLabels = {
   rowMovedTo: 'نُقل {name} إلى المكان {n} من {total}',
   rowMoveHint: 'اسحبه لنقله؛ أو Alt+↑ أو Alt+↓ من لوحة المفاتيح',
   rankNotKept: 'لم يُحفظ الترتيب الجديد: {why}.',
+  treeIn: 'في {name}',
   viewShared: 'مشترك مع الفريق',
   viewSharedBy: 'شاركه {name}',
   shareView: 'مشاركة مع الفريق',

@@ -207,6 +207,7 @@ export const refusals = {
   rankNotWhole: (label: string) => `Rows are ranked by a whole number; ${label} is not one`,
   rankUnderParents: 'Rows under their parent are not ranked by hand: a list ranks one level',
   endlessUnderParents: 'Rows under their parent come a page at a time: a list of them never loads as it is scrolled',
+  childrenNeedParent: 'Children load as a parent opens in a tree: choose the link the rows nest under first',
   notFilterable: (label: string) => `The filter bar cannot list the values of ${label}, nor take its range`,
   notRangeable: (label: string) => `The filter bar takes the range of a number or a date; ${label} is neither`,
   atLeastNeedsNumber: (label: string) => `A press for a least value is a number’s; ${label} holds dates`,

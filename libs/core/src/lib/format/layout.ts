@@ -1256,6 +1256,12 @@ export interface ListNode {
    */
   endless?: boolean;
   /**
+   * With `parentField`, a tree too big for a page — a chart of accounts, a project's work: the list's pages are its
+   * records with no parent, each parent's children asked as it opens, a page at a time, each said whether it opens;
+   * under a search, its matches, each with its parent named. Off unless true: rows nest under parents on their page.
+   */
+  loadChildren?: boolean;
+  /**
    * Export, in the list's bar: the rows ticked — or, none ticked, every
    * record the search finds — as an Excel workbook or a CSV file, the
    * columns as the list shows them. Off unless true, as Edit is: an app
@@ -2325,6 +2331,7 @@ export const ListNodeSchema = z.strictObject({
   detail: ListDetailSchema.optional(),
   sequenceField: fieldName.optional(),
   endless: z.boolean().optional(),
+  loadChildren: z.boolean().optional(),
   export: z.boolean().optional(),
   bulkEdit: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
   import: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),

@@ -1020,7 +1020,7 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // `viewsPart`; 64) — 506.77 measured before, 506.89 after, to 506.9. Multi-column sort is the list part's. The rows
 // part a page asks for where its list's rows open in place (fieldia.rows.js: its name and loader, the global's
 // `rowsPart`, and `partsFor` knowing a list with `detail` asks for it, so the page is drawn whole; 115) — 507.00 after,
-// to 507.0; and one with `sequenceField` (rows re-ranked by hand), 507.02 after, to 507.1.
+// to 507.0; and one with `sequenceField` (rows re-ranked by hand), 507.02 after, to 507.1; and with `loadChildren`, 507.03.
 const BUDGET_KB = 507.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1860,8 +1860,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 42.96 to 134.93 and 43.32, to 135.0 and 43.4. Rows loaded as the list is scrolled in the list part, as its pages
 // are — the next page asked as the rows' end comes in sight and put after those held, Show more, the keys past the last
 // row, every row held asked again: list 134.93 and 43.32 to 136.58 and 43.84, to 136.6 and 43.9 — and the cards' a
-// header's number in its chip and far cards undrawn in such a list: cards 12.31 and 3.83 to 12.43 and 3.88, to 12.5.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [136.6, 43.9], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], views: [5.9, 2.6], rows: [14.9, 6.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.2, 6.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// header's number in its chip and far cards undrawn in such a list: cards 12.31 and 3.83 to 12.43 and 3.88, to 12.5. A
+// tree too big for a page, its children asked as a parent opens, in the rows part — rows 14.82 and 5.98 to 18.96 and
+// 7.21, to 19.0 and 7.3: the top asked alone, each row's children counted in one ask, a parent's opened a page at a time
+// with Show more, closed, opened again as the list asks again, a search's matches with their parent named — and in the
+// list part its hooks and its check: list 136.58 and 43.84 to 137.14 and 44.02, to 137.2 and 44.1.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [137.2, 44.1], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], views: [5.9, 2.6], rows: [19.0, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.2, 6.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1875,7 +1879,7 @@ const PART_GIVES = {
   columns: ['columnChoices', 'columnsKey', 'installColumnStyles'],
   import: ['openImport', 'installImportStyles'],
   views: ['savedViews', 'openingView', 'installViewStyles'],
-  rows: ['detailRows', 'rankRows', 'newRanks', 'installRowsStyles'],
+  rows: ['detailRows', 'rankRows', 'newRanks', 'lazyTree', 'installRowsStyles'],
   themes: ['installThemeStyles'],
   quiet: ['installQuietStyles'],
   lines: ['linesWidget', 'linksTableWidget', 'cardsWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],

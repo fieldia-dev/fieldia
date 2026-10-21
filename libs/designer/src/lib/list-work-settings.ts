@@ -36,7 +36,13 @@ export function workSection(el: ElementFactory, designer: Designer) {
     if (!designer.setListOptions({ endless: endless.checked })) endless.checked = listOf(designer.getPage()).endless === true;
   });
   const endlessRow = el('div', { class: 'fd-prop', 'data-part': 'endless' }, el('label', { class: 'fd-q-required' }, endless, el('span', {}, w.endless)), el('p', { class: 'fd-properties-hint' }, w.endlessHint));
-  const element = el('div', { class: 'fd-prop', 'data-part': 'work' }, el('span', { class: 'fd-prop-name' }, w.title), opensRow, ranksRow, endlessRow);
+  // A tree too big for a page: its children loaded as a parent opens.
+  const lazy = el('input', { type: 'checkbox', 'aria-label': w.loadChildren }) as HTMLInputElement;
+  lazy.addEventListener('change', () => {
+    if (!designer.setListOptions({ loadChildren: lazy.checked })) lazy.checked = listOf(designer.getPage()).loadChildren === true;
+  });
+  const lazyRow = el('div', { class: 'fd-prop', 'data-part': 'load-children' }, el('label', { class: 'fd-q-required' }, lazy, el('span', {}, w.loadChildren)), el('p', { class: 'fd-properties-hint' }, w.loadChildrenHint));
+  const element = el('div', { class: 'fd-prop', 'data-part': 'work' }, el('span', { class: 'fd-prop-name' }, w.title), opensRow, ranksRow, endlessRow, lazyRow);
   return {
     element,
     update(page: Page) {
@@ -54,7 +60,9 @@ export function workSection(el: ElementFactory, designer: Designer) {
       ranksRow.hidden = (!wholes.length || !!list.parentField) && !list.sequenceField;
       endless.checked = list.endless === true;
       endlessRow.hidden = !!list.parentField && !list.endless;
-      element.hidden = opensRow.hidden && ranksRow.hidden && endlessRow.hidden;
+      lazy.checked = list.loadChildren === true;
+      lazyRow.hidden = !list.parentField;
+      element.hidden = opensRow.hidden && ranksRow.hidden && endlessRow.hidden && lazyRow.hidden;
     },
   };
 }

@@ -46,7 +46,7 @@ export const AREAS = [
 /** Each area's demos, by id: every demo of the catalog in exactly one. */
 const AREA_OF = {
   sales: ['order', 'orders-review', 'contract-fees', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive', 'test-drives'],
-  accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
+  accounting: ['reading', 'chart-of-accounts', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
   crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'leads-queue', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'activity-log', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
@@ -70,6 +70,7 @@ const SEARCH_WORDS = {
   customer: 'client account contact company blocked block status sales invoices counters conversation messages notes team phone whatsapp',
   order: 'sale sales order quotation quote lines products items spreadsheet totals tax discount',
   customers: 'clients accounts contacts list search filter group favourites sort multi sort several columns shift archive table',
+  'chart-of-accounts': 'chart of accounts ledger accounts tree hierarchy parent child nested groups classes balance sheet coa big large expand open load children',
   'activity-log': 'activity log feed history audit trail changes who did what timeline endless infinite scroll load more phone mobile newest',
   'waiting-room': 'waiting room queue reception front desk patients order turn next drag reorder rank move up down priority who is next',
   'orders-review': 'orders sales order lines review check approve master detail expand open in place inside rows sections quotation products quantities',
@@ -234,6 +235,18 @@ export const DEMOS = [
       'Tick two customers and press Archive: you are asked first, then the app is given those two, and a note says so.',
       'Save the search as a favourite used by default, and reload: it opens that way.',
       'Click a row to open that customer on its own page.',
+    ],
+  },
+  {
+    id: 'chart-of-accounts',
+    name: 'A chart of accounts, opened a group at a time',
+    category: 'lists',
+    query: 'page=chart-of-accounts&skin=underline',
+    blurb: 'A trading company’s 240 accounts under their classes and groups: each group’s accounts come as it opens, a page at a time, so a group of 60 bank accounts never splits across pages; a search finds an account at any depth.',
+    howTo: [
+      'Open Assets, then Cash and banks: its first twenty accounts come under it, and “Show 20 more” brings the rest.',
+      'On a row, Right opens it and Left closes it; Collapse all in the header closes them all.',
+      'Search “bank”: every bank account, wherever it is, each with the group it is in.',
     ],
   },
   {
@@ -1179,6 +1192,7 @@ export const OPENED = [
   { page: 'lead', name: 'A lead', from: 'leads-queue' },
   { page: 'waiting-patient', name: 'A patient waiting', from: 'waiting-room' },
   { page: 'activity-entry', name: 'An entry of the log', from: 'activity-log' },
+  { page: 'account', name: 'An account', from: 'chart-of-accounts' },
 ];
 
 /** What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock. */

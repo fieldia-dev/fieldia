@@ -119,3 +119,27 @@ describe('rows loaded as the list is scrolled, by the designer', () => {
     expect(list(designer).endless).toBeUndefined();
   });
 });
+
+describe('a tree loaded as it opens, by the designer', () => {
+  const chart = () => {
+    const designer = createDesigner({ page: { ...blankPage('list', 'Accounts'), data: { kind: 'record', model: 'account' } }, model: { name: { type: 'char', label: 'Account' }, parent_id: { type: 'many2one', label: 'Under', relation: 'account' } } });
+    designer.addColumn('name');
+    return designer;
+  };
+
+  it('loads a tree’s children as a parent opens, only once its rows nest under a parent, and lets it go with the parent', () => {
+    const designer = chart();
+    expect(designer.setListOptions({ loadChildren: true })).toBe(false);
+    expect(designer.getState().issues[0]).toBe('Children load as a parent opens in a tree: choose the link the rows nest under first');
+    expect(designer.setListOptions({ parentField: 'parent_id' })).toBe(true);
+    const panel = listProperties(elementFactory(document), designer);
+    panel.update(designer.getPage());
+    const box = panel.element.querySelector('[data-part="load-children"] input') as HTMLInputElement;
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    expect(list(designer).loadChildren).toBe(true);
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(designer.setListOptions({ parentField: null })).toBe(true);
+    expect(list(designer).loadChildren).toBeUndefined();
+  });
+});

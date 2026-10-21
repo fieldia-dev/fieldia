@@ -402,6 +402,8 @@ export interface ViewerLabels {
   rowMovedTo: string;
   rowMoveHint: string;
   rankNotKept: string;
+  /** A tree's match under a search, its parent named after it (`{name}`), where its children load as a parent opens. */
+  treeIn: string;
   /**
    * A list's views kept on the app's server (its source's `views`), in the search bar's menu: a view shared with the
    * team, the person's own (`viewShared`) or another's (`{name}`, who made it); Save current search's Share with the
@@ -906,6 +908,7 @@ const en: ViewerLabels = {
   rowMovedTo: '{name} moved to place {n} of {total}',
   rowMoveHint: 'Drag to move it; Alt+↑ or Alt+↓ from the keyboard',
   rankNotKept: 'The new order was not kept: {why}.',
+  treeIn: 'in {name}',
   viewShared: 'Shared with the team',
   viewSharedBy: 'Shared by {name}',
   shareView: 'Share with the team',

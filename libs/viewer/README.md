@@ -690,6 +690,21 @@ list asks again (a row's button, a record closed) it keeps every row it held; a
 new search or order starts from the first page. On a phone, cards far out of
 sight skip their drawing. Not for rows under their parent (`parentField`).
 
+**A tree too big for a page.** Rows nest under their parent (`parentField`) on
+their page; with `"loadChildren": true` as well — a chart of accounts, a
+project's work, a development's buildings and units — the list's pages are its
+records with no parent (`{ field: parent, op: "notset" }`), each parent's
+children asked of `list` as it opens (`{ field: parent, op: "=", value: id }`),
+a page at a time with "Show 20 more", so a parent's children never split
+across pages. How many children each row has is asked of `groups` in one ask
+for the rows drawn (`{ op: "in", value: ids }`), so only a row with children
+has its toggle; without `groups`, each offers to open, and one with none loses
+its toggle as it opens. Right opens a row and Left closes it; Collapse all
+closes every one, and Expand all, which would load the whole tree, is not
+offered. Those open stay open as the list asks again. Under a search, its
+matches whatever their depth, each with its parent named ("in Current
+assets"). In the rows part.
+
 ```json
 "detail": { "lines": "line_ids", "columns": ["product_id", "name", "qty", "price", "subtotal"], "sort": [{ "field": "sequence" }], "limit": 5 }
 "detail": { "title": "Invoices", "model": "invoice", "field": "partner_id", "fields": { … }, "columns": ["name", "amount"] }

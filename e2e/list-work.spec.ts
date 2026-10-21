@@ -323,3 +323,38 @@ test.describe('a log loaded as it is scrolled', () => {
     await screen(page, 'list-work-endless-phone', { viewport: true });
   });
 });
+
+test.describe('a chart of accounts opened a group at a time', () => {
+  const CHART = 'page=chart-of-accounts&skin=underline';
+  const account = (page: Page, name: string) => page.locator('.fd-list-row', { has: page.locator('td[data-col="name"]', { hasText: new RegExp(`^${name}$`) }) });
+
+  test('lists the classes, opens a group’s accounts a page at a time, closes them, and finds one at any depth', async ({ page }) => {
+    const { problems } = await open(page, 'plain', CHART);
+    const accounts = await records(page, 'coa.account');
+    const top = accounts.filter((one) => one['parent_id'] === null);
+    await expect(page.locator('.fd-list-row:visible')).toHaveCount(top.length);
+    await expect(page.locator('.fd-pager-text')).toHaveText(`1–${top.length} of ${top.length} accounts`);
+    await expect(page.getByRole('button', { name: 'Expand all' })).toBeHidden();
+    await account(page, 'Assets').getByRole('button', { name: 'Assets' }).click();
+    await expect(account(page, 'Cash and banks')).toBeVisible();
+    await account(page, 'Cash and banks').getByRole('button', { name: 'Cash and banks' }).click();
+    const banks = accounts.filter((one) => (one['parent_id'] as { label?: string } | null)?.label === 'Cash and banks');
+    await expect(page.locator('.fd-list-row[data-depth="2"]:visible')).toHaveCount(20);
+    await expect(page.locator('.fd-list-tree-more button')).toHaveText('Show 20 more');
+    await screen(page, 'list-work-tree', { viewport: true });
+    await page.locator('.fd-list-tree-more button').click();
+    await expect(page.locator('.fd-list-row[data-depth="2"]:visible')).toHaveCount(40);
+    expect(await axeFindings(page, 'a chart of accounts opened')).toEqual([]);
+    expect(banks.length).toBe(60);
+    // Left closes from the keys: everything under it goes.
+    await account(page, 'Assets').focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.locator('.fd-list-row:visible')).toHaveCount(top.length);
+    // A search: every bank account whatever its depth, each with its group named.
+    const box = page.getByRole('combobox', { name: 'Search' });
+    await box.fill('National Bank');
+    await page.getByRole('option', { name: 'Search Account for: National Bank' }).click();
+    await expect(page.locator('.fd-list-row').first().locator('.fd-list-tree-in')).toHaveText('in Cash and banks');
+    expect(problems).toEqual([]);
+  });
+});

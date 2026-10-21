@@ -261,5 +261,7 @@ export const list = {
     rankedByNothing: 'Nothing: the list keeps its order',
     endless: 'Rows load as the list is scrolled',
     endlessHint: 'In place of its pages, for a phone’s feed or a log: its count stays, “Show 40 more” at the end for the keys.',
+    loadChildren: 'Children load as a parent opens',
+    loadChildrenHint: 'For a tree too big for a page, a chart of accounts: its pages are the rows with no parent, each parent’s rows asked as it opens.',
   },
 };

@@ -565,7 +565,7 @@ export function listView(context: ListContext): ListView {
    * (`sequenceField`); where it could not come, its rows are read and opened, as a list's always were. What a row opens
    * to, drawn as the list draws its cells.
    */
-  const rowsKit = node.detail || node.sequenceField ? rowsPart.loaded : undefined;
+  const rowsKit = node.detail || node.sequenceField || node.loadChildren ? rowsPart.loaded : undefined;
   const details = rowsKit?.detailRows({ page, node, model, dataSource: context.dataSource, el, labels, locale, fill, number, span, cellsOf: (of, list) => listCells({ page: of, node: list, doc, el, locale, icons: context.icons, fill, ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) }) }) ?? null;
   if (rowsKit) rowsKit.installRowsStyles(doc);
   /** Its rows re-ranked by hand, while it is in their order: by its own rank, ascending, its rows not under groups or parents. */
@@ -592,6 +592,31 @@ export function listView(context: ListContext): ListView {
     }) ?? null;
   // The rank each row moves by, asked with the rest.
   if (ranks && node.sequenceField && !fields.includes(node.sequenceField)) fields.push(node.sequenceField);
+  /** A tree too big for a page, its children loaded as a parent opens (`loadChildren`): the rows part's, where it came. */
+  const tree =
+    parentField && node.loadChildren
+      ? (rowsKit?.lazyTree({
+          node,
+          model,
+          dataSource: context.dataSource,
+          el,
+          labels,
+          fill,
+          number,
+          parentField,
+          filter: () => currentFilter(),
+          sort: () => sort,
+          fields,
+          pageSize,
+          row: (record) => row(record),
+          recordOf: (tr) => recordOf.get(tr),
+          span,
+          searching: () => facets.some((facet) => facet.kind !== 'groupBy'),
+          changed: () => changed(),
+        }) ?? null)
+      : null;
+  // Every parent opened at once would load the whole tree: Expand all is for a tree on its page.
+  if (tree) expandAll.hidden = true;
   /** The columns as last drawn, to know when the totals must follow. */
   let drawnColumns = shownColumns().join();
 
@@ -696,7 +721,7 @@ export function listView(context: ListContext): ListView {
         // A parent opens towards the line's end, closes towards its start: flipped right to left.
         event.preventDefault();
         fold(String(record.id), event.key !== forward);
-      } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && details?.key(tr, event.key === forward)) {
+      } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && (tree?.key(tr, event.key === forward) || details?.key(tr, event.key === forward))) {
         // What it opens to, opened towards the line's end and closed towards its start.
         event.preventDefault();
       }
@@ -718,7 +743,8 @@ export function listView(context: ListContext): ListView {
 
   /** A page of records with each under its parent, depth first, where the parent is on the page too; the rest at the top. */
   function nest(records: Row[]): HTMLTableRowElement[] {
-    if (!parentField) return records.map((record) => row(record));
+    // A tree loaded as it opens draws its rows as they come: the rows part puts each under its parent.
+    if (!parentField || tree) return records.map((record) => row(record));
     const ids = new Set(records.map((record) => String(record.id)));
     const parentOf = (record: Row) => {
       const parent = plain(record.values[parentField]);
@@ -786,6 +812,7 @@ export function listView(context: ListContext): ListView {
     drawFolds();
   });
   collapseAll.addEventListener('click', () => {
+    if (tree) return tree.closeAll(body);
     for (const tr of body.querySelectorAll<HTMLElement>(':scope > .fd-list-row[data-parent-of]')) closed.add(tr.dataset['id'] ?? '');
     drawFolds();
   });
@@ -997,7 +1024,8 @@ export function listView(context: ListContext): ListView {
         drawn = groups.map((group) => groupRow(grouped(source), group, 0, filter, grouping));
       } else {
         // Loaded as it is scrolled: every row it held, asked again from the first.
-        const answer = source?.list ? await source.list({ model, fields, filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize }) : { records: [], total: 0 };
+        // A tree loaded as it opens: its records with no parent, while no search is on.
+        const answer = source?.list ? await source.list({ model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize }) : { records: [], total: 0 };
         if (stale()) return;
         // Past the end, as when the last record of the last page went: back to the page that is left.
         if (!answer.records.length && answer.total > 0 && offset > 0) {
@@ -1023,6 +1051,7 @@ export function listView(context: ListContext): ListView {
     // What the rows open was open before stays so, under them; their grips while the list is in their order.
     details?.drawn(body);
     ranks?.drawn();
+    void tree?.drawn(body);
     empty.hidden = drawn.length > 0 || !failed.hidden;
     empty.textContent = context.none && !facets.length ? context.none : sentence(labels.noRecordsNoun, labels.noRecords);
     table.removeAttribute('aria-busy');

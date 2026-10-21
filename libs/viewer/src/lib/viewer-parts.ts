@@ -35,7 +35,7 @@ export type AnswersPart = typeof AnswersModule;
 export type LimitsPart = typeof LimitsModule;
 /** The views part: a list's views kept on the app's server. */
 export type ViewsPart = typeof ViewsModule;
-/** The rows part: a list's rows a person works in — opened in place, re-ranked by hand. */
+/** The rows part: a list's rows a person works in — opened in place, re-ranked by hand, a tree's loaded as it opens. */
 export type RowsPart = typeof RowsModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
@@ -197,8 +197,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       // Its rows as cards, on a phone or in its gallery; the columns a person shapes.
       if (node['card'] || node['gallery']) found.add(cardsPart);
       if (node['optionalColumns']) found.add(columnsPart);
-      // Its rows a person works in: opened in place, re-ranked by hand.
-      if (node['detail'] || node['sequenceField']) found.add(rowsPart);
+      // Its rows a person works in: opened in place, re-ranked by hand, a tree's children loaded as a parent opens.
+      if (node['detail'] || node['sequenceField'] || node['loadChildren']) found.add(rowsPart);
       if (node['search'] === 'fields') found.add(filtersPart);
       if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
     }

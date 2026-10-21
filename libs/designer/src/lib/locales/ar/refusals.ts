@@ -195,6 +195,7 @@ export const refusals: DesignerWords['refusals'] = {
   rankNotWhole: (label) => `تُرتَّب الصفوف برقم صحيح، و${q(label)} ليس كذلك`,
   rankUnderParents: 'الصفوف تحت أصلها لا تُرتَّب يدويًا: القائمة ترتّب مستوى واحدًا',
   endlessUnderParents: 'الصفوف تحت أصلها تأتي صفحةً بصفحة: لا تُحمَّل قائمتها مع التمرير',
+  childrenNeedParent: 'تُحمَّل الصفوف الفرعية عند فتح أصلها في شجرة: اختر أولًا الرابط الذي تتداخل تحته الصفوف',
   notFilterable: (label) => `لا يستطيع شريط التصفية عرض قيم ${q(label)} ولا أخذ نطاقه`,
   notRangeable: (label) => `يأخذ شريط التصفية نطاق رقم أو تاريخ، و${q(label)} ليس أيًّا منهما`,
   atLeastNeedsNumber: (label) => `زر الحد الأدنى للأرقام، و${q(label)} يحمل تواريخ`,

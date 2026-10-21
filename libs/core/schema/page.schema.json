@@ -9555,6 +9555,9 @@
         "endless": {
           "type": "boolean"
         },
+        "loadChildren": {
+          "type": "boolean"
+        },
         "export": {
           "type": "boolean"
         },

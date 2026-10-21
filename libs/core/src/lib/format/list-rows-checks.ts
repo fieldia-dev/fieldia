@@ -14,6 +14,8 @@ export function checkListWork(list: ListNode, path: string, tools: ListTools, li
   if (list.sequenceField !== undefined) checkRank(list, `${path}.sequenceField`, tools);
   // Rows under their parent come a page at a time, each parent with its own: never as the list is scrolled.
   if (list.endless && list.parentField) tools.report(`${path}.endless`, 'rows under their parent come a page at a time: a list of them never loads as it is scrolled');
+  // Children loaded as a parent opens are a tree's: a link its rows nest by.
+  if (list.loadChildren && !list.parentField) tools.report(`${path}.loadChildren`, 'children load as a parent opens in a tree: name the link its rows nest under (parentField)');
 }
 
 /** A list's rank: a whole number of its records, by which it is in order — else no row could be moved. */

@@ -83,6 +83,8 @@ import waitingRoom from '../../examples/pages/waiting-room.page.json';
 import { waitingPatientPage, waitingPatients } from './waiting-room';
 import activityLog from '../../examples/pages/activity-log.page.json';
 import { activityEntries, activityEntryPage } from './activity-log';
+import chartOfAccounts from '../../examples/pages/chart-of-accounts.page.json';
+import { accountPage, chartAccounts } from './chart-of-accounts';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -102,6 +104,9 @@ export const pages: Record<string, Page> = {
   // A team's log of 1,284 entries, loaded as it is scrolled, and the entry each opens: shared/activity-log.ts.
   'activity-log': activityLog as Page,
   'activity-entry': activityEntryPage,
+  // A chart of 240 accounts, its groups' accounts loaded as each opens, and the account each opens: shared/chart-of-accounts.ts.
+  'chart-of-accounts': chartOfAccounts as Page,
+  account: accountPage,
   contact: contactPage,
   // A customer with its invoices and quotations listed inside it, and a home with its viewings: shared/related-lists.ts.
   'customer-account': customerAccount as Page,
@@ -256,6 +261,7 @@ const RECORD_PAGES: Record<string, string> = {
   'orders-review': 'order',
   'waiting-room': 'waiting-patient',
   'activity-log': 'activity-entry',
+  'chart-of-accounts': 'account',
   'map-couriers': 'map-courier',
   'map-zones': 'map-week-order',
   'map-heat': 'map-week-order',
@@ -778,6 +784,9 @@ export function sampleDataSource() {
     // What the team did, 1,284 entries back from now, on its log and the entry each row opens (shared/activity-log.ts).
     'activity-log': () => ({ 'activity.entry': activityEntries() }),
     'activity-entry': () => ({ 'activity.entry': activityEntries() }),
+    // A chart of 240 accounts, on its list and on the account each row opens (shared/chart-of-accounts.ts).
+    'chart-of-accounts': () => ({ 'coa.account': chartAccounts() }),
+    account: () => ({ 'coa.account': chartAccounts() }),
   };
   const extra = extras[params.get('page') ?? '']?.() ?? {};
   // The sales team's queue keeps its saved views on its server, the team's shared ones among them (shared/saved-views.ts).

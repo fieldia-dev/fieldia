@@ -39,6 +39,11 @@ export const ROWS_STYLES = `
 .fd-list-row[data-lifted] > td { background: var(--fd-accent-soft); }
 tbody[data-ranking] { user-select: none; }
 tbody[data-ranking] > .fd-list-row:not([data-lifted]) { transition: transform 0.12s; }
+/* ---- a tree's children loaded as a parent opens (loadChildren) ---- */
+/* Under a search, a match's parent after its name; a parent's "Show 40 more" set in under its children. */
+.fd-list-tree-in { margin-inline-start: 8px; color: var(--fd-muted); font-size: 12.5px; }
+.fd-list-table > tbody > tr.fd-list-tree-more > td { padding: 4px 10px; padding-inline-start: calc(32px + var(--fd-depth, 0) * 20px); }
+.fd-list-row[aria-busy="true"] > td[data-name] > .fd-list-twisty { opacity: 0.5; }
 /* With its words, in a card on a phone alone. */
 .fd-list-detail-words { display: none; }
 @media not print {

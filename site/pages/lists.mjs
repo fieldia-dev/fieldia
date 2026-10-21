@@ -59,6 +59,7 @@ ${code(
     <tr><td>${c('search')} · ${c('filterFields')} · ${c('filterLabels')}</td><td>${c('"fields"')}: a keyword box and a list of values to tick for each of ${c('filterFields')}, in place of the search bar; ${c('filterLabels')} gives a filter its own, shorter name on the bar, by field (${c('{ "iteration": "Iteration" }')} for Iteration Path), translated with the page's words.</td></tr>
     <tr><td>${c('filterRanges')} · ${c('filterCounts')} · ${c('filterSheet')}</td><td>A number's or a date's range on the filter bar — From and To, a press for each least value (${c('{ "bedrooms": { "atLeast": [1, 2, 3, 4] } }')}) — one chip; how many records each value, named filter and favourite finds, beside it; and on a phone the filter bar's fields in a sheet with <em>Show 37 homes</em>: see <a href="#filters">filters a buyer and a sales team expect</a>.</td></tr>
     <tr><td>${c('parentField')}</td><td>Rows nested under their parent by this link to the list's own records, with Expand all and Collapse all.</td></tr>
+    <tr><td>${c('loadChildren')}</td><td>${c('true')}, with ${c('parentField')}: a tree too big for a page, each parent's children asked as it opens — see <a href="#tree">a tree too big for a page</a>.</td></tr>
     <tr><td>${c('endless')}</td><td>${c('true')}: rows load as the list is scrolled, in place of its pages — see <a href="#endless">loaded as you scroll</a>.</td></tr>
     <tr><td>${c('sequenceField')}</td><td>The whole number the records are ranked by: a row carried to another place by its grip, or moved with <kbd>Alt</kbd> and an arrow, writes it — see <a href="#rank">rows re-ranked by hand</a>.</td></tr>
     <tr><td>${c('detail')}</td><td>What a row opens to in place, under it: its record's lines, or the records pointing at it, a page at a time — see <a href="#work">lists people work in</a>.</td></tr>
@@ -381,6 +382,20 @@ ${code(
 
 <h3 id="endless">Loaded as you scroll</h3>
 <p>A phone's feed, a log, results to browse: with ${c('"endless": true')} the next page of rows comes as the end of the rows comes in sight, put after those already there, a phone's thumb ahead — no pages to turn. The count stays, <em>1–60 of 1,284 entries</em>; the arrows go; <em>Show 30 more</em> waits at the end for a hand or the keys, and <kbd>↓</kbd> past the last row loads the next and moves on to it. A row's button, a record closed, an export: the list asks again for every row it held, where it was; a new search or another order starts from the first page. On a phone its cards far out of sight skip their drawing until they come near (${c('content-visibility')}). Your source answers ${c('list')} with ${c('offset')} and ${c('limit')}, as it does for pages. Not for rows under their parent. <a href="/demos/plain/?page=activity-log&amp;skin=underline">Try the team's log</a>.</p>
+
+<h3 id="tree">A tree too big for a page</h3>
+<p>Rows nested under their parent on one page break once a tree holds more than a page: a chart of accounts, a project's work, a development's buildings and units. With ${c('"loadChildren": true')} beside ${c('parentField')}, the list's pages are its records with no parent, and each parent's children come as it opens — a page at a time, <em>Show 20 more</em> under them — so a parent's children never split across pages. Only a row with children has its arrow: how many each has is asked in one ask for the rows drawn. <kbd>→</kbd> opens a row, <kbd>←</kbd> closes it, <em>Collapse all</em> closes every one; <em>Expand all</em>, which would load the whole tree, is not offered. What was open stays open as the list asks again. A search lists its matches whatever their depth, each with its parent named — <em>Bank 3, in Current assets</em>.</p>
+${code(
+  'ts',
+  `
+// The top: records with no parent, a page at a time, as the pager counts them.
+list({ model: 'account', filter: [{ field: 'parent_id', op: 'notset' }], sort, offset: 0, limit: 20 })
+// How many children each row drawn has, in one ask: a group's value is the parent's id.
+groups({ model: 'account', field: 'parent_id', filter: [{ field: 'parent_id', op: 'in', value: [1, 2, 3] }] })
+// A parent opened: its children, a page at a time.
+list({ model: 'account', filter: [{ field: 'parent_id', op: '=', value: 1 }], sort, offset: 0, limit: 20 })`
+)}
+<p>Without ${c('groups')}, every row offers to open, and one with nothing under it loses its arrow as it opens. In the rows part (${c('fieldia.rows.js')}). In the designer: a list's <em>Children load as a parent opens</em>, under its parent link. <a href="/demos/plain/?page=chart-of-accounts&amp;skin=underline">Try the chart of accounts</a>.</p>
 
 <h3 id="views">Saved views, kept for the team</h3>
 <p>Where your data source keeps views, the search bar's menu lists them in place of the favourites the browser keeps: the person's own and those the team shares — <em>Shared by Mona Adel</em> beside another's — each put on with a press: its search, its order and, where people shape the columns, its columns. <em>Save current search</em> takes a name, <em>Use by default</em> and <em>Share with the team</em>; the list opens on the person's own default, else the team's, asked before its records so they come once, already in it. A person's own view has its × (one shared with the team asked first: it goes for everyone); another's is only put on. The same on every device: nothing of it is kept in the browser.</p>

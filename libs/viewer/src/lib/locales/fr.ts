@@ -277,6 +277,7 @@ export const fr: ViewerLabels = {
   rowMovedTo: '{name} déplacé à la place {n} sur {total}',
   rowMoveHint: 'Faites glisser pour le déplacer ; ou Alt+↑ ou Alt+↓ au clavier',
   rankNotKept: 'Le nouvel ordre n’a pas été gardé : {why}.',
+  treeIn: 'dans {name}',
   viewShared: 'Partagée avec l’équipe',
   viewSharedBy: 'Partagée par {name}',
   shareView: 'Partager avec l’équipe',

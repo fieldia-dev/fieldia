@@ -285,6 +285,7 @@ export const de: ViewerLabels = {
   rowMovedTo: '{name} an Stelle {n} von {total} verschoben',
   rowMoveHint: 'Zum Verschieben ziehen; oder Alt+↑ bzw. Alt+↓ auf der Tastatur',
   rankNotKept: 'Die neue Reihenfolge wurde nicht gespeichert: {why}.',
+  treeIn: 'in {name}',
   viewShared: 'Mit dem Team geteilt',
   viewSharedBy: 'Geteilt von {name}',
   shareView: 'Mit dem Team teilen',
