@@ -1014,7 +1014,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
-const BUDGET_KB = 506.8;
+// A month alone, a year alone and the Hijri calendar (0.30, w6-inputs) — what every page that checks or writes a date
+// needs of them: a month's or a year's limits kept by the month or the year and said so ("can't be before Oct 2026",
+// core's checkDay and dayWords, 0.67), a month, a year and a Hijri day written where a value is read — a list's cell, a
+// value read-only (displayValue, 0.17) — a date of a month, a year or a Hijri day asking for the months part with the
+// date part (widgets.ts, widget-parts.ts, 0.26), and the names the months part takes from the main script (`monthNamed`,
+// `precisionOf`, `monthWords`, `hijriWords`, and `monthsPart` on the global: 0.17); their boxes, calendars and sheet in
+// fieldia.months.js: 506.76 measured before, 508.06 after, to 508.1.
+const BUDGET_KB = 508.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1248,7 +1255,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
-const GZIP_BUDGET_KB = 166.2;
+// A month alone, a year alone and the Hijri calendar (listed with the raw budget above): a month's or a year's limits,
+// a month, a year and a Hijri day written where values are read, such a date asking for the months part, the names
+// that part takes — 166.15 measured before, 166.64 after, to 166.7.
+const GZIP_BUDGET_KB = 166.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1429,7 +1439,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The owner's walk of 0.27 mended: a question's required message, and a refused signature's "ready to sign" and Sign
 // now — Arabic's 77.58 and 13.24 measured before, 77.88 and 13.29 after, to 77.9 and 13.3; German's 36.14 and 11.60 to
 // 36.27 and 11.64, to 36.3 and 11.7; French's 36.60 and 11.64 to 36.75 and 11.70, to 36.8 and 11.7.
-const ADD_ON_BUDGET_KB = { ar: [77.9, 13.3], de: [36.3, 11.7], fr: [36.8, 11.7] };
+// A month alone, a year alone and the Hijri calendar (0.30, w6-inputs): a month's and a year's shapes, their calendars'
+// buttons, what they say when they do not read or leave a day out, and the Hijri box's name, shape and words — 16 in
+// each, as measured: Arabic's 77.88 and 13.29 before, 79.44 and 13.47 after, to 79.5 and 13.5; German's 36.27 and
+// 11.64 to 37.02 and 11.81, to 37.1 and 11.9; French's 36.75 and 11.70 to 37.60 and 11.86, to 37.7 and 11.9.
+const ADD_ON_BUDGET_KB = { ar: [79.5, 13.5], de: [37.1, 11.9], fr: [37.7, 11.9] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1822,7 +1836,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// A month alone, a year alone and the Hijri calendar (0.30, w6-inputs): the date part's box reading and writing a month
+// or a year as the months part says, the text kept unread by the Hijri box beside it left to that box, a calendar of
+// another kind drawn in its place — date 22.14 and 8.36 to 23.71 and 8.97, to 23.8 and 9.0 — and the new
+// fieldia.months.js (a month's and a year's reader, Umm al-Qura's days by Intl, the Hijri box, the months' and years'
+// calendars, their sheet), loaded with the date part only for such a date: 14.62 and 5.90, to 14.7 and 6.0.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [23.8, 9.0], months: [14.7, 6.0], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1831,6 +1850,7 @@ const PART_GIVES = {
   choice: ['ownListWidget', 'searchWidget', 'choiceTagsWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
+  months: ['grainBox', 'readGrainText', 'hijriOf', 'gregorianOf', 'readHijriText', 'hijriBox', 'hijriPair', 'periodCalendar', 'hijriCalendar', 'installMonthsStyles'],
   list: ['listView', 'relatedList', 'relatedListPage', 'relatedCount', 'installListStyles'],
   cards: ['cardSpec', 'cardReads', 'drawCard', 'installCardStyles'],
   columns: ['columnChoices', 'columnsKey', 'installColumnStyles'],
@@ -1855,7 +1875,7 @@ const PART_GIVES = {
   mapchecks: ['checkMap', 'checkPlace'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -2273,6 +2293,17 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
   visit.destroy();
   gone('visit');
+  // A lease whose days are shown in the Hijri calendar beside the Gregorian, its first rent's month a month alone: the
+  // months part asked for with the date part (in already), the page drawn once it came — nothing of it before — the
+  // Hijri box beside the day, the month's box, and its sheet in its place.
+  const lease = inPage.mountViewer(host, { page: read('lease.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { lease: { 1: { name: 'Olaya Tower', tenant: 'Faisal Al-Harbi', starts_on: '2026-10-13' } } } }) });
+  waits(lease, 'a lease of Hijri days and a month alone');
+  await lease.drawn;
+  hasIn('a lease, its Hijri days and a month alone', 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, months, options, path, phone, print, quiet, relations, slots, survey, text, themes');
+  if (!(await until(() => host.querySelector('[data-node="f-starts"] input[data-kind="hijri"]')?.value === '2 Jumada I 1448 AH'))) throw new Error(`in a page, a Hijri date is not shown beside its day: ${host.querySelector('[data-node="f-starts"] input[data-kind="hijri"]')?.value ?? 'no box'}`);
+  if (host.querySelector('[data-node="f-first-rent"] input')?.placeholder !== 'mm/yyyy') throw new Error("in a page, a month alone is not typed as one");
+  lease.destroy();
+  gone('lease');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
@@ -2287,7 +2318,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
   if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-months-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
     const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
@@ -2295,7 +2326,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a lease's Hijri days and a month alone — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

@@ -262,12 +262,35 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     const WEEKS: Record<string, number[]> = { 'sat-sun': [1, 2, 3, 4, 5], 'fri-sat': [1, 2, 3, 4, 7] };
     const weekend = select(w.weekends, [['', w.allowed], ['sat-sun', w.notSatSun], ['fri-sat', w.notFriSat], ['own', w.someDays]]);
     weekend.addEventListener('change', () => weekend.value !== 'own' && designer.setLimits(id, { days: WEEKS[weekend.value] ?? null }));
+    const element = word(w.weekends, weekend);
     return {
-      element: word(w.weekends, weekend),
+      element,
       refresh(page, node) {
+        // A month or a year has every day of the week: no weekends to keep it off.
+        element.hidden = !!(page.fields[node.field] as { precision?: string }).precision;
         const days = JSON.stringify(own(page.fields[node.field], 'days') ?? null);
         weekend.value = days === 'null' ? '' : (Object.keys(WEEKS).find((k) => JSON.stringify(WEEKS[k]) === days) ?? 'own');
         (weekend.options[3] as HTMLOptionElement).hidden = weekend.value !== 'own';
+      },
+    };
+  }
+
+  /**
+   * What a date keeps — a day, a month alone ("Oct 2026"), a year alone — and, for a day, whether the Hijri calendar
+   * shows beside it, typed in too.
+   */
+  function keeps(): Part {
+    const which = select(w.dateKeeps, [['', w.keepsDay], ['month', w.keepsMonth], ['year', w.keepsYear]]);
+    which.addEventListener('change', () => designer.setDateKeeps(id, { precision: (which.value || null) as 'month' | 'year' | null }));
+    const hijri = toggle(w.hijriBeside, (on) => designer.setDateKeeps(id, { hijri: on || null }));
+    return {
+      element: row(word(w.dateKeeps, which), hijri.element),
+      refresh(page, node) {
+        const def = page.fields[node.field] as Field & { precision?: string; hijri?: boolean };
+        show(which, def.precision ?? '');
+        // The Hijri calendar is a day's: a month or a year alone is the Gregorian's.
+        hijri.element.hidden = !!def.precision;
+        hijri.button.setAttribute('aria-checked', String(def.hijri === true));
       },
     };
   }
@@ -496,7 +519,7 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'rating' || kind === 'slider') parts.push(ends());
   if (kind === 'scale') parts.push(nps());
   if (kind === 'date' || kind === 'date-time') parts.push(day('min'), day('max'), weekends());
-  if (kind === 'date') parts.push(startsToday());
+  if (kind === 'date') parts.push(keeps(), startsToday());
   if (kind === 'time') parts.push(hours());
   if (kind === 'date-time' || kind === 'time') parts.push(minutes());
   if (kind === 'date-time' || kind === 'booking-slots') parts.push(zone());

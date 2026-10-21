@@ -87,6 +87,12 @@ export const PART_WORDS = {
     ],
   },
   path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds'] },
+  months: {
+    widgets: [
+      'chooseDate', 'notPastedDate', 'previousMonth', 'nextMonth',
+      'monthShape', 'monthShapeYmd', 'yearShape', 'chooseMonth', 'chooseYear', 'previousYear', 'nextYear', 'earlierYears', 'laterYears', 'monthUnfinished', 'yearUnfinished', 'dayLeftOut', 'monthLeftOut', 'hijriLabel', 'hijriShape', 'hijriUnfinished',
+    ],
+  },
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
   print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },

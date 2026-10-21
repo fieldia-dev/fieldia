@@ -80,6 +80,8 @@ Columns: **Enter** · **Ctrl+Enter** · **Save** (the button) · **Auto** (autos
 | Date, date and time | `date`, `datetime` (date-box.ts, date part) | `settle()` on Enter keydown, change, blur; read in the reader's zone (`DateReader.zone`, the computer's when left out): a time the clocks skip or pass twice is said, never moved; typed back to what it showed, the value as it came | unread, the value as entered; a time left out is said | yes | R | R | L | P | R | R | R | R |
 | Time of day | `char.time` (date-box.ts) | as dates | unread ("14.5" names each time) | yes | R | R | L | P | R | R | R | R |
 | Range of dates | `date.daterange`, `datetime.daterange` (date-range.ts) | two date boxes | unread, by each box's field | yes | R | R | L | P | R | R | R | R |
+| Month alone, year alone | `date` with `precision` (date-box.ts, date-grain.ts, date part) | as dates: a month read whole (10/2026, 2026-10, Oct 2026, أكتوبر ٢٠٢٦) or a year (2026), kept as its first day; a whole day gives its month, the day it leaves out said under the box | unread, the value as entered (months 1 to 12, a year of two digits named both ways) | yes | R | R | L | P | R | R | R | R |
+| Hijri day beside a date | `date` with `hijri` (hijri-box.ts, date part) | `settle()` on Enter keydown, change, blur: read in the page's order, its month a number or a name, by Umm al-Qura as Intl keeps it; the Gregorian day written, which the date box shows | unread in its own box, never the date box's ("Jumada I 1448 AH has 29 days"); the field keeps what it held | yes | R | R | L | P | R | R | R | R |
 | Plain date box (before the date part comes) | date-text.ts `plainDateWidget` | change | unread; a time left out is said under the box | no guard (by design) | R | R | L | P | R | R | R | R |
 | Text line, password | `char`, `char.password` (text-box.ts) | T; held keys and the trim on change / blur | the field's check (most characters, pattern) | yes | R | R | L | P | R | R | R | R |
 | Phone, email, web address | `char.phone`, `char.email`, `char.url` (text-box.ts) | T; digits as 0-9, marks and ends stripped on change / blur | the field's check, with its words | yes | R | R | L | P | R | R | R | R |
@@ -171,7 +173,7 @@ refused one, with the same words, however the text arrives:
 | Enter in a one-line box | never judged, held or stopped | `insertLineBreak` / `insertParagraph` |
 | The browser's autofill, a password manager (no beforeinput; Firefox's cannot be stopped) | in a box the person is not in: cleaned as a paste, kept whole, never put back; read at once as a box left (the viewer's change), its problem said. In the box they are in: judged as keys, all of it held when refused, said, taken as the box is left | `onInput` (`autofilled`), viewer.ts |
 
-Every guard holds: numbers, money, hours, per cents, shares, tax amounts, dates, times, ranges, every text kind (a
+Every guard holds: numbers, money, hours, per cents, shares, tax amounts, dates, months, years, Hijri days, times, ranges, every text kind (a
 phone read the world over among them), the colour code, a place's coordinates, the designer's number and date settings, and the filter's number. The guard of
 typed tags refuses no keys. A box with no guard reads whole words when it is left or saved: link, path and choice names,
 the plain date box, the code and JSON editors, formatted text, and the filter's date. Held keys are part of what was

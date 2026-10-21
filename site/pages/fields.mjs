@@ -9,7 +9,7 @@ const ROWS = [
   ['float', 'A decimal number', 'progressbar, label, duration (HH:MM), percentage, timer, place (a latitude, with @fieldia/map)', 'min, max, digits'],
   ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits, money'],
   ['boolean', 'Yes or no', 'toggle, priority (one star)', ''],
-  ['date', 'A date', 'daterange', 'min, max, days'],
+  ['date', 'A date — or a month alone, or a year alone', 'daterange', 'min, max, days, precision, hijri'],
   ['datetime', 'A date and a time, kept as an instant', 'daterange, timer, slots (booking a time from those free)', 'min, max, days, timeZone'],
   ['selection', 'One choice from a list, or several with multiple', 'radio, checkboxes, statusbar, priority (stars), dot (a state’s dot)', 'options, multiple, optionsFrom'],
   ['many2one', 'A link to one record of another model, found by typing', 'statusbar, path (a record of a tree as its path)', 'relation, filter'],
@@ -43,6 +43,17 @@ ${ROWS.map(([type, holds, widgets, options]) => `    <tr><td>${c(type)}</td><td>
 </div>
 <p>Every type also takes ${c('label')}, ${c('help')}, ${c('required')}, ${c('readonly')} and ${c('default')}. To see them all at once, open <a href="/demos/plain/?page=fields&amp;skin=outlined">the every-field demo</a>.</p>
 <p>A date's ${c('min')} and ${c('max')} are its earliest and latest day: a day, ${c('"2026-03-02"')}, or one counted from the day the form is opened, ${c('"today"')}, ${c('"today+30"')}, ${c('"today-7"')}; a date and time keeps them by the day it falls on. ${c('days')} are the days of the week it may fall on, ISO numbers from 1, Monday, to 7, Sunday: ${c('[1, 2, 3, 4, 5]')} refuses a weekend of Saturday and Sunday, ${c('[7, 1, 2, 3, 4]')} one of Friday and Saturday. A date's ${c('default')} may be ${c('"today"')}. A field with the widget ${c('email')}, ${c('url')}, ${c('phone')} or ${c('time')} is checked as one, and says what to type.</p>
+
+<h2 id="months">A month alone, a year alone, and the Hijri calendar</h2>
+<p>A date of a month alone — a billing period, a card's expiry — says ${c('"precision": "month"')}, and of a year alone — a building's year — ${c('"precision": "year"')}. Its box takes a month as people write one — <em>10/2026</em>, <em>2026-10</em>, <em>Oct 2026</em>, <em>أكتوبر ٢٠٢٦</em> — or four digits, and keeps its first day, ${c('"2026-10-01"')}, as every backend keeps a date; at rest it shows <em>Oct 2026</em> or <em>2026</em>, and so does a list. Its button opens a year's twelve months, or twelve years. A whole day typed or pasted gives its month, the day it leaves out said. Its ${c('min')} and ${c('max')} are kept by the month or the year: with ${c('"min": "today"')}, this month is still within it.</p>
+<p>A date with ${c('"hijri": true')} is shown and typed in the Hijri calendar beside the Gregorian day it keeps, by Umm al-Qura's reckoning, as your browser's Intl keeps it: a second box reads <em>2 Jumada I 1448 AH</em> at rest — <em>2 جمادى الأولى 1448 هـ</em> on an Arabic page — and <em>02/05/1448</em> while it is typed in, in the page's order; a day typed in either box writes the other. A Hijri month has 29 or 30 days as Umm al-Qura says, and a day past them is said with the days it has, the field keeping the day it held. Its calendar shows each day's Hijri day under it; a list writes both days. The value stays the Gregorian day.</p>
+${code(
+  'json',
+  `"first_rent": { "type": "date", "label": "First rent's month", "precision": "month", "min": "today" },
+"built": { "type": "date", "label": "Building built in", "precision": "year", "max": "today" },
+"starts_on": { "type": "date", "label": "Starts on", "hijri": true }`
+)}
+<p>In the designer: a date's Keeps (a day, a month, a year) and Hijri date beside it. Open <a href="/demos/plain/?page=lease&amp;skin=underline">the lease demo</a>.</p>
 
 <h2 id="phone">Phone numbers the world over</h2>
 <p>A phone field is a text box until its page says how phone numbers are read: ${c('"phone"')}, with the ${c('country')} a number typed without its + is read in, and whether a number is ${c('shown')} at rest abroad's way, ${c('"international"')} (the default), or at home's, ${c('"national"')}. A field can say it for itself in its ${c('options')}, which win over the page's.</p>

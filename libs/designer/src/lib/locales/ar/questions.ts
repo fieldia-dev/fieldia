@@ -176,6 +176,12 @@ export const questions: DesignerWords['questions'] = {
   notSatSun: 'ليس السبت أو الأحد',
   notFriSat: 'ليس الجمعة أو السبت',
   someDays: 'بعض الأيام فقط',
+  // ---- ما يحفظه التاريخ، والتقويم الهجري بجانب اليوم
+  dateKeeps: 'يحفظ',
+  keepsDay: 'يومًا',
+  keepsMonth: 'شهرًا: أكتوبر 2026',
+  keepsYear: 'سنة: 2026',
+  hijriBeside: 'التاريخ الهجري بجانبه',
   startsToday: 'يبدأ بتاريخ اليوم',
   minutes: 'الدقائق',
   anyMinute: 'أي دقيقة',

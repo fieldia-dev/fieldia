@@ -35,6 +35,49 @@ export interface CalendarOptions {
   into?: HTMLElement;
   /** What is drawn between the box and its button: a date and time's zone. */
   beside?: HTMLElement;
+  /**
+   * A calendar of another kind than a month of days, or one that says more of each day — a year's twelve months or
+   * twelve years for a month or a year alone, a Hijri date's days (the months part's): what it draws and names.
+   */
+  kind?: CalendarKind;
+}
+
+/** What a calendar of another kind draws in, and reads of the one it is in (`CalendarKind.draw`). */
+export interface CalendarHost {
+  doc: Document;
+  grid: HTMLTableElement;
+  /** The month, or the year, the keys have reached. */
+  focused: Date;
+  /** The day the field holds; today, on the form's clock. */
+  held?: Date;
+  today: Date;
+  readonly: boolean;
+  /** Right to left, where the arrows run the other way. */
+  rtl: boolean;
+  /** Whether a day (or a month, a year) may not be picked, by the field's limits. */
+  refused(at: Date): boolean;
+  pick(at: Date): void;
+  move(at: Date): void;
+  /** The calendar's title, which names it too. */
+  heading(text: string): void;
+}
+
+/**
+ * A calendar of another kind (`CalendarOptions.kind`): the names of its button and of the buttons that turn it, its
+ * grid's class; for a month or a year alone, the value of what is picked (its first day), where it opens, how it turns
+ * and its grid; for a Hijri date, its title beside a month's name and what each day's button says beside its own.
+ */
+export interface CalendarKind {
+  choose: string;
+  previous: string;
+  next: string;
+  className: string;
+  valueOn?(at: Date): string;
+  start?(at: Date): Date;
+  turn?(at: Date, by: -1 | 1): Date;
+  draw?(host: CalendarHost, focus: boolean): void;
+  heading?(first: Date, last: Date): string;
+  mark?(button: HTMLButtonElement, at: Date, label: string): void;
 }
 
 /**
@@ -78,6 +121,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const weekdayShort = weekdayHead(lang);
   const weekdayLong = new Intl.DateTimeFormat(lang, { weekday: 'long' });
+  const other = kind === 'date' ? options.kind : undefined;
 
   const button = doc.createElement('button');
   button.type = 'button';
@@ -96,7 +140,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
     icon.append(shape);
   }
   button.append(icon);
-  button.setAttribute('aria-label', labels.chooseDate);
+  button.setAttribute('aria-label', other?.choose ?? labels.chooseDate);
   button.setAttribute('aria-haspopup', 'dialog');
   button.setAttribute('aria-expanded', 'false');
   button.setAttribute('aria-controls', `${id}-calendar`);
@@ -111,17 +155,17 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   const prev = doc.createElement('button');
   prev.type = 'button';
   prev.textContent = '‹';
-  prev.setAttribute('aria-label', labels.previousMonth);
+  prev.setAttribute('aria-label', other?.previous ?? labels.previousMonth);
   const title = doc.createElement('span');
   title.className = 'fd-calendar-title';
   title.setAttribute('aria-live', 'polite');
   const next = doc.createElement('button');
   next.type = 'button';
   next.textContent = '›';
-  next.setAttribute('aria-label', labels.nextMonth);
+  next.setAttribute('aria-label', other?.next ?? labels.nextMonth);
   head.append(prev, title, next);
   const grid = doc.createElement('table');
-  grid.className = 'fd-calendar-grid';
+  grid.className = `fd-calendar-grid${other ? ` ${other.className}` : ''}`;
   grid.setAttribute('role', 'grid');
   // Why the day pressed was not picked: said politely, under the month, while the month stays open.
   const note = doc.createElement('div');
@@ -149,6 +193,8 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
    * first time, where the clocks repeat it that day (its zone's name then shows which); none where they skip it.
    */
   function valueOn(day: Date): string | null {
+    // A month or a year, kept as its first day.
+    if (other?.valueOn) return other.valueOn(day);
     if (kind === 'date') return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
     const was = dayOf('datetime', form.getState().values[name], zone);
     const at = instantsAt({ year: day.getFullYear(), month: day.getMonth() + 1, day: day.getDate(), hour: was?.hour ?? 0, minute: was?.minute ?? 0 }, zone)[0];
@@ -183,9 +229,24 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   }
 
   function draw(focus: boolean) {
+    // A year's months, or twelve years: the other kind's own grid.
+    if (other?.draw) {
+      const held = dayOf(kind, form.getState().values[name], zone)?.day;
+      const host: CalendarHost = {
+        doc, grid, focused, today: todayOf(), readonly, rtl: rightToLeft(element), pick, move,
+        ...(held ? { held } : {}),
+        refused: (at) => ((value) => value !== null && !!options.refuse?.(value))(valueOn(at)),
+        heading(text) {
+          title.textContent = text;
+          dialog.setAttribute('aria-label', text);
+        },
+      };
+      return other.draw(host, focus);
+    }
     const chosen = dayOf(kind, form.getState().values[name], zone)?.day;
     const today = todayOf();
-    const label = monthName.format(focused);
+    // A Hijri date's month says the Hijri months it spans beside its name.
+    const label = other?.heading ? `${monthName.format(focused)} · ${other.heading(new Date(focused.getFullYear(), focused.getMonth(), 1), new Date(focused.getFullYear(), focused.getMonth() + 1, 0))}` : monthName.format(focused);
     title.textContent = label;
     dialog.setAttribute('aria-label', label);
     const first = new Date(focused.getFullYear(), focused.getMonth(), 1);
@@ -225,6 +286,8 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
         day.type = 'button';
         day.textContent = String(d.getDate());
         day.setAttribute('aria-label', dayName.format(d));
+        // What the other kind says of each day beside its own: its Hijri day.
+        other?.mark?.(day, d, dayName.format(d));
         day.tabIndex = sameDay(d, focused) ? 0 : -1;
         if (d.getMonth() !== focused.getMonth()) day.classList.add('fd-outside');
         if (chosen && sameDay(d, chosen)) day.setAttribute('aria-selected', 'true');
@@ -273,6 +336,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
 
   function open() {
     focused = dayOf(kind, form.getState().values[name], zone)?.day ?? todayOf();
+    if (other?.start) focused = other.start(focused);
     // Over the field's error, the month says it too: why the text typed was not read.
     const unread = form.getState().unread?.[name]?.message ?? '';
     setText(note, unread);
@@ -308,11 +372,11 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   button.addEventListener('click', () => (dialog.hidden ? open() : close()));
   if (inner.element instanceof HTMLInputElement) openOnClick(inner.element, () => dialog.hidden && open());
   prev.addEventListener('click', () => {
-    focused = addMonths(focused, -1);
+    focused = other?.turn ? other.turn(focused, -1) : addMonths(focused, -1);
     draw(false);
   });
   next.addEventListener('click', () => {
-    focused = addMonths(focused, 1);
+    focused = other?.turn ? other.turn(focused, 1) : addMonths(focused, 1);
     draw(false);
   });
   dialog.addEventListener('keydown', (event) => {

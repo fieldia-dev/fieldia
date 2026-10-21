@@ -1,4 +1,4 @@
-import { placesOf, placesOfCurrency, type LineField, type Locale, type Value } from '@fieldia/core';
+import { hijriWords, monthWords, placesOf, placesOfCurrency, precisionOf, type LineField, type Locale, type Value } from '@fieldia/core';
 import { formatMoney, formatNumber } from './numbers';
 import { writeMoney } from './money';
 import { shownNumber } from './duration';
@@ -68,7 +68,13 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
     }
     case 'date': {
       const date = localDate(String(value));
-      return date ? new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn' }).format(date) : String(value);
+      if (!date) return String(value);
+      // A month alone, or a year alone, as its box writes it at rest: "Oct 2026", "2026".
+      const precision = precisionOf(def);
+      if (precision !== 'day') return precision === 'year' ? String(date.getFullYear()) : monthWords(Date.UTC(date.getFullYear(), date.getMonth(), 1), locale);
+      const day = new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn' }).format(date);
+      // A Hijri date, its Hijri day beside it: "13 Oct 2026 · 2 Jumada I 1448 AH".
+      return def.hijri ? `${day} · ${hijriWords(String(value), locale)}` : day;
     }
     case 'datetime':
       // The instant it is, as its box shows it at rest: on its zone's clock, its name beside it where that is not the

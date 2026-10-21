@@ -277,6 +277,7 @@ export {
   readDate,
   foldTyped,
   couldBeMonth,
+  monthNamed,
   readTime,
   placesOfCurrency,
   placesOf,
@@ -297,6 +298,7 @@ export {
   type TimeRead,
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
+export { hijriWords, monthWords, precisionOf, type DatePrecision } from './lib/record/day-words';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
 // (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)

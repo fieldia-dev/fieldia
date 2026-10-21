@@ -38,7 +38,7 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { businessPart, choicePart, datePart, filesPart, linesPart, monthsPart, partFactory, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTimer, plainTotal } from './business-plain';
 import { plainAddress, plainChosen, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
@@ -888,6 +888,15 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
 // which comes in the date part: a plain box of the same reader meanwhile. A date and time is shown in local time, stored
 // as an ISO instant in UTC.
 const dateBoxOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateBoxWidget(kind), plainDateWidget(kind));
+/** A date of a month alone, a year alone, or with the Hijri calendar beside it: the date part's box, the months part's with it. */
+const monthsDate = (field?: Field) => field?.type === 'date' && (!!field.precision || field.hijri === true);
+const datesWithMonths = partWith(datePart, monthsPart);
+const dateWidget: PartFactory = Object.assign(
+  (context: WidgetContext) => (monthsDate(context.field) ? monthsDateBox : dayBox)(context),
+  { partOf: (_node: FieldNode, _page?: Page, field?: Field) => (monthsDate(field) ? datesWithMonths : datePart) }
+);
+const dayBox = dateBoxOf('date');
+const monthsDateBox = partFactory(datesWithMonths, (part) => part.dateBoxWidget('date'), plainDateWidget('date'));
 /** A range of dates, from → to (date-range.ts), in the date part: its first day in a plain box meanwhile. */
 const dateRangeOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateRangeWidget, plainDateWidget(kind));
 
@@ -1071,7 +1080,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'selection.image-choice': surveyKind((part) => part.imageChoiceWidget, (context) => choiceGroup(context.field.type === 'selection' && context.field.multiple ? 'checkbox' : 'radio')(context)),
   'selection.ranking': surveyKind((part) => part.rankingWidget, plainRanking),
   'selection.statusbar': statusbarOf,
-  date: dateBoxOf('date'),
+  date: dateWidget,
   datetime: dateBoxOf('datetime'),
   many2one: many2oneWidget,
   'many2one.statusbar': statusbarOf,

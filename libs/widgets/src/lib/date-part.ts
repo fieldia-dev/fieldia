@@ -7,8 +7,10 @@
  * (`plainDateWidget`, date-text.ts). The reader itself is the main script's:
  * a table's cell, a pasted block and a list's filter read dates with it. The
  * box's input rules (`dateRules`) guard any other box a date is typed into: a
- * designer's setting.
+ * designer's setting. A month alone, a year alone and the Hijri calendar are the months part's (months-part.ts), which
+ * its box and calendar draw from where a field has them (`monthsPartIn`).
  */
+export type { CalendarHost, CalendarKind } from './calendar';
 export { dateBox, dateBoxWidget, dateRules, type DateBox, type DateBoxOptions } from './date-box';
 export { weekdayHead, withCalendar, type CalendarOptions } from './calendar';
 export { dateRangeWidget } from './date-range';

@@ -152,6 +152,8 @@ export const refusals = {
   zoneUnknown: (zone: string) => `“${zone}” is no time zone: name one as the IANA does, such as Africa/Cairo or Europe/Berlin`,
   daysRange: 'The days of the week are 1, Monday, to 7, Sunday',
   oneDay: 'A date falls on one day of the week at least',
+  onlyDateKeeps: 'Only a date keeps a month or a year alone, or shows the Hijri calendar',
+  hijriIsADay: 'A Hijri date is a day: keep a day to show the Hijri calendar beside it',
   onlyDateToday: 'Only a date starts on today',
   onlyScaleNps: 'Only a linear scale is made NPS',
   onlySliderStep: 'Only a slider has a step',

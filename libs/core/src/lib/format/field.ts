@@ -250,7 +250,20 @@ const BooleanField = z.object({ type: z.literal('boolean'), ...common }).strict(
  */
 const dayLimit = z.string().regex(/^(\d{4}-\d{2}-\d{2}|today([+-]\d{1,4})?)$/).optional();
 const days = { min: dayLimit, max: dayLimit, days: z.array(z.int().min(1).max(7)).min(1).optional() };
-const DateField = z.object({ type: z.literal('date'), ...common, ...days }).strict();
+/**
+ * A date of a month alone — a billing period, a card's expiry — or of a year alone — a building's year (`precision`):
+ * typed and shown as its month ("Oct 2026", 10/2026) or its year (2026), kept as its first day ("2026-10-01",
+ * "2026-01-01"), its limits kept by the month or the year. A date with `hijri` is shown and typed in the Hijri calendar
+ * (Umm al-Qura) beside the Gregorian day it keeps: "13 Oct 2026 · 1 Rabiʻ II 1448 AH".
+ */
+const DateField = z
+  .object({ type: z.literal('date'), ...common, ...days, precision: z.enum(['month', 'year']).optional(), hijri: z.boolean().optional() })
+  .strict()
+  .superRefine((field, context) => {
+    if (field.precision && field.days) context.addIssue({ code: 'custom', message: 'the days of the week a date may fall on are a day’s: a month or a year has them all', path: ['days'] });
+    if (field.precision && field.hijri) context.addIssue({ code: 'custom', message: 'a Hijri date is a day: a month or a year alone is the Gregorian calendar’s', path: ['hijri'] });
+  });
+
 /**
  * A time zone by its IANA name: "Africa/Cairo", "Europe/Berlin", "UTC". A page's (`timeZone`) is the zone its dates
  * and times are in; a date and time field may name its own — a flight's departure, in its airport's zone.

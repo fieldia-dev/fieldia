@@ -2,6 +2,8 @@ import { alikeRecords, createMemoryDataSource, scheduleSlots, type AppFunctions,
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import listing from '../../examples/pages/listing.page.json';
+import lease from '../../examples/pages/lease.page.json';
+import { LEASE } from './lease';
 import visitFeedback from '../../examples/pages/visit-feedback.page.json';
 import { demoFunctions } from './functions';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -93,6 +95,8 @@ export const pages: Record<string, Page> = {
   property: property as Page,
   // A listing's features by its type, its sums and dates worked out, the district's average asked of the app (shared/functions.ts).
   listing: listing as Page,
+  // A flat let in Riyadh: its days in the Hijri calendar beside the Gregorian, a month alone, a year alone (shared/lease.ts).
+  lease: lease as Page,
   // A clinic's feedback: the questions after the first offer the treatments ticked in it.
   'visit-feedback': visitFeedback as Page,
   // A record each of their rows opens: an invoice, a quotation, a viewing.
@@ -327,8 +331,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     // `drafts=1`: what is typed is kept in the browser as a draft, offered again when the page opens.
     ...(params.get('drafts') === '1' ? { drafts: { store: localStorage } } : {}),
     // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are, and the booking
-    // template's; so is a consent's signing.
-    ...(['test-drive', 'template-appointment-booking', 'clinic-consent'].includes(params.get('page') ?? '') ? { now: demoNow } : {}),
+    // template's; so is a consent's signing, and a lease's first rent's month.
+    ...(['test-drive', 'template-appointment-booking', 'clinic-consent', 'lease'].includes(params.get('page') ?? '') ? { now: demoNow } : {}),
     // The consents round the one shown: the pager over it moves to the next.
     ...(params.get('page') === 'clinic-consent' ? { records: [1, 2] } : {}),
     // The customers round the one with its invoices and quotations, and the homes round the one with its viewings: the
@@ -526,6 +530,7 @@ export function sampleDataSource() {
       ...CONTRACT_FEES_RECORDS,
       'shop.kitchen': { 1: sampleKitchen() },
       listing: { 1: LISTING },
+      lease: { 1: LEASE },
       // The contacts, and the people who own them (shared/contacts.ts).
       'crm.contact': sampleContacts(),
       'res.users': Object.fromEntries(Object.entries(OWNERS).map(([id, name]) => [id, { name }])),

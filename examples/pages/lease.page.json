@@ -1,0 +1,46 @@
+{
+  "fieldia": "0.7",
+  "id": "lease",
+  "title": "A flat let in Riyadh",
+  "description": "A Saudi lease: its days shown and typed in the Hijri calendar beside the Gregorian they keep, its first rent's month, and the building's year.",
+  "data": { "kind": "record", "model": "lease" },
+  "records": { "one": "lease", "other": "leases", "a": "a lease" },
+  "fields": {
+    "name": { "type": "char", "label": "Lease", "required": true },
+    "tenant": { "type": "char", "label": "Tenant", "required": true },
+    "unit": { "type": "char", "label": "Flat" },
+    "starts_on": { "type": "date", "label": "Starts on", "required": true, "hijri": true, "help": "Type the day in either calendar: the other follows." },
+    "ends_on": { "type": "date", "label": "Ends on", "hijri": true },
+    "first_rent": { "type": "date", "label": "First rent’s month", "precision": "month", "min": "today", "help": "Rent is billed for the whole month: 10/2026, Oct 2026." },
+    "built": { "type": "date", "label": "Building built in", "precision": "year", "min": "1900-01-01", "max": "today" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "placeholder": "The lease, in a few words" },
+    "children": [
+      {
+        "type": "section",
+        "id": "parties",
+        "title": "Tenant and flat",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-tenant", "field": "tenant" },
+          { "type": "field", "id": "f-unit", "field": "unit" },
+          { "type": "field", "id": "f-built", "field": "built" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "term",
+        "title": "Term",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-starts", "field": "starts_on", "colspan": 2 },
+          { "type": "field", "id": "f-ends", "field": "ends_on", "colspan": 2 },
+          { "type": "field", "id": "f-first-rent", "field": "first_rent" }
+        ]
+      }
+    ]
+  }
+}

@@ -51,7 +51,7 @@ const AREA_OF = {
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
-  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing'],
+  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'lease'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -77,6 +77,7 @@ const SEARCH_WORDS = {
   'leads-queue': 'leads queue sales team crm follow up follow-up late overdue today this week counts count filters saved searches favourites agent pipeline',
   'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print tab count badge route router own page',
   property: 'property home house real estate listing viewings visits appointments related records inside agent client',
+  lease: 'lease rent rental tenant landlord tenancy contract flat apartment saudi riyadh ksa hijri umm al-qura islamic calendar arabic month year billing period year built',
   listing: 'listing property home house villa apartment flat studio features garden pool balcony options conditions price per square metre meter district average server function formula handover months age building',
   'visit-feedback': 'feedback survey clinic patient treatments follow up carry forward picked earlier question age birthday options conditions aesthetic botox filler',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
@@ -356,6 +357,20 @@ export const DEMOS = [
       'Pick a district: its average per m² shows “…” while the app’s server is asked, then the listing against it in per cent.',
       'Type 18 in Handover in (months): Handed over by is a year and a half after today; a built-on date gives the building’s age in whole years.',
       'Save while the district’s average is still asked: the save waits for it.',
+    ],
+  },
+  {
+    id: 'lease',
+    name: 'A flat let in Riyadh',
+    category: 'records',
+    query: 'page=lease&skin=underline',
+    blurb: 'A Saudi lease whose days are shown and typed in the Hijri calendar, by Umm al-Qura’s reckoning, beside the Gregorian day they keep; the first rent’s month typed as a month alone and the building’s year as a year alone.',
+    howTo: [
+      'Type 01/06/1448 in the Hijri box beside Starts on: the Gregorian day follows, and the other way round.',
+      'Type 30 in a Hijri month of 29 days and leave the box: it says how many days that month has, and Starts on keeps its day.',
+      'Open the calendar of Ends on: each day shows its Hijri day under it, and the month its Hijri months.',
+      'Type Oct 2026 or 10/2026 in First rent’s month, or pick a month from the year its button opens; a month gone by is refused.',
+      'Type 1998 in Building built in: a year alone. Switch the language to Arabic: the Hijri months are written in Arabic.',
     ],
   },
   {

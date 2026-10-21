@@ -184,6 +184,12 @@ export const questions = {
   notSatSun: 'Not Saturday or Sunday',
   notFriSat: 'Not Friday or Saturday',
   someDays: 'Some days only',
+  // ---- what a date keeps, and the Hijri calendar beside a day
+  dateKeeps: 'Keeps',
+  keepsDay: 'A day',
+  keepsMonth: 'A month: Oct 2026',
+  keepsYear: 'A year: 2026',
+  hijriBeside: 'Hijri date beside it',
   startsToday: 'Starts on today',
   minutes: 'Minutes',
   anyMinute: 'Any minute',

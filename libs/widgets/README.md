@@ -98,6 +98,33 @@ table's cell, a list's, and a value read-only write a date and time as its box
 does: the instant it is, on the browser's clock where nothing names a zone —
 never the clock it was written with (`12:30Z` is 15:30 to a person in Cairo).
 
+A date of a month alone — a billing period, a card's expiry — is
+`"precision": "month"` on its field, and of a year alone — a building's year —
+`"precision": "year"`. Its box takes a month as people write one — 10/2026,
+10-2026, 2026-10, Oct 2026, أكتوبر ٢٠٢٦, octobre 2026 — or four digits, keeps
+its first day (`"2026-10-01"`, `"2026-01-01"`) and shows it at rest in the
+page's language ("Oct 2026", "2026"); its button opens a year's twelve months,
+or twelve years. A whole day typed or pasted gives its month, and the day it
+leaves out is said. Its `min` and `max` are kept by the month or the year: with
+`"min": "today"`, this month is still within it. A list's cell and a value
+read-only write it the same way.
+
+```json
+"first_rent": { "type": "date", "label": "First rent's month", "precision": "month", "min": "today" }
+```
+
+A date with `"hijri": true` is shown and typed in the Hijri calendar beside
+the Gregorian day it keeps, by Umm al-Qura's reckoning as the browser's Intl
+keeps it (`islamic-umalqura`): a second box beside its own reads "2 Jumada I
+1448 AH" at rest ("2 جمادى الأولى 1448 هـ" in Arabic) and 02/05/1448 while it
+is typed in, in the page's order; a day typed in either box writes the other.
+A Hijri month has 29 or 30 days as Umm al-Qura says, and a day past them is
+said with the days it has, kept unread in its own box while the field holds the
+day it held. Its calendar shows each day's Hijri day under it, and the Hijri
+months a month spans in its title; a list's cell writes both days ("13 Oct
+2026 · 2 Jumada I 1448 AH"). The value stays the Gregorian day, as every
+backend keeps it. Both come in the date part with the date box.
+
 `"widget": "slots"` on a date and time books a time from those free: a month
 whose days are shaded by how they are booked (free times left, fully booked,
 closed, a holiday by its name), beside the chosen day's free times as chips,

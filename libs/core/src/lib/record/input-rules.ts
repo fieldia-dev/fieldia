@@ -707,6 +707,9 @@ function monthNames(locale?: string): Map<string, number> {
   return found;
 }
 
+/** The month a word names, 1 to 12 — "Oct", "أكتوبر", "oct.", "Okt." — in any language its names are read in; undefined for none. */
+export const monthNamed = (word: string, locale?: string): number | undefined => monthNames(locale).get(monthKey(word));
+
 /** Whether `word` is how a month's name begins, in any of the languages its names are read in: typing it is on its way. */
 export function couldBeMonth(word: string, locale?: string): boolean {
   const wanted = monthKey(word);
