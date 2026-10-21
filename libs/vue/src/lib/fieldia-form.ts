@@ -138,6 +138,8 @@ export const FieldiaForm = defineComponent({
     drafts: { type: Object as PropType<{ store: DraftStore; restore?: 'auto' | 'ask'; delayMs?: number }>, default: undefined },
     /** A draft kept on the app's server to continue from, by its key: what the link Continue later gave carries. */
     resume: { type: String, default: undefined },
+    /** The respondent's own seed, for a page that draws its questions' order or some of them: the same seed, the same draw. */
+    seed: { type: String, default: undefined },
     autosave: { type: Object as PropType<{ delayMs: number }>, default: undefined },
     scheduler: { type: Object as PropType<Scheduler>, default: undefined },
     confirm: { type: Function as PropType<(message: string) => Promise<boolean>>, default: undefined },
@@ -277,6 +279,7 @@ export const FieldiaForm = defineComponent({
         slots: slotRenderers,
         drafts: props.drafts,
         resume: props.resume,
+        seed: props.seed,
         autosave: props.autosave,
         scheduler: props.scheduler,
         confirm: props.confirm,
@@ -318,7 +321,7 @@ export const FieldiaForm = defineComponent({
     // The app's functions' names alone: a new object with the same names is called through, never mounted again.
     const functionNames = computed(() => Object.keys(props.functions ?? {}).join('|'));
     watch(
-      () => [props.page, props.form, props.dataSource, props.recordId, props.resume, JSON.stringify(props.user ?? null), JSON.stringify(props.context ?? null), props.dir, props.locale, JSON.stringify(props.labels ?? {}), functionNames.value],
+      () => [props.page, props.form, props.dataSource, props.recordId, props.resume, props.seed, JSON.stringify(props.user ?? null), JSON.stringify(props.context ?? null), props.dir, props.locale, JSON.stringify(props.labels ?? {}), functionNames.value],
       () => {
         unmount();
         mount();

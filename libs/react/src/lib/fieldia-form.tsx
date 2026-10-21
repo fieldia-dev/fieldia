@@ -264,8 +264,8 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       setHandle(null);
       setPortals([]);
     };
-    // A draft's key (`resume`) opens that draft, as a record's id opens that record.
-  }, [props.page, props.form, props.dataSource, props.recordId, props.resume, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys, functionKeys]);
+    // A draft's key (`resume`) opens that draft, as a record's id opens that record; a respondent's seed draws theirs.
+  }, [props.page, props.form, props.dataSource, props.recordId, props.resume, props.seed, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys, functionKeys]);
 
   // A theme and a skin switch in place: the theme brings its skin, unless one is given here or by the page.
   useEffect(() => {

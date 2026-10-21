@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Component, DestroyRef, inject, input, signal, type OnInit, type Signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { createMemoryDataSource, type ActionRequest, type Form, type FormState, type FormUser, type Page, type RecordId, type Skin, type Theme, type Value } from '@fieldia/core';
+import { createMemoryDataSource, drawOrder, type ActionRequest, type Form, type FormState, type FormUser, type Page, type RecordId, type Skin, type Theme, type Value } from '@fieldia/core';
 import type { Tokens, ViewerHandle } from '@fieldia/viewer';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from './fieldia-form.component';
 
@@ -143,6 +143,16 @@ class ResumeHostComponent {
   page = page('clinic-intake');
   dataSource = createMemoryDataSource({ drafts: { abc: { pageId: 'clinic-intake', values: { full_name: 'Mona Adel' }, step: 'visit', savedAt: '2026-10-19T10:42:00Z' } } });
   heard: string[] = [];
+  handle!: ViewerHandle;
+}
+
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<fieldia-form [page]="page" [dataSource]="dataSource" seed="candidate-17" (ready)="handle = $event" />`,
+})
+class SeedHostComponent {
+  page = page('training-check');
+  dataSource = createMemoryDataSource();
   handle!: ViewerHandle;
 }
 
@@ -378,6 +388,15 @@ describe('<fieldia-form> for Angular', () => {
     expect(host.handle.form.getState().step).toBe('visit');
     await host.handle.form.continueLater();
     expect(host.heard).toEqual(['draft abc later']);
+  });
+
+  it('draws a page’s questions for the respondent the seed names ([seed])', async () => {
+    const fixture = TestBed.createComponent(SeedHostComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const host = fixture.componentInstance;
+    for (let waited = 0; !host.handle?.form.getState().order && waited < 2000; waited += 10) await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(host.handle.form.getState().order).toEqual(drawOrder(page('training-check'), 'candidate-17'));
   });
 
   it('passes a list’s opened row on as an openRecord output', async () => {

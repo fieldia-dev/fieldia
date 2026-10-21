@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { mount } from '@vue/test-utils';
-import { createForm, createMemoryDataSource, type ActionRequest, type Form, type Page } from '@fieldia/core';
+import { createForm, createMemoryDataSource, drawOrder, type ActionRequest, type Form, type Page } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import { defineComponent, h, nextTick, ref, type PropType } from 'vue';
 import { FieldiaForm, useFormState } from './fieldia-form';
@@ -256,6 +256,13 @@ describe('<FieldiaForm> for Vue', () => {
     expect(handleOf(wrapper)!.form.getState().step).toBe('visit');
     await handleOf(wrapper)!.form.continueLater();
     expect(wrapper.emitted('draft')?.[0]?.[0]).toMatchObject({ key: 'abc', later: true });
+    wrapper.unmount();
+  });
+
+  it('draws a page’s questions for the respondent the seed names (seed)', async () => {
+    const wrapper = mount(FieldiaForm, { props: { page: page('training-check'), dataSource: createMemoryDataSource(), seed: 'candidate-17' }, attachTo: document.body });
+    for (let waited = 0; !handleOf(wrapper)?.form.getState().order && waited < 2000; waited += 10) await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(handleOf(wrapper)!.form.getState().order).toEqual(drawOrder(page('training-check'), 'candidate-17'));
     wrapper.unmount();
   });
 
