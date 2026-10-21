@@ -380,6 +380,30 @@ describe('<fieldia-form> for Angular', () => {
     expect(host.heard).toEqual(['draft abc later']);
   });
 
+  it('fills the fields its link fills from the [url] it is given, as a server-rendered app knows it, and starts again from a new one', async () => {
+    const fixture = TestBed.createComponent(FieldiaFormComponent);
+    let handle: ViewerHandle | null = null;
+    fixture.componentInstance.ready.subscribe((ready) => (handle = ready));
+    fixture.componentRef.setInput('page', page('unit-enquiry'));
+    fixture.componentRef.setInput('url', 'https://partner.example/units?unit=B-12&agent=mona');
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const unitBox = () => document.querySelector('[data-node="f-unit"] input') as HTMLInputElement | null;
+    const settled = async () => {
+      await (handle as ViewerHandle | null)?.form.settled();
+      await (handle as ViewerHandle | null)?.drawn;
+    };
+    await settled();
+    expect(unitBox()?.value).toBe('B-12');
+    expect((handle as ViewerHandle | null)?.form.getState().values).toMatchObject({ unit: 'B-12', agent_code: 'mona' });
+    fixture.componentRef.setInput('url', { unit: 'C-3' });
+    await fixture.whenStable();
+    await settled();
+    expect(unitBox()?.value).toBe('C-3');
+    expect((handle as ViewerHandle | null)?.form.getState().values['agent_code']).toBeNull();
+    fixture.destroy();
+  });
+
   it('passes a list’s opened row on as an openRecord output', async () => {
     const fixture = TestBed.createComponent(ListHostComponent);
     fixture.autoDetectChanges();

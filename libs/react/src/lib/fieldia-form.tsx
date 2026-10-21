@@ -181,6 +181,8 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
   const labelsKey = JSON.stringify(props.labels ?? {});
   // A different person may see different parts: the form is made again for them.
   const userKey = JSON.stringify(props.user ?? null);
+  // The link the page is opened with (`url`, for its `prefill`): a new one starts the form from it again.
+  const urlKey = JSON.stringify(props.url ?? null);
   // Other values from the app (its context) may filter and show other things: made again for them too.
   const contextKey = JSON.stringify(props.context ?? null);
   // The app's functions are called as they are each render; a function named or no longer named makes the form again.
@@ -265,7 +267,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       setPortals([]);
     };
     // A draft's key (`resume`) opens that draft, as a record's id opens that record.
-  }, [props.page, props.form, props.dataSource, props.recordId, props.resume, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys, functionKeys]);
+  }, [props.page, props.form, props.dataSource, props.recordId, props.resume, urlKey, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys, functionKeys]);
 
   // A theme and a skin switch in place: the theme brings its skin, unless one is given here or by the page.
   useEffect(() => {
