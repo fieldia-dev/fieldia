@@ -15,6 +15,7 @@ import { addressFollowsRecord } from '../shared/address';
 import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
 import { meanwhileBar } from '../shared/test-drive';
 import { lastPlacesBar } from '../shared/event-signup';
+import { frontDeskBar } from '../shared/treatment-course';
 
 /** The same demo as the plain one, mounted by React. StrictMode on, as apps run it. */
 const params = new URLSearchParams(location.search);
@@ -71,6 +72,8 @@ if (failures) document.getElementById('app')?.after(failures.element);
 if (params.get('page') === 'test-drive') document.getElementById('app')?.before(meanwhileBar(dataSource));
 // The sign-up has a bar over it: two people take the morning's last places on other screens (shared/event-signup.ts).
 if (params.get('page') === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
+// The course has a bar over it: Mona at the front desk opens it and changes its price (shared/treatment-course.ts).
+if (params.get('page') === 'treatment-course') document.getElementById('app')?.before(frontDeskBar(dataSource));
 
 const chatter = sampleChatter();
 

@@ -10,17 +10,18 @@ test.describe('plain · undo while filling', () => {
   test('takes back a field changed, from the next field, the field taking the focus; and makes it again', async ({ page }) => {
     await open(page, 'plain', 'page=fields&skin=outlined');
     const name = node(page, 'f-name').locator('input');
+    const was = await name.inputValue();
     await name.click();
     await page.keyboard.press('End');
     await page.keyboard.type(' B');
     await page.keyboard.press('Tab');
     await node(page, 'f-email').locator('input').focus();
     await page.keyboard.press('ControlOrMeta+z');
-    await expect(name).toHaveValue('Office fit-out');
+    await expect(name).toHaveValue(was);
     await expect(name).toBeFocused();
     await expect(page.locator('.fd-undo-heard')).toHaveText('Undone: Project');
     await page.keyboard.press('ControlOrMeta+Shift+z');
-    await expect(name).toHaveValue('Office fit-out B');
+    await expect(name).toHaveValue(`${was} B`);
     await screen(page, 'undo-redone', { viewport: true });
   });
 

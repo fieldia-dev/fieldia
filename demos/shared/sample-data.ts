@@ -71,6 +71,7 @@ import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings
 import { customerCardPage, duplicateCustomers } from './duplicates';
 import { keepWrites, keptApart, keptOver } from './kept';
 import { consentPage, sampleConsents } from './consents';
+import { branchSlots, clinicBranchPage, COURSE_TEMPLATES, sampleBranches, sampleCourses, treatmentCoursePage } from './treatment-course';
 import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
@@ -103,6 +104,10 @@ export const pages: Record<string, Page> = {
   'customer-card': customerCardPage,
   // A clinic's consent to treatment, signed: who, when and the answers' fingerprint kept, the answers locked (shared/consents.ts).
   'clinic-consent': consentPage,
+  // A clinic's treatment course — its sessions' repeat rule, templates, Undo after Mark done, Mona at the front desk
+  // live — and a branch's opening hours, which booking follows (shared/treatment-course.ts).
+  'treatment-course': treatmentCoursePage,
+  'clinic-branch': clinicBranchPage,
   fields: fields as Page,
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
@@ -329,6 +334,9 @@ export function optionsFromQuery(params: URLSearchParams): {
     // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are, and the booking
     // template's; so is a consent's signing.
     ...(['test-drive', 'template-appointment-booking', 'clinic-consent'].includes(params.get('page') ?? '') ? { now: demoNow } : {}),
+    // The front desk's person, Sara, who has the course open; the courses round the one shown, on the demos' clock.
+    ...(params.get('page') === 'treatment-course' ? { user: { id: 7, name: 'Sara Hassan' }, records: [1, 2], now: demoNow } : {}),
+    ...(params.get('page') === 'clinic-branch' ? { now: demoNow } : {}),
     // The consents round the one shown: the pager over it moves to the next.
     ...(params.get('page') === 'clinic-consent' ? { records: [1, 2] } : {}),
     // The customers round the one with its invoices and quotations, and the homes round the one with its viewings: the
@@ -489,7 +497,10 @@ export function sampleDataSource() {
     },
     // Free times: a test drive's, from the showroom's schedule (shared/test-drive.ts); the booking template's, from its
     // clinic's (shared/appointments.ts) — each on the demos' clock.
-    slots: (request, records) => (request.schedule === 'appointments' ? appointmentSlots(request, records) : showroomSlots(request, records)),
+    slots: (request, records) => (request.schedule === 'appointments' ? appointmentSlots(request, records) : request.schedule === 'branch' ? branchSlots(request, records) : showroomSlots(request, records)),
+    // The clinic's saved course templates; and the course live, as a server with a socket (shared/treatment-course.ts).
+    templates: COURSE_TEMPLATES,
+    ...(params.get('page') === 'treatment-course' ? { live: true, versions: { by: 'Sara Hassan' } } : {}),
     // Records like the one typed — the same phone, email or tax id, a name close enough — for a page with `duplicates`.
     duplicates: alikeRecords(),
     // The sign-ups already counted, as the server's limits answer (shared/event-signup.ts).
@@ -541,6 +552,9 @@ export function sampleDataSource() {
       ...appointmentRecords(),
       // Two consents signed, one changed in the clinic's system after (shared/consents.ts).
       'clinic.consent': sampleConsents(),
+      // Treatment courses and a branch (shared/treatment-course.ts).
+      'clinic.course': sampleCourses(),
+      'clinic.branch': sampleBranches(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

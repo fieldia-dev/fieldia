@@ -22,6 +22,7 @@ import { photosBar } from '../shared/listing-photos';
 import { botLog, captchaSlot } from '../shared/captcha';
 import { meanwhileBar } from '../shared/test-drive';
 import { lastPlacesBar } from '../shared/event-signup';
+import { frontDeskBar } from '../shared/treatment-course';
 import { addressFollowsRecord } from '../shared/address';
 
 /**
@@ -209,6 +210,8 @@ if (name === 'listing-photos') document.getElementById('app')?.before(photosBar(
 if (name === 'test-drive') document.getElementById('app')?.before(meanwhileBar(dataSource));
 // The sign-up has a bar over it: two people take the morning's last places on other screens (shared/event-signup.ts).
 if (name === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
+// The course has a bar over it: Mona at the front desk opens it and changes its price (shared/treatment-course.ts).
+if (name === 'treatment-course') document.getElementById('app')?.before(frontDeskBar(dataSource));
 
 // `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `pages` themselves,
 // for the one that each draws the sample records' values as their kind is.
