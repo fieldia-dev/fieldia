@@ -93,6 +93,8 @@ export const PART_WORDS = {
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {
     widgets: ['notAnswered', 'addressStreet', 'addressCity', 'addressLine2', 'addressRegion', 'addressPostcode', 'addressCountry', 'keepOrder', 'addProperty', 'propertyName', 'propertyType', 'propertyTypes', 'colourCode', 'colourCodeBox', 'noColour', 'rankTop', 'moveUp', 'moveDown', 'movedTo', 'removed'],
+  },
+  surveyflow: {
     viewer: ['quizTitle', 'quizScore', 'quizRight', 'quizWrong', 'quizNotAnswered', 'quizPoints', 'quizYourAnswer', 'quizRightAnswer', 'quizLater', 'reviewAnswers', 'reviewTitle', 'reviewEdit', 'reviewNotAnswered', 'backToReview', 'flowQuestionOf', 'flowPrevious', 'flowNext', 'flowOk', 'flowEnterHint', 'timeLimitTitle', 'timeLimitIntro', 'timeStart', 'timeLeft', 'stepTimeLeft', 'timeWarn', 'timeUpSent', 'timeUpLocked', 'stepTimeUp'],
   },
   text: {

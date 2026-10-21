@@ -1,33 +1,29 @@
 import type { Page } from '../format/page';
 import type { StoredDraft, SubmitRequest } from './data-source';
-import type { FormState } from './form';
-import { drawOrder, type DrawnOrder } from './order';
+import type { Form, FormState } from './form';
+import { askedInOrder, drawOrder, drawsOrder, type DrawnOrder } from './order';
+import { quizResults, type QuizResults } from './quiz';
+import type { Values } from './values';
 import type { Scheduler } from './scheduler';
-import { drawsOrder } from './survey';
 import { keepTime, WHOLE_FORM, type Countdown } from './timing';
 
 /**
- * A survey's draw and clocks, kept for a form by the survey part (survey.ts, `formSurveyPart`): the order drawn for each
+ * A survey's draw and clocks, kept for a form by the survey flow's part (survey.ts, `formSurveyPart`): the order drawn for each
  * respondent and the parts it leaves out (order.ts), and a page's time limits (timing.ts) — what the form asks of them
  * at its moments: a part hidden or locked, a draft kept and laid, a send told, a response started again, a step entered.
  */
 
-/** What a survey's draw and clocks ask of the form they are kept for. */
+/** What a survey's draw, clocks and marking ask of the form they are kept for. */
 export interface SurveyHost {
+  /** The form: its state, its steps shown, its clock and its person. */
+  readonly form: Form;
   readonly page: Page;
   readonly scheduler: Scheduler;
-  /** The respondent's own seed — the app's, else the person's id — or null: one of this browser's for each response. */
+  /** The app's own seed for this respondent, if it gave one (else the person's id, else one of this browser's). */
   readonly seed: string | null;
-  /** Now, in ms, by the form's clock. */
-  clock(): number;
-  state(): FormState;
   set(patch: Partial<FormState>): void;
-  /** The steps shown now, in their order. */
-  steps(): string[];
   /** The wizard's steps in the order drawn, or null: the page's own. */
   order(steps: string[] | null): void;
-  /** The part a part of the page sits in. */
-  parentOf(id: string): string | null;
   disposed(): boolean;
   /** Keep a draft soon, where the form keeps drafts. */
   keep(): void;
@@ -55,17 +51,23 @@ export interface SurveyKit {
   start(): void;
   /** The countdown showing now. */
   countdown(): Countdown | null;
+  /** A quiz's results for the answers as sent (`quiz` on the page), in the order they were asked; undefined where it has none. */
+  marked(values: Values): QuizResults | undefined;
 }
 
 export function surveyKit(host: SurveyHost): SurveyKit {
-  const { page } = host;
+  const { page, form } = host;
   const drawn = drawsOrder(page);
-  const time = keepTime(host);
-  /** Each part's parts, by its id: what a draw kept in a draft may name. */
+  const time = keepTime({ page, scheduler: host.scheduler, clock: () => form.now().getTime(), state: () => form.getState(), set: host.set, steps: () => form.steps(), disposed: host.disposed, keep: host.keep });
+  const user = form.user()?.id;
+  const seed = host.seed ?? (user != null ? String(user) : null);
+  /** Each part's parts, by its id — what a draw kept in a draft may name — and the part each sits in. */
   const partsOf = new Map<string, Set<string>>();
+  const parents = new Map<string, string>();
   const walk = (node: { id?: string; children?: unknown[] }) => {
     const children = Array.isArray(node.children) ? (node.children as { id?: string; children?: unknown[] }[]) : [];
     if (node.id) partsOf.set(node.id, new Set(children.map((child) => child.id ?? '')));
+    for (const child of children) if (node.id && child.id) parents.set(child.id, node.id);
     children.forEach(walk);
   };
   walk(page.layout as unknown as { id?: string; children?: unknown[] });
@@ -76,27 +78,27 @@ export function surveyKit(host: SurveyHost): SurveyKit {
     for (const [id, list] of Object.entries(order ?? {})) for (const part of partsOf.get(id) ?? []) if (!list.includes(part)) undrawn.add(part);
     host.order((page.layout.type === 'wizard' && order?.[page.layout.id]) || null);
   }
-  const draw = () => drawOrder(page, host.seed ?? Math.random().toString(36).slice(2));
+  const draw = () => drawOrder(page, seed ?? Math.random().toString(36).slice(2));
   /** An order set, the first step the drawn one's while the person has not moved. */
   function placed(order: DrawnOrder | null) {
-    const was = host.steps()[0];
+    const was = form.steps()[0];
     take(order);
-    host.set({ order, ...(host.state().step === was ? { step: host.steps()[0] ?? null } : {}) });
+    host.set({ order, ...(form.getState().step === was ? { step: form.steps()[0] ?? null } : {}) });
   }
   const kit: SurveyKit = {
     open() {
-      if (drawn && !host.state().order) placed(draw());
+      if (drawn && !form.getState().order) placed(draw());
     },
     hidden: (id) => undrawn.has(id),
     locked(id) {
-      const up = host.state().timeUp;
+      const up = form.getState().timeUp;
       if (!up.length) return false;
       if (up.includes(WHOLE_FORM)) return true;
-      for (let at: string | null = id; at; at = host.parentOf(at)) if (up.includes(at)) return true;
+      for (let at: string | undefined = id; at; at = parents.get(at)) if (up.includes(at)) return true;
       return false;
     },
     draft() {
-      const state = host.state();
+      const state = form.getState();
       return {
         ...(state.order ? { order: state.order as DrawnOrder } : {}),
         ...(Object.keys(state.timers).length ? { timers: Object.fromEntries(Object.entries(state.timers).map(([scope, at]) => [scope, new Date(at).toISOString()])) } : {}),
@@ -108,23 +110,24 @@ export function surveyKit(host: SurveyHost): SurveyKit {
       if (drawn && kept.length) placed(Object.fromEntries(kept));
       const timers = Object.entries(draft.timers ?? {}).filter(([, at]) => typeof at === 'string' && !Number.isNaN(Date.parse(at)));
       if (timers.length) {
-        host.set({ timers: { ...host.state().timers, ...Object.fromEntries(timers.map(([scope, at]) => [scope, Date.parse(at)])) } });
+        host.set({ timers: { ...form.getState().timers, ...Object.fromEntries(timers.map(([scope, at]) => [scope, Date.parse(at)])) } });
         time.arm();
       }
     },
     sent() {
-      const order = host.state().order;
+      const order = form.getState().order;
       return { ...(order ? { order: order as DrawnOrder } : {}), ...time.told() };
     },
     reset() {
       time.reset();
-      const order = drawn ? (host.seed === null ? draw() : (host.state().order as DrawnOrder | null) ?? draw()) : null;
+      const order = drawn ? (seed === null ? draw() : (form.getState().order as DrawnOrder | null) ?? draw()) : null;
       take(order);
       host.set({ order, timers: {}, timeUp: [] });
     },
     entered: (step) => time.entered(step),
     start: () => time.start(),
     countdown: () => time.countdown(),
+    marked: (values) => (page.quiz ? quizResults(page, values, askedInOrder(page, (form.getState().order ?? null) as DrawnOrder | null, values)) ?? undefined : undefined),
   };
   return kit;
 }

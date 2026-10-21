@@ -1,5 +1,6 @@
 import { createMemoryDataSource, type DataSource, type Page, type WizardNode } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from './viewer';
+import { surveyPart } from '@fieldia/widgets';
 import { partsFor, surveyFlowPart } from './viewer-parts';
 
 /**
@@ -58,9 +59,18 @@ async function mount(page: Page, dataSource: DataSource = createMemoryDataSource
 }
 
 describe('a review before sending', () => {
-  it('is drawn by the survey part, which a page with a review asks for', () => {
+  it('is drawn by the survey flow’s part, which a page with a review asks for — and a page of survey kinds alone never', () => {
     expect(partsFor(intake())).toContain(surveyFlowPart);
     expect(partsFor(intake({ review: undefined }))).not.toContain(surveyFlowPart);
+    // A slider and a ranking come in the survey kinds' part: none of the flow comes with them.
+    const kinds = intake({
+      review: undefined,
+      fields: { how: { type: 'integer', label: 'How much?' }, order: { type: 'selection', label: 'Rank them', multiple: true, options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] } },
+      layout: { type: 'sections', id: 's', children: [{ type: 'field', id: 'q-how', field: 'how', widget: 'slider' }, { type: 'field', id: 'q-order', field: 'order', widget: 'ranking' }] },
+    });
+    expect(partsFor(kinds)).toContain(surveyPart);
+    expect(partsFor(kinds)).not.toContain(surveyFlowPart);
+    expect(surveyFlowPart.name).toBe('surveyflow');
   });
 
   it('shows every answer by step, each with Edit, once the last step is checked; Edit goes to the question, Back to review comes back', async () => {

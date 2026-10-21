@@ -389,7 +389,7 @@ beside, hidden from screen readers), its points, the person's answer, the right
 answer to one missed and the question's feedback. Their heading takes the focus
 where the page shows no ending's words, so a screen reader reads them first.
 With `results: "later"` they say the results come once the answers have been
-reviewed. They come in the survey part (`surveyFlowPart`, `fieldia.survey.js`),
+reviewed. They come in the survey flow's part (`surveyFlowPart`, `fieldia.surveyflow.js`),
 loaded before a page with a quiz is drawn. Their words are the viewer's labels
 (`quizTitle`, `quizScore`, `quizRight`, `quizWrong`, `quizNotAnswered`,
 `quizPoints`, `quizYourAnswer`, `quizRightAnswer`, `quizLater`). See
@@ -405,8 +405,10 @@ a screen reader) and "Not answered" for one left empty; Back, and the page's own
 words to send. Edit goes to that question in its step, focused; from a step
 before the last, **Back to review** checks the steps on the way and shows the
 answers again. Ctrl+Enter reviews as the button does, and sends from the
-review. A send refused goes back to the question it names. It comes in the
-survey part; its words are the viewer's labels (`reviewAnswers`, `reviewTitle`,
+review. A send refused goes back to the question it names. A saved form placed
+in a step (a `form` part) is not listed in the review yet: its answers are sent,
+but read on its step. It comes in the
+survey flow's part; its words are the viewer's labels (`reviewAnswers`, `reviewTitle`,
 `reviewEdit`, `reviewNotAnswered`, `backToReview`). See
 [a review before sending](https://fieldia.dev/pages/#review).
 
@@ -425,7 +427,7 @@ how far. A question an answer hides is passed over, one it shows comes in its
 place. On a wizard, its steps are entered, checked and kept in drafts as ever;
 a form opened with answers starts at the first still to answer. With `review`,
 the last screen's OK reviews them, and Edit comes back to its screen. It comes
-in the survey part; its words are the viewer's labels (`flowQuestionOf`,
+in the survey flow's part; its words are the viewer's labels (`flowQuestionOf`,
 `flowPrevious`, `flowNext`, `flowOk`, `flowEnterHint`). See
 [one question at a time](https://fieldia.dev/pages/#flow-one).
 
@@ -449,7 +451,7 @@ sent as they were." (`send`, then the thanks says so too), or "…are locked.
 Press Submit to send them." (`lock`). A step's own limit counts from when it is
 first entered — "Time left for this step: 4:59" — and as it runs out its answers
 stay as they are while the form goes on. No review stands in the way of a send
-on time. It comes in the survey part; its words are the viewer's labels
+on time. It comes in the survey flow's part; its words are the viewer's labels
 (`timeLimitTitle`, `timeLimitIntro`, `timeStart`, `timeLeft`, `stepTimeLeft`,
 `timeWarn`, `timeUpSent`, `timeUpLocked`, `stepTimeUp`). See
 [a time limit](https://fieldia.dev/pages/#time-limit).

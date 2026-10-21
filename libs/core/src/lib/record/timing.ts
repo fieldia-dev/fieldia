@@ -4,7 +4,7 @@ import type { FormState } from './form';
 import type { Scheduler } from './scheduler';
 
 /**
- * A page's time limits (`timeLimit` on the page and on a wizard's steps), the survey part's: what each allows, when it
+ * A page's time limits (`timeLimit` on the page and on a wizard's steps), the survey flow's part's: what each allows, when it
  * warns and what it does as it runs out, and the countdown showing now — the page's while it runs, else the step on
  * screen's. The form keeps when each started (`state.timers`, kept in its drafts) and which ran out (`state.timeUp`).
  */
@@ -36,6 +36,9 @@ function limitOf(scope: string, limit: TimeLimit, step: boolean): Limit {
   const ms = limit.minutes * MINUTE;
   return { scope, ms, warnMs: (limit.warn ?? Math.min(1, limit.minutes / 5)) * MINUTE, then: limit.then ?? (step ? 'lock' : 'send') };
 }
+
+/** Whether a page of responses has a time limit: its own (`timeLimit`), or a step's. */
+export const timed = (page: Page): boolean => page.data.kind === 'responses' && (!!page.timeLimit || (page.layout.type === 'wizard' && page.layout.children.some((step) => !!step.timeLimit)));
 
 /** Every time limit of a page, by scope: the page's (`#form`), each step's by its id. */
 export function limitsOf(page: Page): Record<string, Limit> {

@@ -308,7 +308,7 @@ the right ones.
 
 The form marks the answers as they go — `form.getState().sent.quiz` is
 `{ score, max, questions: [{ field, points, max, right, answered, rightAnswer?,
-feedback? }] }`, in the order they were asked — with the survey part's code
+feedback? }] }`, in the order they were asked — with the survey flow's part
 (`formSurveyPart`, asked for as the form opens). `results: "later"` says the
 results come once you have reviewed them, and shows none; `rightAnswers: false`
 keeps the right answers back. The right answers travel in the page, where
@@ -316,7 +316,9 @@ anyone who reads its JSON finds them: a test where that matters keeps them out
 of the page, marks the answers on your server and answers the send with them —
 `submit` returns `{ quiz: { score, max, questions } }`, shown in place of the
 page's. `quizResults(page, values, asked?)` marks answers the page's way for
-your own code.
+your own code. A quiz has no pass mark of its own yet: your server may answer
+the send with a value of its own (`values: { passed: true }`), which an
+ending's `when` reads.
 
 ## A review before sending
 
@@ -324,7 +326,7 @@ your own code.
 on a wizard, by titled group on a page of sections — each with Edit back to its
 question, then Send: `true` in Fieldia's words ("Check your answers"), or
 `{ "title": "Before you send", "text": "Press Edit to change one." }` in the
-page's. The viewer draws it (its survey part); the answers are checked as a
+page's. The viewer draws it (the survey flow's part); the answers are checked as a
 step's are before they show. `form.validate(within)` checks the answers inside
 one part alone — a step, a question — as the review and one question at a time
 do.
@@ -350,7 +352,7 @@ the browser's for each response — so the same seed draws the same in every
 engine. The form keeps it as `state.order` (by part, its parts' ids in the
 order shown), in its drafts — a page opened again shows the same questions —
 and sends it with the answers (`SubmitRequest.order`). A quiz's results follow
-the order shown. The draw comes in the survey part (`formSurveyPart`, asked for
+the order shown. The draw comes in the survey flow's part (`formSurveyPart`, asked for
 as the form opens; a form made before it came draws once it has).
 
 ## A time limit

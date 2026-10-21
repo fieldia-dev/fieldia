@@ -1,23 +1,19 @@
 import type { Page } from '../format/page';
 import { lazyPart, type Part } from '../parts';
-import type * as SurveyModule from './survey-part';
+import type * as SurveyFlowModule from './surveyflow-part';
 
-/** The survey part's form code (survey-part.ts). */
-export type FormSurveyPart = typeof SurveyModule;
+/** The survey flow's form code (surveyflow-part.ts). */
+export type FormSurveyPart = typeof SurveyFlowModule;
 
 /**
- * A form's survey code — a quiz's results worked out as its answers go, the order drawn for each respondent — loaded by
- * a form whose page needs it
- * (`surveyFlow`), and before such a page is drawn: in the one-tag script, one script with the survey kinds and the
- * viewer's survey part (fieldia.survey.js).
+ * A survey's flow, the form's code of it — a quiz's results marked as its answers go, the order drawn for each
+ * respondent, a page's time limits (survey-kit.ts) — loaded by a form whose page has any (`surveyFlow`), and before such
+ * a page is drawn: in the one-tag script, one script with the viewer's (fieldia.surveyflow.js).
  */
-export const formSurveyPart: Part<FormSurveyPart> = lazyPart('survey', () => import('./survey-part'));
+export const formSurveyPart: Part<FormSurveyPart> = lazyPart('surveyflow', () => import('./surveyflow-part'));
 
-/** Whether a page of responses draws its order, or some of its questions, for each respondent (`order: "random"`, `draw`). */
-export const drawsOrder = (page: Page): boolean => page.data.kind === 'responses' && /"(order":"random|draw":)/.test(JSON.stringify(page.layout));
-
-/** Whether a page of responses has a time limit: its own (`timeLimit`), or a step's. */
-export const timed = (page: Page): boolean => page.data.kind === 'responses' && (!!page.timeLimit || (page.layout.type === 'wizard' && page.layout.children.some((step) => !!step.timeLimit)));
-
-/** Whether a page's form needs the survey part's code: a quiz whose results the person sees, a draw, a time limit. */
-export const surveyFlow = (page: Page): boolean => !!page.quiz || drawsOrder(page) || timed(page);
+/**
+ * Whether a page goes through a survey's flow: a quiz, a review before sending, one question at a time, a time limit, or
+ * a part that draws its order or some of its questions. What each of them asks is the part's to tell.
+ */
+export const surveyFlow = (page: Page): boolean => !!(page.quiz || page.review || page.flow || page.timeLimit) || /"order":"random"|"(draw|timeLimit)":/.test(JSON.stringify(page.layout));

@@ -26,6 +26,7 @@ import { checkSlots } from './slots-checks';
 import { checkSignature } from './signature-checks';
 import { checkEndings } from './endings-checks';
 import { checkSurveyFlow } from './flow-checks';
+import { surveyFlow } from '../record/survey';
 import { checkAddressSearch, checkMap, checkPlace, type MapTools } from './map-checks';
 import { checkLineKinds, checkTable, type TableTools } from './table-checks';
 import { checkStatusbar } from './statusbar-checks';
@@ -150,8 +151,9 @@ export class ReferenceCheck {
     const owing = { report: (path: string, message: string) => this.report(path, message), owe: (part: string) => void this.later.add(part) };
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, owing);
-    // A quiz, and each question's own quiz: checked where the page has any (in the one-tag script, by the survey part it asks for).
-    if (!this.line && (this.page.quiz !== undefined || this.page.review !== undefined || this.page.flow !== undefined || this.page.timeLimit !== undefined || /"(order":"random|draw":|timeLimit":)/.test(JSON.stringify(this.page.layout)) || JSON.stringify(this.page.fields).includes('"quiz":'))) checkSurveyFlow(this.page, owing);
+    // A survey's flow — a quiz and each question's own, a review, one at a time, a draw, a time limit — checked where the
+    // page has any (in the one-tag script, by the survey flow's part it asks for).
+    if (!this.line && (surveyFlow(this.page) || JSON.stringify(this.page.fields).includes('"quiz":'))) checkSurveyFlow(this.page, owing);
     this.checkGoingTo();
     return this.issues;
   }

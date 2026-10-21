@@ -50,7 +50,6 @@ import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from 
 import { formSurveyPart, surveyFlow } from './survey';
 import type { SurveyKit } from './survey-kit';
 import type { QuizResults } from './quiz';
-import type { DrawnOrder } from './order';
 import type { Countdown } from './timing';
 import type { Limits } from './form-limits';
 import { draftRead, resumeStep } from './drafts';
@@ -179,7 +178,7 @@ export interface FormState {
   /**
    * The order drawn for this respondent, where the page draws one (`order: "random"`, `draw`): for each wizard, step
    * or group drawn, its parts' ids in the order shown — those not drawn left out, and never asked. Kept in drafts, and
-   * sent with the answers (`SubmitRequest.order`). Null where the page draws nothing, or before its survey part came.
+   * sent with the answers (`SubmitRequest.order`). Null where the page draws nothing, or before the survey flow's part came.
    */
   readonly order?: Readonly<Record<string, readonly string[]>> | null;
   /**
@@ -1056,7 +1055,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const layoutSteps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
   /** The wizard's steps in the order shown: the page's, or the order drawn for this respondent (`state.order`). */
   let steps = layoutSteps;
-  /** A survey's draw and clocks, kept by the survey part (survey-kit.ts) once it came; a draft laid before, laid then. */
+  /** A survey's draw and clocks, kept by the survey flow's part (survey-kit.ts) once it came; a draft laid before, laid then. */
   let surveyKit: SurveyKit | null = null;
   let draftForKit: StoredDraft | null = null;
   const storeKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
@@ -2466,9 +2465,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** A draft laid on the form: its answers as a starting point, its wizard step (or the nearest before it that applies), its text that does not read. */
   function applyDraft(draft: StoredDraft) {
     found = null;
-    // Its draw and its clocks, by the survey part: now, or once it came.
+    // Its draw and its clocks, by the survey flow's part: now, or once it came.
     if (surveyKit) surveyKit.lay(draft);
-    else if (surveyFlow(page)) draftForKit = draft;
+    else draftForKit = draft;
     writeValues(withDraft(draft.values ?? {}), { draft: null }, true);
     const known = (draft.skipped ?? []).filter((id) => steps.includes(id));
     // Text typed that did not read stays as typed, said as it was, where its field is still on the page.
@@ -2545,22 +2544,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Whether the record shown was loaded once: its counts are asked then, its own choices not counted against it. */
   let loadedOnce = false;
   /** Whether the form keeps limits: a page with them or with places of its own, or a list's choices that came with places. */
-  /** A survey's draw and clocks, made from the survey part as it came: the draw made, a draft laid meanwhile laid on it. */
+  /** A survey's draw and clocks, made from the survey flow's part as it came: the draw made, a draft laid meanwhile laid on it. */
   function surveyCode() {
     if (surveyKit || disposed || !formSurveyPart.loaded) return;
-    const kit = formSurveyPart.loaded.surveyKit({
-      page,
-      scheduler,
-      seed: options.seed ?? (options.user?.id != null ? String(options.user.id) : null),
-      clock,
-      state: () => state,
-      set,
-      steps: () => form.steps(),
-      order: (list) => void (steps = list ?? layoutSteps),
-      parentOf: (id) => index.get(id)?.parent ?? null,
-      disposed: () => disposed,
-      keep: () => void ((options.drafts || onServer()) && scheduleDraft()),
-    });
+    const kit = formSurveyPart.loaded.surveyKit({ form, page, scheduler, seed: options.seed ?? null, set, order: (list) => void (steps = list ?? layoutSteps), disposed: () => disposed, keep: () => void ((options.drafts || onServer()) && scheduleDraft()) });
     surveyKit = kit;
     kit.open();
     if (draftForKit) kit.lay(draftForKit);
@@ -2832,7 +2819,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const resetAt = resets;
         const seen = botReport();
         // A quiz's marking, in before the answers go: what the person sees of their results.
-        const marking = page.quiz ? await formSurveyPart.load().catch(() => undefined) : undefined;
+        if (surveyFlow(page) && !surveyKit) await formSurveyPart.load().then(surveyCode, () => undefined);
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
         const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...surveyKit?.sent() })) ?? {};
         // The captcha's token is spent once sent: the next send waits for a new one.
@@ -2845,7 +2832,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const added = answer.values && typeof answer.values === 'object' ? structuredCopy(answer.values) : {};
         // Started again meanwhile (`reset`): a new response is on screen, and no ending is the old one's.
         // A quiz's results: the source's marking, else the page's, on the answers as sent.
-        const quiz = answer.quiz ?? marking?.quizResults(page, sent, marking.askedInOrder(page, (state.order ?? null) as DrawnOrder | null, sent)) ?? undefined;
+        const quiz = answer.quiz ?? surveyKit?.marked(sent);
         set({ status: 'saved', unsent: unsentNow(), ...(resets === resetAt ? { sent: { id: answer.id ?? null, values: { ...structuredCopy(sent), ...added }, ...(quiz ? { quiz } : {}) } } : {}) });
         emit('send', { values: sent, ...(seen ? { bot: seen } : {}) });
         // Counted again: one response fewer to take, this person's sent.

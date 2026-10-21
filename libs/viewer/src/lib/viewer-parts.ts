@@ -11,7 +11,7 @@ import type * as HeadModule from './head-part';
 import type * as ImportModule from './import-part';
 import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
-import type * as SurveyFlowModule from './survey-part';
+import type * as SurveyFlowModule from './surveyflow-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -32,7 +32,7 @@ export type DuplicatesPart = typeof DuplicatesModule;
 export type AnswersPart = typeof AnswersModule;
 /** The limits part: a closed form's words in place of its questions, and Continue later. */
 export type LimitsPart = typeof LimitsModule;
-/** The viewer's survey part: what a survey shows besides its questions — a quiz's results. */
+/** The survey flow's viewer part: a quiz's results, the review, one question at a time, the draw laid out, a time limit. */
 export type SurveyFlowPart = typeof SurveyFlowModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
@@ -74,10 +74,12 @@ const showsAnswers = (page: Page): boolean =>
 export const limitsPart: Part<LimitsPart> = lazyPart('limits', () => import('./limits-part'));
 
 /**
- * What a survey shows besides its questions — a quiz's results under the thanks — loaded with the page's parts where it
- * has a `quiz` (`surveyFlow`): in the one-tag script, one script with the survey kinds and the form's survey code.
+ * A survey's flow, the viewer's part of it — a quiz's results under the thanks, a review before sending, one question at
+ * a time, the order drawn laid out, a time limit's Start and countdown — loaded with the page's parts where it has any
+ * (`surveyFlow`): in the one-tag script, one script with the form's (fieldia.surveyflow.js). A page of survey kinds
+ * alone — a slider, a ranking — never loads it.
  */
-export const surveyFlowPart: Part<SurveyFlowPart> = lazyPart('survey', () => import('./survey-part'));
+export const surveyFlowPart: Part<SurveyFlowPart> = lazyPart('surveyflow', () => import('./surveyflow-part'));
 
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
@@ -222,13 +224,11 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   // A page's opening, closing and limits, and Continue later: said before its questions, so in before it is drawn.
   if (page.limits || page.continueLater) found.add(limitsPart);
   if (hasLimits(page)) found.add(formLimitsPart);
-  // A survey's quiz results: drawn by the viewer's survey part, worked out by the form's.
+  // A survey's flow: drawn by the viewer's part of it, kept by the form's.
   if (surveyFlow(page)) {
     found.add(surveyFlowPart);
     found.add(formSurveyPart);
   }
-  // How a survey is gone through — a review before sending, one question at a time — drawn by the viewer's survey part.
-  if ((page.review || page.flow === 'one') && page.data.kind === 'responses' && page.layout.type !== 'list') found.add(surveyFlowPart);
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);
   if (page.look?.theme) found.add(themesPart);
@@ -241,7 +241,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, survey: surveyFlowPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart };
+  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, surveyflow: surveyFlowPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 

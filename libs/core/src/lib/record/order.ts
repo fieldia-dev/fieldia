@@ -3,10 +3,13 @@ import type { Page } from '../format/page';
 
 /**
  * Questions and steps in an order drawn for each respondent (`order: "random"` on a wizard, a step or a group), and N
- * of a step's or a group's questions drawn of M (`draw`): the survey part's. The draw is seeded, so the same seed draws
+ * of a step's or a group's questions drawn of M (`draw`): the survey flow's part's. The draw is seeded, so the same seed draws
  * the same order in every engine — the form keeps it (`state.order`), in its drafts too, so a person who comes back
  * finds their questions where they left them.
  */
+
+/** Whether a page of responses draws its order, or some of its questions, for each respondent (`order: "random"`, `draw`). */
+export const drawsOrder = (page: Page): boolean => page.data.kind === 'responses' && /"(order":"random|draw":)/.test(JSON.stringify(page.layout));
 
 /** For each part drawn, its parts' ids in the order shown: those not drawn left out. */
 export type DrawnOrder = Record<string, string[]>;

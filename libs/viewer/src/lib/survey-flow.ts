@@ -1,13 +1,14 @@
-import { drawsOrder, timed, type Field, type FieldNode, type Form, type FormState, type LayoutNode, type LineField, type Locale, type Page, type StepNode, type TabNode, type Value } from '@fieldia/core';
+import { surveyFlow as goesThrough, type Field, type FieldNode, type Form, type FormState, type LayoutNode, type LineField, type Locale, type Page, type StepNode, type TabNode, type Value } from '@fieldia/core';
 import { displayValue } from '@fieldia/widgets';
 import { setHidden, setText, type El } from './dom';
 import { installFlowStyles } from './flow-styles';
 import type { ViewerLabels } from './labels';
 import { oneAtATime } from './flow-one';
 import { timeKeeper } from './flow-timer';
+import { showQuiz } from './quiz-results';
 
 /**
- * A survey's flow — the survey part's (survey-part.ts), made as a page of responses that asks for it is drawn:
+ * A survey's flow — its own part's (surveyflow-part.ts), made as a page of responses that asks for it is drawn:
  *
  * - **A review before sending** (`review` on the page): the last step's button, or the page's Submit, reads "Review
  *   your answers"; pressed, the answers are checked as a step's are, and the questions give way to every answer shown —
@@ -52,6 +53,8 @@ export interface FlowKit {
   refused(): void;
   /** One question at a time (`flow: "one"`): on to the next question, as Enter and OK go — the page's submit and Ctrl+Enter alike. */
   forward?(): Promise<void>;
+  /** A quiz's results for the answers just sent, before the thanks' button to start again: their heading, to take the focus; null for none. */
+  quiz(before: HTMLElement): HTMLElement | null;
   update(state: FormState): void;
   destroy(): void;
 }
@@ -64,7 +67,7 @@ interface Asked {
 }
 
 /** Whether a page has a survey flow the viewer's survey part draws: a review before sending, one question at a time, a draw. */
-export const flows = (page: Page): boolean => page.data.kind === 'responses' && page.layout.type !== 'list' && (!!page.review || page.flow === 'one' || drawsOrder(page) || timed(page));
+export const flows = (page: Page): boolean => page.data.kind === 'responses' && page.layout.type !== 'list' && goesThrough(page);
 
 /** A part's parts in the order the form shows them: drawn for this respondent where the page draws, those not drawn left out. */
 export function inOrder<N extends { id: string }>(form: Form, owner: string, children: readonly N[]): readonly N[] {
@@ -76,13 +79,14 @@ export function inOrder<N extends { id: string }>(form: Form, owner: string, chi
  * The page's parts laid in the order drawn (`state.order`): each drawn part's own, by its id — a step's or a group's
  * questions in their grid, a wizard's steps in its list of steps. Those not drawn are hidden by the form already.
  */
-export function layOrder(questions: HTMLElement, order: Readonly<Record<string, readonly string[]>>): void {
+export function layOrder(questions: HTMLElement, order: Readonly<Record<string, readonly string[]>>, layoutSteps: readonly string[]): void {
   for (const [owner, ids] of Object.entries(order)) {
     const box = questions.querySelector<HTMLElement>(`[data-node="${owner}"]`) ?? (questions.getAttribute('data-node') === owner ? questions : null);
     if (!box) continue;
+    // A wizard's list of steps, drawn in the page's order: each item by its step's place there.
     const list = box.querySelector<HTMLElement>(':scope .fd-steps-list');
     if (list) {
-      const items = ids.map((id) => [...list.children].find((li) => li.getAttribute('data-step') === id)).filter((li): li is Element => !!li);
+      const items = ids.map((id) => list.children[layoutSteps.indexOf(id)]).filter((li): li is Element => !!li);
       if (items.some((li, i) => list.children[i] !== li)) list.append(...items);
       continue;
     }
@@ -240,7 +244,7 @@ export function surveyFlow(context: FlowContext): FlowKit {
   const one = page.flow === 'one' ? oneAtATime(context, { finishWords: () => (review && !reviewing ? labels.reviewAnswers : words(wizard?.finishLabel ?? labels.submit)), finish: context.submit, reviewing: () => reviewing }) : null;
   if (one) cleanups.push(() => one.destroy());
   /** A time limit's Start and countdown; as the page's runs out with `send`, its answers sent as they stand. */
-  const timer = timed(page) ? timeKeeper(context, { sendNow: () => context.submit(), words }) : null;
+  const timer = page.timeLimit || (wizard && wizard.children.some((step) => step.timeLimit)) ? timeKeeper(context, { sendNow: () => context.submit(), words }) : null;
   if (timer) cleanups.push(() => timer.destroy());
 
   /** A question's box, focused: on its step, the review put away. */
@@ -274,6 +278,7 @@ export function surveyFlow(context: FlowContext): FlowKit {
   return {
     finishWords: () => (review && !reviewing ? labels.reviewAnswers : undefined),
     ...(one ? { forward: () => one.forward() } : {}),
+    quiz: (before) => (page.quiz ? showQuiz({ doc, page, form, labels, locale, uid: context.uid, before }) : null),
     async sending() {
       // A page whose time ran out goes as it stands: no review in its way.
       if (!review || reviewing || form.getState().timeUp.length) return true;
@@ -294,7 +299,7 @@ export function surveyFlow(context: FlowContext): FlowKit {
       // The parts in the order drawn, before one at a time marks the screen shown.
       if (state.order && state.order !== laidOrder) {
         laidOrder = state.order;
-        layOrder(questions, state.order);
+        layOrder(questions, state.order, wizard ? wizard.children.map((step) => step.id) : []);
       }
       one?.update(state);
       if (timer) {

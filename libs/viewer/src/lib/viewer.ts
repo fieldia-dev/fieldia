@@ -1875,7 +1875,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    */
   const limitsAsked = !!(page.limits || page.continueLater || options.resume);
   let limitsKit: LimitsKit | null = null;
-  /** A survey's flow, from the survey part — a review before sending — made as the page is drawn (survey-flow.ts). */
+  /** A survey's flow, from its own part — a review, one at a time, a draw, a time limit, a quiz's results — made as the page is drawn (survey-flow.ts). */
   let flowKit: FlowKit | null = null;
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
@@ -1888,8 +1888,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function showDone() {
     content.hidden = true;
     done.hidden = false;
-    // A quiz's results under the thanks, from the survey part: their heading takes the focus where no ending does.
-    const results = page.quiz ? surveyFlowPart.loaded?.showQuiz({ doc, page, form, labels, locale, uid, before: again }) : null;
+    // A quiz's results under the thanks, from the survey flow's part: their heading takes the focus where no ending does.
+    const results = flowKit?.quiz(again);
     const answers = doneWords && answersPart.loaded;
     if (!answers || !doneWords) return void results?.focus();
     answers.drawEnding({ doc, page, form, locale, write: asSaid, title: doneTitle, words: doneWords, again, thanks: labels.submitted, another: labels.submitAnother })?.focus();
@@ -2057,7 +2057,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           focusStep();
         });
         stepButtons.set(step.id, go);
-        list.append(el('li', { 'data-step': step.id }, go));
+        list.append(el('li', {}, go));
       }
       box.append(el('nav', { class: 'fd-steps', 'aria-label': labels.steps }, list));
     }

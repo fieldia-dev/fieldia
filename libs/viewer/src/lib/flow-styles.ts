@@ -1,11 +1,15 @@
 import { installPartStyles, PART_RANK } from '@fieldia/widgets';
 
 /**
- * The look of what the viewer's survey part draws: a quiz's results under the thanks, a review of the answers before
- * they are sent, one question at a time, a time limit's Start and countdown. On the form's tokens, so dark and
- * the themes follow; logical sides, so right to left follows. Its sheet takes the survey part's own rank
- * (PART_RANK.survey), beside the survey kinds' sheet: it names only its own parts and the wizard's, which no part's
- * sheet between it and the themes' names, and a theme still reshapes its buttons and type after it.
+ * The look of what the survey flow's part draws: a quiz's results under the thanks, a review of the answers before they
+ * are sent, one question at a time, a time limit's Start and countdown. On the form's tokens, so dark and the themes
+ * follow; logical sides, so right to left follows.
+ *
+ * Its sheet takes the survey kinds' rank (PART_RANK.survey), beside their sheet, rather than a rank of its own: it is
+ * cut from no rule of Fieldia's and names only its own parts and what the main sheet draws (the wizard's progress and
+ * buttons, a choice's options, a group's grid) — nothing of the survey kinds' sheet, nor of any part's sheet between it
+ * and the themes', so whichever of the two came first, the page looks the same; and before the themes, so a theme still
+ * reshapes its buttons, its boxes and its type. No rank after it moves.
  */
 const FLOW_CSS = /* css */ `
 .fd-quiz { display: grid; gap: 12px; width: min(100%, 40em); margin: 8px auto 4px; text-align: start; }
@@ -86,7 +90,7 @@ const FLOW_CSS = /* css */ `
 .fd-time-done { margin: 0; color: var(--fd-muted); }
 `;
 
-/** The viewer's survey part's sheet in a document, once, in the survey part's place among Fieldia's (PART_RANK.survey). */
+/** The survey flow's sheet in a document, once, beside the survey kinds' among Fieldia's (PART_RANK.survey). */
 export function installFlowStyles(doc: Document): void {
-  installPartStyles(doc, 'fieldia-flow-styles', FLOW_CSS, PART_RANK.survey);
+  installPartStyles(doc, 'fieldia-surveyflow-styles', FLOW_CSS, PART_RANK.survey);
 }
