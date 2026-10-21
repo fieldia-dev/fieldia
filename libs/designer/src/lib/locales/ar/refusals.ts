@@ -192,6 +192,8 @@ export const refusals: DesignerWords['refusals'] = {
   parentNotOwnLink: (label) => `تتداخل الصفوف تحت رابط إلى سجلات القائمة نفسها، و${q(label)} ليس كذلك`,
   detailNotLines: (label) => `يُفتح الصف على جدول بنود من حقول الصفحة، و${q(label)} ليس كذلك`,
   detailNoLineField: (label, name) => `لا حقل «${name}» في ${q(label)} لعرضه`,
+  rankNotWhole: (label) => `تُرتَّب الصفوف برقم صحيح، و${q(label)} ليس كذلك`,
+  rankUnderParents: 'الصفوف تحت أصلها لا تُرتَّب يدويًا: القائمة ترتّب مستوى واحدًا',
   notFilterable: (label) => `لا يستطيع شريط التصفية عرض قيم ${q(label)} ولا أخذ نطاقه`,
   notRangeable: (label) => `يأخذ شريط التصفية نطاق رقم أو تاريخ، و${q(label)} ليس أيًّا منهما`,
   atLeastNeedsNumber: (label) => `زر الحد الأدنى للأرقام، و${q(label)} يحمل تواريخ`,

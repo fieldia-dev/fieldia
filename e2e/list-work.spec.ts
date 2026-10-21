@@ -211,3 +211,73 @@ test.describe('orders whose rows open in place', () => {
     await screen(page, 'list-work-detail-phone', { viewport: true });
   });
 });
+
+test.describe('a waiting room ranked by hand', () => {
+  const ROOM = 'page=waiting-room&skin=underline';
+  const patients = (page: Page) => page.locator('.fd-list-row td[data-col="name"]');
+
+  test('carries a patient by the grip to another place, keeps the order, and moves one with Alt and an arrow', async ({ page }) => {
+    const { problems } = await open(page, 'plain', ROOM);
+    const waiting = ordered(await records(page, 'clinic.waiting'), [{ field: 'turn' }]).map((one) => one['name'] as string);
+    await expect(patients(page)).toHaveText(waiting);
+    // The first carried below the third, by its grip.
+    const grip = page.locator('.fd-list-row').first().locator('td[data-col] > .fd-list-rank');
+    const target = (await page.locator('.fd-list-row').nth(2).boundingBox())!;
+    const from = (await grip.boundingBox())!;
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2, target.y + target.height * 0.75, { steps: 8 });
+    await screen(page, 'list-work-rank-carried', { viewport: true });
+    await page.mouse.up();
+    const moved = [waiting[1], waiting[2], waiting[0], ...waiting.slice(3)];
+    await expect(patients(page)).toHaveText(moved);
+    await expect(page.locator('.fd-list > [role="status"]')).toHaveText(`${waiting[0]} moved to place 3 of ${waiting.length}`);
+    // Written: the order kept on reload.
+    await expect.poll(async () => ordered(await records(page, 'clinic.waiting'), [{ field: 'turn' }]).map((one) => one['name'])).toEqual(moved);
+    await page.reload();
+    await expect(patients(page)).toHaveText(moved);
+    // From the keys: the last up a place.
+    const last = page.locator('.fd-list-row').last();
+    await last.focus();
+    await page.keyboard.press('Alt+ArrowUp');
+    const keyed = [...moved.slice(0, -2), moved[moved.length - 1], moved[moved.length - 2]];
+    await expect(patients(page)).toHaveText(keyed);
+    await expect(page.locator('.fd-list-row').nth(keyed.length - 2)).toBeFocused();
+    // The pointer parked off the rows: a muted pill over a hovered row's ground is 4.16:1 in any list (not this one's).
+    await page.mouse.move(0, 0);
+    await screen(page, 'list-work-rank', { viewport: true });
+    expect(await axeFindings(page, 'a waiting room ranked by hand')).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  test('puts a carried row back on Escape', async ({ page }) => {
+    await open(page, 'plain', ROOM);
+    const before = await patients(page).allTextContents();
+    const grip = page.locator('.fd-list-row').first().locator('td[data-col] > .fd-list-rank');
+    const from = (await grip.boundingBox())!;
+    await page.mouse.move(from.x + 4, from.y + 4);
+    await page.mouse.down();
+    await page.mouse.move(from.x + 4, from.y + 120, { steps: 6 });
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+    await expect(patients(page)).toHaveText(before);
+    await expect(page.locator('.fd-list-row[data-lifted]')).toHaveCount(0);
+  });
+
+  test('carries a card by its grip on a phone', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, 'plain', ROOM);
+    const before = await patients(page).allTextContents();
+    await expect(page.locator('.fd-list')).toHaveAttribute('data-as', 'cards');
+    const grip = page.locator('.fd-list-row').first().locator('.fd-list-card > .fd-list-rank');
+    await expect(grip).toBeVisible();
+    const from = (await grip.boundingBox())!;
+    const second = (await page.locator('.fd-list-row').nth(1).boundingBox())!;
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2, second.y + second.height * 0.8, { steps: 8 });
+    await page.mouse.up();
+    await expect(patients(page)).toHaveText([before[1], before[0], ...before.slice(2)]);
+    await screen(page, 'list-work-rank-phone', { viewport: true });
+  });
+});

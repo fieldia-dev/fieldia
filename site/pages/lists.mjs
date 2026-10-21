@@ -59,6 +59,7 @@ ${code(
     <tr><td>${c('search')} · ${c('filterFields')} · ${c('filterLabels')}</td><td>${c('"fields"')}: a keyword box and a list of values to tick for each of ${c('filterFields')}, in place of the search bar; ${c('filterLabels')} gives a filter its own, shorter name on the bar, by field (${c('{ "iteration": "Iteration" }')} for Iteration Path), translated with the page's words.</td></tr>
     <tr><td>${c('filterRanges')} · ${c('filterCounts')} · ${c('filterSheet')}</td><td>A number's or a date's range on the filter bar — From and To, a press for each least value (${c('{ "bedrooms": { "atLeast": [1, 2, 3, 4] } }')}) — one chip; how many records each value, named filter and favourite finds, beside it; and on a phone the filter bar's fields in a sheet with <em>Show 37 homes</em>: see <a href="#filters">filters a buyer and a sales team expect</a>.</td></tr>
     <tr><td>${c('parentField')}</td><td>Rows nested under their parent by this link to the list's own records, with Expand all and Collapse all.</td></tr>
+    <tr><td>${c('sequenceField')}</td><td>The whole number the records are ranked by: a row carried to another place by its grip, or moved with <kbd>Alt</kbd> and an arrow, writes it — see <a href="#rank">rows re-ranked by hand</a>.</td></tr>
     <tr><td>${c('detail')}</td><td>What a row opens to in place, under it: its record's lines, or the records pointing at it, a page at a time — see <a href="#work">lists people work in</a>.</td></tr>
     <tr><td>${c('export')}</td><td>${c('true')}: Export in the list's bar. Off unless said, as Edit is: see <a href="#bulk">taking records away</a>.</td></tr>
     <tr><td>${c('bulkEdit')}</td><td>Edit, for the rows chosen: ${c('true')} offers the columns one value can set, a list of fields offers those. Off unless said: see <a href="#bulk">changing many at once</a>.</td></tr>
@@ -361,6 +362,20 @@ ${code(
   <li><strong>The records pointing at it</strong> — ${c('"model": "invoice", "field": "partner_id", "fields": { … }')}, as a related list names them — are asked of ${c('list')} a page at a time, with ${c('{ field: "partner_id", op: "=", value: id }')} as their filter.</li>
   <li>${c('columns')}, ${c('cells')}, ${c('sort')} and ${c('limit')} (5 unless said) as a list's; ${c('title')} names them — <em>Lines of S00118</em> — the lines' label unless said.</li>
   <li>Without ${c('load')} (for lines) or ${c('list')} (for records), no arrow: the rows are read and opened as ever. It comes in the rows part (${c('fieldia.rows.js')}), only where a list asks for it. In the designer: a list's <em>A row opens to</em>, one of the page's tables of lines. <a href="/demos/plain/?page=orders-review&amp;skin=underline">Try the orders to review</a>.</li>
+</ul>
+
+<h3 id="rank">Rows re-ranked by hand</h3>
+<p>A waiting room's queue, a backlog, the order homes are featured in: with ${c('sequenceField')} — a whole number of the records, the list's ${c('sort')} by it — each row has a grip at its start that carries it to another place, the other rows sliding aside to make room (the page scrolls near its edge, <kbd>Escape</kbd> puts it back), and <kbd>Alt</kbd> with <kbd>↑</kbd> or <kbd>↓</kbd> moves the row with the focus a place, its new place said aloud: <em>Omar Nabil moved to place 3 of 12</em>. On a phone each card has its grip.</p>
+${code(
+  'json',
+  `
+{ "type": "list", "id": "waiting-room", "columns": ["name", "treatment", "doctor", "arrived", "state"],
+  "sort": [{ "field": "turn" }], "sortable": false, "sequenceField": "turn" }`
+)}
+<ul>
+  <li><strong>The fewest writes.</strong> A row moved between two whose ranks leave room takes one halfway between them, and nothing else changes; where they leave none it takes one more than the one before it, and those after it move on while they would fall behind. Each record changed is written its own rank through your source's ${c('writeMany')} (${c('{ ids: [id], values: { turn: 25 } }')}), else its ${c('save')}; a refusal is said — <em>The new order was not kept: …</em> — and the list asks for its records again, in the order your source keeps.</li>
+  <li><strong>Only while it is in that order</strong>: by its rank, ascending, nothing grouped, no rows under their parent, the grips there; a header pressed for another order hides them. A record the person may not change (${c('can.edit: false')}) has none.</li>
+  <li>Moves within the rows shown; ranks are whole numbers, a source's own way of breaking a tie kept. In the rows part (${c('fieldia.rows.js')}). In the designer: a list's <em>Rows ranked by hand, by</em>. <a href="/demos/plain/?page=waiting-room&amp;skin=underline">Try the waiting room</a>.</li>
 </ul>
 
 <h3 id="views">Saved views, kept for the team</h3>

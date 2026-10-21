@@ -556,12 +556,37 @@ export function listView(context: ListContext): ListView {
   /** How many columns a heading's row spans: the leading ones, those shown, the buttons'. */
   const span = () => leading + shownColumns().length + trailing;
   /**
-   * The rows part, which the page waited for where the list's rows open in place (`detail`); where it could not come,
-   * its rows are read and opened, as a list's always were. What a row opens to, drawn as the list draws its cells.
+   * The rows part, which the page waited for where the list's rows open in place (`detail`) or are re-ranked by hand
+   * (`sequenceField`); where it could not come, its rows are read and opened, as a list's always were. What a row opens
+   * to, drawn as the list draws its cells.
    */
-  const rowsKit = node.detail ? rowsPart.loaded : undefined;
+  const rowsKit = node.detail || node.sequenceField ? rowsPart.loaded : undefined;
   const details = rowsKit?.detailRows({ page, node, model, dataSource: context.dataSource, el, labels, locale, fill, number, span, cellsOf: (of, list) => listCells({ page: of, node: list, doc, el, locale, icons: context.icons, fill, ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) }) }) ?? null;
   if (rowsKit) rowsKit.installRowsStyles(doc);
+  /** Its rows re-ranked by hand, while it is in their order: by its own rank, ascending, its rows not under groups or parents. */
+  const ranked = () => !groupedNow && !parentField && sort[0]?.field === node.sequenceField && !sort[0]?.desc && !sort[0]?.near;
+  const ranks =
+    rowsKit?.rankRows({
+      page,
+      node,
+      model,
+      dataSource: context.dataSource,
+      doc,
+      el,
+      labels,
+      fill,
+      number,
+      ranked,
+      rows: () => [...body.querySelectorAll<HTMLTableRowElement>(':scope > .fd-list-row')],
+      recordOf: (tr) => recordOf.get(tr),
+      known: (id) => known.get(String(id)),
+      offset: () => offset,
+      total: () => total,
+      reload: () => load(),
+      ...(context.say ? { say: context.say } : {}),
+    }) ?? null;
+  // The rank each row moves by, asked with the rest.
+  if (ranks && node.sequenceField && !fields.includes(node.sequenceField)) fields.push(node.sequenceField);
   /** The columns as last drawn, to know when the totals must follow. */
   let drawnColumns = shownColumns().join();
 
@@ -643,6 +668,8 @@ export function listView(context: ListContext): ListView {
     });
     tr.addEventListener('keydown', (event) => {
       if (event.target !== tr) return;
+      // Alt with an arrow: the row moved a place, where the list is ranked by hand.
+      if (ranks?.key(tr, event)) return event.preventDefault();
       const forward = tr.closest('[dir]')?.getAttribute('dir') === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -673,6 +700,7 @@ export function listView(context: ListContext): ListView {
     tr.addEventListener('focus', () => viewParts.highlight(record.id));
     recordOf.set(tr, record);
     details?.wire(tr, record, name);
+    ranks?.wire(tr, record, name);
     return tr;
   }
 
@@ -980,8 +1008,9 @@ export function listView(context: ListContext): ListView {
       failed.hidden = false;
     }
     body.replaceChildren(...drawn);
-    // What the rows open was open before stays so, under them.
+    // What the rows open was open before stays so, under them; their grips while the list is in their order.
     details?.drawn(body);
+    ranks?.drawn();
     empty.hidden = drawn.length > 0 || !failed.hidden;
     empty.textContent = context.none && !facets.length ? context.none : sentence(labels.noRecordsNoun, labels.noRecords);
     table.removeAttribute('aria-busy');
@@ -1612,6 +1641,8 @@ export function listView(context: ListContext): ListView {
     ...(key ? [key] : []),
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
+  // Where a row moved by hand is said aloud: in the list, there before anything is said in it.
+  if (ranks) element.append(ranks.voice);
   // Scrolled sideways, the first column and the Columns menu's cell, held at its ends, are parted from those going under them.
   choices?.scrolls(element.querySelector('.fd-list-scroll') as HTMLElement);
   showAs(view);

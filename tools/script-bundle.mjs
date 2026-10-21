@@ -1020,8 +1020,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // `viewsPart`; 64) — 506.77 measured before, 506.89 after, to 506.9. Multi-column sort is the list part's. The rows
 // part a page asks for where its list's rows open in place (fieldia.rows.js: its name and loader, the global's
 // `rowsPart`, and `partsFor` knowing a list with `detail` asks for it, so the page is drawn whole; 115) — 507.00 after,
-// to 507.0.
-const BUDGET_KB = 507.0;
+// to 507.0; and one with `sequenceField` (rows re-ranked by hand), 507.02 after, to 507.1.
+const BUDGET_KB = 507.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1445,8 +1445,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // question before a shared one goes — 7 more in each: Arabic's 78.84 and 13.45 after, to 78.9 and 13.5; German's 36.72
 // and 11.78, to 36.8 and 11.8; French's 37.25 and 11.83, to 37.3 and 11.9. What a row opens to in place, its name and
 // its title, 2 more: Arabic's 78.93 and 13.48 after, to 79.0; German's 36.77 and 11.80, its gzipped to 11.9; French's
-// 37.30 and 11.85, its raw to 37.4.
-const ADD_ON_BUDGET_KB = { ar: [79.0, 13.5], de: [36.8, 11.9], fr: [37.4, 11.9] };
+// 37.30 and 11.85, its raw to 37.4. A row moved by hand — where it went, its grip's hint, an order not kept — 3 more:
+// Arabic's 79.41 and 13.57 after, to 79.5 and 13.6; German's 36.97 and 11.88, to 37.0; French's 37.52 and 11.93, to 37.6
+// and 12.0.
+const ADD_ON_BUDGET_KB = { ar: [79.5, 13.6], de: [37.0, 11.9], fr: [37.6, 12.0] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1852,7 +1854,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 3.94, to 9.6 and 4.0: its toggles, its table of what it opens to and its pager, kept open as the list asks again, its
 // sheet — asked for by a page whose list has `detail`; in the list part its hooks and the setting's checks (what it
 // opens to, its fields and its link to the list's model): list 132.17 and 42.56 to 133.73 and 42.96, to 133.8 and 43.0.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [133.8, 43.0], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], views: [5.9, 2.6], rows: [9.6, 4.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.2, 6.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// Rows re-ranked by hand in the rows part too — rows 14.82 and 5.98, to 14.9 and 6.0: a row carried by its grip (the
+// others sliding aside, the page scrolled at its edge, Escape), Alt and an arrow, the fewest ranks written, its place
+// said, a refusal said and the records asked again — and in the list part its hooks and the rank's checks: list 133.73
+// and 42.96 to 134.93 and 43.32, to 135.0 and 43.4.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [135.0, 43.4], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], views: [5.9, 2.6], rows: [14.9, 6.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.2, 6.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1866,7 +1872,7 @@ const PART_GIVES = {
   columns: ['columnChoices', 'columnsKey', 'installColumnStyles'],
   import: ['openImport', 'installImportStyles'],
   views: ['savedViews', 'openingView', 'installViewStyles'],
-  rows: ['detailRows', 'installRowsStyles'],
+  rows: ['detailRows', 'rankRows', 'newRanks', 'installRowsStyles'],
   themes: ['installThemeStyles'],
   quiet: ['installQuietStyles'],
   lines: ['linesWidget', 'linksTableWidget', 'cardsWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],

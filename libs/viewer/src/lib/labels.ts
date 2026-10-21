@@ -396,6 +396,13 @@ export interface ViewerLabels {
   detailOf: string;
   detailTitle: string;
   /**
+   * A list's rows re-ranked by hand (`sequenceField`): where a row moved (`{name}`, `{n}` of `{total}`), its grip's hint,
+   * and why the new order was not kept (`{why}`, the source's words).
+   */
+  rowMovedTo: string;
+  rowMoveHint: string;
+  rankNotKept: string;
+  /**
    * A list's views kept on the app's server (its source's `views`), in the search bar's menu: a view shared with the
    * team, the person's own (`viewShared`) or another's (`{name}`, who made it); Save current search's Share with the
    * team; why the views could not be asked, a view not saved (`{why}`) or not deleted (`{name}`, `{why}`); and the
@@ -896,6 +903,9 @@ const en: ViewerLabels = {
   sortKeyDown: 'sorted {n} of {total}, descending',
   detailOf: '{title} of {name}',
   detailTitle: 'Details',
+  rowMovedTo: '{name} moved to place {n} of {total}',
+  rowMoveHint: 'Drag to move it; Alt+↑ or Alt+↓ from the keyboard',
+  rankNotKept: 'The new order was not kept: {why}.',
   viewShared: 'Shared with the team',
   viewSharedBy: 'Shared by {name}',
   shareView: 'Share with the team',

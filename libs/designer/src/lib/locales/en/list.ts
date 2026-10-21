@@ -256,5 +256,8 @@ export const list = {
     opensToHint: 'Its arrow before the name shows them under the row, a page at a time; the row’s press still opens the record.',
     opensToNothing: 'Nothing: a press opens the record',
     opensToRecords: 'The records pointing at it (in the JSON)',
+    rankedBy: 'Rows ranked by hand, by',
+    rankedByHint: 'A grip at each row carries it to another place, Alt with an arrow from the keys; the list opens in that order.',
+    rankedByNothing: 'Nothing: the list keeps its order',
   },
 };

@@ -79,6 +79,8 @@ import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 import { keepViews, keptViews } from './saved-views';
 import ordersReview from '../../examples/pages/orders-review.page.json';
 import { reviewOrders } from './orders-review';
+import waitingRoom from '../../examples/pages/waiting-room.page.json';
+import { waitingPatientPage, waitingPatients } from './waiting-room';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -92,6 +94,9 @@ export const pages: Record<string, Page> = {
   contacts: contacts as Page,
   // Orders whose rows open in place to their lines, and the order each opens: shared/orders-review.ts.
   'orders-review': ordersReview as Page,
+  // A clinic's waiting room, its patients carried to another place by hand: shared/waiting-room.ts.
+  'waiting-room': waitingRoom as Page,
+  'waiting-patient': waitingPatientPage,
   contact: contactPage,
   // A customer with its invoices and quotations listed inside it, and a home with its viewings: shared/related-lists.ts.
   'customer-account': customerAccount as Page,
@@ -244,6 +249,7 @@ const RECORD_PAGES: Record<string, string> = {
   'homes-search': 'map-home',
   'leads-queue': 'lead',
   'orders-review': 'order',
+  'waiting-room': 'waiting-patient',
   'map-couriers': 'map-courier',
   'map-zones': 'map-week-order',
   'map-heat': 'map-week-order',
@@ -635,6 +641,8 @@ export function sampleDataSource() {
         4: { name: 'Standing desk 160 × 80', price: 6425 },
         5: { name: 'Cable tray, 120 cm', price: 215 },
       },
+      // A clinic's waiting room this morning, its patients in the order they go in (shared/waiting-room.ts).
+      'clinic.waiting': waitingPatients(),
       'sale.order': {
         1: {
           name: 'S00118',

@@ -11,6 +11,18 @@ type Listed = (list: Pick<ListNode, 'columns' | 'sort' | 'searchFields' | 'cells
  */
 export function checkListWork(list: ListNode, path: string, tools: ListTools, listed: Listed): void {
   if (list.detail) checkDetail(list, `${path}.detail`, tools, listed);
+  if (list.sequenceField !== undefined) checkRank(list, `${path}.sequenceField`, tools);
+}
+
+/** A list's rank: a whole number of its records, by which it is in order — else no row could be moved. */
+function checkRank(list: ListNode, path: string, tools: ListTools): void {
+  const def = tools.need(list.sequenceField as string, path);
+  if (!def) return;
+  if (def.type !== 'integer') return tools.report(path, `"${list.sequenceField}" is a ${def.type}; a list's records are ranked by a whole number`);
+  if (def.readonly === true || def.compute) tools.report(path, `"${list.sequenceField}" is ${def.compute ? 'worked out from other fields' : 'read-only'}; a row moved writes its rank`);
+  const first = list.sort?.[0];
+  if (!first || first.field !== list.sequenceField || first.desc) tools.report(path, `the list opens in another order: put "${list.sequenceField}" first in its sort, ascending, so its rows can be moved`);
+  if (list.parentField) tools.report(path, 'rows under their parent are not ranked by hand: a list ranks one level');
 }
 
 function checkDetail(list: ListNode, path: string, tools: ListTools, listed: Listed): void {

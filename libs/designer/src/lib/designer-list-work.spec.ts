@@ -66,3 +66,40 @@ describe('a list’s rows a person works in, by the designer', () => {
     expect(list(designer).detail).toEqual({ lines: 'line_ids', columns: ['product', 'qty', 'price'] });
   });
 });
+
+describe('rows ranked by hand, by the designer', () => {
+  const queue = () => {
+    const designer = createDesigner({ page: blankPage('list', 'Waiting room'), model: { name: { type: 'char', label: 'Patient' }, turn: { type: 'integer', label: 'Turn' }, seen: { type: 'date', label: 'Seen on' } } });
+    designer.addColumn('name');
+    designer.setListOptions({ sort: [{ field: 'seen' }] });
+    return designer;
+  };
+
+  it('ranks the rows by a whole number, the list opening in its order, and lets it go', () => {
+    const designer = queue();
+    expect(designer.setListOptions({ sequenceField: 'turn' })).toBe(true);
+    expect(list(designer).sequenceField).toBe('turn');
+    expect(list(designer).sort).toEqual([{ field: 'turn' }, { field: 'seen' }]);
+    expect(designer.getPage().fields['turn']?.type).toBe('integer');
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(designer.setListOptions({ sequenceField: null })).toBe(true);
+    expect(list(designer).sequenceField).toBeUndefined();
+  });
+
+  it('refuses what is no whole number', () => {
+    const designer = queue();
+    expect(designer.setListOptions({ sequenceField: 'seen' })).toBe(false);
+    expect(designer.getState().issues[0]).toBe('Rows are ranked by a whole number; Seen on is not one');
+  });
+
+  it('offers the whole numbers in the list’s panel', () => {
+    const designer = queue();
+    const panel = listProperties(elementFactory(document), designer);
+    panel.update(designer.getPage());
+    const ranks = panel.element.querySelector('[data-part="rank"] select') as HTMLSelectElement;
+    expect([...ranks.options].map((option) => option.textContent)).toEqual(['Nothing: the list keeps its order', 'Turn']);
+    ranks.value = 'turn';
+    ranks.dispatchEvent(new Event('change'));
+    expect(list(designer).sequenceField).toBe('turn');
+  });
+});

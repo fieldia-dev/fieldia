@@ -9548,6 +9548,10 @@
         "detail": {
           "$ref": "#/$defs/ListDetail"
         },
+        "sequenceField": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
         "export": {
           "type": "boolean"
         },

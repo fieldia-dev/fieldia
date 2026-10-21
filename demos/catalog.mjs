@@ -50,7 +50,7 @@ const AREA_OF = {
   crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'leads-queue', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
-  clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
+  clinic: ['clinic-calendar', 'waiting-room', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
   'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
@@ -70,6 +70,7 @@ const SEARCH_WORDS = {
   customer: 'client account contact company blocked block status sales invoices counters conversation messages notes team phone whatsapp',
   order: 'sale sales order quotation quote lines products items spreadsheet totals tax discount',
   customers: 'clients accounts contacts list search filter group favourites sort multi sort several columns shift archive table',
+  'waiting-room': 'waiting room queue reception front desk patients order turn next drag reorder rank move up down priority who is next',
   'orders-review': 'orders sales order lines review check approve master detail expand open in place inside rows sections quotation products quantities',
   invoices: 'invoice bill bills billing accounts receivable payments overdue unpaid due totals sum currency dollars pounds month quarter print printout paper pdf phone mobile cards',
   contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize reorder drag move rearrange print cards whatsapp',
@@ -232,6 +233,18 @@ export const DEMOS = [
       'Tick two customers and press Archive: you are asked first, then the app is given those two, and a note says so.',
       'Save the search as a favourite used by default, and reload: it opens that way.',
       'Click a row to open that customer on its own page.',
+    ],
+  },
+  {
+    id: 'waiting-room',
+    name: 'A waiting room, its queue moved by hand',
+    category: 'lists',
+    query: 'page=waiting-room&skin=underline',
+    blurb: 'A clinic’s patients waiting to be seen, in the order they go in: the front desk carries a patient to another place by hand, or with the keyboard, and the new order is kept for every screen.',
+    howTo: [
+      'Carry a patient by the dots at the row’s start to another place: the others slide aside, and let go the new order is kept.',
+      'Or press a row’s Tab stop and Alt+↓ or Alt+↑: it moves a place, and its new place is said aloud.',
+      'Reload the page: the order you made is still there.',
     ],
   },
   {
@@ -1151,6 +1164,7 @@ export const OPENED = [
   { page: 'quotation', name: 'A quotation', from: 'customer-account' },
   { page: 'viewing', name: 'A viewing', from: 'property' },
   { page: 'lead', name: 'A lead', from: 'leads-queue' },
+  { page: 'waiting-patient', name: 'A patient waiting', from: 'waiting-room' },
 ];
 
 /** What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock. */

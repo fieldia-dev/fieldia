@@ -668,6 +668,19 @@ still opens the record. A section's heading or a note among the lines
 (`lineKinds`) reads across the row. Without `load` (lines) or `list` (records),
 no arrow. It comes in the rows part (`fieldia.rows.js`).
 
+**Rows re-ranked by hand.** With `sequenceField` — a whole number the records
+are ranked by, the list's `sort` by it — a grip at each row's start carries the
+row to another place (the other rows sliding aside, the page scrolling near its
+edge, Escape putting it back; on a phone, the card's grip), and Alt with an
+arrow moves the focused row a place, its new place said aloud ("Omar Nabil moved
+to place 3 of 12"). Only the records whose rank changes are written — halfway
+between its neighbours where their ranks leave room, else one more than the one
+before and those after moved on — each through the source's `writeMany` (one
+id, its own rank), else `save`; refused, the list says why and asks for its
+records again. Shown while the list is in that order (no other header pressed,
+no Group By, no rows under parents); a record the person may not change has no
+grip. In the rows part too.
+
 ```json
 "detail": { "lines": "line_ids", "columns": ["product_id", "name", "qty", "price", "subtotal"], "sort": [{ "field": "sequence" }], "limit": 5 }
 "detail": { "title": "Invoices", "model": "invoice", "field": "partner_id", "fields": { … }, "columns": ["name", "amount"] }

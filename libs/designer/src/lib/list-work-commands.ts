@@ -5,6 +5,8 @@ import { Refusal } from './refusal';
 export interface ListWorkPatch {
   /** What a row opens to in place: its record's lines (`lines`, a table of lines of the page's) or the records pointing at it; null for nothing. */
   detail?: ListDetail | null;
+  /** The whole number the records are ranked by, a row carried to another place writing it; null for none. The list's order becomes it. */
+  sequenceField?: string | null;
 }
 
 /** The lines' fields a row opening to them shows at first: the plain ones a person reads, five of them, never their order or kind. */
@@ -31,5 +33,14 @@ export function setListWork(list: ListNode, options: ListWorkPatch, draft: Page,
       for (const name of detail.columns) if (!def.fields[name]) throw new Refusal((w) => w.refusals.detailNoLineField(def.label, name));
     }
     list.detail = JSON.parse(JSON.stringify(detail)) as ListDetail;
+  }
+  if (options.sequenceField === null) delete list.sequenceField;
+  else if (options.sequenceField !== undefined) {
+    const def = fieldFor(draft, options.sequenceField);
+    if (def.type !== 'integer') throw new Refusal((w) => w.refusals.rankNotWhole(def.label));
+    if (list.parentField) throw new Refusal((w) => w.refusals.rankUnderParents);
+    list.sequenceField = options.sequenceField;
+    // In its order, from the first: the rows are moved in the order they are shown, the rest of the old order after it.
+    list.sort = [{ field: options.sequenceField }, ...(list.sort ?? []).filter((order) => order.field !== options.sequenceField)];
   }
 }

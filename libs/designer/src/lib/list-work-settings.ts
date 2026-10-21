@@ -24,7 +24,13 @@ export function workSection(el: ElementFactory, designer: Designer) {
     if (!designer.setListOptions({ detail: def ? { lines: opens.value, columns: detailColumns(def) } : null })) opens.value = listOf(designer.getPage()).detail?.lines ?? '';
   });
   const opensRow = el('label', { class: 'fd-prop', 'data-part': 'detail' }, el('span', { class: 'fd-prop-name' }, w.opensTo), opens, el('span', { class: 'fd-properties-hint' }, w.opensToHint));
-  const element = el('div', { class: 'fd-prop', 'data-part': 'work' }, el('span', { class: 'fd-prop-name' }, w.title), opensRow);
+  // Rows ranked by hand: a whole number of the records', the list's order becoming it.
+  const ranks = el('select', { class: 'fd-input fd-select', 'aria-label': w.rankedBy }) as HTMLSelectElement;
+  ranks.addEventListener('change', () => {
+    if (!designer.setListOptions({ sequenceField: ranks.value || null })) ranks.value = listOf(designer.getPage()).sequenceField ?? '';
+  });
+  const ranksRow = el('label', { class: 'fd-prop', 'data-part': 'rank' }, el('span', { class: 'fd-prop-name' }, w.rankedBy), ranks, el('span', { class: 'fd-properties-hint' }, w.rankedByHint));
+  const element = el('div', { class: 'fd-prop', 'data-part': 'work' }, el('span', { class: 'fd-prop-name' }, w.title), opensRow, ranksRow);
   return {
     element,
     update(page: Page) {
@@ -35,7 +41,12 @@ export function workSection(el: ElementFactory, designer: Designer) {
       opens.replaceChildren(...(own.length ? own : [el('option', { value: '' }, w.opensToNothing)]), ...lines.map(({ name, field }) => el('option', { value: name }, field.label)));
       opens.value = list.detail?.lines ?? '';
       opensRow.hidden = !lines.length && !list.detail;
-      element.hidden = opensRow.hidden;
+      const wholes = fieldsOf(page, designer).filter(({ field }) => field.type === 'integer');
+      ranks.replaceChildren(el('option', { value: '' }, w.rankedByNothing), ...wholes.map(({ name, field }) => el('option', { value: name }, field.label)));
+      ranks.value = list.sequenceField ?? '';
+      // Not for rows under their parent: a list ranks one level.
+      ranksRow.hidden = (!wholes.length || !!list.parentField) && !list.sequenceField;
+      element.hidden = opensRow.hidden && ranksRow.hidden;
     },
   };
 }

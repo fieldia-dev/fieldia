@@ -31,15 +31,25 @@ export const ROWS_STYLES = `
 .fd-list-detail-toggle[aria-expanded="true"]::before { transform: rotate(135deg); }
 .fd-list-detail-toggle:hover { background: var(--fd-accent-soft); color: var(--fd-accent); }
 .fd-list-detail-toggle:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+/* ---- rows re-ranked by hand (sequenceField) ---- */
+/* A grip at the row's start, while the list is in their order; the row carried by it lifted over the rest. */
+.fd-list-rank { display: none; flex: none; width: 10px; height: 16px; margin-inline-end: 8px; vertical-align: middle; cursor: grab; touch-action: none; background: radial-gradient(circle, var(--fd-border-strong) 1.3px, transparent 1.7px) 0 0 / 5px 5.33px; }
+.fd-list-row[data-ranks] > td[data-col] > .fd-list-rank { display: inline-block; }
+.fd-list-row[data-lifted] { position: relative; z-index: 2; cursor: grabbing; box-shadow: 0 6px 18px rgb(0 0 0 / 0.18); }
+.fd-list-row[data-lifted] > td { background: var(--fd-accent-soft); }
+tbody[data-ranking] { user-select: none; }
+tbody[data-ranking] > .fd-list-row:not([data-lifted]) { transition: transform 0.12s; }
 /* With its words, in a card on a phone alone. */
 .fd-list-detail-words { display: none; }
 @media not print {
 .fd-list[data-as="cards"] .fd-list-detail-words { display: inline-flex; gap: 6px; width: auto; height: auto; min-height: 32px; margin: 4px 0 0; padding-inline: 2px 8px; color: var(--fd-accent); font-size: 13.5px; font-weight: 500; justify-self: start; }
 .fd-list[data-as="cards"] .fd-list-detail-words::before { align-self: center; }
 .fd-list[data-as="cards"] .fd-list-detail { display: block; }
+/* A card's grip at its start, the card carried whole. */
+.fd-list[data-as="cards"] .fd-list-row[data-ranks] > td.fd-list-card > .fd-list-rank { display: block; align-self: center; height: 24px; margin: 0; }
 .fd-list[data-as="cards"] .fd-list-table > tbody > tr.fd-list-detail > td { display: block; padding: 0; background: none; }
 /* A gallery's cards open their records: none opens in place. */
-.fd-list[data-as="gallery"] :is(.fd-list-detail-toggle, .fd-list-detail) { display: none; }
+.fd-list[data-as="gallery"] :is(.fd-list-detail-toggle, .fd-list-detail, .fd-list-rank) { display: none !important; }
 }
 `;
 

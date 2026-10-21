@@ -1245,6 +1245,12 @@ export interface ListNode {
    */
   detail?: ListDetail;
   /**
+   * A whole-number field the records are ranked by — a queue's, a backlog's, a featured order's: while the list is in
+   * that order (its `sort` by it, ascending, no group), a grip at each row's start carries the row to another place and
+   * Alt with an arrow moves it, the records whose rank changes written back through the data source. None unless given.
+   */
+  sequenceField?: string;
+  /**
    * Export, in the list's bar: the rows ticked — or, none ticked, every
    * record the search finds — as an Excel workbook or a CSV file, the
    * columns as the list shows them. Off unless true, as Edit is: an app
@@ -2312,6 +2318,7 @@ export const ListNodeSchema = z.strictObject({
   filterSheet: z.boolean().optional(),
   parentField: fieldName.optional(),
   detail: ListDetailSchema.optional(),
+  sequenceField: fieldName.optional(),
   export: z.boolean().optional(),
   bulkEdit: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
   import: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),

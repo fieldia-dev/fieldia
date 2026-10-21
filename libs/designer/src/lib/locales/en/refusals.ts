@@ -204,6 +204,8 @@ export const refusals = {
   parentNotOwnLink: (label: string) => `Rows nest under a link to the list’s own records; ${label} is not one`,
   detailNotLines: (label: string) => `A row opens to a table of lines of the page’s; ${label} is not one`,
   detailNoLineField: (label: string, name: string) => `${label} has no field “${name}” to show`,
+  rankNotWhole: (label: string) => `Rows are ranked by a whole number; ${label} is not one`,
+  rankUnderParents: 'Rows under their parent are not ranked by hand: a list ranks one level',
   notFilterable: (label: string) => `The filter bar cannot list the values of ${label}, nor take its range`,
   notRangeable: (label: string) => `The filter bar takes the range of a number or a date; ${label} is neither`,
   atLeastNeedsNumber: (label: string) => `A press for a least value is a number’s; ${label} holds dates`,
