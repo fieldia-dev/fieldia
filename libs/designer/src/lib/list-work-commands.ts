@@ -7,6 +7,8 @@ export interface ListWorkPatch {
   detail?: ListDetail | null;
   /** The whole number the records are ranked by, a row carried to another place writing it; null for none. The list's order becomes it. */
   sequenceField?: string | null;
+  /** Rows that load as the list is scrolled, in place of its pages: true asks for it, false takes it away. */
+  endless?: boolean;
 }
 
 /** The lines' fields a row opening to them shows at first: the plain ones a person reads, five of them, never their order or kind. */
@@ -42,5 +44,10 @@ export function setListWork(list: ListNode, options: ListWorkPatch, draft: Page,
     list.sequenceField = options.sequenceField;
     // In its order, from the first: the rows are moved in the order they are shown, the rest of the old order after it.
     list.sort = [{ field: options.sequenceField }, ...(list.sort ?? []).filter((order) => order.field !== options.sequenceField)];
+  }
+  if (options.endless === false) delete list.endless;
+  else if (options.endless === true) {
+    if (list.parentField) throw new Refusal((w) => w.refusals.endlessUnderParents);
+    list.endless = true;
   }
 }

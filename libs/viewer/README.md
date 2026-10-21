@@ -681,6 +681,15 @@ records again. Shown while the list is in that order (no other header pressed,
 no Group By, no rows under parents); a record the person may not change has no
 grip. In the rows part too.
 
+**Rows loaded as the list is scrolled.** With `"endless": true` — a phone's
+feed, a log — the next page of rows comes as the rows' end comes in sight, put
+after those already there, in place of the pager's pages: its count stays
+("1–60 of 1,284 entries"), its arrows go, and "Show 30 more" waits at the end
+for a hand or the keys (↓ past the last row loads the next and goes on). As the
+list asks again (a row's button, a record closed) it keeps every row it held; a
+new search or order starts from the first page. On a phone, cards far out of
+sight skip their drawing. Not for rows under their parent (`parentField`).
+
 ```json
 "detail": { "lines": "line_ids", "columns": ["product_id", "name", "qty", "price", "subtotal"], "sort": [{ "field": "sequence" }], "limit": 5 }
 "detail": { "title": "Invoices", "model": "invoice", "field": "partner_id", "fields": { … }, "columns": ["name", "amount"] }

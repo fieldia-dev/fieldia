@@ -39,6 +39,8 @@ export const CARD_STYLES = `
 .fd-list[data-as] .fd-list-row[data-tone]:hover { border-inline-start-color: var(--fd-row-tone); }
 .fd-list[data-as] .fd-list-row:is([aria-selected="true"], [aria-current="true"], .fd-list-hot) { background: var(--fd-accent-soft); border-color: var(--fd-accent); }
 .fd-list[data-as] .fd-list-row:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+/* A long feed of cards: those far out of sight skip their drawing until they come near (a list loaded as it is scrolled). */
+.fd-list[data-endless][data-as="cards"] .fd-list-row { content-visibility: auto; contain-intrinsic-size: auto 160px; }
 .fd-list[data-as] .fd-list-row > td { display: none; height: auto; max-width: none; padding: 0; border: 0; background: none; color: inherit; white-space: normal; overflow: visible; }
 .fd-list[data-as] .fd-list-row > .fd-list-check { display: block; width: auto; padding-block-start: 2px; }
 .fd-list[data-as] .fd-list-row > .fd-list-card { display: flex; gap: 12px; grid-column: -2; min-width: 0; }

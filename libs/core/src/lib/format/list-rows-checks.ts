@@ -12,6 +12,8 @@ type Listed = (list: Pick<ListNode, 'columns' | 'sort' | 'searchFields' | 'cells
 export function checkListWork(list: ListNode, path: string, tools: ListTools, listed: Listed): void {
   if (list.detail) checkDetail(list, `${path}.detail`, tools, listed);
   if (list.sequenceField !== undefined) checkRank(list, `${path}.sequenceField`, tools);
+  // Rows under their parent come a page at a time, each parent with its own: never as the list is scrolled.
+  if (list.endless && list.parentField) tools.report(`${path}.endless`, 'rows under their parent come a page at a time: a list of them never loads as it is scrolled');
 }
 
 /** A list's rank: a whole number of its records, by which it is in order — else no row could be moved. */

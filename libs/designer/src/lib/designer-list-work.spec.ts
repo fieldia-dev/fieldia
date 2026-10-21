@@ -103,3 +103,19 @@ describe('rows ranked by hand, by the designer', () => {
     expect(list(designer).sequenceField).toBe('turn');
   });
 });
+
+describe('rows loaded as the list is scrolled, by the designer', () => {
+  it('asks for it from the list’s panel, and takes it away', () => {
+    const designer = orders();
+    const panel = listProperties(elementFactory(document), designer);
+    panel.update(designer.getPage());
+    const box = panel.element.querySelector('[data-part="endless"] input') as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    expect(list(designer).endless).toBe(true);
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(designer.setListOptions({ endless: false })).toBe(true);
+    expect(list(designer).endless).toBeUndefined();
+  });
+});

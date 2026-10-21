@@ -281,3 +281,45 @@ test.describe('a waiting room ranked by hand', () => {
     await screen(page, 'list-work-rank-phone', { viewport: true });
   });
 });
+
+test.describe('a log loaded as it is scrolled', () => {
+  const LOG = `page=activity-log&skin=underline&${NOW}`;
+  const entries = (page: Page) => page.locator('.fd-list-row');
+
+  test('loads the next entries as their end comes in sight, keeps the count, and goes on from the keys', async ({ page }) => {
+    const { problems } = await open(page, 'plain', LOG);
+    await expect(entries(page)).toHaveCount(30);
+    await expect(page.locator('.fd-pager-text')).toHaveText('1–30 of 1,284 entries');
+    await expect(page.getByRole('button', { name: 'Next page' })).toBeHidden();
+    // Scrolled to the end: the next thirty, by themselves.
+    await page.locator('.fd-list-more-rows').scrollIntoViewIfNeeded();
+    await expect(entries(page)).toHaveCount(60);
+    await expect(page.locator('.fd-pager-text')).toHaveText('1–60 of 1,284 entries');
+    await screen(page, 'list-work-endless', { viewport: true });
+    expect(await axeFindings(page, 'a log loaded as it is scrolled')).toEqual([]);
+    // From the keys: down past the last loaded, the next ones come — by the key, or already as its row came in sight —
+    // and the focus goes on to the first of them.
+    const count = await entries(page).count();
+    await entries(page).nth(count - 1).focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(entries(page).nth(count)).toBeFocused();
+    expect(await entries(page).count()).toBeGreaterThan(count);
+    expect(problems).toEqual([]);
+  });
+
+  test('loads as it is scrolled on a phone, as cards', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, 'plain', LOG);
+    await expect(page.locator('.fd-list')).toHaveAttribute('data-as', 'cards');
+    await expect(entries(page)).toHaveCount(30);
+    // Scrolled down as a thumb does, again and again: each end in sight brings the next.
+    await expect
+      .poll(async () => {
+        await page.mouse.wheel(0, 4000);
+        return entries(page).count();
+      })
+      .toBeGreaterThanOrEqual(60);
+    await expectNoSidewaysScroll(page);
+    await screen(page, 'list-work-endless-phone', { viewport: true });
+  });
+});

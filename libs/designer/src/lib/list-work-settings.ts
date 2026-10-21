@@ -30,7 +30,13 @@ export function workSection(el: ElementFactory, designer: Designer) {
     if (!designer.setListOptions({ sequenceField: ranks.value || null })) ranks.value = listOf(designer.getPage()).sequenceField ?? '';
   });
   const ranksRow = el('label', { class: 'fd-prop', 'data-part': 'rank' }, el('span', { class: 'fd-prop-name' }, w.rankedBy), ranks, el('span', { class: 'fd-properties-hint' }, w.rankedByHint));
-  const element = el('div', { class: 'fd-prop', 'data-part': 'work' }, el('span', { class: 'fd-prop-name' }, w.title), opensRow, ranksRow);
+  // Rows loaded as the list is scrolled, in place of its pages.
+  const endless = el('input', { type: 'checkbox', 'aria-label': w.endless }) as HTMLInputElement;
+  endless.addEventListener('change', () => {
+    if (!designer.setListOptions({ endless: endless.checked })) endless.checked = listOf(designer.getPage()).endless === true;
+  });
+  const endlessRow = el('div', { class: 'fd-prop', 'data-part': 'endless' }, el('label', { class: 'fd-q-required' }, endless, el('span', {}, w.endless)), el('p', { class: 'fd-properties-hint' }, w.endlessHint));
+  const element = el('div', { class: 'fd-prop', 'data-part': 'work' }, el('span', { class: 'fd-prop-name' }, w.title), opensRow, ranksRow, endlessRow);
   return {
     element,
     update(page: Page) {
@@ -46,7 +52,9 @@ export function workSection(el: ElementFactory, designer: Designer) {
       ranks.value = list.sequenceField ?? '';
       // Not for rows under their parent: a list ranks one level.
       ranksRow.hidden = (!wholes.length || !!list.parentField) && !list.sequenceField;
-      element.hidden = opensRow.hidden && ranksRow.hidden;
+      endless.checked = list.endless === true;
+      endlessRow.hidden = !!list.parentField && !list.endless;
+      element.hidden = opensRow.hidden && ranksRow.hidden && endlessRow.hidden;
     },
   };
 }

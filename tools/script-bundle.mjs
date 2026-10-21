@@ -1857,8 +1857,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // Rows re-ranked by hand in the rows part too — rows 14.82 and 5.98, to 14.9 and 6.0: a row carried by its grip (the
 // others sliding aside, the page scrolled at its edge, Escape), Alt and an arrow, the fewest ranks written, its place
 // said, a refusal said and the records asked again — and in the list part its hooks and the rank's checks: list 133.73
-// and 42.96 to 134.93 and 43.32, to 135.0 and 43.4.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [135.0, 43.4], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], views: [5.9, 2.6], rows: [14.9, 6.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.2, 6.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// and 42.96 to 134.93 and 43.32, to 135.0 and 43.4. Rows loaded as the list is scrolled in the list part, as its pages
+// are — the next page asked as the rows' end comes in sight and put after those held, Show more, the keys past the last
+// row, every row held asked again: list 134.93 and 43.32 to 136.58 and 43.84, to 136.6 and 43.9 — and the cards' a
+// header's number in its chip and far cards undrawn in such a list: cards 12.31 and 3.83 to 12.43 and 3.88, to 12.5.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [136.6, 43.9], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], views: [5.9, 2.6], rows: [14.9, 6.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.2, 6.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

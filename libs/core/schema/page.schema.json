@@ -9552,6 +9552,9 @@
           "type": "string",
           "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
         },
+        "endless": {
+          "type": "boolean"
+        },
         "export": {
           "type": "boolean"
         },

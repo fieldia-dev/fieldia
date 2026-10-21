@@ -259,5 +259,7 @@ export const list = {
     rankedBy: 'Rows ranked by hand, by',
     rankedByHint: 'A grip at each row carries it to another place, Alt with an arrow from the keys; the list opens in that order.',
     rankedByNothing: 'Nothing: the list keeps its order',
+    endless: 'Rows load as the list is scrolled',
+    endlessHint: 'In place of its pages, for a phone’s feed or a log: its count stays, “Show 40 more” at the end for the keys.',
   },
 };

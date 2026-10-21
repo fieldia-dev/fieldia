@@ -49,7 +49,7 @@ const AREA_OF = {
   accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
   crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'leads-queue', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
-  operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
+  operations: ['backlog', 'activity-log', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'waiting-room', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
   'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
@@ -70,6 +70,7 @@ const SEARCH_WORDS = {
   customer: 'client account contact company blocked block status sales invoices counters conversation messages notes team phone whatsapp',
   order: 'sale sales order quotation quote lines products items spreadsheet totals tax discount',
   customers: 'clients accounts contacts list search filter group favourites sort multi sort several columns shift archive table',
+  'activity-log': 'activity log feed history audit trail changes who did what timeline endless infinite scroll load more phone mobile newest',
   'waiting-room': 'waiting room queue reception front desk patients order turn next drag reorder rank move up down priority who is next',
   'orders-review': 'orders sales order lines review check approve master detail expand open in place inside rows sections quotation products quantities',
   invoices: 'invoice bill bills billing accounts receivable payments overdue unpaid due totals sum currency dollars pounds month quarter print printout paper pdf phone mobile cards',
@@ -233,6 +234,18 @@ export const DEMOS = [
       'Tick two customers and press Archive: you are asked first, then the app is given those two, and a note says so.',
       'Save the search as a favourite used by default, and reload: it opens that way.',
       'Click a row to open that customer on its own page.',
+    ],
+  },
+  {
+    id: 'activity-log',
+    name: 'What the team did, loaded as you scroll',
+    category: 'lists',
+    query: 'page=activity-log&skin=underline',
+    blurb: 'Every change a sales team made, newest first: 1,284 entries that load as the list is scrolled, as a phone’s feed does — its count kept, nothing to page through.',
+    howTo: [
+      'Scroll down: the next thirty entries come as the end of the list comes in sight, and the count says how many you have.',
+      'With the keyboard, go down past the last entry: the next ones come and the focus goes on.',
+      'Narrow the window to a phone’s width: the entries are cards, loaded as you scroll.',
     ],
   },
   {
@@ -1165,6 +1178,7 @@ export const OPENED = [
   { page: 'viewing', name: 'A viewing', from: 'property' },
   { page: 'lead', name: 'A lead', from: 'leads-queue' },
   { page: 'waiting-patient', name: 'A patient waiting', from: 'waiting-room' },
+  { page: 'activity-entry', name: 'An entry of the log', from: 'activity-log' },
 ];
 
 /** What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock. */

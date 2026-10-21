@@ -167,6 +167,9 @@ export const LIST_STYLES = `
 .fd-search-spans-name { padding: 5px 6px; padding-inline-start: 26px; font-size: 14px; color: var(--fd-text); }
 .fd-search-spans-list { display: grid; gap: 1px; padding-inline-start: 14px; }
 .fd-list-more td { padding: 4px 10px; padding-inline-start: calc(46px + var(--fd-level, 0) * 22px); }
+/* Rows loaded as the list is scrolled (endless): Show more at their end, pressed by itself in sight. */
+.fd-list-more-rows { display: flex; justify-content: center; padding: 10px 0 2px; }
+.fd-list-more-rows[hidden] { display: none; }
 .fd-list-empty, .fd-list-failed { margin: 0; padding: 28px 12px; text-align: center; color: var(--fd-muted); }
 .fd-list-failed { color: var(--fd-error); }
 

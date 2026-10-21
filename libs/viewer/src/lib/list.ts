@@ -44,6 +44,7 @@ import { keepFootRoom, printout, PRINT_MOST } from './list-print';
 import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
 import { markSort, pressedSort, sortWith } from './list-sort';
+import { endlessRows } from './list-endless';
 import type { SavedViews, ViewsSource } from './saved-views';
 import { cardsPart, columnsPart, filtersPart, importPart, rowsPart, viewsPart, type ColumnsPart } from './viewer-parts';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
@@ -220,6 +221,9 @@ export function listView(context: ListContext): ListView {
   let keys: SortOrder[] = [];
   let offset = 0;
   let total = 0;
+  /** Rows loaded as the list is scrolled, in place of its pages (`endless`): how many it holds, kept as it asks again. */
+  const endless = node.endless === true && context.inRecord !== true;
+  let reach = pageSize;
   /** The page of records, when the list is not grouped. */
   let rows: Row[] = [];
   /** Each record's row, for the records on show however they are grouped. */
@@ -388,6 +392,7 @@ export function listView(context: ListContext): ListView {
           keys = pressedSort(keys.length ? keys : sort.slice(0, 1), name, adding);
           sort = sortWith(keys, defaultSort);
           offset = 0;
+          reach = pageSize;
           void load();
         };
         button.addEventListener('click', (event) => press(event.shiftKey));
@@ -679,8 +684,10 @@ export function listView(context: ListContext): ListView {
         box.click();
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
-        // In a gallery, the card over or under this one; else the row.
-        focusRow(element.dataset['as'] === 'gallery' ? cardBeside(tr, event.key === 'ArrowDown') : shownBeside(tr, event.key === 'ArrowDown'));
+        // In a gallery, the card over or under this one; else the row — past the last loaded, the next page first.
+        const beside = element.dataset['as'] === 'gallery' ? cardBeside(tr, event.key === 'ArrowDown') : shownBeside(tr, event.key === 'ArrowDown');
+        if (!beside && event.key === 'ArrowDown' && endless) void more().then(() => focusRow(shownBeside(tr, true)));
+        else focusRow(beside);
       } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && element.hasAttribute('data-as')) {
         // Cards: the next towards the line's end, the one before towards its start.
         event.preventDefault();
@@ -913,6 +920,9 @@ export function listView(context: ListContext): ListView {
     }
     previous.disabled = offset === 0;
     next.disabled = offset + pageSize >= total;
+    // Loaded as it is scrolled: its count alone, and Show more at the rows' end while some are left.
+    previous.hidden = next.hidden = endless;
+    endlessEnd?.drawn(groupedNow || !failed.hidden ? 0 : total - rows.length, fill(labels.loadMore, { n: number(Math.min(pageSize, total - rows.length)) }));
   }
 
   function drawSort() {
@@ -986,7 +996,8 @@ export function listView(context: ListContext): ListView {
         matching = groups.reduce((sum, group) => sum + group.count, 0);
         drawn = groups.map((group) => groupRow(grouped(source), group, 0, filter, grouping));
       } else {
-        const answer = source?.list ? await source.list({ model, fields, filter, sort, offset, limit: pageSize }) : { records: [], total: 0 };
+        // Loaded as it is scrolled: every row it held, asked again from the first.
+        const answer = source?.list ? await source.list({ model, fields, filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize }) : { records: [], total: 0 };
         if (stale()) return;
         // Past the end, as when the last record of the last page went: back to the page that is left.
         if (!answer.records.length && answer.total > 0 && offset > 0) {
@@ -997,6 +1008,7 @@ export function listView(context: ListContext): ListView {
         total = answer.total;
         matching = total;
         groupedNow = false;
+        reach = Math.max(pageSize, rows.length);
         drawn = nest(rows);
       }
       failed.hidden = true;
@@ -1020,9 +1032,38 @@ export function listView(context: ListContext): ListView {
     if (failed.hidden) context.onCount?.(matching, facets.length > 0);
   }
 
+  /**
+   * The next page of rows, where they load as the list is scrolled: put after those it holds — any already there (moved
+   * meanwhile) never twice — its count, its grips and what is chosen with them. A list that asked again meanwhile draws
+   * them itself; one that cannot be asked says so.
+   */
+  async function more(): Promise<void> {
+    const source = context.dataSource;
+    if (!endless || groupedNow || rows.length >= total || !source?.list) return;
+    const mine = asking;
+    try {
+      const answer = await source.list({ model, fields, filter: currentFilter(), sort, offset: rows.length, limit: pageSize });
+      if (mine !== asking || destroyed) return;
+      const held = new Set(rows.map((record) => String(record.id)));
+      const fresh = answer.records.filter((record) => !held.has(String(record.id)));
+      rows = [...rows, ...fresh];
+      total = answer.total;
+      matching = total;
+      reach = rows.length;
+      body.append(...nest(fresh));
+      ranks?.drawn();
+    } catch {
+      if (!destroyed) context.say?.(sentence(labels.loadFailedNoun, labels.loadFailed), 'danger');
+    }
+    drawPager();
+    changed();
+  }
+  /** Its rows' end, where they load as it is scrolled: Show more, pressed by itself in sight (list-endless.ts). */
+  const endlessEnd = endless ? endlessRows(doc, el, more) : null;
   const searched = (next: Facet[]) => {
     facets = next;
     offset = 0;
+    reach = pageSize;
     searches++;
     // Every record that matched the search before is no choice in this one.
     if (wide) {
@@ -1151,6 +1192,7 @@ export function listView(context: ListContext): ListView {
         sort = order ?? defaultSort;
         keys = order ? order.filter((one) => !one.near) : [];
         offset = 0;
+        reach = pageSize;
         void load();
         void viewParts.reload();
       },
@@ -1633,13 +1675,15 @@ export function listView(context: ListContext): ListView {
       'data-shaped': choices ? '' : undefined,
       // How wide a gallery's card is at least.
       'data-size': gallery ? (node.gallery?.size ?? 'medium') : undefined,
+      // Its rows loaded as it is scrolled.
+      'data-endless': endless ? '' : undefined,
     },
     bar,
     // A list with no box to choose a row has nothing to act on; an import's report is said all the same.
     ...(choose ? [selection] : []),
     report,
     ...(key ? [key] : []),
-    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
+    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(endlessEnd ? [endlessEnd.element] : []), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
   // Where a row moved by hand is said aloud: in the list, there before anything is said in it.
   if (ranks) element.append(ranks.voice);
@@ -1671,6 +1715,7 @@ export function listView(context: ListContext): ListView {
     open: (id, options) => openRow(id, options?.lit !== false),
     destroy() {
       destroyed = true;
+      endlessEnd?.destroy();
       doc.removeEventListener('pointerdown', outsideExport, true);
       search.destroy();
       widths?.disconnect();

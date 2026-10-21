@@ -81,6 +81,8 @@ import ordersReview from '../../examples/pages/orders-review.page.json';
 import { reviewOrders } from './orders-review';
 import waitingRoom from '../../examples/pages/waiting-room.page.json';
 import { waitingPatientPage, waitingPatients } from './waiting-room';
+import activityLog from '../../examples/pages/activity-log.page.json';
+import { activityEntries, activityEntryPage } from './activity-log';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -97,6 +99,9 @@ export const pages: Record<string, Page> = {
   // A clinic's waiting room, its patients carried to another place by hand: shared/waiting-room.ts.
   'waiting-room': waitingRoom as Page,
   'waiting-patient': waitingPatientPage,
+  // A team's log of 1,284 entries, loaded as it is scrolled, and the entry each opens: shared/activity-log.ts.
+  'activity-log': activityLog as Page,
+  'activity-entry': activityEntryPage,
   contact: contactPage,
   // A customer with its invoices and quotations listed inside it, and a home with its viewings: shared/related-lists.ts.
   'customer-account': customerAccount as Page,
@@ -250,6 +255,7 @@ const RECORD_PAGES: Record<string, string> = {
   'leads-queue': 'lead',
   'orders-review': 'order',
   'waiting-room': 'waiting-patient',
+  'activity-log': 'activity-entry',
   'map-couriers': 'map-courier',
   'map-zones': 'map-week-order',
   'map-heat': 'map-week-order',
@@ -321,7 +327,7 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('page') === 'contacts' ? { user: { id: 9001, name: 'Mona Adel' } } : {}),
     // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both; the leads'
     // follow-ups too. The sign-up opens and closes on it: `?now=` before sign-ups open, or after they close.
-    ...(params.get('page') === 'invoices' || params.get('page') === 'leads-queue' || params.get('page') === 'event-signup' ? { now: demoNow } : {}),
+    ...(params.get('page') === 'invoices' || params.get('page') === 'leads-queue' || params.get('page') === 'event-signup' || params.get('page') === 'activity-log' ? { now: demoNow } : {}),
     // A draft to continue from, by the key in the link Continue later gave (shared/clinic-intake.ts).
     ...(params.get('resume') ? { resume: params.get('resume') as string } : {}),
     // The vendor bill has the records round it and the trail to it, as an app gives them.
@@ -765,7 +771,15 @@ export function sampleDataSource() {
   // What this tab saved in the demos, in place of the samples (shared/kept.ts) — the customer typed twice's second Nile
   // Traders, someone else's, to find and merge (shared/duplicates.ts), back unless it was merged away; the orders to
   // review, on their list and on the order's page each row opens (shared/orders-review.ts).
-  const extra: Record<string, Record<string, Values>> = params.get('page') === 'customer-card' ? { partner: duplicateCustomers() } : ['orders-review', 'order'].includes(params.get('page') ?? '') ? { 'sale.order': reviewOrders() } : {};
+  const extras: Record<string, () => Record<string, Record<string, Values>>> = {
+    'customer-card': () => ({ partner: duplicateCustomers() }),
+    'orders-review': () => ({ 'sale.order': reviewOrders() }),
+    order: () => ({ 'sale.order': reviewOrders() }),
+    // What the team did, 1,284 entries back from now, on its log and the entry each row opens (shared/activity-log.ts).
+    'activity-log': () => ({ 'activity.entry': activityEntries() }),
+    'activity-entry': () => ({ 'activity.entry': activityEntries() }),
+  };
+  const extra = extras[params.get('page') ?? '']?.() ?? {};
   // The sales team's queue keeps its saved views on its server, the team's shared ones among them (shared/saved-views.ts).
   const views = params.get('page') === 'leads-queue' ? { views: keptViews() } : {};
   const source = createMemoryDataSource({ ...options, ...views, records: keptOver(options?.records ?? {}, extra), notDuplicatePairs: keptApart() });

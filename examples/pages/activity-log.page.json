@@ -1,0 +1,128 @@
+{
+  "fieldia": "0.7",
+  "id": "activity-log",
+  "title": "What the team did",
+  "description": "Every change the team made, newest first: 1,284 entries that load as the list is scrolled, as a feed does on a phone — its count stays, and \"Show 30 more\" waits at the end for the keys.",
+  "records": {
+    "one": "entry",
+    "other": "entries",
+    "a": "an entry"
+  },
+  "data": {
+    "kind": "record",
+    "model": "activity.entry"
+  },
+  "fields": {
+    "at": {
+      "type": "datetime",
+      "label": "When"
+    },
+    "who": {
+      "type": "char",
+      "label": "Who"
+    },
+    "action": {
+      "type": "selection",
+      "label": "Did",
+      "options": [
+        {
+          "value": "created",
+          "label": "Created"
+        },
+        {
+          "value": "updated",
+          "label": "Updated"
+        },
+        {
+          "value": "sent",
+          "label": "Sent"
+        },
+        {
+          "value": "archived",
+          "label": "Archived"
+        }
+      ]
+    },
+    "name": {
+      "type": "char",
+      "label": "Record"
+    },
+    "details": {
+      "type": "char",
+      "label": "Details"
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "activity-log",
+    "columns": [
+      "at",
+      "who",
+      "action",
+      "name",
+      "details"
+    ],
+    "sort": [
+      {
+        "field": "at",
+        "desc": true
+      }
+    ],
+    "pageSize": 30,
+    "endless": true,
+    "searchFields": [
+      "who",
+      "name",
+      "details"
+    ],
+    "filters": [
+      {
+        "id": "sent",
+        "label": "Sent",
+        "filter": [
+          {
+            "field": "action",
+            "op": "=",
+            "value": "sent"
+          }
+        ]
+      },
+      {
+        "id": "today",
+        "label": "Today",
+        "period": {
+          "field": "at",
+          "is": "today"
+        }
+      }
+    ],
+    "groupBy": [
+      "who",
+      "action"
+    ],
+    "cells": {
+      "action": {
+        "widget": "badge",
+        "options": {
+          "tones": {
+            "created": "success",
+            "updated": "info",
+            "sent": "info",
+            "archived": "muted"
+          }
+        }
+      }
+    },
+    "card": {
+      "title": "name",
+      "subtitle": "details",
+      "status": "action",
+      "fields": [
+        [
+          "who",
+          "at"
+        ]
+      ]
+    }
+  }
+}

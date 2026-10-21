@@ -1251,6 +1251,11 @@ export interface ListNode {
    */
   sequenceField?: string;
   /**
+   * Rows that load as the list is scrolled, a page at a time, in place of its pages — a phone's feed, a log: its count
+   * kept ("1–60 of 1,284"), its arrows gone, "Show 40 more" at the rows' end for a hand or the keys. Off unless true.
+   */
+  endless?: boolean;
+  /**
    * Export, in the list's bar: the rows ticked — or, none ticked, every
    * record the search finds — as an Excel workbook or a CSV file, the
    * columns as the list shows them. Off unless true, as Edit is: an app
@@ -2319,6 +2324,7 @@ export const ListNodeSchema = z.strictObject({
   parentField: fieldName.optional(),
   detail: ListDetailSchema.optional(),
   sequenceField: fieldName.optional(),
+  endless: z.boolean().optional(),
   export: z.boolean().optional(),
   bulkEdit: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
   import: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
