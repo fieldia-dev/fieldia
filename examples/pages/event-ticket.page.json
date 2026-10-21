@@ -1,0 +1,134 @@
+{
+  "fieldia": "0.7",
+  "id": "event-ticket",
+  "title": "Ticket",
+  "description": "A ticket to an event, kept for the person who signed up: its code shown at the door, scanned from the screen, and a link to open it on a phone.",
+  "data": {
+    "kind": "record",
+    "model": "event.ticket"
+  },
+  "records": {
+    "one": "ticket",
+    "other": "tickets",
+    "a": "a ticket"
+  },
+  "fields": {
+    "attendee": {
+      "type": "char",
+      "label": "Name",
+      "required": true
+    },
+    "event": {
+      "type": "char",
+      "label": "Event",
+      "readonly": true
+    },
+    "session": {
+      "type": "char",
+      "label": "Session",
+      "readonly": true
+    },
+    "seat": {
+      "type": "char",
+      "label": "Seat",
+      "readonly": true
+    },
+    "reference": {
+      "type": "char",
+      "label": "Ticket number",
+      "readonly": true
+    },
+    "ticket_link": {
+      "type": "char",
+      "label": "Ticket on your phone",
+      "help": "Point your phone's camera at the code: the ticket opens there, to show at the door."
+    },
+    "badge_number": {
+      "type": "integer",
+      "label": "Badge number",
+      "readonly": true
+    },
+    "organiser_card": {
+      "type": "text",
+      "label": "The organisers’ desk",
+      "help": "Scan it to keep the desk’s number and email in your phone’s contacts.",
+      "readonly": true
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "ticket",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-door",
+        "title": "At the door",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-link",
+            "field": "ticket_link",
+            "widget": "qrcode",
+            "options": {
+              "level": "Q",
+              "size": 200
+            }
+          },
+          {
+            "type": "field",
+            "id": "f-reference",
+            "field": "reference",
+            "widget": "barcode"
+          },
+          {
+            "type": "field",
+            "id": "f-card",
+            "field": "organiser_card",
+            "widget": "qrcode",
+            "options": {
+              "size": 160
+            }
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-ticket",
+        "title": "Your ticket",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-attendee",
+            "field": "attendee"
+          },
+          {
+            "type": "field",
+            "id": "f-event",
+            "field": "event"
+          },
+          {
+            "type": "field",
+            "id": "f-session",
+            "field": "session"
+          },
+          {
+            "type": "field",
+            "id": "f-seat",
+            "field": "seat"
+          },
+          {
+            "type": "field",
+            "id": "f-badge",
+            "field": "badge_number",
+            "widget": "barcode",
+            "options": {
+              "size": 48
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

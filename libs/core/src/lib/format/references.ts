@@ -852,6 +852,9 @@ export class ReferenceCheck {
     else if (node.widget === 'slots') checkSlots(node, path, this.fieldTools());
     if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
+    // A value shown as a code: a QR code holds words, a barcode words or a whole number.
+    const codes: Record<string, readonly string[]> = { qrcode: ['char', 'text'], barcode: ['char', 'integer'] };
+    if (def && node.widget && codes[node.widget] && !codes[node.widget].includes(def.type)) this.report(`${path}.widget`, `${node.widget} is for a ${codes[node.widget].join(' or ')} field; "${node.field}" is a ${def.type}`);
     // A file field that records a voice note or a film: its checks come with the files part, which draws it.
     const records = node.options?.['record'] !== undefined || node.options?.['maxSeconds'] !== undefined;
     if (records && def && def.type !== 'binary') this.report(`${path}.options.record`, `record is for a binary field; "${node.field}" is a ${def.type}`);

@@ -46,3 +46,26 @@ describe('a file field that records', () => {
     expect(issues(onWords).quick).toEqual([`${at}.options.record: record is for a binary field; "unit" is a char`]);
   });
 });
+
+describe('a value shown as a code', () => {
+  const coded = (widget: string, options: Record<string, unknown> | undefined, type = 'char'): Page =>
+    ({
+      fieldia: '0.7',
+      id: 'ticket',
+      data: { kind: 'record', model: 'ticket' },
+      fields: { code: { type, label: 'Ticket' } },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-code', field: 'code', widget, ...(options ? { options } : {}) }] },
+    }) as unknown as Page;
+
+  it('is a QR code of words or a barcode of words or a whole number, at a level and a size', () => {
+    for (const page of [coded('qrcode', undefined), coded('qrcode', { level: 'H', size: 240, showValue: true }, 'text'), coded('barcode', { size: 48 }), coded('barcode', undefined, 'integer')]) expect(issues(page)).toEqual({ full: [], quick: [] });
+  });
+
+  it('refuses a level, a size or a field it cannot draw', () => {
+    expect(issues(coded('qrcode', { level: 'X' })).full).toEqual([`${at}.options.level: level is a QR code's error correction: "L", "M", "Q" or "H"`]);
+    expect(issues(coded('qrcode', { size: 20 })).full).toEqual([`${at}.options.size: size is a whole number of pixels, 48 to 640`]);
+    expect(issues(coded('barcode', { level: 'M' })).full).toEqual([`${at}.options.level: level is a QR code's error correction: a barcode has none`]);
+    expect(issues(coded('qrcode', undefined, 'boolean')).quick).toEqual([`${at}.widget: qrcode is for a char or text field; "code" is a boolean`]);
+    expect(issues(coded('barcode', undefined, 'float')).quick).toEqual([`${at}.widget: barcode is for a char or integer field; "code" is a float`]);
+  });
+});

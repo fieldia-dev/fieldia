@@ -50,6 +50,8 @@ export const kinds: DesignerWords['kinds'] = {
     copy: 'نص للنسخ',
     pdf: 'ملف PDF معروض',
     embed: 'صفحة معروضة',
+    'qr-code': 'رمز الاستجابة السريعة',
+    barcode: 'رمز شريطي',
     distribution: 'التوزيع التحليلي',
     'tax-totals': 'إجماليات الضرائب',
     payments: 'المدفوعات',

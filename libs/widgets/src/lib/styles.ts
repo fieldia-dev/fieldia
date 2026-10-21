@@ -985,8 +985,13 @@ export function installStyles(document: Document): void {
  * played back, laid out alone in a dialog the main sheet draws, its buttons the main sheet's. It goes after the limits'
  * (none names another's parts) and before the themes', so a theme still reshapes its dialog, its buttons and their
  * focus: rank 11, the ranks from the themes' on moving on by one.
+ *
+ * A value shown as a code's (0.30, the codes part): the code on its white ground, its words under it and why one cannot
+ * be drawn, under the field's own box — cut from no rule. After the recorder's (neither names the other's parts) and
+ * before the themes', so a theme still reshapes the box over it, its words' type and the note; the code keeps its own
+ * black on white under every theme and scheme: rank 12, the ranks from the themes' on moving on by one.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, record: 11, themes: 12, quiet: 13, picker: 14, head: 15, groups: 16, text: 17, surveyLooks: 18, cards: 19 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, record: 11, codes: 12, themes: 13, quiet: 14, picker: 15, head: 16, groups: 17, text: 18, surveyLooks: 19, cards: 20 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

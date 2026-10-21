@@ -2,10 +2,10 @@ import { SIZES } from '../facts.mjs';
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint'],
-  ['text', 'Several lines of text', 'copy, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), qrcode, barcode (a code to scan), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint'],
+  ['text', 'Several lines of text', 'copy, qrcode, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size'],
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', ''],
-  ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],
+  ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11), barcode', 'min, max'],
   ['float', 'A decimal number', 'progressbar, label, duration (HH:MM), percentage, timer, place (a latitude, with @fieldia/map)', 'min, max, digits'],
   ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits, money'],
   ['boolean', 'Yes or no', 'toggle, priority (one star)', ''],
@@ -204,6 +204,23 @@ ${code(
   <li>The recorder comes in a part of its own, ${c('fieldia.record.js')}, loaded the first time a person presses Record: a page that records nothing never loads it.</li>
   <li>In the designer, a file upload's card and panel set it: <em>Recorded on the page</em>, then <em>Longest recording</em>.</li>
 </ul>
+
+<h2 id="codes">A value shown as a QR code or a barcode</h2>
+<p>A ticket at the door, "open it on your phone", an asset's label: ${c('"widget": "qrcode"')} on a ${c('char')} or ${c('text')} field shows its value as a QR code, ${c('"widget": "barcode"')} on a ${c('char')} or ${c('integer')} field as a Code 128 barcode — drawn on the page from the record's own value, so no picture is made on a server, and as sharp on paper as on the screen. Editable, the field's box is over the code, which follows what is typed; read-only, the code alone, its words under it where ${c('showValue')} says.</p>
+${code(
+  'json',
+  `
+{ "type": "field", "id": "f-link", "field": "ticket_link", "widget": "qrcode", "options": { "level": "Q", "size": 200 } }
+{ "type": "field", "id": "f-number", "field": "reference", "widget": "barcode" }`
+)}
+<ul>
+  <li>${c('level')}, a QR code's error correction: ${c('"L"')}, ${c('"M"')} (the default), ${c('"Q"')} or ${c('"H"')} — about 7, 15, 25 or 30 per cent of the code may be lost (a crease, a glare, a logo over it) and it still reads. ${c('size')}: a QR code's side, or a barcode's height, in pixels (160 and 64 unless it says, 48 to 640). ${c('showValue')}: the value's words under the code — a barcode's unless ${c('false')}, a QR code's where ${c('true')}.</li>
+  <li>A QR code holds the words as UTF-8 — Arabic, accents and signs too — in the smallest of its 40 sizes that fits them: about 2,300 letters at level M. Words too long for one are said in its place, with what to do. A barcode holds letters without accents, digits and signs (Code 128's ASCII), a run of digits two to a bar; a character it cannot hold is said, by name.</li>
+  <li>Black on white whatever the page's scheme or theme, with the margin a scanner needs; a screen reader hears what it is and what it holds ("QR code: https://…").</li>
+  <li>The encoders are Fieldia's own, in a part of their own, ${c('fieldia.codes.js')}, loaded the first time a page shows a code: ${c('(await codesPart.load()).qrCode(words, "M")')} gives a code's modules, and ${c('.code128(words)')} its bars, for your own drawing.</li>
+  <li>In the designer: <em>QR code</em> and <em>Barcode</em> among a screen's kinds, with a QR code's <em>Error correction</em> and <em>Its words under it</em>.</li>
+</ul>
+<p>The legal codes on an invoice or a receipt (ZATCA's, an e-receipt's) belong on the printed document, which your report engine makes; this is for the screen.</p>
 
 <h2 id="signature">A signature that signs the answers</h2>
 <p>A consent, an engagement letter, a reservation contract: a signature's picture alone is weak evidence in a dispute. A signature whose node says ${c('signs')} — ${c('"form"')}, every answer shown, or the fields by name — keeps beside its picture who signed, when, and a fingerprint (SHA-256) of the answers it signed, and locks those answers while it is kept. ${c('signerField')} names the field holding the signer's name; left out, the name typed on the pad, else the person the app says is using the form.</p>

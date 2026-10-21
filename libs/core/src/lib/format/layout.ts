@@ -10,7 +10,7 @@ import { pickerOptionIssues } from './picker-options';
 import { phoneOptionIssues } from './phone';
 import { slotsOptionIssues } from './slots-options';
 import { signatureOptionIssues } from './signature-options';
-import { recordOptionIssues } from './media-options';
+import { codeOptionIssues, recordOptionIssues } from './media-options';
 import { SECTION_TRACK } from './section-checks';
 import { DATE_PERIODS, type DatePeriod } from '../record/periods';
 import type { TotalKind } from '../record/data-source';
@@ -1650,7 +1650,7 @@ export const FieldNodeSchema = z.strictObject({
   hotkey: z.string().regex(/^[a-z0-9]$/, 'an access key is one letter or digit of the label, in small letters: "e"').optional(),
 }).superRefine((node, context) => {
   // A widget's own options, where the format knows them: an address with suggestions.
-  for (const issue of [...pickerOptionIssues(node), ...phoneOptionIssues(node), ...slotsOptionIssues(node), ...signatureOptionIssues(node), ...recordOptionIssues(node)]) context.addIssue({ code: 'custom', ...issue });
+  for (const issue of [...pickerOptionIssues(node), ...phoneOptionIssues(node), ...slotsOptionIssues(node), ...signatureOptionIssues(node), ...recordOptionIssues(node), ...codeOptionIssues(node)]) context.addIssue({ code: 'custom', ...issue });
   if (node.widget !== 'address-search') return;
   const checked = AddressSearchOptionsSchema.safeParse(node.options ?? {});
   for (const issue of checked.error?.issues ?? []) context.addIssue({ code: 'custom', message: issue.message, path: ['options', ...issue.path] });

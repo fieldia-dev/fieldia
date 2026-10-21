@@ -48,6 +48,8 @@ export const kinds = {
     copy: 'Text to copy',
     pdf: 'PDF shown inline',
     embed: 'Page shown inline',
+    'qr-code': 'QR code',
+    barcode: 'Barcode',
     distribution: 'Analytic distribution',
     'tax-totals': 'Tax totals',
     payments: 'Payments',

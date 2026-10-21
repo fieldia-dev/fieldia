@@ -392,6 +392,13 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /** How much of a QR code may be lost and still read: its error correction, M unless said. */
+  function qrLevel(): Part {
+    const level = select(w.qrLevel, Object.entries(w.qrLevels));
+    level.addEventListener('change', () => designer.setWidgetOptions(id, { level: level.value === 'M' ? null : level.value }));
+    return { element: word(w.qrLevel, level), refresh: (_page, node) => show(level, node.options?.['level'] ?? 'M') };
+  }
+
   /** A duration's words after it, inside its box: "hours". */
   function after(): Part {
     const input = el('input', { class: 'fd-inline-input fd-inline-unit', 'aria-label': w.unitAfter, placeholder: 'hours', autocomplete: 'off' }) as HTMLInputElement;
@@ -515,6 +522,8 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'timer') parts.push(fieldPick(w.runsFrom, 'startField', (field) => field.type === 'datetime'), keptIn());
   if (kind === 'state-dot') parts.push(optionToggle(w.wordsBeside, 'label'));
   if (kind === 'pdf' || kind === 'embed') parts.push(height());
+  // A QR code's error correction, and its words under it; a barcode's words are under it unless the page says.
+  if (kind === 'qr-code') parts.push(qrLevel(), optionToggle(w.codeWordsUnder, 'showValue'));
   if (kind === 'distribution') parts.push(optionText(w.accountsFrom, 'model', 'account.analytic.account'));
   if (kind === 'tax-totals' || kind === 'payments') parts.push(fieldPick(w.currencyFrom, 'currencyField', (field) => field.type === 'many2one' || field.type === 'char'));
   if (kind === 'tax-totals') parts.push(optionToggle(w.taxTyped, 'editable'));

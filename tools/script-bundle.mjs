@@ -1018,8 +1018,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // holder and its place among the parts (`recordPart`, asked for as Record is first pressed, never with a page), and the
 // reference check telling a field that records that its checks are the files part's, which carries them
 // (signature-checks.ts, as a signature's); a film's and a sound's kinds, a field's recordings and the players are the
-// files part's, the recorder the record part's: 506.77 measured before, 507.18 after, to 507.2.
-const BUDGET_KB = 507.2;
+// files part's, the recorder the record part's: 506.77 measured before, 507.18 after, to 507.2. A value shown as a QR
+// code or a barcode (0.30, w6-media): what draws one comes in the codes part; here, the codes part's holder and its
+// four widgets' place in the registry (`qrcode` on words, `barcode` on words or a whole number, with the field's own
+// box until the part comes), and the reference check refusing a code or pins on a field they cannot draw: 507.18
+// measured before, 507.60 after, to 507.7.
+const BUDGET_KB = 507.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1254,8 +1258,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
 // Films, sounds and recordings in a file field (0.30, w6-media; listed with the raw budget above): 166.15 measured
-// before, 166.26 after, to 166.3. A page that records takes 4.58 more in fieldia.record.js once Record is pressed.
-const GZIP_BUDGET_KB = 166.3;
+// before, 166.26 after, to 166.3. A page that records takes 4.58 more in fieldia.record.js once Record is pressed. A
+// value shown as a code (listed with the raw budget above): 166.26 measured before, 166.38 after, to 166.4; a page with a
+// code takes 5.36 more in fieldia.codes.js.
+const GZIP_BUDGET_KB = 166.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1439,8 +1445,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Films, sounds and recordings in a file field (0.30, w6-media): a film the browser cannot play, Record and how long,
 // and the recorder's words — 29 in each — Arabic's 77.88 and 13.29 measured before, 83.69 and 14.01 after, to 83.7 and
 // 14.1; German's 36.27 and 11.64 to 38.38 and 12.22, to 38.4 and 12.3; French's 36.75 and 11.70 to 38.88 and 12.26, to
-// 38.9 and 12.3.
-const ADD_ON_BUDGET_KB = { ar: [83.7, 14.1], de: [38.4, 12.3], fr: [38.9, 12.3] };
+// 38.9 and 12.3. A value shown as a code — its name for a screen reader, words too long, a character a barcode cannot
+// hold: four in each — Arabic's 83.69 and 14.01 to 84.73 and 14.18, to 84.8 and 14.2; German's 38.38 and 12.22 to
+// 38.66 and 12.33, to 38.7 and 12.4; French's 38.88 and 12.26 to 39.17 and 12.37, to 39.2 and 12.4.
+const ADD_ON_BUDGET_KB = { ar: [84.8, 14.2], de: [38.7, 12.4], fr: [39.2, 12.4] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1840,8 +1848,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 13.62 measured before, 41.96 and 15.38 after, to 42.0 and 15.4; record new, 11.31 and 4.58: the recorder's
 // dialog, the microphone and the camera asked for and why not said, a voice's level, the time against the limit and
 // stopping at it or at the largest file, the recording played back, Use and Record again, asked before one is let go,
-// its words and its sheet — to 11.4 and 4.6.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [42.0, 15.4], evidence: [9.8, 4.4], record: [11.4, 4.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// its words and its sheet — to 11.4 and 4.6. A value shown as a code: codes new, 11.04 and 5.36 — Fieldia's own QR
+// encoder (byte mode, UTF-8 said by its ECI, the four levels, the 40 versions, Reed–Solomon, the eight masks and their
+// penalties: qr.ts) and Code 128's (sets A, B and C, its check: code128.ts), the widget drawing either as SVG under the
+// field's box, its words and its sheet — to 11.1 and 5.4; the files part, its shared names renumbered, 41.96 and 15.38
+// to 42.08 and 15.43, to 42.1 and 15.5.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [42.1, 15.5], evidence: [9.8, 4.4], record: [11.4, 4.6], codes: [11.1, 5.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1861,6 +1873,7 @@ const PART_GIVES = {
   files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
   record: ['openRecorder', 'recordingType', 'clock', 'installRecordStyles'],
+  codes: ['codeWidget', 'qrCode', 'qrVersion', 'code128', 'code128Values', 'installCodesStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
@@ -1875,7 +1888,7 @@ const PART_GIVES = {
   mapchecks: ['checkMap', 'checkPlace'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', record: 'recordPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', record: 'recordPart', codes: 'codesPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -2290,13 +2303,22 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (host.querySelector('.fd-recorder')) throw new Error('in a page, Cancel leaves the recorder open');
   siteVisit.destroy();
   gone('site visit');
+  // A ticket whose link is a QR code and whose number a barcode (0.30): the codes part asked for with the page, the
+  // page drawn once it came, each code drawn from the value, named; its sheet in its place.
+  const ticket = inPage.mountViewer(host, { page: read('event-ticket.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'event.ticket': { 1: { attendee: 'Mona Adel', reference: 'TKT-2026-0042', ticket_link: 'https://tickets.example/t/TKT-2026-0042', badge_number: 20261105 } } } }) });
+  waits(ticket, "a ticket's codes");
+  await ticket.drawn;
+  hasIn("a ticket's codes", 'business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, lines, list, path, phone, print, quiet, record, relations, slots, survey, text, themes');
+  if (!(await until(() => host.querySelector('[data-node="f-link"] svg[role="img"]')?.getAttribute('aria-label') === 'QR code: https://tickets.example/t/TKT-2026-0042')) || host.querySelector('[data-node="f-reference"] svg')?.getAttribute('aria-label') !== 'Barcode: TKT-2026-0042') throw new Error(`in a page, a ticket's codes are not drawn: ${host.querySelector('.fd-code')?.outerHTML.slice(0, 200) ?? 'none'}`);
+  ticket.destroy();
+  gone('ticket');
   // An event's sign-up that closed (its page's limits): the limits part, the page drawn once it came — its questions
   // never shown first — the closed form's words in their place, its sheet in its place; the survey kinds' part, in
   // already, draws nothing of it. Its endings name the place kept: the answers part comes with it.
   const closed = inPage.mountViewer(host, { page: { ...read('event-signup.page.json'), limits: { closes: '2020-01-31' } }, dataSource: inPage.createMemoryDataSource() });
   waits(closed, 'a sign-up that closed');
   await closed.drawn;
-  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, path, phone, print, quiet, record, relations, slots, survey, text, themes');
+  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, path, phone, print, quiet, record, relations, slots, survey, text, themes');
   if (!host.querySelector('.fd-closed:not([hidden]) .fd-closed-title')?.textContent?.startsWith('This form closed on')) throw new Error("in a page, a closed form's words are not said in place of its questions");
   if ([...host.querySelectorAll('.fd-field')].some((field) => !field.closest('[hidden]')) || !host.querySelector('.fd-page-title')?.closest('.fd-content:not([hidden])')) throw new Error("in a page, a closed form's questions are shown, or its title is not");
   if (!doc.getElementById('fieldia-limits-styles')) throw new Error("in a page, the limits part's sheet was never put in");
@@ -2308,14 +2330,14 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const visit = inPage.mountViewer(host, { page: read('visit-feedback.page.json'), dataSource: inPage.createMemoryDataSource(), values: { birth_date: '1990-10-20' }, now: () => new dom.window.Date('2026-10-20T12:00:00Z') });
   waits(visit, 'a page whose formula counts an age');
   await visit.drawn;
-  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, print, quiet, record, relations, slots, survey, text, themes');
+  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, print, quiet, record, relations, slots, survey, text, themes');
   if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
   visit.destroy();
   gone('visit');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
-  // and a page's limits' (0.27), the recorder's (0.30), before the themes so a theme still
+  // and a page's limits' (0.27), the recorder's and the codes' (0.30), before the themes so a theme still
   // reshapes them, the themes' and the quiet look's before the pickers', the head's and the text's, the survey kinds'
   // own looks last; a list's own sheet, its cards' and its columns' after them all, unranked.
   const styles = [...doc.head.querySelectorAll('style[id]')];
@@ -2326,7 +2348,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
   if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-record-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-record-styles', 'fieldia-codes-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
     const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
@@ -2334,7 +2356,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; a site visit's recorder, only once Record is pressed; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; a site visit's recorder, only once Record is pressed; a ticket's QR code and barcode; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

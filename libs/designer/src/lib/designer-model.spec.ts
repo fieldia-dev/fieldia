@@ -80,8 +80,8 @@ describe('fields the backend already has', () => {
   it('switches a model field only between editors that suit what it holds, keeping its definition', () => {
     const designer = customer();
     const email = designer.addModelField('email') as string;
-    // Text may also be code (in either editor), a colour as #rrggbb, a value to copy, or a page shown inline.
-    expect(designer.kindsFor(email).map((k) => k.id)).toEqual(['short-answer', 'email', 'phone', 'code', 'vscode', 'keywords', 'website', 'colour', 'copy', 'embed']);
+    // Text may also be code (in either editor), a colour as #rrggbb, a value to copy, a page shown inline, or a code to scan.
+    expect(designer.kindsFor(email).map((k) => k.id)).toEqual(['short-answer', 'email', 'phone', 'code', 'vscode', 'keywords', 'website', 'colour', 'copy', 'embed', 'qr-code', 'barcode']);
     expect(designer.changeKind(email, 'email')).toBe(true);
     const page = designer.getPage();
     expect(nodeOf(page, email).widget).toBe('email');
@@ -104,8 +104,8 @@ describe('fields the backend already has', () => {
     const visits = designer.addModelField('visits') as string;
     const score = designer.addModelField('score') as string;
     const terms = designer.addModelField('payment_terms') as string;
-    // A whole number may also be a tag colour; a decimal, hours as HH:MM, a per cent or a timer.
-    expect(designer.kindsFor(visits).map((k) => k.id)).toEqual(['rating', 'scale', 'number', 'slider', 'progress', 'colour']);
+    // A whole number may also be a tag colour or a barcode; a decimal, hours as HH:MM, a per cent or a timer.
+    expect(designer.kindsFor(visits).map((k) => k.id)).toEqual(['rating', 'scale', 'number', 'slider', 'progress', 'colour', 'barcode']);
     expect(designer.kindsFor(score).map((k) => k.id)).toEqual(['number', 'slider', 'duration', 'percentage', 'timer']);
     // One answer stays one answer: checkboxes would make it many.
     expect(designer.kindsFor(terms).map((k) => k.id)).toEqual(['multiple-choice', 'dropdown', 'image-choice', 'status', 'priority', 'state-dot']);

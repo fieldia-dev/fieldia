@@ -217,6 +217,14 @@ export interface WidgetLabels {
   recordTryAgain: string;
   recordingNameVoice: string;
   recordingNameVideo: string;
+  /**
+   * A value shown as a code (`"widget": "qrcode"`, `"barcode"`): the code's name for a screen reader (`{value}`); words too
+   * long for a QR code; a character a barcode cannot hold (`{character}`).
+   */
+  qrCodeOf: string;
+  barcodeOf: string;
+  qrTooLong: string;
+  barcodeRefused: string;
   /** The switch over the files, when the page offers one: the files as a list, as cards, or as thumbnails. */
   showFilesAs: string;
   asList: string;
@@ -697,6 +705,10 @@ const en: WidgetLabels = {
   recordTryAgain: 'Try again',
   recordingNameVoice: 'Voice note {when}',
   recordingNameVideo: 'Video {when}',
+  qrCodeOf: 'QR code: {value}',
+  barcodeOf: 'Barcode: {value}',
+  qrTooLong: 'Too long for a QR code: shorten it, or show a link to it instead.',
+  barcodeRefused: 'A barcode cannot hold “{character}”: only letters without accents, digits and signs.',
   showFilesAs: 'Show files as',
   asList: 'List',
   asCards: 'Cards',

@@ -318,6 +318,10 @@ export const questions = {
   inMinutes: 'Minutes',
   wordsBeside: 'Its words beside it',
   heightPx: 'Height (px)',
+  /** A QR code's error correction, by how much of it may be lost and still read; its value's words under it. */
+  qrLevel: 'Error correction',
+  qrLevels: { L: 'Low (7%)', M: 'Medium (15%)', Q: 'Quartile (25%)', H: 'High (30%)' } as Record<string, string>,
+  codeWordsUnder: 'Its words under it',
   accountsFrom: 'Accounts from',
   currencyFrom: 'Currency from',
   taxTyped: 'Tax amounts can be typed',

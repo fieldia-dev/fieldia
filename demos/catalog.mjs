@@ -52,7 +52,7 @@ const AREA_OF = {
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
   'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'site-visit'],
-  surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
+  surveys: ['survey', 'signup', 'event-signup', 'event-ticket', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
 
@@ -88,6 +88,7 @@ const SEARCH_WORDS = {
   'work-item': 'bug issue ticket tracker azure devops work item quiet look state reason locked workflow',
   fields: 'every field kinds inputs text number money currency choice dropdown date calendar file upload attachment picture image rich text tags',
   'listing-photos': 'photos pictures images upload uploads camera phone property real estate listing gallery retry cancel slow',
+  'event-ticket': 'ticket tickets qr qr code barcode bar code code 128 scan scanner door check in check-in badge event conference summit phone open on your phone link print label asset tag',
   'site-visit': 'site visit inspection video tour film movie clip play player poster audio sound voice note voice notes listen recording record recorder microphone mic camera webcam real estate property flat apartment agent snag',
   kinds: 'survey questionnaire slider tags address picture choice ranking repeat quiz score signature sign moving day time weight hearts nps net promoter recommend scale',
   business: 'fields task project priority stars status timer stopwatch hours timesheet date range tags copy pdf analytic accounts tax payments properties',
@@ -481,6 +482,19 @@ export const DEMOS = [
       'Press Save while photos are still going: it waits, and says how many are left. Press × on one still going to cancel it.',
       'Pick photos of your own with Add photos, or take one with a phone’s camera.',
       'Open the Code drawer: this store is the memory source slowed down; your app gives upload(), with uploadTo({ url }) for a plain endpoint or a signed address for Azure Blob.',
+    ],
+  },
+  {
+    id: 'event-ticket',
+    name: 'A ticket’s QR code and barcode',
+    category: 'fields',
+    query: 'page=event-ticket&record=1&skin=outlined',
+    blurb: 'A ticket to an event: its link as a QR code to open it on a phone, its number as a barcode for the door’s scanner, drawn on the page from the ticket’s own values — no picture made on a server — crisp on the screen and on paper.',
+    howTo: [
+      'Point a phone’s camera at the QR code: the ticket’s link opens.',
+      'Change the link under Ticket on your phone: the QR code follows once the box is left.',
+      'Paste two thousand characters into Ticket on your phone: it says they are too long for a QR code, and how to mend it.',
+      'Print the ticket: the codes print black on white, as sharp as on the screen.',
     ],
   },
   {

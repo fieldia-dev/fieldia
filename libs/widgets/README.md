@@ -82,6 +82,15 @@ value the browser fills in is the person's own, read as typed: cleaned as a
 paste is, never put back where nobody may be looking, read at once in a box the
 person is not in, and saved as any change of theirs.
 
+A value is shown as a code to scan with `"widget": "qrcode"` (a char or text
+field: a QR code, its words as UTF-8, at `options.level` L, M, Q or H) or
+`"widget": "barcode"` (a char or integer field: Code 128), drawn as SVG from the
+value — black on white, crisp on paper, named for a screen reader — under the
+field's own box while it may be typed in; `size` and `showValue` set its size
+and the words under it. Words a code cannot hold are said in its place. The
+encoders are Fieldia's own, in `codesPart` (`fieldia.codes.js`):
+`(await codesPart.load()).qrCode(words, 'M')`, `.code128(words)`.
+
 A phone field (`"widget": "phone"`) is read the world over where its page says
 `"phone": { "country": "EG", "shown": "national" }` — or the field itself, with
 `"options": { "country": "AE" }` or `"shown"`. Its country is picked before the
