@@ -57,12 +57,20 @@ export function checkSheetHead(sheet: SheetNode, path: string, tools: HeadTools)
   }
 }
 
+/** What a divider may say: it is a line, shown by its condition and the items round it. */
+const DIVIDER = new Set(['id', 'type', 'group', 'invisible', 'roles']);
+
 /**
- * An item that opens a menu of its own (`menu`), or the app's (`menuFrom`), drawn by the head part: named, doing nothing
- * itself, each of its menu's items checked as the menu's are (`item`, head-checks.ts' own). In the one-tag script it
- * comes with the head part, which a page with such an item asks for.
+ * A divider of a menu, nothing but a line; and an item that opens a menu of its own (`menu`) or the app's (`menuFrom`):
+ * named, doing nothing itself, each of its menu's items checked as the menu's are (`item`, head-checks.ts' own). Both
+ * are drawn by the head part: in the one-tag script these checks come with it, which a page with either asks for.
  */
 export function checkMenuOpener(item: MenuItem, path: string, tools: MenuTools & { item(item: MenuItem, path: string, tools: MenuTools): void }): void {
+  if (item.type === 'divider') {
+    const more = Object.keys(item).find((key) => !DIVIDER.has(key));
+    if (more) tools.report(`${path}.${more}`, 'a divider is a line between items: it has no words and does nothing');
+    return;
+  }
   if (item.label === undefined) tools.report(`${path}.label`, 'an item that opens a menu needs words');
   const does = (['steps', 'action', 'builtin', 'confirm'] as const).find((key) => item[key] !== undefined);
   if (does) tools.report(`${path}.${does}`, 'an item that opens a menu does nothing of its own: each item in its menu does');

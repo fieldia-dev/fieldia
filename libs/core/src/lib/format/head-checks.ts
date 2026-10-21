@@ -47,23 +47,15 @@ export function checkButtonParts(button: ButtonNode, path: string, tools: MenuTo
 /** What a menu's checks use of the reference check's tools. */
 export type MenuTools = Pick<HeadTools, 'claim' | 'report' | 'checkModifiers' | 'checkSteps' | 'owe'>;
 
-/** What a divider may say: it is a line, shown by its condition and the items round it. */
-const DIVIDER = new Set(['id', 'type', 'group', 'invisible', 'roles']);
-
 /**
  * An item of a menu — the record's gear menu, a button's — as a button of the record: its id, its condition, and what
- * it does, with words unless it is a built-in; a divider, nothing more. One that opens a menu of its own, or the app's,
- * is checked with the head part, which draws it (`checkMenuOpener`).
+ * it does, with words unless it is a built-in. A divider, and one that opens a menu of its own or the app's, are checked
+ * with the head part, which draws them (`checkMenuOpener`).
  */
 export function checkMenuItem(item: MenuItem, path: string, tools: MenuTools): void {
   tools.claim(item.id, path);
   tools.checkModifiers(item, path);
-  if (item.type === 'divider') {
-    const more = Object.keys(item).find((key) => !DIVIDER.has(key));
-    if (more) tools.report(`${path}.${more}`, 'a divider is a line between items: it has no words and does nothing');
-    return;
-  }
-  if (item.menu !== undefined || item.menuFrom !== undefined) return checkMenuOpener(item, path, { ...tools, item: checkMenuItem });
+  if (item.type || item.menu || item.menuFrom !== undefined) return checkMenuOpener(item, path, { ...tools, item: checkMenuItem });
   if (!item.steps && item.action === undefined && !item.builtin) tools.report(path, 'a menu item needs steps, an action, a built-in, or a menu of its own');
   if (item.label === undefined && !item.builtin) tools.report(`${path}.label`, 'a menu item needs words, unless it is a built-in');
   if (item.steps) tools.checkSteps(item.steps, `${path}.steps`);

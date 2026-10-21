@@ -4402,7 +4402,14 @@ function indexLayout(root: RootLayout, functions?: FunctionTable): Map<string, I
       ...(does.length ? { does } : {}),
       source,
     });
-    // A button's menu: each item a button of the record, hidden with it.
+    // A menu's built-in Archive shows while the record is active, Unarchive while it is not.
+    const builtin = (source as MenuItem).builtin;
+    if (builtin === 'archive' || builtin === 'unarchive') {
+      const own = index.get(source.id) as IndexedNode;
+      const mine = own.invisible;
+      own.invisible = { ...mine, evaluate: (context, env) => (context['active'] === false) !== (builtin === 'unarchive') || mine.evaluate(context, env) };
+    }
+    // A button's menu, and a menu inside a menu: each item a button of the record, hidden with it.
     if (kind === 'button') for (const item of (source as ButtonNode).menu ?? []) add(item, source.id, 'button', { invisible: item.invisible });
   };
   const walk = (nodes: LayoutNode[], parent: string) => {
@@ -4486,17 +4493,8 @@ function indexLayout(root: RootLayout, functions?: FunctionTable): Map<string, I
     walk(head?.band?.children ?? [], root.id);
     if (root.sidePanel) add(root.sidePanel, root.id, 'other', { invisible: root.sidePanel.invisible });
     // The gear menu's items are buttons of the record — those of a menu inside it too, hidden with the item that opens
-    // it; Archive shows while it is active, Unarchive while it is not.
+    // it (add's own); Archive shows while it is active, Unarchive while it is not.
     for (const item of root.toolbar?.menu ?? []) add(item, root.id, 'button', { invisible: item.invisible });
-    const inMenus = (items: readonly MenuItem[]): MenuItem[] => items.flatMap((item) => [item, ...inMenus(item.menu ?? [])]);
-    for (const item of inMenus(root.toolbar?.menu ?? [])) {
-      if (item.builtin === 'archive' || item.builtin === 'unarchive') {
-        const own = index.get(item.id) as IndexedNode;
-        const mine = own.invisible;
-        const archived = item.builtin === 'unarchive';
-        own.invisible = { ...mine, evaluate: (context, env) => (context['active'] === false) !== archived || mine.evaluate(context, env) };
-      }
-    }
     if (root.attachmentPreview) add({ id: '#preview', ...root.attachmentPreview }, root.id, 'other', { invisible: root.attachmentPreview.invisible });
   }
   return index;
