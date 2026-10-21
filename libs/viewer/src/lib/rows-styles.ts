@@ -42,6 +42,13 @@ tbody[data-ranking] > .fd-list-row:not([data-lifted]) { transition: transform 0.
 /* ---- a tree's children loaded as a parent opens (loadChildren) ---- */
 /* Under a search, a match's parent after its name; a parent's "Show 40 more" set in under its children. */
 .fd-list-tree-in { margin-inline-start: 8px; color: var(--fd-muted); font-size: 12.5px; }
+/* A name set in by its depth wraps where the list is narrow (a phone), never pushing the other columns past its edge. */
+.fd-list-row[data-tree] > td[data-name] { white-space: normal; overflow-wrap: break-word; padding-inline-start: calc(32px + var(--fd-depth, 0) * 20px); text-indent: -22px; }
+/* On a phone: set in less at each depth, and no column for Collapse all — the arrows open and close each parent. */
+@media (max-width: 520px) {
+  .fd-list-row[data-tree] > td[data-name] { padding-inline-start: calc(28px + var(--fd-depth, 0) * 12px); }
+  .fd-list-table:has(> tbody > .fd-list-row[data-tree]) :is(th, td).fd-list-tree { display: none; }
+}
 .fd-list-table > tbody > tr.fd-list-tree-more > td { padding: 4px 10px; padding-inline-start: calc(32px + var(--fd-depth, 0) * 20px); }
 .fd-list-row[aria-busy="true"] > td[data-name] > .fd-list-twisty { opacity: 0.5; }
 /* With its words, in a card on a phone alone. */

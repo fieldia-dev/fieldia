@@ -92,6 +92,7 @@ export function lazyTree(context: TreeContext): LazyTree | null {
   async function mark(rows: HTMLElement[], depth: number, body: HTMLElement) {
     for (const tr of rows) {
       tr.dataset['depth'] = String(depth);
+      tr.setAttribute('data-tree', '');
       tr.style.setProperty('--fd-depth', String(depth));
       // Its toggle named as the row is: its name's words.
       tr.dataset['treeName'] = tr.querySelector(':scope > td[data-name]')?.textContent ?? tr.dataset['id'] ?? '';

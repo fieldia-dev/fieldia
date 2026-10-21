@@ -64,7 +64,6 @@
     "columns": [
       "name",
       "code",
-      "type",
       "balance"
     ],
     "sort": [
@@ -84,11 +83,12 @@
     ],
     "cells": {
       "code": {
-        "width": 8
+        "width": 6
       },
       "balance": {
         "align": "end"
       }
-    }
+    },
+    "choose": false
   }
 }
