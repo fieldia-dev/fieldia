@@ -18,7 +18,7 @@ npm install @fieldia/react      # React 18 or 19
 npm install @fieldia/vue        # Vue 3
 npm install @fieldia/angular    # Angular 21 or 22`
 )}
-<p>Tables of lines that should edit like a spreadsheet add ${c('@fieldia/grid')} — see <a href="/fields/#grid">the grid</a>; code in any of ${COUNTS.codeLanguages} languages adds ${c('@fieldia/code')}, or ${c('@fieldia/monaco')} for VS Code's editor — see <a href="/fields/#code">the code editors</a>; a place or an area on a map, a list's records on one, or a map of a record's places, its live courier and its route, adds ${c('@fieldia/map')} — see <a href="/maps/">maps</a>; a record's conversation and to-dos beside it add ${c('@fieldia/chatter')} — see <a href="/chatter/">the chatter</a>.</p>
+<p>Tables of lines that should edit like a spreadsheet add ${c('@fieldia/grid')} — see <a href="/fields/#grid">the grid</a>; code in any of ${COUNTS.codeLanguages} languages adds ${c('@fieldia/code')}, or ${c('@fieldia/monaco')} for VS Code's editor — see <a href="/fields/#code">the code editors</a>; a place or an area on a map, a list's records on one, or a map of a record's places, its live courier and its route, adds ${c('@fieldia/map')} — see <a href="/maps/">maps</a>; a list's records on a calendar add ${c('@fieldia/calendar')}, and as bars on a Gantt timeline ${c('@fieldia/gantt')} — see <a href="/lists/#calendar">on a calendar</a> and <a href="/lists/#gantt">on a timeline</a>; a record's conversation and to-dos beside it add ${c('@fieldia/chatter')} — see <a href="/chatter/">the chatter</a>.</p>
 <p>No bundler? Load the script bundle instead — it sets the global ${c('Fieldia')}. See <a href="#script">a script tag</a> below.</p>
 
 <h2 id="first-page">A first page</h2>

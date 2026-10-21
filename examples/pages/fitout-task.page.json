@@ -1,0 +1,94 @@
+{
+  "fieldia": "0.7",
+  "id": "fitout-task",
+  "title": "Fit-out task",
+  "data": { "kind": "record", "model": "cafe.task" },
+  "fields": {
+    "name": { "type": "char", "label": "Task", "required": true },
+    "phase": {
+      "type": "selection",
+      "label": "Phase",
+      "options": [
+        { "value": "design", "label": "Survey and design" },
+        { "value": "strip", "label": "Strip-out" },
+        { "value": "first", "label": "First fix" },
+        { "value": "walls", "label": "Walls and ceilings" },
+        { "value": "second", "label": "Second fix" },
+        { "value": "finish", "label": "Finishes" },
+        { "value": "handover", "label": "Handover" }
+      ]
+    },
+    "trade": { "type": "many2one", "label": "Trade", "relation": "cafe.trade" },
+    "start": { "type": "date", "label": "Starts" },
+    "days": { "type": "integer", "label": "Days", "help": "How many days it takes. None: a milestone, such as the handover." },
+    "after": { "type": "many2many", "label": "Waits for", "relation": "cafe.task", "help": "The tasks that must be finished before this one starts." },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "default": "todo",
+      "options": [
+        { "value": "todo", "label": "To do" },
+        { "value": "doing", "label": "Under way" },
+        { "value": "done", "label": "Done" }
+      ]
+    },
+    "notes": { "type": "text", "label": "Notes" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "task",
+    "children": [
+      {
+        "type": "section",
+        "id": "what",
+        "title": "What",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-name", "field": "name", "focus": true },
+          { "type": "field", "id": "f-phase", "field": "phase" },
+          { "type": "field", "id": "f-trade", "field": "trade" },
+          { "type": "field", "id": "f-state", "field": "state" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "when",
+        "title": "When",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-start", "field": "start" },
+          { "type": "field", "id": "f-days", "field": "days" },
+          { "type": "field", "id": "f-after", "field": "after", "colspan": 2 }
+        ]
+      },
+      { "type": "section", "id": "more", "title": "Notes", "children": [{ "type": "field", "id": "f-notes", "field": "notes" }] }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Fit-out task": "مهمة تجهيز",
+      "What": "ماذا",
+      "When": "متى",
+      "Notes": "ملاحظات",
+      "Task": "المهمة",
+      "Phase": "المرحلة",
+      "Survey and design": "المعاينة والتصميم",
+      "Strip-out": "الإزالة",
+      "First fix": "التأسيس",
+      "Walls and ceilings": "الحوائط والأسقف",
+      "Second fix": "التشطيب الأول",
+      "Finishes": "التشطيبات",
+      "Handover": "التسليم",
+      "Trade": "جهة التنفيذ",
+      "Starts": "يبدأ",
+      "Days": "الأيام",
+      "How many days it takes. None: a milestone, such as the handover.": "عدد الأيام التي تستغرقها. بلا أيام: محطة، مثل التسليم.",
+      "Waits for": "ينتظر",
+      "The tasks that must be finished before this one starts.": "المهام التي يجب أن تنتهي قبل أن تبدأ هذه.",
+      "State": "الحالة",
+      "To do": "لم تبدأ",
+      "Under way": "جارية",
+      "Done": "تمت"
+    }
+  }
+}
