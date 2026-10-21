@@ -132,7 +132,8 @@ anyway, so an adapter needs no second code path for it.
 fixes): a save made outside a form, which never had the whole record, sets
 `partial: true`. `values` and `fields` then hold only the fields in `changes`.
 A source that saves whole records writes those over the record as stored and
-keeps every other field. A calendar's move and its Undo save this way.
+keeps every other field. A calendar's move, a timeline's bar moved or stretched
+(@fieldia/gantt), and their Undo save this way.
 
 ## 3. Permissions (w1-save)
 

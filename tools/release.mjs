@@ -43,7 +43,7 @@ const fail = (message) => {
 
 // ---- which packages, in what order --------------------------------------------
 /** Dependencies before dependants, so a publish never points at a version npm does not have yet. */
-const ORDER = ['core', 'widgets', 'viewer', 'grid', 'code', 'monaco', 'map', 'calendar', 'chatter', 'react', 'vue', 'angular', 'designer'];
+const ORDER = ['core', 'widgets', 'viewer', 'grid', 'code', 'monaco', 'map', 'calendar', 'gantt', 'chatter', 'react', 'vue', 'angular', 'designer'];
 const packages = ORDER.map((dir) => ({ dir, manifest: read(join(WORKSPACE, 'libs', dir, 'package.json')) })).filter((p) => !p.manifest.private);
 const version = packages[0].manifest.version;
 for (const { dir, manifest } of packages) {
@@ -100,6 +100,7 @@ const EXPECT = {
   '@fieldia/monaco': ['monacoWidgets', 'createMonacoWidgets', 'MONACO_LANGUAGES', 'monacoTheme'],
   '@fieldia/map': ['mapWidgets', 'mapKinds', 'azureMaps', 'googleMaps', 'mapbox', 'openStreetMap', 'tiles', 'readArea', 'writePoint', 'MAP_LABELS'],
   '@fieldia/calendar': ['calendarListViews'],
+  '@fieldia/gantt': ['ganttListViews'],
   '@fieldia/chatter': ['mountChatter', 'chatterSlot', 'createMemoryChatter', 'CHATTER_LABELS'],
   '@fieldia/react': ['FieldiaForm', 'useFormState'],
   '@fieldia/vue': ['FieldiaForm', 'useFormState'],
@@ -172,13 +173,14 @@ const lazy = run('node', ['lazy.mjs'], SMOKE).trim();
 console.log(`  the code editors' ${lazy} modules loaded on demand all resolve`);
 
 // The parts the packages load the first time a page uses them (a work item's head, its text, a path picker, Fieldia's
-// own list, a filter bar, Fieldia's own date box and its calendar, a list screen, a list's cards, the columns a person shapes, a list's Import, a table of lines, the business widgets, files, the survey kinds, a phone read the world over, booking slots, possible duplicates, the answers said in a page's words and its endings, a page's limits and Continue later, a page on paper, a link to other records, the themes, the quiet look, a Discussion, a History): each import('./x') of the ES modules, and each require('./x') of CommonJS, is a file
+// own list, a filter bar, Fieldia's own date box and its calendar, a list screen, a list's cards, the columns a person shapes, a list's Import, a list's timeline, a table of lines, the business widgets, files, the survey kinds, a phone read the world over, booking slots, possible duplicates, the answers said in a page's words and its endings, a page's limits and Continue later, a page on paper, a link to other records, the themes, the quiet look, a Discussion, a History): each import('./x') of the ES modules, and each require('./x') of CommonJS, is a file
 // that is there — and each loads, and gives what is asked of it, as an app's bundler would load it.
 const PARTS = {
   core: { 'expression/functions-part': ['functionBody', 'appCall'], 'record/limits-part': ['formLimits', 'takingWords'], 'format/options-part': ['optionRules'] },
   widgets: { 'text-part': ['modernHtml', 'formattedText', 'linksWidget', 'markdownToHtml'], 'path-part': ['pathPickerWidget'], 'choice-part': ['ownListWidget', 'searchWidget', 'choiceTagsWidget'], 'date-part': ['dateBox', 'dateBoxWidget', 'withCalendar', 'dateRangeWidget'], 'themes-part': ['installThemeStyles'], 'quiet-part': ['installQuietStyles'], 'lines-part': ['linesWidget', 'linksTableWidget', 'cardsWidget'], 'survey-part': ['rankingWidget', 'matrixWidget', 'sliderWidget', 'progressbarWidget'] , 'business-part': ['statusbarWidget', 'copyWidget', 'timerWidget'], 'files-part': ['binaryWidget', 'readFile'], 'phone-part': ['phoneWidget', 'readPhone', 'writePhone'], 'slots-part': ['slotsWidget'], 'relations-part': ['many2oneWidget', 'tagsWidget', 'charTagsWidget'] },
   viewer: { 'head-part': ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise'], 'filters-part': ['filterBar'], 'list-part': ['listView', 'relatedList'], 'cards-part': ['drawCard'], 'columns-part': ['columnChoices'], 'import-part': ['openImport'], 'duplicates-part': ['watchDuplicates', 'openMergeScreen'], 'answers-part': ['sentenceValue', 'wordedWidget', 'drawEnding'], 'limits-part': ['drawLimits'], 'print-part': ['printLook', 'printPage', 'printAlone'] },
   calendar: { 'calendar-view': ['calendarPart'] },
+  gantt: { 'gantt-view': ['ganttPart'] },
   chatter: { discussion: ['mountDiscussion'], history: ['mountHistory'] },
 };
 writeFileSync(
@@ -233,6 +235,7 @@ import { codeWidgets } from '@fieldia/code';
 import { createMonacoWidgets, monacoWidgets, type MonacoLoader } from '@fieldia/monaco';
 import { mapKinds, mapListViews, mapWidgets, openStreetMap } from '@fieldia/map';
 import { calendarListViews, type CalendarSettings } from '@fieldia/calendar';
+import { ganttListViews, type GanttSettings } from '@fieldia/gantt';
 import { chatterSlot, createMemoryChatter, type ChatterSource } from '@fieldia/chatter';
 import type { FieldiaFormProps } from '@fieldia/react';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor, type Designer } from '@fieldia/designer';
@@ -241,7 +244,8 @@ declare const host: HTMLElement;
 const form = createForm({ page, dataSource: createMemoryDataSource() });
 const source: ChatterSource = createMemoryChatter({ me: { id: 1, name: 'Sara' } });
 const calendarSettings: CalendarSettings = { now: () => new Date(), limit: 200 };
-const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: { ...gridWidgets, ...codeWidgets, ...monacoWidgets, ...mapWidgets({ provider: openStreetMap() }) }, listViews: { ...mapListViews({ provider: openStreetMap() }), ...calendarListViews(calendarSettings) }, onNewRecord: () => undefined, slots: { chatter: chatterSlot({ source }) } });
+const ganttSettings: GanttSettings = { now: () => new Date(), labels: { en: { today: 'Now' } } };
+const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: { ...gridWidgets, ...codeWidgets, ...monacoWidgets, ...mapWidgets({ provider: openStreetMap() }) }, listViews: { ...mapListViews({ provider: openStreetMap() }), ...calendarListViews(calendarSettings), ...ganttListViews(ganttSettings) }, onNewRecord: () => undefined, slots: { chatter: chatterSlot({ source }) } });
 declare const loader: MonacoLoader;
 const withWorkers = createMonacoWidgets({ getWorker: (_id, label) => new Worker(label + '.js', { type: 'module' }), loader });
 const props: FieldiaFormProps = { page, skin: 'underline' };
