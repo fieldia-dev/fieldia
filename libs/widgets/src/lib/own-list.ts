@@ -4,6 +4,7 @@ import { popup } from './popup';
 import { shownOptions } from './shuffle';
 import { seatMarks } from './seats';
 import { installChoiceStyles } from './styles-choice';
+import { optionCaption, optionMark } from './option-look';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -33,15 +34,24 @@ export const ownListWidget: WidgetFactory = ({ form, name, field, node, id, docu
   // Named by its field's label, which the viewer gives the id `<id>-label`, and by the value it shows.
   const button = make('button', { type: 'button', id, class: 'fd-dot-button fd-own-button', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-controls': listId, 'aria-labelledby': `${id}-label ${wordsId}` });
   const words = make('span', { class: 'fd-dot-label fd-own-words', id: wordsId, 'data-placeholder': node.placeholder });
+  // The option picked's icon or colour before its words, where the page gives one.
+  const mark = make('span', { class: 'fd-own-mark', hidden: '' });
   const rows = choices.map((option, at) => {
     const row = pickRow(make, { role: 'option', id: `${listId}-${at}`, 'aria-selected': 'false' }, option.label);
+    // Its icon or colour before its words, and its second line under them, where the page gives them.
+    const mark = optionMark(make, option);
+    const caption = optionCaption(make, option);
+    if (mark) row.querySelector('.fd-pick-tick')?.after(mark);
+    if (caption) row.querySelector('.fd-pick-words')?.append(caption);
+    row.classList.toggle('fd-pick-marked', !!mark);
+    row.classList.toggle('fd-pick-two', !!caption);
     row.append(seats.marks[at]);
     row.addEventListener('mousedown', (event) => event.preventDefault()); // the list keeps the focus
     row.addEventListener('click', () => pick(at));
     return row;
   });
   const list = make('div', { id: listId, role: 'listbox', class: 'fd-pick-list fd-own-list', tabindex: '-1', 'aria-labelledby': `${id}-label`, hidden: '' }, ...rows);
-  const element = make('span', { class: 'fd-input fd-dot-box fd-own-box' }, button, words, list);
+  const element = make('span', { class: 'fd-input fd-dot-box fd-own-box' }, button, mark, words, list);
 
   const current = () => choices.findIndex((option) => option.value === form.getState().values[name]);
   let active = -1;
@@ -136,6 +146,12 @@ export const ownListWidget: WidgetFactory = ({ form, name, field, node, id, docu
       const at = choices.findIndex((option) => option.value === state.value);
       required = state.required;
       setText(words, at < 0 ? '' : choices[at].label);
+      if (mark.dataset['at'] !== String(at)) {
+        mark.dataset['at'] = String(at);
+        const shown = at < 0 ? null : optionMark(make, choices[at]);
+        mark.replaceChildren(...(shown ? [shown] : []));
+        mark.hidden = !shown;
+      }
       rows.forEach((row, i) => setAttr(row, 'aria-selected', String(i === at)));
       seats.update();
       if (button.disabled !== state.readonly) button.disabled = state.readonly;

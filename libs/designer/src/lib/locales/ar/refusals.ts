@@ -115,6 +115,8 @@ export const refusals: DesignerWords['refusals'] = {
   matrixNoPictures: 'لا صور لأعمدة الشبكة',
   onlyOptionsPictures: 'السؤال ذو الخيارات وحده له صور ونقاط',
   pointsNumber: 'النقاط رقم، مثل 1 أو 0.5',
+  looksForChoices: 'السطر الثاني والأيقونة واللون لخيارات الاختيار: أعمدة المصفوفة لا تأخذها',
+  colourHex: 'اللون بصيغة #rrggbb، مثل #0b5cad',
   seatsNumber: 'الأماكن عدد صحيح، 0 أو أكثر',
   seatsForChoices: 'الأماكن لاختيارات السؤال: أعمدة المصفوفة بلا أماكن',
   limitsForResponses: 'مواعيد الفتح والإغلاق والحدود لنموذج يجمع الإجابات: شاشة التطبيق تُفتح وتُغلق مع التطبيق',

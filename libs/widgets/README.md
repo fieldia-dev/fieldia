@@ -125,6 +125,15 @@ months a month spans in its title; a list's cell writes both days ("13 Oct
 2026 · 2 Jumada I 1448 AH"). The value stays the Gregorian day, as every
 backend keeps it. Both come in the date part with the date box.
 
+A choice's options may say more than their words — `"caption"`, a second line
+under them (a service's length and price), `"icon"`, one of Fieldia's icons by
+name (or the app's), and `"color"`, #rrggbb, a dot beside them. Radios and
+checkboxes draw them (option-look.ts); a dropdown whose options have any is
+Fieldia's own list, never the browser's, which shows one line; a list that
+searches draws them too. A link's suggestions draw what the data source gives
+of each record: its picture, or its colour as Flectra numbers them, before its
+name, its first line of details under it, and its aside at the row's end.
+
 A char field's node may type it to a mask — a national ID, an IBAN, a car
 plate: `"options": { "mask": "9 999 999 999" }`, where `9` is a digit (in any
 script, kept as 0-9), `a` a letter, `*` a letter or a digit, `\` before a

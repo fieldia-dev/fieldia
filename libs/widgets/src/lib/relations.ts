@@ -84,6 +84,9 @@ interface Reading {
   done: Promise<void>;
 }
 
+/** A record's colour as Flectra numbers them, 1 to 11: the same as its tag's (`.fd-chip[data-color]`, styles-sheet.ts). */
+const RECORD_COLOURS = ['#f06050', '#f4a460', '#f7cd1f', '#6cc1ed', '#814968', '#eb7e7f', '#2c8397', '#475577', '#d6145f', '#30c381', '#9365b8'];
+
 /** Words as a search compares them: case, Arabic letter forms and digits folded. */
 const folded = (text: string) => foldForSearch(text).trim();
 /** A query as the data source gets it: digits in any script as 0-9, no direction marks. */
@@ -165,7 +168,25 @@ function combobox(options: {
       option.setAttribute('role', 'option');
       option.setAttribute('aria-selected', String(i === active));
       option.className = `fd-option${i === active ? ' fd-active' : ''}${record === creating || extras.has(record) ? ' fd-option-create' : ''}`;
-      option.textContent = record.label;
+      // What a record shows besides its name, where its source gives it: its picture or its colour before it, its first
+      // line of details under it (a staff member's role, a service's price), and its words at the row's end.
+      const avatar = record.avatar ? linkAvatar(doc, record) : null;
+      const color = typeof record.color === 'number' && record.color >= 1 && record.color <= 11 ? doc.createElement('span') : null;
+      if (color) {
+        color.className = 'fd-option-dot';
+        color.setAttribute('data-color', String(Math.trunc(record.color as number)));
+        color.style.setProperty('--fd-option-color', RECORD_COLOURS[Math.trunc(record.color as number) - 1]);
+      }
+      const details = record.details?.split('\n').find((line) => line.trim());
+      if (avatar || color || details || record.aside) {
+        option.classList.add('fd-option-rich');
+        const text = doc.createElement('span');
+        text.className = 'fd-option-text';
+        text.append(record.label);
+        if (details) text.append(Object.assign(doc.createElement('span'), { className: 'fd-option-caption', textContent: details }));
+        option.append(...[avatar ?? color, text].filter((part): part is HTMLElement => !!part));
+        if (record.aside) option.append(Object.assign(doc.createElement('span'), { className: 'fd-option-aside', textContent: record.aside }));
+      } else option.textContent = record.label;
       option.addEventListener('mousedown', (event) => event.preventDefault()); // keep focus in the box
       option.addEventListener('click', () => choose(i));
       list.append(option);

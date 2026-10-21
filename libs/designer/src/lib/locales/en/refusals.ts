@@ -122,6 +122,8 @@ export const refusals = {
   matrixNoPictures: 'A matrix’s columns have no pictures',
   onlyOptionsPictures: 'Only a question with options has pictures and points',
   pointsNumber: 'Points are a number, such as 1 or 0.5',
+  looksForChoices: 'A second line, an icon and a colour are for a choice’s options: a matrix’s columns take none',
+  colourHex: 'A colour is #rrggbb, such as #0b5cad',
   seatsNumber: 'Places are a whole number, 0 or more',
   seatsForChoices: 'Places are for a choice’s options: a matrix’s columns take none',
   limitsForResponses: 'Open and close dates and limits are for a form that collects responses: an app’s own screen opens and closes with the app',

@@ -38,6 +38,16 @@ export const OptionSchema = z
      * picked (never hidden). Without it, nothing shows: the server refuses as it would.
      */
     seats: z.int().min(0).max(100_000_000).optional(),
+    /**
+     * A second line under its words, where it is listed — a service's length and price, a plan's limits, a person's
+     * role: in Fieldia's own list, a list that searches, radios and checkboxes (a choice with one is drawn in Fieldia's
+     * own list, never the browser's, which shows one line).
+     */
+    caption: z.string().min(1).optional(),
+    /** A picture beside its words, by the name of one of Fieldia's icons, or the app's: "home", "truck", "user". */
+    icon: z.string().min(1).optional(),
+    /** Its colour, as #rrggbb: a dot beside its words — a stage's, a team's, a label's. */
+    color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'a colour is #rrggbb, such as "#0b5cad"').optional(),
   })
   .strict()
   .meta({ id: 'Option' });

@@ -37,6 +37,7 @@ import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
+import { optionCaption, optionMark, optionsLook } from './option-look';
 import { stateDotWidget } from './state-dot';
 import { businessPart, choicePart, datePart, filesPart, linesPart, monthsPart, typedPart, partFactory, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
@@ -704,7 +705,11 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
     const inputs = choices.map((option, i) => {
       const input = make(document, 'input', { type: kind, name: id, value: String(i), id: `${id}-${i}` });
       optionWords.push(make(document, 'span', {}, option.label));
-      group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, optionWords[i], seats.marks[i]));
+      // Its icon or colour before its words, and its second line under them, where the page gives them.
+      const caption = optionCaption(maker(document), option);
+      const mark = optionMark(maker(document), option);
+      const words = caption ? make(document, 'span', { class: 'fd-choice-text' }, optionWords[i], caption) : optionWords[i];
+      group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, ...(mark ? [mark] : []), words, seats.marks[i]));
       return input;
     });
     // "Other:", after the options: a choice of its own, with a box for the answer — as Google Forms has it.
@@ -1089,7 +1094,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'json.payments': business((part) => part.paymentsWidget, plainPayments),
   // Fieldia's own list in place of the browser's, a tick by the option picked (own-list.ts), or a long list searched as
   // it is typed (choice-tags.ts): the choice part's, the browser's own list meanwhile.
-  selection: partFactory(choicePart, (part) => (context) => (ownList(context.node) ? part.ownListWidget : part.searchWidget)(context), (context) => selectWidget(context), (node, _page, field) => ownList(node) || searched(node, field)),
+  // A choice whose options say more than their words (a second line, an icon, a colour) is Fieldia's own list too.
+  selection: partFactory(choicePart, (part) => (context) => (ownList(context.node) || !searched(context.node, context.field) ? part.ownListWidget : part.searchWidget)(context), (context) => selectWidget(context), (node, _page, field) => ownList(node) || searched(node, field) || (!!field && optionsLook(options(field)))),
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),
   // Several answers as tags in a box (choice-tags.ts), in the choice part: their words meanwhile.

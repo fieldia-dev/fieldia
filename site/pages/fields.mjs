@@ -55,6 +55,17 @@ ${code(
 )}
 <p>In the designer: a date's Keeps (a day, a month, a year) and Hijri date beside it. Open <a href="/demos/plain/?page=lease&amp;skin=underline">the lease demo</a>.</p>
 
+<h2 id="option-looks">Options with a second line, an icon or a colour</h2>
+<p>A choice's options may say more than their words: a ${c('caption')} — a second line under them, a service's length and price, a plan's limits — an ${c('icon')}, by the name of one of Fieldia's icons (or your app's), and a ${c('color')}, #rrggbb, a dot beside them. Radios and checkboxes show them; a dropdown whose options have any is Fieldia's own list, never the browser's, which shows one line of words; a list that searches shows them too. Each option is still named by its words, its second line read after them.</p>
+${code(
+  'json',
+  `"plan": { "type": "selection", "label": "Paid", "options": [
+  { "value": "monthly", "label": "Monthly", "caption": "12 payments, on the first of each month", "icon": "calendar" },
+  { "value": "yearly", "label": "Once a year", "caption": "1 payment, 3% off the rent", "icon": "money", "color": "#30c381" }
+] }`
+)}
+<p>A link's suggestions show what your data source gives of each record (<a href="/data/#related">what a link shows</a>): its picture, or its colour as Flectra numbers them, before its name; its first line of ${c('details')} under it — a staff member's role, a service's price — and its ${c('aside')} at the row's end. In the designer: a choice's <em>Describe the options</em>, then each option's Second line, Icon and Colour. Open <a href="/demos/plain/?page=template-appointment-booking&amp;theme=apple">the booking template</a>.</p>
+
 <h2 id="masks">Masks and one-time codes</h2>
 <p>A char field's node may type it to a mask — a national ID, an IBAN, a car plate: ${c('9')} is a digit, in any script, ${c('a')} a letter, ${c('*')} either, ${c('\\')} before a character that character itself, and ${c('[ ]')} round its end what may be left out; every other character is the mask's own, written in as the person types, and Backspace over one takes the character before it. A key no slot takes there is refused with why — <em>a digit goes here, not “x”</em> — and the keys after it wait with it; a paste is laid out against the mask or refused whole. The field takes the characters typed once every slot it needs is filled, or as shown with ${c('"maskKeeps": "shown"')}; ${c('"upper": true')} writes its letters in capitals. Left before it is whole, what was typed stays, marked, with how many are still to type.</p>
 ${code(

@@ -1792,6 +1792,18 @@
           "minimum": 0,
           "maximum": 100000000
         },
+        "caption": {
+          "type": "string",
+          "minLength": 1
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 1
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
         "invisible": {
           "$ref": "#/$defs/Modifier"
         }
@@ -2621,6 +2633,18 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 100000000
+        },
+        "caption": {
+          "type": "string",
+          "minLength": 1
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 1
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
         }
       },
       "required": [

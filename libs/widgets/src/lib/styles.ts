@@ -319,6 +319,16 @@ const SKINS_CSS = /* css */ `
 [dir="rtl"] .fd-switch:checked::after { transform: translateX(-14px); }
 .fd-choices { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 .fd-choice { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+/* An option's icon or colour's dot before its words, its second line under them (option-look.ts), and in a list's row
+   that says more than its words, its own words at its end. */
+:is(.fd-option-icon, .fd-option-dot) { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; color: var(--fd-option-color, var(--fd-muted)); }
+.fd-option-icon svg { width: 100%; height: 100%; }
+.fd-option-dot::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--fd-option-color); }
+.fd-option-rich { display: flex; align-items: center; gap: 8px; }
+:is(.fd-choice-text, .fd-option-text) { display: inline-flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+:is(.fd-option-caption, .fd-option-aside) { font-size: 12.5px; line-height: 1.35; color: var(--fd-muted); }
+.fd-option-aside { margin-inline-start: auto; white-space: nowrap; }
+
 /* An option's places left beside its words ("3 left"), and one whose places are all taken ("Full"): shown, never hidden. */
 .fd-seats { font-size: 0.85em; color: var(--fd-muted); white-space: nowrap; }
 .fd-seats[data-full] { color: var(--fd-error); font-weight: 600; }

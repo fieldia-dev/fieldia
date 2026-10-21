@@ -374,6 +374,7 @@ export const DEMOS = [
       'Type a car plate as 4821rka: the space and the capitals are written in, and a letter where a digit goes is refused, saying why.',
       'Paste a code such as 482 913 into the code boxes: it lands across them; leave it at four digits and it says two are still to type.',
       'Type 120k in Yearly rent: it says “120k is 120,000”, and shows the whole amount once you leave it.',
+      'Search for an agent: each shows their role under the name, their colour, and the leases they hold now.',
     ],
   },
   {
