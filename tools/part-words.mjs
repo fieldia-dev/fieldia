@@ -63,6 +63,7 @@ export const PART_WORDS = {
     ],
   },
   element: { viewer: ['formNotLoaded'] },
+  outbox: { viewer: ['outboxWaiting', 'outboxWaitingOne', 'outboxOffline', 'outboxSending', 'outboxSent', 'outboxSendNow', 'outboxRefused', 'outboxRetry', 'outboxDiscard', 'outboxDiscardAsk', 'outboxKeptTitle', 'outboxKeptWords'] },
   pay: { viewer: ['payAmount', 'payBack', 'payCancel', 'payCancelling', 'payNothingSent', 'payWaiting', 'payPaid', 'payPaidReference', 'payAgain', 'payCancelled', 'payFailed', 'payFailedWhy', 'payNotStarted'] },
   verify: {
     messages: ['notVerified'],

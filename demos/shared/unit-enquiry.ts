@@ -1,4 +1,4 @@
-import type { Form, MemoryDataSource, Page, PayRequest, PayResult, SendCodeRequest, Values } from '@fieldia/core';
+import type { MemoryDataSource, Page, PayRequest, PayResult, SendCodeRequest, SubmitRequest } from '@fieldia/core';
 import unitEnquiry from '../../examples/pages/unit-enquiry.page.json';
 
 /**
@@ -11,15 +11,24 @@ export const unitEnquiryPage = (): Page => unitEnquiry as Page;
 /** The link a broker sends: the unit, the campaign, and their own code. */
 export const BROKER_LINK = '?page=unit-enquiry&utm_source=whatsapp&utm_campaign=autumn-launch&agent=mona&unit=B-12';
 
-/** What a value reads as in the log: empty as "—", the rest as sent. */
-const shown = (value: unknown) => (value === null || value === undefined || value === '' ? '—' : typeof value === 'string' ? value : JSON.stringify(value));
+/** A file as the log names it: its name, and whether it is stored (a link) or still its bytes. */
+const fileWords = (file: { name: string; url?: string }) => `${file.name} (${file.url ? 'stored' : 'its bytes'})`;
+/** What a value reads as in the log: empty as "—", files by their names, the rest as sent. */
+const shown = (value: unknown): string => {
+  if (value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)) return '—';
+  if (typeof value === 'string') return value;
+  const files = (Array.isArray(value) ? value : [value]) as { name?: unknown; url?: string }[];
+  if (files.every((file) => file && typeof file === 'object' && typeof file.name === 'string')) return files.map((file) => fileWords(file as { name: string; url?: string })).join(', ');
+  return JSON.stringify(value);
+};
 
 /**
- * What the app was told with each response, under the form: every value sent, the hidden ones marked — as an app's
- * data source gets them (`SubmitRequest.values`). Opened plainly, the hidden fields are empty; opened from a broker's
- * link, they say who sent the person.
+ * What the app was told with each response, under the form: every value its data source got (`SubmitRequest.values`),
+ * the hidden ones marked, and beside them the mobile's proof, the payment taken and, for a send kept without signal, when
+ * it was kept — listed as the source takes each, so a send waiting on the device shows only once it went. Opened plainly,
+ * the enquiry's hidden fields are empty; opened from a broker's link, they say who sent the person.
  */
-export function sentLog(doc: Document, form: Form, page: Page, dataSource?: Pick<MemoryDataSource, 'responses'>): HTMLElement {
+export function sentLog(doc: Document, page: Page, dataSource: MemoryDataSource): HTMLElement {
   const element = doc.createElement('section');
   element.className = 'demo-error-log demo-sent-log';
   element.setAttribute('aria-labelledby', 'demo-sent-log-title');
@@ -34,24 +43,20 @@ export function sentLog(doc: Document, form: Form, page: Page, dataSource?: Pick
   const tip = doc.createElement('p');
   tip.append(link, ' — the unit filled in, and who sent you kept in hidden fields.');
   const list = doc.createElement('ol');
-  element.append(title, tip, empty, list);
+  // The broker's link, on the enquiry it fills.
+  element.append(title, ...(page.id === 'unit-enquiry' ? [tip] : []), empty, list);
   const placed = new Set((JSON.stringify(page.layout).match(/"field":"[A-Za-z_]\w*"/g) ?? []).map((one) => one.slice(9, -1)));
-  form.on('send', ({ values }: { values: Values }) => {
+  const submit = dataSource.submit.bind(dataSource);
+  dataSource.submit = async (request: SubmitRequest) => {
+    const answer = await submit(request);
     empty.hidden = true;
     const item = doc.createElement('li');
     const rows = doc.createElement('dl');
-    for (const [name, value] of Object.entries(values)) {
-      const term = doc.createElement('dt');
-      term.textContent = `${page.fields[name]?.label ?? name}${placed.has(name) ? '' : ' (hidden)'}`;
-      const said = doc.createElement('dd');
-      said.textContent = shown(value);
-      rows.append(term, said);
-    }
-    // And beside the answers, as the app's source got them: the mobile's proof, and the payment taken.
-    const response = dataSource?.responses[dataSource.responses.length - 1];
     const besides: [string, string][] = [
-      ...Object.entries(response?.verified ?? {}).map(([name, proved]): [string, string] => [`${page.fields[name]?.label ?? name} proved by a code`, proved.proof ?? 'yes']),
-      ...(response?.payment ? [['Payment taken', `${response.payment.currency} ${response.payment.amount.toLocaleString('en')} · ${response.payment.reference ?? ''}`] as [string, string]] : []),
+      ...Object.entries(request.values).map(([name, value]): [string, string] => [`${page.fields[name]?.label ?? name}${placed.has(name) ? '' : ' (hidden)'}`, shown(value)]),
+      ...Object.entries(request.verified ?? {}).map(([name, proved]): [string, string] => [`${page.fields[name]?.label ?? name} proved by a code`, proved.proof ?? 'yes']),
+      ...(request.payment ? [['Payment taken', `${request.payment.currency} ${request.payment.amount.toLocaleString('en')} · ${request.payment.reference ?? ''}`] as [string, string]] : []),
+      ...(request.queued ? [['Kept on the device without signal', `since ${new Date(request.queued.at).toLocaleTimeString('en-GB')}`] as [string, string]] : []),
     ];
     for (const [label, value] of besides) {
       const term = doc.createElement('dt');
@@ -62,7 +67,8 @@ export function sentLog(doc: Document, form: Form, page: Page, dataSource?: Pick
     }
     item.append(rows);
     list.append(item);
-  });
+    return answer;
+  };
   return element;
 }
 

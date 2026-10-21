@@ -421,6 +421,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    * currency that is no code of three capitals nor a field, and for nothing to pay.
    */
   setPayment(patch: { label?: string; amount?: number | string | null; currency?: string | null; description?: string } | null): boolean;
+  /** An offline outbox (`outbox`): sends made without signal kept on the device and sent when it comes back; false takes it away. Refused on a list of records. */
+  setOutbox(on: boolean): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
@@ -1555,6 +1557,14 @@ export function createDesigner(options: {
         if (on) draft.continueLater = true;
         else delete draft.continueLater;
       }, 'continueLater');
+    },
+
+    setOutbox(on) {
+      return apply((draft) => {
+        if (!on) return void delete draft.outbox;
+        if (draft.layout.type === 'list') throw new Refusal((w) => w.refusals.outboxOnList);
+        draft.outbox = true;
+      }, 'outbox');
     },
 
     setPayment(patch) {

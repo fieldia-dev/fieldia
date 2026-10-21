@@ -23,6 +23,7 @@ import { botLog, captchaSlot } from '../shared/captcha';
 import { meanwhileBar } from '../shared/test-drive';
 import { lastPlacesBar } from '../shared/event-signup';
 import { phoneBar, sentLog } from '../shared/unit-enquiry';
+import { offlineBar } from '../shared/site-visit';
 import { addressFollowsRecord } from '../shared/address';
 
 /**
@@ -211,7 +212,12 @@ if (name === 'test-drive') document.getElementById('app')?.before(meanwhileBar(d
 // The sign-up has a bar over it: two people take the morning's last places on other screens (shared/event-signup.ts).
 if (name === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
 // The enquiry says under it what the app was told with each response, its hidden fields marked (shared/unit-enquiry.ts).
-if (name === 'unit-enquiry') document.getElementById('app')?.after(sentLog(document, handle.form, page, dataSource));
+if (name === 'unit-enquiry') document.getElementById('app')?.after(sentLog(document, page, dataSource));
+// The site visit has a bar over it: Work offline, as a compound with no signal; what it sends is listed under it.
+if (name === 'site-visit') {
+  document.getElementById('app')?.before(offlineBar(document));
+  document.getElementById('app')?.after(sentLog(document, page, dataSource));
+}
 // And a stand-in phone over it, where the codes the app sends arrive as WhatsApp or SMS would bring them.
 if (name === 'unit-enquiry') document.getElementById('app')?.before(phoneBar(document, dataSource));
 

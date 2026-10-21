@@ -630,6 +630,23 @@ export interface ViewerLabels {
   payNotStarted: string;
   /** A `<fieldia-form>` whose page could not be read: its address answered nothing, or no page. */
   formNotLoaded: string;
+  /**
+   * An offline outbox (`outbox`, the outbox part): how many sends wait on this device (`{count}`), no signal, while they
+   * are sent, all sent, Send now, a send refused once it went (`{why}`) with Try again and Discard (asked first), and a
+   * response kept without signal's ending.
+   */
+  outboxWaiting: string;
+  outboxWaitingOne: string;
+  outboxOffline: string;
+  outboxSending: string;
+  outboxSent: string;
+  outboxSendNow: string;
+  outboxRefused: string;
+  outboxRetry: string;
+  outboxDiscard: string;
+  outboxDiscardAsk: string;
+  outboxKeptTitle: string;
+  outboxKeptWords: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1083,6 +1100,18 @@ const en: ViewerLabels = {
   payFailedWhy: 'The payment did not go through: {why} Nothing was sent.',
   payNotStarted: 'The payment could not be started: try again.',
   formNotLoaded: 'This form could not be loaded.',
+  outboxWaiting: '{count} sends wait on this device.',
+  outboxWaitingOne: '1 send waits on this device.',
+  outboxOffline: 'No signal:',
+  outboxSending: 'Sending what waited…',
+  outboxSent: 'Everything that waited was sent.',
+  outboxSendNow: 'Send now',
+  outboxRefused: 'Not sent: {why}',
+  outboxRetry: 'Try again',
+  outboxDiscard: 'Discard',
+  outboxDiscardAsk: 'Discard this send? Its answers will be lost.',
+  outboxKeptTitle: 'Kept on this device',
+  outboxKeptWords: 'There is no signal: your answers are kept here and sent as soon as it comes back, even if you close this page.',
 };
 
 /**

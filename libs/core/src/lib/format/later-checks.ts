@@ -7,7 +7,7 @@ import type * as MapChecksModule from './mapchecks-part';
  * head part (sheet-head-checks.ts), a page's limits and Continue later in the limits part (limits-checks.ts), booking
  * slots' in the slots part, a signature's in the files part, a page's endings in the answers part, a table of lines' in
  * the lines part (table-checks.ts), a sheet's statusbar in the business part, options by condition and carried in the
- * options part, the fields a page's link fills in the prefill part, a field's proof by a code in the verify part, a page's payment in the pay part — and a
+ * options part, the fields a page's link fills in the prefill part, a field's proof by a code in the verify part, a page's payment in the pay part, a page's outbox in the outbox part — and a
  * map's in a
  * part of their own (`mapChecksPart`): by part, put here as each part comes (tools/script-bundle.mjs, `CHECKS_IN_PARTS`).
  * Until then the main script's reference check owes them (`PageValidation.later`), and the viewer asks for the parts it

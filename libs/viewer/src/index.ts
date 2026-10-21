@@ -1,7 +1,7 @@
 export * from './lib/viewer';
 export * from './lib/dialog';
 export { addLanguage, type LanguageWords } from './lib/add-language';
-export { answersPart, cardsPart, columnsPart, duplicatesPart, filtersPart, headPart, importPart, installListStyles, limitsPart, listPart, loadParts, partsFor, payPart, verifyPart, type AnswersPart, type CardsPart, type ColumnsPart, type DuplicatesPart, type FiltersPart, type HeadPart, type ImportPart, type LimitsPart, type ListPart, type PayPart, type VerifyPart } from './lib/viewer-parts';
+export { answersPart, cardsPart, columnsPart, duplicatesPart, filtersPart, headPart, importPart, installListStyles, limitsPart, listPart, loadParts, outboxPart, partsFor, payPart, verifyPart, type AnswersPart, type CardsPart, type ColumnsPart, type DuplicatesPart, type FiltersPart, type HeadPart, type ImportPart, type LimitsPart, type ListPart, type OutboxPart, type PayPart, type VerifyPart } from './lib/viewer-parts';
 // A page on paper whole comes in the print part, loaded as a person means to print — Ctrl+P, a Print, the gear opened.
 export { printPart, type PrintPart } from './lib/print';
 // `<fieldia-form>`: a page's form on any web page, its work in a part loaded the first time one is put on a page.

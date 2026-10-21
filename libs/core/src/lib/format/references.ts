@@ -32,6 +32,7 @@ import { checkOptionRules } from './option-checks';
 import { checkPrefill } from './prefill-checks';
 import { checkVerify } from './verify-checks';
 import { checkPayment } from './payment-checks';
+import { checkOutbox } from './outbox-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -147,6 +148,8 @@ export class ReferenceCheck {
     // The fields a link fills: in the one-tag script, their checks come with the prefill part, which a page with it asks for.
     // A payment the answers wait for: in the one-tag script, its checks come with the pay part, which a page with one asks for.
     if (this.page.payment !== undefined && !this.line) checkPayment(this.page, { ...this.fieldTools(), checkModifiers: (owner, path, keys) => this.checkModifiers(owner, path, keys) });
+    // An offline outbox: in the one-tag script, its check comes with the outbox part, which a page with one asks for.
+    if (this.page.outbox !== undefined && !this.line) checkOutbox(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
     if (this.page.prefill !== undefined && !this.line) checkPrefill(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
     if (this.page.endings !== undefined && !this.line) {
       if (this.page.data.kind !== 'responses') this.report('endings', 'endings are for a page of responses, shown once it is sent');

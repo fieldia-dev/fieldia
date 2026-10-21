@@ -224,6 +224,13 @@ export interface Page {
    * the app, and nothing is sent until it is paid. Hidden where the source has no `pay`. See `PagePayment`.
    */
   payment?: PagePayment;
+  /**
+   * An offline outbox: a send that finds no network — a site visit's report in a compound with no signal, a delivery's
+   * proof — is kept on the device, its answers and its photos' bytes (the browser's IndexedDB: never lost on a reload),
+   * said on screen, and sent in order when the signal comes back; a send the server refuses then is kept and said, to try
+   * again or discard. Off unless true.
+   */
+  outbox?: boolean;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -313,6 +320,7 @@ export const PageSchema = z
     continueLater: z.boolean().optional(),
     prefill: PagePrefillSchema.optional(),
     payment: PagePaymentSchema.optional(),
+    outbox: z.boolean().optional(),
   })
   .meta({
     title: 'Fieldia page',

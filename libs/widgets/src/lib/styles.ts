@@ -990,8 +990,12 @@ export function installStyles(document: Document): void {
  * questions' place, laid out alone, its buttons the main sheet's. Like the verify part's, it names no other part's parts:
  * rank 12, after the verify part's, before the themes', so a theme still reshapes its buttons — the ranks from the
  * themes' on moving on by one again.
+ *
+ * An offline outbox (0.30, the viewer's outbox part), new in the same way: a bar over the form saying what waits on the
+ * device, its buttons the main sheet's. Rank 13, after the pay part's, before the themes', the ranks from the themes' on
+ * moving on by one once more.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, verify: 11, pay: 12, themes: 13, quiet: 14, picker: 15, head: 16, groups: 17, text: 18, surveyLooks: 19, cards: 20 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, verify: 11, pay: 12, outbox: 13, themes: 14, quiet: 15, picker: 16, head: 17, groups: 18, text: 19, surveyLooks: 20, cards: 21 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

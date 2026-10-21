@@ -94,6 +94,10 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const prefill = prefillSettings(el, designer);
   // A payment the answers wait for: what for, how much, its currency (payment-settings.ts).
   const payment = paymentSettings(el, designer);
+  // Sends made without signal kept on the device, and sent when it comes back.
+  const outbox = check(w.outboxOn);
+  outbox.addEventListener('change', () => designer.setOutbox(outbox.checked));
+  const outboxRow = setting(el, 'rules', 'Without signal', outbox, { hint: w.outboxHint, words: w.outbox });
   // Its phone numbers: as typed, or checked by their country — the country they start on, and how they are shown.
   const phones = el('select', { class: 'fd-input fd-select', 'aria-label': w.phones }, el('option', { value: '' }, w.phonesAs.typed), el('option', { value: 'checked' }, w.phonesAs.checked)) as HTMLSelectElement;
   phones.addEventListener('change', () => designer.setPhone({ on: phones.value === 'checked' }));
@@ -156,6 +160,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     ...limits.rows,
     ...prefill.rows,
     ...payment.rows,
+    outboxRow,
     sameRow,
     sameOnRow,
     moments.element
@@ -185,6 +190,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       limits.update(page);
       prefill.update(page);
       payment.update(page);
+      outboxRow.hidden = page.layout.type === 'list';
+      outbox.checked = page.outbox === true;
       look.update(page);
       moments.update(page);
       head.update(page);

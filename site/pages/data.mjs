@@ -202,6 +202,15 @@ async submit({ values, payment }) {
 )}
 <p>Paid, the answers go with ${c('payment')}; failed or cancelled, the step says nothing was sent, with <em>Pay again</em> and <em>Back to the answers</em>. A send that fails after paying is sent again without paying twice, and every send path — Ctrl+Enter, a wizard's finish, your own ${c('form.save()')} — waits for the payment the same way. In the designer, <em>Payment before sending</em> on a page's Rules tab. The <a href="/demos/plain/?page=unit-enquiry&amp;skin=outlined">enquiry demo</a> reserves a unit through a stand-in for a provider's checkout.</p>
 
+<h2 id="outbox">Sends kept without signal</h2>
+<p>A broker at a viewing in a compound, an inspector in a basement, a courier at a door: ${c('"outbox": true')} keeps a send that finds no network on the device — its answers, its photos' bytes — and sends it when the signal comes back. No new member: what your source already has (${c('submit')}, ${c('save')}, ${c('upload')}) takes it then.</p>
+${code(
+  'json',
+  `
+{ "id": "site-visit", "data": { "kind": "responses" }, "outbox": true, … }`
+)}
+<p>A failure that reads as the network's — a ${c('TypeError')} from ${c('fetch')} — is kept in the browser's IndexedDB (never lost on a reload, shared by your site's tabs) and said: the form ends <em>Kept on this device</em>, and a bar over it says how many sends wait, with <em>Send now</em>. They go in order when the browser says it is online, every half a minute while something waits, and as the page opens; each is taken by one sender only, and carries ${c('queued: { key, at }')} — the same key every try — so your server can refuse a second try of a send whose answer was lost on the way. A photo taken without signal is stored through ${c('upload')} just before its send goes. A send your server refuses then is kept, said, and offered <em>Try again</em> and <em>Discard</em>. A record saved again while its first save waits is saved once, as it is now, and takes its id when it went. Give the viewer ${c('outbox')} — a store of your own (${c('list')}, ${c('put')}, ${c('delete')}, ${c('claim')}) — to keep them elsewhere. In the designer, <em>Without signal</em> on a page's Rules tab. The <a href="/demos/plain/?page=site-visit&amp;skin=outlined">site visit demo</a> works offline at a press.</p>
+
 <h2 id="upload">Files stored as they are picked</h2>
 <p>A phone's photo is 3 to 12 MB. Twenty of them inside one save fail on mobile data, and one in a draft fills the browser's store. Give your data source ${c('upload')}, and a file or picture field sends each file to your store <em>as soon as it is picked</em>: photos are made smaller first, each shows on its way with a bar, × to cancel it and Retry when it failed, and the field keeps only what ${c('upload')} returns — ${c('{ url, name, size, type, fileId }')}, never the bytes. Three go at once, the rest wait their turn; a field of several keeps them in the order they were picked.</p>
 <ul>

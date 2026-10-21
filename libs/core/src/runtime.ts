@@ -316,6 +316,9 @@ export { asksForCodes, formVerifyPart, type FormVerifyPart } from './lib/record/
 // A payment the answers wait for (`payment`): the form's side in a part, with the viewer's payment step.
 export { asksPayment, formPayPart, type FormPayPart } from './lib/record/payment';
 export type { PagePayment } from './lib/format/payment';
+// An offline outbox (`outbox`): sends kept without signal, the form's side in a part, with the viewer's bar.
+export { formOutboxPart, keepsOffline, type FormOutboxPart, type OutboxItem, type OutboxStore } from './lib/record/outbox';
+export type { FormOutbox } from './lib/record/outbox-form';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
 // (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)

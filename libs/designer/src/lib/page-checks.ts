@@ -285,6 +285,7 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
   if (JSON.stringify(before.limits ?? null) !== JSON.stringify(after.limits ?? null)) out.push(w.limits(!after.limits ? 'off' : !before.limits ? 'on' : 'changed'));
   if (!!before.continueLater !== !!after.continueLater) out.push(w.continueLater(!!after.continueLater));
   if (JSON.stringify(before.prefill ?? null) !== JSON.stringify(after.prefill ?? null)) out.push(w.prefill(after.prefill?.fromUrl.length ?? 0));
+  if (!!before.outbox !== !!after.outbox) out.push(w.outbox(!!after.outbox));
   if (JSON.stringify(before.payment ?? null) !== JSON.stringify(after.payment ?? null)) out.push(w.payment(!after.payment ? 'off' : !before.payment ? 'on' : 'changed'));
   out.push(...lookChanges(before, after, words));
   const layout = layoutChanges(before, after, words);

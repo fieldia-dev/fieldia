@@ -395,6 +395,9 @@
     },
     "payment": {
       "$ref": "#/$defs/PagePayment"
+    },
+    "outbox": {
+      "type": "boolean"
     }
   },
   "required": [

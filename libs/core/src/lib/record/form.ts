@@ -48,6 +48,8 @@ import {
   type VerifiedValue,
   type PaidPayment,
   type PaymentDue,
+  type SaveRequest,
+  type SubmitRequest,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
 import type { Limits } from './form-limits';
@@ -61,6 +63,8 @@ import { prefilledNames, prefillPart, type PrefillPart } from './prefill';
 import { asksForCodes, formVerifyPart, type FormVerifyPart } from './verify';
 import { asksPayment, formPayPart, type FormPayPart } from './payment';
 import type { FormPayment } from './payment-form';
+import { formOutboxPart, keepsOffline, type FormOutboxPart, type OutboxStore } from './outbox';
+import type { FormOutbox } from './outbox-form';
 import type { FormVerify } from './verify-form';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
@@ -187,6 +191,12 @@ export interface FormState {
   readonly verified: Readonly<Record<string, VerifiedValue>>;
   /** The payment the answers waited for (a page's `payment`), once taken: what a send carries; null before, and once started again. */
   readonly paid: PaidPayment | null;
+  /**
+   * A page's offline outbox (`outbox`): how many sends wait on this device, whether they are being sent now, whether the
+   * last try found no network (a send kept, or one kept not taken: the browser's own word is not trusted), and those
+   * the server refused once they went — kept to try again or discard. Null on a page without one, and until it is read.
+   */
+  readonly outbox?: { readonly waiting: number; readonly sending: boolean; readonly offline: boolean; readonly refused: readonly { readonly key: string; readonly message: string; readonly at: string }[] } | null;
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -195,6 +205,8 @@ export interface SentResponse {
   readonly id: RecordId | null;
   /** The answers as they were sent, with the values the source added (`SubmitResult.values`) laid over them. */
   readonly values: Readonly<Values>;
+  /** Kept on the device without signal (a page's `outbox`): sent when it comes back. */
+  readonly queued?: boolean;
 }
 
 /** How a search for a link's records is asked (`form.search`, `form.searchLine`). */
@@ -317,9 +329,9 @@ export interface FormEvents {
   /** A field was written: by a person, a step or the app. Values worked out from it are not told. */
   change: { field: string; value: Value; values: Readonly<Values>; by: ChangeBy };
   /** A record was saved: its values as the save left it — what it sent and what came back; a change made meanwhile is not among them. */
-  save: { recordId: RecordId | null; values: Readonly<Values> };
+  save: { recordId: RecordId | null; values: Readonly<Values>; queued?: boolean };
   /** A page of responses sent its answers: those sent, and on a page with a bot check (`botCheck`) what it saw. */
-  send: { values: Values; bot?: BotReport };
+  send: { values: Values; bot?: BotReport; queued?: boolean };
   /** The app answered a call: with nothing (undefined), or an `ActionResult`. */
   action: { request: ActionRequest; result: ActionResult | undefined };
   /** A run of steps ended — a button's, a moment's, `form.run`'s — and how. */
@@ -384,6 +396,11 @@ export interface FormOptions {
    * (`values`). The viewer gives the browser's own address unless this says. Without `prefill`, never read.
    */
   url?: PageLink;
+  /**
+   * Where a page's offline outbox (`outbox`) keeps its sends: the app's own store; else the browser's IndexedDB, else
+   * memory (`memoryOutbox`, lost with the page).
+   */
+  outbox?: OutboxStore;
   autosave?: { delayMs: number };
   scheduler?: Scheduler;
   /** Validation messages in the page's language. English by default. */
@@ -532,6 +549,11 @@ export interface Form {
    * (a page asking for a payment loads it as its form is made).
    */
   paymentDue(): PaymentDue | null;
+  /**
+   * A page's offline outbox (`outbox`): keep, send, try again and discard what waits on this device — null on a page
+   * without one, and until the outbox part's code has come (a page with one loads it as its form is made).
+   */
+  outbox(): FormOutbox | null;
   /**
    * Whether a box's reading of what was typed still waits (a name being looked up): a check or a step forward made
    * now refuses its text with "still looking", so a caller that can wait for it (`settle`) checks again after.
@@ -1328,6 +1350,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       filesChanged();
     },
     track,
+    // A photo taken without signal, on a page with an offline outbox: kept as its bytes, to go with the send.
+    offlineBytes: () => (keepsOffline(page) && outboxKit ? outboxKit.bytes : null),
   });
 
   /**
@@ -2677,6 +2701,42 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return (await saving(chain)) === null;
   }
 
+  /** A new record's own key while it has no id: a later save of it, still waiting in the outbox, takes its earlier one's place. */
+  let records = 0;
+  let localRecord = `record-${Date.now().toString(36)}-${++records}`;
+  /**
+   * A send, or — where it fails as a network does, on a page with an offline outbox (`outbox`) — kept on the device in
+   * order, to go when the signal comes back: null then. Any other failure is thrown, as without an outbox.
+   */
+  async function sendOrKeep<T>(kind: 'submit' | 'save', request: SubmitRequest | SaveRequest, send: () => Promise<T>): Promise<T | null> {
+    try {
+      return await send();
+    } catch (error) {
+      const kit = keepsOffline(page) && saveProblemOf(error).kind === 'network' ? (outboxKit ?? (await outboxCode())) : null;
+      if (!kit) throw error;
+      await kit.keep(kind, request, kind === 'save' && state.recordId == null ? localRecord : undefined);
+      return null;
+    }
+  }
+  /** The form's side of a page's offline outbox (`outbox`), from the outbox part, as it comes (`outboxCode`). */
+  let outboxKit: FormOutbox | null = null;
+  function outboxCode(): Promise<FormOutbox | null> {
+    const made = (part: FormOutboxPart) =>
+      (outboxKit ??= part.formOutbox({
+        pageId: page.id,
+        fields,
+        dataSource: options.dataSource,
+        store: options.outbox,
+        set,
+        saved(record, result) {
+          // The new record this form still shows went: it has its id now.
+          if (record === localRecord && state.recordId == null) set({ recordId: result.id, version: result.version ?? null });
+        },
+        now: clock,
+      }));
+    if (formOutboxPart.loaded) return Promise.resolve(made(formOutboxPart.loaded));
+    return formOutboxPart.load().then(made, () => null);
+  }
   /** The form's side of a page's payment (`payment`), from the pay part, as it comes (`payCode`). */
   let payKit: FormPayment | null = null;
   const conditions = new Map<string, CompiledModifier>();
@@ -2863,7 +2923,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const resetAt = resets;
         const seen = botReport();
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
-        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...verifyKit?.proved(), ...(state.paid ? { payment: state.paid } : {}) })) ?? {};
+        const request: SubmitRequest = { pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...verifyKit?.proved(), ...(state.paid ? { payment: state.paid } : {}) };
+        // No signal, on a page with an offline outbox: kept on the device (`queued`), the form going on as though it went.
+        const got = await sendOrKeep('submit', request, () => (source.submit as NonNullable<DataSource['submit']>)(request));
+        const queued = got === null;
+        const answer = got ?? {};
         // The captcha's token is spent once sent: the next send waits for a new one.
         if (seen?.captcha) bot.captcha = null;
         // Answered for answers no longer shown — the form was started again meanwhile: the source has them, the form lays nothing.
@@ -2873,8 +2937,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         sentAs = before;
         const added = answer.values && typeof answer.values === 'object' ? structuredCopy(answer.values) : {};
         // Started again meanwhile (`reset`): a new response is on screen, and no ending is the old one's.
-        set({ status: 'saved', unsent: unsentNow(), ...(resets === resetAt ? { sent: { id: answer.id ?? null, values: { ...structuredCopy(sent), ...added } } } : {}) });
-        emit('send', { values: sent, ...(seen ? { bot: seen } : {}) });
+        set({ status: 'saved', unsent: unsentNow(), ...(resets === resetAt ? { sent: { id: answer.id ?? null, values: { ...structuredCopy(sent), ...added }, ...(queued ? { queued } : {}) } } : {}) });
+        emit('send', { values: sent, ...(seen ? { bot: seen } : {}), ...(queued ? { queued } : {}) });
+        if (queued) return null;
         // Counted again: one response fewer to take, this person's sent.
         if (asksLimits()) void track(askLimits());
         void track(moment('on.afterSave', page.on?.afterSave, chain, false));
@@ -2885,7 +2950,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const sent = state.values as Values;
       at = generation;
       const resetAt = resets;
-      const result = await source.save({
+      const request: SaveRequest = {
         model: page.data.model,
         id: state.recordId,
         fields,
@@ -2896,7 +2961,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         ...draft,
         ...verifyKit?.proved(),
         ...(state.paid ? { payment: state.paid } : {}),
-      });
+      };
+      const got = await sendOrKeep('save', request, () => (source.save as NonNullable<DataSource['save']>)(request));
+      const queued = got === null;
+      const result = got ?? { id: state.recordId as RecordId };
       // Answered for a record no longer shown — another opened, or this one loaded again: the source has it, and the
       // form lays nothing of it over the record it shows now.
       if (at !== generation) return null;
@@ -2907,15 +2975,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       sentAs = baseline;
       // Its version now, for the next save to carry; and what the person may do now, when the save changed that.
       // The person's changes it did not send are at risk (`unsent`): every way out asks before it leaves them.
-      set({ status: 'saved', recordId: result.id, values, dirty, warnings: withValues(values, collectWarnings), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
+      set({ status: 'saved', recordId: result.id, values, dirty, warnings: withValues(values, collectWarnings), ...(queued ? {} : { version: result.version ?? null }), ...(result.can ? { can: result.can } : {}) });
       // Changed while it saved: kept in a draft, and saved as any change is.
       if (dirty.length) {
         scheduleDraft();
         scheduleAutosave();
       }
       // The record as this save left it: a change made while it was on its way is no value of it.
-      emit('save', { recordId: state.recordId, values: baseline });
-      void track(moment('on.afterSave', page.on?.afterSave, chain, false));
+      emit('save', { recordId: state.recordId, values: baseline, ...(queued ? { queued } : {}) });
+      if (!queued) void track(moment('on.afterSave', page.on?.afterSave, chain, false));
       return null;
     } catch (error) {
       const problem = saveProblemOf(error);
@@ -3219,6 +3287,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       return true;
     }
     loads++;
+    // A new record: a key of its own while it has no id.
+    localRecord = `record-${Date.now().toString(36)}-${++records}`;
     baseline = startFrom(startingValues(true, false));
     const values = syncParts(structuredCopy(baseline), 'start');
     set({ ...fresh, recordId: null, status: 'ready', values, warnings: withValues(values, collectWarnings) });
@@ -3726,6 +3796,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     asksCode: (field) => !!verifyKit?.asks(field),
 
     paymentDue: () => payKit?.due() ?? null,
+
+    outbox: () => outboxKit,
 
     markVerified(field, proved) {
       fieldDef(field);
@@ -4283,6 +4355,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
   // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
   if (keepsLimits()) void track(limitsCode());
+  // A page with an offline outbox: its code, at once where it has come, else as it does — what waits from before told.
+  if (keepsOffline(page)) void track(outboxCode().then((kit) => kit?.refresh()));
   // A page asking for a payment: the pay part's form code, at once where it has come, else as it does.
   if (asksPayment(page)) void track(payCode());
   // A page with a field asking for a code: the verify part's form code, at once where it has come, else as it does.

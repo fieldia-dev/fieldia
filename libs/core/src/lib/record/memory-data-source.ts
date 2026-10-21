@@ -174,6 +174,11 @@ export interface MemoryDataSourceOptions {
    * payment asked for is kept in `payments`.
    */
   pay?: (request: PayRequest, count: number) => PayResult | Promise<PayResult>;
+  /**
+   * Whether there is no signal now: while it says so, a save, a send and a file's upload fail as a network does
+   * (`TypeError: Failed to fetch`) — a demo's "Work offline", a test's outbox. Signal always, unless said.
+   */
+  offline?: () => boolean;
 }
 
 /**
@@ -246,6 +251,10 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   const told = (version: RecordVersion | undefined, can: RecordPermissions | undefined) => ({ ...(version ? { version } : {}), ...(can ? { can } : {}) });
 
   const pause = () => (options.delayMs ? wait(options.delayMs, options.scheduler) : Promise.resolve());
+  /** No signal now (`offline`): fail as a network does. */
+  const noSignal = () => {
+    if (options.offline?.()) throw new TypeError('Failed to fetch');
+  };
   const labelOf = (model: string, id: RecordId) => {
     const value = table(model)[String(id)]?.[options.labelField?.[model] ?? 'name'];
     return typeof value === 'string' ? value : String(id);
@@ -435,6 +444,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     async save(request: SaveRequest): Promise<SaveResult> {
       calls.push({ method: 'save', request });
       await pause();
+      noSignal();
       const saved = write(request);
       // Saved: the draft its changes were kept in is let go, as a server does.
       if (request.draft) delete drafts[request.draft];
@@ -613,6 +623,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
 
     async upload(file: UploadFile, request: UploadRequest): Promise<UploadedFile> {
       calls.push({ method: 'upload', request: { ...request, file } });
+      noSignal();
       const stopped = () => Object.assign(new Error('The upload was stopped'), { name: 'AbortError' });
       // A store slow or failing as `storage` says: a refusal at once, a failure partway, the bytes paced as they go.
       const tried = `${file.name}:${file.size}`;
@@ -655,6 +666,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     async submit(request: SubmitRequest): Promise<SubmitResult> {
       calls.push({ method: 'submit', request });
       await pause();
+      noSignal();
       responses.push(structuredCopy(request));
       // Sent: the draft it was kept in is let go, as a server does.
       if (request.draft) delete drafts[request.draft];

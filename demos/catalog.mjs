@@ -51,7 +51,7 @@ const AREA_OF = {
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
-  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'unit-enquiry', 'embed'],
+  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'unit-enquiry', 'embed', 'site-visit'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -81,6 +81,7 @@ const SEARCH_WORDS = {
   'visit-feedback': 'feedback survey clinic patient treatments follow up carry forward picked earlier question age birthday options conditions aesthetic botox filler',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
   'clinic-consent': 'consent form signature sign signed esign e-signature evidence proof audit trail fingerprint hash tamper locked patient clinic treatment contract agreement',
+  'site-visit': 'offline no signal no internet no network connection outbox queue queued sync later sent later field work site visit inspection viewing compound broker photos camera phone mobile delivery proof rural reload kept saved device',
   embed: 'embed embedded iframe frame widget website wordpress wix squarespace partner site broker blog listing page html script tag custom element web component fieldia-form no code no build one line copy paste resize height',
   'unit-enquiry': 'enquiry inquiry lead leads link url campaign utm source whatsapp broker agent referral referrer tracking attribution hidden field fields prefill pre-filled prefilled unit property real estate apartment flat villa viewing otp one-time code verify verification verified confirm confirmation phone mobile sms whatsapp fake numbers spam payment pay deposit reservation reserve fee booking fee checkout card stripe paymob fawry paypal',
   'event-signup': 'event sign up signup register registration rsvp tickets seats places capacity limit limited full sold out session workshop close closes closing deadline open opens one per person quota gym club membership members class classes',
@@ -417,6 +418,18 @@ export const DEMOS = [
       'Submit before the mobile is confirmed: it says so under the mobile, and nothing is sent. Change the number after confirming it: it asks for a code again.',
       'Pick Reserve the unit now and Submit: the payment step shows the EGP 10,000 fee. Decline the card first: it says nothing was sent. Pay again with the card: the reservation’s reference, and the payment among what the app was told.',
       '[Open Karim’s Instagram link for C-3](?utm_source=instagram&utm_campaign=open-day&agent=karim&unit=C-3), change the unit to C-4 and Submit: the unit you typed is sent, and Karim is still the agent.',
+    ],
+  },
+  {
+    id: 'site-visit',
+    name: 'A site visit with no signal',
+    category: 'forms',
+    query: 'page=site-visit&skin=outlined',
+    blurb: 'A broker’s report from a viewing in a compound with no signal: what is sent is kept on the phone — the photos too — said on screen, and sent in order when the signal comes back. Never lost on a reload; a report the server refuses then is kept to try again or discard.',
+    howTo: [
+      'Press Work offline over the form, fill in the unit and the condition, add a photo and Submit: “Kept on this device”, and under it, 1 send waits.',
+      'Reload the page, still offline: it still waits. Press Back online: it is sent — what the app was told is listed under the form, the photo stored first.',
+      'Turn your connection off instead (or put the phone in airplane mode): the same, and it goes by itself as the connection comes back.',
     ],
   },
   {

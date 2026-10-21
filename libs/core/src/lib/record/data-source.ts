@@ -656,6 +656,11 @@ export interface SaveRequest {
   verified?: Record<string, VerifiedValue>;
   /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
   payment?: PaidPayment;
+  /**
+   * A send kept on the device without signal and sent later (a page's `outbox`): its key — the same for every try, so a
+   * server that kept the first can tell a second — and when it was made.
+   */
+  queued?: { key: string; at: string };
 }
 
 export interface SaveResult {
@@ -901,6 +906,11 @@ export interface SubmitRequest {
   verified?: Record<string, VerifiedValue>;
   /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
   payment?: PaidPayment;
+  /**
+   * A send kept on the device without signal and sent later (a page's `outbox`): its key — the same for every try, so a
+   * server that kept the first can tell a second — and when it was made.
+   */
+  queued?: { key: string; at: string };
 }
 
 /**

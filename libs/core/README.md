@@ -643,6 +643,22 @@ sent again without paying twice. `form.paymentDue()` says what is due now,
 `state.paid` what was taken. Fieldia holds no keys and no provider's code. The
 memory source answers paid unless its `pay` option says otherwise.
 
+## Sends kept without signal
+
+A page with `"outbox": true` keeps a send that finds no network — a site
+visit's report in a compound, a delivery's proof — on the device and sends it
+when the signal comes back. The form goes on as though it went: a response ends
+"Kept on this device" (`state.sent.queued`), and `state.outbox` says how many
+wait (`{ waiting, sending, refused }`). The items are kept in the browser's
+IndexedDB (`indexedOutbox()`: never lost on a reload, shared by a site's tabs),
+or the store given as `outbox` (`memoryOutbox()` for tests). A photo the network
+could not take stays in its field as its bytes and is stored through `upload`
+just before its send goes. `form.outbox()` sends what waits in order — each
+item claimed by one sender, sent with `queued: { key, at }` so a server can
+refuse a second try — and keeps a refusal to `retry` or `discard`. A new record
+saved twice without signal is saved once, and the form takes its id when it
+went. The memory source's `offline` option fails as a network does.
+
 ## What a page's records are called
 
 A page may say what its records are, so Fieldia's own sentences name them as

@@ -81,7 +81,8 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, asksVerify, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, payPart, verifyPart, type HeadPart } from './viewer-parts';
+import { answersPart, asksVerify, duplicatesPart, headPart, limitsPart, listPart, outboxPart, owedParts, partsFor, payPart, verifyPart, type HeadPart } from './viewer-parts';
+import type { OutboxKit } from './outbox';
 import type { PayKit } from './pay';
 import type { VerifyKit } from './verify';
 import type { LimitsKit } from './limits';
@@ -1891,6 +1892,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   let verifyKit: VerifyKit | null = null;
   /** The payment step a page's answers wait for (`payment`), from the pay part: made as the page is drawn, where its source can `pay`. */
   let payKit: PayKit | null = null;
+  /** An offline outbox said over the form (`outbox`), from the outbox part: made as the page is drawn. */
+  let outboxKit: OutboxKit | null = null;
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
 
@@ -1899,9 +1902,22 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * the id the app gave the response (`{id}`), its button to start again or none — else the plain thanks. An ending
    * takes the focus, so what it says, the reference with it, is read out.
    */
+  /** What a response kept on the device says under its title, in place of the thanks. */
+  let keptWords: HTMLElement | null = null;
   function showDone() {
     content.hidden = true;
     done.hidden = false;
+    // Kept on the device without signal: said so, in place of the thanks and any ending; sent, as ever.
+    keptWords?.remove();
+    keptWords = null;
+    if (form.getState().sent?.queued && outboxKit) {
+      if (doneWords) doneWords.hidden = true;
+      keptWords = el('div', { class: 'fd-done-text' });
+      doneTitle.after(keptWords);
+      return outboxKit.ending(doneTitle, keptWords);
+    }
+    setText(doneTitle, labels.submitted);
+    if (doneWords) doneWords.hidden = false;
     const answers = doneWords && answersPart.loaded;
     if (!answers || !doneWords) return;
     answers.drawEnding({ doc, page, form, locale, write: asSaid, title: doneTitle, words: doneWords, again, thanks: labels.submitted, another: labels.submitAnother })?.focus();
@@ -2429,6 +2445,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       payKit = pays.drawPay({ doc, el, labels, fill, dataSource: options.dataSource, tag: page.language ?? locale, content: () => questions, announce });
       cleanups.push(payKit.destroy);
     }
+    if (page.outbox && outboxPart.loaded) {
+      outboxKit = outboxPart.loaded.watchOutbox({ form, doc, el, labels, fill, announce, ask: (message) => actionHost.ask(message) });
+      updaters.push(outboxKit.update);
+      cleanups.push(outboxKit.destroy);
+    }
     const limits = limitsAsked ? limitsPart.loaded : undefined;
     if (limits) {
       const kit = limits.drawLimits({ form, page, doc, el, labels, messages: options.messages ?? MESSAGES[locale], fill, content: () => questions, done: () => !done.hidden, announce });
@@ -2481,7 +2502,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
     questions = body;
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, body, ...(payKit ? [payKit.step] : []), ...(limitsKit?.after ?? [])];
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...(outboxKit ? [outboxKit.bar] : []), ...safety.elements, draft, body, ...(payKit ? [payKit.step] : []), ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);

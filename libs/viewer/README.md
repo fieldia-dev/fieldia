@@ -136,6 +136,16 @@ your provider's checkout in a window, or draw it in `request.slot` — and waits
 paid, the answers go with the reference; failed or cancelled, it says nothing
 was sent, with Pay again and Back to the answers.
 
+A page with `"outbox": true` keeps a send that finds no network on the device
+(`fieldia.outbox.js`): a bar over the form says what waits ("No signal: 1 send
+waits on this device.") with Send now, a response kept ends "Kept on this
+device" with the bar under it, and what waits is sent as the browser says it is
+`online`, every half a minute while something waits, as the page opens (after a
+reload) and right after another send goes through. "No signal" is said by the
+last try, never by the browser's `navigator.onLine`. A send the server refuses
+then is said, with Try again and Discard. The viewer's `outbox` option takes the
+app's own store in place of the browser's IndexedDB.
+
 ## Saved forms placed in a page
 
 A page may place another saved page in it by its id — an address made once,

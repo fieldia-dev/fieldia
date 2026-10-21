@@ -161,7 +161,7 @@ const asksForParts = (table, parts) => ({
  * Continue later in the limits part, booking slots' settings in the slots part, a signature's in the files part, a page's
  * endings in the answers part, a table of lines' in the lines part, a sheet's statusbar in the business part, options
  * by condition and carried in the options part, the fields a page's link fills in the prefill part, a field's proof by a
- * code in the verify part, a page's payment in the pay part, and a map's in a part of their own
+ * code in the verify part, a page's payment in the pay part, a page's outbox in the outbox part, and a map's in a part of their own
  * (fieldia.mapchecks.js), which the viewer asks for as the check owes it. The packages' `checkPage` runs them at once. Here the main script is built
  * with each module below standing in — its checks owed (`owe`, the reference check's `later`) until its part has come,
  * and the viewer running the check again then, before the page is drawn — and each part's script puts its module's
@@ -181,6 +181,7 @@ const CHECKS_IN_PARTS = {
   prefill: { file: 'libs/core/src/lib/format/prefill-checks.ts', names: ['checkPrefill'] },
   verify: { file: 'libs/core/src/lib/format/verify-checks.ts', names: ['checkVerify'] },
   pay: { file: 'libs/core/src/lib/format/payment-checks.ts', names: ['checkPayment'] },
+  outbox: { file: 'libs/core/src/lib/format/outbox-checks.ts', names: ['checkOutbox'] },
 };
 const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
 const checksLater = {
@@ -1043,7 +1044,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // class — its attributes watched, its page, source and options kept until its part comes and drawn again when set after
 // — the part's handle, and the call that defines it (1.08); what it does is in fieldia.element.js: 510.35 measured
 // before, 511.43 after, to 511.5.
-const BUDGET_KB = 511.5;
+// Sends kept without signal (0.30, w6-public-forms), the store, the sending and the bar in fieldia.outbox.js but what a
+// send needs where the network fails it — at the choke point: the send kept in place of its failure, the form going on
+// as though it went, a new record's own key and its id once it went (0.91 in the form), a photo's bytes kept where the
+// network could not take it (0.11, uploads), the bar placed and a kept response's ending (0.22, viewer), the parts'
+// handles and whether a page keeps them (0.12), the check owed (0.20): 511.43 measured before, 513.21 after, to 513.3.
+const BUDGET_KB = 513.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1287,7 +1293,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 167.36 after, to 167.4.
 // `<fieldia-form>` defined as the script starts (0.30, w6-public-forms; listed with the raw budget above): 167.36
 // measured before, 167.72 after, to 167.8.
-const GZIP_BUDGET_KB = 167.8;
+// Sends kept without signal (0.30, w6-public-forms; listed with the raw budget above): the send kept at the choke point,
+// a photo's bytes kept, the bar placed, the handles, the check owed — 167.72 measured before, 168.56 after, to 168.6.
+const GZIP_BUDGET_KB = 168.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1478,7 +1486,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // and 12.21, to 38.7 and 12.3.
 // A `<fieldia-form>` whose page could not be read says so — 1 word: Arabic's 82.53 to 82.67, to 82.7; German's 38.18 to
 // 38.24, to 38.3; French's 38.61 to 38.67, as it was.
-const ADD_ON_BUDGET_KB = { ar: [82.7, 14.0], de: [38.3, 12.2], fr: [38.7, 12.3] };
+// Sends kept without signal (0.30, w6-public-forms): what waits, sending, sent, Send now, refused, Try again, Discard and
+// its question, a response kept's ending — 12 words: Arabic's 82.67 and 13.95 measured before, 84.31 and 14.17 after, to
+// 84.4 and 14.2; German's 38.24 and 12.19 to 38.89 and 12.36, to 38.9 and 12.4; French's 38.67 and 12.22 to 39.30 and
+// 12.40, to 39.4 and 12.5.
+const ADD_ON_BUDGET_KB = { ar: [84.4, 14.2], de: [38.9, 12.4], fr: [39.4, 12.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1888,7 +1900,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 2.3): its page given or fetched from `src`, its form drawn with its attributes' language and look, its events told,
 // drawn again as an attribute changes, its answers posted to its `action` as JSON, and in a frame its height and events
 // told to the page round it — asked for the first time one is put on a page.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.7, 6.4], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], prefill: [3.8, 1.9], verify: [10.9, 4.7], pay: [7.6, 3.3], element: [4.9, 2.3] };
+// Sends kept without signal (0.30, w6-public-forms) in a part of their own, fieldia.outbox.js (8.89 and 3.94, to 8.9 and
+// 4.0): the items kept in IndexedDB (or the app's store, or memory), each claimed by one sender, sent in order with their
+// photos stored first, a refusal kept to try again or discard, and the bar over the form saying it — under a kept
+// response's ending too — with its sheet and its check, waited for by a page with `outbox`. A memory source fails as a network does at its `offline` — memory
+// 17.61 and 6.37 measured before, 17.69 and 6.41 after, to 17.8 and 6.5.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.8, 6.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], prefill: [3.8, 1.9], verify: [10.9, 4.7], pay: [7.6, 3.3], element: [4.9, 2.3], outbox: [8.9, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1923,9 +1940,10 @@ const PART_GIVES = {
   verify: ['watchVerify', 'verifyWays', 'installVerifyStyles', 'formVerify'],
   pay: ['drawPay', 'amountWords', 'installPayStyles', 'formPayment'],
   element: ['connect', 'disconnect', 'changed', 'handleOf', 'actionSource'],
+  outbox: ['watchOutbox', 'installOutboxStyles', 'formOutbox', 'memoryOutbox', 'indexedOutbox'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', prefill: 'prefillPart', verify: 'verifyPart', pay: 'payPart', element: 'elementPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', prefill: 'prefillPart', verify: 'verifyPart', pay: 'payPart', element: 'elementPart', outbox: 'outboxPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -2378,6 +2396,20 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   element.remove();
   if (element.handle || element.querySelector('.fd-form')?.isConnected === false) throw new Error('in a page, a <fieldia-form> taken off the page keeps its form');
   host.replaceChildren();
+  // A site visit with an offline outbox (`outbox`): the outbox part (its form's side too), the page drawn once it came,
+  // its bar placed over the questions, hidden while nothing waits; a send without signal kept, said, and sent once back.
+  let off = true;
+  const siteVisit = inPage.mountViewer(host, { page: read('site-visit.page.json'), dataSource: inPage.createMemoryDataSource({ offline: () => off }), values: { unit: 'B-12', condition: 'ready' } });
+  waits(siteVisit, 'a page with an offline outbox');
+  await siteVisit.drawn;
+  hasIn('a site visit with an outbox', 'answers, business, cards, choice, columns, date, duplicates, element, evidence, files, filters, functions, head, import, limits, lines, list, options, outbox, path, pay, phone, prefill, print, quiet, relations, slots, survey, text, themes, verify');
+  if (!host.querySelector('.fd-outbox[hidden]') || !doc.getElementById('fieldia-outbox-styles')) throw new Error("in a page, a page with an outbox draws no bar over its questions, or its sheet was never put in");
+  if (!(await siteVisit.save()) || !siteVisit.form.getState().sent?.queued || siteVisit.form.getState().outbox?.waiting !== 1) throw new Error(`in a page, a send without signal is not kept on the device: ${JSON.stringify(siteVisit.form.getState().outbox)}`);
+  off = false;
+  await siteVisit.form.outbox()?.send();
+  if (siteVisit.form.getState().outbox?.waiting !== 0) throw new Error('in a page, what waited is not sent once the signal is back');
+  siteVisit.destroy();
+  gone('site visit');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
@@ -2392,7 +2424,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
   if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-verify-styles', 'fieldia-pay-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-verify-styles', 'fieldia-pay-styles', 'fieldia-outbox-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
     const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
@@ -2400,7 +2432,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; an enquiry filled from a broker's link, by the prefill part, its mobile asking for a code, by the verify part, its fee, by the pay part; a <fieldia-form> put on a page, by the element part — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; an enquiry filled from a broker's link, by the prefill part, its mobile asking for a code, by the verify part, its fee, by the pay part; a <fieldia-form> put on a page, by the element part; a site visit kept without signal, by the outbox part — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

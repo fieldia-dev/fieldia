@@ -1017,3 +1017,44 @@ In plain words:
 - The memory source answers paid with `PAY-n` unless its `pay` option says otherwise (a demo's stand-in checkout drawn in
   the slot, a test's decline), keeping each in `payments`. Tests: `libs/core/src/lib/record/payment.spec.ts`,
   `libs/viewer/src/lib/pay.spec.ts`, `e2e/payment.spec.ts`.
+
+## 21. An offline outbox (Wave 6, lane w6-public-forms)
+
+No new member: a page's `outbox` keeps a send that finds no network on the device and sends it later through the
+members a source already has (`submit`, `save`, `upload`), with one more optional field in their requests.
+
+```ts
+// SubmitRequest and SaveRequest gain queued?: { key: string; at: string } — a send kept without signal and sent later:
+// its key (the same for every try) and when it was kept.
+
+interface OutboxStore {                         // FormOptions.outbox, ViewerOptions.outbox: where the items are kept
+  list(pageId: string): Promise<OutboxItem[]>;
+  put(item: OutboxItem): Promise<void>;
+  delete(key: string): Promise<void>;
+  claim(key: string, by: string, until: number): Promise<boolean>;   // taken by one sender only
+}
+interface OutboxItem { key: string; pageId: string; kind: 'submit' | 'save'; request: SubmitRequest | SaveRequest; at: string;
+  record?: string; tries: number; refused?: { message: string; problem?: SaveProblem }; claim?: { by: string; until: number } }
+```
+
+In plain words:
+
+- **What counts as no signal**: a send whose failure reads as the network's (`saveProblemOf` → `network`: a `TypeError`
+  from `fetch`). Any other refusal is said at once, as before.
+- **Kept**: the request as it would have gone, in the browser's IndexedDB (`fieldia-outbox`, never lost on a reload,
+  shared by a site's tabs) unless the app gives its own store; memory where the browser has none. The form goes on as
+  though it went — a response ends "Kept on this device" (`state.sent.queued`), the outbox's bar under it until another
+  response is started, then over the form again — a record's changes are no longer the
+  person's to lose — and `state.outbox` says how many wait. A new record saved again while its first save waits is one
+  save of the record as it is now; once it went, the form still showing it takes its id.
+- **Photos**: where the source has `upload`, a file the network could not take stays in its field as its bytes (base64),
+  goes with the kept send, and is stored through `upload` just before the send goes, its link put in its place.
+- **Sent**: in the order they were kept, each claimed by one sender only (two tabs never send one twice), with
+  `queued.key` so a server that kept a first try (its answer lost on the way) can refuse a second; when the browser says
+  it is `online`, every half a minute while something waits, as the page opens, right after another send went through,
+  and on Send now — never held back by the browser's `navigator.onLine`, which some browsers get wrong both ways (a try
+  costs one failed request). No signal again: it stops there, the rest waiting behind it, and `state.outbox.offline`
+  says so ("No signal:") until a try goes through. Refused by the server then: kept with why, said, to Try again or Discard.
+- `form.outbox()` gives `send`, `refresh`, `retry`, `discard` and `keep`; `indexedOutbox()` and `memoryOutbox()` are the
+  two stores Fieldia ships. The memory source's `offline` option fails its saves, sends and uploads as a network does.
+  Tests: `libs/core/src/lib/record/outbox.spec.ts`, `libs/viewer/src/lib/outbox.spec.ts`, `e2e/outbox.spec.ts`.

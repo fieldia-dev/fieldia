@@ -75,6 +75,7 @@ import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
 import { standInCheckout, unitEnquiryPage } from './unit-enquiry';
+import { demoOffline, siteVisitPage } from './site-visit';
 import clinicIntake from '../../examples/pages/clinic-intake.page.json';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 
@@ -185,6 +186,8 @@ export const pages: Record<string, Page> = {
   'event-signup': eventSignupPage(),
   // A property enquiry shared as a broker's link: the unit filled from it, who sent the person in hidden fields (shared/unit-enquiry.ts).
   'unit-enquiry': unitEnquiryPage(),
+  // A site visit's report kept on the phone without signal and sent when it comes back (shared/site-visit.ts).
+  'site-visit': siteVisitPage(),
   // A clinic's long intake, Continue later on any device: shared/clinic-intake.ts.
   'clinic-intake': clinicIntake as Page,
   // A test drive booked at a showroom in Berlin, on Berlin's clock, from the times its schedule has free: shared/test-drive.ts.
@@ -501,6 +504,8 @@ export function sampleDataSource() {
     limits: EVENT_COUNTS,
     // A payment the answers wait for, through a stand-in for the app's provider's checkout (shared/unit-enquiry.ts).
     pay: (request) => standInCheckout(request),
+    // No signal while the site visit's bar says so, or the browser has no network: saves and sends fail as a network's.
+    offline: demoOffline,
     // The drafts the server keeps, and the link Continue later gives (shared/clinic-intake.ts).
     drafts: keptDrafts(),
     draftLink,

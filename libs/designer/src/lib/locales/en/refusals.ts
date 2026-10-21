@@ -127,6 +127,7 @@ export const refusals = {
   limitsForResponses: 'Open and close dates and limits are for a form that collects responses: an app’s own screen opens and closes with the app',
   closesBeforeOpens: 'It would close before it opens: pick a closing time after the opening',
   prefillParam: (param: string) => (param ? `“${param}” is no link’s parameter: letters, digits and _ . ~ - only, at most 100` : 'Name the link’s parameter first'),
+  outboxOnList: 'An outbox keeps a form’s sends made without signal: a list of records sends none',
   paymentOnList: 'A payment is taken as a form’s answers are sent: a list of records sends none',
   paymentAmount: 'An amount above 0',
   paymentCurrency: (currency: string) => `“${currency}” is no currency’s code (three capitals: EGP) nor a field of the page`,

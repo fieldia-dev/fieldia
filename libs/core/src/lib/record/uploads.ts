@@ -75,6 +75,11 @@ export interface UploadsHost {
   write(field: string, line: { field: string; key: string } | undefined, value: Value, quiet: boolean): void;
   changed(uploads: readonly FileUpload[]): void;
   track<T>(promise: Promise<T>): Promise<T>;
+  /**
+   * Where a file the network could not take is kept as its bytes in its field (a page's offline `outbox`), how its bytes
+   * are read: the send is kept on the device with it, and the file stored when the signal comes back. Null, never.
+   */
+  offlineBytes?(): ((file: UploadFile) => Promise<FileValue>) | null;
 }
 
 interface Entry {
@@ -290,6 +295,14 @@ export function createUploads(host: UploadsHost) {
         if (entries.includes(entry)) drop(entry);
       } else {
         const problem = saveProblemOf(error);
+        // No signal, on a page with an offline outbox: the file stays in its field as its bytes, to go with the send.
+        const bytes = problem.kind === 'network' ? host.offlineBytes?.() : null;
+        if (bytes) {
+          if (!entry.replaces) put(entry, (await bytes(entry.file)) as UploadedFile);
+          drop(entry);
+          entry.end?.();
+          return;
+        }
         entry.status = problem.kind === 'rule' ? 'refused' : 'failed';
         entry.error = problem.message;
         entry.end?.();
