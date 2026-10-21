@@ -110,6 +110,7 @@ const NAMES: Record<string, string> = {
   'When…': 'عندما…',
   Look: 'المظهر',
   'Asks first': 'يسأل أولًا',
+  'Undo after it': 'تراجع بعده',
   'Key, with Alt': 'المفتاح مع Alt',
   // A record's head (head-properties.ts).
   'Record head': 'رأس السجل',
@@ -166,6 +167,7 @@ const NAMES: Record<string, string> = {
   'Once it is sent': 'بعد الإرسال',
   'One with its article': 'الواحد مع أداة التنكير',
   'Field names small inside them': 'أسماء الحقول بحرف صغير داخلها',
+  'Templates people save': 'قوالب يحفظها المستخدمون',
   'Duplicates asked for': 'متى يُبحث عن السجلات المكررة',
 };
 
