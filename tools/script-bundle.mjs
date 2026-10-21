@@ -1014,7 +1014,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
-const BUDGET_KB = 506.8;
+// Lists people work in (w6-lists): the one-tag script's memory source answering a list's saved views where it is given
+// some (`views`, `saveView`, `deleteView`: their names, the members it makes once its part has come; 58 bytes), and the
+// views part a list asks for where its source keeps views (fieldia.views.js: its name and loader, and the global's
+// `viewsPart`; 64) — 506.77 measured before, 506.89 after, to 506.9. Multi-column sort is the list part's.
+const BUDGET_KB = 506.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1248,7 +1252,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
-const GZIP_BUDGET_KB = 166.2;
+// Lists people work in (listed with the raw budget above): 166.15 measured before, 166.20 after, to 166.3.
+const GZIP_BUDGET_KB = 166.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1431,8 +1436,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 36.27 and 11.64, to 36.3 and 11.7; French's 36.60 and 11.64 to 36.75 and 11.70, to 36.8 and 11.7.
 // Lists people work in (w6-lists): a header's place among several the list is ordered by, said after its name, 2 words
 // in each: Arabic's 77.88 and 13.29 measured before, 78.11 and 13.33 after, to 78.2 and 13.4; German's 36.27 and 11.64 to
-// 36.38 and 11.68, its raw to 36.4; French's 36.75 and 11.70 to 36.84 and 11.73, to 36.9 and 11.8.
-const ADD_ON_BUDGET_KB = { ar: [78.2, 13.4], de: [36.4, 11.7], fr: [36.9, 11.8] };
+// 36.38 and 11.68, its raw to 36.4; French's 36.75 and 11.70 to 36.84 and 11.73, to 36.9 and 11.8. A list's views kept
+// on the app's server — shared with the team, by whom, Share with the team, not loaded, not saved, not deleted, the
+// question before a shared one goes — 7 more in each: Arabic's 78.84 and 13.45 after, to 78.9 and 13.5; German's 36.72
+// and 11.78, to 36.8 and 11.8; French's 37.25 and 11.83, to 37.3 and 11.9.
+const ADD_ON_BUDGET_KB = { ar: [78.9, 13.5], de: [36.8, 11.8], fr: [37.3, 11.9] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1827,8 +1835,15 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
 // Lists people work in (w6-lists), each in the part that draws it. A list ordered by several of its headers — Shift and a
 // press adds a key, each key's number and words beside its header — in the list part, as every list's headers sort:
-// list 129.50 and 41.60 to 131.08 and 42.13, to 131.1 and 42.2.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [131.1, 42.2], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// list 129.50 and 41.60 to 131.08 and 42.13, to 131.1 and 42.2. A list's views kept on the app's server in a part of
+// their own, asked for as a list whose source keeps views opens — views 5.81 and 2.55, to 5.9 and 2.6: the menu's views
+// drawn, put on, saved, shared and deleted, the one it opens on, their sheet — and in the list part only its hooks (the
+// views asked for before the records, the list's state given and put back, the menu's favourites as they come): list
+// 131.08 and 42.13 to 132.17 and 42.56, to 132.2 and 42.6. In the list part they would have added 3.8 and 1.7 to every
+// list's. The columns part saying and putting back a person's columns (a view's): columns 19.01 and 6.86 to 19.07 and
+// 6.89, under its own. The memory source keeping views where given some: memory 16.08 and 5.71 to 17.16 and 6.12, to
+// 17.2 and 6.2.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [132.2, 42.6], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], views: [5.9, 2.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.2, 6.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1841,6 +1856,7 @@ const PART_GIVES = {
   cards: ['cardSpec', 'cardReads', 'drawCard', 'installCardStyles'],
   columns: ['columnChoices', 'columnsKey', 'installColumnStyles'],
   import: ['openImport', 'installImportStyles'],
+  views: ['savedViews', 'openingView', 'installViewStyles'],
   themes: ['installThemeStyles'],
   quiet: ['installQuietStyles'],
   lines: ['linesWidget', 'linksTableWidget', 'cardsWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],
@@ -1861,7 +1877,7 @@ const PART_GIVES = {
   mapchecks: ['checkMap', 'checkPlace'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', views: 'viewsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -2279,6 +2295,16 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
   visit.destroy();
   gone('visit');
+  // A sales team's queue whose source keeps its views on its server: the views part, asked for as the list opens — never
+  // by a page, as no page says where its views are kept — the list's records asked once it answered, its menu's
+  // favourites the views, its sheet right after the list's own.
+  const queue = inPage.mountViewer(host, { page: read('leads-queue.page.json'), dataSource: inPage.createMemoryDataSource({ records: { lead: { 1: { name: 'Omar Nabil', stage: 'new' } } }, views: { 'leads-queue': [{ id: 't1', name: 'New ones', shared: true, by: 'Mona Adel', state: { facets: [] } }] } }) });
+  await queue.drawn;
+  if (!(await until(() => host.querySelector('.fd-list-row')))) throw new Error('in a page, a list whose source keeps views draws no row');
+  hasIn('a queue keeping its views on its server', 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, print, quiet, relations, slots, survey, text, themes, views');
+  if (!(await until(() => host.querySelector('.fd-view-whose')))?.textContent.includes('Mona Adel') || !doc.getElementById('fd-list-views-styles')) throw new Error("in a page, a list's views are not drawn from their part");
+  queue.destroy();
+  gone('queue');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)

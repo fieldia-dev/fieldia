@@ -76,6 +76,7 @@ import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
 import clinicIntake from '../../examples/pages/clinic-intake.page.json';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
+import { keepViews, keptViews } from './saved-views';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -751,7 +752,9 @@ export function sampleDataSource() {
   // What this tab saved in the demos, in place of the samples (shared/kept.ts) — the customer typed twice's second Nile
   // Traders, someone else's, to find and merge (shared/duplicates.ts), back unless it was merged away.
   const extra: Record<string, Record<string, Values>> = params.get('page') === 'customer-card' ? { partner: duplicateCustomers() } : {};
-  const source = createMemoryDataSource({ ...options, records: keptOver(options?.records ?? {}, extra), notDuplicatePairs: keptApart() });
+  // The sales team's queue keeps its saved views on its server, the team's shared ones among them (shared/saved-views.ts).
+  const views = params.get('page') === 'leads-queue' ? { views: keptViews() } : {};
+  const source = createMemoryDataSource({ ...options, ...views, records: keptOver(options?.records ?? {}, extra), notDuplicatePairs: keptApart() });
   // `?store=http`: the listing's photos to a real endpoint, through uploadTo, for the browser tests.
   const upload = listingUpload(params);
   if (upload) source.upload = upload;
@@ -767,6 +770,8 @@ export function sampleDataSource() {
   keepWrites(source);
   // Each draft kept in this browser, for the link opened in another tab (shared/clinic-intake.ts).
   keepDrafts(source);
+  // Each view saved or deleted kept in this tab, as the team's server keeps them.
+  keepViews(source);
   return source;
 }
 

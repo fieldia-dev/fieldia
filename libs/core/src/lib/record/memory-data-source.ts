@@ -50,12 +50,14 @@ import type {
   SaveDraftRequest,
   SavedDraft,
   LoadDraftRequest,
+  SavedView,
 } from './data-source';
 import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
 import { spanStart } from './periods';
 import { wait, type Scheduler } from './scheduler';
 import { memoryKept, type MemoryKept } from './memory-kept';
+import { memoryViews } from './memory-views';
 import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 export interface MemoryDataSourceOptions {
@@ -155,15 +157,23 @@ export interface MemoryDataSourceOptions {
   drafts?: Record<string, StoredDraft & { pageId: string }>;
   /** The link "Continue later" answers with, made from the draft's key — the app's own address with it: none without it. */
   draftLink?: (key: string, request: SaveDraftRequest) => string;
+  /**
+   * Keep lists' saved views, as an app's server does (`views`, `saveView`, `deleteView`): those it starts with, by page
+   * id — the team's shared ones, each with who made it (`by`), and this person's own (`mine`) — `{}` for none yet.
+   * Without it, the source has none of the three, and a list keeps its favourites in the browser, as before.
+   */
+  views?: Record<string, SavedView[]>;
 }
 
 /**
  * Every member of a data source but `exportRecords` and `importRecords`: a
  * memory source leaves an export and an import to the browser, as a source
  * without a server of its own does. A test or a demo gives it one by setting
- * it.
+ * it. Saved views (`views`, `saveView`, `deleteView`) where it is given `views`.
  */
-export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords' | 'importRecords'>>, Pick<DataSource, 'exportRecords' | 'importRecords'> {
+export interface MemoryDataSource
+  extends Required<Omit<DataSource, 'exportRecords' | 'importRecords' | 'views' | 'saveView' | 'deleteView'>>,
+    Pick<DataSource, 'exportRecords' | 'importRecords' | 'views' | 'saveView' | 'deleteView'> {
   readonly records: Record<string, Record<string, Values>>;
   /**
    * The records said to be someone else for one another, by model: each pair of ids, in the order kept, through
@@ -683,6 +693,9 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       const own = options.definitions?.[request.list]?.(request.values) ?? [];
       addedDefinitions.set(`${request.list}:${JSON.stringify(own)}`, structuredCopy(request.definitions.filter((d) => !own.some((o) => o.name === d.name))));
     },
+
+    // Lists' saved views, where it was given some (memory-views.ts).
+    ...(options.views ? memoryViews(options.views, calls, pause) : {}),
   };
 }
 

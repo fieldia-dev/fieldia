@@ -3,6 +3,7 @@ import type { JsonValue } from '../format/json';
 import type { FileValue, RecordId, RelatedRecord, Values } from './values';
 import type { RunStop } from './run';
 import type { DateInterval } from './periods';
+import type { Facet } from './search';
 
 /**
  * How Fieldia reaches data. Fieldia knows no backend: an app implements this
@@ -35,6 +36,23 @@ export interface DataSource {
   list?(request: ListRequest): Promise<ListResult>;
   /** How many records fall under each value of a field, for a list's Group By. */
   groups?(request: GroupRequest): Promise<Group[]>;
+  /**
+   * The views kept for a list on the app's server: each a name and how the list stands — its search, its order and
+   * its columns — the person's own and those shared with their team, the same on every device. Asked as the list
+   * opens, before its records: it opens on the person's own default view, else the team's. Without it, a person's
+   * searches are kept as favourites in their browser (the viewer's `preferences`), as before.
+   */
+  views?(request: ViewsRequest): Promise<SavedView[]>;
+  /**
+   * Keep a view: a new one (no `id`), or one of the person's own again (its `id`) — its name, how the list stands,
+   * shared with the team or not, the default or not. Answer with it as kept, its `id` given. A view kept as the default
+   * is the only one: the person's own default, or the team's (a shared one) — let go of the one before. Refused
+   * (thrown, its message in the person's words), the menu says so and nothing is kept. Without it, views are listed
+   * and put on, and none is saved.
+   */
+  saveView?(request: SaveViewRequest): Promise<SavedView>;
+  /** Delete one of the person's own views. Without it, the menu deletes none. */
+  deleteView?(request: DeleteViewRequest): Promise<void>;
   /** The choices of one of the app's lists, for a selection with `optionsFrom` — a page's field, or a table's line by its values. */
   options?(request: OptionsRequest): Promise<Option[]>;
   /** The definitions of a properties field with `definitionsFrom`: those the linked record keeps. */
@@ -604,6 +622,57 @@ export interface ListedRecord {
   version?: RecordVersion;
   /** What the person may do with it: its row's buttons and a bulk edit keep to it. */
   can?: RecordPermissions;
+}
+
+/** Which list's views (`views`, `saveView`, `deleteView`): the page, its model and the list on it. */
+export interface ViewsRequest {
+  pageId: string;
+  model: string;
+  /** The list's id on the page (its layout's `id`): a page may hold more than one. */
+  list: string;
+}
+
+/** A column as a list keeps it for a person: shown or hidden, in its place in their order, and its width in pixels where they sized it. */
+export interface ColumnState {
+  colId: string;
+  width?: number | null;
+  hide?: boolean;
+}
+
+/** How a list stands, as a saved view keeps it. */
+export interface ViewState {
+  /** Its search, as the search bar's chips: the filters on, the fields grouped by, a field's values, a person's own conditions. */
+  facets: Facet[];
+  /** The keys chosen from its headers, the first leading; none or left out: the list's own order. */
+  sort?: SortOrder[];
+  /** The columns, in the person's order, those hidden marked — where the list lets a person choose (`optionalColumns`). */
+  columns?: ColumnState[];
+}
+
+/** A view kept on the app's server: what `views` answers, and `saveView` gives back. */
+export interface SavedView {
+  /** The source's own key for it. */
+  id: string;
+  name: string;
+  state: ViewState;
+  /** Shared with the team: everyone who opens this list is offered it. Else the person's own alone. */
+  shared?: boolean;
+  /** The list opens on it: the person's own default first, else the team's (a shared one). */
+  isDefault?: boolean;
+  /** The person's own: theirs to keep again and delete. Another's shared view is only put on. */
+  mine?: boolean;
+  /** Who made it, said beside another's shared view: "Mona Adel". */
+  by?: string;
+}
+
+/** A view to keep: new, or one of the person's own by its `id`. */
+export interface SaveViewRequest extends ViewsRequest {
+  view: { id?: string; name: string; state: ViewState; shared?: boolean; isDefault?: boolean };
+}
+
+/** One of the person's own views to delete, by its `id`. */
+export interface DeleteViewRequest extends ViewsRequest {
+  id: string;
 }
 
 /**

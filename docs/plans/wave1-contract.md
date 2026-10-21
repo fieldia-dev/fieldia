@@ -914,3 +914,61 @@ In plain words:
   `limits` option's starting counts, a record page's model's records but the one edited; `saveDraft` keys drafts
   `draft-1`, `draft-2`… (`drafts` shows them, with `later`), with `draftLink(key)`'s link on "Continue later";
   `loadDraft` finds them, and the `drafts` option's. Tests: `libs/core/src/lib/record/taking.spec.ts`, `drafts.spec.ts`.
+
+## 19. A list's views kept on the app's server (Wave 6, lane w6-lists)
+
+A list's search bar keeps searches by name. Without these members they are favourites in the person's browser (the
+viewer's `preferences`), as since 0.20; with `views`, they are views the app's server keeps — the person's own and
+those shared with their team, the same on every device — and a view keeps the list's order and columns besides its
+search. Each member is optional, as everything here: without `saveView` views are listed and put on, none saved;
+without `deleteView` none is deleted from the menu.
+
+```ts
+views?(request: ViewsRequest): Promise<SavedView[]>;
+saveView?(request: SaveViewRequest): Promise<SavedView>;
+deleteView?(request: DeleteViewRequest): Promise<void>;
+
+interface ViewsRequest { pageId: string; model: string; list: string }   // the list's id on the page (its layout's)
+interface ViewState {
+  facets: Facet[];            // the search, as the search bar's chips: filters on, Group By, a field's values, a person's own
+  sort?: SortOrder[];         // the keys chosen from the headers, the first leading; none: the list's own order
+  columns?: ColumnState[];    // where the list has optionalColumns: every column in the person's order, hidden ones marked
+}
+interface ColumnState { colId: string; width?: number | null; hide?: boolean }   // as the list keeps a person's columns
+interface SavedView {
+  id: string;                 // the source's own key
+  name: string;
+  state: ViewState;
+  shared?: boolean;           // with the team: everyone who opens this list is offered it
+  isDefault?: boolean;        // the list opens on it: the person's own default first, else the team's
+  mine?: boolean;             // the person's own: theirs to keep again and delete; another's is only put on
+  by?: string;                // who made another's shared view, said beside it: "Mona Adel"
+}
+interface SaveViewRequest extends ViewsRequest { view: { id?: string; name: string; state: ViewState; shared?: boolean; isDefault?: boolean } }
+interface DeleteViewRequest extends ViewsRequest { id: string }
+```
+
+In plain words:
+
+- **When they are asked.** `views` as the list opens, before its records are: the list opens on the person's own
+  default view (`mine`, `isDefault`, not shared), else their own shared default, else the team's (`shared`,
+  `isDefault`) — its search, its order and its columns, the records asked once, in it. A list opened with a search of
+  its own (View all's) keeps that search and lists the views all the same. Again after each save and delete, so what
+  the server did meanwhile (another default let go) shows.
+- **Saving.** "Save current search" sends the list as it stands, its name, Use by default and Share with the team. A
+  name of the person's own sent again carries that view's `id`: kept in its place. Another's view is never sent with
+  its id. A view kept as the default is the only one of its kind — the person's own, or the team's (a shared one) —
+  the server lets go of the one before. Refused (thrown), the form says why in the source's words ("The view was not
+  saved: Views are full for this list."), keeping what was typed.
+- **Deleting.** Only the person's own (`mine`), with × — one shared with the team asked first ("Delete “Ours” for
+  everyone on the team?"). Refused (thrown), said as a toast.
+- **Failing.** `views` refused: the list opens on its own search, and the menu says "Saved views could not be
+  loaded." with Retry.
+- **Who.** The server knows the person by its own sign-in: nothing in the requests names them. `mine` and `by` are
+  how it tells the page.
+- **Where.** In the search bar's menu (a list with `search: "fields"` has no menu, and keeps no views). A list in a
+  record (a related list) keeps none.
+- **The memory source** keeps them where it is given `views` — by page id, `{}` for none yet — the views given (the
+  team's with `by`, the person's own with `mine`) and those saved, the person's own, each `view-1`, `view-2`…; one
+  default of a kind; another's refused. Without the option it has none of the three members. Tests:
+  `libs/core/src/lib/record/memory-views.spec.ts`, `libs/viewer/src/lib/saved-views.spec.ts`.

@@ -20,7 +20,11 @@ export function readFavourites(preferences: PreferenceStore, page: Page): Favour
 /** What a list starts with: the favourite used by default, or else the list's own default filters. */
 export function startingFacets(node: ListNode, preferences: PreferenceStore, page: Page): Facet[] {
   const chosen = readFavourites(preferences, page).find((favourite) => favourite.isDefault);
-  if (chosen) return chosen.facets;
+  return chosen ? chosen.facets : defaultFacets(node);
+}
+
+/** The list's own default filters, as a chip. */
+export function defaultFacets(node: ListNode): Facet[] {
   if (!node.defaultFilters?.length) return [];
   return [{ kind: 'filters', ids: [...node.defaultFilters], labels: node.defaultFilters.map((id) => node.filters?.find((f) => f.id === id)?.label ?? id) }];
 }
@@ -30,18 +34,7 @@ export function startingFacets(node: ListNode, preferences: PreferenceStore, pag
  * with a click or deleted, and the search on screen kept as a new one, used by
  * default if the person says so. Kept where the page keeps its preferences.
  */
-export function favouritesPart(context: {
-  page: Page;
-  el: El;
-  labels: ViewerLabels;
-  fill: (template: string, values: Record<string, string>) => string;
-  preferences: PreferenceStore;
-  current: () => Facet[];
-  apply: (facets: Facet[]) => void;
-  /** Where a favourite's count goes after its name, where the list counts (`filterCounts`); and what is told once the favourites are drawn. */
-  slot?: () => HTMLElement;
-  drawn?: () => void;
-}) {
+export function favouritesPart(context: FavouritesContext): Favourites {
   const { page, el, labels, fill, preferences } = context;
   const list = el('ul', { class: 'fd-favourite-list' });
   const none = el('p', { class: 'fd-favourites-none' }, labels.noFavourites);
@@ -99,4 +92,46 @@ export function favouritesPart(context: {
 
   draw();
   return { list, none, open, form, slots: () => slots };
+}
+
+/**
+ * The menu's favourites from a part on its way (the views part, for a source that keeps views): drawn in their places
+ * once it comes — the browser's own where it could not, or where it answers none.
+ */
+export function laterFavourites(coming: Promise<((context: FavouritesContext) => Favourites) | null>, el: El): (context: FavouritesContext) => Favourites {
+  return (context) => {
+    const [list, none, open, form] = [el('div', {}), el('div', {}), el('div', {}), el('div', {})];
+    let made: Favourites | null = null;
+    void coming.then((draw) => {
+      made = (draw ?? favouritesPart)(context);
+      list.replaceChildren(made.list);
+      none.replaceChildren(made.none);
+      open.replaceChildren(made.open);
+      form.replaceChildren(made.form);
+    });
+    return { list, none, open, form, slots: () => made?.slots() ?? [] };
+  };
+}
+
+/** What the search bar's menu draws its favourites with: those kept in the browser, or a list's saved views (saved-views.ts). */
+export interface FavouritesContext {
+  page: Page;
+  el: El;
+  labels: ViewerLabels;
+  fill: (template: string, values: Record<string, string>) => string;
+  preferences: PreferenceStore;
+  current: () => Facet[];
+  apply: (facets: Facet[]) => void;
+  /** Where a favourite's count goes after its name, where the list counts (`filterCounts`); and what is told once the favourites are drawn. */
+  slot?: () => HTMLElement;
+  drawn?: () => void;
+}
+
+/** The menu's favourites: their list, what it says holding none, Save current search and its form, and where each one's count goes. */
+export interface Favourites {
+  list: HTMLElement;
+  none: HTMLElement;
+  open: HTMLElement;
+  form: HTMLElement;
+  slots(): { slot: HTMLElement; name: string; facets: Facet[] }[];
 }

@@ -5,8 +5,9 @@ import { open, screen } from './support';
 
 /**
  * Lists people work in all day, as they use them: the customers ordered by several headers (Shift and a press, or Shift
- * and Enter on a header). What each order should be is worked out here from the demo's own records, never written down
- * from the screen.
+ * and Enter on a header), and a sales team's queue whose saved views are kept on its server — the team's put on, one
+ * saved for the team and deleted again. What each order should be is worked out here from the demo's own records,
+ * never written down from the screen.
  */
 
 type Values = Record<string, unknown>;
@@ -81,5 +82,69 @@ test.describe('a list ordered by several headers', () => {
     await expect(header(page, 'Budget').locator('.fd-list-sort-rank')).toHaveText('2');
     await expect(header(page, 'Budget').locator('.fd-list-sort-rank')).toBeVisible();
     await screen(page, 'list-work-sort-phone', { viewport: true });
+  });
+});
+
+test.describe('a sales team’s saved views', () => {
+  const menu = (page: Page) => page.locator('.fd-search-panel [data-group-kind="favourites"]');
+  const view = (page: Page, name: string) => menu(page).locator('.fd-favourite', { has: page.locator('.fd-view-name', { hasText: new RegExp(`^${name}$`) }) });
+  const openMenu = async (page: Page) => {
+    if (await page.locator('.fd-search-panel').isHidden()) await page.getByRole('button', { name: 'Search options' }).click();
+  };
+
+  test('lists the team’s, puts one on with its order, saves one for the team, keeps it, and deletes it', async ({ page }) => {
+    const { problems } = await open(page, 'plain', LEADS);
+    const leads = await records(page, 'lead');
+    await openMenu(page);
+    await expect(view(page, 'No agent yet, biggest first').locator('.fd-view-whose')).toHaveText('Shared by Mona Adel');
+    await expect(view(page, 'Late, by agent').locator('.fd-view-whose')).toHaveText('Shared by Karim Samir');
+    // Another's view is only put on.
+    await expect(view(page, 'Late, by agent').locator('.fd-favourite-remove')).toHaveCount(0);
+    await screen(page, 'list-work-views', { viewport: true });
+    expect(await axeFindings(page, 'a list’s saved views open')).toEqual([]);
+    await view(page, 'Late, by agent').locator('.fd-search-option').click();
+    await expect(page.locator('.fd-facet .fd-facet-text')).toHaveText(['Late']);
+    const late = leads.filter((lead) => lead['next_on'] !== null && (lead['next_on'] as string) < '2026-10-14' && lead['stage'] !== 'won');
+    await expect(names(page)).toHaveText(ordered(late, [{ field: 'agent' }, { field: 'next_on' }]).map((lead) => lead['name'] as string));
+    await expect(header(page, 'Agent')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(header(page, 'Next follow-up').locator('.fd-list-sort-rank')).toHaveText('2');
+    // Saved for the team, as it stands.
+    await openMenu(page);
+    await menu(page).getByRole('button', { name: 'Save current search' }).click();
+    await menu(page).getByRole('textbox', { name: 'Name of the search' }).fill('Late ones, ours');
+    await menu(page).getByLabel('Share with the team').check();
+    await menu(page).locator('.fd-favourite-form').getByRole('button', { name: 'Save' }).click();
+    await expect(view(page, 'Late ones, ours').locator('.fd-view-whose')).toHaveText('Shared with the team');
+    await screen(page, 'list-work-views-saved', { viewport: true });
+    // Late, counted beside it, as each view kept is.
+    await expect(view(page, 'Late ones, ours').locator('.fd-filter-count')).toHaveText(String(late.length));
+    // Kept on the "server": a reload lists it, and the list opens on its own search.
+    await page.reload();
+    await expect(page.locator('.fd-facet')).toHaveCount(0);
+    await openMenu(page);
+    await expect(view(page, 'Late ones, ours')).toHaveCount(1);
+    // The person's own, shared with the team: × asks first, as it goes for everyone.
+    await view(page, 'Late ones, ours').getByRole('button', { name: 'Delete Late ones, ours' }).click();
+    await expect(page.getByRole('alertdialog')).toContainText('Delete “Late ones, ours” for everyone on the team?');
+    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    await expect(view(page, 'Late ones, ours')).toHaveCount(0);
+    await expect(menu(page).locator('.fd-favourite')).toHaveCount(2);
+    expect(problems).toEqual([]);
+  });
+
+  test('opens on the person’s own default view, its order with it', async ({ page }) => {
+    await open(page, 'plain', LEADS);
+    await header(page, 'Budget').getByRole('button').click();
+    await header(page, 'Budget').getByRole('button').click();
+    await openMenu(page);
+    await menu(page).getByRole('button', { name: 'Save current search' }).click();
+    await menu(page).getByRole('textbox', { name: 'Name of the search' }).fill('Biggest first');
+    await menu(page).getByLabel('Use by default').check();
+    await menu(page).locator('.fd-favourite-form').getByRole('button', { name: 'Save' }).click();
+    await expect(view(page, 'Biggest first')).toHaveCount(1);
+    await page.reload();
+    await expect(header(page, 'Budget')).toHaveAttribute('aria-sort', 'descending');
+    const leads = await records(page, 'lead');
+    await expect(names(page).first()).toHaveText(ordered(leads, [{ field: 'budget', desc: true }])[0]['name'] as string);
   });
 });

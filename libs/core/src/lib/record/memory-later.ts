@@ -18,6 +18,9 @@ export const MEMORY_MEMBERS = [
   'attachments', 'totals', 'upload', 'slots', 'writeMany', 'createMany', 'duplicates', 'merge', 'notDuplicates', 'markNotDuplicate', 'limits', 'saveDraft', 'loadDraft',
 ] as const;
 
+/** The members a memory source answers only where it is given what they keep: lists' saved views (`views`). */
+export const MEMORY_VIEW_MEMBERS = ['views', 'saveView', 'deleteView'] as const;
+
 /**
  * The one-tag script's memory source: what it keeps — its records, responses, calls, drafts, its versions, and what
  * someone else does to them (`changeElsewhere`, `answeredElsewhere`) — at once, every member answering once the memory
@@ -31,9 +34,9 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   let made: MemoryDataSource | undefined;
   const members = (): Promise<MemoryDataSource> => memoryPart.load().then((loaded) => (made ??= loaded.memorySource(options, kept)));
   const source = { records: kept.records, notDuplicatePairs: kept.notDuplicatePairs, responses: kept.responses, calls: kept.calls, drafts: kept.drafts, changeElsewhere: kept.changeElsewhere, answeredElsewhere: kept.answeredElsewhere } as Record<string, unknown>;
-  for (const name of MEMORY_MEMBERS) {
+  for (const name of [...MEMORY_MEMBERS, ...(options.views ? MEMORY_VIEW_MEMBERS : [])]) {
     source[name] = (...args: unknown[]) => {
-      const call = (from: MemoryDataSource) => (from[name] as (...given: unknown[]) => Promise<unknown>)(...args);
+      const call = (from: MemoryDataSource) => (from[name] as unknown as (...given: unknown[]) => Promise<unknown>)(...args);
       return made ? call(made) : members().then(call);
     };
   }

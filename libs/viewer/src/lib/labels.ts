@@ -390,6 +390,19 @@ export interface ViewerLabels {
   sortKeyUp: string;
   sortKeyDown: string;
   /**
+   * A list's views kept on the app's server (its source's `views`), in the search bar's menu: a view shared with the
+   * team, the person's own (`viewShared`) or another's (`{name}`, who made it); Save current search's Share with the
+   * team; why the views could not be asked, a view not saved (`{why}`) or not deleted (`{name}`, `{why}`); and the
+   * question before one shared with the team is deleted for everyone.
+   */
+  viewShared: string;
+  viewSharedBy: string;
+  shareView: string;
+  viewsFailed: string;
+  viewNotSaved: string;
+  viewNotDeleted: string;
+  viewDeleteAsk: string;
+  /**
    * How many records a list's group holds, in words (`{n}`: more, or one), said with its name by its heading's button:
    * "Cairo, 12 records" where the heading shows "Cairo (12)".
    */
@@ -875,6 +888,13 @@ const en: ViewerLabels = {
   loadMore: 'Show {n} more',
   sortKeyUp: 'sorted {n} of {total}, ascending',
   sortKeyDown: 'sorted {n} of {total}, descending',
+  viewShared: 'Shared with the team',
+  viewSharedBy: 'Shared by {name}',
+  shareView: 'Share with the team',
+  viewsFailed: 'Saved views could not be loaded.',
+  viewNotSaved: 'The view was not saved: {why}.',
+  viewNotDeleted: '{name} was not deleted: {why}.',
+  viewDeleteAsk: 'Delete “{name}” for everyone on the team?',
   groupCount: '{n} records',
   groupCountNoun: '{n} {records}',
   groupCountOne: '{n} record',

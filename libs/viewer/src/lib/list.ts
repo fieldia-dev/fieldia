@@ -25,10 +25,11 @@ import {
   type SortOrder,
   type Tone,
   type Values,
+  type ViewState,
 } from '@fieldia/core';
 import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
-import { startingFacets } from './favourites';
+import { defaultFacets, laterFavourites, startingFacets } from './favourites';
 import { filterKit } from './filter-range';
 import type { ViewerLabels } from './labels';
 import { listCells, plain, rowRules } from './list-cells';
@@ -43,7 +44,8 @@ import { keepFootRoom, printout, PRINT_MOST } from './list-print';
 import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
 import { markSort, pressedSort, sortWith } from './list-sort';
-import { cardsPart, columnsPart, filtersPart, importPart, type ColumnsPart } from './viewer-parts';
+import type { SavedViews, ViewsSource } from './saved-views';
+import { cardsPart, columnsPart, filtersPart, importPart, viewsPart, type ColumnsPart } from './viewer-parts';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
 
 export interface ListContext {
@@ -225,7 +227,12 @@ export function listView(context: ListContext): ListView {
   const visible = () => [...body.querySelectorAll('.fd-list-row')].map((tr) => recordOf.get(tr) as Row);
   // Only a page of records gets this far: the page check refuses a list of anything else.
   const model = page.data.kind === 'record' ? page.data.model : '';
-  let facets: Facet[] = context.search ? [...context.search] : startingFacets(node, context.preferences, page);
+  /**
+   * The list's views kept on the app's server, where its source keeps them and its search bar has a menu
+   * (saved-views.ts): in place of the favourites the browser keeps, and the list opens on the default one.
+   */
+  const viewSource = node.search !== 'fields' && context.inRecord !== true && context.dataSource?.views ? (context.dataSource as ViewsSource) : null;
+  let facets: Facet[] = context.search ? [...context.search] : viewSource ? defaultFacets(node) : startingFacets(node, context.preferences, page);
   /** In the order they were chosen, which is the order the app gets them. */
   const chosen = new Set<RecordId>();
   /** Each record's version and what the person may do with it, from the rows shown: what Edit sends and keeps to. */
@@ -982,13 +989,33 @@ export function listView(context: ListContext): ListView {
     void load();
     void viewParts.reload();
   };
+  /** How the list stands, as a saved view keeps it: its search, the keys chosen from its headers, its columns. */
+  function viewState(): ViewState {
+    return { facets, ...(keys.length ? { sort: keys } : {}), ...(choices ? { columns: choices.state() } : {}) };
+  }
+  /** A view's order and columns put on; its search comes after, as the menu's own, and the records with it. */
+  function putView(state: ViewState) {
+    keys = sortable ? (state.sort ?? []).filter((one) => !one.near && headers.has(one.field)) : [];
+    sort = sortWith(keys, defaultSort);
+    if (choices && state.columns) choices.restore(state.columns);
+  }
+  /** The views part, asked for as the list opens where its source keeps views, and its views made with it; null where it could not come. */
+  const kept: Promise<SavedViews | null> | null = viewSource
+    ? viewsPart.load().then(
+        (part) => {
+          part.installViewStyles(doc);
+          return part.savedViews({ page, node, model, source: viewSource, el, labels, fill, doc, state: viewState, put: putView, ...(context.icons ? { icons: context.icons } : {}), ...(context.ask ? { ask: context.ask } : {}), ...(context.say ? { say: context.say } : {}) });
+        },
+        () => null
+      )
+    : null;
   // The search bar, or a keyword and a list of values for each of a few fields.
   // The filter bar comes in the filters part, which the viewer has waited for; the search bar where it could not come.
   const filters = node.search === 'fields' ? filtersPart.loaded : undefined;
   const search =
     filters
       ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], searchFilter, count: countOf, facets, onChange: searched, kit: filterKit })
-      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}), ...(node.filterCounts ? { count: countOf, searchFilter } : {}) });
+      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}), ...(node.filterCounts ? { count: countOf, searchFilter } : {}), ...(kept ? { favourites: laterFavourites(kept.then((made) => made?.part ?? null), el) } : {}) });
 
   /**
    * The key to the rows' own looks, where the page says what they mean (`rowTones`' labels, `rowBoldLabel`): each
@@ -1576,7 +1603,20 @@ export function listView(context: ListContext): ListView {
   showAs(view);
   widths?.observe(element);
   drawShape();
-  void load();
+  // Its saved views asked first, where the source keeps them: it opens on the default one (its search, order and
+  // columns), unless it was opened with a search of its own (View all's).
+  const opening = kept?.then((made) => made?.start() ?? null);
+  if (opening && !context.search) {
+    table.setAttribute('aria-busy', 'true');
+    void opening.then((chosen) => {
+      if (destroyed) return;
+      // Views are kept only where the search bar has its menu: never with a filter bar.
+      if (chosen && !filters) {
+        putView(chosen.state);
+        (search as ReturnType<typeof searchBar>).put(chosen.state.facets);
+      } else void load();
+    });
+  } else void load();
 
   return {
     element,

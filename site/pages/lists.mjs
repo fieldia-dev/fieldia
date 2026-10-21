@@ -124,7 +124,7 @@ totals({ model: 'invoice', filter, totals: { amount: ['sum'] }, groupBy: 'city',
   <li><strong>Chips</strong> show what applies. Values searched in one field share a chip, any of them (<em>Name: nile or amira</em>); chips all apply together. <kbd>Backspace</kbd> in the empty box takes the last one away; each has its ×.</li>
   <li><strong>Filters</strong> turn on and off from the menu, any of the ones on; <em>Add a custom filter</em> builds one from a field, a condition that suits its kind, and a value — for a date, also a period: <em>Invoice date: This month</em>.</li>
   <li><strong>Group By</strong> groups by one field, then another inside it: a row for each value, with how many records have it (and their sums), opening into the next field's groups or into its records, a page at a time. A date groups by its year, quarter, month, week or day. A group's heading is a button: a screen reader hears it open or closed, its name and its count in words (<em>Cairo, 12 invoices</em>), and the list stays a table; the arrow keys move from a record's row to a heading and on, <kbd>→</kbd> opens a heading and <kbd>←</kbd> closes it (the other way round right to left).</li>
-  <li><strong>Favourites</strong> keep the search on screen by name, one of them used by default when the list opens. They are kept where the viewer keeps a person's choices: its ${c('preferences')} store, the browser's storage unless you give one.</li>
+  <li><strong>Favourites</strong> keep the search on screen by name, one of them used by default when the list opens. They are kept where the viewer keeps a person's choices: its ${c('preferences')} store, the browser's storage unless you give one. Where your data source keeps views (${c('views')}), they are <a href="#views">saved views</a> instead: kept on your server, shared with the team or not, an order and columns kept with the search.</li>
 </ul>
 
 <h2 id="backlog">A backlog: cells, a filter bar, rows under their parent</h2>
@@ -342,6 +342,20 @@ mountViewer(host, {
 
 <h2 id="work">Lists people work in all day</h2>
 <p><strong>Several orders at once.</strong> A header's press puts its column first, then the other way. With <kbd>Shift</kbd> held, a press adds its column after those already chosen — <em>by agent, then by date</em> — pressed again with <kbd>Shift</kbd>, the other way, and a third time it goes. Each column in the order shows its place beside its arrow (1, 2, 3) once there is more than one; a screen reader hears it after the header's name (<em>sorted 2 of 3, descending</em>), and the first carries ${c('aria-sort')}, as a table says one. The page's own ${c('sort')} breaks the ties after them; your source gets them all in ${c('sort')}, in order — nothing new to answer.</p>
+
+<h3 id="views">Saved views, kept for the team</h3>
+<p>Where your data source keeps views, the search bar's menu lists them in place of the favourites the browser keeps: the person's own and those the team shares — <em>Shared by Mona Adel</em> beside another's — each put on with a press: its search, its order and, where people shape the columns, its columns. <em>Save current search</em> takes a name, <em>Use by default</em> and <em>Share with the team</em>; the list opens on the person's own default, else the team's, asked before its records so they come once, already in it. A person's own view has its × (one shared with the team asked first: it goes for everyone); another's is only put on. The same on every device: nothing of it is kept in the browser.</p>
+${code(
+  'ts',
+  `
+views?({ pageId, model, list }): Promise<SavedView[]>;
+saveView?({ pageId, model, list, view: { id?, name, state, shared?, isDefault? } }): Promise<SavedView>;
+deleteView?({ pageId, model, list, id }): Promise<void>;
+
+// SavedView: { id, name, state: { facets, sort?, columns? }, shared?, isDefault?, mine?, by? }
+// columns as the list keeps a person's: [{ colId, width, hide }], in their order`
+)}
+<p>Your server knows the person by its own sign-in — nothing in a request names them — and tells the page whose a view is with ${c('mine')} and ${c('by')}. A view kept as the default is the only one of its kind (the person's own, or the team's): let go of the one before. A refusal is said under the form in your words, what was typed kept; views that could not be asked are said with Retry, and the list opens on its own search. Without ${c('saveView')} views are put on, none saved; without ${c('deleteView')}, none deleted. ${c('createMemoryDataSource({ views: {} })')} keeps them. <a href="/demos/plain/?page=leads-queue&skin=underline">Try the sales team's queue</a>.</p>
 
 <h2 id="details">What it takes care of</h2>
 <ul>

@@ -641,6 +641,22 @@ is more than one, a screen reader hearing it after the header's name ("sorted
 2 of 3, descending"); the first carries `aria-sort`. The page's `sort` breaks
 the ties after them; the source gets them in `sort`, in order.
 
+**Views kept for the team.** Where the data source keeps views (`views`, and
+`saveView` and `deleteView` where it saves and deletes them), the search bar's
+menu lists them in place of the favourites the browser keeps: the person's own
+and those shared with the team ("Shared by Mona Adel"), each put on with a
+press — its search, its order and its columns (`optionalColumns`). Save current
+search takes a name, Use by default and Share with the team; the list opens on
+the person's own default, else the team's, asked before its records. Only the
+person's own has its × (a shared one asked first). Without `views`, favourites
+as before.
+
+```ts
+views?({ pageId, model, list }): Promise<SavedView[]>;
+saveView?({ pageId, model, list, view: { id?, name, state: { facets, sort?, columns? }, shared?, isDefault? } }): Promise<SavedView>;
+deleteView?({ pageId, model, list, id }): Promise<void>;
+```
+
 ## On paper
 
 Every page prints — Ctrl+P, the browser's menu, or the page's own Print — as a

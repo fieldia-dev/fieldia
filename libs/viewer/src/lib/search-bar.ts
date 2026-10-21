@@ -2,7 +2,7 @@ import { suggestions, DATE_INTERVALS, type DateInterval, type Facet, type Filter
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import { customFilterPart } from './custom-filter';
 import type { El } from './dom';
-import { favouritesPart } from './favourites';
+import { favouritesPart, type Favourites, type FavouritesContext } from './favourites';
 import { countMark } from './filter-count';
 import type { ViewerLabels, WordKey } from './labels';
 
@@ -34,6 +34,8 @@ export interface SearchContext {
    */
   count?: (filter: ResolvedFilter[]) => Promise<number | null>;
   searchFilter?: (facets: Facet[]) => ResolvedFilter[];
+  /** The menu's favourites, where the list keeps its views on the app's server (saved-views.ts): else those the browser keeps. */
+  favourites?: (context: FavouritesContext) => Favourites;
 }
 
 /** A date's spans in the menu, longest first, as a person narrows down: Year, Quarter, Month, Week, Day. */
@@ -231,10 +233,10 @@ export function searchBar(context: SearchContext) {
   const group = (kind: string, iconName: string, title: string, ...parts: HTMLElement[]) =>
     el('div', { class: 'fd-search-group', 'data-group-kind': kind, role: 'group', 'aria-labelledby': `${panelId}-${kind}` }, heading(iconName, title, `${panelId}-${kind}`), ...parts);
   const panel = el('div', { class: 'fd-search-panel', id: panelId, hidden: '' });
-  let favourites: ReturnType<typeof favouritesPart> | null = null;
+  let favourites: Favourites | null = null;
   if (menu) {
     const custom = customFilterPart({ page, el, labels, locale: context.locale, periods: context.periods, add: (facet) => change([...facets, facet]) });
-    favourites = favouritesPart({ page, el, labels, fill, preferences: context.preferences, current: () => facets, apply: change, ...(context.count ? { slot: countSlot, drawn: drawCounts } : {}) });
+    favourites = (context.favourites ?? favouritesPart)({ page, el, labels, fill, preferences: context.preferences, current: () => facets, apply: change, ...(context.count ? { slot: countSlot, drawn: drawCounts } : {}) });
     panel.append(
       group('filters', 'filter', labels.filters, ...filterButtons, custom.button, custom.form),
       ...(groupChoices.length ? [group('groupBy', 'layers', labels.groupBy, ...groupChoices)] : []),
@@ -302,6 +304,8 @@ export function searchBar(context: SearchContext) {
   drawPanel();
   return {
     element,
+    /** A search put in place of the one on, from outside: a saved view's. */
+    put: (next: Facet[]) => change([...next]),
     /** A search put in from outside, as a person's own: one with the same words takes its place, as a map's "In this area" does. */
     add(facet: Facet) {
       const words = facet.kind === 'custom' ? facet.label : null;
