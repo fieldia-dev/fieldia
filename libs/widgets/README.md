@@ -175,7 +175,7 @@ lands across the boxes at once. The field takes the code once it is whole — a
 step on its change can send it; left before then, it says how many are still to
 type. Both come in the typed part (`typedPart`), the text box meanwhile.
 
-: a month
+`"widget": "slots"` on a date and time books a time from those free: a month
 whose days are shaded by how they are booked (free times left, fully booked,
 closed, a holiday by its name), beside the chosen day's free times as chips,
 asked of the data source's `slots` — a month at a time, again when a field in
