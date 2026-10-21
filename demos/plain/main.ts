@@ -17,6 +17,7 @@ import { panelBar } from '../shared/panel-demo';
 import { answerAction } from '../shared/order-desk';
 import { timeFirstPaint } from '../shared/timing';
 import { wiHeadAction, wiHeadTokens } from '../shared/wi-header';
+import { wiMoreAction } from '../shared/wi-more';
 import { wiTextDiscussion } from '../shared/wi-text';
 import { errorLog, plannerSlot, priceTag } from '../shared/contained';
 import { photosBar } from '../shared/listing-photos';
@@ -96,7 +97,7 @@ const options: ViewerOptions = {
     requests.push(request);
     // The shop's answers to the pages' steps: the stock checked for "Order by phone"; and a press with nothing to show
     // says what the app was given.
-    return answerAction(request, params.get('locale') ?? undefined, { page, source: dataSource });
+    return wiMoreAction(request) ?? answerAction(request, params.get('locale') ?? undefined, { page, source: dataSource });
   },
   widgets: { 'char.name-badge': shoutWidget, 'monetary.tag': priceTag, ...gridWidgets, ...codeWidgets, ...monaco, ...demoMapWidgets },
   // Told of each part that fails, which then shows a small box in its place: "A part that fails" lists them.
@@ -182,11 +183,11 @@ if (params.get('open') === 'dialog') {
       dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
       locale,
       pages: appPages,
-      ...(name === 'wi-head' ? { tokens: wiHeadTokens(dark) } : {}),
+      ...(name === 'wi-head' || name === 'wi-more' ? { tokens: wiHeadTokens(dark) } : {}),
       onAction: (request) => {
         actions.push(request.action);
         requests.push(request);
-        return wiHeadAction(request) ?? answerAction(request, locale, { page, source: dataSource });
+        return wiHeadAction(request) ?? wiMoreAction(request) ?? answerAction(request, locale, { page, source: dataSource });
       },
     }).then((result) => void results.push(result));
   void open();

@@ -45,6 +45,7 @@ import workItem from '../../examples/pages/work-item.page.json';
 import contractFees from '../../examples/pages/contract-fees.page.json';
 import { customPage } from './custom-page';
 import { wiHeadPage, WI_HEAD_RECORDS } from './wi-header';
+import { wiMorePage, wiMoreRecords } from './wi-more';
 import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
 import { real } from './real';
 import { wiPicker } from './wi-picker';
@@ -154,6 +155,9 @@ export const pages: Record<string, Page> = {
   'quick-order': quickOrder as Page,
   // A work item's head: kind, title line, row, buttons, band and tabs (shared/wi-header.ts); `&open=dialog` opens it in a large popup.
   'wi-head': wiHeadPage,
+  // The same bug's tags inline in its row, its ⋮ with dividers and Templates › (the app's), its Description read first
+  // (shared/wi-more.ts); `&open=dialog` opens it in a large popup.
+  'wi-more': wiMorePage,
   // A place and an area on a map: @fieldia/map, on OpenStreetMap (shared/maps.ts).
   'map-delivery': mapDelivery as Page,
   'map-zone': mapZone as Page,
@@ -581,6 +585,7 @@ export function sampleDataSource() {
     records: {
       ...READING,
       ...WI_HEAD_RECORDS,
+      ...wiMoreRecords(WI_HEAD_RECORDS['wi.head'][1]),
       ...emptyGridsRecords,
       'account.move': BILLS,
       home: linkedHomes(sampleHomes()),

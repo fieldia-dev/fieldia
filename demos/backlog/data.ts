@@ -110,6 +110,14 @@ const TASKS: Line[] = [
 
 const BUG_4127_REPRO = '<p><a href="https://shop.example/orders/SO-2088?tab=history">https://shop.example/orders/SO-2088?tab=history</a></p>';
 
+/**
+ * Bug 4142's System Info, formatted as the tracker keeps it: words in bold, a link that opens, a picture of the counts
+ * in place (drawn here, invented) — read first, with Edit at its heading's end.
+ */
+const BUG_4142_SYSTEM =
+  '<p><strong>Browser:</strong> Edge 141 on Windows 11. <strong>Price list:</strong> <a href="https://shop.example/pricelists/EGP-2026">EGP 2026</a></p>' +
+  '<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAA8CAIAAABuCSZCAAAAtklEQVR42u3dsQ2AMBAEwS+KgNIoxy0hEVEJIakLsBA+z+oruMntuhVdmWAJ4EdxAQYswAKsaYHruIbcCnN/vxVgwIABAwYMGDBgwIABAwYMOAD43PYhBxgwYMCAAQMGDBgwYMCAAQMGDBgwYMCAAQMGDBgwYMCAAQMGDBgwYMCAAQMGDBgwYMCAAQMGDBgwYMCAAQMGDBgwYMCAAQMGDBhwD9wUl+eEwwMMWIAFWD8Alp/PNGUvLc37GpEt2ZgAAAAASUVORK5CYII=" alt="Stock counts before, during and after the release: 15, 12, 15"></p>';
+
 function workItems(): Record<string, Values> {
   const items: Record<string, Values> = {};
   const base = (order: number, id: number, title: string, at: number): Values => ({
@@ -154,6 +162,11 @@ function workItems(): Record<string, Values> {
     repro_steps: BUG_4127_REPRO,
     attachments: [{ name: 'stock-after-release.png', type: 'image/png', size: 48213, url: null }],
   });
+  // Bug 4142, its tags in the head's row and its System Info read first.
+  Object.assign(items[4142], {
+    tags: [{ id: 2, label: 'Pricing' }, { id: 4, label: 'Currency' }],
+    system_info: BUG_4142_SYSTEM,
+  });
   for (const [order, id, title, at] of TASKS) {
     items[id] = { ...base(order, id, title, at), work_type: 'task', state: id === 4128 ? 'active' : 'new', reason: 'new', parent_id: { id: 4127, label: items[4127]['title'] as string }, changed_by: link(people.karim) };
   }
@@ -178,7 +191,7 @@ export function backlogData() {
       'res.users': Object.fromEntries(Object.values(people).map((p) => [p.id, { name: p.name, image: 'avatar' in p ? p.avatar : null }])),
       'work.area': Object.fromEntries(AREAS.map((a) => [a.id, { name: pathName(a.path), path: a.path }])),
       'work.iteration': Object.fromEntries(ITERATIONS.map((i) => [i.id, { name: pathName(i.path), path: i.path, dates: i.dates }])),
-      'work.tag': { 1: { name: 'Stock' }, 2: { name: 'Pricing' }, 3: { name: 'Night shift' } },
+      'work.tag': { 1: { name: 'Stock' }, 2: { name: 'Pricing' }, 3: { name: 'Night shift' }, 4: { name: 'Currency' }, 5: { name: 'Checkout' }, 6: { name: 'Mobile' } },
       'dev.link': {},
       // What a comment's ! links: a few pull requests, invented.
       'pull.request': { 61: { name: 'Release keeps the reserved stock' }, 62: { name: 'Stock count after a partial release' }, 63: { name: 'Night shift scanner log export' } },

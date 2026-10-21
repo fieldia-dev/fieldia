@@ -62,6 +62,7 @@ const WORDS = {
     backlog: 'Backlog', analytics: 'Analytics', views: 'Backlog views', level: 'Stories', viewOptions: 'View options', filter: 'Filter', backlogSettings: 'Settings', fullScreen: 'Full screen',
     notHere: 'Only the backlog and its bugs are in this demo.', me: 'Salma Nabil', bug: 'Bug',
     create: 'Create', myWork: 'My work items', extensions: 'Extensions', help: 'Help', userSettings: 'User settings', loading: 'Loading…',
+    applied: (name: string) => `${name}: applied.`,
   },
   ar: {
     org: 'Harbor Supply', project: 'Portal', boards: 'اللوحات', backlogs: 'قوائم الأعمال', search: 'بحث', language: 'اللغة', path: 'موقعك', menu: 'المشروع',
@@ -70,6 +71,7 @@ const WORDS = {
     backlog: 'قائمة الأعمال', analytics: 'التحليلات', views: 'طرق عرض قائمة الأعمال', level: 'القصص', viewOptions: 'خيارات العرض', filter: 'تصفية', backlogSettings: 'الإعدادات', fullScreen: 'ملء الشاشة',
     notHere: 'لا يضم هذا العرض إلا قائمة الأعمال وأخطاءها.', me: 'سلمى نبيل', bug: 'خلل',
     create: 'إنشاء', myWork: 'بنود عملي', extensions: 'الإضافات', help: 'المساعدة', userSettings: 'إعدادات المستخدم', loading: 'جارٍ التحميل…',
+    applied: (name: string) => `طُبّق القالب: ${name}.`,
   },
   de: {
     org: 'Harbor Supply', project: 'Portal', boards: 'Boards', backlogs: 'Backlogs', search: 'Suchen', language: 'Sprache', path: 'Wo Sie sind', menu: 'Projekt',
@@ -78,6 +80,7 @@ const WORDS = {
     backlog: 'Backlog', analytics: 'Analyse', views: 'Backlog-Ansichten', level: 'Storys', viewOptions: 'Ansichtsoptionen', filter: 'Filter', backlogSettings: 'Einstellungen', fullScreen: 'Vollbild',
     notHere: 'In dieser Demo gibt es nur das Backlog und seine Fehler.', me: 'Salma Nabil', bug: 'Fehler',
     create: 'Erstellen', myWork: 'Meine Arbeitselemente', extensions: 'Erweiterungen', help: 'Hilfe', userSettings: 'Benutzereinstellungen', loading: 'Wird geladen…',
+    applied: (name: string) => `Vorlage angewendet: ${name}.`,
   },
   fr: {
     org: 'Harbor Supply', project: 'Portal', boards: 'Tableaux', backlogs: 'Backlogs', search: 'Rechercher', language: 'Langue', path: 'Où vous êtes', menu: 'Projet',
@@ -86,6 +89,7 @@ const WORDS = {
     backlog: 'Backlog', analytics: 'Analyse', views: 'Vues du backlog', level: 'Récits', viewOptions: 'Options d’affichage', filter: 'Filtrer', backlogSettings: 'Paramètres', fullScreen: 'Plein écran',
     notHere: 'Cette démo ne contient que le backlog et ses bogues.', me: 'Salma Nabil', bug: 'Bogue',
     create: 'Créer', myWork: 'Mes éléments de travail', extensions: 'Extensions', help: 'Aide', userSettings: 'Paramètres utilisateur', loading: 'Chargement…',
+    applied: (name: string) => `Modèle appliqué : ${name}.`,
   },
 }[locale];
 
@@ -401,8 +405,33 @@ void list.drawn.then(() => standIn.remove());
 /** The person following each bug, as the server keeps it. */
 const following = new Set<RecordId>();
 
-/** The app's answers to the bug's buttons: Follow and its notification settings, Copy link. */
+/**
+ * The bug's templates, by its kind, as the tracker lists them under ⋮ › Templates: each fills what it says when picked.
+ * The app's own, given as the menu opens (`menuFrom`); invented.
+ */
+const TEMPLATES: Record<string, { id: string; label: string; values: Record<string, JsonValue> }[]> = {
+  bug: [
+    { id: 'crash', label: 'Crash report', values: { severity: '1', priority: '1', system_info: '<p><strong>Browser:</strong> Edge 141 on Windows 11</p><p><strong>Build:</strong> see <a href="https://example.com/builds/latest">the latest build</a></p>' } },
+    { id: 'data', label: 'Wrong figures', values: { severity: '2', priority: '2', category: 'business', system_info: '<p><strong>Report:</strong> the figure on screen, and the one expected</p>' } },
+  ],
+  task: [{ id: 'chore', label: 'Housekeeping', values: { priority: '3', activity: 'development' } }],
+};
+
+/** The tracker's actions this demo does not have: said in the popup, as the chrome's are beside it. */
+const ELSEWHERE = new Set(['new-linked', 'change-type', 'move-project', 'email', 'new-branch', 'customize', 'capture-template']);
+
+/** The app's answers to the bug's buttons: Follow and its notification settings, Copy link, and the ⋮ menu's Templates. */
 async function answer(request: ActionRequest): Promise<ActionResult | void> {
+  // Templates: the kind's own, asked for as ⋮ opens; one picked fills its fields.
+  if (request.action === 'templates') {
+    const kind = String(request.values['work_type'] ?? 'bug');
+    return { menu: (TEMPLATES[kind] ?? []).map((one) => ({ id: `tpl-${one.id}`, label: one.label, icon: 'file', action: 'apply-template', params: { kind, template: one.id } })) };
+  }
+  if (request.action === 'apply-template') {
+    const found = TEMPLATES[String(request.params?.['kind'])]?.find((one) => one.id === request.params?.['template']);
+    return found ? { values: found.values as ActionResult['values'], say: WORDS.applied(found.label) } : undefined;
+  }
+  if (ELSEWHERE.has(request.action)) return { say: WORDS.notHere };
   const id = request.recordId;
   if (id === null) return;
   if (request.action === 'follow' || request.action === 'follow-all' || request.action === 'follow-state') {
@@ -451,6 +480,16 @@ function slots() {
   };
 }
 
+/** The ⋮ menu's drawings Fieldia has none of, in its own lines: add, change, move, delete, a template, a brush. */
+const MENU_ICONS = {
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  swap: '<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+  move: '<path d="M4 12h11M11 8l4 4-4 4"/><path d="M15 4h5v16h-5"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+  template: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M4 9h16M10 9v12"/>',
+  brush: '<path d="M14 4l6 6-8 8-6-6z"/><path d="M6 12l-2 6 6-2"/>',
+};
+
 /** The popup's shape: a large window over the backlog, nothing dimmed, that can fill the window and be resized. */
 const POPUP: Pick<FormDialogOptions, 'size' | 'backdrop' | 'maximise' | 'resizable'> = { size: 'inset', backdrop: 'clear', maximise: true, resizable: true };
 
@@ -483,6 +522,8 @@ async function openBug(id: RecordId | null): Promise<FormDialogResult | null> {
     // Related Work's New item opens a new work item on the bug's own page.
     relatedPages: { 'work.item': bugPage },
     onAction: answer,
+    // The ⋮ menu's own drawings, beside Fieldia's.
+    icons: MENU_ICONS,
   });
   try {
     const result = await opened;
