@@ -2586,11 +2586,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     setAttr(box, 'data-cut-title', cut ? '' : null);
   });
 
+  /** On: the next question where a survey goes one at a time, a wizard's next step, else the save or the send. */
+  const goOn = () => void (flowKit?.forward ? flowKit.forward() : wizardForward ? wizardForward() : submitOrSave());
   root.addEventListener('submit', (event) => {
     event.preventDefault();
-    if (layout.type === 'list') return;
-    if (wizardForward) void wizardForward();
-    else void submitOrSave();
+    if (layout.type !== 'list') goOn();
   });
 
   // ---- keys -------------------------------------------------------------------
@@ -2654,8 +2654,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if ((event.target as Element).closest('.ag-root-wrapper')) return;
       // What is still typed is read first by the save itself (commitTyping, through form.settling).
       event.preventDefault();
-      if (wizardForward) void wizardForward();
-      else void submitOrSave();
+      goOn();
       return;
     }
     const from = event.target as HTMLElement;

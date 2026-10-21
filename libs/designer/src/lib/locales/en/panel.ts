@@ -432,6 +432,9 @@ export const panel = {
   reviewHint: 'The last step’s button reads “Review your answers”: every answer shows by step, each with Edit, then Send.',
   reviewHeading: 'Review’s heading',
   reviewHeadingPlaceholder: 'Check your answers',
+  flowOne: 'One question at a time',
+  flowOneOn: 'Ask one question at a time',
+  flowOneHint: 'Each question on a screen of its own, as Typeform asks: Enter goes on, a choice goes on by itself, ↑ and ↓ move between them.',
   // ---- a record page's possible duplicates
   duplicates: 'Possible duplicates',
   duplicatesHint: 'As a record is typed and saved, records with the same value in a field ticked — or a name close to its own — are named under that field, to open instead, let be or merge. Your app’s data source finds them.',

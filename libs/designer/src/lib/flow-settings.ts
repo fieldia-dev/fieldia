@@ -5,7 +5,7 @@ import { setting } from './panel-controls';
 
 /**
  * How a form of responses is gone through, on the screen's panel (panel-page.ts) beside its quiz: a review of the
- * answers before they are sent (`review`), with its own heading.
+ * answers before they are sent (`review`), with its own heading; one question at a time (`flow: "one"`).
  */
 export function flowSettings(el: ElementFactory, designer: Designer): { rows: HTMLElement[]; update(page: Page): void; destroy(): void } {
   const w = designer.words.panel;
@@ -16,7 +16,10 @@ export function flowSettings(el: ElementFactory, designer: Designer): { rows: HT
   heading.addEventListener('input', () => designer.setReview({ title: heading.value }));
   const reviewRow = setting(el, 'rules', 'Review before sending', review, { hint: w.reviewHint, words: w.review });
   const headingRow = setting(el, 'rules', 'Review’s heading', heading, { words: w.reviewHeading });
-  const rows = [reviewRow, headingRow];
+  const one = el('input', { type: 'checkbox', class: 'fd-check', 'aria-label': w.flowOneOn }) as HTMLInputElement;
+  one.addEventListener('change', () => designer.setFlowOne(one.checked));
+  const oneRow = setting(el, 'rules', 'One question at a time', one, { hint: w.flowOneHint, words: w.flowOne });
+  const rows = [reviewRow, headingRow, oneRow];
   return {
     rows,
     destroy: () => undefined,
@@ -26,6 +29,8 @@ export function flowSettings(el: ElementFactory, designer: Designer): { rows: HT
       headingRow.hidden = !responses || !page.review;
       review.checked = !!page.review;
       if (!focused(heading)) heading.value = typeof page.review === 'object' ? page.review.title ?? '' : '';
+      oneRow.hidden = !responses || page.layout.type === 'sheet';
+      one.checked = page.flow === 'one';
     },
   };
 }

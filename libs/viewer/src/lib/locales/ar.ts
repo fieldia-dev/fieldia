@@ -363,4 +363,9 @@ export const ar: ViewerLabels = {
   reviewEdit: 'تعديل',
   reviewNotAnswered: 'لم تُجب',
   backToReview: 'العودة إلى المراجعة',
+  flowQuestionOf: 'السؤال {n} من {total}',
+  flowPrevious: 'السؤال السابق',
+  flowNext: 'السؤال التالي',
+  flowOk: 'موافق',
+  flowEnterHint: 'أو اضغط Enter',
 };

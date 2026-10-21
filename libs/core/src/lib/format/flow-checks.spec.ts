@@ -23,6 +23,12 @@ describe('how a page of responses is gone through', () => {
     expect(issues(intake({ review: true, data: { kind: 'record', model: 'lead' } }))).toEqual(['review: a review before sending is for a page of responses: a record is saved as it is changed']);
   });
 
+  it('asks one question at a time on a page of responses in sections or steps', () => {
+    expect(validatePage(intake({ flow: 'one' })).ok).toBe(true);
+    expect(validatePage(intake({ flow: 'all' as 'one' })).ok).toBe(false);
+    expect(issues(intake({ flow: 'one', data: { kind: 'record', model: 'lead' } }))).toEqual(['flow: one question at a time is for a page of responses in sections or steps: a record’s sheet shows its fields together']);
+  });
+
   it('checks the answers inside one part alone: a step, a question shown on its own', () => {
     const page = intake({ fields: { name: { type: 'char', label: 'Your name', required: true }, phone: { type: 'char', label: 'Phone', required: true } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'q-name', field: 'name' }, { type: 'field', id: 'q-phone', field: 'phone' }] } });
     const form = createForm({ page });

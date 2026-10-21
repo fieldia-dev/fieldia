@@ -140,7 +140,8 @@ A form of responses' Rules tab offers **Review before sending** — every answer
 shown, by step, each with Edit, before it is sent — and once on, the **Review's
 heading** in place of "Check your answers". `designer.setReview({ title, text })`
 sets it (`{}` in Fieldia's words, `null` takes it away; a record's screen is
-refused in words).
+refused in words). **One question at a time** asks the form's questions one by
+one, as Typeform does (`designer.setFlowOne(on)`).
 
 ## Trying a field's rules
 

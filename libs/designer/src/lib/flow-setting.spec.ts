@@ -41,7 +41,20 @@ describe('how a form is gone through, in the designer', () => {
     (rowOf(panel, 'Review before sending').querySelector('input') as HTMLInputElement).click();
     expect(designer.getPage().review).toBeUndefined();
     const sheet = createDesigner({ page: blankPage('screen', 'Customer') });
+    expect(sheet.setFlowOne(true)).toBe(false);
+    expect(sheet.getState().issues[0]).toBe('One question at a time is for a form that collects responses, in sections or pages');
     expect(sheet.setReview({})).toBe(false);
     expect(sheet.getState().issues[0]).toBe('A review before sending is for a form that collects responses: a record is saved as it is changed');
+  });
+
+  it('asks one question at a time', () => {
+    const { designer, panel } = responses();
+    const before = designer.getPage();
+    (rowOf(panel, 'One question at a time').querySelector('input') as HTMLInputElement).click();
+    expect(designer.getPage().flow).toBe('one');
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(pageChanges(before, designer.getPage())).toContain('It asks one question at a time');
+    (rowOf(panel, 'One question at a time').querySelector('input') as HTMLInputElement).click();
+    expect(designer.getPage().flow).toBeUndefined();
   });
 });

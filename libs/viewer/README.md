@@ -410,6 +410,25 @@ survey part; its words are the viewer's labels (`reviewAnswers`, `reviewTitle`,
 `reviewEdit`, `reviewNotAnswered`, `backToReview`). See
 [a review before sending](https://fieldia.dev/pages/#review).
 
+## One question at a time
+
+A page of responses with `"flow": "one"` asks its questions as Typeform does:
+each question on a screen of its own, large, with the words before it (a text,
+a picture) and its group's or step's title over it. **OK** — the form's first
+submit button, so Enter in a box presses it — goes on once the answer is
+checked where it stands; a choice of one picked with the pointer, or with its
+letter (A, B, C… shown beside each option, by the key's place on any keyboard),
+goes on by itself a moment later — never one of several, never the arrows
+moving through radios. The bar's ↑ and ↓, and the keys ↑, ↓, Page Up and Page
+Down where no box takes them, go back and on; "Question 3 of 12" and a bar say
+how far. A question an answer hides is passed over, one it shows comes in its
+place. On a wizard, its steps are entered, checked and kept in drafts as ever;
+a form opened with answers starts at the first still to answer. With `review`,
+the last screen's OK reviews them, and Edit comes back to its screen. It comes
+in the survey part; its words are the viewer's labels (`flowQuestionOf`,
+`flowPrevious`, `flowNext`, `flowOk`, `flowEnterHint`). See
+[one question at a time](https://fieldia.dev/pages/#flow-one).
+
 ## Opening, closing and limiting a form; Continue later
 
 A page of responses with `limits` says, as it opens, when it takes no answers —

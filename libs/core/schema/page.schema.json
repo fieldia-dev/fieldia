@@ -395,6 +395,12 @@
     },
     "review": {
       "$ref": "#/$defs/PageReview"
+    },
+    "flow": {
+      "type": "string",
+      "enum": [
+        "one"
+      ]
     }
   },
   "required": [

@@ -406,4 +406,9 @@ export const de: ViewerLabels = {
   reviewEdit: 'Ändern',
   reviewNotAnswered: 'Nicht beantwortet',
   backToReview: 'Zurück zur Übersicht',
+  flowQuestionOf: 'Frage {n} von {total}',
+  flowPrevious: 'Vorherige Frage',
+  flowNext: 'Nächste Frage',
+  flowOk: 'OK',
+  flowEnterHint: 'oder Enter drücken',
 };

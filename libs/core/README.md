@@ -329,6 +329,14 @@ step's are before they show. `form.validate(within)` checks the answers inside
 one part alone — a step, a question — as the review and one question at a time
 do.
 
+## One question at a time
+
+`"flow": "one"` on a page of responses asks one question at a time (the
+viewer's survey part draws it): each question on a screen of its own, Enter or
+OK going on once its answer is checked (`form.validate(within)`, the question's
+part alone), a choice picked going on by itself. A wizard's steps are entered,
+checked and kept as ever. A record's sheet, and a list, are refused it.
+
 ## Files stored as they are picked
 
 Give the data source `upload(file, request)` and a file or picture field sends

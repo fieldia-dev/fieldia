@@ -603,6 +603,15 @@ export interface ViewerLabels {
   reviewEdit: string;
   reviewNotAnswered: string;
   backToReview: string;
+  /**
+   * One question at a time (`flow: "one"`): how far ({n} of {total}), the bar's buttons back and on, the button that
+   * goes on, and what it says of Enter.
+   */
+  flowQuestionOf: string;
+  flowPrevious: string;
+  flowNext: string;
+  flowOk: string;
+  flowEnterHint: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1031,6 +1040,11 @@ const en: ViewerLabels = {
   reviewEdit: 'Edit',
   reviewNotAnswered: 'Not answered',
   backToReview: 'Back to review',
+  flowQuestionOf: 'Question {n} of {total}',
+  flowPrevious: 'Previous question',
+  flowNext: 'Next question',
+  flowOk: 'OK',
+  flowEnterHint: 'or press Enter',
 };
 
 /**

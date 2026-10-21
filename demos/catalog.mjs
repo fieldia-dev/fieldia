@@ -51,7 +51,7 @@ const AREA_OF = {
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake', 'training-check'],
-  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing'],
+  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'find-a-home'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -79,6 +79,7 @@ const SEARCH_WORDS = {
   property: 'property home house real estate listing viewings visits appointments related records inside agent client',
   listing: 'listing property home house villa apartment flat studio features garden pool balcony options conditions price per square metre meter district average server function formula handover months age building',
   'visit-feedback': 'feedback survey clinic patient treatments follow up carry forward picked earlier question age birthday options conditions aesthetic botox filler',
+  'find-a-home': 'one question at a time typeform conversational lead buyer home search qualify qualifying enquiry real estate property apartment villa budget bedrooms areas full screen keyboard enter arrows letters',
   'training-check': 'quiz test exam assessment training staff check certification compliance score results marks grade right wrong answers correct answer feedback points clinic filler injectables nurse review check your answers before sending edit summary',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
   'clinic-consent': 'consent form signature sign signed esign e-signature evidence proof audit trail fingerprint hash tamper locked patient clinic treatment contract agreement',
@@ -581,6 +582,21 @@ export const DEMOS = [
       'Press Submit with the address empty: Street and number and City refuse, in their own words, inside the Delivery address.',
       'Tick “Send the invoice to another address”: the same Address form comes again, for the billing address.',
       'Fill both and send: the app gets the answers nested, { "delivery_address": { … }, "billing_address": { … } }.',
+    ],
+  },
+  {
+    id: 'find-a-home',
+    name: 'A home search, one question at a time',
+    category: 'forms',
+    query: 'page=find-a-home&skin=outlined',
+    blurb: 'A buyer’s home search asked the way Typeform asks: each question on a screen of its own, Enter or OK to go on, a choice that goes on by itself, letters to pick with, ↑ and ↓ to move, how far you are always said — and a question that does not apply passed over.',
+    howTo: [
+      'Type your name and press Enter: the next question takes the screen, and says your name.',
+      'Press B: “A villa” is picked, and the bedrooms come next by themselves. Press ↑ to go back to it.',
+      'Pick “An office” instead: there are no bedrooms to ask, and the count says one question fewer.',
+      'Tick two areas, then press OK: choosing several never goes on by itself.',
+      'Answer the rest and press Submit: the ending thanks you by name.',
+      'See it [in Arabic, right to left](?locale=ar&dir=rtl), or on a phone.',
     ],
   },
   {

@@ -286,6 +286,7 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
   if (!!before.continueLater !== !!after.continueLater) out.push(w.continueLater(!!after.continueLater));
   if (JSON.stringify(before.quiz ?? null) !== JSON.stringify(after.quiz ?? null)) out.push(w.quiz(!after.quiz ? 'off' : !before.quiz ? 'on' : 'changed'));
   if (JSON.stringify(before.review ?? null) !== JSON.stringify(after.review ?? null)) out.push(w.review(!after.review ? 'off' : !before.review ? 'on' : 'changed'));
+  if ((before.flow === 'one') !== (after.flow === 'one')) out.push(w.flowOne(after.flow === 'one'));
   out.push(...lookChanges(before, after, words));
   const layout = layoutChanges(before, after, words);
   const at = (id: string) => layout.placed.get(id) ?? '';

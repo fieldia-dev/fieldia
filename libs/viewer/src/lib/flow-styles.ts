@@ -2,7 +2,7 @@ import { installPartStyles, PART_RANK } from '@fieldia/widgets';
 
 /**
  * The look of what the viewer's survey part draws: a quiz's results under the thanks, a review of the answers before
- * they are sent. On the form's tokens, so dark and
+ * they are sent, one question at a time. On the form's tokens, so dark and
  * the themes follow; logical sides, so right to left follows. Its sheet takes the survey part's own rank
  * (PART_RANK.survey), beside the survey kinds' sheet: it names only its own parts and the wizard's, which no part's
  * sheet between it and the themes' names, and a theme still reshapes its buttons and type after it.
@@ -45,6 +45,32 @@ const FLOW_CSS = /* css */ `
 .fd-review-actions > .fd-spacer { flex: 1 1 auto; }
 .fd-review-send[aria-busy="true"] { opacity: 0.7; cursor: progress; }
 @container (max-width: 520px) { .fd-review-row { grid-template-columns: minmax(0, 1fr) auto; } .fd-review-question { grid-column: 1 / -1; } }
+/* ---- one question at a time (flow-one.ts) ---- */
+.fd-flow-one [data-fd-away] { display: none !important; }
+.fd-flow-one .fd-wizard > .fd-progress, .fd-flow-one .fd-steps { display: none; }
+.fd-flow-one :is(.fd-wizard-nav, .fd-actions) > button:not(.fd-flow-ok):not(.fd-back-to-review):not(.fd-later-button) { display: none; }
+.fd-flow-one .fd-grid { grid-template-columns: minmax(0, 1fr) !important; align-content: start; }
+.fd-flow-one .fd-grid > * { grid-column: 1 / -1 !important; }
+.fd-flow-one [data-fd-current] { padding-block: clamp(16px, 8vh, 96px) clamp(16px, 6vh, 72px); align-content: start; }
+.fd-flow-one .fd-step-title { font-size: 13px; font-weight: 600; color: var(--fd-muted); text-transform: none; }
+.fd-flow-one [data-fd-current] > .fd-label, .fd-flow-one [data-fd-current] .fd-label:first-child { font-size: 22px; font-weight: 600; line-height: 1.3; color: var(--fd-text); }
+.fd-flow-one [data-fd-current] { animation: fd-flow-in 180ms ease-out; }
+.fd-flow-one [data-fd-current] .fd-choices { flex-direction: column; align-items: stretch; gap: 8px; counter-reset: fd-key; }
+.fd-flow-one [data-fd-current] .fd-choices > .fd-choice { counter-increment: fd-key; padding: 10px 12px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius, 6px); background: var(--fd-surface); max-width: 32em; }
+.fd-flow-one [data-fd-current] .fd-choices > .fd-choice:has(input:checked) { border-color: var(--fd-accent); background: var(--fd-accent-soft, var(--fd-surface)); }
+.fd-flow-one [data-fd-current] .fd-choices > label.fd-choice::after { content: counter(fd-key, upper-alpha); content: counter(fd-key, upper-alpha) / ""; margin-inline-start: auto; min-width: 1.6em; padding: 0 4px; border: 1px solid var(--fd-border); border-radius: 4px; font-size: 12px; text-align: center; color: var(--fd-muted); }
+.fd-flow-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 100%; }
+.fd-flow-progress { display: grid; gap: 4px; min-width: 9em; color: var(--fd-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.fd-flow-bar { display: block; width: 9em; height: 4px; border-radius: 2px; background: var(--fd-border); overflow: hidden; }
+.fd-flow-bar-fill { display: block; height: 100%; background: var(--fd-accent); transition: width 200ms ease-out; }
+.fd-flow-moves { display: inline-flex; gap: 4px; }
+.fd-flow-move { min-width: 36px; padding-inline: 8px; }
+.fd-flow-move[hidden] { display: none; }
+.fd-flow-hint { color: var(--fd-muted); font-size: 13px; }
+.fd-flow-nav > .fd-spacer { flex: 1 1 auto; }
+@container (max-width: 520px) { .fd-flow-hint { display: none; } .fd-flow-one [data-fd-current] > .fd-label { font-size: 19px; } }
+@keyframes fd-flow-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fd-flow-one [data-fd-current] { animation: none; } .fd-flow-bar-fill { transition: none; } }
 `;
 
 /** The viewer's survey part's sheet in a document, once, in the survey part's place among Fieldia's (PART_RANK.survey). */

@@ -226,6 +226,13 @@ export interface Page {
    * page's own heading and words. See `PageReview`.
    */
   review?: boolean | PageReview;
+  /**
+   * How a page of responses is gone through: `one`, one question at a time, as Typeform asks — each question on a screen
+   * of its own, the words before it with it; Enter or OK goes on once it is answered, a choice picked goes on by itself,
+   * ↑ and ↓ go back and on, and "Question 3 of 12" says how far. A wizard's steps keep their checks, events and drafts.
+   * Left out, every question of a step (or of the page) at once, as before.
+   */
+  flow?: 'one';
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -315,6 +322,7 @@ export const PageSchema = z
     continueLater: z.boolean().optional(),
     quiz: PageQuizSchema.optional(),
     review: PageReviewSchema.optional(),
+    flow: z.enum(['one']).optional(),
   })
   .meta({
     title: 'Fieldia page',

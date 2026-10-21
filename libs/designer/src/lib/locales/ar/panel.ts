@@ -157,6 +157,7 @@ const NAMES: Record<string, string> = {
   'Show the right answer to one missed': 'عرض الإجابة الصحيحة لما أخطأ فيه',
   'Review before sending': 'المراجعة قبل الإرسال',
   'Review’s heading': 'عنوان المراجعة',
+  'One question at a time': 'سؤال واحد في كل مرة',
   'Records of': 'سجلات من',
   'Cards on a phone': 'بطاقات على الهاتف',
   'Row tones and buttons': 'ألوان الصفوف وأزرارها',
@@ -576,6 +577,9 @@ export const panel: DesignerWords['panel'] = {
   reviewHint: 'يصبح زر الخطوة الأخيرة «راجع إجاباتك»: تظهر كل إجابة حسب خطوتها، لكل منها تعديل، ثم الإرسال.',
   reviewHeading: 'عنوان المراجعة',
   reviewHeadingPlaceholder: 'تحقّق من إجاباتك',
+  flowOne: 'سؤال واحد في كل مرة',
+  flowOneOn: 'اطرح سؤالًا واحدًا في كل مرة',
+  flowOneHint: 'كل سؤال في شاشة خاصة به: Enter ينتقل إلى التالي، والاختيار ينتقل وحده، و↑ و↓ للتنقل بين الأسئلة.',
   // ---- السجلات المكررة المحتملة في صفحة سجل
   duplicates: 'السجلات المكررة المحتملة',
   duplicatesHint: 'أثناء كتابة السجل وحفظه، تُذكر تحت الحقل السجلات التي فيها القيمة نفسها في حقل محدد — أو اسم قريب من اسمه — لفتحها بدلًا منه أو تركها أو دمجها. مصدر بيانات تطبيقك هو الذي يجدها.',

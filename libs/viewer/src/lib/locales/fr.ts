@@ -395,4 +395,9 @@ export const fr: ViewerLabels = {
   reviewEdit: 'Modifier',
   reviewNotAnswered: 'Sans réponse',
   backToReview: 'Retour à la relecture',
+  flowQuestionOf: 'Question {n} sur {total}',
+  flowPrevious: 'Question précédente',
+  flowNext: 'Question suivante',
+  flowOk: 'OK',
+  flowEnterHint: 'ou appuyez sur Entrée',
 };

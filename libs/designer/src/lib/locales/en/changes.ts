@@ -132,6 +132,7 @@ export const changes = {
   continueLater: (on: boolean): string => (on ? 'It offers Continue later' : 'It no longer offers Continue later'),
   quiz: (now: 'on' | 'off' | 'changed') => ({ on: 'It shows a quiz’s results', off: 'It no longer shows a quiz’s results', changed: 'How it shows the quiz’s results changed' })[now],
   review: (now: 'on' | 'off' | 'changed') => ({ on: 'It shows every answer before it is sent', off: 'It no longer shows the answers before they are sent', changed: 'Its review before sending changed' })[now],
+  flowOne: (on: boolean): string => (on ? 'It asks one question at a time' : 'It asks its questions together again'),
   thePage: 'the page',
   // ---- the look
   look: {

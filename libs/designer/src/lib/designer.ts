@@ -417,6 +417,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    * `title` and `text` (empty or `null` takes one away), `null` takes it away. A form of responses only.
    */
   setReview(patch: { title?: string | null; text?: string | null } | null): boolean;
+  /** One question at a time on a form of responses (`flow: "one"`); false takes it away. Refused on a record's screen. */
+  setFlowOne(on: boolean): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
@@ -1590,6 +1592,14 @@ export function createDesigner(options: {
         },
         `review:${patch ? Object.keys(patch).join(',') : 'off'}`
       );
+    },
+
+    setFlowOne(on) {
+      return apply((draft) => {
+        if (!on) return void delete draft.flow;
+        if (draft.data.kind !== 'responses' || draft.layout.type === 'list' || draft.layout.type === 'sheet') throw new Refusal((w) => w.refusals.flowForResponses);
+        draft.flow = 'one';
+      }, 'flow');
     },
 
     setDuplicates(patch) {

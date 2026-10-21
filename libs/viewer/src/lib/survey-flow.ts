@@ -3,6 +3,7 @@ import { displayValue } from '@fieldia/widgets';
 import { setHidden, setText, type El } from './dom';
 import { installFlowStyles } from './flow-styles';
 import type { ViewerLabels } from './labels';
+import { oneAtATime } from './flow-one';
 
 /**
  * A survey's flow — the survey part's (survey-part.ts), made as a page of responses that asks for it is drawn:
@@ -12,6 +13,8 @@ import type { ViewerLabels } from './labels';
  *   by step, each with Edit — then Back, and the page's own words to send. Edit goes to that question, in its step;
  *   from a step before the last, "Back to review" checks the steps on the way and shows it again. A send the source
  *   refuses goes back to the question it names.
+ * - **One question at a time** (`flow: "one"`, flow-one.ts): each question on a screen of its own; Edit on the review
+ *   goes to its screen.
  */
 
 /** What a survey's flow needs of the viewer that draws the page. */
@@ -45,6 +48,8 @@ export interface FlowKit {
   sending(): Promise<boolean>;
   /** The send was refused — by the page's own checks, or the source: the questions again, at the first problem. */
   refused(): void;
+  /** One question at a time (`flow: "one"`): on to the next question, as Enter and OK go — the page's submit and Ctrl+Enter alike. */
+  forward?(): Promise<void>;
   update(state: FormState): void;
   destroy(): void;
 }
@@ -56,8 +61,8 @@ interface Asked {
   step: StepNode | null;
 }
 
-/** Whether a page has a survey flow the viewer's survey part draws: a review before sending. */
-export const flows = (page: Page): boolean => page.data.kind === 'responses' && page.layout.type !== 'list' && !!page.review;
+/** Whether a page has a survey flow the viewer's survey part draws: a review before sending, one question at a time. */
+export const flows = (page: Page): boolean => page.data.kind === 'responses' && page.layout.type !== 'list' && (!!page.review || page.flow === 'one');
 
 export function surveyFlow(context: FlowContext): FlowKit {
   const { doc, el, page, form, labels, locale, questions } = context;
@@ -198,9 +203,18 @@ export function surveyFlow(context: FlowContext): FlowKit {
     showReview(true);
     return true;
   }
+  /** One question at a time: its screens, made once the review's own buttons are in the page. */
+  const one = page.flow === 'one' ? oneAtATime(context, { finishWords: () => (review && !reviewing ? labels.reviewAnswers : words(wizard?.finishLabel ?? labels.submit)), finish: context.submit, reviewing: () => reviewing }) : null;
+  if (one) cleanups.push(() => one.destroy());
+
   /** A question's box, focused: on its step, the review put away. */
   function editAt(asked: Asked) {
     showReview(false);
+    if (one) {
+      editing = true;
+      one.goTo(asked.node.id);
+      return;
+    }
     if (asked.step && form.getState().step !== asked.step.id) form.goTo(asked.step.id);
     editing = true;
     // Drawn as the step shows: the box in sight, then focused.
@@ -223,6 +237,7 @@ export function surveyFlow(context: FlowContext): FlowKit {
 
   return {
     finishWords: () => (review && !reviewing ? labels.reviewAnswers : undefined),
+    ...(one ? { forward: () => one.forward() } : {}),
     async sending() {
       if (!review || reviewing) return true;
       await openReview();
@@ -233,11 +248,13 @@ export function surveyFlow(context: FlowContext): FlowKit {
       showReview(false);
       // On a wizard, the step whose question the problem is under.
       const errors = Object.keys(form.getState().errors);
-      const asked = groupsAsked().flatMap((group) => group.asked).find((one) => errors.some((path) => path === one.field || path.startsWith(`${one.field}.`)));
-      if (asked?.step && form.getState().step !== asked.step.id) form.goTo(asked.step.id);
+      const asked = groupsAsked().flatMap((group) => group.asked).find((question) => errors.some((path) => path === question.field || path.startsWith(`${question.field}.`)));
+      if (one && asked) one.goTo(asked.node.id);
+      else if (asked?.step && form.getState().step !== asked.step.id) form.goTo(asked.step.id);
       context.focusFirstProblem();
     },
     update(state) {
+      one?.update(state);
       // A page of sections' own Submit reviews them first, as a wizard's last button does.
       if (submitButton) setText(submitButton, review && !reviewing ? labels.reviewAnswers : labels.submit);
       const steps = form.steps();
