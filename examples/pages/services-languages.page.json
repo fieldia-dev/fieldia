@@ -3,7 +3,7 @@
   "id": "services-languages",
   "title": "Services",
   "description": "A clinic's services, each named in English and in Arabic by the clinic: listed in the reader's language — another's said to be another's — and found by a search in either.",
-  "data": { "kind": "record", "model": "clinic.service" },
+  "data": { "kind": "record", "model": "clinic.menu" },
   "records": { "one": "service", "other": "services", "a": "a service" },
   "fields": {
     "name": { "type": "char", "label": "Service", "translate": ["en", "ar"], "required": true },

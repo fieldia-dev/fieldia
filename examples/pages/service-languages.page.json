@@ -5,7 +5,7 @@
   "description": "One of a clinic's services: its name typed in English and in Arabic, both required, as the booking desk and the clinic's site show it.",
   "data": {
     "kind": "record",
-    "model": "clinic.service"
+    "model": "clinic.menu"
   },
   "records": {
     "one": "service",
