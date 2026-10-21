@@ -20,6 +20,8 @@ import { fill, MESSAGES } from '../record/messages';
 import { autofillGroupProblem } from './autofill-group';
 import { checkLimits } from './limits-checks';
 import { checkApproval } from './approval-checks';
+import { checkLanguages } from './languages-checks';
+import { hasLanguages } from '../record/languages';
 import { checkSeats } from './seats-checks';
 import { checkList, checkRelated, type ListTools } from './list-checks';
 import { checkEditable } from './editable-checks';
@@ -152,6 +154,8 @@ export class ReferenceCheck {
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
     // A record's approvals: checked where it has them (in the one-tag script, by the approvals part it asks for).
     if (!this.line && this.page.approval !== undefined) checkApproval(this.page, this.fieldTools());
+    // Texts kept in several languages: placed as words people type (in the one-tag script, by the languages part it asks for).
+    if (hasLanguages(this.page)) checkLanguages(this.fieldTools());
     this.checkGoingTo();
     return this.issues;
   }

@@ -2,6 +2,8 @@ export * from './runtime';
 // Why a page takes no answers now, in words: the limits part's (`formLimitsPart`), whole here.
 export { takingWords, whenWords } from './lib/record/form-limits';
 export { isQuestion } from './lib/record/record-words';
+// A text in several languages checked in each, and a language's name: the languages part's (`formLanguagesPart`), whole here.
+export { checkTranslated, languageName, languagesAtFault, textIn, textOf } from './lib/record/languages-part';
 export { dayWords } from './lib/record/day-words';
 // A memory source's free times from booking schedules: for demos and tests, outside the one-tag script.
 export { scheduleSlots, type MemorySchedule } from './lib/record/memory-schedules';
@@ -10,6 +12,7 @@ export { alikeRecords, nameLikeness } from './lib/record/memory-duplicates';
 export {
   FieldSchema,
   FieldsSchema,
+  LanguageTagSchema,
   LineFieldSchema,
   LinkedFieldSchema,
   LineKindsSchema,

@@ -4,6 +4,7 @@ import { checkDay } from './limits';
 import { fill, fillMessage, MESSAGES, type MessageKey, type Messages } from './messages';
 import { charCount, foldDigits, MOST_DIGITS, placesOf, stripMarks } from './input-rules';
 import { isQuestion } from './record-words';
+import { formLanguagesPart, languagesOf } from './languages';
 import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type Value } from './values';
 
 /**
@@ -32,6 +33,8 @@ export function checkValue(
   // A question is asked for: "Please answer “How was your visit?”", never "How was your visit? is required".
   if (isEmpty(field, value)) return required ? say(isQuestion(label) ? 'requiredQuestion' : 'required') : undefined;
   if (field.type === 'matrix') return checkMatrix(field, value, required, say);
+  // A text kept in several languages, language by language, by its part: until it has come (a save waits for it), nothing is said.
+  if (languagesOf(field)) return formLanguagesPart.loaded?.checkTranslated(field, value, required, messages, today, widget);
 
   switch (field.type) {
     case 'char':

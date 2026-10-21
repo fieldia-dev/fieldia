@@ -1,4 +1,4 @@
-import { foldDigits, stripMarks, webAddress, type Field, type FieldNode, type LineField, type Locale, type Page, type RelatedRecord, type Value, type Values } from '@fieldia/core';
+import { foldDigits, languagesOf, stripMarks, webAddress, type Field, type FieldNode, type LineField, type Locale, type Page, type RelatedRecord, type Value, type Values } from '@fieldia/core';
 import { phoneSettings } from './phone-settings';
 import { cellText } from './display';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
@@ -19,6 +19,8 @@ import { detailLines, linkAvatar } from './link-avatar';
  */
 export function readsAsText(field: Field, node: FieldNode, page?: Pick<Page, 'phone'>): boolean {
   const widget = node.widget;
+  // A text in several languages keeps its switch while it is read, to read each.
+  if (languagesOf(field)) return false;
   switch (field.type) {
     case 'char':
       if (widget === 'phone' && phoneSettings(page, node.options)) return false;

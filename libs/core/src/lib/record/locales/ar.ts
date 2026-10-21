@@ -88,5 +88,7 @@ export const ar: Messages = {
   approvalLocked: 'مقفل ما دام ينتظر الموافقة',
   approvalReasonNeeded: 'اذكر سبب الرفض',
   approvalNotYours: 'ليس لك أن تقرّر في {level} الآن',
+  languagesNeeded: '{label} مطلوب باللغة {languages}',
+  languagesNeededQuestion: 'يُرجى الإجابة عن {label} باللغة {languages}',
   locale: 'ar',
 };

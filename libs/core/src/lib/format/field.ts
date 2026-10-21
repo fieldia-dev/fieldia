@@ -178,19 +178,65 @@ const valueMap = z.record(z.string().regex(FIELD_NAME), z.string().min(1));
  */
 const createValues = valueMap.optional();
 
-const Char = z
-  .object({
-    type: z.literal('char'),
-    ...common,
-    size,
-    /** What the whole answer must look like, as a regular expression: tested trimmed, its digits as 0-9. */
-    pattern: z.string().optional(),
-    /** Why an answer does not fit the pattern, in words, in place of "not in the expected format": `{label}` is the field's. */
-    patternHint: z.string().min(1).optional(),
-  })
-  .strict();
-const Text = z.object({ type: z.literal('text'), ...common, size }).strict();
-const Html = z.object({ type: z.literal('html'), ...common }).strict();
+/** A language by its BCP 47 tag, as a text kept in several languages is keyed: "ar", "en", "pt-BR", "zh-Hant". */
+export const LanguageTagSchema = z
+  .string()
+  .regex(/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, 'a language is written as its BCP 47 tag: "ar", "en", "pt-BR"')
+  .meta({ id: 'LanguageTag', description: 'A language by its BCP 47 tag.', examples: ['ar', 'en', 'fr', 'pt-BR'] });
+
+/**
+ * A text kept in several languages, each typed by a person — never translated by a machine: its value is an object of
+ * each language's text, `{ "ar": "…", "en": "…" }`, a language not typed yet left out (none typed: no value). A switch
+ * on the field shows one language at a time, the reader's first, each written its own way (Arabic right to left); a
+ * list's cells and cards show the reader's, else another, marked with it; a search finds either.
+ */
+const languages = {
+  /** The languages its text is kept in, two or more: `["ar", "en"]`. A line, a paragraph or formatted text. */
+  translate: z.array(LanguageTagSchema).min(2).meta({ uniqueItems: true }).optional(),
+  /** Of those, the languages a required answer is typed in: every one when left out. */
+  requiredIn: z.array(LanguageTagSchema).min(1).meta({ uniqueItems: true }).optional(),
+};
+/** A table's line keeps one language: a text in several is for the page's own fields, and a linked record's shown. */
+const oneLanguage = {
+  translate: z.never({ error: 'a table’s line keeps its text in one language: a text in several is for the page’s own fields' }).optional(),
+  requiredIn: z.never({ error: 'requiredIn is for a text kept in several languages (translate)' }).optional(),
+};
+type LanguageRules = { translate?: string[]; requiredIn?: string[] };
+/** Each language once; `requiredIn` only with `translate`, each of its own — and for tools that read only the JSON Schema, the first. */
+const withLanguages = <T extends z.ZodType<LanguageRules>>(schema: T) =>
+  schema
+    .superRefine((field, context) => {
+      const same = (tags: string[]) => tags.find((tag, i) => tags.findIndex((other) => other.toLowerCase() === tag.toLowerCase()) !== i);
+      const twice = same(field.translate ?? []);
+      if (twice) context.addIssue({ code: 'custom', message: `"${twice}" is named twice: each language once`, path: ['translate'] });
+      if (field.requiredIn === undefined) return;
+      if (field.translate === undefined) context.addIssue({ code: 'custom', message: 'requiredIn says which of a text’s languages are required: name them in translate', path: ['requiredIn'] });
+      else
+        field.requiredIn.forEach((tag, i) => {
+          if (!field.translate?.some((own) => own.toLowerCase() === tag.toLowerCase())) context.addIssue({ code: 'custom', message: `"${tag}" is not one of the languages it is kept in (translate)`, path: ['requiredIn', i] });
+        });
+    })
+    .meta({ dependentSchemas: { requiredIn: { required: ['translate'] } } });
+
+const charShape = {
+  type: z.literal('char'),
+  ...common,
+  size,
+  /** What the whole answer must look like, as a regular expression: tested trimmed, its digits as 0-9 — in each of its languages. */
+  pattern: z.string().optional(),
+  /** Why an answer does not fit the pattern, in words, in place of "not in the expected format": `{label}` is the field's. */
+  patternHint: z.string().min(1).optional(),
+};
+const textShape = { type: z.literal('text'), ...common, size };
+const htmlShape = { type: z.literal('html'), ...common };
+/** A page's own text, and a linked record's: kept in one language, or in several (`translate`). */
+const Char = withLanguages(z.object({ ...charShape, ...languages }).strict());
+const Text = withLanguages(z.object({ ...textShape, ...languages }).strict());
+const Html = withLanguages(z.object({ ...htmlShape, ...languages }).strict());
+/** A table line's text: one language. */
+const LineChar = z.object({ ...charShape, ...oneLanguage }).strict();
+const LineText = z.object({ ...textShape, ...oneLanguage }).strict();
+const LineHtml = z.object({ ...htmlShape, ...oneLanguage }).strict();
 const Integer = z
   .object({ type: z.literal('integer'), ...common, min: z.number().optional(), max: z.number().optional() })
   .strict();
@@ -487,7 +533,7 @@ const Matrix = z
 /** A field of the lines a line holds: any line field but more lines. */
 const InnerLineFieldSchema = z
   .discriminatedUnion('type', [
-    Char, Text, Html, Integer, Float, Monetary, BooleanField, DateField, DateTime,
+    LineChar, LineText, LineHtml, Integer, Float, Monetary, BooleanField, DateField, DateTime,
     LineSelection, Binary, Image, Many2one, Many2many, Reference, Properties, Json,
   ])
   .meta({ id: 'InnerLineField' });
@@ -512,7 +558,7 @@ const LineOne2many = z
 /** A field of a one2many's lines; lines may hold lines of their own, one level down. */
 export const LineFieldSchema = z
   .discriminatedUnion('type', [
-    Char, Text, Html, Integer, Float, Monetary, BooleanField, DateField, DateTime,
+    LineChar, LineText, LineHtml, Integer, Float, Monetary, BooleanField, DateField, DateTime,
     LineSelection, Binary, Image, Many2one, Many2many, Reference, Properties, Json, LineOne2many,
   ])
   .meta({ id: 'LineField' });

@@ -158,6 +158,13 @@ export interface Messages {
   approvalLocked: string;
   approvalReasonNeeded: string;
   approvalNotYours: string;
+  /**
+   * A text kept in several languages (`translate`) typed in some, not in all those a required answer is typed in:
+   * `{languages}`, their names in the page's language ("Arabic", "Arabic and French"); of a label that is a question,
+   * `languagesNeededQuestion`.
+   */
+  languagesNeeded: string;
+  languagesNeededQuestion: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -273,6 +280,8 @@ const en: Messages = {
   approvalLocked: 'Locked while it waits for approval',
   approvalReasonNeeded: 'Say why it is rejected',
   approvalNotYours: '{level} is not yours to decide now',
+  languagesNeeded: '{label} is required in {languages}',
+  languagesNeededQuestion: 'Please answer {label} in {languages}',
   locale: 'en',
 };
 

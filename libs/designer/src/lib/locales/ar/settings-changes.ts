@@ -1,5 +1,6 @@
 import type { DesignerWords } from '../../designer-words';
 import { listOf, plural, quoteAr } from '../speak';
+import { displayName } from '../../language-names';
 
 const q = quoteAr;
 const minutes = (n: number) => plural('ar', n, { zero: '# دقيقة', one: 'دقيقة واحدة', two: 'دقيقتان', few: '# دقائق', many: '# دقيقة', other: '# دقيقة' });
@@ -62,6 +63,10 @@ export const settingsChanges: DesignerWords['settingsChanges'] = {
   oneDate: 'تاريخ واحد بلا نهاية',
   runsFrom: (field) => `يعمل منذ ${q(field)}`,
   onZone: (zone) => `حسب ساعة ${zone}`,
+  languageName: (tag) => displayName('ar', tag),
+  typedIn: (languages) => `يُكتب باللغات: ${listOf('ar', languages, 'and')}`,
+  oneLanguage: 'يُكتب بلغة واحدة',
+  requiredIn: (languages) => `الإجابة المطلوبة تُكتب باللغات: ${listOf('ar', languages, 'and')}`,
   onPageZone: 'حسب ساعة الصفحة',
   scheduleOf: (name) => `يسأل عن الأوقات المتاحة في ${q(name)}`,
   ownSchedule: 'يسأل عن الأوقات المتاحة باسمه هو',

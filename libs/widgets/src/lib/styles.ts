@@ -984,9 +984,20 @@ export function installStyles(document: Document): void {
  * says where its approval stands, its levels, its history and Reject's question, laid out alone, their buttons, boxes and
  * dialog drawn by the main sheet's rules. Like a page's limits, they go after the slots', Import's, possible duplicates'
  * and the limits' (none names another's parts) and before the themes', so a theme still reshapes their buttons, their
- * focus, the dialog's corners and their words' type: rank 11, the ranks from the themes' on moving on by one.
+ * focus, the dialog's corners and their words' type: rank 11.
+ *
+ * A text kept in several languages (0.29, the languages part) is new too, cut from no rule: the switch between its
+ * languages over its box, and a list's mark beside a text in another language than the reader's, laid out alone; each
+ * language's box is the main sheet's. It goes after the limits' (none names another's parts) and before the themes',
+ * so a theme still reshapes the boxes it holds and the tokens its tabs take their corners and focus from, and the quiet
+ * look still quietens those boxes: rank 14.
+ *
+ * Those four of 0.29 — a record's approvals' (11), AI help's (12), a photo set's (13) and a text's languages' (14) —
+ * each style only their own parts and name none of another's, so their order among them changes nothing (it is the
+ * order their lanes were merged in); all four go before the themes', which reshape them. The ranks from the themes' on
+ * move on by four.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, themes: 12, quiet: 13, picker: 14, head: 15, groups: 16, text: 17, surveyLooks: 18, cards: 19 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, languages: 14, themes: 15, quiet: 16, picker: 17, head: 18, groups: 19, text: 20, surveyLooks: 21, cards: 22 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

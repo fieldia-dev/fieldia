@@ -88,5 +88,7 @@ export const fr: Messages = {
   approvalLocked: 'Verrouillé tant qu’il attend l’approbation',
   approvalReasonNeeded: 'Dites pourquoi il est refusé',
   approvalNotYours: 'Ce n’est pas à vous de décider pour {level} maintenant',
+  languagesNeeded: '{label} est obligatoire en {languages}',
+  languagesNeededQuestion: 'Veuillez répondre à {label} en {languages}',
   locale: 'fr',
 };

@@ -204,6 +204,33 @@ carries no options from a question: its own, or one of the app's lists — the s
 `optionsFrom` as a page's own choice (`{ list, dependsOn }`, its `dependsOn` naming
 the line's columns or `parent.` and a field).
 
+## One text in several languages
+
+A line, a paragraph or formatted text may keep its text in several languages, each
+typed by a person — Fieldia never translates it (`translate`), and `requiredIn` says
+which a required answer is typed in (every one when left out):
+
+```json
+"title": { "type": "char", "label": "Title", "translate": ["ar", "en"], "required": true, "size": 80 },
+"description": { "type": "text", "label": "Description", "translate": ["ar", "en"], "required": true, "requiredIn": ["en"] }
+```
+
+Its value is an object of each language's text by its tag — `{ "ar": "شقة…", "en":
+"Nile-view flat" }` — a language not typed yet left out, none typed `null`; a plain
+text loaded for it is read as its first language's. The form checks it in each
+language: "Title is required in Arabic" while it is typed in some (`languagesNeeded`,
+or `languagesNeededQuestion` for a label that asks), "Title is required" in none;
+each language held to the field's `size` and `pattern`, named in the problem ("Title
+(English) is 4 characters too long: shorten it to 80"). `textIn(value, reader,
+languages)` reads it as a reader of a language does — theirs where typed, else the
+field's first typed, said to be another's — `languageName(tag, locale)` names a
+language, `checkTranslated` and `languagesAtFault` check it. They come in the
+languages part (`formLanguagesPart`), which a form with such a field asks for as it
+is made and a save waits for; `languagesOf(field)` and `hasLanguages(page)` say
+whether a page has one. A table's line keeps one language. The memory source finds
+such a text by a search in any of its languages, and reads one text — a link's
+name, a list's order — in its `language` option's.
+
 ## A public form's bot check
 
 A page of responses anyone may send — a sign-up, a contact form — can check that

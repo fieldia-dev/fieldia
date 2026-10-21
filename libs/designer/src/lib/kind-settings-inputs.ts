@@ -7,6 +7,13 @@ import type { InputLimits } from './input-commands';
 import { settingDate, type SettingDateOptions } from './date-setting';
 import { settingNumber, type SettingNumberOptions } from './number-box';
 import { zoneBox } from './zone-setting';
+import { COMMON_LANGUAGES, displayName } from './language-names';
+
+/** The two languages a text is first typed in: the page's own, then English — or Arabic, on an English page. */
+export function firstPair(language: string): string[] {
+  const own = language.split('-')[0].toLowerCase();
+  return own === 'en' ? ['en', 'ar'] : [own, 'en'];
+}
 
 /**
  * The text, number and date kinds' settings, in the picked field itself
@@ -484,7 +491,73 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /**
+   * A short answer, a paragraph or formatted text typed in several languages (`translate`), each by a person: a switch,
+   * the languages chosen — by their names in the designer's language, the page's own first when it is turned on, one
+   * taken away while three or more are — one added from the common ones; and, while the field is required, the languages
+   * a required answer is typed in.
+   */
+  function languages(): Part {
+    const locale = designer.locale === 'ar' ? 'ar' : 'en';
+    const several = toggle(w.severalLanguages, (on) => designer.setLanguages(id, on ? firstPair(designer.getPage().language ?? locale) : null));
+    const chosen = el('ul', { class: 'fd-kind-languages', 'aria-label': w.typedIn });
+    const add = el('select', { class: 'fd-inline-select', 'aria-label': w.addLanguage }) as HTMLSelectElement;
+    add.addEventListener('change', () => {
+      const tag = add.value;
+      add.value = '';
+      if (tag) designer.setLanguages(id, [...tags, tag]);
+    });
+    const required = el('span', { class: 'fd-inline-setting fd-kind-required-in', role: 'group', 'aria-label': w.requiredIn }, el('span', {}, w.requiredIn));
+    let tags: string[] = [];
+    let asked: string[] = [];
+    const element = el('div', { class: 'fd-kind-block fd-kind-languages-block' }, several.element, el('div', { class: 'fd-inline-row' }, chosen, add), required);
+    return {
+      element,
+      refresh(page, node) {
+        const def = page.fields[node.field] as Field & { translate?: string[]; requiredIn?: string[]; required?: boolean };
+        tags = def.translate ?? [];
+        asked = def.requiredIn ?? tags;
+        several.button.setAttribute('aria-checked', String(tags.length > 0));
+        const on = tags.length > 0;
+        (chosen.parentElement as HTMLElement).hidden = !on;
+        const key = JSON.stringify([tags, asked, def.required === true || node.required === true]);
+        if (element.dataset['shown'] === key) return;
+        element.dataset['shown'] = key;
+        chosen.replaceChildren(
+          ...tags.map((tag) => {
+            const name = displayName(locale, tag);
+            const item = el('li', { class: 'fd-kind-language', lang: tag }, el('span', {}, name));
+            // Two at the least: one is taken away only while three or more are kept.
+            if (tags.length > 2) {
+              const remove = el('button', { type: 'button', class: 'fd-button fd-button-link fd-kind-language-remove', 'aria-label': w.removeLanguage(name) }, '×');
+              remove.addEventListener('click', () => designer.setLanguages(id, tags.filter((other) => other !== tag)));
+              item.append(remove);
+            }
+            return item;
+          })
+        );
+        const offered = Object.keys(COMMON_LANGUAGES).filter((tag) => !tags.some((own) => own.toLowerCase() === tag.toLowerCase()));
+        add.replaceChildren(el('option', { value: '' }, w.addLanguage), ...offered.map((tag) => el('option', { value: tag }, displayName(locale, tag))).sort((a, b) => (a.textContent ?? '').localeCompare(b.textContent ?? '', locale)));
+        // The languages a required answer is typed in: while it is required.
+        required.hidden = !on || !(def.required === true || node.required === true);
+        required.replaceChildren(
+          el('span', {}, w.requiredIn),
+          ...tags.map((tag) => {
+            const box = el('input', { type: 'checkbox', class: 'fd-checkbox' }) as HTMLInputElement;
+            box.checked = asked.includes(tag);
+            box.addEventListener('change', () => {
+              const next = tags.filter((other) => (other === tag ? box.checked : asked.includes(other)));
+              if (!designer.setRequiredIn(id, next)) box.checked = !box.checked;
+            });
+            return el('label', { class: 'fd-inline-setting fd-kind-required-language' }, box, el('span', {}, displayName(locale, tag)));
+          })
+        );
+      },
+    };
+  }
+
   const parts: Part[] = [];
+  if (kind === 'short-answer' || kind === 'paragraph' || kind === 'rich-text') parts.push(languages());
   if (kind === 'code' || kind === 'vscode') parts.push(codeLanguage());
   if (kind === 'phone') parts.push(phone());
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());

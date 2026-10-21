@@ -42,6 +42,10 @@ export interface InputCommandsDeps {
 }
 
 const NUMBERS = ['integer', 'float', 'monetary'];
+/** The kinds whose text may be kept in several languages: a line, a paragraph, formatted text. */
+const TRANSLATABLE = ['char', 'text', 'html'];
+/** A language's tag, as the format takes it: "ar", "en", "pt-BR". */
+const LANGUAGE_TAG = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 const DATES = ['date', 'datetime'];
 const DAY = /^(\d{4}-\d{2}-\d{2}|today([+-]\d{1,4})?)$/;
 /** The usual width of a number, in digits, when the decimals are set and the width is not. */
@@ -136,6 +140,51 @@ export function inputCommands({ apply, fromModel, words }: InputCommandsDeps) {
         },
         `zone:${id ?? 'page'}`
       );
+    },
+
+    /**
+     * The languages a line, a paragraph or formatted text keeps its text in, each typed by a person (`translate`): two or
+     * more, by their tags ("ar", "en"), in the order given; null or one keeps it in one language again. Languages a
+     * required answer is typed in (`requiredIn`) that it no longer keeps go with them.
+     */
+    setLanguages(id: string, languages: string[] | null): boolean {
+      return apply((draft) => {
+        const { node, field, owned } = question(draft, id);
+        if (!TRANSLATABLE.includes(field.type)) throw new Refusal((w) => w.refusals.onlyTextLanguages);
+        if (!owned) throw new Refusal((w) => w.refusals.languagesFromModel(field.label));
+        const own = field as Field & { translate?: string[]; requiredIn?: string[] };
+        const tags = [...new Map((languages ?? []).map((tag) => tag.trim()).filter(Boolean).map((tag) => [tag.toLowerCase(), tag])).values()];
+        const bad = tags.find((tag) => !LANGUAGE_TAG.test(tag));
+        if (bad) throw new Refusal((w) => w.refusals.languageTag(bad));
+        if (tags.length < 2) {
+          delete own.translate;
+          delete own.requiredIn;
+          return;
+        }
+        // Its words as people type them: a box of their own in each language, never an email, a phone or tags.
+        if (node.widget) throw new Refusal((w) => w.refusals.languagesPlainText);
+        own.translate = tags;
+        const kept = own.requiredIn?.filter((tag) => tags.includes(tag));
+        if (kept?.length && kept.length < tags.length) own.requiredIn = kept;
+        else delete own.requiredIn;
+      });
+    },
+
+    /**
+     * Of a text's languages, those a required answer is typed in (`requiredIn`): some of them; all of them, or null, for
+     * every one (the usual, left out). None is refused: a text no language of which is required is not required.
+     */
+    setRequiredIn(id: string, languages: string[] | null): boolean {
+      return apply((draft) => {
+        const { field, owned } = question(draft, id);
+        const own = field as Field & { translate?: string[]; requiredIn?: string[] };
+        if (!own.translate) throw new Refusal((w) => w.refusals.requiredInNeedsLanguages);
+        if (!owned) throw new Refusal((w) => w.refusals.languagesFromModel(field.label));
+        const kept = own.translate.filter((tag) => (languages ?? own.translate ?? []).includes(tag));
+        if (!kept.length) throw new Refusal((w) => w.refusals.requiredInOne);
+        if (kept.length < own.translate.length) own.requiredIn = kept;
+        else delete own.requiredIn;
+      });
     },
 
     /** How an amount is written where it is read — a list, a field shown as words, a map's card and pins — in its field's money look. */

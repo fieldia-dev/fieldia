@@ -85,6 +85,10 @@ import servicePrices from '../../examples/pages/service-prices.page.json';
 import staffHours from '../../examples/pages/staff-hours.page.json';
 import dealStages from '../../examples/pages/deal-stages.page.json';
 import { CLINIC_ROLES, sampleServices, sampleStaffWeeks, sampleStages, servicePerHour, stagePermissions, staffWeekRule } from './editable-lists';
+import listingLanguages from '../../examples/pages/listing-languages.page.json';
+import servicesLanguages from '../../examples/pages/services-languages.page.json';
+import serviceLanguages from '../../examples/pages/service-languages.page.json';
+import { bilingualListings, bilingualServices } from './languages';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -208,6 +212,11 @@ export const pages: Record<string, Page> = {
   // A purchase order over its limit waiting for Finance, then the CFO; an expense rejected with why (shared/approvals.ts).
   'purchase-approval': purchaseApproval as Page,
   'expense-approval': expenseApproval as Page,
+  // A listing's title and description typed in Arabic and English; a clinic's services named in both, and each one's
+  // page: shared/languages.ts.
+  'listing-languages': listingLanguages as Page,
+  'services-languages': servicesLanguages as Page,
+  'service-languages': serviceLanguages as Page,
 };
 
 /**
@@ -268,6 +277,7 @@ const RECORD_PAGES: Record<string, string> = {
   invoices: 'invoice',
   'customer-account': 'invoice',
   property: 'viewing',
+  'services-languages': 'service-languages',
 };
 
 /** What a portal's page of homes to buy keeps to, whatever is filtered: homes for sale, priced in pounds. */
@@ -522,6 +532,9 @@ export function sampleDataSource() {
     duplicates: alikeRecords(),
     // The sign-ups already counted, as the server's limits answer (shared/event-signup.ts).
     limits: EVENT_COUNTS,
+    // A text kept in several languages read in the reader's where the source says it as one — a list's order, a link's
+    // name — as an app's server reads it in its person's language.
+    language: params.get('locale') ?? 'en',
     // The drafts the server keeps, and the link Continue later gives (shared/clinic-intake.ts).
     drafts: keptDrafts(),
     // How a purchase order and an expense are approved, and what was decided so far — this tab's decisions over the
@@ -584,6 +597,9 @@ export function sampleDataSource() {
       enquiry: ENQUIRY_RECORDS,
       // A purchase order waiting for approval, one under its limit, an expense rejected (shared/approvals.ts).
       ...approvalRecords(),
+      // A portal's listings and a clinic's services, typed in Arabic and English (shared/languages.ts).
+      'portal.listing': bilingualListings(),
+      'clinic.service': bilingualServices(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

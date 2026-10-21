@@ -315,6 +315,8 @@ export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimi
 // A record's approvals (`approval`): the form's state of them; asking, deciding and locking are the approvals part's.
 export { formApprovalsPart, type ApprovalStatus, type FormApproval, type FormApprovalsPart } from './lib/record/approving';
 // (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)
+// A text kept in several languages, typed by people (`translate`): the reader's, and its part's checks loaded on first use.
+export { formLanguagesPart, hasLanguages, languagesOf, type FormLanguagesPart, type Translated } from './lib/record/languages';
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
 export { fieldPattern } from './lib/format/pattern';

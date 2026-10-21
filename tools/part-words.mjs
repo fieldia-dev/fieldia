@@ -71,6 +71,7 @@ export const PART_WORDS = {
       'importStartNoun', 'importStartNounOne', 'importNotMadeNoun', 'importFailedNoun',
     ],
   },
+  languages: { messages: ['languagesNeeded', 'languagesNeededQuestion'], widgets: ['languageSwitch', 'languageEmpty', 'languageNeeded', 'inLanguage'] },
   limits: { messages: ['formOpens', 'formClosed', 'formFull', 'formSent', 'choiceFull', 'choiceFilled'], viewer: ['closedTyped', 'laterButton', 'laterSaving', 'laterSaved', 'laterLink', 'laterLinkName', 'laterCopy', 'laterCopied', 'laterAgain', 'laterBack', 'laterFailed', 'resumeMissing'] },
   lines: {
     widgets: [

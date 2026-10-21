@@ -111,6 +111,20 @@ one. `options.endField` takes the booking's end. It comes in a part of its own,
 `fieldia.slots.js` (`slotsPart`), with the date part; without `slots` in the
 data source it is the date and time box.
 
+A line, a paragraph or formatted text kept in several languages (its field's
+`translate`) is a switch over its box, one press for each language named in itself
+— *English*, *العربية* — the reader's first (the widget's `locale`), and under it that
+language's box: the field's own, its rules as typed, written its own way (Arabic
+right to left whatever the page's direction). A language not typed yet is marked on
+its press, one a required answer still needs more so, and said to a screen reader;
+the arrows move along the switch (mirrored right to left), Home and End to its ends;
+a problem takes the focus to its language. Where it is read — a list's cell, a card —
+`languageWords` draws it in the reader's language, else another's with that
+language's code beside it ("AR", said as "in Arabic"), and `displayValue` writes it
+in the reader's. It comes in the languages part (`languagesPart`,
+`fieldia.languages.js`), with @fieldia/core's form code for it; drawn before it
+came, its first text is read until it comes. Nothing is translated by a machine.
+
 What is pasted into a formatted text (`html`) from Word, Excel, Google Docs or
 Google Sheets — or copied from any page — comes in plain, in the field's own
 look, in either editor: its headings, bold, italic, underlined and struck

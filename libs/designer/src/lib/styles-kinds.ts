@@ -24,6 +24,13 @@ export const DESIGNER_KINDS_CSS = /* css */ `
 .fd-inline-input.fd-inline-number { width: 8ch; }
 .fd-inline-input.fd-inline-words { width: 16ch; }
 .fd-inline-toggle { gap: 10px; color: var(--fd-text); }
+/* A text typed in several languages: its languages as chips, one added beside them; those a required answer is typed in. */
+.fd-kind-languages { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-kind-language { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; border: 1px solid var(--fd-border); border-radius: 999px; font-size: 13px; color: var(--fd-text); }
+.fd-kind-language:not(:has(button)) { padding-inline-end: 10px; }
+.fd-kind-language-remove { min-width: 24px; min-height: 24px; padding: 0; font-size: 15px; line-height: 1; }
+.fd-kind-required-in { flex-wrap: wrap; gap: 6px 14px; }
+.fd-kind-required-language { gap: 6px; color: var(--fd-text); }
 @container (max-width: 520px) {
   .fd-kind-picture { grid-template-columns: 48px minmax(0, 1fr) auto; }
   .fd-kind-picture-name { grid-column: 2 / -1; }

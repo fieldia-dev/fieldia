@@ -1,0 +1,63 @@
+{
+  "fieldia": "0.7",
+  "id": "listing-languages",
+  "title": "A listing in Arabic and English",
+  "description": "A home's listing for a portal read in Arabic and in English: its title and its description typed by the agent in each language, never translated by a machine.",
+  "data": { "kind": "record", "model": "portal.listing" },
+  "records": { "one": "listing", "other": "listings", "a": "a listing" },
+  "fields": {
+    "title": { "type": "char", "label": "Title", "translate": ["ar", "en"], "required": true, "size": 80, "help": "As buyers read it on the portal: Arabic and English are both required." },
+    "description": { "type": "text", "label": "Description", "translate": ["ar", "en"], "required": true, "requiredIn": ["en"], "help": "English is required; the Arabic may follow." },
+    "unit_type": {
+      "type": "selection",
+      "label": "Unit type",
+      "required": true,
+      "options": [
+        { "value": "villa", "label": "Villa" },
+        { "value": "apartment", "label": "Apartment" },
+        { "value": "studio", "label": "Studio" }
+      ]
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        { "value": "new_cairo", "label": "New Cairo" },
+        { "value": "sheikh_zayed", "label": "Sheikh Zayed" },
+        { "value": "maadi", "label": "Maadi" },
+        { "value": "zamalek", "label": "Zamalek" }
+      ]
+    },
+    "bedrooms": { "type": "integer", "label": "Bedrooms", "min": 0 },
+    "price": { "type": "monetary", "label": "Price", "currency": "EGP", "min": 0, "digits": [14, 0] },
+    "agent": { "type": "char", "label": "Agent" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "children": [
+      {
+        "type": "section",
+        "id": "words",
+        "title": "What buyers read",
+        "children": [
+          { "type": "field", "id": "f-title", "field": "title" },
+          { "type": "field", "id": "f-description", "field": "description", "options": { "rows": 5 } }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "home",
+        "title": "The home",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-unit-type", "field": "unit_type", "widget": "radio", "options": { "columns": "row" } },
+          { "type": "field", "id": "f-district", "field": "district" },
+          { "type": "field", "id": "f-bedrooms", "field": "bedrooms" },
+          { "type": "field", "id": "f-price", "field": "price" },
+          { "type": "field", "id": "f-agent", "field": "agent" }
+        ]
+      }
+    ]
+  }
+}

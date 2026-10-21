@@ -90,5 +90,7 @@ export const de: Messages = {
   approvalLocked: 'Gesperrt, solange es auf die Genehmigung wartet',
   approvalReasonNeeded: 'Geben Sie an, warum es abgelehnt wird',
   approvalNotYours: 'Über {level} entscheiden Sie jetzt nicht',
+  languagesNeeded: '{label} ist auf {languages} erforderlich',
+  languagesNeededQuestion: 'Bitte beantworten Sie {label} auf {languages}',
   locale: 'de',
 };
