@@ -1019,7 +1019,8 @@ export function listView(context: ListContext): ListView {
   const wordsSource = context.dataSource;
   const wordsLine = el('div', { class: 'fd-assist-read', hidden: '' });
   let wordsRead: ReturnType<AssistPart['searchWords']> | null = null;
-  if (node.searchToFilter && !inRecord && wordsSource?.searchToFilter) {
+  const readsWords = !!(node.searchToFilter && !inRecord && wordsSource?.searchToFilter);
+  if (readsWords) {
     // Its mark a ✦ in words: the assist part's own icon comes with it.
     const button = el('button', { type: 'button', class: 'fd-button fd-button-link fd-assist-words', title: labels.assistWordsTitle, 'aria-label': labels.assistWordsTitle, hidden: '' }, el('span', { class: 'fd-assist-mark', 'aria-hidden': 'true' }, '✦'), el('span', {}, labels.assistWords));
     const offer = () => {
@@ -1617,7 +1618,8 @@ export function listView(context: ListContext): ListView {
       'data-size': gallery ? (node.gallery?.size ?? 'medium') : undefined,
     },
     bar,
-    wordsLine,
+    // The ✦'s line, where the list offers it alone: any other list is as it was.
+    ...(readsWords ? [wordsLine] : []),
     // A list with no box to choose a row has nothing to act on; an import's report is said all the same.
     ...(choose ? [selection] : []),
     report,
