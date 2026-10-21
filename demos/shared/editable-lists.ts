@@ -76,7 +76,8 @@ const hoursWords = (hours: number) => `${Math.floor(hours)}:${String(Math.round(
  */
 export function staffWeekRule(source: MemoryDataSource): void {
   const save = source.save.bind(source);
-  const writeMany = source.writeMany.bind(source);
+  // A source the address left without writeMany (`?writeMany=none`) saves each row: only its save is ruled.
+  const writeMany = source.writeMany ? source.writeMany.bind(source) : null;
   const refusal = (id: unknown, changes: Values) => {
     const stored = (source.records['staff.week'] ?? {})[String(id)] ?? {};
     const week = hoursOf({ ...stored, ...changes });
@@ -92,6 +93,7 @@ export function staffWeekRule(source: MemoryDataSource): void {
     }
     return saved;
   };
+  if (!writeMany) return;
   source.writeMany = async (request: WriteManyRequest) => {
     if (request.model !== 'staff.week') return writeMany(request);
     const refused = request.ids.flatMap((id) => {
@@ -110,7 +112,7 @@ export function staffWeekRule(source: MemoryDataSource): void {
 /** A worked-out price per hour kept as the clinic's server keeps it: written again with each save of a service. */
 export function servicePerHour(source: MemoryDataSource): void {
   const save = source.save.bind(source);
-  const writeMany = source.writeMany.bind(source);
+  const writeMany = source.writeMany ? source.writeMany.bind(source) : null;
   const again = (id: unknown) => {
     const stored = (source.records['clinic.service'] ?? {})[String(id)];
     if (stored && typeof stored['price'] === 'number' && typeof stored['minutes'] === 'number' && stored['minutes'] > 0) stored['per_hour'] = Math.round((stored['price'] / stored['minutes']) * 60);
@@ -120,6 +122,7 @@ export function servicePerHour(source: MemoryDataSource): void {
     if (request.model === 'clinic.service') again(saved.id);
     return saved;
   };
+  if (!writeMany) return;
   source.writeMany = async (request: WriteManyRequest) => {
     const answer = await writeMany(request);
     if (request.model === 'clinic.service') request.ids.forEach(again);
