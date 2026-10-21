@@ -272,6 +272,8 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
     const structures = [...structureSettings(el, designer, id, kind), ...pickerSettings(el, designer, id, kind)];
     if (!inputs && !structures.length) return;
     element.append(...(inputs?.elements ?? []), ...structures.map((p) => p.element));
+    // A quiz's question's own settings close the row, after its kind's (a short answer's Most characters).
+    element.append(...element.querySelectorAll(':scope > .fd-kind-quiz'));
     const before = refresh;
     refresh = (page, node) => (before(page, node), inputs?.refresh(page, node), structures.forEach((p) => p.refresh(page, node)));
   }
@@ -288,8 +290,9 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         drawn = kind ?? '';
         build(kind);
       }
-      element.hidden = !element.childElementCount;
       refresh(page, node);
+      // Hidden with nothing in it to show: a quiz's settings on a question of a form that is no quiz yet.
+      element.hidden = !element.childElementCount || [...element.children].every((child) => (child as HTMLElement).hidden);
       return standsIn && !element.hidden;
     },
   };

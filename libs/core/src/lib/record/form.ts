@@ -47,6 +47,8 @@ import {
   type StoredDraft,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
+import { formSurveyPart, surveyFlow } from './survey';
+import type { QuizResults } from './quiz';
 import type { Limits } from './form-limits';
 import { draftRead, resumeStep } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
@@ -179,6 +181,8 @@ export interface SentResponse {
   readonly id: RecordId | null;
   /** The answers as they were sent, with the values the source added (`SubmitResult.values`) laid over them. */
   readonly values: Readonly<Values>;
+  /** A quiz's results (`quiz` on the page): as the app's source marked them (`SubmitResult.quiz`), else as the page does. */
+  readonly quiz?: QuizResults;
 }
 
 /** How a search for a link's records is asked (`form.search`, `form.searchLine`). */
@@ -2759,6 +2763,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         at = generation;
         const resetAt = resets;
         const seen = botReport();
+        // A quiz's marking, in before the answers go: what the person sees of their results.
+        const marking = page.quiz ? await formSurveyPart.load().catch(() => undefined) : undefined;
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
         const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft })) ?? {};
         // The captcha's token is spent once sent: the next send waits for a new one.
@@ -2770,7 +2776,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         sentAs = before;
         const added = answer.values && typeof answer.values === 'object' ? structuredCopy(answer.values) : {};
         // Started again meanwhile (`reset`): a new response is on screen, and no ending is the old one's.
-        set({ status: 'saved', unsent: unsentNow(), ...(resets === resetAt ? { sent: { id: answer.id ?? null, values: { ...structuredCopy(sent), ...added } } } : {}) });
+        // A quiz's results: the source's marking, else the page's, on the answers as sent.
+        const quiz = answer.quiz ?? marking?.quizResults(page, sent) ?? undefined;
+        set({ status: 'saved', unsent: unsentNow(), ...(resets === resetAt ? { sent: { id: answer.id ?? null, values: { ...structuredCopy(sent), ...added }, ...(quiz ? { quiz } : {}) } } : {}) });
         emit('send', { values: sent, ...(seen ? { bot: seen } : {}) });
         // Counted again: one response fewer to take, this person's sent.
         if (asksLimits()) void track(askLimits());
@@ -4154,6 +4162,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
   // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
   if (keepsLimits()) void track(limitsCode());
+  // A page's survey code — a quiz's marking — asked for as the form opens, so it is in as the answers go.
+  if (surveyFlow(page)) void formSurveyPart.load().catch(() => undefined);
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

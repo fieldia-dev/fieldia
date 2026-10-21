@@ -579,6 +579,20 @@ export interface ViewerLabels {
   laterBack: string;
   laterFailed: string;
   resumeMissing: string;
+  /**
+   * A quiz's results once its answers are sent (`quiz`): their heading, the score (`{score}` of `{max}`, `{percent}`),
+   * each question marked right, wrong or not answered with its points (`{points}` of `{max}`), the person's answer and
+   * the right one (`{answer}`) — or, with results given later, that they come once the answers are reviewed.
+   */
+  quizTitle: string;
+  quizScore: string;
+  quizRight: string;
+  quizWrong: string;
+  quizNotAnswered: string;
+  quizPoints: string;
+  quizYourAnswer: string;
+  quizRightAnswer: string;
+  quizLater: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -993,6 +1007,15 @@ const en: ViewerLabels = {
   laterBack: 'Keep going',
   laterFailed: 'Your answers could not be saved: {why}',
   resumeMissing: 'These saved answers could not be found: they may have been sent already. The form starts empty.',
+  quizTitle: 'Your results',
+  quizScore: 'You scored {score} of {max} ({percent})',
+  quizRight: 'Right',
+  quizWrong: 'Wrong',
+  quizNotAnswered: 'Not answered',
+  quizPoints: '{points} of {max}',
+  quizYourAnswer: 'Your answer: {answer}',
+  quizRightAnswer: 'Right answer: {answer}',
+  quizLater: 'Your results will be shown once your answers have been reviewed.',
 };
 
 /**

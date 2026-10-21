@@ -3,6 +3,7 @@ import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import listing from '../../examples/pages/listing.page.json';
 import visitFeedback from '../../examples/pages/visit-feedback.page.json';
+import trainingCheck from '../../examples/pages/training-check.page.json';
 import { demoFunctions } from './functions';
 import delivery from '../../examples/pages/delivery.page.json';
 import mapDelivery from '../../examples/pages/map-delivery.page.json';
@@ -95,6 +96,8 @@ export const pages: Record<string, Page> = {
   listing: listing as Page,
   // A clinic's feedback: the questions after the first offer the treatments ticked in it.
   'visit-feedback': visitFeedback as Page,
+  // A clinic's staff check: a quiz whose results the person sees once they send.
+  'training-check': trainingCheck as Page,
   // A record each of their rows opens: an invoice, a quotation, a viewing.
   invoice: relatedLists.pages.invoice,
   quotation: relatedLists.pages.quotation,

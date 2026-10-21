@@ -349,4 +349,13 @@ export const ar: ViewerLabels = {
   laterBack: 'تابع الآن',
   laterFailed: 'تعذّر حفظ إجاباتك: {why}',
   resumeMissing: 'تعذّر العثور على هذه الإجابات المحفوظة: ربما أُرسلت من قبل. يبدأ النموذج فارغًا.',
+  quizTitle: 'نتيجتك',
+  quizScore: 'حصلت على {score} من {max} ({percent})',
+  quizRight: 'صحيحة',
+  quizWrong: 'خاطئة',
+  quizNotAnswered: 'لم تُجب',
+  quizPoints: '{points} من {max}',
+  quizYourAnswer: 'إجابتك: {answer}',
+  quizRightAnswer: 'الإجابة الصحيحة: {answer}',
+  quizLater: 'ستظهر نتيجتك بعد مراجعة إجاباتك.',
 };

@@ -97,6 +97,16 @@ export const questions = {
   placesFor: (option: string) => `Places for ${option}`,
   placesHint: 'Shown as places left, and Full, once your server counts who took them (the data source’s limits). A full one is refused when picked. Empty: no limit.',
   noLimit: 'No limit',
+  // ---- a quiz's question
+  rightAnswers: 'Right answers',
+  rightAnswerFor: (option: string) => `${option} is a right answer`,
+  rightHint: 'Ticked: a right answer. With several ticked, a question of one answer takes any of them; one of several answers needs exactly those.',
+  answersTaken: 'Answers it takes',
+  answersTakenHint: 'Separated by commas: “Hyaluronidase, hyaluronidase enzyme”. Words whatever their case; a number as its value.',
+  questionPoints: 'Points',
+  questionPointsLabel: 'Points for a right answer to this question',
+  feedbackRight: 'Said when right',
+  feedbackWrong: 'Said when wrong',
   // ---- choices
   layOut: 'Lay out',
   oneColumn: 'One column',

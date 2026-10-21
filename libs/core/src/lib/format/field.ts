@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { JsonValueSchema } from './json';
 import { isTimeZone } from '../record/zones';
+import { QuizQuestionSchema } from './quiz';
 
 /**
  * Field definitions: what a page knows about each value it shows or collects.
@@ -26,6 +27,8 @@ export const OptionSchema = z
     image: z.string().min(1).optional(),
     /** Points this choice is worth, for a quiz or a score. */
     score: z.number().optional(),
+    /** A right answer of a quiz's question (`quiz` on the page): its results say whether the answer chosen was right. */
+    correct: z.boolean().optional(),
     /** What the picture shows, for people who cannot see it. */
     alt: z.string().optional(),
     /** Goes alone, as "None of these": choosing it clears the others, and another clears it — the widgets see to it. */
@@ -187,15 +190,17 @@ const Char = z
     pattern: z.string().optional(),
     /** Why an answer does not fit the pattern, in words, in place of "not in the expected format": `{label}` is the field's. */
     patternHint: z.string().min(1).optional(),
+    /** A quiz's question (`quiz` on the page): the answers it takes, its points and its feedback. */
+    quiz: QuizQuestionSchema.optional(),
   })
   .strict();
 const Text = z.object({ type: z.literal('text'), ...common, size }).strict();
 const Html = z.object({ type: z.literal('html'), ...common }).strict();
 const Integer = z
-  .object({ type: z.literal('integer'), ...common, min: z.number().optional(), max: z.number().optional() })
+  .object({ type: z.literal('integer'), ...common, min: z.number().optional(), max: z.number().optional(), quiz: QuizQuestionSchema.optional() })
   .strict();
 const Float = z
-  .object({ type: z.literal('float'), ...common, min: z.number().optional(), max: z.number().optional(), digits })
+  .object({ type: z.literal('float'), ...common, min: z.number().optional(), max: z.number().optional(), digits, quiz: QuizQuestionSchema.optional() })
   .strict();
 /** The spans of time an amount can be for: a rent's month, a holiday flat's night. */
 export const PERIODS = ['day', 'night', 'week', 'month', 'year'] as const;
@@ -328,7 +333,13 @@ const selection = {
   ownAnswers: z.boolean().optional(),
 };
 const Selection = z
-  .object({ ...selection, options: z.array(SelectionOptionSchema), optionsFrom: OptionsFromSchema.optional() })
+  .object({
+    ...selection,
+    options: z.array(SelectionOptionSchema),
+    optionsFrom: OptionsFromSchema.optional(),
+    /** A quiz's question (`quiz` on the page): its points and its feedback; its right answers are its options marked `correct`. */
+    quiz: QuizQuestionSchema.optional(),
+  })
   .strict()
   .refine((field) => field.options.length > 0 || field.optionsFrom !== undefined, {
     message: 'a choice needs its options, a list of the app’s to take them from, or an earlier question to carry them from',

@@ -392,4 +392,13 @@ export const de: ViewerLabels = {
   laterBack: 'Weiter ausfüllen',
   laterFailed: 'Ihre Antworten konnten nicht gespeichert werden: {why}',
   resumeMissing: 'Diese gespeicherten Antworten wurden nicht gefunden: Vielleicht wurden sie schon gesendet. Das Formular beginnt leer.',
+  quizTitle: 'Ihr Ergebnis',
+  quizScore: 'Sie haben {score} von {max} erreicht ({percent})',
+  quizRight: 'Richtig',
+  quizWrong: 'Falsch',
+  quizNotAnswered: 'Nicht beantwortet',
+  quizPoints: '{points} von {max}',
+  quizYourAnswer: 'Ihre Antwort: {answer}',
+  quizRightAnswer: 'Richtige Antwort: {answer}',
+  quizLater: 'Ihr Ergebnis wird angezeigt, sobald Ihre Antworten geprüft wurden.',
 };

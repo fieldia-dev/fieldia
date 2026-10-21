@@ -120,6 +120,20 @@ close before the open, or limits on a record's screen, are refused in words),
 `designer.setContinueLater(on)` and `designer.setOptionDetails(id, index, {
 seats })` the rest; Publish lists each change.
 
+## A quiz's results
+
+A form of responses' Rules tab offers **Quiz results**: not shown, shown as the
+answers are sent, or once you have reviewed them; then **Points for a right
+answer** and **Show the right answer to one missed**. Once the form is a quiz,
+each choice's settings offer its **Right answers**, ticked option by option, and
+a short answer's or a number's **Answers it takes**, separated by commas; each
+question its own **Points**, and what is **Said when right** and **Said when
+wrong**. `designer.setPageQuiz({ results, points, rightAnswers })` (`null` takes
+the quiz away), `designer.setOptionDetails(id, index, { correct })` and
+`designer.setQuizQuestion(id, { points, answers, right, wrong })` set them; a
+number's answers are numbers, refused in words otherwise. Try it shows the
+results the person will see.
+
 ## Trying a field's rules
 
 Under a field's answer rules — on the panel's Rules tab, and in a survey

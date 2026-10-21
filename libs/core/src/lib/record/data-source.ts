@@ -1,4 +1,5 @@
 import type { FilterCondition, Fields, Option, PropertyDefinition } from '../format/field';
+import type { QuizResults } from './quiz';
 import type { JsonValue } from '../format/json';
 import type { FileValue, RecordId, RelatedRecord, Values } from './values';
 import type { RunStop } from './run';
@@ -780,6 +781,11 @@ export interface SubmitResult {
    * answers themselves stay as they were sent.
    */
   values?: Values;
+  /**
+   * A quiz's results as the app marked them on its server (`quiz` on the page), shown in place of those the page works
+   * out: for a test that keeps its right answers out of the page. See `QuizResults`.
+   */
+  quiz?: QuizResults;
 }
 
 /**

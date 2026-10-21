@@ -202,6 +202,24 @@ ${code(
 )}
 <p>${c('{field}')} shows an answer given in a page's own words beyond a text's and an alert's: a field's ${c('label')} and ${c('help')} — its own, or its part's — each choice's words, a step's ${c('label')} and ${c('description')}, a wizard's ${c('nextLabel')}, ${c('backLabel')} and ${c('finishLabel')}, and a button's ${c('label')}: <em>"How was your visit to {branch}?"</em> reads <em>"How was your visit to Zamalek?"</em> once the branch is chosen, and again as it changes. Each value reads as people read it — a choice by its label, a link by its name, money with its currency, a day in the page's order (${c('look.dateOrder')}: <em>Oct 15, 2026</em> month first), a yes or no in words — and the form's messages name the field as its label reads (<em>Please answer “How was your visit to Zamalek?”</em>: a label that is a question — ending with a question mark, or with an ellipsis the answer completes — is quoted in the language's own marks wherever a sentence names it, and asked for when it is required; a label that is a name reads <em>Your name is required</em>). After a bar, the words said while the answer is empty: ${c('{branch|this branch}')} reads <em>"How was your visit to this branch?"</em> until a branch is chosen — the page's own words, translated with the rest of its words, drawn as the words round them; without them, an empty answer says nothing. A ${c('{name}')} that is no field of the page is refused by the page check, wherever it is written, with words after its bar or not. These words, and the endings, come in a part of their own, ${c('fieldia.answers.js')}, loaded before a page that has any; a page with none never loads it.</p>
 
+<h3 id="quiz">A quiz's results</h3>
+<p>A page of responses with ${c('quiz')} shows each person their results once they send: their score — <em>You scored 5 of 8 (63%)</em> — and each question asked marked <em>Right</em>, <em>Wrong</em> or <em>Not answered</em>, its points, their answer, the right answer to one they missed and the question's feedback. A choice's right answers are its options marked ${c('"correct": true')} (several: right is exactly those); a question typed names the answers it takes in its field's ${c('quiz.answers')} — words whatever their case and spaces, a number by its value. A right answer earns its question's ${c('quiz.points')}, else the page's ${c('quiz.points')}, else 1; a choice whose options carry points (${c('score')}) earns those, marked neither right nor wrong. ${c('"results": "later"')} says the results come once you have reviewed them; ${c('"rightAnswers": false')} keeps the right answers back.</p>
+${code(
+  'json',
+  `
+"quiz": { "results": "now" },
+"fields": {
+  "reversible": { "type": "selection", "label": "Which filler can be dissolved?",
+    "options": [{ "value": "ha", "label": "Hyaluronic acid", "correct": true },
+                { "value": "caha", "label": "Calcium hydroxylapatite" }],
+    "quiz": { "feedback": { "right": "Yes: hyaluronidase dissolves it.",
+                            "wrong": "Only hyaluronic acid can be dissolved." } } },
+  "minutes": { "type": "integer", "label": "Minutes to watch a patient after?",
+    "quiz": { "answers": [30], "points": 2 } }
+}`
+)}
+<p>The right answers travel in the page, where anyone who reads its JSON finds them. A test where that matters leaves ${c('correct')} and ${c('answers')} out, marks the answers on your server, and answers the send with its results: ${c('submit')} returns ${c('{ quiz: { score, max, questions: [{ field, points, max, right, answered, rightAnswer?, feedback? }] } }')}, shown in place of the page's own. The form keeps them as ${c('form.getState().sent.quiz')}. The results come in the survey part, ${c('fieldia.survey.js')}, loaded before a page with a quiz is drawn.</p>
+
 <h3 id="columns">Columns at each width</h3>
 <p>${c('columns')} can give a count for each width of the form: ${c('wide')} above 760px, ${c('medium')} up to 760px, ${c('narrow')} up to 520px. A width left out stacks the way the skin does by itself — the outlined skin keeps its columns until the form is narrow, the underline skin, whose labels sit beside their values, stacks at medium. On a narrow form — a phone — every label goes above its value, the page's or a group's ${c('"labels": "beside"')} too, in every theme: the value has the whole width, never cut to <em>+20 100 912 4…</em>; a title gives its picture the line under it rather than break its words.</p>
 ${code('json', `{ "type": "section", "id": "header", "columns": { "wide": 2, "medium": 2 }, "children": [] }`)}

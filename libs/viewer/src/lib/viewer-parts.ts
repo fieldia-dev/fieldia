@@ -1,4 +1,4 @@
-import { callsPartFunctions, formLimitsPart, functionsPart, hasLimits, hasOptionRules, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formLimitsPart, formSurveyPart, functionsPart, hasLimits, surveyFlow, hasOptionRules, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -11,6 +11,7 @@ import type * as HeadModule from './head-part';
 import type * as ImportModule from './import-part';
 import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
+import type * as SurveyFlowModule from './survey-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -31,6 +32,8 @@ export type DuplicatesPart = typeof DuplicatesModule;
 export type AnswersPart = typeof AnswersModule;
 /** The limits part: a closed form's words in place of its questions, and Continue later. */
 export type LimitsPart = typeof LimitsModule;
+/** The viewer's survey part: what a survey shows besides its questions — a quiz's results. */
+export type SurveyFlowPart = typeof SurveyFlowModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -71,6 +74,12 @@ const showsAnswers = (page: Page): boolean =>
 export const limitsPart: Part<LimitsPart> = lazyPart('limits', () => import('./limits-part'));
 
 /**
+ * What a survey shows besides its questions — a quiz's results under the thanks — loaded with the page's parts where it
+ * has a `quiz` (`surveyFlow`): in the one-tag script, one script with the survey kinds and the form's survey code.
+ */
+export const surveyFlowPart: Part<SurveyFlowPart> = lazyPart('survey', () => import('./survey-part'));
+
+/**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
  * else as soon as it comes (settled then; a part that cannot come puts none). For what draws a list's look without the
  * list: the designer's canvas.
@@ -88,7 +97,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, surveyFlowPart, formSurveyPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -213,6 +222,11 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   // A page's opening, closing and limits, and Continue later: said before its questions, so in before it is drawn.
   if (page.limits || page.continueLater) found.add(limitsPart);
   if (hasLimits(page)) found.add(formLimitsPart);
+  // A survey's quiz results: drawn by the viewer's survey part, worked out by the form's.
+  if (surveyFlow(page)) {
+    found.add(surveyFlowPart);
+    found.add(formSurveyPart);
+  }
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);
   if (page.look?.theme) found.add(themesPart);
@@ -225,7 +239,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart };
+  const by: Record<string, Part> = { list: listPart, head: headPart, limits: limitsPart, answers: answersPart, survey: surveyFlowPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 

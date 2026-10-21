@@ -389,6 +389,9 @@
     },
     "continueLater": {
       "type": "boolean"
+    },
+    "quiz": {
+      "$ref": "#/$defs/PageQuiz"
     }
   },
   "required": [
@@ -452,6 +455,9 @@
             "patternHint": {
               "type": "string",
               "minLength": 1
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -595,6 +601,9 @@
             },
             "max": {
               "type": "number"
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -663,6 +672,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -973,6 +985,9 @@
             },
             "optionsFrom": {
               "$ref": "#/$defs/OptionsFrom"
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -1684,6 +1699,49 @@
         }
       ]
     },
+    "QuizQuestion": {
+      "type": "object",
+      "properties": {
+        "points": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000
+        },
+        "answers": {
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "\\S"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "feedback": {
+          "type": "object",
+          "properties": {
+            "right": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "\\S"
+            },
+            "wrong": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "\\S"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "MoneyLook": {
       "type": "object",
       "properties": {
@@ -1767,6 +1825,9 @@
         },
         "score": {
           "type": "number"
+        },
+        "correct": {
+          "type": "boolean"
         },
         "alt": {
           "type": "string"
@@ -2014,6 +2075,9 @@
             "patternHint": {
               "type": "string",
               "minLength": 1
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -2113,6 +2177,9 @@
             },
             "max": {
               "type": "number"
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -2181,6 +2248,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -2588,6 +2658,9 @@
         "score": {
           "type": "number"
         },
+        "correct": {
+          "type": "boolean"
+        },
         "alt": {
           "type": "string"
         },
@@ -2659,6 +2732,9 @@
             "patternHint": {
               "type": "string",
               "minLength": 1
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -2802,6 +2878,9 @@
             },
             "max": {
               "type": "number"
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -2870,6 +2949,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -3859,6 +3941,9 @@
             "patternHint": {
               "type": "string",
               "minLength": 1
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -4002,6 +4087,9 @@
             },
             "max": {
               "type": "number"
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -4070,6 +4158,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -10239,6 +10330,27 @@
           "type": "string",
           "maxLength": 1000,
           "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PageQuiz": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "string",
+          "enum": [
+            "now",
+            "later"
+          ]
+        },
+        "points": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000
+        },
+        "rightAnswers": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false

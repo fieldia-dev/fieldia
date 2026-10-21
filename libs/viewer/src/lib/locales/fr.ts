@@ -381,4 +381,13 @@ export const fr: ViewerLabels = {
   laterBack: 'Continuer maintenant',
   laterFailed: 'Vos réponses n’ont pas pu être enregistrées : {why}',
   resumeMissing: 'Ces réponses enregistrées sont introuvables : elles ont peut-être déjà été envoyées. Le formulaire repart à vide.',
+  quizTitle: 'Vos résultats',
+  quizScore: 'Vous avez obtenu {score} sur {max} ({percent})',
+  quizRight: 'Juste',
+  quizWrong: 'Faux',
+  quizNotAnswered: 'Sans réponse',
+  quizPoints: '{points} sur {max}',
+  quizYourAnswer: 'Votre réponse : {answer}',
+  quizRightAnswer: 'Bonne réponse : {answer}',
+  quizLater: 'Vos résultats s’afficheront une fois vos réponses examinées.',
 };

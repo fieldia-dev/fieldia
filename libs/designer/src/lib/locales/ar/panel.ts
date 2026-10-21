@@ -152,6 +152,9 @@ const NAMES: Record<string, string> = {
   'One response per person': 'رد واحد لكل شخص',
   'Words while it takes none': 'كلمات حين لا يقبل إجابات',
   'Continue later': 'المتابعة لاحقًا',
+  'Quiz results': 'نتيجة الاختبار',
+  'Points for a right answer': 'نقاط الإجابة الصحيحة',
+  'Show the right answer to one missed': 'عرض الإجابة الصحيحة لما أخطأ فيه',
   'Records of': 'سجلات من',
   'Cards on a phone': 'بطاقات على الهاتف',
   'Row tones and buttons': 'ألوان الصفوف وأزرارها',
@@ -558,6 +561,13 @@ export const panel: DesignerWords['panel'] = {
   continueLater: 'المتابعة لاحقًا',
   continueLaterOn: 'إتاحة المتابعة لاحقًا',
   continueLaterHint: 'تُحفظ الإجابات على خادمك أثناء كتابتها، مع رابط للمتابعة من أي جهاز. يُخفى حيث لا يحفظ مصدر البيانات المسودات.',
+  // ---- نتيجة الاختبار
+  quizResults: 'نتيجة الاختبار',
+  quizResultsAs: { off: 'لا تُعرض', now: 'تُعرض عند إرسال الإجابات', later: 'بعد أن تراجعها' },
+  quizResultsHint: 'يرى الشخص نتيجته، وكل إجابة موسومة بصحيحة أو خاطئة، والإجابات الصحيحة وتعليقك. حدّد الإجابات الصحيحة في كل سؤال.',
+  quizPointsEach: 'نقاط الإجابة الصحيحة',
+  quizPointsEachHint: 'حيث لا يحدد السؤال نقاطه. 1 ما لم يُذكر غير ذلك.',
+  quizShowRight: 'عرض الإجابة الصحيحة لما أخطأ فيه',
   // ---- السجلات المكررة المحتملة في صفحة سجل
   duplicates: 'السجلات المكررة المحتملة',
   duplicatesHint: 'أثناء كتابة السجل وحفظه، تُذكر تحت الحقل السجلات التي فيها القيمة نفسها في حقل محدد — أو اسم قريب من اسمه — لفتحها بدلًا منه أو تركها أو دمجها. مصدر بيانات تطبيقك هو الذي يجدها.',

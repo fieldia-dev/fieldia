@@ -155,11 +155,11 @@ export function tryIt(options: TryItOptions): TryIt {
     const dataSource = createMemoryDataSource({ records: madeUp(page, options.sampleCentre) });
     const app = options.dataSource;
     if (app?.options) dataSource.options = app.options.bind(app);
-    // Sent: the answers' score, under the viewer's thanks, when the page gives points.
+    // Sent: the answers' score, under the viewer's thanks, when the page gives points — a quiz's own results say it.
     const send = dataSource.submit.bind(dataSource);
     dataSource.submit = async (request) => {
       const result = await send(request);
-      showScore(page, request.values);
+      if (!page.quiz) showScore(page, request.values);
       return result;
     };
     viewer = mountViewer(frame, {

@@ -79,7 +79,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, type HeadPart } from './viewer-parts';
+import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, surveyFlowPart, type HeadPart } from './viewer-parts';
 import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
@@ -1885,10 +1885,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function showDone() {
     content.hidden = true;
     done.hidden = false;
+    // A quiz's results under the thanks, from the survey part: their heading takes the focus where no ending does.
+    const results = page.quiz ? surveyFlowPart.loaded?.showQuiz({ doc, page, form, labels, locale, uid, before: again }) : null;
     const answers = doneWords && answersPart.loaded;
-    if (!answers || !doneWords) return;
+    if (!answers || !doneWords) return void results?.focus();
     answers.drawEnding({ doc, page, form, locale, write: asSaid, title: doneTitle, words: doneWords, again, thanks: labels.submitted, another: labels.submitAnother })?.focus();
   }
+
 
   async function submitOrSave() {
     // A record only to read has nothing to save: Ctrl+Enter there does nothing.

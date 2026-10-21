@@ -25,6 +25,19 @@ export interface OptionDetails {
   invisible?: string | null;
   /** How many may choose it, its places left shown once the app counts them; `null` takes them away. */
   seats?: number | null;
+  /** A right answer of a quiz's question (`correct`); false or `null` takes it away. */
+  correct?: boolean | null;
+}
+
+/** A quiz's question's own settings (its field's `quiz`): each `null` (or empty) takes that one away, the setting going with the last. */
+export interface QuizQuestionPatch {
+  /** What a right answer earns. */
+  points?: number | null;
+  /** The answers a question typed takes: words, or numbers for a number. */
+  answers?: (string | number)[] | null;
+  /** Said under it in the results when right, and when wrong. */
+  right?: string | null;
+  wrong?: string | null;
 }
 
 export interface KindCommandsDeps {
@@ -114,6 +127,12 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
             else if (!Number.isFinite(details.score)) throw new Refusal((w) => w.refusals.pointsNumber);
             else option.score = details.score;
           }
+          // A right answer: a choice's option; a matrix's columns are marked by their points.
+          if (details.correct !== undefined) {
+            if (field.type !== 'selection') throw new Refusal((w) => w.refusals.rightAnswersForChoices);
+            if (details.correct) (option as Option).correct = true;
+            else delete (option as Option).correct;
+          }
           // A choice's places: a matrix's columns are no choice of seats.
           if (details.seats !== undefined) {
             if (field.type !== 'selection') throw new Refusal((w) => w.refusals.seatsForChoices);
@@ -124,6 +143,41 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
         },
         // Typing a picture's address or points is one undo step.
         `option:${id}:${index}:${Object.keys(details).join(',')}`
+      );
+    },
+
+    setQuizQuestion(id: string, patch: QuizQuestionPatch): boolean {
+      return apply(
+        (draft) => {
+          const { field } = question(draft, id, (w, label) => w.refusals.optionsFromModel(label));
+          const typed = field.type === 'char' || field.type === 'integer' || field.type === 'float';
+          if (field.type !== 'selection' && !typed) throw new Refusal((w) => w.refusals.answersForTyped);
+          const quiz: { points?: number; answers?: (string | number)[]; feedback?: { right?: string; wrong?: string } } = JSON.parse(JSON.stringify((field as { quiz?: object }).quiz ?? {}));
+          if (patch.points !== undefined) {
+            if (patch.points === null) delete quiz.points;
+            else if (!Number.isFinite(patch.points) || patch.points <= 0) throw new Refusal((w) => w.refusals.pointsNumber);
+            else quiz.points = patch.points;
+          }
+          if (patch.answers !== undefined) {
+            const answers = (patch.answers ?? []).filter((answer) => (typeof answer === 'number' ? Number.isFinite(answer) : answer.trim() !== ''));
+            if (answers.length && !typed) throw new Refusal((w) => w.refusals.answersForTyped);
+            if (answers.length && field.type !== 'char' && answers.some((answer) => typeof answer !== 'number')) throw new Refusal((w) => w.refusals.answersNumbers);
+            if (answers.length) quiz.answers = answers.map((answer) => (typeof answer === 'string' ? answer.trim() : answer));
+            else delete quiz.answers;
+          }
+          for (const side of ['right', 'wrong'] as const) {
+            const words = patch[side];
+            if (words === undefined) continue;
+            const feedback = { ...(quiz.feedback ?? {}) };
+            if (words === null || !words.trim()) delete feedback[side];
+            else feedback[side] = words;
+            if (Object.keys(feedback).length) quiz.feedback = feedback;
+            else delete quiz.feedback;
+          }
+          if (Object.keys(quiz).length) (field as { quiz?: object }).quiz = quiz;
+          else delete (field as { quiz?: object }).quiz;
+        },
+        `quiz:${id}:${Object.keys(patch).join(',')}`
       );
     },
 

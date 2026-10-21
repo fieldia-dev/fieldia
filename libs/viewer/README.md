@@ -380,6 +380,21 @@ any is drawn; where it cannot come, the words show each value as its field
 does at rest, and a page sent says the plain thanks. See
 [endings](https://fieldia.dev/pages/#endings).
 
+## A quiz's results
+
+A page of responses with `quiz` shows its results under the thanks once its
+answers are sent — "You scored 5 of 8 (63%)", then each question asked, in the
+order it was asked: marked Right, Wrong or Not answered in words (a ✓ or ✗
+beside, hidden from screen readers), its points, the person's answer, the right
+answer to one missed and the question's feedback. Their heading takes the focus
+where the page shows no ending's words, so a screen reader reads them first.
+With `results: "later"` they say the results come once the answers have been
+reviewed. They come in the survey part (`surveyFlowPart`, `fieldia.survey.js`),
+loaded before a page with a quiz is drawn. Their words are the viewer's labels
+(`quizTitle`, `quizScore`, `quizRight`, `quizWrong`, `quizNotAnswered`,
+`quizPoints`, `quizYourAnswer`, `quizRightAnswer`, `quizLater`). See
+[a quiz's results](https://fieldia.dev/pages/#quiz).
+
 ## Opening, closing and limiting a form; Continue later
 
 A page of responses with `limits` says, as it opens, when it takes no answers —

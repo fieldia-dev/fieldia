@@ -177,6 +177,7 @@ const CHECKS_IN_PARTS = {
   lines: { file: 'libs/core/src/lib/format/table-checks.ts', names: ['checkTable', 'checkLineKinds'] },
   business: { file: 'libs/core/src/lib/format/statusbar-checks.ts', names: ['checkStatusbar'] },
   options: { file: 'libs/core/src/lib/format/option-checks.ts', names: ['checkOptionRules'] },
+  survey: { file: 'libs/core/src/lib/format/flow-checks.ts', names: ['checkSurveyFlow'] },
 };
 const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
 const checksLater = {
@@ -1014,7 +1015,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
-const BUDGET_KB = 506.8;
+// Wave 6's survey flow, what every page of the form needs of it (lane w6-survey-flow), each item measured after the one
+// before: a quiz's results — the form asking for the survey part's marking as it opens and keeping its results as the
+// answers go (0.14), the done screen handing them to the survey part (0.12), the survey part named among the page's
+// (0.08) and its checks owed to it (0.10, the reference check's call 0.10) — 506.76 measured before, 507.44 after, to 507.5.
+const BUDGET_KB = 507.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1248,7 +1253,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
-const GZIP_BUDGET_KB = 166.2;
+// Wave 6's survey flow (listed with the raw budget above): a quiz's results, 166.15 measured before, 166.42 after, to 166.5.
+const GZIP_BUDGET_KB = 166.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1429,7 +1435,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The owner's walk of 0.27 mended: a question's required message, and a refused signature's "ready to sign" and Sign
 // now — Arabic's 77.58 and 13.24 measured before, 77.88 and 13.29 after, to 77.9 and 13.3; German's 36.14 and 11.60 to
 // 36.27 and 11.64, to 36.3 and 11.7; French's 36.60 and 11.64 to 36.75 and 11.70, to 36.8 and 11.7.
-const ADD_ON_BUDGET_KB = { ar: [77.9, 13.3], de: [36.3, 11.7], fr: [36.8, 11.7] };
+// Wave 6's survey flow (lane w6-survey-flow), each item measured after the one before: a quiz's results — their
+// heading, the score, right, wrong and not answered, the points, the answer and the right one, results to come: 9 in
+// each — Arabic's 77.88 and 13.29 measured before, 78.55 and 13.44 after, to 78.6 and 13.5; German's 36.27 and 11.64 to
+// 36.62 and 11.76, to 36.7 and 11.8; French's 36.75 and 11.70 to 37.11 and 11.85, to 37.2 and 11.9.
+const ADD_ON_BUDGET_KB = { ar: [78.6, 13.5], de: [36.7, 11.8], fr: [37.2, 11.9] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1822,7 +1832,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// Wave 6's survey flow in the survey part (lane w6-survey-flow), the form's code and the viewer's with the survey kinds,
+// one script, each item measured after the one before: a quiz's results — the form's marking (1.62 and 0.82), the
+// results drawn (2.21 and 1.00) with their sheet (1.84 and 0.68), a quiz's checks (1.42 and 0.65) — survey 37.88 and
+// 13.00 to 45.37 and 15.60, to 45.4 and 15.7.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [45.4, 15.7], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1841,7 +1855,7 @@ const PART_GIVES = {
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget', 'copyWidget', 'timerWidget'],
   files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
-  survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
+  survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget', 'quizResults', 'drawQuizResults', 'showQuiz', 'installFlowStyles'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
   relations: ['many2oneWidget', 'tagsWidget', 'charTagsWidget', 'linkCheckboxesWidget', 'referenceWidget'],

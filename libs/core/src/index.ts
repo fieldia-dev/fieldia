@@ -1,6 +1,8 @@
 export * from './runtime';
 // Why a page takes no answers now, in words: the limits part's (`formLimitsPart`), whole here.
 export { takingWords, whenWords } from './lib/record/form-limits';
+// A quiz's results for answers sent: the survey part's (`formSurveyPart`), whole here — for an app's own marking.
+export { quizResults } from './lib/record/quiz';
 export { isQuestion } from './lib/record/record-words';
 export { dayWords } from './lib/record/day-words';
 // A memory source's free times from booking schedules: for demos and tests, outside the one-tag script.
@@ -37,6 +39,7 @@ export { PageDuplicatesSchema } from './lib/format/duplicates';
 export { PageRecordsSchema } from './lib/format/records';
 export { PageEndingSchema } from './lib/format/endings';
 export { PageLimitsSchema } from './lib/format/limits';
+export { PageQuizSchema, QuizQuestionSchema } from './lib/format/quiz';
 export { DUPLICATE_KINDS, comparable } from './lib/format/duplicate-kinds';
 export { pageJsonSchema } from './lib/format/json-schema';
 // The purposes a browser fills a box in with, from the HTML standard, as the format checks them.

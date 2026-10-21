@@ -8,6 +8,7 @@ import { PageDuplicatesSchema, type PageDuplicates } from './duplicates';
 import { PageRecordsSchema, type PageRecords } from './records';
 import { PageEndingsSchema, type PageEnding } from './endings';
 import { PageLimitsSchema, type PageLimits } from './limits';
+import { PageQuizSchema, type PageQuiz } from './quiz';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -210,6 +211,14 @@ export interface Page {
    * sees where people stopped. Hidden where the source has no `saveDraft`.
    */
   continueLater?: boolean;
+  /**
+   * A quiz whose results the person sees once their answers are sent: their score, each question's answer marked right
+   * or wrong, the right answer to one missed and each question's feedback — or, with `results: "later"`, that their
+   * results come once the app has reviewed them. Right answers are a choice's options marked `correct`, or the answers a
+   * question typed takes (its field's `quiz.answers`); points are its field's `quiz.points`, the page's, or 1. See
+   * `PageQuiz`. Without it, a page whose options carry points (`score`) shows no results, as before.
+   */
+  quiz?: PageQuiz;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -297,6 +306,7 @@ export const PageSchema = z
     endings: PageEndingsSchema.optional(),
     limits: PageLimitsSchema.optional(),
     continueLater: z.boolean().optional(),
+    quiz: PageQuizSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

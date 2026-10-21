@@ -42,7 +42,7 @@ import { comparable, FIELD_NAME, FORMAT_VERSION, upgradePage } from '@fieldia/co
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, setRowRules, type ListCommands, type RowRulesPatch } from './list-commands';
-import { kindCommands, relabel, type OptionDetails } from './kind-commands';
+import { kindCommands, relabel, type OptionDetails, type QuizQuestionPatch } from './kind-commands';
 import { choiceCommands, type ChoiceCommands } from './choice-commands';
 import { inputCommands, type InputCommands } from './input-commands';
 import { structureCommands, type StructureCommands } from './structure-commands';
@@ -407,6 +407,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   /** "Continue later" (`continueLater`): the answers kept on the app's server with a link to carry on; false takes it away. */
   setContinueLater(on: boolean): boolean;
   /**
+   * A quiz's results shown to the person (`quiz`): as the answers are sent or later, once reviewed (`results`), what a
+   * right answer earns where its question says nothing (`points`), whether a question missed shows its right answer
+   * (`rightAnswers`) — each `null` taking that one away; `null` alone takes the quiz away. A page of responses only.
+   */
+  setPageQuiz(patch: { results?: 'now' | 'later' | null; points?: number | null; rightAnswers?: boolean | null } | null): boolean;
+  /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
    * home's — `null` takes either away.
@@ -489,6 +495,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setColumnOptionWhen(id: string, column: string, index: number, invisible: string | null): boolean;
   /** An option's picture and points for a quiz; `null` or empty takes either away. */
   setOptionDetails(id: string, index: number, details: OptionDetails): boolean;
+  /**
+   * A quiz's question's own settings (its field's `quiz`): its points, the answers a question typed takes, and what is
+   * said when right and when wrong — each `null` or empty taking that one away. A choice's right answers are its
+   * options' (`setOptionDetails` with `correct`).
+   */
+  setQuizQuestion(id: string, patch: QuizQuestionPatch): boolean;
   /** A matrix's rows or columns, by their words, in order. */
   setMatrixItems(id: string, which: 'rows' | 'columns', labels: string[]): boolean;
   /** Which parts an address asks for: street, city, postcode, country. */
@@ -1540,6 +1552,23 @@ export function createDesigner(options: {
         if (on) draft.continueLater = true;
         else delete draft.continueLater;
       }, 'continueLater');
+    },
+
+    setPageQuiz(patch) {
+      return apply(
+        (draft) => {
+          if (patch === null) return void delete draft.quiz;
+          if (draft.data.kind !== 'responses') throw new Refusal((w) => w.refusals.quizForResponses);
+          const quiz: Record<string, unknown> = { ...(draft.quiz ?? {}) };
+          for (const [key, value] of Object.entries(patch)) {
+            if (value === null || value === undefined || (key === 'rightAnswers' && value === true) || (key === 'results' && value === 'now')) delete quiz[key];
+            else if (key === 'points' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0)) throw new Refusal((w) => w.refusals.pointsNumber);
+            else quiz[key] = value;
+          }
+          draft.quiz = quiz as Page['quiz'];
+        },
+        `quiz:${patch ? Object.keys(patch).join(',') : 'off'}`
+      );
     },
 
     setDuplicates(patch) {

@@ -419,6 +419,13 @@ export const panel = {
   continueLater: 'Continue later',
   continueLaterOn: 'Offer Continue later',
   continueLaterHint: 'The answers kept on your server as they are typed, with a link to carry on from any device (the data source’s saveDraft and loadDraft). Hidden where it has none.',
+  // ---- a quiz's results
+  quizResults: 'Quiz results',
+  quizResultsAs: { off: 'Not shown', now: 'Shown as the answers are sent', later: 'Once you have reviewed them' },
+  quizResultsHint: 'The person sees their score, each answer marked right or wrong, the right answers and your feedback. Mark the right answers on each question.',
+  quizPointsEach: 'Points for a right answer',
+  quizPointsEachHint: 'Where a question gives none of its own. 1 unless said.',
+  quizShowRight: 'Show the right answer to one missed',
   // ---- a record page's possible duplicates
   duplicates: 'Possible duplicates',
   duplicatesHint: 'As a record is typed and saved, records with the same value in a field ticked — or a name close to its own — are named under that field, to open instead, let be or merge. Your app’s data source finds them.',

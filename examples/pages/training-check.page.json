@@ -1,0 +1,126 @@
+{
+  "fieldia": "0.7",
+  "id": "training-check",
+  "title": "Injectables safety check",
+  "description": "Six questions for the clinic’s staff before they assist with fillers. You see your score and the right answers once you send.",
+  "data": { "kind": "responses" },
+  "quiz": { "results": "now" },
+  "fields": {
+    "name": { "type": "char", "label": "Your name", "required": true },
+    "role": {
+      "type": "selection",
+      "label": "Your role",
+      "required": true,
+      "options": [
+        { "value": "nurse", "label": "Nurse" },
+        { "value": "doctor", "label": "Doctor" },
+        { "value": "therapist", "label": "Therapist" }
+      ]
+    },
+    "reversible": {
+      "type": "selection",
+      "label": "Which filler can be dissolved if something goes wrong?",
+      "required": true,
+      "options": [
+        { "value": "ha", "label": "Hyaluronic acid", "correct": true },
+        { "value": "caha", "label": "Calcium hydroxylapatite" },
+        { "value": "plla", "label": "Poly-L-lactic acid" }
+      ],
+      "quiz": {
+        "feedback": {
+          "right": "Yes: hyaluronidase dissolves hyaluronic acid within hours.",
+          "wrong": "Only hyaluronic acid can be dissolved: hyaluronidase breaks it down."
+        }
+      }
+    },
+    "enzyme": {
+      "type": "char",
+      "label": "Which enzyme dissolves it?",
+      "required": true,
+      "quiz": { "answers": ["Hyaluronidase", "Hyaluronidase enzyme"], "feedback": { "wrong": "Hyaluronidase: keep it in the emergency kit." } }
+    },
+    "signs": {
+      "type": "selection",
+      "label": "Which are early signs of a blocked vessel?",
+      "multiple": true,
+      "required": true,
+      "options": [
+        { "value": "blanching", "label": "Blanching of the skin", "correct": true },
+        { "value": "pain", "label": "Severe pain at the site", "correct": true },
+        { "value": "swelling", "label": "Mild swelling" },
+        { "value": "bruise", "label": "A small bruise" }
+      ],
+      "quiz": {
+        "points": 2,
+        "feedback": {
+          "right": "Right: blanching and severe pain come first. Stop injecting at once.",
+          "wrong": "Blanching and severe pain are the early signs. Swelling and a bruise are expected."
+        }
+      }
+    },
+    "wait_minutes": {
+      "type": "integer",
+      "label": "How many minutes should a patient be watched after hyaluronidase?",
+      "required": true,
+      "min": 0,
+      "max": 240,
+      "quiz": { "answers": [30], "feedback": { "wrong": "Thirty minutes, for an allergic reaction." } }
+    },
+    "consent": {
+      "type": "selection",
+      "label": "When is the patient’s written consent taken?",
+      "required": true,
+      "options": [
+        { "value": "before", "label": "Before the treatment, after the risks are explained", "correct": true },
+        { "value": "during", "label": "During the treatment" },
+        { "value": "after", "label": "After the treatment, with the bill" }
+      ]
+    },
+    "confidence": {
+      "type": "selection",
+      "label": "How sure are you about handling a blocked vessel?",
+      "options": [
+        { "value": "not", "label": "Not sure yet", "score": 0 },
+        { "value": "fairly", "label": "Fairly sure", "score": 1 },
+        { "value": "very", "label": "Very sure", "score": 2 }
+      ]
+    }
+  },
+  "layout": {
+    "type": "wizard",
+    "id": "check",
+    "finishLabel": "Send my answers",
+    "children": [
+      {
+        "type": "step",
+        "id": "step-you",
+        "label": "About you",
+        "children": [
+          { "type": "text", "id": "intro", "text": "Answer on your own. Your answers go to the clinic’s training lead.", "style": "paragraph" },
+          { "type": "field", "id": "q-name", "field": "name" },
+          { "type": "field", "id": "q-role", "field": "role", "widget": "radio" }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-fillers",
+        "label": "Fillers",
+        "children": [
+          { "type": "field", "id": "q-reversible", "field": "reversible", "widget": "radio" },
+          { "type": "field", "id": "q-enzyme", "field": "enzyme" },
+          { "type": "field", "id": "q-signs", "field": "signs", "widget": "checkboxes" }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-care",
+        "label": "Care and consent",
+        "children": [
+          { "type": "field", "id": "q-wait", "field": "wait_minutes" },
+          { "type": "field", "id": "q-consent", "field": "consent", "widget": "radio" },
+          { "type": "field", "id": "q-confidence", "field": "confidence", "widget": "radio" }
+        ]
+      }
+    ]
+  }
+}
