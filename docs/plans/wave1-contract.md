@@ -948,5 +948,6 @@ In plain words:
   save, and a source that refuses one says it as any rule (`saveRefused`, its field's message).
 - **The memory source** keeps the object as given, finds a record by a text in any of its languages (each record read in
   each of its languages, `matchesFilter` on each), a link by any of its names, and reads one text — a link's name, a
-  list's order — in its `language` option's (the reader's tag: the demos pass the page's), else the first typed.
+  list's order, a Group By's heading — in its `language` option's (the reader's tag: the demos pass the page's), else the
+  first typed.
   `matchesFilter` itself judges one text, as before. Tests: `libs/core/src/lib/record/languages.spec.ts`.

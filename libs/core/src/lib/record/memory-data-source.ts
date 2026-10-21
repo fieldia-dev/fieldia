@@ -504,7 +504,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     async groups(request: GroupRequest): Promise<Group[]> {
       calls.push({ method: 'groups', request });
       await pause();
-      return groupRows(matchingRows(request.model, request.filter), request.field, request).map(({ rows: _rows, ...group }) => group);
+      return groupRows(matchingRows(request.model, request.filter), request.field, request, options.language).map(({ rows: _rows, ...group }) => group);
     },
 
     async slots(request: SlotsRequest): Promise<SlotsResult> {
@@ -575,7 +575,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       await pause();
       const rows = matchingRows(request.model, request.filter);
       const result: TotalsResult = { count: rows.length, ...totalsOver(rows, request) };
-      if (request.groupBy) result.groups = groupRows(rows, request.groupBy, request).map(({ rows: under, ...group }) => ({ ...group, ...totalsOver(under, request) }));
+      if (request.groupBy) result.groups = groupRows(rows, request.groupBy, request, options.language).map(({ rows: under, ...group }) => ({ ...group, ...totalsOver(under, request) }));
       return result;
     },
 
@@ -764,15 +764,16 @@ function compareValues(a: unknown, b: unknown): { result: number; empty: boolean
 }
 
 /**
- * Records under each value of a field: a link's by its record, a record of links (a many2many) under each of its
+ * Records under each value of a field (a text kept in several languages by its text in `language`): a link's by its record, a record of links (a many2many) under each of its
  * links, as a server groups tags; nothing as its own group, last; the rest by their labels. With `interval`, a date's
  * by the span it falls in, its first day the group's value and label, in time order.
  */
-function groupRows(rows: Values[], field: string, by: GroupInterval = {}): (Group & { rows: Values[] })[] {
+function groupRows(rows: Values[], field: string, by: GroupInterval = {}, language?: string): (Group & { rows: Values[] })[] {
   const grouped = new Map<string, Group & { rows: Values[] }>();
   const isLink = (item: unknown): item is RelatedRecord => item !== null && typeof item === 'object' && !Array.isArray(item) && 'id' in item;
   for (const values of rows) {
-    const held = values[field] ?? null;
+    // A text kept in several languages, grouped by its text in the source's language.
+    const held = (inLanguages(values[field]) ? oneText(values[field], language) : values[field]) ?? null;
     // Links: the record under each one; none, under nothing.
     const each = Array.isArray(held) && !by.interval && held.every(isLink) ? (held.length ? held : [null]) : [held];
     for (const raw of each) {

@@ -195,5 +195,11 @@ describe('found in either language', () => {
     expect(listed.records.map((record) => record.id)).toEqual([1]);
     const sorted = await source.list({ model: 'service', fields: ['name'], filter: [], sort: [{ field: 'name' }], offset: 0, limit: 10 });
     expect(sorted.records.map((record) => record.id)).toEqual([3, 2, 1]);
+    // Grouped by its text in the source's language, never by the object.
+    expect((await source.groups({ model: 'service', field: 'name', filter: [] })).map((group) => [group.label, group.count])).toEqual([
+      ['Check-up', 1],
+      ['تبييض', 1],
+      ['تنظيف الأسنان', 1],
+    ]);
   });
 });
