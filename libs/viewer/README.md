@@ -746,6 +746,41 @@ foot of every sheet where the browser keeps room for it there (Chromium,
 Firefox), else once after the rows. See
 [on paper](https://fieldia.dev/record/#print).
 
+## A first paint from the server: Next, Nuxt, any server
+
+A site whose pages a server renders shows the form before any script has run:
+`firstPaint(page, { values })` from `@fieldia/viewer/server` draws the form's
+first paint as plain HTML — its title, sections, each field's label, its box
+with its value, its help — in Fieldia's own classes and with Fieldia's
+stylesheet, the page's own rules run (what is hidden, read-only, required,
+worked out). No DOM is needed: Node, an edge function or a worker. Put it in
+the element the viewer is mounted in; `mountViewer` then mounts **over** it:
+the live form is drawn out of sight, and once it is drawn and its record in, it
+takes the first paint's place in one step — never a blank — and what a person
+typed, ticked or chose in the first paint meanwhile is carried into the live
+boxes, the focus and caret where they were.
+
+```ts
+// On the server, for each request.
+import { firstPaint } from '@fieldia/viewer/server';
+const html = `<div id="app">${firstPaint(page, { values: record, nonce })}</div>`;
+
+// In the browser, as ever.
+mountViewer(document.getElementById('app')!, { page, dataSource, recordId: record.id, nonce });
+```
+
+This is a first paint, not the whole form rendered on a server and hydrated
+widget by widget: what needs a script — a date's calendar, a choice's own list,
+a table of lines' tools, a map, a slot, a button's menu — comes with the live
+form, and a formatted text shows its words without its looks until then. The
+HTML holds no style attribute (a grid's columns and a field's span are said by
+attributes, which the first paint's own sheet reads), so a strict
+Content-Security-Policy needs only the `nonce`. With several forms on a page,
+give the styles once — `firstPaintStyles(nonce)` in the page's head — and
+`styles: false` to each `firstPaint`. The React and Vue components do all of
+this given `firstPaint` (see their READMEs). The one-tag script draws its form
+in a first paint's place at once: mount over one with the packages.
+
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`

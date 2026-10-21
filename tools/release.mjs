@@ -108,7 +108,7 @@ const EXPECT = {
   '@fieldia/testing': ['fieldia', 'matchFields', 'readField', 'labelsOf'],
 };
 /** A package's other entries, by name, and what each must export. */
-const SUBPATHS = { '@fieldia/testing/playwright': ['fieldia'], '@fieldia/testing/pages': ['checkPageFiles', 'pageFiles', 'resultLines', 'runCheck'] };
+const SUBPATHS = { '@fieldia/testing/playwright': ['fieldia'], '@fieldia/testing/pages': ['checkPageFiles', 'pageFiles', 'resultLines', 'runCheck'], '@fieldia/viewer/server': ['firstPaint', 'firstPaintStyles'] };
 const names = packages.map((p) => p.manifest.name);
 const esmOnly = new Set(['@fieldia/angular']);
 // Every language in the packages with no extra import: only the script bundle leaves them to add-ons.

@@ -55,6 +55,7 @@ import {
   workAtRisk,
   type SignedBy,
 } from '@fieldia/core';
+import { overFirstPaint } from './first-paint-over';
 import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, useStyleNonce, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
@@ -2805,6 +2806,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
   }
 
+  // A first paint the server drew in the host (@fieldia/viewer/server): in sight until this form is drawn and its record
+  // in, then this form in its place in one step, what was typed in it carried over (first-paint-over.ts).
+  let loaded!: () => void;
+  overFirstPaint(host, root, Promise.all([dressed, new Promise<void>((resolve) => (loaded = resolve))]));
   host.append(root);
   // A press lands on what the person aimed at: never on a button that slid under a pointer that did not move.
   cleanups.push(steadyPresses(root));
@@ -2844,7 +2849,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       focusAsOpened(first);
     })
   );
-  if (form.getState().status === 'idle') void form.load();
+  if (form.getState().status === 'idle') void form.load().finally(loaded);
+  else loaded();
 
   return {
     form,

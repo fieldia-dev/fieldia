@@ -4,12 +4,13 @@
  * the same example pages; the browser gates in e2e/ drive all of them.
  */
 import { build } from 'esbuild';
-import { cpSync, existsSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, readdirSync, writeFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
-const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'designer-react', 'designer-vue', 'designer-angular', 'script', 'map-embed', 'backlog', 'save-safety', 'csp'];
+const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'designer-react', 'designer-vue', 'designer-angular', 'script', 'map-embed', 'backlog', 'save-safety', 'csp', 'ssr'];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
@@ -85,6 +86,17 @@ for (const variant of variants) {
     });
   }
   cpSync(join(WORKSPACE, 'demos', variant, 'index.html'), join(OUT, variant, 'index.html'));
+  if (variant === 'ssr') {
+    // What a site's server sends: the page with the form's first paint in it, drawn in Node from @fieldia/viewer/server,
+    // as Next or Nuxt would draw it for each request; main.js then mounts over it.
+    // Split, as the packages are files of their own: one file would put off a module's start past its first use.
+    const server = join(WORKSPACE, 'tmp/demos-ssr/server.mjs');
+    await build({ entryPoints: [join(WORKSPACE, 'demos/ssr/server.ts')], bundle: true, splitting: true, platform: 'node', format: 'esm', target: 'node20', outdir: dirname(server), outExtension: { '.js': '.mjs' }, tsconfig: join(WORKSPACE, 'tsconfig.base.json'), logLevel: 'warning' });
+    const { render } = await import(pathToFileURL(server).href);
+    const html = readFileSync(join(WORKSPACE, 'demos/ssr/index.html'), 'utf8');
+    writeFileSync(join(OUT, variant, 'index.html'), html.replace('<!--FIRST_PAINT-->', render()));
+    rmSync(dirname(server), { recursive: true, force: true });
+  }
   // A demo with a stylesheet of its own beside its page (the backlog's chrome), or other pages (csp's one-tag page): copied with it.
   for (const file of readdirSync(join(WORKSPACE, 'demos', variant))) if (file.endsWith('.css') || (file.endsWith('.html') && file !== 'index.html')) cpSync(join(WORKSPACE, 'demos', variant, file), join(OUT, variant, file));
   console.log(`demo ${variant}: ${join('dist/demos', variant)}`);

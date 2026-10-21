@@ -157,6 +157,19 @@ mountScreenEditor(element, { designer, nonce: 'r4nd0m' });     // and the survey
 )}
 <p>Left out, Fieldia takes the page's ${c('<meta property="csp-nonce" nonce="…">')}, as Vite writes it, and the one-tag script takes its own tag's: give ${c('<script nonce="…" src="…/fieldia.js">')} the nonce and it carries it to every part's tag it adds and every sheet. A formatted text keeps its own looks — a line centred, a word's colour, highlight and size — in its value as style attributes, the HTML you store and e-mail; Fieldia never has the browser read one as HTML (a policy would refuse it), and puts each on through the element's style object, so the text looks the same under the policy as without it. Pictures and files shown in place need ${c('img-src data: blob:')} (and ${c('frame-src blob:')} for a PDF's preview). Two add-ons bring code of their own that a policy may refuse: VS Code's editor (${c('@fieldia/monaco')}) adds sheets Monaco makes with no nonce — under a strict policy use ${c('@fieldia/code')}, which carries it — and a map draws Leaflet and your map provider's tiles, which ${c('img-src')} must allow.</p>
 
+<h2 id="server">On a server: Next and Nuxt</h2>
+<p>A site whose pages a server renders shows the form before any script has run. ${c('firstPaint(page, { values })')}, from ${c('@fieldia/viewer/server')}, draws the form's first paint as plain HTML — its title, its sections, each field's label and its box with its value — in Fieldia's look, the page's own rules run (what is hidden, read-only, worked out), in Node with no DOM. The viewer then mounts <em>over</em> it: the live form is drawn out of sight and takes the first paint's place in one step once it is drawn and its record in — never a blank — and what a person typed in the first paint meanwhile is carried over, the caret where it was. In React and Vue, the component does it given ${c('firstPaint')}, on the server as Next and Nuxt render it, and hydrates it as it is:</p>
+${code(
+  'js',
+  `
+<FieldiaForm page={page} dataSource={dataSource} recordId={record.id} firstPaint={{ values: record }} />   // Next
+<FieldiaForm :page="page" :data-source="dataSource" :record-id="record.id" :first-paint="{ values: record }" />  // Nuxt
+
+// Any other server: the HTML into the element the viewer is mounted in.
+const html = \`<div id="app">\${firstPaint(page, { values: record })}</div>\`;`
+)}
+<p>It is a first paint, not the whole form rendered on the server: what needs a script — a date's calendar, a choice's own list, a table of lines' tools, a map — comes with the live form. The first paint holds no style attribute, so under a <a href="#csp">strict policy</a> it needs only the ${c('nonce')}.</p>
+
 <h2 id="testing">Testing your forms</h2>
 <p>${c('@fieldia/testing')} tests the forms in your app as people use them: a field found by the words of its label, typed in and left, picked from, ticked; a button pressed by its words; then what a person sees read back — a field's problems, what its box shows. The same helpers for Testing Library (any DOM, under Jest or Vitest) and for Playwright:</p>
 ${code(

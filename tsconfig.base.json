@@ -19,6 +19,7 @@
       "@fieldia/core": ["libs/core/src/index.ts"],
       "@fieldia/widgets": ["libs/widgets/src/index.ts"],
       "@fieldia/viewer": ["libs/viewer/src/index.ts"],
+      "@fieldia/viewer/server": ["libs/viewer/src/server.ts"],
       "@fieldia/code": ["libs/code/src/index.ts"],
       "@fieldia/monaco": ["libs/monaco/src/index.ts"],
       "@fieldia/map": ["libs/map/src/index.ts"],

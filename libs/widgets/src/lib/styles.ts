@@ -912,6 +912,11 @@ export const FIELDIA_CSS = BASE_CSS + LOOKS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 const LOOKS_ID = 'fieldia-styles-looks';
+/** Fieldia's stylesheet as its two `<style>` elements have it, by their ids: what a server's first paint brings (`@fieldia/viewer/server`), which `installStyles` then keeps. */
+export const FIELDIA_STYLE_SHEETS: readonly (readonly [id: string, css: string])[] = [
+  [STYLE_ID, BASE_CSS],
+  [LOOKS_ID, LOOKS_CSS],
+];
 
 /** Add Fieldia's stylesheet to a document, once: two <style> elements, the page's own looks in the second, so a part's sheet can go between them. */
 export function installStyles(document: Document): void {

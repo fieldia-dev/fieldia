@@ -52,6 +52,20 @@ const minifiedStyles = {
 };
 
 /**
+ * A server's first paint (@fieldia/viewer/server) is the packages': an app that draws one mounts the packages' viewer
+ * over it. The one-tag script draws its form in its place at once — no more code for it in a page with no build step.
+ */
+const noFirstPaint = {
+  name: 'no-first-paint',
+  setup(builder) {
+    builder.onLoad({ filter: /libs\/viewer\/src\/lib\/first-paint-over\.ts$/ }, () => ({
+      contents: "export function overFirstPaint(host) { host.querySelector(':scope > [data-fd-first-paint]')?.remove(); }",
+      loader: 'ts',
+    }));
+  },
+};
+
+/**
  * English alone in the main script: each package's module of the other
  * languages (`locales/all.ts`) is built as an empty one, so their words stay
  * out; the add-ons bring them.
@@ -237,7 +251,7 @@ const mainScript = async (table) => {
   const { metafile } = await build({
     ...common,
     entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
-    plugins: [minifiedStyles, englishOnly, partWordsOut, checksLater, asksForParts(table, parts)],
+    plugins: [minifiedStyles, englishOnly, noFirstPaint, partWordsOut, checksLater, asksForParts(table, parts)],
     globalName: 'Fieldia',
     banner: { js: `/*! Fieldia ${version} · MIT · https://fieldia.dev */` },
     outfile: OUT,
@@ -1024,7 +1038,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // browser's own editing writes as one too (style-attributes.ts, 1.0 — the sanitizer and the plain editor are this
 // script's, and a policy otherwise loses a value's alignment and colours as it is read): 506.77 measured before,
 // 508.40 after, to 508.5.
-const BUDGET_KB = 508.5;
+// A server's first paint (w6-platform), what this script needs of it: Fieldia's sheets by their ids, which a first
+// paint brings and installStyles keeps (`FIELDIA_STYLE_SHEETS`), and a first paint taken away as the form is drawn —
+// the packages' viewer mounts over one; this script draws in its place (noFirstPaint): 508.40 measured before, 508.57
+// after, to 508.6.
+const BUDGET_KB = 508.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1260,8 +1278,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
 // A strict Content-Security-Policy (listed with the raw budget above): the nonce on every <style>, carried to the
 // one-tag script's parts, a formatted text's looks held as its HTML is read — 166.15 measured before, 166.86 after, to
-// 166.9.
-const GZIP_BUDGET_KB = 166.9;
+// 166.9. A server's first paint (listed with the raw budget above): 166.86 measured before, 166.93 after, to 167.0.
+const GZIP_BUDGET_KB = 167.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
