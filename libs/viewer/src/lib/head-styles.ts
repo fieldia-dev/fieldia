@@ -151,11 +151,26 @@ export const HEAD_PART_CSS = /* css */ `
 @media (hover: none) { .fd-head-copy { visibility: visible; } }
 .fd-head-copy:hover { background: var(--fd-head-pressed); }
 
-/* The row under the title: people and links from its start, the record's buttons at its end. */
-.fd-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; min-height: 32px; margin-block-start: 9px; padding-inline: 21px 6px; }
-.fd-head-meta { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 auto; }
+/* The row under the title: people and links from its start, the record's buttons at its end — each on its first line,
+   32px tall, whatever the tags among them take (below). */
+.fd-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px 16px; min-height: 32px; margin-block-start: 9px; padding-inline: 21px 6px; }
+.fd-head-meta { display: flex; align-items: flex-start; gap: 6px; min-width: 0; flex: 1 1 auto; }
 .fd-form .fd-head-meta > .fd-field { flex: 0 1 269px; min-width: 0; }
-.fd-form .fd-head-meta > .fd-field:is([data-type="many2many"], [data-widget="tags"]) { flex: 0 1 auto; }
+/* A link's 20px in the middle of the line its neighbours' boxes make. */
+.fd-head-meta > .fd-head-link { margin-block: 6px; }
+/*
+ * Tags in the row, inline: their chips after the comments' link, what adds one ("Add Tag", or the box typed in) after
+ * the last chip. Out of room, the chips wrap in a slot of their own — the row's other parts keep its first line, and
+ * give way only once the slot is down to 200px — so the row is as tall with two tags as with none.
+ */
+.fd-form .fd-head-meta > .fd-field:is([data-type="many2many"], [data-widget="tags"]) { flex: 0 1000 auto; min-width: min(100%, 200px); }
+/* Each line of chips as tall as the box typed in, 30px, so a wrapped slot's first line is the row's: no room between. */
+.fd-form .fd-head-meta .fd-field[data-quiet] .fd-tags { padding-block: 0; min-height: 32px; row-gap: 0; }
+.fd-form .fd-head-meta .fd-field[data-quiet] .fd-tags .fd-chip { margin-block: 3px; }
+.fd-form .fd-head-meta .fd-field[data-quiet] .fd-tags .fd-input { height: 30px; min-height: 30px; }
+.fd-form .fd-head-meta .fd-tags .fd-combo { flex: 1 1 96px; }
+/* The box typed in still says what it adds after the chips, as the tracker's Add Tag does. */
+.fd-form .fd-head-meta .fd-field[data-quiet] .fd-tags:has(.fd-chip) .fd-combo-input:not(:focus)::placeholder { color: var(--fd-muted); }
 /* Tags with their "Add Tag" button: the button just after the comments' link, as the tracker's (08_19): no box room round it. */
 .fd-form .fd-head-meta .fd-field[data-quiet] .fd-tags:has(> .fd-tags-adder:not([hidden])) { padding-inline: 0; }
 .fd-head-link {
@@ -195,6 +210,16 @@ span.fd-head-link { cursor: default; color: var(--fd-text); }
 .fd-head .fd-icon[data-icon="undo"]:dir(rtl) { transform: scaleX(-1); }
 /* A toggle pressed: Following. */
 .fd-head .fd-button[aria-pressed="true"]:not(.fd-button-primary) { color: var(--fd-text); }
+
+/* A menu inside a menu (menu-flyout.ts): › at its item's end, mirrored right to left; its item lit while it is open;
+   the menu itself beside it, over everything (placed by its code), "Loading…" muted while the app's items come. */
+.fd-record-menu-item > .fd-menu-more { margin-inline-start: auto; }
+.fd-record-menu-item > .fd-menu-more:dir(rtl) { transform: scaleX(-1); }
+.fd-record-menu-item[aria-haspopup][aria-expanded="true"] { background: var(--fd-accent-soft); }
+.fd-menu-flyout { z-index: 41; overflow: visible; }
+.fd-menu-flyout:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; }
+.fd-menu-waiting { padding: 6px 12px; color: var(--fd-muted); font-size: 13px; line-height: 20px; }
+.fd-menu-waiting[hidden] { display: none; }
 
 /* A split button: its press, a rule, its chevron or its own icon (Follow's gear); its menu under it. */
 .fd-split { position: relative; display: inline-flex; align-items: stretch; flex: none; }
@@ -301,7 +326,8 @@ button.fd-head-updated:hover { text-decoration: underline; }
 /* ---- a narrow head: one column, the buttons and tabs under what they followed ------------------ */
 @container fd-head (max-width: 760px) {
   .fd-head-row { flex-wrap: wrap; }
-  .fd-head-meta { flex-wrap: wrap; flex-basis: 100%; }
+  .fd-head-meta { flex-wrap: wrap; flex-basis: 100%; align-items: center; }
+  .fd-head-meta > .fd-head-link { margin-block: 0; }
   .fd-head-actions { flex: 1 1 100%; justify-content: flex-start; gap: 8px; }
   .fd-head-band { flex-direction: column; gap: 4px; padding-inline: 12px 8px; }
   .fd-head-fields { grid-template-columns: minmax(0, 1fr); padding-block-end: 0; }

@@ -1,4 +1,4 @@
-import { callsPartFunctions, formApprovalsPart, editableColumns, formLimitsPart, functionsPart, hasLanguages, hasLimits, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formApprovalsPart, editableColumns, formLimitsPart, functionsPart, hasLanguages, hasLimits, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, relationsPart, scanPart, scans, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -127,16 +127,17 @@ export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage'
  */
 const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
-/** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
+/** A group holding a text read first alone — Markdown, or one edited by its button — whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
   const only = node.children.length === 1 ? node.children[0] : undefined;
-  return !!node.title && only?.type === 'field' && only.options?.['editor'] === 'markdown';
+  return !!node.title && only?.type === 'field' && (only.options?.['editor'] === 'markdown' || only.options?.['edit'] === 'button');
 };
 
 /**
  * The parts a page draws from (parts.ts in @fieldia/widgets): the head part for
- * a record's head, a button split, toggled or shown by its icon alone, or a
- * group's work heading; the list part for a list or a related list, and beside
+ * a record's head, a button split, toggled or shown by its icon alone, a
+ * group's work heading, or a menu's dividers and menus inside it (`MenuItem.type`, `menu`, `menuFrom`);
+ * the list part for a list or a related list, and beside
  * a list the filters part for its filter bar, the cards part for its cards
  * (`card`, `gallery`; a related list's `card` too), the columns part for the
  * columns a person shapes (`optionalColumns`) and the editable part for cells
@@ -235,6 +236,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       const field = name ? page.fields[name] : undefined;
       if (field && name) fieldParts(field, { type: 'field', id, field: name });
     }
+    // A menu's dividers and the menus inside it are the head part's.
+    if (Array.isArray(node['menu']) && (node['menu'] as MenuItem[]).some((item) => item.type || item.menu || item.menuFrom)) found.add(headPart);
     if (node.type === 'sheet' && node['head']) found.add(headPart);
     else if (node.type === 'button' && isRichButton(node as unknown as ButtonNode)) found.add(headPart);
     else if (node.type === 'section' && Array.isArray(node['children']) && (workHeading(node as unknown as SectionNode) || markdownAlone(node as unknown as SectionNode))) found.add(headPart);

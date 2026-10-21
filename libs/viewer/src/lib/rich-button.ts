@@ -4,6 +4,8 @@ import { nothingToUndo, onlyResets, type ButtonContext } from './button-parts';
 import { setAttr, setHidden, setText } from './dom';
 import { installHeadStyles } from './head-styles';
 import { hotkeyOn } from './hotkeys';
+import { menuItemsShown, submenus } from './menu-flyout';
+import { menuEntries, opensMenu } from './record-bar';
 
 /**
  * A button of the record's head, or one anywhere asking for the same: its
@@ -70,19 +72,18 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
     opener.append(chevron);
   }
   const list = el('div', { class: 'fd-record-menu fd-button-menu', role: 'menu', id, 'aria-labelledby': opener.id, hidden: '' });
-  const items = menu.map((item: MenuItem) => {
-    const button = el('button', { type: 'button', role: 'menuitem', tabindex: '-1', class: 'fd-record-menu-item', 'data-node': item.id }, ...context.withIcon(item.icon, item.label ?? item.id));
-    button.addEventListener('click', () => {
-      close(true);
-      void context.press(opener, () => form.runAction(item.id));
-    });
-    return { item, button };
+  const itemWords = (item: MenuItem) => item.label ?? item.id;
+  const items = menuEntries(context, menu, itemWords, (item) => {
+    close(true);
+    void context.press(opener, () => form.runAction(item.id));
   });
   list.append(...items.map((i) => i.button));
   const parts: HTMLElement[] = own ? [main, el('span', { class: 'fd-split-rule', 'aria-hidden': 'true' }), opener] : [main];
   const box = el('div', { class: `fd-split${own ? '' : ' fd-split-alone'}`, 'data-node': node.id, role: own ? 'group' : undefined, 'aria-label': own ? label() : undefined }, ...parts, list);
+  // The menus inside it, beside the items that open them (`MenuItem.menu`, `menuFrom`).
+  const nested = items.some((i) => i.item.type || opensMenu(i.item)) ? submenus({ context, opener, close, refresh: () => paintMenu(), words: itemWords }, items, list) : null;
 
-  const shown = () => items.filter((i) => !i.button.hidden).map((i) => i.button);
+  const shown = () => menuItemsShown(items);
   const outside = (event: Event) => {
     if (!box.contains(event.target as Node)) close(false);
   };
@@ -95,17 +96,19 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
     if (room.right > context.doc.documentElement.clientWidth - 4 || room.left < 4) list.setAttribute('data-end', '');
     opener.setAttribute('aria-expanded', 'true');
     context.doc.addEventListener('pointerdown', outside, true);
+    nested?.opened();
     const found = shown();
     (at === 'first' ? found[0] : found[found.length - 1])?.focus();
   }
   function close(refocus: boolean) {
     if (list.hidden) return;
+    nested?.closed();
     list.hidden = true;
     opener.setAttribute('aria-expanded', 'false');
     context.doc.removeEventListener('pointerdown', outside, true);
     if (refocus) opener.focus();
   }
-  context.cleanups.push(() => context.doc.removeEventListener('pointerdown', outside, true));
+  context.cleanups.push(() => context.doc.removeEventListener('pointerdown', outside, true), () => nested?.closed());
   opener.addEventListener('click', () => (list.hidden ? open('first') : close(false)));
   opener.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
@@ -118,6 +121,7 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
     });
   }
   list.addEventListener('keydown', (event) => {
+    if (nested?.key(event)) return;
     const found = shown();
     const at = found.indexOf(context.doc.activeElement as HTMLButtonElement);
     const to = ({ ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: found.length - 1 } as Record<string, number>)[event.key];
@@ -135,11 +139,16 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
     paint(main);
     if (own) paint(opener);
     box.setAttribute('data-look', look());
-    for (const { item, button } of items) setHidden(button, form.node(item.id).invisible);
-    // A menu with nothing in it shows no chevron.
-    setHidden(opener, !items.some((i) => !i.button.hidden) && own);
+    paintMenu();
   });
   return box;
+
+  /** Its menu's items by their conditions, the menus inside it and the dividers between those that show; a menu with nothing in it shows no chevron. */
+  function paintMenu() {
+    for (const { item, button } of items) setHidden(button, form.node(item.id).invisible);
+    nested?.update();
+    setHidden(opener, !shown().length && own);
+  }
 
   /**
    * Its look and its words now: primary or quiet, pressed or not, hidden by its condition. Undo with nothing changed is

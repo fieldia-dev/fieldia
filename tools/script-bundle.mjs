@@ -170,7 +170,7 @@ const asksForParts = (table, parts) => ({
 const CHECKS_IN_PARTS = {
   list: { file: 'libs/core/src/lib/format/list-checks.ts', names: ['checkList', 'checkRelated'] },
   editable: { file: 'libs/core/src/lib/format/editable-checks.ts', names: ['checkEditable'] },
-  head: { file: 'libs/core/src/lib/format/sheet-head-checks.ts', names: ['checkSheetHead'] },
+  head: { file: 'libs/core/src/lib/format/sheet-head-checks.ts', names: ['checkSheetHead', 'checkMenuOpener'] },
   limits: { file: 'libs/core/src/lib/format/limits-checks.ts', names: ['checkLimits'] },
   approvals: { file: 'libs/core/src/lib/format/approval-checks.ts', names: ['checkApproval'] },
   slots: { file: 'libs/core/src/lib/format/slots-checks.ts', names: ['checkSlots'] },
@@ -1082,7 +1082,15 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // uploads' work (a file made ready and sent, its stored link put in its field, in place of bytes a save stores) out of
 // the main script into the files part, which a page with a file field loads before it is drawn and a form asks for as
 // it first sends a file (core's files-part.ts, the form keeping its queue and its ids): 510.59, to 510.6.
-const BUDGET_KB = 510.6;
+// A work item's menus and tags (lane atloria-wi): every page with a gear menu carries only the hooks that let a menu
+// hold dividers and menus of its own — an item drawn by one function the head part's menus share, a divider's line,
+// the item that opens a menu left to the head part (record-bar.ts, 0.38), the head part asked for by a page whose
+// menus have either (viewer-parts.ts, 0.10), handed to the bar (0.03), the item's check sending a divider and such an
+// item to the head part's checks (head-checks.ts and its stand-in, 0.17); the flyout, its keys and pointer, the app's
+// items asked as a menu opens, the dividers left only between items that show, and those checks are the head part's
+// (menu-flyout.ts, sheet-head-checks.ts). Tags inline in a head's row are its stylesheet's, a rich text read first the
+// text part's: 510.59 measured before, 511.21 after, to 511.3.
+const BUDGET_KB = 511.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1331,7 +1339,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // A code scanned with the camera (0.29, w5-scan; listed with the raw budget above): what knows a field is scanned into
 // and asks for the scan part, 166.15 measured before, 166.38 after, to 166.4.
 // Merged (0.29.0): the lanes together 168.16 measured; the uploads' work in the files part, 167.41, to 167.5.
-const GZIP_BUDGET_KB = 167.5;
+// A work item's menus (lane atloria-wi; listed with the raw budget above): a menu's hooks for its dividers and the
+// menus inside it, the head part asked for and its checks owed — 167.41 measured before, 167.75 after, to 167.8.
+const GZIP_BUDGET_KB = 167.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1988,10 +1998,18 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // (131.88 and 42.41); the memory source with approvals, languages, AI help and clusters (20.07 and 7.11); the files part
 // with the uploads' work out of the main script (40.22 and 14.87, from 37.36 and 13.77); AI help with one language of a
 // text kept in several (36.27 and 12.36); the editable part never opening such a text's cell (28.94 and 10.66).
-const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.0, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.1, 7.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
+// A work item's menus, tags and texts (lane atloria-wi): the menus inside a menu in the head part, which draws the
+// head's buttons and ⋮ already — an item's menu beside it, on the side with room and on the screen, opened by a
+// pointer, a press or the arrow toward it, its keys, the app's items asked as a menu opens and pressed by their steps,
+// the dividers left only between items that show, under its item on a screen with room on neither side (menu-flyout.ts,
+// 5.1 and 2.4); the checks of a divider and such an item (0.7 and 0.3); its sheet with tags inline in a head's row (1.1
+// and 0.2) — head 36.50 and 10.80 measured before, 43.37 and 13.22 after, to 43.4 and 13.3. A rich text read first,
+// Edit and Done with it, Escape and a press outside (html-field.ts) — text 73.00 and 24.62 to 73.45 and 24.78, to 73.5
+// and 24.8.
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.1, 7.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
-  head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
+  head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
   text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu', 'cleanPasted', 'pasteHtml', 'putHtml'],
   path: ['pathPickerWidget'],
   choice: ['ownListWidget', 'searchWidget', 'choiceTagsWidget'],

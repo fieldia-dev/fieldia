@@ -1979,6 +1979,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       press,
       name: recordName,
       render: renderNow,
+      submenus: headPart.loaded?.submenus,
       async leave() {
         // What is still typed is read first (a name being looked up, waited for): text that does not read keeps the
         // record on screen, said, as a change does. The changes are saved first, as the pager always has; a file still

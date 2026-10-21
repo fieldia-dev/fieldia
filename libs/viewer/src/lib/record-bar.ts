@@ -49,6 +49,8 @@ export interface RecordBarContext {
   leave(): Promise<boolean>;
   /** Draw the form again: the pager's records changed, the record shown perhaps not. */
   render(): void;
+  /** The menus inside the gear menu (`MenuItem.menu`, `menuFrom`): the head part's, which a page with any loads first. */
+  submenus?: SubmenuMaker;
 }
 
 const GEAR: IconSet = {
@@ -134,13 +136,64 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
 }
 
 /** What the record's menu needs of the viewer that draws it. */
-export type RecordMenuContext = Pick<RecordBarContext, 'doc' | 'el' | 'form' | 'labels' | 'locale' | 'uid' | 'withIcon' | 'press'>;
+export type RecordMenuContext = Pick<RecordBarContext, 'doc' | 'el' | 'form' | 'labels' | 'locale' | 'uid' | 'withIcon' | 'press' | 'submenus'>;
+
+/** An item of a menu as drawn: its button, or a divider's line. */
+export interface MenuEntry {
+  item: MenuItem;
+  button: HTMLElement;
+}
+
+/** A menu, as the menus inside it are given it to open beside its items: what an item pressed in them needs of it. */
+export interface MenuTree {
+  context: RecordMenuContext;
+  /** The button the menu opens from, busy while an item runs. */
+  opener: HTMLElement;
+  /** The whole menu closed, the focus back on its button when `refocus`. */
+  close(refocus: boolean): void;
+  /** Draw what shows again: the app gave a menu's items. */
+  refresh(): void;
+  /** An item's words: its own, else a built-in's. */
+  words(item: MenuItem): string;
+}
+
+/** A menu's dividers and the menus inside it, opened beside the items that hold them (menu-flyout.ts, the head part's). */
+export interface Submenus {
+  /** A key pressed in the menu: the arrow toward an item's menu opens it. True when it took the key. */
+  key(event: KeyboardEvent): boolean;
+  /** The menu opened: the items the app gives asked for again. */
+  opened(): void;
+  /** The menu closed: its menus with it. */
+  closed(): void;
+  /** At each change of the form, after its items' conditions: an item with nothing in its menu to show hidden, the dividers left only between items that show. */
+  update(): void;
+}
+
+export type SubmenuMaker = (tree: MenuTree, entries: readonly MenuEntry[], menu: HTMLElement) => Submenus;
+
+/** Whether an item opens a menu of its own, or the app's, rather than doing something. */
+export const opensMenu = (item: MenuItem): boolean => !!item.menu?.length || item.menuFrom !== undefined;
+
+/**
+ * A menu's items, drawn: each a menu item with its icon and words, `run` at a press; a divider a line; one that opens
+ * a menu its words alone, its menu wired by the head part.
+ */
+export function menuEntries(context: Pick<RecordMenuContext, 'el' | 'withIcon'>, items: readonly MenuItem[], words: (item: MenuItem) => string, run: (item: MenuItem) => void): MenuEntry[] {
+  const { el } = context;
+  return items.map((item) => {
+    if (item.type === 'divider') return { item, button: el('div', { class: 'fd-record-menu-rule', role: 'separator', 'data-node': item.id }) };
+    const button = el('button', { type: 'button', role: 'menuitem', tabindex: '-1', class: 'fd-record-menu-item', 'data-node': item.id }, ...context.withIcon(item.icon, words(item)));
+    if (!opensMenu(item)) button.addEventListener('click', () => run(item));
+    return { item, button };
+  });
+}
 
 /**
  * The record's menu: the gear with its words over a record, or — `more` —
  * ⋮ alone at the end of a record head's buttons, named "More actions". A
  * real menu, opened with Enter, Space or the arrows, its items reached with
- * the arrows, gone with Escape.
+ * the arrows, gone with Escape; its dividers and the menus inside it as the
+ * page says (`MenuItem.type`, `menu`, `menuFrom`).
  */
 export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[], updaters: (() => void)[], cleanups: (() => void)[], look: 'gear' | 'more' = 'gear'): HTMLElement {
   const { doc, el, form, labels } = context;
@@ -151,16 +204,11 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
   if (icon) gear.append(icon);
   if (look === 'gear') gear.append(el('span', { class: 'fd-record-gear-words' }, labels.actions));
   const menu = el('div', { class: 'fd-record-menu', role: 'menu', id, 'aria-labelledby': gear.id, hidden: '' });
-  const drawn = items.map((item) => {
-    // The built-in Print is under its Print heading: "This record".
-    const words = item.label ?? (item.builtin === 'print' ? sentenceOf(context)(labels.printRecordNoun, labels.printRecord) : item.builtin ? labels[item.builtin] : item.id);
-    const button = el('button', { type: 'button', role: 'menuitem', tabindex: '-1', class: 'fd-record-menu-item', 'data-node': item.id }, ...context.withIcon(item.icon, words));
-    if (item.builtin === 'delete') button.classList.add('fd-record-menu-danger');
-    button.addEventListener('click', () => {
-      close(true);
-      void context.press(gear, () => form.runAction(item.id));
-    });
-    return { item, button };
+  // The built-in Print is under its Print heading: "This record".
+  const words = (item: MenuItem) => item.label ?? (item.builtin === 'print' ? sentenceOf(context)(labels.printRecordNoun, labels.printRecord) : item.builtin ? labels[item.builtin] : item.id);
+  const drawn = menuEntries(context, items, words, (item) => {
+    close(true);
+    void context.press(gear, () => form.runAction(item.id));
   });
   // Under Print: the app's reports, and the built-in Print unless it says otherwise.
   const underPrint = (item: MenuItem) => (item.group ?? (item.builtin === 'print' ? 'print' : 'actions')) === 'print';
@@ -175,8 +223,11 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
   const note = el('div', { class: 'fd-record-menu-note', id: `${id}-note`, role: 'none', hidden: '' });
   if (builtins.length) menu.append(note);
   const wrap = el('div', { class: 'fd-record-actions' }, gear, menu);
+  // Its dividers, and the menus inside it beside the items that open them: the head part's; where it could not come,
+  // neither is shown.
+  const nested = drawn.some((d) => d.item.type || opensMenu(d.item)) ? context.submenus?.({ context, opener: gear, close, refresh: () => paint(), words }, drawn, menu) : undefined;
 
-  const shown = () => drawn.filter((d) => !d.button.hidden).map((d) => d.button);
+  const shown = () => drawn.filter((d) => !d.button.hidden && !d.item.type).map((d) => d.button);
   const onOutside = (event: Event) => {
     if (!wrap.contains(event.target as Node)) close(false);
   };
@@ -191,17 +242,19 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
     doc.addEventListener('pointerdown', onOutside, true);
     // Its built-in Print in sight: the print part fetched, for the press that may come.
     if (drawn.some((d) => d.item.builtin === 'print' && !d.button.hidden)) prefetchPrint();
+    nested?.opened();
     const items = shown();
     (at === 'first' ? items[0] : items[items.length - 1])?.focus();
   }
   function close(refocus: boolean) {
     if (menu.hidden) return;
+    nested?.closed();
     menu.hidden = true;
     gear.setAttribute('aria-expanded', 'false');
     doc.removeEventListener('pointerdown', onOutside, true);
     if (refocus) gear.focus();
   }
-  cleanups.push(() => doc.removeEventListener('pointerdown', onOutside, true));
+  cleanups.push(() => doc.removeEventListener('pointerdown', onOutside, true), () => nested?.closed());
   gear.addEventListener('click', () => (menu.hidden ? open('first') : close(false)));
   gear.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -210,6 +263,7 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
     }
   });
   menu.addEventListener('keydown', (event) => {
+    if (nested?.key(event)) return;
     const items = shown();
     const at = items.indexOf(doc.activeElement as HTMLButtonElement);
     const to = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: items.length - 1 }[event.key];
@@ -224,17 +278,20 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
     } else if (event.key === 'Tab') close(false);
   });
 
-  updaters.push(() => {
-    for (const { item, button } of drawn) setHidden(button, form.node(item.id).invisible);
+  function paint() {
+    // Each item by its condition; a divider, and one that opens a menu, by what is round it and in it (`nested`).
+    for (const { item, button } of drawn) setHidden(button, form.node(item.id).invisible || ((!!item.type || opensMenu(item)) && !nested));
+    nested?.update();
     setHidden(printGroup, !printed.some((d) => !d.button.hidden));
     setHidden(rule, printGroup.hidden || !acted.some((d) => !d.button.hidden));
-    setHidden(wrap, !drawn.some((d) => !d.button.hidden));
+    setHidden(wrap, !shown().length);
     if (!builtins.length) return;
     const why = barredWords(form.getState().can, builtins, labels);
     setHidden(note, !why);
     setText(note, why ?? '');
     setAttr(gear, 'aria-describedby', why ? note.id : null);
-  });
+  }
+  updaters.push(paint);
   return wrap;
 }
 
