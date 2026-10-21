@@ -8,6 +8,7 @@ import { demoListViews, demoMaps, demoMapWidgets } from '../shared/maps';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
+import { buyerBar, enquiryChatterOptions } from '../shared/enquiry';
 import { historySlot } from '@fieldia/chatter';
 import { wiHistoryChatter } from '../shared/wi-history';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, pages, recordFromQuery, sampleDataSource } from '../shared/sample-data';
@@ -109,7 +110,7 @@ const options: ViewerOptions = {
     // The app's delivery planner, which fails as it loads ("A part that fails").
     planner: plannerSlot,
     // The record's conversation, to-dos and followers, beside it.
-    chatter: chatterSlot({ source: chatter, locale: (params.get('locale') as Locale | null) ?? undefined, dir: params.get('dir') === 'rtl' ? 'rtl' : undefined }),
+    chatter: chatterSlot({ source: chatter, ...enquiryChatterOptions(params), locale: (params.get('locale') as Locale | null) ?? undefined, dir: params.get('dir') === 'rtl' ? 'rtl' : undefined }),
     // A work item's Discussion: a comment box, then a card for each comment (shared/wi-text.ts).
     discussion: wiTextDiscussion(params, dataSource),
     note: (element, { form }) => {
@@ -209,6 +210,8 @@ if (name === 'listing-photos') document.getElementById('app')?.before(photosBar(
 if (name === 'test-drive') document.getElementById('app')?.before(meanwhileBar(dataSource));
 // The sign-up has a bar over it: two people take the morning's last places on other screens (shared/event-signup.ts).
 if (name === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
+// The enquiry has a bar over it: the buyer's phone reads what was sent and writes back (shared/enquiry.ts).
+if (name === 'enquiry') document.getElementById('app')?.before(buyerBar(chatter));
 
 // `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `pages` themselves,
 // for the one that each draws the sample records' values as their kind is.

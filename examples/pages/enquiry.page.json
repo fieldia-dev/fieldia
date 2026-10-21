@@ -1,0 +1,105 @@
+{
+  "fieldia": "0.7",
+  "id": "enquiry",
+  "title": "Property enquiry",
+  "description": "A buyer's enquiry about a home, and the conversation with them beside it: WhatsApp, e-mail and the team's notes in one place, each reply by the buyer's own channel, follow-ups at an hour on the office's clock.",
+  "data": { "kind": "record", "model": "enquiry" },
+  "records": { "one": "enquiry", "other": "enquiries", "a": "an enquiry" },
+  "timeZone": "Africa/Cairo",
+  "phone": { "country": "EG" },
+  "fields": {
+    "name": { "type": "char", "label": "Enquiry", "required": true },
+    "customer": { "type": "char", "label": "Buyer", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "email": { "type": "char", "label": "E-mail", "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" },
+    "came_by": {
+      "type": "selection",
+      "label": "Came by",
+      "options": [
+        { "value": "whatsapp", "label": "WhatsApp" },
+        { "value": "email", "label": "E-mail" },
+        { "value": "portal", "label": "Property portal" },
+        { "value": "walk_in", "label": "Walk-in" }
+      ]
+    },
+    "stage": {
+      "type": "selection",
+      "label": "Stage",
+      "options": [
+        { "value": "new", "label": "New" },
+        { "value": "talking", "label": "Talking" },
+        { "value": "viewing", "label": "Viewing" },
+        { "value": "offer", "label": "Offer" },
+        { "value": "won", "label": "Won" }
+      ],
+      "default": "new"
+    },
+    "property": { "type": "char", "label": "Property" },
+    "budget": { "type": "monetary", "label": "Budget", "currency": "EGP", "digits": [12, 0] },
+    "bedrooms": { "type": "integer", "label": "Bedrooms", "min": 0, "max": 12 },
+    "agent": { "type": "char", "label": "Agent" },
+    "looking_for": { "type": "text", "label": "Looking for" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "placeholder": "Who is buying, and what" },
+    "statusbar": { "field": "stage", "clickable": true },
+    "sidePanelBeside": "always",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-buyer",
+        "title": "The buyer",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-customer", "field": "customer" },
+          { "type": "field", "id": "f-came-by", "field": "came_by" },
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
+          { "type": "field", "id": "f-email", "field": "email", "widget": "email" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-home",
+        "title": "What they want",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-property", "field": "property" },
+          { "type": "field", "id": "f-budget", "field": "budget" },
+          { "type": "field", "id": "f-bedrooms", "field": "bedrooms" },
+          { "type": "field", "id": "f-agent", "field": "agent" },
+          { "type": "field", "id": "f-looking-for", "field": "looking_for", "colspan": 2 }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "side", "name": "chatter" }
+  },
+  "translations": {
+    "ar": {
+      "Property enquiry": "استفسار عن عقار",
+      "Enquiry": "الاستفسار",
+      "Buyer": "المشتري",
+      "Phone": "الهاتف",
+      "E-mail": "البريد الإلكتروني",
+      "Came by": "وصل عبر",
+      "WhatsApp": "واتساب",
+      "Property portal": "بوابة عقارية",
+      "Walk-in": "زيارة مباشرة",
+      "Stage": "المرحلة",
+      "New": "جديد",
+      "Talking": "قيد التواصل",
+      "Viewing": "معاينة",
+      "Offer": "عرض",
+      "Won": "تم البيع",
+      "Property": "العقار",
+      "Budget": "الميزانية",
+      "Bedrooms": "غرف النوم",
+      "Agent": "الوكيل",
+      "Looking for": "يبحث عن",
+      "The buyer": "المشتري",
+      "What they want": "ما يريده",
+      "Who is buying, and what": "من يشتري، وماذا"
+    }
+  }
+}

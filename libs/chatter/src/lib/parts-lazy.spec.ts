@@ -1,7 +1,7 @@
 import { createForm, createMemoryDataSource, type Page } from '@fieldia/core';
 import { filesPart, textPart } from '@fieldia/widgets';
 import { mountChatter } from './chatter';
-import { discussionPart, historyPart } from './chatter-parts';
+import { channelsPart, discussionPart, historyPart } from './chatter-parts';
 import { historySlot } from './history-slot';
 import { createMemoryChatter } from './memory';
 import { chatterSlot } from './slot';
@@ -40,7 +40,7 @@ describe('a chatter slot before its parts came', () => {
     const form = createForm({ page, dataSource: createMemoryDataSource() });
     const stop = chatterSlot({ source: createMemoryChatter({ me }) })(element, { form });
     expect(element.querySelector('.fd-chatter')).not.toBeNull();
-    expect([discussionPart.loaded, historyPart.loaded, textPart.loaded]).toEqual([undefined, undefined, undefined]);
+    expect([discussionPart.loaded, historyPart.loaded, textPart.loaded, channelsPart.loaded]).toEqual([undefined, undefined, undefined, undefined]);
     stop();
   });
 
@@ -105,6 +105,30 @@ describe('a composer’s files before the files part came', () => {
     expect(host.querySelector('.fd-composer .fd-files .fd-file-going .fd-file-name')?.textContent).toBe('Quote.pdf');
     expect(document.getElementById('fieldia-files-styles')).not.toBeNull();
     expect(sent).toEqual(['Quote.pdf']);
+    handle.destroy();
+  });
+});
+
+describe('a conversation that knows its channels, before the channels part came', () => {
+  it('sends nothing before it knows them, and draws its messages, their channels and its choice of channel once the part is in', async () => {
+    expect(channelsPart.loaded).toBeUndefined();
+    const mona = { id: 2, name: 'Mona Adel' };
+    const source = createMemoryChatter({
+      me,
+      records: { 'enquiry:1': { messages: [{ id: 1, kind: 'message', author: mona, date: '2026-10-20T08:30:00Z', body: '<p>Is it still for sale?</p>', channel: 'whatsapp', direction: 'in' }] } },
+    });
+    const host = document.createElement('div');
+    document.body.append(host);
+    const handle = mountChatter(host, { source, record: { model: 'enquiry', id: 1 }, channels: [{ id: 'whatsapp', label: 'WhatsApp' }] });
+    const send = [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Send message') as HTMLButtonElement;
+    expect(send.hidden).toBe(true);
+    await until(() => host.querySelector('.fd-message'));
+    expect(channelsPart.loaded).toBeDefined();
+    expect(host.querySelector('.fd-message-channel')?.textContent).toBe('WhatsApp');
+    expect(document.getElementById('fd-chatter-channels-styles')).not.toBeNull();
+    expect(send.hidden).toBe(false);
+    send.click();
+    expect(host.querySelector('.fd-send-by input:checked')?.closest('label')?.textContent).toBe('WhatsApp');
     handle.destroy();
   });
 });

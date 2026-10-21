@@ -51,7 +51,7 @@ const AREA_OF = {
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
-  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing'],
+  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'enquiry'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -77,6 +77,7 @@ const SEARCH_WORDS = {
   'leads-queue': 'leads queue sales team crm follow up follow-up late overdue today this week counts count filters saved searches favourites agent pipeline',
   'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print tab count badge route router own page',
   property: 'property home house real estate listing viewings visits appointments related records inside agent client',
+  enquiry: 'enquiry inquiry request lead buyer property home flat whatsapp email e-mail sms text message messages conversation chat chatter inbox channel channels reply ticks delivered read seen blue failed live arriving follow up follow-up reminder call back hour time clock cairo team note',
   listing: 'listing property home house villa apartment flat studio features garden pool balcony options conditions price per square metre meter district average server function formula handover months age building',
   'visit-feedback': 'feedback survey clinic patient treatments follow up carry forward picked earlier question age birthday options conditions aesthetic botox filler',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
@@ -356,6 +357,21 @@ export const DEMOS = [
       'Pick a district: its average per m² shows “…” while the app’s server is asked, then the listing against it in per cent.',
       'Type 18 in Handover in (months): Handed over by is a year and a half after today; a built-on date gives the building’s age in whole years.',
       'Save while the district’s average is still asked: the save waits for it.',
+    ],
+  },
+  {
+    id: 'enquiry',
+    name: 'A buyer’s enquiry and the conversation with them',
+    category: 'records',
+    query: 'page=enquiry&skin=underline',
+    blurb: 'The request page of a buyer’s enquiry about a home, the conversation beside it as an agency has it: WhatsApp, e-mail, a text message and the team’s notes mixed, each saying its channel, ticks on what went out — sent, delivered, read, or why it failed —, a reply by the buyer’s own channel, messages arriving while you read, and follow-ups at an hour on the office’s clock.',
+    howTo: [
+      'Press Send message: the reply goes by WhatsApp, the channel Yasmin last wrote on, to her number. Type a few words and press Send by WhatsApp: one tick, then two as her phone gets it.',
+      'Press Yasmin reads your WhatsApp messages over the page: the grey ticks on what you sent her turn blue.',
+      'Start a reply, then press Yasmin writes on WhatsApp: her message arrives at the top of the conversation, and what you are typing stays as it is.',
+      'Look at the conversation: her first e-mail, your answer with the floor plan (read), a text message that failed and why, Karim’s team note — each says its channel. Press Retry under the text message: it goes again, and is refused again.',
+      'Look at Activities: Call Yasmin to confirm Thursday is due at 15:30 today on the office’s clock in Cairo, wherever you look from; Schedule activity takes a time as well as a day.',
+      '[Open Omar Said’s enquiry](?record=2): he has no e-mail, so a reply goes by WhatsApp or SMS, and E-mail is not offered.',
     ],
   },
   {

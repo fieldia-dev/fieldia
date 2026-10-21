@@ -1,6 +1,12 @@
 import { createMemoryChatter } from '@fieldia/chatter';
+import { demoNow } from './calendar';
+import { enquiryChatter, enquiryRefuses } from './enquiry';
 
-/** A chatter for the demos: Nile Traders' conversation, to-dos and followers, kept in memory. */
+/**
+ * A chatter for the demos: Nile Traders' conversation, to-dos and followers, and the property enquiries' — WhatsApp,
+ * e-mail and notes, kept in memory. On the enquiry's page it pushes what arrives as it happens, as a server with a
+ * socket does, and a message sent by a channel is delivered a moment after, on the demos' clock (shared/enquiry.ts).
+ */
 const salma = { id: 23, name: 'Salma Nabil' };
 const mona = { id: 21, name: 'Mona Adel' };
 const karim = { id: 22, name: 'Karim Fathy' };
@@ -21,15 +27,18 @@ const floorPlan =
     '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180" viewBox="0 0 240 180"><rect width="240" height="180" fill="#f4f1ea"/><g fill="none" stroke="#5b6470" stroke-width="3"><rect x="12" y="12" width="216" height="156"/><path d="M12 92h96v76M108 12v50M150 92h78M150 92v40"/></g><g fill="#c9b99a"><rect x="24" y="24" width="60" height="24"/><rect x="124" y="104" width="22" height="22"/></g></svg>'
   );
 
-export function sampleChatter() {
+export function sampleChatter(params: URLSearchParams = new URLSearchParams(typeof location === 'undefined' ? '' : location.search)) {
   const call = { id: 'call', name: 'Call', icon: 'phone', daysUntilDue: 2 };
   const todo = { id: 'todo', name: 'To-do', icon: 'check', daysUntilDue: 0 };
   const meeting = { id: 'meeting', name: 'Meeting', icon: 'calendar', daysUntilDue: 7 };
+  const enquiry = params.get('page') === 'enquiry';
   return createMemoryChatter({
     me: salma,
     people: [salma, mona, karim, youssef],
     activityTypes: [call, todo, meeting],
+    ...(enquiry ? { live: true, deliverAfter: 2500, now: demoNow, refuse: enquiryRefuses } : {}),
     records: {
+      ...enquiryChatter({ me: salma, karim }, { call, todo, meeting }),
       // The vendor bill's conversation: what was tracked as it was confirmed, and the vendor's own word.
       'account.move:3': {
         messages: [

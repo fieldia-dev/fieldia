@@ -7,6 +7,7 @@ import type { Skin } from '@fieldia/viewer';
 import { StrictMode, useEffect, useRef, useState } from 'react';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
+import { buyerBar, enquiryChatterOptions } from '../shared/enquiry';
 import { createRoot } from 'react-dom/client';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
@@ -73,11 +74,13 @@ if (params.get('page') === 'test-drive') document.getElementById('app')?.before(
 if (params.get('page') === 'event-signup') document.getElementById('app')?.before(lastPlacesBar(dataSource));
 
 const chatter = sampleChatter();
+// The enquiry has a bar over it: the buyer's phone reads what was sent and writes back (shared/enquiry.ts).
+if (params.get('page') === 'enquiry') document.getElementById('app')?.before(buyerBar(chatter));
 
 /** The chatter in a React slot: a box it mounts into, for as long as the slot lives. */
 function Chatter({ form }: SlotComponentProps) {
   const box = useRef<HTMLDivElement>(null);
-  useEffect(() => (box.current ? chatterSlot({ source: chatter, locale: (params.get('locale') as Locale | null) ?? undefined })(box.current, { form }) : undefined), [form]);
+  useEffect(() => (box.current ? chatterSlot({ source: chatter, ...enquiryChatterOptions(params), locale: (params.get('locale') as Locale | null) ?? undefined })(box.current, { form }) : undefined), [form]);
   return <div ref={box} />;
 }
 

@@ -914,3 +914,70 @@ In plain words:
   `limits` option's starting counts, a record page's model's records but the one edited; `saveDraft` keys drafts
   `draft-1`, `draft-2`… (`drafts` shows them, with `later`), with `draftLink(key)`'s link on "Continue later";
   `loadDraft` finds them, and the `drafts` option's. Tests: `libs/core/src/lib/record/taking.spec.ts`, `drafts.spec.ts`.
+
+## 19. A conversation that knows its channels (Wave 5, lane w5-channels)
+
+Three more members — of `ChatterSource` (@fieldia/chatter), the chatter's own source, not `DataSource` — each optional
+as everything here, and four optional fields on a message. A chatter given no `channels` and a source with neither
+member behaves as in 0.28: no channel, no ticks, no asking again.
+
+```ts
+interface ChatterSource {
+  /* …as before… */
+  replyChannels?(record: RecordRef): Promise<ReplyChannel[]>;
+  subscribe?(record: RecordRef, push: (change: ChatterChange) => void): () => void;
+  resend?(record: RecordRef, messageId: ChatterId): Promise<void>;   // a failed message sent again (Retry)
+}
+interface ReplyChannel { id: string; to?: string | null }       // a channel of the app's, and who it reaches: "+20 10 0482 1937"
+type ChatterChange =
+  | { type: 'message'; message: ChatterMessage }                // new to the conversation, or changed (by id)
+  | { type: 'delivery'; id: ChatterId; delivery: Delivery; failure?: string | null };
+type Delivery = 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+
+interface ChatterMessage { /* …as before… */ channel?: string | null; direction?: 'in' | 'out' | null; delivery?: Delivery | null; failure?: string | null }
+interface NewMessage { /* …as before… */ channel?: string; to?: string }
+interface Activity { /* …as before… */ due: string }   // a day, or an hour: '2026-10-20T12:30:00Z', or '2026-10-20T15:30' on the page's clock
+interface NewActivity { /* …as before… */ due: string } // a day, or the instant a time on the page's clock names, in UTC
+
+// The app's list, an option of the chatter (not the source): each channel's id, words and icon.
+interface Channel { id: string; label: string; icon?: string; note?: boolean }
+// ChatterOptions gains channels?, live?: boolean | { every?: number }, timeZone?, dateOrder?, recordShown?.
+```
+
+In plain words:
+
+- **Which channels a reply may take.** `replyChannels` as a record is shown and after each save: a channel of the
+  app's it leaves out is hidden for that record (hide, never disable), and none hides Send message — a note is always
+  the team's. Without the member, every channel of the app's is offered. Asked once for the record shown; an answer
+  for one no longer shown (`form.recordShown()`) is laid on none; one that throws offers none. While a reply is typed,
+  what it offers stays as it was until the reply is sent or let go.
+- **The reply's channel.** The channel of the message answered (↩), else the customer's last — the newest message
+  `direction: 'in'` by a channel offered —, else the first offered. A note posted where the app has a note channel
+  (`note: true`) names it; `post` gets `channel` and `to` as the person saw them.
+- **Delivery.** `delivery` is how far an outgoing message got; `failure`, why one failed, is said under it. A delivery
+  never goes back in the chatter: of two answers, the further (pending → sent → failed → delivered → read) is kept,
+  so a late answer saying "delivered" of a message read leaves it read — but a failed message is at no place on the
+  way: sent again, here or elsewhere, what is told next of it is laid.
+- **Retry.** Where the source has `resend`, a failed outgoing message offers Retry under its failure (without the
+  member, none: hide, never disable). Pressed, the message is on its way (`pending`, its clock) at once, the focus kept
+  in it (on its ↩), and `resend(record, id)` is asked; how far it gets is then told as any delivery is — pushed, or
+  found asking again — and a second failure is said again, with Retry again. A `resend` that throws says the failure
+  again with the error's words, on the record still shown only.
+- **Live.** With `subscribe`, the chatter subscribes as a record is shown and stops as another is, or it goes; what
+  is pushed for a record no longer shown is laid nowhere, and what is pushed while the conversation is fetched — or a
+  message posted (a server's echo of it is never said as arriving) — is laid once it has come. Without it, a chatter
+  with channels (or `live: true | { every }`) asks `messages` again every `every` ms (15 s): never while an answer is
+  on its way, while the page is out of sight (asked again as it comes back) or offline (as it comes online), twice as
+  long each time nothing changes, up to four times, at the usual pace again after the person sends. An answer is
+  laid on the record the form still shows only. Nothing is fetched again whole: each message kept where it is,
+  unchanged ones never drawn again, so a reply being typed — its words, its caret, its channel — is never disturbed.
+- **Hours.** An activity's hour is shown, and counted overdue from, on the page's clock (`Page.timeZone`, the slot
+  gives it); a time the clocks skip is the first minute after them. Schedule activity posts a time chosen as its
+  instant in UTC, a day alone as before.
+- The memory source (`createMemoryChatter`): `replyChannels` from each record's `replyChannels` or the option of that
+  name (the member is there only where one is given); `subscribe` with `live: true`; a message posted by a channel
+  is `direction: 'out'`, `delivery: 'sent'`, delivered `deliverAfter` ms later where that is given — or failed with
+  the words `refuse(message, record)` gives; `resend` puts a message back on its way (`pending`), then refused or
+  delivered alike; `receive(record, message)` and `deliver(record, id, delivery, failure?)` play the customer's side
+  and push it. Tests:
+  `libs/chatter/src/lib/channels.spec.ts`, `memory.spec.ts`, `parts-lazy.spec.ts`; `e2e/chatter-channels.spec.ts`.

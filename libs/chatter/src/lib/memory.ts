@@ -1,15 +1,33 @@
-import type { Activity, ActivityType, Attachment, ChatterId, ChatterMessage, ChatterSource, Follower, Person, RecordRef } from './source';
+import type { Activity, ActivityType, Attachment, ChatterChange, ChatterId, ChatterMessage, ChatterSource, Delivery, Follower, Person, RecordRef, ReplyChannel } from './source';
 
 export interface MemoryChatterOptions {
   /** The person using the chatter: the author of what is posted, the one who reacts. */
   me: Person;
   people?: Person[];
   activityTypes?: ActivityType[];
-  /** What each record starts with, by `model:id`. */
-  records?: Record<string, { messages?: ChatterMessage[]; activities?: Activity[]; followers?: Follower[] }>;
+  /**
+   * What each record starts with, by `model:id`; `replyChannels`, the channels it can be written to by (the source's
+   * `replyChannels` gives them).
+   */
+  records?: Record<string, { messages?: ChatterMessage[]; activities?: Activity[]; followers?: Follower[]; replyChannels?: ReplyChannel[] }>;
   /** The clock; the real one unless a test pins it. */
   now?: () => Date;
+  /** The channels a record the source was given none for can be written to by. With it, or a record's own, the source has `replyChannels`. */
+  replyChannels?: ReplyChannel[];
+  /** Messages received and deliveries pushed to the chatter as they happen (`subscribe`), as a server with a socket does; without it, a live chatter asks again now and then. */
+  live?: boolean;
+  /** A message sent by a channel is delivered this many ms after it is sent, as a gateway tells; left sent without it. */
+  deliverAfter?: number;
+  /**
+   * Why a channel refuses a message sent by it, as a gateway says it — "This number does not take text messages" —, or
+   * null where it takes it: refused, a message posted or sent again (`resend`) fails with these words, `deliverAfter`
+   * ms after it goes (at once without it).
+   */
+  refuse?: (message: ChatterMessage, record: RecordRef) => string | null;
 }
+
+/** What a demo or a test hands `receive`: a message from outside, its id and time given unless said. */
+export type ReceivedMessage = Omit<ChatterMessage, 'id' | 'date' | 'kind'> & Partial<Pick<ChatterMessage, 'id' | 'date' | 'kind'>>;
 
 /** Who reacted with what, per message: kept apart so "mine" can be worked out for whoever asks. */
 type Reactors = Map<string, Set<ChatterId>>;
@@ -20,7 +38,13 @@ const escape = (text: string) => text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;'
  * A chatter source that keeps everything in memory: for demos, tests and
  * prototypes, the way the memory data source is for records.
  */
-export function createMemoryChatter(options: MemoryChatterOptions): ChatterSource & { readonly posted: ChatterMessage[] } {
+export function createMemoryChatter(options: MemoryChatterOptions): ChatterSource & {
+  readonly posted: ChatterMessage[];
+  /** A message from outside — the customer's WhatsApp, an e-mail — added to a record's conversation, and pushed to who subscribes. */
+  receive(record: RecordRef, message: ReceivedMessage): ChatterMessage;
+  /** How far a message got, as its channel tells: kept, and pushed to who subscribes. */
+  deliver(record: RecordRef, id: ChatterId, delivery: Delivery, failure?: string | null): void;
+} {
   const now = options.now ?? (() => new Date());
   const people = options.people ?? [options.me];
   const types = options.activityTypes ?? [];
@@ -53,9 +77,49 @@ export function createMemoryChatter(options: MemoryChatterOptions): ChatterSourc
     posted.push(made);
     return made;
   };
+  /** Who subscribes, by record. */
+  const listeners = new Map<string, Set<(change: ChatterChange) => void>>();
+  const tell = (record: RecordRef, change: ChatterChange) => {
+    for (const push of [...(listeners.get(key(record)) ?? [])]) push(change);
+  };
+  function deliver(record: RecordRef, id: ChatterId, delivery: Delivery, failure: string | null = null) {
+    const message = of(record).messages.find((one) => one.id === id);
+    if (!message) throw new Error(`No message ${id}`);
+    message.delivery = delivery;
+    message.failure = delivery === 'failed' ? failure : null;
+    tell(record, { type: 'delivery', id, delivery, failure: message.failure });
+  }
+  /** A message gone out by a channel: refused, or delivered, as the gateway tells after `deliverAfter`. */
+  function goOut(record: RecordRef, message: ChatterMessage) {
+    const refused = options.refuse?.(message, record) ?? null;
+    if (refused === null && options.deliverAfter === undefined) return;
+    setTimeout(() => {
+      if (message.delivery !== 'sent' && message.delivery !== 'pending') return;
+      deliver(record, message.id, refused === null ? 'delivered' : 'failed', refused);
+    }, options.deliverAfter ?? 0);
+  }
+  const channelled = !!options.replyChannels || Object.values(options.records ?? {}).some((start) => start.replyChannels);
 
   return {
     posted,
+    receive(record, message) {
+      const made: ChatterMessage = { kind: 'message', direction: 'in', id: next++, date: now().toISOString(), ...message };
+      of(record).messages.unshift(made);
+      tell(record, { type: 'message', message: { ...made } });
+      return made;
+    },
+    deliver,
+    ...(channelled ? { replyChannels: async (record: RecordRef) => [...(options.records?.[key(record)]?.replyChannels ?? options.replyChannels ?? [])] } : {}),
+    ...(options.live
+      ? {
+          subscribe(record: RecordRef, push: (change: ChatterChange) => void) {
+            const set = listeners.get(key(record)) ?? new Set();
+            listeners.set(key(record), set);
+            set.add(push);
+            return () => void set.delete(push);
+          },
+        }
+      : {}),
     async messages(record) {
       const { messages, reactions } = of(record);
       // Each message's reactions as the person asking sees them.
@@ -67,7 +131,26 @@ export function createMemoryChatter(options: MemoryChatterOptions): ChatterSourc
       });
     },
     async post(record, message) {
-      return add(record, { kind: message.kind, body: message.body, attachments: message.attachments ?? [], parentId: message.parentId ?? null, mentions: message.mentions ?? [] });
+      // Sent by a channel, it goes out: sent, then delivered once the gateway says so (`deliverAfter`).
+      const out = message.kind === 'message' && !!message.channel;
+      const made = add(record, {
+        kind: message.kind,
+        body: message.body,
+        attachments: message.attachments ?? [],
+        parentId: message.parentId ?? null,
+        mentions: message.mentions ?? [],
+        ...(message.channel ? { channel: message.channel } : {}),
+        ...(out ? { direction: 'out' as const, delivery: 'sent' as const } : {}),
+      });
+      if (out) goOut(record, made);
+      return { ...made };
+    },
+    async resend(record, messageId) {
+      const message = of(record).messages.find((one) => one.id === messageId);
+      if (!message) throw new Error(`No message ${messageId}`);
+      // On its way again: refused once more, or delivered, as the gateway tells.
+      deliver(record, messageId, 'pending');
+      goOut(record, message);
     },
     async upload(_record, file, how) {
       if (how?.signal?.aborted) throw Object.assign(new Error('The upload was stopped'), { name: 'AbortError' });

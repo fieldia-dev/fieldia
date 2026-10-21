@@ -75,6 +75,8 @@ import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
 import clinicIntake from '../../examples/pages/clinic-intake.page.json';
+import enquiry from '../../examples/pages/enquiry.page.json';
+import { ENQUIRY_RECORDS } from './enquiry';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 
 /** The example pages every demo can show, by name. */
@@ -184,6 +186,9 @@ export const pages: Record<string, Page> = {
   'event-signup': eventSignupPage(),
   // A clinic's long intake, Continue later on any device: shared/clinic-intake.ts.
   'clinic-intake': clinicIntake as Page,
+  // A buyer's property enquiry beside its conversation — WhatsApp, e-mail and notes, ticks, a follow-up at 15:30 on
+  // Cairo's clock — and the buyer's phone over it (shared/enquiry.ts).
+  enquiry: enquiry as Page,
   // A test drive booked at a showroom in Berlin, on Berlin's clock, from the times its schedule has free: shared/test-drive.ts.
   'test-drive': testDriveDemo.page,
   // The showroom's week of test drives on a calendar, on Berlin's clock wherever it is looked at from.
@@ -327,10 +332,10 @@ export function optionsFromQuery(params: URLSearchParams): {
     // `drafts=1`: what is typed is kept in the browser as a draft, offered again when the page opens.
     ...(params.get('drafts') === '1' ? { drafts: { store: localStorage } } : {}),
     // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are, and the booking
-    // template's; so is a consent's signing.
-    ...(['test-drive', 'template-appointment-booking', 'clinic-consent'].includes(params.get('page') ?? '') ? { now: demoNow } : {}),
-    // The consents round the one shown: the pager over it moves to the next.
-    ...(params.get('page') === 'clinic-consent' ? { records: [1, 2] } : {}),
+    // template's; so is a consent's signing, and an enquiry's follow-ups.
+    ...(['test-drive', 'template-appointment-booking', 'clinic-consent', 'enquiry'].includes(params.get('page') ?? '') ? { now: demoNow } : {}),
+    // The consents round the one shown, and the enquiries: the pager over it moves to the next.
+    ...(params.get('page') === 'clinic-consent' || params.get('page') === 'enquiry' ? { records: [1, 2] } : {}),
     // The customers round the one with its invoices and quotations, and the homes round the one with its viewings: the
     // pager over the record moves to the next, its related lists that one's.
     ...(params.get('page') === 'customer-account' ? { records: [1, ...Array.from({ length: 12 }, (_, i) => 20 + i)] } : {}),
@@ -541,6 +546,8 @@ export function sampleDataSource() {
       ...appointmentRecords(),
       // Two consents signed, one changed in the clinic's system after (shared/consents.ts).
       'clinic.consent': sampleConsents(),
+      // Two buyers' enquiries about homes (shared/enquiry.ts).
+      enquiry: ENQUIRY_RECORDS,
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',
