@@ -387,4 +387,5 @@ export const ar: ViewerLabels = {
   payFailed: 'لم يتم الدفع: لم يُرسل شيء.',
   payFailedWhy: 'لم يتم الدفع: {why} لم يُرسل شيء.',
   payNotStarted: 'تعذّر بدء الدفع: حاول مرة أخرى.',
+  formNotLoaded: 'تعذّر تحميل هذا النموذج.',
 };

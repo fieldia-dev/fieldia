@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ask about a unit</title>
+    <style>
+      body { margin: 0; padding: 4px 0; background: transparent; font-family: system-ui, sans-serif; }
+      .note { max-width: 640px; margin: 0 auto 8px; padding: 0 16px; font-size: 13px; color: #5b6470; }
+    </style>
+  </head>
+  <body>
+    <!--
+      The app's own form page, which a partner's site shows in an iframe (fieldia-embed.js): one script tag, and the
+      form as an element. `frame` tells the page round it the form's height and what happened; its language and look
+      come from the frame's address (?locale=ar&theme=material), as the partner's tag passes them on, and so do the
+      link's parameters its hidden fields are filled from (?utm_source=…).
+    -->
+    <p class="note">A demo: the code it sends your mobile is always 246810, and no card is charged.</p>
+    <fieldia-form src="unit-enquiry.page.json" frame skin="outlined"></fieldia-form>
+    <script src="fieldia.js"></script>
+    <script>
+      // The app's data source: here, one in memory standing in for the app's server — its codes always 246810, its
+      // payments taken at once, as a provider's test mode would.
+      const memory = Fieldia.createMemoryDataSource({ submitted: (request, count) => ({ id: `R-${1200 + count}` }), codes: { code: () => '246810' } });
+      document.querySelector('fieldia-form').source = memory;
+      window.fieldiaDemo = { dataSource: memory };
+    </script>
+  </body>
+</html>

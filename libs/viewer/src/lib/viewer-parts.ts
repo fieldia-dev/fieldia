@@ -2,6 +2,7 @@ import { asksForCodes, asksPayment, callsPartFunctions, formLimitsPart, formPayP
 import { businessPart, choicePart, datePart, evidencePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
+import type * as ElementModule from './element-part';
 import type * as AnswersModule from './answers-part';
 import type * as CardsModule from './cards-part';
 import type * as ColumnsModule from './columns-part';
@@ -37,6 +38,8 @@ export type LimitsPart = typeof LimitsModule;
 export type VerifyPart = typeof VerifyModule;
 /** The pay part: the payment step a page's answers wait for, paid through the app's own source. */
 export type PayPart = typeof PayModule;
+/** The element part: what `<fieldia-form>` does once it is on a page (element-part.ts). */
+export type ElementPart = typeof ElementModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -89,6 +92,12 @@ export const asksVerify = (page: Page): boolean => asksForCodes(page);
 export const payPart: Part<PayPart> = lazyPart('pay', () => import('./pay-part'));
 
 /**
+ * What `<fieldia-form>` does — its page fetched, its form drawn in it, its events told — loaded the first time one is
+ * put on a page (element.ts): a page with none never downloads it.
+ */
+export const elementPart: Part<ElementPart> = lazyPart('element', () => import('./element-part'));
+
+/**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
  * else as soon as it comes (settled then; a part that cannot come puts none). For what draws a list's look without the
  * list: the designer's canvas.
@@ -105,8 +114,8 @@ export function installListStyles(doc: Document): Promise<void> {
   );
 }
 
-/** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, verifyPart, payPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, prefillPart, formVerifyPart, formPayPart];
+/** Every part the viewer can draw from, its own and its widgets', the print part (print.ts), which draws nothing, and what `<fieldia-form>` does (element.ts). */
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, verifyPart, payPart, elementPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, prefillPart, formVerifyPart, formPayPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {

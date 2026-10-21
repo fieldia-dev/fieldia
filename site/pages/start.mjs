@@ -146,6 +146,38 @@ ${code(
 </script>`
 )}
 
+<h2 id="element">One tag: &lt;fieldia-form&gt;</h2>
+<p>The script defines an element as it starts, so a page needs no code of its own: ${c('<fieldia-form>')} fetches its page (${c('src')}), draws its form in itself and sends the answers to its ${c('action')} as JSON — ${c('{ pageId, values, … }')}, answered with ${c('{ id }')}, or refused with ${c('{ message, fields }')}. ${c('locale')}, ${c('theme')}, ${c('skin')}, ${c('record')} and ${c('resume')} say the rest; changing one draws it again (a theme or a skin in place). What it does comes in a part of its own, fetched the first time one is on a page.</p>
+${code(
+  'html',
+  `
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" locale="ar" skin="outlined"></fieldia-form>`
+)}
+<p>It tells what happens as events that bubble: ${c('fieldia-ready')} once drawn, ${c('fieldia-send')} (the reference your server gave, and the answers), ${c('fieldia-save')}, ${c('fieldia-step')} and ${c('fieldia-error')} when its page cannot be read. With a little code, its properties take the rest of the viewer: ${c('page')} (given whole), ${c('source')} (your own data source, for a record's page, codes, payments) and ${c('options')}; ${c('handle')} is the viewer once drawn. An app built with a bundler calls ${c('defineFieldiaForm()')} from ${c('@fieldia/viewer')} once.</p>
+${code(
+  'js',
+  `
+const form = document.querySelector('fieldia-form');
+form.source = myDataSource;            // sendCode, checkCode, pay, submit… your app's own
+form.addEventListener('fieldia-send', (event) => analytics.track('enquiry', { id: event.detail.id }));`
+)}
+
+<h2 id="embed">On another site: an iframe that grows with its form</h2>
+<p>For a form your app serves on a site that is not yours — a partner's, a WordPress page, a broker's listing — one script tag places an iframe of your form's page where it stands: ${c('fieldia-embed.js')}, ${SIZES.embed} KB gzipped, with nothing else of Fieldia's in it. Your page holds ${c('<fieldia-form frame>')}, which tells the page round it its height as it changes — the frame grows and shrinks with the form, never a scrollbar inside — and what happens: ${c('fieldia-ready')}, ${c('fieldia-step')} and ${c('fieldia-send')} (its reference, never the answers) as events on the iframe, from your page's origin only.</p>
+${code(
+  'html',
+  `
+<!-- On the partner's page -->
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia-embed.js"
+  data-src="https://forms.example.com/enquiry" data-locale="ar" data-theme="material" async></script>
+
+<!-- Your form's page, https://forms.example.com/enquiry -->
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" frame></fieldia-form>`
+)}
+<p>${c('data-locale')}, ${c('data-theme')} and ${c('data-skin')} reach the form through its frame's address; ${c('data-title')} names the frame for a screen reader; ${c('data-height')} is its height before the form tells its own (600). The partner page's campaign parameters — ${c('utm_source')}, ${c('utm_medium')}, ${c('utm_campaign')}, ${c('utm_term')}, ${c('utm_content')}, or those ${c('data-params')} names — are passed on, so a page that fills hidden fields from its link (<a href="/data/#prefill">${c('prefill')}</a>) knows which campaign brought the person to the partner. The <a href="/demos/embed/">embed demo</a> shows both.</p>
+
 <h2 id="next">Next</h2>
 <p>The memory data source keeps everything in the browser — right for trying things, not for keeping them. <a href="/data/">Data sources</a> shows how to connect your own backend; <a href="/fields/">Fields</a> lists every field type and how it can be shown.</p>
 <p>Moving to a newer Fieldia? The <a href="https://github.com/fieldia-dev/fieldia/blob/main/CHANGELOG.md">changelog</a> says what changed in each release, in plain words, with what to change in your app under <strong>Upgrading</strong>; pages your app keeps are brought up to date as they are read (<a href="/pages/#versions">versions</a>).</p>

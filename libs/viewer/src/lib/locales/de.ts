@@ -430,4 +430,5 @@ export const de: ViewerLabels = {
   payFailed: 'Die Zahlung ist nicht durchgegangen: Nichts wurde gesendet.',
   payFailedWhy: 'Die Zahlung ist nicht durchgegangen: {why} Nichts wurde gesendet.',
   payNotStarted: 'Die Zahlung konnte nicht gestartet werden: Versuchen Sie es erneut.',
+  formNotLoaded: 'Dieses Formular konnte nicht geladen werden.',
 };

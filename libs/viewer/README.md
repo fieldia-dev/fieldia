@@ -774,13 +774,14 @@ Firefox), else once after the rows. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 165 KB gzipped). What a page uses beyond
+(core, widgets and viewer; about 168 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a link to
 another record, a phone, a theme, possible duplicates, a page on paper, the
 answers said in a page's words, a form's limits, the functions beyond the plain
-ones… — comes in 28 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
-`fieldia.relations.js`, `fieldia.print.js`, …), each loaded from the same
-folder the first time a page uses it:
+ones, a field's code, a payment, `<fieldia-form>`'s work… — comes in 32 parts
+beside it (`fieldia.list.js`, `fieldia.date.js`, `fieldia.relations.js`,
+`fieldia.print.js`, …), each loaded from the same folder the first time a page
+uses it:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
@@ -818,6 +819,32 @@ the script bundle, `Fieldia.VIEWER_LABELS.en` (and `WIDGET_LABELS`,
 puts its words over ones a table has (a language's, or your own). The viewer
 reads its words as it draws them, so a page mounted before its parts came
 shows theirs.
+
+The script defines `<fieldia-form>` as it starts, so a page needs no code of its
+own: it fetches its page (`src`), draws its form and sends the answers to its
+`action` as JSON (`{ pageId, values, … }`, answered with `{ id }`, refused with
+`{ message, fields }`); `locale`, `theme`, `skin`, `record` and `resume` say the
+rest, and changing one draws it again. Its `page`, `source` and `options`
+properties take the rest of the viewer, `handle` is the viewer once drawn, and it
+tells `fieldia-ready`, `fieldia-send`, `fieldia-save`, `fieldia-step` and
+`fieldia-error` as events that bubble. Its work comes in `fieldia.element.js`. An
+app built with a bundler calls `defineFieldiaForm()` once.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" locale="ar"></fieldia-form>
+```
+
+On a site that is not yours, `fieldia-embed.js` (under 1 KB gzipped, nothing else
+of Fieldia's in it) places an iframe of your form's page where its tag stands —
+`<script src=".../bundle/fieldia-embed.js" data-src="https://forms.example.com/enquiry"
+data-locale="ar" async></script>` — and your page's `<fieldia-form frame>` tells
+it its height as it changes, so the frame grows and shrinks with the form, and
+`fieldia-ready`, `fieldia-step` and `fieldia-send` (the reference, never the
+answers) as events on the iframe, from your page's origin only. The tag passes on
+`data-locale`, `data-theme`, `data-skin` and the page's campaign parameters
+(`utm_*`, or those `data-params` names), for a page that fills hidden fields
+from its link.
 
 For React, Vue and Angular, use `@fieldia/react`, `@fieldia/vue` or
 `@fieldia/angular` — thin shells over this viewer. MIT licensed.

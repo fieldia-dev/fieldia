@@ -419,4 +419,5 @@ export const fr: ViewerLabels = {
   payFailed: 'Le paiement n’est pas passé : rien n’a été envoyé.',
   payFailedWhy: 'Le paiement n’est pas passé : {why} Rien n’a été envoyé.',
   payNotStarted: 'Le paiement n’a pas pu commencer : réessayez.',
+  formNotLoaded: 'Ce formulaire n’a pas pu être chargé.',
 };

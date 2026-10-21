@@ -396,6 +396,11 @@ for (const [locale, name] of Object.entries(LANGUAGES)) {
   });
 }
 
+// fieldia-embed.js: a form from the app's own site on another, in an iframe that grows and shrinks with it — standing
+// alone, nothing of Fieldia's in it but the frame's few lines (tools/embed-entry.ts); the form's page loads fieldia.js.
+const EMBED = join(BUNDLE, 'fieldia-embed.js');
+await build({ ...common, entryPoints: [join(WORKSPACE, 'tools/embed-entry.ts')], banner: { js: `/*! Fieldia ${version} · embed · MIT · https://fieldia.dev */` }, outfile: EMBED });
+
 // It must stand on its own: run it with nothing but a window and look for the viewer.
 const sandbox = { window: {}, self: {}, globalThis: {} };
 runInNewContext(readFileSync(OUT, 'utf8'), sandbox);
@@ -1034,7 +1039,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // the payment carried, `paymentDue` and the paid state (0.60 in the form), the step made and placed and the host's `pay`
 // handed to the form (0.44, viewer), the parts' handles (0.12), the checks owed (0.21), the memory member named (0.03):
 // 508.96 measured before, 510.35 after, to 510.4.
-const BUDGET_KB = 510.4;
+// `<fieldia-form>` (0.30, w6-public-forms), defined as the script starts so a page needs no code of its own: the element's
+// class — its attributes watched, its page, source and options kept until its part comes and drawn again when set after
+// — the part's handle, and the call that defines it (1.08); what it does is in fieldia.element.js: 510.35 measured
+// before, 511.43 after, to 511.5.
+const BUDGET_KB = 511.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1276,7 +1285,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // A payment the answers wait for (0.30, w6-public-forms; listed with the raw budget above): the pay code waited for at the
 // send, the payment carried, the step placed, the host's pay, the handles, the checks owed — 166.86 measured before,
 // 167.36 after, to 167.4.
-const GZIP_BUDGET_KB = 167.4;
+// `<fieldia-form>` defined as the script starts (0.30, w6-public-forms; listed with the raw budget above): 167.36
+// measured before, 167.72 after, to 167.8.
+const GZIP_BUDGET_KB = 167.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1465,7 +1476,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // cancelled, failed, not started — 13 words in each: Arabic's 81.19 and 13.75 measured before, 82.53 and 13.94 after,
 // to 82.6 and 14.0; German's 37.56 and 12.00 to 38.18 and 12.17, to 38.2 and 12.2; French's 37.97 and 12.04 to 38.61
 // and 12.21, to 38.7 and 12.3.
-const ADD_ON_BUDGET_KB = { ar: [82.6, 14.0], de: [38.2, 12.2], fr: [38.7, 12.3] };
+// A `<fieldia-form>` whose page could not be read says so — 1 word: Arabic's 82.53 to 82.67, to 82.7; German's 38.18 to
+// 38.24, to 38.3; French's 38.61 to 38.67, as it was.
+const ADD_ON_BUDGET_KB = { ar: [82.7, 14.0], de: [38.3, 12.2], fr: [38.7, 12.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1871,7 +1884,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // paid, failed or cancelled and Pay again, Back to the answers — its sheet and its checks, and the form's side: what is
 // due, the payment taken once, a new key started again. A memory source pays as a provider would — memory 17.34 and 6.26
 // measured before, 17.61 and 6.37 after, to 17.7 and 6.4.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.7, 6.4], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], prefill: [3.8, 1.9], verify: [10.9, 4.7], pay: [7.6, 3.3] };
+// What `<fieldia-form>` does (0.30, w6-public-forms) in a part of its own, fieldia.element.js (4.82 and 2.20, to 4.9 and
+// 2.3): its page given or fetched from `src`, its form drawn with its attributes' language and look, its events told,
+// drawn again as an attribute changes, its answers posted to its `action` as JSON, and in a frame its height and events
+// told to the page round it — asked for the first time one is put on a page.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [17.7, 6.4], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], prefill: [3.8, 1.9], verify: [10.9, 4.7], pay: [7.6, 3.3], element: [4.9, 2.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1905,9 +1922,10 @@ const PART_GIVES = {
   prefill: ['linkValues', 'linkParams', 'linkValue'],
   verify: ['watchVerify', 'verifyWays', 'installVerifyStyles', 'formVerify'],
   pay: ['drawPay', 'amountWords', 'installPayStyles', 'formPayment'],
+  element: ['connect', 'disconnect', 'changed', 'handleOf', 'actionSource'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', prefill: 'prefillPart', verify: 'verifyPart', pay: 'payPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', prefill: 'prefillPart', verify: 'verifyPart', pay: 'payPart', element: 'elementPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -2346,6 +2364,20 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!doc.getElementById('fieldia-pay-styles')) throw new Error("in a page, the pay part's sheet was never put in");
   enquiry.destroy();
   gone('enquiry');
+  // A page with nothing of its own but a `<fieldia-form>` (defined as fieldia.js starts): the element part, as one is
+  // put on the page — nothing of it before — its form drawn in it, `fieldia-ready` told; taken off, nothing left.
+  if (!dom.window.customElements.get('fieldia-form')) throw new Error('in a page, fieldia.js defines no <fieldia-form>');
+  const element = doc.createElement('fieldia-form');
+  element.page = read('unit-enquiry.page.json');
+  element.source = { submit: async () => ({}) };
+  const ready = new Promise((done) => element.addEventListener('fieldia-ready', done));
+  host.append(element);
+  await ready;
+  hasIn('a <fieldia-form> put on a page', 'answers, business, cards, choice, columns, date, duplicates, element, evidence, files, filters, functions, head, import, limits, lines, list, options, path, pay, phone, prefill, print, quiet, relations, slots, survey, text, themes, verify');
+  if (!element.querySelector('.fd-form [data-node="f-name"]') || element.handle?.form.page.id !== 'unit-enquiry') throw new Error('in a page, a <fieldia-form> draws no form');
+  element.remove();
+  if (element.handle || element.querySelector('.fd-form')?.isConnected === false) throw new Error('in a page, a <fieldia-form> taken off the page keeps its form');
+  host.replaceChildren();
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
@@ -2368,7 +2400,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; an enquiry filled from a broker's link, by the prefill part, its mobile asking for a code, by the verify part, its fee, by the pay part — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; an enquiry filled from a broker's link, by the prefill part, its mobile asking for a code, by the verify part, its fee, by the pay part; a <fieldia-form> put on a page, by the element part — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**
@@ -2481,4 +2513,29 @@ console.log("on paper: a page no one printed asks for no print part; the browser
   view.destroy();
   dom.window.close();
   console.log("in an Arabic page: a list's part's own words in Arabic, none of their English drawn");
+}
+
+/**
+ * fieldia-embed.js: small, standing alone — nothing of Fieldia's in it — and placing its frame where its tag stands: the
+ * form page's address with its frame's number and the page's origin, the tag's language, and the link's campaign
+ * parameters passed on (none it was not told to); grown as its form tells its height, from the frame's own origin only.
+ */
+// 0.30 (w6-public-forms): 1.54 and 0.88 measured, to 1.6 and 0.9.
+const EMBED_BUDGET_KB = [1.6, 0.9];
+{
+  const embed = readFileSync(EMBED, 'utf8');
+  const [raw, gzip] = EMBED_BUDGET_KB;
+  if (Buffer.byteLength(embed) > raw * 1024 || gzipSync(embed, { level: 9 }).length > gzip * 1024) throw new Error(`fieldia-embed.js is ${(Buffer.byteLength(embed) / 1024).toFixed(2)} KB, ${(gzipSync(embed, { level: 9 }).length / 1024).toFixed(2)} gzipped: over its ${raw} and ${gzip} KB budget`);
+  if (/mountViewer|createForm|fd-form/.test(embed)) throw new Error("fieldia-embed.js carries Fieldia's own code: it stands alone");
+  const { JSDOM } = await import('jsdom');
+  const tag = embed.replace(/<\/script/gi, '<\\/script');
+  const dom = new JSDOM(`<!doctype html><html><body><p>A partner's listing</p><script data-src="https://forms.example/enquiry" data-locale="ar" data-title="Ask about this unit">${tag}</script><p>After it</p></body></html>`, { url: 'https://partner.example/listing?utm_source=newsletter&token=secret', runScripts: 'dangerously' });
+  const frame = dom.window.document.querySelector('iframe');
+  if (!frame || frame.previousElementSibling?.tagName !== 'SCRIPT') throw new Error('fieldia-embed.js places no frame where its tag stands');
+  const at = new URL(frame.src);
+  const params = Object.fromEntries(at.searchParams);
+  if (at.origin !== 'https://forms.example' || params.locale !== 'ar' || params.utm_source !== 'newsletter' || 'token' in params || params['fieldia-origin'] !== 'https://partner.example' || !params['fieldia-frame']) throw new Error(`fieldia-embed.js's frame is not the form's page with what it passes on: ${frame.src}`);
+  if (frame.title !== 'Ask about this unit' || frame.style.height !== '600px') throw new Error("fieldia-embed.js's frame has no name, or no height before the form tells its own");
+  dom.window.close();
+  console.log(`fieldia-embed.js: ${(Buffer.byteLength(embed) / 1024).toFixed(1)} KB, ${(gzipSync(embed, { level: 9 }).length / 1024).toFixed(1)} KB gzipped; standing alone, its frame placed with the form's language and the link's campaign, nothing else passed on`);
 }

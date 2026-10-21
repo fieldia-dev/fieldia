@@ -62,6 +62,7 @@ export const PART_WORDS = {
       'importStartNoun', 'importStartNounOne', 'importNotMadeNoun', 'importFailedNoun',
     ],
   },
+  element: { viewer: ['formNotLoaded'] },
   pay: { viewer: ['payAmount', 'payBack', 'payCancel', 'payCancelling', 'payNothingSent', 'payWaiting', 'payPaid', 'payPaidReference', 'payAgain', 'payCancelled', 'payFailed', 'payFailedWhy', 'payNotStarted'] },
   verify: {
     messages: ['notVerified'],

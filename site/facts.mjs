@@ -38,6 +38,8 @@ export const SIZES = {
   print: Math.round(gzippedKB('fieldia.print.js')),
   /** fieldia.phone.js: the phone box and its country table, fetched the first time a page shows a phone. */
   phone: Math.round(gzippedKB('fieldia.phone.js')),
+  /** fieldia-embed.js: a form's frame on another site, to a tenth (it is under one KB). */
+  embed: Math.round(gzippedKB('fieldia-embed.js') * 10) / 10,
 };
 
 const packages = readdirSync(new URL('libs/', ROOT)).filter((dir) => {

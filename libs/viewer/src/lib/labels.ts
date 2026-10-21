@@ -628,6 +628,8 @@ export interface ViewerLabels {
   payFailed: string;
   payFailedWhy: string;
   payNotStarted: string;
+  /** A `<fieldia-form>` whose page could not be read: its address answered nothing, or no page. */
+  formNotLoaded: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1080,6 +1082,7 @@ const en: ViewerLabels = {
   payFailed: 'The payment did not go through: nothing was sent.',
   payFailedWhy: 'The payment did not go through: {why} Nothing was sent.',
   payNotStarted: 'The payment could not be started: try again.',
+  formNotLoaded: 'This form could not be loaded.',
 };
 
 /**

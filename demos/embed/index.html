@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fieldia — a form on another site</title>
+    <link rel="stylesheet" href="../demo.css" />
+    <link rel="stylesheet" href="../shell.css" />
+    <style>
+      .partner { max-width: 760px; margin: 0 auto; padding: 16px; }
+      .partner-listing { margin: 0 0 16px; padding: 16px; border-radius: 10px; background: #fff7ed; color: #431407; }
+      .partner-listing h1 { margin: 0 0 4px; font-size: 22px; }
+      .partner-listing p { margin: 0; }
+      .partner-code { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: #1f2937; color: #f9fafb; font: 12.5px/1.5 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .partner-note { margin: 0 0 8px; font-size: 13px; color: var(--dh-muted, #5b6470); }
+      .partner-told { max-width: 760px; margin: 0 auto 24px; padding: 0 16px; }
+      .partner-told h2 { font-size: 16px; }
+      @media (prefers-color-scheme: dark) { .partner-listing { background: #431407; color: #ffedd5; } }
+    </style>
+  </head>
+  <body>
+    <header id="demo-head" data-app="embed"></header>
+    <main id="app">
+      <article class="partner">
+        <div class="partner-listing">
+          <h1>Nile Homes · Palm Valley, unit B-12</h1>
+          <p>3 bedrooms, 180 m², garden. A partner’s page, with the developer’s own enquiry form on it.</p>
+        </div>
+        <pre class="partner-code" id="partner-code"></pre>
+        <div id="form-place"></div>
+      </article>
+      <section class="partner-told" aria-labelledby="told-title">
+        <h2 id="told-title">What the page round the form was told</h2>
+        <ol id="told"></ol>
+      </section>
+    </main>
+    <script type="module" src="../shell.mjs"></script>
+    <!-- The whole of Fieldia in one file, which defines <fieldia-form>. -->
+    <script src="fieldia.js"></script>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const place = document.getElementById('form-place');
+      const code = document.getElementById('partner-code');
+      const told = document.getElementById('told');
+      // What the form tells, as events that bubble: listed under it, as a partner's analytics would hear them.
+      const hear = (target) => {
+        for (const type of ['ready', 'step', 'send', 'error']) {
+          target.addEventListener(`fieldia-${type}`, (event) => {
+            const item = document.createElement('li');
+            const said = { ...event.detail };
+            delete said.values;
+            item.textContent = `fieldia-${type} ${JSON.stringify(said)}`;
+            told.append(item);
+          });
+        }
+      };
+      if (params.get('as') === 'frame') {
+        // In an iframe of the developer's own form page: the one tag a partner pastes, as written below — the frame
+        // grows and shrinks with the form, and the link's campaign parameters reach its hidden fields.
+        code.textContent = '<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia-embed.js"\n  data-src="https://forms.palmvalley.example/enquiry" data-title="Ask about this unit" async><\/script>';
+        const tag = document.createElement('script');
+        tag.src = 'fieldia-embed.js';
+        tag.dataset.src = 'form.html';
+        tag.dataset.title = 'Ask about this unit';
+        tag.dataset.params = 'utm_source utm_campaign agent unit';
+        if (params.get('locale')) tag.dataset.locale = params.get('locale');
+        hear(place);
+        place.append(tag);
+      } else {
+        // On the page itself: one script tag, and the form as an element.
+        code.textContent = '<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"><\/script>\n<fieldia-form src="enquiry.page.json" action="/api/enquiries" skin="outlined"></fieldia-form>';
+        const form = document.createElement('fieldia-form');
+        form.setAttribute('src', 'unit-enquiry.page.json');
+        form.setAttribute('skin', 'outlined');
+        if (params.get('locale')) form.setAttribute('locale', params.get('locale'));
+        // Here the answers go to a stand-in for the app's server — its codes always 246810, its payments taken at once;
+        // on a real site, its `action` address takes them, or the app's own data source.
+        const memory = Fieldia.createMemoryDataSource({ submitted: (request, count) => ({ id: `R-${1200 + count}` }), codes: { code: () => '246810' } });
+        form.source = memory;
+        const note = document.createElement('p');
+        note.className = 'partner-note';
+        note.textContent = 'A demo: the code it sends your mobile is always 246810, and no card is charged.';
+        place.append(note);
+        window.fieldiaDemo = { dataSource: memory, form };
+        hear(document);
+        place.append(form);
+      }
+    </script>
+  </body>
+</html>
