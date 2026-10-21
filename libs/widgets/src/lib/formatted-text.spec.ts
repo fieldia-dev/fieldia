@@ -310,6 +310,151 @@ describe('the Markdown editor', () => {
   });
 });
 
+describe('the rich editor read first, edited from its Edit (edit: "button")', () => {
+  const description = (more: Record<string, unknown> = {}, node: Record<string, unknown> = {}) =>
+    mountKind({ type: 'html', label: 'Description' }, { placeholder: 'Click to add Description.', options: { editor: 'rich', edit: 'button', toolbar: 'focus', toolbarAt: 'top', tools: ['bold', 'italic', 'link', 'image'], mention: { model: 'res.users' }, ...more }, ...node });
+  const STORED = '<p>Pay with <a href="https://shop.example/pay">the new page</a></p><p><img src="https://shop.example/cart.png" alt="The cart"></p>';
+  /** The field holding what the record was loaded with: no change to save. */
+  const loaded = (form: ReturnType<typeof description>['form'], html: string | null) => form.setValues({ x: html }, { stored: true });
+
+  it('shows its text formatted at rest — links that open, pictures in place — and Edit and Done as its tools', () => {
+    const { el, form, widget } = description();
+    loaded(form, STORED);
+    const view = el.querySelector('.fd-md-view') as HTMLElement;
+    expect([view.hidden, (el.querySelector('.fd-text') as HTMLElement).hidden]).toEqual([false, true]);
+    expect([view.getAttribute('role'), view.tabIndex]).toEqual(['textbox', 0]);
+    const link = view.querySelector('a') as HTMLAnchorElement;
+    expect([link.textContent, link.target, link.rel]).toEqual(['the new page', '_blank', 'noopener noreferrer']);
+    expect(view.querySelector('img')?.getAttribute('alt')).toBe('The cart');
+    // Edit named for the field, for its group's heading; Done only while it is edited.
+    expect(widget.tools?.map((t) => [t.getAttribute('aria-label'), t.hidden])).toEqual([['Edit Description', false], ['Done', true]]);
+    // A press on a link opens the link, not the editor.
+    link.click();
+    expect(view.hidden).toBe(false);
+  });
+
+  it('opens on Edit with its toolbar on top and the focus in it; Done keeps what was typed', () => {
+    const { el, form, widget } = description();
+    loaded(form, '<p>old</p>');
+    (widget.tools?.[0] as HTMLButtonElement).click();
+    const area = el.querySelector('.fd-text-area') as HTMLElement;
+    expect([(el.querySelector('.fd-md-view') as HTMLElement).hidden, (el.querySelector('.fd-text') as HTMLElement).hidden]).toEqual([true, false]);
+    expect(document.activeElement).toBe(area);
+    expect(area.innerHTML).toBe('<p>old</p>');
+    expect(el.querySelector('.fd-text')?.getAttribute('data-bar-at')).toBe('top');
+    expect(el.querySelector('.fd-text-box')?.firstElementChild?.getAttribute('role')).toBe('toolbar');
+    expect(widget.tools?.map((t) => t.hidden)).toEqual([true, false]);
+    typeRich(area, '<p>new <strong>words</strong></p>');
+    expect(form.getState().dirty).toEqual(['x']);
+    (widget.tools?.[1] as HTMLButtonElement).click();
+    expect(form.getState().values['x']).toBe('<p>new <strong>words</strong></p>');
+    const view = el.querySelector('.fd-md-view') as HTMLElement;
+    expect([view.hidden, view.querySelector('strong')?.textContent]).toEqual([false, 'words']);
+    expect(document.activeElement).toBe(view);
+    expect(widget.tools?.map((t) => t.hidden)).toEqual([false, true]);
+  });
+
+  it('opens on Enter on its words; Escape puts back what it held, the form unchanged', () => {
+    const { el, form } = description();
+    loaded(form, '<p>kept</p>');
+    const view = el.querySelector('.fd-md-view') as HTMLElement;
+    press(view, 'Enter');
+    const area = el.querySelector('.fd-text-area') as HTMLElement;
+    expect(document.activeElement).toBe(area);
+    typeRich(area, '<p>changed</p>');
+    expect(form.getState().dirty).toEqual(['x']);
+    press(area, 'Escape');
+    expect([form.getState().values['x'], form.getState().dirty]).toEqual(['<p>kept</p>', []]);
+    expect([view.hidden, view.textContent]).toEqual([false, 'kept']);
+    expect(document.activeElement).toBe(view);
+  });
+
+  it('keeps what was typed on a press outside it, and the form is changed only where the text is', () => {
+    const { el, form, widget } = description();
+    loaded(form, '<p>same</p>');
+    const outside = document.createElement('button');
+    document.body.append(outside);
+    (widget.tools?.[0] as HTMLButtonElement).click();
+    // Done with nothing typed: nothing changed.
+    (widget.tools?.[1] as HTMLButtonElement).click();
+    expect(form.getState().dirty).toEqual([]);
+    (widget.tools?.[0] as HTMLButtonElement).click();
+    const area = el.querySelector('.fd-text-area') as HTMLElement;
+    typeRich(area, '<p>other</p>');
+    typeRich(area, '<p>same</p>');
+    outside.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect([form.getState().values['x'], form.getState().dirty]).toEqual(['<p>same</p>', []]);
+    expect((el.querySelector('.fd-md-view') as HTMLElement).hidden).toBe(false);
+    // Typed and left by the keys for somewhere else: kept, the focus left where it went.
+    (widget.tools?.[0] as HTMLButtonElement).click();
+    typeRich(area, '<p>moved on</p>');
+    outside.focus();
+    expect([form.getState().values['x'], (el.querySelector('.fd-md-view') as HTMLElement).hidden, document.activeElement]).toEqual(['<p>moved on</p>', false, outside]);
+  });
+
+  it('stays open as its own tools — Done, its group’s ⤢ — are pressed, and its toolbar’s menus are used', () => {
+    const { el, form, widget } = description();
+    loaded(form, '<p>text</p>');
+    const tools = document.createElement('span');
+    const maximise = document.createElement('button');
+    tools.append(...(widget.tools as HTMLElement[]), maximise);
+    document.body.append(tools);
+    (widget.tools?.[0] as HTMLButtonElement).click();
+    maximise.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    maximise.focus();
+    expect((el.querySelector('.fd-text') as HTMLElement).hidden).toBe(false);
+    (el.querySelector('.fd-text-area') as HTMLElement).dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect((el.querySelector('.fd-text') as HTMLElement).hidden).toBe(false);
+  });
+
+  it('is its editor at rest while empty, its placeholder saying what to add; typed in and left, it reads as text', () => {
+    const { el, form, widget } = description();
+    loaded(form, null);
+    const view = el.querySelector('.fd-md-view') as HTMLElement;
+    const area = el.querySelector('.fd-text-area') as HTMLElement;
+    expect([view.hidden, (el.querySelector('.fd-text') as HTMLElement).hidden]).toEqual([true, false]);
+    expect(area.getAttribute('data-placeholder')).toBe('Click to add Description.');
+    expect(widget.tools?.map((t) => t.hidden)).toEqual([true, true]);
+    area.focus();
+    typeRich(area, '<p>Steps</p>');
+    expect(widget.tools?.map((t) => t.hidden)).toEqual([true, false]);
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect([view.hidden, view.textContent, widget.tools?.[0].hidden]).toEqual([false, 'Steps', false]);
+    // Emptied again from Edit and kept: its editor at rest once more.
+    (widget.tools?.[0] as HTMLButtonElement).click();
+    typeRich(area, '');
+    (widget.tools?.[1] as HTMLButtonElement).click();
+    expect([form.getState().values['x'], view.hidden, (el.querySelector('.fd-text') as HTMLElement).hidden]).toEqual([null, true, false]);
+  });
+
+  it('read-only, reads as text with no Edit, empty or not', () => {
+    const { el, form, widget, refresh } = description();
+    loaded(form, '<p>locked</p>');
+    refresh({ readonly: true });
+    const view = el.querySelector('.fd-md-view') as HTMLElement;
+    expect([view.hidden, view.getAttribute('aria-readonly'), view.tabIndex, widget.tools?.[0].hidden]).toEqual([false, 'true', -1, true]);
+    view.click();
+    press(view, 'Enter');
+    expect((el.querySelector('.fd-text') as HTMLElement).hidden).toBe(true);
+    loaded(form, null);
+    expect([view.hidden, view.getAttribute('data-placeholder'), (el.querySelector('.fd-text') as HTMLElement).hidden]).toEqual([false, null, true]);
+    // Made read-only while it is edited: what was typed is kept, read as text.
+    refresh({ readonly: false });
+    loaded(form, '<p>open</p>');
+    (widget.tools?.[0] as HTMLButtonElement).click();
+    typeRich(el.querySelector('.fd-text-area') as HTMLElement, '<p>typed</p>');
+    refresh({ readonly: true });
+    expect([form.getState().values['x'], view.hidden]).toEqual(['<p>typed</p>', false]);
+  });
+
+  it('leaves a rich text without edit: "button" as it was, its editor always there', () => {
+    const { el, widget } = rich();
+    expect(el.querySelector('.fd-md-view')).toBeNull();
+    expect(widget.tools).toBeUndefined();
+    expect((el.querySelector('.fd-text-area') as HTMLElement).id).toBe('fd-x');
+  });
+});
+
 describe('a page that asks for nothing new', () => {
   it('keeps the classic toolbar on top, its text style and alignment', () => {
     const { el } = mountKind({ type: 'html' });

@@ -19,6 +19,12 @@ import type { Widget, WidgetContext } from './widgets';
  *                links opening in a tab of their own; a click on its words,
  *                Enter, or Edit in its group's heading opens the Markdown
  *                card; Done keeps what was typed, Escape puts back what it held
+ *   edit         'button': the rich editor read first, as Markdown is — the
+ *                text formatted, its links opening, its pictures in place;
+ *                Edit (its group's ✎), Enter or a click on its words opens
+ *                the editor; Done, or a press or the focus outside it, keeps
+ *                what was typed, Escape puts back what it held. Empty, it is
+ *                its editor at rest, its placeholder saying what to add
  *   switchEditor a link under it to the other editor
  *   mention      { model }: people @mentioned, found with form.search
  *   references   [{ key, model, label, icon }]: records linked by "#", "!" …
@@ -34,6 +40,9 @@ export function modernHtml(context: WidgetContext): Widget {
   const make = maker(document);
   const options = node.options ?? {};
   const pageEditor = options['editor'] === 'markdown' ? 'markdown' : 'rich';
+  // Read first, edited from its Edit: Markdown always; the rich editor where the page says so (`edit: "button"`).
+  const rich = pageEditor === 'rich';
+  const readFirst = !rich || options['edit'] === 'button';
   const toolbar = options['toolbar'] === false || options['toolbar'] === 'never' ? 'never' : options['toolbar'] === 'focus' ? 'focus' : 'always';
   const tools = Array.isArray(options['tools']) ? options['tools'].filter(isTool) : undefined;
   const mention = record(options['mention']);
@@ -45,13 +54,15 @@ export function modernHtml(context: WidgetContext): Widget {
     return [{ key: r['key'], label: r['label'], model, ...(typeof r['icon'] === 'string' ? { icon: r['icon'] } : {}), search: (query: string) => form.search(name, query, 8, { model }) }];
   });
 
-  let editing = pageEditor === 'rich';
+  let editing = !readFirst;
   let readonly = false;
   /** What the field held as editing began: Escape puts it back. */
   let before: string | null = null;
+  /** What the field holds now, as the form last said. */
+  let held: string | null = null;
 
   const text = formattedText(document, {
-    id: pageEditor === 'rich' ? id : `${id}-markdown`,
+    id: !readFirst ? id : `${id}-${pageEditor}`,
     labelledBy: `${id}-label`,
     placeholder: node.placeholder,
     labels,
@@ -63,9 +74,13 @@ export function modernHtml(context: WidgetContext): Widget {
     switchEditor: options['switchEditor'] === true,
     ...(mentionModel ? { mention: { search: (query: string) => form.search(name, query, 8, { model: mentionModel }) } } : {}),
     references,
-    onInput: (html) => form.setValue(name, html),
+    onInput(html) {
+      // Typed in a rich text open at rest (an empty one): editing from here, what it held kept for Escape.
+      if (readFirst && !editing) begin();
+      form.setValue(name, html);
+    },
     onKey(event) {
-      if (event.key !== 'Escape' || pageEditor !== 'markdown' || !editing) return false;
+      if (event.key !== 'Escape' || !readFirst || !editing) return false;
       event.preventDefault();
       event.stopPropagation();
       finish(false);
@@ -73,7 +88,7 @@ export function modernHtml(context: WidgetContext): Widget {
     },
   });
 
-  if (pageEditor === 'rich') {
+  if (!readFirst) {
     return {
       element: text.element,
       focus: () => text.focus(),
@@ -89,9 +104,10 @@ export function modernHtml(context: WidgetContext): Widget {
     };
   }
 
-  // ---- Markdown: the text as it reads at rest, the card while it is edited ----
+  // ---- read first: the text as it reads at rest, the editor while it is edited ----
+  // (A rich one empty and open to change is its editor at rest, its placeholder saying what to add.)
   const view = make('div', { class: 'fd-md-view', id, role: 'textbox', 'aria-multiline': 'true', 'aria-readonly': 'false', tabindex: '0', 'aria-labelledby': `${id}-label` });
-  if (node.placeholder) view.setAttribute('data-placeholder', node.placeholder);
+  if (node.placeholder && !rich) view.setAttribute('data-placeholder', node.placeholder);
   const label = () => document.getElementById(`${id}-label`)?.textContent?.trim() || form.page.fields[name]?.label || name;
   const editButton = make('button', { type: 'button', class: 'fd-field-tool', 'data-tool': 'edit' });
   const doneButton = make('button', { type: 'button', class: 'fd-field-tool', 'data-tool': 'done', hidden: '' });
@@ -100,7 +116,7 @@ export function modernHtml(context: WidgetContext): Widget {
   if (pencil) editButton.append(pencil);
   if (tick) doneButton.append(tick);
   const toolBox = make('div', { class: 'fd-field-tools' }, editButton, doneButton);
-  const element = make('div', { class: 'fd-md-field' }, toolBox, view, text.element);
+  const element = make('div', { class: 'fd-md-field', 'data-editor': pageEditor }, toolBox, view, text.element);
   text.element.hidden = true;
 
   const name_ = () => {
@@ -112,35 +128,54 @@ export function modernHtml(context: WidgetContext): Widget {
   };
   name_();
 
+  const clean = (value: string | null) => (value ? sanitizeHtml(value, document) : '');
+  /** A rich text with nothing in it, open to change: its editor shows at rest. */
+  const openAtRest = () => rich && !readonly && !clean(held).replace(/<br\s*\/?>|<\/?(p|div|span)>|&nbsp;|\s/gi, '');
   function render(value: string | null) {
-    const clean = value ? sanitizeHtml(value, document) : '';
-    const shown = decorateLinks(clean, document);
+    const shown = decorateLinks(clean(value), document);
     if (view.innerHTML !== shown) view.innerHTML = shown;
-    view.classList.toggle('fd-blank', !clean);
+    view.classList.toggle('fd-blank', !clean(value));
+  }
+  /** The view or the editor, and Edit or Done, as it stands. */
+  function show() {
+    const open = editing || openAtRest();
+    view.hidden = open;
+    text.element.hidden = !open;
+    editButton.hidden = readonly || open;
+    doneButton.hidden = !editing;
+    element.toggleAttribute('data-editing', editing);
+  }
+  /** A press or a key outside the field and its tools, a rich text being edited: what was typed kept, the text read again. */
+  const outside = (event: Event) => {
+    const at = event.target as Node;
+    if (!element.contains(at) && !editButton.parentElement?.contains(at)) finish(true, false);
+  };
+  function begin() {
+    if (editing || readonly) return;
+    editing = true;
+    before = held;
+    show();
+    if (!rich) return;
+    document.addEventListener('pointerdown', outside, true);
+    document.addEventListener('focusin', outside, true);
   }
   function start() {
     if (editing || readonly) return;
-    editing = true;
-    before = (form.getState().values[name] as string | null | undefined) ?? null;
+    begin();
     text.setValue(before);
-    view.hidden = true;
-    text.element.hidden = false;
-    editButton.hidden = true;
-    doneButton.hidden = false;
-    element.setAttribute('data-editing', '');
     text.focus();
   }
-  function finish(keep: boolean) {
+  function finish(keep: boolean, refocus = true) {
     if (!editing) return;
     editing = false;
+    document.removeEventListener('pointerdown', outside, true);
+    document.removeEventListener('focusin', outside, true);
     if (!keep) form.setValue(name, before);
-    view.hidden = false;
-    text.element.hidden = true;
-    editButton.hidden = readonly;
-    doneButton.hidden = true;
-    element.removeAttribute('data-editing');
-    render((form.getState().values[name] as string | null | undefined) ?? null);
-    view.focus();
+    // Its words the same as it held, but written another way (the editor's own markup): as it held them, unchanged.
+    else if (rich && held !== before && clean(held).replace(/\s+/g, ' ') === clean(before).replace(/\s+/g, ' ')) form.setValue(name, before);
+    show();
+    render(held);
+    if (refocus && !view.hidden) view.focus();
   }
   editButton.addEventListener('click', start);
   doneButton.addEventListener('click', () => finish(true));
@@ -157,16 +192,20 @@ export function modernHtml(context: WidgetContext): Widget {
   return {
     element,
     tools: [editButton, doneButton],
-    focus: () => (editing ? text.focus() : view.focus()),
-    destroy: () => text.destroy(),
+    focus: () => (view.hidden ? text.focus() : view.focus()),
+    destroy() {
+      document.removeEventListener('pointerdown', outside, true);
+      document.removeEventListener('focusin', outside, true);
+      text.destroy();
+    },
     update(state) {
       readonly = state.readonly;
-      const value = typeof state.value === 'string' ? state.value : null;
-      if (editing) text.setValue(value);
-      else render(value);
-      text.setReadonly(state.readonly);
+      held = typeof state.value === 'string' ? state.value : null;
       if (readonly && editing) finish(true);
-      editButton.hidden = readonly || editing;
+      if (editing || openAtRest()) text.setValue(held);
+      else render(held);
+      text.setReadonly(state.readonly);
+      show();
       setAttr(view, 'aria-readonly', String(readonly));
       setAttr(view, 'tabindex', readonly ? '-1' : '0');
       name_();
