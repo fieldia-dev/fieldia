@@ -108,6 +108,9 @@ export interface Messages {
   /** Told as the source pushes that the record shown was deleted elsewhere (`subscribe`); by whom, where it says. */
   deletedElsewhere: string;
   deletedBy: string;
+  /** Told as a change made elsewhere is laid on the record shown, the person having changed nothing: `{fields}`, their labels; by whom, where it says. */
+  changedElsewhere: string;
+  changedBy: string;
   /** Asked before a step leaves the record while work of the person's is not saved: a copy shown, another record. */
   discardChanges: string;
   /** Why a run of steps stopped: the record it ran on was replaced by another while it went on, and its steps are not for that one. */
@@ -246,6 +249,8 @@ const en: Messages = {
   theirsUnread: 'Their version could not be read, so yours was not saved over it. Try Keep mine again, or Reload.',
   deletedElsewhere: 'This record was deleted elsewhere.',
   deletedBy: '{name} deleted this record.',
+  changedElsewhere: 'Changed elsewhere: {fields}.',
+  changedBy: '{name} changed {fields}.',
   discardChanges: 'Discard your changes?',
   recordReplaced: 'Another record is shown now: the rest of these steps did not run.',
   pressDone: 'Done: {label}',

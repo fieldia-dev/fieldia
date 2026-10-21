@@ -68,6 +68,8 @@ export const de: Messages = {
   theirsUnread: 'Die andere Fassung konnte nicht gelesen werden, darum wurde Ihre nicht darüber gespeichert. Versuchen Sie Meine behalten erneut, oder Neu laden.',
   deletedElsewhere: 'Dieser Datensatz wurde anderswo gelöscht.',
   deletedBy: '{name} hat diesen Datensatz gelöscht.',
+  changedElsewhere: 'Anderswo geändert: {fields}.',
+  changedBy: '{name} hat {fields} geändert.',
   discardChanges: 'Ihre Änderungen verwerfen?',
   recordReplaced: 'Jetzt wird ein anderer Datensatz angezeigt: die übrigen Schritte wurden nicht ausgeführt.',
   pressDone: 'Erledigt: {label}',

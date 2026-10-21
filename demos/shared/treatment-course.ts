@@ -66,16 +66,16 @@ export function frontDeskBar(dataSource: MemoryDataSource): HTMLElement {
     return one;
   };
   const opens = button('Mona opens this course', () => {
-    dataSource.arrive('clinic.course', id, { id: 9, name: 'Mona Adel' });
+    dataSource.arrive?.('clinic.course', id, { id: 9, name: 'Mona Adel' });
     opens.hidden = true;
     edits.hidden = false;
     return 'Mona Adel has this course open too: her initials are over it.';
   });
   const edits = button('Mona changes the price', () => {
     const now = Number(dataSource.records['clinic.course']?.[id]?.['price'] ?? 0);
-    dataSource.arrive('clinic.course', id, { id: 9, name: 'Mona Adel', editing: true });
+    dataSource.arrive?.('clinic.course', id, { id: 9, name: 'Mona Adel', editing: true });
     dataSource.changeElsewhere('clinic.course', id, { price: now + 500 }, { by: 'Mona Adel' });
-    dataSource.arrive('clinic.course', id, { id: 9, name: 'Mona Adel' });
+    dataSource.arrive?.('clinic.course', id, { id: 9, name: 'Mona Adel' });
     return 'Mona Adel saved the course with 500 more on its price.';
   });
   edits.hidden = true;

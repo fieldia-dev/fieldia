@@ -160,7 +160,8 @@ const asksForParts = (table, parts) => ({
  * list page's own settings and a related list's in the list part, a record's head in the head part, a page's limits and
  * Continue later in the limits part, booking slots' settings in the slots part, a signature's in the files part, a page's
  * endings in the answers part, a table of lines' in the lines part, a sheet's statusbar in the business part, options
- * by condition and carried in the options part, and a map's in a part of their own
+ * by condition and carried in the options part, a repeat field's and a week's hours' in the schedule part, record
+ * templates' in the templates part, and a map's in a part of their own
  * (fieldia.mapchecks.js), which the viewer asks for as the check owes it. The packages' `checkPage` runs them at once. Here the main script is built
  * with each module below standing in — its checks owed (`owe`, the reference check's `later`) until its part has come,
  * and the viewer running the check again then, before the page is drawn — and each part's script puts its module's
@@ -177,6 +178,8 @@ const CHECKS_IN_PARTS = {
   lines: { file: 'libs/core/src/lib/format/table-checks.ts', names: ['checkTable', 'checkLineKinds'] },
   business: { file: 'libs/core/src/lib/format/statusbar-checks.ts', names: ['checkStatusbar'] },
   options: { file: 'libs/core/src/lib/format/option-checks.ts', names: ['checkOptionRules'] },
+  schedule: { file: 'libs/core/src/lib/format/schedule-checks.ts', names: ['checkSchedule'] },
+  templates: { file: 'libs/core/src/lib/format/templates-checks.ts', names: ['checkTemplates'] },
 };
 const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
 const checksLater = {
@@ -1014,23 +1017,26 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
-// Wave 6, w6-records, each a record's daily comfort, measured in the main script's modules (506.77 before):
-// - Undo and Redo while filling — every form a person fills in: a record's changes kept as they are made, a box's
-//   typing one change until it is left (history.ts 0.69, the form's hooks into its writes 0.75), Ctrl+Z and Ctrl+Shift+Z
-//   past a box's own undo, the field taken back focused and said (the viewer's keys 1.55, two words), to 509.9.
-// - Undo after a one-tap press: what a press says held while it runs and what its steps write noted, so its words can
-//   carry Undo (the runner 0.94, the form's ask for the undo part 0.40), and the toast's Undo button (0.67, two words);
-//   saying it and taking it back in fieldia.undo.js, asked for with a page whose buttons offer it, to 512.1.
-// - Record templates: the Templates menu's place over a record and the part asked for (0.52), the page's `templates`
-//   checked (0.20); the menu and its dialogs in fieldia.templates.js, to 512.8.
-// - A repeat field: its kind checked (0.26), a list's cell of it said in words once its part came (0.12), its widget's
-//   holder and a box of its refusing as a field's (0.30); in fieldia.schedule.js, to 513.5.
-// - A week's opening hours: its kind and its week's start checked (0.22), a list's cell of it said in words (0.09), its
-//   widget's holder (0.10); in fieldia.schedule.js beside the repeat field's, to 513.9.
-// - Presence and live updates: a record's watch asked of the live part where the source tells either (0.52), a memory
-//   source's push asked before its members came (0.32), the strip's place over the record and a change laid said (0.44,
-//   two words); the watch, the strip and its sheet in fieldia.live.js. 506.77 measured before, 515.16 after, to 515.2.
-const BUDGET_KB = 515.2;
+// Wave 6, w6-records, each a record's daily comfort — the main script keeping only what must run from a page's first
+// change, or where the page asks for a part, its bodies, words and checks in the parts — measured by its modules
+// (tools-local size-tools attribute.cjs; 506.77 before):
+// - Undo and Redo while filling — every form a person fills in: each change noted as it is made and the form's ways to
+//   write one back (1.00); walking them, Ctrl+Z's keys, the field focused and said in fieldia.undo.js, asked for as the
+//   person first enters a form — the box they are in known as entered, before they type (2.99 before the size pass).
+// - Undo after a one-tap press: the words a press says held while it runs, the values it began with, the app's own undo
+//   and an archive noted, the toast asked to carry Undo (0.89); what it did read, said and taken back, and the toast's
+//   Undo, in fieldia.undo.js (2.01 before).
+// - Record templates: the menu's place over a record and its part asked for (0.55); the menu, its dialogs, words and
+//   checks in fieldia.templates.js (0.72 before).
+// - A repeat field and a week's opening hours: their widgets' holders, a box of theirs refusing as a field's, a list's
+//   cell said by its part, their checks owed to it (0.57); in fieldia.schedule.js (1.09 before).
+// - Presence and live updates: the form's own ways handed to the parts that work inside it — the live part, a press's
+//   Undo — once (0.21), the live part asked for where the source tells either and told of each change (0.13), the
+//   strip's place over the record (0.16), a memory source's live and template members forwarded (0.16); the watch, the
+//   strip, its sheet and a change said in fieldia.live.js (1.28 before).
+// - The parts' handles beside the main script's others (0.23).
+// 506.77 measured before, 510.72 after (515.16 before the size pass), to 510.8.
+const BUDGET_KB = 510.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1264,11 +1270,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
-// Wave 6, w6-records (each listed with the raw budget above): Undo and Redo while filling, 1.25 more, to 167.4; Undo
-// after a one-tap press, 0.85 more, to 168.3; record templates' place, 0.30 more, to 168.6; a repeat field's check and
-// holder, 0.22 more, to 168.9; opening hours' checks and holder, 0.18 more, to 169.0; presence and live updates' watch,
-// 0.39 more — 166.15 measured before, 169.39 after, to 169.4.
-const GZIP_BUDGET_KB = 169.4;
+// Wave 6, w6-records (each listed with the raw budget above): 166.15 measured before, 167.90 after — 1.75 more, 3.24
+// before the size pass took the lane's bodies, words and checks into its parts — to 168.0.
+const GZIP_BUDGET_KB = 168.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1451,10 +1455,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 36.27 and 11.64, to 36.3 and 11.7; French's 36.60 and 11.64 to 36.75 and 11.70, to 36.8 and 11.7.
 // A record's daily comforts (Wave 6, w6-records): Undo and Redo said (2), Undo on a toast and what it says (5 of the
 // messages and the viewer's), record templates' menu and dialogs (13), a repeat field's and opening hours' words (40),
-// who else is here and a change laid (5) — Arabic's 77.88 and 13.29 measured before, 83.19 and 14.25 after, to 83.2 and
-// 14.3; German's 36.27 and 11.64 to 38.82 and 12.51, to 38.9 and 12.6; French's 36.75 and 11.70 to 39.33 and 12.55, to
-// 39.4 and 12.6.
-const ADD_ON_BUDGET_KB = { ar: [83.2, 14.3], de: [38.9, 12.6], fr: [39.4, 12.6] };
+// who else is here and a change laid, said (6) — Arabic's 77.88 and 13.29 measured before, 83.31 and 14.25 after, to
+// 83.4 and 14.3; German's 36.27 and 11.64 to 38.88 and 12.51, to 38.9 and 12.6; French's 36.75 and 11.70 to 39.38 and
+// 12.56, to 39.4 and 12.6.
+const ADD_ON_BUDGET_KB = { ar: [83.4, 14.3], de: [38.9, 12.6], fr: [39.4, 12.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1850,12 +1854,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // A record's daily comforts (Wave 6, w6-records): Undo after a row's press lists the records again — list 129.50 and
 // 41.60 measured before, 129.58 and 41.64 after, to 129.6; a repeat field and a week's opening hours, a part of their own
 // with the date part beside it — the rule read, written and said in words in four languages' ways (ordinals, weekdays by
-// Intl), its boxes, a week's rows, shifts checked, copied and split, their sheet — schedule new, 20.54 and 7.86, to 20.6
-// and 7.9; record templates' menu, its dialogs and where they are kept, templates new, 6.44 and 2.89, to 6.5 and 2.9; a
-// record's watch, who else is here and their sheet, live new, 4.43 and 2.20, to 4.5 and 2.3; a press's words said with
-// Undo and taken back, undo new, 3.10 and 1.55, to 3.2 and 1.6; the memory source's templates and its live pushes,
-// memory 16.08 and 5.71 to 17.75 and 6.30, to 17.8 and 6.4.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.6, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], schedule: [20.6, 7.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], templates: [6.5, 2.9], live: [4.5, 2.3], undo: [3.2, 1.6], print: [16.9, 5.4], memory: [17.8, 6.4], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// Intl), its boxes, a week's rows, shifts checked, copied and split, their sheet, a list's cells of them said and their
+// checks — schedule new, 21.36 and 8.17, to 21.4 and 8.2; record templates' menu, its dialogs, where they are kept and
+// their checks, templates new, 6.83 and 3.06, to 6.9 and 3.1; a record's watch, who else is here and their sheet, a
+// change laid said, live new, 5.08 and 2.43, to 5.1 and 2.5; Undo and Redo walking a record's changes with Ctrl+Z's keys,
+// and a press's words said with Undo, read and taken back with the toast's Undo, undo new, 7.90 and 3.63, to 8.0 and
+// 3.7; the memory source's templates and its live pushes, memory 16.08 and 5.71 to 17.82 and 6.33, to 17.9 and 6.4.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.6, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], schedule: [21.4, 8.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], templates: [6.9, 3.1], live: [5.1, 2.5], undo: [8.0, 3.7], print: [16.9, 5.4], memory: [17.9, 6.4], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1885,7 +1890,7 @@ const PART_GIVES = {
   limits: ['drawLimits', 'installLimitsStyles', 'formLimits'],
   templates: ['templatesMenu', 'templateValues', 'templateFields', 'startFrom'],
   live: ['liveRecord', 'presenceStrip', 'installLiveStyles'],
-  undo: ['offerUndo', 'takeBack'],
+  undo: ['offerUndo', 'takeBack', 'takeNoted', 'takeStep', 'nextSteps', 'undoKeys', 'undoToast'],
   memory: ['createMemoryDataSource', 'memorySource'],
   functions: ['functionBody', 'appCall'],
   options: ['optionRules'],
@@ -2257,7 +2262,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const card = inPage.mountViewer(host, { page: read('customer-card.page.json'), dataSource: inPage.createMemoryDataSource({ duplicates: like }), values: { email: 'orders@niletraders.example' } });
   if (!host.querySelector('.fd-field[data-path="email"]')) throw new Error('in a page, possible duplicates kept the card from being drawn');
   if (!(await until(() => host.querySelector('.fd-field[data-path="email"] .fd-duplicates')))) throw new Error('in a page, a possible duplicate is not said under its field');
-  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
+  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
   if (!doc.getElementById('fieldia-duplicates-styles')) throw new Error("in a page, possible duplicates' sheet was never put in");
   card.destroy();
   gone('card');
@@ -2268,7 +2273,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const kinds = inPage.mountViewer(host, { page: read('kinds.page.json'), dataSource: inPage.createMemoryDataSource() });
   await kinds.drawn;
   await tick(0);
-  hasIn("a survey's plain signature", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
+  hasIn("a survey's plain signature", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
   if (!host.querySelector('.fd-signature .fd-signature-pad') || host.querySelector('.fd-signature-evidence')) throw new Error("in a page, a plain signature is not the files part's alone");
   kinds.destroy();
   gone('kinds');
@@ -2281,7 +2286,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const consent = inPage.mountViewer(host, { page: consentPage, recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.consent': { 1: signedRecord } } }) });
   waits(consent, 'a consent whose signature signs its answers');
   await consent.drawn;
-  hasIn('a consent signed, its evidence', 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
+  hasIn('a consent signed, its evidence', 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('.fd-signature-state:not([hidden])')?.textContent === '✓The answers are as they were signed.')) || !host.querySelector('.fd-signature-who')?.textContent.startsWith('Signed by Mona Adel, 14 Oct 2026')) throw new Error(`in a page, a consent's evidence is not said under its signature: ${host.querySelector('.fd-signature-evidence')?.textContent ?? 'none'}`);
   if (!host.querySelector('[data-node="f-treatment"] select')?.disabled) throw new Error("in a page, a consent's signed answer is not locked");
   // Its parts come by script tags of their own, asked for anew once one failed: what offers to try again may.
@@ -2294,7 +2299,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const closed = inPage.mountViewer(host, { page: { ...read('event-signup.page.json'), limits: { closes: '2020-01-31' } }, dataSource: inPage.createMemoryDataSource() });
   waits(closed, 'a sign-up that closed');
   await closed.drawn;
-  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
+  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
   if (!host.querySelector('.fd-closed:not([hidden]) .fd-closed-title')?.textContent?.startsWith('This form closed on')) throw new Error("in a page, a closed form's words are not said in place of its questions");
   if ([...host.querySelectorAll('.fd-field')].some((field) => !field.closest('[hidden]')) || !host.querySelector('.fd-page-title')?.closest('.fd-content:not([hidden])')) throw new Error("in a page, a closed form's questions are shown, or its title is not");
   if (!doc.getElementById('fieldia-limits-styles')) throw new Error("in a page, the limits part's sheet was never put in");
@@ -2306,7 +2311,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const visit = inPage.mountViewer(host, { page: read('visit-feedback.page.json'), dataSource: inPage.createMemoryDataSource(), values: { birth_date: '1990-10-20' }, now: () => new dom.window.Date('2026-10-20T12:00:00Z') });
   waits(visit, 'a page whose formula counts an age');
   await visit.drawn;
-  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, print, quiet, relations, slots, survey, text, themes');
+  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, options, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
   if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
   visit.destroy();
   gone('visit');

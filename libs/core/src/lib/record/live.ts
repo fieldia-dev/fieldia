@@ -1,6 +1,7 @@
-import { loadedRecordOf, type RecordChange, type RecordVersion } from './data-source';
-import type { LiveContext, LiveRecord } from './live-later';
-import { fillMessage } from './messages';
+import { loadedRecordOf, type DataSource, type RecordChange, type RecordVersion } from './data-source';
+import type { FormInner, LiveRecord } from './live-later';
+import { fill, fillMessage } from './messages';
+import { unsavedWork } from './form';
 import { structuredCopy, type RecordId, type Value, type Values } from './values';
 
 /**
@@ -8,11 +9,20 @@ import { structuredCopy, type RecordId, type Value, type Values } from './values
  * for once it has an id, and who else has it open asked again as this person starts or stops changing it (`editing`).
  * A change arriving waits for a save of the form's on its way (its answer may be that very change), and one carrying the
  * form's own version is let go; without its values, the record is read again. Where the person changed nothing, it is
- * laid on the record as stored and told (`arrived`); after a change of theirs, it waits as the conflict a save would
+ * laid on the record as stored, told (`arrived`) and said; after a change of theirs, it waits as the conflict a save would
  * meet, their typing untouched. Nothing arriving for a record no longer shown is laid on the one shown.
  */
-export function liveRecord(context: LiveContext): LiveRecord {
-  const { source, page, fields } = context;
+/**
+ * What stops a push: the source's own, or the one it gives once it is ready (the one-tag script's memory source asked
+ * before its members came).
+ */
+const stopOf = (given: unknown): (() => void) => (typeof given === 'function' ? (given as () => void) : () => void Promise.resolve(given).then((stop) => typeof stop === 'function' && stop()));
+
+export function liveRecord(context: FormInner): LiveRecord {
+  const { page, fields } = context;
+  // A page of responses has no record to watch.
+  if (page.data.kind !== 'record') return { watch: () => undefined, stop: () => undefined };
+  const source = context.options.dataSource as DataSource;
   const model = (page.data as { model: string }).model;
   let watchedId: RecordId | null = null;
   let watchedAt = -1;
@@ -23,7 +33,9 @@ export function liveRecord(context: LiveContext): LiveRecord {
   async function arrived(change: RecordChange, shown: () => boolean) {
     const state = context.state();
     const id = state.recordId as RecordId;
-    if (change.type === 'deleted') return context.say(change.by ? fillMessage(context.messages, context.messages.deletedBy, { name: change.by }) : context.messages.deletedElsewhere);
+    const { messages } = context;
+    const say = (words: string, tone: 'info' | 'warning') => context.options.host?.say(words, tone);
+    if (change.type === 'deleted') return say(change.by ? fillMessage(messages, messages.deletedBy, { name: change.by }) : messages.deletedElsewhere, 'warning');
     if (change.type !== 'record') return;
     await context.settled();
     const ours = (version: RecordVersion | undefined) => !!version && !!context.state().version && version.token === context.state().version?.token;
@@ -44,19 +56,25 @@ export function liveRecord(context: LiveContext): LiveRecord {
     const by = version?.by ?? change.by;
     const at = version?.at ?? change.at;
     const when = { ...(by ? { by } : {}), ...(at ? { at } : {}) };
-    if (context.atRisk()) {
+    // The person's work would be lost by laying their values over the record: it waits, as a save would meet it.
+    if (unsavedWork(context.state())) {
       context.set({ conflict: context.conflictOf({ version: version ?? { token: '', ...when }, theirs: told }) });
-      context.arrived({ recordId: id, ...when, fields: changed, conflict: true });
+      context.emit('arrived', { recordId: id, ...when, fields: changed, conflict: true });
       return;
     }
     if (changed.length) context.store(Object.fromEntries(changed.map((name) => [name, told[name]])));
     if (version) context.set({ version });
-    if (changed.length) context.arrived({ recordId: id, ...when, fields: changed, conflict: false });
+    if (!changed.length) return;
+    context.emit('arrived', { recordId: id, ...when, fields: changed, conflict: false });
+    // Who changed what, said: "Mona Adel changed Price."
+    const labels = changed.map((name) => page.fields[name]?.label ?? name).join(', ');
+    say(by ? fill(messages.changedBy, { name: by, fields: labels }) : fill(messages.changedElsewhere, { fields: labels }), 'info');
   }
 
   return {
     watch() {
       const state = context.state();
+      if (state.status === 'loading') return;
       const id = state.recordId;
       const again = id !== watchedId || context.generation() !== watchedAt;
       const editingNow = state.dirty.length > 0;
@@ -73,12 +91,14 @@ export function liveRecord(context: LiveContext): LiveRecord {
       editing = editingNow;
       if (id == null) return;
       const shown = context.shownNow();
-      if (again && source.subscribe) stopChanges = source.subscribe({ model, id, fields }, (change) => void (shown() && arrived(change, shown)));
+      if (again && source.subscribe) stopChanges = stopOf(source.subscribe({ model, id, fields }, (change) => void (shown() && arrived(change, shown))));
       if (source.presence) {
-        const me = context.user;
-        stopPresence = source.presence({ model, id, ...(me ? { user: { id: me.id, ...(me.name ? { name: me.name } : {}) } } : {}), editing }, (people) => {
-          if (shown()) context.set({ present: people.filter((one) => !me || String(one.id) !== String(me.id)) });
-        });
+        const me = context.options.user;
+        stopPresence = stopOf(
+          source.presence({ model, id, ...(me ? { user: { id: me.id, ...(me.name ? { name: me.name } : {}) } } : {}), editing }, (people) => {
+            if (shown()) context.set({ present: people.filter((one) => !me || String(one.id) !== String(me.id)) });
+          })
+        );
       }
     },
     stop() {

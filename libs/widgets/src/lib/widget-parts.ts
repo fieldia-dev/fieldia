@@ -113,13 +113,6 @@ export const slotsPart: Part<SlotsPart> = lazyPart('slots', () => Promise.all([i
  * the date part, whose boxes their days and times are: in when both are.
  */
 export const schedulePart: Part<SchedulePart> = lazyPart('schedule', () => Promise.all([import('./schedule-part'), datePart.load()]).then(([module]) => module));
-/**
- * The schedule part's code once it has come, for a cell's words (a repeat rule said, a week's hours): a function, as
- * `datePartIn` is — a part takes the main script's names as they stood when it started.
- */
-export function schedulePartIn(): SchedulePart | undefined {
-  return schedulePart.loaded;
-}
 
 /**
  * A phone number read the world over, loaded the first time a page shows a phone field it reads so (its page's

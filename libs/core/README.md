@@ -636,6 +636,10 @@ A form keeps the person's changes to the record shown, for `form.undo()` and
 moved — typing on in one box is one change until the box is left
 (`boxLeft`). Each returns what it took (`{ field, line? }`), or null when
 nothing is left; `form.history()` names the next of each without taking it.
+The changes are noted from the first; walking them is the undo part's
+(`pressUndoPart`), asked for with the first change — in by the time a person
+presses Ctrl+Z, and in at once where an app loads it first (`await
+pressUndoPart.load()`): until it has come, `undo` and `redo` take nothing.
 
 ```ts
 form.setValue('price', 1200);
@@ -666,8 +670,9 @@ they have changes not saved (`editing`), asked again as that turns; what it
 pushes — the others with the record open — is `state.present`. Both are the
 same call as @fieldia/chatter's `subscribe`, with types that never meet: one
 function may serve both. It comes in a part of its own (`recordLivePart`),
-asked for only where the source has either member. The memory source does both
-with `live: true` (`changeElsewhere`, `arrive`, `leave`), and neither without.
+asked for as a form is made where the source has either member, and never
+where it has neither. The memory source does both with `live: true`
+(`changeElsewhere`, `arrive`, `leave`), and has none of them without.
 
 ## Record templates
 
@@ -675,7 +680,8 @@ A record page's `templates` (`true`, or `{ fields }`) keeps a record's values
 by a name, to start new records from. The data source's `templates`,
 `saveTemplate` and `deleteTemplate` keep them on your server
 (`RecordTemplate`: `{ id, name, values, by? }`); the viewer keeps them in its
-`preferences` without them. The memory source keeps them by page id.
+`preferences` without them. The memory source has them where its `templates`
+option is given (`{}` for none yet), kept by page id.
 
 ## Two people, one record
 

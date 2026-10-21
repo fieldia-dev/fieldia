@@ -54,9 +54,9 @@ import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { signedBy, type SignedBy } from './signed';
-import { createHistory, type HistoryStep } from './history';
-import { pressUndoPart, type PressUndoPart } from './undo-later';
-import { recordLivePart, type LiveRecord } from './live-later';
+import type { HistoryStep, Noted } from './history';
+import { pressUndoPart } from './undo-later';
+import { recordLivePart, type FormInner, type LiveRecord } from './live-later';
 import { createMoments, createRunner, takenNow, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
@@ -817,11 +817,13 @@ export interface Form {
    * moved; typing on in one box is one change until the box is left — as their own change back: the page's `change`
    * steps and the source's onchange run as for any. A change whose field holds something else since (a step, the app,
    * a reload) or is locked now is passed over. The step taken back, or null when none is left. The viewer's Ctrl+Z.
+   * The changes are kept from the first; taking them back is the undo part's (`pressUndoPart`), asked for as the first
+   * is kept — null until it has come.
    */
   undo(): HistoryStep | null;
   /** Make the last change taken back again, as `undo` takes one back; null when none is. Ctrl+Shift+Z, Ctrl+Y. */
   redo(): HistoryStep | null;
-  /** The changes `undo` and `redo` would take now: for a button or a menu that names them. */
+  /** The changes `undo` and `redo` would take now: for a button or a menu that names them (once the undo part has come). */
   history(): { undo: HistoryStep | null; redo: HistoryStep | null };
   /** Resolves once every onchange, save, autosave and run of steps started so far has finished — a question still waiting for its answer included. */
   settled(): Promise<void>;
@@ -1402,55 +1404,50 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Whether the values set now are a change someone made (`writeValues`), after which a line's choice no longer offered is cleared. */
   let edit = false;
   // ---- live: changes made elsewhere, and who else has the record open (the live part) ------------------------
-  /** Whether the source tells either: a page of a record's, with `subscribe` or `presence`. */
-  const watching = page.data.kind === 'record' && !!(options.dataSource?.subscribe || options.dataSource?.presence);
+  /** The live part's watch over the record shown, where the source tells either (`subscribe`, `presence`): told of each change. */
   let liveKit: LiveRecord | null = null;
-  let liveAsked = false;
-  /** The record shown watched, once it has an id: the live part asked for the first time, then told of each change. */
-  function watch() {
-    if (liveKit) return liveKit.watch();
-    if (liveAsked || state.recordId == null) return;
-    liveAsked = true;
-    void recordLivePart.load().then((part) => {
-      if (disposed) return;
-      liveKit = part.liveRecord({
-        page,
-        fields,
-        source: options.dataSource as DataSource,
-        ...(options.user ? { user: options.user } : {}),
-        state: () => state,
-        set,
-        baseline: () => baseline,
-        same: (name, one, other) => sameValue(fields[name], one, other),
-        conflictOf,
-        store,
-        settled: savesSettled,
-        track,
-        shownNow,
-        generation: () => generation,
-        atRisk: () => unsavedWork(state),
-        arrived: (event) => emit('arrived', event),
-        say: (message) => options.host?.say(message, 'warning'),
-        messages,
-      });
-      liveKit.watch();
-    }, () => undefined);
-  }
-
-  /** The person's changes to the record shown, for Undo and Redo; and whether one is being taken back or made again now. */
-  const history = createHistory((name, one, other) => sameValue(fields[name], one, other));
+  /** What the parts that work inside the form take of it (live-later.ts): the live part, the undo part's press. */
+  const inner: FormInner = {
+    page,
+    fields,
+    options,
+    messages,
+    state: () => state,
+    set,
+    baseline: () => baseline,
+    same: (name, one, other) => sameValue(fields[name], one, other),
+    conflictOf,
+    store,
+    settled: savesSettled,
+    track,
+    shownNow,
+    generation: () => generation,
+    emit,
+    replaced,
+  };
+  /** The person's changes to the record shown, as made (history.ts); and whether one is being taken back or made again now. */
+  let noted: Noted[] = [];
   let replaying = false;
-  /** A person's change written to `field` (on `line`), kept for Undo with what it held `before`: typing on joins it (`joins`). */
+  /**
+   * A person's change written to `field` (on `line`), noted for Undo with what it held `before`: typing on joins it
+   * (`joins`). The undo part takes them as they come, asked for with the first: in by the time the person presses Ctrl+Z.
+   */
   const noteChange = (field: string, line: string | undefined, before: Value | undefined, joins: boolean) => {
-    if (!replaying) history.note(line === undefined ? { field } : { field, line }, (before ?? null) as Value, (state.values[field] ?? null) as Value, joins);
+    if (replaying) return;
+    noted.push([field, line, before ?? null, state.values[field] ?? null, joins]);
+    const part = pressUndoPart.loaded;
+    if (part) part.takeNoted(noted, inner.same);
+    // Kept while it comes; where it cannot, the oldest let go.
+    else if (noted.length > 500) noted.shift();
+    else pressUndoPart.load().catch(() => undefined);
   };
   /**
-   * Undo (`back`) or Redo: the change taken, written as the person's own change back — the page's `change` steps and
-   * the source's onchange run as for any — once its field still holds what the change left and may be changed.
+   * Undo (`back`) or Redo, once the undo part has come: the change taken, written as the person's own change back —
+   * the page's `change` steps and the source's onchange run as for any — once its field still holds what the change
+   * left and may be changed.
    */
   function replay(back: boolean): HistoryStep | null {
-    if (!editing) return null;
-    const step = history.take(back, (one, left) => !form.fieldReadonly(one.field) && sameValue(fields[one.field], state.values[one.field], left));
+    const step = editing ? pressUndoPart.loaded?.takeStep(noted, inner.same, back, (one, left) => !form.fieldReadonly(one.field) && sameValue(fields[one.field], state.values[one.field], left)) : null;
     if (!step) return null;
     const { value, ...taken } = step;
     replaying = true;
@@ -1491,7 +1488,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (state.errors !== shown) for (const part of attached.values()) part.inner.show(inside(state.errors, part.name));
     for (const listener of [...listeners]) listener(state);
     // The record shown, watched for changes made elsewhere and for who else has it open; asked again as that changes.
-    if (watching && state.status !== 'loading') watch();
+    liveKit?.watch();
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
       // After someone's change, a choice its new choices do not offer is taken out and said, as a line's is.
@@ -1524,7 +1521,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Another record is shown: nothing of the last one's is the person's work any more, and its files on their way stop. */
   function newGeneration() {
     generation++;
-    history.clear();
+    noted = [];
     // Another record's lines ask the source anew.
     lineAsks = new Map();
     answers = new Map();
@@ -3509,7 +3506,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const offers = 'undo' in source ? source.undo : undefined;
     const asked = offers !== undefined ? undefined : builtin === 'archive' ? named(messages.archiveConfirmNoun, messages.archiveConfirm) : builtin === 'delete' ? named(messages.deleteConfirmNoun, messages.deleteConfirm) : undefined;
     const confirm = 'confirm' in source && source.confirm !== undefined ? source.confirm : asked;
-    if (offers !== undefined) scope.taken = takenNow();
+    if (offers !== undefined) scope.taken = takenNow(state.values);
     // On the record it was pressed on: another shown while its question is asked, it does nothing to that one.
     scope.generation ??= generation;
     // Pressed by the person: what is typed is read before a step reads the form or hands its values on.
@@ -3551,16 +3548,17 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /**
    * A press that offers Undo has ended: its words said — the last with Undo, where what it did can be taken back — by
-   * the undo part (press-undo.ts), at once where it has come (a page whose buttons offer Undo asks for it first); its
-   * words said plainly where it cannot come.
+   * the undo part (press-undo.ts), which a page whose buttons offer Undo asks for first; plainly where it cannot come.
    */
   function offerUndo(source: ButtonNode | StatButton | MenuItem, scope: RunScope, result: RunResult, offers: PressUndo | undefined) {
     const taken = scope.taken as NonNullable<RunScope['taken']>;
     scope.taken = undefined;
-    const offer = (part: PressUndoPart) =>
-      part.offerUndo({ kit: runner.kit, source, scope, taken, result, offers, host: options.host, messages, generation: () => generation, track, replaced, told: (id, steps, ended) => emit('run', { id, steps, result: ended }) });
-    if (pressUndoPart.loaded) return offer(pressUndoPart.loaded);
-    void track(pressUndoPart.load().then(offer, () => taken.said.forEach((words) => options.host?.say(words.message, words.tone))));
+    void track(
+      pressUndoPart.load().then(
+        (part) => part.offerUndo(inner, { kit: runner.kit, source, scope, taken, result, offers }),
+        () => taken.said.forEach((words) => options.host?.say(words.message, words.tone))
+      )
+    );
   }
 
   const form: Form = {
@@ -3700,7 +3698,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     boxLeft(path) {
-      history.close(path.split('.')[0]);
+      noted.push([path.split('.')[0]]);
       const problem = leftProblem(path);
       if (!problem || state.errors[path] === problem) return;
       set({ errors: { ...state.errors, [path]: problem } });
@@ -3813,7 +3811,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       holding = setWhen.holding(baseline);
       // The person's own Discard: nothing of theirs is left at risk, and a save on its way lands as the record it stored.
       resets++;
-      history.clear();
+      noted = [];
       personal.clear();
       personalLines.clear();
       filed.clear();
@@ -4198,7 +4196,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     undo: () => replay(true),
     redo: () => replay(false),
-    history: () => history.next(),
+    history: () => pressUndoPart.loaded?.nextSteps(noted, inner.same) ?? { undo: null, redo: null },
 
     async settled() {
       while (pending.size) await Promise.allSettled([...pending]);
@@ -4281,6 +4279,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
   // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
   if (keepsLimits()) void track(limitsCode());
+  // Where the source tells changes made elsewhere or who else is here: the live part, asked for now.
+  if (options.dataSource?.subscribe || options.dataSource?.presence) void recordLivePart.load().then((part) => disposed || (liveKit = part.liveRecord(inner)).watch(), () => undefined);
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

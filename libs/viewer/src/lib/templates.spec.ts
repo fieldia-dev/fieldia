@@ -86,12 +86,12 @@ describe('record templates', () => {
   });
 
   it('saves a record as a template by its name, through the data source, and starts a new record from it', async () => {
-    const ds = createMemoryDataSource({ records: { course: { 1: { ...RECORD } } } });
+    const ds = createMemoryDataSource({ records: { course: { 1: { ...RECORD } } }, templates: {} });
     const { host } = await mount(ds, 1);
     expect(menuButton(host).textContent).toBe('Templates');
     await choose(host, 'Save as template…');
     await answer('Botox package', 'Save template');
-    const saved = await ds.templates({ model: 'course', pageId: 'course' });
+    const saved = await (ds.templates as NonNullable<typeof ds.templates>)({ model: 'course', pageId: 'course' });
     expect(saved).toEqual([{ id: 'template-1', name: 'Botox package', values: { treatment: 'botox', price: 4500, notes: 'Forehead and frown lines', sessions: [{ values: { area: 'Forehead' } }] } }]);
     handle?.destroy();
     document.body.replaceChildren();
@@ -110,13 +110,13 @@ describe('record templates', () => {
     const { host } = await mount(ds, 1);
     await choose(host, 'Save as template…');
     await answer('botox package', 'Save template');
-    expect((await ds.templates({ model: 'course', pageId: 'course' })).find((one) => one.id === 'botox')?.values['price']).toBe(4500);
+    expect((await (ds.templates as NonNullable<typeof ds.templates>)({ model: 'course', pageId: 'course' })).find((one) => one.id === 'botox')?.values['price']).toBe(4500);
     await choose(host, 'Delete templates…');
     const dialog = document.querySelector('.fd-form-dialog') as HTMLElement;
     const laser = [...dialog.querySelectorAll('label')].find((label) => label.textContent?.includes('Laser course'))?.querySelector('input') as HTMLInputElement;
     laser.click();
     await answer('', 'Delete');
-    expect((await ds.templates({ model: 'course', pageId: 'course' })).map((one) => one.name)).toEqual(['botox package']);
+    expect((await (ds.templates as NonNullable<typeof ds.templates>)({ model: 'course', pageId: 'course' })).map((one) => one.name)).toEqual(['botox package']);
   });
 
   it("keeps them in the person's preferences where the source keeps none, and offers starting from one only on a new record", async () => {

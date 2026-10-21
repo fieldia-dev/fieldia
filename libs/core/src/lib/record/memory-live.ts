@@ -6,7 +6,7 @@ import { structuredCopy, type RecordId } from './values';
 /**
  * A memory source live, as a server with a socket (`live`): each change `changeElsewhere` makes pushed to the pages
  * that have its record open (`subscribe`), and who has a record open told to each of them (`presence`) — every page
- * that opens it with a `user`, and whoever `arrive` brings until `leave`. Off unless said: then nothing is pushed.
+ * that opens it with a `user`, and whoever `arrive` brings until `leave`. Off unless said: then it has none of them.
  */
 export function memoryLive(options: Pick<MemoryDataSourceOptions, 'live' | 'versions'>, kept: MemoryKept) {
   const changes = new Map<string, Set<(change: RecordChange) => void>>();
@@ -48,15 +48,17 @@ export function memoryLive(options: Pick<MemoryDataSourceOptions, 'live' | 'vers
       };
     },
   };
-  return {
-    ...(options.live ? told : {}),
-    arrive(model: string, id: RecordId, person: PresentPerson) {
-      held(present, at(model, id), () => new Map<string, PresentPerson>()).set(String(person.id), { ...person });
-      tell(at(model, id));
-    },
-    leave(model: string, id: RecordId, person: RecordId) {
-      present.get(at(model, id))?.delete(String(person));
-      tell(at(model, id));
-    },
-  };
+  return options.live
+    ? {
+        ...told,
+        arrive(model: string, id: RecordId, person: PresentPerson) {
+          held(present, at(model, id), () => new Map<string, PresentPerson>()).set(String(person.id), { ...person });
+          tell(at(model, id));
+        },
+        leave(model: string, id: RecordId, person: RecordId) {
+          present.get(at(model, id))?.delete(String(person));
+          tell(at(model, id));
+        },
+      }
+    : {};
 }

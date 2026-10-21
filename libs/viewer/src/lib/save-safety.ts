@@ -228,12 +228,7 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
 
     // Others with the record open: the live part's strip, asked for the first time someone else is.
     if (strip) strip.update(state);
-    else if (state.present?.length) {
-      void livePart.load().then((part) => {
-        strip ??= part.presenceStrip({ el, doc: context.doc, labels, fill, list, slot: presence });
-        strip.update(form.getState());
-      }, () => undefined);
-    }
+    else if (state.present?.length) void livePart.load().then((part) => (strip ??= part.presenceStrip(el, labels, list, presence)).update(form.getState()), () => undefined);
 
     // Only to read: the source's reason, else the viewer's words.
     const can: Readonly<RecordPermissions> | null = state.can;

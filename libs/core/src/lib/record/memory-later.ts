@@ -16,7 +16,6 @@ export const memoryPart: Part<MemoryPart> = lazyPart('memory', () => import('./m
 export const MEMORY_MEMBERS = [
   'load', 'save', 'onchange', 'search', 'create', 'submit', 'list', 'groups', 'options', 'definitions', 'saveDefinitions', 'archive', 'copy', 'delete',
   'attachments', 'totals', 'upload', 'slots', 'writeMany', 'createMany', 'duplicates', 'merge', 'notDuplicates', 'markNotDuplicate', 'limits', 'saveDraft', 'loadDraft',
-  'templates', 'saveTemplate', 'deleteTemplate',
 ] as const;
 
 /**
@@ -32,26 +31,13 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   let made: MemoryDataSource | undefined;
   const members = (): Promise<MemoryDataSource> => memoryPart.load().then((loaded) => (made ??= loaded.memorySource(options, kept)));
   const source = { records: kept.records, notDuplicatePairs: kept.notDuplicatePairs, responses: kept.responses, calls: kept.calls, drafts: kept.drafts, changeElsewhere: kept.changeElsewhere, answeredElsewhere: kept.answeredElsewhere } as Record<string, unknown>;
-  for (const name of MEMORY_MEMBERS) {
+  // Record templates where it was given some (`templates`); live (`live`): a push answered once the members came, as
+  // a form asks for it once it has read the record through them.
+  for (const name of [...MEMORY_MEMBERS, ...(options.templates ? ['templates', 'saveTemplate', 'deleteTemplate'] : []), ...(options.live ? ['subscribe', 'presence', 'arrive', 'leave'] : [])]) {
     source[name] = (...args: unknown[]) => {
-      const call = (from: MemoryDataSource) => (from[name] as (...given: unknown[]) => Promise<unknown>)(...args);
+      const call = (from: MemoryDataSource) => (from[name as keyof MemoryDataSource] as (...given: unknown[]) => unknown)(...args);
       return made ? call(made) : members().then(call);
     };
   }
-  // A push asked for before the members came: answered once they have, unless stopped first.
-  for (const name of options.live ? (['subscribe', 'presence'] as const) : []) {
-    source[name] = (...args: unknown[]) => {
-      const start = (from: MemoryDataSource) => (from[name] as (...given: unknown[]) => () => void)(...args);
-      if (made) return start(made);
-      let stop: (() => void) | null = null;
-      let stopped = false;
-      void members().then((from) => (stopped ? undefined : (stop = start(from))));
-      return () => {
-        stopped = true;
-        stop?.();
-      };
-    };
-  }
-  for (const name of ['arrive', 'leave'] as const) source[name] = (...args: unknown[]) => void members().then((from) => (from[name] as (...given: unknown[]) => void)(...args));
   return source as unknown as MemoryDataSource;
 }

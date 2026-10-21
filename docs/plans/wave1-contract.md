@@ -941,7 +941,8 @@ In plain words:
 - **Started from** (a new record): each value written as the person's own change — the page's `change` steps run,
   the source's onchange, Ctrl+Z takes each back — a table's lines as new lines.
 - **Shared or own** is the app's: `templates` answers what this person may start from, `by` names who saved one.
-- The memory source keeps them by page id (`templates` option to start from). Tests:
+- The memory source has the three where its `templates` option is given (`{}` for none yet), kept by page id; without
+  it, none — as an app's source without them, so a page keeps its templates in the viewer's `preferences`. Tests:
   `libs/viewer/src/lib/templates.spec.ts`.
 
 ## 20. Changes pushed, and who else is here (Wave 6, lane w6-records)
@@ -978,9 +979,10 @@ In plain words:
   request carries `fields` besides), a push, a stop — with types that never meet: one function of the app's, on one
   socket, may serve both, each taking only its own `type` and letting the rest go.
 - **In a part of its own**, `fieldia.live.js` (`recordLivePart` in core, `livePart` in the viewer): the core's half
-  asked for as a record with an id is shown where the source has either member, the viewer's strip as someone else
-  first has the record open. An app whose source has neither never loads it.
+  asked for as a form is made where the source has either member — it watches the record shown from then on, told of
+  each change of the form's state — the viewer's strip as someone else first has the record open. An app whose source
+  has neither never loads it. A change laid on the record is said by the core's half, through the host's `say`.
 - The memory source with `live: true` has both members: it pushes `changeElsewhere`'s changes, and tells who has a
   record open — each form that opens it with a `user`, and whoever `arrive` brings (`leave` takes them away). Without
-  `live` it has neither, as a source without a socket. Tests:
+  `live` it has none of `subscribe`, `presence`, `arrive` and `leave`, as a source without a socket. Tests:
   `libs/core/src/lib/record/live.spec.ts`, `libs/viewer/src/lib/live.spec.ts`.

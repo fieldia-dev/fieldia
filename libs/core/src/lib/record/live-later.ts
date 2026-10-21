@@ -1,8 +1,9 @@
 import type { Fields } from '../format/field';
 import type { Page } from '../format/page';
 import { lazyPart, type Part } from '../parts';
-import type { DataSource, SaveConflict } from './data-source';
-import type { FormConflict, FormEvents, FormState, FormUser } from './form';
+import type { SaveConflict } from './data-source';
+import type { FormConflict, FormEvents, FormOptions, FormState } from './form';
+import type { Stopped } from './run';
 import type { Messages } from './messages';
 import type * as LiveModule from './live-part';
 import type { Value, Values } from './values';
@@ -11,17 +12,20 @@ import type { Value, Values } from './values';
 export type RecordLivePart = typeof LiveModule;
 
 /**
- * The record shown made live, loaded the first time a form of a record whose source has `subscribe` or `presence` shows
- * one with an id: never for an app whose source has neither.
+ * The record shown made live, loaded as a form is made whose source has `subscribe` or `presence`: never for an app whose
+ * source has neither.
  */
 export const recordLivePart: Part<RecordLivePart> = lazyPart('live', () => import('./live-part'));
 
-/** What the live part needs of the form it makes live. */
-export interface LiveContext {
+/**
+ * What the parts that work inside a form take of it — the live part, the undo part's press — made once for each form
+ * (form.ts): its page, its options and words, and its own ways with its state.
+ */
+export interface FormInner {
   page: Page;
   fields: Fields;
-  source: DataSource;
-  user?: FormUser;
+  options: FormOptions;
+  messages: Messages;
   state(): FormState;
   set(patch: Partial<FormState>): void;
   /** The record as loaded or last saved. */
@@ -35,11 +39,9 @@ export interface LiveContext {
   track<T>(work: Promise<T>): Promise<T>;
   shownNow(): () => boolean;
   generation(): number;
-  /** Whether the person's work would be lost by laying values over the record (`unsavedWork`). */
-  atRisk(): boolean;
-  arrived(event: FormEvents['arrived']): void;
-  say(message: string): void;
-  messages: Messages;
+  emit<E extends keyof FormEvents>(event: E, payload: FormEvents[E]): void;
+  /** Why a run stops whose record was replaced. */
+  replaced(): Stopped;
 }
 
 /** The form's record made live: `watch` as what is shown changes, `stop` as the form goes. */

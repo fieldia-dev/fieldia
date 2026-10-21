@@ -42,12 +42,13 @@ async function open(dataSource: ReturnType<typeof source>, user = { id: 7, name:
 describe('changes made elsewhere, live', () => {
   it('lays a change made elsewhere on the record where the person changed nothing, and says who changed what', async () => {
     const ds = source();
-    const { form, arrived } = await open(ds);
+    const { form, said, arrived } = await open(ds);
     ds.changeElsewhere('course', 1, { price: 5000 }, { by: 'Mona Adel', at: '2026-10-21T10:42:00Z' });
     await settle();
     expect(form.getState().values['price']).toBe(5000);
     expect(form.getState().dirty).toEqual([]);
     expect(arrived).toEqual([{ recordId: 1, by: 'Mona Adel', at: '2026-10-21T10:42:00Z', fields: ['price'], conflict: false }]);
+    expect(said).toEqual(['Mona Adel changed Price.']);
     // Their version is the record's now: a save of the person's next change is no conflict.
     form.setValue('notes', 'Allergic to lidocaine');
     expect(await form.save()).toBe(true);
@@ -115,7 +116,7 @@ describe('who else has the record open', () => {
     // Mona goes to another record: Sara sees no one.
     await mona.form.openRecord(2);
     expect(sara.form.getState().present).toEqual([]);
-    ds.arrive('course', 1, { id: 11, name: 'Karim Nabil' });
+    ds.arrive?.('course', 1, { id: 11, name: 'Karim Nabil' });
     expect(sara.form.getState().present).toEqual([{ id: 11, name: 'Karim Nabil' }]);
     sara.form.dispose();
     expect(mona.form.getState().present).toEqual([]);
@@ -123,18 +124,21 @@ describe('who else has the record open', () => {
 });
 
 describe("the one-tag script's memory source, live", () => {
-  it('takes a push asked for before its members came, and stops one stopped before', async () => {
+  it('takes a push asked for before its members came, its stop given once they have', async () => {
     const { createMemoryDataSource: later, memoryPart } = await import('./memory-later');
     expect(memoryPart.loaded).toBeUndefined();
     const ds = later({ live: true, records: { course: { 1: { name: 'Mona Adel', price: 1 } } } });
     const pushed: unknown[] = [];
     const subscribe = ds.subscribe as NonNullable<typeof ds.subscribe>;
-    subscribe({ model: 'course', id: 1, fields: {} }, (change) => void pushed.push(change));
-    const stopped = subscribe({ model: 'course', id: 1, fields: {} }, () => void pushed.push('never'));
-    stopped();
+    // Asked before the members came, as a form never asks (it reads the record through them first): answered once they
+    // have, its stop then (the live part takes either, live.ts).
+    const given = subscribe({ model: 'course', id: 1, fields: {} }, (change) => void pushed.push(change)) as unknown as Promise<() => void>;
     await memoryPart.load();
     await settle();
     ds.changeElsewhere('course', 1, { price: 2 }, { by: 'Mona Adel' });
     expect(pushed).toEqual([expect.objectContaining({ type: 'record', by: 'Mona Adel', values: { name: 'Mona Adel', price: 2 } })]);
+    (await given)();
+    ds.changeElsewhere('course', 1, { price: 3 }, { by: 'Mona Adel' });
+    expect(pushed).toHaveLength(1);
   });
 });

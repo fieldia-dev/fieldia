@@ -13,6 +13,7 @@ import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
 import type * as TemplatesModule from './templates-part';
 import type * as LiveModule from './live-part';
+import type * as UndoModule from './undo-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -37,6 +38,8 @@ export type LimitsPart = typeof LimitsModule;
 export type TemplatesPart = typeof TemplatesModule;
 /** The live part's viewer half: who else has a record open, over it. */
 export type LivePart = typeof LiveModule;
+/** The undo part's viewer half: Ctrl+Z through a record's changes, and a press's words with Undo. */
+export type UndoPart = typeof UndoModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -79,6 +82,8 @@ export const limitsPart: Part<LimitsPart> = lazyPart('limits', () => import('./l
 export const templatesPart: Part<TemplatesPart> = lazyPart('templates', () => import('./templates-part'));
 /** Who else has a record open, loaded the first time someone else has one open (the core's half beside it). */
 export const livePart: Part<LivePart> = lazyPart('live', () => import('./live-part'));
+/** Undo, with the core's half beside it: asked for as the person first enters a form, or with a page whose buttons offer it. */
+export const undoPart: Part<UndoPart> = lazyPart('undo', () => Promise.all([import('./undo-part'), pressUndoPart.load()]).then(([module]) => module));
 
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
@@ -98,7 +103,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, pressUndoPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -181,7 +186,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     // A group or a field that asks for the quiet look.
     if (node['quiet'] === true) found.add(quietPart);
     // A button or a menu item that offers Undo after its press: the undo part, in before it is pressed.
-    if (node['undo'] !== undefined) found.add(pressUndoPart);
+    if (node['undo'] !== undefined) found.add(undoPart);
     // A sheet's statusbar, drawn unless its head is (which shows the state its own way).
     const bar = node.type === 'sheet' && !node['head'] ? (node['statusbar'] as { field?: unknown } | undefined) : undefined;
     if (bar && typeof bar.field === 'string' && page.fields[bar.field]) fieldParts(page.fields[bar.field], { type: 'field', id: '#statusbar', field: bar.field, widget: 'statusbar' });
@@ -202,7 +207,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       if (node['search'] === 'fields') found.add(filtersPart);
       if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
       // A column of repeat rules or of opening hours, said in words.
-      if (scheduleColumns(node as { cells?: unknown })) found.add(schedulePart);
+      if (/"widget":"(repeat|hours)"/.test(JSON.stringify(node['cells'] ?? 0))) found.add(schedulePart);
     }
     // A related list is drawn by the list part's table, its records' phones as its own fields say, its rows as cards
     // on a phone as a list's.
@@ -245,9 +250,6 @@ export function owedParts(later: readonly string[] | undefined): Part[] {
 }
 
 /** A list's columns whose numbers it writes as people read them: those it shows as a phone (`cells.<field>.widget`), where its page or the cell's options say so. */
-/** Whether a list's cells say a repeat rule or a week's hours in words: the schedule part's. */
-const scheduleColumns = (list: { cells?: unknown }) => Object.values((list.cells ?? {}) as Record<string, { widget?: string } | undefined>).some((cell) => cell?.widget === 'repeat' || cell?.widget === 'hours');
-
 export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unknown }): string[] {
   const cells = (list.cells ?? {}) as Record<string, { widget?: string; options?: Record<string, unknown> } | undefined>;
   const columns = Array.isArray(list.columns) ? (list.columns as unknown[]).filter((name): name is string => typeof name === 'string') : [];

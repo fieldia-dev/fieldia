@@ -1,10 +1,11 @@
 import type { SayUndo, Tone } from '@fieldia/core';
 import type { El } from './dom';
+import type { ViewerLabels } from './labels';
+import { undoPart } from './viewer-parts';
 
-/** How long words stay before they go by themselves: a warning or a danger stays longer, and so do words with Undo. */
+/** How long words stay before they go by themselves: a warning or a danger stays longer. */
 const STAY_MS = 6000;
 const STAY_LONG_MS = 10000;
-const STAY_UNDO_MS = 8000;
 /** The most toasts on screen at once: the oldest give way. */
 const MOST = 4;
 
@@ -18,23 +19,20 @@ const MOST = 4;
  * takes away what was said before: a button pressed again speaks for itself,
  * never under "Customer blocked" once it has made the customer active again.
  *
- * Words a one-tap press said with `undo` carry **Undo** for a few seconds: pressed, the press is taken back, and the
- * toast says so ("Undone.") — or why not, in the words the taking back stopped with.
+ * Words a one-tap press said with `undo` carry **Undo** for a few seconds: drawn by the undo part (undo-toast.ts), which
+ * the press that offers it has brought; said plainly where it cannot come.
  */
-export function sayer(root: HTMLElement, el: El, dismiss: string, words?: { undoPress: string; pressUndone: string }): ((message: string, tone: Tone, undo?: SayUndo) => void) & { clear(): void } {
+export function sayer(root: HTMLElement, el: El, words: ViewerLabels): ((message: string, tone: Tone, undo?: SayUndo) => void) & { clear(): void } {
   // There before anything is said, so a screen reader hears what comes into it.
   const region = el('div', { class: 'fd-says', role: 'status', 'aria-live': 'polite' });
   root.append(region);
   const say = (message: string, tone: Tone, undo?: SayUndo) => {
-    const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': dismiss }, '×');
-    const text = el('span', {}, message);
-    const back = undo && words ? el('button', { type: 'button', class: 'fd-button fd-button-link fd-say-undo' }, words.undoPress) : null;
-    const toast = el('div', { class: 'fd-say', 'data-tone': tone }, text, ...(back ? [back] : []), close);
-    const toned = (now: Tone) => toast.style.setProperty('--fd-tone', `var(--fd-${now === 'danger' ? 'error' : now})`);
+    if (undo) return void undoPart.load().then((part) => part.undoToast(region, el, words, message, tone, undo), () => say(message, tone));
+    const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': words.dismiss }, '×');
+    const toast = el('div', { class: 'fd-say', 'data-tone': tone }, el('span', {}, message), close);
     // Its edge in its tone's colour, from the scheme's own: a danger is the error colour.
-    toned(tone);
+    toast.style.setProperty('--fd-tone', `var(--fd-${tone === 'danger' ? 'error' : tone})`);
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let stay = back ? STAY_UNDO_MS : tone === 'warning' || tone === 'danger' ? STAY_LONG_MS : STAY_MS;
     const hold = () => clearTimeout(timer);
     const go = () => {
       hold();
@@ -42,30 +40,13 @@ export function sayer(root: HTMLElement, el: El, dismiss: string, words?: { undo
     };
     const wait = () => {
       hold();
-      // Not while Undo is taking the press back.
-      if (!back?.hasAttribute('aria-busy')) timer = setTimeout(go, stay);
+      timer = setTimeout(go, tone === 'warning' || tone === 'danger' ? STAY_LONG_MS : STAY_MS);
     };
     close.addEventListener('click', go);
     toast.addEventListener('mouseenter', hold);
     toast.addEventListener('focusin', hold);
     toast.addEventListener('mouseleave', wait);
     toast.addEventListener('focusout', wait);
-    back?.addEventListener('click', async () => {
-      if (!undo || back.hasAttribute('aria-busy')) return;
-      back.setAttribute('aria-busy', 'true');
-      hold();
-      const taken = await undo.undo().catch((error: unknown) => ({ done: false, message: error instanceof Error ? error.message : String(error) }));
-      // Taken back, or why not: said in its place, Undo gone, the focus kept on the toast's × where it was on Undo.
-      const focused = back.ownerDocument.activeElement === back;
-      back.remove();
-      text.textContent = taken.done ? (words as { pressUndone: string }).pressUndone : (taken.message ?? '');
-      if (!taken.done && !taken.message) return go();
-      toned(taken.done ? 'info' : 'warning');
-      stay = taken.done ? STAY_MS : STAY_LONG_MS;
-      if (focused) close.focus();
-      echo(region, el, text.textContent);
-      wait();
-    });
     region.append(toast);
     while (region.children.length > MOST) region.firstElementChild?.remove();
     echo(region, el, message);
@@ -75,7 +56,7 @@ export function sayer(root: HTMLElement, el: El, dismiss: string, words?: { undo
 }
 
 /** The words again, unseen, in a live region of the topmost modal dialog the region is not in. */
-function echo(region: HTMLElement, el: El, message: string) {
+export function echo(region: HTMLElement, el: El, message: string) {
   const modals = [...region.ownerDocument.querySelectorAll<HTMLElement>('[aria-modal="true"]')].filter((m) => !m.contains(region));
   const top = modals[modals.length - 1];
   if (!top) return;

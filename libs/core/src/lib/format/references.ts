@@ -23,6 +23,8 @@ import { checkSeats } from './seats-checks';
 import { checkList, checkRelated, type ListTools } from './list-checks';
 import type { FieldTools } from './part-checks';
 import { checkSlots } from './slots-checks';
+import { checkSchedule } from './schedule-checks';
+import { checkTemplates } from './templates-checks';
 import { checkSignature } from './signature-checks';
 import { checkEndings } from './endings-checks';
 import { checkAddressSearch, checkMap, checkPlace, type MapTools } from './map-checks';
@@ -147,10 +149,8 @@ export class ReferenceCheck {
       if (Array.isArray(this.page.endings) && this.page.endings.length) checkEndings(this.page, { ...this.fieldTools(), checkModifiers: (owner, path, keys) => this.checkModifiers(owner, path, keys), checkWords: (owner, path, keys, sent) => this.checkWords(owner, path, keys, sent) });
     }
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
-    // Templates people save: a record's page's, each field it keeps the page's own.
-    const templates = this.line ? undefined : this.page.templates;
-    if (templates && this.page.data.kind !== 'record') this.report('templates', 'templates are kept of records: a page of responses has none');
-    if (templates && templates !== true) templates.fields.forEach((name, i) => this.need(name, `templates.fields[${i}]`));
+    // Templates people save: in the one-tag script, checked by the templates part a page with them asks for.
+    if (!this.line && this.page.templates) checkTemplates(this.fieldTools());
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
     this.checkGoingTo();
     return this.issues;
@@ -854,11 +854,8 @@ export class ReferenceCheck {
     // with them in the one-tag script.
     if (node.widget === 'slots' && def && def.type !== 'datetime') this.report(`${path}.widget`, `slots is for a datetime field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'slots') checkSlots(node, path, this.fieldTools());
-    // A repeat rule is kept as text, a week's opening hours as JSON (the schedule part's).
-    if (node.widget === 'repeat' && def && def.type !== 'char') this.report(`${path}.widget`, `repeat is for a char field; "${node.field}" is a ${def.type}`);
-    if (node.widget === 'hours' && def && def.type !== 'json') this.report(`${path}.widget`, `hours is for a json field; "${node.field}" is a ${def.type}`);
-    const weekStart = node.widget === 'hours' ? node.options?.['weekStart'] : undefined;
-    if (weekStart !== undefined && !(Number.isInteger(weekStart) && (weekStart as number) >= 1 && (weekStart as number) <= 7)) this.report(`${path}.options.weekStart`, 'weekStart is a weekday, 1 (Monday) to 7 (Sunday)');
+    // A repeat rule, a week's opening hours: the schedule part's, as their checks are in the one-tag script.
+    if (node.widget === 'repeat' || node.widget === 'hours') checkSchedule(node, def, path, this.fieldTools());
     if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
     if (def) this.checkPicker(node, def, path);

@@ -1,4 +1,4 @@
-import { isEmpty, type DataSource, type Form, type Line, type Locale, type Page, type RecordTemplate, type Values } from '@fieldia/core';
+import { fill, isEmpty, type DataSource, type Form, type Line, type Locale, type Page, type RecordTemplate, type Values } from '@fieldia/core';
 import type { PreferenceStore, WidgetDialogs } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -27,8 +27,7 @@ export interface TemplatesContext {
   labels: ViewerLabels;
   locale: Locale;
   preferences: PreferenceStore;
-  dataSource?: DataSource;
-  fill(template: string, values: Record<string, string | number>): string;
+  dataSource: DataSource | undefined;
   say(message: string, tone: 'info' | 'success' | 'warning' | 'danger'): void;
   /** Values asked in a dialog (the widgets' `editValues`): the name a template is kept as, the templates to let go. */
   ask: WidgetDialogs['editValues'];
@@ -97,8 +96,10 @@ export function startFrom(form: Form, template: RecordTemplate): string[] {
 }
 
 /** The Templates menu over a record: start from one, save one, let some go. */
-export function templatesMenu(context: TemplatesContext): { element: HTMLElement; update(): void } {
-  const { doc, el, form, page, labels, fill } = context;
+export function templatesMenu(context: TemplatesContext): { element: HTMLElement; update(): void } | undefined {
+  const { doc, el, form, page, labels } = context;
+  // A page without them, shown where another's brought the part: none.
+  if (!page.templates) return undefined;
   const kept = keeper(context);
   const id = `fd-templates-${++menus}`;
   const button = el('button', { type: 'button', class: 'fd-button fd-record-gear fd-templates-button', id: `${id}-button`, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': id }, labels.templatesButton);

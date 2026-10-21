@@ -112,11 +112,15 @@ export interface MemoryDataSourceOptions {
   /**
    * Live, as a server with a socket: a record's changes made with `changeElsewhere` are pushed to each page that has it
    * open (`subscribe`), and who has a record open is told (`presence`): each page that opens it, and anyone `arrive`
-   * brings. Off unless said: `subscribe` and `presence` then push nothing, and a change elsewhere is found as a save
-   * meets it.
+   * brings (`leave` takes them away). Without it the source has none of `subscribe`, `presence`, `arrive` and `leave`, as
+   * a source without a socket: a change elsewhere is found as a save meets it.
    */
   live?: boolean;
-  /** Record templates saved before, by page id: what `templates` answers first ("Botox package"), as an app's server keeps them. */
+  /**
+   * Record templates saved before, by page id: what `templates` answers first ("Botox package"), as an app's server
+   * keeps them — `{}` for none yet. Given, the source has `templates`, `saveTemplate` and `deleteTemplate`; else none,
+   * and a page keeps its templates in the viewer's `preferences`.
+   */
   templates?: Record<string, RecordTemplate[]>;
   /**
    * What the person may do with each record, by model: given with its load
@@ -178,7 +182,9 @@ export interface MemoryDataSourceOptions {
  * without a server of its own does. A test or a demo gives it one by setting
  * it.
  */
-export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords' | 'importRecords' | 'subscribe' | 'presence'>>, Pick<DataSource, 'exportRecords' | 'importRecords' | 'subscribe' | 'presence'> {
+export interface MemoryDataSource
+  extends Required<Omit<DataSource, 'exportRecords' | 'importRecords' | 'templates' | 'saveTemplate' | 'deleteTemplate' | 'subscribe' | 'presence'>>,
+    Pick<DataSource, 'exportRecords' | 'importRecords' | 'templates' | 'saveTemplate' | 'deleteTemplate' | 'subscribe' | 'presence'> {
   readonly records: Record<string, Record<string, Values>>;
   /**
    * The records said to be someone else for one another, by model: each pair of ids, in the order kept, through
@@ -193,10 +199,10 @@ export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecor
    * told of a conflict when it saves. Gives the new version.
    */
   changeElsewhere(model: string, id: RecordId, values: Values, who: { by: string; at?: string }): RecordVersion;
-  /** Someone else opens a record, or changes whether they are editing it (`live`): told to each page that has it open. */
-  arrive(model: string, id: RecordId, person: PresentPerson): void;
-  /** Someone else closes it. */
-  leave(model: string, id: RecordId, person: RecordId): void;
+  /** Someone else opens a record, or changes whether they are editing it: told to each page that has it open. With `live`. */
+  arrive?(model: string, id: RecordId, person: PresentPerson): void;
+  /** Someone else closes it. With `live`. */
+  leave?(model: string, id: RecordId, person: RecordId): void;
   /** Drafts kept by `saveDraft`, by key, each with its page's id and the request's `later`: the partial answers an app sees. */
   readonly drafts: Record<string, StoredDraft & { pageId: string; later?: boolean }>;
   /** Take a response to a page as someone else would, on another screen: counted by `limits`, never as this person's. */
@@ -245,6 +251,28 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   const savedTemplates: Record<string, RecordTemplate[]> = structuredCopy(options.templates ?? {});
   const templatesOf = (pageId: string) => (savedTemplates[pageId] ??= []);
   let templateIds = 0;
+  async function templates(request: TemplatesRequest): Promise<RecordTemplate[]> {
+    calls.push({ method: 'templates', request });
+    await pause();
+    return structuredCopy(templatesOf(request.pageId));
+  }
+  async function saveTemplate(request: SaveTemplateRequest): Promise<RecordTemplate> {
+    calls.push({ method: 'saveTemplate', request });
+    await pause();
+    const list = templatesOf(request.pageId);
+    const kept: RecordTemplate = { id: request.template.id ?? `template-${++templateIds}`, name: request.template.name, values: structuredCopy(request.template.values) };
+    const at = list.findIndex((one) => String(one.id) === String(kept.id));
+    if (at >= 0) list[at] = kept;
+    else list.push(kept);
+    return structuredCopy(kept);
+  }
+  async function deleteTemplate(request: TemplateRequest): Promise<void> {
+    calls.push({ method: 'deleteTemplate', request });
+    await pause();
+    const list = templatesOf(request.pageId);
+    const at = list.findIndex((one) => String(one.id) === String(request.id));
+    if (at >= 0) list.splice(at, 1);
+  }
   const labelOf = (model: string, id: RecordId) => {
     const value = table(model)[String(id)]?.[options.labelField?.[model] ?? 'name'];
     return typeof value === 'string' ? value : String(id);
@@ -355,6 +383,8 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     answeredElsewhere: kept.answeredElsewhere,
     changeElsewhere: kept.changeElsewhere,
     ...memoryLive(options, kept),
+    // Record templates, as an app's server keeps them: where it was given some (`templates`, `{}` for none yet).
+    ...(options.templates ? { templates, saveTemplate, deleteTemplate } : {}),
 
     async limits(request: LimitsRequest): Promise<LimitsResult> {
       calls.push({ method: 'limits', request });
@@ -378,31 +408,6 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       drafts[key] = { ...structuredCopy(request.draft), pageId: request.pageId, ...(request.later ? { later: true } : {}) };
       const link = request.later && options.draftLink ? options.draftLink(key, request) : undefined;
       return { key, ...(link ? { link } : {}) };
-    },
-
-    async templates(request: TemplatesRequest): Promise<RecordTemplate[]> {
-      calls.push({ method: 'templates', request });
-      await pause();
-      return structuredCopy(templatesOf(request.pageId));
-    },
-
-    async saveTemplate(request: SaveTemplateRequest): Promise<RecordTemplate> {
-      calls.push({ method: 'saveTemplate', request });
-      await pause();
-      const list = templatesOf(request.pageId);
-      const kept: RecordTemplate = { id: request.template.id ?? `template-${++templateIds}`, name: request.template.name, values: structuredCopy(request.template.values) };
-      const at = list.findIndex((one) => String(one.id) === String(kept.id));
-      if (at >= 0) list[at] = kept;
-      else list.push(kept);
-      return structuredCopy(kept);
-    },
-
-    async deleteTemplate(request: TemplateRequest): Promise<void> {
-      calls.push({ method: 'deleteTemplate', request });
-      await pause();
-      const list = templatesOf(request.pageId);
-      const at = list.findIndex((one) => String(one.id) === String(request.id));
-      if (at >= 0) list.splice(at, 1);
     },
 
     async loadDraft(request: LoadDraftRequest): Promise<StoredDraft | null> {

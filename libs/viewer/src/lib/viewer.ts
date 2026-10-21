@@ -79,7 +79,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, templatesPart, type HeadPart } from './viewer-parts';
+import { answersPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, templatesPart, undoPart, type HeadPart } from './viewer-parts';
 import type { LimitsKit } from './limits';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
@@ -535,7 +535,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
   const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
-  const say = sayer(root, el, labels.dismiss, labels);
+  const say = sayer(root, el, labels);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
   /** For each field in a tab, how to show its tab: a problem there is shown before the focus goes to it. */
@@ -1813,13 +1813,6 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // Save safety, over the record: someone else's save first (Reload, Keep mine), the changes Reload set aside, a record only to read.
   const safety = saveSafety({ doc, el, form, page, labels, locale, tag, icons: options.icons, fill, announce, root: () => root, discard: () => letGoAsked() });
   updaters.push(safety.update);
-  // A change made elsewhere laid on the record, the person having changed nothing: who changed what, said. One that
-  // waits after a change of theirs is the conflict's, said over the record.
-  cleanups.push(
-    form.on('arrived', ({ by, fields, conflict }) => {
-      if (!conflict) actionHost.say(fill(labels.arrivedChanged, { name: by || labels.someoneElse, fields: fields.map((name) => page.fields[name]?.label ?? name).join(', ') }), 'info');
-    })
-  );
   // Possible duplicates (`duplicates`): records like this one, asked of the source as it is typed and saved, said under
   // the fields they matched on — in a part of their own, asked for where the page names fields and its source can
   // answer; the page is drawn meanwhile, and nothing is said before an answer comes.
@@ -1945,8 +1938,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function topBar(toolbar: SheetNode['toolbar']): HTMLElement | null {
     if (page.data.kind !== 'record') return null;
     // Record templates people save and name (`templates`): their menu, from the part the page waited for.
-    const kit = page.templates ? templatesPart.loaded : undefined;
-    const extra = kit?.templatesMenu({ doc, el, form, page, labels, locale, preferences, ...(options.dataSource ? { dataSource: options.dataSource } : {}), fill, say: (message, tone) => actionHost.say(message, tone), ask: (request) => dialogs.editValues(request) });
+    const extra = templatesPart.loaded?.templatesMenu({ doc, el, form, page, labels, locale, preferences, dataSource: options.dataSource, say: actionHost.say, ask: dialogs.editValues });
     const bar = recordBar({
       doc,
       el,
@@ -2674,70 +2666,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   // ---- Undo and Redo while filling ----------------------------------------------
 
-  // Ctrl+Z (⌘Z) takes back the person's last change to the record — a field, a cell, a line added, taken away or moved
-  // (`form.undo()`) — and Ctrl+Shift+Z or Ctrl+Y (⌘⇧Z) makes it again. In a box whose text was changed since it was
-  // entered, the browser's own undo goes through it first; once the box shows what it showed as it was entered, the
-  // record's. In a formatted text, always its own. The field taken back takes the focus, and what was done is said politely.
-
-  /** What a box showed as it was entered, and the browser's own undos in it since its last typing: what its redo has. */
-  const boxEdits = new WeakMap<EventTarget, { text: string; undone: number }>();
-  const editable = (target: EventTarget | null): target is HTMLElement => target instanceof HTMLElement && (typedBox(target) || target.isContentEditable);
-  const textOf = (box: HTMLElement) => (box.isContentEditable ? box.innerHTML : (box as HTMLInputElement).value);
-  const onEntered = (event: Event) => {
-    const box = event.target;
-    // Once its own focus has written it (a value shown at rest, written for typing as it is entered).
-    if (editable(box)) queueMicrotask(() => boxEdits.set(box, { text: textOf(box), undone: 0 }));
-  };
-  const onEdited = (event: Event) => {
-    const edits = boxEdits.get(event.target as EventTarget);
-    const how = (event as InputEvent).inputType ?? '';
-    if (edits) edits.undone = how === 'historyUndo' ? edits.undone + 1 : how === 'historyRedo' ? Math.max(0, edits.undone - 1) : 0;
-  };
-  let heard: HTMLElement | null = null;
-  const onUndoKey = (event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.isComposing || event.altKey || !(event.ctrlKey || event.metaKey) || options.keys?.undo === false || layout.type === 'list') return;
-    const key = event.key.toLowerCase();
-    const redo = key === 'y' ? !event.shiftKey && !event.metaKey : key === 'z' && event.shiftKey;
-    if (!redo && (key !== 'z' || event.shiftKey)) return;
-    const target = event.target as Element;
-    // An app's own content in a slot keeps its keys, and so do its own boxes outside the form and a form inside this one
-    // (a dialog's); pressed on nothing, the keys are the first form's on the page, as a button's key is.
-    if ((editable(target) && !root.contains(target)) || target.closest('.fd-slot') || !hotkeysHere(target)) return;
-    // A formatted text keeps its own undo: its tools (a table's rows, a header row) change it as typing does, and the
-    // browser's history holds both, across leaving it for a menu and coming back.
-    if (editable(target) && target.isContentEditable) return;
-    // A box whose text is not what it showed as it was entered: the browser's own undo has typing to take back there;
-    // its own redo, its undos since.
-    const edits = editable(target) ? boxEdits.get(target) : undefined;
-    if (edits && (redo ? edits.undone > 0 : textOf(target as HTMLElement) !== edits.text)) return;
-    const step = redo ? form.redo() : form.undo();
-    if (!step) return;
-    event.preventDefault();
-    const name = page.fields[step.field]?.label ?? step.field;
-    if (!heard) root.append((heard = el('div', { class: 'fd-sr-only fd-undo-heard', role: 'status', 'aria-live': 'polite' })));
-    const words = fill(redo ? labels.redone : labels.undone, { field: name });
-    heard.textContent = '';
-    setTimeout(() => heard && (heard.textContent = words), 0);
-    // The field taken back takes the focus, where it is shown and is not the one the person is in.
-    const box = [...root.querySelectorAll<HTMLElement>(`.fd-field[data-field="${step.field}"]`)]
-      .filter((wrapper) => !wrapper.closest('[hidden]') && wrapper.closest('.fd-form') === root)
-      .flatMap((wrapper) => [...wrapper.querySelectorAll<HTMLElement>('input:not([type="hidden"]), select, textarea, [contenteditable="true"]')])
-      .find((one) => !one.closest('[hidden]'));
-    if (box && !box.contains(doc.activeElement)) box.focus();
-    // What the record's undo wrote in the box the person is in is what it shows as entered: the next Ctrl+Z is the record's too.
-    queueMicrotask(() => {
-      const active = doc.activeElement;
-      if (editable(active)) boxEdits.set(active, { text: textOf(active), undone: 0 });
-    });
-  };
-  root.addEventListener('focusin', onEntered, true);
-  root.addEventListener('input', onEdited, true);
-  doc.addEventListener('keydown', onUndoKey);
-  cleanups.push(() => {
-    root.removeEventListener('focusin', onEntered, true);
-    root.removeEventListener('input', onEdited, true);
-    doc.removeEventListener('keydown', onUndoKey);
-  });
+  // Ctrl+Z (⌘Z) takes back the person's last change to the record, Ctrl+Shift+Z or Ctrl+Y makes it again — inside a box
+  // typed in, the browser's own undo first (undo-keys.ts). In the undo part, asked for as the person first enters the
+  // form: the box they are in known as it was entered before they type, and each key answered at once as it is pressed.
+  if (options.keys?.undo !== false && layout.type !== 'list')
+    root.addEventListener('focusin', () => void undoPart.load().then((part) => gone || cleanups.push(part.undoKeys(root, form, page, el, labels, hotkeysHere)), () => undefined), { once: true });
 
   // ---- a button's key, with Alt -------------------------------------------------
 

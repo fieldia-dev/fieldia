@@ -295,8 +295,10 @@ changed since it was entered, the browser's own undo goes first; once the box
 shows what it showed as it was entered, the next press is the record's; a
 formatted text keeps its own undo always (its table and list tools too). The
 field taken back takes the focus, and “Undone: Price” is said to a screen
-reader. `keys: { undo: false }` leaves the keys to the browser alone; your own
-Undo button calls `form.undo()` (see `@fieldia/core`).
+reader. The keys come in the undo part, asked for as the person first enters
+the form — the box they are in known as it was entered, before they type.
+`keys: { undo: false }` leaves the keys to the browser alone; your own Undo
+button calls `form.undo()` (see `@fieldia/core`).
 
 ## Record templates people save
 

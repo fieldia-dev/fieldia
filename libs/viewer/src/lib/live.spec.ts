@@ -37,15 +37,15 @@ describe('presence and live updates', () => {
     const { host, ds } = await mount();
     // Drawn by the live part the first time someone else is here.
     expect(host.querySelector('.fd-presence')).toBeNull();
-    ds.arrive('course', 1, { id: 9, name: 'Mona Adel' });
+    ds.arrive?.('course', 1, { id: 9, name: 'Mona Adel' });
     await settle();
     const presence = host.querySelector('.fd-presence') as HTMLElement;
     expect(presence.hidden).toBe(false);
     expect(presence.querySelector('.fd-presence-words')?.textContent).toBe('Also here: Mona Adel');
     expect(presence.querySelector('.fd-presence-face')?.textContent).toBe('MA');
-    ds.arrive('course', 1, { id: 9, name: 'Mona Adel', editing: true });
+    ds.arrive?.('course', 1, { id: 9, name: 'Mona Adel', editing: true });
     expect(presence.querySelector('.fd-presence-words')?.textContent).toBe('Also here: Mona Adel (editing)');
-    ds.leave('course', 1, 9);
+    ds.leave?.('course', 1, 9);
     expect(presence.hidden).toBe(true);
   });
 

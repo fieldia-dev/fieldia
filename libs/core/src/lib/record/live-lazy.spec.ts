@@ -3,7 +3,7 @@ import { createForm } from './form';
 import { recordLivePart } from './live-later';
 import { createMemoryDataSource } from './memory-data-source';
 
-/** The live part, asked for only by a form of a record whose source tells changes or presence, once it shows one with an id. */
+/** The live part, asked for only by a form whose source tells changes or presence, as it is made. */
 
 const page = {
   fieldia: '0.7',
@@ -17,17 +17,15 @@ const settle = async () => {
 };
 
 describe('the live part', () => {
-  it('is never asked for by a source that tells neither, nor by a new record', async () => {
-    const ds = createMemoryDataSource({ live: true, records: { course: { 1: { price: 1 } } } });
-    const plain = createForm({ page, dataSource: { ...ds, subscribe: undefined, presence: undefined }, recordId: 1 });
+  it('is never asked for by a source that tells neither', async () => {
+    const ds = createMemoryDataSource({ records: { course: { 1: { price: 1 } } } });
+    const plain = createForm({ page, dataSource: ds, recordId: 1 });
     await plain.load();
-    const fresh = createForm({ page, dataSource: ds });
-    await fresh.load();
     await settle();
     expect(recordLivePart.loaded).toBeUndefined();
   });
 
-  it('comes as a record with an id is shown, and lays a change made elsewhere once it has', async () => {
+  it('comes for a source that tells them, and lays a change made elsewhere once it has', async () => {
     const ds = createMemoryDataSource({ live: true, records: { course: { 1: { price: 1 } } } });
     const form = createForm({ page, dataSource: ds, recordId: 1 });
     await form.load();

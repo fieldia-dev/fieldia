@@ -62,8 +62,9 @@ function watch(page: Page) {
 function scripts(page: Page) {
   const requested: string[] = [];
   page.on('request', (request) => requested.push(new URL(request.url()).pathname));
-  // The demo's memory source's members come in a part of their own as it is first asked (script.spec): the source's.
-  return () => requested.filter((path) => /\/fieldia(\.\w+)?\.js$/.test(path) && !path.endsWith('/fieldia.memory.js')).sort();
+  // The demo's memory source's members come in a part of their own as it is first asked, and Ctrl+Z's as a form is
+  // first entered (script.spec): the source's and every form's, not the page's.
+  return () => requested.filter((path) => /\/fieldia(\.\w+)?\.js$/.test(path) && !/\/fieldia\.(memory|undo)\.js$/.test(path)).sort();
 }
 
 test.describe('a table of lines in a part of its own', () => {

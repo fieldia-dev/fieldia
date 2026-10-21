@@ -109,19 +109,18 @@ export interface SayUndo {
 
 /**
  * What a press that offers Undo keeps as it runs (a button's or a menu item's `undo`, or the app answering with one):
- * the words it says, held to be said as it ends — the last with Undo — and what Fieldia needs to take it back.
+ * the words it says, held to be said as it ends — the last with Undo — and what Fieldia needs to take it back. What it
+ * wrote is read by the undo part as it ends (press-undo.ts), against the values it began with.
  */
 export interface PressTaken {
   said: { message: string; tone: Tone }[];
   /** The app's own undos, from its answers, in the order given. */
   app: AppUndo[];
-  /** Fields its steps and the app's answers wrote: what each held before the first write, and after the last. */
-  wrote: Map<string, { before: Value; after: Value }>;
+  /** The form's values as the press began. */
+  at: Values;
   /** It archived the record (true) or brought it back (false). */
   archived?: boolean;
-  /** It saved the record. */
-  saved?: boolean;
-  /** What Fieldia cannot take back by itself, by the step that did it: a delete, a copy, a post, a page opened, an address, the app's call answered with no undo. */
+  /** The app's call answered with no undo: Fieldia cannot take that back by itself. */
   beyond?: string;
 }
 
@@ -393,11 +392,8 @@ export interface RunForm {
 
 export const DONE: RunResult = Object.freeze({ done: true });
 
-/** The steps a press does that Fieldia cannot take back by itself: a copy, a delete, a form put back or closed, an address, a post. */
-const BEYOND = new Set<ActionStep['do']>(['duplicate', 'delete', 'reset', 'close', 'openUrl', 'post']);
-
-/** What a press that offers Undo starts keeping (`RunScope.taken`). */
-export const takenNow = (): PressTaken => ({ said: [], app: [], wrote: new Map() });
+/** What a press that offers Undo starts keeping (`RunScope.taken`), from the values it begins with. */
+export const takenNow = (at: Values = {}): PressTaken => ({ said: [], app: [], at: structuredCopy(at) });
 
 /** The kinds of field an expression gives a value to; the rest hold records, lines or files, and take a field named alone whole. */
 const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'json']);
@@ -480,14 +476,10 @@ export function createRunner(form: RunForm) {
   function writeIn(scope: RunScope, names: readonly string[], write: () => void) {
     const journal = (scope.wrote ??= new Map());
     const before = new Map(names.filter((name) => !journal.has(name)).map((name) => [name, { before: structuredCopy(form.values()[name] ?? null) as Value, mine: form.mine(name) }]));
-    const kept = scope.taken?.wrote;
-    const was = kept ? new Map(names.filter((name) => !kept.has(name)).map((name) => [name, structuredCopy(form.values()[name] ?? null) as Value])) : null;
     write();
     for (const name of names) {
       const first = journal.get(name) ?? before.get(name);
       if (first) journal.set(name, { before: first.before, mine: first.mine, after: structuredCopy(form.values()[name] ?? null) as Value });
-      const held = kept?.get(name)?.before ?? was?.get(name);
-      if (kept && held !== undefined) kept.set(name, { before: held, after: structuredCopy(form.values()[name] ?? null) as Value });
     }
   }
 
@@ -537,7 +529,6 @@ export function createRunner(form: RunForm) {
 
   /** Open a page through the host, take its answers back, and run its `then`. */
   async function open(step: Omit<OpenStep, 'do' | 'when'>, scope: RunScope): Promise<Stopped | null> {
-    if (scope.taken) scope.taken.beyond ??= 'open';
     const host = form.host;
     if (!host) return cannot(`Nothing can open "${step.page}" here: the form has no host`);
     const record = step.record !== undefined ? read(step.record, false) : null;
@@ -618,7 +609,7 @@ export function createRunner(form: RunForm) {
     }
     form.answered(request, answer);
     // A press offering Undo whose call the app answered with no way back: Fieldia cannot take it back by itself.
-    if (scope.taken && !answer?.undo) scope.taken.beyond ??= 'call';
+    if (scope.taken && !answer?.undo) scope.taken.beyond = 'call';
     if (!answer) return null;
     // The app's own undo for what it did: its words are held to be said with Undo.
     if (answer.undo) (scope.taken ??= takenNow()).app.push(answer.undo);
@@ -696,8 +687,6 @@ export function createRunner(form: RunForm) {
 
   /** A record step the data source cannot do: the app's action of its name, answered as a call is. */
   async function instead(name: 'archive' | 'unarchive' | 'duplicate' | 'delete', method: string, scope: RunScope): Promise<Stopped | null> {
-    // The app's own archive, answered as a call: taken back only by the app's own undo.
-    if (scope.taken) scope.taken.beyond ??= name;
     if (!form.onAction) return cannot(`Nothing can ${name} this record here: the data source has no ${method}, and the app takes no actions`);
     return call({ action: name }, scope);
   }
@@ -782,8 +771,6 @@ export function createRunner(form: RunForm) {
   }
 
   async function runStep(step: ActionStep, scope: RunScope): Promise<Stopped | null> {
-    // A press that offers Undo: what Fieldia cannot take back by itself is noted, and Undo is not offered for it.
-    if (scope.taken && BEYOND.has(step.do)) scope.taken.beyond ??= step.do;
     switch (step.do) {
       case 'set': {
         const def = fieldOf(step.field);
@@ -814,7 +801,6 @@ export function createRunner(form: RunForm) {
         const stopped = await form.save(scope.chain);
         // Saved: what the steps wrote is the record's now.
         if (!stopped) scope.wrote?.clear();
-        if (!stopped && scope.taken) scope.taken.saved = true;
         return stopped;
       }
       case 'reset':
