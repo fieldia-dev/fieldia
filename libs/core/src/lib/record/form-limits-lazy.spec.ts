@@ -12,7 +12,7 @@ import { formLimitsPart, hasLimits } from './taking';
 
 const signup = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.7',
+    fieldia: '0.8',
     id: 'event-signup',
     data: { kind: 'responses' },
     fields: {

@@ -157,7 +157,7 @@ test.describe('the demo frame', () => {
     // Coloured as it reads: a key apart from its value, in colours of their own.
     const colour = (selector: string) => code.locator(selector).first().evaluate((el) => getComputedStyle(el).color);
     await expect(code.locator('.tok-key').first()).toHaveText('"fieldia"');
-    await expect(code.locator('.tok-string').first()).toHaveText('"0.7"');
+    await expect(code.locator('.tok-string').first()).toHaveText('"0.8"');
     expect(await colour('.tok-key')).not.toBe(await colour('.tok-string'));
     expect(await colour('.tok-string')).not.toBe(await code.locator('code').evaluate((el) => getComputedStyle(el).color));
     await code.getByRole('tab', { name: 'React' }).click();

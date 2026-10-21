@@ -11,7 +11,7 @@ import { callsPartFunctions, functionsPart } from './functions';
  */
 
 const page = {
-  fieldia: '0.7',
+  fieldia: '0.8',
   id: 'visit',
   title: 'Visit',
   data: { kind: 'responses' },

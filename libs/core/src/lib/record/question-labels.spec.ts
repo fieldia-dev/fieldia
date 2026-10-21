@@ -50,7 +50,7 @@ describe('a label that is a question', () => {
 
   it('the form says it so, the question as the page shows it: {branch} filled in', () => {
     const page = {
-      fieldia: '0.7',
+      fieldia: '0.8',
       id: 'feedback',
       data: { kind: 'responses' },
       fields: {

@@ -11,7 +11,7 @@ import { decodePart, scanPart } from './widget-parts';
 it('is its box alone until the scan part comes, then has the Scan button beside it, what was typed kept', async () => {
   expect(scanPart.loaded).toBeUndefined();
   const fields: Record<string, Field> = { lot: { type: 'char', label: 'Lot' } };
-  const page = { fieldia: '0.7', id: 'p', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-lot', field: 'lot', options: { scan: true } }] } } as unknown as Page;
+  const page = { fieldia: '0.8', id: 'p', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-lot', field: 'lot', options: { scan: true } }] } } as unknown as Page;
   const form = createForm({ page });
   const widget = createWidget({ form, name: 'lot', field: fields['lot'], node: (page.layout as unknown as { children: FieldNode[] }).children[0], id: 'fd-lot', document, labels: WIDGET_LABELS.en, locale: 'en' });
   document.body.replaceChildren(widget.element);

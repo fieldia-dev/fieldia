@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.7",
+  "fieldia": "0.8",
   "id": "deal-stages",
   "title": "Deal stages",
   "description": "A sales pipeline's stages as a settings list: each stage's name, order, chance of winning and days expected changed in place, a stage added at the end, and the won stage the sales manager's alone.",

@@ -1005,7 +1005,7 @@ test('the Templates page: every template with its picture, and each tried, chang
   for (const [tried, changed, json] of links) {
     const file = await request.get(SITE + json);
     expect(file.status(), json).toBe(200);
-    expect((await file.json()).fieldia, json).toBe('0.7');
+    expect((await file.json()).fieldia, json).toBe('0.8');
     await page.goto(SITE + tried);
     await expect(page.locator('.fd-form').first(), tried).toBeVisible();
     await page.goto(SITE + changed);

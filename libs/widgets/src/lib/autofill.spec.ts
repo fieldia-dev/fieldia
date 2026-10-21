@@ -195,7 +195,7 @@ describe('a value the browser fills in is read as the person’s own, typed', ()
 
   it('is the person’s work no save took: at risk, asked about before it is left, and sent by the next save', async () => {
     const page: Page = {
-      fieldia: '0.7',
+      fieldia: '0.8',
       id: 'contact',
       data: { kind: 'record', model: 'contact' },
       fields: { name: { type: 'char', label: 'Name' }, email: { type: 'char', label: 'Email' } },

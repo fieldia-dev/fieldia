@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.7",
+  "fieldia": "0.8",
   "id": "clinic-consent",
   "title": "Consent to treatment",
   "data": { "kind": "record", "model": "clinic.consent" },

@@ -22,7 +22,7 @@ const FIELDS = {
   },
 };
 const page = (node: Record<string, unknown>) => ({
-  fieldia: '0.7',
+  fieldia: '0.8',
   id: 'scan',
   data: { kind: 'record', model: 'treatment' },
   fields: FIELDS,

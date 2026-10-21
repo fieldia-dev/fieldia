@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 const stay = {
-  fieldia: '0.7',
+  fieldia: '0.8',
   id: 'stay',
   data: { kind: 'responses' },
   fields: {

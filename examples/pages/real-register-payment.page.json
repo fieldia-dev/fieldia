@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.7",
+  "fieldia": "0.8",
   "id": "real-register-payment",
   "title": "Register Payment",
   "data": { "kind": "record", "model": "account.payment.register" },

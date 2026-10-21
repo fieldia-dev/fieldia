@@ -14,7 +14,7 @@ import { WIDGET_LABELS } from './labels';
 
 const page = (fields: Page['fields'] = {}): Page =>
   ({
-    fieldia: '0.7',
+    fieldia: '0.8',
     id: 'listing',
     data: { kind: 'record', model: 'listing' },
     fields: {

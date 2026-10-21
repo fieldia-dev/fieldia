@@ -13,7 +13,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 const page = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.7',
+    fieldia: '0.8',
     id: 'customer-card',
     title: 'Customer',
     data: { kind: 'record', model: 'partner' },

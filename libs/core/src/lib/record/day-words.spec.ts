@@ -14,7 +14,7 @@ import { MESSAGES } from './messages';
 
 const page = (fields: Record<string, unknown>, more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.7',
+    fieldia: '0.8',
     id: 'days',
     data: { kind: 'responses' },
     fields,

@@ -12,7 +12,7 @@ import { workedOutSetting } from './rules-worked-out';
  * as Fieldia's are; a value of a kind a function does not take said in words.
  */
 
-const page = (fields: Page['fields']): Page => ({ fieldia: '0.7', id: 'p', data: { kind: 'record', model: 'patient' }, fields, layout: { type: 'sections', id: 'root', children: [] } });
+const page = (fields: Page['fields']): Page => ({ fieldia: '0.8', id: 'p', data: { kind: 'record', model: 'patient' }, fields, layout: { type: 'sections', id: 'root', children: [] } });
 
 const patient = page({
   name: { type: 'char', label: 'Name' },

@@ -15,7 +15,7 @@ const SARA = { id: 26, name: 'Sara Nabil' };
 
 const order = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.7',
+    fieldia: '0.8',
     id: 'purchase-order',
     timeZone: 'UTC',
     data: { kind: 'record', model: 'purchase.order' },

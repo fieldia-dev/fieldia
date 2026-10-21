@@ -8,7 +8,7 @@ import { checkPage, pageWarnings, validatePage, type Page } from '../../index';
 
 function page(fields: Record<string, unknown>, more: Record<string, unknown> = {}): Page {
   return {
-    fieldia: '0.7',
+    fieldia: '0.8',
     id: 'patient',
     data: { kind: 'record', model: 'clinic.patient' },
     fields: {
