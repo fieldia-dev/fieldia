@@ -22,7 +22,7 @@ export {
   PERIODS,
   TimeZoneSchema,
 } from './lib/format/field';
-export { ModifierSchema, RolesSchema, CellRulesSchema, ToneWhenSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema, ListCellSchema, ListCalendarSchema, ListCardSchema, ListGallerySchema, FilterRangeSchema, FilterPeriodSchema, RelatedNodeSchema } from './lib/format/layout';
+export { ModifierSchema, RolesSchema, CellRulesSchema, ToneWhenSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema, ListCellSchema, ListCalendarSchema, ListGanttSchema, ListCardSchema, ListGallerySchema, FilterRangeSchema, FilterPeriodSchema, RelatedNodeSchema } from './lib/format/layout';
 export { PageSchema } from './lib/format/page';
 export { ActionStepSchema, PageEventsSchema } from './lib/format/actions';
 export { pageWarnings, validatePage } from './lib/format/validate';
