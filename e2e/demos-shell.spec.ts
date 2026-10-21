@@ -124,7 +124,7 @@ test.describe('the demo frame', () => {
     await expect(menu(page).locator('.dn-item[aria-current="page"]').first()).toHaveText('Customer list');
     await page.locator('body').press('/');
     await expect(menu(page).getByRole('searchbox', { name: 'Filter demos' })).toBeFocused();
-    await page.keyboard.type('arabic');
+    await page.keyboard.type('record in arabic');
     await expect(menu(page).locator('.dn-item:visible')).toHaveText(['Customer record in Arabic']);
     await page.keyboard.press('Escape');
 
