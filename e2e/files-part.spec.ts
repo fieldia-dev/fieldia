@@ -155,7 +155,8 @@ test.describe('file and picture fields in a part of their own', () => {
   test('as an app’s bundler builds it: a page with no file asks for no files chunk; one with a photo asks for it, a photo picked at once', async ({ page }) => {
     const problems = watch(page);
     const asked: string[] = [];
-    // The files part's chunk, named by its module (files-part.ts) as the bundler names a chunk loaded on demand.
+    // The files part's chunks, named by their modules (files-part.ts) as the bundler names a chunk loaded on demand: the
+    // widgets', and @fieldia/core's with the uploads' work (0.29), which the widgets' brings with it.
     page.on('request', (request) => {
       const url = new URL(request.url()).pathname;
       if (/\/chunks\/files-part-[^/]+\.js$/.test(url)) asked.push(url);
@@ -168,7 +169,7 @@ test.describe('file and picture fields in a part of their own', () => {
     const avatar = page.locator('.fd-avatar .fd-file');
     await expect(avatar.locator('.fd-image-pick')).toBeVisible();
     await page.waitForLoadState('networkidle');
-    expect(asked).toHaveLength(1);
+    expect(asked).toHaveLength(2);
     await avatar.locator('input[type=file]').setInputFiles(FILES.photo('Portrait.png'));
     await expect(avatar.locator('img.fd-file-thumb')).toHaveCount(1);
     expect(problems).toEqual([]);
