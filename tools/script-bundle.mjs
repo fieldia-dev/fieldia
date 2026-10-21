@@ -1985,10 +1985,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // list's row is, by the row its `list` now shares — memory 16.08 and 5.72 measured before, 16.23 and 5.77 after, to
 // 16.3 and 5.8.
 // Merged (0.29.0), each part as measured: the list with the editable list's hooks, a text's languages and AI help's ✦
-// (131.86 and 42.39); the memory source with approvals, languages, AI help and clusters (20.07 and 7.11); the files part
+// (131.88 and 42.41); the memory source with approvals, languages, AI help and clusters (20.07 and 7.11); the files part
 // with the uploads' work out of the main script (40.22 and 14.87, from 37.36 and 13.77); AI help with one language of a
 // text kept in several (36.27 and 12.36); the editable part never opening such a text's cell (28.94 and 10.66).
-const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.0, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.4], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.1, 7.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
+const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.0, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.1, 7.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
