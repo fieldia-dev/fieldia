@@ -42,7 +42,7 @@ describe('the photos part', () => {
     expect(filesPart.loaded).toBeDefined();
     expect(document.querySelectorAll('.fd-photo')).toHaveLength(2);
     expect(document.querySelector('.fd-photo-cover:not([hidden])')?.textContent).toBe('Cover');
-    expect(document.getElementById('fieldia-photos-styles')?.getAttribute('data-fd-rank')).toBe('11');
+    expect(document.getElementById('fieldia-photos-styles')?.getAttribute('data-fd-rank')).toBe('13');
   });
 
   it('is the part of a picture field of several photos drawn as a set; a plain picture field’s is the files part’s', () => {

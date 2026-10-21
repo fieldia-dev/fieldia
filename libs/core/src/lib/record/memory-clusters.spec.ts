@@ -3,7 +3,7 @@ import { gridClusters } from './memory-clusters';
 import { createMemoryDataSource } from './memory-data-source';
 
 /**
- * A list's map whose data source gathers its records where they crowd (`clusters`, the data source contract's §19):
+ * A list's map whose data source gathers its records where they crowd (`clusters`, the data source contract's §26):
  * the memory source answers it as a server does, by a grid of squares fixed to the world, for demos and tests
  * (`gridClusters`), and has no `clusters` at all unless asked to — a map then gathers in the browser, as ever.
  */
