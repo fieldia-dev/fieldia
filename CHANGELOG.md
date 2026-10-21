@@ -15,6 +15,223 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.29.0 — 2026-10-21
+
+**What apps need as they move over: a conversation that knows its channels,
+approvals on a record, a list whose cells change in place, one text in two
+languages typed by people, AI help through your own model, photo sets, codes
+scanned with the camera, and thousands of records on a map counted by your
+server.** The page format is 0.8; a page of 0.1 to 0.7 is read as it is.
+
+**A conversation that knows its channels** (@fieldia/chatter). Give the chatter
+your app's `channels` — WhatsApp, e-mail, SMS, the team's notes — each with your
+own icon and words: each message says its channel, and what went out shows its
+ticks (a clock on its way, one tick sent, two delivered, two in the accent
+colour read); a failed one says why under it ("Not delivered: This number does
+not take text messages"), with **Retry** where your source has `resend`. A
+reply goes by the customer's last channel by default, ↩ by the channel of the
+message answered; a channel the record cannot use is hidden
+(`replyChannels`), and who it goes to is said ("To +20 10 0482 1937"). New
+messages and delivery changes arrive live — pushed by `subscribe`, else a polite
+poll every 15 seconds, on where the chatter has channels, never while the page is
+out of sight or offline — laid in place, announced politely, never disturbing a
+reply being typed; what arrives for a record no longer shown is dropped.
+**Follow-ups at an hour** on the page's clock ("Today at 15:30", "Overdue since
+11:00"), and Schedule activity has a Time box. They come in a part of the
+chatter's own (`channels`, 3.5 KB gzipped). Demo: a buyer's enquiry with
+WhatsApp, e-mail, a failed SMS and team notes.
+
+**Approvals on a record.** A record page with `approval` says over the record
+where its approval stands — "Waiting for Finance: Mona Adel or Hany Lotfy",
+"Needs approval from Finance, then CFO", "Approved", "Rejected by Mona Adel
+(Finance)" with the reason quoted — its levels in order, and **Approve** and
+**Reject** (Reject asks why) for those who may decide. While it waits, every
+field is locked but those `approval.open` names, each lock saying why. The
+history (who asked, who decided at which level, when and why) is folded under
+the band, and told among the chatter's messages, written as the chatter writes
+a time. Through the optional `approvals` and `decide` members: your app, or an
+approval engine such as Flowyard's approval step, decides the routing — the
+docs say how such a step answers them. It comes in `fieldia.approvals.js`. In
+the designer: the Rules tab's Approvals. Demos: a purchase order over its limit
+waiting for Finance then the CFO; an expense rejected with a reason.
+
+**A list whose cells change in place** (`editable`). A press, Enter or a key
+typed opens a cell in its field's own box with its rules; Tab and Shift+Tab go
+from cell to cell, Enter goes down its column, Escape puts back. Each row is
+saved as it is left — the fields it changed alone (`partial: true`), with the
+version it was listed at; one refused stays as typed, why said under it, with
+Put back; someone else's save first is said as a record's page says it, with
+Reload and Keep mine. Computed columns follow the cells and wait where one does
+not read. **Add a line** adds a row at the end; a block pasted from a spreadsheet
+goes across and down the rows (rows given the same change in one `writeMany`);
+on a phone a card is changed in a sheet. It comes in `fieldia.editable.js`. In
+the designer: a list's Change cells in place. Demos: a clinic's price list, a
+week of staff hours, a pipeline's stages.
+
+**One text in several languages, typed by people.** A line, a paragraph or
+formatted text with `translate: ["ar", "en"]` keeps its value as `{ ar, en }`: a
+switch over its box (the reader's language first, each named in itself), Arabic
+written right to left on any page, `required` in every language or `requiredIn`
+some ("Title is required in Arabic", the save taking you to it), lists and cards
+showing the reader's language — another's marked "EN" where it has none — and a
+search finding either. Fieldia never translates it, and never offers to. It
+comes in `fieldia.languages.js`. In the designer: Typed in several languages,
+Required in. Demos: a listing in Arabic and English; a clinic's services named
+in both.
+
+**AI help, through your app's own model.** Fieldia ships no model and no keys:
+a page's `suggest` draws **Fill from text** (words pasted, files picked, or a
+text the record holds, `fromField`), a text field's `options.rewrite` **Draft**
+and **Polish**, a list's `searchToFilter` a ✦ that reads "villas in New Cairo
+under 15M" as the list's own filters — through the optional `suggest`,
+`rewrite` and `searchToFilter` members. Every value proposed is shown on its
+field first — the old one struck through, the new one, Accept and Reject, Accept
+all — nothing kept until accepted, Undo after; a field typed in meanwhile keeps
+what was typed ("Left as you typed: Email"); a proposal for a record no longer
+shown is dropped. A text in two languages is filled in the one language the
+person is looking at, said so ("Proposed in English"), never the other.
+`handle.propose(values, { why })` shows your agent's values the same way. It
+comes in `fieldia.assist.js`. `assistStandIn()` answers for demos and tests,
+labelled "Stand-in AI, no model". Demos: a customer filled from an e-mail
+signature; an enquiry's reply drafted and polished; homes searched in plain
+words.
+
+**Photo sets.** A picture field of several photos drawn as `"widget":
+"photos"`: tiles in the order a person puts them (dragged, a finger resting a
+moment on a phone, or Alt and an arrow key, each move said), the first the
+cover — what a list's card and a map's pin show — each cropped and turned in a
+dialog, the picture made stored through your `upload` and the original kept
+beside it (Put back the original), captions, the field's `maxFiles`. It comes in
+`fieldia.photos.js`, with the files part. In the designer: a Photo set kind.
+Demos: a listing's photos with the agent's covers; a clinic's before and after.
+
+**A code scanned with the camera** (`options.scan`): a Scan button at the end of
+a field's box — a line of text, a paragraph, a link found by its code (`by`), a
+table's column, a table that counts what is scanned — the camera in a sheet, the
+back one on a phone; QR, DataMatrix, EAN-13/8, UPC and Code 128/39; a medicine's
+GS1 code read in parts (`part`, `fills`: a lot, its expiry, its product). The
+browser's own reader where it has one, else ZXing's readers in a part of their
+own (`fieldia.decode.js`), loaded only as Scan is pressed; a camera refused or
+missing says so, and a scanner gun types as before. It comes in
+`fieldia.scan.js`. In the designer: Scan with the camera, Code kept in. Demos: an
+injectable's lot scanned into a clinic's treatment; a shelf counted by its
+barcodes; codes to scan, printed or on another screen.
+
+**Thousands on a map, counted by your server** (@fieldia/map). A data source's
+optional `clusters` gives a list's map the bubbles of the view it shows — each
+with its count and the box its records lie in — in place of loading at most 500
+records: asked as the search changes and a moment after the map stops (the last
+ask wins), a bubble on one spot listing its records, a record standing alone with
+its pin and card, "Search this area" counting from the bubbles. Without it, or
+where it answers `false`, the map loads and gathers as before. `gridClusters()`
+answers it from a memory source. Demo: 20,000 homes across Egypt.
+
+**Smaller things:**
+
+- **Fill from text asks only for what it fills**: words, numbers, money, yes or
+  no, a choice, a day, links, a table's lines — never a file, a picture or a
+  photo set.
+- **A list's cell never opens a text in two languages**: its languages are typed
+  under their switch, on the record's page; a page naming one in
+  `editable.fields` is refused, with why.
+- **Smaller main script**: the uploads' work — a file made ready and sent, its
+  link put in its field — moved into the files part, which a page with a file
+  field loads anyway (core's `formUploadsPart`).
+
+**Fixes:** a number's total under a plain table lines up under its column (it
+read from the left); the tender's lots test reads the days the demo counts from
+today, and runs on two other days' clocks as well (it held on 20 Oct alone).
+
+**And:** the page format is **0.8** (`FORMAT_VERSION`): it only added — a
+record's `approval`, a list's `editable` and `searchToFilter`, a text's
+`translate` and `requiredIn`, a page's `suggest`, a text field's
+`options.rewrite`, a photo set's options and a field's `options.scan` — so a 0.1
+to 0.7 page is read as it is, and `upgradePage` writes 0.8 in it.
+
+**Not done yet** (each feature's docs say it): an editable list's own `on` steps
+in a row's form, a link among `startValues`; two languages in a table's line,
+in `matchesFilter`, Export and Import; a photo set in a table line's cell; ZXing's
+trimmed readers for an app's own bundler (it gets the library's whole index,
+about 120 KB gzipped, lazily); ids in a server's bubbles.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- An app that serves `fieldia.js` itself serves the new parts beside it:
+  `fieldia.approvals.js`, `fieldia.editable.js`, `fieldia.languages.js`,
+  `fieldia.assist.js`, `fieldia.photos.js`, `fieldia.scan.js` and
+  `fieldia.decode.js` (the package's `bundle` folder has them, with
+  `THIRD_PARTY_NOTICES.md`, which the decode part's banner names). The uploads'
+  work is in `fieldia.files.js` now: a form that sends a file loads it, as a page
+  with a file field always did.
+- **The conversation writes a time one way**: a message's time and a follow-up's
+  day as the page's date boxes write them — "1 Oct 2026, 10:00" (0.28: "Oct 1,
+  2026, 10:00 AM"), "Due 22 Oct 2026" (0.28: "Due Oct 22, 2026") — and, inside a
+  slot, on the page's clock (`timeZone`) and with the form's today. An approval's
+  history in the conversation is written so too. A refresh updates the list in
+  place. The poll is on only where the chatter has channels or `live` is set.
+- `PART_RANK`, one order: print 0, lines 1, business 2, survey 3, files 4,
+  evidence 5, phone 6, slots 7, import 8, duplicates 9, limits 10, approvals 11,
+  assist 12, photos 13, languages 14, themes 15, quiet 16, picker 17, head 18,
+  groups 19, text 20, surveyLooks 21, cards 22, scan 23. The editable list's sheet
+  goes right after the list's own, as the cards' and the columns' do.
+- @fieldia/widgets depends on `@zxing/library` 0.23.0 (Apache-2.0, noticed in
+  `THIRD_PARTY_NOTICES.md`), loaded only by the decode part.
+- New optional data source members: `approvals`, `decide`, `suggest`, `rewrite`,
+  `searchToFilter`, `clusters`; the chatter's source `replyChannels`,
+  `subscribe`, `resend`. `SuggestRequest` carries `languages` for a text in two
+  languages; `SearchOptions` gains `field`; `FileValue` gains `caption`,
+  `original` and `edit`, `UploadHow` `replaces`. `ChatterMessage` gains `channel`,
+  `direction`, `delivery` and `failure`; `ChatterOptions` gains `channels`,
+  `live`, `timeZone`, `dateOrder`, `recordShown` and `entries`; `ChatterHandle`
+  gains `setEntries`; `chatterSlot` takes `approvals: false`.
+- `FormState` gains `approval`; `Form` gains `refreshApprovals`, `decide` and
+  `approvalLock`; `ViewerHandle` gains `propose`; a list context gains `newForm`,
+  `drawField`, `dialogs` and `letGo`; the list's `Cells` gain `text()`; the search
+  bar and the filter bar give `input`, `current()` and `take()`.
+- `MemoryDataSource` has the AI members only where its `assist` option answers
+  them, and `clusters` only with its option; new options `approvals`,
+  `approvalHistory`, `language`, `assist` and `clusters`.
+- New exports: @fieldia/core's `formUploadsPart`, `formLanguagesPart`,
+  `hasLanguages`, `languagesOf`, `checkTranslated`, `languageName`,
+  `languagesAtFault`, `textIn`, `textOf`, `LanguageTagSchema`, `editableColumns`,
+  `cellChangeable`, `EDIT_KINDS`, `assistStandIn`, `gridClusters`,
+  `PhotosOptionsSchema`, `SCAN_FORMATS`, `ScanOptionSchema`, `ScanSettingsSchema`,
+  `ScanFillSchema` and their types; @fieldia/widgets' `languagesPart`,
+  `photosPart`, `scanPart`, `decodePart`, `loadDecodePart` and `scans`; the files
+  part's `takeFiles`, `preview` and `readPicture`; @fieldia/viewer's
+  `approvalsPart`, `editablePart` and `assistPart`; @fieldia/chatter's
+  `approvalEntries`; the designer's `setApproval`, `setSuggest`, `setLanguages`
+  and `setRequiredIn`.
+- A file's dialog uses its caption as its title; a stored file keeps the words
+  beside its bytes as they stand when it lands.
+- An app that gives the viewer a whole `labels` object adds the `approval…`,
+  `assist…` (`assistProposedIn` among them) and `row…` words; the widgets' adds
+  `languageSwitch`, `languageEmpty`, `languageNeeded`, `inLanguage` and the
+  `photo…`, `crop…`, `turn…` and `scan…` words; the chatter's the 18 words of its
+  channels and hours (`sendBy` … `dueTime`, `retry`) and `approvalAsked`,
+  `approvalApproved`, `approvalRejected`; the map's list `crowdMore`; whole
+  `messages` add `approvalLocked`, `approvalReasonNeeded`, `approvalNotYours`,
+  `languagesNeeded` and `languagesNeededQuestion`. `addLanguage` fills any left
+  out from English.
+- A page the designer saves says `"fieldia": "0.8"`: Fieldia 0.28 refuses it as
+  newer than it reads. An app that keeps pages for older Fieldias keeps them in
+  0.7 (nothing 0.8 adds is in them).
+
+**Size:** `fieldia.js` 510.6 KB, 167.4 gzipped (0.28.0: 506.8, 166.2; the lanes
+merged, before the uploads' work moved to the files part, measured 512.4,
+168.2). New parts: `fieldia.approvals.js` 6.8 KB gzipped, `fieldia.editable.js`
+10.7, `fieldia.languages.js` 4.5, `fieldia.assist.js` 12.4, `fieldia.photos.js`
+11.6, `fieldia.scan.js` 7.9, `fieldia.decode.js` 38.9 (only where the browser
+reads no codes). Of the parts, the files part grew with the uploads' work and a
+photo set's helpers (14.9 KB gzipped, from 13.6), the list's with the editable
+list's hooks, a text's languages and the ✦ (42.4, from 41.6), the memory
+source's with approvals, languages, AI help and clusters (7.1, from 5.7, the
+one-tag script alone), the filters' (7.9, from 7.8); the rest are as they were.
+A language's add-on is 13.8 to 15.9 KB gzipped (0.28: 11.6 to 13.3). The
+chatter's main chunk is 14.5 KB gzipped (from 11.7), its `channels` part 3.5;
+@fieldia/map 47.4 with a list's map (from 46.4), 32.1 for a list's map in a page
+of its own (from 31.1), its `server-clusters` chunk 1.1.
+
 ## 0.28.0 — 2026-10-20
 
 **Everything a business owner's walk of 0.27 found, mended** — values worked
