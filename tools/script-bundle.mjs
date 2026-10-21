@@ -1021,7 +1021,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // part a page asks for where its list's rows open in place (fieldia.rows.js: its name and loader, the global's
 // `rowsPart`, and `partsFor` knowing a list with `detail` asks for it, so the page is drawn whole; 115) — 507.00 after,
 // to 507.0; and one with `sequenceField` (rows re-ranked by hand), 507.02 after, to 507.1; and with `loadChildren`, 507.03.
-const BUDGET_KB = 507.1;
+// A pill's soft shade laid on the surface, its ground its own over a row under the pointer or ticked (every tone at
+// 4.5:1 in every skin, theme and scheme; 82 bytes), 507.11 after, to 507.2.
+const BUDGET_KB = 507.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1256,7 +1258,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
 // Lists people work in (listed with the raw budget above): 166.15 measured before, 166.20 after, to 166.3; the rows
-// part's name and its page's need of it, 166.26 after.
+// part's name and its page's need of it, 166.26 after; a pill's ground its own, 166.29.
 const GZIP_BUDGET_KB = 166.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);

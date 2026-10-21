@@ -667,8 +667,9 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-field[data-tone="muted"] { --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
 .fd-field[data-tone] :is(input, select, textarea, .fd-value-text, .fd-pending) { color: var(--fd-tone); -webkit-text-fill-color: var(--fd-tone); }
 .fd-field.fd-value-bold :is(input, select, textarea, .fd-value-text, .fd-pending, .fd-value-badge) { font-weight: 700; }
-/* A value as a pill (widget badge): grey, or its tone's colour on its soft shade. */
-.fd-value-badge { justify-self: start; align-self: center; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; line-height: 18px; font-weight: 500; color: var(--fd-tone, var(--fd-muted)); background: var(--fd-tone-soft, color-mix(in srgb, var(--fd-tone, var(--fd-muted)) 14%, transparent)); }
+/* A value as a pill (widget badge): grey, or its tone's colour on its soft shade — laid on the surface, so its ground is
+   its own whatever is under it (a row under the pointer, a row ticked) and its words read as they do at rest. */
+.fd-value-badge { --fd-pill: var(--fd-tone-soft, color-mix(in srgb, var(--fd-tone, var(--fd-muted)) 14%, transparent)); justify-self: start; align-self: center; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; line-height: 18px; font-weight: 500; color: var(--fd-tone, var(--fd-muted)); background: linear-gradient(var(--fd-pill), var(--fd-pill)) var(--fd-surface); }
 .fd-value-badge[hidden] { display: none; }
 /* A value given its own tone by options.tones, over the part's. */
 .fd-value-badge[data-tone="info"] { --fd-tone: var(--fd-info); --fd-tone-soft: var(--fd-info-soft); }

@@ -243,8 +243,8 @@ test.describe('a waiting room ranked by hand', () => {
     const keyed = [...moved.slice(0, -2), moved[moved.length - 1], moved[moved.length - 2]];
     await expect(patients(page)).toHaveText(keyed);
     await expect(page.locator('.fd-list-row').nth(keyed.length - 2)).toBeFocused();
-    // The pointer parked off the rows: a muted pill over a hovered row's ground is 4.16:1 in any list (not this one's).
-    await page.mouse.move(0, 0);
+    // The pointer over a row, as a person's is: its pills read over the hovered row's ground.
+    await page.locator('.fd-list-row').nth(1).hover();
     await screen(page, 'list-work-rank', { viewport: true });
     expect(await axeFindings(page, 'a waiting room ranked by hand')).toEqual([]);
     expect(problems).toEqual([]);
@@ -357,4 +357,46 @@ test.describe('a chart of accounts opened a group at a time', () => {
     await expect(page.locator('.fd-list-row').first().locator('.fd-list-tree-in')).toHaveText('in Cash and banks');
     expect(problems).toEqual([]);
   });
+});
+
+/**
+ * A list's pills in every tone read at 4.5:1 over their row — at rest, under the pointer, ticked, ticked and under the
+ * pointer — in each skin and each theme, light and dark: a pill's ground is its own, never the row's showing through.
+ */
+test.describe('a list’s pills over their row', () => {
+  const TONES = ['info', 'success', 'warning', 'danger', 'muted'];
+  const LOOKS = [
+    ...['underline', 'outlined', 'quiet'].map((skin) => ({ name: skin, query: `skin=${skin}` })),
+    ...['material', 'fluent', 'apple', 'bootstrap', 'shadcn', 'ant', 'odoo', 'google-forms'].map((theme) => ({ name: theme, query: `skin=underline&theme=${theme}` })),
+  ];
+  for (const look of LOOKS) {
+    for (const scheme of ['light', 'dark']) {
+      test(`every tone reads at rest, hovered and ticked · ${look.name} · ${scheme}`, async ({ page }, info) => {
+        // Contrast is the look's, not the engine's: every look in Chromium, the plain skin in the others.
+        test.skip(info.project.name !== 'chromium' && look.name !== 'underline', 'the looks are swept in Chromium');
+        await open(page, 'plain', `page=waiting-room&${look.query}&scheme=${scheme}`);
+        const row = page.locator('.fd-list-row').first();
+        // Each tone's pill in the first row, beside its status.
+        await row.locator('td[data-col="state"]').evaluate((cell, tones) => {
+          const pill = cell.querySelector('.fd-value-badge') as HTMLElement;
+          for (const tone of tones) {
+            const one = pill.cloneNode(true) as HTMLElement;
+            one.dataset['tone'] = tone;
+            one.textContent = tone;
+            cell.append(one);
+          }
+        }, TONES);
+        const within = '.fd-list-table tbody';
+        await page.mouse.move(0, 0);
+        expect(await axeFindings(page, `${look.name} ${scheme} at rest`, within)).toEqual([]);
+        await row.locator('td[data-col="doctor"]').hover();
+        expect(await axeFindings(page, `${look.name} ${scheme} hovered`, within)).toEqual([]);
+        await row.locator('.fd-list-checkbox').check();
+        await page.mouse.move(0, 0);
+        expect(await axeFindings(page, `${look.name} ${scheme} ticked`, within)).toEqual([]);
+        await row.locator('td[data-col="doctor"]').hover();
+        expect(await axeFindings(page, `${look.name} ${scheme} ticked and hovered`, within)).toEqual([]);
+      });
+    }
+  }
 });
