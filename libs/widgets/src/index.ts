@@ -1,5 +1,9 @@
 export * from './lib/widgets';
 export * from './lib/styles';
+// A strict Content-Security-Policy: the nonce every <style> of Fieldia's carries, and the element made with it.
+export { fieldiaStyle, styleNonce, useStyleNonce } from './lib/style-nonce';
+// A formatted text's own looks shown, and read, with no style attribute read by the browser: as a strict policy needs.
+export { showHtml } from './lib/style-attributes';
 export * from './lib/labels';
 // Links to other records: each widget the relations part's (relations.ts), drawn plainly until it comes; what a link
 // shows of its record at rest, the main script's. (A char field's tags, `charTagsWidget`, is the registry's.)

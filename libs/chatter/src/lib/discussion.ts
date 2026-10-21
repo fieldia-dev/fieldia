@@ -1,5 +1,5 @@
 import { fill, recordSentence } from '@fieldia/core';
-import { installStyles, sanitizeHtml, textPart, WIDGET_LABELS, type TextPart, type TextReference } from '@fieldia/widgets';
+import { installStyles, sanitizeHtml, showHtml, textPart, WIDGET_LABELS, type TextPart, type TextReference } from '@fieldia/widgets';
 import type { ChatterHandle, ChatterOptions } from './chatter';
 import { initials } from './chatter';
 import { chatterLabels, type ChatterLabels } from './labels';
@@ -186,7 +186,7 @@ function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorat
     const day = (date.getFullYear() === now().getFullYear() ? sameYear : otherYear).format(date);
     const when = el('a', { class: 'fd-comment-date', href: `#comment-${message.id}`, title: full.format(date) }, el('time', { datetime: message.date }, fill(labels.commentedOn, { date: day })));
     const body = el('div', { class: 'fd-comment-body' });
-    body.innerHTML = decorateLinks(sanitizeHtml(message.body, doc), doc);
+    showHtml(body, decorateLinks(sanitizeHtml(message.body, doc), doc));
     return el(
       'li',
       { class: 'fd-comment-card', id: `comment-${message.id}`, tabindex: '-1', 'data-message': String(message.id) },

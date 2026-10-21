@@ -16,6 +16,8 @@ export const SurveyEditor = defineComponent({
   props: {
     designer: { type: Object as PropType<Designer>, required: true },
     skin: { type: String as PropType<Skin>, default: undefined },
+    /** The page's Content-Security-Policy nonce: every <style> the editor adds carries it. */
+    nonce: { type: String, default: undefined },
   },
   emits: { ready: (_handle: SurveyEditorHandle) => true },
   setup(props, { emit, expose }) {
@@ -23,7 +25,7 @@ export const SurveyEditor = defineComponent({
     let handle: SurveyEditorHandle | null = null;
     const mount = () => {
       handle?.destroy();
-      handle = mountSurveyEditor(host.value as HTMLElement, { designer: props.designer, skin: props.skin });
+      handle = mountSurveyEditor(host.value as HTMLElement, { designer: props.designer, skin: props.skin, nonce: props.nonce });
       emit('ready', handle);
     };
     onMounted(mount);
@@ -39,6 +41,8 @@ export const ScreenEditor = defineComponent({
   props: {
     designer: { type: Object as PropType<Designer>, required: true },
     skin: { type: String as PropType<Skin>, default: undefined },
+    /** The page's Content-Security-Policy nonce: every <style> the editor adds carries it. */
+    nonce: { type: String, default: undefined },
   },
   emits: { ready: (_handle: ScreenEditorHandle) => true },
   setup(props, { emit, expose }) {
@@ -46,7 +50,7 @@ export const ScreenEditor = defineComponent({
     let handle: ScreenEditorHandle | null = null;
     const mount = () => {
       handle?.destroy();
-      handle = mountScreenEditor(host.value as HTMLElement, { designer: props.designer, skin: props.skin });
+      handle = mountScreenEditor(host.value as HTMLElement, { designer: props.designer, skin: props.skin, nonce: props.nonce });
       emit('ready', handle);
     };
     onMounted(mount);

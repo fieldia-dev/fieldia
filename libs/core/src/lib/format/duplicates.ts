@@ -1,4 +1,8 @@
 import * as z from 'zod';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
 
 /**
  * Possible duplicates (`duplicates` on a record's page): while a person types a record — and again as it is saved —

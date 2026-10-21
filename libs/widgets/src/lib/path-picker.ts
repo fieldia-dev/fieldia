@@ -234,7 +234,9 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       nameCell.append(twist);
     }
     nameCell.append(make('span', { class: 'fd-path-words' }, text));
-    const element = make('div', { id: rowId, role: 'treeitem', class: 'fd-path-row', 'aria-selected': 'false', 'aria-level': String(level), style: `--fd-depth: ${level - 1}` }, nameCell);
+    const element = make('div', { id: rowId, role: 'treeitem', class: 'fd-path-row', 'aria-selected': 'false', 'aria-level': String(level) }, nameCell);
+    // Its depth through its style object, never a style attribute: a strict Content-Security-Policy lets one be.
+    element.style.setProperty('--fd-depth', String(level - 1));
     if (extra.set) {
       element.setAttribute('aria-setsize', String(extra.set));
       element.setAttribute('aria-posinset', String(extra.at));

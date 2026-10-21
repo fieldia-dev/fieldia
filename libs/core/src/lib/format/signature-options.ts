@@ -1,4 +1,8 @@
 import * as z from 'zod';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
 
 /**
  * A signature that signs answers (`"widget": "signature"` on a binary field): its settings in the node's `options`,

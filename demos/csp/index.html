@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fieldia — under a strict Content-Security-Policy</title>
+    <!--
+      Served under a strict policy (tools/serve.mjs, /csp/): scripts and styles run only with this response's nonce,
+      no 'unsafe-inline', no 'unsafe-eval'. The server writes the nonce where __CSP_NONCE__ stands, as an app's server
+      does. What the policy refuses is kept in window.cspViolations, which the browser gate reads (e2e/csp.spec.ts).
+    -->
+    <script nonce="__CSP_NONCE__">
+      window.cspViolations = [];
+      document.addEventListener('securitypolicyviolation', (event) => window.cspViolations.push({ directive: event.violatedDirective, blocked: event.blockedURI, sample: event.sample, source: event.sourceFile, line: event.lineNumber, target: (event.target && event.target.id) || '' }));
+    </script>
+    <style nonce="__CSP_NONCE__">
+      body { margin: 0; font-family: system-ui, sans-serif; background: #f6f7f9; color: #1b1f24; }
+      #app { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+    </style>
+  </head>
+  <body>
+    <main id="app"></main>
+    <!-- A module, split as an app's bundler splits it: its chunks and Fieldia's parts come by import(), under the nonce. -->
+    <script type="module" nonce="__CSP_NONCE__" src="main.js" data-app></script>
+  </body>
+</html>

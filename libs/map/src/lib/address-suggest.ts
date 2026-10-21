@@ -1,5 +1,5 @@
 import type { Locale, Value } from '@fieldia/core';
-import { stillShown, type WidgetContext } from '@fieldia/widgets';
+import { stillShown, type WidgetContext, fieldiaStyle } from '@fieldia/widgets';
 import type { addressLine } from './address-line';
 import type { AddressParts } from './address-parts';
 import { asJson, isLatLng, writePoint, type LatLng } from './geo';
@@ -92,9 +92,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
   const near = isObject(options['near']) && isLatLng(options['near']['lat'], options['near']['lng']) ? (options['near'] as unknown as LatLng) : settings.center;
   installMapStyles(doc);
   if (!doc.getElementById('fieldia-address-styles')) {
-    const style = doc.createElement('style');
-    style.id = 'fieldia-address-styles';
-    style.textContent = ADDRESS_CSS;
+    const style = fieldiaStyle(doc, ADDRESS_CSS, 'fieldia-address-styles');
     doc.head.prepend(style);
   }
 

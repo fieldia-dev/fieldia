@@ -14,6 +14,11 @@ import { SKINS, type Skin } from './themes';
 
 import { FORMAT_VERSIONS, formatProblem, type FormatVersion } from './version';
 import type { DateOrder } from '../record/input-rules';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
+
 export { FORMAT_VERSION } from './version';
 
 /**

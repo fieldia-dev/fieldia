@@ -1,4 +1,8 @@
 import * as z from 'zod';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
 
 /**
  * A day ("2026-11-20"), a day and a time on the page's clock ("2026-11-01T09:00"), or an instant with its offset

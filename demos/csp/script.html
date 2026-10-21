@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fieldia's one tag — under a strict Content-Security-Policy</title>
+    <!--
+      The one-tag script under a strict policy (tools/serve.mjs, /csp/): fieldia.js takes its own tag's nonce for every
+      <style> it adds and for each part's tag, which it adds beside itself as a page first uses the part. The page says
+      nothing more about the policy. What the policy refuses is kept in window.cspViolations (e2e/csp.spec.ts).
+    -->
+    <script nonce="__CSP_NONCE__">
+      window.cspViolations = [];
+      document.addEventListener('securitypolicyviolation', (event) => window.cspViolations.push({ directive: event.violatedDirective, blocked: event.blockedURI, sample: event.sample, source: event.sourceFile, line: event.lineNumber, target: (event.target && event.target.id) || '' }));
+    </script>
+    <style nonce="__CSP_NONCE__">
+      body { margin: 0; font-family: system-ui, sans-serif; }
+      #app { max-width: 900px; margin: 0 auto; padding: 24px 16px 64px; }
+    </style>
+  </head>
+  <body>
+    <main id="app"></main>
+    <script nonce="__CSP_NONCE__" src="../script/fieldia.js"></script>
+    <script nonce="__CSP_NONCE__">
+      // A visit with a day, a choice, its rooms as lines, and a formatted note with its own looks (centred, a colour):
+      // the date, lines and text parts each come as the page first draws them.
+      const page = {
+        fieldia: '0.7',
+        id: 'site-visit',
+        title: 'Site visit',
+        data: { kind: 'record', model: 'site.visit' },
+        fields: {
+          name: { type: 'char', label: 'Client', required: true },
+          day: { type: 'date', label: 'Visit day' },
+          area: { type: 'selection', label: 'Area', options: [{ value: 'north', label: 'North' }, { value: 'south', label: 'South' }] },
+          budget: { type: 'monetary', label: 'Budget', currency: 'EUR' },
+          note: { type: 'html', label: 'Note' },
+          rooms: { type: 'one2many', label: 'Rooms', relation: 'site.room', fields: { room: { type: 'char', label: 'Room' }, size: { type: 'float', label: 'Size (m²)' } } },
+        },
+        layout: {
+          type: 'sections',
+          id: 'sections',
+          children: [
+            {
+              type: 'section',
+              id: 'visit',
+              columns: 2,
+              children: [
+                { type: 'field', id: 'name', field: 'name' },
+                { type: 'field', id: 'day', field: 'day' },
+                { type: 'field', id: 'area', field: 'area', widget: 'radio' },
+                { type: 'field', id: 'budget', field: 'budget' },
+                { type: 'field', id: 'note', field: 'note', colspan: 2 },
+                { type: 'field', id: 'rooms', field: 'rooms', colspan: 2, columns: ['room', 'size'] },
+              ],
+            },
+          ],
+        },
+      };
+      const dataSource = Fieldia.createMemoryDataSource({
+        records: { 'site.visit': { 1: { name: 'Nile Traders', note: '<p style="text-align: center;">Bring the <span style="color: rgb(19, 101, 217);">floor plan</span></p>', rooms: [{ key: 'hall', id: 11, values: { room: 'Hall', size: 24 } }] } } },
+      });
+      const handle = Fieldia.mountViewer(document.getElementById('app'), { page, dataSource, recordId: 1, skin: 'outlined' });
+      window.fieldiaDemo = { handle };
+    </script>
+  </body>
+</html>

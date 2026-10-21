@@ -27,6 +27,7 @@
  */
 import { SHARED } from 'fieldia:shared';
 import type { LanguageWords } from '@fieldia/viewer';
+import { styleNonce, useStyleNonce } from '@fieldia/widgets';
 
 declare const __FIELDIA_VERSION__: string;
 
@@ -45,6 +46,11 @@ const made = new Map<string, unknown>();
 const waiting = new Map<string, { resolve(exports: unknown): void; reject(error: Error): void }[]>();
 /** The folder the main script came from, where its parts are; empty when it came from no file of its own. */
 let base = '';
+/**
+ * The main script's own nonce (`<script nonce>`), which its parts' tags carry: a Content-Security-Policy that lets
+ * scripts run by their nonce lets the parts run too. Empty under none.
+ */
+let nonce = '';
 /** What puts a part's words in the tables (`partWords`, add-language.ts), given as the main script starts. */
 let fillWords: (words: LanguageWords) => void = () => undefined;
 
@@ -88,6 +94,7 @@ export function loadPart(name: string): Promise<unknown> {
     const tag = doc.createElement('script');
     tag.src = `${base}fieldia.${name}.js`;
     tag.async = true;
+    if (nonce) tag.nonce = nonce;
     tag.onload = () => {
       tag.remove();
       if (!made.has(name)) settle(name, { error: new Error(`${tag.src} gave no part`) });
@@ -102,15 +109,19 @@ export function loadPart(name: string): Promise<unknown> {
 }
 
 /**
- * Run as the main script starts: where it came from, while the browser still
- * says (`document.currentScript`), what puts a part's words in the tables, and
- * the parts whose scripts ran before it.
+ * Run as the main script starts: where it came from and its nonce, while the
+ * browser still says (`document.currentScript`), what puts a part's words in the
+ * tables, and the parts whose scripts ran before it.
  */
 export function startParts(words: (words: LanguageWords) => void): void {
   fillWords = words;
   const script = typeof document === 'undefined' ? null : document.currentScript;
   const src = script && 'src' in script ? String(script.src) : '';
   base = src ? src.replace(/[?#].*$/, '').replace(/[^/]*$/, '') : '';
+  // A browser hides a nonce's attribute once a policy came with the page: its property keeps it. Fieldia's <style>
+  // elements carry it too, unless the page or the app gives them one of their own (the viewer's `nonce`).
+  nonce = (script as HTMLScriptElement | null)?.nonce || script?.getAttribute('nonce') || '';
+  if (nonce && typeof document !== 'undefined' && !styleNonce(document)) useStyleNonce(document, nonce);
   const host = globalThis as PartsHost;
   const queued = Array.isArray(host.FieldiaParts) ? host.FieldiaParts : [];
   host.FieldiaParts = { push: take };

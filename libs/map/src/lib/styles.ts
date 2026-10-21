@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 /**
  * The maps in Fieldia's colours: every colour a token, so a theme, a host's
  * tokens and the dark scheme reach the map's buttons, search, shapes and
@@ -117,9 +118,7 @@ path.fd-map-trace { stroke: var(--fd-accent); fill: var(--fd-accent); stroke-wid
 /** The maps' own stylesheet, once per document: the tools, the search and the box are drawn before Leaflet has loaded. */
 export function installMapStyles(doc: Document) {
   if (doc.getElementById('fieldia-map-styles')) return;
-  const own = doc.createElement('style');
-  own.id = 'fieldia-map-styles';
-  own.textContent = MAP_CSS;
+  const own = fieldiaStyle(doc, MAP_CSS, 'fieldia-map-styles');
   // Before the page's own styles, so an app's rule for a map wins over these.
   doc.head.prepend(own);
 }
@@ -127,9 +126,7 @@ export function installMapStyles(doc: Document) {
 /** Leaflet's stylesheet, once per document, before the maps' own (which add to it): it comes with Leaflet. */
 export function installLeafletStyles(doc: Document, css: string) {
   if (doc.getElementById('fieldia-leaflet-styles')) return;
-  const leaflet = doc.createElement('style');
-  leaflet.id = 'fieldia-leaflet-styles';
-  leaflet.textContent = css;
+  const leaflet = fieldiaStyle(doc, css, 'fieldia-leaflet-styles');
   const own = doc.getElementById('fieldia-map-styles');
   if (own) own.before(leaflet);
   else doc.head.prepend(leaflet);
@@ -287,9 +284,7 @@ span.fd-map-crowd-item { display: block; cursor: default; }
 export function installListMapStyles(doc: Document) {
   installMapStyles(doc);
   if (doc.getElementById('fieldia-list-map-styles')) return;
-  const own = doc.createElement('style');
-  own.id = 'fieldia-list-map-styles';
-  own.textContent = LIST_MAP_CSS;
+  const own = fieldiaStyle(doc, LIST_MAP_CSS, 'fieldia-list-map-styles');
   doc.getElementById('fieldia-map-styles')?.after(own);
 }
 
@@ -329,9 +324,7 @@ export const EMBED_CSS = `
 export function installEmbedStyles(doc: Document) {
   installListMapStyles(doc);
   if (doc.getElementById('fieldia-map-embed-styles')) return;
-  const own = doc.createElement('style');
-  own.id = 'fieldia-map-embed-styles';
-  own.textContent = EMBED_CSS;
+  const own = fieldiaStyle(doc, EMBED_CSS, 'fieldia-map-embed-styles');
   doc.getElementById('fieldia-list-map-styles')?.after(own);
 }
 
@@ -376,8 +369,6 @@ path.fd-map-fence { stroke: var(--fd-warning); stroke-width: 2.5; stroke-dasharr
 export function installFormMapStyles(doc: Document) {
   installListMapStyles(doc);
   if (doc.getElementById('fieldia-form-map-styles')) return;
-  const own = doc.createElement('style');
-  own.id = 'fieldia-form-map-styles';
-  own.textContent = FORM_MAP_CSS;
+  const own = fieldiaStyle(doc, FORM_MAP_CSS, 'fieldia-form-map-styles');
   doc.getElementById('fieldia-list-map-styles')?.after(own);
 }

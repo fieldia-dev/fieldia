@@ -1,3 +1,4 @@
+import { heldHtml, HELD_STYLE, styleOf } from './style-attributes';
 /**
  * Markdown and the formatted text Fieldia keeps, both ways, written by hand so
  * the one-tag script stays small: a field edited in Markdown is still stored
@@ -230,8 +231,9 @@ const escapeMarkdown = (text: string) =>
 
 /** Formatted text written as Markdown, as near as Markdown can say it. */
 export function htmlToMarkdown(html: string, doc: Document = globalThis.document): string {
+  // Its style attributes held while it is read, as a strict Content-Security-Policy needs (style-attributes.ts).
   const box = doc.createElement('template');
-  box.innerHTML = html;
+  box.innerHTML = heldHtml(html);
   return blockChildren(box.content, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
@@ -330,7 +332,7 @@ function inlineNode(node: Node): string {
 
 /** A cell's alignment, as a column's colons can say it, or not ('?'). */
 const alignOf = (cell: HTMLTableCellElement) => {
-  const align = cell.style.textAlign;
+  const align = styleOf(cell).textAlign;
   return !align || /^(left|center|right)$/.test(align) ? align : '?';
 };
 
@@ -372,14 +374,14 @@ function tableLoses(table: HTMLTableElement): boolean {
  */
 export function markdownLoses(html: string, doc: Document = globalThis.document): boolean {
   const box = doc.createElement('template');
-  box.innerHTML = html;
+  box.innerHTML = heldHtml(html);
   return [...box.content.querySelectorAll('*')].some(
     (element) =>
       element.tagName === 'U' ||
       element.hasAttribute('data-mention') ||
       element.hasAttribute('data-record') ||
       (element.tagName === 'TABLE' && tableLoses(element as HTMLTableElement)) ||
-      (element.hasAttribute('style') && !highlightOnly(element) && !/^T[DH]$/.test(element.tagName)) ||
+      (element.hasAttribute(HELD_STYLE) && !highlightOnly(element) && !/^T[DH]$/.test(element.tagName)) ||
       (element.tagName === 'SPAN' && element.attributes.length > 0 && !highlightOnly(element))
   );
 }
@@ -387,6 +389,6 @@ export function markdownLoses(html: string, doc: Document = globalThis.document)
 /** A span that only highlights its words, as ==words== write it. */
 function highlightOnly(element: Element): boolean {
   if (element.tagName !== 'SPAN' || element.attributes.length !== 1) return false;
-  const style = (element as HTMLElement).style;
-  return !!style?.backgroundColor && style.length === 1;
+  const style = styleOf(element);
+  return !!style.backgroundColor && style.length === 1;
 }

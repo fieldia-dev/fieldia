@@ -146,6 +146,17 @@ ${code(
 </script>`
 )}
 
+<h2 id="csp">Under a strict Content-Security-Policy</h2>
+<p>A bank's, a government's or an enterprise's site often runs under a policy with no ${c("'unsafe-inline'")} and no ${c("'unsafe-eval'")}. Fieldia works under it: nothing it runs is code made from text, nothing it draws writes a style attribute (what is worked out as it is drawn — a width, a colour — is set through the element's style object, which a policy lets be), and every ${c('<style>')} it adds — its own sheet, each part's as it comes, the calendar's, the chatter's, a map's, the designer's, CodeMirror's and AG Grid's — carries your page's nonce. Give it as ${c('nonce')}, the nonce your server wrote into this response's policy:</p>
+${code(
+  'js',
+  `
+// Content-Security-Policy: script-src 'nonce-r4nd0m'; style-src 'nonce-r4nd0m'; img-src 'self' data: blob:
+mountViewer(element, { page, dataSource, nonce: 'r4nd0m' });  // <FieldiaForm nonce="…">, :nonce, [nonce] alike
+mountScreenEditor(element, { designer, nonce: 'r4nd0m' });     // and the survey editor`
+)}
+<p>Left out, Fieldia takes the page's ${c('<meta property="csp-nonce" nonce="…">')}, as Vite writes it, and the one-tag script takes its own tag's: give ${c('<script nonce="…" src="…/fieldia.js">')} the nonce and it carries it to every part's tag it adds and every sheet. A formatted text keeps its own looks — a line centred, a word's colour, highlight and size — in its value as style attributes, the HTML you store and e-mail; Fieldia never has the browser read one as HTML (a policy would refuse it), and puts each on through the element's style object, so the text looks the same under the policy as without it. Pictures and files shown in place need ${c('img-src data: blob:')} (and ${c('frame-src blob:')} for a PDF's preview). Two add-ons bring code of their own that a policy may refuse: VS Code's editor (${c('@fieldia/monaco')}) adds sheets Monaco makes with no nonce — under a strict policy use ${c('@fieldia/code')}, which carries it — and a map draws Leaflet and your map provider's tiles, which ${c('img-src')} must allow.</p>
+
 <h2 id="next">Next</h2>
 <p>The memory data source keeps everything in the browser — right for trying things, not for keeping them. <a href="/data/">Data sources</a> shows how to connect your own backend; <a href="/fields/">Fields</a> lists every field type and how it can be shown.</p>
 <p>Moving to a newer Fieldia? The <a href="https://github.com/fieldia-dev/fieldia/blob/main/CHANGELOG.md">changelog</a> says what changed in each release, in plain words, with what to change in your app under <strong>Upgrading</strong>; pages your app keeps are brought up to date as they are read (<a href="/pages/#versions">versions</a>).</p>

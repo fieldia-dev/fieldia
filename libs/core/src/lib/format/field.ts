@@ -12,6 +12,11 @@ import { isTimeZone } from '../record/zones';
  */
 
 import { FIELD_NAME } from './names';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
+
 export { FIELD_NAME, FIELD_TYPES, type FieldType } from './names';
 
 /** `true`, `false`, or a condition on the record's values, as everything that shows or hides by state takes it (layout.ts `Modifier`). */

@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 import { CODE_COLOURS } from './theme';
 
 const declare = (scheme: 'light' | 'dark') =>
@@ -51,8 +52,6 @@ input.fd-monaco-plain { font-family: ui-monospace, SFMono-Regular, Menlo, Consol
 
 export function installMonacoStyles(doc: Document) {
   if (doc.getElementById('fieldia-monaco-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fieldia-monaco-styles';
-  style.textContent = MONACO_CSS;
+  const style = fieldiaStyle(doc, MONACO_CSS, 'fieldia-monaco-styles');
   doc.head.append(style);
 }

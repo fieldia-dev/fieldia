@@ -56,7 +56,9 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
   function signature(): StructurePart {
     const inks = PEN_COLOURS.map(([colour], i) => {
       const name = w.pens[colour];
-      const chip = el('button', { type: 'button', class: 'fd-inline-chip fd-pen-ink', 'aria-pressed': 'false', style: `--fd-ink: ${colour}` }, el('span', { class: 'fd-pen-dot', 'aria-hidden': 'true' }), name) as HTMLButtonElement;
+      const chip = el('button', { type: 'button', class: 'fd-inline-chip fd-pen-ink', 'aria-pressed': 'false' }, el('span', { class: 'fd-pen-dot', 'aria-hidden': 'true' }), name) as HTMLButtonElement;
+      // Its ink through its style object, never a style attribute: a strict Content-Security-Policy lets one be.
+      chip.style.setProperty('--fd-ink', colour);
       chip.addEventListener('click', () => widget({ color: i === 0 ? null : colour }));
       return { chip, colour };
     });

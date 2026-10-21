@@ -126,6 +126,8 @@ export const FieldiaForm = defineComponent({
     theme: { type: String as PropType<Theme>, default: undefined },
     /** The host's own colours, corners and font, over everything else (`TOKEN_NAMES`). */
     tokens: { type: Object as PropType<Tokens>, default: undefined },
+    /** The page's Content-Security-Policy nonce: every <style> Fieldia adds carries it (the viewer's `nonce`). */
+    nonce: { type: String, default: undefined },
     dir: { type: String as PropType<'ltr' | 'rtl'>, default: undefined },
     locale: { type: String as PropType<Locale>, default: undefined },
     labels: { type: Object as PropType<Partial<ViewerLabels>>, default: undefined },
@@ -268,6 +270,7 @@ export const FieldiaForm = defineComponent({
         skin: props.skin,
         theme: props.theme,
         tokens: props.tokens,
+        nonce: props.nonce,
         dir: props.dir,
         locale: props.locale,
         labels: props.labels,

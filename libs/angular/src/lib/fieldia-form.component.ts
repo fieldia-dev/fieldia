@@ -91,6 +91,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly theme = input<Theme | undefined>(undefined);
   /** The host's own colours, corners and font, over everything else (`TOKEN_NAMES`). */
   readonly tokens = input<Tokens | undefined>(undefined);
+  /** The page's Content-Security-Policy nonce: every <style> Fieldia adds carries it (the viewer's `nonce`). */
+  readonly nonce = input<string | undefined>(undefined);
   readonly dir = input<'ltr' | 'rtl' | undefined>(undefined);
   readonly locale = input<Locale | undefined>(undefined);
   readonly labels = input<Partial<ViewerLabels> | undefined>(undefined);
@@ -291,6 +293,7 @@ export class FieldiaFormComponent implements OnDestroy {
       skin: this.skin(),
       theme: this.theme(),
       tokens: this.tokens(),
+      nonce: this.nonce(),
       dir: options.dir,
       locale: options.locale,
       labels: options.labels,

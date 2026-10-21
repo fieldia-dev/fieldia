@@ -4,7 +4,7 @@ import { bracketMatching, indentOnInput, syntaxHighlighting } from '@codemirror/
 import { Compartment, EditorState, StateEffect, StateField } from '@codemirror/state';
 import { Decoration, EditorView, keymap, lineNumbers, type DecorationSet } from '@codemirror/view';
 import type { JsonValue, Value } from '@fieldia/core';
-import { jsonProblem, readJson, WIDGET_LABELS, type WidgetFactory } from '@fieldia/widgets';
+import { jsonProblem, readJson, styleNonce, WIDGET_LABELS, type WidgetFactory } from '@fieldia/widgets';
 import { codeHighlightStyle } from './palette';
 import { installCodeStyles } from './styles';
 import { textCodeWidget } from './text-code';
@@ -106,6 +106,8 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
         editable.of([EditorView.editable.of(true), EditorState.readOnly.of(false)]),
         // Named by the field's label, like every other field.
         EditorView.contentAttributes.of({ id, 'aria-labelledby': `${id}-label` }),
+        // CodeMirror's own sheets with the page's nonce, under a policy with no 'unsafe-inline' (style-nonce.ts).
+        EditorView.cspNonce.of(styleNonce(document) ?? ''),
         EditorView.updateListener.of((update) => {
           if (!update.docChanged || writing) return;
           const text = update.state.doc.toString();

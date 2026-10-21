@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 /**
  * A discussion's look: the comment box on a card, its picture at the start,
  * then a card for each comment, 16px apart, on the same tokens as the form
@@ -65,8 +66,6 @@ const STYLE_ID = 'fieldia-discussion-styles';
 
 export function installDiscussionStyles(doc: Document): void {
   if (doc.getElementById(STYLE_ID)) return;
-  const style = doc.createElement('style');
-  style.id = STYLE_ID;
-  style.textContent = DISCUSSION_STYLES;
+  const style = fieldiaStyle(doc, DISCUSSION_STYLES, STYLE_ID);
   (doc.head ?? doc.documentElement).append(style);
 }

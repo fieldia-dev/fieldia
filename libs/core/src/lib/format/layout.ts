@@ -13,6 +13,10 @@ import { signatureOptionIssues } from './signature-options';
 import { SECTION_TRACK } from './section-checks';
 import { DATE_PERIODS, type DatePeriod } from '../record/periods';
 import type { TotalKind } from '../record/data-source';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
 
 /**
  * The layout: where each field goes and what surrounds it.

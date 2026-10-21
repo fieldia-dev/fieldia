@@ -43,6 +43,8 @@ import {
   type WidgetContext,
   type WidgetFactory,
   type WidgetLabels,
+  fieldiaStyle,
+  styleNonce,
 } from '@fieldia/widgets';
 
 /**
@@ -1565,6 +1567,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const api: GridApi<Line> = createGrid<Line>(
     host,
     {
+      // AG Grid's own sheets with the page's nonce, under a policy with no 'unsafe-inline' (style-nonce.ts).
+      styleNonce: styleNonce(document),
       theme: themeQuartz.withParams({
         fontFamily: 'var(--fd-font)',
         fontSize: 13.5,
@@ -1721,7 +1725,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   voice.setAttribute('aria-live', 'polite');
   element.append(voice);
   /** The column dragged, tinted down the whole grid with a line at its start, as a list's: AG Grid marks its header alone. */
-  const lifted = document.createElement('style');
+  const lifted = fieldiaStyle(document, '');
   element.append(lifted);
   const tint = (column: string | null) => {
     lifted.textContent = column ? `#${CSS.escape(id)} .ag-cell[col-id="${CSS.escape(column)}"] { background: var(--fd-accent-soft); box-shadow: inset ${rtl ? -2 : 2}px 0 0 var(--fd-accent); }` : '';

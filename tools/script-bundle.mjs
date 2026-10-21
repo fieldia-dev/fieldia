@@ -402,6 +402,10 @@ for (const name of ['mountViewer', 'createMemoryDataSource', 'createForm', 'chec
 // Light enough for a page with no build step: no validation library, English alone, and under budget.
 const code = readFileSync(OUT, 'utf8');
 if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries zod: something imports the format schemas');
+// A strict Content-Security-Policy (no 'unsafe-eval', no 'unsafe-inline'): no code made from text, no style attribute
+// written — a style is set through an element's style object, which a policy lets be (style-nonce.ts).
+const CSP_REFUSES = /\bnew Function\b|\beval\(|\bsetAttribute\(\s*["'`]style["'`]/;
+if (CSP_REFUSES.test(code)) throw new Error(`the script bundle ${CSP_REFUSES.exec(code)?.[0]}: a strict Content-Security-Policy refuses code made from text and style attributes`);
 for (const table of ['MESSAGES', 'WIDGET_LABELS', 'VIEWER_LABELS']) {
   const held = Object.keys(Fieldia[table] ?? {}).join(', ');
   if (held !== 'en') throw new Error(`the script bundle's ${table} holds ${held}: English alone belongs in it, the other languages in their add-ons`);
@@ -1014,7 +1018,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
-const BUDGET_KB = 506.8;
+// A strict Content-Security-Policy (w6-platform), what every page needs of it: the nonce on every <style> Fieldia adds
+// (style-nonce.ts, 0.33 — every page adds Fieldia's sheet), the one-tag script's own nonce carried to its parts' tags
+// (0.12), and a formatted text's looks held while its HTML is read and put on through style objects — what the
+// browser's own editing writes as one too (style-attributes.ts, 1.0 — the sanitizer and the plain editor are this
+// script's, and a policy otherwise loses a value's alignment and colours as it is read): 506.77 measured before,
+// 508.40 after, to 508.5.
+const BUDGET_KB = 508.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1248,7 +1258,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
-const GZIP_BUDGET_KB = 166.2;
+// A strict Content-Security-Policy (listed with the raw budget above): the nonce on every <style>, carried to the
+// one-tag script's parts, a formatted text's looks held as its HTML is read — 166.15 measured before, 166.86 after, to
+// 166.9.
+const GZIP_BUDGET_KB = 166.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1822,7 +1835,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 5.02 and 2.28, to 5.1 and 2.3. Merged with the site's fixes (0.28.0), under their own: a page of one response from
 // each person offering no other from its ending — answers 4.65 and 2.32 to 4.67 and 2.34 — and booking slots asked
 // again once a response is sent — slots 15.92 and 6.12 to 15.98 and 6.15.
-const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
+// A strict Content-Security-Policy (w6-platform): a formatted text's looks held as its HTML is read and put on through
+// style objects — what is pasted from an office app, Markdown both ways, its links, its editor's sizes and tables —
+// text 73.00 and 24.62 to 73.72 and 24.87, to 73.8 and 24.9.
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.8, 24.9], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.5, 41.7], cards: [12.4, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.7], evidence: [9.8, 4.4], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1872,6 +1888,7 @@ for (const part of PARTS) {
   const name = `fieldia.${part}.js`;
   if (/mountViewer|createForm/.test(partCode)) throw new Error(`${name} carries a copy of Fieldia: it must carry its own code alone`);
   if (/ZodError|\$ZodType/.test(partCode)) throw new Error(`${name} carries zod`);
+  if (CSP_REFUSES.test(partCode)) throw new Error(`${name} ${CSP_REFUSES.exec(partCode)?.[0]}: a strict Content-Security-Policy refuses code made from text and style attributes`);
   if (/\\u06[2-4][0-9a-f]/i.test(partCode)) throw new Error(`${name} carries Arabic letters: a part's words are the packages' tables', in the language add-ons`);
   const [raw, gzip] = PART_BUDGET_KB[part];
   const partBytes = statSync(file).size;

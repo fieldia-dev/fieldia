@@ -5,6 +5,10 @@ import { ReferenceCheck, type PageIssue, type PageValidation } from './reference
 import { functionTable, type FunctionsKnown } from '../expression/app-functions';
 import { parseExpression } from '../expression/expression';
 import { kindProblems, kindProblemWords } from '../expression/kinds';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
 
 export type { PageIssue, PageValidation } from './references';
 

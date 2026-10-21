@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 /** The filter bar (filter-bar.ts): the filters part's sheet, put after the list's own the first time a list draws one. */
 export const FILTER_CSS = /* css */ `
 /* The filter bar (search "fields"): a card with a keyword box at its start, each field's list of values at its end, then the gear and ×. */
@@ -92,9 +93,7 @@ export const FILTER_CSS = /* css */ `
 /** The sheet in a document, once: after the list's own (list-styles.ts), whose rules it adds to. */
 export function installFilterStyles(doc: Document): void {
   if (doc.getElementById('fd-filter-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-filter-styles';
-  style.textContent = FILTER_CSS;
+  const style = fieldiaStyle(doc, FILTER_CSS, 'fd-filter-styles');
   const list = doc.getElementById('fd-list-styles');
   if (list) list.after(style);
   else doc.head.append(style);

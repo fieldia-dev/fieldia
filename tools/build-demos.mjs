@@ -9,7 +9,7 @@ import { dirname, join, resolve } from 'node:path';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
-const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'designer-react', 'designer-vue', 'designer-angular', 'script', 'map-embed', 'backlog', 'save-safety'];
+const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'designer-react', 'designer-vue', 'designer-angular', 'script', 'map-embed', 'backlog', 'save-safety', 'csp'];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
@@ -52,7 +52,8 @@ for (const variant of variants) {
   // VS Code's editor are files of their own (chunks/), loaded only by a page that shows them. Monaco's CSS
   // is written beside it, as main.css, which its page links. The backlog too: the work item's parts — its head, its
   // text, its path pickers, the list's filter bar — are chunks the page asks for the first time it draws one.
-  const split = variant === 'plain' || variant === 'backlog';
+  // The pages under a strict Content-Security-Policy too (csp): its chunks and parts come by import(), under the nonce.
+  const split = variant === 'plain' || variant === 'backlog' || variant === 'csp';
   await build({
     entryPoints: [entry],
     jsx: 'automatic',
@@ -84,7 +85,7 @@ for (const variant of variants) {
     });
   }
   cpSync(join(WORKSPACE, 'demos', variant, 'index.html'), join(OUT, variant, 'index.html'));
-  // A demo with a stylesheet of its own beside its page (the backlog's chrome): copied with it.
-  for (const file of readdirSync(join(WORKSPACE, 'demos', variant))) if (file.endsWith('.css')) cpSync(join(WORKSPACE, 'demos', variant, file), join(OUT, variant, file));
+  // A demo with a stylesheet of its own beside its page (the backlog's chrome), or other pages (csp's one-tag page): copied with it.
+  for (const file of readdirSync(join(WORKSPACE, 'demos', variant))) if (file.endsWith('.css') || (file.endsWith('.html') && file !== 'index.html')) cpSync(join(WORKSPACE, 'demos', variant, file), join(OUT, variant, file));
   console.log(`demo ${variant}: ${join('dist/demos', variant)}`);
 }

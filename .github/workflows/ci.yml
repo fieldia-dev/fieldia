@@ -52,7 +52,9 @@ jobs:
       - run: npm ci
       # The release tools: CHANGELOG.md has a section for every version released, and the page format's shapes; and the
       # words the script bundle's parts carry for themselves, read by their parts alone (tools/part-words.mjs).
-      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs
+      # And a strict Content-Security-Policy in the packages' source: no code made from text, no style attribute
+      # written, every <style> made with the page's nonce (tools/csp-source.test.mjs).
+      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's
       # exports point at missing files or its ESM output would not resolve in
       # Node — the packaging mistakes that pass every source-level test.

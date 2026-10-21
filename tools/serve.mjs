@@ -3,7 +3,8 @@
  * installed beyond Node. usage: node tools/serve.mjs <dir> <port>
  */
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 
 const root = resolve(process.argv[2] ?? 'dist/demos');
@@ -64,6 +65,27 @@ function store(request, response, url) {
   });
 }
 
+/**
+ * The pages under /csp/ are served as a bank's or a government's site serves its own: under a strict
+ * Content-Security-Policy — scripts and styles only with this response's nonce, no 'unsafe-inline', no 'unsafe-eval',
+ * nothing from elsewhere — the nonce new for each response, written where the page says __CSP_NONCE__ (e2e/csp.spec.ts).
+ */
+const strictPolicy = (nonce) =>
+  [
+    "default-src 'self'",
+    `script-src 'nonce-${nonce}'`,
+    `style-src 'nonce-${nonce}'`,
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "frame-src 'self' blob:",
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'self'",
+  ].join('; ');
+
 createServer((request, response) => {
   const url = new URL(request.url ?? '/', 'http://localhost');
   if (url.pathname.startsWith('/api/')) return store(request, response, url);
@@ -76,6 +98,12 @@ createServer((request, response) => {
   if (!existsSync(path)) {
     response.writeHead(404, { 'content-type': 'text/plain' }).end(`Not found: ${url.pathname}`);
     return;
+  }
+  if (url.pathname.startsWith('/csp/') && extname(path) === '.html') {
+    const nonce = randomBytes(18).toString('base64');
+    const html = readFileSync(path, 'utf8').replaceAll('__CSP_NONCE__', nonce);
+    response.writeHead(200, { 'content-type': types['.html'], 'cache-control': 'no-store', 'content-security-policy': strictPolicy(nonce) });
+    return response.end(html);
   }
   response.writeHead(200, { 'content-type': types[extname(path)] ?? 'application/octet-stream', 'cache-control': 'no-store' });
   createReadStream(path).pipe(response);

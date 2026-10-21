@@ -2,6 +2,7 @@
  * Formatted text kept safe: every value — typed, pasted or loaded — passes
  * through `sanitizeHtml`, so stored markup can never run script in the page.
  */
+import { givenHtml, heldHtml, HELD_STYLE, styleOf } from './style-attributes';
 
 /** A table's own elements, kept as plain table markup: no widths, no columns' sizes (colgroup, col), no styles. */
 const TABLE = ['TABLE', 'CAPTION', 'THEAD', 'TBODY', 'TFOOT', 'TR', 'TH', 'TD'];
@@ -43,8 +44,9 @@ const MODEL = /^[A-Za-z][\w.]{0,63}$/;
  * the text part, pasted-html.ts.)
  */
 export function sanitizeHtml(html: string, document: Document = globalThis.document): string {
+  // Its style attributes held while it is read, as a strict Content-Security-Policy needs (style-attributes.ts).
   const box = document.createElement('template');
-  box.innerHTML = html;
+  box.innerHTML = heldHtml(html);
   const clean = (parent: ParentNode) => {
     for (const node of [...parent.childNodes]) {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -63,7 +65,7 @@ export function sanitizeHtml(html: string, document: Document = globalThis.docum
         continue;
       }
       clean(element);
-      const style = element.style;
+      const style = element.hasAttribute(HELD_STYLE) ? styleOf(element, document) : null;
       if (style) {
         for (const [mark, says, already] of MARKS) {
           if (already.test(tag) || !says(style)) continue;
@@ -103,7 +105,7 @@ export function sanitizeHtml(html: string, document: Document = globalThis.docum
         if (ground && COLOUR.test(ground)) styles.push(`background-color: ${ground};`);
         if (size && SIZES.has(size)) styles.push(`font-size: ${size};`);
       }
-      if (styles.length) kept.push(['style', styles.join(' ')]);
+      if (styles.length) kept.push([HELD_STYLE, styles.join(' ')]);
       if (tag === 'SPAN' || tag === 'A') {
         for (const name of ['data-mention', 'data-record'] as const) {
           const value = element.getAttribute(name);
@@ -133,7 +135,7 @@ export function sanitizeHtml(html: string, document: Document = globalThis.docum
   clean(box.content);
   const out = document.createElement('div');
   out.append(box.content);
-  return out.innerHTML;
+  return givenHtml(out.innerHTML);
 }
 
 /** A typed address as a link target: web and mail addresses only, "https://" added to a bare domain. */
