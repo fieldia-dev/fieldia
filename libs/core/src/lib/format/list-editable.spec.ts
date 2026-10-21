@@ -66,6 +66,22 @@ describe('a list’s cells changed in place, as the page says them', () => {
     ]);
   });
 
+  it('never changes a text kept in several languages in a cell, and refuses one named, with words', () => {
+    // Each of its languages a person's to type under its switch, on the record's page: a cell holds one box.
+    const bilingual = { ...fields, title: { type: 'char', label: 'Title', translate: ['ar', 'en'] } };
+    const listed = (list: Record<string, unknown>) => ({ ...page(list, ['title', 'price']), fields: bilingual });
+    const p = listed({ editable: true }) as unknown as Page;
+    expect(editableColumns(p, p.layout as ListNode)).toEqual(['price']);
+    expect(problems(listed({ editable: true }))).toEqual([]);
+    expect(problems(listed({ editable: { fields: ['title', 'price'] } }))).toEqual([
+      'layout.editable.fields[0]: "title" is kept in several languages (translate); a cell holds one box, so its languages are typed on the record\'s page, under their switch',
+    ]);
+    // Alone, nothing a cell can change: true is refused as over any other such columns.
+    expect(problems({ ...page({ editable: true }, ['title']), fields: bilingual })).toEqual([
+      'layout.editable: its cells change the columns a box in a cell can, and none of these can: words, a number, money, yes or no, a date, a choice or a link people can change',
+    ]);
+  });
+
   it('refuses true over columns none of which a cell can change, and fields named none', () => {
     expect(problems(page({ editable: true }, ['per_hour', 'code', 'lines']))).toEqual([
       'layout.editable: its cells change the columns a box in a cell can, and none of these can: words, a number, money, yes or no, a date, a choice or a link people can change',

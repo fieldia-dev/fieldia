@@ -1,5 +1,6 @@
 import type { ListNode } from './layout';
 import { cellChangeable, EDIT_KINDS } from './list-editable';
+import { languagesOf } from '../record/languages';
 import type { FieldTools } from './part-checks';
 
 /**
@@ -23,5 +24,6 @@ export function checkEditable(list: ListNode, path: string, tools: FieldTools): 
     if (!list.columns.includes(name)) tools.report(at, `"${name}" is no column of this list: a cell changed in place is one of its columns`);
     else if (!EDIT_KINDS.has(def.type)) tools.report(at, `"${name}" is a ${def.type}; a cell changes words, a number, money, a yes or no, a date, a choice, or a link or links`);
     else if (def.readonly === true || def.compute) tools.report(at, `"${name}" is ${def.compute ? 'worked out from other fields' : 'read-only'}; a cell changes a field people can change`);
+    else if (languagesOf(def)) tools.report(at, `"${name}" is kept in several languages (translate); a cell holds one box, so its languages are typed on the record's page, under their switch`);
   });
 }

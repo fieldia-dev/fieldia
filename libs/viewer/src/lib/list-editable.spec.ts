@@ -72,6 +72,20 @@ describe('a list whose cells are changed in place', () => {
     expect(document.getElementById('fd-list-editable-styles')).not.toBeNull();
   });
 
+  it('never opens a text kept in several languages in a cell: read in the reader’s language, a press opens its record', async () => {
+    // Each language a person's to type under its switch, on the record's page (translate): a cell holds one box.
+    const bilingual: Page = { ...prices, fields: { ...prices.fields, name: { type: 'char', label: 'Service', translate: ['en', 'ar'] } } };
+    const opened: unknown[] = [];
+    const source = createMemoryDataSource({ records: { service: { 1: { name: { en: 'Chemical peel', ar: 'تقشير كيميائي' }, minutes: 45, price: 2200, per_hour: 2933, code: 'CP' } } }, versions: true });
+    const host = await mount({ dataSource: source, onOpenRecord: (id) => void opened.push(id) }, bilingual);
+    expect([...row(host, 1).querySelectorAll('td[data-edit]')].map((td) => td.getAttribute('data-col'))).toEqual(['minutes', 'price']);
+    expect(cell(host, 1, 'name').textContent).toContain('Chemical peel');
+    cell(host, 1, 'name').click();
+    await until(() => opened.length);
+    expect(opened).toEqual([1]);
+    expect(cell(host, 1, 'name').querySelector('input')).toBeNull();
+  });
+
   it('opens a pressed cell in its field’s own box, and saves the row as it is left: its changes alone, with its version', async () => {
     const source = createMemoryDataSource({ records: records(), versions: true });
     const host = await mount({ dataSource: source });

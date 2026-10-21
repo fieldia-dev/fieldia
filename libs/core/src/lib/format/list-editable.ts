@@ -2,6 +2,7 @@ import { BULK_KINDS } from './bulk-edit';
 import type { Field } from './field';
 import type { ListNode } from './layout';
 import type { Page } from './page';
+import { languagesOf } from '../record/languages';
 
 /**
  * The kinds of field a list's cell changes in place (`ListNode.editable`): words, a paragraph, a number, money, yes or
@@ -10,9 +11,13 @@ import type { Page } from './page';
  */
 export const EDIT_KINDS: ReadonlySet<string> = new Set([...BULK_KINDS, 'many2many']);
 
-/** Whether a field's cell can be changed in place: of such a kind, neither read-only nor worked out from others. */
+/**
+ * Whether a field's cell can be changed in place: of such a kind, neither read-only nor worked out from others, nor a
+ * text kept in several languages (`translate`) — a cell holds one box, and each of its languages is a person's to type
+ * under its switch, on the record's own page (a press on its cell opens the record, where the list opens one).
+ */
 export function cellChangeable(def: Field | undefined): boolean {
-  return !!def && EDIT_KINDS.has(def.type) && def.readonly !== true && !def.compute;
+  return !!def && EDIT_KINDS.has(def.type) && def.readonly !== true && !def.compute && !languagesOf(def);
 }
 
 /**
