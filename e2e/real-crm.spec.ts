@@ -1,6 +1,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { expectNoSidewaysScroll, node, open, screen } from './support';
+import { dayWords } from '../demos/shared/day-words';
 import { VARIANTS } from './variants';
 
 /**
@@ -347,32 +348,41 @@ test('the properties line up with the fields round them: their labels as the she
   expect(problems).toEqual([]);
 });
 
-test('the tender’s lots: a delivery date whole at every laptop’s and desktop’s width, its pattern too, and no box cut', async ({ page }) => {
-  const { problems } = await open(page, 'plain', 'page=real-tender&record=7801&skin=underline');
-  const lots = node(page, 'f-lots');
-  /** Each box of the lots whose words run past it — what it holds, or the pattern it asks for, in its own type: its column and those words. */
-  const cut = () =>
-    lots.locator('tbody td[data-column] input:not([type="checkbox"])').evaluateAll((boxes) =>
-      boxes.flatMap((box) => {
-        const input = box as HTMLInputElement;
-        const style = getComputedStyle(input);
-        const words = document.createElement('span');
-        words.style.cssText = `position: absolute; visibility: hidden; white-space: pre; font: ${style.font}; letter-spacing: ${style.letterSpacing}`;
-        words.textContent = input.value || input.placeholder;
-        document.body.append(words);
-        const room = input.clientWidth - parseFloat(style.paddingInlineStart) - parseFloat(style.paddingInlineEnd);
-        const over = words.getBoundingClientRect().width > room + 0.5;
-        words.remove();
-        return over ? [`${input.closest('td')!.dataset['column']}: ${input.value || input.placeholder}`] : [];
-      })
-    );
-  for (const width of [1280, 1366, 1440, 1600, 1680, 1920]) {
-    await page.setViewportSize({ width, height: 900 });
-    await expect.poll(() => lots.locator('td[data-column="delivery_deadline"] input').evaluateAll((boxes) => boxes.map((box) => (box as HTMLInputElement).value))).toEqual(['14 Mar 2027', '13 Apr 2027', '']);
-    await expect(lots.locator('td[data-column="delivery_deadline"] input').last()).toHaveAttribute('placeholder', 'dd/mm/yyyy');
-    await expect.poll(cut, `${width}: nothing cut`).toEqual([]);
-    expect(await lots.locator('.fd-lines-scroll').evaluate((box) => box.scrollWidth - box.clientWidth), `${width}: the table fits`).toBeLessThanOrEqual(0);
-    if (width === 1280) await screen(page, 'real-crm-tender-lots-1280');
-  }
-  expect(problems).toEqual([]);
-});
+// The tender's dates are counted from the day it is opened (`day(145)`): the test reads the days the demo computed and
+// writes them as the page's boxes do — never fixed days, which held on one day alone — and is run on today's clock and
+// on two others, a lot then due in September and one in a leap year's summer.
+for (const [when, clock] of [['today', null], ['on 21 Apr 2027', '2027-04-21T10:00:00'], ['on 31 Jan 2028', '2028-01-31T10:00:00']] as const) {
+  test(`the tender’s lots ${when}: a delivery date whole at every laptop’s and desktop’s width, its pattern too, and no box cut`, async ({ page }) => {
+    if (clock) await page.clock.setFixedTime(new Date(clock));
+    const { problems } = await open(page, 'plain', 'page=real-tender&record=7801&skin=underline');
+    const lots = node(page, 'f-lots');
+    /** The lots' delivery days as the demo computed them, written as the page's date boxes write a day; none for none. */
+    const days = ((await value(page, 'lot_ids')) as { values: { delivery_deadline: string | null } }[]).map((line) => dayWords(line.values.delivery_deadline));
+    expect(days.filter(Boolean)).toHaveLength(2);
+    /** Each box of the lots whose words run past it — what it holds, or the pattern it asks for, in its own type: its column and those words. */
+    const cut = () =>
+      lots.locator('tbody td[data-column] input:not([type="checkbox"])').evaluateAll((boxes) =>
+        boxes.flatMap((box) => {
+          const input = box as HTMLInputElement;
+          const style = getComputedStyle(input);
+          const words = document.createElement('span');
+          words.style.cssText = `position: absolute; visibility: hidden; white-space: pre; font: ${style.font}; letter-spacing: ${style.letterSpacing}`;
+          words.textContent = input.value || input.placeholder;
+          document.body.append(words);
+          const room = input.clientWidth - parseFloat(style.paddingInlineStart) - parseFloat(style.paddingInlineEnd);
+          const over = words.getBoundingClientRect().width > room + 0.5;
+          words.remove();
+          return over ? [`${input.closest('td')!.dataset['column']}: ${input.value || input.placeholder}`] : [];
+        })
+      );
+    for (const width of [1280, 1366, 1440, 1600, 1680, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect.poll(() => lots.locator('td[data-column="delivery_deadline"] input').evaluateAll((boxes) => boxes.map((box) => (box as HTMLInputElement).value))).toEqual(days);
+      await expect(lots.locator('td[data-column="delivery_deadline"] input').last()).toHaveAttribute('placeholder', 'dd/mm/yyyy');
+      await expect.poll(cut, `${width}: nothing cut`).toEqual([]);
+      expect(await lots.locator('.fd-lines-scroll').evaluate((box) => box.scrollWidth - box.clientWidth), `${width}: the table fits`).toBeLessThanOrEqual(0);
+      if (width === 1280 && !clock) await screen(page, 'real-crm-tender-lots-1280');
+    }
+    expect(problems).toEqual([]);
+  });
+}
