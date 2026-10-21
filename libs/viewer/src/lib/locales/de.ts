@@ -351,6 +351,8 @@ export const de: ViewerLabels = {
   putBack: 'Übernehmen',
   putBackField: '{label} übernehmen',
   putAllBack: 'Alle übernehmen',
+  undone: 'Rückgängig gemacht: {field}',
+  redone: 'Wiederhergestellt: {field}',
   nowIs: 'jetzt {value}',
   readOnlyRecord: 'Sie können diesen Datensatz lesen, aber nicht ändern.',
   fieldNotYours: 'Sie können dieses Feld sehen, aber nicht ändern.',

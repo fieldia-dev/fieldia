@@ -628,6 +628,29 @@ plain, locale)` says one. A language, or an app's own `messages`, that has no
 such sentence says its plain one: a page that names no records reads as before.
 `checkPage` and `validatePage` refuse a word for one or for more left out.
 
+## Undo and Redo while filling
+
+A form keeps the person's changes to the record shown, for `form.undo()` and
+`form.redo()` (the viewer's Ctrl+Z and Ctrl+Shift+Z): each field written
+(`setValue`), each cell typed in (`updateLine`), each line added, taken away or
+moved — typing on in one box is one change until the box is left
+(`boxLeft`). Each returns what it took (`{ field, line? }`), or null when
+nothing is left; `form.history()` names the next of each without taking it.
+
+```ts
+form.setValue('price', 1200);
+form.boxLeft('price');
+form.undo();        // { field: 'price' }: back to what it held, as the person's own change back
+form.redo();        // { field: 'price' }: 1200 again
+```
+
+What it writes is the person's own change back: the page's `change` steps and
+the source's onchange run as for any, and what is worked out from it follows. A
+step's, a rule's or the app's writes are never a change to take back, and a
+change whose field one of them wrote since — or that is locked now — is passed
+over, never written over theirs. Another record shown, a reload, or `reset()`
+starts with nothing to take back; a form not being edited takes nothing back.
+
 ## Two people, one record
 
 A source that keeps versions returns each record with its version, and what this

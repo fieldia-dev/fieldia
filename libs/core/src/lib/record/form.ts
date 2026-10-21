@@ -53,6 +53,7 @@ import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { signedBy, type SignedBy } from './signed';
+import { createHistory, type HistoryStep } from './history';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
@@ -800,6 +801,17 @@ export interface Form {
   putBack(field?: string): void;
   /** Let go of the changes set aside. */
   discardSetAside(): void;
+  /**
+   * Take back the person's last change to the record — a field written, a cell typed in, a line added, taken away or
+   * moved; typing on in one box is one change until the box is left — as their own change back: the page's `change`
+   * steps and the source's onchange run as for any. A change whose field holds something else since (a step, the app,
+   * a reload) or is locked now is passed over. The step taken back, or null when none is left. The viewer's Ctrl+Z.
+   */
+  undo(): HistoryStep | null;
+  /** Make the last change taken back again, as `undo` takes one back; null when none is. Ctrl+Shift+Z, Ctrl+Y. */
+  redo(): HistoryStep | null;
+  /** The changes `undo` and `redo` would take now: for a button or a menu that names them. */
+  history(): { undo: HistoryStep | null; redo: HistoryStep | null };
   /** Resolves once every onchange, save, autosave and run of steps started so far has finished — a question still waiting for its answer included. */
   settled(): Promise<void>;
   /**
@@ -1378,6 +1390,32 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const listed = listedColumns(page.fields);
   /** Whether the values set now are a change someone made (`writeValues`), after which a line's choice no longer offered is cleared. */
   let edit = false;
+  /** The person's changes to the record shown, for Undo and Redo; and whether one is being taken back or made again now. */
+  const history = createHistory((name, one, other) => sameValue(fields[name], one, other));
+  let replaying = false;
+  /** A person's change written to `field` (on `line`), kept for Undo with what it held `before`: typing on joins it (`joins`). */
+  const noteChange = (field: string, line: string | undefined, before: Value | undefined, joins: boolean) => {
+    if (!replaying) history.note(line === undefined ? { field } : { field, line }, (before ?? null) as Value, (state.values[field] ?? null) as Value, joins);
+  };
+  /**
+   * Undo (`back`) or Redo: the change taken, written as the person's own change back — the page's `change` steps and
+   * the source's onchange run as for any — once its field still holds what the change left and may be changed.
+   */
+  function replay(back: boolean): HistoryStep | null {
+    if (!editing) return null;
+    const step = history.take(back, (one, left) => !form.fieldReadonly(one.field) && sameValue(fields[one.field], state.values[one.field], left));
+    if (!step) return null;
+    const { value, ...taken } = step;
+    replaying = true;
+    try {
+      writeValues({ ...(state.values as Values), [taken.field]: structuredCopy(value) });
+      afterEdit(taken.field);
+      changed(taken.field, 'person', taken.line === undefined ? {} : { line: taken.line });
+    } finally {
+      replaying = false;
+    }
+    return taken;
+  }
 
   function set(patch: Partial<FormState>) {
     const was = state.values;
@@ -1437,6 +1475,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Another record is shown: nothing of the last one's is the person's work any more, and its files on their way stop. */
   function newGeneration() {
     generation++;
+    history.clear();
     // Another record's lines ask the source anew.
     lineAsks = new Map();
     answers = new Map();
@@ -2910,7 +2949,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   function addLine(field: string, values: Values, by: ChangeBy): string {
     const def = lineField(field);
-    const current = (state.values[field] as Line[] | null) ?? [];
+    const before = state.values[field];
+    const current = (before as Line[] | null) ?? [];
     // A key no line holds: lines given (a line's own lines, back from its form) may hold new-… keys already.
     let key = `new-${++lineKeys}`;
     while (current.some((line) => line.key === key)) key = `new-${++lineKeys}`;
@@ -2922,6 +2962,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     }
     const lines = [...current, line];
     writeValues({ ...(state.values as Values), [field]: lines });
+    if (by === 'person') noteChange(field, key, before, false);
     afterEdit(field);
     changed(field, by, by === 'person' ? { line: key } : { keep: true });
     return key;
@@ -3478,7 +3519,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       fieldDef(name);
       // A choice whose places are all taken is shown, and refused when the person picks it: said under its field.
       if ((how?.by ?? 'person') === 'person' && refusedFull(name, value)) return;
+      const before = state.values[name];
       writeValues({ ...(state.values as Values), [name]: structuredCopy(value) });
+      if ((how?.by ?? 'person') === 'person') noteChange(name, undefined, before, true);
       afterEdit(name);
       changed(name, how?.by ?? 'person');
     },
@@ -3586,6 +3629,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     boxLeft(path) {
+      history.close(path.split('.')[0]);
       const problem = leftProblem(path);
       if (!problem || state.errors[path] === problem) return;
       set({ errors: { ...state.errors, [path]: problem } });
@@ -3698,6 +3742,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       holding = setWhen.holding(baseline);
       // The person's own Discard: nothing of theirs is left at risk, and a save on its way lands as the record it stored.
       resets++;
+      history.clear();
       personal.clear();
       personalLines.clear();
       filed.clear();
@@ -3728,10 +3773,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     updateLine(field, key, name, value) {
       const def = lineField(field);
       if (!def.fields[name]) throw new Error(`The lines of "${field}" have no field "${name}"`);
-      const lines = ((state.values[field] as Line[] | null) ?? []).map((line) =>
+      const before = state.values[field];
+      const lines = ((before as Line[] | null) ?? []).map((line) =>
         line.key === key ? { ...line, values: { ...line.values, [name]: structuredCopy(value) } } : line
       );
       writeValues({ ...(state.values as Values), [field]: lines });
+      noteChange(field, key, before, true);
       afterEdit(field);
       changed(field, 'person', { line: key });
     },
@@ -3759,7 +3806,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const value = trusted ? (i >= low && i <= high ? pool[i - low] : line.values[sequence]) : i + 1;
         return value === line.values[sequence] ? line : { ...line, values: { ...line.values, [sequence]: value } };
       });
+      const was = state.values[field];
       writeValues({ ...(state.values as Values), [field]: renumbered });
+      noteChange(field, undefined, was, false);
       afterEdit(field);
       changed(field, 'person');
     },
@@ -3773,8 +3822,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           throw new Error(`The line "${key}" of "${field}" cannot be deleted now: its table's lineDelete does not hold on it`);
         }
       }
-      const lines = ((state.values[field] as Line[] | null) ?? []).filter((line) => line.key !== key);
+      const before = state.values[field];
+      const lines = ((before as Line[] | null) ?? []).filter((line) => line.key !== key);
       writeValues({ ...(state.values as Values), [field]: lines });
+      noteChange(field, key, before, false);
       afterEdit(field);
       changed(field, 'person', { line: key });
     },
@@ -4073,6 +4124,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     discardSetAside() {
       if (state.setAside) set({ setAside: null });
     },
+
+    undo: () => replay(true),
+    redo: () => replay(false),
+    history: () => history.next(),
 
     async settled() {
       while (pending.size) await Promise.allSettled([...pending]);

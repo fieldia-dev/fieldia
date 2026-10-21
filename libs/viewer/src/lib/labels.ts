@@ -514,6 +514,10 @@ export interface ViewerLabels {
   putBack: string;
   putBackField: string;
   putAllBack: string;
+  /** Said politely as Ctrl+Z takes back a change to a field: `{field}`, its label. */
+  undone: string;
+  /** Said as Ctrl+Shift+Z makes it again. */
+  redone: string;
   nowIs: string;
   readOnlyRecord: string;
   readOnlyRecordNoun?: string;
@@ -948,6 +952,8 @@ const en: ViewerLabels = {
   putBack: 'Put back',
   putBackField: 'Put back {label}',
   putAllBack: 'Put all back',
+  undone: 'Undone: {field}',
+  redone: 'Redone: {field}',
   nowIs: 'now {value}',
   readOnlyRecord: 'You can read this record, but not change it.',
   readOnlyRecordNoun: 'You can read this {record}, but not change it.',

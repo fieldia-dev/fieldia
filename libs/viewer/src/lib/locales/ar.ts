@@ -312,6 +312,8 @@ export const ar: ViewerLabels = {
   putBack: 'إعادة',
   putBackField: 'إعادة {label}',
   putAllBack: 'إعادة الكل',
+  undone: 'تم التراجع: {field}',
+  redone: 'تمت الإعادة: {field}',
   nowIs: 'الآن {value}',
   readOnlyRecord: 'يمكنك قراءة هذا السجل، لكن لا يمكنك تغييره.',
   fieldNotYours: 'يمكنك رؤية هذا الحقل، لكن لا يمكنك تغييره.',

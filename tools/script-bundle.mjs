@@ -1014,7 +1014,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // required message asking for it (0.53, the widgets' words with it); a day a message names written as the page's date
 // boxes write it, in its order and language (0.40; a time after it in the limits part): 504.82 measured before, 506.74
 // after, to 506.8; merged with the site's fixes (0.28.0), `quotedLabel` named on the runtime again, 506.76.
-const BUDGET_KB = 506.8;
+// Wave 6, w6-records, each a record's daily comfort, measured in the main script's modules (506.77 before):
+// - Undo and Redo while filling — every form a person fills in: a record's changes kept as they are made, a box's
+//   typing one change until it is left (history.ts 0.69, the form's hooks into its writes 0.75), Ctrl+Z and Ctrl+Shift+Z
+//   past a box's own undo, the field taken back focused and said (the viewer's keys 1.55, two words), to 509.9.
+const BUDGET_KB = 509.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1248,7 +1252,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.27 mended (listed with the raw budget above): a value worked out from a refused answer waiting,
 // a note of options taken out said only while true, a question's label quoted and asked for, a day written as the
 // page's date boxes write it — 165.38 measured before, 166.14 after, to 166.2; merged (0.28.0), 166.15.
-const GZIP_BUDGET_KB = 166.2;
+// Wave 6, w6-records (each listed with the raw budget above): Undo and Redo while filling, 1.25 more, to 167.4.
+const GZIP_BUDGET_KB = 167.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

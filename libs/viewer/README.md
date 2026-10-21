@@ -285,6 +285,18 @@ await viewer.run([{ do: 'check' }, { do: 'save' }]); // steps, as a button would
 A form made elsewhere and handed in as `form` keeps the host it was made with
 (`createForm({ host })`): the viewer gives its own only to a form it makes.
 
+## Undo and Redo while filling
+
+**Ctrl+Z** (⌘Z) takes back the person's last change to the record, one at a
+time across fields — a field written, a cell typed in, a line added, taken away
+or moved; typing on in one box is one change until the box is left — and
+**Ctrl+Shift+Z** or **Ctrl+Y** makes it again. Inside a box whose text was
+changed since it was entered, the browser's own undo goes first; once the box
+shows what it showed as it was entered, the next press is the record's. The
+field taken back takes the focus, and “Undone: Price” is said to a screen
+reader. `keys: { undo: false }` leaves the keys to the browser alone; your own
+Undo button calls `form.undo()` (see `@fieldia/core`).
+
 ## Two people, one record
 
 When a save is refused because someone else saved the record first (the data

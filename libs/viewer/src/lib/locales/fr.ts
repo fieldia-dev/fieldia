@@ -340,6 +340,8 @@ export const fr: ViewerLabels = {
   putBack: 'Remettre',
   putBackField: 'Remettre {label}',
   putAllBack: 'Tout remettre',
+  undone: 'Annulé : {field}',
+  redone: 'Rétabli : {field}',
   nowIs: 'maintenant {value}',
   readOnlyRecord: 'Vous pouvez lire cet enregistrement, mais pas le modifier.',
   fieldNotYours: 'Vous pouvez voir ce champ, mais pas le modifier.',
