@@ -166,7 +166,13 @@ export function designerBar(
     scroller.style.scrollPaddingTop = `${height + 8}px`;
   };
   const view = root.ownerDocument.defaultView;
-  const sized = view && 'ResizeObserver' in view ? new view.ResizeObserver(room) : null;
+  // Measured in the next frame, never inside the watcher's call: what the room changes (a sticky panel's height, the
+  // page's scroll padding) is then no change the watcher must answer in the same frame — WebKit called that a loop.
+  let soon = 0;
+  const roomSoon = () => {
+    if (!soon && view) soon = view.requestAnimationFrame(() => ((soon = 0), room()));
+  };
+  const sized = view && 'ResizeObserver' in view ? new view.ResizeObserver(roomSoon) : null;
   sized?.observe(element);
   const issues = el('div', { class: 'fd-alert fd-tone-danger fd-designer-issues', role: 'alert', hidden: '' });
 
@@ -223,6 +229,7 @@ export function designerBar(
       doc.removeEventListener('keydown', onKey);
       doc.removeEventListener('pointerdown', onPress);
       sized?.disconnect();
+      if (soon) view?.cancelAnimationFrame(soon);
       scroller.style.removeProperty('scroll-padding-top');
       checks.destroy();
     },
