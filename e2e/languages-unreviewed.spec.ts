@@ -202,3 +202,37 @@ test.describe('the designers, their words fetched before they are made', () => {
     }
   }
 });
+
+test.describe('the first paint, the four languages fetched where they are spoken', () => {
+  for (const locale of ['tr', 'fa', 'ur', 'es'] as const) {
+    test(`a page in ${locale} is drawn in its words from its first paint: no English word of Fieldia's ever shown`, async ({ page }) => {
+      // Every word put in a form where it shows, from before its first paint: what a person could have seen, however briefly.
+      await page.addInitScript(() => {
+        const seen: string[] = [];
+        (window as unknown as { seen: string[] }).seen = seen;
+        const shows = (element: Element | null) => !!element?.closest('.fd-form') && element.checkVisibility({ checkVisibilityCSS: true });
+        const note = (node: Node) => {
+          const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+          for (let at: Node | null = node; at; at = walker.nextNode()) {
+            if (at.nodeType === 3 && shows(at.parentElement)) seen.push(at.textContent ?? '');
+            if (at.nodeType === 1 && shows(at as Element)) for (const name of ['aria-label', 'placeholder']) seen.push((at as Element).getAttribute(name) ?? '');
+          }
+        };
+        new MutationObserver((records) => {
+          for (const record of records) {
+            if (record.type === 'characterData') note(record.target);
+            else for (const node of record.addedNodes) note(node);
+          }
+        }).observe(document, { subtree: true, childList: true, characterData: true });
+      });
+      const { problems } = await open(page, 'plain', `page=signup&skin=outlined&locale=${locale}`);
+      const submit = page.locator('.fd-form button[type="submit"]:visible').last();
+      await expect(submit).toHaveText(VIEWER[locale].submit);
+      const seen = await page.evaluate(() => (window as unknown as { seen: string[] }).seen.join('\n'));
+      // English's Submit, Next and its search's words never drawn, not even before the language's came.
+      for (const english of ['Submit', 'Search…', 'Next']) expect({ english, shown: seen.split('\n').includes(english) }).toEqual({ english, shown: false });
+      expect(seen).toContain(VIEWER[locale].submit);
+      expect(problems).toEqual([]);
+    });
+  }
+});
