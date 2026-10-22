@@ -400,6 +400,11 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   /** A field's label written small inside Fieldia's sentences (`lowerLabels`), the page's own setting; false takes it away. */
   setLowerLabels(on: boolean): boolean;
   /**
+   * Record templates people save and name (`templates`), a record page's: on keeps every field a person fills in
+   * (`true`, or the fields it named already), off takes it away.
+   */
+  setTemplates(on: boolean): boolean;
+  /**
    * When a page of responses takes answers, and how many (`limits`): when it opens and closes (a day and a time on the
    * page's clock, 2026-11-01T09:00), the most responses, one from each person, and its words while it takes none — each
    * `null` (false, or empty) taking that one away, the setting going with the last. A page of responses only, refused
@@ -1585,6 +1590,14 @@ export function createDesigner(options: {
         if (on) draft.lowerLabels = true;
         else delete draft.lowerLabels;
       }, 'lowerLabels');
+    },
+
+    setTemplates(on) {
+      return apply((draft) => {
+        if (on && draft.data.kind !== 'record') throw new Refusal((w) => w.refusals.templatesForRecords);
+        if (on) draft.templates ??= true;
+        else delete draft.templates;
+      }, 'templates');
     },
 
     setPageLimits(patch) {

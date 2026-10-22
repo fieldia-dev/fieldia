@@ -1732,3 +1732,75 @@ form.joined(name): FormJoins[name] | null;           // verify: asks, mark; pay:
   browser's address is not it (a server-rendered or embedded app).
   Tests: `libs/core/src/lib/record/outbox.spec.ts` (the order), `libs/core/src/lib/record/prefill-lazy.spec.ts`,
   `libs/viewer/src/lib/element.spec.ts`, and each wrapper's `url` test.
+
+## 34. Record templates people save (Wave 6, lane w6-records)
+
+Three more members, each optional: a page with `templates` keeps its templates through them where the source has all
+three; without them, the viewer keeps them in its `preferences` (this person's own, `templates:<page id>`). The menu
+shows either way.
+
+```ts
+templates?(request: TemplatesRequest): Promise<RecordTemplate[]>;
+saveTemplate?(request: SaveTemplateRequest): Promise<RecordTemplate>;
+deleteTemplate?(request: TemplateRequest): Promise<void>;
+
+interface TemplatesRequest { model: string; pageId: string }
+interface TemplateRequest extends TemplatesRequest { id: RecordId }
+interface SaveTemplateRequest extends TemplatesRequest { template: { id?: RecordId; name: string; values: Values } }
+interface RecordTemplate { id: RecordId; name: string; values: Values; by?: string }
+```
+
+In plain words:
+
+- **What is kept**: the page's `templates.fields`, else every field a person fills in — never the record's name (its
+  sheet's title), a file or a picture, a value worked out (`compute`) or `readonly`, nor a field the source hides from
+  this person — and of those only what holds a value. A table's lines are kept as `{ values }`, without their ids.
+- **Saved again under a name it has** (in any case), the template is replaced: `saveTemplate` with its `id`.
+- **Started from** (a new record): each value written as the person's own change — the page's `change` steps run,
+  the source's onchange, Ctrl+Z takes each back — a table's lines as new lines.
+- **Shared or own** is the app's: `templates` answers what this person may start from, `by` names who saved one.
+- The memory source has the three where its `templates` option is given (`{}` for none yet), kept by page id; without
+  it, none — as an app's source without them, so a page keeps its templates in the viewer's `preferences`. Tests:
+  `libs/viewer/src/lib/templates.spec.ts`.
+
+## 35. Changes pushed, and who else is here (Wave 6, lane w6-records)
+
+Two more members, each optional. Without `subscribe`, a change made elsewhere is found as a save meets it (§2);
+without `presence`, nobody else is shown.
+
+```ts
+subscribe?(record: RecordRequest, push: (change: RecordChange) => void): () => void;
+presence?(request: PresenceRequest, push: (people: PresentPerson[]) => void): () => void;
+
+type RecordChange =
+  | { type: 'record'; version?: RecordVersion; values?: Values; by?: string; at?: string }
+  | { type: 'deleted'; by?: string; at?: string };
+interface PresenceRequest { model: string; id: RecordId; user?: { id: RecordId | null; name?: string }; editing: boolean }
+interface PresentPerson { id: RecordId; name: string; editing?: boolean; avatar?: string }
+// FormState gains present?: PresentPerson[]; FormEvents gains arrived: { recordId, by?, at?, fields, conflict }.
+```
+
+In plain words:
+
+- **Asked as a record is shown** (once it has an id, its load done), stopped as another is shown or the form goes. An
+  answer for a record no longer shown is laid on none.
+- **A change arriving** waits for a save of this form's on its way (its answer may be that very change); one whose
+  `version` is the form's own is let go. Without `values`, the form reads the record (`load`).
+- **The person changed nothing**: their values are laid on the record as stored (no change to save) with their
+  version, and said ("Mona Adel changed Price."). **After a change of the person's**: it waits as the conflict a
+  save would meet (§2) — the banner names who and when, what they changed and what both did, Reload and Keep mine —
+  and nothing typed is touched. `deleted` is said.
+- **Presence** is asked with `editing` (whether this person has changes not saved), and asked again as that turns:
+  the app stops the last and starts the next. What it pushes are the others: never this person (`user`).
+- **Beside @fieldia/chatter's `subscribe`.** The chatter's source has `subscribe(record, push) → stop` too, pushing
+  `{ type: 'message' }` and `{ type: 'delivery' }`. The two are the same call — `{ model, id }` first (the record's
+  request carries `fields` besides), a push, a stop — with types that never meet: one function of the app's, on one
+  socket, may serve both, each taking only its own `type` and letting the rest go.
+- **In a part of its own**, `fieldia.live.js` (`recordLivePart` in core, `livePart` in the viewer): the core's half
+  asked for as a form is made where the source has either member — it watches the record shown from then on, told of
+  each change of the form's state — the viewer's strip as someone else first has the record open. An app whose source
+  has neither never loads it. A change laid on the record is said by the core's half, through the host's `say`.
+- The memory source with `live: true` has both members: it pushes `changeElsewhere`'s changes, and tells who has a
+  record open — each form that opens it with a `user`, and whoever `arrive` brings (`leave` takes them away). Without
+  `live` it has none of `subscribe`, `presence`, `arrive` and `leave`, as a source without a socket. Tests:
+  `libs/core/src/lib/record/live.spec.ts`, `libs/viewer/src/lib/live.spec.ts`.

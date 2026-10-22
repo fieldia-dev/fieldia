@@ -80,7 +80,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, owedParts, partsFor, surveyFlowPart, type AssistPart, type HeadPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, owedParts, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart } from './viewer-parts';
 import type { PageJoin } from './joins';
 import type { LimitsKit } from './limits';
 import type { FlowKit } from './survey-flow';
@@ -187,9 +187,11 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   /**
    * Keys around the fields. Ctrl+Enter (Cmd+Enter on a Mac) saves, from
    * wherever the cursor is, unless `saveWithCtrlEnter` is false. With
-   * `enterMovesToNext`, Enter moves to the next field instead of sending the form.
+   * `enterMovesToNext`, Enter moves to the next field instead of sending the form. Ctrl+Z (Cmd+Z) takes back the
+   * person's last change to the record and Ctrl+Shift+Z or Ctrl+Y makes it again — inside a box typed in, the
+   * browser's own undo first — unless `undo` is false.
    */
-  keys?: { saveWithCtrlEnter?: boolean; enterMovesToNext?: boolean };
+  keys?: { saveWithCtrlEnter?: boolean; enterMovesToNext?: boolean; undo?: boolean };
   /** A ✓ by a field's label once someone has filled it in and it would pass its checks. */
   showValid?: boolean;
   /** Where a save's progress shows: beside Save (the default), as a toast in a corner, or as a bar across the top. */
@@ -427,7 +429,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           title: (other) => shownAs(other).title || other.id,
           back: labels.back,
           missing: (id) => fill(labels.pageMissing, { page: id }),
-          say: (message, tone) => actionHost.say(message, tone),
+          say: (message, tone, undo) => actionHost.say(message, tone, undo),
           post: (message) => form.post(message),
           name: () => recordName() || sentence(labels.newRecordNoun, labels.newRecord),
           leave: () => form.leave(),
@@ -435,7 +437,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         },
         request
       ),
-    say: (message, tone) => say(message, tone),
+    say: (message, tone, undo) => say(message, tone, undo),
     // A question that lets the person's work go is the viewer's own, worded Discard, the focus on Cancel.
     ask: (message, how) => (how?.discard ? letGoAsked(message) : confirm(message)),
     show: (target) => {
@@ -544,7 +546,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
   const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
-  const say = sayer(root, el, labels.dismiss);
+  const say = sayer(root, el, labels);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
   /** For each field in a tab, how to show its tab: a problem there is shown before the focus goes to it. */
@@ -1981,11 +1983,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** The bar over a record — its breadcrumbs, its gear menu, its pager — or null when it would hold nothing. */
   function topBar(toolbar: SheetNode['toolbar']): HTMLElement | null {
     if (page.data.kind !== 'record') return null;
+    // Record templates people save and name (`templates`): their menu, from the part the page waited for.
+    const extra = templatesPart.loaded?.templatesMenu({ doc, el, form, page, labels, locale, preferences, dataSource: options.dataSource, say: actionHost.say, ask: dialogs.editValues });
     const bar = recordBar({
       doc,
       el,
       form,
       toolbar,
+      ...(extra ? { extra } : {}),
       records: options.records,
       breadcrumbs: options.breadcrumbs,
       labels,
@@ -2743,6 +2748,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     event.preventDefault();
     nextField(from)?.focus();
   });
+
+  // ---- Undo and Redo while filling ----------------------------------------------
+
+  // Ctrl+Z (⌘Z) takes back the person's last change to the record, Ctrl+Shift+Z or Ctrl+Y makes it again — inside a box
+  // typed in, the browser's own undo first (undo-keys.ts). In the undo part, asked for as the person first enters the
+  // form: the box they are in known as it was entered before they type, and each key answered at once as it is pressed.
+  if (options.keys?.undo !== false && layout.type !== 'list')
+    root.addEventListener('focusin', () => void undoPart.load().then((part) => gone || cleanups.push(part.undoKeys(root, form, page, el, labels, hotkeysHere)), () => undefined), { once: true });
 
   // ---- a button's key, with Alt -------------------------------------------------
 

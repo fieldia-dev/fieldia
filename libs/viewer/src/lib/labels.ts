@@ -67,6 +67,20 @@ export interface ViewerLabels {
   copyTitle: string;
   titleCopied: string;
   moreActions: string;
+  /** Record templates (`templates` on the page, the templates part): its menu, its dialogs and what they say. `{name}` a template's; `{n}` how many. */
+  templatesButton: string;
+  templatesStart: string;
+  templateSave: string;
+  templateName: string;
+  templateKeeps: string;
+  templateKeep: string;
+  templateSaved: string;
+  templateReplaced: string;
+  templateUsed: string;
+  templatesDelete: string;
+  templatesChosen: string;
+  templatesDeleteNow: string;
+  templatesDeleted: string;
   /** A split button's chevron, named for the button it opens more of (`{label}`), unless it has a name of its own. */
   optionsFor: string;
   updatedBy: string;
@@ -77,6 +91,10 @@ export interface ViewerLabels {
   discardChangesNoun?: string;
   /** The × on an alert that may be dismissed. */
   dismiss: string;
+  /** Beside the words a one-tap press said, for a few seconds (a button's `undo`, or the app answering with one): pressed, it takes the press back. */
+  undoPress: string;
+  /** What the toast says once its Undo has taken the press back. */
+  pressUndone: string;
   /** The (?) beside a label that shows its help: its name, as a screen reader says it. */
   helpFor: string;
   /**
@@ -563,10 +581,17 @@ export interface ViewerLabels {
   putBack: string;
   putBackField: string;
   putAllBack: string;
+  /** Said politely as Ctrl+Z takes back a change to a field: `{field}`, its label. */
+  undoneField: string;
+  /** Said as Ctrl+Shift+Z makes it again. */
+  redoneField: string;
   nowIs: string;
   readOnlyRecord: string;
   readOnlyRecordNoun?: string;
   fieldNotYours: string;
+  /** Who else has the record open (the source's `presence`): `{names}`, each one's name, `presentEditing` round whoever is changing it. */
+  presentHere: string;
+  presentEditing: string;
   /** Said by the lock of an answer a signature signed (`options.signs`): how to change it. */
   signedAnswer: string;
   notOffered: string;
@@ -885,6 +910,19 @@ const en: ViewerLabels = {
   copyTitle: 'Copy title',
   titleCopied: 'Title copied',
   moreActions: 'More actions',
+  templatesButton: 'Templates',
+  templatesStart: 'Start from',
+  templateSave: 'Save as template…',
+  templateName: 'Template name',
+  templateKeeps: 'Keeps this record’s values, except its name and files, to start new ones from.',
+  templateKeep: 'Save template',
+  templateSaved: 'Template “{name}” saved.',
+  templateReplaced: 'Template “{name}” replaced.',
+  templateUsed: 'Started from “{name}”.',
+  templatesDelete: 'Delete templates…',
+  templatesChosen: 'Templates to delete',
+  templatesDeleteNow: 'Delete',
+  templatesDeleted: 'Templates deleted: {n}',
   optionsFor: '{label} options',
   updatedBy: 'Updated by {name}: {date}',
   nothingChanged: 'Nothing has changed.',
@@ -892,6 +930,8 @@ const en: ViewerLabels = {
   discardChanges: 'Discard your changes?',
   discardChangesNoun: 'Discard your changes to this {record}?',
   dismiss: 'Dismiss',
+  undoPress: 'Undo',
+  pressUndone: 'Undone.',
   helpFor: 'Help for {label}',
   quietHint: 'Add {label}',
   quietAnswer: 'Your answer',
@@ -1232,10 +1272,14 @@ const en: ViewerLabels = {
   putBack: 'Put back',
   putBackField: 'Put back {label}',
   putAllBack: 'Put all back',
+  undoneField: 'Undone: {field}',
+  redoneField: 'Redone: {field}',
   nowIs: 'now {value}',
   readOnlyRecord: 'You can read this record, but not change it.',
   readOnlyRecordNoun: 'You can read this {record}, but not change it.',
   fieldNotYours: 'You can see this field, but not change it.',
+  presentHere: 'Also here: {names}',
+  presentEditing: '{name} (editing)',
   signedAnswer: 'Signed. To change it, press Change answers under the signature.',
   notOffered: 'Not open to you here: {actions}.',
   duplicateWith: 'A record with this {fields} already exists: {name}',

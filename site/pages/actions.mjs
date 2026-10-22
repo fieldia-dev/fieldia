@@ -65,6 +65,27 @@ mountViewer(host, {
 )}
 <p>Return nothing to go on. ${c('values')} are set as a ${c('set')} step sets them; ${c('say')} is said; ${c('post')} is posted in the record's conversation; ${c('record')} shows another record in the form's place — the copy your server made, a credit note; ${c('open')} opens a page as an ${c('open')} step does; ${c('reload: true')} loads the record again first, as your server now has it; ${c('stop')} stops, its words said.</p>
 
+<h2 id="undo">Undo after a one-tap press</h2>
+<p>A press that acts at once — Mark done, Archive, Send — can offer <strong>Undo</strong> in place of asking first: a button's or a menu item's ${c('"undo": true')}. Once it has run, what it said (its last ${c('say')}, or your app's answer's words; else “Done: Mark done”, a built-in Archive's “Archived.”) shows with Undo for a few seconds, held while the pointer or the focus is on it. Undo takes back what the press did: the values its steps and your answers set, put back — each only while it holds what they left, a change made since staying — and saved again where it saved; the record archived, brought back; what your app answered with an ${c('undo')} for, through it. It is offered only where all of it can be taken back: never after a copy, a delete, a post, a page opened, or a call answered without an ${c('undo')}. A built-in Archive with ${c('undo')} asks nothing first, unless it says ${c('confirm')}.</p>
+${code(
+  'json',
+  `
+{ "type": "button", "id": "done", "label": "Mark done", "undo": true,
+  "steps": [{ "do": "set", "field": "state", "value": "'done'" }, { "do": "save" },
+            { "do": "say", "message": "Follow-up marked done", "tone": "success" }] }`
+)}
+<p>Steps of the page's own in place of ${c('true')} are what Undo runs (${c('"undo": [{ "do": "call", "action": "reopen" }]')}). And your app answers a call with ${c('undo')} — its own way back, answered as a call is — to offer Undo for what it did, a button saying nothing of it: a message held a few seconds before it goes, a follow-up reopened.</p>
+${code(
+  'ts',
+  `
+onAction: async ({ action, recordId }) => {
+  if (action !== 'send_reminder') return;
+  const queued = await api.queueReminder(recordId);   // sent in 10 seconds unless called back
+  return { say: 'Reminder on its way', undo: async () => { await api.cancel(queued); return { say: 'Reminder not sent' }; } };
+},`
+)}
+<p>In a list, Undo after a row's button or the chosen rows' lists the records again, as they are then. The viewer's host says the words with Undo (${c('ActionHost.say')}'s third, ${c('{ undo }')}); a host of your own that leaves it out says them plainly. It comes in a part of its own, ${c('fieldia.undo.js')}, with a page whose buttons offer it.</p>
+
 <h2 id="host">What the viewer draws</h2>
 <ul>
   <li><strong>A page opened</strong> comes from ${c('pages')} by ${c('{ id, version }')} — in a dialog or a side panel with the same data source, pages, language, skin and look; or in this form's place, with Back over it: saved, the form comes back and the steps go on; Back brings it back as it was, and they stop. A page your app has none of stops them, saying so. A page opened gets a host of its own, so its own steps run there, and a ${c('close')} step closes it.</li>

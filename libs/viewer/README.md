@@ -394,6 +394,41 @@ await viewer.run([{ do: 'check' }, { do: 'save' }]); // steps, as a button would
 A form made elsewhere and handed in as `form` keeps the host it was made with
 (`createForm({ host })`): the viewer gives its own only to a form it makes.
 
+## Undo and Redo while filling
+
+**Ctrl+Z** (⌘Z) takes back the person's last change to the record, one at a
+time across fields — a field written, a cell typed in, a line added, taken away
+or moved; typing on in one box is one change until the box is left — and
+**Ctrl+Shift+Z** or **Ctrl+Y** makes it again. Inside a box whose text was
+changed since it was entered, the browser's own undo goes first; once the box
+shows what it showed as it was entered, the next press is the record's; a
+formatted text keeps its own undo always (its table and list tools too). The
+field taken back takes the focus, and “Undone: Price” is said to a screen
+reader. The keys come in the undo part, asked for as the person first enters
+the form — the box they are in known as it was entered, before they type.
+`keys: { undo: false }` leaves the keys to the browser alone; your own Undo
+button calls `form.undo()` (see `@fieldia/core`).
+
+## Record templates people save
+
+A page with `"templates": true` has a **Templates** menu over its record:
+**Save as template…** keeps what the record holds by a name ("Botox
+package") — never its name, its files, a value worked out or locked; a name
+already kept is replaced — and on a new record each template starts it, its
+values written as the person's own changes (Ctrl+Z takes each back).
+**Delete templates…** lets some go. Kept by the data source's `templates`,
+`saveTemplate` and `deleteTemplate`, else in the viewer's `preferences`. It
+comes in a part of its own, `fieldia.templates.js` (`templatesPart`).
+
+## Who else is here, and changes as they happen
+
+Where the data source has `presence`, the people who have the record open show
+over it — their initials, a ring round whoever is changing it, "Also here:
+Mona Adel (editing)". Where it has `subscribe`, a change someone else saves
+arrives in the open record: laid on it where the person changed nothing, and
+said ("Mona Adel changed Price."); after a change of theirs, it is the
+conflict below, before they save. See `@fieldia/core`.
+
 ## Two people, one record
 
 When a save is refused because someone else saved the record first (the data

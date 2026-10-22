@@ -39,8 +39,8 @@ function watch(page: Page) {
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   const requested: string[] = [];
   page.on('request', (request) => requested.push(new URL(request.url()).pathname));
-  /** The scripts asked for: the main one and its parts. */
-  const scripts = () => requested.filter((path) => /\/fieldia(\.[a-z]+)?\.js$/.test(path)).sort();
+  /** The scripts asked for: the main one and its parts — Ctrl+Z's aside, asked for as a form is first entered: every form's, not the look's. */
+  const scripts = () => requested.filter((path) => /\/fieldia(\.[a-z]+)?\.js$/.test(path) && !path.endsWith('/fieldia.undo.js')).sort();
   return { problems, scripts };
 }
 

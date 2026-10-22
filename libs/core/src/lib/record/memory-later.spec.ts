@@ -13,7 +13,13 @@ describe("the one-tag script's memory source", () => {
     const whole = wholeSource();
     const functions = (of: object) => Object.keys(of).filter((key) => typeof (of as Record<string, unknown>)[key] === 'function').sort();
     expect(functions(source)).toEqual(functions(whole));
-    expect([...MEMORY_MEMBERS].sort()).toEqual(functions(whole).filter((name) => name !== 'changeElsewhere' && name !== 'answeredElsewhere'));
+    // What it does at once besides: someone else's change and response.
+    const atOnce = ['changeElsewhere', 'answeredElsewhere'];
+    expect([...MEMORY_MEMBERS].sort()).toEqual(functions(whole).filter((name) => !atOnce.includes(name)));
+    // Templates and live members only where their options say, as the packages' source has them.
+    const given = { templates: {}, live: true };
+    expect(functions(createMemoryDataSource(given))).toEqual(functions(wholeSource(given)));
+    expect(functions(wholeSource(given)).filter((name) => !functions(whole).includes(name))).toEqual(['arrive', 'deleteTemplate', 'leave', 'presence', 'saveTemplate', 'subscribe', 'templates']);
     // What it keeps, and someone else's change, at once — before its part was asked for.
     expect(source.records['partner']['1']).toEqual({ name: 'Nile Traders' });
     expect(source.changeElsewhere('partner', 1, { name: 'Nile Traders Co.' }, { by: 'Mona', at: '2026-10-20T09:00:00.000Z' })).toEqual({ token: '1', by: 'Mona', at: '2026-10-20T09:00:00.000Z' });

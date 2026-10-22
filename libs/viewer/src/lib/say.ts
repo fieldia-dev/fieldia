@@ -1,5 +1,7 @@
-import type { Tone } from '@fieldia/core';
+import type { SayUndo, Tone } from '@fieldia/core';
 import type { El } from './dom';
+import type { ViewerLabels } from './labels';
+import { undoPart } from './viewer-parts';
 
 /** How long words stay before they go by themselves: a warning or a danger stays longer. */
 const STAY_MS = 6000;
@@ -16,13 +18,17 @@ const MOST = 4;
  * which hears only inside it — is told them there as well, unseen. `clear`
  * takes away what was said before: a button pressed again speaks for itself,
  * never under "Customer blocked" once it has made the customer active again.
+ *
+ * Words a one-tap press said with `undo` carry **Undo** for a few seconds: drawn by the undo part (undo-toast.ts), which
+ * the press that offers it has brought; said plainly where it cannot come.
  */
-export function sayer(root: HTMLElement, el: El, dismiss: string): ((message: string, tone: Tone) => void) & { clear(): void } {
+export function sayer(root: HTMLElement, el: El, words: ViewerLabels): ((message: string, tone: Tone, undo?: SayUndo) => void) & { clear(): void } {
   // There before anything is said, so a screen reader hears what comes into it.
   const region = el('div', { class: 'fd-says', role: 'status', 'aria-live': 'polite' });
   root.append(region);
-  const say = (message: string, tone: Tone) => {
-    const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': dismiss }, '×');
+  const say = (message: string, tone: Tone, undo?: SayUndo) => {
+    if (undo) return void undoPart.load().then((part) => part.undoToast(region, el, words, message, tone, undo), () => say(message, tone));
+    const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': words.dismiss }, '×');
     const toast = el('div', { class: 'fd-say', 'data-tone': tone }, el('span', {}, message), close);
     // Its edge in its tone's colour, from the scheme's own: a danger is the error colour.
     toast.style.setProperty('--fd-tone', `var(--fd-${tone === 'danger' ? 'error' : tone})`);
@@ -50,7 +56,7 @@ export function sayer(root: HTMLElement, el: El, dismiss: string): ((message: st
 }
 
 /** The words again, unseen, in a live region of the topmost modal dialog the region is not in. */
-function echo(region: HTMLElement, el: El, message: string) {
+export function echo(region: HTMLElement, el: El, message: string) {
   const modals = [...region.ownerDocument.querySelectorAll<HTMLElement>('[aria-modal="true"]')].filter((m) => !m.contains(region));
   const top = modals[modals.length - 1];
   if (!top) return;

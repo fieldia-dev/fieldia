@@ -924,6 +924,61 @@ plain, locale)` says one. A language, or an app's own `messages`, that has no
 such sentence says its plain one: a page that names no records reads as before.
 `checkPage` and `validatePage` refuse a word for one or for more left out.
 
+## Undo and Redo while filling
+
+A form keeps the person's changes to the record shown, for `form.undo()` and
+`form.redo()` (the viewer's Ctrl+Z and Ctrl+Shift+Z): each field written
+(`setValue`), each cell typed in (`updateLine`), each line added, taken away or
+moved — typing on in one box is one change until the box is left
+(`boxLeft`). Each returns what it took (`{ field, line? }`), or null when
+nothing is left; `form.history()` names the next of each without taking it.
+The changes are noted from the first; walking them is the undo part's
+(`pressUndoPart`), asked for with the first change — in by the time a person
+presses Ctrl+Z, and in at once where an app loads it first (`await
+pressUndoPart.load()`): until it has come, `undo` and `redo` take nothing.
+
+```ts
+form.setValue('price', 1200);
+form.boxLeft('price');
+form.undo();        // { field: 'price' }: back to what it held, as the person's own change back
+form.redo();        // { field: 'price' }: 1200 again
+```
+
+What it writes is the person's own change back: the page's `change` steps and
+the source's onchange run as for any, and what is worked out from it follows. A
+step's, a rule's or the app's writes are never a change to take back, and a
+change whose field one of them wrote since — or that is locked now — is passed
+over, never written over theirs. Another record shown, a reload, or `reset()`
+starts with nothing to take back; a form not being edited takes nothing back.
+
+## Changes pushed as they happen, and who else is here
+
+Two optional data source members make an open record live. `subscribe(record,
+push) → stop` is asked as a record is shown and stopped as another is; push
+`{ type: 'record', version?, values?, by?, at? }` as someone else saves it, or
+`{ type: 'deleted', by? }`. Where the person changed nothing, their values are
+laid on the record as stored (`arrived` is told, `conflict: false`); after a
+change of theirs it waits as the conflict a save would meet (`state.conflict`,
+with Reload and Keep mine), their typing untouched. A change without `values`
+is read with `load`; one carrying this form's own version is let go.
+`presence(request, push) → stop` is asked with the form's `user` and whether
+they have changes not saved (`editing`), asked again as that turns; what it
+pushes — the others with the record open — is `state.present`. Both are the
+same call as @fieldia/chatter's `subscribe`, with types that never meet: one
+function may serve both. It comes in a part of its own (`recordLivePart`),
+asked for as a form is made where the source has either member, and never
+where it has neither. The memory source does both with `live: true`
+(`changeElsewhere`, `arrive`, `leave`), and has none of them without.
+
+## Record templates
+
+A record page's `templates` (`true`, or `{ fields }`) keeps a record's values
+by a name, to start new records from. The data source's `templates`,
+`saveTemplate` and `deleteTemplate` keep them on your server
+(`RecordTemplate`: `{ id, name, values, by? }`); the viewer keeps them in its
+`preferences` without them. The memory source has them where its `templates`
+option is given (`{}` for none yet), kept by page id.
+
 ## Two people, one record
 
 A source that keeps versions returns each record with its version, and what this
@@ -1205,6 +1260,37 @@ onAction: async ({ action, values }) => {
 `stop` stops the steps after it, and its words, if any, are said as a
 warning. Nothing answered means go on: an `onAction` that returns nothing
 works as it always did.
+
+### Undo after a one-tap press
+
+A button or a gear menu item with `"undo": true` offers Undo in place of
+asking first: once its press has run whole, the words it said — its last `say`,
+or the app's — are given to the host's `say` with a third argument, `{ undo }`
+(else "Done: {label}", the built-in Archive's "Archived."); the words before
+them are said plainly. `undo()` takes the press back and resolves to a
+`RunResult`: the app's own undos (an answer's `undo`, latest first, each
+answered as a call is), the record archived brought back (or the reverse), and
+the values its steps and answers wrote put back — each only while it holds what
+they left — saved again where the press saved. It is offered only where all of
+it can be taken back: a copy, a delete, a post, a page opened, an address, a
+form put back or closed, or a call answered without `undo` say plainly. Steps in
+place of `true` are what Undo runs instead. A call's answer with `undo` offers it
+by itself, for what the app did:
+
+```ts
+onAction: async ({ action, recordId }) => {
+  if (action === 'mark_done') {
+    await api.done(recordId);
+    return { say: { message: 'Follow-up marked done', tone: 'success' }, undo: () => api.reopen(recordId).then(() => ({ reload: true })) };
+  }
+},
+```
+
+Undo's run is told as `run` with the press's id and `.undo` after it
+(`b-done.undo`); a built-in Archive or Delete with `undo` asks nothing first
+unless it says `confirm`. Saying it with Undo and taking it back come in a part
+of their own (`pressUndoPart`, `fieldia.undo.js`): asked for with a page whose
+buttons offer Undo, else as an answer first brings one.
 
 ### The moments
 

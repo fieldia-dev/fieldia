@@ -1,6 +1,7 @@
 import { labelAt, recordSentence, type Form, type FormState, type LineField, type Locale, type Page, type RecordPermissions, type Values } from '@fieldia/core';
 import { displayValue, drawIcon, type IconSet } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
+import { livePart } from './viewer-parts';
 import type { ViewerLabels } from './labels';
 
 /** What the save-safety parts need of the viewer that draws them. */
@@ -153,6 +154,10 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
   const aside = el('section', { class: 'fd-set-aside', hidden: '' }, el('div', { class: 'fd-set-aside-head' }, asideTitle, dismiss), rows, all);
   let shownAside: Readonly<Values> | null = null;
 
+  // ---- who else has it open (the data source's `presence`): drawn by the live part, once someone else is ------
+  const presence = el('div', { class: 'fd-presence-slot' });
+  let strip: { update(state: FormState): void } | null = null;
+
   // ---- a record the person may only read ------------------------------------------------------------------
   const lock = drawIcon(context.doc, 'lock', context.icons);
   const noteWords = el('span');
@@ -221,6 +226,10 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
       setAttr(aside, 'aria-labelledby', names.length ? asideTitle.id : null);
     }
 
+    // Others with the record open: the live part's strip, asked for the first time someone else is.
+    if (strip) strip.update(state);
+    else if (state.present?.length) void livePart.load().then((part) => (strip ??= part.presenceStrip(el, labels, list, presence)).update(form.getState()), () => undefined);
+
     // Only to read: the source's reason, else the viewer's words.
     const can: Readonly<RecordPermissions> | null = state.can;
     const readOnly = can?.edit === false;
@@ -229,7 +238,7 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
     setAttr(note, 'data-reason', readOnly && can?.reason ? '' : null);
   }
 
-  return { elements: [conflict, aside, note], update };
+  return { elements: [presence, conflict, aside, note], update };
 }
 
 let drawn = 0;

@@ -2,7 +2,7 @@ import type { ButtonNode, ImageNode, Page, TextNode, Tone } from '@fieldia/core'
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { locate } from './layout-tree';
-import { segmented, setting } from './panel-controls';
+import { segmented, setting, switchControl } from './panel-controls';
 import { formContent } from './panel-form';
 import { mapContent } from './panel-map';
 import { relatedContent } from './panel-related';
@@ -156,6 +156,7 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
     );
     const asks = el('input', { class: 'fd-input', 'aria-label': w.asksFirst, placeholder: w.actsAtOnce, autocomplete: 'off' }) as HTMLInputElement;
     asks.addEventListener('input', () => designer.updateBlock(id, { confirm: asks.value }));
+    const undo = switchControl(el, w.undoAfter, (on) => designer.updateBlock(id, { undo: on }));
     const hotkey = el('input', { class: 'fd-input fd-hotkey-input', 'aria-label': w.hotkey, placeholder: 'V', autocomplete: 'off', spellcheck: 'false', maxlength: '11' }) as HTMLInputElement;
     hotkey.addEventListener('change', () => designer.updateBlock(id, { hotkey: hotkey.value }));
     const buttonWhile = shownWhileSetting(el, designer, id, { tab: 'content' });
@@ -166,6 +167,7 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
         clicked.element,
         setting(el, 'content', 'Look', look.element, { words: w.look }),
         setting(el, 'content', 'Asks first', asks, { words: w.asksFirst }),
+        setting(el, 'content', 'Undo after it', undo.element, { words: w.undoAfter, hint: w.undoAfterHint }),
         setting(el, 'content', 'Key, with Alt', hotkey, { words: w.hotkey, hint: w.hotkeyHint }),
         buttonWhile.element,
       ],
@@ -176,6 +178,7 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
         clicked.update(page);
         look.set(node.style ?? 'secondary');
         if (!focused(asks)) asks.value = node.confirm ?? '';
+        undo.set(node.undo !== undefined);
         if (!focused(hotkey)) hotkey.value = hotkeyShown(node.hotkey);
         buttonWhile.update(page);
       },

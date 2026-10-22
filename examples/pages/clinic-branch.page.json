@@ -1,0 +1,37 @@
+{
+  "fieldia": "0.7",
+  "id": "clinic-branch",
+  "title": "Clinic branch",
+  "records": { "one": "branch", "other": "branches", "a": "a branch" },
+  "data": { "kind": "record", "model": "clinic.branch" },
+  "fields": {
+    "name": { "type": "char", "label": "Branch", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "hours": { "type": "json", "label": "Opening hours" },
+    "trial": { "type": "datetime", "label": "A visit, as patients book it", "timeZone": "Africa/Cairo" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "placeholder": "Branch name" },
+    "children": [
+      {
+        "type": "section",
+        "id": "s-branch",
+        "children": [
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
+          { "type": "field", "id": "f-hours", "field": "hours", "widget": "hours", "options": { "weekStart": 6 } }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-try",
+        "title": "Booking, as patients see it",
+        "children": [
+          { "type": "text", "id": "t-try", "text": "The times a patient may book follow the hours above as they are changed: 30 minutes a visit.", "style": "help" },
+          { "type": "field", "id": "f-trial", "field": "trial", "widget": "slots", "options": { "schedule": "branch", "length": 30, "dependsOn": ["hours"] } }
+        ]
+      }
+    ]
+  }
+}

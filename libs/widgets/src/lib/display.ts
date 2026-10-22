@@ -103,6 +103,12 @@ export interface ShownWith {
 }
 
 /**
+ * A cell's words for a widget a part draws, put here as the part comes: a repeat rule's and a week's hours' (the
+ * schedule part's, schedule-part.ts). Until then, the value as its type says it.
+ */
+export const PART_CELL_WORDS: Record<string, ((value: Value | undefined, locale: Locale, shown: ShownWith) => string) | undefined> = {};
+
+/**
  * A value as words in the widget it is shown with — hours as HH:MM
  * (`duration`), a fraction as a per cent (`percentage`) — else as its type
  * says it (`displayValue`). For a table's cells and totals, plain and grid.
@@ -110,6 +116,9 @@ export interface ShownWith {
 export function cellText(def: LineField, value: Value | undefined, values: Record<string, Value> = {}, locale: Locale = 'en', parent?: Readonly<Record<string, Value>>, shown: ShownWith = {}): string {
   // An analytic distribution in a cell: its shares, "60% · 40%".
   if (shown.widget === 'distribution' && def.type === 'json') return distributionWords(value, locale);
+  // A repeat rule and a week's hours in words, once their part has come (the page asks for it first).
+  const words = shown.widget ? PART_CELL_WORDS[shown.widget] : undefined;
+  if (words) return words(value, locale, shown);
   return shownNumber(shown.widget, def as never, value, locale, shown.options as Record<string, unknown>) ?? displayValue(def, value, values, locale, parent);
 }
 

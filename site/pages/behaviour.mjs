@@ -10,12 +10,13 @@ export default {
 <h2 id="keys">Keys</h2>
 <p><kbd>Ctrl</kbd>+<kbd>Enter</kbd> (<kbd>Cmd</kbd>+<kbd>Enter</kbd> on a Mac) saves from wherever the cursor is — in a text box too, where a plain <kbd>Enter</kbd> starts a new line — and takes what is still being typed: a tag typed but not yet added is added first. In a dialog it is Save &amp; Close. Inside the lines grid, <kbd>Ctrl</kbd>+<kbd>Enter</kbd> stays the grid's: it finishes a note.</p>
 <p>With ${c('enterMovesToNext')}, <kbd>Enter</kbd> moves to the next field instead of sending the form, for screens typed through from top to bottom. A field that uses <kbd>Enter</kbd> itself keeps it: an open list picks its choice. The arrow keys always stay the text box's.</p>
+<p id="undo"><kbd>Ctrl</kbd>+<kbd>Z</kbd> (<kbd>Cmd</kbd>+<kbd>Z</kbd>) takes back the person's last change to the record, one at a time across fields: a field written, a cell typed in, a line added, taken away or moved — typing on in one box is one change until the box is left. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> or <kbd>Ctrl</kbd>+<kbd>Y</kbd> makes it again. Inside a box whose text was changed since it was entered, the browser's own undo goes first, through what was typed there; once the box shows what it showed as it was entered, the next press is the record's. A formatted text keeps its own undo always, its table and list tools included. The field taken back takes the focus, and “Undone: Price” is said to a screen reader. It is the person's own change back: the page's ${c('change')} steps and the source's onchange run as for any, a value worked out from it follows, and a change whose field a step, the app or a reload wrote since is passed over. Another record, or Discard, starts with nothing to take back. Your own buttons call ${c('form.undo()')} and ${c('form.redo()')}; ${c('form.history()')} names what each would take.</p>
 ${code(
   'ts',
   `
 mountViewer(host, {
   page, dataSource,
-  keys: { enterMovesToNext: true },     // saveWithCtrlEnter: false turns Ctrl+Enter off
+  keys: { enterMovesToNext: true },     // saveWithCtrlEnter: false turns Ctrl+Enter off; undo: false, Ctrl+Z
 });`
 )}
 

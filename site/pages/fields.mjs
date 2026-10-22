@@ -2,7 +2,7 @@ import { SIZES } from '../facts.mjs';
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), one-time-code (a box per digit), qrcode, barcode (a code to scan), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint, translate, requiredIn'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), repeat (an iCalendar repeat rule), one-time-code (a box per digit), qrcode, barcode (a code to scan), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint, translate, requiredIn'],
   ['text', 'Several lines of text', 'copy, qrcode, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, translate, requiredIn'],
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', 'translate, requiredIn'],
   ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11), barcode', 'min, max'],
@@ -18,7 +18,7 @@ const ROWS = [
   ['reference', 'A link to a record of one of several models', '', 'models'],
   ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', 'pdf (shown inline)', 'accept, maxSize, multiple, minFiles, maxFiles, shrink'],
   ['image', 'An image, with a preview; several with multiple, as thumbnails, cards or a list', '', 'maxSize, multiple, minFiles, maxFiles, shrink'],
-  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), monaco (with @fieldia/monaco), place and area (with @fieldia/map), address, pins (on a picture), distribution, tax-totals, payments', ''],
+  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), monaco (with @fieldia/monaco), place and area (with @fieldia/map), address, pins (on a picture), distribution, tax-totals, payments, hours (a week’s opening hours)', ''],
   ['properties', 'Extra values, each edited with the field for its type', '', 'definitions, definitionsFrom'],
 ];
 
@@ -185,6 +185,23 @@ ${code(
   "options": { "schedule": "showroom", "length": 45, "between": 15, "endField": "stop", "dependsOn": ["car"] } }`
 )}
 <p>${c('schedule')} names what the app is asked for (the field's name unless said); ${c('length')} and ${c('between')} are the minutes a booking lasts and those kept free after it, unless the app says; ${c('endField')}, a date and time, takes the booking's end; ${c('dependsOn')}, the fields whose change asks again. In the designer: the kind Booking slots, with its Schedule, Minutes a booking lasts, Minutes kept free after one, Its end in, Asked again when, and Time zone.</p>
+
+<h2 id="repeat">A repeat rule</h2>
+<p>${c('"widget": "repeat"')} on a char field says how often something comes back — a treatment course, a hearing, a check: every day, every week on the days ticked, every month on a day, on its last, or on the first Monday; every so many; never ending, until a day, or a number of times. Its value is an iCalendar rule (RFC 5545's RRULE), which a calendar or your server reads as it is, said in words under its boxes, at rest and in a list's column: <em>Every 2 weeks on Tuesday and Thursday, 6 times</em>. ${c('startField')} names the date it starts from: a new week's day and a month's day come from it. A rule the box cannot change (an hour, several days of a month) is kept as it is and said so. Its numbers and its end day are Fieldia's own boxes, with their input rules. In the designer: the kind Repeat rule.</p>
+${code(
+  'json',
+  `
+{ "type": "field", "id": "f-sessions", "field": "sessions", "widget": "repeat", "options": { "startField": "first_session" } }
+// "sessions": "FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;COUNT=6"`
+)}
+
+<h2 id="hours">A week's opening hours</h2>
+<p>${c('"widget": "hours"')} on a json field is a week's opening hours: a row a weekday, open or closed, its shifts from and to — <em>Add a break</em> splits the last at its middle — a shift taken away, and a day's hours copied to every day. Its value is what a booking schedule reads (the memory source's ${c('scheduleSlots')} reads it as ${c('hours')}): by ISO weekday, ${c('"1"')} Monday to ${c('"7"')} Sunday, each day's shifts in order; a day not named is closed. A shift that ends before it starts, or overlaps another, is said under its day and the record is not saved until it is put right. ${c('weekStart')} (1 to 7) is the day its week starts on, Monday unless said. At rest and in a list's column: <em>Mon–Fri 09:00–13:00, 14:00–18:00 · Sat 10:00–14:00 · Sun closed</em>. In the designer: the kind Opening hours.</p>
+${code(
+  'json',
+  `
+{ "1": [["09:00", "13:00"], ["14:00", "18:00"]], "2": [["09:00", "18:00"]], "6": [["10:00", "14:00"]] }`
+)}
 
 <h2 id="options">Widget options</h2>
 <p>A node's ${c('options')} tune its widget. An option whose name ends in ${c('Field')} names another field of the page, and the format checks that it exists.</p>

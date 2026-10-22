@@ -150,6 +150,14 @@ export const PART_WORDS = {
   scan: {
     widgets: ['scanButton', 'scanInto', 'scanCountInto', 'scanTitle', 'scanStarting', 'scanAim', 'scanAimCount', 'scanTypeInstead', 'scanDone', 'scanLookingUp', 'scanNoneFound', 'scanSeveral', 'scanLookUpFailed', 'scanNoPart', 'scanRead', 'scanCounted', 'scanRefused', 'scanNoCamera', 'scanCameraBusy', 'scanUnavailable', 'scanNoReader'],
   },
+  schedule: {
+    widgets: [
+      'repeatLabel', 'repeatNever', 'repeatKinds', 'repeatEveryLabel', 'repeatUnits', 'repeatUnitsMany', 'repeatOnDays', 'repeatMonthHow', 'repeatMonthDay', 'repeatNth', 'repeatWeekday', 'repeatEndsLabel', 'repeatEnds', 'repeatUntilDay', 'repeatCount', 'repeatSaidEveryN', 'repeatSaidDays', 'repeatSaidMonthDay', 'repeatSaidLastDay', 'repeatSaidNth', 'repeatSaidTimes', 'repeatSaidOnce', 'repeatSaidUntil', 'repeatOrdinals', 'repeatKept', 'repeatAtLeastOne', 'hoursOpenOn', 'hoursOpen', 'hoursClosed', 'hoursOpens', 'hoursCloses', 'hoursAddBreak', 'hoursRemove', 'hoursCopyAll', 'hoursCopied', 'hoursEndsFirst', 'hoursOverlap', 'hoursNoTime', 'hoursAllClosed', 'hoursDays',
+    ],
+  },
+  live: { messages: ['deletedElsewhere', 'deletedBy', 'changedElsewhere', 'changedBy'], viewer: ['presentHere', 'presentEditing'] },
+  undo: { messages: ['pressDone', 'pressArchived', 'pressUnarchived'], viewer: ['undoPress', 'pressUndone', 'undoneField', 'redoneField'] },
+  templates: { viewer: ['templatesButton', 'templatesStart', 'templateSave', 'templateName', 'templateKeeps', 'templateKeep', 'templateSaved', 'templateReplaced', 'templateUsed', 'templatesDelete', 'templatesChosen', 'templatesDeleteNow', 'templatesDeleted'] },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {
     widgets: ['notAnswered', 'addressStreet', 'addressCity', 'addressLine2', 'addressRegion', 'addressPostcode', 'addressCountry', 'keepOrder', 'addProperty', 'propertyName', 'propertyType', 'propertyTypes', 'colourCode', 'colourCodeBox', 'noColour', 'rankTop', 'moveUp', 'moveDown', 'movedTo', 'removed'],

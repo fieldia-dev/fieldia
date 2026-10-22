@@ -1,0 +1,83 @@
+{
+  "fieldia": "0.7",
+  "id": "treatment-course",
+  "title": "Treatment course",
+  "records": { "one": "course", "other": "courses", "a": "a course" },
+  "data": { "kind": "record", "model": "clinic.course" },
+  "templates": true,
+  "fields": {
+    "patient": { "type": "char", "label": "Patient", "required": true },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "options": [
+        { "value": "planned", "label": "Planned" },
+        { "value": "running", "label": "In progress" },
+        { "value": "done", "label": "Done" }
+      ]
+    },
+    "treatment": {
+      "type": "selection",
+      "label": "Treatment",
+      "options": [
+        { "value": "botox", "label": "Botox" },
+        { "value": "filler", "label": "Filler" },
+        { "value": "laser", "label": "Laser hair removal" },
+        { "value": "peel", "label": "Chemical peel" }
+      ]
+    },
+    "doctor": { "type": "char", "label": "Doctor" },
+    "first_session": { "type": "date", "label": "First session" },
+    "sessions": { "type": "char", "label": "Sessions" },
+    "price": { "type": "monetary", "label": "Course price", "currency": "EGP", "min": 0 },
+    "notes": { "type": "text", "label": "Notes" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "patient", "placeholder": "Patient's name" },
+    "statusbar": { "field": "state" },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "b-start",
+        "label": "Start course",
+        "style": "primary",
+        "invisible": "state != 'planned'",
+        "undo": true,
+        "steps": [{ "do": "set", "field": "state", "value": "'running'" }, { "do": "save" }, { "do": "say", "message": "Course started", "tone": "success" }]
+      },
+      {
+        "type": "button",
+        "id": "b-done",
+        "label": "Mark done",
+        "style": "primary",
+        "invisible": "state != 'running'",
+        "undo": true,
+        "steps": [{ "do": "set", "field": "state", "value": "'done'" }, { "do": "save" }, { "do": "say", "message": "Course marked done", "tone": "success" }]
+      }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "s-course",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-treatment", "field": "treatment" },
+          { "type": "field", "id": "f-doctor", "field": "doctor" },
+          { "type": "field", "id": "f-first", "field": "first_session" },
+          { "type": "field", "id": "f-price", "field": "price" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-sessions",
+        "title": "Sessions",
+        "children": [
+          { "type": "field", "id": "f-sessions", "field": "sessions", "widget": "repeat", "options": { "startField": "first_session" } },
+          { "type": "field", "id": "f-notes", "field": "notes" }
+        ]
+      }
+    ]
+  }
+}

@@ -129,6 +129,7 @@ export const refusals = {
   colourHex: 'A colour is #rrggbb, such as #0b5cad',
   seatsNumber: 'Places are a whole number, 0 or more',
   seatsForChoices: 'Places are for a choice’s options: a matrix’s columns take none',
+  templatesForRecords: 'Templates are kept of a record: a form that collects responses has none',
   limitsForResponses: 'Open and close dates and limits are for a form that collects responses: an app’s own screen opens and closes with the app',
   closesBeforeOpens: 'It would close before it opens: pick a closing time after the opening',
   approvalForRecords: 'Approvals are asked of a model’s records, on a record’s own screen: a form of responses, or a list, has no record to approve',

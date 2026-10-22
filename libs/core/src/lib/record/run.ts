@@ -86,6 +86,47 @@ export interface ActionResult {
    * own, each pressed as theirs are. Read only by that menu; any other call's is left alone.
    */
   menu?: MenuItem[];
+  /**
+   * How to take back what the app just did, for a one-tap press (a follow-up marked done, a message sent with a few
+   * seconds to call it back): its words are said with Undo, and Undo calls this — the app reopens the follow-up,
+   * cancels the send — answering as a call is answered (values, words, a reload…). Offered for a few seconds.
+   */
+  undo?: AppUndo;
+}
+
+/** The app's own way to take back what it did for a press (`ActionResult.undo`): answered as a call is. */
+export type AppUndo = () => void | ActionResult | Promise<void | ActionResult>;
+
+/** The runner's own ways a press's Undo takes it back with (press-undo.ts, the undo part). */
+export interface UndoKit {
+  form: RunForm;
+  answered(answer: ActionResult, scope: RunScope): Promise<Stopped | null>;
+  recordStep(name: 'archive' | 'unarchive' | 'duplicate' | 'delete', scope: RunScope): Promise<Stopped | null>;
+  replaced(scope: RunScope): boolean;
+  tell(scope: RunScope | null, message: string, tone: Tone): void;
+  runSteps(steps: readonly ActionStep[], scope: RunScope, inner?: boolean): Promise<RunResult>;
+}
+
+/** Undo, offered with the words a press said (`ActionHost.say`'s third): pressed, it takes back what the press did. */
+export interface SayUndo {
+  undo(): Promise<RunResult>;
+}
+
+/**
+ * What a press that offers Undo keeps as it runs (a button's or a menu item's `undo`, or the app answering with one):
+ * the words it says, held to be said as it ends — the last with Undo — and what Fieldia needs to take it back. What it
+ * wrote is read by the undo part as it ends (press-undo.ts), against the values it began with.
+ */
+export interface PressTaken {
+  said: { message: string; tone: Tone }[];
+  /** The app's own undos, from its answers, in the order given. */
+  app: AppUndo[];
+  /** The form's values as the press began. */
+  at: Values;
+  /** It archived the record (true) or brought it back (false). */
+  archived?: boolean;
+  /** The app's call answered with no undo: Fieldia cannot take that back by itself. */
+  beyond?: string;
 }
 
 /**
@@ -162,7 +203,8 @@ export interface OpenResult {
  */
 export interface ActionHost {
   open(request: OpenRequest): Promise<OpenResult>;
-  say(message: string, tone: Tone): void;
+  /** Words to say, in a tone; with `undo`, a one-tap press's: Undo beside them for a few seconds, pressed, takes it back. */
+  say(message: string, tone: Tone, undo?: SayUndo): void;
   /** A question, answered Yes (true) or No; `how` says what kind, for a host that asks some differently. */
   ask(message: string, how?: AskHow): Promise<boolean>;
   /** Close the dialog or panel this form was opened in. */
@@ -269,6 +311,8 @@ export interface RunScope {
    * what the last wrote. Put back when the run's save is refused.
    */
   wrote?: Map<string, { before: Value; mine: boolean; after: Value }>;
+  /** A press that offers Undo: what it said and did, to be taken back (`PressTaken`). */
+  taken?: PressTaken;
 }
 
 /** What a run reaches its form by: the form gives these. */
@@ -359,6 +403,9 @@ export interface RunForm {
 
 export const DONE: RunResult = Object.freeze({ done: true });
 
+/** What a press that offers Undo starts keeping (`RunScope.taken`), from the values it begins with. */
+export const takenNow = (at: Values = {}): PressTaken => ({ said: [], app: [], at: structuredCopy(at) });
+
 /** The kinds of field an expression gives a value to; the rest hold records, lines or files, and take a field named alone whole. */
 const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'json']);
 
@@ -445,6 +492,12 @@ export function createRunner(form: RunForm) {
       const first = journal.get(name) ?? before.get(name);
       if (first) journal.set(name, { before: first.before, mine: first.mine, after: structuredCopy(form.values()[name] ?? null) as Value });
     }
+  }
+
+  /** Words a run says: held, for a press that offers Undo, to be said as it ends; else said now. */
+  function tell(scope: RunScope | null, message: string, tone: Tone) {
+    if (scope?.taken) scope.taken.said.push({ message, tone });
+    else form.host?.say(message, tone);
   }
 
   /**
@@ -566,13 +619,22 @@ export function createRunner(form: RunForm) {
       return { reason: 'app', message: wordsOf(error), error };
     }
     form.answered(request, answer);
+    // A press offering Undo whose call the app answered with no way back: Fieldia cannot take it back by itself.
+    if (scope.taken && !answer?.undo) scope.taken.beyond = 'call';
     if (!answer) return null;
+    // The app's own undo for what it did: its words are held to be said with Undo.
+    if (answer.undo) (scope.taken ??= takenNow()).app.push(answer.undo);
+    return answered(answer, scope);
+  }
+
+  /** The app's answer to a call, or to its own undo, laid over the form: values, words, a reload, another record… */
+  async function answered(answer: ActionResult, scope: RunScope): Promise<Stopped | null> {
     // Answered for a record no longer shown: nothing of it is laid over the one shown now. Its words to the person are
     // laid over no record, and are said still — a dialog's "Payment … posted", answered as it closed, as before.
     if (replaced(scope)) {
       if (answer.say !== undefined) {
         const said = typeof answer.say === 'string' ? { message: answer.say } : answer.say;
-        form.host?.say(said.message, said.tone ?? 'info');
+        tell(scope, said.message, said.tone ?? 'info');
       }
       return form.gone();
     }
@@ -593,7 +655,7 @@ export function createRunner(form: RunForm) {
     }
     if (answer.say !== undefined) {
       const said = typeof answer.say === 'string' ? { message: answer.say } : answer.say;
-      form.host?.say(said.message, said.tone ?? 'info');
+      tell(scope, said.message, said.tone ?? 'info');
     }
     if (answer.post !== undefined) {
       const posted = typeof answer.post === 'string' ? { message: answer.post } : answer.post;
@@ -616,7 +678,7 @@ export function createRunner(form: RunForm) {
       if (opened) return opened;
     }
     if (answer.stop) {
-      if (typeof answer.stop === 'string') form.host?.say(answer.stop, 'warning');
+      if (typeof answer.stop === 'string') tell(scope, answer.stop, 'warning');
       return { reason: 'app', ...(typeof answer.stop === 'string' ? { message: answer.stop } : {}) };
     }
     return null;
@@ -653,6 +715,7 @@ export function createRunner(form: RunForm) {
       const kept = await form.letGo(scope.chain);
       if (kept) return kept;
       await form.archive(name === 'archive');
+      if (scope.taken) scope.taken.archived = scope.taken.archived === undefined ? name === 'archive' : undefined;
       form.told({ archived: name === 'archive' }, id);
       // Archived once another record is shown: that one is not loaded again over what is typed in it.
       if (replaced(scope)) return form.gone();
@@ -762,7 +825,7 @@ export function createRunner(form: RunForm) {
         return null;
       }
       case 'say':
-        form.host?.say(step.message, step.tone ?? 'info');
+        tell(scope, step.message, step.tone ?? 'info');
         return null;
       case 'ask':
         return (await ask(step.message)) ? null : { reason: 'no', message: step.message };
@@ -859,7 +922,9 @@ export function createRunner(form: RunForm) {
     return DONE;
   }
 
-  return { runSteps, ask };
+  /** What a press's Undo takes back with, in the undo part (press-undo.ts): the runner's own ways, on this form. */
+  const kit: UndoKit = { form, answered, recordStep, replaced, tell, runSteps };
+  return { runSteps, ask, kit };
 }
 
 /**

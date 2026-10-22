@@ -112,6 +112,7 @@ const NAMES: Record<string, string> = {
   'When…': 'عندما…',
   Look: 'المظهر',
   'Asks first': 'يسأل أولًا',
+  'Undo after it': 'تراجع بعده',
   'Key, with Alt': 'المفتاح مع Alt',
   // A record's head (head-properties.ts).
   'Record head': 'رأس السجل',
@@ -188,6 +189,7 @@ const NAMES: Record<string, string> = {
   'Once it is sent': 'بعد الإرسال',
   'One with its article': 'الواحد مع أداة التنكير',
   'Field names small inside them': 'أسماء الحقول بحرف صغير داخلها',
+  'Templates people save': 'قوالب يحفظها المستخدمون',
   'Duplicates asked for': 'متى يُبحث عن السجلات المكررة',
   Approvals: 'الموافقات',
   'Locked while it waits': 'مقفل أثناء الانتظار',
@@ -499,6 +501,8 @@ export const panel: DesignerWords['panel'] = {
   actionHint: 'الاسم الذي يتلقاه التطبيق عند الضغط؛ والتطبيق يقرر ما يفعل.',
   buttonLooks: { secondary: 'عادي', primary: 'رئيسي', danger: 'خطر', link: 'رابط' },
   asksFirst: 'يسأل أولًا',
+  undoAfter: 'تراجع بعده',
+  undoAfterHint: 'بدلًا من السؤال أولًا: يُقال ما فعله مع «تراجع» لبضع ثوانٍ.',
   hotkey: 'المفتاح مع Alt',
   hotkeyHint: 'حرف أو رقم: يضغط الزر مع Alt. ‏Shift+G لـ Alt+Shift+G.',
   actsAtOnce: 'لا شيء: ينفّذ فورًا',
@@ -687,5 +691,7 @@ export const panel: DesignerWords['panel'] = {
   recordsAExample: 'عميل',
   recordsAHint: 'في لغة تضع أداة قبل الاسم، كالإنجليزية والفرنسية. إن تُرك فارغًا قالت الجملة التي تحتاجه «سجل».',
   recordsLowerLabels: 'أسماء الحقول بحرف صغير داخلها',
+  templatesOn: 'قوالب يحفظها المستخدمون',
+  templatesOnHint: 'قائمة «القوالب» فوق السجل: «حفظ كقالب» يحفظ ما يحمله السجل باسم («باقة البوتوكس»)، ويبدأ سجل جديد من أحدها. تُحفظ عبر مصدر بيانات تطبيقك، أو في متصفح المستخدم.',
   recordsLowerLabelsHint: 'في لغة فيها حروف كبيرة وصغيرة، كالإنجليزية: يُكتب اسم الحقل داخل الجملة بحرف أول صغير. يبقى اسم فيه حرف كبير آخر كما كُتب.',
 };

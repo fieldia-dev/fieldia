@@ -39,6 +39,8 @@ export interface HeaderPartPatch {
   style?: ButtonNode['style'];
   /** A button's question before it acts; empty asks nothing. */
   confirm?: string;
+  /** A button's or a menu item's Undo after it, in place of asking first (`undo: true`); off takes it away. */
+  undo?: boolean;
   /** A button's key, as typed: "v", "Shift+G"; empty for none. */
   hotkey?: string;
   /** A badge's, a ribbon's or an alert's colour. */
@@ -305,6 +307,11 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
             if (kind !== 'button' && kind !== 'menu') throw new Refusal((w) => w.refusals.onlyButtonAsks);
             if (patch.confirm.trim()) (part as ButtonNode).confirm = patch.confirm;
             else delete (part as ButtonNode).confirm;
+          }
+          if (patch.undo !== undefined) {
+            if (kind !== 'button' && kind !== 'menu') throw new Refusal((w) => w.refusals.onlyButtonAsks);
+            if (patch.undo) (part as ButtonNode | MenuItem).undo ??= true;
+            else delete (part as ButtonNode | MenuItem).undo;
           }
           if (patch.hotkey !== undefined) {
             if (kind !== 'button') throw new Refusal((w) => w.refusals.onlyButtonKey);

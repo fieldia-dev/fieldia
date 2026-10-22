@@ -74,6 +74,8 @@ export interface ListActionPatch {
   action?: string;
   style?: ButtonNode['style'];
   confirm?: string;
+  /** Undo after it, in place of asking first (`undo: true`); off takes it away. */
+  undo?: boolean;
 }
 
 export interface ListCommands {
@@ -575,6 +577,8 @@ export function listCommands(context: {
             if (patch.confirm.trim()) button.confirm = patch.confirm;
             else delete button.confirm;
           }
+          if (patch.undo === true) button.undo ??= true;
+          else if (patch.undo === false) delete button.undo;
         },
         Object.keys(patch).length === 1 && (patch.label !== undefined || patch.action !== undefined || patch.confirm !== undefined) ? `action:${Object.keys(patch)[0]}:${id}` : null
       );

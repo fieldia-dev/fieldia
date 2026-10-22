@@ -18,6 +18,7 @@ import type { ShrinkOptions } from './shrink';
 import type * as SurveyModule from './survey-part';
 import type * as PhoneModule from './phone-part';
 import type * as SlotsModule from './slots-part';
+import type * as ScheduleModule from './schedule-part';
 import type * as RelationsModule from './relations-part';
 import type * as LanguagesModule from './languages-part';
 import type * as ScanModule from './scan-part';
@@ -67,6 +68,8 @@ export type SurveyPart = typeof SurveyModule;
 export type PhonePart = typeof PhoneModule;
 /** The slots part: a booking's time picked from the times free, on a month shaded by how its days are booked. */
 export type SlotsPart = typeof SlotsModule;
+/** The schedule part: a repeat field — its rule, its words — and a week's opening hours. */
+export type SchedulePart = typeof ScheduleModule;
 /** The relations part: links to other records — a many2one's and a reference's box, a many2many's tags and checkboxes, a char field's tags. */
 export type RelationsPart = typeof RelationsModule;
 /** The languages part: a text kept in several languages — its switch between them over its box, and a list's cell of it, marked. */
@@ -184,6 +187,12 @@ export const surveyPart: Part<SurveyPart> = lazyPart('survey', () => import('./s
  * is where the data source has no `slots`: in when both are.
  */
 export const slotsPart: Part<SlotsPart> = lazyPart('slots', () => Promise.all([import('./slots-part'), datePart.load()]).then(([module]) => module));
+
+/**
+ * A repeat field and a week's opening hours, loaded the first time a page shows one, or a list's column of them — with
+ * the date part, whose boxes their days and times are: in when both are.
+ */
+export const schedulePart: Part<SchedulePart> = lazyPart('schedule', () => Promise.all([import('./schedule-part'), datePart.load()]).then(([module]) => module));
 
 /**
  * A phone number read the world over, loaded the first time a page shows a phone field it reads so (its page's

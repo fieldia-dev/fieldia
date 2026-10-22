@@ -17,6 +17,8 @@ export function recordsSettings(el: ElementFactory, designer: Designer): { rows:
   const other = el('input', { class: 'fd-input', 'aria-label': w.recordsOther, placeholder: w.recordsOtherExample }) as HTMLInputElement;
   const a = el('input', { class: 'fd-input', 'aria-label': w.recordsA, placeholder: w.recordsAExample }) as HTMLInputElement;
   const lower = el('input', { type: 'checkbox', class: 'fd-check', 'aria-label': w.recordsLowerLabels }) as HTMLInputElement;
+  const templates = el('input', { type: 'checkbox', class: 'fd-check', 'aria-label': w.templatesOn }) as HTMLInputElement;
+  templates.addEventListener('change', () => designer.setTemplates(templates.checked));
   const half = el('p', { class: 'fd-properties-hint fd-records-half', role: 'status', hidden: '' }, w.recordsBoth);
   const name = () => {
     const [words, more] = [one.value.trim(), other.value.trim()];
@@ -30,8 +32,9 @@ export function recordsSettings(el: ElementFactory, designer: Designer): { rows:
   const called = setting(el, 'content', 'Records are called', [one, other, half], { hint: w.recordsHint, words: w.recordsCalled });
   const article = setting(el, 'content', 'One with its article', a, { hint: w.recordsAHint, words: w.recordsA });
   const small = setting(el, 'content', 'Field names small inside them', lower, { hint: w.recordsLowerLabelsHint, words: w.recordsLowerLabels });
+  const saved = setting(el, 'content', 'Templates people save', templates, { hint: w.templatesOnHint, words: w.templatesOn });
   return {
-    rows: [called, article, small],
+    rows: [called, article, small, saved],
     update(page) {
       called.hidden = page.data.kind !== 'record';
       // While one word of the two is typed alone, the boxes keep it.
@@ -41,6 +44,8 @@ export function recordsSettings(el: ElementFactory, designer: Designer): { rows:
       }
       if (!focused(a)) a.value = page.records?.a ?? '';
       lower.checked = !!page.lowerLabels;
+      templates.checked = !!page.templates;
+      saved.hidden = page.data.kind !== 'record';
       // One with its article once both words are given; labels small on any page, a survey's too.
       article.hidden = called.hidden || !page.records;
       small.hidden = false;

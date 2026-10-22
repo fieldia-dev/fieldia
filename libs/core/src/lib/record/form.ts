@@ -2,7 +2,7 @@ import type { ActionStep } from '../format/actions';
 import type { DefinitionsFrom, Field, Fields, LineField, Option, PropertyDefinition } from '../format/field';
 import { changesOptions, hasOptionRules, optionRulesPart, optionsField, optionsList, type OptionRulesPart } from '../format/choice-options';
 import type { OptionRules, TakenOption } from './option-rules';
-import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
+import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, PressUndo, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { PageEnding } from '../format/endings';
 import { fillValues } from '../format/words';
@@ -50,6 +50,7 @@ import {
   type PaidPayment,
   type SaveRequest,
   type SubmitRequest,
+  type PresentPerson,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
 import { formLanguagesPart, hasLanguages } from './languages';
@@ -68,7 +69,10 @@ import { signedBy, type SignedBy } from './signed';
 import type { PageLink } from './link-values';
 import type { OutboxStore } from './outbox-form';
 import { formJoins, type FormJoin, type FormJoins, type JoinPart, type SendKind } from './joins';
-import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
+import type { HistoryStep, Noted } from './history';
+import { pressUndoPart } from './undo-later';
+import { recordLivePart, type FormInner, type LiveRecord } from './live-later';
+import { createMoments, createRunner, takenNow, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
   initialValues,
@@ -223,6 +227,8 @@ export interface FormState {
    * refused once they went — kept to try again or discard. Left out on a page without one, and until it is read.
    */
   readonly outbox?: { readonly waiting: number; readonly sending: boolean; readonly offline: boolean; readonly kept: boolean; readonly refused: readonly { readonly key: string; readonly message: string; readonly at: string }[] };
+  /** Who else has the record open, as the data source's `presence` pushed: never this person. Empty while none does, or without it. */
+  readonly present?: readonly PresentPerson[];
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -387,6 +393,12 @@ export interface FormEvents {
    * person pressed "Continue later" (`later`), with the source's answer.
    */
   draft: { key: string; savedAt: string; later: boolean; saved: SavedDraft };
+  /**
+   * A change made elsewhere arrived (the data source's `subscribe`): laid on the record where the person had changed
+   * nothing (`conflict` false), else waiting as a conflict, Reload or Keep mine — with who and when, and the fields it
+   * changed.
+   */
+  arrived: { recordId: RecordId; by?: string; at?: string; fields: string[]; conflict: boolean };
 }
 
 export interface FormOptions {
@@ -911,6 +923,19 @@ export interface Form {
   putBack(field?: string): void;
   /** Let go of the changes set aside. */
   discardSetAside(): void;
+  /**
+   * Take back the person's last change to the record — a field written, a cell typed in, a line added, taken away or
+   * moved; typing on in one box is one change until the box is left — as their own change back: the page's `change`
+   * steps and the source's onchange run as for any. A change whose field holds something else since (a step, the app,
+   * a reload) or is locked now is passed over. The step taken back, or null when none is left. The viewer's Ctrl+Z.
+   * The changes are kept from the first; taking them back is the undo part's (`pressUndoPart`), asked for as the first
+   * is kept — null until it has come.
+   */
+  undo(): HistoryStep | null;
+  /** Make the last change taken back again, as `undo` takes one back; null when none is. Ctrl+Shift+Z, Ctrl+Y. */
+  redo(): HistoryStep | null;
+  /** The changes `undo` and `redo` would take now: for a button or a menu that names them (once the undo part has come). */
+  history(): { undo: HistoryStep | null; redo: HistoryStep | null };
   /** Resolves once every onchange, save, autosave and run of steps started so far has finished — a question still waiting for its answer included. */
   settled(): Promise<void>;
   /**
@@ -1500,6 +1525,63 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const listed = listedColumns(page.fields);
   /** Whether the values set now are a change someone made (`writeValues`), after which a line's choice no longer offered is cleared. */
   let edit = false;
+  // ---- live: changes made elsewhere, and who else has the record open (the live part) ------------------------
+  /** The live part's watch over the record shown, where the source tells either (`subscribe`, `presence`): told of each change. */
+  let liveKit: LiveRecord | null = null;
+  /** What the parts that work inside the form take of it (live-later.ts): the live part, the undo part's press. */
+  const inner: FormInner = {
+    page,
+    fields,
+    options,
+    messages,
+    state: () => state,
+    set,
+    baseline: () => baseline,
+    same: (name, one, other) => sameValue(fields[name], one, other),
+    conflictOf,
+    store,
+    settled: savesSettled,
+    track,
+    shownNow,
+    generation: () => generation,
+    emit,
+    replaced,
+  };
+  /** The person's changes to the record shown, as made (history.ts); and whether one is being taken back or made again now. */
+  let noted: Noted[] = [];
+  let replaying = false;
+  /**
+   * A person's change written to `field` (on `line`), noted for Undo with what it held `before`: typing on joins it
+   * (`joins`). The undo part takes them as they come, asked for with the first: in by the time the person presses Ctrl+Z.
+   */
+  const noteChange = (field: string, line: string | undefined, before: Value | undefined, joins: boolean) => {
+    if (replaying) return;
+    noted.push([field, line, before ?? null, state.values[field] ?? null, joins]);
+    const part = pressUndoPart.loaded;
+    if (part) part.takeNoted(noted, inner.same);
+    // Kept while it comes; where it cannot, the oldest let go.
+    else if (noted.length > 500) noted.shift();
+    else pressUndoPart.load().catch(() => undefined);
+  };
+  /**
+   * Undo (`back`) or Redo, once the undo part has come: the change taken, written as the person's own change back —
+   * the page's `change` steps and the source's onchange run as for any — once its field still holds what the change
+   * left and may be changed.
+   */
+  function replay(back: boolean): HistoryStep | null {
+    const step = editing ? pressUndoPart.loaded?.takeStep(noted, inner.same, back, (one, left) => !form.fieldReadonly(one.field) && sameValue(fields[one.field], state.values[one.field], left)) : null;
+    if (!step) return null;
+    const { value, ...taken } = step;
+    replaying = true;
+    try {
+      writeValues({ ...(state.values as Values), [taken.field]: structuredCopy(value) });
+      afterEdit(taken.field);
+      changed(taken.field, 'person', taken.line === undefined ? {} : { line: taken.line });
+    } finally {
+      replaying = false;
+    }
+    return taken;
+  }
 
   function set(patch: Partial<FormState>) {
     const was = state.values;
@@ -1527,6 +1609,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // The problems found inside a saved form are shown on it, beside its own fields.
     if (state.errors !== shown) for (const part of attached.values()) part.inner.show(inside(state.errors, part.name));
     for (const listener of [...listeners]) listener(state);
+    // The record shown, watched for changes made elsewhere and for who else has it open; asked again as that changes.
+    liveKit?.watch();
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
       // After someone's change, a choice its new choices do not offer is taken out and said, as a line's is.
@@ -1559,6 +1643,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Another record is shown: nothing of the last one's is the person's work any more, and its files on their way stop. */
   function newGeneration() {
     generation++;
+    noted = [];
     // Another record's lines ask the source anew.
     lineAsks = new Map();
     answers = new Map();
@@ -3112,7 +3197,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   function addLine(field: string, values: Values, by: ChangeBy): string {
     const def = lineField(field);
-    const current = (state.values[field] as Line[] | null) ?? [];
+    const before = state.values[field];
+    const current = (before as Line[] | null) ?? [];
     // A key no line holds: lines given (a line's own lines, back from its form) may hold new-… keys already.
     let key = `new-${++lineKeys}`;
     while (current.some((line) => line.key === key)) key = `new-${++lineKeys}`;
@@ -3124,6 +3210,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     }
     const lines = [...current, line];
     writeValues({ ...(state.values as Values), [field]: lines });
+    if (by === 'person') noteChange(field, key, before, false);
     afterEdit(field);
     changed(field, by, by === 'person' ? { line: key } : { keep: true });
     return key;
@@ -3623,8 +3710,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // A built-in item of the gear menu with nothing of its own: its step, asked about first when it archives or deletes.
     const builtin = 'builtin' in source && !list.length ? source.builtin : undefined;
     if (builtin) list.push({ do: builtin });
-    const asked = builtin === 'archive' ? named(messages.archiveConfirmNoun, messages.archiveConfirm) : builtin === 'delete' ? named(messages.deleteConfirmNoun, messages.deleteConfirm) : undefined;
+    // Undo after it, in place of asking first: a built-in with `undo` asks nothing unless it says so.
+    const offers = 'undo' in source ? source.undo : undefined;
+    const asked = offers !== undefined ? undefined : builtin === 'archive' ? named(messages.archiveConfirmNoun, messages.archiveConfirm) : builtin === 'delete' ? named(messages.deleteConfirmNoun, messages.deleteConfirm) : undefined;
     const confirm = 'confirm' in source && source.confirm !== undefined ? source.confirm : asked;
+    if (offers !== undefined) scope.taken = takenNow(state.values);
     // On the record it was pressed on: another shown while its question is asked, it does nothing to that one.
     scope.generation ??= generation;
     // Pressed by the person: what is typed is read before a step reads the form or hands its values on.
@@ -3657,8 +3747,25 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
             return result;
           }
         }
-        return runTop(list, scope);
+        const result = await runTop(list, scope);
+        if (scope.taken) offerUndo(source, scope, result, offers);
+        return result;
       })()
+    );
+  }
+
+  /**
+   * A press that offers Undo has ended: its words said — the last with Undo, where what it did can be taken back — by
+   * the undo part (press-undo.ts), which a page whose buttons offer Undo asks for first; plainly where it cannot come.
+   */
+  function offerUndo(source: ButtonNode | StatButton | MenuItem, scope: RunScope, result: RunResult, offers: PressUndo | undefined) {
+    const taken = scope.taken as NonNullable<RunScope['taken']>;
+    scope.taken = undefined;
+    void track(
+      pressUndoPart.load().then(
+        (part) => part.offerUndo(inner, { kit: runner.kit, source, scope, taken, result, offers }),
+        () => taken.said.forEach((words) => options.host?.say(words.message, words.tone))
+      )
     );
   }
 
@@ -3686,7 +3793,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       fieldDef(name);
       // A choice whose places are all taken is shown, and refused when the person picks it: said under its field.
       if ((how?.by ?? 'person') === 'person' && refusedFull(name, value)) return;
+      const before = state.values[name];
       writeValues({ ...(state.values as Values), [name]: structuredCopy(value) });
+      if ((how?.by ?? 'person') === 'person') noteChange(name, undefined, before, true);
       afterEdit(name);
       changed(name, how?.by ?? 'person');
     },
@@ -3760,8 +3869,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
       if (state.unread[name]) return state.unread[name].message;
-      // A property's text left unread answers for its field.
-      if (page.fields[name].type === 'properties') {
+      // A property's text left unread answers for its field, and so does a box of a value drawn in parts (a repeat
+      // rule's number, an opening hour's time: `field.part`).
+      if (['properties', 'json', 'char'].includes(page.fields[name].type)) {
         const row = Object.keys(state.unread).find((path) => path.startsWith(`${name}.`));
         if (row) return state.unread[row].message;
       }
@@ -3776,7 +3886,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const field = path.split('.')[0];
       // A line's cell (`field.lineKey.subfield`), or a property (`field.property`).
       const def = fieldDef(field);
-      if (path.includes('.') && def.type !== 'properties') lineField(field);
+      // A line's cell, a property, or one of the boxes a value is drawn in (a repeat rule's number, an opening hour's
+      // time: `field.part`, of a char or a json field).
+      if (path.includes('.') && def.type !== 'properties' && !((def.type === 'json' || def.type === 'char') && path.split('.').length === 2)) lineField(field);
       const had = state.unread[path];
       if (!unread && !had) return;
       // A line taken away takes its cells' text with it: a box of it still reading (a name looked up) keeps none.
@@ -3794,6 +3906,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     boxLeft(path) {
+      noted.push([path.split('.')[0]]);
       const problem = leftProblem(path);
       if (!problem || state.errors[path] === problem) return;
       set({ errors: { ...state.errors, [path]: problem } });
@@ -3908,6 +4021,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       holding = setWhen.holding(baseline);
       // The person's own Discard: nothing of theirs is left at risk, and a save on its way lands as the record it stored.
       resets++;
+      noted = [];
       personal.clear();
       personalLines.clear();
       filed.clear();
@@ -3942,10 +4056,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     updateLine(field, key, name, value) {
       const def = lineField(field);
       if (!def.fields[name]) throw new Error(`The lines of "${field}" have no field "${name}"`);
-      const lines = ((state.values[field] as Line[] | null) ?? []).map((line) =>
+      const before = state.values[field];
+      const lines = ((before as Line[] | null) ?? []).map((line) =>
         line.key === key ? { ...line, values: { ...line.values, [name]: structuredCopy(value) } } : line
       );
       writeValues({ ...(state.values as Values), [field]: lines });
+      noteChange(field, key, before, true);
       afterEdit(field);
       changed(field, 'person', { line: key });
     },
@@ -3973,7 +4089,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const value = trusted ? (i >= low && i <= high ? pool[i - low] : line.values[sequence]) : i + 1;
         return value === line.values[sequence] ? line : { ...line, values: { ...line.values, [sequence]: value } };
       });
+      const was = state.values[field];
       writeValues({ ...(state.values as Values), [field]: renumbered });
+      noteChange(field, undefined, was, false);
       afterEdit(field);
       changed(field, 'person');
     },
@@ -3987,8 +4105,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           throw new Error(`The line "${key}" of "${field}" cannot be deleted now: its table's lineDelete does not hold on it`);
         }
       }
-      const lines = ((state.values[field] as Line[] | null) ?? []).filter((line) => line.key !== key);
+      const before = state.values[field];
+      const lines = ((before as Line[] | null) ?? []).filter((line) => line.key !== key);
       writeValues({ ...(state.values as Values), [field]: lines });
+      noteChange(field, key, before, false);
       afterEdit(field);
       changed(field, 'person', { line: key });
     },
@@ -4301,6 +4421,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (state.setAside) set({ setAside: null });
     },
 
+    undo: () => replay(true),
+    redo: () => replay(false),
+    history: () => pressUndoPart.loaded?.nextSteps(noted, inner.same) ?? { undo: null, redo: null },
+
     async settled() {
       while (pending.size) await Promise.allSettled([...pending]);
     },
@@ -4365,6 +4489,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     dispose() {
       // An answer that lands after is for no record shown.
       disposed = true;
+      liveKit?.stop();
       newGeneration();
       clearFiles();
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
@@ -4396,6 +4521,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const made = (at: number) => (part: JoinPart) => void (disposed || (joins[at] ??= part.join(host)));
     joining = Promise.all(joinParts.map((part, at) => (part.loaded ? made(at)(part.loaded) : track(part.load().then(made(at), () => undefined)))));
   }
+  // Where the source tells changes made elsewhere or who else is here: the live part, asked for now.
+  if (options.dataSource?.subscribe || options.dataSource?.presence) void recordLivePart.load().then((part) => disposed || (liveKit = part.liveRecord(inner)).watch(), () => undefined);
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

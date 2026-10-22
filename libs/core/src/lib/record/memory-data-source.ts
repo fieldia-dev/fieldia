@@ -71,8 +71,14 @@ import type {
   ClustersRequest,
   ClustersResult,
   SavedView,
+  PresentPerson,
+  RecordTemplate,
+  TemplatesRequest,
+  TemplateRequest,
+  SaveTemplateRequest,
 } from './data-source';
 import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused } from './data-source';
+import { memoryLive } from './memory-live';
 import { distanceFrom, matchesFilter } from './filter';
 import { spanStart } from './periods';
 import { wait, type Scheduler } from './scheduler';
@@ -126,6 +132,19 @@ export interface MemoryDataSourceOptions {
    * `changeElsewhere` changes a record as someone else would.
    */
   versions?: boolean | { by?: string };
+  /**
+   * Live, as a server with a socket: a record's changes made with `changeElsewhere` are pushed to each page that has it
+   * open (`subscribe`), and who has a record open is told (`presence`): each page that opens it, and anyone `arrive`
+   * brings (`leave` takes them away). Without it the source has none of `subscribe`, `presence`, `arrive` and `leave`, as
+   * a source without a socket: a change elsewhere is found as a save meets it.
+   */
+  live?: boolean;
+  /**
+   * Record templates saved before, by page id: what `templates` answers first ("Botox package"), as an app's server
+   * keeps them — `{}` for none yet. Given, the source has `templates`, `saveTemplate` and `deleteTemplate`; else none,
+   * and a page keeps its templates in the viewer's `preferences`.
+   */
+  templates?: Record<string, RecordTemplate[]>;
   /**
    * What the person may do with each record, by model: given with its load
    * and its row in a list, and kept to as a backend would — a save, a
@@ -245,6 +264,11 @@ export interface MemoryAssist {
 
 /** The members of AI help a memory source has only where its `assist` answers them. */
 type AssistMembers = 'suggest' | 'rewrite' | 'searchToFilter';
+/**
+ * The members a memory source has only where an option says how it answers: AI help's (`assist`), a list's map's
+ * `clusters`, lists' saved views (`views`), record templates (`templates`) and live updates (`live`).
+ */
+type OptionalMembers = AssistMembers | 'clusters' | 'views' | 'saveView' | 'deleteView' | 'templates' | 'saveTemplate' | 'deleteTemplate' | 'subscribe' | 'presence';
 
 /**
  * Every member of a data source but `exportRecords` and `importRecords`: a
@@ -252,11 +276,12 @@ type AssistMembers = 'suggest' | 'rewrite' | 'searchToFilter';
  * without a server of its own does. A test or a demo gives it one by setting
  * it. AI help's (`suggest`, `rewrite`, `searchToFilter`) where its `assist`
  * option answers them. `clusters` is there where its option says how it answers.
- * Saved views (`views`, `saveView`, `deleteView`) where it is given `views`.
+ * Saved views (`views`, `saveView`, `deleteView`) where it is given `views`; record templates (`templates`,
+ * `saveTemplate`, `deleteTemplate`) where it is given `templates`; `subscribe` and `presence` with `live`.
  */
 export interface MemoryDataSource
-  extends Required<Omit<DataSource, 'exportRecords' | 'importRecords' | AssistMembers | 'clusters' | 'views' | 'saveView' | 'deleteView'>>,
-    Pick<DataSource, 'exportRecords' | 'importRecords' | AssistMembers | 'clusters' | 'views' | 'saveView' | 'deleteView'> {
+  extends Required<Omit<DataSource, 'exportRecords' | 'importRecords' | OptionalMembers>>,
+    Pick<DataSource, 'exportRecords' | 'importRecords' | OptionalMembers> {
   readonly records: Record<string, Record<string, Values>>;
   /**
    * The records said to be someone else for one another, by model: each pair of ids, in the order kept, through
@@ -271,6 +296,10 @@ export interface MemoryDataSource
    * told of a conflict when it saves. Gives the new version.
    */
   changeElsewhere(model: string, id: RecordId, values: Values, who: { by: string; at?: string }): RecordVersion;
+  /** Someone else opens a record, or changes whether they are editing it: told to each page that has it open. With `live`. */
+  arrive?(model: string, id: RecordId, person: PresentPerson): void;
+  /** Someone else closes it. With `live`. */
+  leave?(model: string, id: RecordId, person: RecordId): void;
   /** Drafts kept by `saveDraft`, by key, each with its page's id and the request's `later`: the partial answers an app sees. */
   readonly drafts: Record<string, StoredDraft & { pageId: string; later?: boolean }>;
   /** Take a response to a page as someone else would, on another screen: counted by `limits`, never as this person's. */
@@ -339,6 +368,32 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   const noSignal = () => {
     if (options.offline?.()) throw new TypeError('Failed to fetch');
   };
+  /** Each page's record templates, as saved: those given first, then each kept, numbered on. */
+  const savedTemplates: Record<string, RecordTemplate[]> = structuredCopy(options.templates ?? {});
+  const templatesOf = (pageId: string) => (savedTemplates[pageId] ??= []);
+  let templateIds = 0;
+  async function templates(request: TemplatesRequest): Promise<RecordTemplate[]> {
+    calls.push({ method: 'templates', request });
+    await pause();
+    return structuredCopy(templatesOf(request.pageId));
+  }
+  async function saveTemplate(request: SaveTemplateRequest): Promise<RecordTemplate> {
+    calls.push({ method: 'saveTemplate', request });
+    await pause();
+    const list = templatesOf(request.pageId);
+    const kept: RecordTemplate = { id: request.template.id ?? `template-${++templateIds}`, name: request.template.name, values: structuredCopy(request.template.values) };
+    const at = list.findIndex((one) => String(one.id) === String(kept.id));
+    if (at >= 0) list[at] = kept;
+    else list.push(kept);
+    return structuredCopy(kept);
+  }
+  async function deleteTemplate(request: TemplateRequest): Promise<void> {
+    calls.push({ method: 'deleteTemplate', request });
+    await pause();
+    const list = templatesOf(request.pageId);
+    const at = list.findIndex((one) => String(one.id) === String(request.id));
+    if (at >= 0) list.splice(at, 1);
+  }
   const labelOf = (model: string, id: RecordId) => {
     const value = nameOf(model, id);
     const name = oneText(value, options.language);
@@ -465,6 +520,9 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       return result;
     },
     changeElsewhere: kept.changeElsewhere,
+    ...memoryLive(options, kept),
+    // Record templates, as an app's server keeps them: where it was given some (`templates`, `{}` for none yet).
+    ...(options.templates ? { templates, saveTemplate, deleteTemplate } : {}),
 
     async sendCode(request: SendCodeRequest): Promise<SentCode> {
       calls.push({ method: 'sendCode', request });

@@ -1070,8 +1070,13 @@ export function installStyles(document: Document): void {
  *
  * An offline outbox (0.31, the viewer's outbox part), new in the same way: a bar over the form saying what waits on the
  * device, its buttons the main sheet's. Rank 22, after the pay part's, before the themes'.
+ *
+ * A repeat field and a week's opening hours (0.31, the schedule part) are new, cut from no rule: their rows laid out
+ * alone, a week's days as toggles, their boxes Fieldia's own (the main sheet's, a number's and a time's). Like the
+ * limits', they go before the themes' — after the outbox's (none names another's parts) — so a theme still reshapes
+ * their toggles' colours and type, its own boxes and buttons over them: rank 23.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, record: 17, codes: 18, pins: 19, verify: 20, pay: 21, outbox: 22, themes: 23, quiet: 24, picker: 25, head: 26, groups: 27, text: 28, surveyLooks: 29, cards: 30, scan: 31 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, record: 17, codes: 18, pins: 19, verify: 20, pay: 21, outbox: 22, schedule: 23, themes: 24, quiet: 25, picker: 26, head: 27, groups: 28, text: 29, surveyLooks: 30, cards: 31, scan: 32 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

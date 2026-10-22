@@ -27,6 +27,7 @@ import { lastPlacesBar } from '../shared/event-signup';
 import { signedInBar } from '../shared/approvals';
 import { phoneBar, sentLog } from '../shared/unit-enquiry';
 import { offlineBar } from '../shared/viewing-report';
+import { frontDeskBar } from '../shared/treatment-course';
 import { addressFollowsRecord } from '../shared/address';
 import { priceListBar } from '../shared/editable-lists';
 
@@ -232,6 +233,8 @@ if (name === 'viewing-report') {
 }
 // And a stand-in phone over it, where the codes the app sends arrive as WhatsApp or SMS would bring them.
 if (name === 'unit-enquiry') document.getElementById('app')?.before(phoneBar(document, dataSource));
+// The course has a bar over it: Mona at the front desk opens it and changes its price (shared/treatment-course.ts).
+if (name === 'treatment-course') document.getElementById('app')?.before(frontDeskBar(dataSource));
 
 // `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `pages` themselves,
 // for the one that each draws the sample records' values as their kind is.

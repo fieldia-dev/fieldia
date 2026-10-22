@@ -89,7 +89,11 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // A text box typed to a mask (`options.mask`) and a one-time code's boxes (`"widget": "one-time-code"`) come in the
 // typed part: `(await typedPart.load()).conform(…)`.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-export { textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, decodePart, loadDecodePart, scans, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type MonthsPart, type TypedPart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type PhotosPart, type RecordPart, type CodesPart, type PinsPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type LanguagesPart, type ScanPart, type DecodePart, type PartFactory } from './lib/widget-parts';
+// A repeat field and a week's opening hours come in the schedule part, with the date part: `(await schedulePart.load())
+// .repeatWords(…)`, `.hoursWords(…)`, `.readRule(…)`.
+export type { RepeatRule, RepeatFrequency, Weekday } from './lib/repeat-rule';
+export type { Shift, WeekHours } from './lib/hours';
+export { textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, decodePart, loadDecodePart, scans, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type MonthsPart, type TypedPart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type PhotosPart, type RecordPart, type CodesPart, type PinsPart, type SurveyPart, type PhonePart, type SlotsPart, type SchedulePart, type RelationsPart, type LanguagesPart, type ScanPart, type DecodePart, type PartFactory } from './lib/widget-parts';
 export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.

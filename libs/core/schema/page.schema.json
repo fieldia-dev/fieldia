@@ -421,6 +421,31 @@
     },
     "outbox": {
       "type": "boolean"
+    },
+    "templates": {
+      "anyOf": [
+        {
+          "type": "boolean",
+          "const": true
+        },
+        {
+          "type": "object",
+          "properties": {
+            "fields": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "fields"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "required": [
@@ -5438,6 +5463,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -5711,6 +5751,21 @@
                     "confirm": {
                       "type": "string"
                     },
+                    "undo": {
+                      "anyOf": [
+                        {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActionStep"
+                          }
+                        }
+                      ]
+                    },
                     "icon": {
                       "type": "string"
                     },
@@ -5971,6 +6026,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -6107,6 +6177,21 @@
               },
               "confirm": {
                 "type": "string"
+              },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
               },
               "icon": {
                 "type": "string"
@@ -6426,6 +6511,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -6535,6 +6635,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -6643,6 +6758,21 @@
               },
               "confirm": {
                 "type": "string"
+              },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
               },
               "icon": {
                 "type": "string"
@@ -7645,6 +7775,21 @@
         "confirm": {
           "type": "string"
         },
+        "undo": {
+          "anyOf": [
+            {
+              "type": "boolean",
+              "const": true
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ActionStep"
+              }
+            }
+          ]
+        },
         "icon": {
           "type": "string"
         },
@@ -7737,6 +7882,21 @@
             },
             "confirm": {
               "type": "string"
+            },
+            "undo": {
+              "anyOf": [
+                {
+                  "type": "boolean",
+                  "const": true
+                },
+                {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/ActionStep"
+                  }
+                }
+              ]
             },
             "icon": {
               "type": "string"
@@ -8960,6 +9120,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -9487,6 +9662,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -9844,6 +10034,21 @@
               "confirm": {
                 "type": "string"
               },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
+              },
               "icon": {
                 "type": "string"
               },
@@ -10109,6 +10314,21 @@
               },
               "confirm": {
                 "type": "string"
+              },
+              "undo": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  }
+                ]
               },
               "icon": {
                 "type": "string"

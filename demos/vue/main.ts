@@ -16,6 +16,7 @@ import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contain
 import { meanwhileBar } from '../shared/test-drive';
 import { lastPlacesBar } from '../shared/event-signup';
 import { signedInBar } from '../shared/approvals';
+import { frontDeskBar } from '../shared/treatment-course';
 
 /** The same demo again, mounted by Vue with render functions. */
 const params = new URLSearchParams(location.search);
@@ -107,6 +108,8 @@ if (params.get('page') === 'event-signup') document.getElementById('app')?.befor
 // A purchase order's and an expense's approvals: who uses the demo, and the others to sign in as (shared/approvals.ts).
 const signedIn = signedInBar(params);
 if (signedIn) document.getElementById('app')?.before(signedIn);
+// The course has a bar over it: Mona at the front desk opens it and changes its price (shared/treatment-course.ts).
+if (params.get('page') === 'treatment-course') document.getElementById('app')?.before(frontDeskBar(dataSource));
 
 const chatter = sampleChatter();
 // The enquiry has a bar over it: the buyer's phone reads what was sent and writes back (shared/enquiry.ts).

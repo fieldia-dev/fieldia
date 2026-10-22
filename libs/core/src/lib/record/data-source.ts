@@ -248,6 +248,35 @@ export interface DataSource {
    * idempotency key, so a payment is never taken twice. Without it, no payment is asked and the page sends as before.
    */
   pay?(request: PayRequest): Promise<PayResult>;
+  /**
+   * The record templates people saved for a page (`templates` on the page): each by its id, its name and the values it
+   * keeps — this person's own and those the team shares, as the app decides. With `saveTemplate` and `deleteTemplate`,
+   * a template saved and named, or let go, on the app's server; without the three, the viewer keeps them in its
+   * `preferences`, the person's own.
+   */
+  templates?(request: TemplatesRequest): Promise<RecordTemplate[]>;
+  /** Keep a template — a new one, or one again by its `id` (renamed, its values replaced) — answered with it as kept. */
+  saveTemplate?(request: SaveTemplateRequest): Promise<RecordTemplate>;
+  deleteTemplate?(request: TemplateRequest): Promise<void>;
+  /**
+   * Changes to the record shown, pushed as they happen elsewhere — over the app's own socket, server-sent events, a
+   * database's listener: call `push` with each, and return what stops it. Asked as a record is shown (once it has an
+   * id), stopped as another is shown or the form goes. A change arriving while the person has changed nothing is laid
+   * on the record at once, and said; after a change of theirs, it is the conflict a save would meet — who changed it
+   * and when, what both changed, with Reload and Keep mine — and their typing is never touched. Without it, a change
+   * elsewhere is found as the person saves (`versions`).
+   *
+   * The same call as @fieldia/chatter's `subscribe(record, push)` (`{ model, id }`, a push, a stop): one function of
+   * the app's may serve both, pushing every kind of change; each takes only its own `type` — the record's `record`
+   * and `deleted`, the chatter's `message` and `delivery` — and lets the rest go.
+   */
+  subscribe?(record: RecordRequest, push: (change: RecordChange) => void): () => void;
+  /**
+   * Who else has the record shown open, pushed as it changes (the app's socket, a heartbeat): call `push` with the
+   * people — never this person — and return what stops it. Asked as a record is shown, with whether this person is
+   * changing it (`editing`), and asked again as that changes. Without it, nobody else is shown.
+   */
+  presence?(request: PresenceRequest, push: (people: PresentPerson[]) => void): () => void;
 }
 
 /** Whose approvals are asked: the record shown, and the person, as the app told the form. */
@@ -597,6 +626,51 @@ export interface CodeChecked {
 export interface VerifiedValue {
   value: string;
   proof?: string;
+}
+
+/** The templates of a page's records, as `templates` is asked. */
+export interface TemplatesRequest {
+  model: string;
+  pageId: string;
+}
+/** One template, by its id. */
+export interface TemplateRequest extends TemplatesRequest {
+  id: RecordId;
+}
+/** A template kept as `saveTemplate` is asked: without `id`, a new one. */
+export interface SaveTemplateRequest extends TemplatesRequest {
+  template: { id?: RecordId; name: string; values: Values };
+}
+/** A record's values kept by a name, to start a new one from: "Botox package". `by`, who saved it, where it is shared. */
+export interface RecordTemplate {
+  id: RecordId;
+  name: string;
+  values: Values;
+  by?: string;
+}
+
+/**
+ * A change to a record made elsewhere (`subscribe`): `record`, its version and values now — where it leaves them out,
+ * the form reads the record again (`load`) — and who changed it and when, where no version tells; `deleted`, it is gone.
+ */
+export type RecordChange =
+  | { type: 'record'; version?: RecordVersion; values?: Values; by?: string; at?: string }
+  | { type: 'deleted'; by?: string; at?: string };
+
+/** The record shown, and this person, as `presence` is asked: whether they have changes not saved in it (`editing`). */
+export interface PresenceRequest {
+  model: string;
+  id: RecordId;
+  user?: { id: RecordId | null; name?: string };
+  editing: boolean;
+}
+
+/** Someone else with the record open: their name, whether they are changing it, and their picture's address. */
+export interface PresentPerson {
+  id: RecordId;
+  name: string;
+  editing?: boolean;
+  avatar?: string;
 }
 
 /** Whose possible duplicates were let be: what `notDuplicates` is asked. */

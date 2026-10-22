@@ -27,6 +27,8 @@ import { checkList, checkRelated, type ListTools } from './list-checks';
 import { checkEditable } from './editable-checks';
 import type { FieldTools } from './part-checks';
 import { checkSlots } from './slots-checks';
+import { checkSchedule } from './schedule-checks';
+import { checkTemplates } from './templates-checks';
 import { checkRecording, checkSignature } from './signature-checks';
 import { checkRewrite, checkSuggest } from './assist-checks';
 import { checkScan } from './scan-checks';
@@ -170,6 +172,8 @@ export class ReferenceCheck {
     }
     const owing = { report: (path: string, message: string) => this.report(path, message), owe: (part: string) => void this.later.add(part) };
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
+    // Templates people save: in the one-tag script, checked by the templates part a page with them asks for.
+    if (!this.line && this.page.templates) checkTemplates(this.fieldTools());
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, owing);
     // A survey's flow — a quiz and each question's own, a review, one at a time, a draw, a time limit — checked where the
     // page has any (in the one-tag script, by the survey flow's part it asks for).
@@ -891,6 +895,8 @@ export class ReferenceCheck {
     // with them in the one-tag script.
     if (node.widget === 'slots' && def && def.type !== 'datetime') this.report(`${path}.widget`, `slots is for a datetime field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'slots') checkSlots(node, path, this.fieldTools());
+    // A repeat rule, a week's opening hours: the schedule part's, as their checks are in the one-tag script.
+    if (node.widget === 'repeat' || node.widget === 'hours') checkSchedule(node, def, path, this.fieldTools());
     if (node.widget === 'signature' && def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
     else if (node.widget === 'signature') checkSignature(node, path, this.fieldTools());
     // A text field's AI tools (`options.rewrite`), drawn by the assist part, whose checks come with it in the one-tag script.

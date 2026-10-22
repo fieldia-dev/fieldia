@@ -326,6 +326,8 @@ export const panel = {
   actionHint: 'The name the app receives when it is pressed; the app decides what it does.',
   buttonLooks: { secondary: 'Plain', primary: 'Main', danger: 'Danger', link: 'A link' },
   asksFirst: 'Asks first',
+  undoAfter: 'Undo after it',
+  undoAfterHint: 'In place of asking first: what it did is said with Undo for a few seconds.',
   hotkey: 'Key, with Alt',
   hotkeyHint: 'A letter or a digit: Alt and it presses the button. Shift+G for Alt+Shift+G.',
   actsAtOnce: 'Nothing: it acts at once',
@@ -524,5 +526,7 @@ export const panel = {
   recordsAExample: 'a customer',
   recordsAHint: '“A customer”, “an invoice”: left empty, a sentence that needs it says “A record”.',
   recordsLowerLabels: 'Field names small inside them',
+  templatesOn: 'Templates people save',
+  templatesOnHint: 'A Templates menu over the record: Save as template keeps what a record holds by a name (“Botox package”), and a new record starts from one. Kept by your app’s data source, or in the person’s browser.',
   recordsLowerLabelsHint: 'Inside every sentence Fieldia says: “A customer with this phone already exists”, “Choose at least 2 for interests”. A label that begins a sentence, and a name like IBAN or WhatsApp, stay as written.',
 };

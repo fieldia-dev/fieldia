@@ -1,5 +1,5 @@
-import { callsPartFunctions, formJoins, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
-import { businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { callsPartFunctions, formJoins, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as ElementModule from './element-part';
@@ -19,6 +19,9 @@ import type * as ListModule from './list-part';
 import type * as ViewsModule from './views-part';
 import type * as RowsModule from './rows-part';
 import type * as SurveyFlowModule from './surveyflow-part';
+import type * as TemplatesModule from './templates-part';
+import type * as LiveModule from './live-part';
+import type * as UndoModule from './undo-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -53,6 +56,12 @@ export type RowsPart = typeof RowsModule;
 export type SurveyFlowPart = typeof SurveyFlowModule;
 /** The element part: what `<fieldia-form>` does once it is on a page (element-part.ts). */
 export type ElementPart = typeof ElementModule;
+/** The templates part: record templates people save and name, and start a new record from. */
+export type TemplatesPart = typeof TemplatesModule;
+/** The live part's viewer half: who else has a record open, over it. */
+export type LivePart = typeof LiveModule;
+/** The undo part's viewer half: Ctrl+Z through a record's changes, and a press's words with Undo. */
+export type UndoPart = typeof UndoModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -97,6 +106,12 @@ const showsAnswers = (page: Page): boolean =>
  * has `limits` or `continueLater`: waited for, so a closed form never shows its questions first.
  */
 export const limitsPart: Part<LimitsPart> = lazyPart('limits', () => import('./limits-part'));
+/** Record templates people save and name — their menu over a record — loaded with the page's parts where it has `templates`. */
+export const templatesPart: Part<TemplatesPart> = lazyPart('templates', () => import('./templates-part'));
+/** Who else has a record open, loaded the first time someone else has one open (the core's half beside it). */
+export const livePart: Part<LivePart> = lazyPart('live', () => import('./live-part'));
+/** Undo, with the core's half beside it: asked for as the person first enters a form, or with a page whose buttons offer it. */
+export const undoPart: Part<UndoPart> = lazyPart('undo', () => Promise.all([import('./undo-part'), pressUndoPart.load()]).then(([module]) => module));
 
 /**
  * A record's approvals drawn over it — where it stands, Approve and Reject, its history — loaded with the page's parts
@@ -167,7 +182,7 @@ export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage'
  * Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing —
  * but the decode part, which reads codes only where a browser reads none itself, as Scan is pressed.
  */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
 /** A group holding a text read first alone — Markdown, or one edited by its button — whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -272,6 +287,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     const node = value as { type?: unknown; [key: string]: unknown };
     // A group or a field that asks for the quiet look.
     if (node['quiet'] === true) found.add(quietPart);
+    // A button or a menu item that offers Undo after its press: the undo part, in before it is pressed.
+    if (node['undo'] !== undefined) found.add(undoPart);
     // A sheet's statusbar, drawn unless its head is (which shows the state its own way).
     const bar = node.type === 'sheet' && !node['head'] ? (node['statusbar'] as { field?: unknown } | undefined) : undefined;
     if (bar && typeof bar.field === 'string' && page.fields[bar.field]) fieldParts(page.fields[bar.field], { type: 'field', id: '#statusbar', field: bar.field, widget: 'statusbar' });
@@ -303,6 +320,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
         fieldParts(page.fields[name], { type: 'field', id: `${String(node['id'])}.${name}`, field: name, ...(look ? { widget: look.widget, ...(look.options ? { options: look.options } : {}) } : {}) });
       }
       if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
+      // A column of repeat rules or of opening hours, said in words.
+      if (/"widget":"(repeat|hours)"/.test(JSON.stringify(node['cells'] ?? 0))) found.add(schedulePart);
     }
     // A related list is drawn by the list part's table, its records' phones as its own fields say, its rows as cards
     // on a phone as a list's.
@@ -327,6 +346,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (showsAnswers(page)) found.add(answersPart);
   // A page's opening, closing and limits, and Continue later: said before its questions, so in before it is drawn.
   if (page.limits || page.continueLater) found.add(limitsPart);
+  if (page.templates && page.data.kind === 'record') found.add(templatesPart);
   if (hasLimits(page)) found.add(formLimitsPart);
   // A record's approvals: drawn over it, its fields locked while it waits — both in before it is drawn.
   if (page.approval) {
