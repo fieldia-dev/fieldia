@@ -715,6 +715,9 @@ export const DESIGNER_CSS = /* css */ `
   .fd-survey-canvas .fd-q-head { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .fd-survey-canvas .fd-q-kind { min-width: 0; justify-self: start; }
   .fd-q-rail { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); inset-inline-start: auto; justify-self: center; display: flex; transform: none; }
+  /* A page's order, draw and minutes (0.31) under its title while it is picked, or where it uses them: otherwise they
+     would push every page's first question a row further down, the first one below a small phone's screen. */
+  .fd-design-step:not(.fd-step-selected) .fd-draw-settings:not(.fd-draw-in-use) { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .fd-line::after, .fd-q-rail, .fd-survey-canvas .fd-q-grip { transition: none; } }
 .fd-props > .fd-prop > .fd-button { justify-self: start; }

@@ -61,6 +61,8 @@ export function drawSettings(el: ElementFactory, designer: Designer, id: string)
       timeBox.hidden = node.type !== 'step';
       minutes = node.type === 'step' ? node.timeLimit?.minutes ?? null : null;
       time.refresh();
+      // Whether the page uses any of them: on a phone they show where it does, else only while it is picked (styles.ts).
+      element.classList.toggle('fd-draw-in-use', node.order === 'random' || node.draw !== undefined || node.fixed === true || minutes !== null);
     },
   };
 }
