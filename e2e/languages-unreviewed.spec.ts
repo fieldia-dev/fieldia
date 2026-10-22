@@ -167,3 +167,38 @@ test.describe('a calendar and a timeline, their words fetched in a chunk of thei
     }
   }
 });
+
+test.describe('the designers, their words fetched before they are made', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+  const PUBLISH = { tr: 'Yayımla', fa: 'منتشر کردن', ur: 'شائع کریں', es: 'Publicar' } as const;
+  for (const editor of ['designer', 'screen'] as const) {
+    for (const locale of ['tr', 'fa', 'ur', 'es'] as const) {
+      const rtl = locale === 'fa' || locale === 'ur';
+      test(`/${editor}/ in ${locale}: its own words${rtl ? ', right to left on a page right to left' : ''}, nothing cut, and axe finds nothing`, async ({ page }) => {
+        const problems: string[] = [];
+        page.on('console', (message) => (message.type() === 'error' || message.type() === 'warning') && problems.push(`${message.type()}: ${message.text()}`));
+        page.on('pageerror', (error) => problems.push(error.message));
+        await page.goto(`/${editor}/?locale=${locale}${rtl ? '&dir=rtl' : ''}`);
+        const designer = page.locator('.fd-designer');
+        await expect(page.locator('.fd-designer-bar')).toBeVisible();
+        await expect(designer).toHaveAttribute('lang', locale);
+        await expect(designer).toHaveAttribute('dir', rtl ? 'rtl' : 'ltr');
+        await expect(page.locator('.fd-designer-bar .fd-button-primary')).toHaveText(PUBLISH[locale]);
+        // No button, tab or name whose words its box cuts.
+        const cut = await page.evaluate(() =>
+          [...document.querySelectorAll<HTMLElement>('.fd-designer button, .fd-designer [role="tab"], .fd-designer .fd-prop-name, .fd-designer label')]
+            .filter((element) => element.checkVisibility() && element.textContent?.trim() && element.clientWidth > 1 && !element.closest('.fd-try-frame, .fd-canvas-form-body'))
+            .filter((element) => {
+              const style = getComputedStyle(element);
+              return (style.overflowX === 'hidden' || style.overflowX === 'clip' || style.textOverflow === 'ellipsis') && element.scrollWidth > element.clientWidth + 1;
+            })
+            .map((element) => element.textContent?.trim().slice(0, 60))
+        );
+        expect(cut).toEqual([]);
+        await screen(page, `languages-${editor}-${locale}`, { viewport: true });
+        expect(await axeFindings(page, `${editor} in ${locale}`)).toEqual([]);
+        expect(problems).toEqual([]);
+      });
+    }
+  }
+});
