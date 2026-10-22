@@ -110,6 +110,13 @@ const SHOTS = [
       await page.waitForTimeout(300);
     } },
 
+  // A café's fit-out on a timeline, two weeks under way: the first fix and the walls round today's line.
+  { file: 'lists/gantt.png', query: 'page=fitout-plan&skin=underline&now=2026-10-14T09:40', width: 1280, height: 720, before: async (page) => {
+      await page.locator('.fd-gantt-body:not([aria-busy]) .fd-gantt-sheet').waitFor();
+      await page.evaluate(() => window.scrollTo(0, document.querySelector('.fd-gantt').getBoundingClientRect().top + window.scrollY - 140));
+      await page.waitForTimeout(300);
+    } },
+
   // ---- maps ----
   // Maps are JPEGs: their pictures are a quarter the size that way. Their images load from OpenStreetMap.
   { file: 'maps/fields.jpg', query: 'page=map-zone&skin=underline', width: 1280, height: 640, settle: 2500, before: async (page) => {

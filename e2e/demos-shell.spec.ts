@@ -44,8 +44,8 @@ test('every page the demos serve has a card of its own, so a visitor can find it
 });
 
 test('each list’s record page is a demo, or a page the catalog names as one a demo opens', () => {
-  // What a row, a pin or a booking opens, by the list's page: demos/shared/sample-data.ts and the calendars' own.
-  const pairs = [readFileSync('demos/shared/sample-data.ts', 'utf8'), readFileSync('demos/shared/calendar.ts', 'utf8')]
+  // What a row, a pin, a booking or a bar opens, by the list's page: demos/shared/sample-data.ts, the calendars' own and the timeline's.
+  const pairs = [readFileSync('demos/shared/sample-data.ts', 'utf8'), readFileSync('demos/shared/calendar.ts', 'utf8'), readFileSync('demos/shared/gantt.ts', 'utf8')]
     .flatMap((source) => [...source.matchAll(/(?:RECORD_PAGES[^{]*\{|recordPages: \{)([^}]*)\}/g)])
     .flatMap((m) => [...m[1].matchAll(/'([a-z-]+)': '([a-z-]+)'/g)].map((pair) => pair[2]));
   expect(pairs.length).toBeGreaterThanOrEqual(6);

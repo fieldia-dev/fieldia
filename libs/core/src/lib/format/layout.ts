@@ -1207,6 +1207,8 @@ export interface ListNode {
   map?: ListMap;
   /** The records on a calendar, by day, week or month, a press away from the table (drawn by @fieldia/calendar). */
   calendar?: ListCalendar;
+  /** The records as bars on a time axis, grouped, with the records each waits for: a Gantt timeline, a press away from the table (drawn by @fieldia/gantt). */
+  gantt?: ListGantt;
   /**
    * Each column's cells, by its field: a widget (`dot` for a state, with its
    * options), an icon before the words from another field (a work item's
@@ -1630,6 +1632,40 @@ export interface ListCalendar {
   hours?: { start: number; end: number };
   /** The minutes a drag moves by and an empty slot holds: 15, 30 (unless said) or 60. */
   slot?: 15 | 30 | 60;
+}
+
+/** The scale a list's Gantt timeline shows: a column for each day, each week, or each month. */
+export type GanttZoom = 'day' | 'week' | 'month';
+
+/**
+ * A list's records as bars on a time axis — a Gantt timeline: when each starts, and when it ends or how many days it
+ * lasts; its words; the group it is drawn in (a project, a person); its colour; and the records it waits for, each
+ * joined to it by an arrow from that one's end to its start (finish to start). People move a bar by dragging it or by
+ * the arrow keys, and stretch it by its ends.
+ */
+export interface ListGantt {
+  /** When each record starts: a date, or a date and time field. */
+  start: string;
+  /** When it ends, a field of the same kind as `start` (its last day, for a date). */
+  end?: string;
+  /** How many days it lasts, a number field, where it has no end field: a day unless it has either. */
+  duration?: string;
+  /** The words on each bar and its row: the task's name. */
+  title: string;
+  /** A field whose value draws the bars in groups, each under its heading: a project, a person, a phase. */
+  group?: string;
+  /** A field whose value colours each bar: the same value, the same colour. */
+  colour?: string;
+  /** The records each one waits for, a many2many to the list's own records: an arrow from each one's end to its start. */
+  dependsOn?: string;
+  /** The scales offered, in this order: all three unless said. */
+  zooms?: GanttZoom[];
+  /** The scale it shows first: `week` unless said (the first offered, where week is not). */
+  zoom?: GanttZoom;
+  /** Whether the list opens on its table (unless said) or on its timeline. */
+  opens?: 'list' | 'gantt';
+  /** The week's first day, 0 Sunday to 6 Saturday, for the weeks' heads: the language's own unless said. */
+  firstDay?: number;
 }
 
 /** Anything that can sit inside a section, tab, step or sheet. */
@@ -2368,6 +2404,23 @@ export const ListCalendarSchema = z
   })
   .meta({ id: 'ListCalendar' });
 
+/** A list's records on a Gantt timeline: when each starts and ends or how long it lasts, its words, its group, its colour, what it waits for, the scales and the first day. */
+export const ListGanttSchema = z
+  .strictObject({
+    start: fieldName,
+    end: fieldName.optional(),
+    duration: fieldName.optional(),
+    title: fieldName,
+    group: fieldName.optional(),
+    colour: fieldName.optional(),
+    dependsOn: fieldName.optional(),
+    zooms: z.array(z.enum(['day', 'week', 'month'])).min(1).optional(),
+    zoom: z.enum(['day', 'week', 'month']).optional(),
+    opens: z.enum(['list', 'gantt']).optional(),
+    firstDay: z.int().min(0).max(6).optional(),
+  })
+  .meta({ id: 'ListGantt' });
+
 /** A period a date falls in, from the day the list is looked at: "This month", "Overdue". */
 export const FilterPeriodSchema = z.strictObject({ field: fieldName, is: z.enum(DATE_PERIODS) }).meta({ id: 'FilterPeriod' });
 
@@ -2391,6 +2444,7 @@ export const ListNodeSchema = z.strictObject({
   actions: z.array(ButtonNodeSchema).optional(),
   map: ListMapSchema.optional(),
   calendar: ListCalendarSchema.optional(),
+  gantt: ListGanttSchema.optional(),
   cells: z.record(fieldName, ListCellSchema).optional(),
   choose: z.boolean().optional(),
   sortable: z.boolean().optional(),

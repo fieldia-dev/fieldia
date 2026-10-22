@@ -7,7 +7,7 @@ import type { Scope } from './references';
 import { checkListWork } from './list-rows-checks';
 
 /**
- * The checks of a list page's own settings (`layout.type: "list"`): its filters, buttons, calendar, map, filter bar,
+ * The checks of a list page's own settings (`layout.type: "list"`): its filters, buttons, calendar, timeline, map, filter bar,
  * rows' cards and rules, Edit and Import — the reference check hands over its own tools, so what is said reads as the
  * rest of its findings — and a related list's, which the list part draws too: what it shares with a list, its columns,
  * order, search, cells and card.
@@ -80,6 +80,7 @@ export function checkList(list: ListNode, path: string, tools: ListTools): void 
   });
   if (list.map) checkListMap(list.map, `${path}.map`, tools);
   if (list.calendar) checkListCalendar(list, `${path}.calendar`, tools);
+  if (list.gantt) checkListGantt(list, `${path}.gantt`, tools);
   checkListCells(list, path, tools);
   checkListRows(list, path, tools);
   // Its rows a person works in: opened in place (list-rows-checks.ts).
@@ -103,6 +104,7 @@ function checkListRows(list: ListNode, path: string, tools: ListTools): void {
   if (list.gallery?.opens === 'gallery') {
     if (list.map?.view && list.map.view !== 'list') tools.report(`${path}.gallery.opens`, 'the list opens on its map (map.view) and on its gallery: say one');
     if (list.calendar?.opens === 'calendar') tools.report(`${path}.gallery.opens`, 'the list opens on its calendar and on its gallery: say one');
+    if (list.gantt?.opens === 'gantt') tools.report(`${path}.gallery.opens`, 'the list opens on its timeline and on its gallery: say one');
   }
   list.rowTones?.forEach((tone, i) => tools.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when']));
   tools.checkModifiers(list, path, ['rowBold']);
@@ -114,6 +116,35 @@ function checkListRows(list: ListNode, path: string, tools: ListTools): void {
   });
 }
 
+/** A field a list's calendar or timeline names, of a kind that can be it; its definition, as checked. */
+const typedIn = (path: string, tools: ListTools) => (name: string | undefined, key: string, ok: ReadonlySet<string>, says: string) => {
+  if (name === undefined) return undefined;
+  const def = tools.need(name, `${path}.${key}`);
+  if (def && !ok.has(def.type)) tools.report(`${path}.${key}`, `"${name}" is a ${def.type}; ${says}`);
+  return def;
+};
+
+/**
+ * What a calendar and a timeline share: a start (a date, or a date and time) and an end of the same kind, each named
+ * as `whose` (a calendar's, a bar's); and its views or scales each offered once, the one it opens on among them.
+ */
+function checkTimes(spec: { start: string; end?: string }, whose: string, path: string, tools: ListTools, offered: readonly string[], shown: string | undefined, keys: [string, string, string]): void {
+  const typed = typedIn(path, tools);
+  const start = typed(spec.start, 'start', CALENDAR_TIMES, `${whose} start is a date, or a date and time`);
+  const end = typed(spec.end, 'end', CALENDAR_TIMES, `${whose} end is a date, or a date and time`);
+  if (start && end && CALENDAR_TIMES.has(start.type) && CALENDAR_TIMES.has(end.type) && start.type !== end.type) {
+    tools.report(`${path}.end`, `"${spec.end}" is a ${end.type}; an end is the same kind of field as its start, a ${start.type}`);
+  }
+  const [many, one, called] = keys;
+  offered.forEach((item, i) => {
+    if (offered.indexOf(item) !== i) tools.report(`${path}.${many}[${i}]`, `"${item}" is offered twice`);
+  });
+  if (shown && !offered.includes(shown)) tools.report(`${path}.${one}`, `"${shown}" is not one of its ${called} (${offered.join(', ')})`);
+}
+
+/** Said where a list opens on its map and on this, both. */
+const mapAnd = (list: ListNode, path: string, tools: ListTools, what: string) => list.map?.view && list.map.view !== 'list' && tools.report(`${path}.opens`, `the list opens on its map (map.view) and on its ${what}: say one`);
+
 /**
  * A list's calendar: when each record starts (a date, or a date and time)
  * and ends (the same kind), its words, its colour and its columns, each
@@ -122,27 +153,36 @@ function checkListRows(list: ListNode, path: string, tools: ListTools): void {
  */
 function checkListCalendar(list: ListNode, path: string, tools: ListTools): void {
   const calendar = list.calendar as NonNullable<ListNode['calendar']>;
-  const typed = (name: string | undefined, key: string, ok: ReadonlySet<string>, says: string) => {
-    if (name === undefined) return undefined;
-    const def = tools.need(name, `${path}.${key}`);
-    if (def && !ok.has(def.type)) tools.report(`${path}.${key}`, `"${name}" is a ${def.type}; ${says}`);
-    return def;
-  };
-  const start = typed(calendar.start, 'start', CALENDAR_TIMES, "a calendar's start is a date, or a date and time");
-  const end = typed(calendar.end, 'end', CALENDAR_TIMES, "a calendar's end is a date, or a date and time");
-  if (start && end && CALENDAR_TIMES.has(start.type) && CALENDAR_TIMES.has(end.type) && start.type !== end.type) {
-    tools.report(`${path}.end`, `"${calendar.end}" is a ${end.type}; an end is the same kind of field as its start, a ${start.type}`);
-  }
+  const typed = typedIn(path, tools);
+  checkTimes(calendar, "a calendar's", path, tools, calendar.views ?? ['day', 'week', 'month', 'agenda'], calendar.view, ['views', 'view', 'views']);
   typed(calendar.title, 'title', CALENDAR_WORDS, "a record's words on a calendar are a field that can be said");
   typed(calendar.colour, 'colour', CALENDAR_COLOURS, 'a colour comes from a link, a choice, text, a whole number or a yes or no');
   typed(calendar.resource, 'resource', CALENDAR_COLUMNS, 'a column for each comes from a link, a choice, text or a whole number');
-  const views = calendar.views ?? ['day', 'week', 'month', 'agenda'];
-  views.forEach((view, i) => {
-    if (views.indexOf(view) !== i) tools.report(`${path}.views[${i}]`, `"${view}" is offered twice`);
-  });
-  if (calendar.view && !views.includes(calendar.view)) tools.report(`${path}.view`, `"${calendar.view}" is not one of its views (${views.join(', ')})`);
   if (calendar.hours && calendar.hours.end <= calendar.hours.start) tools.report(`${path}.hours`, `the hours end at ${calendar.hours.end}, before they start at ${calendar.hours.start}`);
-  if (calendar.opens === 'calendar' && list.map?.view && list.map.view !== 'list') tools.report(`${path}.opens`, 'the list opens on its map (map.view) and on its calendar: say one');
+  if (calendar.opens === 'calendar') mapAnd(list, path, tools, 'calendar');
+}
+
+/**
+ * A list's Gantt timeline: when each record starts (a date, or a date and time) and ends (the same kind) or how many
+ * days it lasts (a number) — one or the other —, its words, its group and its colour, each from a field that can; the
+ * records it waits for, a many2many of the list's own records; the scale it opens on is one it offers; and the list
+ * opens on one thing.
+ */
+function checkListGantt(list: ListNode, path: string, tools: ListTools): void {
+  const gantt = list.gantt as NonNullable<ListNode['gantt']>;
+  const typed = typedIn(path, tools);
+  checkTimes(gantt, "a bar's", path, tools, gantt.zooms ?? ['day', 'week', 'month'], gantt.zoom, ['zooms', 'zoom', 'scales']);
+  typed(gantt.duration, 'duration', new Set(['integer', 'float']), 'how long a bar lasts is a number of days');
+  if (gantt.end !== undefined && gantt.duration !== undefined) tools.report(`${path}.duration`, 'a bar ends at its end or lasts its duration: say one');
+  typed(gantt.title, 'title', CALENDAR_WORDS, "a bar's words are a field that can be said");
+  typed(gantt.group, 'group', CALENDAR_COLUMNS, 'a group comes from a link, a choice, text or a whole number');
+  typed(gantt.colour, 'colour', CALENDAR_COLOURS, 'a colour comes from a link, a choice, text, a whole number or a yes or no');
+  const waits = typed(gantt.dependsOn, 'dependsOn', new Set(['many2many']), "what a bar waits for is a many2many of the list's own records");
+  const model = tools.page.data.kind === 'record' ? tools.page.data.model : '';
+  if (waits?.type === 'many2many' && waits.relation !== model) tools.report(`${path}.dependsOn`, `"${gantt.dependsOn}" links to ${waits.relation}; a bar waits for records of this list, ${model}`);
+  if (gantt.opens !== 'gantt') return;
+  mapAnd(list, path, tools, 'timeline');
+  if (list.calendar?.opens === 'calendar') tools.report(`${path}.opens`, 'the list opens on its calendar and on its timeline: say one');
 }
 
 /**

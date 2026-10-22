@@ -1,6 +1,6 @@
-import { bulkSettable, cellChangeable, importable, type ButtonNode, type Field, type FilterCondition, type FilterRange, type FilterItem, type FilterPeriod, type FunctionsKnown, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Modifier, type Page, type ToneWhen } from '@fieldia/core';
+import { bulkSettable, cellChangeable, importable, type ButtonNode, type Field, type FilterCondition, type FilterRange, type FilterItem, type FilterPeriod, type FunctionsKnown, type ListCalendar, type ListCard, type ListCell, type ListGantt, type ListGallery, type ListMap, type ListNode, type Modifier, type Page, type ToneWhen } from '@fieldia/core';
 import { storedAs } from './kinds';
-import { allIds, fieldReads, keptFields, listCalendarFields, listCardFields, listMapFields, nextName } from './page-tree';
+import { allIds, fieldReads, keptFields, listCalendarFields, listCardFields, listGanttFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
 import { formulaProblem, problemWords } from './rules-formula';
 import { en } from './locales/en';
@@ -49,6 +49,8 @@ export interface ListOptionsPatch extends RowRulesPatch, ListWorkPatch {
   parentField?: string | null;
   /** The records on a calendar too: when each starts and ends, its words, its colour, a column for each; null for none. */
   calendar?: ListCalendar | null;
+  /** The records on a timeline too: when each starts and ends or how long it lasts, its words, its group, its colour, what it waits for; null for none. */
+  gantt?: ListGantt | null;
   /** Export of the rows chosen, or every one the search finds, as Excel or CSV: true offers it, false takes it away. */
   export?: boolean;
   /** Edit of many rows at once: true for the columns one value can set (keeping the fields named, if it names them), the fields it offers, or false for none. */
@@ -422,6 +424,12 @@ export function listCommands(context: {
           // As a map's: its fields come from the model, and the page check says what is wrong with the rest.
           for (const name of listCalendarFields(options.calendar)) fieldFor(draft, name);
           list.calendar = JSON.parse(JSON.stringify(options.calendar)) as ListCalendar;
+        }
+        if (options.gantt === null) delete list.gantt;
+        else if (options.gantt !== undefined) {
+          // As a calendar's: its fields come from the model, and the page check says what is wrong with the rest.
+          for (const name of listGanttFields(options.gantt)) fieldFor(draft, name);
+          list.gantt = JSON.parse(JSON.stringify(options.gantt)) as ListGantt;
         }
         if (options.card === null) delete list.card;
         else if (options.card !== undefined) {

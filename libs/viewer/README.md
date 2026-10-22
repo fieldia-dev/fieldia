@@ -582,7 +582,8 @@ between rows, Right opens it and Left closes it. See
 
 Other ways of showing a list's records come from `listViews`, by name: a
 list's `map` (`mapListViews` from `@fieldia/map`), its `calendar`
-(`calendarListViews` from `@fieldia/calendar`), or an app's own view. The list
+(`calendarListViews` from `@fieldia/calendar`), its `gantt` timeline
+(`ganttListViews` from `@fieldia/gantt`), or an app's own view. The list
 offers each on its switcher when it has the page option of its name, or where
 the view's own `offers(node)` says, in the view's words (`label(locale)`). A
 view that makes a record (a calendar's empty slot) asks `onNewRecord(values)`;

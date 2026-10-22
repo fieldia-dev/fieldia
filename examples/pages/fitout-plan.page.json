@@ -1,0 +1,89 @@
+{
+  "fieldia": "0.7",
+  "id": "fitout-plan",
+  "title": "Café fit-out: the plan",
+  "description": "A shop's fit-out on a timeline: each task a bar from its start for its days, in its phase, coloured by its trade, joined to the tasks it waits for; dragged or moved by the keys a day at a time.",
+  "data": { "kind": "record", "model": "cafe.task" },
+  "records": { "one": "task", "other": "tasks", "a": "a task" },
+  "fields": {
+    "name": { "type": "char", "label": "Task", "required": true },
+    "phase": {
+      "type": "selection",
+      "label": "Phase",
+      "options": [
+        { "value": "design", "label": "Survey and design" },
+        { "value": "strip", "label": "Strip-out" },
+        { "value": "first", "label": "First fix" },
+        { "value": "walls", "label": "Walls and ceilings" },
+        { "value": "second", "label": "Second fix" },
+        { "value": "finish", "label": "Finishes" },
+        { "value": "handover", "label": "Handover" }
+      ]
+    },
+    "trade": { "type": "many2one", "label": "Trade", "relation": "cafe.trade" },
+    "start": { "type": "date", "label": "Starts" },
+    "days": { "type": "integer", "label": "Days" },
+    "after": { "type": "many2many", "label": "Waits for", "relation": "cafe.task" },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "options": [
+        { "value": "todo", "label": "To do" },
+        { "value": "doing", "label": "Under way" },
+        { "value": "done", "label": "Done" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "tasks",
+    "columns": ["name", "phase", "trade", "start", "days", "state"],
+    "sort": [{ "field": "start" }],
+    "pageSize": 40,
+    "searchFields": ["name", "trade"],
+    "filters": [
+      { "id": "open", "label": "Not done", "filter": [{ "field": "state", "op": "!=", "value": "done" }] },
+      { "id": "electrics", "label": "Electrics", "filter": [{ "field": "trade", "op": "=", "value": 2 }] }
+    ],
+    "groupBy": ["phase", "trade", "state"],
+    "gantt": {
+      "start": "start",
+      "duration": "days",
+      "title": "name",
+      "group": "phase",
+      "colour": "trade",
+      "dependsOn": "after",
+      "zooms": ["day", "week", "month"],
+      "zoom": "day",
+      "opens": "gantt"
+    }
+  },
+  "translations": {
+    "ar": {
+      "Café fit-out: the plan": "تجهيز المقهى: الخطة",
+      "A shop's fit-out on a timeline: each task a bar from its start for its days, in its phase, coloured by its trade, joined to the tasks it waits for; dragged or moved by the keys a day at a time.": "تجهيز محل على مخطط زمني: كل مهمة شريط من بدايتها لعدد أيامها، في مرحلتها، بلون جهة التنفيذ، موصولة بالمهام التي تنتظرها؛ تُسحب أو تُنقل بالأسهم يومًا بيوم.",
+      "Task": "المهمة",
+      "Phase": "المرحلة",
+      "Survey and design": "المعاينة والتصميم",
+      "Strip-out": "الإزالة",
+      "First fix": "التأسيس",
+      "Walls and ceilings": "الحوائط والأسقف",
+      "Second fix": "التشطيب الأول",
+      "Finishes": "التشطيبات",
+      "Handover": "التسليم",
+      "Trade": "جهة التنفيذ",
+      "Starts": "يبدأ",
+      "Days": "الأيام",
+      "Waits for": "ينتظر",
+      "State": "الحالة",
+      "To do": "لم تبدأ",
+      "Under way": "جارية",
+      "Done": "تمت",
+      "Not done": "لم تتم",
+      "Electrics": "الكهرباء",
+      "task": "مهمة",
+      "tasks": "مهام",
+      "a task": "مهمة"
+    }
+  }
+}

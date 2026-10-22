@@ -53,6 +53,7 @@ ${code(
     <tr><td>${c('actions')}</td><td>Buttons for the records chosen. A ${c('confirm')} asks first.</td></tr>
     <tr><td>${c('map')}</td><td>The records on a map too, beside the table or instead of it: see <a href="#map">on a map</a>.</td></tr>
     <tr><td>${c('calendar')}</td><td>The records on a calendar too, by day, week or month or as an agenda, a column for each person or room: see <a href="#calendar">on a calendar</a>.</td></tr>
+    <tr><td>${c('gantt')}</td><td>The records as bars on a timeline too, by days, weeks or months, in groups, joined to the records each waits for: see <a href="#gantt">on a timeline</a>.</td></tr>
     <tr><td>${c('cells')}</td><td>Each column's cells, by its field: a ${c('widget')} (${c('dot')}, a state's dot in ${c('options.colours')} or ${c('tones')}), a ${c('lead')} icon from another field's value, a ${c('width')} in characters, or in pixels for the whole column (${c('"200px"')}) as a tracker sizes its grid's (words past it end in “…”, a header cut short shows its whole name when pointed at; every column sized, the table keeps them and scrolls sideways in its card when wider), an ${c('align')}, a ${c('total')} (see <a href="#totals">lists that add up</a>), and its header's ${c('rule')} where the theme parts the columns (Fluent's): ${c('false')} for none, as a tracker draws a column people cannot size, or ${c('"42px"')} to set it in from the column's end, before the room a tracker keeps there for a row's tools. See <a href="#backlog">a backlog</a>.</td></tr>
     <tr><td>${c('choose')}</td><td>${c('false')}: no box to choose a row, and so no buttons for rows chosen.</td></tr>
     <tr><td>${c('sortable')}</td><td>${c('false')}: a ranked list, such as a backlog, keeps its own order (${c('sort')}): its headers are words, with no press and no arrow, the order still said by ${c('aria-sort')}.</td></tr>
@@ -446,6 +447,44 @@ deleteView?({ pageId, model, list, id }): Promise<void>;
 // columns as the list keeps a person's: [{ colId, width, hide }], in their order`
 )}
 <p>Your server knows the person by its own sign-in — nothing in a request names them — and tells the page whose a view is with ${c('mine')} and ${c('by')}. A view kept as the default is the only one of its kind (the person's own, or the team's): let go of the one before. A refusal is said under the form in your words, what was typed kept; views that could not be asked are said with Retry, and the list opens on its own search. Without ${c('saveView')} views are put on, none saved; without ${c('deleteView')}, none deleted. ${c('createMemoryDataSource({ views: {} })')} keeps them. <a href="/demos/plain/?page=leads-queue&skin=underline">Try the sales team's queue</a>.</p>
+
+<h2 id="gantt">On a timeline</h2>
+<p>With ${c('gantt')}, a list offers <em>Timeline</em> beside its table, drawn by ${c('@fieldia/gantt')}: a Gantt chart of its records, each a bar from its start to its end (or for its days) on an axis of days, weeks or months, in groups under their headings, with an arrow from each record it waits for to its start. Today has a red line; a bar that starts before what it waits for ends has a red arrow and says so. It keeps to the list's search, filters and favourites, and is drawn with the page's own DOM and SVG — no chart library.</p>
+${code(
+  'json',
+  `
+"gantt": {
+  "start": "start", "duration": "days", "title": "name",
+  "group": "phase", "colour": "trade", "dependsOn": "after",
+  "zooms": ["day", "week", "month"], "zoom": "day", "opens": "gantt"
+}`
+)}
+<table>
+  <thead><tr><th>Key</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td>${c('start')} · ${c('end')} · ${c('duration')}</td><td>When each record starts (a ${c('date')} or a ${c('datetime')}), and when it ends — a field of the same kind, its last day for a date — or how many days it lasts (an ${c('integer')} or ${c('float')}): one or the other. A duration of ${c('0')} is a milestone, a diamond; with neither, a bar lasts a day. A record with no start has its row, saying so.</td></tr>
+    <tr><td>${c('title')}</td><td>The words on each bar and its row: a task's name.</td></tr>
+    <tr><td>${c('group')}</td><td>A link, a choice, text or a whole number whose value groups the bars, each under its heading with the span they take; a heading folds its group away. A choice's groups come in its options' order (a project's phases), others by their first start.</td></tr>
+    <tr><td>${c('colour')}</td><td>A field whose value colours each bar, the same value the same colour; a value that is a colour (${c('#0f766e')}) is used as it is.</td></tr>
+    <tr><td>${c('dependsOn')}</td><td>A ${c('many2many')} to the list's own records: what each waits for, drawn finish to start. The page check refuses one that links to another model.</td></tr>
+    <tr><td>${c('zooms')} · ${c('zoom')}</td><td>The scales offered, of ${c('day')}, ${c('week')} and ${c('month')}, all three when left out; and the one shown first, ${c('week')} unless said.</td></tr>
+    <tr><td>${c('opens')} · ${c('firstDay')}</td><td>${c('gantt')}: the list opens on its timeline; and the week's first day for the weeks' heads, the language's own when left out.</td></tr>
+  </tbody>
+</table>
+<p>People drag a bar to other days, or drag its start or its end, by whole days; from the keyboard there is one stop for the whole timeline: <kbd>↑</kbd> <kbd>↓</kbd> reach the bar above or below, <kbd>←</kbd> <kbd>→</kbd> move it a day (as the page reads, so flipped right to left) and with <kbd>Shift</kbd> its end, written once the keys rest; <kbd>Enter</kbd> opens it, as a row's press does. Each move is saved through the data source's ${c('save')} with the changed fields alone, ${c('partial: true')} and the row's ${c('version')}, and <em>Undo</em> puts it back; a refused save puts it back and says why. A record its row locks (${c('can.readonlyFields')}, ${c('can.edit: false')}) stays where it is, saying why. The timeline is on its start field's zone's clock, else its page's, else the reader's own, a bar moved keeping its time of day there; and on paper the whole plan fits the page's width.</p>
+${code(
+  'ts',
+  `
+import { ganttListViews } from '@fieldia/gantt';
+
+mountViewer(host, {
+  page: tasks,
+  dataSource,
+  listViews: ganttListViews(), // with a calendar too: { ...calendarListViews(), ...ganttListViews() }
+  onOpenRecord: (id) => openTask(id),
+});`
+)}
+<p>Its code loads the first time a timeline is shown, in a chunk of its own. <a href="/demos/plain/?page=fitout-plan&skin=outlined">Try a café's fit-out</a>.</p>
 
 <h2 id="details">What it takes care of</h2>
 <ul>

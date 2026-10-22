@@ -23,6 +23,7 @@
       "@fieldia/monaco": ["libs/monaco/src/index.ts"],
       "@fieldia/map": ["libs/map/src/index.ts"],
       "@fieldia/calendar": ["libs/calendar/src/index.ts"],
+      "@fieldia/gantt": ["libs/gantt/src/index.ts"],
       "@fieldia/chatter": ["libs/chatter/src/index.ts"],
       "@fieldia/grid": ["libs/grid/src/index.ts"],
       "@fieldia/react": ["libs/react/src/index.ts"],

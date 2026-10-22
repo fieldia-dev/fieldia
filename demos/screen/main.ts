@@ -21,6 +21,7 @@ import addressPage from '../../examples/pages/address.page.json';
  * `?start=big` a supplier's file of 500 fields, for timing, `?start=homes`
  * the homes in Cairo, a list on a map (its Map in the list's panel, and Try
  * it with the map), `?start=clinic` a clinic's appointments on a calendar,
+ * `?start=fitout` a café's fit-out on a timeline,
  * `?start=order` an order with its map's layers,
  * `?start=kitchen` a kitchen's map with its areas, reach and fences, and
  * `?start=template-<id>` a page of the template library, to change.
@@ -141,8 +142,9 @@ const customerPage: Page = {
 };
 store.pages.set('customer-card', { draft: null, versions: [published(customerPage, 1)] });
 const start = params.get('start');
-// `?start=clinic`: a clinic's appointments, a list on a calendar (its Calendar in the list's panel, and Try it with it).
-const onCalendar = start === 'clinic' ? (structuredClone(pages['clinic-calendar']) as Page) : null;
+// `?start=clinic`: a clinic's appointments, a list on a calendar (its Calendar in the list's panel, and Try it with it);
+// `?start=fitout`: a café's fit-out, a list on a timeline (its Timeline there, and Try it with it).
+const onCalendar = start === 'clinic' ? (structuredClone(pages['clinic-calendar']) as Page) : start === 'fitout' ? (structuredClone(pages['fitout-plan']) as Page) : null;
 const model = onCalendar ? onCalendar.fields : start === 'sheet' || start === 'list' ? customer : start === 'homes' ? pages['map-homes'].fields : start === 'order' ? pages['map-order'].fields : start === 'kitchen' ? pages['map-kitchen'].fields : undefined;
 // `?start=template-<id>`: a page of the template library, to change. A survey's steps are the survey editor's (designer/).
 const template = start?.startsWith('template-') && pages[start]?.layout.type !== 'wizard' ? pages[start] : undefined;

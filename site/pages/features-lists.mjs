@@ -57,6 +57,15 @@ export default featurePage({
       tryIt: ['Try the clinic', demo('page=clinic-calendar&skin=underline')], docs: ['Lists on a calendar, in the docs', '/lists/#calendar'],
     },
     {
+      id: 'gantt',
+      no: 'On a timeline',
+      title: 'A project’s plan, and what each task waits for',
+      body: 'Add a timeline to the list and its records are bars on it too: by days, weeks or months, in groups under their headings, each joined by an arrow to what it waits for, red where it starts too soon. Drag a bar or its end; Undo puts a move back.',
+      ticks: ['Groups by phase, person or project, folded away with a press', 'Finish-to-start arrows, a clash said in red', 'Drag, stretch, or the arrow keys a day at a time, saved with Undo', 'The page’s time zone; right to left; the whole plan on paper'],
+      shot: 'gantt.png', alt: 'A café’s fit-out on a timeline: its tasks in phases from the survey to the handover, bars coloured by trade, arrows from each task to the next, one red, and a red line for today', width: 1280, height: 720,
+      tryIt: ['Try the fit-out', demo('page=fitout-plan&skin=underline')], docs: ['Lists on a timeline, in the docs', '/lists/#gantt'],
+    },
+    {
       id: 'arabic',
       no: 'In any language',
       title: 'Right to left, from the search bar to the last column',

@@ -9668,6 +9668,9 @@
         "calendar": {
           "$ref": "#/$defs/ListCalendar"
         },
+        "gantt": {
+          "$ref": "#/$defs/ListGantt"
+        },
         "cells": {
           "type": "object",
           "propertyNames": {
@@ -10193,6 +10196,76 @@
               "const": 60
             }
           ]
+        }
+      },
+      "required": [
+        "start",
+        "title"
+      ],
+      "additionalProperties": false
+    },
+    "ListGantt": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "duration": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "title": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "group": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "colour": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "dependsOn": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "zooms": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ]
+          }
+        },
+        "zoom": {
+          "type": "string",
+          "enum": [
+            "day",
+            "week",
+            "month"
+          ]
+        },
+        "opens": {
+          "type": "string",
+          "enum": [
+            "list",
+            "gantt"
+          ]
+        },
+        "firstDay": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
         }
       },
       "required": [

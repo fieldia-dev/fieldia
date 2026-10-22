@@ -66,6 +66,8 @@ jobs:
       - run: node tools/map-bundle.mjs
       # @fieldia/calendar: its name on the list's switcher with the page, the calendar in a chunk of its own, each under its budget.
       - run: node tools/calendar-bundle.mjs
+      # @fieldia/gantt: its name on the list's switcher with the page, the timeline in a chunk of its own, each under its budget.
+      - run: node tools/gantt-bundle.mjs
 
   browser:
     name: Browser gates (every framework demo, ${{ matrix.shard }} of 4)

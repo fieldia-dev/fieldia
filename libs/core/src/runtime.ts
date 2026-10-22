@@ -51,6 +51,8 @@ export type {
   ListMap,
   ListCalendar,
   CalendarView,
+  ListGantt,
+  GanttZoom,
   ListCell,
   ListCard,
   ListGallery,

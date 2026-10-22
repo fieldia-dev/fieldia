@@ -1,0 +1,40 @@
+{
+  "name": "@fieldia/gantt",
+  "version": "0.28.0",
+  "description": "Fieldia's Gantt timeline: a list's records as bars on a time axis, in groups, joined by the records each waits for, moved and stretched by dragging or from the keyboard. Loaded only where a timeline is shown.",
+  "license": "MIT",
+  "homepage": "https://fieldia.dev",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "module": "./src/index.mjs",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": {
+        "import": "./src/index.d.mts",
+        "require": "./src/index.d.ts"
+      },
+      "import": "./src/index.mjs",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@fieldia/core": "0.28.0",
+    "@fieldia/viewer": "0.28.0",
+    "@fieldia/widgets": "0.28.0",
+    "tslib": "^2.8.1"
+  },
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fieldia-dev/fieldia",
+    "directory": "libs/gantt"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ]
+}

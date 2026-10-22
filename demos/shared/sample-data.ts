@@ -63,6 +63,7 @@ import { CONTAINED_RECORDS, containedPage } from './contained';
 import listingPhotos from '../../examples/pages/listing-photos.page.json';
 import { LISTING, LISTING_STORAGE, listingUpload } from './listing-photos';
 import { calendarDemo, demoNow } from './calendar';
+import { ganttDemo } from './gantt';
 import { sampleInvoices } from './invoices';
 import { listingHandover } from './listing-handover';
 import { contactPage, contactPermissions, contactsAsAsked, OWNERS, sampleContacts } from './contacts';
@@ -237,6 +238,8 @@ export const pages: Record<string, Page> = {
   'listing-photos': listingPhotos as Page,
   // A list's records on a calendar, and the record each opens: a clinic's day by doctor, the booking desk's week (shared/calendar.ts).
   ...calendarDemo.pages,
+  // A café's fit-out on a timeline, its tasks by phase and what each waits for, and the task each opens (shared/gantt.ts).
+  ...ganttDemo.pages,
   // A listing's handover with the owner's consent placed in it, its files the listing's: shared/listing-handover.ts.
   ...listingHandover.pages,
   // An event's sign-up with open and close dates, places for each session, one from each person: shared/event-signup.ts.
@@ -322,6 +325,7 @@ const RECORD_PAGES: Record<string, string> = {
   'map-heat': 'map-week-order',
   'map-many-homes': 'map-many-home',
   ...calendarDemo.recordPages,
+  ...ganttDemo.recordPages,
   'test-drives': 'test-drive',
   // An invoice from the invoices list, and from a customer's (View all, by the app's route — or in its dialog, over
   // the customer, where the app has no route); a home's viewings, in View all's dialog over the home.
@@ -463,7 +467,7 @@ const APP_CATALOG_FR: Record<string, string> = {
 };
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
-export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related, 'drive.booking': testDriveDemo.page, ...relatedLists.related };
+export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related, ...ganttDemo.related, 'drive.booking': testDriveDemo.page, ...relatedLists.related };
 
 /** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
 export const savedForms: Record<string, Page> = { address: address as Page, ...listingHandover.savedForms };
@@ -645,6 +649,8 @@ export function sampleDataSource() {
       'res.users': Object.fromEntries(Object.entries(OWNERS).map(([id, name]) => [id, { name }])),
       // The calendars' appointments and bookings, made round now (shared/calendar.ts).
       ...calendarDemo.records(),
+      // The fit-out's tasks, the plan two weeks under way (shared/gantt.ts).
+      ...ganttDemo.records(),
       // Fifteen months of invoices up to now (shared/invoices.ts).
       invoice: sampleInvoices(),
       // An AI agent and the company's connections its tools come from (shared/agent-tools.ts).
