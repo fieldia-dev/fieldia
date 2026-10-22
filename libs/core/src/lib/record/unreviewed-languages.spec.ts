@@ -5,6 +5,7 @@ import { dayTag, dayWords, monthWords } from './day-words';
 import { couldBeNumber, readDate, readNumber } from './input-rules';
 import { MESSAGES } from './messages';
 import { quotedLabel } from './record-words';
+import { wordsComing, wordsReady } from './words-chunks';
 
 /**
  * Turkish, Persian, Urdu and Spanish (0.31): the owner's decision is to ship them now, machine-assisted and not yet
@@ -14,6 +15,13 @@ import { quotedLabel } from './record-words';
  */
 
 const NEW = ['tr', 'fa', 'ur', 'es'] as const;
+
+// Each in a chunk of its own, fetched where it is spoken: here, at once.
+beforeAll(async () => {
+  expect(NEW.map(wordsComing)).toEqual([true, true, true, true]);
+  await Promise.all(NEW.map(wordsReady));
+  expect(NEW.map(wordsComing)).toEqual([false, false, false, false]);
+});
 const blanks = (text: string, key: string) =>
   [...new Set([...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))]
     // A model's or a type's name with its article or without, the language's choice; {n} in a sentence for one, or a literal 1.

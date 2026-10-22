@@ -1,4 +1,6 @@
 import { LANGUAGES } from './locales/all';
+import { LATER } from './locales/later';
+import { tableInChunks, wordsInChunks } from './words-chunks';
 import { labelAt } from './record-words';
 import type { DateOrder } from './input-rules';
 
@@ -317,7 +319,9 @@ const en: Messages = {
  * with that language's script (fieldia.ar.js, …), through the viewer's
  * `addLanguage`.
  */
-export const MESSAGES: Record<Locale, Messages> = { en, ...LANGUAGES };
+export const MESSAGES = { en, ...LANGUAGES } as Record<Locale, Messages>;
+// Turkish, Persian, Urdu and Spanish: each in a chunk of its own, there once asked for (`wordsReady`), English till it came.
+wordsInChunks(tableInChunks(MESSAGES, LATER));
 
 /** The blanks of a message a field's label fills: its own, a table's column, a range's start and end. */
 const LABELS = ['label', 'column', 'start', 'end'];

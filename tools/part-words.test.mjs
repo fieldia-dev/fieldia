@@ -110,6 +110,8 @@ async function scriptModules() {
         setup(builder) {
           // English alone, and the parts' table of shared names (which only the script bundle's build makes) empty.
           builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/all\.ts$/ }, () => ({ contents: 'export const LANGUAGES = {};', loader: 'ts' }));
+          // Turkish, Persian, Urdu and Spanish, which the packages fetch in chunks of their own: the add-on scripts here.
+          builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/later\.ts$/ }, () => ({ contents: 'export const LATER = {};', loader: 'ts' }));
           builder.onResolve({ filter: /^fieldia:shared$/ }, () => ({ path: 'shared', namespace: 'fieldia-shared' }));
           builder.onLoad({ filter: /.*/, namespace: 'fieldia-shared' }, () => ({ contents: 'export const SHARED = [];', loader: 'js' }));
         },

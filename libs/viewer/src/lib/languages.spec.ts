@@ -1,5 +1,5 @@
 import type { Page } from '@fieldia/core';
-import { MESSAGES } from '@fieldia/core';
+import { MESSAGES, wordsReady } from '@fieldia/core';
 import { WIDGET_LABELS } from '@fieldia/widgets';
 import * as packaged from '../index';
 import { ar as arMessages } from '../../../core/src/lib/record/locales/ar';
@@ -64,7 +64,11 @@ afterEach(() => {
 });
 
 describe('the packages', () => {
-  it('give all eight languages with no extra import', () => {
+  it('give four languages with no extra import, and Turkish, Persian, Urdu and Spanish each in a chunk once asked for', async () => {
+    expect(Object.keys(MESSAGES).sort()).toEqual(['ar', 'de', 'en', 'fr']);
+    expect(Object.keys(WIDGET_LABELS).sort()).toEqual(['ar', 'de', 'en', 'fr']);
+    expect(Object.keys(packaged.VIEWER_LABELS).sort()).toEqual(['ar', 'de', 'en', 'fr']);
+    await Promise.all(['tr', 'fa', 'ur', 'es'].map(wordsReady));
     expect(Object.keys(MESSAGES).sort()).toEqual(['ar', 'de', 'en', 'es', 'fa', 'fr', 'tr', 'ur']);
     expect(Object.keys(WIDGET_LABELS).sort()).toEqual(['ar', 'de', 'en', 'es', 'fa', 'fr', 'tr', 'ur']);
     expect(Object.keys(packaged.VIEWER_LABELS).sort()).toEqual(['ar', 'de', 'en', 'es', 'fa', 'fr', 'tr', 'ur']);

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Page } from '@fieldia/core';
+import { wordsReady, type Page } from '@fieldia/core';
 import { mountViewer, VIEWER_LABELS, type ViewerHandle } from '../index';
 
 /**
@@ -11,6 +11,9 @@ import { mountViewer, VIEWER_LABELS, type ViewerHandle } from '../index';
  */
 
 const NEW = ['tr', 'fa', 'ur', 'es'] as const;
+
+// Each in a chunk of its own, fetched where it is spoken: here, at once.
+beforeAll(() => Promise.all(NEW.map(wordsReady)));
 const NOUN = /Noun(One|Two|Many)?$/;
 const RECORDS = new Set(['record', 'records', 'aRecord']);
 const blanks = (text: string, key: string) =>
@@ -53,10 +56,11 @@ afterEach(() => {
   handle = undefined;
   document.body.replaceChildren();
 });
-function show(locale: string) {
+async function show(locale: string) {
   const host = document.createElement('div');
   document.body.append(host);
   handle = mountViewer(host, { page, locale });
+  await handle.drawn;
   return host;
 }
 
@@ -66,8 +70,8 @@ describe.each([
   ['tr', null],
   ['es', null],
 ] as const)('a page in %s', (locale, dir) => {
-  it('speaks the language’s words, in its direction', () => {
-    const host = show(locale);
+  it('speaks the language’s words, in its direction', async () => {
+    const host = await show(locale);
     const form = host.querySelector('.fd-form') as HTMLElement;
     expect(form.getAttribute('lang')).toBe(locale);
     expect(form.getAttribute('dir')).toBe(dir);
@@ -76,8 +80,8 @@ describe.each([
 });
 
 describe('a number typed in Persian digits', () => {
-  it.each(['fa', 'ur'])('reads on a page in %s', (locale) => {
-    const host = show(locale);
+  it.each(['fa', 'ur'])('reads on a page in %s', async (locale) => {
+    const host = await show(locale);
     const box = (id: string) => host.querySelector(`[data-node="${id}"] input`) as HTMLInputElement;
     for (const [id, typed] of [['q', '۱۲۵'], ['p', '۱۲٫۵']] as const) {
       box(id).focus();

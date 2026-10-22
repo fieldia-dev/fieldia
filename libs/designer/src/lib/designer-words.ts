@@ -1,3 +1,4 @@
+import { wordsReady } from '@fieldia/core';
 import { ar } from './locales/ar';
 import { en } from './locales/en';
 import type { Speaker } from './locales/speak';
@@ -47,13 +48,15 @@ export function designerLocale(tag: string | null | undefined): DesignerLocale |
 }
 
 /**
- * The designer's words in a language fetched, where they come in a chunk of their own (Turkish, Persian, Urdu, Spanish):
- * await it before `createDesigner` in such a language — `createDesigner.open` does. At once for any other.
+ * The designer's words in a language fetched, where they come in a chunk of their own (Turkish, Persian, Urdu, Spanish),
+ * and the words of the page it draws in that language — the widgets', the viewer's, a map's (`wordsReady` in
+ * @fieldia/core): await it before `createDesigner` in such a language — `createDesigner.open` does. At once for any other.
  */
 export async function designerWordsReady(tag: string | null | undefined): Promise<void> {
   const locale = designerLocale(tag);
-  if (!locale || DESIGNER_WORDS[locale]) return;
-  DESIGNER_WORDS[locale] = await LATER[locale as keyof typeof LATER]();
+  const page = wordsReady(tag);
+  if (locale && !DESIGNER_WORDS[locale]) DESIGNER_WORDS[locale] = await LATER[locale as keyof typeof LATER]();
+  await page;
 }
 
 /** The designer's words in a language: its own where they are at hand, else English. */

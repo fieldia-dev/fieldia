@@ -1,5 +1,6 @@
-import type { Locale } from '@fieldia/core';
+import { tableInChunks, wordsInChunks, wordsNotYet, type Locale } from '@fieldia/core';
 import { LANGUAGES } from './locales/all';
+import { LATER } from './locales/later';
 
 /**
  * Every word the viewer shows, so a page can be translated. `{n}`, `{total}` and `{time}` are filled in.
@@ -1488,7 +1489,9 @@ const en: ViewerLabels = {
  * language with that language's script (fieldia.ar.js, …), through
  * `addLanguage`.
  */
-export const VIEWER_LABELS: Record<Locale, ViewerLabels> = { en, ...LANGUAGES };
+export const VIEWER_LABELS = { en, ...LANGUAGES } as Record<Locale, ViewerLabels>;
+// Turkish, Persian, Urdu and Spanish: each in a chunk of its own, there once asked for (`wordsReady`), English till it came.
+wordsInChunks(tableInChunks(VIEWER_LABELS, LATER));
 
 /** English, kept under its old name. */
 export const DEFAULT_LABELS: ViewerLabels = VIEWER_LABELS.en;
@@ -1509,11 +1512,15 @@ const missing = new Set<string>();
  * The language of the viewer's own words for a language tag: its own, its
  * base language's (`ar` for `ar-EG`), or English. A language the one-tag
  * script was not given is English, and the console says once which script
- * to add.
+ * to add. A language whose words come in a chunk of their own (the
+ * packages' Turkish, Persian, Urdu and Spanish), asked for by what does not
+ * wait for them as `mountViewer` does: its own, English's words till they
+ * come, and the console says once what to await.
  */
 export function ownLocale(tag = 'en'): Locale {
-  const base = tag.split('-')[0];
+  const base = tag.split('-')[0].toLowerCase();
   if (Object.prototype.hasOwnProperty.call(VIEWER_LABELS, base)) return base as Locale;
+  if (wordsNotYet(base)) return base as Locale;
   const name = ADD_ONS.get(base);
   if (name && !missing.has(base)) {
     missing.add(base);

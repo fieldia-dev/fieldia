@@ -79,6 +79,15 @@ const englishOnly = {
   name: 'english-only',
   setup(builder) {
     builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/all\.ts$/ }, () => ({ contents: 'export const LANGUAGES = {};', loader: 'ts' }));
+    // Turkish, Persian, Urdu and Spanish, which the packages fetch in chunks of their own: the add-on scripts here.
+    builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/later\.ts$/ }, () => ({ contents: 'export const LATER = {};', loader: 'ts' }));
+    // With no language in a chunk, the packages' way of fetching them and of putting a mount's early words in theirs has
+    // nothing to do here: what every caller reads of it, and no more.
+    builder.onLoad({ filter: /libs\/core\/src\/lib\/record\/words-chunks\.ts$/ }, () => ({
+      contents: 'export const wordsInChunks = () => undefined; export const wordsComing = () => false; export const wordsNotYet = () => false; export const wordsReady = () => Promise.resolve(); export const tableInChunks = () => ({ coming: () => false, fetch: () => Promise.resolve() });',
+      loader: 'ts',
+    }));
+    builder.onLoad({ filter: /libs\/viewer\/src\/lib\/in-own-words\.ts$/ }, () => ({ contents: 'export const inOwnWords = () => undefined;', loader: 'ts' }));
   },
 };
 
@@ -1267,7 +1276,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // The week's first day where CLDR starts it for a language's region, the owner's rule (international, never hand-picked):
 // the engine's own `Intl.Locale` week info, else CLDR's table of the regions whose week starts on another day than
 // Monday — Firefox has no week info — 518.73 measured before, 519.13 after, to 519.2.
-const BUDGET_KB = 519.2;
+// The packages' Turkish, Persian, Urdu and Spanish fetched where spoken (words-chunks.ts in @fieldia/core), which this
+// script leaves to its add-ons: the way of fetching them and of saying a mount's early words in theirs are built empty
+// here; what stays is each table's call to them, a mount's wait for a language still coming, the form's messages and a
+// value's yes and no read through to a table filled in place — 519.13 measured before, 519.58 after, to 519.6.
+const BUDGET_KB = 519.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1552,7 +1565,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the files part, 172.02; the shared table by place, 170.29 — to 170.3.
 // Turkish, Persian, Urdu and Spanish (listed with the raw budget above): 170.29 measured before, 170.36 after, to 170.4.
 // The week's first day by CLDR (listed with the raw budget above): 170.36 measured before, 170.68 after, to 170.7.
-const GZIP_BUDGET_KB = 170.7;
+// The packages' four languages fetched where spoken (listed with the raw budget above): 170.68 before, 170.94 after, to 171.0.
+const GZIP_BUDGET_KB = 171.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

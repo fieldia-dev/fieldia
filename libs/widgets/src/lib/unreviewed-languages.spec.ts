@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { wordsReady } from '@fieldia/core';
 import { inPlural, WIDGET_LABELS } from './labels';
 
 /**
@@ -8,6 +9,9 @@ import { inPlural, WIDGET_LABELS } from './labels';
  */
 
 const NEW = ['tr', 'fa', 'ur', 'es'] as const;
+
+// Each in a chunk of its own, fetched where it is spoken: here, at once.
+beforeAll(() => Promise.all(NEW.map(wordsReady)));
 const blanks = (text: string) => [...new Set([...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort();
 
 describe.each(NEW)('the widgets’ words in %s', (locale) => {

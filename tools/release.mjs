@@ -112,11 +112,18 @@ const EXPECT = {
 const SUBPATHS = { '@fieldia/testing/playwright': ['fieldia'], '@fieldia/testing/pages': ['checkPageFiles', 'pageFiles', 'resultLines', 'runCheck'], '@fieldia/viewer/server': ['firstPaint', 'firstPaintStyles'] };
 const names = packages.map((p) => p.manifest.name);
 const esmOnly = new Set(['@fieldia/angular']);
-// Every language in the packages with no extra import: only the script bundle leaves them to add-ons.
+// English, Arabic, German and French in the packages with no extra import, and Turkish, Persian, Urdu and Spanish each in a
+// chunk of its own, fetched once asked for (@fieldia/core's wordsReady): only the script bundle leaves them to add-ons.
 const languagesCheck = (load) => `for (const [name, table] of [['@fieldia/core', 'MESSAGES'], ['@fieldia/widgets', 'WIDGET_LABELS'], ['@fieldia/viewer', 'VIEWER_LABELS']]) {
   const held = Object.keys((${load})[table]).sort().join(',');
-  if (held !== 'ar,de,en,es,fa,fr,tr,ur') throw new Error(name + ' has ' + table + ' in ' + held + ', not in all eight languages');
+  if (held !== 'ar,de,en,fr') throw new Error(name + ' has ' + table + ' in ' + held + ', not English, Arabic, German and French alone');
 }
+Promise.all(['tr', 'fa', 'ur', 'es'].map(async (locale) => (${load.replace('name', "'@fieldia/core'")}).wordsReady(locale))).then(async () => {
+  for (const [name, table] of [['@fieldia/core', 'MESSAGES'], ['@fieldia/widgets', 'WIDGET_LABELS'], ['@fieldia/viewer', 'VIEWER_LABELS']]) {
+    const held = Object.keys((${load})[table]).sort().join(',');
+    if (held !== 'ar,de,en,es,fa,fr,tr,ur') throw new Error(name + ' has ' + table + ' in ' + held + ' once its chunks came, not all eight languages');
+  }
+}).catch((error) => { console.error(error); process.exitCode = 1; });
 `;
 
 // CommonJS: require() every package that ships CommonJS.

@@ -1,5 +1,6 @@
-import type { Locale } from '@fieldia/core';
+import { tableInChunks, wordsInChunks, type Locale } from '@fieldia/core';
 import { LANGUAGES } from './locales/all';
+import { LATER } from './locales/later';
 
 /** Every word a widget shows on its own. `{label}` and `{name}` are filled in. */
 export interface WidgetLabels {
@@ -1274,7 +1275,9 @@ const en: WidgetLabels = {
  * language with that language's script (fieldia.ar.js, …), through the
  * viewer's `addLanguage`.
  */
-export const WIDGET_LABELS: Record<Locale, WidgetLabels> = { en, ...LANGUAGES };
+export const WIDGET_LABELS = { en, ...LANGUAGES } as Record<Locale, WidgetLabels>;
+// Turkish, Persian, Urdu and Spanish: each in a chunk of its own, there once asked for (`wordsReady`), English till it came.
+wordsInChunks(tableInChunks(WIDGET_LABELS, LATER));
 
 const plurals = new Map<string, Intl.PluralRules>();
 /**
