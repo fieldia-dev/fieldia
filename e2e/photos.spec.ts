@@ -308,7 +308,9 @@ test.describe('a clinic’s before and after', () => {
     await expect.poll(async () => { const now = (await dialog.locator('.fd-photo-picture').boundingBox())!; return now.height > now.width; }).toBe(true);
     await screen(page, 'photos-clinic-turned', { viewport: true });
     await dialog.getByRole('button', { name: 'Apply' }).click();
-    await expect.poll(async () => (await photos(page, 'before'))[2].edit?.turn).toBe(90);
+    // Turned at once, stored a moment later: until its upload is done the value holds no link yet (WebKit's memory store
+    // takes ~40 ms), so the picture is read once the store gave it its file and link.
+    await expect.poll(async () => { const photo = (await photos(page, 'before'))[2]; return [photo.edit?.turn, photo.fileId !== undefined]; }).toEqual([90, true]);
     const turned = (await photos(page, 'before'))[2];
     expect(turned).toMatchObject({ caption: 'Right side', original: { name: 'Right side.jpg' } });
     const size = await page.evaluate(async (src) => {
