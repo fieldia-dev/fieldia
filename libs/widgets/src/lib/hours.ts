@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Form, FormState, JsonValue, Locale, Value } from '@fieldia/core';
+import { firstWeekday, type Field, type FieldNode, type Form, type FormState, type JsonValue, type Locale, type Value } from '@fieldia/core';
 import { fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import { weekdayName, WEEKDAYS } from './repeat-rule';
@@ -15,7 +15,9 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  *
  * The times are Fieldia's time boxes, with their input rules; a shift that ends before it starts, or overlaps
  * another, is said under its day and the field refuses a save until it is put right — the times stay as typed. The
- * week starts on the field's `options.weekStart` (1 Monday … 7 Sunday), Monday unless it says. At rest, in words:
+ * week starts on the field's `options.weekStart` (1 Monday … 7 Sunday), else on its first day where the page is read
+ * (`firstWeekday`: Sunday for an English page read in the United States, Saturday in Egypt, Monday in Britain). At
+ * rest, in words:
  * "Mon–Fri 09:00–13:00, 14:00–18:00 · Sat 10:00–14:00 · Sun closed".
  *
  * Each time box is drawn by `widgetFor`, the main script's createWidget, as a property's row is. It comes in the
@@ -57,12 +59,14 @@ export function shiftProblem(shifts: readonly Shift[], day: string, words: Widge
 
 /** The days in the order the week shows them, from `start` (1 Monday … 7 Sunday). */
 const weekFrom = (start: number) => Array.from({ length: 7 }, (_, i) => ((start - 1 + i) % 7) + 1);
+/** The week's first day where the page is read (`firstWeekday`), as an ISO weekday: 1 Monday … 7 Sunday. */
+const isoFirstDay = (locale: string, page?: { readonly language?: string }) => firstWeekday(locale, page) || 7;
 
 /**
  * A week's hours in words, days in a row with the same hours together: "Mon–Fri 09:00–13:00, 14:00–18:00 · Sat
  * 10:00–14:00 · Sun closed"; "Closed every day" with none.
  */
-export function hoursWords(value: unknown, locale: Locale, words: WidgetLabels, start = 1): string {
+export function hoursWords(value: unknown, locale: Locale, words: WidgetLabels, start = isoFirstDay(locale)): string {
   const week = weekHours(value);
   const days = weekFrom(start);
   if (!days.some((day) => week[String(day)]?.length)) return words.hoursAllClosed;
@@ -82,8 +86,8 @@ export const hoursWidget = (widgetFor: (context: WidgetContext) => Widget): Widg
   installScheduleStyles(document);
   const make = maker(document);
   const words = wordsFor(labels, locale);
-  const start = Number(node.options?.['weekStart'] ?? 1);
-  const days = weekFrom(start >= 1 && start <= 7 ? start : 1);
+  const start = Number(node.options?.['weekStart'] ?? isoFirstDay(locale, form.page));
+  const days = weekFrom(start >= 1 && start <= 7 ? start : isoFirstDay(locale, form.page));
   const current = () => weekHours(form.getState().values[name]);
   const write = (week: WeekHours) => {
     const out: Record<string, JsonValue> = {};

@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Form, FormState, Value } from '@fieldia/core';
+import { firstWeekday, type Field, type FieldNode, type Form, type FormState, type Value } from '@fieldia/core';
 import { maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { readRule, RuleBeyond, ruleWords, weekdayName, weekdayOf, WEEKDAYS, writeRule, type RepeatFrequency, type RepeatRule, type Weekday } from './repeat-rule';
 import { installScheduleStyles } from './styles-schedule';
@@ -10,7 +10,8 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  * on a day or after a number of times. The value is an iCalendar rule (RFC 5545's RRULE, `FREQ=WEEKLY;BYDAY=TU,TH;
  * COUNT=6`), which a calendar or a server reads as it is; it is said in words under the boxes, and at rest ("Every
  * week on Tuesday and Thursday, 6 times"). `options.startField` names the date it starts from: a new week's day, a
- * month's day, come from it.
+ * month's day, come from it. A week's days are offered from its first day where the page is read (`firstWeekday`);
+ * the rule names them in RRULE's own order, Monday's first.
  *
  * A rule it cannot change (an hour, a month's several days) is kept as it is and said so; nothing is written over
  * it until the person picks another. The numbers are Fieldia's number boxes and the end day its date box, with
@@ -129,7 +130,10 @@ export const repeatWidget = (widgetFor: (context: WidgetContext) => Widget): Wid
   const everyPart = make('span', { class: 'fd-repeat-every' }, make('label', { class: 'fd-repeat-name', for: `${id}-interval` }, words.repeatEveryLabel), every.element, unit);
 
   // ---- which days: a week's, toggled; a month's, by its number or a weekday's place ----------------------
-  const dayButtons = WEEKDAYS.map((day) => {
+  // The week from its first day where the page is read: WEEKDAYS is Monday's first, firstWeekday Sunday's 0.
+  const from = (firstWeekday(locale, form.page) + 6) % 7;
+  const week = [...WEEKDAYS.slice(from), ...WEEKDAYS.slice(0, from)];
+  const dayButtons = week.map((day) => {
     const button = make('button', { type: 'button', class: 'fd-repeat-day', 'aria-pressed': 'false', 'aria-label': weekdayName(day, locale), 'data-day': day }, weekdayName(day, locale, 'short'));
     button.addEventListener('click', () =>
       !locked && change((rule) => {
@@ -147,7 +151,7 @@ export const repeatWidget = (widgetFor: (context: WidgetContext) => Widget): Wid
   const monthDay = select(words.repeatMonthDay, Array.from({ length: 31 }, (_, i): [string, string] => [String(i + 1), String(i + 1)]));
   const nthWords = words.repeatNth.split('|');
   const nth = select(monthHow[2] ?? '', [1, 2, 3, 4, -1].map((n, i): [string, string] => [String(n), nthWords[i] ?? String(n)]));
-  const weekday = select(words.repeatWeekday, WEEKDAYS.map((day): [string, string] => [day, weekdayName(day, locale)]));
+  const weekday = select(words.repeatWeekday, week.map((day): [string, string] => [day, weekdayName(day, locale)]));
   const month = make('div', { class: 'fd-repeat-month' }, monthWay, monthDay, nth, weekday);
   monthWay.addEventListener('change', () =>
     change((rule) => {

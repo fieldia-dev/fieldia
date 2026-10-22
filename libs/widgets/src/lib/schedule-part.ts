@@ -17,4 +17,4 @@ export { installScheduleStyles } from './styles-schedule';
 
 // A list's cells of either, said in words from now on (display.ts).
 PART_CELL_WORDS['repeat'] = (value, locale) => repeatWords(value, locale, WIDGET_LABELS[locale] ?? WIDGET_LABELS.en);
-PART_CELL_WORDS['hours'] = (value, locale, shown) => (value ? hoursWords(value, locale, WIDGET_LABELS[locale] ?? WIDGET_LABELS.en, Number(shown.options?.['weekStart'] ?? 1)) : '');
+PART_CELL_WORDS['hours'] = (value, locale, shown) => (value ? hoursWords(value, locale, WIDGET_LABELS[locale] ?? WIDGET_LABELS.en, shown.options?.['weekStart'] === undefined ? undefined : Number(shown.options['weekStart'])) : '');
