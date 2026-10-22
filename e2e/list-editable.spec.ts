@@ -458,10 +458,44 @@ test.describe('a pipeline’s deal stages', () => {
     await expect(cell(page, 'Offer', 'probability')).toHaveText('65%');
     expect(problems).toEqual([]);
   });
+
+  test('Add a stage opens its Stage, the first cell a new stage needs, though Order comes first: its name typed is saved', async ({ page }) => {
+    // The owner's walk of 0.29: the name landed in Order and was refused, "Order: “Contract signed” is not a number".
+    const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline');
+    await expect(row(page, 'Offer')).toBeVisible();
+    // "Press Add a stage, name it and leave it: it is saved at the end."
+    await page.getByRole('button', { name: 'Add a stage' }).click();
+    const added = page.locator('.fd-list-row[data-new]');
+    await expect(added.locator('td[data-col="name"] input')).toBeFocused();
+    await page.keyboard.type('Contract signed');
+    await screen(page, 'list-editable-stage-added', { viewport: true });
+    await page.locator('.fd-search-input').click();
+    await expect.poll(() => calls(page, 'save')).toHaveLength(1);
+    expect((await calls(page, 'save'))[0].values).toMatchObject({ name: 'Contract signed' });
+    await expect(page.locator('.fd-list-row[data-new]')).toHaveCount(0);
+    await expect(page.locator('.fd-list-note:not([hidden])')).toHaveCount(0);
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
+
+  test('Add a stage opens its sheet at its Stage, the first field a new stage needs', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline');
+    await expect(page.locator('.fd-list[data-as="cards"]')).toBeVisible();
+    await page.getByRole('button', { name: 'Add a stage' }).click();
+    const sheet = page.getByRole('dialog');
+    await expect(sheet.getByLabel('Stage')).toBeFocused();
+    // Its card behind the sheet goes by its words, never by the key the list keeps it by.
+    await expect(page.locator('.fd-list-row[data-new] .fd-list-card-title')).toHaveText('New stage');
+    await page.keyboard.type('Contract signed');
+    await screen(page, 'list-editable-phone-stage-added', { viewport: true });
+    await sheet.getByRole('button', { name: 'Save & Close' }).click();
+    await expect.poll(() => calls(page, 'save')).toHaveLength(1);
+    expect((await calls(page, 'save'))[0].values).toMatchObject({ name: 'Contract signed' });
+    expect(problems).toEqual([]);
+  });
 
   test('a service’s card changed in a sheet over the list, saved as Done closes it', async ({ page }) => {
     const { problems } = await prices(page);

@@ -1,6 +1,7 @@
 import {
   compileModifier,
   editableColumns,
+  isEmpty,
   isRightToLeft,
   labelAt,
   loadedRecord,
@@ -290,6 +291,9 @@ export function editableRows(context: EditableContext): EditableRows | null {
     tr.removeAttribute('data-id');
     tr.querySelector(':scope > .fd-list-check')?.replaceChildren();
     tr.querySelector(':scope > .fd-list-tail')?.replaceChildren();
+    // Its card, nameless yet, goes by "New stage" — never the key the list keeps it by.
+    const title = tr.querySelector('.fd-list-card-title');
+    if (title?.textContent === key) title.replaceChildren(el('bdi', {}, sentence(labels.newRecordNoun, labels.newRecord)));
     return tr;
   }
 
@@ -948,7 +952,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
   const addButton = el('button', { type: 'button', class: 'fd-button fd-button-link fd-list-add' }, el('span', { 'aria-hidden': 'true' }, '+'), ' ', sentence(labels.rowAddNoun, labels.rowAdd));
   addButton.addEventListener('click', () => void addRow());
 
-  /** A row added at the end, its first cell open — or, on a phone, its sheet. */
+  /** A row added at the end, the first cell a new record needs open — or, on a phone, its sheet there. */
   function addRow(): RowEdit | null {
     if (!canAdd()) return null;
     const key = `new-${++added}`;
@@ -958,10 +962,22 @@ export function editableRows(context: EditableContext): EditableRows | null {
     context.changed();
     if (cards()) void sheet(edit);
     else {
-      const first = cellsOf(tr)[0];
-      if (first) editCell(first);
+      const cells = cellsOf(tr);
+      const first = firstNeeded(edit, cells.map((td) => td.getAttribute('data-col') ?? ''));
+      const td = cells.find((one) => one.getAttribute('data-col') === first);
+      if (td) editCell(td);
     }
     return edit;
+  }
+
+  /**
+   * Where a row added takes the person first: the first cell a new record needs — required, empty and changeable, in
+   * the person's order of the columns — else the first that changes. A stage's name, though its order comes first.
+   */
+  function firstNeeded(edit: RowEdit, shown: readonly string[]): string | undefined {
+    const values = edit.form.getState().values;
+    const can = shown.filter((name) => changeable(edit.record, name, edit.form));
+    return can.find((name) => (rowPage.fields[name]?.required === true || edit.form.node(nodeId(name)).required) && isEmpty(rowPage.fields[name] as Field, values[name])) ?? can[0];
   }
 
   // ---- on a phone: a card's fields in a sheet ------------------------------------------------------------------
@@ -973,12 +989,14 @@ export function editableRows(context: EditableContext): EditableRows | null {
     if (edit.gone) return;
     const state = edit.form.getState();
     const shown = context.columns().filter((name) => name in rowPage.fields);
+    // A card added: its sheet opens at the first field a new record needs, as a row added does.
+    const focus = edit.record ? undefined : firstNeeded(edit, shown);
     const fields = Object.fromEntries(Object.entries(rowPage.fields).map(([name, def]) => [name, columns.includes(name) && changeable(edit.record, name, edit.form) ? def : { ...def, readonly: true }])) as Record<string, Field>;
     const values = await list.editValues({
       title: edit.record ? fill(labels.rowChange, { name: nameOf(state.values, edit.key) }) : sentence(labels.rowAddNoun, labels.rowAdd),
       fields,
       values: state.values as Values,
-      layout: [{ type: 'section', id: `${node.id}-sheet`, columns: 1, children: shown.map((name) => ({ type: 'field', id: `${node.id}-sheet-${name}`, field: name })) }],
+      layout: [{ type: 'section', id: `${node.id}-sheet`, columns: 1, children: shown.map((name) => ({ type: 'field', id: `${node.id}-sheet-${name}`, field: name, ...(name === focus ? { focus: true } : {}) })) }],
       ...(page.lowerLabels ? { lowerLabels: true } : {}),
     });
     if (edit.gone) return;

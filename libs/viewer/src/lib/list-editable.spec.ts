@@ -219,6 +219,24 @@ describe('a list whose cells are changed in place', () => {
     expect(saves(source)).toHaveLength(1);
   });
 
+  it('opens a row added at the first cell a new record needs — required and empty, in the columns’ order — else its first', async () => {
+    // The owner's walk of 0.29: a stage's name typed in Order, the first cell, and refused as no number.
+    const ordered: Page = { ...prices, layout: { ...prices.layout, columns: ['minutes', 'name', 'price'] } as Page['layout'] };
+    const opened = async (page: Page) => {
+      const host = await mount({}, page);
+      (host.querySelector('.fd-list-add') as HTMLButtonElement).click();
+      await until(() => host.querySelector('.fd-list-row[data-new] td[data-editing]'));
+      const column = host.querySelector('.fd-list-row[data-new] td[data-editing]')?.getAttribute('data-col');
+      handle?.destroy();
+      handle = null;
+      document.body.replaceChildren();
+      return column;
+    };
+    expect(await opened(ordered)).toBe('name');
+    // Nothing a new record needs: its first cell that changes.
+    expect(await opened({ ...ordered, fields: { ...ordered.fields, name: { type: 'char', label: 'Service' } } })).toBe('minutes');
+  });
+
   it('writes rows a paste gave the same change in one writeMany, each with its version', async () => {
     const source = createMemoryDataSource({ records: records(), versions: true });
     const host = await mount({ dataSource: source });
