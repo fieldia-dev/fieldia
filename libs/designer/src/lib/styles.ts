@@ -19,7 +19,9 @@ export const DESIGNER_CSS = /* css */ `
   display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 10px 14px;
 }
-.fd-designer-title { font-size: 17px; font-weight: 600; flex: 1 1 220px; max-width: 420px; min-width: 0; }
+.fd-designer-title { font-size: 17px; font-weight: 600; flex: 1 1 220px; max-width: 420px; min-width: 0; line-height: 1.3; }
+/* A title's box that wraps its words where its room ends (growing-box.ts): one row, as tall as its words. */
+.fd-growing { display: block; box-sizing: border-box; resize: none; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; }
 /* Where the page stands; pressed, the versions published. */
 .fd-designer-status-box { display: inline-flex; }
 .fd-designer-status { all: unset; box-sizing: border-box; cursor: pointer; color: var(--fd-muted); font-size: 13px; padding: 4px 8px; border-radius: 6px; }
@@ -96,9 +98,10 @@ export const DESIGNER_CSS = /* css */ `
 .fd-step-when { color: var(--fd-muted); font-size: 13px; }
 .fd-when { display: grid; gap: 6px; justify-items: start; color: var(--fd-muted); font-size: 13px; }
 .fd-q .fd-when { padding: 8px 10px; border-inline-start: 3px solid var(--fd-accent-soft); background: var(--fd-page); border-radius: 4px; width: 100%; box-sizing: border-box; }
-.fd-when-rules { display: grid; gap: 6px; }
-.fd-when-rule, .fd-when-match-row { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
-.fd-when .fd-select { width: auto; min-width: 140px; }
+/* No wider than the room they have: a choice's long words shrink its box, on a phone too. */
+.fd-when-rules { display: grid; gap: 6px; max-width: 100%; min-width: 0; }
+.fd-when-rule, .fd-when-match-row { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; max-width: 100%; min-width: 0; }
+.fd-when .fd-select { width: auto; min-width: 140px; max-width: 100%; }
 .fd-when-custom code { font-size: 12.5px; color: var(--fd-text); }
 .fd-q-when { padding-inline: 4px; }
 .fd-step-cards { display: grid; gap: 10px; position: relative; }
@@ -190,7 +193,7 @@ export const DESIGNER_CSS = /* css */ `
 .fd-bar-break { display: none; }
 @container (min-width: 521px) {
   .fd-bar-break { display: block; flex-basis: 100%; height: 0; order: 1; }
-  .fd-designer-bar > :is(.fd-mode, .fd-look-button) { order: 2; }
+  .fd-bar-rest > :is(.fd-mode, .fd-look-button) { order: 2; }
 }
 /* On a narrow bar the ways to look at the page share one row: their words alone, each on one line. */
 @container (max-width: 520px) {
@@ -198,6 +201,36 @@ export const DESIGNER_CSS = /* css */ `
   .fd-mode-button { flex: 1 1 auto; justify-content: center; padding-inline: 6px; white-space: nowrap; }
   .fd-mode-button > .fd-dicon { display: none; }
 }
+/* A phone's bar: one row — the title, Publish, More — which is all of it that stays on screen as the page scrolls; the
+   rest under More, dropped below the row while it is open, in the order the keys go through it (chrome.ts). Wider,
+   the box holding the rest is no box at all: its parts sit in the bar's rows. */
+.fd-bar-rest { display: contents; }
+.fd-bar-more { display: none; }
+/* The bar itself by the editor's width; its parts, below, by the bar's own. Its boxes 10px in from its edge, as wider:
+   never a box drawn in a box. */
+@container (max-width: 620px) {
+  .fd-designer-bar { padding: 10px; gap: 8px; flex-wrap: nowrap; }
+}
+@container (max-width: 620px) {
+  .fd-designer-bar > .fd-designer-title { flex: 1 1 0; max-width: none; font-size: 15px; padding-inline: 8px; }
+  .fd-designer-bar > .fd-button-primary { flex: none; padding-inline: 12px; }
+  .fd-bar-more { display: inline-grid; place-items: center; flex: none; width: 36px; padding-inline: 0; }
+  .fd-bar-more > .fd-dicon { width: 20px; height: 20px; }
+  .fd-designer-bar > .fd-bar-rest { display: none; }
+  .fd-designer-bar.fd-bar-unfolded > .fd-bar-rest {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; position: absolute; z-index: 1; inset-inline: -1px; top: calc(100% + 6px);
+    max-height: calc(100vh - 100% - 24px); overflow: auto; box-sizing: border-box; padding: 12px;
+    background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); box-shadow: 0 18px 44px rgba(15, 20, 25, 0.18);
+    animation: fd-menu-in 120ms cubic-bezier(0, 0, 0.2, 1); transform-origin: top center;
+  }
+  .fd-bar-rest > * { order: 0; }
+  .fd-bar-rest > :is(.fd-spacer, .fd-bar-break) { display: none; }
+  .fd-bar-rest > :is(.fd-designer-status-box, .fd-mode) { flex: 1 1 100%; }
+  .fd-bar-rest > .fd-mode { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); box-sizing: border-box; }
+  .fd-bar-rest > .fd-mode-switch { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fd-bar-rest .fd-mode-button { justify-content: center; min-width: 0; min-height: 32px; }
+}
+@media (prefers-reduced-motion: reduce) { .fd-designer-bar.fd-bar-unfolded > .fd-bar-rest { animation: none; } }
 .fd-try { display: grid; gap: 14px; }
 .fd-try-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 8px 12px; }
 .fd-try-group { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--fd-page); border: 1px solid var(--fd-border); }
@@ -316,6 +349,9 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-section-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-canvas-untitled { color: var(--fd-muted); font-weight: 500; font-style: italic; font-size: 13px; }
 .fd-canvas-section-title-input { font: inherit; color: inherit; border: 0; border-bottom: 1px dashed var(--fd-border-strong); background: none; padding: 0 0 1px; min-width: 12em; outline: none; }
+/* Typed in, the title takes the rest of its line after the fold's mark, and wraps there. */
+.fd-section-title:has(> .fd-canvas-section-title-input:not([hidden])) { display: flex; align-items: baseline; gap: 4px; }
+.fd-section-title > .fd-canvas-section-title-input.fd-growing { flex: 1 1 auto; min-width: min(12em, 100%); }
 .fd-canvas-section-title-input:focus { border-bottom: 1px solid var(--fd-accent); }
 .fd-canvas-empty { color: var(--fd-muted); font-size: 13px; border: 1px dashed var(--fd-border); border-radius: 6px; padding: 16px; text-align: center; margin: 0; }
 /* A field's ring sits in the gap around it: picking or hovering one moves nothing. */
@@ -335,6 +371,7 @@ export const DESIGNER_CSS = /* css */ `
   font: inherit; font-weight: var(--fd-label-weight); color: var(--fd-text); border: 0; border-bottom: 1px dashed var(--fd-border-strong);
   background: none; padding: 0 0 1px; outline: none; max-width: 100%; min-width: 4ch; field-sizing: content; cursor: text;
 }
+.fd-canvas-label-input.fd-growing { display: inline-block; flex: 0 1 auto; }
 .fd-canvas-label-input:focus { border-bottom: 2px solid var(--fd-accent); padding-bottom: 0; }
 /* Typed in where they stand, the line under the words is the focus: no ring round them too. */
 .fd-designer .fd-canvas-label-input:focus-visible, .fd-designer .fd-canvas-help-input:focus-visible, .fd-designer .fd-part-input:focus-visible, .fd-designer .fd-canvas-section-title-input:focus-visible { outline: none; }
@@ -516,10 +553,10 @@ export const DESIGNER_CSS = /* css */ `
 .fd-survey-column { position: relative; width: 100%; max-width: 770px; margin-inline: auto; display: grid; gap: 12px; }
 .fd-survey-column > .fd-button { justify-self: start; }
 .fd-line { position: relative; display: block; border-block-end: 1px solid transparent; }
-.fd-line > input { font: inherit; color: inherit; background: none; border: 0; outline: none; width: 100%; box-sizing: border-box; padding: 6px 0; margin: 0; }
-.fd-line > input::placeholder { color: var(--fd-muted); }
+.fd-line > :is(input, textarea) { font: inherit; color: inherit; background: none; border: 0; outline: none; width: 100%; box-sizing: border-box; padding: 6px 0; margin: 0; }
+.fd-line > :is(input, textarea)::placeholder { color: var(--fd-muted); }
 /* The growing line is the focus here, as in Google Forms: no ring around it too. */
-.fd-designer .fd-line > input:focus, .fd-designer .fd-line > input:focus-visible { outline: none; box-shadow: none; }
+.fd-designer .fd-line > :is(input, textarea):focus, .fd-designer .fd-line > :is(input, textarea):focus-visible { outline: none; box-shadow: none; }
 .fd-line:hover { border-block-end-color: var(--fd-border); }
 .fd-line::after { content: ""; position: absolute; inset-inline: 0; bottom: -1px; height: 2px; background: var(--fd-accent); transform: scaleX(0); transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1); }
 .fd-line:focus-within::after { transform: scaleX(1); }
@@ -535,8 +572,10 @@ export const DESIGNER_CSS = /* css */ `
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 0 8px 8px 8px;
 }
 .fd-survey-canvas .fd-step-number { position: absolute; bottom: 100%; inset-inline-start: -1px; border-radius: 8px 8px 0 0; padding: 5px 14px; font-size: 13px; font-weight: 500; }
-.fd-step-head-row { display: flex; gap: 8px; align-items: center; }
-.fd-step-title-box { flex: 1; min-width: 0; }
+/* A page's title takes the row; where the row has no room for it and its buttons, they go under it, the title whole. */
+.fd-step-head-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fd-step-title-box { flex: 1 1 14rem; min-width: 0; }
+.fd-step-tools { flex: none; display: inline-flex; align-items: center; gap: 8px; }
 .fd-survey-canvas .fd-step-title { font-size: 22px; font-weight: 400; }
 .fd-survey-canvas .fd-step-selected { border: 0; }
 .fd-survey-canvas .fd-step-selected > .fd-step-head { box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0 1px 1px 0 rgba(0, 0, 0, 0.14), 0 1px 3px 0 rgba(0, 0, 0, 0.12); }
@@ -639,6 +678,36 @@ export const DESIGNER_CSS = /* css */ `
 .fd-rail-button:hover { background: color-mix(in srgb, var(--fd-text) 7%, transparent); color: var(--fd-text); }
 .fd-rail-button:focus-visible { outline: 2px solid var(--fd-focus); }
 .fd-rail-button > .fd-dicon { width: 22px; height: 22px; }
+/* Where the toolbox cannot sit beside the page — a phone, a tablet held upright — it waits behind a + so the page starts
+   near the top: the survey's in the bar beside the card picked (at the foot of a phone's screen), in place of the + that
+   adds a question there; the screen's in a bar at the foot of the screen. Pressed, it comes up in a sheet. */
+.fd-rail-button.fd-rail-tools, .fd-foot-bar { display: none; }
+@container (max-width: 900px) {
+  .fd-survey-body > .fd-rail, .fd-q-rail > .fd-rail-question { display: none; }
+  .fd-q-rail > .fd-rail-tools { display: grid; }
+}
+@container (max-width: 1000px) {
+  .fd-screen-body > .fd-rail { display: none; }
+  .fd-screen-body > .fd-foot-bar {
+    position: sticky; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 4; justify-self: center; display: flex; gap: 2px; padding: 4px;
+    background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px;
+    box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0 1px 1px 0 rgba(0, 0, 0, 0.14), 0 1px 3px 0 rgba(0, 0, 0, 0.12);
+  }
+  .fd-foot-bar > .fd-rail-tools { display: grid; }
+}
+/* The sheet: up from the foot of the screen, over the page dimmed under it; the editor's side in it, its tabs beside its ×. */
+.fd-tools-backdrop { z-index: 55; padding: 48px 0 0; place-items: end stretch; }
+.fd-tools-sheet {
+  position: relative; box-sizing: border-box; width: 100%; max-height: min(78vh, 720px); overflow: auto; overscroll-behavior: contain;
+  background: var(--fd-surface); color: var(--fd-text); border-radius: 14px 14px 0 0; box-shadow: 0 -12px 40px rgba(15, 20, 25, 0.22);
+  padding: 10px 6px calc(12px + env(safe-area-inset-bottom, 0px)); animation: fd-sheet-up 180ms cubic-bezier(0, 0, 0.2, 1);
+}
+@keyframes fd-sheet-up { from { opacity: 0; transform: translateY(24px); } }
+.fd-tools-sheet-close { position: absolute; top: 8px; inset-inline-end: 8px; z-index: 1; width: 36px; height: 36px; font-size: 22px; }
+.fd-tools-sheet > .fd-rail { position: static; max-height: none; overflow: visible; border: 0; border-radius: 0; padding: 0; background: none; }
+.fd-tools-sheet .fd-rail-tabs { margin-inline-end: 48px; }
+.fd-tools-sheet .fd-tools { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+@media (prefers-reduced-motion: reduce) { .fd-tools-sheet { animation: none; } }
 @container (max-width: 620px) {
   .fd-survey-canvas { padding-inline: 10px; }
   /* A question's words the width of its card, its kind under them. */

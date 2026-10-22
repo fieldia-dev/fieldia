@@ -59,7 +59,10 @@ export function lookSheet(options: { el: ElementFactory; designer: Designer; roo
     wearLook(wearer, page.look);
   };
   const leave = designer.subscribe(draw);
-  bar.insertBefore(button, bar.querySelector('[data-checks]'));
+  // Before Checks, wherever the bar holds it: in its row, or under More on a phone.
+  const checks = bar.querySelector('[data-checks]');
+  if (checks) checks.before(button);
+  else bar.append(button);
   draw();
   return {
     button,

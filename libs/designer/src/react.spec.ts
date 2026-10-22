@@ -27,6 +27,6 @@ describe('the editors in React', () => {
     const second = createDesigner({ page: blankPage('screen', 'Other') });
     rerender(createElement(ScreenEditor, { designer: second }));
     expect(container.querySelectorAll('.fd-screen-designer')).toHaveLength(1);
-    expect((container.querySelector('input[aria-label="Screen title"]') as HTMLInputElement).value).toBe('Other');
+    expect((container.querySelector('[aria-label="Screen title"]') as HTMLTextAreaElement).value).toBe('Other');
   });
 });

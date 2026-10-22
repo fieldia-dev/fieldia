@@ -23,6 +23,7 @@ import { cardRules } from './rules-card';
 import { ruleMarks } from './rules-marks';
 import { installDesignerStyles } from './styles';
 import { toolbox, toolboxGroups } from './toolbox';
+import { toolsSheet } from './tools-sheet';
 import { tryIt } from './try-it';
 import { translationsView } from './translations-view';
 import { jsonView } from './json-view';
@@ -32,6 +33,7 @@ import type { PageTemplate } from './templates';
 import { startHere } from './templates-start';
 import { answerButton } from './answer-picker';
 import { endingsEditor } from './endings-editor';
+import { growingBox } from './growing-box';
 
 /**
  * The survey editor, the Google Forms way: on a tinted page, a card heading
@@ -129,18 +131,22 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   });
 
   // The card heading the form: its title and description, as people will see them.
-  const headTitle = el('input', { class: 'fd-survey-head-title', 'aria-label': w.formHeading, placeholder: own.bar.untitledForm, autocomplete: 'off', ...dataDirection }) as HTMLInputElement;
+  // Titles and words that wrap where their room ends, never cut (growing-box.ts): on a phone a page's title read "Your ex".
+  const headTitle = growingBox(el, { class: 'fd-survey-head-title', 'aria-label': w.formHeading, placeholder: own.bar.untitledForm, autocomplete: 'off', ...dataDirection });
   headTitle.addEventListener('input', () => designer.setPageInfo({ title: headTitle.value }));
-  const headDescription = el('input', { class: 'fd-survey-head-description', 'aria-label': w.formDescription, placeholder: w.formDescription, autocomplete: 'off', ...dataDirection }) as HTMLInputElement;
+  const headDescription = growingBox(el, { class: 'fd-survey-head-description', 'aria-label': w.formDescription, placeholder: w.formDescription, autocomplete: 'off', ...dataDirection });
   headDescription.addEventListener('input', () => designer.setPageInfo({ description: headDescription.value }));
   const head = el('div', { class: 'fd-survey-head' }, lined(el, headTitle), lined(el, headDescription));
   head.addEventListener('focusin', () => designer.getState().selected !== null && designer.select(null));
 
-  // Beside the card picked, following it down the page: a question after it, or a page.
-  const railQuestion = el('button', { type: 'button', class: 'fd-rail-button', 'aria-label': w.addQuestionAfter, title: w.addQuestion }, designerIcon(doc, 'plus'));
+  // Beside the card picked, following it down the page: a question after it, or a page. Where the toolbox cannot sit
+  // beside the page (a phone, a tablet held upright), its + opens the toolbox instead, in a sheet (tools-sheet.ts).
+  const railQuestion = el('button', { type: 'button', class: 'fd-rail-button fd-rail-question', 'aria-label': w.addQuestionAfter, title: w.addQuestion }, designerIcon(doc, 'plus'));
+  const railTools = el('button', { type: 'button', class: 'fd-rail-button fd-rail-tools', 'aria-label': own.toolbox.openToolbox, title: own.toolbox.openToolbox, 'aria-haspopup': 'dialog', 'aria-expanded': 'false' }, designerIcon(doc, 'plus'));
   const railPage = el('button', { type: 'button', class: 'fd-rail-button', 'aria-label': w.addPageAfter, title: w.addPage }, designerIcon(doc, 'section'));
-  const rail = el('div', { class: 'fd-q-rail', role: 'toolbar', 'aria-label': w.add }, railQuestion, railPage);
+  const rail = el('div', { class: 'fd-q-rail', role: 'toolbar', 'aria-label': w.add }, railQuestion, railTools, railPage);
   railQuestion.addEventListener('click', () => add('short-answer', railTarget()));
+  railTools.addEventListener('click', () => sheet.show(railTools));
   railPage.addEventListener('click', addPageHere);
 
   // Where answers lead: the pages on one line, those for some answers off it.
@@ -181,8 +187,10 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     doc,
     kinds,
     words: designer.words,
-    onPick: (spec) => add(spec.slice(spec.indexOf(':') + 1), target()),
-    onPress: (spec, event, tile) => drag.press({ tool: spec }, event, tile),
+    // Picked in the sheet, the sheet goes first: the question added takes the focus.
+    onPick: (spec) => sheet.closeFor(() => add(spec.slice(spec.indexOf(':') + 1), target())),
+    // A tile is carried onto the page from beside it; in the sheet over the page it is only picked.
+    onPress: (spec, event, tile) => !sheet.open && drag.press({ tool: spec }, event, tile),
   });
   const side = sideRail({
     el,
@@ -193,6 +201,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     reveal: (id) => root.querySelector(`[data-node="${id}"]`)?.scrollIntoView?.({ block: 'nearest' }),
   });
   const body = el('div', { class: 'fd-designer-body fd-survey-body' }, side.element, editor);
+  const sheet = toolsSheet({ el, doc, root, side: side.element, words: designer.words });
   const json = jsonView({ el, doc, designer, trial, body });
   root.append(bar.element, bar.issues, body, trial.element, json.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
@@ -404,7 +413,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   /** The question picked: open to edit, the Google Forms way. */
   function openCard(id: string): CardView {
     const grip = el('button', { type: 'button', class: 'fd-q-grip', 'data-grip': '', 'aria-label': w.dragToMove, title: w.dragTitle }, designerIcon(doc, 'grip'));
-    const label = el('input', { class: 'fd-q-label', 'aria-label': w.question, autocomplete: 'off', placeholder: w.question, ...dataDirection }) as HTMLInputElement;
+    const label = growingBox(el, { class: 'fd-q-label', 'aria-label': w.question, autocomplete: 'off', placeholder: w.question, ...dataDirection });
     label.addEventListener('input', () => designer.updateQuestion(id, { label: label.value }));
     const kindIcon = el('span', { class: 'fd-q-kind-icon' });
     const kindName = el('span', { class: 'fd-q-kind-name' });
@@ -419,7 +428,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       const items: MenuItem[] = toolboxGroups(designer.kindsFor(id)).flatMap(([, ids]) => ids.filter((k) => offered.has(k)).map((k, i) => ({ id: k, label: nameOfKind(kindById(k), own), icon: k, checked: k === current, ...(i === 0 ? { divider: true } : {}) })));
       openMenu({ el, anchor: kind, title: w.kindOfQuestion, items, roomy: true, onPick: (k) => designer.changeKind(id, k) });
     });
-    const help = el('input', { class: 'fd-q-help', 'aria-label': w.description, placeholder: w.description, autocomplete: 'off', ...dataDirection }) as HTMLInputElement;
+    const help = growingBox(el, { class: 'fd-q-help', 'aria-label': w.description, placeholder: w.description, autocomplete: 'off', ...dataDirection });
     help.addEventListener('input', () => designer.updateQuestion(id, { help: help.value }));
     const helpBox = lined(el, help, 'fd-q-help-box');
     /** A description asked for from ⋮, still empty: shown until the card closes. */
@@ -561,7 +570,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   function makeStep(id: string): StepView {
     const section = el('section', { class: 'fd-design-step', 'data-node': id });
     const number = el('span', { class: 'fd-step-number' });
-    const name = el('input', { class: 'fd-step-title', 'aria-label': w.pageTitle, placeholder: w.untitledPage, autocomplete: 'off', ...dataDirection }) as HTMLInputElement;
+    const name = growingBox(el, { class: 'fd-step-title', 'aria-label': w.pageTitle, placeholder: w.untitledPage, autocomplete: 'off', ...dataDirection });
     name.addEventListener('input', () => designer.renameContainer(id, name.value));
     name.addEventListener('focus', () => designer.getState().selected !== id && designer.select(id));
     const removeStep = iconButton(w.deletePage, '✕', () => designer.removeNode(id), 'fd-icon-danger');
@@ -572,7 +581,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     addQuestion.setAttribute('aria-label', w.addQuestion);
     addQuestion.addEventListener('click', () => add('short-answer', { parent: id }));
     // The page's own card, its number on a tab over it, as Google Forms heads a section.
-    section.append(el('header', { class: 'fd-step-head' }, number, el('div', { class: 'fd-step-head-row' }, lined(el, name, 'fd-step-title-box'), answerButton(el, designer, name), removeStep), condition), cards, addQuestion);
+    // Its title and, beside it — under it where the row has no room — its buttons, together.
+    const tools = el('span', { class: 'fd-step-tools' }, answerButton(el, designer, name), removeStep);
+    section.append(el('header', { class: 'fd-step-head' }, number, el('div', { class: 'fd-step-head-row' }, lined(el, name, 'fd-step-title-box'), tools), condition), cards, addQuestion);
 
     return {
       element: section,
@@ -717,6 +728,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     element: root,
     destroy() {
       leave();
+      sheet.destroy();
       look.destroy();
       watcher?.disconnect();
       unclear();

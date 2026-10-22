@@ -427,6 +427,27 @@ createDesigner({ page, looks }); // the same store for every designer, so they o
 
 `createMemoryLookStore()` keeps them for as long as the page is open, as for a test.
 
+## On a phone
+
+Where the editor is a phone's width (620px or less), its bar is one row that
+keeps to its height as the page scrolls: the page's title, **Publish** and
+**More** (⋮). Under More are where the page stands and its versions, Find
+anything, Undo and Redo, Simple and Advanced, the views (Design, Try it, JSON,
+Translations, Rules), Look and Checks, the keys going in as it opens; a view
+picked puts them away, and so do More again, Escape and a press anywhere else.
+
+Where the toolbox cannot sit beside the page — a survey editor 900px wide or
+less, a screen editor 1,000px or less — the page starts at the top: the toolbox
+waits behind a **+** (in a survey, the bar beside the question picked, at the
+foot of a phone's screen; in the screen editor, a bar at the foot of the
+screen) and comes up from the foot in a sheet, with its Outline and Data tabs.
+A kind picked there is added after what is picked, its words ready to type, and
+the sheet goes; its ×, Escape and a press beside it put it away too.
+
+Titles typed in place — the page's, a page's, a question's words and its
+description — wrap onto another line where their room ends, never cut; a
+page's buttons go under its title when the row has no room for them.
+
 ## The designer in Arabic
 
 The designer speaks English unless it is given a language: `locale: 'ar'` (any
