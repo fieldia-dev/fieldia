@@ -316,6 +316,29 @@ test.describe('axe on fieldia.dev', () => {
   }
 });
 
+test('a box under Try it’s drawer on a phone is let go only because the keys bring it clear: left under, it is found', async ({ page }) => {
+  // The sweep's exception for a bar at the foot of the screen (a11y-support.ts), checked to bite where it is used: the
+  // survey designer tried on a phone, its email box partly under the drawer where the page stands.
+  await page.setViewportSize(PHONE);
+  await page.goto('/designer/?start=survey');
+  await expect(page.locator('.fd-designer-bar')).toBeVisible();
+  await (await inBar(page, 'Try it')).click();
+  await expect(page.locator('.fd-try-drawer')).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(250);
+  const email = page.locator('.fd-try-frame [id$="-q-email"]');
+  const drawer = page.locator('.fd-try-drawer');
+  expect((await email.boundingBox())!.y + (await email.boundingBox())!.height, 'the box partly under the drawer').toBeGreaterThan((await drawer.boundingBox())!.y);
+  // The sweep leaves the page as it was: the focus where it was, the page where it stood.
+  const standing = () => page.evaluate(() => [document.activeElement?.outerHTML.slice(0, 80), scrollY]);
+  const before = await standing();
+  expect(await axeFindings(page, 'tried')).toEqual([]);
+  expect(await standing()).toEqual(before);
+  // The designer's move of a focused box from under the drawer taken away (its focusin never heard): found.
+  await page.evaluate(() => document.addEventListener('focusin', (event) => event.stopPropagation(), true));
+  expect(await axeFindings(page, 'left under')).toEqual([expect.stringMatching(/^left under · target-size · #fd\d+-q-email · reached by the keys, still under .*fd-try/)]);
+});
+
 test('the allow-list stays short, and says why for each', () => {
   expect(ALLOWED.length).toBeLessThanOrEqual(3);
   for (const entry of ALLOWED) expect(entry.why.length, `${entry.rule} needs a reason`).toBeGreaterThan(20);
