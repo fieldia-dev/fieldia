@@ -1173,6 +1173,10 @@ In plain words:
   `matchesFilter` itself judges one text, as before. Tests: `libs/core/src/lib/record/languages.spec.ts`.
 - **Elsewhere in 0.29**: a list whose cells change in place never opens such a field's cell (§21); AI help fills the one
   language the person is looking at, never the others (§23).
+- **With 0.31's lanes**: a mask or shorthand on such a text is refused by the page's checks (each language typed as
+  words); `prefill` naming one is refused (a link's words fill none of its languages); a record template keeps the
+  object whole and lays both languages (§34); `pageFromSchema` keeps the languages Fieldia's own fields name, and a
+  backend's `translate: true` is typed in one language, said in its notes (`languages`).
 - **Not done yet (0.29)**: a table's line keeps one language (`translate` refused there); the exported `matchesFilter`
   judges one text; Export writes the reader's language alone, Import reads one text, taken as the first language; the
   quiet look leaves the switch's tabs boxed; a map's pins and cards show the reader's language without the mark.

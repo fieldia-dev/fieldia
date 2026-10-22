@@ -76,6 +76,12 @@ async function answer(name: string, button: string) {
 }
 
 describe('record templates', () => {
+  it('keeps a text in several languages whole, each language as the person typed it, and lays both (0.31)', () => {
+    const both = { ...page, fields: { ...page.fields, notes: { type: 'text', label: 'Notes', translate: ['ar', 'en'] } } } as unknown as Page;
+    const notes = { ar: 'الجبهة وخطوط العبوس', en: 'Forehead and frown lines' };
+    expect(templateValues(both, { treatment: 'botox', notes })).toEqual({ treatment: 'botox', notes });
+  });
+
   it('keeps what a person fills in — never the name, a file or a value worked out — and lines without their ids', () => {
     expect(templateValues(page, { ...RECORD, total: 9000, consent: { name: 'c.pdf', type: 'application/pdf', size: 1, data: 'QQ==' } })).toEqual({
       treatment: 'botox',

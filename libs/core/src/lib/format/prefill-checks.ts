@@ -27,6 +27,7 @@ export function checkPrefill(page: Page, tools: PrefillTools): void {
     const def = page.fields[name];
     if (!def) return report(at, `no field "${name}" for the link's "${param}" to fill: add it to the page's fields (placed nowhere, it is a hidden field, sent with the answers)`);
     if (def.compute !== undefined) return report(at, `"${name}" is worked out from other fields: a link cannot fill it`);
+    if (Array.isArray((def as { translate?: unknown }).translate)) return report(at, `"${name}" keeps its text in several languages, each typed by a person: a link's words fill none of them`);
     if (!PREFILLED_KINDS.has(def.type)) return report(at, `"${name}" is a ${def.type}: a link's words fill a line of text, a number, a yes or no, a choice or a day — keep them in a text field (an agent's code), and let your app link the record`);
     if (def.type === 'selection' && def.optionsFrom !== undefined) report(at, `"${name}" takes its options from elsewhere: a link fills a choice of the page's own options`);
   });

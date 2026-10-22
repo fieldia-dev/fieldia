@@ -25,10 +25,11 @@ export interface SchemaNote {
    * Kept with a change: `renamed` (a name a field cannot have), `flattened` (an object's properties as fields of their
    * own, in a section), `json` (a value of a kind no field holds, kept as JSON), `limit` (a limit no setting holds),
    * `format` (a format Fieldia does not know, kept as text), `pattern` (a pattern that does not read, left out),
-   * `constant` (one value, shown read-only), `links` (lines whose fields are not given, kept as links).
+   * `constant` (one value, shown read-only), `links` (lines whose fields are not given, kept as links), `languages` (a
+   * backend's text kept in several languages, `translate: true`, typed in one here: the page names its languages).
    * Left out: `reference` (a `$ref` outside the document, or one that refers to itself), `kind` (no kind of value).
    */
-  code: 'renamed' | 'flattened' | 'json' | 'limit' | 'format' | 'pattern' | 'constant' | 'links' | 'reference' | 'kind';
+  code: 'renamed' | 'flattened' | 'json' | 'limit' | 'format' | 'pattern' | 'constant' | 'links' | 'languages' | 'reference' | 'kind';
   /** What exactly: the new name, the limit as the schema wrote it, the kind of value, the reference. */
   detail?: string;
 }
@@ -137,6 +138,8 @@ export function schemaNoteWords(note: SchemaNote): string {
       return `${at} is always ${detail}: shown, not asked.`;
     case 'links':
       return `${at} is links to ${detail} records: the fields of its lines were not given.`;
+    case 'languages':
+      return `${at} is typed in one language: a text kept in several names its languages on the page (translate).`;
     case 'reference':
       return `${at} was left out: it refers to ${detail}, which is not in the document.`;
     case 'kind':
@@ -549,6 +552,15 @@ class Builder {
       for (const key of ['help', 'required', 'readonly', 'relation', 'size', 'digits', 'currency', 'multiple', 'accept', 'min', 'max', 'pattern'] as const) if (given[key] !== undefined && given[key] !== false && given[key] !== '') field[key] = given[key];
       if (typeof given['currency_field'] === 'string') field['currencyField'] = given['currency_field'];
       if (Array.isArray(given['digits']) && (given['digits'] as unknown[]).length !== 2) delete field['digits'];
+      // A text kept in several languages: Fieldia's own field keeps its languages, each typed by a person; a backend's
+      // `translate: true` (Flectra's) names none, so it is typed in one here, and said.
+      if (['char', 'text', 'html'].includes(type)) {
+        const tags = given['translate'];
+        if (Array.isArray(tags) && tags.length > 1 && tags.every((tag) => typeof tag === 'string')) {
+          field['translate'] = tags;
+          if (Array.isArray(given['requiredIn'])) field['requiredIn'] = given['requiredIn'];
+        } else if (tags === true) this.notes.push({ path, code: 'languages' });
+      }
       if (type === 'selection' || type === 'reference') {
         const raw = (Array.isArray(given['options']) ? given['options'] : Array.isArray(given['selection']) ? given['selection'] : Array.isArray(given['models']) ? given['models'] : []) as unknown[];
         const options = raw.map((one) => (Array.isArray(one) ? { value: one[0] as string | number, label: String(one[1] ?? one[0]) } : (asObject(one) as Option | null))).filter((one): one is Option => !!one && (typeof one.value === 'string' || typeof one.value === 'number'));

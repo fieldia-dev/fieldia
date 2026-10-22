@@ -53,6 +53,7 @@ export const templates: DesignerWords['templates'] = {
         pattern: `نمط ${ltr(path)} ${ltr(detail)} ليس تعبيرًا نمطيًا، فتُرك.`,
         constant: `${ltr(path)} قيمته دائمًا ${ltr(detail)}: تُعرض ولا تُسأل.`,
         links: `${ltr(path)} روابط إلى سجلات ${ltr(detail)}: لم تُعطَ حقول أسطره.`,
+        languages: `${ltr(path)} يُكتب بلغة واحدة: سمِّ لغاته في الصفحة ليُحفظ بعدة لغات.`,
         reference: `${ltr(path)} يشير إلى ${ltr(detail)}، وهو ليس في المستند.`,
         kind: `${ltr(path)} يحمل ${ltr(detail)}، ولا حقل يسأل عنه.`,
       })[code] ?? `${ltr(path)}: ${ltr(detail)}`,

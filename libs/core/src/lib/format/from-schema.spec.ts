@@ -217,6 +217,15 @@ describe("pageFromSchema: a model's fields", () => {
     expect(result.unmapped).toEqual([{ path: 'props', code: 'kind', detail: 'properties_definition' }]);
   });
 
+  it('keeps a text in several languages as Fieldia’s own fields name them, and says a backend’s typed in one (0.31)', () => {
+    const own = { title: { type: 'char', label: 'Title', translate: ['ar', 'en'], required: true, requiredIn: ['en'] } };
+    expect(valid(pageFromSchema([{ name: 'title', ...own.title }])).fields).toEqual(own);
+    const flectra = pageFromSchema({ name: { type: 'char', string: 'Name', translate: true } });
+    expect(valid(flectra).fields['name']).toEqual({ type: 'char', label: 'Name' });
+    expect(flectra.notes).toEqual([{ path: 'name', code: 'languages' }]);
+    expect(schemaNoteWords(flectra.notes[0])).toBe('name is typed in one language: a text kept in several names its languages on the page (translate).');
+  });
+
   it("Fieldia's own fields, as they are; a list of them by name", () => {
     const own = { title: { type: 'char', label: 'Title', required: true }, kind: { type: 'selection', label: 'Kind', options: [{ value: 'a', label: 'A' }] } };
     expect(valid(pageFromSchema(own)).fields).toEqual(own);

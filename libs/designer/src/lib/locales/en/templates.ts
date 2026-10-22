@@ -58,6 +58,7 @@ export const templates = {
         pattern: `${path}’s pattern ${detail} is not a regular expression, so it was left out.`,
         constant: `${path} is always ${detail}: shown, not asked.`,
         links: `${path} is links to ${detail} records: the fields of its lines were not given.`,
+        languages: `${path} is typed in one language: name its languages on the page to keep it in several.`,
         reference: `${path} refers to ${detail}, which is not in the document.`,
         kind: `${path} holds ${detail}, which no field asks for.`,
       })[code] ?? `${path}: ${detail}`,

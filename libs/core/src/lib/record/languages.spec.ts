@@ -77,6 +77,17 @@ describe('the format: a text kept in several languages', () => {
     const placedRequired = listing({ layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-description', field: 'description', required: 'price > 0' }] } }, { description: { type: 'text', label: 'Description', translate: ['ar', 'en'], requiredIn: ['en'] } });
     expect(issues(placedRequired)).toEqual([]);
   });
+
+  it('types it as words: no mask, no shorthand, and no link fills it (0.31)', () => {
+    const masked = listing({ layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-title', field: 'title', options: { mask: 'aa-9999', upper: true } }, { type: 'field', id: 'f-notes', field: 'notes', options: { shorthand: true } }] } });
+    // Said by the format's check and the page's alike: once here.
+    expect([...new Set(issues(masked))]).toEqual([
+      'layout.children[0].options.mask: "title" keeps its text in several languages, each typed as words by a person: it takes no mask',
+      'layout.children[1].options.shorthand: "notes" keeps its text in several languages, each typed as words by a person: it takes no shorthand',
+    ]);
+    const linked = listing({ prefill: { fromUrl: [{ param: 'title', field: 'title' }] } });
+    expect([...new Set(issues(linked))]).toEqual(['prefill.fromUrl[0]: "title" keeps its text in several languages, each typed by a person: a link\'s words fill none of them']);
+  });
 });
 
 describe('the demos’ pages', () => {

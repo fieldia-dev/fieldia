@@ -709,6 +709,14 @@ the record — and a page naming one in `editable.fields` is refused, with why. 
 help fills the one language the person is looking at (the switch's, else the
 reader's), never the others: see AI help above.
 
+With 0.31's inputs and records: such a text is typed as words, so a mask or
+shorthand on it is refused by the page's checks, with why; a link's words fill
+none of its languages (`prefill` naming one is refused); a record template keeps
+it whole, each language as the person typed it, and lays both on a new record;
+and `pageFromSchema` keeps the languages Fieldia's own fields name, while a
+backend's `translate: true` (Flectra's), which names none, is typed in one
+language and said in its notes.
+
 Not done yet, for 0.29: a table's line keeps one language (`translate` there is
 refused); the exported `matchesFilter` judges one text — only the memory source
 finds a record by any of its languages; Export writes the reader's language
