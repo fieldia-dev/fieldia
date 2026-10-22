@@ -100,6 +100,6 @@ export const formMap: FormMapLabels = {
   map: 'Harita',
   lastSeen: 'Son görülme: {time}',
   follow: 'Takip et',
-  routeFailed: 'Güzergâh bulunamadı.',
+  routeFailed: 'Rota bulunamadı.',
   crowdHere: 'Burada {n} tane: {names}. Görmek için yakınlaştırın.',
 };

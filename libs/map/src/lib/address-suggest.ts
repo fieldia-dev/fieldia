@@ -42,7 +42,7 @@ const NOT_PLACED: Record<Locale, string> = {
   // Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
   tr: 'Haritada bulunamadı: bu adres için bir konum kaydedilmedi.',
   fa: 'روی نقشه پیدا نشد: برای این نشانی مکانی ذخیره نشد.',
-  ur: 'یہ پتہ نقشے پر نہیں ملا: اس کے لیے کوئی جگہ محفوظ نہیں کی گئی۔',
+  ur: 'یہ پتہ نقشے پر نہیں ملا: اس کے لیے کوئی مقام محفوظ نہیں کیا گیا۔',
   es: 'No se encontró en el mapa: no se guardó ningún lugar para esta dirección.',
 };
 /** Said when the place could not be asked for (the line dropped, the provider down or refusing): it may well be on the map. */
@@ -54,7 +54,7 @@ const LOCATE_FAILED: Record<Locale, string> = {
   // Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
   tr: 'Harita yanıt vermedi, bu yüzden bu adres için bir konum kaydedilmedi: bağlantıyı denetleyin, sonra adresi yeniden seçin.',
   fa: 'نقشه پاسخی نداد، از این رو برای این نشانی مکانی ذخیره نشد: اتصال را بررسی کنید و سپس دوباره آن را انتخاب کنید.',
-  ur: 'نقشے نے جواب نہیں دیا، اس لیے اس پتے کے لیے کوئی جگہ محفوظ نہیں کی گئی: کنکشن جانچیں، پھر اسے دوبارہ منتخب کریں۔',
+  ur: 'نقشے نے جواب نہیں دیا، اس لیے اس پتے کے لیے کوئی مقام محفوظ نہیں کیا گیا: کنکشن جانچیں، پھر اسے دوبارہ منتخب کریں۔',
   es: 'El mapa no respondió, así que no se guardó ningún lugar para esta dirección: compruebe la conexión y vuelva a seleccionarla.',
 };
 /** Said when only a place near it is found (`precise: false`): its street, district or town, kilometres off perhaps. */
@@ -66,7 +66,7 @@ const PLACED_NEAR: Record<Locale, string> = {
   // Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
   tr: 'Yalnızca bu adresin yakınına yerleştirildi: tam konumu haritada bulunamadı.',
   fa: 'فقط در نزدیکی این نشانی قرار گرفت: مکان دقیق آن روی نقشه پیدا نشد.',
-  ur: 'صرف اس پتے کے قریب رکھا گیا: اس کی صحیح جگہ نقشے پر نہیں ملی۔',
+  ur: 'صرف اس پتے کے قریب رکھا گیا: اس کا صحیح مقام نقشے پر نہیں ملا۔',
   es: 'Se colocó solo cerca de esta dirección: no se encontró su lugar exacto en el mapa.',
 };
 

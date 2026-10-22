@@ -38,7 +38,7 @@ export const ADDRESS_LABELS: Record<Locale, Omit<AddressLabels, SaidAfterAPick>>
   // Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
   tr: { suggested: 'Öneriler: {n}', addressKind: 'Adres arama', settingPlace: 'Konumun yazılacağı alan', settingParts: 'Adres parçalarının yazılacağı alan', settingCountry: 'Adreslerin ülkesi', anywhere: 'Tüm ülkeler' },
   fa: { suggested: 'پیشنهادها: {n}', addressKind: 'جستجوی نشانی', settingPlace: 'محل ثبت مکان', settingParts: 'محل ثبت اجزای نشانی', settingCountry: 'کشور نشانی‌ها', anywhere: 'هر کشوری' },
-  ur: { suggested: 'تجاویز: {n}', addressKind: 'پتے کی تلاش', settingPlace: 'جگہ کے لیے فیلڈ', settingParts: 'اجزا کے لیے فیلڈ', settingCountry: 'پتوں کا ملک', anywhere: 'کوئی بھی ملک' },
+  ur: { suggested: 'تجاویز: {n}', addressKind: 'پتے کی تلاش', settingPlace: 'مقام کے لیے فیلڈ', settingParts: 'اجزا کے لیے فیلڈ', settingCountry: 'پتوں کا ملک', anywhere: 'کوئی بھی ملک' },
   es: { suggested: 'Sugerencias: {n}', addressKind: 'Búsqueda de dirección', settingPlace: 'El lugar va en', settingParts: 'Las partes van en', settingCountry: 'Direcciones en', anywhere: 'Cualquier país' },
 };
 

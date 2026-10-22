@@ -10,7 +10,7 @@ import type { FormMapLabels, ListMapLabels, MapLabels } from '../labels';
 export const map: MapLabels = {
   mapOf: '{label}، نقشہ',
   mapKeys: 'تیر والی کلیدوں سے نقشہ ہلائیں۔ پلس اور مائنس سے زوم کریں۔',
-  placeKeys: 'جگہ کو نقشے کے مرکز میں رکھنے کے لیے Enter دبائیں۔',
+  placeKeys: 'مقام کو نقشے کے مرکز میں رکھنے کے لیے Enter دبائیں۔',
   zoomIn: 'زوم ان',
   zoomOut: 'زوم آؤٹ',
   search: 'پتہ تلاش کریں',
@@ -50,7 +50,7 @@ export const map: MapLabels = {
   gripKeys: 'تیر والی کلیدوں سے اسے ہلائیں۔',
   drawKeys: 'کی بورڈ سے: Space نقشے کے مرکز میں نقطہ رکھتا ہے، Enter ختم کرتا ہے، Backspace آخری نقطہ واپس لیتا ہے، Escape روکتا ہے۔',
   addPoint: 'یہاں نقطہ شامل کرنے کے لیے گھسیٹیں',
-  placeKind: 'جگہ',
+  placeKind: 'مقام',
   areaKind: 'علاقہ',
   mapsGroup: 'نقشے',
   settingMyLocation: '“میرا مقام” بٹن',
@@ -85,7 +85,7 @@ export const listMap: ListMapLabels = {
   legendBubble: 'کتنے ایک دوسرے کے قریب ہیں: الگ کرنے کے لیے زوم ان کریں',
   crowd: 'ایک جگہ پر {n}',
   crowdMore: 'اور یہاں {n} مزید',
-  notOnMap: '{n} بغیر جگہ کے، نقشے پر نہیں',
+  notOnMap: '{n} بغیر مقام کے، نقشے پر نہیں',
   mapShowsFirst: 'نقشہ {total} میں سے {n} دکھاتا ہے۔ باقی کے لیے زوم ان کریں اور اس علاقے میں تلاش کریں۔',
   mapFailed: 'نقشہ ریکارڈ لوڈ نہیں کر سکا۔',
   mapFailedNoun: 'نقشہ {records} لوڈ نہیں کر سکا۔',
@@ -100,7 +100,7 @@ export const listMap: ListMapLabels = {
 export const formMap: FormMapLabels = {
   map: 'نقشہ',
   lastSeen: 'آخری بار دیکھا گیا: {time}',
-  follow: 'پیچھا کریں',
+  follow: 'نظر میں رکھیں',
   routeFailed: 'راستہ نہیں مل سکا۔',
   crowdHere: '{n} یہاں: {names}۔ انہیں دیکھنے کے لیے زوم ان کریں۔',
 };

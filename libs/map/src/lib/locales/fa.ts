@@ -66,7 +66,7 @@ export const map: MapLabels = {
   measureHint: 'روی نقاط مسیر کلیک کنید؛ برای پایان دوبار کلیک کنید یا Enter را بزنید. Escape پاک می‌کند.',
   measured: 'طول مسیر {distance} است.',
   areaValue: '{name}: {value}',
-  areasNone: 'هیچ',
+  areasNone: 'هیچ‌کدام',
 };
 
 export const listMap: ListMapLabels = {

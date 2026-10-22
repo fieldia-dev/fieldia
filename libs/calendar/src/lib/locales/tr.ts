@@ -48,7 +48,7 @@ export const tr: CalendarLabels = {
   moved: '{name} taşındı, yeni zaman: {when}.',
   stretched: '{name} artık şu zamanda bitiyor: {when}.',
   undo: 'Geri al',
-  undone: 'Eski haline getirildi.',
+  undone: 'Eski hâline getirildi.',
   close: 'Kapat',
   notMoved: 'Taşınmadı: {why}',
   cannotMove: 'Bunu değiştiremezsiniz.',

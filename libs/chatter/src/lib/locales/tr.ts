@@ -79,7 +79,7 @@ export const tr: ChatterLabels = {
   saveComment: 'Kaydet',
   comment: 'Yorum',
   discardComment: 'Yorumunuz atılsın mı?',
-  discard: 'Vazgeç',
+  discard: 'Yorumu at',
   keepWriting: 'Yazmaya devam et',
   sendBy: 'Gönderim kanalı',
   toWhom: 'Alıcı: {to}',

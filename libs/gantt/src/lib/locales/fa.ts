@@ -17,7 +17,7 @@ export const fa: GanttLabels = {
   holdsNoun: '{n} {record}',
   holdsNounOne: '1 {record}',
   loadFailed: 'خط زمانی بارگیری نشد.',
-  retry: 'دوباره تلاش کنید',
+  retry: 'تلاش دوباره',
   nothing: 'چیزی برای نمایش روی خط زمانی نیست.',
   tooMany: 'نمایش {shown} مورد نخست از {total}: برای دیدن همه، جستجو را محدودتر کنید.',
   notPlanned: 'هنوز تاریخ آغاز ندارد',

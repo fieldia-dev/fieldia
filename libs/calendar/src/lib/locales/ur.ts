@@ -50,9 +50,9 @@ export const ur: CalendarLabels = {
   moved: '{name} کو {when} پر منتقل کر دیا گیا۔',
   stretched: '{name} کا اختتام اب {when} پر ہے۔',
   undo: 'کالعدم کریں',
-  undone: 'پہلے جیسی حالت بحال کر دی گئی۔',
+  undone: 'پہلے جیسا کر دیا گیا۔',
   close: 'بند کریں',
   notMoved: 'منتقلی نہیں ہو سکی: {why}',
   cannotMove: 'آپ اسے تبدیل نہیں کر سکتے۔',
-  saving: 'محفوظ کیا جا رہا ہے…',
+  saving: 'محفوظ ہو رہا ہے…',
 };

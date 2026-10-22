@@ -34,7 +34,7 @@ export const tr: GanttLabels = {
   stretched: '{name} artık şu tarihte bitiyor: {when}.',
   started: '{name} artık şu tarihte başlıyor: {when}.',
   undo: 'Geri al',
-  undone: 'Eski haline getirildi.',
+  undone: 'Eski hâline getirildi.',
   close: 'Kapat',
   notMoved: 'Taşınmadı: {why}',
   cannotMove: 'Bunu değiştiremezsiniz.',

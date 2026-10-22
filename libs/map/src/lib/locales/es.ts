@@ -7,7 +7,7 @@ import type { FormMapLabels, ListMapLabels, MapLabels } from '../labels';
  */
 export const map: MapLabels = {
   mapOf: '{label}, mapa',
-  mapKeys: 'Las teclas de flecha mueven el mapa. Más y menos acercan y alejan.',
+  mapKeys: 'Las teclas de flecha mueven el mapa. Las teclas + y - lo acercan y lo alejan.',
   placeKeys: 'Presione Enter para poner el lugar en el centro del mapa.',
   zoomIn: 'Acercar',
   zoomOut: 'Alejar',
@@ -17,7 +17,7 @@ export const map: MapLabels = {
   searchFailed: 'La búsqueda no respondió. Inténtelo de nuevo.',
   myLocation: 'Mi ubicación',
   locating: 'Buscando su ubicación…',
-  locationBlocked: 'Este sitio no puede pedir su ubicación.',
+  locationBlocked: 'Este sitio no tiene permiso para pedir su ubicación.',
   locationFailed: 'No se pudo encontrar su ubicación.',
   locatedWithin: 'Se colocó a unos {distance} de donde está usted. Arrastre el marcador al lugar correcto.',
   kilometres: '{n} km',

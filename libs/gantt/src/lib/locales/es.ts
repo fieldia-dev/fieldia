@@ -34,7 +34,7 @@ export const es: GanttLabels = {
   stretched: '{name} ahora termina el {when}.',
   started: '{name} ahora empieza el {when}.',
   undo: 'Deshacer',
-  undone: 'Se ha restablecido como estaba.',
+  undone: 'Se restableció como estaba.',
   close: 'Cerrar',
   notMoved: 'No se movió: {why}',
   cannotMove: 'No puede modificar este registro.',
