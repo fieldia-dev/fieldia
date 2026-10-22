@@ -15,6 +15,339 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.31.0 — 2026-10-22
+
+**The study's "nice to have" list, done: lists people work in all day and a
+Gantt timeline, boxes for the values people type, surveys that behave like the
+tools people know, films, sounds, codes and pins, forms on the open web, a
+record's daily comforts, and Fieldia for the developers who adopt it — under a
+strict Content-Security-Policy, tested with its own kit, first painted on a
+server, started from a schema.** Turkish, Persian, Urdu and Spanish join
+English, Arabic, German and French — machine-assisted, not yet reviewed by a
+native speaker. The page format is 0.10; a page of 0.1 to 0.9 is read as it is.
+
+**Lists people work in all day.** Shift and a header's press adds its column to
+the order — each column in it numbered (1, 2, 3) and said ("sorted 2 of 3,
+descending"), Shift with Enter or Space from the keys. **Saved views on your
+server, shared with the team** (`views`, `saveView`, `deleteView`): the search
+bar's menu lists the person's own and the team's ("Shared by Mona Adel"), each
+putting back its search, order and columns; Save takes a name, Use by default
+and Share with the team; the list opens on the person's default, else the
+team's; without the members, the 0.20 favourites are kept in the browser as
+before. **A row opened in place** (`detail`) to its lines or to the records
+pointing at it, a page at a time, by the arrow before its name or Right and
+Left. **Rows re-ranked by hand** (`sequenceField`): a grip, or Alt and an arrow,
+the fewest ranks written through `writeMany`, each move said. **Rows loaded as
+the list is scrolled** (`endless`), its count kept ("1–60 of 1,284"), Show 30
+more at the end for the keys. **A tree too big for a page** (`loadChildren`): a
+parent's children asked as it opens, counted by `groups`, a search's matches
+named under their parent. The views come in `fieldia.views.js`, the rows opened,
+ranked and loaded in `fieldia.rows.js`. In the designer: a list's Rows people
+work in. Demos: orders reviewed in place, a clinic's waiting room, an activity
+log, a chart of accounts; the customers' Shift-sorting and the sales team's
+shared views.
+
+**A Gantt timeline** (@fieldia/gantt). A list with `gantt` offers Timeline on
+its view switcher, beside the table, the calendar and the map: each record a bar
+on an axis of days, weeks or months, grouped under headings that fold away
+(`group`), coloured (`colour`), an arrow from each record it waits for
+(`dependsOn`, finish to start) — red and dashed where a bar starts too soon — a
+line for today and Today. A bar is dragged, or stretched by either end, by whole
+days, Escape putting it back; from the keys ↑↓ reach a bar, ←→ move it a day,
+Shift with them its end, Enter opens it — a run of presses saved once they rest,
+one save, one Undo. Each move saves only the fields it changed (`partial`, with
+the row's version); a record the source locks stays still and says why. On the
+page's clock, right to left, the whole plan on paper. It loads in a chunk of its
+own (`ganttListViews()`). In the designer: a list's Timeline. Demo: a café's
+fit-out.
+
+**Boxes for the values people type.** A date of a month alone or a year alone
+(`precision`), and Hijri (Umm al-Qura) days shown and typed beside the Gregorian
+day kept (`hijri`), in the months part. **Masks as you type** (`options.mask`: a
+national ID, an IBAN, a plate — a wrong key refused with why, a paste laid out,
+nothing typed lost) and **a one-time code's boxes** (`"widget":
+"one-time-code"`: a box per character, a pasted code across them, the phone's
+autofill), in the typed part. **Amounts in shorthand** (`options.shorthand`:
+"3.5m", "500k", "٣٫٥ مليون", said as typed). **Options with a second line, an
+icon or a colour** (`caption`, `icon`, `color`) on radios, checkboxes and
+Fieldia's own lists — a dropdown whose options have any is Fieldia's own list —
+and a link's suggestions with each record's picture or colour, details and
+aside; an option is named by its words alone. **A checkbox tree** (`"widget":
+"tree"` on a many2many): branches ticked whole or in part, search, the keys of a
+tree, `keeps` all, top or leaves. Demos: a flat let in Riyadh; a lead's areas
+wanted.
+
+**Surveys that behave like the tools people know.** **Quiz results** (`quiz`): a
+score, each question marked right, wrong or not answered with its points and
+feedback, the right answer to one missed, or "results after review" — your
+server may mark it (`SubmitResult.quiz`). **A review before sending**
+(`review`): every answer by step, each with Edit, then Send. **One question at a
+time** (`flow: "one"`): a screen each, a pick moving on by itself, letters to
+pick, Enter and the arrows, "Question 3 of 7". **Random order and N of M**
+(`order: "random"`, `draw`, `fixed`), drawn per respondent (`seed`), kept in
+drafts and sent as `order`. **Time limits** (`timeLimit`) for a form or a step:
+Start, a countdown, one warning, then sent as they stood or locked — the page
+says which. They come in `fieldia.surveyflow.js`, so a page of a slider or a
+ranking alone never downloads them. In the designer: the Rules tab and each
+question's settings. Demos: a clinic's staff training check; a home search one
+question at a time.
+
+**Films, sounds, codes and pins.** A film among a field's files shows its poster
+(`FileValue.poster`, else the frame at half a second) and plays in the dialog; a
+sound plays in place in a list. **A voice note or a short video recorded on the
+page** (`options.record`, `maxSeconds`): the microphone or the camera asked for,
+a refusal said with Try again, the time against the limit, played back, kept as
+a picked file is, asked before it is let go — in `fieldia.record.js`, loaded as
+Record is pressed. **A value shown as a QR code or a Code 128 barcode**
+(`"widget": "qrcode"` / `"barcode"`; `level`, `size`, `showValue`), drawn as SVG
+by Fieldia's own encoders, black on white, named — in `fieldia.codes.js`. **Pins
+with notes on a picture** (`"widget": "pins"`: `image` or `imageField`, `alt`,
+`maxPins`, `noteLabel`) — a face chart, a floor plan — placed by pointer or
+keyboard, listed for screen readers, in `fieldia.pins.js`. Demos: a site visit,
+an event ticket, a face chart.
+
+**Forms on the open web.** **Fields a page's link fills** (`prefill.fromUrl`):
+campaign and agent codes in hidden fields, sent with the answers, never over
+what the person typed. **Proof of an email or a phone by a code**
+(`options.verify`, your source's `sendCode` and `checkCode`): the ways you
+offer, expiry, tries left, Send again after its wait, nothing sent unconfirmed.
+**A payment the answers wait for** (`payment`, your source's `pay`): the amount
+and its currency, your own checkout opened or embedded, paid, failed or
+cancelled said, nothing sent unpaid — your checkout handed the values as the
+send will carry them, those a link filled among them; Fieldia holds no keys and
+no provider's code. **`<fieldia-form>` and `fieldia-embed.js`**: a form on any
+page with one script tag, and a frame on another site that grows with its form
+and tells its events. **An offline outbox** (`outbox`): saves, sends and photos
+kept on the device without signal, in IndexedDB, sent in order when it is back,
+never lost on a reload, a refusal kept to try again or discard. Each in a part
+of its own (`fieldia.prefill.js`, `verify`, `pay`, `element`, `outbox`). React,
+Vue and Angular take `url`. Demos: a unit's enquiry from a broker's link; a
+viewing report with no signal; a form embedded.
+
+**A record's daily comforts.** **Undo and Redo while filling**: Ctrl+Z (⌘Z)
+takes back the record's last change — a field, a cell, a line added, removed or
+moved; typing on in one box is one change until it is left — Ctrl+Shift+Z or
+Ctrl+Y makes it again; inside a box typed in the browser's own undo comes first,
+a formatted text keeps its own; `form.undo()`, `redo()`, `history()`,
+`keys.undo: false`. **Undo on the toast after a one-tap press** (a button's or a
+menu item's `undo`): its words with Undo for a few seconds in place of asking
+first. **Record templates** (`templates`): Save as template…, a new record from
+one, Delete templates… — through your source's `templates`, `saveTemplate`,
+`deleteTemplate`, else the viewer's preferences. **A repeat field** (`"widget":
+"repeat"`: an iCalendar RRULE said in words, in lists too) and **a week's
+opening hours** (`"widget": "hours"`: shifts, breaks, closed days, Copy to all
+days — what booking slots read), in `fieldia.schedule.js`. **Who else is here,
+and changes arriving live** (your source's `presence` and `subscribe`): a change
+made elsewhere laid on the record and said ("Mona Adel changed Price."), the
+0.22 conflict after a change of the person's; the chatter's `subscribe` and the
+record's can be one function of your app's, each taking its own kind of change.
+Demos: a treatment course with its sessions and templates; a branch's opening
+hours.
+
+**For the developers who adopt it.** **A strict Content-Security-Policy**: every
+`<style>` Fieldia adds carries the page's nonce (the `nonce` option on the
+viewer, the components and the designer; else `<meta property="csp-nonce">`; the
+one-tag script its own tag's); no style attribute written; no code made from
+text; a formatted text keeps its looks under a policy — and every feature of
+0.29 and 0.31 that colours or places what it draws passes the strict test page
+in three engines. **@fieldia/testing**: `fill`, `pick`, `check`, `press`,
+`errorsOf`, `valueOf` for Testing Library and Playwright, and `fieldia-check`
+for stored pages in CI. **A server's first paint** (`@fieldia/viewer/server`'s
+`firstPaint`, `firstPaint` on React and Vue): the form as plain HTML with its
+values before any script runs, `mountViewer` mounting over it without a flash or
+lost typing. **`pageFromSchema`** and the designer's Start from a schema…: a
+JSON Schema, an OpenAPI operation or a model's fields made a page, what was kept
+with a change and what was left out said.
+
+**Four more languages, not yet reviewed.** Turkish, Persian, Urdu and Spanish
+(`tr`, `fa`, `ur`, `es`): every word Fieldia says — the viewer's, the widgets',
+the messages', the designer's, the chatter's, the map's, the calendar's and the
+timeline's — machine-assisted, each table marked so, not yet reviewed by a
+native speaker. Persian and Urdu run right to left and their digits (۰–۹, ٫ ٬)
+are read as numbers; both list with the Arabic comma, Persian quotes «…»,
+Turkish dates are typed with dots. **Fetched where they are spoken**: in the
+packages each language's words come in chunks of their own — `wordsReady(tag)`
+fetches every package's; `mountViewer`, the chatter and a list's map wait for
+them and draw in the language from the first paint, never English first;
+`designerWordsReady` for the designer; the calendar and the timeline fetch
+theirs with their view. In the one-tag script they are add-ons, as Arabic's,
+German's and French's are: `fieldia.tr.js`, `fieldia.fa.js`, `fieldia.ur.js`,
+`fieldia.es.js`. **Days on the Gregorian calendar everywhere** (`dayTag`):
+Persian's own calendar in a browser is the Solar Hijri, under which a date
+showed as "23 Mehr 1405" and never read back. **A week starts where its reader
+is** (`firstWeekday(language, page?, readers?)`): the page's region (`en-GB`),
+else the reader's where their browser asks for the page's language with one,
+else the region CLDR has the language most spoken in — for every week Fieldia
+draws: a list's periods and week groups, the calendar and the timeline, a date's
+and a range's calendar, booking slots, a week's hours, a repeat's days, a
+chatter's history. Demos and the site's live form offer the four, marked
+unreviewed.
+
+**Smaller things:**
+
+- **A list prints the view it shows** — its table, its gallery, its calendar,
+  its map, its timeline, or its table and its map side by side — and leaves the
+  others off paper: a calendar shown alone printed a blank page.
+- **One Undo for an accepted proposal**: AI help's own Undo and Ctrl+Z each take
+  it back, whichever is pressed first, and the other has nothing of it left; a
+  photo set's move is a change Ctrl+Z takes back; a list's cell saved as its row
+  is left is a save of its own, which Ctrl+Z leaves — a list's paste is taken
+  back by its own Undo and Ctrl+Z for a few seconds after (0.30.1), never by the
+  form's.
+- **A text kept in several languages is typed as words**: a mask or shorthand on
+  it, or `prefill` naming it, is refused with why; a record template keeps it
+  whole; `pageFromSchema` keeps the languages Fieldia's own fields name and says
+  a backend's `translate: true` is typed in one.
+- **A saved view keeps the filters AI help read from words**, and putting it on
+  never asks the model again.
+- **Every pill tone reads at 4.5:1** over a row at rest, under the pointer or
+  ticked, in every skin, theme and scheme.
+- **`tools/serve.mjs` answers byte ranges**, as Safari needs to play and seek.
+- **Parts join a form through one registry and one kit** (`formJoins`,
+  `FormInner`): the fields a link fills, proof by a code, a payment, an outbox,
+  a survey's flow, a record's approvals and the record made live each answer at
+  their moments through one hook (`FormJoin`); a page's limits and Undo take the
+  same kit at moments of their own.
+- **Smaller one-tag script**: `uploadTo`'s work comes in the files part; an
+  option's mark and second line in the choice part; the parts take the main
+  script's names by their place in a table, never by their words (every part a
+  little smaller too).
+
+**Fixes:** the presence band, empty while nobody else is here, is hidden; the
+outbox's kept photos are made files through the files part (0.29 moved where
+they are made).
+
+**And:** the page format is **0.10** (`FORMAT_VERSION`): it only added — a
+list's `detail`, `sequenceField`, `endless`, `loadChildren` and `gantt`; a
+date's `precision` and `hijri`; an option's `caption`, `icon` and `color`; a
+field's `quiz`; a page's `quiz`, `review`, `flow`, `timeLimit`, `prefill`,
+`payment`, `outbox` and `templates`; a step's and a group's `order`, `draw` and
+`fixed`; a button's `undo` — so a 0.1 to 0.9 page is read as it is, and
+`upgradePage` writes 0.10 in it. Format versions are compared as numbers: 0.10
+is newer than 0.9.
+
+**Not done yet** (each feature's docs say it): rows of an endless list are not
+virtualised, and a tree's match under a search names its parent alone; the
+timeline's other link kinds, moving what waits, progress and the critical path;
+a month date's stand-in reads whole days, Import and grid paste read neither
+months nor shorthand; a quiz's pass mark, a saved form placed in a step in the
+review; the attachment preview of films, recording in a table line's cell, pins
+of kinds or colours; Angular's `firstPaint`; Monaco's sheets under a policy.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- An app that serves `fieldia.js` itself serves the new parts beside it:
+  `fieldia.views.js`, `fieldia.rows.js`, `fieldia.months.js`,
+  `fieldia.typed.js`, `fieldia.surveyflow.js`, `fieldia.record.js`,
+  `fieldia.codes.js`, `fieldia.pins.js`, `fieldia.prefill.js`,
+  `fieldia.verify.js`, `fieldia.pay.js`, `fieldia.element.js`,
+  `fieldia.outbox.js`, `fieldia.undo.js`, `fieldia.templates.js`,
+  `fieldia.schedule.js` and `fieldia.live.js`, and `fieldia-embed.js` for a
+  frame on another site. `uploadTo`'s work is in `fieldia.files.js`.
+- `PART_RANK`, one order: print 0, lines 1, business 2, survey 3 (and a survey's
+  flow), files 4, evidence 5, phone 6, slots 7, import 8, duplicates 9, limits
+  10, approvals 11, assist 12, photos 13, languages 14, months 15, typed 16,
+  record 17, codes 18, pins 19, verify 20, pay 21, outbox 22, schedule 23,
+  themes 24, quiet 25, picker 26, head 27, groups 28, text 29, surveyLooks 30,
+  cards 31, scan 32. A list's views' and rows' sheets go right after the list's
+  own.
+- Shift and a header's press adds a key to a list's order instead of replacing
+  it; a header carries `data-sort`, and only the first key's `aria-sort`.
+- Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y on a form are Fieldia's outside a box typed
+  in, unless `keys.undo` is false; the undo part is asked for at the first focus
+  into a form. `form.undo()` waits for it.
+- A video or audio file shows a film's picture or a sound's player where 0.30
+  showed an icon. A dropdown whose options have a `caption`, `icon` or `color`
+  is Fieldia's own list.
+- Fieldia builds its zod schemas in zod's `jitless` mode, given back as it was
+  once they are made.
+- New optional data source members: `views`, `saveView`, `deleteView`,
+  `sendCode`, `checkCode`, `pay`, `templates`, `saveTemplate`, `deleteTemplate`,
+  `subscribe`, `presence`. Requests gain `verified`, `payment`, `queued`,
+  `order`, `started`, `timeUp`; `SubmitResult` gains `quiz`; `FileValue` gains
+  `poster`; `ActionHost.say` takes `{ undo }` and gains `pay`; `ActionResult`
+  gains `undo`.
+- `FormState` gains `order`, `timers`, `timeUp`, `verified`, `paid`, `outbox`,
+  `present`; `FormEvents` `arrived`; `Form` gains `joined`, `validate(within?)`,
+  `startTimer`, `countdown`, `undo`, `redo`, `history`; `FormOptions` `seed`,
+  `url` and `outbox`.
+- `MemoryDataSource` has its view members only with `views`, its template
+  members only with `templates`, and `subscribe`, `presence`, `arrive` and
+  `leave` only with `live`.
+- A week starts where its reader is, where 0.30 started it on Saturday for
+  Arabic and on Monday for every other language (a date's and a range's calendar
+  and booking slots on Monday always; a chatter's history where the browser
+  said): the page's own region if its `language` names one (`en-GB`: Monday),
+  else the reader's if their browser asks for the page's language with a region,
+  else CLDR's. So an `en` page now starts its weeks on Sunday in New York or for
+  a reader with no region, on Monday in London, on Saturday in Cairo; an `ar`
+  page on Saturday as before, on Sunday for a reader in Riyadh; `de` and `fr` on
+  Monday as before. It moves a list's "this week" and its week groups, the
+  calendar (unless `firstDay`), a date's and a range's calendar, booking slots
+  and a chatter's history. A date's calendar with `weekNumbers: true` keeps ISO
+  rows, Monday first. A page that wants 0.30's Monday names its region
+  (`"language": "en-GB"`), or its calendar's `firstDay: 1`.
+- `Locale` gains `tr`, `fa`, `ur` and `es`: an app's own `Record<Locale, …>`
+  names them. In the packages their words come in chunks of their own:
+  `MESSAGES.tr`, `WIDGET_LABELS.tr` and the like hold English's words until
+  `wordsReady('tr')` has settled (`mountViewer` awaits it; an app that draws
+  with them itself awaits it first). An app that serves `fieldia.js` itself
+  serves `fieldia.tr.js`, `fieldia.fa.js`, `fieldia.ur.js` and `fieldia.es.js`
+  where its pages speak them.
+- Days are written on the Gregorian calendar whatever the language's tag says
+  (`dayTag`): a full tag like `ar-SA` on save-safety's time words was Umm
+  al-Qura (the browser's default there) and is now Gregorian.
+- New exports: @fieldia/core's `formJoins`, `pageFromSchema`, `schemaChoices`,
+  `schemaNoteWords`, `quizResults`, `drawOrder`, `surveyFlow`, `formSurveyPart`,
+  `pressUndoPart`, `recordLivePart`, `linkParams`, `linkValue`, `linkValues`,
+  `indexedOutbox`, `memoryOutbox`, `monthNamed`, `monthWords`, `hijriWords`,
+  `precisionOf`, `dayTag`, `listComma`, `firstWeekday`, `wordsReady`,
+  `wordsInChunks`, `tableInChunks`, `wordsComing`, `wordsNotYet`,
+  `ListDetailSchema`, `ListGanttSchema`, `MaskOptionsSchema`,
+  `OneTimeCodeOptionsSchema`, `ShorthandOptionsSchema`,
+  `CheckTreeOptionsSchema`, `CodeOptionsSchema`, `PinsOptionsSchema`,
+  `RecordOptionsSchema`, `PagePrefillSchema`, `PagePaymentSchema`,
+  `PageQuizSchema`, `QuizQuestionSchema`, `PageReviewSchema`, `TimeLimitSchema`
+  and their types (`FormInner` and `FormJoin` among them); @fieldia/widgets'
+  `monthsPart`, `typedPart`, `recordPart`, `codesPart`, `pinsPart`,
+  `schedulePart`, `fieldiaStyle`, `styleNonce`, `useStyleNonce`,
+  `FIELDIA_STYLE_SHEETS`, `showHtml` and `PART_CELL_WORDS`; @fieldia/viewer's
+  `viewsPart`, `rowsPart`, `surveyFlowPart`, `templatesPart`, `livePart`,
+  `elementPart` and `defineFieldiaForm`, and `@fieldia/viewer/server`'s
+  `firstPaint` and `firstPaintStyles`; @fieldia/designer's `designerWordsReady`.
+- New packages, at 0.31.0 with the others: **@fieldia/gantt** (`ganttListViews`,
+  the timeline in a chunk of its own) and **@fieldia/testing** (`fieldia`,
+  `readField`, `matchFields`, `labelsOf`; `@fieldia/testing/playwright`;
+  `@fieldia/testing/pages`' `checkPageFiles`, `pageFiles`, `runCheck`,
+  `resultLines`, and the `fieldia-check` command).
+- A page the designer saves says `"fieldia": "0.10"`: Fieldia 0.30 refuses it as
+  newer than it reads. An app that keeps pages for older Fieldias keeps them in
+  0.9 (nothing 0.10 adds is in them).
+- An app that gives a whole `labels` object adds the new words (`addLanguage`
+  fills them from English).
+
+**Size:** `fieldia.js` 519.6 KB, 170.8 gzipped (0.30.1: 511.6, 167.9). The eight
+features merged measured 525.5, 173.2; the parts joining a form through one kit,
+an option's mark and `uploadTo`'s work in the parts that use them, and the parts
+reading the main script's names by their place in a table took 2.95 KB gzipped
+off (every part a little smaller for it), and the four languages and 0.30.1's
+fixes put 0.48 back. New parts, gzipped: `fieldia.views.js` 2.4 KB, `rows` 7.1,
+`months` 5.6, `typed` 5.7, `surveyflow` 12.3, `record` 4.4, `codes` 5.2, `pins`
+4.0, `prefill` 2.0, `verify` 4.7, `pay` 3.3, `element` 2.4, `outbox` 4.0,
+`templates` 2.9, `schedule` 7.9, `live` 2.2, `undo` 3.4; and `fieldia-embed.js`
+0.9 for a frame on another site. Of the parts, the list's grew with several sort
+keys, the views' and rows' hooks and the week's first day (45.0 KB gzipped, from
+42.4), the files' with a film's poster and player and `uploadTo`'s work (17.3,
+from 14.9), the path's with the checkbox tree (8.2, from 6.3), the date's with
+the week's first day (9.1, from 8.4), the memory source's with views, templates
+and live changes (8.7, from 7.4), the choice part's with an option's mark and
+second line (4.7, from 4.6); the rest are 0.1 to 0.6 smaller, the relations' as
+it was. A language's add-on is 17.5 to 22.3 KB gzipped (0.30.1: 14.1 to 16.2),
+the four new ones among them. @fieldia/gantt is 0.8 KB gzipped with the page and
+14.1 for its timeline, in a chunk of its own; in the packages, each new
+language's words are chunks of their own (18 to 23 KB gzipped for the viewer's),
+fetched where it is spoken.
+
 ## 0.30.1 — 2026-10-22
 
 **The owner's walk of 0.29, mended.** A business owner walked fieldia.dev's
