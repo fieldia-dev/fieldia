@@ -2,6 +2,10 @@ import * as z from 'zod';
 import { FilterItemSchema, type FilterItem } from './field';
 import { JsonValueSchema, type JsonValue } from './json';
 import type { Modifier, Tone } from './layout';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
 
 /**
  * What a press, a change or a moment of the form does: steps, run in order,

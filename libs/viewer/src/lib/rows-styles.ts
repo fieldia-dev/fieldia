@@ -1,3 +1,5 @@
+import { fieldiaStyle } from '@fieldia/widgets';
+
 /**
  * The rows part's sheet (rows-part.ts): what a list's row opens to under it — its toggle before the row's name (with
  * its words in a card on a phone), a table of what it holds, to read, its pager — Not ranked among the parts' sheets
@@ -68,9 +70,7 @@ tbody[data-ranking] > .fd-list-row:not([data-lifted]) { transition: transform 0.
 /** The rows' sheet in a document, once, right after the list's own (and its cards', which it reshapes for a phone). */
 export function installRowsStyles(doc: Document): void {
   if (doc.getElementById('fd-list-rows-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-list-rows-styles';
-  style.textContent = ROWS_STYLES;
+  const style = fieldiaStyle(doc, ROWS_STYLES, 'fd-list-rows-styles');
   const after = doc.getElementById('fd-list-cards-styles') ?? doc.getElementById('fd-list-styles');
   if (after) after.after(style);
   else (doc.head ?? doc.documentElement).append(style);

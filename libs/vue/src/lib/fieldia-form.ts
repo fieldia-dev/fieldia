@@ -1,5 +1,6 @@
 import type { DataSource, DraftStore, Field, FieldNode, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, PageLink, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
 import { mountViewer, newestFunctions, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
+import { firstPaint as drawFirstPaint, type FirstPaintOptions } from '@fieldia/viewer/server';
 import type { PreferenceStore, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
   computed,
@@ -120,12 +121,20 @@ export const FieldiaForm = defineComponent({
     /** The app's own functions, which the page's expressions call by name: each call reaches the newest given. */
     functions: { type: Object as PropType<ViewerOptions['functions']>, default: undefined },
     values: { type: Object as PropType<Values>, default: undefined },
+    /**
+     * The form's first paint, rendered with the component — on the server too, as Nuxt renders it — from the page and
+     * these values (the record as the server loaded it): plain HTML in Fieldia's look, which the viewer mounts over once
+     * it is drawn, keeping what was typed in it meanwhile. `true` paints `values`. Read once, as the component is made.
+     */
+    firstPaint: { type: [Boolean, Object] as PropType<boolean | Omit<FirstPaintOptions, 'skin' | 'locale' | 'dir' | 'nonce'>>, default: undefined },
     /** The skin — underline, outlined or quiet: the page's own when left out, else its theme's, else underline. */
     skin: { type: String as PropType<Skin>, default: undefined },
     /** A theme in the style of a known design system, over the page's own. */
     theme: { type: String as PropType<Theme>, default: undefined },
     /** The host's own colours, corners and font, over everything else (`TOKEN_NAMES`). */
     tokens: { type: Object as PropType<Tokens>, default: undefined },
+    /** The page's Content-Security-Policy nonce: every <style> Fieldia adds carries it (the viewer's `nonce`). */
+    nonce: { type: String, default: undefined },
     dir: { type: String as PropType<'ltr' | 'rtl'>, default: undefined },
     locale: { type: String as PropType<Locale>, default: undefined },
     labels: { type: Object as PropType<Partial<ViewerLabels>>, default: undefined },
@@ -209,6 +218,10 @@ export const FieldiaForm = defineComponent({
     const host = ref<HTMLElement>();
     const portals = shallowRef<Portal[]>([]);
     let handle: ViewerHandle | null = null;
+    // The first paint, drawn once — the same HTML on the server and as the client hydrates it — then the viewer's to replace.
+    const asked = props.firstPaint;
+    const skin = props.skin ?? props.page.look?.skin;
+    const painted = asked ? drawFirstPaint(toRaw(props.page), { values: props.values ? toRaw(props.values) : undefined, ...(asked === true ? {} : toRaw(asked)), ...(skin ? { skin } : {}), locale: props.locale, dir: props.dir, nonce: props.nonce }) : undefined;
 
     function mount() {
       const element = host.value;
@@ -276,6 +289,7 @@ export const FieldiaForm = defineComponent({
         skin: props.skin,
         theme: props.theme,
         tokens: props.tokens,
+        nonce: props.nonce,
         dir: props.dir,
         locale: props.locale,
         labels: props.labels,
@@ -361,7 +375,7 @@ export const FieldiaForm = defineComponent({
     });
 
     return () => [
-      h('div', { ref: host }),
+      h('div', painted ? { ref: host, innerHTML: painted } : { ref: host }),
       ...portals.value.map((portal) => h(Teleport, { to: portal.element, key: portal.key }, [h(Contained, { render: portal.render, fail: portal.fail, drew: portal.drew })])),
     ];
   },

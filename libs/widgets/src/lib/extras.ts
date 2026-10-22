@@ -4,6 +4,8 @@ import { fillIn } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 import { jsonProblem, readJson } from './json-problem';
 import { linkAddress, sanitizeHtml } from './sanitize';
+import { appendHtml, heldHtml, restyle, showHtml, wearStyles } from './style-attributes';
+import { styleNonce } from './style-nonce';
 import { partFactory, textPart } from './widget-parts';
 
 export { linkAddress, sanitizeHtml } from './sanitize';
@@ -70,6 +72,8 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
   const withToolbar = node.options?.['toolbar'] !== false && node.options?.['toolbar'] !== 'never';
   let last = '';
   area.addEventListener('input', () => {
+    // An alignment the browser's editing wrote, shown under a strict policy too (style-attributes.ts).
+    restyle(area);
     const clean = sanitizeHtml(area.innerHTML, document);
     last = clean;
     form.setValue(name, clean.trim() === '' ? null : clean);
@@ -83,14 +87,15 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
     event.preventDefault();
     const selection = document.getSelection();
     const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
-    const put = (clean: string, putHtml = (_box: HTMLElement, html: string, doc: Document): unknown => doc.execCommand?.('insertHTML', false, html)) => {
+    // Under a strict Content-Security-Policy, its styles held as it goes in and put on through their style objects.
+    const put = (clean: string, putHtml = (box: HTMLElement, html: string, doc: Document): unknown => (doc.execCommand?.('insertHTML', false, styleNonce(doc) ? heldHtml(html) : html), wearStyles(box))) => {
       if (document.activeElement === area && range && area.contains(range.commonAncestorContainer)) {
         selection?.removeAllRanges();
         selection?.addRange(range);
         putHtml(area, clean, document);
       }
       // The person has gone on elsewhere: the table at the text's end, the focus left where it is.
-      else area.insertAdjacentHTML('beforeend', clean);
+      else appendHtml(area, clean);
       area.dispatchEvent(new Event('input', { bubbles: true }));
     };
     // Once the part has come, its load answers before the next key: the paste is put in at once.
@@ -98,7 +103,7 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
   });
   area.addEventListener('blur', () => {
     // Show what was stored: anything unsafe that was typed or pasted is gone.
-    if (area.innerHTML !== last) area.innerHTML = last;
+    if (area.innerHTML !== last) showHtml(area, last);
   });
   const toolbar = withToolbar ? formattingToolbar(area, document, labels) : null;
   let element: HTMLElement = area;
@@ -121,7 +126,7 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
       }
       const clean = sanitizeHtml(typeof state.value === 'string' ? state.value : '', document);
       if (clean !== last || document.activeElement !== area) {
-        if (area.innerHTML !== clean) area.innerHTML = clean;
+        if (area.innerHTML !== clean) showHtml(area, clean);
         last = clean;
       }
       area.setAttribute('contenteditable', String(!state.readonly));

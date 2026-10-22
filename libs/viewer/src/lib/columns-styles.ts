@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 /**
  * The columns part's sheet (columns-part.ts): a list whose columns people shape — the Columns menu at its header's end,
  * a header's grip, the header and the first column kept in view while the rows scroll. Not ranked among the parts'
@@ -77,9 +78,7 @@ export const COLUMN_STYLES = `
 /** The columns' sheet in a document, once, right after the list's own. */
 export function installColumnStyles(doc: Document): void {
   if (doc.getElementById('fd-list-columns-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-list-columns-styles';
-  style.textContent = COLUMN_STYLES;
+  const style = fieldiaStyle(doc, COLUMN_STYLES, 'fd-list-columns-styles');
   const list = doc.getElementById('fd-list-styles');
   if (list) list.after(style);
   else (doc.head ?? doc.documentElement).append(style);

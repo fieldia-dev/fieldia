@@ -1,3 +1,5 @@
+import { fieldiaStyle } from '@fieldia/widgets';
+
 /**
  * A list's Gantt timeline in Fieldia's tokens, so a theme, a host's own
  * tokens and the dark scheme reach it: each bar a tint of the surface edged
@@ -131,8 +133,6 @@ export const GANTT_CSS = `
 /** The timeline's stylesheet, once per document, before the page's own so an app's rule wins. */
 export function installGanttStyles(doc: Document) {
   if (doc.getElementById('fieldia-gantt-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fieldia-gantt-styles';
-  style.textContent = GANTT_CSS;
+  const style = fieldiaStyle(doc, GANTT_CSS, 'fieldia-gantt-styles');
   doc.head.prepend(style);
 }

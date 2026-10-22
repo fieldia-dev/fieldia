@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 import type * as Leaflet from 'leaflet';
 import type { Locale, MapLayer, MapRegions, ResolvedFilter } from '@fieldia/core';
 import { fill, type MapLabels } from './labels';
@@ -136,9 +137,7 @@ path.fd-map-region:focus-visible { stroke: var(--fd-focus); stroke-width: 4; str
 
 function installRegionStyles(doc: Document) {
   if (doc.getElementById('fieldia-map-region-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fieldia-map-region-styles';
-  style.textContent = REGIONS_CSS;
+  const style = fieldiaStyle(doc, REGIONS_CSS, 'fieldia-map-region-styles');
   (doc.getElementById('fieldia-map-styles') ?? doc.head.lastElementChild)?.after(style);
   if (!style.isConnected) doc.head.append(style);
 }

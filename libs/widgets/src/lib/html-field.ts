@@ -4,6 +4,7 @@ import { drawIcon } from './icons';
 import { fillIn, maker, setAttr } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { sanitizeHtml } from './sanitize';
+import { showHtml } from './style-attributes';
 import { TEXT_TOOLS, type TextTool } from './text-tools';
 import type { Widget, WidgetContext } from './widgets';
 
@@ -133,7 +134,7 @@ export function modernHtml(context: WidgetContext): Widget {
   const openAtRest = () => rich && !readonly && !clean(held).replace(/<br\s*\/?>|<\/?(p|div|span)>|&nbsp;|\s/gi, '');
   function render(value: string | null) {
     const shown = decorateLinks(clean(value), document);
-    if (view.innerHTML !== shown) view.innerHTML = shown;
+    if (view.innerHTML !== shown) showHtml(view, shown);
     view.classList.toggle('fd-blank', !clean(value));
   }
   /** The view or the editor, and Edit or Done, as it stands. */

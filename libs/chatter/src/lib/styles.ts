@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 /** The chatter's look, on the same tokens as the form beside it. */
 export const CHATTER_STYLES = `
 .fd-chatter { display: grid; gap: 14px; font-family: var(--fd-font); color: var(--fd-text); font-size: 14px; min-width: 0; }
@@ -101,8 +102,6 @@ a.fd-attachment-file:hover { border-color: var(--fd-accent); }
 /** Puts the chatter's look in the document once. */
 export function installChatterStyles(doc: Document): void {
   if (doc.getElementById('fd-chatter-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-chatter-styles';
-  style.textContent = CHATTER_STYLES;
+  const style = fieldiaStyle(doc, CHATTER_STYLES, 'fd-chatter-styles');
   doc.head.append(style);
 }

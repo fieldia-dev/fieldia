@@ -1,5 +1,5 @@
 import { fill } from '@fieldia/core';
-import { drawIcon } from '@fieldia/widgets';
+import { drawIcon, fieldiaStyle } from '@fieldia/widgets';
 import type { ChatterContext } from './chatter';
 import type { Channel, ChatterChange, ChatterMessage, Delivery, RecordRef, ReplyChannel } from './source';
 
@@ -390,8 +390,6 @@ export const CHANNEL_STYLES = `
 /** Puts the channels' look in the document once, after the chatter's own. */
 export function installChannelStyles(doc: Document): void {
   if (doc.getElementById('fd-chatter-channels-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-chatter-channels-styles';
-  style.textContent = CHANNEL_STYLES;
+  const style = fieldiaStyle(doc, CHANNEL_STYLES, 'fd-chatter-channels-styles');
   (doc.head ?? doc.documentElement).append(style);
 }

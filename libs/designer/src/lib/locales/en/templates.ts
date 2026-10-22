@@ -20,6 +20,48 @@ export const templates = {
   notAPage: (issues: string) => `This is not a page the designer can open: ${issues}`,
   surveyNotScreen: 'A survey is made of pages of questions: this is a screen of sections',
   screenNotSurvey: 'A screen is made of sections: this is a survey’s pages of questions',
+  // ---- starting from a schema (pageFromSchema in @fieldia/core)
+  fromSchema: 'Start from a schema…',
+  schema: {
+    title: 'Start from a schema',
+    lead: (survey: boolean) =>
+      `Paste a JSON Schema, an OpenAPI document or a model’s fields as JSON, or choose its file: each property becomes a ${survey ? 'question' : 'field'} of its kind, with its label, its rules and its default.`,
+    label: 'Schema, as JSON',
+    file: 'Choose a file…',
+    from: 'Start from',
+    start: 'Start',
+    cancel: 'Cancel',
+    close: 'Close',
+    hint: 'schema',
+    fields: (n: number, survey: boolean) => (survey ? (n === 1 ? '1 question:' : `${n} questions:`) : n === 1 ? '1 field:' : `${n} fields:`),
+    kept: 'Kept with a change:',
+    leftOut: 'Left out:',
+    started: (n: number, survey: boolean) => `Started from the schema: ${survey ? (n === 1 ? '1 question' : `${n} questions`) : n === 1 ? '1 field' : `${n} fields`}.`,
+    notJson: (problem: string) => `This is not JSON: ${problem}`,
+    refused: {
+      'not-json-object': 'A schema is a JSON object: a JSON Schema, an OpenAPI document or a model’s fields.',
+      'not-a-schema': 'This is not a JSON Schema, an OpenAPI document or a model’s fields: it has no properties, no paths and no fields with a type.',
+      'not-an-object': 'A page starts from an object, with properties: this schema is not one.',
+      outside: 'This schema refers to one outside it: paste the schema itself.',
+      'no-properties': 'This schema has no properties to ask for.',
+      'no-such-schema': 'The document has no operation or schema of that name.',
+      'nothing-in-document': 'This OpenAPI document has no operation with a body or parameters, and no schemas.',
+    },
+    /** What a schema said that was kept with a change, or left out (`SchemaNote`), said of its property. */
+    note: (code: string, path: string, detail: string): string =>
+      ({
+        renamed: `${path} is named ${detail}: a field’s name has letters, digits and _ alone.`,
+        flattened: `${path}’s properties are fields of their own, in a section of its name.`,
+        json: `${path} is kept as JSON, edited as text: no field holds ${detail}.`,
+        limit: `${path}: ${detail} is not checked by the page; your server checks it.`,
+        format: `${path} is plain text: the format ${detail} is not one Fieldia knows.`,
+        pattern: `${path}’s pattern ${detail} is not a regular expression, so it was left out.`,
+        constant: `${path} is always ${detail}: shown, not asked.`,
+        links: `${path} is links to ${detail} records: the fields of its lines were not given.`,
+        reference: `${path} refers to ${detail}, which is not in the document.`,
+        kind: `${path} holds ${detail}, which no field asks for.`,
+      })[code] ?? `${path}: ${detail}`,
+  },
   // ---- the templates' own words
   feedback: {
     title: 'Feedback',

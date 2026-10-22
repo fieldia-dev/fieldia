@@ -3,7 +3,7 @@ import { bracketMatching, indentOnInput, syntaxHighlighting } from '@codemirror/
 import { Compartment, EditorState, type ChangeSpec, type Extension } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, placeholder } from '@codemirror/view';
 import type { Value } from '@fieldia/core';
-import type { WidgetFactory } from '@fieldia/widgets';
+import { styleNonce, type WidgetFactory } from '@fieldia/widgets';
 import { loadCodeLanguage } from './languages';
 import { codeHighlightStyle } from './palette';
 import { installCodeStyles } from './styles';
@@ -70,6 +70,8 @@ export const textCodeWidget: WidgetFactory = ({ form, name, field, node, id, doc
         keymap.of([...defaultKeymap, ...historyKeymap]),
         node.placeholder ? placeholder(node.placeholder) : [],
         editable.of([]),
+        // CodeMirror's own sheets with the page's nonce, under a policy with no 'unsafe-inline' (style-nonce.ts).
+        EditorView.cspNonce.of(styleNonce(document) ?? ''),
         // Named by the field's label, like every other field; its state said as the form says it. A char
         // field says it is one line: to assistive technology, and to the form, which moves on from it at Enter.
         EditorView.contentAttributes.of({ id, 'aria-labelledby': `${id}-label`, ...(line ? { 'aria-multiline': 'false' } : {}) }),

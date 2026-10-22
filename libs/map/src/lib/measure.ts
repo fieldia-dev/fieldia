@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 import type * as Leaflet from 'leaflet';
 import type { Locale } from '@fieldia/core';
 import { metresBetween, type LatLng } from './geo';
@@ -25,9 +26,7 @@ path.fd-map-measure-trace { stroke-dasharray: 4 6; stroke-opacity: 0.7; }
 
 function installMeasureStyles(doc: Document) {
   if (doc.getElementById('fieldia-map-measure-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fieldia-map-measure-styles';
-  style.textContent = MEASURE_CSS;
+  const style = fieldiaStyle(doc, MEASURE_CSS, 'fieldia-map-measure-styles');
   doc.head.append(style);
 }
 

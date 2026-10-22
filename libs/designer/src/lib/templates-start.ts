@@ -9,6 +9,7 @@ import { designerIcon } from './icons';
 import { kindOfField } from './kinds';
 import { isBlank, type PageTemplate } from './templates';
 import { doneNotice, type DoneNotice } from './templates-notice';
+import { openSchemaDialog } from './schema-start';
 import { setHidden } from './writes';
 
 /**
@@ -19,7 +20,9 @@ import { setHidden } from './writes';
  * undone, the offer is back to pick another. The first part added puts the
  * offer away too. With the app's assistant, a box to describe the form sits
  * under the templates, and once the page has parts, "Ask the assistant…" is
- * in Find anything. An editor places `element` once, above the page.
+ * in Find anything. Beside Start blank, "Start from a schema…" makes the page
+ * from a JSON Schema, an OpenAPI document or a model's fields (schema-start.ts),
+ * said in the same notice with Undo. An editor places `element` once, above the page.
  */
 
 export interface StartOptions {
@@ -66,6 +69,7 @@ export function startHere(options: StartOptions): StartHere {
   const id = `fd-start-${++made}`;
   const list = el('ul', { class: 'fd-start-list', role: 'list' });
   const blank = el('button', { type: 'button', class: 'fd-button fd-start-blank' }, w.startBlank);
+  const fromSchema = el('button', { type: 'button', class: 'fd-button fd-start-schema', 'aria-haspopup': 'dialog' }, w.fromSchema);
   const panel = el(
     'section',
     { class: 'fd-start', 'aria-labelledby': `${id}-title`, hidden: '' },
@@ -97,7 +101,7 @@ export function startHere(options: StartOptions): StartHere {
       })
     : null;
   if (box) panel.append(box.element);
-  panel.append(el('div', { class: 'fd-start-foot' }, blank));
+  panel.append(el('div', { class: 'fd-start-foot' }, blank, fromSchema));
   const element = el('div', { class: 'fd-start-area' }, notice.element, panel);
   /** Put away for good, by Start blank. */
   let dismissed = false;
@@ -142,6 +146,16 @@ export function startHere(options: StartOptions): StartHere {
       })
     );
   }
+  /** "Start from a schema…": its dialog, the page it makes said with Undo. */
+  const askSchema = () =>
+    openSchemaDialog({
+      el,
+      root: options.root,
+      designer,
+      survey: options.survey,
+      onStarted: (_page, fields) => notice.show(w.schema.started(fields, options.survey)),
+    });
+  fromSchema.addEventListener('click', askSchema);
   blank.addEventListener('click', () => {
     dismissed = true;
     panel.hidden = true;
@@ -160,7 +174,7 @@ export function startHere(options: StartOptions): StartHere {
     element,
     notice,
     items() {
-      if (showing(designer.getPage())) return offered().map((template) => ({ label: w.startFrom(template.title), hint: w.template, run: () => pick(template) }));
+      if (showing(designer.getPage())) return [...offered().map((template) => ({ label: w.startFrom(template.title), hint: w.template, run: () => pick(template) })), { label: w.fromSchema, hint: w.schema.hint, run: askSchema }];
       if (!assistant) return [];
       const ask = () => openAssistantDialog({ el, root: options.root, designer, assistant, onApplied: (changes) => saidDone(changes, false) });
       return [{ label: a.askItem, hint: assistant.name ?? a.hint, run: ask }];

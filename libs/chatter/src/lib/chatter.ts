@@ -1,5 +1,5 @@
 import { fill, recordSentence, type DateOrder, type Locale, type PageRecords } from '@fieldia/core';
-import { installStyles, sanitizeHtml, type IconSet, type ShrinkOptions } from '@fieldia/widgets';
+import { installStyles, sanitizeHtml, showHtml, type IconSet, type ShrinkOptions } from '@fieldia/widgets';
 import { activitiesPart, momentWords } from './activities';
 import { attachmentList, composerFiles } from './attachments';
 import type * as ChannelsModule from './channels';
@@ -369,7 +369,7 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     if (message.kind === 'note' && !mark?.querySelector('.fd-message-channel')) head.append(el('span', { class: 'fd-message-kind' }, labels.note));
     if (mark) head.append(mark);
     const body = el('div', { class: 'fd-message-body' });
-    body.innerHTML = sanitizeHtml(message.body, doc);
+    showHtml(body, sanitizeHtml(message.body, doc));
     const content = el('div', { class: 'fd-message-content' }, head);
     const parent = message.parentId != null ? byId.get(message.parentId) : undefined;
     if (parent) content.append(el('p', { class: 'fd-message-parent' }, fill(labels.replyingTo, { name: parent.author?.name ?? '' })));

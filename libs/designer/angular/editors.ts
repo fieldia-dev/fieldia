@@ -13,13 +13,15 @@ import type { Skin } from '@fieldia/viewer';
 export class FieldiaSurveyEditorComponent implements OnDestroy {
   readonly designer = input.required<Designer>();
   readonly skin = input<Skin | undefined>(undefined);
+  /** The page's Content-Security-Policy nonce: every <style> the editor adds carries it. */
+  readonly nonce = input<string | undefined>(undefined);
   readonly ready = output<SurveyEditorHandle>();
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private handle: SurveyEditorHandle | null = null;
 
   constructor() {
     effect(() => {
-      const options = { designer: this.designer(), skin: this.skin() };
+      const options = { designer: this.designer(), skin: this.skin(), nonce: this.nonce() };
       untracked(() => {
         this.handle?.destroy();
         this.handle = mountSurveyEditor(this.host.nativeElement, options);
@@ -38,13 +40,15 @@ export class FieldiaSurveyEditorComponent implements OnDestroy {
 export class FieldiaScreenEditorComponent implements OnDestroy {
   readonly designer = input.required<Designer>();
   readonly skin = input<Skin | undefined>(undefined);
+  /** The page's Content-Security-Policy nonce: every <style> the editor adds carries it. */
+  readonly nonce = input<string | undefined>(undefined);
   readonly ready = output<ScreenEditorHandle>();
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private handle: ScreenEditorHandle | null = null;
 
   constructor() {
     effect(() => {
-      const options = { designer: this.designer(), skin: this.skin() };
+      const options = { designer: this.designer(), skin: this.skin(), nonce: this.nonce() };
       untracked(() => {
         this.handle?.destroy();
         this.handle = mountScreenEditor(this.host.nativeElement, options);

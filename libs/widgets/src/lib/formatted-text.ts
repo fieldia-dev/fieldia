@@ -5,6 +5,7 @@ import { htmlToMarkdown, markdownLoses, markdownToHtml } from './markdown';
 import { CHOOSING, EMOJI, HIGHLIGHTS, MARKDOWN_TOOLS, RICH_TOOLS, TEXT_COLOURS, TEXT_SIZES, TOGGLES, chevron, moreIcon, swatch, toolIcon, toolLabel, type TextTool } from './text-tools';
 import { textMenu, type MenuChoice, type TextMenu } from './text-menu';
 import { linkAddress, sanitizeHtml } from './sanitize';
+import { givenHtml, heldHtml, restyle, showHtml } from './style-attributes';
 import { copyHtml, keepCells, pasteHtml } from './pasted-html';
 import { PICK_COLUMNS, cellAt, cellsInOrder, editTable, hasHeader, markdownTable, newTable, pickerChoices, placeOf, tableGrid, tableHeight, tableSize, tableWidth, type TableEdit } from './rich-table';
 import { installEditorStyles } from './styles-editor';
@@ -172,6 +173,8 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
 
   // ---- values ---------------------------------------------------------------------------
   function emit() {
+    // What the browser's editing wrote as a style (an alignment, a colour), shown under a strict policy too.
+    if (editor === 'rich') restyle(area);
     const html = editor === 'rich' ? sanitizeHtml(area.innerHTML, doc) : sanitizeHtml(markdownToHtml(markdown.value), doc);
     const value = isEmpty(html) ? null : html;
     area.classList.toggle('fd-blank', editor === 'rich' && !area.textContent?.trim() && !area.querySelector('img, li, table'));
@@ -182,12 +185,12 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
   function show(html: string | null) {
     const clean = html ? sanitizeHtml(html, doc) : '';
     if (editor === 'rich') {
-      if (area.innerHTML !== clean) area.innerHTML = clean;
+      if (area.innerHTML !== clean) showHtml(area, clean);
       area.classList.toggle('fd-blank', !area.textContent?.trim() && !area.querySelector('img, li, table'));
     } else {
       const text = htmlToMarkdown(clean, doc);
       if (markdown.value !== text) markdown.value = text;
-      if (previewSwitch.getAttribute('aria-checked') === 'true') preview.innerHTML = clean;
+      if (previewSwitch.getAttribute('aria-checked') === 'true') showHtml(preview, clean);
     }
   }
 
@@ -564,7 +567,9 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     doc.execCommand?.('styleWithCSS', false, 'false');
     doc.execCommand?.('fontSize', false, '7');
     for (const font of [...area.querySelectorAll('font[size="7"]')]) {
-      const span = make('span', { style: `font-size: ${size}px;` }, ...font.childNodes);
+      // Through its style object, never a style attribute: a strict Content-Security-Policy lets one be.
+      const span = make('span', {}, ...font.childNodes);
+      span.style.fontSize = `${size}px`;
       font.replaceWith(span);
     }
     for (const span of [...area.querySelectorAll<HTMLElement>('[style*="xxx-large"]')]) span.style.fontSize = `${size}px`;
@@ -729,7 +734,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
 
   function setPreview(on: boolean) {
     previewSwitch.setAttribute('aria-checked', String(on));
-    if (on) preview.innerHTML = decorateLinks(sanitizeHtml(markdownToHtml(markdown.value), doc), doc);
+    if (on) showHtml(preview, decorateLinks(sanitizeHtml(markdownToHtml(markdown.value), doc), doc));
     preview.style.minHeight = on ? `${markdown.offsetHeight}px` : '';
     markdown.hidden = on;
     preview.hidden = !on;
@@ -1016,8 +1021,9 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
  * after each saying so. The stored text keeps none of it.
  */
 export function decorateLinks(html: string, doc: Document): string {
+  // Its style attributes held while it is read, as a strict Content-Security-Policy needs (style-attributes.ts).
   const box = doc.createElement('template');
-  box.innerHTML = html;
+  box.innerHTML = heldHtml(html);
   for (const link of box.content.querySelectorAll('a[href]')) {
     if (!/^https?:/i.test(link.getAttribute('href') ?? '')) continue;
     link.setAttribute('target', '_blank');
@@ -1030,5 +1036,5 @@ export function decorateLinks(html: string, doc: Document): string {
   }
   const out = doc.createElement('div');
   out.append(box.content);
-  return out.innerHTML;
+  return givenHtml(out.innerHTML);
 }

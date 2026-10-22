@@ -46,7 +46,9 @@ export const codeWidget: WidgetFactory = (context: WidgetContext): Widget => {
     ...boxPurpose(node, { autocomplete: 'one-time-code', ...(letters ? {} : { inputmode: 'numeric' }) }),
   });
   const cells = Array.from({ length }, () => make('span', { class: 'fd-code-cell', 'aria-hidden': 'true' }));
-  const element = make('span', { class: 'fd-code', style: `--fd-code-length: ${length}` }, ...cells, input, size);
+  const element = make('span', { class: 'fd-code' }, ...cells, input, size);
+  // Through the style object, never a style attribute: a strict Content-Security-Policy refuses those.
+  element.style.setProperty('--fd-code-length', String(length));
 
   const why = (char: string) => fillIn(letters ? words.codeLetterOrDigit : words.codeDigitOnly, { label, char: quoted(char) });
   const full = () => fillIn(letters ? words.codeFullCharacters : words.codeFull, { label, n: length });

@@ -1,3 +1,5 @@
+import { fieldiaStyle } from '@fieldia/widgets';
+
 /**
  * The editable part's sheet (editable-part.ts): a list whose cells are changed in place — a cell that takes a change,
  * the box open in it, a row changed and not saved, the note under a row saying why it was not, a row added, Add a
@@ -57,9 +59,7 @@ export const EDITABLE_STYLES = `
 /** The editable part's sheet in a document, once: right after the list's own, where it builds on its rules. */
 export function installEditableStyles(doc: Document): void {
   if (doc.getElementById('fd-list-editable-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-list-editable-styles';
-  style.textContent = EDITABLE_STYLES;
+  const style = fieldiaStyle(doc, EDITABLE_STYLES, 'fd-list-editable-styles');
   const list = doc.getElementById('fd-list-styles');
   if (list) list.after(style);
   else (doc.head ?? doc.documentElement).append(style);

@@ -1,5 +1,5 @@
 import { fill, labelAt, recordSentence, type Locale, type PageRecords } from '@fieldia/core';
-import { drawIcon, installStyles, sanitizeHtml, type IconSet } from '@fieldia/widgets';
+import { drawIcon, installStyles, sanitizeHtml, showHtml, type IconSet } from '@fieldia/widgets';
 import { initials } from './chatter';
 import { installHistoryStyles } from './history-styles';
 import { chatterLabels, type ChatterLabels } from './labels';
@@ -354,7 +354,7 @@ export function mountHistory(host: HTMLElement, options: MountHistoryOptions): H
     detail.setAttribute('aria-labelledby', `${uid}-said`);
     if (entry.kind === 'comment') {
       const body = el('div', { class: 'fd-history-comment' });
-      body.innerHTML = sanitizeHtml(entry.message.body, doc);
+      showHtml(body, sanitizeHtml(entry.message.body, doc));
       detail.replaceChildren(head, body);
       return;
     }

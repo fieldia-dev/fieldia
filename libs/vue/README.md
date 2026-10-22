@@ -21,6 +21,23 @@ const dataSource = createMemoryDataSource();
 </template>
 ```
 
+In **Nuxt** (or any server-rendered Vue), give the component `first-paint`: it
+renders the form's first paint on the server — its values in plain HTML, in
+Fieldia's look — which the browser shows before any script and hydrates as it
+is; the viewer then mounts over it once drawn and loaded, keeping what was
+typed meanwhile (`@fieldia/viewer/server`):
+
+```vue
+<script setup lang="ts">
+const { data: record } = await useFetch(`/api/enquiries/${useRoute().params.id}`);
+const nonce = useNuxtApp().ssrContext?.event.context.nonce; // with a strict Content-Security-Policy
+</script>
+
+<template>
+  <FieldiaForm :page="page" :data-source="dataSource" :record-id="record.id" :nonce="nonce" :first-paint="{ values: record }" />
+</template>
+```
+
 Custom fields can be Vue components (`fieldTypes`), slot content goes in named
 slots, and `useFormState(form)` gives you a form's state as a ref. A list page
 opens a row through the `@open-record` event.

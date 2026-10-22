@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 import { CODE_COLOURS_CSS } from './palette';
 
 /** The editor in Fieldia's colours, so it sits among the other fields. Installed once per document. */
@@ -29,8 +30,6 @@ ${CODE_COLOURS_CSS}
 
 export function installCodeStyles(doc: Document) {
   if (doc.getElementById('fieldia-code-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fieldia-code-styles';
-  style.textContent = CODE_CSS;
+  const style = fieldiaStyle(doc, CODE_CSS, 'fieldia-code-styles');
   doc.head.append(style);
 }

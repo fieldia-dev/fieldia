@@ -56,7 +56,8 @@ import {
   workAtRisk,
   type SignedBy,
 } from '@fieldia/core';
-import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses } from '@fieldia/widgets';
+import { overFirstPaint } from './first-paint-over';
+import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, useStyleNonce, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { relatedInTab, upgradePage, zonedPage } from '@fieldia/core';
@@ -133,6 +134,13 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * rule on the form does the same.
    */
   tokens?: Tokens;
+  /**
+   * The page's Content-Security-Policy nonce, for a policy with no `'unsafe-inline'` in `style-src`: every `<style>`
+   * Fieldia adds to the document carries it — its own sheet, each part's as it comes, an add-on's (a calendar, a map,
+   * a code editor, a grid). Left out, the page's `<meta property="csp-nonce" nonce="…">` gives it where there is one,
+   * and the one-tag script takes its own `<script nonce>`'s.
+   */
+  nonce?: string;
   /** Widgets that replace or add to the built-in ones, by `type` or `type.widget`. */
   widgets?: Record<string, WidgetFactory>;
   /** Other ways a list shows its records, by name: `map` (from @fieldia/map's `mapListViews`) for a list with `map`. */
@@ -488,6 +496,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const fill = (template: string, values: Record<string, string | number>) =>
     template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ''));
 
+  // Every <style> Fieldia adds to this document carries the app's nonce, for a policy with no 'unsafe-inline'.
+  useStyleNonce(doc, options.nonce);
   installStyles(doc);
   installRecordStyles(doc);
 
@@ -2894,6 +2904,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
   }
 
+  // A first paint the server drew in the host (@fieldia/viewer/server): in sight until this form is drawn and its record
+  // in, then this form in its place in one step, what was typed in it carried over (first-paint-over.ts).
+  let loaded!: () => void;
+  // Settled either way — a page its later checks refuse rejects `drawn`, for the app to hear, never this one.
+  overFirstPaint(host, root, Promise.all([dressed, new Promise<void>((resolve) => (loaded = resolve))]).then(() => undefined, () => undefined));
   host.append(root);
   // A press lands on what the person aimed at: never on a button that slid under a pointer that did not move.
   cleanups.push(steadyPresses(root));
@@ -2933,7 +2948,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       focusAsOpened(first);
     })
   );
-  if (form.getState().status === 'idle') void form.load();
+  if (form.getState().status === 'idle') void form.load().finally(loaded);
+  else loaded();
 
   return {
     form,

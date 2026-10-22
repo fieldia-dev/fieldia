@@ -39,6 +39,17 @@ import { ScreenEditor, SurveyEditor } from '@fieldia/designer/react';
 In Vue they are `SurveyEditor` and `ScreenEditor` too; in Angular,
 `<fieldia-survey-editor [designer]>` and `<fieldia-screen-editor [designer]>`.
 
+## Starting from a schema
+
+On a blank page, beside **Start blank** — and in Find anything — **Start from a
+schema…** opens a dialog to paste a JSON Schema, an OpenAPI document or a
+model's fields as JSON, or to choose its file. Before anything changes it shows
+the fields it makes, each with its kind, what is kept with a change and what is
+left out (`pageFromSchema` in `@fieldia/core`); an OpenAPI document says which
+of its operations and schemas to start from. **Start** — shown once there is a
+page to start with — puts it in place as one edit, said with Undo. A survey
+gets its questions, in steps; a screen its fields, in sections.
+
 ## Laying a screen out
 
 The screen editor opens in Simple mode, which keeps the panel to what most

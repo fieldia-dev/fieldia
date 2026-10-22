@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 /**
  * The cards part's sheet (cards-part.ts): a record list's rows as cards — on a phone, where the list has `card`, and in
  * its gallery on any width — their pictures, titles, pills and lines, the Group By headings across them and the totals
@@ -115,9 +116,7 @@ export const CARD_STYLES = `
 /** The cards' sheet in a document, once, right after the list's own. */
 export function installCardStyles(doc: Document): void {
   if (doc.getElementById('fd-list-cards-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-list-cards-styles';
-  style.textContent = CARD_STYLES;
+  const style = fieldiaStyle(doc, CARD_STYLES, 'fd-list-cards-styles');
   const list = doc.getElementById('fd-list-styles');
   if (list) list.after(style);
   else (doc.head ?? doc.documentElement).append(style);

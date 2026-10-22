@@ -1,7 +1,7 @@
 import { createForm, type DataSource, type Field, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
 import { uncalled } from './uncalled';
 import type { Skin } from '@fieldia/viewer';
-import { createWidget, installStyles, type Widget, type WidgetFactory } from '@fieldia/widgets';
+import { createWidget, installStyles, useStyleNonce, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { barRoom, clearOfBar, keepClearOfBar } from './bottom-bar';
 import { branchMap, drawBranchMap } from './branch-map';
 import { canvasDrag } from './canvas-drag';
@@ -63,6 +63,8 @@ export interface SurveyEditorOptions {
   templates?: readonly PageTemplate[];
   /** The app's own assistant, in place of the designer's. Without one, nothing about it shows. */
   assistant?: DesignerAssistant;
+  /** The page's Content-Security-Policy nonce: every <style> the designer and the forms in it add carries it (the viewer's `nonce`). */
+  nonce?: string;
 }
 
 export interface SurveyEditorHandle {
@@ -91,6 +93,7 @@ const lined = (el: ElementFactory, input: HTMLElement, extra = '') => el('span',
 export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOptions): SurveyEditorHandle {
   const { designer } = options;
   const doc = host.ownerDocument;
+  useStyleNonce(doc, options.nonce);
   installStyles(doc);
   installDesignerStyles(doc);
 

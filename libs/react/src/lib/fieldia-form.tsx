@@ -1,5 +1,6 @@
 import type { Field, FieldNode, Form, FormEvents, FormState, Value } from '@fieldia/core';
 import { mountViewer, newestFunctions, skinFor, type SlotRenderer, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
+import { firstPaint as drawFirstPaint, type FirstPaintOptions } from '@fieldia/viewer/server';
 import type { WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
   Component as ReactComponent,
@@ -29,7 +30,9 @@ import { createPortal } from 'react-dom';
  *      the viewer's own elements through portals,
  *   4. teardown.
  *
- * `mountViewer` runs only in an effect, so the component renders on a server.
+ * `mountViewer` runs only in an effect, so the component renders on a server. Given `firstPaint`, it renders the form's
+ * first paint there too — its values in plain HTML, styled — which the client hydrates as it is and the viewer then
+ * mounts over (`@fieldia/viewer/server`): a Next page shows the form before any script has run.
  */
 
 /** What a custom field component receives. Call `onChange` to write the value. */
@@ -56,6 +59,13 @@ export interface FieldiaFormProps extends Omit<ViewerOptions, 'slots'> {
   slots?: Record<string, ComponentType<SlotComponentProps>>;
   className?: string;
   style?: CSSProperties;
+  /**
+   * The form's first paint, rendered with the component — on the server too, as Next renders a client component —
+   * from the page and these values (the record as the server loaded it): plain HTML in Fieldia's look, which the viewer
+   * mounts over once it is drawn, keeping what was typed in it meanwhile. `true` paints `values`. Read once, as the
+   * component first renders. See `firstPaint` in `@fieldia/viewer/server`.
+   */
+  firstPaint?: boolean | Omit<FirstPaintOptions, 'skin' | 'locale' | 'dir' | 'nonce'>;
   /** Called once per mount with the viewer's handle. */
   onReady?: (handle: ViewerHandle) => void;
   /** A field was written — `by` a person, a step or the app. */
@@ -172,6 +182,14 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
   const [handle, setHandle] = useState<ViewerHandle | null>(null);
   const [portals, setPortals] = useState<Portal[]>([]);
   useImperativeHandle(ref, () => handle as ViewerHandle, [handle]);
+  // The first paint, drawn once — the same HTML on the server and as the client hydrates it — then the viewer's to replace.
+  const [painted] = useState(() => {
+    const asked = props.firstPaint;
+    if (!asked) return null;
+    const given = asked === true ? {} : asked;
+    const skin = props.skin ?? props.page.look?.skin;
+    return { __html: drawFirstPaint(props.page, { values: props.values, ...given, ...(skin ? { skin } : {}), locale: props.locale, dir: props.dir, nonce: props.nonce }) };
+  });
 
   // Mount again only when the record or what the page is changes. Callbacks
   // and components are read through `latest`, so a new function each render
@@ -237,7 +255,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       };
     }
 
-    const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, onRecord: _record, onArchive: _archive, onDuplicate: _duplicate, onDelete: _delete, onDraft: _draft, ...options } = latest.current;
+    const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, firstPaint: _paint, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, onRecord: _record, onArchive: _archive, onDuplicate: _duplicate, onDelete: _delete, onDraft: _draft, ...options } = latest.current;
     const mounted = mountViewer(element, {
       ...options,
       functions: newestFunctions(() => latest.current.functions),
@@ -290,7 +308,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
 
   return (
     <>
-      <div ref={host} className={props.className} style={props.style} />
+      <div ref={host} className={props.className} style={props.style} {...(painted ? { dangerouslySetInnerHTML: painted, suppressHydrationWarning: true } : {})} />
       {portals.map((portal) => createPortal(portal.node, portal.element, portal.key))}
     </>
   );

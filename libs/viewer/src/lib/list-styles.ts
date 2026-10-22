@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 import { LIST_ROW_STYLES } from './list-rows-styles';
 
 /** The list's look, on the same tokens as the forms it opens. */
@@ -317,8 +318,6 @@ export const LIST_STYLES = `
 /** Puts the list's look in the document once: its table's, then its richer rows' (list-rows-styles.ts). */
 export function installListStyles(doc: Document): void {
   if (doc.getElementById('fd-list-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-list-styles';
-  style.textContent = LIST_STYLES + LIST_ROW_STYLES;
+  const style = fieldiaStyle(doc, LIST_STYLES + LIST_ROW_STYLES, 'fd-list-styles');
   doc.head.append(style);
 }

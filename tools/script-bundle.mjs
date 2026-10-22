@@ -52,6 +52,20 @@ const minifiedStyles = {
 };
 
 /**
+ * A server's first paint (@fieldia/viewer/server) is the packages': an app that draws one mounts the packages' viewer
+ * over it. The one-tag script draws its form in its place at once — no more code for it in a page with no build step.
+ */
+const noFirstPaint = {
+  name: 'no-first-paint',
+  setup(builder) {
+    builder.onLoad({ filter: /libs\/viewer\/src\/lib\/first-paint-over\.ts$/ }, () => ({
+      contents: "export function overFirstPaint(host) { host.querySelector(':scope > [data-fd-first-paint]')?.remove(); }",
+      loader: 'ts',
+    }));
+  },
+};
+
+/**
  * English alone in the main script: each package's module of the other
  * languages (`locales/all.ts`) is built as an empty one, so their words stay
  * out; the add-ons bring them.
@@ -252,7 +266,7 @@ const mainScript = async (table) => {
   const { metafile } = await build({
     ...common,
     entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
-    plugins: [minifiedStyles, englishOnly, partWordsOut, checksLater, asksForParts(table, parts)],
+    plugins: [minifiedStyles, englishOnly, noFirstPaint, partWordsOut, checksLater, asksForParts(table, parts)],
     globalName: 'Fieldia',
     banner: { js: `/*! Fieldia ${version} · MIT · https://fieldia.dev */` },
     outfile: OUT,
@@ -436,6 +450,10 @@ for (const name of ['mountViewer', 'createMemoryDataSource', 'createForm', 'chec
 // Light enough for a page with no build step: no validation library, English alone, and under budget.
 const code = readFileSync(OUT, 'utf8');
 if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries zod: something imports the format schemas');
+// A strict Content-Security-Policy (no 'unsafe-eval', no 'unsafe-inline'): no code made from text, no style attribute
+// written — a style is set through an element's style object, which a policy lets be (style-nonce.ts).
+const CSP_REFUSES = /\bnew Function\b|\beval\(|\bsetAttribute\(\s*["'`]style["'`]/;
+if (CSP_REFUSES.test(code)) throw new Error(`the script bundle ${CSP_REFUSES.exec(code)?.[0]}: a strict Content-Security-Policy refuses code made from text and style attributes`);
 for (const table of ['MESSAGES', 'WIDGET_LABELS', 'VIEWER_LABELS']) {
   const held = Object.keys(Fieldia[table] ?? {}).join(', ');
   if (held !== 'en') throw new Error(`the script bundle's ${table} holds ${held}: English alone belongs in it, the other languages in their add-ons`);
@@ -1204,8 +1222,18 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 //   strip, its sheet and a change said in fieldia.live.js (1.28 before).
 // - The parts' handles beside the main script's others (0.23).
 // 506.77 measured before, 510.72 after (515.16 before the size pass), to 510.8.
-// Merged (0.31.0), with w6-records: 523.68 measured, to 523.7.
-const BUDGET_KB = 523.7;
+// A strict Content-Security-Policy (w6-platform), what every page needs of it: the nonce on every <style> Fieldia adds
+// (style-nonce.ts, 0.33 — every page adds Fieldia's sheet), the one-tag script's own nonce carried to its parts' tags
+// (0.12), and a formatted text's looks held while its HTML is read and put on through style objects — what the
+// browser's own editing writes as one too (style-attributes.ts, 1.0 — the sanitizer and the plain editor are this
+// script's, and a policy otherwise loses a value's alignment and colours as it is read): 506.77 measured before,
+// 508.40 after, to 508.5.
+// A server's first paint (w6-platform), what this script needs of it: Fieldia's sheets by their ids, which a first
+// paint brings and installStyles keeps (`FIELDIA_STYLE_SHEETS`), and a first paint taken away as the form is drawn —
+// the packages' viewer mounts over one; this script draws in its place (noFirstPaint): 508.40 measured before, 508.57
+// after, to 508.6.
+// Merged (0.31.0), with w6-platform: 525.53 measured, to 525.6.
+const BUDGET_KB = 525.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1482,8 +1510,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 167.4.
 // Wave 6, w6-records (each listed with the raw budget above): 166.15 measured before, 167.90 after — 1.75 more, 3.24
 // before the size pass took the lane's bodies, words and checks into its parts — to 168.0.
-// Merged (0.31.0), with w6-records: 172.49 measured, to 172.5.
-const GZIP_BUDGET_KB = 172.5;
+// A strict Content-Security-Policy (listed with the raw budget above): the nonce on every <style>, carried to the
+// one-tag script's parts, a formatted text's looks held as its HTML is read — 166.15 measured before, 166.86 after, to
+// 166.9. A server's first paint (listed with the raw budget above): 166.86 measured before, 166.93 after, to 167.0.
+// Merged (0.31.0), with w6-platform: 173.24 measured, to 173.3.
+const GZIP_BUDGET_KB = 173.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2310,7 +2341,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // change laid said, live new, 5.08 and 2.43, to 5.1 and 2.5; Undo and Redo walking a record's changes with Ctrl+Z's keys,
 // and a press's words said with Undo, read and taken back with the toast's Undo, undo new, 7.90 and 3.63, to 8.0 and
 // 3.7; the memory source's templates and its live pushes, memory 16.08 and 5.71 to 17.82 and 6.33, to 17.9 and 6.4.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [23.5, 8.7], choice: [12.6, 5.0], filters: [23.0, 7.9], date: [23.8, 9.0], months: [14.7, 5.9], typed: [14.4, 6.1], list: [141.0, 45.2], cards: [12.6, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], views: [5.9, 2.6], rows: [19.3, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [45.4, 16.7], evidence: [9.8, 4.4], photos: [31.5, 11.6], record: [11.3, 4.6], codes: [11.1, 5.4], pins: [10.1, 4.3], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], schedule: [21.4, 8.2], relations: [21.1, 8.0], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], templates: [6.9, 3.1], live: [5.1, 2.5], undo: [7.9, 3.7], print: [16.9, 5.4], memory: [24.5, 8.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0], surveyflow: [35.1, 12.5], prefill: [4.4, 2.2], verify: [11.8, 5.0], pay: [8.2, 3.6], element: [5.8, 2.6], outbox: [9.7, 4.3] };
+// A strict Content-Security-Policy (w6-platform): a formatted text's looks held as its HTML is read and put on through
+// style objects — what is pasted from an office app, Markdown both ways, its links, its editor's sizes and tables —
+// text 73.00 and 24.62 to 73.72 and 24.87, to 73.8 and 24.9.
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [74.2, 25.1], path: [23.5, 8.7], choice: [12.6, 5.0], filters: [22.9, 7.9], date: [23.8, 9.0], months: [14.7, 5.9], typed: [14.4, 6.1], list: [141.0, 45.2], cards: [12.6, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], views: [5.8, 2.6], rows: [19.2, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [45.4, 16.7], evidence: [9.8, 4.4], photos: [31.5, 11.6], record: [11.3, 4.6], codes: [11.1, 5.4], pins: [10.1, 4.3], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], schedule: [21.4, 8.2], relations: [21.1, 8.0], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], templates: [6.9, 3.1], live: [5.2, 2.5], undo: [7.9, 3.7], print: [16.9, 5.4], memory: [24.5, 8.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0], surveyflow: [35.1, 12.5], prefill: [4.4, 2.2], verify: [11.8, 5.0], pay: [8.2, 3.6], element: [5.8, 2.6], outbox: [9.7, 4.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2394,6 +2428,7 @@ for (const part of PARTS) {
   const name = `fieldia.${part}.js`;
   if (/mountViewer|createForm/.test(partCode)) throw new Error(`${name} carries a copy of Fieldia: it must carry its own code alone`);
   if (/ZodError|\$ZodType/.test(partCode)) throw new Error(`${name} carries zod`);
+  if (CSP_REFUSES.test(partCode)) throw new Error(`${name} ${CSP_REFUSES.exec(partCode)?.[0]}: a strict Content-Security-Policy refuses code made from text and style attributes`);
   if (/\\u06[2-4][0-9a-f]/i.test(partCode)) throw new Error(`${name} carries Arabic letters: a part's words are the packages' tables', in the language add-ons`);
   const [raw, gzip] = PART_BUDGET_KB[part];
   const partBytes = statSync(file).size;

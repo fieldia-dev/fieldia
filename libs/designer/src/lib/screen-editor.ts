@@ -1,6 +1,6 @@
 import type { DataSource, FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
 import type { ListViewFactory, MapPartFactory, Skin } from '@fieldia/viewer';
-import { installStyles, type WidgetFactory } from '@fieldia/widgets';
+import { installStyles, useStyleNonce, type WidgetFactory } from '@fieldia/widgets';
 import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mode';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
 import { speakIn } from './chrome-language';
@@ -58,6 +58,8 @@ export interface ScreenEditorOptions {
   templates?: readonly PageTemplate[];
   /** The app's own assistant, in place of the designer's. Without one, nothing about it shows. */
   assistant?: DesignerAssistant;
+  /** The page's Content-Security-Policy nonce: every <style> the designer and the forms in it add carries it (the viewer's `nonce`). */
+  nonce?: string;
 }
 
 export interface ScreenEditorHandle {
@@ -71,6 +73,7 @@ const topOf = (page: Page) => (page.layout as { children: LayoutNode[] }).childr
 export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOptions): ScreenEditorHandle {
   const { designer } = options;
   const doc = host.ownerDocument;
+  useStyleNonce(doc, options.nonce);
   installStyles(doc);
   installDesignerStyles(doc);
   const el = elementFactory(doc);

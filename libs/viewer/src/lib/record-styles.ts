@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 /**
  * What sits around a record, on the same tokens as the form: the bar over it
  * (breadcrumbs, the gear menu, the pager), the attachment preview beside its
@@ -111,8 +112,6 @@ export const RECORD_STYLES = /* css */ `
 /** Puts the record's surroundings' look in the document once. */
 export function installRecordStyles(doc: Document): void {
   if (doc.getElementById('fd-record-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-record-styles';
-  style.textContent = RECORD_STYLES;
+  const style = fieldiaStyle(doc, RECORD_STYLES, 'fd-record-styles');
   (doc.head ?? doc.documentElement).append(style);
 }

@@ -63,6 +63,42 @@ settings each kind has are `PART_LOOKS`:
 }
 ```
 
+## A starting page from a schema
+
+`pageFromSchema(input, options)` makes a page from what an app already has: a
+**JSON Schema**, an **OpenAPI** document (a component's schema, or an
+operation's request body and parameters — `schema: 'POST /enquiries'`, an
+`operationId`, or a component's name; `schemaChoices(doc)` lists them), or a
+**model's fields** — Fieldia's own, or a backend's field list such as
+Flectra's `fields_get` (`string`, `selection` pairs, `relation`). Each property
+becomes a field of its kind, with its label (`title`, else its name in words),
+help (`description`), required, read-only, limits (`minimum`, `maximum`,
+`maxLength`, `multipleOf` as decimals), pattern (found anywhere, as JSON Schema
+reads it), choices (`enum`, a union of `const`s) and default; `format` picks the
+box (`date`, `date-time`, `email`, `uri`, `time`, a phone, a password, a
+colour, a file); a list of choices is several picked, a list of files several
+files, a list of objects a table of lines; an object's properties are fields of
+their own in a section of its name. `$ref`s inside the document are followed,
+`allOf` merged, `null` set aside.
+
+```ts
+import { pageFromSchema, validatePage } from '@fieldia/core';
+
+const { page, notes, unmapped } = pageFromSchema(openApi, { schema: 'POST /enquiries', kind: 'screen' });
+validatePage(page).ok; // true: a page Fieldia reads, to edit in the designer
+```
+
+Nothing is dropped quietly: what is kept with a change is in `notes` (a name a
+field cannot have, renamed; an object's properties flattened; a value of a kind
+no field holds — a list of text, a union of kinds — kept as JSON; a limit no
+setting holds, such as `minLength`, left to your server), and what is left out
+in `unmapped` (a `$ref` outside the document, a property of no kind). Each has a
+`code` and the property's path; `schemaNoteWords(note)` says it in English. A
+survey (`kind: 'survey'`) is a step for the page and one for each object, sent
+as responses; a screen keeps a record of `model` (its title's words joined by
+dots unless given). A schema that gives no page throws `SchemaRefused`, its
+`code` saying why. In the designer: **Start from a schema…** on a blank page.
+
 ## Values that wait for a line
 
 A value worked out from others waits while one of them holds text that does

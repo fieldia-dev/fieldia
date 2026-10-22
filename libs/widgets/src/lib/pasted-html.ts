@@ -1,4 +1,6 @@
 import { sanitizeHtml } from './sanitize';
+import { givenHtml, heldHtml, HELD_STYLE, styleOf, wearStyles } from './style-attributes';
+import { styleNonce } from './style-nonce';
 
 /**
  * What is pasted into a formatted text from Word, Excel, Google Docs or Sheets — or any page — made plain, in the text
@@ -21,7 +23,16 @@ import { sanitizeHtml } from './sanitize';
  * is (`sanitizeHtml`). Whatever else the marker came with is dropped as from anywhere.
  *
  * The result reads the same through `sanitizeHtml` again: what is stored is what was put in.
+ *
+ * The clipboard's style attributes are held while it is read (`data-fd-style`, style-attributes.ts) and read through
+ * a style object, so a strict Content-Security-Policy neither refuses nor reports them.
  */
+
+/** An element's held style written again: `cssText`, or none. */
+function holdStyle(element: Element, cssText: string): void {
+  if (cssText.trim()) element.setAttribute(HELD_STYLE, cssText);
+  else element.removeAttribute(HELD_STYLE);
+}
 
 /** The mark on what a Fieldia editor puts on the clipboard. */
 const COPIED = 'data-fieldia-copy';
@@ -54,16 +65,16 @@ function forOthers(root: Node, what: RegExp): string[] {
 
 /** Word's list paragraphs as lists: each run of them one list, nested by level, its kind by the marks before its items. */
 function wordLists(root: DocumentFragment, doc: Document) {
-  const items = [...root.querySelectorAll<HTMLElement>('p, h1, h2, h3, h4, h5, h6, div')].filter((one) => WORD_ITEM.test(one.getAttribute('style') ?? ''));
+  const items = [...root.querySelectorAll<HTMLElement>('p, h1, h2, h3, h4, h5, h6, div')].filter((one) => WORD_ITEM.test(one.getAttribute(HELD_STYLE) ?? ''));
   // Runs of items side by side, as the source has them, before any is moved.
   const runs: HTMLElement[][] = [];
   items.forEach((item, i) => (i && item.previousElementSibling === items[i - 1] ? runs[runs.length - 1].push(item) : runs.push([item])));
   for (const run of runs) {
     let open: { level: number; id: string; list: HTMLElement }[] = [];
     for (const paragraph of run) {
-      const [, id, level] = WORD_ITEM.exec(paragraph.getAttribute('style') ?? '') as RegExpExecArray;
+      const [, id, level] = WORD_ITEM.exec(paragraph.getAttribute(HELD_STYLE) ?? '') as RegExpExecArray;
       const depth = Number(level);
-      const mark = (forOthers(paragraph, /^\[if !supportLists\]/i).join('') + [...paragraph.querySelectorAll('[style*="mso-list:Ignore" i]')].map((ignored) => (ignored.remove(), ignored.textContent)).join('')).replace(/[\s\u00a0]/g, '');
+      const mark = (forOthers(paragraph, /^\[if !supportLists\]/i).join('') + [...paragraph.querySelectorAll(`[${HELD_STYLE}*="mso-list:Ignore" i]`)].map((ignored) => (ignored.remove(), ignored.textContent)).join('')).replace(/[\s\u00a0]/g, '');
       if (open.length && id !== open[0].id && depth <= open[0].level) open = [];
       while (open.length && open[open.length - 1].level > depth) open.pop();
       let top = open[open.length - 1];
@@ -84,22 +95,26 @@ function wordLists(root: DocumentFragment, doc: Document) {
 /** Pasted markup made plain: see above. Rows alone (a spreadsheet's fragment) in a table of their own. */
 export function cleanPasted(html: string, doc: Document): string {
   const box = doc.createElement('template');
-  box.innerHTML = /<table[\s>]/i.test(html) || !/<tr[\s>]/i.test(html) ? html : `<table>${html}</table>`;
+  box.innerHTML = heldHtml(/<table[\s>]/i.test(html) || !/<tr[\s>]/i.test(html) ? html : `<table>${html}</table>`);
   const content = box.content;
   // A Fieldia editor's own copy: its own styles kept, as a stored value keeps them.
   const own = content.querySelector(`[${COPIED}]`);
-  if (own) return sanitizeHtml(own.innerHTML, doc);
+  if (own) return sanitizeHtml(givenHtml(own.innerHTML), doc);
   for (const sheet of content.querySelectorAll('style')) {
     for (const [, name, rules] of (sheet.textContent ?? '').matchAll(/\.([\w-]+)\s*\{([^}]*)\}/g)) {
-      for (const marked of content.querySelectorAll<HTMLElement>(`[class~="${name}"]`)) marked.setAttribute('style', `${rules};${marked.getAttribute('style') ?? ''}`);
+      for (const marked of content.querySelectorAll<HTMLElement>(`[class~="${name}"]`)) marked.setAttribute(HELD_STYLE, `${rules};${marked.getAttribute(HELD_STYLE) ?? ''}`);
     }
   }
   wordLists(content, doc);
   forOthers(content, /^\[if !supportLineBreakNewLine\]/i);
   for (const newline of content.querySelectorAll('br.Apple-interchange-newline')) newline.remove();
   // A link's words in its own colour, its own underline: the source's on its words go.
-  for (const marked of content.querySelectorAll<HTMLElement>('a[style], a [style]')) for (const name of ['color', 'text-decoration', 'text-decoration-line']) marked.style.removeProperty(name);
-  box.innerHTML = sanitizeHtml(box.innerHTML, doc);
+  for (const marked of content.querySelectorAll<HTMLElement>(`a[${HELD_STYLE}], a [${HELD_STYLE}]`)) {
+    const style = styleOf(marked, doc);
+    for (const name of ['color', 'text-decoration', 'text-decoration-line']) style.removeProperty(name);
+    holdStyle(marked, style.cssText);
+  }
+  box.innerHTML = heldHtml(sanitizeHtml(givenHtml(box.innerHTML), doc));
   const plain = (parent: Node) => {
     for (const node of [...parent.childNodes]) {
       if (node.nodeType !== Node.ELEMENT_NODE) continue;
@@ -108,7 +123,7 @@ export function cleanPasted(html: string, doc: Document): string {
       if (tag !== 'PRE') plain(element);
       if (tag === 'SPAN') {
         // Its colour, highlight and size the field's own; a person or record linked in place keeps its span.
-        element.removeAttribute('style');
+        element.removeAttribute(HELD_STYLE);
         if (!element.attributes.length) element.replaceWith(...element.childNodes);
       } else if (tag === 'DIV' && element.children.length === 1 && element.firstElementChild?.tagName === 'TABLE') element.replaceWith(...element.childNodes);
       // A list nested beside an item (Google Docs'), in it.
@@ -116,7 +131,11 @@ export function cleanPasted(html: string, doc: Document): string {
       else if (/^(T[DH]|LI)$/.test(tag)) {
         const only = element.children.length === 1 && element.firstElementChild?.tagName === 'P' && ![...element.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim()) ? (element.firstElementChild as HTMLElement) : null;
         if (!only) continue;
-        if (!element.style.textAlign && only.style.textAlign) element.style.textAlign = only.style.textAlign;
+        const [mine, its] = [styleOf(element, doc), styleOf(only, doc)];
+        if (!mine.textAlign && its.textAlign) {
+          mine.textAlign = its.textAlign;
+          holdStyle(element, mine.cssText);
+        }
         only.replaceWith(...only.childNodes);
         element.normalize();
         const [first, last] = [element.firstChild, element.lastChild];
@@ -137,7 +156,7 @@ export function cleanPasted(html: string, doc: Document): string {
   };
   spaces(box.content);
   // Kept as any value is kept, in its order: what is stored reads the same through `sanitizeHtml` again.
-  return sanitizeHtml(box.innerHTML, doc);
+  return sanitizeHtml(givenHtml(box.innerHTML), doc);
 }
 
 /**
@@ -147,8 +166,9 @@ export function cleanPasted(html: string, doc: Document): string {
 export function keepCells(table: HTMLTableElement, as: HTMLTableElement): void {
   const given = [...as.rows].flatMap((row) => [...row.cells]);
   [...table.rows].flatMap((row) => [...row.cells]).forEach((cell, i) => {
-    const style = given[i]?.getAttribute('style');
-    if (style) cell.setAttribute('style', style);
+    // As given: held (read with its styles held), or a table drawn here. Put on through its style object.
+    const style = given[i]?.getAttribute(HELD_STYLE) ?? given[i]?.getAttribute('style');
+    if (style) cell.style.cssText = style;
     else cell.removeAttribute('style');
   });
 }
@@ -156,9 +176,12 @@ export function keepCells(table: HTMLTableElement, as: HTMLTableElement): void {
 /** HTML put in where the caret is in `box`, in one step the browser's Undo takes back, the tables in it as given. */
 export function putHtml(box: HTMLElement, html: string, doc: Document): void {
   const had = new Set(box.querySelectorAll('table'));
-  doc.execCommand?.('insertHTML', false, html);
+  // Under a strict Content-Security-Policy, its styles held as it goes in and put on through each element's style
+  // object: never a style attribute for the browser to read. Without one, as the browser's own paste keeps the look.
+  doc.execCommand?.('insertHTML', false, styleNonce(doc) ? heldHtml(html) : html);
+  wearStyles(box);
   const given = doc.createElement('template');
-  given.innerHTML = html;
+  given.innerHTML = heldHtml(html);
   const tables = [...given.content.querySelectorAll('table')];
   [...box.querySelectorAll('table')].filter((table) => !had.has(table)).forEach((table, i) => tables[i] && keepCells(table, tables[i]));
 }

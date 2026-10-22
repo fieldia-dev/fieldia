@@ -1,3 +1,5 @@
+import { fieldiaStyle } from '@fieldia/widgets';
+
 /** Who else has a record open (live.ts, the live part): their initials, a ring round whoever is changing it, their names. */
 const LIVE_CSS = /* css */ `
 .fd-presence[hidden] { display: none; }
@@ -18,8 +20,6 @@ const LIVE_CSS = /* css */ `
  */
 export function installLiveStyles(doc: Document): void {
   if (doc.getElementById('fd-live-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-live-styles';
-  style.textContent = LIVE_CSS;
+  const style = fieldiaStyle(doc, LIVE_CSS, 'fd-live-styles');
   (doc.head ?? doc.documentElement).append(style);
 }

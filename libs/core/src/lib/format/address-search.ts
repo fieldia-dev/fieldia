@@ -1,5 +1,9 @@
 import * as z from 'zod';
 import { FIELD_NAME } from './names';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
 
 /**
  * An address typed on one line with the addresses a map's provider suggests

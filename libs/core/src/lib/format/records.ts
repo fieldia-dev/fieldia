@@ -1,4 +1,8 @@
 import * as z from 'zod';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
 
 /**
  * What a page's records are called (`records` on a page), so Fieldia's own sentences name them as the business does:

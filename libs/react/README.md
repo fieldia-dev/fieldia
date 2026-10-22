@@ -19,6 +19,27 @@ export function Customer() {
 }
 ```
 
+In **Next** (or any server-rendered React), give the component `firstPaint`:
+it renders the form's first paint on the server — its values in plain HTML,
+in Fieldia's look — which the browser shows before any script and hydrates as
+it is; the viewer then mounts over it once drawn and loaded, keeping what was
+typed meanwhile (`@fieldia/viewer/server`).
+
+```tsx
+// app/enquiries/[id]/page.tsx — a server component loads the record…
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const record = await loadEnquiry((await params).id);
+  const nonce = (await headers()).get('x-nonce') ?? undefined; // with a strict Content-Security-Policy
+  return <Enquiry record={record} nonce={nonce} />;
+}
+
+// enquiry.tsx — …and the client component paints it first.
+'use client';
+export function Enquiry({ record, nonce }: { record: Values; nonce?: string }) {
+  return <FieldiaForm page={page} dataSource={dataSource} recordId={record.id as number} nonce={nonce} firstPaint={{ values: record }} />;
+}
+```
+
 Custom fields and slot content can be React components (`fieldTypes`, `slots`);
 `useFormState(form)` gives you a form's state as React state. A list page opens
 a row through `onOpenRecord`.

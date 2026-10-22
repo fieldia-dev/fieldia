@@ -84,8 +84,11 @@ export function drawBranchMap(doc: Document, map: BranchMap, picked: string | nu
 
   // A group, not an image: its pages are buttons, and an image's insides are hidden from a screen reader.
   const svg = make('svg', { viewBox: `0 0 ${width} ${height}`, role: 'group', class: 'fd-branch-svg', 'aria-label': w.mapLabel(n) });
-  // As wide as the card, never wider than drawn; past a quarter smaller it scrolls instead.
-  svg.setAttribute('style', `width: 100%; max-width: ${width}px; min-width: ${Math.round(width * 0.75)}px`);
+  // As wide as the card, never wider than drawn; past a quarter smaller it scrolls instead. Through its style object,
+  // never a style attribute: a strict Content-Security-Policy lets one be.
+  svg.style.width = '100%';
+  svg.style.maxWidth = `${width}px`;
+  svg.style.minWidth = `${Math.round(width * 0.75)}px`;
   const defs = make('defs');
   const marker = make('marker', { id: 'fd-branch-arrow', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' });
   marker.append(make('path', { d: 'M0 0L10 5L0 10z', class: 'fd-branch-head' }));

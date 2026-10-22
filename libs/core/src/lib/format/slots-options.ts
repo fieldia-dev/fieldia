@@ -1,4 +1,8 @@
 import * as z from 'zod';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
 
 /**
  * A date and time drawn as booking slots (`"widget": "slots"`): its settings in

@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 /**
  * The History tab's look, on the same tokens as the form round it. Sizes are a
  * work item's, measured: headings 50px over a hairline, 51px rows with 32px
@@ -158,8 +159,6 @@ export const HISTORY_STYLES = /* css */ `
 /** Puts the History tab's look in the document once. */
 export function installHistoryStyles(doc: Document): void {
   if (doc.getElementById('fd-history-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fd-history-styles';
-  style.textContent = HISTORY_STYLES;
+  const style = fieldiaStyle(doc, HISTORY_STYLES, 'fd-history-styles');
   doc.head.append(style);
 }

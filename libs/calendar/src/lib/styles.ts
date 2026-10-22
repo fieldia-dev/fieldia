@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 /**
  * A list's calendar in Fieldia's tokens, so a theme, a host's own tokens and
  * the dark scheme reach it: each record a tint of the surface with a bar in
@@ -155,8 +156,6 @@ export const CALENDAR_CSS = `
 /** The calendar's stylesheet, once per document, before the page's own so an app's rule wins. */
 export function installCalendarStyles(doc: Document) {
   if (doc.getElementById('fieldia-calendar-styles')) return;
-  const style = doc.createElement('style');
-  style.id = 'fieldia-calendar-styles';
-  style.textContent = CALENDAR_CSS;
+  const style = fieldiaStyle(doc, CALENDAR_CSS, 'fieldia-calendar-styles');
   doc.head.prepend(style);
 }

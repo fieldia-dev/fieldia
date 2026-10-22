@@ -1,3 +1,4 @@
+import { fieldiaStyle } from '@fieldia/widgets';
 /** The grid's own touches on top of AG Grid's theme, scoped to Fieldia grids. */
 export const GRID_CSS = /* css */ `
 /* The box a paste on a chosen cell lands in where the browser sends none to the cell (Safari): in the page, out of sight. */
@@ -181,8 +182,6 @@ const STYLE_ID = 'fieldia-grid-styles';
 
 export function installGridStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
-  const style = document.createElement('style');
-  style.id = STYLE_ID;
-  style.textContent = GRID_CSS;
+  const style = fieldiaStyle(document, GRID_CSS, STYLE_ID);
   (document.head ?? document.documentElement).append(style);
 }

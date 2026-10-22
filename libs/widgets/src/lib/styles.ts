@@ -29,6 +29,7 @@ import { PRINT_CSS } from './styles-print';
  */
 import { LAYOUT_CSS } from './layout-styles';
 import { LOOK_TOKENS_CSS } from './look-styles';
+import { fieldiaStyle } from './style-nonce';
 
 /**
  * The widths of a form at which its groups take their medium and their narrow
@@ -922,17 +923,17 @@ export const FIELDIA_CSS = BASE_CSS + LOOKS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 const LOOKS_ID = 'fieldia-styles-looks';
+/** Fieldia's stylesheet as its two `<style>` elements have it, by their ids: what a server's first paint brings (`@fieldia/viewer/server`), which `installStyles` then keeps. */
+export const FIELDIA_STYLE_SHEETS: readonly (readonly [id: string, css: string])[] = [
+  [STYLE_ID, BASE_CSS],
+  [LOOKS_ID, LOOKS_CSS],
+];
 
 /** Add Fieldia's stylesheet to a document, once: two <style> elements, the page's own looks in the second, so a part's sheet can go between them. */
 export function installStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
-  const base = document.createElement('style');
-  base.id = STYLE_ID;
-  base.textContent = BASE_CSS;
-  const looks = document.createElement('style');
-  looks.id = LOOKS_ID;
-  looks.textContent = LOOKS_CSS;
-  (document.head ?? document.documentElement).append(base, looks);
+  // Each with the page's nonce, for a policy with no 'unsafe-inline' (style-nonce.ts).
+  (document.head ?? document.documentElement).append(fieldiaStyle(document, BASE_CSS, STYLE_ID), fieldiaStyle(document, LOOKS_CSS, LOOKS_ID));
 }
 
 /**
@@ -1082,10 +1083,8 @@ export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4,
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {
   if (document.getElementById(id)) return;
   installStyles(document);
-  const sheet = document.createElement('style');
-  sheet.id = id;
+  const sheet = fieldiaStyle(document, css, id);
   sheet.setAttribute('data-fd-rank', String(rank));
-  sheet.textContent = css;
   const later = [...document.querySelectorAll('style[data-fd-rank]')].find((other) => Number(other.getAttribute('data-fd-rank')) > rank);
   const looks = later ?? document.getElementById(LOOKS_ID);
   if (looks) looks.before(sheet);

@@ -63,5 +63,7 @@ export { linkParams, linkValue, linkValues } from './lib/record/link-values';
 export { indexedOutbox, memoryOutbox } from './lib/record/outbox-form';
 export { DUPLICATE_KINDS, comparable } from './lib/format/duplicate-kinds';
 export { pageJsonSchema } from './lib/format/json-schema';
+// A starting page from a JSON Schema, an OpenAPI document or a model's fields — what could not be taken as it is, said.
+export { pageFromSchema, schemaChoices, schemaNoteWords, SchemaRefused, type PageFromSchema, type PageFromSchemaOptions, type SchemaNote, type SchemaRefusal } from './lib/format/from-schema';
 // The purposes a browser fills a box in with, from the HTML standard, as the format checks them.
 export { AUTOFILL, AUTOFILL_CONTACT, AUTOFILL_NAMES, autofillProblem, autofillPurpose } from './lib/format/autofill';

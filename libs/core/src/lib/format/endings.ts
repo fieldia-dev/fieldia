@@ -1,5 +1,9 @@
 import * as z from 'zod';
 import { ModifierSchema, type Modifier } from './layout';
+import { makeSchemasJitless } from './jitless';
+
+// zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
+makeSchemasJitless();
 
 /**
  * What a page of responses shows once its answers are sent, in place of the plain "Thank you" (`endings` on a page):
