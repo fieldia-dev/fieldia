@@ -91,9 +91,6 @@ export interface FormInner {
   reload(): Promise<void>;
 }
 
-/** What a part that joins a form is given of it: the one kit. */
-export type JoinHost = FormInner;
-
 /** A part's side of a form, made for it (`join`): its hooks into the form, each at its moment, each left out where it has none. */
 export interface FormJoin {
   /**

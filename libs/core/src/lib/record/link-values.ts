@@ -1,7 +1,7 @@
 import type { Field } from '../format/field';
 import type { Page } from '../format/page';
 import { checkValue } from './check';
-import type { FormJoin, JoinHost } from './joins';
+import type { FormInner, FormJoin } from './joins';
 import { structuredCopy, type Value, type Values } from './values';
 
 /**
@@ -103,7 +103,7 @@ export function linkValues(page: Page, link: PageLink | undefined): Values {
  * what the person changed — and laid again as another starts; the hidden ones, placed nowhere and seen by no one, sent
  * with the answers all the same. The link is the form's `url`, else the page's own address.
  */
-export function join(host: JoinHost): FormJoin {
+export function join(host: FormInner): FormJoin {
   const { form, page, options } = host;
   const placed = new Set((JSON.stringify(page.layout).match(/"field":"[^"]+"/g) ?? []).map((one) => one.slice(9, -1)));
   const lay = () => {

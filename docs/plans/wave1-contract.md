@@ -1731,7 +1731,7 @@ the same name in the same script).
 ```ts
 formJoins(page?: Page, options?: FormOptions): Part<JoinPart>[];   // the parts a page (and its source) asks to join its form, in order
 interface JoinPart { join(host: FormInner): FormJoin }
-// The one kit every part that works inside a form is given (JoinHost is its other name): the form, its page, options,
+// The one kit every part that works inside a form is given: the form, its page, options,
 // words and clock, and its own ways with its state — set, reading, sending, store, track, shownNow, emit, keep, reload…
 interface FormInner { form: Form; page: Page; fields: Fields; options: FormOptions; messages: Messages; scheduler: Scheduler; … }
 interface FormJoin {

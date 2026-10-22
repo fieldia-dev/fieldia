@@ -1,7 +1,7 @@
 import { functionTable } from '../expression/app-functions';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { PaidPayment, PaymentDue, PayRequest } from './data-source';
-import type { FormJoin, JoinHost } from './joins';
+import type { FormInner, FormJoin } from './joins';
 
 /** A payment step that shows what is due and settles once it is paid, or with null once the person goes back. */
 export type PayStep = (due: PaymentDue, request: PayRequest) => Promise<PaidPayment | null>;
@@ -30,7 +30,7 @@ const newKey = () => `pay-${Date.now().toString(36)}-${Math.random().toString(36
  * a code or a field's, else a money field's own; while `when` holds, above 0 — taken before the answers go, once the
  * form's own checks found nothing; not taken, nothing is sent; taken, the send carries it (`payment`).
  */
-export function join(host: JoinHost): FormPayment {
+export function join(host: FormInner): FormPayment {
   const { form, page, options, messages, set } = host;
   const payment = page.payment;
   const source = options.dataSource;

@@ -1,6 +1,6 @@
 import type { Fields } from '../format/field';
 import { saveProblemOf, type DataSource, type SaveProblem, type SaveRequest, type SubmitRequest, type UploadedFile, type UploadFile } from './data-source';
-import type { FormJoin, JoinHost } from './joins';
+import type { FormInner, FormJoin } from './joins';
 import { fileBytesIn, formUploadsPart } from './uploads';
 import { structuredCopy, type FileValue } from './values';
 
@@ -228,7 +228,7 @@ const recordKey = () => `record-${Date.now().toString(36)}-${Math.random().toStr
  * when the signal comes back, and right after a send of this form went through; a refusal kept and said; what waits
  * told in the form's state (`outbox`).
  */
-export function join(joined: JoinHost): FormOutbox {
+export function join(joined: FormInner): FormOutbox {
   const { form, page, options, set } = joined;
   const host: OutboxHost = { pageId: page.id, fields: page.fields, dataSource: options.dataSource };
   const store = options.outbox ?? indexedOutbox() ?? memoryOutbox();

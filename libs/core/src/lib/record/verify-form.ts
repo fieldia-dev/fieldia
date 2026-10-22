@@ -1,6 +1,6 @@
 import type { FieldNode } from '../format/layout';
 import type { VerifiedValue } from './data-source';
-import type { FormJoin, JoinHost } from './joins';
+import type { FormInner, FormJoin } from './joins';
 import { fillMessage } from './messages';
 
 /** A form's verify code, made for it (`join`; `form.joined('verify')`). */
@@ -26,7 +26,7 @@ const fieldNodes = (node: { type: string; children?: unknown }): FieldNode[] => 
  * where the data source has `sendCode` and `checkCode`; before a send, one holding a value not proved (`state.verified`)
  * is said under it and nothing goes — an empty one asks none; a send carries the proofs (`verified`).
  */
-export function join(host: JoinHost): FormVerify {
+export function join(host: FormInner): FormVerify {
   const { form, page, options, messages, set } = host;
   const asked = fieldNodes(page.layout).filter((node) => node.options?.['verify'] !== undefined && node.options['verify'] !== false);
   const asking = (field?: string): FieldNode[] => {
