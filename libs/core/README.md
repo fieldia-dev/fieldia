@@ -72,11 +72,31 @@ digits (۰–۹) and marks (٫ ٬) as it reads Arabic-Indic ones; a day a messag
 names is written by Intl on the Gregorian calendar a value is kept in
 (`dayTag`: Intl's own for Persian is the Solar Hijri — Fieldia shows the
 Gregorian day, in Latin digits, in Persian too, for now). `listComma` gives the
-Arabic comma in Arabic, Persian and Urdu, and `firstWeekday(tag)` the week's first
-day as CLDR has it for the tag's region — its own, else the one its language is
-most spoken in: Saturday in Arabic and Persian, Sunday in `en` (the United
-States') and Urdu, Monday in `en-GB`, German, French, Turkish and Spanish — from
-the engine's `Intl.Locale` week info, else CLDR's table.
+Arabic comma in Arabic, Persian and Urdu.
+
+`firstWeekday(language, page?)` is the week's first day, `0` Sunday to `6`
+Saturday — the one every week Fieldia draws starts on: a list's "this week" and
+its weeks, a calendar's and a timeline's, a date's and a range's month, booking
+slots' month, a week's hours, a repeat's days, a chatter's history. CLDR's day
+for a region, which is decided in this order:
+
+1. the region of the language's own tag: the page's (`"language": "en-GB"`,
+   where the page is shown in its own language) or the one given (`en-GB`);
+2. else the reader's, where the browser asks for the same language with a
+   region (`navigator.languages`, the first that does): an `en` page read in
+   `en-EG` starts on Saturday, in `en-GB` on Monday, in `en-US` on Sunday;
+3. else the region CLDR has the language most spoken in: the United States'
+   for `en` (Sunday), Egypt's for `ar` and Iran's for `fa` (Saturday),
+   Pakistan's for `ur` (Sunday), Germany's, France's, Turkey's and Spain's
+   (Monday).
+
+The day is the engine's own `Intl.Locale` week info, else CLDR's table (Firefox
+has none). A third argument gives the reader's languages instead of the
+browser's, for a server or a test. In the one-tag script it comes with the parts
+that draw a week (`fieldia.list.js`, `fieldia.date.js`), not with `fieldia.js`:
+`Fieldia.firstWeekday` answers once one has come — `await
+Fieldia.datePart.load()` first where your own code calls it on a page that has
+drawn no week.
 
 Those four come in a chunk each of their own, so an app never carries the words
 of a language it does not show: each package says how it fetches its words

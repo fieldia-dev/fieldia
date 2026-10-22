@@ -57,7 +57,7 @@ A list page with `gantt` offers **Timeline** beside its table:
 | `zooms` | The scales offered, in order: `day`, `week`, `month`. All three unless said. |
 | `zoom` | The scale it shows first: `week` unless said (the first offered, where week is not). |
 | `opens` | `gantt` opens the list on its timeline; `list` (unless said) on its table. |
-| `firstDay` | The week's first day, `0` Sunday to `6` Saturday, for the weeks' heads: where CLDR starts it for the page's language and region unless said: Saturday in Arabic and Persian, Sunday in United States English (`en`) and Urdu, Monday in British English (`en-GB`), German, French, Turkish and Spanish. |
+| `firstDay` | The week's first day, `0` Sunday to `6` Saturday, for the weeks' heads: where CLDR starts it for the region unless said (`firstWeekday`): the page's own, else the reader's where their browser asks for the page's language with one (an `en` page read in `en-EG`: Saturday, `en-GB`: Monday), else where the language is most spoken: Saturday in Arabic and Persian, Sunday in English (`en`) and Urdu, Monday in German, French, Turkish and Spanish. |
 
 The page check refuses a field the page lacks or one of the wrong kind, an end
 of another kind than its start, an end and a duration both, a `dependsOn` that

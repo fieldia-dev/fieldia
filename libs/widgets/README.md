@@ -284,7 +284,8 @@ day's hours copied to every day; its value is a booking schedule's hours —
 `{ "1": [["09:00", "13:00"], ["14:00", "18:00"]] }`, by ISO weekday, a day not
 named closed — and a shift ending before it starts, or overlapping another,
 keeps the record from being saved, said under its day. `options.weekStart`
-(1–7) starts its week. Both come in a part of their own, `fieldia.schedule.js`
+(1–7) starts its week; without it, the week's first day where the page is read
+(`firstWeekday` in @fieldia/core), as a repeat's days are offered. Both come in a part of their own, `fieldia.schedule.js`
 (`schedulePart`), with the date part, whose boxes their days and times are;
 `(await schedulePart.load()).repeatWords(rule, locale, labels)` and
 `.hoursWords(value, locale, labels)` say a value in words for your own code.

@@ -771,7 +771,7 @@ A named filter may be a period a date falls in, counted from today —
 `{ "id": "overdue", "label": "Overdue", "period": { "field": "due_date", "is": "overdue" } }`
 — and a person's own filter offers "in the period" for a date: today,
 yesterday, this week or last, this month or last, this year, the last 7 or
-30 days, overdue. A week starts where CLDR starts it for the page's language and region (Saturday in Arabic and Persian, Sunday in United States English and Urdu, Monday in British English, German, French, Turkish and Spanish); days are the page's time zone's (`timeZone`), else
+30 days, overdue. A week starts where CLDR starts it for the region (`firstWeekday`): the page's own (`en-GB`: Monday), else the reader's where their browser asks for the page's language with one (an `en` page read in `en-EG`: Saturday, `en-GB`: Monday, `en-US`: Sunday), else where the language is most spoken (Saturday in Arabic and Persian, Sunday in English and Urdu, Monday in German, French, Turkish and Spanish); days are the page's time zone's (`timeZone`), else
 the browser's; the clock is the viewer's `now`. They reach the data source as
 plain conditions. A date in `groupBy` groups by its year, quarter, month,
 week or day, asked of `groups` with `interval`. See
