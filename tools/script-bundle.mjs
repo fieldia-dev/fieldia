@@ -1233,7 +1233,7 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // the packages' viewer mounts over one; this script draws in its place (noFirstPaint): 508.40 measured before, 508.57
 // after, to 508.6.
 // Merged (0.31.0), with w6-platform: 525.53 measured, to 525.6.
-const BUDGET_KB = 525.6;
+const BUDGET_KB = 525.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2344,7 +2344,7 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // A strict Content-Security-Policy (w6-platform): a formatted text's looks held as its HTML is read and put on through
 // style objects — what is pasted from an office app, Markdown both ways, its links, its editor's sizes and tables —
 // text 73.00 and 24.62 to 73.72 and 24.87, to 73.8 and 24.9.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [74.2, 25.1], path: [23.5, 8.7], choice: [12.6, 5.0], filters: [22.9, 7.9], date: [23.8, 9.0], months: [14.7, 5.9], typed: [14.4, 6.1], list: [141.0, 45.2], cards: [12.6, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], views: [5.8, 2.6], rows: [19.2, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [45.4, 16.7], evidence: [9.8, 4.4], photos: [31.5, 11.6], record: [11.3, 4.6], codes: [11.1, 5.4], pins: [10.1, 4.3], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], schedule: [21.4, 8.2], relations: [21.1, 8.0], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], templates: [6.9, 3.1], live: [5.2, 2.5], undo: [7.9, 3.7], print: [16.9, 5.4], memory: [24.5, 8.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0], surveyflow: [35.1, 12.5], prefill: [4.4, 2.2], verify: [11.8, 5.0], pay: [8.2, 3.6], element: [5.8, 2.6], outbox: [9.7, 4.3] };
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [74.2, 25.1], path: [23.5, 8.7], choice: [12.6, 5.0], filters: [22.9, 7.9], date: [23.8, 9.0], months: [14.7, 5.9], typed: [14.4, 6.1], list: [140.9, 45.2], cards: [12.6, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], views: [5.8, 2.6], rows: [19.2, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [45.4, 16.7], evidence: [9.8, 4.4], photos: [31.5, 11.6], record: [11.3, 4.6], codes: [11.1, 5.4], pins: [10.1, 4.3], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], schedule: [21.4, 8.2], relations: [21.1, 8.0], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], templates: [6.9, 3.1], live: [5.3, 2.5], undo: [7.9, 3.7], print: [16.9, 5.4], memory: [24.5, 8.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [11.1, 4.7], assist: [36.5, 12.5], scan: [18.7, 7.9], decode: [153.8, 39.0], surveyflow: [35.1, 12.6], prefill: [4.5, 2.2], verify: [11.8, 5.0], pay: [8.2, 3.6], element: [5.8, 2.6], outbox: [9.7, 4.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2373,7 +2373,7 @@ const PART_GIVES = {
   codes: ['codeWidget', 'qrCode', 'qrVersion', 'code128', 'code128Values', 'installCodesStyles'],
   pins: ['pinsWidget', 'pinsOf', 'pinAt', 'installPinsStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
-  surveyflow: ['quizResults', 'drawOrder', 'askedInOrder', 'limitsOf', 'countdownNow', 'keepTime', 'surveyKit', 'drawQuizResults', 'showQuiz', 'installFlowStyles', 'surveyFlow', 'flows', 'oneAtATime', 'timeKeeper'],
+  surveyflow: ['quizResults', 'drawOrder', 'askedInOrder', 'limitsOf', 'countdownNow', 'keepTime', 'join', 'drawQuizResults', 'showQuiz', 'installFlowStyles', 'surveyFlow', 'flows', 'oneAtATime', 'timeKeeper'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
   schedule: ['repeatWidget', 'hoursWidget', 'repeatWords', 'hoursWords', 'readRule', 'writeRule', 'ruleWords', 'installScheduleStyles'],
@@ -2382,10 +2382,10 @@ const PART_GIVES = {
   answers: ['sentenceValue', 'orderedDay', 'wordedWidget', 'drawEnding', 'linkedValueWords'],
   print: ['printLook', 'printPage', 'printAlone', 'installPrintStyles'],
   limits: ['drawLimits', 'installLimitsStyles', 'formLimits'],
-  approvals: ['drawApprovals', 'installApprovalStyles', 'formApprovals', 'approvalWhen'],
+  approvals: ['drawApprovals', 'installApprovalStyles', 'join', 'approvalWhen'],
   assist: ['watchAssist', 'searchWords', 'installAssistStyles'],
   templates: ['templatesMenu', 'templateValues', 'templateFields', 'startFrom'],
-  live: ['liveRecord', 'presenceStrip', 'installLiveStyles'],
+  live: ['join', 'liveRecord', 'presenceStrip', 'installLiveStyles'],
   undo: ['offerUndo', 'takeBack', 'takeNoted', 'takeStep', 'nextSteps', 'undoKeys', 'undoToast'],
   memory: ['createMemoryDataSource', 'memorySource'],
   functions: ['functionBody', 'appCall'],
