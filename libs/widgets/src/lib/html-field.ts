@@ -1,5 +1,6 @@
 import type { JsonValue } from '@fieldia/core';
 import { decorateLinks, formattedText, type TextReference } from './formatted-text';
+import { headedTables } from './rich-table';
 import { drawIcon } from './icons';
 import { fillIn, maker, setAttr } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
@@ -128,7 +129,8 @@ export function modernHtml(context: WidgetContext): Widget {
   };
   name_();
 
-  const clean = (value: string | null) => (value ? sanitizeHtml(value, document) : '');
+  // A table's header row in its head, as it shows and prints, though the value holds it among the rows.
+  const clean = (value: string | null) => (value ? headedTables(sanitizeHtml(value, document), document) : '');
   /** A rich text with nothing in it, open to change: its editor shows at rest. */
   const openAtRest = () => rich && !readonly && !clean(held).replace(/<br\s*\/?>|<\/?(p|div|span)>|&nbsp;|\s/gi, '');
   function render(value: string | null) {

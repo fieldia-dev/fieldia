@@ -2050,8 +2050,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // question, Fill from text and the import asking "Discard your changes?" before Escape or × lets work go — photos 31.42
 // and 11.59 measured before, 32.34 and 11.95 after, to 32.4 and 12.0; approvals 20.38 and 7.00, to 20.4 and 7.1;
 // assist 36.95 and 12.56, to 37.0 and 12.6; import 38.11 and 15.03 measured before, 38.50 and 15.17 after, to 38.6
-// and 15.2.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.6, 15.2], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [34.4, 12.5], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [32.4, 12.0], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.4, 7.1], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [37.0, 12.6], scan: [21.4, 8.9], decode: [153.8, 39.0] };
+// and 15.2. A formatted text's table with its header row among its rows (as office apps copy one, as an app may store
+// one) shown and kept with it in the table's head, so a printout repeats it on every sheet — text 73.45 and 24.78
+// measured before, 73.91 and 24.89 after, to 74.0 and 24.9.
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [74.0, 24.9], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.6, 15.2], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [34.4, 12.5], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [32.4, 12.0], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.4, 7.1], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [37.0, 12.6], scan: [21.4, 8.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

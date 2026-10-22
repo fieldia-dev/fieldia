@@ -156,7 +156,9 @@ selected, Shift+Tab back, Tab past the last cell adds a row, and Escape leaves
 the table; said once as the cursor first comes into one. In Markdown a table is
 GitHub's (`| a | b |` over `| --- | ---: |`), both ways; switching asks first
 where a table cannot be written so. On paper a table is whole on a sheet where
-it fits, else broken between its rows with its header row again.
+it fits, else broken between its rows with its header row again — a header row
+pasted among its rows, as Word, Excel and Google Docs copy one, or stored so by
+an app, is shown and kept in the table's head, so it repeats too.
 
 Rows copied from a spreadsheet and pasted in a cell of a table of lines — a
 dropdown's too, where no browser sends a paste: Ctrl or ⌘ and V on it is caught by

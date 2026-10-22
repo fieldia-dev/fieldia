@@ -476,4 +476,42 @@ test.describe('on paper', () => {
     expect(lines[0].slice(0, 4).map(squash).some((line) => line.includes(squash('SA-2026-014')))).toBe(true);
     expect(lines[0].slice(0, 4).map(squash).some((line) => /^agreement/.test(line))).toBe(false);
   });
+
+  test('a table pasted with its header row among its rows, as office apps copy one: that row again on each sheet', async ({ page, browserName, playwright, baseURL }) => {
+    // The owner's walk of 0.29 re-checking 0.27's: 80 instalments pasted, their header row a row of the body as Word and
+    // Excel copy it — sheets 2 to 4 began without it.
+    test.skip(browserName === 'webkit', 'Safari prints through its own dialog, which a test cannot drive');
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const pasteSchedule = async (on: Page) => {
+      await expect(node(on, 'f-payment')).toBeVisible();
+      const rows = Array.from({ length: 80 }, (_, i) => `<tr><td>Instalment ${i + 1}</td><td>Week ${i + 1}</td><td style="text-align:right">1.25%</td><td style="text-align:right">217.50</td></tr>`).join('');
+      const box = area(on, 'f-payment');
+      await box.click();
+      await paste(box, `<html><body><table border=1><tr><th>Milestone</th><th>Due</th><th>Share</th><th>Amount</th></tr>${rows}</table></body></html>`);
+      await expect(box.locator('table tr')).toHaveCount(81);
+      // Kept with its header row in the table's head.
+      await expect(box.locator('table > thead > tr > th')).toHaveText(['Milestone', 'Due', 'Share', 'Amount']);
+    };
+    let sheets;
+    if (browserName === 'firefox') [sheets] = await firefoxSheets(playwright, baseURL!, [{ query: QUERY, name: 'firefox-rich-tables-pasted-print', before: pasteSchedule }]);
+    else {
+      await open(page, 'plain', QUERY);
+      await pasteSchedule(page);
+      expect(await value(page, 'payment')).toMatch(/^<table><thead><tr><th>Milestone<\/th>/);
+      sheets = await chromiumSheets(page, 'rich-tables-pasted-print');
+    }
+    const lines = sheets.map((sheet) => sheet.lines.map((line) => line.text));
+    const on = (words: string) => lines.flatMap((sheet, at) => (sheet.some((line) => squash(line) === squash(words)) ? [at] : []));
+    const scheduleSheets = [...new Set(Array.from({ length: 80 }, (_, i) => on(`Instalment ${i + 1}Week ${i + 1}1.25%217.50`)).flat())];
+    expect(scheduleSheets.length, 'the schedule across three sheets at least').toBeGreaterThan(2);
+    for (const at of scheduleSheets) expect(lines[at].some((line) => squash(line).startsWith('milestonedue')), `the header row on sheet ${at + 1}`).toBe(true);
+  });
+
+  test('a stored value whose header row is among its rows is drawn with it in the table’s head', async ({ page }) => {
+    await open(page, 'plain', QUERY);
+    await expect(node(page, 'f-payment')).toBeVisible();
+    await page.evaluate((html) => (window as unknown as { fieldiaDemo: { handle: { form: { setValue(name: string, value: string): void } } } }).fieldiaDemo.handle.form.setValue('payment', html), '<table><tbody><tr><th>Milestone</th><th>Due</th></tr><tr><td>Instalment 1</td><td>Week 1</td></tr></tbody></table>');
+    await expect(area(page, 'f-payment').locator('table > thead > tr > th')).toHaveText(['Milestone', 'Due']);
+    await expect(area(page, 'f-payment').locator('table > tbody > tr')).toHaveCount(1);
+  });
 });
