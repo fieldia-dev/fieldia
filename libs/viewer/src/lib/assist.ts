@@ -631,10 +631,20 @@ export function watchAssist(context: AssistContext): AssistKit {
       problem.textContent = words ?? '';
       problem.hidden = !words;
     };
+    // Something pasted or added once it said there was nothing: that goes.
+    const filled = () => {
+      if ([labels.assistFillEmpty, labels.assistFillEmptyText, labels.assistFillEmptyFiles].includes(problem.textContent ?? '')) tell(null);
+    };
+    text.addEventListener('input', filled);
+    picker.addEventListener('change', filled);
     go.addEventListener('click', async () => {
       if (go.hasAttribute('aria-busy')) return;
       const words = text.value.trim();
-      if (!words && !files.length) return (from.includes('text') ? text : pick).focus();
+      // Nothing pasted or added: said beside it, where to put it focused — never a press that does nothing.
+      if (!words && !files.length) {
+        tell(from.includes('text') && from.includes('files') ? labels.assistFillEmpty : from.includes('text') ? labels.assistFillEmptyText : labels.assistFillEmptyFiles);
+        return (from.includes('text') ? text : pick).focus();
+      }
       go.setAttribute('aria-busy', 'true');
       go.textContent = labels.assistReading;
       tell(null);

@@ -1557,8 +1557,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 13.99, to 45.0 and 14.0. Approvals routed as recommended — "No approval needed", a level named once in brackets —
 // Arabic's 96.22 and 16.03, to 96.3; German's 44.44 and 13.98, inside 44.5 and 14.0; French's 44.99 and 14.00, to 45.1
 // and 14.1. A counted table's sheet with a box to type a code in — Arabic's 96.33 and 16.05, to 96.4; German's 44.50
-// and 14.00, to 44.6 and 14.1; French's 45.05 and 14.02, inside 45.1 and 14.1.
-const ADD_ON_BUDGET_KB = { ar: [96.4, 16.1], de: [44.6, 14.1], fr: [45.1, 14.1] };
+// and 14.00, to 44.6 and 14.1; French's 45.05 and 14.02, inside 45.1 and 14.1. Propose values pressed with nothing
+// to read from, said — Arabic's 96.68 and 16.08, to 96.7 and 16.1; German's 44.71 and 14.03, to 44.8; French's 45.19
+// and 14.04, to 45.2.
+const ADD_ON_BUDGET_KB = { ar: [96.7, 16.1], de: [44.8, 14.1], fr: [45.2, 14.1] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2034,8 +2036,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // so a hovered row keeps its words' contrast; 511.22 and 167.75 measured before, 511.26 and 167.77 after.) A record's
 // status strip on a phone: the step it is in scrolled into view, at rest on a step, a fade and a sign at each edge with
 // more past it, its frame, and the focus where none of its steps takes it — business 31.38 and 11.53 measured before,
-// 34.30 and 12.45 after (the strip's code 1.7 KB, its sheet 1.2 KB), to 34.4 and 12.5.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [34.4, 12.5], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.2, 7.0], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [21.4, 8.9], decode: [153.8, 39.0] };
+// 34.30 and 12.45 after (the strip's code 1.7 KB, its sheet 1.2 KB), to 34.4 and 12.5. Propose values pressed with
+// nothing pasted or added says what to do — assist 36.27 and 12.36 measured before, 36.70 and 12.45 after, to 36.8
+// and 12.5.
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [34.4, 12.5], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.2, 7.0], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.8, 12.5], scan: [21.4, 8.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

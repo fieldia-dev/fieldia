@@ -669,6 +669,10 @@ export interface ViewerLabels {
   assistFillPlaceholder: string;
   assistFiles: string;
   assistFillGo: string;
+  /** Propose values pressed with nothing pasted or added: said beside it — the text and files, the text, or files alone offered. */
+  assistFillEmpty: string;
+  assistFillEmptyText: string;
+  assistFillEmptyFiles: string;
   assistReading: string;
   assistFailed: string;
   assistNothing: string;
@@ -1184,6 +1188,9 @@ const en: ViewerLabels = {
   assistFillPlaceholder: 'Paste the text here',
   assistFiles: 'Add files',
   assistFillGo: 'Propose values',
+  assistFillEmpty: 'Paste or add what to fill from',
+  assistFillEmptyText: 'Paste what to fill from',
+  assistFillEmptyFiles: 'Add what to fill from',
   assistReading: 'Reading…',
   assistFailed: 'Nothing could be proposed: {why}',
   assistNothing: 'Nothing in it fills this form.',

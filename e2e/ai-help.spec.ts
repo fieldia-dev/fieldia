@@ -107,6 +107,18 @@ test.describe('a customer filled from an e-mail, by its keys and its files', () 
     expect((await values(page))['name']).toBe('Amman Fresh Markets');
   });
 
+  test('Propose values with nothing pasted or added says so beside it, and goes as words are pasted', async ({ page }) => {
+    // The owner's walk of 0.29: pressed empty, it did nothing and said nothing.
+    await page.getByRole('button', { name: 'Fill from an e-mail' }).click();
+    await dialog(page).getByRole('button', { name: 'Propose values' }).click();
+    const said = dialog(page).locator('.fd-assist-problem');
+    await expect(said).toHaveText('Paste or add what to fill from');
+    await expect(dialog(page).getByRole('textbox', { name: 'Text to fill the form from' })).toBeFocused();
+    await screen(page, 'ai-fill-empty-said', { viewport: true });
+    await page.keyboard.type('Lina');
+    await expect(said).toBeHidden();
+  });
+
   test('in Arabic, right to left: the dialog, the review and each proposal in its words', async ({ page }) => {
     await page.goto('/plain/?page=customer-from-email&record=new&skin=underline&locale=ar&dir=rtl');
     await page.getByRole('button', { name: 'Fill from an e-mail' }).click();

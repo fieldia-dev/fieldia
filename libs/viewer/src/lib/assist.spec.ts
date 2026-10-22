@@ -91,6 +91,23 @@ async function fillFrom(text: string) {
 }
 
 describe('Fill from text', () => {
+  it('says what to do where Propose values is pressed with nothing pasted or added, and lets it go as words come', async () => {
+    // The owner's walk of 0.29: pressed empty, it did nothing and said nothing.
+    const ds = source();
+    await mount({ dataSource: ds });
+    button('Fill from text')?.click();
+    button('Propose values', dialog() as HTMLElement)?.click();
+    await pass(0);
+    const said = dialog()?.querySelector<HTMLElement>('.fd-assist-problem');
+    expect([said?.hidden, said?.textContent]).toEqual([false, 'Paste or add what to fill from']);
+    expect(ds.calls.filter((call) => call.method === 'suggest')).toEqual([]);
+    const box = dialog()?.querySelector('textarea') as HTMLTextAreaElement;
+    expect(document.activeElement).toBe(box);
+    box.value = 'Lina';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(said?.hidden).toBe(true);
+  });
+
   it('is offered where the page asks and the source can answer — hidden, never disabled, where it cannot', async () => {
     await mount({ dataSource: source() });
     expect(button('Fill from text')).not.toBeNull();
