@@ -556,7 +556,7 @@ export const DEMOS = [
       'Press Add a line under Injectables used, then the scan button beside its Lot, and hold up the hyaluronic acid filler’s code: Product, Lot and Expiry fill in.',
       'Press Scan beside Patient and show Hana Fouad’s card: she is the patient now.',
       'Hold up a shelf’s barcode instead: the camera’s sheet says it holds no lot and reads on. Press Escape, or Type it instead, to type the lot.',
-      'Press Block when the browser asks for the camera, or try it on a computer with none: the field says why, and the cursor waits in its box for you to type. A barcode scanner plugged in types into the box as ever.',
+      'Press Block when the browser asks for the camera, or try it on a computer with none: the field says why, and the cursor waits in its box for you to type. A barcode scanner plugged in types into the box: Hana’s card code and Enter finds her, a box’s code fills its line, as the camera does.',
     ],
   },
   {
@@ -569,7 +569,7 @@ export const DEMOS = [
       'Open [the codes to scan](samples/codes-to-scan.html) on your phone or another screen, or print it.',
       'Press Scan under the table and hold up the hand cream’s barcode: a line for it, counted 1.',
       'Move the code away from the camera and back: 2. Held still, it is counted once.',
-      'Hold up the lip balm’s: its line goes from 3 to 4. Then the product the shop does not sell: the sheet says nothing has that code, and counts on.',
+      'Hold up the lip balm’s: its line goes from 3 to 4. Then the product the shop does not sell: the sheet says nothing has that code, and counts on. A code whose label will not scan: type it in the sheet and press Count.',
       'Press Done: the total under the table counts every item.',
     ],
   },
