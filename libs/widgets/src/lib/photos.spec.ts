@@ -131,7 +131,7 @@ describe('a photo set', () => {
     expect(form.history().undo).toMatchObject({ field: 'photos' });
     expect(form.undo()).toMatchObject({ field: 'photos' });
     expect(value().map((p) => p.name)).toEqual(ROOMS);
-    expect(labels(el)[0]).toBe('Living room.jpg, the cover, photo 1 of 3');
+    expect(labels(el)[0]).toBe('The cover, photo 1 of 3');
     expect(form.redo()).toMatchObject({ field: 'photos' });
     expect(value().map((p) => p.name)).toEqual(['Kitchen.jpg', 'Living room.jpg', 'Hall.jpg']);
   });
