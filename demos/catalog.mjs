@@ -24,6 +24,7 @@ export const CATEGORIES = [
   { id: 'script', label: 'No build step', colour: '#475569' },
   { id: 'templates', label: 'Templates to start from', colour: '#4f46e5' },
   { id: 'real', label: 'Real screens from a working ERP', colour: '#9a3412' },
+  { id: 'designer', label: 'The designers: build a page by pointing', colour: '#0e7490' },
 ];
 
 /**
@@ -52,8 +53,8 @@ const AREA_OF = {
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen', 'stock-count'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake', 'clinic-treatment', 'service-prices', 'services-languages', 'clinic-before-after'],
   'real-estate': ['map-homes', 'map-many-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'listing-photo-set', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'enquiry', 'listing-languages', 'enquiry-reply'],
-  surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
-  'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
+  surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey', 'designer-survey'],
+  'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic', 'designer-screen'],
 };
 
 /** The area a demo is in, by its id; undefined for one in none (the browser test says which). */
@@ -182,6 +183,8 @@ const SEARCH_WORDS = {
   'real-manufacturing-order': 'manufacturing production make build bill of materials bom components work order factory',
   'real-legal-case': 'legal case law firm lawyer court hearing matter dispute trust billing',
   'real-survey': 'survey settings questions questionnaire exam quiz certification scoring',
+  'designer-survey': 'designer design survey designer survey builder form builder form designer questionnaire builder quiz builder google forms typeform drag and drop drag drop no code nocode build make create edit editor questions cards kinds publish published versions preview',
+  'designer-screen': 'designer design screen designer form builder form designer page builder app builder ui builder drag and drop drag drop no code nocode low code lowcode build make create edit editor layout fields sections record page list columns model publish published versions preview',
 };
 /**
  * The words an owner of each business types for it, which none of its demos may say: a dentist's for a clinic, a
@@ -1293,6 +1296,46 @@ export const DEMOS = [
       'Read the page’s source: one script tag, a page as JSON, and one call.',
     ],
   },
+  // The designers themselves, each opening on a page to build (demos/designer-catalog.mjs has their other starting points).
+  {
+    id: 'designer-survey',
+    name: 'The survey designer',
+    category: 'designer',
+    app: 'designer',
+    query: 'start=survey',
+    code: 'designer',
+    // fieldia.dev's Designer page, its other starting points; the tab is named after the page being made.
+    startingPoints: '/designer/',
+    ownTab: true,
+    blurb: 'Build a survey by pointing at it, the Google Forms way: questions as cards, each opened to type its words and options where it stands, its kind switched from a menu, dragged into place, where each answer leads drawn as a map — then tried as people will answer it, checked and published.',
+    howTo: [
+      'Press the question “How would you rate it?”: its card opens to type its words where they stand, and its kind changes from the menu beside them.',
+      'Press Dropdown in the toolbox: a question of that kind is added under the one picked, its words ready to type.',
+      'Drag a question by the handle at its top to another place, or onto another page.',
+      'Press Try it: the survey works as people will answer it, each answer leading where it says. Design brings you back.',
+      'Press Publish: what changed since the last version is said, and it is published as the next one.',
+      'On a phone, the toolbox waits behind the + at the foot of the screen.',
+    ],
+  },
+  {
+    id: 'designer-screen',
+    name: 'The screen designer',
+    category: 'designer',
+    app: 'screen',
+    query: '',
+    code: 'designer',
+    // fieldia.dev's Designer page, its other starting points; the tab is named after the page being made.
+    startingPoints: '/designer/',
+    ownTab: true,
+    blurb: 'Build an app’s screen where it is seen: the screen drawn as the viewer draws it, fields dragged in from the toolbox — a gap opens where one lands — each picked to type its words in place and set the rest in the panel beside it, a record’s page and a list of records too, tried at a phone’s width, checked and published.',
+    howTo: [
+      'Drag Email from the toolbox into the Visit section, under Notes: a gap opens where it will land.',
+      'Press Visit date: type its label where it stands; the panel on the right sets the rest.',
+      'Press Advanced to lay the screen out by dragging: a line and a chip say where a field goes before you let it go.',
+      'Press Try it, then the phone: the screen works at a phone’s width.',
+      'Open [a customer’s record](?start=sheet), its model’s fields first in the toolbox, or [a list of customers](?start=list), by its columns.',
+    ],
+  },
   // The template library, each in its theme: templates.mjs.
   ...TEMPLATE_DEMOS,
   // A working ERP's own screens, rebuilt in Fieldia: one file per lane in real/.
@@ -1309,6 +1352,8 @@ const SOURCES = {
   code: 'demos/shared/code-page.ts',
   custom: 'demos/shared/custom-page.ts',
   contained: 'demos/shared/contained.ts',
+  'designer-survey': 'demos/designer/main.ts',
+  'designer-screen': 'demos/screen/main.ts',
 };
 /** The repository on GitHub, at its main line. */
 export const GITHUB = 'https://github.com/fieldia-dev/fieldia';
@@ -1369,8 +1414,11 @@ export const OPENED = [
   { page: 'service-languages', name: 'A service', from: 'services-languages' },
 ];
 
-/** What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock. */
-const SAME = new Set(['skin', 'theme', 'record', 'now']);
+/**
+ * What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock, and
+ * the page a designer starts on.
+ */
+const SAME = new Set(['skin', 'theme', 'record', 'now', 'start']);
 
 /** The demo a page shows: the one whose query the address holds, the most specific first. */
 export function demoAt(app, params) {
