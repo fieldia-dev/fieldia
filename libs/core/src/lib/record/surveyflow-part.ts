@@ -6,4 +6,4 @@
 export { quizResults } from './quiz';
 export { drawOrder, askedInOrder } from './order';
 export { limitsOf, countdownNow, keepTime } from './timing';
-export { surveyKit } from './survey-kit';
+export { join } from './survey-kit';

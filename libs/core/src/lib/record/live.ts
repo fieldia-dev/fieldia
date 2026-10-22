@@ -1,5 +1,6 @@
 import { loadedRecordOf, type DataSource, type RecordChange, type RecordVersion } from './data-source';
-import type { FormInner, LiveRecord } from './live-later';
+import type { FormInner } from './joins';
+import type { LiveRecord } from './live-later';
 import { fill, fillMessage } from './messages';
 import { unsavedWork } from './form';
 import { structuredCopy, type RecordId, type Value, type Values } from './values';
@@ -17,6 +18,15 @@ import { structuredCopy, type RecordId, type Value, type Values } from './values
  * before its members came).
  */
 const stopOf = (given: unknown): (() => void) => (typeof given === 'function' ? (given as () => void) : () => void Promise.resolve(given).then((stop) => typeof stop === 'function' && stop()));
+
+/**
+ * The live part's side of a form (joins.ts): the record shown watched once it is loaded (`loaded`: at once where it was
+ * loaded before the part came), again as the form's state changes (`changed`), and let go with the form (`dispose`).
+ */
+export function join(context: FormInner): LiveRecord {
+  const live = liveRecord(context);
+  return { ...live, loaded: live.watch, changed: live.watch, dispose: live.stop };
+}
 
 export function liveRecord(context: FormInner): LiveRecord {
   const { page, fields } = context;

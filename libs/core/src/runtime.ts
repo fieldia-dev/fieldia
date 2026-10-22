@@ -364,7 +364,7 @@ export { dayOf } from './lib/record/limits';
 export { hijriWords, monthWords, precisionOf, type DatePrecision } from './lib/record/day-words';
 // The parts that join a form where its page asks — an offline outbox, the fields its link fills (`prefill`), proof of an
 // email or a phone by a code, a payment — each with one hook into its send, the form knowing only that its page asks.
-export { formJoins, type FormJoin, type FormJoins, type JoinHost, type JoinPart, type SendKind, type Sent } from './lib/record/joins';
+export { formJoins, type FormInner, type FormJoin, type FormJoins, type JoinHost, type JoinPart, type SendKind, type Sent } from './lib/record/joins';
 export type { PageLink } from './lib/record/link-values';
 export type { FormVerify } from './lib/record/verify-form';
 export type { FormPayment, PayStep } from './lib/record/payment-form';

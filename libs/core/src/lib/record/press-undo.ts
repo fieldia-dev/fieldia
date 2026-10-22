@@ -2,7 +2,7 @@ import type { ButtonNode, MenuItem, PressUndo, StatButton } from '../format/layo
 import { fillMessage } from './messages';
 import { DONE, type ActionResult, type PressTaken, type RunResult, type RunScope, type Stopped, type UndoKit } from './run';
 import type { Fields } from '../format/field';
-import type { FormInner } from './live-later';
+import type { FormInner } from './joins';
 import { sameValue, structuredCopy, type Value, type Values } from './values';
 
 const wordsOf = (error: unknown) => (error instanceof Error ? error.message : String(error));

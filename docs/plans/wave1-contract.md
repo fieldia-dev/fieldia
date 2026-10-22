@@ -1709,24 +1709,45 @@ its state, its words, its page checks — is in its own part (fieldia.<name>.js 
 the same name in the same script).
 
 ```ts
-formJoins(page?: Page): Part<JoinPart>[];          // the parts a page asks to join its form, in their order (all, without one)
-interface JoinPart { join(host: JoinHost): FormJoin }
-interface JoinHost { form: Form; page: Page; options: FormOptions; messages: Messages; set(patch): void; reading(): … }
+formJoins(page?: Page, options?: FormOptions): Part<JoinPart>[];   // the parts a page (and its source) asks to join its form, in order
+interface JoinPart { join(host: FormInner): FormJoin }
+// The one kit every part that works inside a form is given (JoinHost is its other name): the form, its page, options,
+// words and clock, and its own ways with its state — set, reading, sending, store, track, shownNow, emit, keep, reload…
+interface FormInner { form: Form; page: Page; fields: Fields; options: FormOptions; messages: Messages; scheduler: Scheduler; … }
 interface FormJoin {
+  // the send
   before?(problems: Record<string, string>): void | false | Promise<void | false>;   // once the form's own checks ran
   around?<T>(kind: 'submit' | 'save' | 'upload', sent, go: (sent) => Promise<T>): Promise<T | null>;  // null: kept
+  values?(answers: Values): void;                                                    // what a response's answers carry more
   reset?(): void;                                                                    // another response, another record
+  // the page and the record
+  hides?(id: string): boolean;   locks?(id: string): boolean;   locksField?(name: string): boolean;
+  kept?(): Partial<StoredDraft>;   lay?(draft: StoredDraft): void;   entered?(step: string): void;
+  loaded?(): void;   changed?(): void;   dispose?(): void;
 }
-form.joined(name): FormJoins[name] | null;           // verify: asks, mark; pay: due, step; outbox: send, retry, discard
+form.joined(name): FormJoins[name] | null;   // verify: asks, mark; pay: due, step; outbox: send…; surveyflow: start, countdown, marked;
+                                            // approvals: ask, decide, lockWords; live: watch, stop
 ```
 
-- **Asked for** by the page alone: `outbox`, `prefill`, a field's `options.verify` (not `false`), `payment`. The form asks
+- **One registry, one kit (0.31).** Every part that joins a form is listed once, with what asks for it — `outbox`,
+  `prefill`, a field's `options.verify` (not `false`), `payment`; a survey's flow (a quiz, a review, `flow`, a time limit,
+  a draw: `surveyFlow`); a record's `approval` where the source has `approvals`; the record made live where the source has
+  `subscribe` or `presence` — and each gets the one kit and answers at its moments through one hook. Kept apart, as they
+  come at other moments: a page's limits (the limits part, given the same kit) are made once the form knows it keeps them,
+  which a list's choices coming with places may tell it long after it is made; Undo (the undo part's press, the same kit)
+  as the person first changes the record; a text's languages (the languages part) carry code and checks, no hooks.
+
+- **Asked for** by the page (and its source, for approvals and live): the form asks
   for each as it is made and a send waits for one that has not come; the viewer waits for them with the page's parts, and
   draws what each part of the same name gives (`draw`: Send a code, the payment step, the outbox's bar).
 - **Through each in order**: `before` hooks run where every one before let the send go (verify adds its problems; pay,
   once nothing stops the send, takes the payment or stops it); `around` hooks nest, the outbox innermost — what it keeps is
   the request as it would have gone, proofs, payment and hidden fields in it — and an upload goes through them too (the
-  outbox keeps a file as its bytes). `reset` as Submit another starts a response, or another record opens.
+  outbox keeps a file as its bytes). `reset` as Submit another starts a response, or another record opens. A survey's
+  flow adds its draw and clocks to a response (`around`), hides and locks parts (`hides`, `locks`), keeps and lays its draw
+  in drafts (`kept`, `lay`) and starts a step's clock (`entered`); a record's approvals lock its fields (`locksField`) and
+  are asked as the record is loaded or saved (`loaded`); the live record watches what is shown (`loaded`, `changed`) and
+  stops with the form (`dispose`).
 - **Their checks** (`checkPrefill`, `checkVerify`, `checkPayment`, `checkOutbox`) come with each part in the one-tag script,
   owed to it (`PageValidation.later`) and run as it comes.
 - `<fieldia-form>` is defined as the script starts, as a stub: put on a page it asks for the element part, which makes it

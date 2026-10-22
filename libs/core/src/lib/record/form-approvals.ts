@@ -1,7 +1,8 @@
 import type { Page } from '../format/page';
 import type { ApprovalDecision, ApprovalEntry, ApprovalLevel, ApprovalLevelState, Approvals, Approver, DataSource } from './data-source';
 import { saveProblemOf } from './data-source';
-import type { Form, FormState } from './form';
+import type { FormState } from './form';
+import type { FormInner, FormJoin } from './joins';
 import type { ApprovalStatus, FormApproval } from './approving';
 import { fill, type Messages } from './messages';
 import { dayWords } from './day-words';
@@ -13,22 +14,12 @@ import { uploadGoing } from './uploads';
  * A record's approvals (the approvals part): asked of the data source's `approvals` as a saved record is shown — again
  * after each save, and once a decision is taken — kept in the form's state (`FormState.approval`), its decisions taken
  * through `decide`, and its fields locked while it waits but for those the page leaves open (`approval.open`). A form on
- * a page with `approval` makes this from the part as it comes (form.ts, `approvalsCode`); the viewer waits for the part
+ * a page with `approval` makes this from the part as it comes (joins.ts); the viewer waits for the part
  * before it draws such a page, so nothing is typed in a field that would lock.
  */
 
-/** What the approvals ask of the form they are made for: the form itself — its page, its state, the record shown, its typing read and its changes saved — and what it keeps to itself. */
-export interface ApprovalsHost {
-  readonly form: Form;
-  readonly dataSource: DataSource | undefined;
-  readonly messages: Messages;
-  set(patch: Partial<FormState>): void;
-  /** The record loaded again, after a decision: its approvals asked again with it. */
-  reload(): Promise<void>;
-}
-
-/** A record's approvals, made for its form (`formApprovals`). */
-export interface ApprovalsKit {
+/** A record's approvals, made for its form (`join`; `form.joined('approvals')`): its hooks into the form, and its own. */
+export interface ApprovalsKit extends FormJoin {
   /** Ask the source's `approvals` for the record shown and keep what it tells — the last answer kept while it asks again. */
   ask(): Promise<void>;
   /**
@@ -38,7 +29,7 @@ export interface ApprovalsKit {
    */
   decide(level: string, decision: ApprovalDecision, reason?: string): Promise<void>;
   /** Whether a field — or a saved form placed on the page, by its name — is locked while the record waits for approval. */
-  locks(name: string): boolean;
+  locksField(name: string): boolean;
   /** What a field's lock says while the record waits for approval; null where it is not locked by one. */
   lockWords(name: string): string | null;
 }
@@ -102,8 +93,12 @@ export function approvalWhen(at: string, messages: Messages, page: Page): string
   return name ? `${words} ${name}` : words;
 }
 
-/** A record's approvals: what the form keeps of them, and what it asks, decides and locks by them. */
-export function formApprovals(host: ApprovalsHost): ApprovalsKit {
+/**
+ * A record's approvals, the approvals part's side of a form (joins.ts): what the form keeps of them, and what it asks,
+ * decides and locks by them — asked as the record is loaded or saved (`loaded`: at once where it was loaded before the
+ * part came).
+ */
+export function join(host: FormInner): ApprovalsKit {
   const { form, messages } = host;
   const page = form.page;
   /** Counted at each ask: only the latest answer is kept, a save's and a load's asks crossing. */
@@ -129,7 +124,7 @@ export function formApprovals(host: ApprovalsHost): ApprovalsKit {
   }
 
   async function ask(): Promise<void> {
-    const source = host.dataSource;
+    const source = host.options.dataSource;
     const recordId = state().recordId;
     if (!source?.approvals || recordId == null || !model) {
       if (state().approval) host.set({ approval: null });
@@ -152,7 +147,7 @@ export function formApprovals(host: ApprovalsHost): ApprovalsKit {
   }
 
   async function decide(level: string, decision: ApprovalDecision, reason?: string): Promise<void> {
-    const source = host.dataSource;
+    const source = host.options.dataSource;
     const recordId = state().recordId;
     if (!source?.decide || recordId == null || !model) throw new Error('The data source has no decide()');
     const now = state().approval;
@@ -192,15 +187,17 @@ export function formApprovals(host: ApprovalsHost): ApprovalsKit {
     if (shown()) await host.reload();
   }
 
-  function locks(name: string): boolean {
+  function locksField(name: string): boolean {
     const own = page.approval;
     return !!own && own.lock !== false && state().approval?.status === 'waiting' && !(own.open ?? []).includes(name);
   }
 
+  const loaded = () => void host.track(ask());
   return {
     ask,
     decide,
-    locks,
-    lockWords: (name) => (locks(name) ? messages.approvalLocked : null),
+    locksField,
+    lockWords: (name) => (locksField(name) ? messages.approvalLocked : null),
+    loaded,
   };
 }

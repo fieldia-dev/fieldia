@@ -1,10 +1,8 @@
-import type { Page } from '../format/page';
 import type { StoredDraft, SubmitRequest } from './data-source';
-import type { Form, FormState } from './form';
+import type { FormInner, FormJoin } from './joins';
 import { askedInOrder, drawOrder, drawsOrder, type DrawnOrder } from './order';
 import { quizResults, type QuizResults } from './quiz';
 import type { Values } from './values';
-import type { Scheduler } from './scheduler';
 import { keepTime, WHOLE_FORM, type Countdown } from './timing';
 
 /**
@@ -13,37 +11,17 @@ import { keepTime, WHOLE_FORM, type Countdown } from './timing';
  * at its moments: a part hidden or locked, a draft kept and laid, a send told, a response started again, a step entered.
  */
 
-/** What a survey's draw, clocks and marking ask of the form they are kept for. */
-export interface SurveyHost {
-  /** The form: its state, its steps shown, its clock and its person. */
-  readonly form: Form;
-  readonly page: Page;
-  readonly scheduler: Scheduler;
-  /** The app's own seed for this respondent, if it gave one (else the person's id, else one of this browser's). */
-  readonly seed: string | null;
-  set(patch: Partial<FormState>): void;
-  /** The wizard's steps in the order drawn, or null: the page's own. */
-  order(steps: string[] | null): void;
-  disposed(): boolean;
-  /** Keep a draft soon, where the form keeps drafts. */
-  keep(): void;
-}
-
-/** A form's survey draw and clocks (`surveyKit`). */
-export interface SurveyKit {
-  /** The draw made, where the page draws and the form has none yet: its first step the drawn one's while the person has not moved. */
-  open(): void;
+/** A form's survey draw and clocks (`join`; `form.joined('surveyflow')`): its hooks into the form, and its own. */
+export interface SurveyKit extends FormJoin {
   /** Whether a part was left out by the draw: never shown, asked, required or sent. */
-  hidden(id: string): boolean;
+  hides(id: string): boolean;
   /** Whether a part's time ran out — the page's, or that of the step it is on: locked, its checks refusing nothing. */
-  locked(id: string): boolean;
+  locks(id: string): boolean;
   /** What a draft keeps of them: the draw, the clocks' starts. */
-  draft(): Pick<StoredDraft, 'order' | 'timers'>;
+  kept(): Pick<StoredDraft, 'order' | 'timers'>;
   /** A draft laid: its draw where the page still has it, its clocks going on from their starts. */
   lay(draft: StoredDraft): void;
-  /** What a send tells of them: the order shown, when the page's clock started and whether it ran out. */
-  sent(): Pick<SubmitRequest, 'order' | 'started' | 'timeUp'>;
-  /** Started again, a new respondent: drawn anew (unless the app or the person's id is the seed), no clock running. */
+  /** Started again, a new respondent: drawn anew (unless the app or the person's id is the seed), no clock running, on the first step drawn. */
   reset(): void;
   /** A step entered: its own clock starts the first time. */
   entered(step: string): void;
@@ -55,12 +33,17 @@ export interface SurveyKit {
   marked(values: Values): QuizResults | undefined;
 }
 
-export function surveyKit(host: SurveyHost): SurveyKit {
+/**
+ * The survey flow's side of a form (joins.ts), made as the form is: the draw made where the page draws and the form has
+ * none yet — its first step the drawn one's while the person has not moved — and what a response is sent with told
+ * (`around`: the order shown, when the page's clock started and whether it ran out).
+ */
+export function join(host: FormInner): SurveyKit {
   const { page, form } = host;
   const drawn = drawsOrder(page);
   const time = keepTime({ page, scheduler: host.scheduler, clock: () => form.now().getTime(), state: () => form.getState(), set: host.set, steps: () => form.steps(), disposed: host.disposed, keep: host.keep });
   const user = form.user()?.id;
-  const seed = host.seed ?? (user != null ? String(user) : null);
+  const seed = host.options.seed ?? (user != null ? String(user) : null);
   /** Each part's parts, by its id — what a draw kept in a draft may name — and the part each sits in. */
   const partsOf = new Map<string, Set<string>>();
   const parents = new Map<string, string>();
@@ -85,19 +68,21 @@ export function surveyKit(host: SurveyHost): SurveyKit {
     take(order);
     host.set({ order, ...(form.getState().step === was ? { step: form.steps()[0] ?? null } : {}) });
   }
+  /** What a response is sent with of them: the order shown, when the page's clock started and whether it ran out. */
+  const told = (): Pick<SubmitRequest, 'order' | 'started' | 'timeUp'> => {
+    const order = form.getState().order;
+    return { ...(order ? { order: order as DrawnOrder } : {}), ...time.told() };
+  };
   const kit: SurveyKit = {
-    open() {
-      if (drawn && !form.getState().order) placed(draw());
-    },
-    hidden: (id) => undrawn.has(id),
-    locked(id) {
+    hides: (id) => undrawn.has(id),
+    locks(id) {
       const up = form.getState().timeUp;
       if (!up.length) return false;
       if (up.includes(WHOLE_FORM)) return true;
       for (let at: string | undefined = id; at; at = parents.get(at)) if (up.includes(at)) return true;
       return false;
     },
-    draft() {
+    kept() {
       const state = form.getState();
       return {
         ...(state.order ? { order: state.order as DrawnOrder } : {}),
@@ -114,20 +99,17 @@ export function surveyKit(host: SurveyHost): SurveyKit {
         time.arm();
       }
     },
-    sent() {
-      const order = form.getState().order;
-      return { ...(order ? { order: order as DrawnOrder } : {}), ...time.told() };
-    },
+    around: (kind, sent, go) => go(kind === 'submit' ? { ...(sent as SubmitRequest), ...told() } : sent),
     reset() {
       time.reset();
-      const order = drawn ? (seed === null ? draw() : (form.getState().order as DrawnOrder | null) ?? draw()) : null;
-      take(order);
-      host.set({ order, timers: {}, timeUp: [] });
+      host.set({ timers: {}, timeUp: [] });
+      placed(drawn ? (seed === null ? draw() : (form.getState().order as DrawnOrder | null) ?? draw()) : null);
     },
     entered: (step) => time.entered(step),
     start: () => time.start(),
     countdown: () => time.countdown(),
     marked: (values) => (page.quiz ? quizResults(page, values, askedInOrder(page, (form.getState().order ?? null) as DrawnOrder | null, values)) ?? undefined : undefined),
   };
+  if (drawn && !form.getState().order) placed(draw());
   return kit;
 }

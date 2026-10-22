@@ -348,23 +348,19 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (page.limits || page.continueLater) found.add(limitsPart);
   if (page.templates && page.data.kind === 'record') found.add(templatesPart);
   if (hasLimits(page)) found.add(formLimitsPart);
-  // A record's approvals: drawn over it, its fields locked while it waits — both in before it is drawn.
-  if (page.approval) {
-    found.add(approvalsPart);
-    found.add(formApprovalsPart);
-  }
+  // A record's approvals: drawn over it, its fields locked while it waits — both in before it is drawn (the form's
+  // side, @fieldia/core's `formApprovalsPart`, with the parts that join its form below).
+  if (page.approval) found.add(approvalsPart);
   // AI help's button, tools and words read as filters: drawn with the page, so in before it is drawn.
   if (asksAssist(page)) found.add(assistPart);
-  // A survey's flow: drawn by the viewer's part of it, kept by the form's.
-  if (surveyFlow(page)) {
-    found.add(surveyFlowPart);
-    found.add(formSurveyPart);
-  }
+  // A survey's flow: drawn by the viewer's part of it, kept by the form's (`formSurveyPart`, joining its form below).
+  if (surveyFlow(page)) found.add(surveyFlowPart);
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);
   // A text kept in several languages: its switch where it is typed, the reader's language where a list or a card reads it.
   if (hasLanguages(page)) found.add(languagesPart);
-  // The parts that join its form, and what each draws with the page.
+  // The parts that join its form — the fields its link fills, proof by a code, a payment, an outbox, a survey's flow, a
+  // record's approvals — and what each draws with the page.
   for (const part of formJoins(page)) found.add(joinDrawings[part.name] ?? part).add(part);
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);

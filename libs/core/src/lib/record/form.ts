@@ -54,13 +54,10 @@ import {
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
 import { formLanguagesPart, hasLanguages } from './languages';
-import { formSurveyPart, surveyFlow } from './survey';
-import type { SurveyKit } from './survey-kit';
 import type { QuizResults } from './quiz';
 import type { Countdown } from './timing';
 import type { Limits } from './form-limits';
-import { formApprovalsPart, type FormApproval } from './approving';
-import type { ApprovalsKit } from './form-approvals';
+import type { FormApproval } from './approving';
 import { draftRead, resumeStep } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
@@ -68,10 +65,9 @@ import { hostScheduler, type Scheduler } from './scheduler';
 import { signedBy, type SignedBy } from './signed';
 import type { PageLink } from './link-values';
 import type { OutboxStore } from './outbox-form';
-import { formJoins, type FormJoin, type FormJoins, type JoinPart, type SendKind } from './joins';
+import { formJoins, type FormInner, type FormJoin, type FormJoins, type JoinPart, type SendKind } from './joins';
 import type { HistoryStep, Noted } from './history';
 import { pressUndoPart } from './undo-later';
-import { recordLivePart, type FormInner, type LiveRecord } from './live-later';
 import { createMoments, createRunner, takenNow, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
@@ -1158,9 +1154,20 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const layoutSteps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
   /** The wizard's steps in the order shown: the page's, or the order drawn for this respondent (`state.order`). */
   let steps = layoutSteps;
-  /** A survey's draw and clocks, kept by the survey flow's part (survey-kit.ts) once it came; a draft laid before, laid then. */
-  let surveyKit: SurveyKit | null = null;
-  let draftForKit: StoredDraft | null = null;
+  /**
+   * The parts that join this form where its page or its source asks (`formJoins`: an offline outbox, the fields its link
+   * fills, proof by a code, a payment, a survey's flow, a record's approvals, the record made live), each made as it
+   * comes — at once where it has — and kept in their order: holes until then. While one has not come, a send waits for it
+   * (`joining`); a draft laid before one came is laid on it as it does (`laid`).
+   */
+  const joins: FormJoin[] = [];
+  const joinParts = formJoins(page, options).filter((part) => !outer || part.name !== 'approvals');
+  let joining: Promise<unknown> | undefined;
+  let laid: StoredDraft | null = null;
+  /** A part's side of this form, by its name, once it came. */
+  const joined = <K extends keyof FormJoins>(name: K): FormJoins[K] | null => (joins[joinParts.findIndex((part) => part.name === name)] ?? null) as FormJoins[K] | null;
+  /** Whether a part that joins the form says so of a part of the page, or of a field. */
+  const anyJoin = (says: (join: FormJoin) => boolean | undefined) => joins.some((join) => join && says(join));
   const storeKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
   /** Today, on the clock of the page's time zone (the browser's own when it names none). */
   const today = () => dayIn(options.now?.() ?? new Date(), page.timeZone);
@@ -1525,17 +1532,23 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const listed = listedColumns(page.fields);
   /** Whether the values set now are a change someone made (`writeValues`), after which a line's choice no longer offered is cleared. */
   let edit = false;
-  // ---- live: changes made elsewhere, and who else has the record open (the live part) ------------------------
-  /** The live part's watch over the record shown, where the source tells either (`subscribe`, `presence`): told of each change. */
-  let liveKit: LiveRecord | null = null;
-  /** What the parts that work inside the form take of it (live-later.ts): the live part, the undo part's press. */
+  /**
+   * The one kit the parts that work inside the form are given of it (joins.ts): the parts that join it, its limits, the
+   * undo part's press.
+   */
   const inner: FormInner = {
+    get form() {
+      return form;
+    },
     page,
     fields,
     options,
     messages,
+    scheduler,
     state: () => state,
     set,
+    reading,
+    sending: () => (page.data.kind === 'responses' ? answersSent() : sentValues()),
     baseline: () => baseline,
     same: (name, one, other) => sameValue(fields[name], one, other),
     conflictOf,
@@ -1546,6 +1559,18 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     generation: () => generation,
     emit,
     replaced,
+    clock,
+    started: () => started,
+    listened: () => listeners.size > 0,
+    disposed: () => disposed,
+    keep: () => void ((options.drafts || onServer()) && scheduleDraft()),
+    order: (list) => void (steps = list ?? layoutSteps),
+    refuse(name, message) {
+      // Said until the field changes from what it holds, as a refused save's words are.
+      serverErrors[name] = { message, value: JSON.stringify(state.values[name] ?? null) };
+      set({ errors: { ...state.errors, [name]: message } });
+    },
+    reload: () => load(true),
   };
   /** The person's changes to the record shown, as made (history.ts); and whether one is being taken back or made again now. */
   let noted: Noted[] = [];
@@ -1609,8 +1634,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // The problems found inside a saved form are shown on it, beside its own fields.
     if (state.errors !== shown) for (const part of attached.values()) part.inner.show(inside(state.errors, part.name));
     for (const listener of [...listeners]) listener(state);
-    // The record shown, watched for changes made elsewhere and for who else has it open; asked again as that changes.
-    liveKit?.watch();
+    // What the parts that join the form follow of it: the record shown, watched for changes made elsewhere and for who
+    // else has it open, asked again as that changes.
+    for (const join of joins) join?.changed?.();
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
       // After someone's change, a choice its new choices do not offer is taken out and said, as a line's is.
@@ -1751,7 +1777,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     told = step;
     emit('step', { step });
     // A step with a time limit: its clock starts as it is first entered.
-    surveyKit?.entered(step);
+    for (const join of joins) join?.entered?.(step);
     const list = page.on?.show?.[step];
     if (list) void track(moment(`on.show.${step}`, list, chain, true));
   }
@@ -2136,13 +2162,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const node = index.get(id);
     if (!node) throw new Error(`The page has no element "${id}"`);
     const { context: ctx, env } = reading();
-    const hidden = (at: IndexedNode | undefined) => (at ? !!surveyKit?.hidden(at.id) || !rolesAllow(at.roles, userRoles) || at.invisible.evaluate(ctx, env) : false);
+    const hidden = (at: IndexedNode | undefined) => (at ? anyJoin((join) => join.hides?.(at.id)) || !rolesAllow(at.roles, userRoles) || at.invisible.evaluate(ctx, env) : false);
     let invisible = hidden(node);
     for (let parent = node.parent; !invisible && parent; parent = index.get(parent)?.parent ?? null) {
       invisible = hidden(index.get(parent));
     }
     // A section read-only right now makes everything inside it read-only too; a page's, or a step's, time run out too.
-    let readonly = node.readonly.evaluate(ctx, env) || !!surveyKit?.locked(id);
+    let readonly = node.readonly.evaluate(ctx, env) || anyJoin((join) => join.locks?.(id));
     for (let parent = node.parent; !readonly && parent; parent = index.get(parent)?.parent ?? null) {
       readonly = index.get(parent)?.readonly.evaluate(ctx, env) ?? false;
     }
@@ -2157,7 +2183,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const answer = answerOf(node);
     if (answer !== undefined && signedNow().has(answer)) readonly = true;
     // A record waiting for approval: locked but for the fields the page leaves open (the approvals part).
-    if (answer !== undefined && approvalKit?.locks(answer)) readonly = true;
+    if (answer !== undefined && anyJoin((join) => join.locksField?.(answer))) readonly = true;
     return {
       invisible,
       readonly: readonly || (def !== undefined && lockedField(def)),
@@ -2296,7 +2322,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const seen = new Set<string>();
     for (const node of visibleFieldNodes(root)) {
       // The answers of a time run out go as they stood: their checks refuse nothing.
-      if (surveyKit?.locked(node.id)) continue;
+      if (anyJoin((join) => join.locks?.(node.id))) continue;
       const name = node.field as string;
       seen.add(name);
       const end = rangeEnd(node);
@@ -2577,7 +2603,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return {
       values,
       ...(steps.length ? { step: state.step, skipped: [...state.skipped] } : {}),
-      ...surveyKit?.draft(),
+      ...Object.assign({}, ...joins.map((join) => join?.kept?.())),
       ...(Object.keys(state.unread).length ? { unread: structuredCopy(state.unread as Record<string, UnreadText>) } : {}),
       answered: Object.keys(fields).filter((name) => state.dirty.includes(name)),
       savedAt: new Date(clock()).toISOString(),
@@ -2637,8 +2663,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   function applyDraft(draft: StoredDraft) {
     found = null;
     // Its draw and its clocks, by the survey flow's part: now, or once it came.
-    if (surveyKit) surveyKit.lay(draft);
-    else draftForKit = draft;
+    laid = draft;
+    for (const join of joins) join?.lay?.(draft);
     writeValues(withDraft(draft.values ?? {}), { draft: null }, true);
     const known = (draft.skipped ?? []).filter((id) => steps.includes(id));
     // Text typed that did not read stays as typed, said as it was, where its field is still on the page.
@@ -2715,15 +2741,6 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Whether the record shown was loaded once: its counts are asked then, its own choices not counted against it. */
   let loadedOnce = false;
   /** Whether the form keeps limits: a page with them or with places of its own, or a list's choices that came with places. */
-  /** A survey's draw and clocks, made from the survey flow's part as it came: the draw made, a draft laid meanwhile laid on it. */
-  function surveyCode() {
-    if (surveyKit || disposed || !formSurveyPart.loaded) return;
-    const kit = formSurveyPart.loaded.surveyKit({ form, page, scheduler, seed: options.seed ?? null, set, order: (list) => void (steps = list ?? layoutSteps), disposed: () => disposed, keep: () => void ((options.drafts || onServer()) && scheduleDraft()) });
-    surveyKit = kit;
-    kit.open();
-    if (draftForKit) kit.lay(draftForKit);
-    draftForKit = null;
-  }
 
   const keepsLimits = () => !outer && (hasLimits(page) || Object.values(state.choices).some((choices) => choices.options?.some((option) => option.seats !== undefined)));
   /**
@@ -2738,27 +2755,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   }
   function limitsMade(part: FormLimitsPart): Limits | null {
     if (limitsKit || disposed) return limitsKit;
-    const kit = part.formLimits({
-      page,
-      dataSource: options.dataSource,
-      user: options.user,
-      messages,
-      scheduler,
-      state: () => state,
-      set,
-      clock,
-      started: () => started,
-      shownNow,
-      generation: () => generation,
-      replaced: () => named(messages.recordReplacedNoun, messages.recordReplaced),
-      listened: () => listeners.size > 0,
-      disposed: () => disposed,
-      refuse(name, message) {
-        // Said until the field changes from what it holds, as a refused save's words are.
-        serverErrors[name] = { message, value: JSON.stringify(state.values[name] ?? null) };
-        set({ errors: { ...state.errors, [name]: message } });
-      },
-    });
+    // The one kit, made at the limits' own moment: once the form knows it keeps them (joins.ts).
+    const kit = part.formLimits(inner);
     limitsKit = kit;
     kit.show();
     if (kit.asks() && (state.recordId == null || loadedOnce)) void track(kit.ask());
@@ -2780,18 +2778,6 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /** A choice of a full option, picked by the person, refused under its field: the field keeps what it held. */
   const refusedFull = (name: string, value: Value): boolean => !!limitsKit?.refusedFull(name, value);
-
-  // ---- a record's approvals (the approvals part: form-approvals.ts) ---------------------------------------------------
-
-  /** The approvals made for this form from the approvals part, once it came: none before, nor on a page without them. */
-  let approvalKit: ApprovalsKit | null = null;
-  /** Whether the form asks for approvals: a page with `approval` (a record's own, as its check says), its source telling them. */
-  const keepsApprovals = !outer && !!page.approval && !!options.dataSource?.approvals;
-  /** The approvals, made from their part once it came; null without them, or where it could not come. */
-  const approvalsCode = (): Promise<ApprovalsKit | null> =>
-    keepsApprovals ? formApprovalsPart.load().then((part) => (approvalKit ??= part.formApprovals({ form, dataSource: options.dataSource, messages, set, reload: () => load(true) })), () => null) : Promise.resolve(null);
-  /** Ask the record shown's approvals, once their part came; nothing on a page without them. */
-  const askApprovals = () => approvalsCode().then((kit) => kit?.ask());
 
   function scheduleAutosave() {
     const autosave = options.autosave;
@@ -2878,19 +2864,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return (await saving(chain)) === null;
   }
 
-  /**
-   * The parts that join this form where its page asks (`formJoins`: an offline outbox, the fields its link fills, proof
-   * by a code, a payment), each made as it comes — at once where it has — and kept in their order; while one has not
-   * come, a send waits for it (`joining`).
-   */
-  const joins: FormJoin[] = [];
-  let joining: Promise<unknown> | undefined;
   /** A send — a response's, a save's, an upload's — through the parts that join the form, each around the next. Null: kept, not sent. */
   function through<T>(kind: SendKind, sent: unknown, send: (sent: never) => Promise<T>): Promise<T | null> {
     return joins.reduce<(sent: never) => Promise<T | null>>((go, join) => (join.around ? (one) => join.around!(kind, one, go as never) : go), send)(sent as never);
   }
   /** Started again, or another record opened: the parts that join the form let go of what the one before had. */
   const joinsReset = () => joins.forEach((join) => join.reset?.());
+  /** The record loaded, or saved: what the parts that join the form ask again (a record's approvals). */
+  const joinsLoaded = () => joins.forEach((join) => join.loaded?.());
 
   /** Every value, for a source that saves whole records: those of fields hidden from the person, which they never had, left out. */
   function sentValues(): Values {
@@ -3038,9 +3019,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const resetAt = resets;
         const seen = botReport();
         // A quiz's marking, in before the answers go: what the person sees of their results.
-        if (surveyFlow(page) && !surveyKit) await formSurveyPart.load().then(surveyCode, () => undefined);
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
-        const request: SubmitRequest = { pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...surveyKit?.sent() };
+        const request: SubmitRequest = { pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft };
         // Through the parts that join the form: kept on the device where an outbox finds no signal (null), the form going
         // on as though it went.
         const got = await through('submit', request, (one: SubmitRequest) => (source.submit as NonNullable<DataSource['submit']>)(one));
@@ -3055,7 +3035,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const added = answer.values && typeof answer.values === 'object' ? structuredCopy(answer.values) : {};
         // Started again meanwhile (`reset`): a new response is on screen, and no ending is the old one's.
         // A quiz's results: the source's marking, else the page's, on the answers as sent.
-        const quiz = answer.quiz ?? surveyKit?.marked(sent);
+        const quiz = answer.quiz ?? joined('surveyflow')?.marked(sent);
         set({ status: 'saved', unsent: unsentNow(), ...(resets === resetAt ? { sent: { id: answer.id ?? null, values: { ...structuredCopy(sent), ...added }, ...(quiz ? { quiz } : {}) } } : {}) });
         emit('send', { values: sent, ...(seen ? { bot: seen } : {}) });
         // Kept, not sent: its counts and its after-save steps wait for a send that went.
@@ -3100,7 +3080,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         scheduleAutosave();
       }
       // A save may have sent it for approval, or moved it on: its approvals asked again.
-      if (keepsApprovals) void track(askApprovals());
+      joinsLoaded();
       // The record as this save left it: a change made while it was on its way is no value of it.
       emit('save', { recordId: state.recordId, values: baseline });
       if (got) void track(moment('on.afterSave', page.on?.afterSave, chain, false));
@@ -3364,7 +3344,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       loadedOnce = true;
       if (asksLimits()) void track(askLimits());
       // Its approvals: where it stands, what was decided, what this person may decide — its fields locked while it waits.
-      if (keepsApprovals) void track(askApprovals());
+      joinsLoaded();
       if (again) return;
       offerDraft();
       void track(opening());
@@ -3834,7 +3814,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       set({});
     },
 
-    fieldReadonly: (name) => lockedField(fieldDef(name)) || state.can?.edit === false || state.can?.readonlyFields?.includes(name) === true || signedNow().has(name) || !!approvalKit?.locks(name),
+    fieldReadonly: (name) => lockedField(fieldDef(name)) || state.can?.edit === false || state.can?.readonlyFields?.includes(name) === true || signedNow().has(name) || anyJoin((join) => join.locksField?.(name)),
 
     loadChoices: (field) => loadChoices(field),
     loadDefinitions,
@@ -4035,10 +4015,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Started again: a new response, timed from now.
       bot = { ...bot, honeypot: false, since: clock() };
       const values = syncParts(structuredCopy(baseline), 'start');
-      // A new respondent: drawn anew (unless the app or the person's id is the seed), no clock running.
-      surveyKit?.reset();
       set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null });
-      // Started again: a new response proves and pays its own.
+      // Started again: a new response proves and pays its own; a new respondent is drawn anew (unless the app or the
+      // person's id is the seed), on the first step drawn, no clock running.
       joinsReset();
       // Started again: whether the page takes another response, and each choice's places, asked again.
       if (asksLimits()) void track(askLimits());
@@ -4180,8 +4159,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       return true;
     },
 
-    startTimer: () => surveyKit?.start(),
-    countdown: () => surveyKit?.countdown() ?? null,
+    startTimer: () => joined('surveyflow')?.start(),
+    countdown: () => joined('surveyflow')?.countdown() ?? null,
 
     skip() {
       const current = state.step;
@@ -4333,15 +4312,19 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     refreshLimits: () => askLimits(),
 
-    refreshApprovals: askApprovals,
+    async refreshApprovals() {
+      await joining;
+      await joined('approvals')?.ask();
+    },
 
     async decide(level, decision, reason) {
-      const kit = await approvalsCode();
+      await joining;
+      const kit = joined('approvals');
       if (!kit) throw new Error('No approvals on this page');
       return track(kit.decide(level, decision, reason));
     },
 
-    approvalLock: (name) => approvalKit?.lockWords(name) ?? null,
+    approvalLock: (name) => joined('approvals')?.lockWords(name) ?? null,
 
     async reloadTheirs() {
       // A save on its way first: its answer is not dropped by the load.
@@ -4495,7 +4478,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     dispose() {
       // An answer that lands after is for no record shown.
       disposed = true;
-      liveKit?.stop();
+      for (const join of joins) join?.dispose?.();
       newGeneration();
       clearFiles();
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
@@ -4512,23 +4495,19 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
   // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
   if (keepsLimits()) void track(limitsCode());
-  // A record's approvals: their part asked for as the form is made, ready by the time its record is loaded.
-  if (keepsApprovals) void track(approvalsCode());
-  // A page's survey code — a quiz's marking, its draw and its clocks — made at once where it came, else once it has:
-  // before a draft is laid, which lays its own draw over it.
-  if (surveyFlow(page)) {
-    surveyCode();
-    if (!surveyKit) void formSurveyPart.load().then(surveyCode, () => undefined);
-  }
-  // The parts its page asks to join it: each made at once where it has come, else as it does.
-  const joinParts = formJoins(page);
+  // The parts its page or its source asks to join it — a survey's draw made before a draft is laid, which lays its own
+  // draw over it; a record's approvals ready by the time its record is loaded; the record made live — each made at once
+  // where it has come, else as it does, a draft laid meanwhile laid on it.
   if (joinParts.length) {
-    const host = { form, page, options, messages, set, reading, sending: () => (page.data.kind === 'responses' ? answersSent() : sentValues()) };
-    const made = (at: number) => (part: JoinPart) => void (disposed || (joins[at] ??= part.join(host)));
+    const made = (at: number) => (part: JoinPart) => {
+      if (disposed || joins[at]) return;
+      const join = (joins[at] = part.join(inner));
+      if (laid) join.lay?.(laid);
+      // Its record loaded before it came: what it asks of a loaded record, asked now.
+      if (loadedOnce) join.loaded?.();
+    };
     joining = Promise.all(joinParts.map((part, at) => (part.loaded ? made(at)(part.loaded) : track(part.load().then(made(at), () => undefined)))));
   }
-  // Where the source tells changes made elsewhere or who else is here: the live part, asked for now.
-  if (options.dataSource?.subscribe || options.dataSource?.presence) void recordLivePart.load().then((part) => disposed || (liveKit = part.liveRecord(inner)).watch(), () => undefined);
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

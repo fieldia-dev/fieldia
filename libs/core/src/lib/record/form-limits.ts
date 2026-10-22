@@ -1,11 +1,10 @@
 import type { Option } from '../format/field';
 import type { Page } from '../format/page';
 import { choiceOptions, optionsField, optionsList } from '../format/choice-options';
-import type { DataSource, LimitsResult, SaveProblem } from './data-source';
-import type { FormState, FormUser } from './form';
+import type { LimitsResult, SaveProblem } from './data-source';
+import type { FormInner } from './joins';
 import { fill, type Messages } from './messages';
 import type { Stopped } from './run';
-import type { Scheduler } from './scheduler';
 import { countsAsked, dayAlone, limitInstant, seatedFields, type FormLimits, type Seats, type TakingState } from './taking';
 import { dayWords } from './day-words';
 import { isOwnZone, wallClock, wallDay, wallTime } from './zones';
@@ -20,31 +19,8 @@ import type { Value } from './values';
  * page without limits does, and a save waits for it.
  */
 
-/** What the limits ask of the form they are made for. */
-export interface LimitsHost {
-  readonly page: Page;
-  readonly dataSource: DataSource | undefined;
-  readonly user: FormUser | undefined;
-  readonly messages: Messages;
-  readonly scheduler: Scheduler;
-  state(): FormState;
-  set(patch: Partial<FormState>): void;
-  /** Now, in ms, by the form's clock. */
-  clock(): number;
-  /** Whether the form has its state yet: a list's choices are read from it once it has. */
-  started(): boolean;
-  /** Whether what is asked now still lands on the record shown, when it answers. */
-  shownNow(): () => boolean;
-  /** The record shown's generation: another shown since a save started, it is told so. */
-  generation(): number;
-  /** The words a save says when another record was shown since it started. */
-  replaced(): string;
-  /** Whether something listens to the form: a page left open is told as it opens or closes then. */
-  listened(): boolean;
-  disposed(): boolean;
-  /** Words said under a field until it changes from what it holds, as a refused save's are. */
-  refuse(name: string, message: string): void;
-}
+/** What the limits are given of the form they are made for: the one kit (joins.ts), made at their own moment. */
+export type LimitsHost = FormInner;
 
 /** A form's limits, made for it (`formLimits`). */
 export interface Limits {
@@ -142,7 +118,7 @@ export function formLimits(host: LimitsHost): Limits {
   };
   /** The choice fields with places now: those of the page's own, and of the app's lists whose options loaded with them. */
   const seatedNow = () => [...seated, ...Object.keys(host.started() ? host.state().choices : {}).filter((name) => !seated.includes(name) && optionsOf(name).some((option) => option.seats !== undefined))];
-  const asks = () => !!host.dataSource?.limits && (countsAsked(page) || seatedNow().length > 0);
+  const asks = () => !!host.options.dataSource?.limits && (countsAsked(page) || seatedNow().length > 0);
   /** The page's counts asked as it opens and not told yet: nothing is typed meanwhile. */
   let askingFirst = asks() && countsAsked(page);
   const limitsHere = (): FormLimits | null => limitsNow(page, host.clock(), counted, askingFirst, optionsOf);
@@ -159,10 +135,11 @@ export function formLimits(host: LimitsHost): Limits {
   }
 
   async function ask(): Promise<void> {
-    const source = host.dataSource;
+    const source = host.options.dataSource;
     if (!asks() || !source?.limits) return show();
     const shown = host.shownNow();
-    const user = host.user ? { user: { id: host.user.id, ...(host.user.name ? { name: host.user.name } : {}) } } : {};
+    const person = host.options.user;
+    const user = person ? { user: { id: person.id, ...(person.name ? { name: person.name } : {}) } } : {};
     // A source that never answers keeps no one from the questions for long: past 10 seconds they show, and its submit decides.
     const waited = askingFirst
       ? scheduler.setTimeout(() => {
@@ -193,7 +170,10 @@ export function formLimits(host: LimitsHost): Limits {
     async stillTaking(asked) {
       if (!page.limits && !seatedNow().length) return null;
       await ask();
-      if (asked !== host.generation()) return { reason: 'save', message: host.replaced() };
+      if (asked !== host.generation()) {
+        const gone = host.replaced();
+        return gone.reason === 'cannot' ? { reason: 'save', message: gone.message } : gone;
+      }
       const limits = limitsHere();
       const why = limits && limits.state !== 'open' && limits.state !== 'asking' ? takingWords(page, limits, messages) : null;
       if (!why) return null;
