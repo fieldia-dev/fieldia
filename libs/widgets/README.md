@@ -16,6 +16,12 @@ form with `data-fd-skin`:
 npm install @fieldia/widgets
 ```
 
+The widgets' own words (`WIDGET_LABELS`) come in English, Arabic, German and
+French, and in Turkish, Persian, Urdu and Spanish — **machine-assisted, not yet
+reviewed by a native speaker**; a number box on a Persian or Urdu page reads
+their digits (۰–۹), and a Turkish page's date box writes a day with dots
+(15.10.2026), as a German one does.
+
 Most apps never import this package directly: [`@fieldia/viewer`](https://www.npmjs.com/package/@fieldia/viewer)
 lays a page out with these widgets. Import it to write your own widget — a
 `WidgetFactory` returns `{ element, update(state), focus() }` — and register it

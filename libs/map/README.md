@@ -200,6 +200,8 @@ map.reload();        // your search changed
 map.destroy();
 ```
 
+Its words come in English, Arabic, German and French, and in Turkish, Persian,
+Urdu and Spanish — machine-assisted, not yet reviewed by a native speaker.
 Also `locale` (a tag; the document's language unless said), `sort`, `icons`,
 `isChosen` and `onChoose`, `actions` and `onAction`, `onSort` (Nearest first),
 and every setting `mapListViews` takes. Without `onSearch` the map offers no

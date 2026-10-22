@@ -17,7 +17,7 @@ export const FEATURES = [
   { path: '/features/rules/', name: 'Rules and actions', blurb: 'Fields shown, required and locked by conditions, values worked out, and buttons that run steps.' },
   { path: '/features/lists/', name: 'Lists and search', blurb: 'Suggestions as people type, filters, grouping and favourites, and buttons for the records chosen.' },
   { path: '/features/maps/', name: 'Maps', blurb: 'Places and areas as fields, records on a map, couriers that move along the road, and districts shaded by colour.' },
-  { path: '/features/looks/', name: 'Looks and languages', blurb: `${Words(COUNTS.themes)} themes, ${words(COUNTS.skins)} skins, light and dark, ${words(COUNTS.languages)} languages with Arabic right to left, and your app’s own words.` },
+  { path: '/features/looks/', name: 'Looks and languages', blurb: `${Words(COUNTS.themes)} themes, ${words(COUNTS.skins)} skins, light and dark, ${words(COUNTS.languages)} languages (four machine-assisted, not yet reviewed by a native speaker) with Arabic right to left, and your app’s own words.` },
   { path: '/features/backend/', name: 'Your backend', blurb: 'One small interface to load and save; your server fills in fields and puts its refusals on them.' },
 ];
 

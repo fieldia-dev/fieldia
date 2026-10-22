@@ -3,7 +3,8 @@
 Show a [Fieldia](https://fieldia.dev) page and let people fill it in. Plain DOM,
 no framework: sections, tabs and wizards, the statusbar, stat buttons, drafts,
 lists of records with a search bar, right-to-left layout, and messages in
-English, Arabic, German and French.
+English, Arabic, German and French — and in Turkish, Persian, Urdu and Spanish,
+machine-assisted, not yet reviewed by a native speaker.
 
 ```sh
 npm install @fieldia/viewer
@@ -448,7 +449,7 @@ lost without a word. Where the source says the person may only read the record
 (`can.edit: false`) there is no Edit, Save or Save & Close and a line over the
 record says why; fields it locks show a lock with the reason, fields it hides
 are gone, and the gear menu's Archive, Duplicate or Delete it does not allow
-are hidden, its foot saying why — in English, Arabic, French or German. See
+are hidden, its foot saying why — in each language Fieldia speaks. See
 [versions and conflicts](https://fieldia.dev/data/#versions).
 
 ## What a page's records are called
@@ -474,7 +475,8 @@ count, and @fieldia/map's failure, say them too.
 Each is a word of its own beside the plain one, ending in `Noun`
 (`exportedNoun: '{n} {records} exported.'`, `exportedNounOne`); English has them
 all, German and French those they can say round any noun's gender, Arabic the
-pager's name. A language that leaves one out says its own plain sentence, and so
+pager's name, Persian most, Turkish those where the noun takes no ending, Spanish
+and Urdu those where nothing must agree with it. A language that leaves one out says its own plain sentence, and so
 does an app's `labels` that gives the plain one alone (`exported`): never an
 English sentence round another language's words. `addLanguage` keeps it so.
 
@@ -770,7 +772,7 @@ A named filter may be a period a date falls in, counted from today —
 — and a person's own filter offers "in the period" for a date: today,
 yesterday, this week or last, this month or last, this year, the last 7 or
 30 days, overdue. A week starts on the language's first day (Saturday in
-Arabic, Monday elsewhere); days are the page's time zone's (`timeZone`), else
+Arabic and Persian, Monday elsewhere); days are the page's time zone's (`timeZone`), else
 the browser's; the clock is the viewer's `now`. They reach the data source as
 plain conditions. A date in `groupBy` groups by its year, quarter, month,
 week or day, asked of `groups` with `interval`. See
@@ -1239,13 +1241,14 @@ folder the first time a page uses it:
 </script>
 ```
 
-Its own words are English. For Arabic, German or French, add that language's
-script after it (about 12–13 KB gzipped each), then pass `locale`:
+Its own words are English. For Arabic, German, French, Turkish, Persian, Urdu
+or Spanish, add that language's script after it (about 17–22 KB gzipped each),
+then pass `locale`:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
-<!-- or fieldia.de.js, fieldia.fr.js; one per language the page is shown in -->
+<!-- or fieldia.de.js, fieldia.fr.js, fieldia.tr.js, fieldia.fa.js, fieldia.ur.js, fieldia.es.js; one per language the page is shown in -->
 <script>
   Fieldia.mountViewer(element, { page, dataSource, locale: 'ar' });
 </script>
@@ -1254,9 +1257,20 @@ script after it (about 12–13 KB gzipped each), then pass `locale`:
 Load both from the same version. A page set to a language whose script is
 missing shows Fieldia's words in English, and the console names the script to
 add. Installed from npm, `@fieldia/viewer` (and `@fieldia/core`,
-`@fieldia/widgets` and the React, Vue and Angular bindings) has all four
+`@fieldia/widgets` and the React, Vue and Angular bindings) has all eight
 languages with no extra import; `addLanguage(locale, { messages, widgets,
 viewer })` replaces a language's words in either.
+
+Turkish (`tr`), Persian (`fa`), Urdu (`ur`) and Spanish (`es`) are
+**machine-assisted, not yet reviewed by a native speaker**: every word English
+has is there, with the same blanks, but no native speaker has read them yet —
+corrections are welcome, and `addLanguage` takes an app's own over them.
+Persian and Urdu pages run right to left, and a number typed in their digits
+(۰–۹, and ٫ ٬ as its marks) reads as one, as Arabic-Indic digits do. Their
+dates and numbers are written by Intl in the page's language, in Latin digits
+and on the Gregorian calendar a date is kept in — Intl's own calendar for
+Persian is the Solar Hijri, which Fieldia does not show; a Turkish page writes
+a typed date with dots (15.10.2026), as a German one does.
 
 The words only a part shows — a list's, Import's, a file's, booking slots'… —
 come in that part, in English, and a language's script has all of them: in

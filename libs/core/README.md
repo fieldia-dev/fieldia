@@ -63,6 +63,17 @@ settings each kind has are `PART_LOOKS`:
 }
 ```
 
+The validation messages (`MESSAGES`) come in English, Arabic, German and French,
+and in Turkish (`tr`), Persian (`fa`), Urdu (`ur`) and Spanish (`es`) —
+**machine-assisted, not yet reviewed by a native speaker**: every message
+English has, with its blanks, not yet read by a native speaker (corrections
+welcome). Persian and Urdu are written right to left; `readNumber` reads their
+digits (۰–۹) and marks (٫ ٬) as it reads Arabic-Indic ones; a day a message
+names is written by Intl on the Gregorian calendar a value is kept in
+(`dayTag`: Intl's own for Persian is the Solar Hijri), and `listComma` and
+`firstWeekday` give the Arabic comma and a Saturday week where those languages
+use them.
+
 ## A starting page from a schema
 
 `pageFromSchema(input, options)` makes a page from what an app already has: a

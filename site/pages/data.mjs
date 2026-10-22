@@ -584,7 +584,7 @@ return loadedRecord(row.values, {
   },
 });`
 )}
-<p>What is not allowed is hidden, never shown greyed out, and the reason is said: over the record when it is only to be read, by a locked field's lock, and at the foot of the gear menu for an action it leaves out — the source's ${c('reason')}, or Fieldia's own words in English, Arabic, French or German. A save can change it (a stage that locks the record): return ${c('can')} with the ${c('SaveResult')}. Each row of a list may carry ${c('can')} and ${c('version')} too. See it as a <a href="/demos/save-safety/?role=viewer">viewer who may only read</a>.</p>
+<p>What is not allowed is hidden, never shown greyed out, and the reason is said: over the record when it is only to be read, by a locked field's lock, and at the foot of the gear menu for an action it leaves out — the source's ${c('reason')}, or Fieldia's own words in the page's language. A save can change it (a stage that locks the record): return ${c('can')} with the ${c('SaveResult')}. Each row of a list may carry ${c('can')} and ${c('version')} too. See it as a <a href="/demos/save-safety/?role=viewer">viewer who may only read</a>.</p>
 
 <h2 id="many">Many records at once: every match, export and bulk edit</h2>
 <p>A list's <em>Select all 1,284 that match</em>, its Export and its Edit (see <a href="/lists/#bulk">lists</a>) read three optional members. Without them each still works: the list reads ${c('list')} a page at a time, writes the file in the browser, and saves each record in turn.</p>
