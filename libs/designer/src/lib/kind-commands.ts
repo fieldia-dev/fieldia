@@ -25,6 +25,12 @@ export interface OptionDetails {
   invisible?: string | null;
   /** How many may choose it, its places left shown once the app counts them; `null` takes them away. */
   seats?: number | null;
+  /** A second line under its words; empty or `null` takes it away. */
+  caption?: string | null;
+  /** An icon beside its words, by name; empty or `null` takes it away. */
+  icon?: string | null;
+  /** Its colour, as #rrggbb; `null` takes it away. */
+  color?: string | null;
 }
 
 export interface KindCommandsDeps {
@@ -113,6 +119,15 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
             if (details.score === null) delete option.score;
             else if (!Number.isFinite(details.score)) throw new Refusal((w) => w.refusals.pointsNumber);
             else option.score = details.score;
+          }
+          // What a choice's option says beside its words: a second line, an icon, a colour.
+          for (const key of ['caption', 'icon', 'color'] as const) {
+            const value = details[key];
+            if (value === undefined) continue;
+            if (field.type !== 'selection') throw new Refusal((w) => w.refusals.looksForChoices);
+            if (key === 'color' && value !== null && !/^#[0-9a-fA-F]{6}$/.test(value)) throw new Refusal((w) => w.refusals.colourHex);
+            if (value === null || !value.trim()) delete (option as Option)[key];
+            else (option as Option)[key] = key === 'caption' ? value : value.trim();
           }
           // A choice's places: a matrix's columns are no choice of seats.
           if (details.seats !== undefined) {

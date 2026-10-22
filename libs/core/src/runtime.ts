@@ -312,6 +312,7 @@ export {
   readDate,
   foldTyped,
   couldBeMonth,
+  monthNamed,
   readTime,
   placesOfCurrency,
   placesOf,
@@ -332,6 +333,7 @@ export {
   type TimeRead,
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
+export { hijriWords, monthWords, precisionOf, type DatePrecision } from './lib/record/day-words';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
 // A record's approvals (`approval`): the form's state of them; asking, deciding and locking are the approvals part's.

@@ -1,6 +1,7 @@
-import { checkValue, couldBeMonth, foldTyped, isOwnZone, MESSAGES, ownZone, stripMarks, wallClock, wallDay, wallTime, type Field, type Form, type Locale, type Value } from '@fieldia/core';
+import { checkValue, couldBeMonth, foldTyped, isOwnZone, MESSAGES, ownZone, precisionOf, stripMarks, wallClock, wallDay, wallTime, type Field, type Form, type Locale, type Value } from '@fieldia/core';
 import { withCalendar } from './calendar';
-import { dateExample, dateOrderOf, dateShape, localOf, readDateText, restingText, typingText, zoneName, zoneOf, type DateKind, type DateReader } from './date-text';
+import { dateExample, dateOrderOf, dateShape, localOf, readDateText, restingText, typingText, zoneName, zoneOf, type DateKind, type DateReader, type DateReading } from './date-text';
+import { monthsPartIn } from './widget-parts';
 import { guard, quoted, refusalHint, type InputRules } from './input-rules';
 import { boxPurpose, fillIn, maker, setAttr, typeInto, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
@@ -96,12 +97,27 @@ const WHOLE_TIME = new RegExp(`(?:[:.hH]\\s*\\d{2}|^\\d{4}|\\d\\s*${HALF})$`);
 const WHOLE_DATETIME = new RegExp(`[\\sT]\\d{1,2}\\s*[:.hH]\\s*\\d{2}$|\\s\\d{1,2}(?:\\s*[:.hH]\\s*\\d{2})?\\s*${HALF}$`);
 
 /** A typed date or time whole enough to take while it is still typed: its year of four digits (its day, written year first), its minutes. */
-function whole(text: string, kind: DateKind): boolean {
+function whole(text: string, kind: DateKind, reader?: DateReader): boolean {
+  if (reader?.grain) return reader.grain.whole(text);
   const t = foldTyped(text).trim();
   if (kind === 'time') return WHOLE_TIME.test(t);
   if (kind === 'datetime') return WHOLE_DATETIME.test(t);
   return /^\d{4}/.test(t) ? /\d{2}$/.test(t) : /\d{4}$/.test(t);
 }
+
+/**
+ * Typed text read as the box's reader says: a day, a date and time or a time (date-text.ts), or a month or a year alone
+ * (`grain`, the months part's) — with what a whole day typed for a month leaves out (`leftOut`), in words.
+ */
+export function readBoxText(text: string, reader: DateReader): DateReading & { leftOut?: string } {
+  return reader.grain ? reader.grain.read(text) : readDateText(text, reader);
+}
+/** A value as a box of this reader shows it while typed in: 15/10/2026, 15/10/2026 14:30, 14:30; 10/2026, 2026. */
+export function boxTyping(value: Value | undefined, reader: DateReader): string {
+  return reader.grain ? reader.grain.typing(value) : typingText(value, reader.kind, reader.order, reader.locale, reader.zone);
+}
+/** An example of what a box of this reader takes, in the page's order. */
+const boxExample = (reader: DateReader) => reader.grain?.example ?? dateExample(reader);
 
 /** What a date box needs: its form and field, the path its unread text is kept by, its kind, its words. */
 export interface DateBoxOptions {
@@ -129,6 +145,11 @@ export interface DateBoxOptions {
   within?: HTMLElement;
   /** What the browser fills it in with and the keyboard a phone shows (`boxPurpose`): nothing unless said. */
   purpose?: { autocomplete?: string; inputmode?: string };
+  /**
+   * Where another box writes the same field (a date's Hijri box beside it): whether the text the form keeps unread is
+   * that one's (`elsewhere`), which this box leaves to it, and what this box says when it keeps its own (`mine`).
+   */
+  unreadOwner?: { elsewhere(): boolean; mine(): void };
 }
 
 /** A date box: its text box, which its widget draws where it wants, and what keeps it current. */
@@ -166,14 +187,15 @@ export function dateRules(input: HTMLInputElement, reader: DateReader): InputRul
     judge(next, before) {
       if (strangers(next, kind, locale, reader.zone) <= strangers(before, kind, locale, reader.zone)) return null;
       const label = reader.label;
-      return kind === 'time' ? fillIn(words.timeUnfinished, { label, text: quoted(next) }) : fillIn(words.dateUnfinished, { label, text: quoted(next), example: dateExample(reader) });
+      if (reader.grain) return reader.grain.unfinished(next);
+      return kind === 'time' ? fillIn(words.timeUnfinished, { label, text: quoted(next) }) : fillIn(words.dateUnfinished, { label, text: quoted(next), example: boxExample(reader) });
     },
     paste(text) {
       const plain = stripMarks(text).replace(/(\r\n|[\r\n])$/, '').trim();
       if (/[\t\n\r]/.test(plain)) return { refuse: fillIn(words.severalValues, { label: reader.label }) };
-      let read = readDateText(plain, reader);
+      let read = readBoxText(plain, reader);
       // A date and time pasted in a date's box: its day, and the time left out is said.
-      if (kind === 'date' && !read.ok) {
+      if (kind === 'date' && !read.ok && !reader.grain) {
         const timed = readDateText(plain, { ...reader, kind: 'datetime' });
         if (timed.ok && timed.value) {
           // Its day and time on the clock of the page's zone, where it names one.
@@ -185,7 +207,9 @@ export function dateRules(input: HTMLInputElement, reader: DateReader): InputRul
       if (read.ok && read.value) {
         // A whole date takes the box's place, written the page's way (`whole`: where keys wait after a refused one, it
         // joins them as it was pasted instead, the hold's rule).
-        const taken = typingText(read.value, kind, reader.order, locale, reader.zone);
+        const taken = boxTyping(read.value, reader);
+        // A whole day pasted where a month is kept: its month, and the day it leaves out said.
+        if (read.leftOut) return { text: taken, whole: true, say: read.leftOut };
         return read.timeLeftOut ? { text: taken, whole: true, say: fillIn(words.timeLeftOut, { label: reader.label, time: read.timeLeftOut }) } : { text: taken, whole: true };
       }
       // A piece of one, put where the caret is; never a text no date is written with, nor a whole one that does not read.
@@ -206,7 +230,10 @@ export function dateBox(options: DateBoxOptions): DateBox {
   const order = dateOrderOf(form);
   // A date and time on its zone's clock; a date's paste of an instant, its day there.
   const zone = zoneOf(form, field);
-  const reader: DateReader = { kind, order, locale, label, labels, ...(zone ? { zone } : {}) };
+  // A month alone, or a year alone (its field's `precision`): typed, shown and read as one, as the months part does.
+  const precision = kind === 'date' ? precisionOf(field) : 'day';
+  const grain = precision !== 'day' ? monthsPartIn()?.grainBox(precision, { kind, order, locale, label, labels }) : undefined;
+  const reader: DateReader = { kind, order, locale, label, labels, ...(zone ? { zone } : {}), ...(grain ? { grain } : {}) };
   // The zone beside a date and time on another clock than the browser's: its short name, for the instant held or now.
   const mark = kind === 'datetime' && zone && !isOwnZone(zone) ? make('span', { class: 'fd-zone', ...(options.id ? { id: `${options.id}-zone` } : {}) }) : undefined;
   const showMark = (value: Value | undefined) => {
@@ -217,9 +244,10 @@ export function dateBox(options: DateBoxOptions): DateBox {
     setAttr(mark, 'title', zoneName(at, zone, locale, 'longGeneric'));
   };
   /** A value as the box shows it at rest: its zone's name left to the mark beside it, where there is one. */
-  const resting = (value: Value | undefined) => restingText(value, kind, locale, zone, !mark);
+  const resting = (value: Value | undefined) => (grain ? grain.resting(value) : restingText(value, kind, locale, zone, !mark));
+  const typed = (value: Value | undefined) => boxTyping(value, reader);
   const input = make('input', { type: 'text', class: `fd-input fd-${kind}${options.className ? ` ${options.className}` : ''}`, 'data-kind': kind, autocomplete: 'off', ...options.purpose, spellcheck: 'false', ...(options.id ? { id: options.id } : {}) });
-  input.placeholder = options.placeholder || dateShape(kind, order, words);
+  input.placeholder = options.placeholder || (grain?.shape ?? dateShape(kind, order, words));
   markBounds(input, limits);
 
   const hint = refusalHint(input, options.anchor ?? input);
@@ -230,7 +258,12 @@ export function dateBox(options: DateBoxOptions): DateBox {
   /** What the field held as the box was entered — text left that does not read puts it back — and the text it showed then. */
   let entered: { value: Value | undefined; text: string } | null = null;
   let readonly = false;
-  const unreadNow = () => form.getState().unread?.[name];
+  // Text kept unread by another box of the field (a date's Hijri box) is that one's to show.
+  const unreadNow = () => (options.unreadOwner?.elsewhere() ? undefined : form.getState().unread?.[name]);
+  const keepUnread = (text: string, message: string) => {
+    options.unreadOwner?.mine();
+    form.setUnread(name, { text, message });
+  };
   const typing = () => document.activeElement === input;
   const write = (value: string | null) => {
     held = value;
@@ -241,7 +274,7 @@ export function dateBox(options: DateBoxOptions): DateBox {
     const value = form.getState().values[name];
     if (!readonly && !unreadNow()) {
       // Entered, the box shows the value as it is typed, all of it chosen, so typing replaces it.
-      const text = typingText(value, kind, order, locale, zone);
+      const text = typed(value);
       if (input.value !== text) {
         input.value = text;
         input.setSelectionRange(0, text.length);
@@ -259,20 +292,22 @@ export function dateBox(options: DateBoxOptions): DateBox {
     // reader's own way of keeping it, seconds and all).
     if (entered && text === entered.text) {
       write((entered.value ?? null) as string | null);
-      if (unreadNow()) form.setUnread(name, null);
+      if (form.getState().unread?.[name]) form.setUnread(name, null);
       return;
     }
     if (!stripMarks(text).trim()) {
       write(null);
-      if (unreadNow()) form.setUnread(name, null);
+      if (form.getState().unread?.[name]) form.setUnread(name, null);
       return;
     }
     // Taken once it reads whole: "13/10/20" waits for the rest of its year.
-    if (!whole(text, kind)) return;
-    const read = readDateText(text, reader);
+    if (!whole(text, kind, reader)) return;
+    const read = readBoxText(text, reader);
     if (!read.ok) return;
     write(read.value);
-    if (unreadNow()) form.setUnread(name, null);
+    if (form.getState().unread?.[name]) form.setUnread(name, null);
+    // A whole day typed where a month is kept: the day it leaves out said as soon as it reads.
+    if (read.leftOut) hint.show(read.leftOut);
   });
   /** The text read as the box is left: taken, or kept and marked with why, the field holding what it held. */
   function settle() {
@@ -289,15 +324,17 @@ export function dateBox(options: DateBoxOptions): DateBox {
     const text = input.value;
     // Not changed since the box was entered: the value stays as it came, seconds and all.
     if (text === entered.text && !unreadNow()) return;
-    const read = readDateText(text, reader);
+    const read = readBoxText(text, reader);
     if (read.ok) {
       write(read.value);
-      if (unreadNow()) form.setUnread(name, null);
+      if (form.getState().unread?.[name]) form.setUnread(name, null);
+      // A whole day typed where a month is kept: its month is taken, and the day it leaves out said under the box.
+      if (read.leftOut) hint.show(read.leftOut);
       return;
     }
     const back = entered.value ?? null;
     if ((form.getState().values[name] ?? null) !== back) write(back as string | null);
-    form.setUnread(name, { text, message: read.words });
+    keepUnread(text, read.words);
   }
   input.addEventListener('keydown', (event) => {
     // Enter sends a form: what is typed is read first, so a date that does not read is never sent as the one held.
@@ -330,7 +367,7 @@ export function dateBox(options: DateBoxOptions): DateBox {
     take(typed) {
       typeInto(input, typed, () => {
         // Entered as the plain box was: its text then is what was shown for the value it held.
-        entered = { value: typed.entered, text: typingText(typed.entered, kind, order, locale, zone) };
+        entered = { value: typed.entered, text: boxTyping(typed.entered, reader) };
         checks.accept();
       });
     },
@@ -345,7 +382,7 @@ export function dateBox(options: DateBoxOptions): DateBox {
         // Changed by someone else while it is typed in (the app, a rule): shown as it is typed.
         if (state.value !== held && !readonly) {
           held = state.value;
-          input.value = typingText(state.value, kind, order, locale, zone);
+          input.value = typed(state.value);
           // Keys held after a refused one are let go with the text they were typed into, and the words that said why.
           checks.accept();
           hint.hide();
@@ -359,7 +396,7 @@ export function dateBox(options: DateBoxOptions): DateBox {
       // Empty, its placeholder is no answer: read-only, it is not drawn.
       input.classList.toggle('fd-blank', !input.value);
       // A value from outside that is no date, shown as its own text, is marked as text left unread is.
-      const strange = typeof state.value === 'string' && state.value !== '' && kind !== 'time' && !localOf(state.value, kind);
+      const strange = typeof state.value === 'string' && state.value !== '' && kind !== 'time' && !localOf(state.value, kind) && !(grain && /^\d{4}-\d{2}/.test(state.value));
       setAttr(input, 'aria-invalid', String(state.invalid || ((!!unread || strange) && !typing())));
       showMark(state.value);
       // The zone's name is part of what the box says: "14:30", on Berlin's clock.
@@ -380,9 +417,14 @@ export function dateBox(options: DateBoxOptions): DateBox {
 export function dateBoxWidget(kind: DateKind): WidgetFactory {
   return (context: WidgetContext): Widget => {
     const { form, name, field, node, id, document, labels, locale = 'en' } = context;
+    // A month alone, a year alone, a Hijri date: the months part's (asked for with this one by such a field).
+    const months = monthsPartIn();
+    const precision = kind === 'date' ? precisionOf(field) : 'day';
+    // A date with `hijri`: its Hijri box beside it, writing the same field (the months part's `hijriPair`).
+    const pair = kind === 'date' && field.type === 'date' && field.hijri === true && precision === 'day' ? months?.hijriPair(context) : undefined;
     // A date's box and its calendar button, in one: the hint goes under both.
     const into = kind === 'time' ? undefined : maker(document)('span', { class: 'fd-date-pick' });
-    const box = dateBox({ form, name, field, kind, label: node.label ?? field.label, document, locale, labels, id, limits: bounds(null, field, node), placeholder: node.placeholder, anchor: into, within: into, purpose: boxPurpose(node) });
+    const box = dateBox({ form, name, field, kind, label: node.label ?? field.label, document, locale, labels, id, limits: bounds(null, field, node), placeholder: node.placeholder, anchor: into, within: into, purpose: boxPurpose(node), ...(pair ? { unreadOwner: pair.owner } : {}) });
     const inner: Widget = {
       element: box.input,
       focus: () => box.input.focus(),
@@ -394,6 +436,9 @@ export function dateBoxWidget(kind: DateKind): WidgetFactory {
       },
     };
     if (kind === 'time' || !into) return inner;
-    return withCalendar(inner, context, kind, { weekNumbers: node.options?.['weekNumbers'] === true, refuse: (value) => box.refuse(value), into, ...(box.zone ? { beside: box.zone } : {}) });
+    // A year's months or twelve years, or a Hijri date's days: the months part's calendar.
+    const other = precision !== 'day' ? months?.periodCalendar(precision, document, labels, locale) : pair?.calendar;
+    const calendar = withCalendar(inner, context, kind, { weekNumbers: node.options?.['weekNumbers'] === true, refuse: (value) => box.refuse(value), into, ...(box.zone ? { beside: box.zone } : {}), ...(other ? { kind: other } : {}) });
+    return pair ? pair.wrap(calendar) : calendar;
   };
 }

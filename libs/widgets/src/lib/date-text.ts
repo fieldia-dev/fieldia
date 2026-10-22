@@ -168,6 +168,23 @@ export interface DateReader {
    * or repeat, is said; a date pasted as an instant is its day there. The browser's own, as before, without one.
    */
   zone?: string;
+  /** A date's month alone or year alone (its field's `precision`): how the months part reads and writes one; a day without it. */
+  grain?: GrainBox;
+}
+
+/**
+ * A month alone or a year alone, as a date's box reads and writes it (the months part's, date-grain.ts): typed text
+ * read — a whole day's month, what it leaves out said — the value written while typed in and at rest, the
+ * placeholder, an example, whether what is typed is whole enough to take, and why it is not a month yet.
+ */
+export interface GrainBox {
+  read(text: string): DateReading & { leftOut?: string };
+  typing(value: Value | undefined): string;
+  resting(value: Value | undefined): string;
+  shape: string;
+  example: string;
+  whole(text: string): boolean;
+  unfinished(text: string): string;
 }
 
 /**

@@ -4,7 +4,7 @@ import { Refusal } from './refusal';
 
 /**
  * The edits the work tracker's pickers need beyond a widget's plain
- * settings: a link drawn as a path picker, and a state's exact colour for
+ * settings: a link drawn as a path picker, links as a tree to tick, and a state's exact colour for
  * each of its values. Each goes through the designer's `apply`, so it is
  * validated, undone and saved as every other edit is.
  */
@@ -12,6 +12,8 @@ import { Refusal } from './refusal';
 export interface PickerCommands {
   /** A link to a record of a tree drawn as its path, "Portal\Sprint 14", with suggestions and the tree; off, a link as before. */
   setPathPicker(id: string, on: boolean): boolean;
+  /** Links to several records of a tree drawn as a tree to tick, a branch ticking all under it; off, its tags as before. */
+  setCheckTree(id: string, on: boolean): boolean;
   /** A state's dot in an exact colour (#rrggbb) for one value, over its tone; `null` gives it its tone again. */
   setDotColour(id: string, value: string | number, colour: string | null): boolean;
 }
@@ -29,6 +31,19 @@ function without(node: FieldNode, keys: string[]) {
 
 export function pickerCommands({ apply }: { apply(edit: (draft: Page) => void, merge?: string | null): boolean }): PickerCommands {
   return {
+    setCheckTree(id, on) {
+      return apply((draft) => {
+        const found = findNode(draft, id);
+        const field = found?.node.type === 'field' ? draft.fields[found.node.field] : undefined;
+        if (!found || found.node.type !== 'field' || field?.type !== 'many2many' || (found.node.widget && found.node.widget !== 'tree')) throw new Refusal((w) => w.refusals.onlyLinksTree);
+        if (on) found.node.widget = 'tree';
+        else {
+          delete found.node.widget;
+          without(found.node, ['keeps', 'search']);
+        }
+      });
+    },
+
     setPathPicker(id, on) {
       return apply((draft) => {
         const found = findNode(draft, id);

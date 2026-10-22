@@ -2,7 +2,7 @@ import type { Field, LineField } from '../format/field';
 import { localDay } from '../expression/functions';
 import { dayIn } from './zones';
 import { fillMessage, type Messages } from './messages';
-import { dayWords } from './day-words';
+import { dayWords, precisionOf } from './day-words';
 
 /**
  * A date's limits: its earliest and latest day (`min`, `max`), each a day
@@ -30,12 +30,15 @@ export function checkDay(field: Field | LineField, value: string, today: string 
   // A date and time by the day it falls on in its zone (the page's, written into it), else where the person is.
   const day = field.type === 'date' ? value : dayIn(Date.parse(value), field.timeZone);
   const say = (key: 'before' | 'after' | 'weekday', limit: string) => fillMessage(messages, messages[key], { label: field.label, min: limit, max: limit, days: limit });
-  // As the page's date boxes write a day: its order, its language (`dayWords`).
-  const words = (limit: string) => dayWords(limit, messages);
+  // A month's or a year's limits by its month or its year: this month is within "today" as its first day is not.
+  const precision = precisionOf(field);
+  const cut = (one: string) => (precision === 'month' ? one.slice(0, 7) : precision === 'year' ? one.slice(0, 4) : one);
+  // As the page's date boxes write a day — its order, its language — or a month or a year (`dayWords`).
+  const words = (limit: string) => dayWords(limit, messages, undefined, precision);
   const min = field.min && dayOf(field.min, today);
   const max = field.max && dayOf(field.max, today);
-  if (min && day < min) return say('before', words(min));
-  if (max && day > max) return say('after', words(max));
+  if (min && cut(day) < cut(min)) return say('before', words(min));
+  if (max && cut(day) > cut(max)) return say('after', words(max));
   const days = field.days;
   // 1 January 2024 was a Monday: the day of the week n is the nth of that January.
   if (days && !days.includes(new Date(Date.parse(day)).getUTCDay() || 7)) {

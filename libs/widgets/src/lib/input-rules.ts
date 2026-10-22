@@ -11,6 +11,8 @@ import {
   type Locale,
   type Messages,
   type NumberLimits,
+  type NumberRead,
+  type NumberReadOptions,
   type NumberRefusal,
 } from '@fieldia/core';
 import { fillIn, setAttr, wordsFor } from './kind-parts';
@@ -492,7 +494,25 @@ export interface NumberBox {
   units?(): readonly string[];
   /** Hours typed as hours and minutes (6:30) or hours (6.5). */
   duration?: boolean;
+  /** Amounts typed in shorthand (`options.shorthand`: "3.5m", "500k", "٣٫٥ مليون"), as the typed part reads them. */
+  shorthand?: Shorthand;
 }
+
+/**
+ * Amounts typed in shorthand, as the typed part reads them (shorthand.ts): text whose last word names a power of ten
+ * read as the amount it is ("3.5m": 3,500,000), null where it names none; a number box's rules made to take it — keys
+ * on their way to a word, a paste in shorthand; and the box watched as it is typed in, the amount said under it in a
+ * line of its own (`written`, as the box writes it at rest).
+ */
+export interface Shorthand {
+  read(text: string, options?: NumberReadOptions): NumberRead | null;
+  rules(rules: InputRules, box: NumberBox): InputRules;
+  watch(input: HTMLInputElement, written: (value: number) => string): void;
+}
+
+/** A number box's text read: by the number reader, or in shorthand where the box takes it. */
+export const readShort = (text: string, box: Pick<NumberBox, 'locale' | 'shorthand'>, options: NumberReadOptions = {}): NumberRead =>
+  box.shorthand?.read(text, options) ?? readNumber(text, box.locale, options);
 
 /** A pasted or typed text as a hint quotes it: on one line, not too long, set apart from the words round it. */
 export function quoted(text: string): string {
@@ -554,7 +574,7 @@ export function refusalWords(refusal: NumberRefusal, box: Pick<NumberBox, 'label
  * a number", "Digits are grouped in threes, like 1,234,567", the minutes of
  * hours past 59. Null when it reads.
  */
-export function unreadWords(text: string, box: Pick<NumberBox, 'label' | 'locale' | 'labels' | 'messages' | 'duration'> & { percent?: boolean; limits?: () => NumberLimits }): string | null {
+export function unreadWords(text: string, box: Pick<NumberBox, 'label' | 'locale' | 'labels' | 'messages' | 'duration' | 'shorthand'> & { percent?: boolean; limits?: () => NumberLimits }): string | null {
   const words = wordsFor(box.labels, box.locale);
   const label = box.label;
   if (box.duration) {
@@ -565,7 +585,7 @@ export function unreadWords(text: string, box: Pick<NumberBox, 'label' | 'locale
     if (read.problem === 'severalValues') return fillIn(words.severalValues, { label });
     return fillIn(words.duration, { label, decimal: formatNumber(6.5, 1, box.locale) });
   }
-  const read = readNumber(text, box.locale, { percent: box.percent, ungrouped: box.limits?.().ungrouped });
+  const read = readShort(text, box, { percent: box.percent, ungrouped: box.limits?.().ungrouped });
   if (read.ok) return null;
   if (read.problem === 'groupsOfThree' || read.problem === 'oneDecimalMark' || read.problem === 'minusFirst' || read.problem === 'severalValues') return refusalWords({ problem: read.problem }, box);
   return fillIn(words.notANumber, { label, text: quoted(text) });
@@ -578,11 +598,11 @@ export function unreadWords(text: string, box: Pick<NumberBox, 'label' | 'locale
  * field's. Typed key by key, "12.345" in a box of two places could not be
  * told from "12.345,67" on its way; left as it is, it is said now.
  */
-export function leftWords(text: string, box: Pick<NumberBox, 'label' | 'locale' | 'labels' | 'messages' | 'duration' | 'limits'> & { percent?: boolean }): string | null {
+export function leftWords(text: string, box: Pick<NumberBox, 'label' | 'locale' | 'labels' | 'messages' | 'duration' | 'limits' | 'shorthand'> & { percent?: boolean }): string | null {
   const unread = unreadWords(text, box);
   if (unread !== null || box.duration) return unread;
   const limits = box.limits();
-  const read = readNumber(text, box.locale, { percent: box.percent, ungrouped: limits.ungrouped });
+  const read = readShort(text, box, { percent: box.percent, ungrouped: limits.ungrouped });
   const misfit = read.ok && read.value !== null ? numberMisfit(read.value, limits) : null;
   return misfit ? refusalWords(misfit, box) : null;
 }
@@ -592,9 +612,9 @@ export function leftWords(text: string, box: Pick<NumberBox, 'label' | 'locale' 
  * stands: one to set as it is typed. "12.345" in a box of two places waits for
  * the next key ("12.345,6") or for the box to be left.
  */
-export function numberFits(text: string, box: Pick<NumberBox, 'locale' | 'limits'> & { percent?: boolean }): boolean {
+export function numberFits(text: string, box: Pick<NumberBox, 'locale' | 'limits' | 'shorthand'> & { percent?: boolean }): boolean {
   const limits = box.limits();
-  const read = readNumber(text, box.locale, { percent: box.percent, ungrouped: limits.ungrouped });
+  const read = readShort(text, box, { percent: box.percent, ungrouped: limits.ungrouped });
   return read.ok && (read.value === null || !numberMisfit(read.value, limits));
 }
 

@@ -29,6 +29,8 @@ const KEPT = [
   ...['home', 'street'],
   // JSON's own words, and language tags, as examples of what to type.
   ...['true', 'false', 'null', 'ar', 'es', 'pt-BR'],
+  // A mask's slot for a letter, as it is typed in a mask (9 a digit, a a letter).
+  'a',
 ];
 
 /** Where the words are the page's or the app's, not the designer's, and why. */

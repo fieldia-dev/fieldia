@@ -4,6 +4,8 @@ import type * as TextModule from './text-part';
 import type * as PathModule from './path-part';
 import type * as ChoiceModule from './choice-part';
 import type * as DateModule from './date-part';
+import type * as MonthsModule from './months-part';
+import type * as TypedModule from './typed-part';
 import type * as LinesModule from './lines-part';
 import type * as BusinessModule from './business-part';
 import type * as FilesModule from './files-part';
@@ -21,12 +23,16 @@ import type { TypedText, Widget, WidgetContext, WidgetFactory, WidgetState } fro
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
 export type TextPart = typeof TextModule;
-/** The path part: a path picker, with its suggestions and its tree. */
+/** The path part: a path picker, with its suggestions and its tree; a checkbox tree of several records of a tree. */
 export type PathPart = typeof PathModule;
 /** The choice part: a choice in Fieldia's own list, a long one searched as it is typed, and several chosen as tags. */
 export type ChoicePart = typeof ChoiceModule;
 /** The date part: Fieldia's own box for a date, a date and time and a time of day, a date's calendar, a range of dates. */
 export type DatePart = typeof DateModule;
+/** The months part: a date of a month alone or a year alone, and the Hijri calendar beside a day — their boxes, calendars and sheet. */
+export type MonthsPart = typeof MonthsModule;
+/** The typed part: a text box typed to a mask (a national ID, an IBAN, a plate) and a one-time code's boxes. */
+export type TypedPart = typeof TypedModule;
 /** The lines part: a one2many's table of lines, a many2many's table of records, and their stylesheet. */
 export type LinesPart = typeof LinesModule;
 /** The business part: a statusbar, priority stars, hours and a per cent's boxes, an analytic distribution, tax totals, payments. */
@@ -74,6 +80,23 @@ export const datePart: Part<DatePart> = lazyPart('date', () => import('./date-pa
 export function datePartIn(): DatePart | undefined {
   return datePart.loaded;
 }
+/**
+ * A month alone, a year alone and the Hijri calendar (a date's `precision`, `hijri`), loaded with the date part the first
+ * time a page shows such a date: never for a date of days alone.
+ */
+export const monthsPart: Part<MonthsPart> = lazyPart('months', () => import('./months-part'));
+/**
+ * The months part's code once it has come, for the date part's box and calendar (a field that has one asked for both):
+ * a function, as `datePartIn` is.
+ */
+export function monthsPartIn(): MonthsPart | undefined {
+  return monthsPart.loaded;
+}
+/**
+ * A text box typed to a mask (`options.mask` on a char field) and a one-time code's boxes (`"widget": "one-time-code"`),
+ * loaded the first time a page shows one.
+ */
+export const typedPart: Part<TypedPart> = lazyPart('typed', () => import('./typed-part'));
 /** A table of lines and a many2many's table of records, loaded the first time a page shows one. */
 export const linesPart: Part<LinesPart> = lazyPart('lines', () => import('./lines-part'));
 /**

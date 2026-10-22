@@ -1,4 +1,4 @@
-import { foldForSearch, languagesOf, placesOf, placesOfCurrency, readNumber, type NumberLimits } from '@fieldia/core';
+import { foldForSearch, languagesOf, placesOf, placesOfCurrency, type NumberLimits } from '@fieldia/core';
 import type {
   Field,
   FieldNode,
@@ -17,7 +17,7 @@ import type {
 } from '@fieldia/core';
 import type { PreferenceStore } from './preferences';
 import { formatNumber, formatPlain, ungroup } from './numbers';
-import { guard, leftWords, numberFits, numberKeyboard, numberRules, refusalHint, unreadWords, type NumberBox } from './input-rules';
+import { guard, leftWords, numberFits, numberKeyboard, numberRules, readShort, refusalHint, unreadWords, type NumberBox, type Shorthand } from './input-rules';
 import { textBox, type TextKind } from './text-box';
 import type { WidgetLabels } from './labels';
 import { linkCheckboxesWidget, many2oneWidget, plainLinkWidget, plainTagsWidget, referenceWidget, tagsWidget } from './relations-plain';
@@ -37,8 +37,9 @@ import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
+import { optionCaption, optionMark, optionsLook } from './option-look';
 import { stateDotWidget } from './state-dot';
-import { anyText, businessPart, choicePart, datePart, filesPart, languagesPart, linesPart, partFactory, partWidget, pathPart, phonePart, photosPart, relationsPart, scanPart, scans, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { anyText, businessPart, choicePart, datePart, filesPart, languagesPart, linesPart, monthsPart, typedPart, partFactory, partWidget, pathPart, phonePart, photosPart, relationsPart, scanPart, scans, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTimer, plainTotal } from './business-plain';
 import { plainAddress, plainChosen, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
@@ -431,7 +432,14 @@ const textareaWidget: WidgetFactory = (context) => {
  * keeps the value it held (`FormState.unread`). A save made with the box
  * still entered (Ctrl+Enter) reads it first, as leaving it would.
  */
-const numberWidget: WidgetFactory = (context) => {
+const numberWidget: WidgetFactory = (context) => numberBox(context);
+
+/**
+ * A number box, with amounts typed in shorthand where its node says (`options.shorthand`: "3.5m", "500k", the typed
+ * part's reader, `shorthand`): read on the digits as the box reads any number, the amount said under the box while it
+ * is typed — "3.5m is 3,500,000.00" — and shown whole at rest.
+ */
+function numberBox(context: WidgetContext, shorthand?: (locale: Locale, labels?: WidgetLabels) => Shorthand): Widget {
   const { form, name, field, node, id, document, labels, locale = 'en' } = context;
   const integer = field.type === 'integer';
   /** The box's currency now: a money box's places, and an amount pasted with it, follow it. */
@@ -481,9 +489,12 @@ const numberWidget: WidgetFactory = (context) => {
       : input;
 
   // The input rules: refused keystrokes and pastes are said under the box (after the units round it).
-  const box: NumberBox = { label: node.label ?? field.label, locale, labels, limits, currency: () => currencyNow, units: () => [prefix, suffix].map((u) => u?.textContent ?? '').filter(Boolean) };
+  const box: NumberBox = { label: node.label ?? field.label, locale, labels, limits, currency: () => currencyNow, units: () => [prefix, suffix].map((u) => u?.textContent ?? '').filter(Boolean), ...(shorthand ? { shorthand: shorthand(locale, labels) } : {}) };
+  const readBox = (text: string) => readShort(text, box);
   const hint = refusalHint(input, element);
-  const checks = guard(input, numberRules(box), hint);
+  // In shorthand, the typed part's rules round the number's, and the amount said under the box as it reads.
+  const checks = guard(input, box.shorthand ? box.shorthand.rules(numberRules(box), box) : numberRules(box), hint);
+  box.shorthand?.watch(input, shown);
   /** Unread text the form keeps for this box, and what the field held as the box was entered. */
   const unreadNow = () => form.getState().unread?.[name];
   let entered: Value | undefined;
@@ -507,7 +518,7 @@ const numberWidget: WidgetFactory = (context) => {
     // Written while the person is elsewhere — the browser's autofill, from a pick in another box: the field held this as
     // the write came, and keeps it should the text not read.
     if (document.activeElement !== input) entered = form.getState().values[name];
-    const reading = readNumber(input.value, locale);
+    const reading = readBox(input.value);
     // On its way to a number ("-", "1,", "12.345" on its way to "12.345,6"), or text that does not read: nothing is
     // set; leaving the box says why.
     if (!reading.ok || !numberFits(input.value, box)) return;
@@ -529,7 +540,7 @@ const numberWidget: WidgetFactory = (context) => {
       checks.accept();
     }
     const text = input.value;
-    const reading = readNumber(text, locale);
+    const reading = readBox(text);
     // A value the box held as it was entered (one from outside with more places) is let be: check names it.
     const words = !held && reading.ok && reading.value === (entered ?? null) ? unreadWords(text, box) : leftWords(text, box);
     if (words === null) {
@@ -562,7 +573,7 @@ const numberWidget: WidgetFactory = (context) => {
     const now = form.getState().values[name] ?? null;
     const text = kept?.text ?? (typed && typed.value === now ? typed.text : undefined);
     if (text === undefined) return;
-    const reading = readNumber(text, locale);
+    const reading = readBox(text);
     const words = leftWords(text, box);
     if (words === null && reading.ok) {
       if (kept) form.setUnread(name, null);
@@ -599,7 +610,7 @@ const numberWidget: WidgetFactory = (context) => {
       if (typed && (state.value ?? null) !== typed.value) typed = null;
       const unread = unreadNow();
       if (typing) {
-        const reading = readNumber(input.value, locale);
+        const reading = readBox(input.value);
         // A value changed under the person editing it shows as they edit: plain. Text the box did not set ("1.5" in
         // whole numbers, waiting to be said as the box is left) is theirs, and stays.
         if (reading.ok && numberFits(input.value, box) && reading.value !== (state.value ?? null)) {
@@ -701,7 +712,12 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
     const inputs = choices.map((option, i) => {
       const input = make(document, 'input', { type: kind, name: id, value: String(i), id: `${id}-${i}` });
       optionWords.push(make(document, 'span', {}, option.label));
-      group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, optionWords[i], seats.marks[i]));
+      // Its icon or colour before its words, and its second line under them, where the page gives them.
+      const caption = optionCaption(maker(document), option, `${id}-${i}-more`);
+      if (caption) input.setAttribute('aria-describedby', caption.id);
+      const mark = optionMark(maker(document), option);
+      const words = caption ? make(document, 'span', { class: 'fd-choice-text' }, optionWords[i], caption) : optionWords[i];
+      group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, ...(mark ? [mark] : []), words, seats.marks[i]));
       return input;
     });
     // "Other:", after the options: a choice of its own, with a box for the answer — as Google Forms has it.
@@ -895,6 +911,15 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
 // which comes in the date part: a plain box of the same reader meanwhile. A date and time is shown in local time, stored
 // as an ISO instant in UTC.
 const dateBoxOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateBoxWidget(kind), plainDateWidget(kind));
+/** A date of a month alone, a year alone, or with the Hijri calendar beside it: the date part's box, the months part's with it. */
+const monthsDate = (field?: Field) => field?.type === 'date' && (!!field.precision || field.hijri === true);
+const datesWithMonths = partWith(datePart, monthsPart);
+const dateWidget: PartFactory = Object.assign(
+  (context: WidgetContext) => (monthsDate(context.field) ? monthsDateBox : dayBox)(context),
+  { partOf: (_node: FieldNode, _page?: Page, field?: Field) => (monthsDate(field) ? datesWithMonths : datePart) }
+);
+const dayBox = dateBoxOf('date');
+const monthsDateBox = partFactory(datesWithMonths, (part) => part.dateBoxWidget('date'), plainDateWidget('date'));
 /** A range of dates, from → to (date-range.ts), in the date part: its first day in a plain box meanwhile. */
 const dateRangeOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateRangeWidget, plainDateWidget(kind));
 
@@ -1014,8 +1039,15 @@ const later = (factory: () => WidgetFactory): WidgetFactory =>
     partOf: (node: FieldNode, page?: Page, field?: Field) => (factory() as Partial<PartFactory>).partOf?.(node, page, field),
   });
 
+/** A number or an amount typed in shorthand (`options.shorthand`): the typed part's reader (shorthand.ts); the box without it meanwhile. */
+const amounts = partFactory(typedPart, (part) => (context) => numberBox(context, part.shorthandFor), numberWidget, (node) => node.options?.['shorthand'] === true);
+/** A char field typed to a mask (`options.mask`): the typed part's box (mask-box.ts); the text box it was meanwhile. */
+const hasMask = (node: FieldNode) => typeof node.options?.['mask'] === 'string' && !!node.options['mask'];
+
 export const builtInWidgets: Record<string, WidgetFactory> = {
-  char: textWidget('text'),
+  char: partFactory(typedPart, (part) => part.maskWidget, textWidget('text'), hasMask),
+  // A one-time code's boxes, one text box under them that the phone's autofill fills whole (code-box.ts, the typed part).
+  'char.one-time-code': partFactory(typedPart, (part) => part.codeWidget, textWidget('text')),
   'char.email': textWidget('email'),
   // A phone read the world over where its page or its own options say so (phone-box.ts, in the phone part): its
   // country picked or typed, checked, kept as E.164, shown at rest with its links. Else, and before the part comes, the
@@ -1026,9 +1058,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.time': dateBoxOf('time'),
   'char.tags': charTagsWidget,
   text: textareaWidget,
-  integer: numberWidget,
-  float: numberWidget,
-  monetary: numberWidget,
+  integer: amounts,
+  float: amounts,
+  monetary: amounts,
   'integer.rating': pointsWidget('rating'),
   'integer.scale': pointsWidget('scale'),
   'integer.slider': sliderKind,
@@ -1076,7 +1108,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'json.payments': business((part) => part.paymentsWidget, plainPayments),
   // Fieldia's own list in place of the browser's, a tick by the option picked (own-list.ts), or a long list searched as
   // it is typed (choice-tags.ts): the choice part's, the browser's own list meanwhile.
-  selection: partFactory(choicePart, (part) => (context) => (ownList(context.node) ? part.ownListWidget : part.searchWidget)(context), (context) => selectWidget(context), (node, _page, field) => ownList(node) || searched(node, field)),
+  // A choice whose options say more than their words (a second line, an icon, a colour) is Fieldia's own list too.
+  selection: partFactory(choicePart, (part) => (context) => (ownList(context.node) || !searched(context.node, context.field) ? part.ownListWidget : part.searchWidget)(context), (context) => selectWidget(context), (node, _page, field) => ownList(node) || searched(node, field) || (!!field && optionsLook(options(field)))),
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),
   // Several answers as tags in a box (choice-tags.ts), in the choice part: their words meanwhile.
@@ -1084,7 +1117,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'selection.image-choice': surveyKind((part) => part.imageChoiceWidget, (context) => choiceGroup(context.field.type === 'selection' && context.field.multiple ? 'checkbox' : 'radio')(context)),
   'selection.ranking': surveyKind((part) => part.rankingWidget, plainRanking),
   'selection.statusbar': statusbarOf,
-  date: dateBoxOf('date'),
+  date: dateWidget,
   datetime: dateBoxOf('datetime'),
   many2one: many2oneWidget,
   'many2one.statusbar': statusbarOf,
@@ -1093,6 +1126,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   many2many: tagsWidget,
   'many2many.tags': tagsWidget,
   'many2many.checkboxes': linkCheckboxesWidget,
+  // Several records of a tree, each a row with a box to tick, a branch's ticking all under it (check-tree.ts, path part).
+  'many2many.tree': partFactory(pathPart, (part) => part.checkTreeWidget, plainTagsWidget),
   // A table of the records it links to, in the lines part: their names as plain words meanwhile.
   'many2many.table': partFactory(linesPart, (part) => part.linksTableWidget, plainLinksWidget),
   // The links box comes with the text part, whose menus and words it shares; the tags meanwhile.

@@ -109,6 +109,38 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /**
+   * A short answer typed to a mask — a national ID, an IBAN, a plate: 9 a digit, a a letter, * either, the rest written
+   * in as people type — and whether its letters are written in capitals. Emptied, no mask.
+   */
+  function mask(): Part {
+    const input = el('input', { class: 'fd-inline-input fd-inline-mask', 'aria-label': w.mask, placeholder: '9 999999 99 99999', autocomplete: 'off', spellcheck: 'false', title: w.maskHelp }) as HTMLInputElement;
+    input.addEventListener('change', () => designer.setWidgetOptions(id, { mask: input.value.trim() || null, ...(input.value.trim() ? {} : { upper: null, maskKeeps: null }) }));
+    const upper = toggle(w.inCapitals, (on) => designer.setWidgetOptions(id, { upper: on || null }));
+    return {
+      element: row(word(w.mask, input), upper.element),
+      refresh(_page, node) {
+        show(input, node.options?.['mask']);
+        upper.element.hidden = typeof node.options?.['mask'] !== 'string';
+        upper.button.setAttribute('aria-checked', String(node.options?.['upper'] === true));
+      },
+    };
+  }
+
+  /** A one-time code's boxes: how many digits, 4 to 8, and whether letters are in it too. */
+  function code(): Part {
+    const count = select(w.codeLength, ['4', '5', '6', '7', '8'].map((n): [string, string] => [n, n]));
+    count.addEventListener('change', () => designer.setWidgetOptions(id, { length: count.value === '6' ? null : Number(count.value) }));
+    const letters = toggle(w.codeLetters, (on) => designer.setWidgetOptions(id, { letters: on || null }));
+    return {
+      element: row(word(w.codeLength, count), letters.element),
+      refresh(_page, node) {
+        show(count, node.options?.['length'] ?? 6);
+        letters.button.setAttribute('aria-checked', String(node.options?.['letters'] === true));
+      },
+    };
+  }
+
   /** A paragraph's rows, and whether it grows as people type. */
   function rows(): Part {
     const count = select(w.rows, Array.from({ length: 11 }, (_, i) => [String(i + 2), String(i + 2)]));
@@ -294,12 +326,35 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     const WEEKS: Record<string, number[]> = { 'sat-sun': [1, 2, 3, 4, 5], 'fri-sat': [1, 2, 3, 4, 7] };
     const weekend = select(w.weekends, [['', w.allowed], ['sat-sun', w.notSatSun], ['fri-sat', w.notFriSat], ['own', w.someDays]]);
     weekend.addEventListener('change', () => weekend.value !== 'own' && designer.setLimits(id, { days: WEEKS[weekend.value] ?? null }));
+    const element = word(w.weekends, weekend);
     return {
-      element: word(w.weekends, weekend),
+      element,
       refresh(page, node) {
+        // A month or a year has every day of the week: no weekends to keep it off.
+        element.hidden = !!(page.fields[node.field] as { precision?: string }).precision;
         const days = JSON.stringify(own(page.fields[node.field], 'days') ?? null);
         weekend.value = days === 'null' ? '' : (Object.keys(WEEKS).find((k) => JSON.stringify(WEEKS[k]) === days) ?? 'own');
         (weekend.options[3] as HTMLOptionElement).hidden = weekend.value !== 'own';
+      },
+    };
+  }
+
+  /**
+   * What a date keeps — a day, a month alone ("Oct 2026"), a year alone — and, for a day, whether the Hijri calendar
+   * shows beside it, typed in too.
+   */
+  function keeps(): Part {
+    const which = select(w.dateKeeps, [['', w.keepsDay], ['month', w.keepsMonth], ['year', w.keepsYear]]);
+    which.addEventListener('change', () => designer.setDateKeeps(id, { precision: (which.value || null) as 'month' | 'year' | null }));
+    const hijri = toggle(w.hijriBeside, (on) => designer.setDateKeeps(id, { hijri: on || null }));
+    return {
+      element: row(word(w.dateKeeps, which), hijri.element),
+      refresh(page, node) {
+        const def = page.fields[node.field] as Field & { precision?: string; hijri?: boolean };
+        show(which, def.precision ?? '');
+        // The Hijri calendar is a day's: a month or a year alone is the Gregorian's.
+        hijri.element.hidden = !!def.precision;
+        hijri.button.setAttribute('aria-checked', String(def.hijri === true));
       },
     };
   }
@@ -586,16 +641,18 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'code' || kind === 'vscode') parts.push(codeLanguage());
   if (kind === 'phone') parts.push(phone());
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
+  if (kind === 'short-answer') parts.push(mask());
+  if (kind === 'one-time-code') parts.push(code());
   if (kind === 'paragraph') parts.push(rows());
   if (kind === 'short-answer' || kind === 'paragraph' || kind === 'rich-text') parts.push(aiTools());
-  if (kind === 'number' || kind === 'amount') parts.push(range());
+  if (kind === 'number' || kind === 'amount') parts.push(range(), optionToggle(w.shorthand, 'shorthand'));
   if (kind === 'number') parts.push(units());
   if (kind === 'amount') parts.push(money());
   if (kind === 'rating') parts.push(look());
   if (kind === 'rating' || kind === 'slider') parts.push(ends());
   if (kind === 'scale') parts.push(nps());
   if (kind === 'date' || kind === 'date-time') parts.push(day('min'), day('max'), weekends());
-  if (kind === 'date') parts.push(startsToday());
+  if (kind === 'date') parts.push(keeps(), startsToday());
   if (kind === 'time') parts.push(hours());
   if (kind === 'date-time' || kind === 'time') parts.push(minutes());
   if (kind === 'date-time' || kind === 'booking-slots') parts.push(zone());

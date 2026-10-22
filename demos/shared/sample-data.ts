@@ -2,6 +2,9 @@ import { alikeRecords, createMemoryDataSource, gridClusters, scheduleSlots, type
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import listing from '../../examples/pages/listing.page.json';
+import lease from '../../examples/pages/lease.page.json';
+import { LEASE, LEASE_AGENTS, LEASE_SHOWS } from './lease';
+import { AREAS, AREA_SHOWS } from './areas';
 import visitFeedback from '../../examples/pages/visit-feedback.page.json';
 import { demoFunctions } from './functions';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -134,6 +137,8 @@ export const pages: Record<string, Page> = {
   property: property as Page,
   // A listing's features by its type, its sums and dates worked out, the district's average asked of the app (shared/functions.ts).
   listing: listing as Page,
+  // A flat let in Riyadh: its days in the Hijri calendar beside the Gregorian, a month alone, a year alone (shared/lease.ts).
+  lease: lease as Page,
   // A clinic's feedback: the questions after the first offer the treatments ticked in it.
   'visit-feedback': visitFeedback as Page,
   // A record each of their rows opens: an invoice, a quotation, a viewing.
@@ -420,8 +425,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     // `drafts=1`: what is typed is kept in the browser as a draft, offered again when the page opens.
     ...(params.get('drafts') === '1' ? { drafts: { store: localStorage } } : {}),
     // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are, and the booking
-    // template's; so is a consent's signing, and an enquiry's follow-ups.
-    ...(['test-drive', 'template-appointment-booking', 'clinic-consent', 'enquiry'].includes(params.get('page') ?? '') ? { now: demoNow } : {}),
+    // template's; so is a consent's signing, an enquiry's follow-ups, and a lease's first rent's month.
+    ...(['test-drive', 'template-appointment-booking', 'clinic-consent', 'enquiry', 'lease'].includes(params.get('page') ?? '') ? { now: demoNow } : {}),
     // The consents round the one shown, and the enquiries: the pager over it moves to the next.
     ...(params.get('page') === 'clinic-consent' || params.get('page') === 'enquiry' ? { records: [1, 2] } : {}),
     // The customers round the one with its invoices and quotations, and the homes round the one with its viewings: the
@@ -609,7 +614,7 @@ export function sampleDataSource() {
     // The price list keeps versions: a price someone else changes meanwhile is said under its row (shared/editable-lists.ts).
     ...(params.get('page') === 'service-prices' ? { versions: { by: 'Sara Ali' } } : {}),
     // What links show of their records besides their names: an address, a picture, a colour.
-    shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' }, ...wiPicker.shows },
+    shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' }, ...wiPicker.shows, ...LEASE_SHOWS, ...AREA_SHOWS },
     records: {
       ...READING,
       ...WI_HEAD_RECORDS,
@@ -639,6 +644,10 @@ export function sampleDataSource() {
       ...CONTRACT_FEES_RECORDS,
       'shop.kitchen': { 1: sampleKitchen() },
       listing: { 1: LISTING },
+      lease: { 1: LEASE },
+      'lease.agent': LEASE_AGENTS,
+      // Areas of Greater Cairo as a tree, for a lead's areas wanted (shared/areas.ts).
+      area: AREAS,
       // The contacts, and the people who own them (shared/contacts.ts).
       'crm.contact': sampleContacts(),
       // A clinic's prices, a week's hours, a pipeline's stages: lists changed in place (shared/editable-lists.ts).

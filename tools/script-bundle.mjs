@@ -1099,8 +1099,33 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // to 507.0; and one with `sequenceField` (rows re-ranked by hand), 507.02 after, to 507.1; and with `loadChildren`, 507.03.
 // A pill's soft shade laid on the surface, its ground its own over a row under the pointer or ticked (every tone at
 // 4.5:1 in every skin, theme and scheme; 82 bytes), 507.11 after, to 507.2.
-// Merged (0.31.0), with w6-lists: 511.54 measured, to 511.6.
-const BUDGET_KB = 511.6;
+// A month alone, a year alone and the Hijri calendar (0.30, w6-inputs) — what every page that checks or writes a date
+// needs of them: a month's or a year's limits kept by the month or the year and said so ("can't be before Oct 2026",
+// core's checkDay and dayWords, 0.67), a month, a year and a Hijri day written where a value is read — a list's cell, a
+// value read-only (displayValue, 0.17) — a date of a month, a year or a Hijri day asking for the months part with the
+// date part (widgets.ts, widget-parts.ts, 0.26), and the names the months part takes from the main script (`monthNamed`,
+// `precisionOf`, `monthWords`, `hijriWords`, and `monthsPart` on the global: 0.17); their boxes, calendars and sheet in
+// fieldia.months.js: 506.76 measured before, 508.06 after, to 508.1.
+// A text box typed to a mask and a one-time code's boxes (0.30, w6-inputs): a char field with a mask, and one drawn as
+// a code, asking for the typed part (widgets.ts, widget-parts.ts, 0.17), its rank among the parts' sheets and
+// `typedPart` on the global (0.03); their boxes, their reading and their sheet in fieldia.typed.js: 508.06 measured
+// before, 508.26 after, to 508.3.
+// Amounts typed in shorthand (0.30, w6-inputs): a number box asking for the typed part where its node says
+// `shorthand`, reading what is typed through it (`readShort`, in the box's checks and on leaving) and taking its rules
+// and its saying round the number's (widgets.ts, input-rules.ts); the words for thousands and millions, the reading
+// on the digits, the rules and what is said, in fieldia.typed.js: 508.26 measured before, 508.49 after, to 508.5.
+// Options that say more than their words (0.30, w6-inputs): an option's icon or colour's dot and its second line drawn
+// in radios and checkboxes, which every survey draws (option-look.ts, widgets.ts), a dropdown of such options asking
+// for Fieldia's own list, and their look in the main sheet, where radios' and lists' rows are (styles.ts, 0.73 of it);
+// Fieldia's own list's rows and a link's suggestions in their parts: 508.49 measured before, 509.63 after, to 509.7.
+// A checkbox tree (0.30, w6-inputs): a many2many drawn as one asking for the path part, where the tree is (widgets.ts,
+// 0.05): 509.63 measured before, 509.68 after, under 509.7.
+// An option named by its words alone, its second line describing it (0.30, w6-inputs): a radio's or a checkbox's second
+// line hidden from its name and named by its input's aria-describedby (widgets.ts, option-look.ts, 0.09) — as a link's
+// suggestion is named by its record's name again, its details and aside describing it, in the relations part: 509.68
+// measured before, 509.77 after, to 509.8.
+// Merged (0.31.0), with w6-inputs: 514.54 measured, to 514.6.
+const BUDGET_KB = 514.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1353,8 +1378,17 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // menus inside it, the head part asked for and its checks owed — 167.41 measured before, 167.75 after, to 167.8.
 // Lists people work in (listed with the raw budget above): 166.15 measured before, 166.20 after, to 166.3; the rows
 // part's name and its page's need of it, 166.26 after; a pill's ground its own, 166.29.
-// Merged (0.31.0), with w6-lists: 167.87 measured, to 167.9.
-const GZIP_BUDGET_KB = 167.9;
+// A month alone, a year alone and the Hijri calendar (listed with the raw budget above): a month's or a year's limits,
+// a month, a year and a Hijri day written where values are read, such a date asking for the months part, the names
+// that part takes — 166.15 measured before, 166.64 after, to 166.7.
+// A mask and a one-time code (listed with the raw budget above): such a field asking for the typed part — 166.64
+// measured before, 166.71 after, to 166.8. Amounts in shorthand (listed with the raw budget above): 166.71 measured
+// before, 166.89 after, to 166.9. Options with a second line, an icon or a colour (listed with the raw budget above):
+// 166.89 measured before, 167.18 after, to 167.2. A checkbox tree (listed with the raw budget above): 167.18 measured
+// before, 167.19 after, under 167.2. An option named by its words alone (listed with the raw budget above): 167.19
+// measured before, 167.21 after, to 167.3.
+// Merged (0.31.0), with w6-inputs: 168.92 measured, to 169.0.
+const GZIP_BUDGET_KB = 169.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1571,8 +1605,22 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 37.30 and 11.85, its raw to 37.4. A row moved by hand — where it went, its grip's hint, an order not kept — 3 more:
 // Arabic's 79.41 and 13.57 after, to 79.5 and 13.6; German's 36.97 and 11.88, to 37.0; French's 37.52 and 11.93, to 37.6
 // and 12.0.
-// Merged (0.31.0), with w6-lists: Arabic's 96.53 and 16.15, German's 44.61 and 14.10, French's 45.21 and 14.08 measured.
-const ADD_ON_BUDGET_KB = { ar: [96.6, 16.2], de: [44.7, 14.1], fr: [45.3, 14.1] };
+// A month alone, a year alone and the Hijri calendar (0.30, w6-inputs): a month's and a year's shapes, their calendars'
+// buttons, what they say when they do not read or leave a day out, and the Hijri box's name, shape and words — 16 in
+// each, as measured: Arabic's 77.88 and 13.29 before, 79.44 and 13.47 after, to 79.5 and 13.5; German's 36.27 and
+// 11.64 to 37.02 and 11.81, to 37.1 and 11.9; French's 36.75 and 11.70 to 37.60 and 11.86, to 37.7 and 11.9.
+// A mask and a one-time code (0.30, w6-inputs): what a mask's place wants, a mask full or not whole yet, a code's
+// length, what it takes and a code full — 12 in each, as measured: Arabic's 79.44 and 13.47 before, 80.88 and 13.66
+// after, to 80.9 and 13.7; German's 37.02 and 11.81 to 37.81 and 11.99, to 37.9 and 12.0; French's 37.60 and 11.86 to
+// 38.41 and 12.04, to 38.5 and 12.1.
+// Amounts in shorthand (0.30): what is said as one reads, and what a box taking it refuses — two in each: Arabic's 80.88
+// and 13.66 before, 81.19 and 13.72 after, to 81.2 and 13.8; German's 37.81 and 11.99 to 37.94 and 12.03, to 38.0 and
+// 12.1; French's 38.41 and 12.04 to 38.56 and 12.10, to 38.6 and 12.1.
+// A checkbox tree (0.30, w6-inputs): its search's name and how many are chosen, one and more — three in each: Arabic's
+// 81.19 and 13.72 before, 81.37 and 13.75 after, to 81.4 and 13.8; German's 37.94 and 12.03 to 38.03 and 12.06, to
+// 38.1 and 12.1; French's 38.56 and 12.10 to 38.64 and 12.12, to 38.7 and 12.2.
+// Merged (0.31.0), with w6-inputs: Arabic's 100.03 and 16.61, German's 46.37 and 14.52, French's 47.10 and 14.51 measured.
+const ADD_ON_BUDGET_KB = { ar: [100.1, 16.7], de: [46.4, 14.6], fr: [47.2, 14.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2058,15 +2106,39 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // — its start and end or duration, its words, group and colour, what it waits for (the list's own records), its scales,
 // and opening on one thing — sharing the calendar's checks of a start and an end and of views offered once: list
 // 129.50 and 41.60 to 130.82 and 41.97, to 130.9 and 42.0. The timeline itself is @fieldia/gantt's, never in this script.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [140.9, 45.2], cards: [12.6, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], views: [5.9, 2.6], rows: [19.3, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [21.2, 7.6], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
+// A month alone, a year alone and the Hijri calendar (0.30, w6-inputs): the date part's box reading and writing a month
+// or a year as the months part says, the text kept unread by the Hijri box beside it left to that box, a calendar of
+// another kind drawn in its place — date 22.14 and 8.36 to 23.71 and 8.97, to 23.8 and 9.0 — and the new
+// fieldia.months.js (a month's and a year's reader, Umm al-Qura's days by Intl, the Hijri box, the months' and years'
+// calendars, their sheet), loaded with the date part only for such a date: 14.62 and 5.90, to 14.7 and 6.0. The new
+// fieldia.typed.js (0.30, w6-inputs): a text box typed to a mask — its pattern read, what is typed laid out against it,
+// its own characters written in and Backspace over them — and a one-time code's boxes over one text box, with their
+// sheet: 11.70 and 4.85, to 11.7 and 4.9; with amounts typed in shorthand (each language's words for thousands and
+// millions found in Intl, the reading on the digits, the number box's rules round its own, and what it reads said in a
+// line of its own under the box), 14.37 and 6.02, to 14.4 and 6.1.
+// Options that say more than their words (0.30, w6-inputs): Fieldia's own list's rows and box with an option's icon,
+// colour and second line, and a list that searches showing them — choice 11.16 and 4.56 to 12.46 and 4.92, to 12.5
+// and 5.0 — and a link's suggestions with each record's picture or colour, its first line of details and its words at
+// the end — relations 20.08 and 7.59 to 20.88 and 7.89, to 20.9 and 7.9.
+// A checkbox tree (0.30, w6-inputs), in the path part with the path picker, both a record of a tree placed by its path:
+// a many2many's records drawn as a tree of boxes, a branch ticked, part-ticked or not by what is under it, what the
+// field keeps by `keeps`, its search asking the source beyond what it drew, an ARIA tree's keys, and its sheet — path
+// 16.06 and 6.31 to 23.40 and 8.60, to 23.5 and 8.7. A page with a path picker and no tree loads it too: 2.29 gzipped,
+// against a part of its own and the path part's sheet loaded twice.
+// An option named by its words alone, its second line describing it (0.30, w6-inputs): Fieldia's own list's rows and a
+// list that searches — choice 12.46 and 4.92 to 12.56 and 4.96, to 12.6 and 5.0 — and a link's suggestion named by its
+// record's name, its details and its aside describing it — relations 20.88 and 7.89 to 21.05 and 7.96, to 21.1 and 8.0.
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [23.5, 8.7], choice: [12.6, 5.0], filters: [23.0, 7.9], date: [23.8, 9.0], months: [14.7, 5.9], typed: [14.4, 6.1], list: [140.9, 45.2], cards: [12.6, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], views: [5.9, 2.6], rows: [19.3, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [21.1, 8.0], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [21.2, 7.6], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
   text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu', 'cleanPasted', 'pasteHtml', 'putHtml'],
-  path: ['pathPickerWidget'],
+  path: ['pathPickerWidget', 'checkTreeWidget'],
   choice: ['ownListWidget', 'searchWidget', 'choiceTagsWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
+  typed: ['maskWidget', 'maskOf', 'readMask', 'conform', 'masked', 'maskShape', 'codeWidget', 'codeLength', 'installTypedStyles', 'shorthandFor'],
+  months: ['grainBox', 'readGrainText', 'hijriOf', 'gregorianOf', 'readHijriText', 'hijriBox', 'hijriPair', 'periodCalendar', 'hijriCalendar', 'installMonthsStyles'],
   list: ['listView', 'relatedList', 'relatedListPage', 'relatedCount', 'installListStyles'],
   cards: ['cardSpec', 'cardReads', 'drawCard', 'installCardStyles'],
   columns: ['columnChoices', 'columnsKey', 'installColumnStyles'],
@@ -2100,7 +2172,7 @@ const PART_GIVES = {
   decode: ['codeReader'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots; a photo set the files part, whose taking, files on their way, dialog and sheet it draws with.
@@ -2636,6 +2708,28 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!(await until(() => host.querySelector('.fd-list-detail [role="rowgroup"]:last-child > [role="row"]')?.textContent.includes('Oak top')))) throw new Error(`in a page, a row opened in place shows no line: ${host.querySelector('.fd-list-detail')?.textContent ?? 'nothing under it'}`);
   reviewed.destroy();
   gone('reviewed');
+  // A lease whose days are shown in the Hijri calendar beside the Gregorian, its first rent's month a month alone, its
+  // tenant's ID, IBAN and plate typed to masks and confirmed with a one-time code: the months part asked for with the
+  // date part (in already) and the typed part, the page drawn once they came — nothing of it before — the Hijri box
+  // beside the day, the month's box, the masks and the code's boxes, and their sheets in their places.
+  const lease = inPage.mountViewer(host, { page: read('lease.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { lease: { 1: { name: 'Olaya Tower', tenant: 'Faisal Al-Harbi', starts_on: '2026-10-13' } } } }) });
+  waits(lease, 'a lease of Hijri days and a month alone');
+  await lease.drawn;
+  hasIn('a lease, its Hijri days, a month alone, masks and a code', 'answers, approvals, assist, business, cards, choice, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, months, options, path, phone, photos, print, quiet, relations, rows, scan, slots, survey, text, themes, typed, views');
+  if (!(await until(() => host.querySelector('[data-node="f-starts"] input[data-kind="hijri"]')?.value === '2 Jumada I 1448 AH'))) throw new Error(`in a page, a Hijri date is not shown beside its day: ${host.querySelector('[data-node="f-starts"] input[data-kind="hijri"]')?.value ?? 'no box'}`);
+  if (host.querySelector('[data-node="f-first-rent"] input')?.placeholder !== 'mm/yyyy') throw new Error("in a page, a month alone is not typed as one");
+  if (host.querySelector('[data-node="f-national-id"] input')?.placeholder !== '_ ___ ___ ___' || host.querySelectorAll('[data-node="f-code"] .fd-code-cell').length !== 6) throw new Error('in a page, a mask or a one-time code is not drawn from its part');
+  lease.destroy();
+  gone('lease');
+  // A lead's areas wanted, a many2many drawn as a checkbox tree from the path part (in already): a whole district ticked,
+  // the one of two neighbourhoods ticked part-ticking theirs, and how many are chosen said under it.
+  const areas = { 1: { name: 'Nasr City', path: ['Nasr City'] }, 2: { name: 'District 7', path: ['Nasr City', 'District 7'] }, 3: { name: 'New Cairo', path: ['New Cairo'] }, 4: { name: 'Rehab', path: ['New Cairo', 'Rehab'] }, 5: { name: 'Madinaty', path: ['New Cairo', 'Madinaty'] } };
+  const lead = inPage.mountViewer(host, { page: read('lead.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { lead: { 1: { name: 'Omar Nabil', areas: [{ id: 1, label: 'Nasr City' }, { id: 4, label: 'Rehab' }] } }, area: areas }, shows: { area: { path: 'path' } } }) });
+  await lead.drawn;
+  const treeRow = (name) => [...host.querySelectorAll('[data-node="f-areas"] [role=treeitem]')].find((row) => row.querySelector('.fd-tree-name')?.textContent === name);
+  if (!(await until(() => treeRow('New Cairo')?.getAttribute('aria-checked') === 'mixed')) || treeRow('Nasr City')?.getAttribute('aria-checked') !== 'true' || host.querySelector('[data-node="f-areas"] .fd-tree-count')?.textContent !== '2 chosen') throw new Error(`in a page, a many2many is not drawn as a checkbox tree from its part: ${host.querySelector('[data-node="f-areas"]')?.innerHTML.slice(0, 300)}`);
+  lead.destroy();
+  gone('lead');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
@@ -2651,7 +2745,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
   if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-approvals-styles', 'fieldia-assist-styles', 'fieldia-photos-styles', 'fieldia-languages-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks', 'fieldia-scan-styles']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-approvals-styles', 'fieldia-assist-styles', 'fieldia-photos-styles', 'fieldia-languages-styles', 'fieldia-months-styles', 'fieldia-typed-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks', 'fieldia-scan-styles']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
     const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
@@ -2659,7 +2753,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place; a listing in Arabic and English; a customer filled from an e-mail, AI help drawn with it and a proposal laid; a listing's photo set, with the files part; a treatment's patient scanned by her card, never with the decode part where the app reads codes; a queue's views kept on its server; orders opened in place — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place; a listing in Arabic and English; a customer filled from an e-mail, AI help drawn with it and a proposal laid; a listing's photo set, with the files part; a treatment's patient scanned by her card, never with the decode part where the app reads codes; a queue's views kept on its server; orders opened in place; a lease's Hijri days, a month alone, its masks and its code; a lead's areas as a checkbox tree — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

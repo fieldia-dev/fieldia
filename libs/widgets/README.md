@@ -98,6 +98,109 @@ table's cell, a list's, and a value read-only write a date and time as its box
 does: the instant it is, on the browser's clock where nothing names a zone —
 never the clock it was written with (`12:30Z` is 15:30 to a person in Cairo).
 
+A date of a month alone — a billing period, a card's expiry — is
+`"precision": "month"` on its field, and of a year alone — a building's year —
+`"precision": "year"`. Its box takes a month as people write one — 10/2026,
+10-2026, 2026-10, Oct 2026, أكتوبر ٢٠٢٦, octobre 2026 — or four digits, keeps
+its first day (`"2026-10-01"`, `"2026-01-01"`) and shows it at rest in the
+page's language ("Oct 2026", "2026"); its button opens a year's twelve months,
+or twelve years. A whole day typed or pasted gives its month, and the day it
+leaves out is said. Its `min` and `max` are kept by the month or the year: with
+`"min": "today"`, this month is still within it. A list's cell and a value
+read-only write it the same way.
+
+```json
+"first_rent": { "type": "date", "label": "First rent's month", "precision": "month", "min": "today" }
+```
+
+A date with `"hijri": true` is shown and typed in the Hijri calendar beside
+the Gregorian day it keeps, by Umm al-Qura's reckoning as the browser's Intl
+keeps it (`islamic-umalqura`): a second box beside its own reads "2 Jumada I
+1448 AH" at rest ("2 جمادى الأولى 1448 هـ" in Arabic) and 02/05/1448 while it
+is typed in, in the page's order; a day typed in either box writes the other.
+A Hijri month has 29 or 30 days as Umm al-Qura says, and a day past them is
+said with the days it has, kept unread in its own box while the field holds the
+day it held. Its calendar shows each day's Hijri day under it, and the Hijri
+months a month spans in its title; a list's cell writes both days ("13 Oct
+2026 · 2 Jumada I 1448 AH"). The value stays the Gregorian day, as every
+backend keeps it. Both come in the date part with the date box.
+
+A choice's options may say more than their words — `"caption"`, a second line
+under them (a service's length and price), `"icon"`, one of Fieldia's icons by
+name (or the app's), and `"color"`, #rrggbb, a dot beside them. Radios and
+checkboxes draw them (option-look.ts); a dropdown whose options have any is
+Fieldia's own list, never the browser's, which shows one line; a list that
+searches draws them too. A link's suggestions draw what the data source gives
+of each record: its picture, or its colour as Flectra numbers them, before its
+name, its first line of details under it, and its aside at the row's end. An
+option is named by its words alone, and a suggestion by its record's name, as
+a screen reader reads them and a test finds them (`getByRole('option', { name
+})`); the second line, the details and the aside describe it
+(`aria-describedby`), read after its name.
+
+A char field's node may type it to a mask — a national ID, an IBAN, a car
+plate: `"options": { "mask": "9 999 999 999" }`, where `9` is a digit (in any
+script, kept as 0-9), `a` a letter, `*` a letter or a digit, `\` before a
+character that character itself, and `[ ]` round the end of it what may be
+left out (an IBAN's last groups, as long as its country's); every other
+character is the mask's own, written in as the person types — "2 104 " as the
+fifth digit is due — and Backspace over one takes the character before it. A
+key no slot takes there is refused with why ("a digit goes here, not “x”"),
+the keys after it held (the input rules); a paste is laid out against it or
+refused whole, saying why. The field takes the characters typed
+(`"2104556789"`) once every slot it needs is filled, or as shown
+(`"maskKeeps": "shown"`: `"4821 RKA"`); `"upper": true` writes its letters in
+capitals. Left before it is whole, what was typed stays, marked, with how many
+are still to type, and the field keeps what it held. A value from outside that
+the mask does not fit is shown as it came.
+
+```json
+{ "type": "field", "id": "f-iban", "field": "iban", "options": { "mask": "aa99 **** **** **** **** **[** **** **** **]", "upper": true } }
+```
+
+A number or an amount whose node says `"options": { "shorthand": true }` is
+typed as agents write big amounts: "3.5m", "500k", "1.2bn", "2 million",
+"٣٫٥ مليون", "3,5 Mio.", "1,5 Md" — the number read by the number reader in
+the page's way, its last word read as the power of ten it names, worked out on
+the digits (1.1m is 1,100,000, never 1,100,000.0000000002). The words are the
+page's language's own, as Intl writes compact numbers in it — short and long,
+each form it uses — and English's, beside the letters people type anywhere:
+k, m, mn, b, bn. While it is typed the box says what it reads ("3.5m is
+3,500,000.00"), and once left it shows the whole amount. A letter no such word
+begins with is refused, saying so; a paste in shorthand is taken as typed. It
+comes in the typed part, with masks.
+
+`"widget": "one-time-code"` on a char field draws a box for each of a code's
+digits (`options.length`, 4 to 12, 6 unless said; `options.letters` for
+letters too) over one text box with `autocomplete="one-time-code"`, so the
+phone's autofill of a code sent by SMS fills it whole, a screen reader reads
+one box by its label ("6 digits"), and a code pasted with its spaces or dashes
+lands across the boxes at once. The field takes the code once it is whole — a
+step on its change can send it; left before then, it says how many are still to
+type. Both come in the typed part (`typedPart`), the text box meanwhile.
+
+`"widget": "tree"` on a many2many picks several records of a tree at once —
+the areas a buyer wants, a doctor's specialties, a role's permissions — as a
+tree of boxes to tick: a branch's box is ticked when all under it are and
+part-ticked (`aria-checked="mixed"`) when some are, and ticking it ticks all
+under it. Its records are the link's, each placed by its `path` as the path
+picker's are (its names from the top down: see what a link shows), the first
+500 the source finds and any a search finds beyond them. What the field keeps
+is `options.keeps`: every record ticked (`"all"`, unless said — a branch's own
+record too once all under it are), a whole branch as its own record alone
+(`"top"`: all of Nasr City kept as Nasr City), or the records with none under
+them alone (`"leaves"`); a record the value holds that the tree does not show
+is kept as it is. A search over it (`options.search`, shown unless `false`)
+keeps the rows whose names have the words, with the branches they are in, open;
+how many are chosen is said under it. It is an ARIA tree, several picked: ↓ ↑
+move, → opens a branch or goes into it, ← closes it or goes up (the other way
+round right to left), Home and End, Space ticks, typing a name's first letters
+goes to it. It comes in the path part (`pathPart`), the tags meanwhile.
+
+```json
+{ "type": "field", "id": "f-areas", "field": "areas", "widget": "tree", "options": { "keeps": "top" } }
+```
+
 `"widget": "slots"` on a date and time books a time from those free: a month
 whose days are shaded by how they are booked (free times left, fully booked,
 closed, a holiday by its name), beside the chosen day's free times as chips,

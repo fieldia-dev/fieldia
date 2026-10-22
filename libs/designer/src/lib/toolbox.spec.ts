@@ -35,7 +35,7 @@ describe('the toolbox', () => {
     expect(groups()).toEqual(['Text', 'Numbers and dates', 'Choices', 'Records', 'More', 'Business', 'Layout']);
     // The widgets an ERP's screens lean on, in a group of their own.
     expect(tiles('Business')).toEqual(['priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties'].map((id) => `kind:${id}`));
-    expect(tiles('Text')).toEqual(['kind:short-answer', 'kind:paragraph', 'kind:email', 'kind:phone', 'kind:website', 'kind:keywords']);
+    expect(tiles('Text')).toEqual(['kind:short-answer', 'kind:paragraph', 'kind:email', 'kind:phone', 'kind:one-time-code', 'kind:website', 'kind:keywords']);
     expect(tiles('Records')).toEqual(['kind:link', 'kind:links', 'kind:lines']);
     const email = tile('kind:email');
     expect(email.querySelector('svg')).not.toBeNull();
@@ -87,7 +87,7 @@ describe('the toolbox', () => {
     box.update({ modelFields: [], tabs: false });
     expect(tiles('Text')).toEqual([]);
     heading.click();
-    expect(tiles('Text')).toHaveLength(6);
+    expect(tiles('Text')).toHaveLength(7);
   });
 
   it('finds a kind by its name, hiding groups with nothing to show, and says when nothing matches', () => {

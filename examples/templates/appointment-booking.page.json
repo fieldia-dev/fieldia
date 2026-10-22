@@ -18,15 +18,21 @@
       "options": [
         {
           "value": "consultation",
-          "label": "First consultation, 30 min"
+          "label": "First consultation, 30 min",
+          "caption": "Getting to know you and what you need",
+          "icon": "user"
         },
         {
           "value": "follow_up",
-          "label": "Follow-up, 20 min"
+          "label": "Follow-up, 20 min",
+          "caption": "For patients seen in the last three months",
+          "icon": "history"
         },
         {
           "value": "review",
-          "label": "Full review, 60 min"
+          "label": "Full review, 60 min",
+          "caption": "Tests, and a full plan to follow",
+          "icon": "list"
         }
       ]
     },
@@ -43,11 +49,15 @@
       "options": [
         {
           "value": "in_person",
-          "label": "In person"
+          "label": "In person",
+          "caption": "At the clinic",
+          "icon": "building"
         },
         {
           "value": "video",
-          "label": "Video call"
+          "label": "Video call",
+          "caption": "The link comes by email an hour before",
+          "icon": "chat"
         }
       ],
       "default": "in_person"

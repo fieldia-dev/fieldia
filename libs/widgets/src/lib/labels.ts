@@ -429,6 +429,51 @@ export interface WidgetLabels {
   notPastedDate: string;
   /** A date and time pasted where a day alone is kept: the day is taken, and its `{time}` (HH:MM, here) was left out. */
   timeLeftOut: string;
+  /** A month's and a year's placeholders (a date with `precision`): month and year in the page's order, the year first, a year alone. */
+  monthShape: string;
+  monthShapeYmd: string;
+  yearShape: string;
+  /** The button beside a month or a year that opens its months or its years, and the buttons that turn them. */
+  chooseMonth: string;
+  chooseYear: string;
+  previousYear: string;
+  nextYear: string;
+  earlierYears: string;
+  laterYears: string;
+  /** A month or a year not whole when left: `{text}` as typed, `{example}` one written as the box writes it. */
+  monthUnfinished: string;
+  yearUnfinished: string;
+  /** A whole day typed or pasted where a month (or a year) alone is kept: the month is taken, and the `{day}` it leaves out said. */
+  dayLeftOut: string;
+  monthLeftOut: string;
+  /** A date's Hijri box beside its Gregorian (`hijri`): its name, its placeholder (`{shape}`, the page's order), a Hijri date not whole. */
+  hijriLabel: string;
+  hijriShape: string;
+  hijriUnfinished: string;
+  /**
+   * A box typed to a mask: what a place wants where a character does not fit there (`{char}`), a mask full (`{n}`
+   * characters), and how many are still to type where it is left before it is whole (one, and `{n}`).
+   */
+  maskDigit: string;
+  maskLetter: string;
+  maskEither: string;
+  maskFull: string;
+  maskShort: string;
+  maskShortOne: string;
+  /** A one-time code's boxes: how many it has (`{n}`), said with its label; a character no code has; a code full. */
+  codeDigits: string;
+  codeCharacters: string;
+  codeDigitOnly: string;
+  codeLetterOrDigit: string;
+  codeFull: string;
+  codeFullCharacters: string;
+  /** An amount typed in shorthand (`{typed}`, "3.5m"), said as it reads (`{amount}`); a key no number or shorthand has (`{example}`, "3.5M"). */
+  shorthandIs: string;
+  shorthandOnly: string;
+  /** A checkbox tree's search box, named by its field (`{label}`), and how many are chosen under it. */
+  treeSearch: string;
+  treeChosen: string;
+  treeChosenOne: string;
   /** Hours typed with a decimal mark and two digits (`{text}`), read as hours with a decimal: `{time}` in hours and minutes. */
   hoursDecimal: string;
   /** Typed words no choice is called (`{text}`), with a way to create one where the field can. */
@@ -877,6 +922,39 @@ const en: WidgetLabels = {
   timeUnfinished: '{label}: “{text}” is not a time; write it like 14:30',
   notPastedDate: '“{text}” is not a date, so it was not pasted',
   timeLeftOut: '{label} takes a day only: the time {time} was left out',
+  monthShape: 'mm/yyyy',
+  monthShapeYmd: 'yyyy-mm',
+  yearShape: 'yyyy',
+  chooseMonth: 'Choose a month',
+  chooseYear: 'Choose a year',
+  previousYear: 'Previous year',
+  nextYear: 'Next year',
+  earlierYears: 'Earlier years',
+  laterYears: 'Later years',
+  monthUnfinished: '{label}: “{text}” is not a month yet; write it like {example}',
+  yearUnfinished: '{label}: “{text}” is not a year; write it like {example}',
+  dayLeftOut: '{label} takes a month only: the day {day} was left out',
+  monthLeftOut: '{label} takes a year only: {day} was left out',
+  hijriLabel: '{label} (Hijri)',
+  hijriShape: '{shape} AH',
+  hijriUnfinished: '{label}: “{text}” is not a whole Hijri date yet; write it like {example}',
+  maskDigit: '{label}: a digit goes here, not “{char}”',
+  maskLetter: '{label}: a letter goes here, not “{char}”',
+  maskEither: '{label}: a letter or a digit goes here, not “{char}”',
+  maskFull: '{label} takes {n} characters: there is no room for more',
+  maskShort: '{label} is not whole yet: {n} more to type',
+  maskShortOne: '{label} is not whole yet: 1 more to type',
+  codeDigits: '{n} digits',
+  codeCharacters: '{n} characters',
+  codeDigitOnly: '{label}: the code is digits only, not “{char}”',
+  codeLetterOrDigit: '{label}: the code is letters and digits only, not “{char}”',
+  codeFull: '{label} has {n} digits: there is no room for more',
+  codeFullCharacters: '{label} has {n} characters: there is no room for more',
+  shorthandIs: '{typed} is {amount}',
+  shorthandOnly: '{label}: numbers only, or short for thousands and millions, like {example}',
+  treeSearch: 'Search {label}',
+  treeChosen: '{n} chosen',
+  treeChosenOne: '1 chosen',
   hoursDecimal: '{label}: “{text}” is hours with a decimal: {time}',
   noMatch: '{label}: nothing is called “{text}”; pick one from the list',
   noMatchCreate: '{label}: nothing is called “{text}” yet; pick one or create it',

@@ -2,18 +2,18 @@ import { SIZES } from '../facts.mjs';
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint, translate, requiredIn'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), one-time-code (a box per digit), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint, translate, requiredIn'],
   ['text', 'Several lines of text', 'copy, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, translate, requiredIn'],
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', 'translate, requiredIn'],
   ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],
   ['float', 'A decimal number', 'progressbar, label, duration (HH:MM), percentage, timer, place (a latitude, with @fieldia/map)', 'min, max, digits'],
   ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits, money'],
   ['boolean', 'Yes or no', 'toggle, priority (one star)', ''],
-  ['date', 'A date', 'daterange', 'min, max, days'],
+  ['date', 'A date — or a month alone, or a year alone', 'daterange', 'min, max, days, precision, hijri'],
   ['datetime', 'A date and a time, kept as an instant', 'daterange, timer, slots (booking a time from those free)', 'min, max, days, timeZone'],
   ['selection', 'One choice from a list, or several with multiple', 'radio, checkboxes, statusbar, priority (stars), dot (a state’s dot)', 'options, multiple, optionsFrom'],
   ['many2one', 'A link to one record of another model, found by typing', 'statusbar, path (a record of a tree as its path)', 'relation, filter'],
-  ['many2many', 'Links to several records', 'tags, checkboxes', 'relation, filter'],
+  ['many2many', 'Links to several records', 'tags, checkboxes, tree (several records of a tree, ticked)', 'relation, filter'],
   ['one2many', 'A table of lines that belong to this record', '', 'relation, fields; columns on the node'],
   ['reference', 'A link to a record of one of several models', '', 'models'],
   ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', 'pdf (shown inline)', 'accept, maxSize, multiple, minFiles, maxFiles, shrink'],
@@ -43,6 +43,51 @@ ${ROWS.map(([type, holds, widgets, options]) => `    <tr><td>${c(type)}</td><td>
 </div>
 <p>Every type also takes ${c('label')}, ${c('help')}, ${c('required')}, ${c('readonly')} and ${c('default')}. To see them all at once, open <a href="/demos/plain/?page=fields&amp;skin=outlined">the every-field demo</a>.</p>
 <p>A date's ${c('min')} and ${c('max')} are its earliest and latest day: a day, ${c('"2026-03-02"')}, or one counted from the day the form is opened, ${c('"today"')}, ${c('"today+30"')}, ${c('"today-7"')}; a date and time keeps them by the day it falls on. ${c('days')} are the days of the week it may fall on, ISO numbers from 1, Monday, to 7, Sunday: ${c('[1, 2, 3, 4, 5]')} refuses a weekend of Saturday and Sunday, ${c('[7, 1, 2, 3, 4]')} one of Friday and Saturday. A date's ${c('default')} may be ${c('"today"')}. A field with the widget ${c('email')}, ${c('url')}, ${c('phone')} or ${c('time')} is checked as one, and says what to type.</p>
+
+<h2 id="months">A month alone, a year alone, and the Hijri calendar</h2>
+<p>A date of a month alone — a billing period, a card's expiry — says ${c('"precision": "month"')}, and of a year alone — a building's year — ${c('"precision": "year"')}. Its box takes a month as people write one — <em>10/2026</em>, <em>2026-10</em>, <em>Oct 2026</em>, <em>أكتوبر ٢٠٢٦</em> — or four digits, and keeps its first day, ${c('"2026-10-01"')}, as every backend keeps a date; at rest it shows <em>Oct 2026</em> or <em>2026</em>, and so does a list. Its button opens a year's twelve months, or twelve years. A whole day typed or pasted gives its month, the day it leaves out said. Its ${c('min')} and ${c('max')} are kept by the month or the year: with ${c('"min": "today"')}, this month is still within it.</p>
+<p>A date with ${c('"hijri": true')} is shown and typed in the Hijri calendar beside the Gregorian day it keeps, by Umm al-Qura's reckoning, as your browser's Intl keeps it: a second box reads <em>2 Jumada I 1448 AH</em> at rest — <em>2 جمادى الأولى 1448 هـ</em> on an Arabic page — and <em>02/05/1448</em> while it is typed in, in the page's order; a day typed in either box writes the other. A Hijri month has 29 or 30 days as Umm al-Qura says, and a day past them is said with the days it has, the field keeping the day it held. Its calendar shows each day's Hijri day under it; a list writes both days. The value stays the Gregorian day.</p>
+${code(
+  'json',
+  `"first_rent": { "type": "date", "label": "First rent's month", "precision": "month", "min": "today" },
+"built": { "type": "date", "label": "Building built in", "precision": "year", "max": "today" },
+"starts_on": { "type": "date", "label": "Starts on", "hijri": true }`
+)}
+<p>In the designer: a date's Keeps (a day, a month, a year) and Hijri date beside it. Open <a href="/demos/plain/?page=lease&amp;skin=underline">the lease demo</a>.</p>
+
+<h2 id="option-looks">Options with a second line, an icon or a colour</h2>
+<p>A choice's options may say more than their words: a ${c('caption')} — a second line under them, a service's length and price, a plan's limits — an ${c('icon')}, by the name of one of Fieldia's icons (or your app's), and a ${c('color')}, #rrggbb, a dot beside them. Radios and checkboxes show them; a dropdown whose options have any is Fieldia's own list, never the browser's, which shows one line of words; a list that searches shows them too. Each option is still named by its words, its second line read after them.</p>
+${code(
+  'json',
+  `"plan": { "type": "selection", "label": "Paid", "options": [
+  { "value": "monthly", "label": "Monthly", "caption": "12 payments, on the first of each month", "icon": "calendar" },
+  { "value": "yearly", "label": "Once a year", "caption": "1 payment, 3% off the rent", "icon": "money", "color": "#30c381" }
+] }`
+)}
+<p>A link's suggestions show what your data source gives of each record (<a href="/data/#related">what a link shows</a>): its picture, or its colour as Flectra numbers them, before its name; its first line of ${c('details')} under it — a staff member's role, a service's price — and its ${c('aside')} at the row's end. Each is named by its record's name alone, as it always was; what it shows besides describes it, read after the name. In the designer: a choice's <em>Describe the options</em>, then each option's Second line, Icon and Colour. Open <a href="/demos/plain/?page=template-appointment-booking&amp;theme=apple">the booking template</a>.</p>
+
+<h2 id="masks">Masks and one-time codes</h2>
+<p>A char field's node may type it to a mask — a national ID, an IBAN, a car plate: ${c('9')} is a digit, in any script, ${c('a')} a letter, ${c('*')} either, ${c('\\')} before a character that character itself, and ${c('[ ]')} round its end what may be left out; every other character is the mask's own, written in as the person types, and Backspace over one takes the character before it. A key no slot takes there is refused with why — <em>a digit goes here, not “x”</em> — and the keys after it wait with it; a paste is laid out against the mask or refused whole. The field takes the characters typed once every slot it needs is filled, or as shown with ${c('"maskKeeps": "shown"')}; ${c('"upper": true')} writes its letters in capitals. Left before it is whole, what was typed stays, marked, with how many are still to type.</p>
+${code(
+  'json',
+  `{ "type": "field", "id": "f-id", "field": "national_id", "options": { "mask": "9 999 999 999" } },
+{ "type": "field", "id": "f-iban", "field": "iban", "options": { "mask": "aa99 **** **** **** **** **[** **** **** **]", "upper": true } },
+{ "type": "field", "id": "f-plate", "field": "plate", "options": { "mask": "9999 aaa", "upper": true, "maskKeeps": "shown" } },
+{ "type": "field", "id": "f-code", "field": "code", "widget": "one-time-code", "options": { "length": 6 } }`
+)}
+<p>A number or an amount with ${c('"shorthand": true')} in its node's options is typed as agents write big amounts: <em>3.5m</em>, <em>500k</em>, <em>1.2bn</em>, <em>٣٫٥ مليون</em>, <em>3,5 Mio.</em> — read on the digits, its word the power of ten it names in the page's language or English, and k, m and b anywhere. As it is typed the box says <em>3.5m is 3,500,000</em>; once left, it shows the whole amount. Open <a href="/demos/plain/?page=listing&amp;record=new&amp;skin=underline">the listing demo</a> and type a price of 6m.</p>
+<p>${c('"widget": "one-time-code"')} draws a box for each digit — ${c('length')} 4 to 12, 6 unless said; ${c('letters')} for letters too — over one text box the phone's autofill of a code sent by SMS fills whole (${c('autocomplete="one-time-code"')}); a code pasted with its spaces or dashes lands across the boxes, and a screen reader reads one box by its label. The field takes the code once it is whole, so a step on its change can send it. In the designer: a short answer's Mask and Letters in capitals; the kind One-time code, with its Digits and Letters too.</p>
+
+<h2 id="check-tree">A checkbox tree</h2>
+<p>A ${c('many2many')} with ${c('"widget": "tree"')} picks several records of a tree at once — the areas a buyer wants, a doctor's specialties, a role's permissions — as a tree of boxes to tick. A branch's box is ticked when all under it are and part-ticked when some are; ticking it ticks all under it. Its records are the link's, each placed by its ${c('path')}, as the ${c('path')} picker's are (see <a href="/data/#related">what a link shows</a>). What the field keeps is ${c('keeps')}: every record ticked (${c('"all"')}, unless said, a branch's own record too once all under it are), a whole branch as its own record alone (${c('"top"')}: all of Nasr City kept as Nasr City), or the records with none under them alone (${c('"leaves"')}). A record the value holds that the tree does not show is kept as it is.</p>
+<p>A search over the tree keeps the rows whose names have the words, with the branches they are in, open (${c('"search": false')} leaves it out); how many are chosen is said under it. It is used as a tree: ↓↑ move, → opens a branch or goes into it, ← closes it or goes up (the other way round right to left), Home and End, Space ticks, and typing a name's first letters goes to it.</p>
+${code(
+  'json',
+  `"areas": { "type": "many2many", "label": "Areas wanted", "relation": "area" }
+
+{ "type": "field", "id": "f-areas", "field": "areas", "widget": "tree", "options": { "keeps": "top" } }`
+)}
+<p>In the designer: a link to several records' <em>A tree to tick</em>, with its Keeps and A search over it. Open <a href="/demos/plain/?page=lead&amp;record=1&amp;skin=underline">a lead</a>: his areas wanted are a tree.</p>
 
 <h2 id="phone">Phone numbers the world over</h2>
 <p>A phone field is a text box until its page says how phone numbers are read: ${c('"phone"')}, with the ${c('country')} a number typed without its + is read in, and whether a number is ${c('shown')} at rest abroad's way, ${c('"international"')} (the default), or at home's, ${c('"national"')}. A field can say it for itself in its ${c('options')}, which win over the page's.</p>
@@ -186,6 +231,7 @@ ${code(
     <tr><td>${c('dot')} on a ${c('selection')}</td><td>A state's dot with a menu of the states. ${c('tones')}: a tone by value, ${c('{ "blocked": "danger" }')} (else ${c('normal')} grey, ${c('blocked')} red, ${c('done')} green, then by place); ${c('colours')}: an exact colour by value, ${c('{ "active": "#007acc" }')}, over its tone; ${c('label')}: ${c('true')} shows the state's words beside it; ${c('listDots')}: ${c('false')} lists the states as Fieldia's own list does, a tick by the one picked and no dots, at the start of the value's box and as wide — as a work tracker's State. A press on its words opens it too, and a field with a lead slot before its value (a work item's band) holds the dot there</td></tr>
     <tr><td>a ${c('selection')} with no widget</td><td>${c('list')}: ${c('"own"')} draws it in Fieldia's own list in place of the browser's — its value as words on a button, and a list with a tick by the option picked, used with ↓↑, Home, End, Enter, Escape and by typing an option's first letters; Delete empties a choice that need not be made. As a work tracker's Priority and Severity</td></tr>
     <tr><td>${c('path')} on a ${c('many2one')}</td><td>A record of a tree — an area, an iteration — shown as its path, ${c('"Portal\\Sprint 14"')}, from the record's ${c('path')} (its names from the top down; see <a href="/data/#related">what a link shows</a>). Its list, as wide as its box: Suggestions (the value and the person's latest picks of the model, kept in the viewer's preferences under ${c('recent:&lt;model&gt;')}), then the tree folded to the value's branch, each row's ${c('aside')} — an iteration's dates — at its end. Typing shows the records whose path has the words, flat. ↓↑ move, → opens a branch or goes into it, ← closes it or goes up (the other way round right to left), Enter picks, Escape puts back. ${c('separator')} (${c('"\\"')}), ${c('suggestions')} (5; 0 for none), ${c('tree')} (${c('false')} leaves it out)</td></tr>
+    <tr><td>${c('tree')} on a ${c('many2many')}</td><td>Several records of a tree ticked — <a href="#check-tree">a checkbox tree</a>. ${c('keeps')}: ${c('"all"')} every record ticked, ${c('"top"')} a whole branch as its own record, ${c('"leaves"')} the records with none under them; ${c('search')}: ${c('false')} leaves its search out</td></tr>
     <tr><td>a ${c('many2many')}, or ${c('tags')} on a ${c('char')}</td><td>${c('adder')}: ${c('"button"')} adds tags from a button — its words the node's ${c('placeholder')}, else “Add Tags” — that turns into the tag box; Enter adds the tag typed (an existing one by its name, or a new one) and the button comes back, as it does on Escape and when the box is left. As a work tracker's Add Tag</td></tr>
     <tr><td>${c('daterange')} on a ${c('date')} or ${c('datetime')}</td><td>${c('endField')}: the field of the last day. One box from → to, typed in or picked on a calendar</td></tr>
     <tr><td>${c('timer')}</td><td>On a ${c('float')}: the time logged, ${c('unit')} ${c('"minutes"')} when kept in minutes, and ${c('startField')}, a ${c('datetime')} it runs from while set. On a ${c('datetime')}: the time since it</td></tr>

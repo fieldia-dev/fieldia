@@ -1,4 +1,5 @@
 import type { Field, FieldNode, Page } from '@fieldia/core';
+import { ICONS } from '@fieldia/widgets';
 import { appKindSettings } from './app-kinds-ui';
 import { iconButton, type ElementFactory } from './chrome';
 import { columnsEditor } from './columns-editor';
@@ -32,6 +33,8 @@ const SHUFFLED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-ch
 const SCORED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice', 'matrix']);
 /** Kinds whose options may have places, counted by the app: a session's seats, an offer's stock. */
 const SEATED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice']);
+/** Kinds whose options may say more than their words: a second line, an icon, a colour. */
+const LOOKED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'tags']);
 
 const optionsOf = (field: Field) => (field.type === 'selection' ? field.options : field.type === 'matrix' ? field.columns : []);
 /** A setting's number as the page holds it, or null. */
@@ -364,6 +367,62 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
     };
   }
 
+  /**
+   * What each option shows besides its words — a second line (a service's length and price), an icon, a colour — once
+   * one shows any, and the way to start: the choice is then drawn in Fieldia's own list.
+   */
+  function looks(): Part {
+    const start = el('button', { type: 'button', class: 'fd-button fd-button-link fd-kind-give-looks' }, w.giveLooks);
+    start.addEventListener('click', () => {
+      if (designer.setOptionDetails(id, 0, { caption: w.secondLine })) (list.querySelector('input') as HTMLInputElement | null)?.select();
+    });
+    const list = el('ul', { class: 'fd-kind-points fd-kind-looks' });
+    const block = el('div', { class: 'fd-kind-block' }, el('span', { class: 'fd-prop-name' }, w.looks), list, el('p', { class: 'fd-properties-hint' }, w.looksHint));
+    const icons = Object.keys(ICONS).sort();
+    const rows: { name: HTMLElement; caption: HTMLInputElement; icon: HTMLSelectElement; colour: HTMLInputElement; clear: HTMLButtonElement }[] = [];
+    return {
+      element: el('div', { class: 'fd-kind-points-box' }, start, block),
+      standsIn: false,
+      refresh(page, node) {
+        const options = optionsOf(page.fields[node.field]);
+        const typing = list.contains(list.ownerDocument.activeElement);
+        const looked = options.some((o) => o.caption || o.icon || o.color);
+        start.hidden = looked || typing;
+        block.hidden = !looked && !typing;
+        while (rows.length > options.length) {
+          rows.pop();
+          list.lastElementChild?.remove();
+        }
+        while (rows.length < options.length) {
+          const index = rows.length;
+          const caption = el('input', { class: 'fd-inline-input', autocomplete: 'off', placeholder: w.secondLine }) as HTMLInputElement;
+          caption.addEventListener('input', () => designer.setOptionDetails(id, index, { caption: caption.value || null }));
+          const icon = el('select', { class: 'fd-inline-select' }, el('option', { value: '' }, w.noIcon), ...icons.map((name) => el('option', { value: name }, name))) as HTMLSelectElement;
+          icon.addEventListener('change', () => designer.setOptionDetails(id, index, { icon: icon.value || null }));
+          const colour = el('input', { type: 'color', class: 'fd-inline-colour' }) as HTMLInputElement;
+          colour.addEventListener('change', () => designer.setOptionDetails(id, index, { color: colour.value }));
+          const clear = el('button', { type: 'button', class: 'fd-button fd-button-link' }, '×') as HTMLButtonElement;
+          clear.addEventListener('click', () => designer.setOptionDetails(id, index, { color: null }));
+          const name = el('span', { class: 'fd-kind-points-name' });
+          list.append(el('li', { class: 'fd-kind-points-row fd-kind-look-row' }, name, caption, icon, colour, clear));
+          rows.push({ name, caption, icon, colour, clear });
+        }
+        options.forEach((option, i) => {
+          const row = rows[i];
+          row.name.textContent = option.label;
+          row.caption.setAttribute('aria-label', w.captionFor(option.label));
+          row.icon.setAttribute('aria-label', w.iconFor(option.label));
+          row.colour.setAttribute('aria-label', w.optionColourFor(option.label));
+          row.clear.setAttribute('aria-label', w.optionNoColourFor(option.label));
+          row.clear.hidden = !option.color;
+          if (!focused(row.caption)) row.caption.value = option.caption ?? '';
+          row.icon.value = option.icon ?? '';
+          row.colour.value = option.color ?? '#000000';
+        });
+      },
+    };
+  }
+
   const parts: Part[] = [];
   if (kind === 'slider') parts.push(slider());
   if (kind === 'image-choice') parts.push(pictures());
@@ -374,6 +433,7 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   parts.push(...choiceSettings(el, designer, id, kind));
   if (kind && SCORED.has(kind)) parts.push(points());
   if (kind && SEATED.has(kind)) parts.push(places());
+  if (kind && LOOKED.has(kind)) parts.push(looks());
   const app = appKindSettings(el, designer, id, kind);
   if (app) parts.push(app);
   if (!parts.length) return null;

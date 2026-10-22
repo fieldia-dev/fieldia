@@ -105,7 +105,7 @@ export const PART_WORDS = {
       'importFailedNoun', 'importUndoAskNoun', 'importUndoAskNounOne', 'importUndoneNoun', 'importUndoneNounOne', 'importUndoSomeNoun', 'relatedAllNoun', 'relatedNewNoun', 'relatedUnsavedNoun', 'relatedNoneNoun', 'relatedShownNoun', 'groupCountNoun', 'groupCountNounOne',
     ],
   },
-  path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds'] },
+  path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds', 'treeSearch', 'treeChosen', 'treeChosenOne'] },
   photos: {
     widgets: [
       'photosMove', 'photosMoveCover', 'photosMoveTouch', 'photosMoveTouchCover', 'photoCover', 'makeCover', 'coverNow', 'editPhoto', 'photoCaption', 'captionPlaceholder', 'photoNamed', 'photoNamedCover', 'photoCount', 'photoCountOne', 'photoCountOf', 'upToPhotos',
@@ -115,6 +115,13 @@ export const PART_WORDS = {
   },
   rows: { viewer: ['previousPage', 'nextPage', 'relatedNone', 'detailOf', 'detailTitle', 'rowMovedTo', 'rowMoveHint', 'rankNotKept', 'treeIn', 'loadMore'] },
   views: { viewer: ['saveSearch', 'searchName', 'useByDefault', 'deleteFavourite', 'noFavourites', 'viewShared', 'viewSharedBy', 'shareView', 'viewsFailed', 'viewNotSaved', 'viewNotDeleted', 'viewDeleteAsk'] },
+  months: {
+    widgets: [
+      'chooseDate', 'notPastedDate', 'previousMonth', 'nextMonth',
+      'monthShape', 'monthShapeYmd', 'yearShape', 'chooseMonth', 'chooseYear', 'previousYear', 'nextYear', 'earlierYears', 'laterYears', 'monthUnfinished', 'yearUnfinished', 'dayLeftOut', 'monthLeftOut', 'hijriLabel', 'hijriShape', 'hijriUnfinished',
+    ],
+  },
+  typed: { widgets: ['maskDigit', 'maskLetter', 'maskEither', 'maskFull', 'maskShort', 'maskShortOne', 'codeDigits', 'codeCharacters', 'codeDigitOnly', 'codeLetterOrDigit', 'codeFull', 'codeFullCharacters', 'shorthandIs', 'shorthandOnly'] },
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
   print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },

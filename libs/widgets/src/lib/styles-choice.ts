@@ -23,9 +23,20 @@ export const CHOICE_CSS = /* css */ `
 }
 .fd-own-box:has(> .fd-own-button:disabled) { cursor: default; color: var(--fd-muted); }
 .fd-own-box:has(> .fd-own-button:disabled)::after { content: none; }
+/* An option's icon or colour before its words, and its second line under them (option-look.ts): the row as tall as both. */
+.fd-pick-row.fd-pick-marked { grid-template-columns: 26px 24px minmax(0, 1fr); }
+.fd-pick-row > :is(.fd-option-icon, .fd-option-dot) { align-self: center; }
+.fd-pick-row.fd-pick-two { height: auto; min-height: 29.3px; }
+.fd-pick-row.fd-pick-two > .fd-pick-words { line-height: 20px; padding-block: 5px; white-space: normal; }
+.fd-pick-row.fd-pick-two > .fd-pick-words > .fd-option-caption { display: block; white-space: normal; }
+.fd-pick-row.fd-pick-two > .fd-pick-tick { align-self: start; padding-block-start: 7px; }
+.fd-own-box > .fd-own-mark { display: inline-grid; margin-inline-end: 8px; pointer-events: none; }
+.fd-own-box > .fd-own-mark[hidden] { display: none; }
 /* An option's places left after its words, as a radio's: a column of their own, the words cut before them. */
 .fd-own-list .fd-pick-row:has(> .fd-seats) { grid-template-columns: 26px minmax(0, 1fr) auto; }
 .fd-own-list .fd-pick-row > .fd-seats { align-self: center; padding-inline-start: 6px; }
+/* A row with an icon or a colour before its words: a column for it, its places left still last. */
+.fd-own-list .fd-pick-row.fd-pick-marked:has(> .fd-seats) { grid-template-columns: 26px 24px minmax(0, 1fr) auto; }
 `;
 
 /** The sheet in a document, once, in its place among Fieldia's. */

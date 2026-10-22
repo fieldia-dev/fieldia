@@ -187,6 +187,32 @@ export function inputCommands({ apply, fromModel, words }: InputCommandsDeps) {
       });
     },
 
+    /**
+     * What of a date a field keeps (`precision`): a day (null), a month alone or a year alone, each kept as its first
+     * day — its days of the week then go, a month having all of them — and whether it is shown and typed in the Hijri
+     * calendar beside its Gregorian day (`hijri`), a day's alone. Settings of how a date is typed and shown, so a field
+     * from the model may have them too.
+     */
+    setDateKeeps(id: string, patch: { precision?: 'month' | 'year' | null; hijri?: boolean | null }): boolean {
+      return apply((draft) => {
+        const { field } = question(draft, id);
+        if (field.type !== 'date') throw new Refusal((w) => w.refusals.onlyDateKeeps);
+        if (patch.precision !== undefined) {
+          if (patch.precision === null) delete field.precision;
+          else {
+            field.precision = patch.precision;
+            delete field.days;
+            delete field.hijri;
+          }
+        }
+        if (patch.hijri !== undefined) {
+          if (patch.hijri && field.precision) throw new Refusal((w) => w.refusals.hijriIsADay);
+          if (patch.hijri) field.hijri = true;
+          else delete field.hijri;
+        }
+      });
+    },
+
     /** How an amount is written where it is read — a list, a field shown as words, a map's card and pins — in its field's money look. */
     setMoneyLook(id: string, patch: MoneyLookPatch): boolean {
       return apply((draft) => {

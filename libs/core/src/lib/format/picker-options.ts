@@ -3,7 +3,8 @@ import * as z from 'zod';
 /**
  * The pickers' own settings in a field's `options`, as a work tracker draws
  * them: a path picker for a record of a tree (`"widget": "path"` on a
- * many2one: an area, an iteration), Fieldia's own list for a choice
+ * many2one: an area, an iteration), a checkbox tree of several (`"widget":
+ * "tree"` on a many2many: areas, permissions), Fieldia's own list for a choice
  * (`"list": "own"`), a state's dots in exact colours and its list with a tick
  * alone (`"widget": "dot"`), and tags added from a button (`"adder":
  * "button"`). Known to the format, so a word written wrong is refused before
@@ -35,6 +36,21 @@ export const StateDotOptionsSchema = z
   })
   .meta({ id: 'StateDotOptions' });
 
+/**
+ * A checkbox tree: `"widget": "tree"` on a many2many — several records of a tree ticked, a branch ticking all under it.
+ */
+export const CheckTreeOptionsSchema = z
+  .object({
+    /**
+     * What the field keeps: every record ticked ("all", unless said: a branch's own record too once all under it are),
+     * a whole branch as its own record alone ("top"), or the records with none under them alone ("leaves").
+     */
+    keeps: z.enum(['all', 'top', 'leaves'], { error: 'keeps is "all", "top" (a whole branch as its own record) or "leaves"' }).optional(),
+    /** Its search box over the tree: shown unless false. */
+    search: z.boolean().optional(),
+  })
+  .meta({ id: 'CheckTreeOptions' });
+
 /** The settings any picker of these may have on a node of the widget it names. */
 const SHARED = z.object({
   /** "own": Fieldia's own list in place of the browser's, a tick by the option picked (a choice with no widget). */
@@ -45,10 +61,11 @@ const SHARED = z.object({
 
 export type PathPickerOptions = z.infer<typeof PathPickerOptionsSchema>;
 export type StateDotOptions = z.infer<typeof StateDotOptionsSchema>;
+export type CheckTreeOptions = z.infer<typeof CheckTreeOptionsSchema>;
 
 /** The issues of a field node's picker settings, each at its path under `options`. */
 export function pickerOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
   const options = node.options ?? {};
-  const schemas = [SHARED, ...(node.widget === 'path' ? [PathPickerOptionsSchema] : []), ...(node.widget === 'dot' ? [StateDotOptionsSchema] : [])];
+  const schemas = [SHARED, ...(node.widget === 'path' ? [PathPickerOptionsSchema] : []), ...(node.widget === 'dot' ? [StateDotOptionsSchema] : []), ...(node.widget === 'tree' ? [CheckTreeOptionsSchema] : [])];
   return schemas.flatMap((schema) => (schema.safeParse(options).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] })));
 }

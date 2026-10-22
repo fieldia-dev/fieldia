@@ -319,6 +319,16 @@ const SKINS_CSS = /* css */ `
 [dir="rtl"] .fd-switch:checked::after { transform: translateX(-14px); }
 .fd-choices { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 .fd-choice { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+/* An option's icon or colour's dot before its words, its second line under them (option-look.ts), and in a list's row
+   that says more than its words, its own words at its end. */
+:is(.fd-option-icon, .fd-option-dot) { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; color: var(--fd-option-color, var(--fd-muted)); }
+.fd-option-icon svg { width: 100%; height: 100%; }
+.fd-option-dot::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--fd-option-color); }
+.fd-option-rich { display: flex; align-items: center; gap: 8px; }
+:is(.fd-choice-text, .fd-option-text) { display: inline-flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+:is(.fd-option-caption, .fd-option-aside) { font-size: 12.5px; line-height: 1.35; color: var(--fd-muted); }
+.fd-option-aside { margin-inline-start: auto; white-space: nowrap; }
+
 /* An option's places left beside its words ("3 left"), and one whose places are all taken ("Full"): shown, never hidden. */
 .fd-seats { font-size: 0.85em; color: var(--fd-muted); white-space: nowrap; }
 .fd-seats[data-full] { color: var(--fd-error); font-weight: 600; }
@@ -1018,8 +1028,23 @@ export function installStyles(document: Document): void {
  * It names no class a theme, the quiet look, a picker's, the head's, the text's or the cards' sheet names, nor do they
  * name its own: placed after them all it overrides nothing of theirs, and they nothing of its. So it goes last, rank
  * 23 (after 0.29's four before the themes moved the cards' to 22), and no other rank moves.
+ *
+ * Wave 6 (0.31) brings nine sheets of parts more, each cut from no rule and naming none of another part's parts, so
+ * their order among them changes nothing; each goes after 0.29's four (none of which names theirs) and before the
+ * themes', which reshape them — the ranks from the themes' on move on by nine.
+ *
+ * The months part's (0.31, `styles-months`): a year's twelve months or twelve years in a month's or a year's calendar,
+ * a Hijri date's day under each day, and its Hijri box beside its date's — cut from no rule: the calendar, its days
+ * and the boxes are drawn by the main sheet's rules, and these only size and lay out what they add. It goes after the
+ * slots' (the booking slots' month is the date part's calendar's, and names none of these) and before the themes', so
+ * a theme still reshapes the months' and years' buttons as it does the days', their corners and their focus: rank 15.
+ *
+ * The typed part's (0.31, `styles-typed`): a one-time code's boxes, each a character's, drawn under the text box typed
+ * in — cut from no rule: it lays out its own boxes alone, their look borrowed from a text box's. It goes after the
+ * months part's (neither names the other's parts) and before the themes', so a theme still reshapes the boxes'
+ * corners and their focus as it does a text box's: rank 16.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, themes: 15, quiet: 16, picker: 17, head: 18, groups: 19, text: 20, surveyLooks: 21, cards: 22, scan: 23 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, themes: 17, quiet: 18, picker: 19, head: 20, groups: 21, text: 22, surveyLooks: 23, cards: 24, scan: 25 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

@@ -76,8 +76,12 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // A code scanned with the camera (`options.scan`) comes in the scan part, loaded with a page that has one — its Scan
 // button, the camera's sheet — and where the browser reads no codes itself, the decode part, as Scan is pressed. An app
 // reads codes its own way with `(await scanPart.load()).useCodeReader(reader)`.
+// A month alone, a year alone and the Hijri calendar (a date's `precision`, `hijri`) come in the months part, with the
+// date part: `(await monthsPart.load()).readHijriText(…)`, `.gregorianOf(…)`.
+// A text box typed to a mask (`options.mask`) and a one-time code's boxes (`"widget": "one-time-code"`) come in the
+// typed part: `(await typedPart.load()).conform(…)`.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, decodePart, loadDecodePart, scans, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type PhotosPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type LanguagesPart, type ScanPart, type DecodePart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, decodePart, loadDecodePart, scans, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type MonthsPart, type TypedPart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type PhotosPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type LanguagesPart, type ScanPart, type DecodePart, type PartFactory } from './lib/widget-parts';
 export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.
