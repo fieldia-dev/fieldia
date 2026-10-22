@@ -3099,12 +3099,14 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   watched.destroy();
   gone('watched');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
-  // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
-  // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
-  // and a page's limits' (0.27), a record's approvals', AI help's, a photo set's and a text's languages' (0.29), the months',
-  // the typed boxes', the recorder's, the codes' and the pins' (0.31), before the themes so a theme still reshapes them, the themes' and the quiet look's before the pickers', the head's and the
-  // text's, the survey kinds' own looks, a repeating group's cards', and a code scanned's (0.29) last; a list's own
-  // sheet, its cards' and its columns' after them all, unranked.
+  // (PART_RANK) — a table of lines', the business widgets', the survey kinds' (and a survey's flow, at their rank), the
+  // files', a signature's evidence right after them (0.27), then a phone's and booking slots' (new at 0.24), a list's
+  // Import's and possible duplicates' (0.25) and a page's limits' (0.27), a record's approvals', AI help's, a photo
+  // set's and a text's languages' (0.29), a month's and a year's, the typed boxes', the recorder's, the codes', the
+  // pins', proof by a code's, a payment's, an outbox's and a repeat rule's and a week's hours' (0.31), before the themes
+  // so a theme still reshapes them, the themes' and the quiet look's before the pickers', the head's and the text's,
+  // the survey kinds' own looks, a repeating group's cards', and a code scanned's (0.29) last; a list's own sheet, its
+  // cards', its columns', its views' and its rows' after them all, unranked.
   const styles = [...doc.head.querySelectorAll('style[id]')];
   const ids = styles.map((style) => style.id);
   const ranked = styles.filter((style) => style.hasAttribute('data-fd-rank'));

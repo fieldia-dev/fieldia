@@ -1027,8 +1027,9 @@ export function installStyles(document: Document): void {
  * side by side, a table's button under it, the camera's picture, its frame and its words — laid out alone, the button,
  * the dialog round the camera and its words drawn by the main sheet's rules, which a theme and the quiet look reshape.
  * It names no class a theme, the quiet look, a picker's, the head's, the text's or the cards' sheet names, nor do they
- * name its own: placed after them all it overrides nothing of theirs, and they nothing of its. So it goes last, rank
- * 23 (after 0.29's four before the themes moved the cards' to 22), and no other rank moves.
+ * name its own: placed after them all it overrides nothing of theirs, and they nothing of its. So it goes last — rank
+ * 23 at 0.29 (after 0.29's four before the themes moved the cards' to 22), 32 since Wave 6's nine came before the
+ * themes — and no other rank moves for it.
  *
  * Wave 6 (0.31) brings nine sheets of parts more, each cut from no rule and naming none of another part's parts, so
  * their order among them changes nothing; each goes after 0.29's four (none of which names theirs) and before the
@@ -1076,6 +1077,17 @@ export function installStyles(document: Document): void {
  * alone, a week's days as toggles, their boxes Fieldia's own (the main sheet's, a number's and a time's). Like the
  * limits', they go before the themes' — after the outbox's (none names another's parts) — so a theme still reshapes
  * their toggles' colours and type, its own boxes and buttons over them: rank 23.
+ *
+ * Wave 6's other sheets take no rank of their own: a survey's flow (the surveyflow part) styles only what it draws and
+ * what the main sheet draws — a wizard's progress and buttons, a choice's options, a group's grid — which nothing
+ * between it and the themes touches, so it shares the survey kinds' rank (3), as their sheet does; a list's views and
+ * its rows opened in place (the views and rows parts) go right after the list's own sheet, as its cards' and columns'
+ * do; the Gantt timeline's (@fieldia/gantt) goes first in the document's head, as the calendar's does.
+ *
+ * The one order of 0.31: print 0, lines 1, business 2, survey 3 (and the survey flow), files 4, evidence 5, phone 6,
+ * slots 7, import 8, duplicates 9, limits 10, approvals 11, assist 12, photos 13, languages 14, months 15, typed 16,
+ * record 17, codes 18, pins 19, verify 20, pay 21, outbox 22, schedule 23, themes 24, quiet 25, picker 26, head 27,
+ * groups 28, text 29, surveyLooks 30, cards 31, scan 32.
  */
 export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, record: 17, codes: 18, pins: 19, verify: 20, pay: 21, outbox: 22, schedule: 23, themes: 24, quiet: 25, picker: 26, head: 27, groups: 28, text: 29, surveyLooks: 30, cards: 31, scan: 32 } as const;
 
