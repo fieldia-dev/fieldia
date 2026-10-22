@@ -211,7 +211,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
   const emptyWords = words('emptyLabel');
   const empty = emptyWords ? make('div', { class: 'fd-help fd-lines-empty' }, emptyWords) : null;
   // Removing a line with something in it asks first, in place: "Remove line 2?  Remove · Keep".
-  const confirm = askFirst(make, labels);
+  const confirm = askFirst(make, { yes: labels.removeFile, no: labels.keep });
   // Where a line went, said politely; not the page's own announcer, which a page looks for by its class.
   const voice = make('div', { class: 'fd-sr-only', role: 'status' });
   // What a block pasted on the cells did, said politely: how many cells took it, the lines added, and which did not.

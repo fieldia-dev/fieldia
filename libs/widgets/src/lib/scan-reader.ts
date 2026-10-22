@@ -34,21 +34,23 @@ export function useCodeReader(reader: CodeReader | CodeReaderMaker | null): void
 }
 
 /**
- * The reader of `formats` a scan reads with: the app's own (`useCodeReader`); else the browser's `BarcodeDetector`
- * where it reads every one of them; else the decode part's, asked for now — the first time Scan is pressed in a
+ * The reader of `formats` a scan reads with — and of `also` where it can, codes of other kinds the field takes nothing
+ * from, to say so: the app's own (`useCodeReader`); else the browser's `BarcodeDetector` where it reads every one of
+ * `formats` (and those of `also` it reads); else the decode part's, asked for now — the first time Scan is pressed in a
  * browser that reads none itself. Rejects where that part cannot come.
  */
-export async function codeReaderFor(formats: readonly string[], doc: Document): Promise<CodeReader> {
-  if (own) return own(formats, doc);
+export async function codeReaderFor(formats: readonly string[], doc: Document, also: readonly string[] = []): Promise<CodeReader> {
+  const every = [...new Set([...formats, ...also])];
+  if (own) return own(every, doc);
   const Detector = (doc.defaultView as (Window & { BarcodeDetector?: DetectorClass }) | null)?.BarcodeDetector;
   if (Detector) {
     try {
       const supported = await Detector.getSupportedFormats();
-      if (formats.every((format) => supported.includes(format))) return new Detector({ formats: [...formats] });
+      if (formats.every((format) => supported.includes(format))) return new Detector({ formats: every.filter((format) => supported.includes(format)) });
     } catch {
       // A detector that cannot say what it reads: the decode part reads instead.
     }
   }
   const part = await loadDecodePart();
-  return part.codeReader(formats, doc);
+  return part.codeReader(every, doc);
 }

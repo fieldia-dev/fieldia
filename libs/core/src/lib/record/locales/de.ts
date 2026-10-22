@@ -88,7 +88,7 @@ export const de: Messages = {
   choiceFull: '{option} ist ausgebucht',
   choiceFilled: '{option} ist jetzt ausgebucht: Wählen Sie etwas anderes',
   approvalLocked: 'Gesperrt, solange es auf die Genehmigung wartet',
-  approvalReasonNeeded: 'Geben Sie an, warum es abgelehnt wird',
+  approvalReasonNeeded: 'Geben Sie an, warum Sie es ablehnen',
   approvalNotYours: 'Über {level} entscheiden Sie jetzt nicht',
   languagesNeeded: '{label} ist auf {languages} erforderlich',
   languagesNeededQuestion: 'Bitte beantworten Sie {label} auf {languages}',

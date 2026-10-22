@@ -2,7 +2,7 @@ import { fill, type FileValue, type PhotoEdit } from '@fieldia/core';
 import { bytesOf } from './file-shown';
 import { keepTabIn } from './focus-trap';
 import { drawIcon, type IconSet } from './icons';
-import { maker, setHidden, setText } from './kind-parts';
+import { askFirst, maker, setHidden, setText } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import type { Picture } from './shrink';
 import { installPhotosStyles } from './styles-photos';
@@ -134,6 +134,8 @@ export interface PhotoEditing {
   id: string;
   /** The photo as the set holds it: its original, where it keeps one, is what is cropped. */
   photo: FileValue;
+  /** How the set names it: its caption, else its place ("photo 2 of 5"). */
+  name: string;
   /** The page's shape, width over height; null lets the person pick one, or none. */
   shape: number | null;
   /** What it opens over: the form round it, whose skin, scheme and direction it wears, else the page's body. */
@@ -157,7 +159,7 @@ export function editPhoto(editing: PhotoEditing): Promise<Edited> {
   let crop: Crop = { x: 0, y: 0, width: 1, height: 1 };
   let shape = editing.shape;
 
-  const title = make('h2', { id: editing.id, class: 'fd-form-dialog-title' }, fill(words.editPhoto, { name: photo.caption || photo.name }));
+  const title = make('h2', { id: editing.id, class: 'fd-form-dialog-title' }, fill(words.editPhoto, { name: editing.name }));
   const close = make('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': words.close }, '×');
   const canvas = make('canvas', { 'aria-hidden': 'true' });
   const keysId = `${editing.id}-keys`;
@@ -179,11 +181,13 @@ export function editPhoto(editing: PhotoEditing): Promise<Edited> {
   original.hidden = !photo.original;
   const cancel = make('button', { type: 'button', class: 'fd-button' }, words.cancel);
   const apply = make('button', { type: 'button', class: 'fd-button fd-button-primary', hidden: '' }, words.applyEdit);
+  // Left with a change in it — Escape, ×, a press outside it — it asks first, in place, as a record's dialog asks.
+  const letGo = askFirst(make, { yes: words.cropLetGo, no: words.cropKeepEditing });
   const dialog = make(
     'div',
     { class: 'fd-form-dialog fd-photo-editor', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': editing.id, tabindex: '-1' },
     make('div', { class: 'fd-form-dialog-head' }, title, close),
-    make('div', { class: 'fd-photo-editor-body' }, stage, tools, keys, said),
+    make('div', { class: 'fd-photo-editor-body' }, stage, tools, keys, said, letGo.element),
     make('div', { class: 'fd-form-dialog-foot fd-photo-editor-foot' }, original, cancel, apply)
   );
   const backdrop = make('div', { class: 'fd-dialog-backdrop' }, dialog);
@@ -273,15 +277,24 @@ export function editPhoto(editing: PhotoEditing): Promise<Edited> {
     view?.removeEventListener('resize', draw);
     answered(result);
   };
-  close.addEventListener('click', () => done(null));
+  /** The part kept and the turn as the photo came: a change from them is the person's work. */
+  let came = { turn, crop };
+  const changed = () => !!picture && (turn !== came.turn || (['x', 'y', 'width', 'height'] as const).some((side) => Math.abs(crop[side] - came.crop[side]) > 1e-6));
+  /** Left without Apply: at once with nothing changed; else asked first — Discard lets the change go, Cancel goes back to it. */
+  const leave = () => {
+    if (!changed()) return done(null);
+    letGo.ask(words.cropLetGoAsk, (discard) => (discard ? done(null) : box.focus({ preventScroll: true })));
+  };
+  close.addEventListener('click', leave);
+  // Cancel is the person's own answer: no question.
   cancel.addEventListener('click', () => done(null));
   original.addEventListener('click', () => done({ original: true }));
-  backdrop.addEventListener('click', (event) => event.target === backdrop && done(null));
+  backdrop.addEventListener('click', (event) => event.target === backdrop && leave());
   dialog.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-      // The dialog's own: the form's page or dialog behind it hears nothing of it.
+      // The dialog's own: the form's page or dialog behind it hears nothing of it. The question's own Escape is its Cancel.
       event.stopPropagation();
-      done(null);
+      if (!letGo.element.contains(event.target as Node)) leave();
     } else keepTabIn(dialog, event);
   });
   apply.addEventListener('click', async () => {
@@ -312,6 +325,7 @@ export function editPhoto(editing: PhotoEditing): Promise<Edited> {
         const size = turned();
         const last = photo.original && photo.edit ? photo.edit.crop : null;
         crop = last && (!shape || ofShape(last, size, shape)) ? { ...last } : fitted(size, shape);
+        came = { turn, crop: { ...crop } };
         waiting.remove();
         for (const shown of [pictured, tools, keys, apply]) setHidden(shown, false);
         draw();

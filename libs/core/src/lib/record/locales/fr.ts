@@ -86,7 +86,7 @@ export const fr: Messages = {
   choiceFull: '{option} est complet',
   choiceFilled: '{option} est maintenant complet : choisissez autre chose',
   approvalLocked: 'Verrouillé tant qu’il attend l’approbation',
-  approvalReasonNeeded: 'Dites pourquoi il est refusé',
+  approvalReasonNeeded: 'Dites pourquoi vous le refusez',
   approvalNotYours: 'Ce n’est pas à vous de décider pour {level} maintenant',
   languagesNeeded: '{label} est obligatoire en {languages}',
   languagesNeededQuestion: 'Veuillez répondre à {label} en {languages}',

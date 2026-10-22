@@ -35,6 +35,10 @@ export const SCAN_CSS = /* css */ `
 .fd-scan-said[data-problem] { color: var(--fd-error); font-weight: 600; }
 .fd-scan-said[data-kept] { color: var(--fd-success); font-weight: 600; }
 .fd-scan-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+/* A table counted: a box under the words to type a code whose label will not scan, its button beside it. */
+.fd-scan-typing { display: grid; gap: 4px; padding: 0 16px 14px; }
+.fd-scan-typing-row { display: flex; gap: 8px; }
+.fd-scan-typed { flex: 1 1 auto; min-width: 0; }
 @media (prefers-reduced-motion: no-preference) { .fd-scan-frame { transition: border-color 0.15s; } }
 @media print { .fd-form .fd-scan-button, .fd-form .fd-scan-note { display: none !important; } }
 `;

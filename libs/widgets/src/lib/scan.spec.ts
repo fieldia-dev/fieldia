@@ -2,7 +2,7 @@ import { createForm, createMemoryDataSource, type DataSource, type Field, type F
 import { WIDGET_LABELS } from './labels';
 import type { FoundCode } from './scan-reader';
 import { createWidget } from './widgets';
-import { scanPart } from './widget-parts';
+import { relationsPart, scanPart } from './widget-parts';
 
 /**
  * A code scanned with the camera (`options.scan`): a Scan button beside the box; the camera's sheet — the back camera,
@@ -279,6 +279,28 @@ describe('a link scanned into', () => {
   });
 });
 
+describe('a link scanned into, typed by a scanner gun', () => {
+  const PATIENTS = { 1: { name: 'Mona Adel', card: 'P-1042' }, 2: { name: 'Hana Fouad', card: 'P-1043' } };
+  const fields: Record<string, Field> = { patient_id: { type: 'many2one', label: 'Patient', relation: 'clinic.patient' } };
+
+  it('finds the record by its code as Enter is pressed, and by its name where no code is so', async () => {
+    // The owner's walk of 0.29: "P-1043" and Enter said "nothing is called P-1043"; the camera found Hana.
+    await relationsPart.load();
+    const { values } = mount(fields, 'patient_id', { options: { scan: { formats: ['qr_code'], by: 'card' } } }, { dataSource: createMemoryDataSource({ records: { 'clinic.patient': PATIENTS } }) });
+    const box = document.querySelector<HTMLInputElement>('.fd-scan input') as HTMLInputElement;
+    const typeIn = (text: string) => {
+      box.focus();
+      box.value = text;
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+      box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    };
+    typeIn('P-1043');
+    expect(await until(() => (values()['patient_id'] as { id?: number } | null)?.id === 2)).toBe(true);
+    typeIn('Mona Adel');
+    expect(await until(() => (values()['patient_id'] as { id?: number } | null)?.id === 1)).toBe(true);
+  });
+});
+
 describe("a GS1 code's parts", () => {
   const PRODUCTS = { 1: { name: 'Botulinum toxin type A, 100 U', gtin: '06285096000842' } };
   const fields: Record<string, Field> = {
@@ -300,14 +322,44 @@ describe("a GS1 code's parts", () => {
     expect(values()['product_id']).toEqual({ id: 1, label: 'Botulinum toxin type A, 100 U' });
   });
 
-  it('says a code without the part, reading on; reads only the formats the field asks', async () => {
+  it('says a code without the part, reading on; takes only the formats the field asks, and says another holds no part', async () => {
     const { button, said, values } = mount(fields, 'lot', { options: { scan } }, { dataSource: createMemoryDataSource({ records: { 'clinic.product': PRODUCTS } }) });
     button()?.click();
     await until(() => said() === 'Hold the code inside the frame.');
     frames.push(code(`${GS}0106285096000842172812311`, 'data_matrix'));
     expect(await until(() => said() === 'This code has no Lot in it. Scan the code on the pack.')).toBe(true);
-    frames.push(code(`${GS}010628509600084210LOT-9`, 'qr_code'), [], code(`${GS}010628509600084210LOT-8`, 'data_matrix'));
+    // A shelf's barcode held up for a lot: said, never silence (the owner's walk of 0.29), and nothing taken.
+    frames.push([], code('6224000123451', 'ean_13'));
+    await until(() => document.querySelector('.fd-scan-said[data-problem]') && frames.length === 0);
+    expect(said()).toBe('This code has no Lot in it. Scan the code on the pack.');
+    frames.push([], code(`${GS}010628509600084210LOT-9`, 'qr_code'), [], code(`${GS}010628509600084210LOT-8`, 'data_matrix'));
     expect(await until(() => values()['lot'] === 'LOT-8')).toBe(true);
+  });
+
+  it('reads a code a scanner gun types in the box as the camera reads one, as it is left or Enter commits it; words typed stay', async () => {
+    // The owner's walk of 0.29: the box's code typed into Lot stayed as typed, no product, no expiry.
+    const { values } = mount(fields, 'lot', { options: { scan } }, { dataSource: createMemoryDataSource({ records: { 'clinic.product': PRODUCTS } }) });
+    const box = document.querySelector<HTMLInputElement>('.fd-scan input') as HTMLInputElement;
+    const typeIn = (text: string) => {
+      box.focus();
+      box.value = text;
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+      box.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    typeIn('0106285096000842172812311025A1234');
+    expect(await until(() => values()['lot'] === '25A1234')).toBe(true);
+    expect(values()).toMatchObject({ expiry: '2028-12-31', product_id: { id: 1, label: 'Botulinum toxin type A, 100 U' } });
+    expect(box.value).toBe('25A1234');
+    // As a label prints it, the same.
+    typeIn('(01)06285096000842(10)LOT-7');
+    expect(await until(() => values()['lot'] === 'LOT-7')).toBe(true);
+    // A lot typed by hand, though it starts as a GS1 part would: as typed.
+    typeIn('10A55');
+    await settle(20);
+    expect(values()['lot']).toBe('10A55');
+    // A code with no lot in it: said beside the box, the words as typed.
+    typeIn('01062850960008421728123121SN000417');
+    expect(await until(() => document.querySelector('.fd-scan-note')?.textContent === 'This code has no Lot in it. Scan the code on the pack.')).toBe(true);
   });
 
   it("fills a line's columns from its lot's cell, as a table of lines draws the cell", async () => {
@@ -368,8 +420,26 @@ describe('a table of lines counted by scanning', () => {
     expect(await until(() => counts()['Lip balm'] === 5)).toBe(true);
     expect(said()).toBe('Lip balm: 5 counted');
     expect(sheet()).not.toBeNull();
+    // A code typed in the sheet, as its words offer: counted as one read (the owner's walk of 0.29: nowhere to type it).
+    const typed = document.querySelector<HTMLInputElement>('.fd-scan-typed') as HTMLInputElement;
+    expect(document.querySelector(`label[for="${typed.id}"]`)?.textContent).toBe('Or type the code');
+    typed.value = '6224000123468';
+    typed.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(await until(() => counts()['Lip balm'] === 6)).toBe(true);
+    expect(typed.value).toBe('');
+    typed.value = '4006381333931';
+    document.querySelector<HTMLButtonElement>('.fd-scan-count')?.click();
+    expect(await until(() => said() === 'Nothing has the code 4006381333931. Scan another, or type it.')).toBe(true);
+    expect(typed.value).toBe('4006381333931');
     document.querySelector<HTMLButtonElement>('.fd-scan-done')?.click();
     expect(sheet()).toBeNull();
     expect(track.stop).toHaveBeenCalled();
+  });
+
+  it('has no box to type a code in the sheet of a single field: Type it instead goes to its own', async () => {
+    const { button, said } = mount(LOT, 'lot', { options: { scan: true } });
+    button()?.click();
+    await until(() => said() === 'Hold the code inside the frame.');
+    expect(document.querySelector('.fd-scan-typed')).toBeNull();
   });
 });

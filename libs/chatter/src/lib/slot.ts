@@ -36,7 +36,7 @@ export function approvalEntries(approval: FormApproval | null | undefined, label
   if (!approval) return [];
   const levelName = (id: string | undefined, kept: string | undefined) => approval.levels.find((level) => level.id === id)?.name ?? kept ?? id ?? '';
   return approval.history.map((entry, at) => {
-    const what = entry.decision === 'requested' ? labels.approvalAsked : fill(entry.decision === 'approved' ? labels.approvalApproved : labels.approvalRejected, { level: levelName(entry.level, entry.levelName) });
+    const what = entry.decision === 'requested' ? labels.approvalAsked : entry.decision === 'notNeeded' ? labels.approvalNotNeeded : fill(entry.decision === 'approved' ? labels.approvalApproved : labels.approvalRejected, { level: levelName(entry.level, entry.levelName) });
     return {
       id: `approval-${at}`,
       kind: 'event',

@@ -86,7 +86,7 @@ export const ar: Messages = {
   choiceFull: 'لا أماكن متبقية في {option}',
   choiceFilled: 'امتلأ {option} الآن: اختر غيره',
   approvalLocked: 'مقفل ما دام ينتظر الموافقة',
-  approvalReasonNeeded: 'اذكر سبب الرفض',
+  approvalReasonNeeded: 'اذكر سبب رفضك',
   approvalNotYours: 'ليس لك أن تقرّر في {level} الآن',
   languagesNeeded: '{label} مطلوب باللغة {languages}',
   languagesNeededQuestion: 'يُرجى الإجابة عن {label} باللغة {languages}',

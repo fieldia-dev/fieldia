@@ -88,7 +88,7 @@ describe('a record’s approval history in its conversation', () => {
     await until(() => items().length === 3);
     await viewer?.form.decide('finance', 'rejected', 'Over the quarter’s budget');
     await until(() => items().length === 4);
-    expect(items()[0]).toBe('Mona Adel: Rejected for FinanceOver the quarter’s budget');
+    expect(items()[0]).toBe('Mona Adel: Rejected (Finance)Over the quarter’s budget');
     expect(source.posted).toEqual([]);
   });
 
@@ -110,12 +110,13 @@ describe('a record’s approval history in its conversation', () => {
           { decision: 'requested', by: 'Omar Said', at: '2026-10-18T08:10:00Z' },
           { decision: 'rejected', level: 'finance', by: 'Mona Adel', at: '2026-10-19T08:10:00Z', reason: 'Zu teuer' },
           { decision: 'approved', level: 'board', levelName: 'Vorstand', by: 'Karim Fathy', at: '2026-10-20T08:10:00Z' },
+          { decision: 'notNeeded', by: 'Karim Fathy', at: '2026-10-21T08:10:00Z' },
         ],
         mine: [],
       },
       CHATTER_LABELS.de
     );
-    expect(entries.map((entry) => entry.body)).toEqual(['<p>Hat um Genehmigung gebeten</p>', '<p>Für Finanzen abgelehnt</p><blockquote><p>Zu teuer</p></blockquote>', '<p>Für Vorstand genehmigt</p>']);
+    expect(entries.map((entry) => entry.body)).toEqual(['<p>Hat um Genehmigung gebeten</p>', '<p>Abgelehnt (Finanzen)</p><blockquote><p>Zu teuer</p></blockquote>', '<p>Genehmigt (Vorstand)</p>', '<p>Keine Genehmigung nötig</p>']);
     expect(entries.every((entry) => entry.kind === 'event')).toBe(true);
   });
 });

@@ -100,6 +100,16 @@ describe('the stand-in for an app’s AI (no model, no keys)', () => {
     expect(polishText('All is ready.')).toEqual({ text: 'All is ready.', did: [] });
   });
 
+  it('polishes names with the capitals the record writes them with, and the days and months', async () => {
+    // The owner's walk of 0.29: "zamalek", "nile" and "thursday" were left in small letters.
+    const enquiry: Page = { ...company, fields: { message: { type: 'text', label: 'Their message' }, reply: { type: 'text', label: 'Reply' } } };
+    const message = 'Good morning. We are moving to Cairo in January and look for a flat in Zamalek. A Nile view would be lovely. Best, Omar';
+    const ask = { pageId: 'enquiry', model: 'enquiry', recordId: 2, page: enquiry, values: { message }, field: 'reply', how: 'polish', text: 'hi omar\n\nwe have 2 flats in zamalek, one with a nile view. can u come on thursday? the good flat is ready in january, it may suit you.', language: 'en' };
+    const polished = await assistStandIn().rewrite(ask, {});
+    expect(polished.text).toBe('Hi Omar,\n\nWe have 2 flats in Zamalek, one with a Nile view. Can you come on Thursday? The good flat is ready in January, it may suit you.');
+    expect(polished.why).toBe('Stand-in AI, no model: wrote out shorthand, put capitals and full stops in and wrote names with their capitals.');
+  });
+
   it('drafts from the app’s template, else greets the person the record names; an html field in paragraphs', async () => {
     const enquiry: Page = { ...company, fields: { partner_name: { type: 'char', label: 'Buyer’s name' }, reply: { type: 'html', label: 'Reply' } } };
     const ask = { pageId: 'enquiry', model: 'enquiry', recordId: 3, page: enquiry, values: { partner_name: 'Hana Fouad' }, field: 'reply', how: 'draft', text: '', language: 'en' };
@@ -145,6 +155,23 @@ describe('the stand-in for an app’s AI (no model, no keys)', () => {
       { field: 'kind', op: 'in', value: ['flat', 'villa'] },
     ]);
     expect(await read('something nice')).toEqual({ filter: [], text: 'something nice', why: 'Stand-in AI, no model: found no field in these words.' });
+    // The owner's walk of 0.29: "<25m" was read and set nothing; "apartments" matched no type.
+    expect((await read('villa garden city <25m')).filter).toEqual([
+      { field: 'price', op: '<=', value: 25_000_000 },
+      { field: 'kind', op: '=', value: 'villa' },
+      { field: 'district', op: '=', value: 'garden_city' },
+    ]);
+    expect((await read('flats >= 3m')).filter).toEqual([
+      { field: 'price', op: '>=', value: 3_000_000 },
+      { field: 'kind', op: '=', value: 'flat' },
+    ]);
+    expect((await read('apartments under 5 million with a pool')).filter).toEqual([
+      { field: 'price', op: '<=', value: 5_000_000 },
+      { field: 'kind', op: '=', value: 'flat' },
+      { field: 'amenities', op: 'contains', value: { id: 2, label: 'Pool' } },
+    ]);
+    // A word holding "min" is no minimum: "admin 3" sets nothing.
+    expect((await read('admin 3')).filter).toEqual([]);
   });
 
   it('reads numbers as people write them', () => {

@@ -96,6 +96,9 @@ export interface ChatterLabels {
   toWhom: string;
   writeBy: string;
   sendByChannel: string;
+  /** Send, or Log, pressed with nothing typed and no file: said beside it. */
+  typeMessageFirst: string;
+  typeNoteFirst: string;
   /** A message's delivery, as its ticks say it; one not delivered, and why (`{reason}`). */
   sending: string;
   sent: string;
@@ -118,6 +121,8 @@ export interface ChatterLabels {
   approvalAsked: string;
   approvalApproved: string;
   approvalRejected: string;
+  /** Sent, and moved on at once as its rules asked no level of it. */
+  approvalNotNeeded: string;
 }
 
 /**
@@ -210,6 +215,8 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     toWhom: 'To {to}',
     writeBy: 'Message by {channel}…',
     sendByChannel: 'Send by {channel}',
+    typeMessageFirst: 'Type a message first',
+    typeNoteFirst: 'Type a note first',
     sending: 'Sending',
     sent: 'Sent',
     delivered: 'Delivered',
@@ -224,8 +231,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     overdueSince: 'Overdue since {when}',
     dueTime: 'Time',
     approvalAsked: 'Asked for approval',
-    approvalApproved: 'Approved for {level}',
-    approvalRejected: 'Rejected for {level}',
+    approvalApproved: 'Approved ({level})',
+    approvalRejected: 'Rejected ({level})',
+    approvalNotNeeded: 'No approval needed',
   },
   ar: {
     conversation: 'المحادثة',
@@ -304,6 +312,8 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     toWhom: 'إلى {to}',
     writeBy: 'رسالة عبر {channel}…',
     sendByChannel: 'إرسال عبر {channel}',
+    typeMessageFirst: 'اكتب رسالة أولًا',
+    typeNoteFirst: 'اكتب ملاحظة أولًا',
     sending: 'جارٍ الإرسال',
     sent: 'أُرسلت',
     delivered: 'وصلت',
@@ -318,8 +328,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     overdueSince: 'متأخر منذ {when}',
     dueTime: 'الوقت',
     approvalAsked: 'طلب الموافقة',
-    approvalApproved: 'وافق عن {level}',
-    approvalRejected: 'رفض عن {level}',
+    approvalApproved: 'وافق ({level})',
+    approvalRejected: 'رفض ({level})',
+    approvalNotNeeded: 'لا حاجة إلى موافقة',
   },
   de: {
     conversation: 'Unterhaltung',
@@ -398,6 +409,8 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     toWhom: 'An {to}',
     writeBy: 'Nachricht per {channel}…',
     sendByChannel: 'Per {channel} senden',
+    typeMessageFirst: 'Schreiben Sie zuerst eine Nachricht',
+    typeNoteFirst: 'Schreiben Sie zuerst eine Notiz',
     sending: 'Wird gesendet',
     sent: 'Gesendet',
     delivered: 'Zugestellt',
@@ -412,8 +425,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     overdueSince: 'Überfällig seit {when}',
     dueTime: 'Uhrzeit',
     approvalAsked: 'Hat um Genehmigung gebeten',
-    approvalApproved: 'Für {level} genehmigt',
-    approvalRejected: 'Für {level} abgelehnt',
+    approvalApproved: 'Genehmigt ({level})',
+    approvalRejected: 'Abgelehnt ({level})',
+    approvalNotNeeded: 'Keine Genehmigung nötig',
   },
   fr: {
     conversation: 'Conversation',
@@ -492,6 +506,8 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     toWhom: 'À {to}',
     writeBy: 'Message par {channel}…',
     sendByChannel: 'Envoyer par {channel}',
+    typeMessageFirst: 'Écrivez d’abord un message',
+    typeNoteFirst: 'Écrivez d’abord une note',
     sending: 'Envoi en cours',
     sent: 'Envoyé',
     delivered: 'Distribué',
@@ -506,7 +522,8 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     overdueSince: 'En retard depuis {when}',
     dueTime: 'Heure',
     approvalAsked: 'A demandé l’approbation',
-    approvalApproved: 'Approuvé pour {level}',
-    approvalRejected: 'Refusé pour {level}',
+    approvalApproved: 'Approuvé ({level})',
+    approvalRejected: 'Refusé ({level})',
+    approvalNotNeeded: 'Aucune approbation nécessaire',
   },
 };

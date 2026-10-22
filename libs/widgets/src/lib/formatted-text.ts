@@ -6,7 +6,7 @@ import { CHOOSING, EMOJI, HIGHLIGHTS, MARKDOWN_TOOLS, RICH_TOOLS, TEXT_COLOURS, 
 import { textMenu, type MenuChoice, type TextMenu } from './text-menu';
 import { linkAddress, sanitizeHtml } from './sanitize';
 import { copyHtml, keepCells, pasteHtml } from './pasted-html';
-import { PICK_COLUMNS, cellAt, cellsInOrder, editTable, hasHeader, markdownTable, newTable, pickerChoices, placeOf, tableGrid, tableHeight, tableSize, tableWidth, type TableEdit } from './rich-table';
+import { PICK_COLUMNS, cellAt, cellsInOrder, editTable, hasHeader, headedTables, markdownTable, newTable, pickerChoices, placeOf, tableGrid, tableHeight, tableSize, tableWidth, type TableEdit } from './rich-table';
 import { installEditorStyles } from './styles-editor';
 
 /**
@@ -180,7 +180,8 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     options.onInput?.(value);
   }
   function show(html: string | null) {
-    const clean = html ? sanitizeHtml(html, doc) : '';
+    // A table's header row in its head, as it shows and prints, though the value holds it among the rows.
+    const clean = html ? headedTables(sanitizeHtml(html, doc), doc) : '';
     if (editor === 'rich') {
       if (area.innerHTML !== clean) area.innerHTML = clean;
       area.classList.toggle('fd-blank', !area.textContent?.trim() && !area.querySelector('img, li, table'));

@@ -278,7 +278,7 @@ const en: Messages = {
   choiceFull: '{option} is full',
   choiceFilled: '{option} is full now: choose another',
   approvalLocked: 'Locked while it waits for approval',
-  approvalReasonNeeded: 'Say why it is rejected',
+  approvalReasonNeeded: 'Say why you reject it',
   approvalNotYours: '{level} is not yours to decide now',
   languagesNeeded: '{label} is required in {languages}',
   languagesNeededQuestion: 'Please answer {label} in {languages}',

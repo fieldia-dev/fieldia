@@ -67,7 +67,7 @@ export function approvalStatus(levels: readonly ApprovalLevel[]): ApprovalStatus
 /** What the form keeps of a source's answer: the levels it can say, those this person may decide now — where the source takes decisions. */
 export function approvalOf(told: Approvals | null | undefined, decides: boolean): FormApproval {
   const levels = (Array.isArray(told?.levels) ? told.levels : []).map(levelOf).filter((level): level is ApprovalLevel => level !== null);
-  const history = (Array.isArray(told?.history) ? told.history : []).filter((entry): entry is ApprovalEntry => !!entry && said(entry.by) && said(entry.at) && ['approved', 'rejected', 'requested'].includes(entry.decision));
+  const history = (Array.isArray(told?.history) ? told.history : []).filter((entry): entry is ApprovalEntry => !!entry && said(entry.by) && said(entry.at) && ['approved', 'rejected', 'requested', 'notNeeded'].includes(entry.decision));
   const waiting = new Set(levels.filter((level) => level.state === 'waiting').map((level) => level.id));
   const mine = decides ? [...new Set((Array.isArray(told?.mine) ? told.mine : []).filter((id) => waiting.has(id)))] : [];
   return {

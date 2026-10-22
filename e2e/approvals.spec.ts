@@ -56,7 +56,7 @@ for (const variant of ['plain', 'react']) {
       await expect(levels(page)).toHaveText(['FinanceApproved by Mona Adel', 'CFOWaiting']);
       // Nothing more for Finance to decide.
       await expect(band(page).locator('.fd-approval-actions button')).toHaveCount(0);
-      await expect(conversation(page).first()).toContainText('Approved for Finance');
+      await expect(conversation(page).first()).toContainText('Approved (Finance)');
       await signIn(page, /Sara Nabil/);
       await expect(page.locator('.demo-signed-in-said')).toHaveText('Signed in as Sara Nabil, CFO.');
       await expect(title(page)).toHaveText('Waiting for CFO: Sara Nabil');
@@ -70,9 +70,9 @@ for (const variant of ['plain', 'react']) {
       const history = band(page).getByRole('button', { name: 'Approval history (3)' });
       await expect(history).toHaveAttribute('aria-expanded', 'false');
       await history.click();
-      await expect(band(page).locator('.fd-approval-entry-what')).toHaveText(['Omar Said asked for approval', 'Mona Adel approved for Finance', 'Sara Nabil approved for CFO']);
+      await expect(band(page).locator('.fd-approval-entry-what')).toHaveText(['Omar Said asked for approval', 'Mona Adel approved (Finance)', 'Sara Nabil approved (CFO)']);
       await expect(band(page).locator('.fd-approval-entry time').first()).toHaveText(/^\d{1,2} \w{3} 2\d{3}, \d\d:\d\d/);
-      await expect(conversation(page).locator('.fd-message-body')).toContainText(['Approved for CFO', 'Approved for Finance', 'Asked for approval']);
+      await expect(conversation(page).locator('.fd-message-body')).toContainText(['Approved (CFO)', 'Approved (Finance)', 'Asked for approval']);
       await screen(page, `${variant}-approval-approved`);
     });
 
@@ -80,6 +80,33 @@ for (const variant of ['plain', 'react']) {
       await signIn(page, /Omar Said/);
       await expect(title(page)).toHaveText('Waiting for Finance: Mona Adel or Hany Lotfy');
       await expect(band(page).locator('.fd-approval-actions button')).toHaveCount(0);
+    });
+
+    test('an order under its limit, asked for approval, is a purchase order at once: “No approval needed”, in its history', async ({ page }) => {
+      // The owner's walk of 0.29: it stood at "To approve", no one asked, and no button to move it on.
+      ({ problems } = await open(page, variant, 'page=purchase-approval&record=2&skin=outlined'));
+      await expect(band(page)).toBeHidden();
+      await page.getByRole('button', { name: 'Ask for approval' }).click();
+      await expect(title(page)).toHaveText('No approval needed');
+      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Purchase order');
+      expect(await state(page)).toBe('purchase');
+      await band(page).getByRole('button', { name: 'Approval history (2)' }).click();
+      await expect(band(page).locator('.fd-approval-entry-what')).toHaveText(['Mona Adel asked for approval', 'No approval needed']);
+      await expect(conversation(page).locator('.fd-message-body')).toContainText(['No approval needed']);
+      await screen(page, `${variant}-approval-not-needed`);
+    });
+
+    test('the person who asks for approval decides none of it: Mona sends an order of Finance’s, and Hany alone is asked', async ({ page }) => {
+      // The owner's walk of 0.29: the manager sent his employee's claim again, and approved it himself.
+      ({ problems } = await open(page, variant, 'page=purchase-approval&record=2&skin=outlined'));
+      // Two hundred lamps: over the limit, Finance's to approve.
+      await node(page, 'f-lines').locator('td[data-column="qty"] input').fill('200');
+      await page.getByRole('button', { name: 'Ask for approval' }).click();
+      await expect(title(page)).toHaveText('Waiting for Finance: Hany Lotfy');
+      await expect(band(page).locator('.fd-approval-actions button')).toHaveCount(0);
+      await band(page).getByRole('button', { name: 'Approval history (1)' }).click();
+      await expect(band(page).locator('.fd-approval-entry-what')).toHaveText(['Mona Adel asked for approval']);
+      await screen(page, `${variant}-approval-asker-decides-none`);
     });
 
     test('says nothing on an order under its limit', async ({ page }) => {
@@ -117,7 +144,7 @@ for (const variant of ['plain', 'react']) {
       await expect(dialog).toBeVisible();
       await expect(dialog.getByRole('textbox', { name: 'Reason' })).toBeFocused();
       await dialog.getByRole('button', { name: 'Reject', exact: true }).click();
-      await expect(dialog.locator('.fd-error')).toHaveText('Say why it is rejected');
+      await expect(dialog.locator('.fd-error')).toHaveText('Say why you reject it');
       await screen(page, `${variant}-approval-reject-why`, { viewport: true });
       await dialog.getByRole('textbox', { name: 'Reason' }).fill('Attach the receipt, please.');
       await dialog.getByRole('button', { name: 'Reject', exact: true }).click();
@@ -126,7 +153,7 @@ for (const variant of ['plain', 'react']) {
       await expect(title(page)).toBeFocused();
       await expect(band(page).locator('.fd-approval-reason')).toHaveText('Attach the receipt, please.');
       await band(page).getByRole('button', { name: 'Approval history (5)' }).click();
-      await expect(band(page).locator('.fd-approval-entry-what')).toHaveText(['Omar Said asked for approval', 'Karim Fathy approved for Manager', 'Mona Adel rejected it for Finance', 'Omar Said asked for approval', 'Karim Fathy rejected it for Manager']);
+      await expect(band(page).locator('.fd-approval-entry-what')).toHaveText(['Omar Said asked for approval', 'Karim Fathy approved (Manager)', 'Mona Adel rejected it (Finance)', 'Omar Said asked for approval', 'Karim Fathy rejected it (Manager)']);
       await expect(band(page).locator('.fd-approval-entry-reason')).toHaveText(['Four of us for two guests is over the meals policy: claim the dinner for you and the two from Nile Traders, and name them.', 'Attach the receipt, please.']);
     });
 
@@ -142,9 +169,17 @@ for (const variant of ['plain', 'react']) {
       await page.keyboard.press('Tab');
       await page.keyboard.press('Tab');
       await expect(dialog.getByRole('textbox', { name: 'Reason' })).toBeFocused();
+      // A reason typed: Escape asks first, as a record's dialog asks; Discard lets it go.
       await page.keyboard.press('Escape');
+      await expect(dialog.locator('.fd-file-confirm')).toHaveText('Discard your changes?DiscardKeep editing');
+      await dialog.getByRole('button', { name: 'Discard', exact: true }).click();
       await expect(dialog).toBeHidden();
       await expect(decide(page, 'Reject')).toBeFocused();
+      // Nothing typed: Escape lets it go at once.
+      await decide(page, 'Reject').click();
+      await expect(dialog.getByRole('textbox', { name: 'Reason' })).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
       await expect(title(page)).toHaveText('Waiting for Manager: Karim Fathy');
     });
   });

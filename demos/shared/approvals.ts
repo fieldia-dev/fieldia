@@ -53,11 +53,13 @@ const totalOf = (values: Values) => ((values['line_ids'] as { values: Values }[]
 export const APPROVAL_ROUTES: Record<string, (values: Values) => MemoryApprovalRoute | null> = {
   'purchase.order': (values) => {
     const total = totalOf(values);
-    if (total <= 50000) return null;
+    const asked = values['state'] === 'to_approve' || values['state'] === 'purchase';
+    // Under its limit no level is asked: sent, it is a purchase order at once — "No approval needed".
+    if (total <= 50000) return { levels: [], asked, approved: { state: 'purchase' } };
     const cfo = total > 150000;
     return {
       levels: [{ id: 'finance', name: 'Finance', approvers: [MONA, HANY] }, ...(cfo ? [{ id: 'cfo', name: 'CFO', approvers: [SARA] }] : [])],
-      asked: values['state'] === 'to_approve' || values['state'] === 'purchase',
+      asked,
       why: cfo ? 'Orders over EGP 150,000 go to Finance, then the CFO.' : 'Orders over EGP 50,000 go to Finance.',
       approved: { state: 'purchase' },
       rejected: { state: 'rejected' },
