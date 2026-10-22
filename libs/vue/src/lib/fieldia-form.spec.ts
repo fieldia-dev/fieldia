@@ -266,6 +266,19 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('fills the fields its link fills from the url it is given, and starts again from a new one', async () => {
+    const wrapper = mount(FieldiaForm, { props: { page: page('unit-enquiry'), url: 'https://partner.example/units?unit=B-12&agent=mona' }, attachTo: document.body });
+    const unitBox = () => wrapper.element.querySelector('[data-node="f-unit"] input') as HTMLInputElement | null;
+    await waitFor(() => unitBox()?.value === 'B-12');
+    expect(handleOf(wrapper)!.form.getState().values).toMatchObject({ unit: 'B-12', agent_code: 'mona' });
+    await wrapper.setProps({ url: { unit: 'C-3' } });
+    await waitFor(() => unitBox()?.value === 'C-3');
+    // Mounted again from the new link: its form, the newest ready.
+    const newest = wrapper.emitted('ready')?.at(-1)?.[0] as ViewerHandle;
+    expect(newest.form.getState().values['agent_code']).toBeNull();
+    wrapper.unmount();
+  });
+
   it('passes a list’s opened row on as an openRecord event', async () => {
     const dataSource = createMemoryDataSource({ records: { partner: { 7: { name: 'Delta Foods' } } } });
     const wrapper = mount(FieldiaForm, { props: { page: page('customers'), dataSource }, attachTo: document.body });

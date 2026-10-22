@@ -90,5 +90,6 @@ export const fr: Messages = {
   approvalNotYours: 'Ce n’est pas à vous de décider pour {level} maintenant',
   languagesNeeded: '{label} est obligatoire en {languages}',
   languagesNeededQuestion: 'Veuillez répondre à {label} en {languages}',
+  notVerified: '{label} n’est pas confirmé : demandez un code et saisissez-le',
   locale: 'fr',
 };

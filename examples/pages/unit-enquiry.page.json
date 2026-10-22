@@ -1,0 +1,77 @@
+{
+  "fieldia": "0.7",
+  "id": "unit-enquiry",
+  "title": "Ask about a unit",
+  "description": "Palm Valley, New Cairo: tell us how to reach you, and an agent calls within the hour. We confirm your mobile with a code first.",
+  "data": { "kind": "responses" },
+  "maxWidth": "narrow",
+  "phone": { "country": "EG" },
+  "payment": {
+    "label": "Reservation fee",
+    "amount": 10000,
+    "currency": "EGP",
+    "when": "visit == 'reserve'",
+    "description": "Holds the unit for you for 7 days and is taken off its price; refunded in full if it is no longer available."
+  },
+  "prefill": { "fromUrl": ["utm_source", "utm_campaign", { "param": "agent", "field": "agent_code" }, "unit"] },
+  "fields": {
+    "full_name": { "type": "char", "label": "Full name", "required": true, "size": 80 },
+    "phone": { "type": "char", "label": "Mobile", "required": true },
+    "unit": { "type": "char", "label": "Unit", "help": "As on the listing: B-12, C-3." },
+    "visit": {
+      "type": "selection",
+      "label": "What would you like?",
+      "required": true,
+      "options": [
+        { "value": "viewing", "label": "Book a viewing" },
+        { "value": "call", "label": "A call about prices and plans" },
+        { "value": "reserve", "label": "Reserve the unit now" }
+      ]
+    },
+    "message": { "type": "text", "label": "Anything else?", "size": 500 },
+    "utm_source": { "type": "char", "label": "Source", "size": 60 },
+    "utm_campaign": { "type": "char", "label": "Campaign", "size": 60 },
+    "agent_code": { "type": "char", "label": "Agent", "size": 40 }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "enquiry",
+    "children": [
+      {
+        "type": "section",
+        "id": "about",
+        "title": "About you",
+        "children": [
+          { "type": "field", "id": "f-name", "field": "full_name", "autocomplete": "name" },
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "autocomplete": "tel", "options": { "verify": { "by": ["whatsapp", "sms"] } } }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "ask",
+        "title": "What you ask about",
+        "children": [
+          { "type": "field", "id": "f-unit", "field": "unit" },
+          { "type": "field", "id": "f-visit", "field": "visit", "widget": "radio", "options": { "columns": 1 } },
+          { "type": "field", "id": "f-message", "field": "message" }
+        ]
+      }
+    ]
+  },
+  "endings": [
+    {
+      "when": "visit == 'reserve'",
+      "title": "{unit|The unit} is held for you, {full_name}",
+      "text": "Your reservation is {id}. An agent will call you within the hour to book the signing."
+    },
+    {
+      "when": "agent_code != null",
+      "title": "Thank you, {full_name}",
+      "text": "Your agent will call you within the hour about {unit|the unit}."
+    },
+    {
+      "title": "Thank you, {full_name}",
+      "text": "An agent will call you within the hour about {unit|the unit}."
+    }
+  ]
+}

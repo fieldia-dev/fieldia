@@ -1058,8 +1058,20 @@ export function installStyles(document: Document): void {
  * Pins on a picture's (0.31, the pins part): the picture, its numbered pins, the keyboard's cross and the list of notes
  * under it — cut from no rule. After the codes' (none names another's parts) and before the themes', so a theme still
  * reshapes the note boxes, the buttons and their focus: rank 19.
+ *
+ * Proof of an email or a phone by a code (0.31, the viewer's verify part) is new too, cut from no rule: Send a code, the
+ * code's box, Confirm and what is said under a field, laid out alone, their buttons and box drawn by the main sheet's
+ * rules. It names none of the other parts' parts, so it goes with the parts of its kind, after the pins' and before the
+ * themes', so a theme still reshapes its buttons, its box and their focus: rank 20.
+ *
+ * A payment the answers wait for (0.31, the viewer's pay part) is new as well, cut from no rule: the payment step in the
+ * questions' place, laid out alone, its buttons the main sheet's. Like the verify part's, it names no other part's parts:
+ * rank 21, after the verify part's, before the themes', so a theme still reshapes its buttons.
+ *
+ * An offline outbox (0.31, the viewer's outbox part), new in the same way: a bar over the form saying what waits on the
+ * device, its buttons the main sheet's. Rank 22, after the pay part's, before the themes'.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, record: 17, codes: 18, pins: 19, themes: 20, quiet: 21, picker: 22, head: 23, groups: 24, text: 25, surveyLooks: 26, cards: 27, scan: 28 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, record: 17, codes: 18, pins: 19, verify: 20, pay: 21, outbox: 22, themes: 23, quiet: 24, picker: 25, head: 26, groups: 27, text: 28, surveyLooks: 29, cards: 30, scan: 31 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

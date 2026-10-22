@@ -771,6 +771,74 @@ export interface ViewerLabels {
   timeUpSent: string;
   timeUpLocked: string;
   stepTimeUp: string;
+  /**
+   * Proof of an email or a phone by a code (`options.verify`, the verify part): Send a code, by a way (`{by}`: SMS,
+   * WhatsApp, a call, email), while it is sent and once sent (`{value}`), how long it works, the code's box's name,
+   * Confirm and while it is checked, a code not typed, wrong (the tries left), too late, Send again and its wait
+   * (`{time}`, 0:25), Confirmed, and a code that could not be sent or checked.
+   */
+  verifySend: string;
+  verifySendBy: string;
+  verifyBySms: string;
+  verifyByWhatsapp: string;
+  verifyByCall: string;
+  verifyByEmail: string;
+  verifySending: string;
+  verifySent: string;
+  verifySentBy: string;
+  verifyWorksFor: string;
+  verifyWorksForOne: string;
+  verifyCodeName: string;
+  verifyCheck: string;
+  verifyChecking: string;
+  verifyTypeCode: string;
+  verifyWrong: string;
+  verifyWrongOne: string;
+  verifyWrongSome: string;
+  verifyWrongNone: string;
+  verifyExpired: string;
+  verifyAgain: string;
+  verifyAgainIn: string;
+  verifyDone: string;
+  verifyNotSent: string;
+  verifyNotChecked: string;
+  /**
+   * A payment the answers wait for (`payment`, the pay part): Pay and its amount, back to the answers, Cancel while it
+   * waits, that nothing is sent until it is paid, while it waits, paid (with the provider's reference), Pay again, and a
+   * payment cancelled, failed (with the provider's `{why}`) or not started.
+   */
+  payAmount: string;
+  payBack: string;
+  payCancel: string;
+  payCancelling: string;
+  payNothingSent: string;
+  payWaiting: string;
+  payPaid: string;
+  payPaidReference: string;
+  payAgain: string;
+  payCancelled: string;
+  payFailed: string;
+  payFailedWhy: string;
+  payNotStarted: string;
+  /** A `<fieldia-form>` whose page could not be read: its address answered nothing, or no page. */
+  formNotLoaded: string;
+  /**
+   * An offline outbox (`outbox`, the outbox part): how many sends wait on this device (`{count}`), no signal, while they
+   * are sent, all sent, Send now, a send refused once it went (`{why}`) with Try again and Discard (asked first), and a
+   * response kept without signal's ending.
+   */
+  outboxWaiting: string;
+  outboxWaitingOne: string;
+  outboxOffline: string;
+  outboxSending: string;
+  outboxSent: string;
+  outboxSendNow: string;
+  outboxRefused: string;
+  outboxRetry: string;
+  outboxDiscard: string;
+  outboxDiscardAsk: string;
+  outboxKeptTitle: string;
+  outboxKeptWords: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1316,6 +1384,57 @@ const en: ViewerLabels = {
   timeUpSent: 'Time is up: your answers were sent as they were.',
   timeUpLocked: 'Time is up: your answers are locked. Press {send} to send them.',
   stepTimeUp: 'Time is up for this step: its answers are kept as they are.',
+  verifySend: 'Send a code',
+  verifySendBy: 'Send a code by {by}',
+  verifyBySms: 'SMS',
+  verifyByWhatsapp: 'WhatsApp',
+  verifyByCall: 'phone call',
+  verifyByEmail: 'email',
+  verifySending: 'Sending a code…',
+  verifySent: 'We sent a code to {value}.',
+  verifySentBy: 'We sent a code to {value} by {by}.',
+  verifyWorksFor: 'It works for {minutes} minutes.',
+  verifyWorksForOne: 'It works for 1 minute.',
+  verifyCodeName: 'Code sent to {value}',
+  verifyCheck: 'Confirm',
+  verifyChecking: 'Checking the code…',
+  verifyTypeCode: 'Type the code you were sent.',
+  verifyWrong: 'That code is not right.',
+  verifyWrongOne: 'That code is not right: 1 try left.',
+  verifyWrongSome: 'That code is not right: {tries} tries left.',
+  verifyWrongNone: 'That code is not right, and no tries are left: send a new one.',
+  verifyExpired: 'The code has expired: send a new one.',
+  verifyAgain: 'Send again',
+  verifyAgainIn: 'Send again in {time}',
+  verifyDone: 'Confirmed',
+  verifyNotSent: 'The code could not be sent: try again.',
+  verifyNotChecked: 'The code could not be checked: try again.',
+  payAmount: 'Pay {amount}',
+  payBack: 'Back to the answers',
+  payCancel: 'Cancel',
+  payCancelling: 'Cancelling…',
+  payNothingSent: 'Nothing is sent until it is paid.',
+  payWaiting: 'Waiting for the payment…',
+  payPaid: 'Paid',
+  payPaidReference: 'Paid: reference {reference}',
+  payAgain: 'Pay again',
+  payCancelled: 'The payment was cancelled: nothing was sent.',
+  payFailed: 'The payment did not go through: nothing was sent.',
+  payFailedWhy: 'The payment did not go through: {why} Nothing was sent.',
+  payNotStarted: 'The payment could not be started: try again.',
+  formNotLoaded: 'This form could not be loaded.',
+  outboxWaiting: '{count} sends wait on this device.',
+  outboxWaitingOne: '1 send waits on this device.',
+  outboxOffline: 'No signal:',
+  outboxSending: 'Sending what waited…',
+  outboxSent: 'Everything that waited was sent.',
+  outboxSendNow: 'Send now',
+  outboxRefused: 'Not sent: {why}',
+  outboxRetry: 'Try again',
+  outboxDiscard: 'Discard',
+  outboxDiscardAsk: 'Discard this send? Its answers will be lost.',
+  outboxKeptTitle: 'Kept on this device',
+  outboxKeptWords: 'There is no signal: your answers are kept here and sent as soon as it comes back, even if you close this page.',
 };
 
 /**

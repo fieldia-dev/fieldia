@@ -1,4 +1,4 @@
-import type { UploadedFile, UploadFile, UploadRequest, UploadSignal } from './data-source';
+import type { DataSource, UploadedFile, UploadFile, UploadRequest, UploadSignal } from './data-source';
 import { saveProblemOf } from './data-source';
 import { filesIn, isFile, UPLOADS_AT_ONCE, type Entry, type UploadsRun } from './uploads';
 import type { FileValue, Value } from './values';
@@ -121,7 +121,9 @@ async function send(run: UploadsRun, entry: Entry) {
     },
   };
   try {
-    const stored = await source.upload(entry.file, request);
+    // Through the parts that join the form (form.ts): on a page with an offline outbox, a file the network could not
+    // take comes back as its bytes, kept in its field to go with the send.
+    const stored = (await run.host.through('upload', entry.file, (file) => (source.upload as NonNullable<DataSource['upload']>)(file, request))) as UploadedFile;
     if (!run.entries.includes(entry)) return;
     run.entries = run.entries.filter((other) => other !== entry);
     put(run, entry, stored);

@@ -6,7 +6,7 @@
  * `fieldia.import.js`, `fieldia.editable.js`, `fieldia.views.js`, `fieldia.rows.js`, `fieldia.lines.js`, `fieldia.files.js`, `fieldia.evidence.js`, `fieldia.photos.js`, `fieldia.record.js`, `fieldia.codes.js`, `fieldia.pins.js`, `fieldia.business.js`, `fieldia.survey.js`,
  * `fieldia.phone.js`, `fieldia.slots.js`, `fieldia.relations.js`, `fieldia.duplicates.js`, `fieldia.answers.js`, `fieldia.limits.js`, `fieldia.approvals.js`,
  * `fieldia.assist.js`, `fieldia.print.js`, `fieldia.themes.js`, `fieldia.quiet.js`, `fieldia.memory.js`, `fieldia.functions.js`, `fieldia.options.js`, `fieldia.mapchecks.js`, `fieldia.languages.js`,
- * `fieldia.scan.js`, `fieldia.decode.js`, `fieldia.surveyflow.js`
+ * `fieldia.scan.js`, `fieldia.decode.js`, `fieldia.surveyflow.js`, `fieldia.prefill.js`, `fieldia.verify.js`, `fieldia.pay.js`, `fieldia.element.js`, `fieldia.outbox.js`
  * (tools/script-bundle.mjs). The first time a page asks for a part, the main
  * script adds the part's tag, from the folder it came from itself; the part
  * runs, hands over its code, and the page draws from it.

@@ -224,6 +224,30 @@ export interface DataSource {
    * this (a search that finds few, a model your server does not gather). To fail, throw: the map says so.
    */
   clusters?(request: ClustersRequest): Promise<ClustersResult | false>;
+  /**
+   * Send a code that proves the person owns an email or a phone, for a field whose node says `options.verify`: by
+   * email, SMS, WhatsApp — your app's own way (its mail service, Twilio, a WhatsApp gateway); Fieldia sends nothing and
+   * holds no keys. Answer with how long it works, how soon another may be asked for and how many digits it has; throw
+   * `saveRefused({ kind: 'rule', message })` to refuse it in your words ("Too many codes for this number: try in an
+   * hour"). With `checkCode`; without both, no field asks for a code.
+   */
+  sendCode?(request: SendCodeRequest): Promise<SentCode>;
+  /**
+   * Check the code the person typed for the value it was sent to: right, wrong (with the tries left), or expired. Answer
+   * right with a `proof` of your own — a signed token — and every send carries it (`verified`), so your server trusts
+   * the value without asking again. With `sendCode`.
+   */
+  checkCode?(request: CheckCodeRequest): Promise<CodeChecked>;
+  /**
+   * Take a payment the answers wait for (a page's `payment`): a reservation fee, a deposit — your app's own way, through
+   * its own provider (Stripe, Paymob, Fawry, PayPal…); Fieldia holds no keys and no provider's code. Called inside the
+   * person's press of Pay, so you may open the provider's checkout in a window of its own; or draw it in `slot`, an
+   * element in the payment step. Answer once it is over: paid (with the provider's reference, which the send carries),
+   * failed (with why) or cancelled; nothing is sent until it is paid. Stop when `signal` aborts (the person pressed
+   * Cancel, or left). `key` is the same for every try of one response's payment: hand it to your provider as its
+   * idempotency key, so a payment is never taken twice. Without it, no payment is asked and the page sends as before.
+   */
+  pay?(request: PayRequest): Promise<PayResult>;
 }
 
 /** Whose approvals are asked: the record shown, and the person, as the app told the form. */
@@ -457,6 +481,122 @@ export interface MapCluster {
   bbox?: GeoBox;
   /** With `weight` asked: that field added up over its records. */
   weight?: number;
+}
+
+/** What `pay` is asked: what is due, what for, the answers it pays for, and where its checkout may be drawn. */
+export interface PayRequest {
+  pageId: string;
+  /** The page's model; empty for a page of responses. */
+  model: string;
+  recordId: RecordId | null;
+  /** How much, in the currency's own units (10000 for EGP 10,000.00). */
+  amount: number;
+  /** ISO 4217: "EGP". */
+  currency: string;
+  /** What it is for, in the page's words: "Reservation fee". */
+  label: string;
+  description?: string;
+  /** The same for every try of this response's payment: the provider's idempotency key. */
+  key: string;
+  /** The answers it pays for, as the send would carry them. */
+  values: Values;
+  /** The page's language, by tag. */
+  language: string;
+  /** Where the provider's checkout may be drawn in the payment step: an element, in a browser. */
+  slot?: unknown;
+  /** Aborts when the person presses Cancel or leaves: stop, and answer cancelled (or reject with an error named AbortError). */
+  signal?: UploadSignal;
+}
+
+/** How a payment ended. */
+export interface PayResult {
+  status: 'paid' | 'failed' | 'cancelled';
+  /** The provider's reference for a payment taken, sent with the answers. */
+  reference?: string;
+  /** Why it failed, in the person's words, said as it is: "The card was declined." */
+  message?: string;
+}
+
+/** What a page's payment asks now: the amount, its currency, what for, and its key. */
+export interface PaymentDue {
+  amount: number;
+  currency: string;
+  label: string;
+  description?: string;
+  key: string;
+}
+
+/** A payment taken, as a send carries it (`payment`). */
+export interface PaidPayment {
+  amount: number;
+  currency: string;
+  key: string;
+  reference?: string;
+}
+
+/** What `sendCode` is asked: the field, the value to prove, and how the person asked to get the code. */
+export interface SendCodeRequest {
+  pageId: string;
+  /** The page's model; empty for a page of responses. */
+  model: string;
+  /** The record edited; null for a new one or a response. */
+  recordId: RecordId | null;
+  /** The email or phone field, by name. */
+  field: string;
+  /** What it holds now: an email address, or a phone number (E.164 where the page reads phones the world over). */
+  value: string;
+  /** What the value is: an email, or a phone. */
+  kind: 'email' | 'phone';
+  /** The way the person picked to get it — `sms`, `whatsapp`, `call`, `email`, or one of the page's own — where the page offers more than one. */
+  by?: string;
+  /** The page's language, by tag: the code's message is written in it. */
+  language: string;
+}
+
+/** A code on its way. Each part is told where the app knows it. */
+export interface SentCode {
+  /** When it stops working, as ISO: said ("The code works for 10 minutes"), and after it, a new one is asked for. */
+  expiresAt?: string;
+  /** Seconds before another may be asked for: Send again waits so long, its count said. */
+  retryAfter?: number;
+  /** How many digits it has: its box takes so many, and checks it once they are all typed. 6 unless said. */
+  length?: number;
+  /** Your own id for it, handed back to `checkCode`. */
+  id?: string;
+  /** Words of your own, said as they are: "We sent a code to +20 10 1234 5678 on WhatsApp." */
+  message?: string;
+}
+
+/** What `checkCode` is asked: the code typed, for the value it was sent to. */
+export interface CheckCodeRequest {
+  pageId: string;
+  model: string;
+  recordId: RecordId | null;
+  field: string;
+  value: string;
+  /** What the person typed, its digits as 0-9, without spaces. */
+  code: string;
+  /** The id `sendCode` gave it, where it gave one. */
+  id?: string;
+}
+
+/** Whether a code was right. */
+export interface CodeChecked {
+  ok: boolean;
+  /** Right: a proof of your own (a signed token), sent with the answers so your server trusts the value as proved. */
+  proof?: string;
+  /** Wrong: how many tries are left; 0, a new code must be asked for. */
+  triesLeft?: number;
+  /** Too late: the code no longer works, and a new one must be asked for. */
+  expired?: boolean;
+  /** Words of your own, said as they are, in place of Fieldia's. */
+  message?: string;
+}
+
+/** An email or a phone the person proved they own, by a code: the value proved, and the app's proof of it. */
+export interface VerifiedValue {
+  value: string;
+  proof?: string;
 }
 
 /** Whose possible duplicates were let be: what `notDuplicates` is asked. */
@@ -814,6 +954,15 @@ export interface SaveRequest {
   version?: RecordVersion;
   /** The key of the draft these changes were kept in on the server (`saveDraft`): the source may let it go. */
   draft?: string;
+  /** The emails and phones proved by a code (`options.verify`), by field: the value and the app's own proof, to trust it by. */
+  verified?: Record<string, VerifiedValue>;
+  /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
+  payment?: PaidPayment;
+  /**
+   * A send kept on the device without signal and sent later (a page's `outbox`): its key — the same for every try, so a
+   * server that kept the first can tell a second — and when it was made.
+   */
+  queued?: { key: string; at: string };
 }
 
 export interface SaveResult {
@@ -1118,6 +1267,15 @@ export interface SubmitRequest {
    */
   started?: string;
   timeUp?: boolean;
+  /** The emails and phones proved by a code (`options.verify`), by field: the value and the app's own proof, to trust it by. */
+  verified?: Record<string, VerifiedValue>;
+  /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
+  payment?: PaidPayment;
+  /**
+   * A send kept on the device without signal and sent later (a page's `outbox`): its key — the same for every try, so a
+   * server that kept the first can tell a second — and when it was made.
+   */
+  queued?: { key: string; at: string };
 }
 
 /**

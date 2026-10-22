@@ -58,10 +58,15 @@ A page with `continueLater` opens a draft kept on your server by its key —
 link Continue later gave — and `(draft)` is told of each draft kept. A new
 `[resume]` opens that draft, as a new `[recordId]` opens that record.
 
+A page that fills fields from its link (`prefill`) reads the browser's address;
+an app rendered on a server, or shown inside another page, gives the link it
+knows — `[url]="router.url"`, an address, or `[url]="{ agent: 'mona' }"`. A new
+`[url]` starts the form from it again.
+
 **Before your app leaves the form**, ask its one check: `await
 handle.form.leave()` in a route's `canDeactivate`, before removing
 `<fieldia-form>`, and before changing an input that mounts it again (`page`,
-`form`, `dataSource`, `recordId`, `resume`, `user`, `context`, `dir`, `locale`,
+`form`, `dataSource`, `recordId`, `resume`, `url`, `user`, `context`, `dir`, `locale`,
 `labels`, `fieldTypes`, the names in `functions`). Angular destroys it at once, so nothing else can keep
 the person there. It waits for a save on its way, then asks "Discard your
 changes?" only when their work is at risk, and answers false when they choose to

@@ -320,6 +320,17 @@ describe('<FieldiaForm>', () => {
     expect(handle!.form.getState().order).toEqual(drawOrder(page('training-check'), 'candidate-17'));
   });
 
+  it('fills the fields its link fills from the url it is given, and starts again from a new one', async () => {
+    let handle: ViewerHandle | null = null;
+    const unitBox = (container: HTMLElement) => container.querySelector('[data-node="f-unit"] input') as HTMLInputElement | null;
+    const { container, rerender } = render(<FieldiaForm page={page('unit-enquiry')} url="https://partner.example/units?unit=B-12&agent=mona" onReady={(ready) => (handle = ready)} />);
+    await waitFor(() => unitBox(container)?.value === 'B-12');
+    expect((handle as ViewerHandle | null)?.form.getState().values).toMatchObject({ unit: 'B-12', agent_code: 'mona' });
+    rerender(<FieldiaForm page={page('unit-enquiry')} url={{ unit: 'C-3' }} onReady={(ready) => (handle = ready)} />);
+    await waitFor(() => unitBox(container)?.value === 'C-3');
+    expect((handle as ViewerHandle | null)?.form.getState().values['agent_code']).toBeNull();
+  });
+
   it('draws the pager and the breadcrumbs the app gives, and tells each record the form shows', async () => {
     const shown: unknown[] = [];
     const { container } = render(<FieldiaForm page={staffPage} dataSource={staff()} recordId={1} records={[1, 2]} breadcrumbs={[{ label: 'Employees' }]} onRecord={(event) => shown.push(event.recordId)} />);

@@ -83,6 +83,11 @@ export interface UploadsHost {
   write(field: string, line: { field: string; key: string } | undefined, value: Value, quiet: boolean): void;
   changed(uploads: readonly FileUpload[]): void;
   track<T>(promise: Promise<T>): Promise<T>;
+  /**
+   * An upload through the parts that join the form (form.ts): on a page with an offline outbox, a file the network
+   * could not take comes back as its bytes, kept in its field to go with the send.
+   */
+  through<T>(kind: 'upload', file: UploadFile, send: (file: UploadFile) => Promise<T>): Promise<T | null>;
 }
 
 /** A file on its way, as the uploads keep it (the state shows each as a `FileUpload`). */

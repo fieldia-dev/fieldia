@@ -151,6 +151,9 @@ export const changes = {
   flowOne: (on: boolean): string => (on ? 'It asks one question at a time' : 'It asks its questions together again'),
   questionsDrawn: 'Which questions each person is asked, or their order, changed',
   timeLimit: 'Its time limits changed',
+  outbox: (on: boolean): string => (on ? 'It keeps sends made without signal on the device' : 'It no longer keeps sends made without signal'),
+  payment: (now: 'on' | 'off' | 'changed'): string => ({ on: 'It takes a payment before the answers go', off: 'It no longer takes a payment', changed: 'Its payment changed' })[now],
+  prefill: (count: number): string => (count ? `The link it is opened with fills ${count === 1 ? 'a field' : `${count} fields`}` : 'The link it is opened with fills no field'),
   thePage: 'the page',
   // ---- the look
   look: {

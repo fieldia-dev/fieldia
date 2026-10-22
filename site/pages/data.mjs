@@ -49,6 +49,9 @@ interface DataSource {
   rewrite?(request: RewriteRequest): Promise<RewriteResult>;  // AI: a text field drafted or polished
   searchToFilter?(request: SearchToFilterRequest): Promise<SearchToFilterResult>; // AI: plain words as filters
   clusters?(request: ClustersRequest): Promise<ClustersResult | false>; // a list's map: the view's bubbles, counted
+  sendCode?(request: SendCodeRequest): Promise<SentCode>;    // send a code that proves an email or a phone
+  checkCode?(request: CheckCodeRequest): Promise<CodeChecked>; // check the code typed
+  pay?(request: PayRequest): Promise<PayResult>;               // take a payment the answers wait for
 }`
 )}
 
@@ -81,6 +84,8 @@ interface DataSource {
     <tr><td>${c('merge')}</td><td>Someone merges a record with one like it, a value picked for each field</td><td>Merge, beside a possible duplicate — without it, none is offered</td></tr>
     <tr><td>${c('notDuplicates')} · ${c('markNotDuplicate')}</td><td>A saved record with possible duplicates is shown; someone presses <em>It's someone new</em></td><td>What was let be kept on your server, so every device lets it be — without both, the person's browser keeps it. See <a href="#duplicates">possible duplicates</a></td></tr>
     <tr><td>${c('limits')}</td><td>A page with ${c('limits')} or options with ${c('seats')} opens, and again just before its answers go and after</td><td>The most responses, one from each person, each choice's places left — see <a href="#limits">opening, closing and limiting a form</a>; without it, a page keeps to its dates alone</td></tr>
+    <tr><td>${c('sendCode')} · ${c('checkCode')}</td><td>Someone presses <em>Send a code</em> under an email or a phone whose node says ${c('options.verify')}; types the code</td><td>Proof the person owns it, before the answers go — see <a href="#verify">proof of an email or a phone</a>; without both, no field asks for a code</td></tr>
+    <tr><td>${c('pay')}</td><td>Someone presses <em>Pay</em> in a page's payment step, after its answers passed their checks</td><td>A reservation fee or a deposit taken through your own provider, before anything is sent — see <a href="#pay">a payment the answers wait for</a>; without it, no payment is asked</td></tr>
     <tr><td>${c('saveDraft')} · ${c('loadDraft')}</td><td>Someone types on a page with ${c('continueLater')}, enters a wizard's step, or presses Continue later; a page opens with a draft's key</td><td>Answers kept on your server, continued on any device — see <a href="#drafts">save and resume</a>; without them, no Continue later shows</td></tr>
     <tr><td>${c('approvals')} · ${c('decide')}</td><td>A record of a page with ${c('approval')} is shown, saved, or decided on; someone presses Approve, or Reject with why</td><td>Who must approve it at which level, the record locked while it waits, Approve and Reject, its history — see <a href="#approvals">approvals on a record</a>; without them, nothing shows</td></tr>
     <tr><td>${c('suggest')} · ${c('rewrite')} · ${c('searchToFilter')}</td><td>Someone presses Fill from text (a page's ${c('suggest')}), a text field's Draft or Polish (its ${c('rewrite')}), or ✦ beside a list's search (${c('searchToFilter')})</td><td>AI help by your own model, each value shown to accept or reject — see <a href="#ai">AI help</a>; without one, what asks for it is hidden</td></tr>
@@ -135,6 +140,89 @@ slots: {
 }`
 )}
 <p>A page without ${c('botCheck')} sends what it always did. In the designer, a page of responses has <em>Bot check</em> on its Rules tab. The <a href="/demos/plain/?page=signup&amp;skin=outlined">sign-up demo</a> has one, with a stand-in for a captcha, and shows under the form what the app was told.</p>
+
+<h2 id="prefill">Fields filled from the link</h2>
+<p>A form shared as a link — in a WhatsApp campaign, by a broker, beside a listing — can say who sent the person and what they asked about, with no code of your app's: ${c('prefill.fromUrl')} names the link's parameters, each filling the field of its name, or the ${c('field')} it names.</p>
+${code(
+  'json',
+  `
+"prefill": { "fromUrl": ["utm_source", "utm_campaign", { "param": "agent", "field": "agent_code" }, "unit"] },
+"fields": {
+  "utm_source": { "type": "char", "label": "Source" },
+  "utm_campaign": { "type": "char", "label": "Campaign" },
+  "agent_code": { "type": "char", "label": "Agent" },
+  "unit": { "type": "char", "label": "Unit" }
+}`
+)}
+${code('text', 'https://homes.example/enquiry?utm_source=whatsapp&utm_campaign=autumn&agent=mona&unit=B-12')}
+<p>Opened so, the form starts with those values — and again after <em>Submit another</em>. A field placed nowhere is a <em>hidden field</em>: seen by no one, sent with the answers to ${c('submit')} (or in a new record's ${c('save')}). One placed on the page shows the value, for the person to keep or change. Each is read as its field reads words — a number, ${c('yes')}/${c('no')}/${c('1')}/${c('0')}, a choice by one of its options' values, a day as ${c('2026-10-20')}, a day and time with its offset — and words that do not read so, or that the field's own checks would refuse, are left out: a hidden field no one can put right never stops a send. The link never writes over an answer: what the person types, and a draft opened over it, are theirs; a stored record opened is never filled. The form reads the page's own address unless it is given ${c('url')} — the React, Vue and Angular components take it too, for an app rendered on a server or embedded, whose address bar is not the link; a form shown in a partner's page through <a href="/start/#embed">the embed script</a> gets that page's campaign parameters passed on. In the designer, <em>Filled from the link</em> on a page's Rules tab names each parameter and the field it fills, or its own hidden field.</p>
+
+<h2 id="verify">Proof of an email or a phone</h2>
+<p>A lead form pays for every fake number. A field drawn as an email or a phone whose node says ${c('options.verify')} asks the person to prove it is theirs before the answers go: <em>Send a code</em> under its box — one button for each way the page offers — then the code's box (${c('autocomplete="one-time-code"')}, so a phone offers the code from its message), <em>Confirm</em>, how long the code works and when another may be asked for. Right, the field says <em>Confirmed</em>; a send before that is refused under it (<em>Mobile is not confirmed: send a code and type it in</em>), and a number changed afterwards asks again. Fieldia sends nothing itself and holds no keys: your data source sends the code its own way — your mail service, Twilio, a WhatsApp gateway — and checks it.</p>
+${code(
+  'json',
+  `
+{ "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "options": { "verify": { "by": ["whatsapp", "sms"] } } }
+{ "type": "field", "id": "f-email", "field": "email", "widget": "email", "options": { "verify": true } }`
+)}
+${code(
+  'ts',
+  `
+async sendCode({ field, value, kind, by, language }) {
+  // value: "+201012345678" (a phone read the world over) or "mona@example.com"
+  const { id, expiresAt } = await myCodes.send(value, { via: by ?? (kind === 'email' ? 'email' : 'sms'), language });
+  return { id, expiresAt, retryAfter: 30, length: 6 }; // or throw saveRefused({ kind: 'rule', message: 'Too many codes: try in an hour' })
+},
+async checkCode({ value, code, id }) {
+  const result = await myCodes.check(id, value, code);
+  return result.ok ? { ok: true, proof: result.signedToken } : { ok: false, triesLeft: result.triesLeft, expired: result.expired };
+},
+async submit({ values, verified }) {
+  // verified: { phone: { value: "+201012345678", proof: "eyJ…" } } — trust a value only by its proof
+  if (!(await myCodes.trusts(verified?.phone))) throw saveRefused({ kind: 'fields', message: 'Confirm your mobile', fields: { phone: 'Confirm your mobile' } });
+  return { id: await store(values) };
+}`
+)}
+<p>Each send — ${c('submit')}, or ${c('save')} on a record's page — carries ${c('verified')}: the values proved and your proof of each, so your server trusts a value only by a proof it signed. ${c('form.getState().verified')} holds them; ${c("form.joined('verify').asks(field)")} says whether a field asks for one, ${c("form.joined('verify').mark(field, { value, proof })")} keeps one your app proved its own way. In the designer, an email's or a phone's settings have <em>Confirmed by a code</em>, and a phone's the ways it is sent. The <a href="/demos/plain/?page=unit-enquiry&amp;skin=outlined">enquiry demo</a> sends its codes to a stand-in phone over the form.</p>
+
+<h2 id="pay">A payment the answers wait for</h2>
+<p>A reservation fee, a deposit, a retainer: a page's ${c('payment')} is taken before its answers go, through your own provider — Stripe, Paymob, Fawry, PayPal — with no key and no provider's code in Fieldia. Submit checks the answers first, then the payment step shows what is due and <em>Pay</em>; nothing is sent until it is paid.</p>
+${code(
+  'json',
+  `
+"payment": {
+  "label": "Reservation fee",
+  "amount": 10000,
+  "currency": "EGP",
+  "when": "visit == 'reserve'",
+  "description": "Held for 7 days and taken off the price; refunded if the unit is no longer available."
+}`
+)}
+<p>${c('amount')} is a number, or a number or money field's name; ${c('currency')} a code, or a field holding one — left out, a money field's own; ${c('when')}, a condition on the answers. Your data source's ${c('pay')} is called inside the person's press of Pay, so it may open the provider's checkout in a window of its own, or draw it in ${c('request.slot')}, the payment step's own place for it:</p>
+${code(
+  'ts',
+  `
+async pay({ amount, currency, label, key, values, slot, signal }) {
+  // key: the same for every try of this response's payment — your provider's idempotency key.
+  const session = await myServer.checkout({ amount, currency, label, key });
+  const result = await myProvider.mount(slot, session, { signal }); // or window.open(session.url) and wait for its webhook
+  return result.ok ? { status: 'paid', reference: result.id } : { status: result.cancelled ? 'cancelled' : 'failed', message: result.error };
+},
+async submit({ values, payment }) {
+  // payment: { amount: 10000, currency: 'EGP', key: 'pay-…', reference: 'pi_3Q…' } — check it with your provider
+  return { id: await store(values, payment) };
+}`
+)}
+<p>Paid, the answers go with ${c('payment')}; failed or cancelled, the step says nothing was sent, with <em>Pay again</em> and <em>Back to the answers</em>. A send that fails after paying is sent again without paying twice, and every send path — Ctrl+Enter, a wizard's finish, your own ${c('form.save()')} — waits for the payment the same way. In the designer, <em>Payment before sending</em> on a page's Rules tab. The <a href="/demos/plain/?page=unit-enquiry&amp;skin=outlined">enquiry demo</a> reserves a unit through a stand-in for a provider's checkout.</p>
+
+<h2 id="outbox">Sends kept without signal</h2>
+<p>A broker at a viewing in a compound, an inspector in a basement, a courier at a door: ${c('"outbox": true')} keeps a send that finds no network on the device — its answers, its photos' bytes — and sends it when the signal comes back. No new member: what your source already has (${c('submit')}, ${c('save')}, ${c('upload')}) takes it then.</p>
+${code(
+  'json',
+  `
+{ "id": "viewing-report", "data": { "kind": "responses" }, "outbox": true, … }`
+)}
+<p>A failure that reads as the network's — a ${c('TypeError')} from ${c('fetch')} — is kept in the browser's IndexedDB (never lost on a reload, shared by your site's tabs) and said: the form ends <em>Kept on this device</em>, and a bar over it says how many sends wait, with <em>Send now</em>. They go in order when the browser says it is online, every half a minute while something waits, as the page opens, and right after a send that went through (which goes first); each is taken by one sender only, and carries ${c('queued: { key, at }')} — the same key every try — so your server can refuse a second try of a send whose answer was lost on the way. A photo taken without signal is stored through ${c('upload')} just before its send goes. A send your server refuses then is kept, said, and offered <em>Try again</em> and <em>Discard</em>. A record saved again while its first save waits is saved once, as it is now, and takes its id when it went. Give the viewer ${c('outbox')} — a store of your own (${c('list')}, ${c('put')}, ${c('delete')}, ${c('claim')}) — to keep them elsewhere. In the designer, <em>Without signal</em> on a page's Rules tab. The <a href="/demos/plain/?page=site-visit&amp;skin=outlined">site visit demo</a> works offline at a press.</p>
 
 <h2 id="upload">Files stored as they are picked</h2>
 <p>A phone's photo is 3 to 12 MB. Twenty of them inside one save fail on mobile data, and one in a draft fills the browser's store. Give your data source ${c('upload')}, and a file or picture field sends each file to your store <em>as soon as it is picked</em>: photos are made smaller first, each shows on its way with a bar, × to cancel it and Retry when it failed, and the field keeps only what ${c('upload')} returns — ${c('{ url, name, size, type, fileId }')}, never the bytes. Three go at once, the rest wait their turn; a field of several keeps them in the order they were picked.</p>

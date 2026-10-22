@@ -42,6 +42,8 @@ export const SIZES = {
   scan: Math.round(gzippedKB('fieldia.scan.js')),
   /** fieldia.decode.js: ZXing's readers of codes, fetched as Scan is pressed in a browser that reads none itself. */
   decode: Math.round(gzippedKB('fieldia.decode.js')),
+  /** fieldia-embed.js: a form's frame on another site, to a tenth (it is under one KB). */
+  embed: Math.round(gzippedKB('fieldia-embed.js') * 10) / 10,
 };
 
 const packages = readdirSync(new URL('libs/', ROOT)).filter((dir) => {

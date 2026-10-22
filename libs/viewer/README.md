@@ -111,6 +111,42 @@ mountViewer(host, {
 
 Nothing is refused on the page for what the check saw: the app decides.
 
+A page that fills fields from its link (`"prefill": { "fromUrl": ["utm_source",
+{ "param": "agent", "field": "agent_code" }] }`) reads the browser's own address
+as it starts — `?utm_source=whatsapp&agent=mona` — unless the viewer is given
+`url` (an address, its `?…` part, or the parameters by name; the React, Vue and
+Angular components take it too): a field placed
+nowhere is a hidden field sent with the answers, one placed shows what the link
+gave, and nothing the person typed is written over.
+
+A field drawn as an email or a phone whose node says `"options": { "verify": {
+"by": ["whatsapp", "sms"] } }` (or `true`) asks for a code, in a part of its
+own (`fieldia.verify.js`), where the data source has `sendCode` and
+`checkCode`: Send a code under its box once the value reads — one button for
+each way — then the code's box (`one-time-code`, so a phone offers the code
+from its message; a whole code typed or pasted is checked at once), Confirm,
+how long it works and Send again after its wait, a wrong code's tries left,
+and Confirmed. A send before that is refused under the field, a value changed
+afterwards asks again, and each send carries the app's proof (`verified`).
+
+A page with a `payment` (`{ "label": "Reservation fee", "amount": 10000,
+"currency": "EGP" }`) and a source with `pay` has a payment step, in a part of
+its own (`fieldia.pay.js`): Submit checks the answers, then they give way to
+what is due and **Pay**, which calls the source's `pay` inside the press — open
+your provider's checkout in a window, or draw it in `request.slot` — and waits:
+paid, the answers go with the reference; failed or cancelled, it says nothing
+was sent, with Pay again and Back to the answers.
+
+A page with `"outbox": true` keeps a send that finds no network on the device
+(`fieldia.outbox.js`): a bar over the form says what waits ("No signal: 1 send
+waits on this device.") with Send now, a response kept ends "Kept on this
+device" with the bar under it, and what waits is sent as the browser says it is
+`online`, every half a minute while something waits, as the page opens (after a
+reload) and right after another send goes through. "No signal" is said by the
+last try, never by the browser's `navigator.onLine`. A send the server refuses
+then is said, with Try again and Discard. The viewer's `outbox` option takes the
+app's own store in place of the browser's IndexedDB.
+
 ## Saved forms placed in a page
 
 A page may place another saved page in it by its id — an address made once,
@@ -1098,11 +1134,12 @@ Firefox), else once after the rows. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 165 KB gzipped). What a page uses beyond
+(core, widgets and viewer; about 168 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a link to
 another record, a phone, a theme, possible duplicates, a page on paper, the
 answers said in a page's words, a form's limits, a record's approvals, the
-functions beyond the plain ones… — comes in 29 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
+functions beyond the plain ones, a field's code, a payment, `<fieldia-form>`'s
+work… — comes in PARTCOUNT parts beside it (`fieldia.list.js`, `fieldia.date.js`,
 `fieldia.relations.js`, `fieldia.print.js`, …), each loaded from the same
 folder the first time a page uses it:
 
@@ -1142,6 +1179,35 @@ the script bundle, `Fieldia.VIEWER_LABELS.en` (and `WIDGET_LABELS`,
 puts its words over ones a table has (a language's, or your own). The viewer
 reads its words as it draws them, so a page mounted before its parts came
 shows theirs.
+
+The script defines `<fieldia-form>` as it starts, so a page needs no code of its
+own: it fetches its page (`src`), draws its form and sends the answers to its
+`action` as JSON (`{ pageId, values, … }`, answered with `{ id }`, refused with
+`{ message, fields }`); `locale`, `theme`, `skin`, `record` and `resume` say the
+rest, and changing one draws it again. Its `page`, `source` and `options`
+properties take the rest of the viewer, `handle` is the viewer once drawn, and it
+tells `fieldia-ready`, `fieldia-send`, `fieldia-save`, `fieldia-step` and
+`fieldia-error` as events that bubble. Its work comes in `fieldia.element.js`:
+until then the element is a stub, made what it is in place as it comes (what was
+set on it before is kept). `action` takes a page of responses' answers; a
+record's page saves through its `source`. An app built with a bundler calls
+`defineFieldiaForm()` once.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" locale="ar"></fieldia-form>
+```
+
+On a site that is not yours, `fieldia-embed.js` (under 1 KB gzipped, nothing else
+of Fieldia's in it) places an iframe of your form's page where its tag stands —
+`<script src=".../bundle/fieldia-embed.js" data-src="https://forms.example.com/enquiry"
+data-locale="ar" async></script>` — and your page's `<fieldia-form frame>` tells
+it its height as it changes, so the frame grows and shrinks with the form, and
+`fieldia-ready`, `fieldia-step` and `fieldia-send` (the reference, never the
+answers) as events on the iframe, from your page's origin only. The tag passes on
+`data-locale`, `data-theme`, `data-skin` and the page's campaign parameters
+(`utm_*`, or those `data-params` names), for a page that fills hidden fields
+from its link.
 
 For React, Vue and Angular, use `@fieldia/react`, `@fieldia/vue` or
 `@fieldia/angular` — thin shells over this viewer. MIT licensed.

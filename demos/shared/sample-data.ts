@@ -89,6 +89,8 @@ import { treatments } from './face-chart';
 import { CONTRACT_FEES_RECORDS } from './contract-fees';
 import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
+import { standInCheckout, unitEnquiryPage } from './unit-enquiry';
+import { demoOffline, viewingReportPage } from './viewing-report';
 import clinicIntake from '../../examples/pages/clinic-intake.page.json';
 import enquiry from '../../examples/pages/enquiry.page.json';
 import { ENQUIRY_RECORDS } from './enquiry';
@@ -267,6 +269,10 @@ export const pages: Record<string, Page> = {
   ...listingHandover.pages,
   // An event's sign-up with open and close dates, places for each session, one from each person: shared/event-signup.ts.
   'event-signup': eventSignupPage(),
+  // A property enquiry shared as a broker's link: the unit filled from it, who sent the person in hidden fields (shared/unit-enquiry.ts).
+  'unit-enquiry': unitEnquiryPage(),
+  // A broker's viewing report kept on the phone without signal and sent when it comes back (shared/viewing-report.ts).
+  'viewing-report': viewingReportPage(),
   // A clinic's long intake, Continue later on any device: shared/clinic-intake.ts.
   'clinic-intake': clinicIntake as Page,
   // A buyer's property enquiry beside its conversation — WhatsApp, e-mail and notes, ticks, a follow-up at 15:30 on
@@ -602,6 +608,8 @@ export function sampleDataSource() {
     // (shared/appointments.ts), and with its reference, which the page's ending says ("Your booking is B-1043"); every
     // other response with its number.
     submitted: (request, count) => {
+      // An enquiry that reserves a unit: its reservation's reference, which its ending says.
+      if (request.pageId === 'unit-enquiry') return { id: `R-${1200 + count}` };
       if (request.pageId !== 'appointment-booking') return { id: count };
       keepAppointment(source.records, request.values);
       return { id: `B-${1042 + count}` };
@@ -619,6 +627,10 @@ export function sampleDataSource() {
     // AI help — Fill from text, Draft and Polish, a search's words read as filters — answered by Fieldia's stand-in: no
     // model and no keys, words read by their patterns, a reply drafted from the agency's template (shared/enquiries.ts).
     assist: demoAssist,
+    // A payment the answers wait for, through a stand-in for the app's provider's checkout (shared/unit-enquiry.ts).
+    pay: (request) => standInCheckout(request),
+    // No signal while the viewing report's bar says so, or the browser has no network: saves and sends fail as a network's.
+    offline: demoOffline,
     // The drafts the server keeps, and the link Continue later gives (shared/clinic-intake.ts).
     drafts: keptDrafts(),
     // How a purchase order and an expense are approved, and what was decided so far — this tab's decisions over the

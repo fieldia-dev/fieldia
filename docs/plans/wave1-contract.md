@@ -1548,3 +1548,187 @@ In plain words:
   "Voice note 2026-10-21 11.42.05.webm" on the page's clock — else inside the record as base64. A store that refuses
   it (`saveRefused`, a kind it does not keep) is said under the field, as for any file. Nothing is sent while it is
   being made: the bytes go once the person presses Use this recording.
+
+## 30. Proof of an email or a phone by a code (Wave 6, lane w6-public-forms)
+
+Two more members, a pair, each optional as everything here: with both, a field whose node says `options.verify` asks
+the person to prove the email or phone is theirs before the answers go; without both, nothing is drawn and nothing is
+asked. Fieldia sends nothing itself and holds no keys: the app sends the code its own way (its mail service, Twilio, a
+WhatsApp gateway) and checks it.
+
+```ts
+sendCode?(request: SendCodeRequest): Promise<SentCode>;
+checkCode?(request: CheckCodeRequest): Promise<CodeChecked>;
+
+interface SendCodeRequest {
+  pageId: string;
+  model: string;                 // empty for a page of responses
+  recordId: RecordId | null;
+  field: string;                 // the email or phone field
+  value: string;                 // what it holds: E.164 where the page reads phones the world over
+  kind: 'email' | 'phone';
+  by?: string;                   // the way picked, where the node offers several: sms, whatsapp, call, email, or its own
+  language: string;              // the page's language, by tag
+}
+interface SentCode { expiresAt?: string; retryAfter?: number; length?: number; id?: string; message?: string }
+interface CheckCodeRequest { pageId: string; model: string; recordId: RecordId | null; field: string; value: string; code: string; id?: string }
+interface CodeChecked { ok: boolean; proof?: string; triesLeft?: number; expired?: boolean; message?: string }
+
+// SubmitRequest and SaveRequest gain verified?: Record<string, VerifiedValue> — by field, the value proved and the proof.
+interface VerifiedValue { value: string; proof?: string }
+```
+
+In plain words:
+
+- **The page asks** (`"options": { "verify": true }`, or `{ "by": ["whatsapp", "sms"] }`, on a text field drawn as an
+  email or a phone; `checkPage` refuses it on any other, on a table's line, and ways no one can read). The verify part
+  draws Send a code under the field once it holds a value that reads, one button for each way offered.
+- **Sending.** `sendCode` answers how long the code works (`expiresAt`, said in minutes), how soon another may be asked
+  for (`retryAfter` seconds, 30 unless said: Send again waits, its count said), how many digits it has (`length`, 6:
+  the box checks the code once they are all typed) and its own `id`, handed back to `checkCode`; `message` is said in
+  place of Fieldia's words. Throwing `saveRefused({ kind: 'rule', message })` says the message as it is ("Too many
+  codes: try in an hour"); any other failure, "The code could not be sent: try again".
+- **Checking.** `checkCode` answers `ok` with the app's `proof` (a signed token), or not: the tries left, or `expired`
+  (too late, or none left: a new code is asked for). The code's box is `autocomplete="one-time-code"`, its digits read
+  however written (Arabic-Indic too), Enter confirms and never sends the form.
+- **The form keeps the proof** while the field holds the value proved (`state.verified`, `form.joined('verify').mark`), and
+  refuses a send while a shown field asking for a code holds a value not proved — under the field, "Mobile is not
+  confirmed: send a code and type it in" (`messages.notVerified`). An empty field asks for none (its `required` says
+  whether one is needed). Every send carries `verified`: the server trusts a value only by a proof it signed. Started
+  again, or another record shown, the proofs go.
+- The memory source sends and checks codes as a service would (`codes` option: `code`, `length`, `expiresIn`,
+  `retryAfter`, `tries`, `refuse`, `now`), keeping each code sent in `codes` for a demo to show and a test to read.
+  Tests: `libs/core/src/lib/record/verify.spec.ts`, `libs/viewer/src/lib/verify.spec.ts`, `e2e/verify.spec.ts`.
+
+## 31. A payment the answers wait for (Wave 6, lane w6-public-forms)
+
+One more member, optional as everything here: with it, a page's `payment` is taken before the answers go; without it,
+no payment is asked and the page sends as before. Provider-agnostic (the owner's decision, 20 Oct): Fieldia holds no
+keys and no provider's code — the app's `pay` talks to its own provider (Stripe, Paymob, Fawry, PayPal…).
+
+```ts
+pay?(request: PayRequest): Promise<PayResult>;
+
+interface PayRequest {
+  pageId: string;
+  model: string;                 // empty for a page of responses
+  recordId: RecordId | null;
+  amount: number;                // in the currency's own units: 10000 for EGP 10,000.00
+  currency: string;              // ISO 4217
+  label: string;                 // what it is for: "Reservation fee"
+  description?: string;
+  key: string;                   // the same for every try of one response's payment: the provider's idempotency key
+  values: Values;                // the answers it pays for, as the send would carry them
+  language: string;
+  slot?: unknown;                // where the provider's checkout may be drawn in the payment step (an element)
+  signal?: UploadSignal;         // aborts on Cancel, or when the person leaves
+}
+interface PayResult { status: 'paid' | 'failed' | 'cancelled'; reference?: string; message?: string }
+
+// SubmitRequest and SaveRequest gain payment?: PaidPayment — the payment taken.
+interface PaidPayment { amount: number; currency: string; key: string; reference?: string }
+// ActionHost gains pay?(due: PaymentDue, request: PayRequest): Promise<PaidPayment | null> — an app's own payment step,
+// where no viewer draws one (the viewer's pay part hands the form its own: `form.joined('pay').step`).
+interface PaymentDue { amount: number; currency: string; label: string; description?: string; key: string }
+```
+
+In plain words:
+
+- **The page asks** (`"payment": { "label", "amount", "currency"?, "description"?, "when"? }`): the amount a number or a
+  number or money field's name, the currency a code or a field holding one (else a money field's own), `when` a
+  condition on the answers. Nothing is due while `when` does not hold, or the amount is empty or not above 0.
+- **At the choke point.** Every send — Submit, Ctrl+Enter, a wizard's finish, a `save` step, the app's `form.save()` —
+  checks the answers first (a payment is never taken for answers that would be refused), then, where something is due
+  and not paid, waits for the payment: through the viewer's payment step (its pay part), else the host's
+  (`ActionHost.pay`), else the source's `pay` itself. Not paid, nothing is sent and no problem is said (the person went back, or the step said
+  why); paid, the send carries `payment`. A send that fails after paying (the network) is sent again without paying
+  twice: the payment is kept (`state.paid`) while what is due stays the same (its key, amount and currency). Started
+  again (Submit another), a new response has a new key.
+- **The viewer's payment step**: the questions give way to what it is for, the amount in its currency (Intl, Latin
+  digits), the page's words, the slot, and Pay — which calls `pay` inside the person's press, so the app may open its
+  provider's checkout in a window of its own (a popup is allowed in the press) or draw it in `slot`. Waiting: Cancel
+  aborts the signal. Paid: the answers go, the reference said. Failed (with the provider's words) or cancelled: "Nothing
+  was sent", with Pay again and Back to the answers.
+- A new payment set in the designer asks 100 USD until its author sets the amount and the currency: a default to change,
+  never a currency Fieldia picks for a market.
+- The memory source answers paid with `PAY-n` unless its `pay` option says otherwise (a demo's stand-in checkout drawn in
+  the slot, a test's decline), keeping each in `payments`. Tests: `libs/core/src/lib/record/payment.spec.ts`,
+  `libs/viewer/src/lib/pay.spec.ts`, `e2e/payment.spec.ts`.
+
+## 32. An offline outbox (Wave 6, lane w6-public-forms)
+
+No new member: a page's `outbox` keeps a send that finds no network on the device and sends it later through the
+members a source already has (`submit`, `save`, `upload`), with one more optional field in their requests.
+
+```ts
+// SubmitRequest and SaveRequest gain queued?: { key: string; at: string } — a send kept without signal and sent later:
+// its key (the same for every try) and when it was kept.
+
+interface OutboxStore {                         // FormOptions.outbox, ViewerOptions.outbox: where the items are kept
+  list(pageId: string): Promise<OutboxItem[]>;
+  put(item: OutboxItem): Promise<void>;
+  delete(key: string): Promise<void>;
+  claim(key: string, by: string, until: number): Promise<boolean>;   // taken by one sender only
+}
+interface OutboxItem { key: string; pageId: string; kind: 'submit' | 'save'; request: SubmitRequest | SaveRequest; at: string;
+  record?: string; tries: number; refused?: { message: string; problem?: SaveProblem }; claim?: { by: string; until: number } }
+```
+
+In plain words:
+
+- **What counts as no signal**: a send whose failure reads as the network's (`saveProblemOf` → `network`: a `TypeError`
+  from `fetch`). Any other refusal is said at once, as before.
+- **Kept**: the request as it would have gone, in the browser's IndexedDB (`fieldia-outbox`, never lost on a reload,
+  shared by a site's tabs) unless the app gives its own store; memory where the browser has none. The form goes on as
+  though it went — a response ends "Kept on this device" (`state.outbox.kept`), the outbox's bar under it until another
+  response is started, then over the form again — a record's changes are no longer the person's to lose — and
+  `state.outbox` says how many wait (`{ waiting, sending, offline, kept, refused }`). A new record saved again while its first save waits is one
+  save of the record as it is now; once it went, the form still showing it takes its id.
+- **Photos**: where the source has `upload`, a file the network could not take stays in its field as its bytes (base64),
+  goes with the kept send, and is stored through `upload` just before the send goes, its link put in its place.
+- **Sent**: in the order they were kept — a send made once the signal is back goes at once, and what waited right after
+  it — each claimed by one sender only (two tabs never send one twice), with
+  `queued.key` so a server that kept a first try (its answer lost on the way) can refuse a second; when the browser says
+  it is `online`, every half a minute while something waits, as the page opens, right after another send went through,
+  and on Send now — never held back by the browser's `navigator.onLine`, which some browsers get wrong both ways (a try
+  costs one failed request). No signal again: it stops there, the rest waiting behind it, and `state.outbox.offline`
+  says so ("No signal:") until a try goes through. Refused by the server then: kept with why, said, to Try again or Discard.
+- `form.joined('outbox')` gives `send`, `refresh`, `retry`, `discard` and `keep`; `indexedOutbox()` and `memoryOutbox()`
+  are the two stores Fieldia ships. The memory source's `offline` option fails its saves, sends and uploads as a network does.
+  Tests: `libs/core/src/lib/record/outbox.spec.ts`, `libs/viewer/src/lib/outbox.spec.ts`, `e2e/outbox.spec.ts`.
+
+## 33. Parts that join a form (Wave 6, lane w6-public-forms)
+
+The four above, and the fields a page's link fills (`prefill`), are parts that join a form: the main script knows only
+that a page asks for one, and gives each one hook into its send. What each does — what it checks, what a send carries,
+its state, its words, its page checks — is in its own part (fieldia.<name>.js in the one-tag script, the viewer's side of
+the same name in the same script).
+
+```ts
+formJoins(page?: Page): Part<JoinPart>[];          // the parts a page asks to join its form, in their order (all, without one)
+interface JoinPart { join(host: JoinHost): FormJoin }
+interface JoinHost { form: Form; page: Page; options: FormOptions; messages: Messages; set(patch): void; reading(): … }
+interface FormJoin {
+  before?(problems: Record<string, string>): void | false | Promise<void | false>;   // once the form's own checks ran
+  around?<T>(kind: 'submit' | 'save' | 'upload', sent, go: (sent) => Promise<T>): Promise<T | null>;  // null: kept
+  reset?(): void;                                                                    // another response, another record
+}
+form.joined(name): FormJoins[name] | null;           // verify: asks, mark; pay: due, step; outbox: send, retry, discard
+```
+
+- **Asked for** by the page alone: `outbox`, `prefill`, a field's `options.verify` (not `false`), `payment`. The form asks
+  for each as it is made and a send waits for one that has not come; the viewer waits for them with the page's parts, and
+  draws what each part of the same name gives (`draw`: Send a code, the payment step, the outbox's bar).
+- **Through each in order**: `before` hooks run where every one before let the send go (verify adds its problems; pay,
+  once nothing stops the send, takes the payment or stops it); `around` hooks nest, the outbox innermost — what it keeps is
+  the request as it would have gone, proofs, payment and hidden fields in it — and an upload goes through them too (the
+  outbox keeps a file as its bytes). `reset` as Submit another starts a response, or another record opens.
+- **Their checks** (`checkPrefill`, `checkVerify`, `checkPayment`, `checkOutbox`) come with each part in the one-tag script,
+  owed to it (`PageValidation.later`) and run as it comes.
+- `<fieldia-form>` is defined as the script starts, as a stub: put on a page it asks for the element part, which makes it
+  what it is in place (`page`, `source`, `options`, `handle`; what was set before it came kept) and watches its
+  attributes. Its `action` posts a page of responses' answers only: a record's page saves through an app's own source.
+- The React, Vue and Angular wrappers take `url`: the link a page that fills fields from it is opened with, where the
+  browser's address is not it (a server-rendered or embedded app).
+  Tests: `libs/core/src/lib/record/outbox.spec.ts` (the order), `libs/core/src/lib/record/prefill-lazy.spec.ts`,
+  `libs/viewer/src/lib/element.spec.ts`, and each wrapper's `url` test.

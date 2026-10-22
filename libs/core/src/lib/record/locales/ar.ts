@@ -90,5 +90,6 @@ export const ar: Messages = {
   approvalNotYours: 'ليس لك أن تقرّر في {level} الآن',
   languagesNeeded: '{label} مطلوب باللغة {languages}',
   languagesNeededQuestion: 'يُرجى الإجابة عن {label} باللغة {languages}',
+  notVerified: 'لم يُؤكَّد {label}: أرسل رمزًا واكتبه',
   locale: 'ar',
 };

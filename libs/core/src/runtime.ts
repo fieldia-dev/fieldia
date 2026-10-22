@@ -96,6 +96,7 @@ export type { PageLimits } from './lib/format/limits';
 export type { PageApproval } from './lib/format/approval';
 export type { PageQuiz, QuizQuestion } from './lib/format/quiz';
 export type { PageReview, TimeLimit } from './lib/format/flow';
+export type { PagePrefill, PrefillParam } from './lib/format/prefill';
 export type { PageRecords } from './lib/format/records';
 export type { PageEnding } from './lib/format/endings';
 // `quotedLabel` here, not in index.ts alone: the widgets' messages read it, and a package's module taking a name only
@@ -268,6 +269,15 @@ export type {
   ClustersRequest,
   ClustersResult,
   MapCluster,
+  SendCodeRequest,
+  SentCode,
+  CheckCodeRequest,
+  CodeChecked,
+  VerifiedValue,
+  PayRequest,
+  PayResult,
+  PaymentDue,
+  PaidPayment,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
@@ -275,6 +285,7 @@ export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DateP
 export { suggestions, facetsToFilter, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryAssist, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
 export type { MemoryApprovalRoute } from './lib/record/memory-approvals';
+export type { MemoryCodes, SentCodeKept } from './lib/record/memory-codes';
 // Time zones: a page's or a field's `timeZone`, its clock, its day, the hour its clocks skip or repeat.
 export { clocksSkip, dayIn, instantsAt, isOwnZone, isTimeZone, ownZone, wallClock, wallDay, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './lib/record/zones';
 export { zonedPage } from './lib/format/zoned';
@@ -342,6 +353,14 @@ export {
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
 export { hijriWords, monthWords, precisionOf, type DatePrecision } from './lib/record/day-words';
+// The parts that join a form where its page asks — an offline outbox, the fields its link fills (`prefill`), proof of an
+// email or a phone by a code, a payment — each with one hook into its send, the form knowing only that its page asks.
+export { formJoins, type FormJoin, type FormJoins, type JoinHost, type JoinPart, type SendKind, type Sent } from './lib/record/joins';
+export type { PageLink } from './lib/record/link-values';
+export type { FormVerify } from './lib/record/verify-form';
+export type { FormPayment, PayStep } from './lib/record/payment-form';
+export type { PagePayment } from './lib/format/payment';
+export type { FormOutbox, OutboxItem, OutboxStore } from './lib/record/outbox-form';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
 // A record's approvals (`approval`): the form's state of them; asking, deciding and locking are the approvals part's.

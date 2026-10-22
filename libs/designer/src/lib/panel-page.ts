@@ -17,6 +17,8 @@ import { approvalSettings } from './approval-settings';
 import { assistSettings } from './assist-settings';
 import { quizSettings } from './quiz-settings';
 import { flowSettings } from './flow-settings';
+import { prefillSettings } from './prefill-settings';
+import { paymentSettings } from './payment-settings';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
@@ -100,6 +102,14 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const quiz = quizSettings(el, designer);
   // How a form of responses is gone through: a review before sending (flow-settings.ts).
   const flow = flowSettings(el, designer);
+  // The fields the link it is opened with fills: a campaign's, a broker's (prefill-settings.ts).
+  const prefill = prefillSettings(el, designer);
+  // A payment the answers wait for: what for, how much, its currency (payment-settings.ts).
+  const payment = paymentSettings(el, designer);
+  // Sends made without signal kept on the device, and sent when it comes back.
+  const outbox = check(w.outboxOn);
+  outbox.addEventListener('change', () => designer.setOutbox(outbox.checked));
+  const outboxRow = setting(el, 'rules', 'Without signal', outbox, { hint: w.outboxHint, words: w.outbox });
   // Its phone numbers: as typed, or checked by their country — the country they start on, and how they are shown.
   const phones = el('select', { class: 'fd-input fd-select', 'aria-label': w.phones }, el('option', { value: '' }, w.phonesAs.typed), el('option', { value: 'checked' }, w.phonesAs.checked)) as HTMLSelectElement;
   phones.addEventListener('change', () => designer.setPhone({ on: phones.value === 'checked' }));
@@ -162,6 +172,9 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     ...limits.rows,
     ...quiz.rows,
     ...flow.rows,
+    ...prefill.rows,
+    ...payment.rows,
+    outboxRow,
     sameRow,
     sameOnRow,
     ...approval.rows,
@@ -175,6 +188,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       limits.destroy();
       quiz.destroy();
       flow.destroy();
+      payment.destroy();
     },
     update(page) {
       if (!focused(description)) description.value = page.description ?? '';
@@ -195,6 +209,10 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       assist.update(page);
       quiz.update(page);
       flow.update(page);
+      prefill.update(page);
+      payment.update(page);
+      outboxRow.hidden = page.layout.type === 'list';
+      outbox.checked = page.outbox === true;
       look.update(page);
       moments.update(page);
       head.update(page);

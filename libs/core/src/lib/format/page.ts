@@ -12,6 +12,8 @@ import { PageApprovalSchema, type PageApproval } from './approval';
 import { PageSuggestSchema, type PageSuggest } from './assist';
 import { PageQuizSchema, type PageQuiz } from './quiz';
 import { PageReviewSchema, TimeLimitSchema, type PageReview, type TimeLimit } from './flow';
+import { PagePrefillSchema, type PagePrefill } from './prefill';
+import { PagePaymentSchema, type PagePayment } from './payment';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -259,6 +261,25 @@ export interface Page {
    * the person to send (`lock`) — the page says which. A step may have its own (`timeLimit` on the step). See `TimeLimit`.
    */
   timeLimit?: TimeLimit;
+  /**
+   * Fields filled from the link the page is opened with — `?utm_source=whatsapp&agent=mona` — as it starts, with no
+   * code of the app's: a campaign's, a broker's, a listing's. A field placed nowhere on the page is a hidden field, sent
+   * with the answers; one placed shows what the link gave. Never over what the person typed. See `PagePrefill`.
+   */
+  prefill?: PagePrefill;
+  /**
+   * A payment the answers wait for — a reservation fee, a deposit, a retainer — through the app's own provider (the data
+   * source's `pay`; Fieldia holds no keys): as Submit's checks pass, a payment step shows what is due, Pay hands it to
+   * the app, and nothing is sent until it is paid. Hidden where the source has no `pay`. See `PagePayment`.
+   */
+  payment?: PagePayment;
+  /**
+   * An offline outbox: a send that finds no network — a site visit's report in a compound with no signal, a delivery's
+   * proof — is kept on the device, its answers and its photos' bytes (the browser's IndexedDB: never lost on a reload),
+   * said on screen, and sent in order when the signal comes back; a send the server refuses then is kept and said, to try
+   * again or discard. Off unless true.
+   */
+  outbox?: boolean;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -352,6 +373,9 @@ export const PageSchema = z
     review: PageReviewSchema.optional(),
     flow: z.enum(['one']).optional(),
     timeLimit: TimeLimitSchema.optional(),
+    prefill: PagePrefillSchema.optional(),
+    payment: PagePaymentSchema.optional(),
+    outbox: z.boolean().optional(),
   })
   .meta({
     title: 'Fieldia page',

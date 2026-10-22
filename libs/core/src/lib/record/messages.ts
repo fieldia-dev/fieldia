@@ -165,6 +165,8 @@ export interface Messages {
    */
   languagesNeeded: string;
   languagesNeededQuestion: string;
+  /** An email or a phone that asks for a code (`options.verify`) sent before the person confirmed it with one. */
+  notVerified: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -282,6 +284,7 @@ const en: Messages = {
   approvalNotYours: '{level} is not yours to decide now',
   languagesNeeded: '{label} is required in {languages}',
   languagesNeededQuestion: 'Please answer {label} in {languages}',
+  notVerified: '{label} is not confirmed: send a code and type it in',
   locale: 'en',
 };
 

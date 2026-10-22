@@ -9,6 +9,7 @@ import {
   wideColumns,
   type AnswerRule,
   type BotCheck,
+  type PrefillParam,
   type ColumnCount,
   type ColumnsByWidth,
   type Field,
@@ -447,6 +448,22 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    * away; `null` alone, or no minutes, takes the limit away. Refused on a record's screen, and a warning not before the end.
    */
   setTimeLimit(id: string | null, patch: { minutes?: number | null; warn?: number | null; then?: 'send' | 'lock' | null } | null): boolean;
+  /**
+   * The fields the link a page is opened with fills (`prefill.fromUrl`): each of the link's parameters and the field it
+   * fills — one of the page's that a link's words can fill, or, with `field` null, a hidden field of the parameter's
+   * own name, made placed nowhere (a line of text). None takes the setting away, and with it the hidden fields it made
+   * that nothing else names. Refused on a list of records, and for a parameter written as no link writes one.
+   */
+  setPrefill(rows: { param: string; field: string | null }[]): boolean;
+  /**
+   * A payment the answers wait for (`payment`): `{}` asks for one (a payment of USD 100, "Payment", until said), null takes it
+   * away; else what it is for, how much — a number, or a number or money field's name ("" back to a number) — its
+   * currency (a code, null taking it away) and words under it ("" taking them away). Refused on a list of records, for a
+   * currency that is no code of three capitals nor a field, and for nothing to pay.
+   */
+  setPayment(patch: { label?: string; amount?: number | string | null; currency?: string | null; description?: string } | null): boolean;
+  /** An offline outbox (`outbox`): sends made without signal kept on the device and sent when it comes back; false takes it away. Refused on a list of records. */
+  setOutbox(on: boolean): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
@@ -1729,6 +1746,69 @@ export function createDesigner(options: {
         if (draft.data.kind !== 'responses' || draft.layout.type === 'list' || draft.layout.type === 'sheet') throw new Refusal((w) => w.refusals.flowForResponses);
         draft.flow = 'one';
       }, 'flow');
+    },
+
+    setOutbox(on) {
+      return apply((draft) => {
+        if (!on) return void delete draft.outbox;
+        if (draft.layout.type === 'list') throw new Refusal((w) => w.refusals.outboxOnList);
+        draft.outbox = true;
+      }, 'outbox');
+    },
+
+    setPayment(patch) {
+      return apply(
+        (draft) => {
+          if (!patch) return void delete draft.payment;
+          if (draft.layout.type === 'list') throw new Refusal((w) => w.refusals.paymentOnList);
+          // A new payment starts at 100 US dollars, for the screen's panel to change at once: a currency is always said.
+          const was = draft.payment ?? { label: words.panel.paymentLabelDefault, amount: 100, currency: 'USD' };
+          const next = { ...was };
+          if (patch.label !== undefined && patch.label.trim()) next.label = patch.label.trim();
+          if (patch.amount === '') next.amount = 100;
+          else if (typeof patch.amount === 'string') next.amount = patch.amount;
+          else if (typeof patch.amount === 'number') {
+            if (!(patch.amount > 0)) throw new Refusal((w) => w.refusals.paymentAmount);
+            next.amount = patch.amount;
+          }
+          if (patch.currency === null) delete next.currency;
+          else if (patch.currency !== undefined) {
+            if (!/^[A-Z]{3}$/.test(patch.currency) && !draft.fields[patch.currency]) throw new Refusal((w) => w.refusals.paymentCurrency(patch.currency as string));
+            next.currency = patch.currency;
+          }
+          if (patch.description !== undefined) {
+            if (patch.description.trim()) next.description = patch.description.trim();
+            else delete next.description;
+          }
+          draft.payment = next;
+        },
+        'payment'
+      );
+    },
+
+    setPrefill(rows) {
+      return apply(
+        (draft) => {
+          const placed = shownFields(draft);
+          const before = (draft.prefill?.fromUrl ?? []).map((one) => (typeof one === 'string' ? one : one.field));
+          const fromUrl: PrefillParam[] = [];
+          for (const row of rows) {
+            const param = row.param.trim();
+            if (!/^[A-Za-z0-9_.~-]{1,100}$/.test(param)) throw new Refusal((w) => w.refusals.prefillParam(param));
+            // Its own hidden field: the field of its name where the page has one a link fills, else one made, placed nowhere.
+            const field = row.field ?? (FIELD_NAME.test(param) ? param : param.replace(/[^A-Za-z0-9_]/g, '_').replace(/^(?=\d)/, '_'));
+            if (!draft.fields[field]) draft.fields[field] = { type: 'char', label: param };
+            fromUrl.push(param === field ? field : { param, field });
+          }
+          if (fromUrl.length && draft.layout.type === 'list') throw new Refusal((w) => w.refusals.prefillOnList);
+          if (fromUrl.length) draft.prefill = { fromUrl };
+          else delete draft.prefill;
+          // A hidden field it made that nothing names now goes with its parameter.
+          const named = new Set(fromUrl.map((one) => (typeof one === 'string' ? one : one.field)));
+          for (const name of before) if (!named.has(name) && !placed.has(name)) delete draft.fields[name];
+        },
+        'prefill'
+      );
     },
 
     setDuplicates(patch) {

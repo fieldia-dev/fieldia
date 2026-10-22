@@ -55,6 +55,12 @@ export { PageLimitsSchema } from './lib/format/limits';
 export { PageApprovalSchema } from './lib/format/approval';
 export { PageQuizSchema, QuizQuestionSchema } from './lib/format/quiz';
 export { PageReviewSchema, TimeLimitSchema } from './lib/format/flow';
+export { PagePrefillSchema } from './lib/format/prefill';
+export { PagePaymentSchema } from './lib/format/payment';
+// A link's parameters read as the fields a page's `prefill` fills: the prefill part's, whole here.
+export { linkParams, linkValue, linkValues } from './lib/record/link-values';
+// An outbox kept in memory, or in the browser's IndexedDB: the outbox part's, whole here.
+export { indexedOutbox, memoryOutbox } from './lib/record/outbox-form';
 export { DUPLICATE_KINDS, comparable } from './lib/format/duplicate-kinds';
 export { pageJsonSchema } from './lib/format/json-schema';
 // The purposes a browser fills a box in with, from the HTML standard, as the format checks them.

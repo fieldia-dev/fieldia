@@ -25,6 +25,8 @@ import { botLog, captchaSlot } from '../shared/captcha';
 import { meanwhileBar } from '../shared/test-drive';
 import { lastPlacesBar } from '../shared/event-signup';
 import { signedInBar } from '../shared/approvals';
+import { phoneBar, sentLog } from '../shared/unit-enquiry';
+import { offlineBar } from '../shared/viewing-report';
 import { addressFollowsRecord } from '../shared/address';
 import { priceListBar } from '../shared/editable-lists';
 
@@ -221,6 +223,15 @@ if (name === 'enquiry') document.getElementById('app')?.before(buyerBar(chatter)
 // A purchase order's and an expense's approvals: who uses the demo, and the others to sign in as (shared/approvals.ts).
 const signedIn = signedInBar(params);
 if (signedIn) document.getElementById('app')?.before(signedIn);
+// The enquiry says under it what the app was told with each response, its hidden fields marked (shared/unit-enquiry.ts).
+if (name === 'unit-enquiry') document.getElementById('app')?.after(sentLog(document, page, dataSource));
+// The viewing report has a bar over it: Work offline, as a compound with no signal; what it sends is listed under it.
+if (name === 'viewing-report') {
+  document.getElementById('app')?.before(offlineBar(document));
+  document.getElementById('app')?.after(sentLog(document, page, dataSource));
+}
+// And a stand-in phone over it, where the codes the app sends arrive as WhatsApp or SMS would bring them.
+if (name === 'unit-enquiry') document.getElementById('app')?.before(phoneBar(document, dataSource));
 
 // `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `pages` themselves,
 // for the one that each draws the sample records' values as their kind is.

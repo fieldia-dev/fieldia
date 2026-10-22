@@ -49,10 +49,15 @@ key the link Continue later gave — and `onDraft={({ key, later, saved }) => �
 is told of each draft kept. A new `resume` opens that draft, as a new
 `recordId` opens that record.
 
+A page that fills fields from its link (`prefill`) reads the browser's address;
+an app rendered on a server, or shown inside another page, gives the link it
+knows — `url="https://homes.example/enquiry?agent=mona&unit=B-12"`, its `?…`
+part, or `url={{ agent: 'mona' }}`. A new `url` starts the form from it again.
+
 **Before your app leaves the form**, ask its one check: `await
 handle.form.leave()` before a route change, before unmounting `<FieldiaForm>`,
 and before changing a prop that mounts it again (`page`, `form`, `dataSource`,
-`recordId`, `resume`, `user`, `context`, `dir`, `labels`, `fieldTypes`, `slots`, the names
+`recordId`, `resume`, `url`, `user`, `context`, `dir`, `labels`, `fieldTypes`, `slots`, the names
 in `functions`). React
 unmounts at once, so nothing else can keep the person there. It waits for a save
 on its way, then asks "Discard your changes?" only when their work is at risk,

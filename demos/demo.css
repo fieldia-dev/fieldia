@@ -64,3 +64,7 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
 .demo-signed-in { background: var(--dh-surface, #fff); border-color: var(--dh-line, #e3e6ea); color: var(--dh-ink, #1f2933); }
 .demo-signed-in-said { font-weight: 600; }
 .demo-signed-in .demo-links a { color: var(--dh-link, #0b5cad); }
+/* A stand-in for a payment provider's checkout, drawn in a payment step's slot (shared/unit-enquiry.ts). */
+.demo-checkout { display: grid; gap: 8px; max-width: 26em; padding: 12px 14px; border: 1px dashed var(--fd-border, #c9ced6); border-radius: 8px; }
+.demo-checkout p { margin: 0; font-size: 13px; color: var(--fd-muted, #5b6470); }
+.demo-checkout-row { display: flex; flex-wrap: wrap; gap: 8px; }

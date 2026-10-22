@@ -163,10 +163,14 @@ export function shownFields(page: Page): Set<string> {
   return shown;
 }
 
-/** The fields a page keeps: those it shows, and what a shown amount reads — its currency's field, its money look's conditions' fields. */
+/**
+ * The fields a page keeps: those it shows, what a shown amount reads — its currency's field, its money look's
+ * conditions' fields — and the hidden fields its link fills (`prefill`), placed nowhere.
+ */
 export function keptFields(page: Page): Set<string> {
   const kept = shownFields(page);
   for (const name of [...kept]) for (const read of fieldReads(page.fields[name])) kept.add(read);
+  for (const one of page.prefill?.fromUrl ?? []) kept.add(typeof one === 'string' ? one : one.field);
   return kept;
 }
 

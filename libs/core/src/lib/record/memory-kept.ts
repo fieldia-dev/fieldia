@@ -8,7 +8,7 @@ import { structuredCopy, type RecordId, type Values } from './values';
  * would do them, at once (`changeElsewhere`, `answeredElsewhere`). Apart from its members, which work on it, so the
  * one-tag script can hand an app its source at once and its members as they come (memory-later.ts).
  */
-export interface MemoryKept extends Pick<MemoryDataSource, 'records' | 'notDuplicatePairs' | 'responses' | 'calls' | 'drafts' | 'changeElsewhere' | 'answeredElsewhere'> {
+export interface MemoryKept extends Pick<MemoryDataSource, 'records' | 'notDuplicatePairs' | 'responses' | 'calls' | 'drafts' | 'codes' | 'payments' | 'changeElsewhere' | 'answeredElsewhere'> {
   /** Responses others sent meanwhile (`answeredElsewhere`): counted, never as this person's. */
   readonly elsewhere: SubmitRequest[];
   /** A model's records, by id: made empty the first time it is asked for. */
@@ -37,6 +37,8 @@ export function memoryKept(options: Pick<MemoryDataSourceOptions, 'records' | 'n
     responses: [],
     calls: [],
     drafts: structuredCopy(options.drafts ?? {}),
+    codes: [],
+    payments: [],
     elsewhere,
     table,
     versionOf(model, id) {

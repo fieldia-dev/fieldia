@@ -8,7 +8,7 @@
  * date's box, a theme, the quiet look, a memory source's members — comes in
  * parts loaded the first time a page uses them (tools/script-parts.ts).
  */
-import { addLanguage } from '@fieldia/viewer';
+import { addLanguage, defineFieldiaForm } from '@fieldia/viewer';
 import { partsComeByScriptTag } from '@fieldia/widgets';
 import { partWords } from '../libs/viewer/src/lib/add-language';
 import type { LanguageHost } from './script-language';
@@ -31,6 +31,10 @@ export const VERSION: string = __FIELDIA_VERSION__;
 startParts(partWords);
 // Each part a script tag of its own, asked for anew after a failure: what offers to try again may (`Part.asksAgain`).
 partsComeByScriptTag();
+
+// `<fieldia-form>` defined as the script starts: a page needs no code of its own to show a form (its work in
+// fieldia.element.js, loaded the first time one is put on a page).
+defineFieldiaForm();
 
 // A language's script loaded before this one left its words behind: take them now.
 const host = globalThis as LanguageHost;

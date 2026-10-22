@@ -774,6 +774,105 @@ import { assistStandIn, createMemoryDataSource } from '@fieldia/core';
 const dataSource = createMemoryDataSource({ records, assist: assistStandIn({ drafts: { 'enquiry.reply': (values) => `Dear ${values.partner_name},` } }) });
 ```
 
+## Fields filled from the link
+
+A page may fill fields from the link it is opened with — a campaign's, a
+broker's, a unit's — with no code of the app's:
+
+```json
+{
+  "prefill": { "fromUrl": ["utm_source", "utm_campaign", { "param": "agent", "field": "agent_code" }, "unit"] },
+  "fields": { "utm_source": { "type": "char", "label": "Source" }, "agent_code": { "type": "char", "label": "Agent" }, "unit": { "type": "char", "label": "Unit" } }
+}
+```
+
+`https://homes.example/enquiry?utm_source=whatsapp&agent=mona&unit=B-12` starts
+the form with those values: each parameter named fills the field of its name, or
+the `field` it names, as a new record or response starts — and again after
+Submit another. A field the page fills so and places nowhere is a hidden field:
+sent with the answers (a page of responses otherwise sends only what its
+questions show), seen by no one. One placed on the page shows the value, for the
+person to keep or change. Words are read as the field reads them — a number as a
+number, `yes`/`no`/`1`/`0` for a yes or no, a choice by one of its options'
+values, a day as 2026-10-20, a day and time with its offset — and one that does
+not read so, or that the field's own checks would refuse (its most characters,
+its pattern, its least and most), is left out: a hidden field no one can put
+right never stops a send. The link never writes over an answer: a draft opened
+over it, and what the person types, are theirs; a stored record opened is never
+filled. The form reads `url` (the address, its `?…` part, or the parameters by
+name), else the page's own address (`location.href`) — an app rendered on a
+server, or embedded, gives the one it knows (the React, Vue and Angular
+wrappers' `url`) — and `linkValues(page, url)` is the reading, exported. The page's checks refuse a
+field it has not, a link's field, one worked out, a choice of the app's own
+list, and a field filled twice.
+
+## Proof of an email or a phone
+
+A field drawn as an email or a phone may ask the person to prove it is theirs
+before the answers go — `"options": { "verify": true }`, or `{ "by":
+["whatsapp", "sms"] }` for the ways a code may be sent — where the data source
+has `sendCode({ pageId, model, recordId, field, value, kind, by, language })`
+(answering `{ id, expiresAt, retryAfter, length, message }`) and
+`checkCode({ …, value, code, id })` (answering `{ ok, proof }`, or `{ ok:
+false, triesLeft, expired }`). Fieldia sends nothing and holds no keys: the app
+sends the code its own way. `form.joined('verify')?.mark(field, { value, proof
+})` keeps a proof while the field holds that value (`state.verified`); a send is refused
+while a shown field asking for a code holds a value not proved ("Mobile is not
+confirmed: send a code and type it in"), and every send carries `verified` — by
+field, the value and the proof — for the server to trust.
+`form.joined('verify')?.asks(field)` says whether a field asks for one: never
+where the source lacks either member.
+The memory source sends and checks codes as a service would (its `codes`
+option), each kept in `codes`.
+
+## A payment the answers wait for
+
+A page may take a payment before its answers go — a reservation fee, a deposit
+— through the app's own provider: `"payment": { "label": "Reservation fee",
+"amount": 10000, "currency": "EGP", "when": "visit == 'reserve'" }` (the amount
+a number or a number or money field's name, the currency a code or a field's,
+else a money field's own). Where the data source has `pay(request)` (answering
+`{ status: 'paid' | 'failed' | 'cancelled', reference, message }`), a send
+checks the answers, then waits for the payment — through the host's payment
+step (the viewer's, else `ActionHost.pay`), else the source's `pay` itself — and
+sends nothing unpaid; paid, the send carries `payment` (`{ amount, currency,
+key, reference }`). `request.key` is the same for every try of one response's
+payment: the provider's idempotency key. A send that failed after paying is
+sent again without paying twice. `form.joined('pay')?.due()` says what is due
+now, `state.paid` what was taken. A new payment in the designer asks 100 USD
+until its amount and currency are set. Fieldia holds no keys and no provider's code. The
+memory source answers paid unless its `pay` option says otherwise.
+
+## Sends kept without signal
+
+A page with `"outbox": true` keeps a send that finds no network — a site
+visit's report in a compound, a delivery's proof — on the device and sends it
+when the signal comes back. The form goes on as though it went: a response ends
+"Kept on this device" (`state.outbox.kept`), and `state.outbox` says how many
+wait (`{ waiting, sending, offline, kept, refused }`). The items are kept in the browser's
+IndexedDB (`indexedOutbox()`: never lost on a reload, shared by a site's tabs),
+or the store given as `outbox` (`memoryOutbox()` for tests). A photo the network
+could not take stays in its field as its bytes and is stored through `upload`
+just before its send goes. `form.joined('outbox')` sends what waits in order —
+each item claimed by one sender, sent with `queued: { key, at }` so a server
+can refuse a second try — and keeps a refusal to `retry` or `discard`. Kept sends
+go in the order they were kept; a send made once the signal is back goes first,
+and what waited goes right after it. A new record
+saved twice without signal is saved once, and the form takes its id when it
+went. The memory source's `offline` option fails as a network does.
+
+## Parts that join a form
+
+The four above are parts of their own, asked for as a page needs them
+(`formJoins(page)`): the form knows only that its page asks for one, and each
+joins it by one hook into its send (`FormJoin`) — `before` the send, once the
+form's own checks ran (a field not proved added to what they found; a payment
+not taken, nothing sent), `around` the send itself (what it carries added, or
+kept on the device), and `reset` as another response or record starts. Their
+state, their words and their checks come with them. `form.joined(name)` is a
+part's side of the form once it came — null before, and on a page that asks for
+none; a send made before it came waits for it.
+
 ## What a page's records are called
 
 A page may say what its records are, so Fieldia's own sentences name them as

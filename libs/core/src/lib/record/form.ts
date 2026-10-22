@@ -46,6 +46,10 @@ import {
   type SavedDraft,
   type StoredDraft,
   type ApprovalDecision,
+  type VerifiedValue,
+  type PaidPayment,
+  type SaveRequest,
+  type SubmitRequest,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
 import { formLanguagesPart, hasLanguages } from './languages';
@@ -61,6 +65,9 @@ import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { signedBy, type SignedBy } from './signed';
+import type { PageLink } from './link-values';
+import type { OutboxStore } from './outbox-form';
+import { formJoins, type FormJoin, type FormJoins, type JoinPart, type SendKind } from './joins';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
@@ -198,6 +205,24 @@ export interface FormState {
   readonly timers: Readonly<Record<string, number>>;
   /** The time limits that ran out: their answers are locked, and their checks refuse nothing — they go as they stood. */
   readonly timeUp: readonly string[];
+  /**
+   * The emails and phones the person proved they own by a code (`options.verify`), by field: the value proved and the
+   * app's proof. One counts while its field still holds that value; each send carries those that do (`verified`). Set
+   * by the verify part, on a page with a field asking for a code.
+   */
+  readonly verified?: Readonly<Record<string, VerifiedValue>>;
+  /**
+   * The payment the answers waited for (a page's `payment`), once taken: what a send carries; null before, and once
+   * started again. Set by the pay part, on a page asking for a payment.
+   */
+  readonly paid?: PaidPayment | null;
+  /**
+   * A page's offline outbox (`outbox`), set by the outbox part: how many sends wait on this device, whether they are
+   * being sent now, whether the last try found no network (a send kept, or one kept not taken: the browser's own word
+   * is not trusted), whether the last send of this form was kept (`kept`: its ending says so), and those the server
+   * refused once they went — kept to try again or discard. Left out on a page without one, and until it is read.
+   */
+  readonly outbox?: { readonly waiting: number; readonly sending: boolean; readonly offline: boolean; readonly kept: boolean; readonly refused: readonly { readonly key: string; readonly message: string; readonly at: string }[] };
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -402,6 +427,18 @@ export interface FormOptions {
    * one of the browser's for each response.
    */
   seed?: string;
+  /**
+   * The link the page is opened with — its address, its `?…` part, or its parameters by name — for a page that fills
+   * fields from it (`prefill.fromUrl`): read as a new record or response starts, before what the form is given
+   * (`values`). Left out, the page's own address (`location.href`); an app that renders on a server, or is embedded,
+   * gives the one it knows (the React, Vue and Angular wrappers' `url`). Without `prefill`, never read.
+   */
+  url?: PageLink;
+  /**
+   * Where a page's offline outbox (`outbox`) keeps its sends: the app's own store; else the browser's IndexedDB, else
+   * memory (`memoryOutbox`, lost with the page).
+   */
+  outbox?: OutboxStore;
   autosave?: { delayMs: number };
   scheduler?: Scheduler;
   /** Validation messages in the page's language. English by default. */
@@ -532,6 +569,13 @@ export interface Form {
    * the time the answers took, as `bot` (`SubmitRequest`); a token goes once it is sent, as a captcha's is spent.
    */
   botCheck(seen: { honeypot?: boolean; captcha?: string | null }): void;
+  /**
+   * A part's side of this form, where the page asks for it (`formJoins`), by its name: `verify` — which fields ask for a
+   * code (`asks`), a value proved (`mark`); `pay` — what is due now (`due`); `outbox` — what waits on this device
+   * (`send`, `retry`, `discard`). Null where the page asks for none, and until its part has come (the form asks for it
+   * as it is made; `settle` waits for it).
+   */
+  joined<K extends keyof FormJoins>(name: K): FormJoins[K] | null;
   /**
    * Whether a box's reading of what was typed still waits (a name being looked up): a check or a step forward made
    * now refuses its text with "still looking", so a caller that can wait for it (`settle`) checks again after.
@@ -1359,6 +1403,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       filesChanged();
     },
     track,
+    // Through the parts that join the form: a photo taken without signal kept as its bytes, on a page with an outbox.
+    through,
   });
 
   /**
@@ -2741,6 +2787,20 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return (await saving(chain)) === null;
   }
 
+  /**
+   * The parts that join this form where its page asks (`formJoins`: an offline outbox, the fields its link fills, proof
+   * by a code, a payment), each made as it comes — at once where it has — and kept in their order; while one has not
+   * come, a send waits for it (`joining`).
+   */
+  const joins: FormJoin[] = [];
+  let joining: Promise<unknown> | undefined;
+  /** A send — a response's, a save's, an upload's — through the parts that join the form, each around the next. Null: kept, not sent. */
+  function through<T>(kind: SendKind, sent: unknown, send: (sent: never) => Promise<T>): Promise<T | null> {
+    return joins.reduce<(sent: never) => Promise<T | null>>((go, join) => (join.around ? (one) => join.around!(kind, one, go as never) : go), send)(sent as never);
+  }
+  /** Started again, or another record opened: the parts that join the form let go of what the one before had. */
+  const joinsReset = () => joins.forEach((join) => join.reset?.());
+
   /** Every value, for a source that saves whole records: those of fields hidden from the person, which they never had, left out. */
   function sentValues(): Values {
     const values = structuredCopy(state.values as Values);
@@ -2843,8 +2903,19 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Whether the page still takes answers — its dates, its counts asked again — and each choice held still has room.
     const refused = await stillTaking(asked);
     if (refused) return refused;
-    // A file that did not reach the store stops it, under its field, with the form's own checks.
+    // The parts that join the form (`formJoins`), waited for where they have not come.
+    if (joining) {
+      await joining;
+      if (asked !== generation) return elsewhere();
+    }
+    // A file that did not reach the store stops it, under its field, with the form's own checks — and what the parts that
+    // join the form find: an email or a phone not proved by a code; a payment not taken sends nothing.
     const errors = { ...collectErrors(), ...fileProblems() };
+    for (const join of joins) {
+      // A part that never came (a hole) has nothing to say.
+      if ((await join?.before?.(errors)) === false) return { reason: 'save' };
+      if (asked !== generation) return elsewhere();
+    }
     if (Object.keys(errors).length) {
       set({ errors, ...unstored(errors) });
       return { reason: 'save', message: Object.values(errors)[0] };
@@ -2878,7 +2949,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         // A quiz's marking, in before the answers go: what the person sees of their results.
         if (surveyFlow(page) && !surveyKit) await formSurveyPart.load().then(surveyCode, () => undefined);
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
-        const answer = (await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...surveyKit?.sent() })) ?? {};
+        const request: SubmitRequest = { pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft, ...surveyKit?.sent() };
+        // Through the parts that join the form: kept on the device where an outbox finds no signal (null), the form going
+        // on as though it went.
+        const got = await through('submit', request, (one: SubmitRequest) => (source.submit as NonNullable<DataSource['submit']>)(one));
+        const answer = got ?? {};
         // The captcha's token is spent once sent: the next send waits for a new one.
         if (seen?.captcha) bot.captcha = null;
         // Answered for answers no longer shown — the form was started again meanwhile: the source has them, the form lays nothing.
@@ -2892,6 +2967,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const quiz = answer.quiz ?? surveyKit?.marked(sent);
         set({ status: 'saved', unsent: unsentNow(), ...(resets === resetAt ? { sent: { id: answer.id ?? null, values: { ...structuredCopy(sent), ...added }, ...(quiz ? { quiz } : {}) } } : {}) });
         emit('send', { values: sent, ...(seen ? { bot: seen } : {}) });
+        // Kept, not sent: its counts and its after-save steps wait for a send that went.
+        if (got === null) return null;
         // Counted again: one response fewer to take, this person's sent.
         if (asksLimits()) void track(askLimits());
         void track(moment('on.afterSave', page.on?.afterSave, chain, false));
@@ -2902,7 +2979,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const sent = state.values as Values;
       at = generation;
       const resetAt = resets;
-      const result = await source.save({
+      const request: SaveRequest = {
         model: page.data.model,
         id: state.recordId,
         fields,
@@ -2911,7 +2988,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         // The version it was opened at, for a source that refuses a save over someone else's.
         ...(state.recordId != null && state.version ? { version: state.version } : {}),
         ...draft,
-      });
+      };
+      const got = await through('save', request, (one: SaveRequest) => (source.save as NonNullable<DataSource['save']>)(one));
+      // Kept on the device (null): the record as it was, its version too.
+      const result = got ?? { id: state.recordId as RecordId, version: state.version ?? undefined };
       // Answered for a record no longer shown — another opened, or this one loaded again: the source has it, and the
       // form lays nothing of it over the record it shows now.
       if (at !== generation) return null;
@@ -2932,7 +3012,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (keepsApprovals) void track(askApprovals());
       // The record as this save left it: a change made while it was on its way is no value of it.
       emit('save', { recordId: state.recordId, values: baseline });
-      void track(moment('on.afterSave', page.on?.afterSave, chain, false));
+      if (got) void track(moment('on.afterSave', page.on?.afterSave, chain, false));
       return null;
     } catch (error) {
       const problem = saveProblemOf(error);
@@ -3225,6 +3305,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {}, resume: null, approval: null };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
+      joinsReset();
       await load();
       return true;
     }
@@ -3232,6 +3313,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     baseline = startFrom(startingValues(true, false));
     const values = syncParts(structuredCopy(baseline), 'start');
     set({ ...fresh, recordId: null, status: 'ready', values, warnings: withValues(values, collectWarnings) });
+    joinsReset();
     if (asksLimits()) void track(askLimits());
     offerDraft();
     await opening();
@@ -3732,6 +3814,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (seen.honeypot !== undefined) bot.honeypot = seen.honeypot;
       if (seen.captcha !== undefined) bot.captcha = seen.captcha;
     },
+
+    joined: (name) => (joins[joinParts.findIndex((part) => part.name === name)] ?? null) as never,
     reading: () => readingNow > 0 || [...attached.values()].some((part) => part.inner.form.reading()),
 
     validate(within) {
@@ -3834,6 +3918,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // A new respondent: drawn anew (unless the app or the person's id is the seed), no clock running.
       surveyKit?.reset();
       set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null });
+      // Started again: a new response proves and pays its own.
+      joinsReset();
       // Started again: whether the page takes another response, and each choice's places, asked again.
       if (asksLimits()) void track(askLimits());
     },
@@ -4302,6 +4388,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   if (surveyFlow(page)) {
     surveyCode();
     if (!surveyKit) void formSurveyPart.load().then(surveyCode, () => undefined);
+  }
+  // The parts its page asks to join it: each made at once where it has come, else as it does.
+  const joinParts = formJoins(page);
+  if (joinParts.length) {
+    const host = { form, page, options, messages, set, reading };
+    const made = (at: number) => (part: JoinPart) => void (disposed || (joins[at] ??= part.join(host)));
+    joining = Promise.all(joinParts.map((part, at) => (part.loaded ? made(at)(part.loaded) : track(part.load().then(made(at), () => undefined)))));
   }
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.

@@ -1,7 +1,14 @@
 import type { Field, Fields, Option, PropertyDefinition } from '../format/field';
 import { foldForSearch } from './input-rules';
 import type { JsonValue } from '../format/json';
+import { memoryCodes, type MemoryCodes, type SentCodeKept } from './memory-codes';
 import type {
+  PayRequest,
+  PayResult,
+  CheckCodeRequest,
+  CodeChecked,
+  SendCodeRequest,
+  SentCode,
   DataSource,
   Group,
   GroupInterval,
@@ -210,6 +217,23 @@ export interface MemoryDataSourceOptions {
    * Without it, the source has none of the three, and a list keeps its favourites in the browser, as before.
    */
   views?: Record<string, SavedView[]>;
+  /**
+   * How the codes that prove an email or a phone are made and checked (`sendCode`, `checkCode`), as an app's own
+   * service would: their digits, how long each works, how soon another may be asked for, the wrong ones taken. Each
+   * code sent is kept in `codes`, where a demo shows it as the message would. See `MemoryCodes`.
+   */
+  codes?: MemoryCodes;
+  /**
+   * How a payment the answers wait for ends (`pay`), as an app's provider would answer: paid, with a reference of its
+   * own, unless this says otherwise — a demo's stand-in checkout drawn in the request's `slot`, a test's decline. Each
+   * payment asked for is kept in `payments`.
+   */
+  pay?: (request: PayRequest, count: number) => PayResult | Promise<PayResult>;
+  /**
+   * Whether there is no signal now: while it says so, a save, a send and a file's upload fail as a network does
+   * (`TypeError: Failed to fetch`) — a demo's "Work offline", a test's outbox. Signal always, unless said.
+   */
+  offline?: () => boolean;
 }
 
 /** What a memory source's AI help answers with (`MemoryDataSourceOptions.assist`): each given, from its records. */
@@ -251,6 +275,10 @@ export interface MemoryDataSource
   readonly drafts: Record<string, StoredDraft & { pageId: string; later?: boolean }>;
   /** Take a response to a page as someone else would, on another screen: counted by `limits`, never as this person's. */
   answeredElsewhere(pageId: string, values: Values): void;
+  /** The codes `sendCode` sent, in order: each with the value it proves and the code itself, as its message would say it. */
+  readonly codes: SentCodeKept[];
+  /** The payments `pay` was asked for, in order (without their slot and signal), and how each ended. */
+  readonly payments: (Omit<PayRequest, 'slot' | 'signal'> & { result: PayResult })[];
 }
 
 /**
@@ -264,7 +292,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
 
 /** A memory source's members, working on what it keeps (`memoryKept`): the one-tag script's memory part. */
 export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept): MemoryDataSource {
-  const { records, notDuplicatePairs, responses, calls, elsewhere, drafts, table, versionOf, moveOn } = kept;
+  const { records, notDuplicatePairs, responses, calls, elsewhere, drafts, codes, payments, table, versionOf, moveOn } = kept;
+  const proving = memoryCodes(options.codes, codes);
   let draftIds = 0;
   /** A record's approvals, as an approval engine keeps them (memory-approvals.ts). */
   const approving = memoryApprovals({
@@ -306,6 +335,10 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   const pause = () => (options.delayMs ? wait(options.delayMs, options.scheduler) : Promise.resolve());
   /** A record's name, or its names in each language it is kept in (`{ ar, en }`). */
   const nameOf = (model: string, id: RecordId) => table(model)[String(id)]?.[options.labelField?.[model] ?? 'name'];
+  /** No signal now (`offline`): fail as a network does. */
+  const noSignal = () => {
+    if (options.offline?.()) throw new TypeError('Failed to fetch');
+  };
   const labelOf = (model: string, id: RecordId) => {
     const value = nameOf(model, id);
     const name = oneText(value, options.language);
@@ -419,8 +452,31 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     responses,
     calls,
     drafts,
+    codes,
+    payments,
     answeredElsewhere: kept.answeredElsewhere,
+
+    async pay(request: PayRequest): Promise<PayResult> {
+      const { slot: _slot, signal: _signal, ...asked } = request;
+      calls.push({ method: 'pay', request: asked });
+      await pause();
+      const result = options.pay ? await options.pay(request, payments.length + 1) : { status: 'paid' as const, reference: `PAY-${payments.length + 1}` };
+      payments.push({ ...structuredCopy(asked), result: structuredCopy(result) });
+      return result;
+    },
     changeElsewhere: kept.changeElsewhere,
+
+    async sendCode(request: SendCodeRequest): Promise<SentCode> {
+      calls.push({ method: 'sendCode', request });
+      await pause();
+      return proving.sendCode(request);
+    },
+
+    async checkCode(request: CheckCodeRequest): Promise<CodeChecked> {
+      calls.push({ method: 'checkCode', request });
+      await pause();
+      return proving.checkCode(request);
+    },
 
     async limits(request: LimitsRequest): Promise<LimitsResult> {
       calls.push({ method: 'limits', request });
@@ -499,6 +555,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     async save(request: SaveRequest): Promise<SaveResult> {
       calls.push({ method: 'save', request });
       await pause();
+      noSignal();
       const saved = write(request);
       // Saved: the draft its changes were kept in is let go, as a server does.
       if (request.draft) delete drafts[request.draft];
@@ -673,6 +730,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
 
     async upload(file: UploadFile, request: UploadRequest): Promise<UploadedFile> {
       calls.push({ method: 'upload', request: { ...request, file } });
+      noSignal();
       const stopped = () => Object.assign(new Error('The upload was stopped'), { name: 'AbortError' });
       // A store slow or failing as `storage` says: a refusal at once, a failure partway, the bytes paced as they go.
       const tried = `${file.name}:${file.size}`;
@@ -715,6 +773,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     async submit(request: SubmitRequest): Promise<SubmitResult> {
       calls.push({ method: 'submit', request });
       await pause();
+      noSignal();
       responses.push(structuredCopy(request));
       // Sent: the draft it was kept in is let go, as a server does.
       if (request.draft) delete drafts[request.draft];

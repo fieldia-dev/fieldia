@@ -24,7 +24,7 @@ import {
   type Signal,
   type Type,
 } from '@angular/core';
-import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
+import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, PageLink, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
 import { mountViewer, newestFunctions, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PartFailure, PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
@@ -106,6 +106,12 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly resume = input<string | undefined>(undefined);
   /** The respondent's own seed, for a page that draws its questions' order or some of them: the same seed, the same draw. */
   readonly seed = input<string | undefined>(undefined);
+  /**
+   * The link the page is opened with, for a page that fills fields from it (`prefill`): its address, its `?…` part, or
+   * its parameters by name — what a server-rendered or embedded app knows the browser's address bar may not show. Left
+   * out, the browser's own address.
+   */
+  readonly url = input<PageLink | undefined>(undefined);
   readonly autosave = input<{ delayMs: number } | undefined>(undefined);
   readonly scheduler = input<Scheduler | undefined>(undefined);
   readonly confirm = input<((message: string) => Promise<boolean>) | undefined>(undefined);
@@ -201,6 +207,7 @@ export class FieldiaFormComponent implements OnDestroy {
         recordId: this.recordId(),
         resume: this.resume(),
         seed: this.seed(),
+        url: this.url(),
         user: this.user(),
         context: this.context(),
         // Made again when a function is named or no longer named; each call reaches the newest given.
@@ -241,7 +248,7 @@ export class FieldiaFormComponent implements OnDestroy {
     this.unmount();
   }
 
-  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; resume?: string; seed?: string; user?: FormUser; context?: ViewerOptions['context']; functionNames?: string; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
+  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; resume?: string; seed?: string; url?: PageLink; user?: FormUser; context?: ViewerOptions['context']; functionNames?: string; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
     this.unmount();
     const widgets: Record<string, WidgetFactory> = { ...this.widgets() };
     for (const [key, type] of Object.entries(options.fieldTypes ?? {})) {
@@ -288,6 +295,7 @@ export class FieldiaFormComponent implements OnDestroy {
       recordId: options.recordId,
       resume: options.resume,
       seed: options.seed,
+      url: options.url,
       user: options.user,
       context: options.context,
       functions: newestFunctions(() => this.functions()),

@@ -7,7 +7,7 @@ import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { FIELD_NAME } from '../format/names';
 import { splitValues } from '../format/words';
 import { fitTo } from './compute';
-import type { ResolvedFilter } from './data-source';
+import type { PaidPayment, PaymentDue, PayRequest, ResolvedFilter } from './data-source';
 import { resolveFilter } from './filter';
 import type { Facet } from './search';
 import { emptyValue, sameValue, structuredCopy, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
@@ -181,6 +181,12 @@ export interface ActionHost {
    * is given one that posts in that record's. False: nothing heard them.
    */
   post?(message: PostedMessage): boolean | void | Promise<boolean | void>;
+  /**
+   * The payment step a send waits on (a page's `payment`): show what is due, and settle once it is paid — through the
+   * data source's `pay`, in the person's press — or with null once the person goes back to the answers: nothing is sent.
+   * Left out, the form asks the source's `pay` itself.
+   */
+  pay?(due: PaymentDue, request: PayRequest): Promise<PaidPayment | null>;
 }
 
 /**

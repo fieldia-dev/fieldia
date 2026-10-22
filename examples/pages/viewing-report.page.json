@@ -1,0 +1,44 @@
+{
+  "fieldia": "0.7",
+  "id": "viewing-report",
+  "title": "Viewing report",
+  "description": "A broker’s report from a viewing in a compound with no signal: it is kept on the phone and sent when the signal comes back.",
+  "data": { "kind": "responses" },
+  "maxWidth": "narrow",
+  "outbox": true,
+  "fields": {
+    "unit": { "type": "char", "label": "Unit", "required": true, "size": 40 },
+    "visited_on": { "type": "date", "label": "Visited on", "default": "today", "required": true },
+    "condition": {
+      "type": "selection",
+      "label": "Condition",
+      "required": true,
+      "options": [
+        { "value": "ready", "label": "Ready to move in" },
+        { "value": "finishing", "label": "Needs finishing" },
+        { "value": "repairs", "label": "Needs repairs" }
+      ]
+    },
+    "buyer_interest": { "type": "integer", "label": "The buyer’s interest (1–5)", "min": 1, "max": 5 },
+    "photos": { "type": "binary", "label": "Photos", "multiple": true, "accept": ["image/*"] },
+    "notes": { "type": "text", "label": "Notes", "size": 1000 }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "visit",
+    "children": [
+      {
+        "type": "section",
+        "id": "where",
+        "children": [
+          { "type": "field", "id": "f-unit", "field": "unit" },
+          { "type": "field", "id": "f-visited", "field": "visited_on" },
+          { "type": "field", "id": "f-condition", "field": "condition", "widget": "radio", "options": { "columns": 1 } },
+          { "type": "field", "id": "f-interest", "field": "buyer_interest", "widget": "rating", "options": { "max": 5 } },
+          { "type": "field", "id": "f-photos", "field": "photos", "options": { "camera": true } },
+          { "type": "field", "id": "f-notes", "field": "notes" }
+        ]
+      }
+    ]
+  }
+}

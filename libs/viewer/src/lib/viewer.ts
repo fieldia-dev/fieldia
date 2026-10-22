@@ -7,6 +7,7 @@ import {
   localizePage,
   translatePage,
   wideColumns,
+  formJoins,
   type ActionHost,
   type ActionStep,
   type ButtonNode,
@@ -79,7 +80,8 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, surveyFlowPart, type AssistPart, type HeadPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, owedParts, partsFor, surveyFlowPart, type AssistPart, type HeadPart } from './viewer-parts';
+import type { PageJoin } from './joins';
 import type { LimitsKit } from './limits';
 import type { FlowKit } from './survey-flow';
 import { filesPart } from '@fieldia/widgets';
@@ -1891,6 +1893,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   let approvalBand: HTMLElement | null = null;
   /** A survey's flow, from its own part — a review, one at a time, a draw, a time limit, a quiz's results — made as the page is drawn (survey-flow.ts). */
   let flowKit: FlowKit | null = null;
+  /**
+   * What the parts that join the form draw with the page (`joinDrawings`: Send a code, a payment step, an outbox's bar),
+   * each made as the page is drawn — its part waited for with the page's.
+   */
+  const joins: PageJoin[] = [];
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
   /**
@@ -1918,6 +1925,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     done.hidden = false;
     // A quiz's results under the thanks, from the survey flow's part: their heading takes the focus where no ending does.
     const results = flowKit?.quiz(again);
+    // An ending a part that joins the form says in place of the page's: a response kept on the device.
+    if (joins.some((join) => join.ending?.(doneTitle, doneWords))) return;
     const answers = doneWords && answersPart.loaded;
     if (!answers || !doneWords) return void results?.focus();
     answers.drawEnding({ doc, page, form, locale, write: asSaid, title: doneTitle, words: doneWords, again, thanks: labels.submitted, another: labels.submitAnother })?.focus();
@@ -2440,9 +2449,18 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * nothing moves as a part arrives, and no focus is lost: there was nothing to have it.
    */
   function drawPage() {
+    // What the page's parts draw with it are handed the same: the form, the page, its words, its questions once drawn.
+    const drawing = { form, page, doc, el, labels, fill, announce, content: () => questions };
+    for (const part of formJoins(page)) {
+      const join = joinDrawings[part.name]?.loaded?.draw({ ...drawing, dataSource: options.dataSource, tag: page.language ?? locale, icons: options.icons, editable: () => !locked, ask: (message) => actionHost.ask(message) });
+      if (!join) continue;
+      joins.push(join);
+      if (join.update) updaters.push(join.update);
+      if (join.destroy) cleanups.push(join.destroy);
+    }
     const limits = limitsAsked ? limitsPart.loaded : undefined;
     if (limits) {
-      const kit = limits.drawLimits({ form, page, doc, el, labels, messages: options.messages ?? MESSAGES[locale], fill, content: () => questions, done: () => !done.hidden, announce });
+      const kit = limits.drawLimits({ ...drawing, messages: options.messages ?? MESSAGES[locale], done: () => !done.hidden });
       updaters.push((state) => kit.update(state));
       limitsKit = kit;
     }
@@ -2512,7 +2530,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     questions = body;
     // Over the record's sections where no sheet placed it under its alerts.
     const band = approvalBand && !approvalBand.parentElement ? [approvalBand] : [];
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...safety.elements, draft, ...band, ...(assistKit && !assistKit.bar.parentElement ? [assistKit.bar] : []), body, ...(limitsKit?.after ?? [])];
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...joins.flatMap((join) => join.before ?? []), ...safety.elements, draft, ...band, ...(assistKit && !assistKit.bar.parentElement ? [assistKit.bar] : []), body, ...joins.flatMap((join) => join.after ?? []), ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);

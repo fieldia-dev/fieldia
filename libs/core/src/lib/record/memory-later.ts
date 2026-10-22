@@ -16,7 +16,7 @@ export const memoryPart: Part<MemoryPart> = lazyPart('memory', () => import('./m
 export const MEMORY_MEMBERS = [
   'load', 'save', 'onchange', 'search', 'create', 'submit', 'list', 'groups', 'options', 'definitions', 'saveDefinitions', 'archive', 'copy', 'delete',
   'attachments', 'totals', 'upload', 'slots', 'writeMany', 'createMany', 'duplicates', 'merge', 'notDuplicates', 'markNotDuplicate', 'limits', 'saveDraft', 'loadDraft',
-  'approvals', 'decide',
+  'approvals', 'decide', 'sendCode', 'checkCode', 'pay',
 ] as const;
 
 /** The members a memory source answers only where it is given what they keep: lists' saved views (`views`). */
@@ -34,7 +34,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   const kept = memoryKept(options);
   let made: MemoryDataSource | undefined;
   const members = (): Promise<MemoryDataSource> => memoryPart.load().then((loaded) => (made ??= loaded.memorySource(options, kept)));
-  const source = { records: kept.records, notDuplicatePairs: kept.notDuplicatePairs, responses: kept.responses, calls: kept.calls, drafts: kept.drafts, changeElsewhere: kept.changeElsewhere, answeredElsewhere: kept.answeredElsewhere } as Record<string, unknown>;
+  const source = { records: kept.records, notDuplicatePairs: kept.notDuplicatePairs, responses: kept.responses, calls: kept.calls, drafts: kept.drafts, codes: kept.codes, payments: kept.payments, changeElsewhere: kept.changeElsewhere, answeredElsewhere: kept.answeredElsewhere } as Record<string, unknown>;
   // AI help's members, where the app gave what answers them: without, the source has none.
   const assist = (['suggest', 'rewrite', 'searchToFilter'] as const).filter((name) => options.assist?.[name]);
   for (const name of [...MEMORY_MEMBERS, ...assist, ...(options.views ? MEMORY_VIEW_MEMBERS : [])]) {

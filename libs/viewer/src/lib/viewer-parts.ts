@@ -1,7 +1,9 @@
-import { callsPartFunctions, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formJoins, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
+import type * as ElementModule from './element-part';
+import type { JoinDrawing } from './joins';
 import type * as AnswersModule from './answers-part';
 import type * as ApprovalsModule from './approvals-part';
 import type * as AssistModule from './assist-part';
@@ -49,6 +51,8 @@ export type ViewsPart = typeof ViewsModule;
 export type RowsPart = typeof RowsModule;
 /** The survey flow's viewer part: a quiz's results, the review, one question at a time, the draw laid out, a time limit. */
 export type SurveyFlowPart = typeof SurveyFlowModule;
+/** The element part: what `<fieldia-form>` does once it is on a page (element-part.ts). */
+export type ElementPart = typeof ElementModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -123,6 +127,23 @@ export const asksAssist = (page: Page): boolean => !!page.suggest || /"rewrite":
 export const surveyFlowPart: Part<SurveyFlowPart> = lazyPart('surveyflow', () => import('./surveyflow-part'));
 
 /**
+ * What the parts that join a form draw with its page (joins.ts), by the name of @fieldia/core's part (`formJoins`):
+ * Send a code under a field that asks for one, the payment step, an outbox's bar — each loaded with the page's parts
+ * where it asks, so it is drawn with the page. The fields a link fills draw nothing.
+ */
+export const joinDrawings: Record<string, Part<JoinDrawing>> = {
+  verify: lazyPart('verify', () => import('./verify-part')),
+  pay: lazyPart('pay', () => import('./pay-part')),
+  outbox: lazyPart('outbox', () => import('./outbox-part')),
+};
+
+/**
+ * What `<fieldia-form>` does — its page fetched, its form drawn in it, its events told — loaded the first time one is
+ * put on a page (element.ts): a page with none never downloads it.
+ */
+export const elementPart: Part<ElementPart> = lazyPart('element', () => import('./element-part'));
+
+/**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
  * else as soon as it comes (settled then; a part that cannot come puts none). For what draws a list's look without the
  * list: the designer's canvas.
@@ -146,7 +167,7 @@ export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage'
  * Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing —
  * but the decode part, which reads codes only where a browser reads none itself, as Scan is pressed.
  */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
 /** A group holding a text read first alone — Markdown, or one edited by its button — whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -209,6 +230,9 @@ const markdownAlone = (node: SectionNode) => {
  *
  * A page that asks for AI help — a Fill from text (`suggest`), a text field's tools (`options.rewrite`) — asks for the
  * assist part, which draws them with the page.
+ *
+ * The parts that join a page's form (@fieldia/core's `formJoins`: an outbox, the fields its link fills, proof by a code,
+ * a payment) are asked for with what each draws (`joinDrawings`) — in the one-tag script, the same script.
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
@@ -320,6 +344,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (hasOptionRules(page)) found.add(optionRulesPart);
   // A text kept in several languages: its switch where it is typed, the reader's language where a list or a card reads it.
   if (hasLanguages(page)) found.add(languagesPart);
+  // The parts that join its form, and what each draws with the page.
+  for (const part of formJoins(page)) found.add(joinDrawings[part.name] ?? part).add(part);
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
@@ -330,6 +356,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
+  // The checks of the parts that join a form come with them, asked for with the page's own (`partsFor`).
   const by: Record<string, Part> = { list: listPart, editable: editablePart, head: headPart, limits: limitsPart, approvals: approvalsPart, answers: answersPart, assist: assistPart, surveyflow: surveyFlowPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, languages: languagesPart, scan: scanPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
@@ -353,5 +380,6 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * `themesPart` or `quietPart` (@fieldia/widgets), `.load()`ed the same way.
  */
 export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {
-  await Promise.all((page ? partsFor(page, widgets, slots) : EVERY_PART).map((part) => part.load()));
+  // With the parts that join a form, asked for as they are loaded: their module may come after this one's.
+  await Promise.all((page ? partsFor(page, widgets, slots) : [...EVERY_PART, ...formJoins()]).map((part) => part.load()));
 }

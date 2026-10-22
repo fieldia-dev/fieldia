@@ -44,7 +44,8 @@ describe('ranking the settings found', () => {
 describe('the search box over the settings', () => {
   function picked() {
     const designer = createDesigner({ page: blankPage('screen', 'Visit') });
-    const id = designer.addQuestion('email', { parent: 'section-1' }) as string;
+    // A website: a typed box with no settings of its kind (an email has its code's, 0.30).
+    const id = designer.addQuestion('website', { parent: 'section-1' }) as string;
     designer.updateQuestion(id, { label: 'Customer' });
     designer.select(id);
     const { host } = mount(designer, { mode: 'advanced' });

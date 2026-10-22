@@ -412,6 +412,15 @@
     },
     "timeLimit": {
       "$ref": "#/$defs/TimeLimit"
+    },
+    "prefill": {
+      "$ref": "#/$defs/PagePrefill"
+    },
+    "payment": {
+      "$ref": "#/$defs/PagePayment"
+    },
+    "outbox": {
+      "type": "boolean"
     }
   },
   "required": [
@@ -10955,6 +10964,93 @@
           "additionalProperties": false
         }
       ]
+    },
+    "PagePrefill": {
+      "type": "object",
+      "properties": {
+        "fromUrl": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "param": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_.~-]{1,100}$"
+                  },
+                  "field": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                  }
+                },
+                "required": [
+                  "param",
+                  "field"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "fromUrl"
+      ],
+      "additionalProperties": false
+    },
+    "PagePayment": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "maxLength": 120,
+          "pattern": "\\S"
+        },
+        "amount": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            }
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            }
+          ]
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500,
+          "pattern": "\\S"
+        },
+        "when": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "label",
+        "amount"
+      ],
+      "additionalProperties": false
     }
   }
 }

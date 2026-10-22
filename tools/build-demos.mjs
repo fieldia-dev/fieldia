@@ -9,7 +9,7 @@ import { dirname, join, resolve } from 'node:path';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
-const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'designer-react', 'designer-vue', 'designer-angular', 'script', 'map-embed', 'backlog', 'save-safety'];
+const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'designer-react', 'designer-vue', 'designer-angular', 'script', 'embed', 'map-embed', 'backlog', 'save-safety'];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
@@ -35,6 +35,17 @@ for (const variant of variants) {
     // fieldia.js asks for from beside itself the first time a page uses it (a work item's head, its text, a path picker).
     for (const file of readdirSync(dirname(SCRIPT_BUNDLE)).filter((name) => /^fieldia\.[a-z]+\.js$/.test(name))) cpSync(join(dirname(SCRIPT_BUNDLE), file), join(OUT, 'script', file));
     console.log(`demo script: ${join('dist/demos', 'script')}`);
+    continue;
+  }
+  if (variant === 'embed') {
+    // A form on another site, no build step either: a partner's page with <fieldia-form> on it, or the embed script's
+    // frame of the app's own form page (form.html) — each beside the script bundle, its parts, fieldia-embed.js and the
+    // enquiry's page.
+    if (!existsSync(SCRIPT_BUNDLE)) throw new Error('demos/embed needs the script bundle: run `npx nx build viewer` first');
+    cpSync(join(WORKSPACE, 'demos/embed'), join(OUT, 'embed'), { recursive: true });
+    for (const file of readdirSync(dirname(SCRIPT_BUNDLE)).filter((name) => /^fieldia(\.[a-z]+|-embed)?\.js$/.test(name))) cpSync(join(dirname(SCRIPT_BUNDLE), file), join(OUT, 'embed', file));
+    cpSync(join(WORKSPACE, 'examples/pages/unit-enquiry.page.json'), join(OUT, 'embed/unit-enquiry.page.json'));
+    console.log(`demo embed: ${join('dist/demos', 'embed')}`);
     continue;
   }
   const entry = ['main.ts', 'main.tsx'].map((file) => join(WORKSPACE, 'demos', variant, file)).find(existsSync);

@@ -94,6 +94,15 @@ export const PART_WORDS = {
     ],
   },
   languages: { messages: ['languagesNeeded', 'languagesNeededQuestion'], widgets: ['languageSwitch', 'languageEmpty', 'languageNeeded', 'inLanguage'] },
+  element: { viewer: ['formNotLoaded'] },
+  outbox: { viewer: ['outboxWaiting', 'outboxWaitingOne', 'outboxOffline', 'outboxSending', 'outboxSent', 'outboxSendNow', 'outboxRefused', 'outboxRetry', 'outboxDiscard', 'outboxDiscardAsk', 'outboxKeptTitle', 'outboxKeptWords'] },
+  pay: { viewer: ['payAmount', 'payBack', 'payCancel', 'payCancelling', 'payNothingSent', 'payWaiting', 'payPaid', 'payPaidReference', 'payAgain', 'payCancelled', 'payFailed', 'payFailedWhy', 'payNotStarted'] },
+  verify: {
+    messages: ['notVerified'],
+    viewer: [
+      'verifySend', 'verifySendBy', 'verifyBySms', 'verifyByWhatsapp', 'verifyByCall', 'verifyByEmail', 'verifySending', 'verifySent', 'verifySentBy', 'verifyWorksFor', 'verifyWorksForOne', 'verifyCodeName', 'verifyCheck', 'verifyChecking', 'verifyTypeCode', 'verifyWrong', 'verifyWrongOne', 'verifyWrongSome', 'verifyWrongNone', 'verifyExpired', 'verifyAgain', 'verifyAgainIn', 'verifyDone', 'verifyNotSent', 'verifyNotChecked',
+    ],
+  },
   limits: { messages: ['formOpens', 'formClosed', 'formFull', 'formSent', 'choiceFull', 'choiceFilled'], viewer: ['closedTyped', 'laterButton', 'laterSaving', 'laterSaved', 'laterLink', 'laterLinkName', 'laterCopy', 'laterCopied', 'laterAgain', 'laterBack', 'laterFailed', 'resumeMissing'] },
   lines: {
     widgets: [
