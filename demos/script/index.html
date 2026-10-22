@@ -52,6 +52,11 @@
           ar: { 'Ask for a call back': 'اطلب أن نتصل بك', 'Your name': 'اسمك', Phone: 'الهاتف', 'Best time': 'أفضل وقت', Morning: 'صباحًا', Afternoon: 'بعد الظهر' },
           de: { 'Ask for a call back': 'Rückruf anfordern', 'Your name': 'Ihr Name', Phone: 'Telefon', 'Best time': 'Beste Zeit', Morning: 'Vormittags', Afternoon: 'Nachmittags' },
           fr: { 'Ask for a call back': 'Demander à être rappelé', 'Your name': 'Votre nom', Phone: 'Téléphone', 'Best time': 'Meilleur moment', Morning: 'Le matin', Afternoon: 'L’après-midi' },
+          // Turkish, Persian, Urdu and Spanish: machine-assisted, not yet reviewed by a native speaker, as Fieldia's own words in them are.
+          tr: { 'Ask for a call back': 'Sizi aramamızı isteyin', 'Your name': 'Adınız', Phone: 'Telefon', 'Best time': 'En uygun zaman', Morning: 'Sabah', Afternoon: 'Öğleden sonra' },
+          fa: { 'Ask for a call back': 'درخواست تماس', 'Your name': 'نام شما', Phone: 'تلفن', 'Best time': 'بهترین زمان', Morning: 'صبح', Afternoon: 'بعدازظهر' },
+          ur: { 'Ask for a call back': 'کال بیک کی درخواست کریں', 'Your name': 'آپ کا نام', Phone: 'فون', 'Best time': 'بہترین وقت', Morning: 'صبح', Afternoon: 'سہ پہر' },
+          es: { 'Ask for a call back': 'Solicite que le llamemos', 'Your name': 'Su nombre', Phone: 'Teléfono', 'Best time': 'Mejor momento', Morning: 'Por la mañana', Afternoon: 'Por la tarde' },
         },
       };
       const locale = new URLSearchParams(location.search).get('locale') || 'en';
@@ -61,9 +66,11 @@
         window.fieldiaDemo = { handle, dataSource, page, version: Fieldia.VERSION };
       }
       // Arabic, German and French each come in a script of their own, loaded after fieldia.js: fieldia.ar.js,
-      // fieldia.de.js, fieldia.fr.js. Here the address picks the language (/script/?locale=ar), so its script
-      // is added as the page starts; a page in one language just writes its script tag after fieldia.js.
-      if (['ar', 'de', 'fr'].includes(locale)) {
+      // fieldia.de.js, fieldia.fr.js — and Turkish, Persian, Urdu and Spanish (machine-assisted, not yet reviewed by a
+      // native speaker): fieldia.tr.js, fieldia.fa.js, fieldia.ur.js, fieldia.es.js. Here the address picks the language
+      // (/script/?locale=ar), so its script is added as the page starts; a page in one language just writes its script
+      // tag after fieldia.js.
+      if (['ar', 'de', 'fr', 'tr', 'fa', 'ur', 'es'].includes(locale)) {
         const words = document.createElement('script');
         words.src = `fieldia.${locale}.js`;
         words.onload = show;

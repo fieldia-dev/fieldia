@@ -6,6 +6,11 @@
     ar: ['أخبرنا بما تبنيه', 'اسمك', 'البريد الإلكتروني', 'تبني باستخدام', 'شيء آخر', 'أيّها؟', 'كم نموذجًا في تطبيقك؟'],
     de: ['Erzählen Sie uns, was Sie bauen', 'Ihr Name', 'E-Mail', 'Sie entwickeln mit', 'Etwas anderem', 'Womit?', 'Wie viele Formulare hat Ihre App?'],
     fr: ['Dites-nous ce que vous construisez', 'Votre nom', 'E-mail', 'Vous développez avec', 'Autre chose', 'Lequel ?', 'Combien de formulaires compte votre application ?'],
+    // Turkish, Persian, Urdu and Spanish: machine-assisted, not yet reviewed by a native speaker, as Fieldia's own words in them are.
+    tr: ['Ne geliştirdiğinizi anlatın', 'Adınız', 'E-posta', 'Geliştirdiğiniz araç', 'Başka bir şey', 'Hangisi?', 'Uygulamanızda kaç form var?'],
+    fa: ['بگویید چه می‌سازید', 'نام شما', 'ایمیل', 'با چه چیزی می‌سازید', 'چیز دیگری', 'کدام؟', 'برنامهٔ شما چند فرم دارد؟'],
+    ur: ['ہمیں بتائیں آپ کیا بناتے ہیں', 'آپ کا نام', 'ای میل', 'آپ کس کے ساتھ بناتے ہیں', 'کچھ اور', 'کون سا؟', 'آپ کی ایپ میں کتنے فارم ہیں؟'],
+    es: ['Cuéntenos qué está creando', 'Su nombre', 'Correo electrónico', 'Desarrolla con', 'Otra cosa', '¿Cuál?', '¿Cuántos formularios tiene su aplicación?'],
   };
   function pageIn(locale) {
     var w = WORDS[locale] || WORDS.en;
