@@ -284,6 +284,8 @@ test('(e) after a run of drops, every part on its tracks; the canvas draws each 
   await pick(page, 'Customer');
   await gutter(page).focus();
   await page.keyboard.press('ArrowRight');
+  // Follow-up in view, as a person scrolls to it: the demos' frame over the designer puts it near the window's foot.
+  await (await cardOf(page, 'Manager to call?')).scrollIntoViewIfNeeded();
   const due = await own(page, 'Due by');
   await dropAt(page, centre(await at(page, 'Manager to call?')), { x: due.right - 10, y: due.top + due.height / 2 });
   await page.mouse.click(5, 5);

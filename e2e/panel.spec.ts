@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { cardOf, doubleLines, inAdvanced, layout, watch } from './designer-support';
+import { cardOf, doubleLines, inAdvanced, inBar, layout, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -240,7 +240,8 @@ test.describe('the panel', () => {
     await check(page, 'phone-layout');
     await expectNoSidewaysScroll(page);
     await page.goto('/designer/?start=survey');
-    await page.locator('.fd-designer-bar').getByRole('button', { name: 'Look', exact: true }).click();
+    // Under the bar's More on a phone.
+    await (await inBar(page, 'Look')).click();
     await check(page, 'phone-survey-look');
     await expectNoSidewaysScroll(page);
     expect(problems).toEqual([]);

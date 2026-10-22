@@ -19,7 +19,7 @@ export default {
   body: `
 <header class="gallery-hero">
   <h1>The designer</h1>
-  <p class="lead"><b>Build a page by pointing at it.</b> Questions as cards, the Google Forms way; a record’s page in the viewer’s own grid, fields dropped where a gap opens; a list of records by its columns. Pick anything to type its words where it stands; check it, publish it, and open an earlier version again. Nothing you do here is saved.</p>
+  <p class="lead"><b>Build a page by pointing at it.</b> Questions as cards, the Google Forms way; a record’s page in the viewer’s own grid, fields dropped where a gap opens; a list of records by its columns. Pick anything to type its words where it stands; check it, publish it, and open an earlier version again. On a phone the page keeps the screen: one row of bar, and the toolbox behind a +. Nothing you do here is saved.</p>
   <div class="chips">
     <span class="chip"><code>npm install @fieldia/designer</code></span>
     <span class="chip">MIT licensed</span>

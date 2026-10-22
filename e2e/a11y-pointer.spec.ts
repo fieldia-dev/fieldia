@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { inAdvanced } from './designer-support';
+import { inAdvanced, inBar } from './designer-support';
 import { card, kids, spanOf } from './keyboard-support';
 
 /**
@@ -225,7 +225,8 @@ test.describe('2.5.8 targets 24 by 24, or room round them', () => {
       await page.setViewportSize(PHONE);
       await inAdvanced(page);
       await page.goto(url);
-      await page.getByRole('button', { name: 'Try it' }).first().click();
+      // On a phone, Try it is under the bar's More.
+      await (await inBar(page, 'Try it')).click();
       await expect(page.locator('.fd-try-drawer')).toBeVisible();
       expect(await coveredWhenReached(page, '.fd-try-frame')).toEqual([]);
     });

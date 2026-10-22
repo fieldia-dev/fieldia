@@ -1,6 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { addField, doubleLines, inAdvanced, tile, watch } from './designer-support';
+import { addField, doubleLines, fromToolbox, inAdvanced, tile, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -371,7 +371,8 @@ test.describe('When… in the screen designer', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/screen/');
     await page.locator('.fd-canvas-field').first().click();
-    await tile(page, 'block:button').click();
+    // On a phone, from the toolbox's sheet.
+    await (await fromToolbox(page, 'block:button')).click();
     const button = clicked(page);
     await button.getByRole('button', { name: 'Add a step', exact: true }).click();
     await menu(page).getByRole('menuitem', { name: 'Open a page' }).click();

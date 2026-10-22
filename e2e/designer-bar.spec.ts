@@ -26,7 +26,7 @@ for (const [name, path] of [['screen editor', '/screen/'], ['survey designer', '
         expect(Math.abs((await middle(page, action)).centre - title.centre), `${width}px: ${action} beside the title`).toBeLessThanOrEqual(6);
       }
       const bar = (await page.locator('.fd-designer-bar').boundingBox())!;
-      const parts = await page.locator('.fd-designer-bar > *').evaluateAll((all) => all.map((p) => p.getBoundingClientRect()).filter((r) => r.width > 0).map((r) => r.right));
+      const parts = await page.locator('.fd-designer-bar > *, .fd-designer-bar > .fd-bar-rest > *').evaluateAll((all) => all.map((p) => p.getBoundingClientRect()).filter((r) => r.width > 0).map((r) => r.right));
       expect(Math.max(...parts), `${width}px: nothing past the bar`).toBeLessThanOrEqual(bar.x + bar.width + 0.5);
       expect(views.top, `${width}px: the views beneath`).toBeGreaterThan(title.bottom);
       await screen(page, `designer-bar-${name.split(' ')[0]}-${width}`, { viewport: true });
@@ -34,13 +34,15 @@ for (const [name, path] of [['screen editor', '/screen/'], ['survey designer', '
   });
 }
 
-test('at a phone’s width: the views three to a row, none alone, and a question’s words the width of its card', async ({ page }) => {
+test('at a phone’s width: under More, the views three to a row, none alone; and a question’s words the width of its card', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/designer/?start=survey');
+  await page.locator('.fd-designer-bar').getByRole('button', { name: 'More', exact: true }).click();
   const tops = await page.locator('.fd-designer-bar .fd-mode:not(.fd-mode-switch) [data-mode]').evaluateAll((all) => all.map((b) => Math.round(b.getBoundingClientRect().top)));
   const rows = new Map<number, number>();
   for (const top of tops) rows.set(top, (rows.get(top) ?? 0) + 1);
   expect([...rows.values()].every((n) => n >= 2), `views per row: ${[...rows.values()]}`).toBe(true);
+  await page.keyboard.press('Escape');
   await page.locator('.fd-q').nth(1).click();
   const card = page.locator('.fd-q-selected');
   const words = (await card.locator('.fd-q-head > :first-child').boundingBox())!;

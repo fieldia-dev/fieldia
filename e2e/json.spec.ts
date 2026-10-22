@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { cardOf, doubleLines, watch } from './designer-support';
+import { cardOf, doubleLines, inBar, watch } from './designer-support';
 import { expectNoSidewaysScroll, open, screen } from './support';
 
 /**
@@ -129,7 +129,8 @@ test.describe('the JSON view of the screen editor', () => {
 
   test('fits a phone: the text scrolls inside its own box', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.getByRole('button', { name: 'JSON', exact: true }).click();
+    // Under the bar's More on a phone.
+    await (await inBar(page, 'JSON')).click();
     await expect(box(page)).toBeVisible();
     await expectNoSidewaysScroll(page);
     const [scroll, width] = await box(page).evaluate((t: HTMLTextAreaElement) => [t.scrollWidth, t.clientWidth]);

@@ -5,6 +5,7 @@ import { AREAS, AREA_IDS, DEMOS, FEATURED, areaOf, demoHref } from '../demos/cat
 import { HERO_JSON, TABS } from '../site/hero.mjs';
 import { expectNoSidewaysScroll, screen } from './support';
 import { axeFindings } from './a11y-support';
+import { cardOf, dragToward, editing, layout } from './designer-support';
 import { gzipSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 
@@ -319,6 +320,17 @@ test('the gallery has a way in to the designers: an owner’s words find both, e
   await expect(page.locator('.fd-designer')).toBeVisible();
   await expect(page.locator('.dh-title')).toHaveText('The screen designer');
   await expect(page.locator('.dh-try-step')).toContainText('Drag Email from the toolbox into the Visit section');
+  // Its first step, as it says, with the mouse at hand speed: Email dragged under Notes, a gap opening there.
+  const email = (await page.locator('.fd-toolbox [data-tool="kind:email"]').boundingBox())!;
+  // Under Notes: on Photos, the field after it, where a gap opens before it.
+  await dragToward(page, { x: email.x + email.width / 2, y: email.y + 20 }, async () => {
+    const photos = (await (await cardOf(page, 'Photos')).boundingBox())!;
+    return { x: photos.x + 40, y: photos.y + 20 };
+  }, { release: false });
+  await expect(page.locator('.fd-drop-slot + .fd-canvas-field .fd-label')).toHaveText('Photos');
+  await page.mouse.up();
+  await expect(editing(page).label).toBeFocused();
+  await expect.poll(async () => (await layout(page))[0].map((part) => part.split(':')[0])).toEqual(['Customer', 'Visit date', 'Notes', 'Untitled question', 'Photos']);
   expect(problems).toEqual([]);
 });
 
@@ -1055,7 +1067,7 @@ test('the Templates page: every template with its picture, and each tried, chang
     await page.goto(SITE + changed);
     // The template itself in the editor, not its usual starting page.
     await expect(page.locator('.fd-designer, .fd-survey-editor, [class*="fd-editor"]').first(), changed).toBeVisible();
-    await expect(page.locator('input').first(), changed).toHaveValue((await file.json()).title);
+    await expect(page.locator('.fd-designer-title'), changed).toHaveValue((await file.json()).title);
   }
   expect(problems).toEqual([]);
 });
