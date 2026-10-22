@@ -1225,7 +1225,7 @@ plain fields — a list's screen, a table of lines, a date's box, a link to
 another record, a phone, a theme, possible duplicates, a page on paper, the
 answers said in a page's words, a form's limits, a record's approvals, the
 functions beyond the plain ones, a field's code, a payment, `<fieldia-form>`'s
-work… — comes in PARTCOUNT parts beside it (`fieldia.list.js`, `fieldia.date.js`,
+work… — comes in 52 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
 `fieldia.relations.js`, `fieldia.print.js`, …), each loaded from the same
 folder the first time a page uses it:
 
