@@ -43,10 +43,11 @@ describe.each(NEW)('the messages in %s', (locale) => {
 });
 
 describe('Persian and Urdu', () => {
-  it('run right to left, with the Arabic comma between names, and Persian’s week from Saturday', () => {
+  it('run right to left, with the Arabic comma between names, and their weeks where CLDR starts them', () => {
     expect([isRightToLeft('fa'), isRightToLeft('ur'), isRightToLeft('tr'), isRightToLeft('es')]).toEqual([true, true, false, false]);
     expect([listComma('fa'), listComma('ur-PK'), listComma('ar'), listComma('tr'), listComma('es')]).toEqual(['، ', '، ', '، ', ', ', ', ']);
-    expect([firstWeekday('fa'), firstWeekday('ar'), firstWeekday('ur'), firstWeekday('tr'), firstWeekday('es'), firstWeekday('en')]).toEqual([6, 6, 1, 1, 1, 1]);
+    // Iran's and Egypt's from Saturday, Pakistan's and the United States' from Sunday, Turkey's, Spain's and Britain's from Monday.
+    expect(['fa', 'ar', 'ur', 'tr', 'es', 'en', 'en-GB', 'ar-SA'].map(firstWeekday)).toEqual([6, 6, 0, 1, 1, 0, 1, 0]);
   });
 
   it('read a number typed in Persian or Urdu digits, with either script’s marks', () => {
@@ -89,5 +90,20 @@ describe('a day in the four languages', () => {
     }
     expect(readDate('۱۵/۱۰/۲۰۲۶', { locale: 'fa' })).toEqual({ ok: true, value: '2026-10-15' });
     expect(readDate('15.10.2026', { locale: 'tr' })).toEqual({ ok: true, value: '2026-10-15' });
+  });
+});
+
+describe('the week’s first day, where an engine’s Intl does not say', () => {
+  it('is CLDR’s for the tag’s region, or the one its language is most spoken in', () => {
+    const proto = Intl.Locale.prototype as unknown as Record<string, unknown>;
+    const [getWeekInfo, weekInfo] = [Object.getOwnPropertyDescriptor(proto, 'getWeekInfo'), Object.getOwnPropertyDescriptor(proto, 'weekInfo')];
+    delete proto['getWeekInfo'];
+    delete proto['weekInfo'];
+    try {
+      expect(['fa', 'ar', 'ur', 'tr', 'es', 'en', 'en-GB', 'ar-SA', 'dv'].map(firstWeekday)).toEqual([6, 6, 0, 1, 1, 0, 1, 0, 5]);
+    } finally {
+      if (getWeekInfo) Object.defineProperty(proto, 'getWeekInfo', getWeekInfo);
+      if (weekInfo) Object.defineProperty(proto, 'weekInfo', weekInfo);
+    }
   });
 });

@@ -42,11 +42,9 @@ describe("a calendar's days", () => {
     expect(readDay('20260-10-14')).toBeNull();
   });
 
-  it('starts the week on the language’s own day unless the page says: Saturday in Arabic, Monday in English, French and German', () => {
-    expect(firstDayOf('ar')).toBe(6);
-    expect(firstDayOf('en')).toBe(1);
-    expect(firstDayOf('fr')).toBe(1);
-    expect(firstDayOf('de')).toBe(1);
+  it('starts the week where CLDR has it for the language’s region unless the page says: its own, else where it is most spoken', () => {
+    expect(['ar', 'en', 'fr', 'de', 'tr', 'fa', 'ur', 'es'].map((tag) => firstDayOf(tag))).toEqual([6, 0, 1, 1, 1, 6, 0, 1]);
+    expect(['en-GB', 'ar-SA', 'es-MX', 'fr-CA'].map((tag) => firstDayOf(tag))).toEqual([1, 0, 0, 0]);
     expect(firstDayOf('ar', 0)).toBe(0);
   });
 

@@ -70,9 +70,13 @@ English has, with its blanks, not yet read by a native speaker (corrections
 welcome). Persian and Urdu are written right to left; `readNumber` reads their
 digits (۰–۹) and marks (٫ ٬) as it reads Arabic-Indic ones; a day a message
 names is written by Intl on the Gregorian calendar a value is kept in
-(`dayTag`: Intl's own for Persian is the Solar Hijri), and `listComma` and
-`firstWeekday` give the Arabic comma and a Saturday week where those languages
-use them.
+(`dayTag`: Intl's own for Persian is the Solar Hijri — Fieldia shows the
+Gregorian day, in Latin digits, in Persian too, for now). `listComma` gives the
+Arabic comma in Arabic, Persian and Urdu, and `firstWeekday(tag)` the week's first
+day as CLDR has it for the tag's region — its own, else the one its language is
+most spoken in: Saturday in Arabic and Persian, Sunday in `en` (the United
+States') and Urdu, Monday in `en-GB`, German, French, Turkish and Spanish — from
+the engine's `Intl.Locale` week info, else CLDR's table.
 
 ## A starting page from a schema
 

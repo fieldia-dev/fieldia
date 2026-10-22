@@ -28,7 +28,8 @@
       "views": ["week", "day", "month", "agenda"],
       "opens": "calendar",
       "hours": { "start": 8, "end": 19 },
-      "slot": 15
+      "slot": 15,
+      "firstDay": 1
     }
   }
 }

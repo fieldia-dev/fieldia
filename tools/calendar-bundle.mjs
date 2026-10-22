@@ -51,7 +51,8 @@
  * measured before, 19,448 after, to 19.0); and each language's words in a chunk of its own, fetched with the first
  * calendar shown in it, each against its own budget (`LANGUAGE_BUDGET`: Turkish 858 bytes, Persian 1,049, Urdu 1,070,
  * Spanish 773 measured) — a calendar in any other language never carries them (inline, they took the calendar's chunk
- * to 22,191).
+ * to 22,191). The week's first day where CLDR starts it for the page's own tag where it is shown in its own language
+ * (en-GB's, not en's): 19,448 bytes measured before, 19,486 after, to 19.1.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -60,7 +61,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/calendar-bundle');
-const BUDGET = { page: 0.8, calendar: 19.0 };
+const BUDGET = { page: 0.8, calendar: 19.1 };
 const LANGUAGE_BUDGET = { tr: 0.9, fa: 1.1, ur: 1.1, es: 0.8 };
 
 rmSync(OUT, { recursive: true, force: true });

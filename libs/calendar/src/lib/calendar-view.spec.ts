@@ -380,7 +380,7 @@ describe('a calendar of days, and in other languages', () => {
     const host = await mount({ locale });
     expect(host.querySelector('.fd-cal-nav button')?.textContent).toBe(today);
     expect(host.querySelector('.fd-list-view[data-view="calendar"]')?.textContent).toBe(name);
-    // The week from the language's own first day: Saturday in Arabic.
+    // The week from the first day CLDR has where the language is spoken: Saturday in Arabic (Egypt's).
     if (locale === 'ar') expect(host.querySelector('.fd-cal-head-day')?.getAttribute('aria-label')).toMatch(/^السبت/);
   });
 });

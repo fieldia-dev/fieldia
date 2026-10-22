@@ -24,6 +24,8 @@
  * measured before, 14,404 after, under 14.1); and each language's words in a chunk of its own, fetched with the first
  * timeline shown in it, each against its own budget (`LANGUAGE_BUDGET`: Turkish 713 bytes, Persian 878, Urdu 861,
  * Spanish 661 measured) — a timeline in any other language never carries them (inline, they took its chunk to 16,540).
+ * The week's first day where CLDR starts it for the page's own tag where it is shown in its own language (en-GB's, not
+ * en's): 14,404 bytes measured before, 14,444 after, to 14.2.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -32,7 +34,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.9, gantt: 14.1 };
+const BUDGET = { page: 0.9, gantt: 14.2 };
 const LANGUAGE_BUDGET = { tr: 0.8, fa: 0.9, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });

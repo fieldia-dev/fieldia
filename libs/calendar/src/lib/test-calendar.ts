@@ -11,6 +11,8 @@ export function clinicPage(calendar: Partial<ListCalendar> = {}): Page {
     fieldia: '0.1',
     id: 'appointments',
     title: 'Appointments',
+    // British English: its week from Monday, as CLDR has the United Kingdom's (these tests' weeks run so).
+    language: 'en-GB',
     data: { kind: 'record', model: 'clinic.appointment' },
     fields: {
       patient: { type: 'char', label: 'Patient' },

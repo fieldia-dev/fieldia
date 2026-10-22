@@ -86,10 +86,10 @@ export function readDay(text: string): Date | null {
 /** A moment as its field keeps it: a date's day, or a date and time as the date widgets write one — the instant it is on the zone's clock, in UTC. */
 export const writeWhen = (d: Date, kind: WhenKind, zone?: string) => (kind === 'date' ? dayKey(d) : new Date(fromWall(d, zone)).toISOString());
 
-/** The week's first day by language: Saturday in Arabic and Persian (as Egypt's and Iran's weeks run), Monday elsewhere, as Fieldia's date picker has it. */
-export function firstDayOf(locale: Locale, own?: number): number {
+/** The week's first day where the page's language is spoken, as CLDR has it for its region (`firstWeekday`), unless the page says. */
+export function firstDayOf(tag: string, own?: number): number {
   if (own !== undefined) return own;
-  return firstWeekday(locale);
+  return firstWeekday(tag);
 }
 
 export const startOfWeek = (d: Date, firstDay: number) => addDays(startOfDay(d), -((weekdayOf(d) - firstDay + 7) % 7));

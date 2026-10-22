@@ -144,5 +144,29 @@ export function isRightToLeft(tag: string): boolean {
 /** What parts a list of names, as a sentence writes them: ", ", or the Arabic comma "، " in a language written in Arabic's script (Arabic, Persian, Urdu). */
 export const listComma = (tag: string): string => (/^(ar|fa|ur)(-|$)/i.test(tag) ? '\u060c ' : ', ');
 
-/** The week's first day for a language, 0 Sunday to 6 Saturday: Saturday in Arabic and Persian (as Egypt's and Iran's weeks run), Monday elsewhere, as Fieldia's date picker has it. */
-export const firstWeekday = (tag: string): number => (/^(ar|fa)(-|$)/i.test(tag) ? 6 : 1);
+/**
+ * Where the week starts, by region, as CLDR (47) has it — for an engine whose Intl does not say (`weekInfo`): Sunday's
+ * regions, Saturday's and Friday's; every other region's week starts on Monday.
+ */
+const WEEK_STARTS: readonly (readonly [number, string])[] = [
+  [0, 'AG AS BD BR BS BT BW BZ CA CO DM DO ET GT GU HK HN ID IL IN JM JP KE KH KR LA MH MM MO MT MX MZ NI NP PA PE PH PK PR PT PY SA SG SV TH TT TW UM US VE VI WS YE ZA ZW'],
+  [6, 'AF BH DJ DZ EG IQ IR JO KW LY OM QA SD SY'],
+  [5, 'MV'],
+];
+
+/**
+ * The week's first day where a language tag is spoken, 0 Sunday to 6 Saturday, as CLDR has it for its region — the
+ * tag's own, else the one its language is most spoken in (`en` the United States', `ar` Egypt's, `fa` Iran's): the
+ * engine's own Intl where it says (`getWeekInfo`), else CLDR's table. Monday for a tag no engine reads.
+ */
+export function firstWeekday(tag: string): number {
+  try {
+    const locale = new Intl.Locale(tag) as Intl.Locale & { getWeekInfo?: () => { firstDay: number }; weekInfo?: { firstDay: number } };
+    const info = locale.getWeekInfo?.() ?? locale.weekInfo;
+    if (info) return info.firstDay % 7;
+    const region = locale.maximize().region ?? '';
+    return WEEK_STARTS.find(([, regions]) => region.length === 2 && regions.includes(region))?.[0] ?? 1;
+  } catch {
+    return 1;
+  }
+}

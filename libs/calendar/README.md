@@ -55,7 +55,7 @@ A list page with `calendar` offers **Calendar** beside its table:
 | `views` | The views offered, in order: `day`, `week`, `month`, `agenda`. All four unless said. |
 | `view` | The view it shows first: the first of `views` unless said. On a phone it opens on the agenda. |
 | `opens` | `calendar` opens the list on its calendar; `list` (unless said) on its table. |
-| `firstDay` | The week's first day, `0` Sunday to `6` Saturday: Saturday in Arabic and Persian, Monday in the other languages unless said. |
+| `firstDay` | The week's first day, `0` Sunday to `6` Saturday: where CLDR starts it for the page's language and region unless said: Saturday in Arabic and Persian, Sunday in United States English (`en`) and Urdu, Monday in British English (`en-GB`), German, French, Turkish and Spanish. |
 | `hours` | The hours the day and week show, `0` to `24`: 8 to 20 unless said. A record outside them stretches them. |
 | `slot` | The minutes a drag moves by and a slot holds: `15`, `30` (unless said) or `60`. |
 

@@ -63,7 +63,8 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
   const now = () => toWall(settings.now?.() ?? new Date(), zone);
   const zooms = (spec.zooms?.length ? spec.zooms : ALL_ZOOMS).filter((z, i, all) => all.indexOf(z) === i);
   let zoom: GanttZoom = spec.zoom && zooms.includes(spec.zoom) ? spec.zoom : zooms.includes('week') ? 'week' : zooms[0];
-  const firstDay = firstDayOf(locale, spec.firstDay);
+  // The page's own tag where it is shown in its own language (its region's week: en-GB's, not en's), else the language shown.
+  const firstDay = firstDayOf(page.language?.split('-')[0].toLowerCase() === locale ? page.language : locale, spec.firstDay);
   const limit = settings.limit ?? 500;
   const id = `fd-gantt-${++made}`;
   const rtl = () => element.closest('[dir]')?.getAttribute('dir') === 'rtl';
