@@ -108,6 +108,26 @@ describe('a list whose cells are changed in place', () => {
     expect(cell(host, 2, 'price').textContent).toContain('3,000');
   });
 
+  it('leaves a row saved as it was left as saved: Ctrl+Z takes no saved cell back — the row is changed again, as it was (0.31)', async () => {
+    const source = createMemoryDataSource({ records: records(), versions: true });
+    const host = await mount({ dataSource: source });
+    cell(host, 2, 'price').click();
+    await until(() => cell(host, 2, 'price').querySelector('input'));
+    type(cell(host, 2, 'price'), '3000');
+    leaveTo(cell(host, 3, 'name'));
+    await until(() => saves(source).length === 1);
+    await until(() => !row(host, 2).hasAttribute('data-changed'));
+    // The keys pressed where the person is, as Ctrl+Z, and on the list itself: nothing written, nothing taken back.
+    for (const target of [document.activeElement ?? host, host.querySelector('.fd-list') as Element]) {
+      target.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }));
+      await new Promise((done) => setTimeout(done, 20));
+    }
+    expect(saves(source)).toHaveLength(1);
+    expect(source.records['service']['2']['price']).toBe(3000);
+    expect(cell(host, 2, 'price').textContent).toContain('3,000');
+    expect(handle?.form.history().undo).toBeNull();
+  });
+
   it('keeps a row its page refuses as typed, says why under it, and puts it back on Put back', async () => {
     const source = createMemoryDataSource({ records: records(), versions: true });
     const host = await mount({ dataSource: source });

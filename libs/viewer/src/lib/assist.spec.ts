@@ -147,6 +147,30 @@ describe('Fill from text', () => {
     expect(proposal('email')).toBeNull();
   });
 
+  it('is one change to undo, whichever Undo is pressed — its own or the record’s, Ctrl+Z (0.31)', async () => {
+    await mount({ dataSource: source(), recordId: 1 });
+    const form = handle!.form;
+    const poll = async (check: () => unknown) => {
+      for (let turn = 0; turn < 200 && !check(); turn++) await new Promise((done) => setTimeout(done, 5));
+      expect(check()).toBeTruthy();
+    };
+    await fillFrom(SIGNATURE);
+    button('Accept', proposal('email') as HTMLElement)?.click();
+    await poll(() => form.history().undo);
+    expect(form.history().undo).toMatchObject({ field: 'email' });
+    // Its own Undo takes the change back in the record's history: nothing left there to take back again, Redo makes it again.
+    button('Undo', proposal('email') as HTMLElement)?.click();
+    expect(values()['email']).toBe('orders@deltafoods.example');
+    expect(form.history()).toMatchObject({ undo: null, redo: { field: 'email' } });
+    // Accepted again, then the record's Undo: the value back, and the proposal's note with its Undo gone with it.
+    await fillFrom(SIGNATURE);
+    button('Accept', proposal('email') as HTMLElement)?.click();
+    expect(values()['email']).toBe('mona.adel@niletraders.example');
+    expect(form.undo()).toMatchObject({ field: 'email' });
+    expect(values()['email']).toBe('orders@deltafoods.example');
+    expect(proposal('email')).toBeNull();
+  });
+
   it('keeps them all on Accept all — a line added, a link by its record — and Undo all puts them back', async () => {
     await mount({ dataSource: source(), recordId: 1 });
     await fillFrom(SIGNATURE);

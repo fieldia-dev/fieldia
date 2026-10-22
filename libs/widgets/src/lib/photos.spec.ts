@@ -120,6 +120,20 @@ describe('a photo set', () => {
     expect(value().map((p) => p.name)).toEqual(['Hall.jpg', 'Kitchen.jpg', 'Living room.jpg']);
   });
 
+  it('takes a photo moved back with the record’s Undo (Ctrl+Z), as one change (0.31)', async () => {
+    const { el, form, value } = setup();
+    opens(el)[0].focus();
+    key(opens(el)[0], 'ArrowRight', { altKey: true });
+    expect(value().map((p) => p.name)).toEqual(['Kitchen.jpg', 'Living room.jpg', 'Hall.jpg']);
+    await until(() => form.history().undo);
+    expect(form.history().undo).toMatchObject({ field: 'photos' });
+    expect(form.undo()).toMatchObject({ field: 'photos' });
+    expect(value().map((p) => p.name)).toEqual(ROOMS);
+    expect(labels(el)[0]).toBe('Living room.jpg, the cover, photo 1 of 3');
+    expect(form.redo()).toMatchObject({ field: 'photos' });
+    expect(value().map((p) => p.name)).toEqual(['Kitchen.jpg', 'Living room.jpg', 'Hall.jpg']);
+  });
+
   it('mirrors the arrows right to left, and says the moves in the page’s language', () => {
     const { el, value } = setup({ dir: 'rtl', locale: 'ar' });
     key(opens(el)[0], 'ArrowLeft', { altKey: true });

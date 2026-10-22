@@ -433,19 +433,28 @@ export function watchAssist(context: AssistContext): AssistKit {
     undoAll.focus();
   }
 
-  /** What was kept, put back — but where the person changed it since: their typing wins. */
+  /**
+   * What was kept, put back — but where the person changed it since: their typing wins. Where what it wrote is the change
+   * the record's Undo takes back next (Ctrl+Z), it is taken back there, so one Accept is one change to undo, whichever
+   * Undo the person presses — never a second change that the record's Undo would then take back again.
+   */
   function undo(entries: Kept[], focus: HTMLElement | null) {
     writing = true;
+    /** Whether the record's own Undo takes this change back next: then it is the one that does. */
+    const next = (field: string, line?: string) => {
+      const step = form.history().undo;
+      return !!step && step.field === field && step.line === line && !!form.undo();
+    };
     try {
-      for (const one of entries) {
+      // The last kept first: the record's history holds them in the order they were written.
+      for (const one of [...entries].reverse()) {
         kept.delete(one.field);
         if (one.lines) {
-          const lines = (form.getState().values[one.field] as Line[] | undefined) ?? [];
-          for (const added of one.lines) {
-            const line = lines.find((each) => each.key === added.key);
-            if (line && Object.entries(added.values).every(([name, value]) => sameValue(line.values[name], value))) form.removeLine(one.field, added.key);
+          for (const added of [...one.lines].reverse()) {
+            const line = ((form.getState().values[one.field] as Line[] | undefined) ?? []).find((each) => each.key === added.key);
+            if (line && Object.entries(added.values).every(([name, value]) => sameValue(line.values[name], value)) && !next(one.field, added.key)) form.removeLine(one.field, added.key);
           }
-        } else if (sameValue(form.getState().values[one.field], one.after)) form.setValue(one.field, (one.before ?? null) as Value);
+        } else if (sameValue(form.getState().values[one.field], one.after) && !next(one.field)) form.setValue(one.field, (one.before ?? null) as Value);
       }
     } finally {
       writing = false;

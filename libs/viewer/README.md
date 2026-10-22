@@ -409,6 +409,14 @@ the form — the box they are in known as it was entered, before they type.
 `keys: { undo: false }` leaves the keys to the browser alone; your own Undo
 button calls `form.undo()` (see `@fieldia/core`).
 
+With the other features: a photo set's move, cover or caption is a change
+Ctrl+Z takes back, as any field's; a value AI help proposed and the person
+accepted is one change — the proposal's own Undo or Ctrl+Z takes it back,
+whichever is pressed first, and the other has nothing of it left to take back
+(Redo makes it again); a list's cell changed in place is saved as its row is
+left, a save of its own, and Ctrl+Z takes no saved cell back — the cell is
+changed again, as it was.
+
 ## Record templates people save
 
 A page with `"templates": true` has a **Templates** menu over its record:
