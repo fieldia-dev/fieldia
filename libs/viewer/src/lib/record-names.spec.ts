@@ -16,7 +16,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 const named: PageRecords = { one: 'customer', other: 'customers', a: 'a customer' };
 
 const customer: Page = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'customer',
   title: 'Customer',
   data: { kind: 'record', model: 'partner' },

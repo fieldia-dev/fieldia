@@ -11,7 +11,7 @@ import { firstPaint, firstPaintStyles } from './server';
  */
 
 const page: Page = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'enquiry',
   title: 'Property enquiry',
   description: 'Tell us <what> you need',

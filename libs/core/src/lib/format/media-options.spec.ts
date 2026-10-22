@@ -10,7 +10,7 @@ import type { Page } from './page';
 
 const page = (options: Record<string, unknown>, field: Record<string, unknown> = {}): Page =>
   ({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'visit',
     data: { kind: 'record', model: 'visit' },
     fields: { notes: { type: 'binary', label: 'Voice notes', multiple: true, ...field }, unit: { type: 'char', label: 'Unit' } },
@@ -50,7 +50,7 @@ describe('a file field that records', () => {
 describe('a value shown as a code', () => {
   const coded = (widget: string, options: Record<string, unknown> | undefined, type = 'char'): Page =>
     ({
-      fieldia: '0.9',
+      fieldia: '0.10',
       id: 'ticket',
       data: { kind: 'record', model: 'ticket' },
       fields: { code: { type, label: 'Ticket' } },
@@ -73,7 +73,7 @@ describe('a value shown as a code', () => {
 describe('pins on a picture', () => {
   const pinned = (options: Record<string, unknown> | undefined, type = 'json'): Page =>
     ({
-      fieldia: '0.9',
+      fieldia: '0.10',
       id: 'chart',
       data: { kind: 'record', model: 'treatment' },
       fields: { points: { type, label: 'Injection points' }, plan: { type: 'image', label: 'Plan' } },

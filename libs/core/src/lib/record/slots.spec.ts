@@ -111,7 +111,7 @@ describe('the memory source’s free times, from a schedule', () => {
 });
 
 const BOOKING: Page = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'drive',
   timeZone: 'Europe/Berlin',
   data: { kind: 'record', model: 'drive' },

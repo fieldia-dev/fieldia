@@ -11,7 +11,7 @@ ${code(
   'json',
   `
 {
-  "fieldia": "0.9",
+  "fieldia": "0.10",
   "id": "customers",
   "title": "Customers",
   "data": { "kind": "record", "model": "partner" },

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.9",
+  "fieldia": "0.10",
   "id": "viewing-report",
   "title": "Viewing report",
   "description": "A broker’s report from a viewing in a compound with no signal: it is kept on the phone and sent when the signal comes back.",

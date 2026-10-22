@@ -17,7 +17,7 @@ const photo = (name: string): FileValue => ({ name, type: 'image/jpeg', size: 5,
 
 function listing(drawnAs: string | undefined, field: Record<string, unknown> = { type: 'image', label: 'Photos', multiple: true }) {
   const page = {
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'listing',
     data: { kind: 'responses' },
     fields: { photos: field as Field },

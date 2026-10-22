@@ -2,7 +2,7 @@ import type { Page, Values } from '@fieldia/core';
 
 /** A property enquiry, as a site's server and the browser both read it (server.ts draws its first paint, main.ts mounts over it). */
 export const page: Page = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'enquiry',
   title: 'Property enquiry',
   description: 'Drawn by the server first, then made live in the browser — what you type meanwhile is kept.',

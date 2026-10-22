@@ -4,7 +4,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 /** A log of what the team did, a hundred entries, loaded as it is scrolled, ten at a time. */
 const log: Page = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'log',
   title: 'Activity',
   records: { one: 'entry', other: 'entries' },

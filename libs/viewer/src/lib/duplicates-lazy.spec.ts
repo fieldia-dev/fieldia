@@ -10,7 +10,7 @@ import { duplicatesPart, partsFor } from './viewer-parts';
 
 const page = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'card',
     data: { kind: 'record', model: 'partner' },
     fields: { name: { type: 'char', label: 'Name' }, phone: { type: 'char', label: 'Phone' } },

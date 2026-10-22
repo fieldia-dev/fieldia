@@ -7,7 +7,7 @@ import { checkPage, validatePage, type Page } from '../../index';
 
 const page = (options?: Record<string, unknown>, photos: Record<string, unknown> = { type: 'image', label: 'Photos', multiple: true, maxFiles: 12 }): Page =>
   ({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'listing',
     data: { kind: 'record', model: 'listing' },
     fields: { name: { type: 'char', label: 'Title' }, photos, plan: { type: 'binary', label: 'Floor plan' } },

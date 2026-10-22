@@ -4,7 +4,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
 /** Who else has the record open, over it; a change made elsewhere laid on it and said, or the conflict's banner after a change of the person's. */
 
 const page = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'course',
   title: 'Treatment course',
   data: { kind: 'record', model: 'course' },

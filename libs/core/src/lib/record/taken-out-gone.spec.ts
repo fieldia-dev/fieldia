@@ -10,7 +10,7 @@ import { createForm, type DataSource, type Line, type Option, type Page, type Va
  */
 
 const unit = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'unit',
   data: { kind: 'record', model: 'unit' },
   fields: {
@@ -30,7 +30,7 @@ const unit = {
 } as Page;
 
 const visit = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'visit',
   data: { kind: 'responses' },
   fields: {
@@ -105,7 +105,7 @@ function lists() {
 describe('a note of a choice the app’s list no longer offers goes once the list offers it again', () => {
   const CITIES: Record<string, Option[]> = { eg: [{ value: 'cai', label: 'Cairo' }], jo: [{ value: 'amm', label: 'Amman' }] };
   const sites = {
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'sites',
     data: { kind: 'record', model: 'site' },
     fields: {
@@ -136,7 +136,7 @@ describe('a note of a choice the app’s list no longer offers goes once the lis
   it('a line’s tool: taken out as its connection changed, said no more once the first connection is back', async () => {
     const TOOLS: Record<string, Option[]> = { 1: [{ value: 'send_email', label: 'Send email' }], 2: [{ value: 'post_message', label: 'Post message' }] };
     const agent = {
-      fieldia: '0.9',
+      fieldia: '0.10',
       id: 'agent',
       data: { kind: 'record', model: 'agent' },
       fields: {

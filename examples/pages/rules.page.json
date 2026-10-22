@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.9",
+  "fieldia": "0.10",
   "id": "supplies-order",
   "title": "Office supplies order",
   "description": "Totals work themselves out as you type. An order over EGP 1,000 gets 10% off, which you may still change.",

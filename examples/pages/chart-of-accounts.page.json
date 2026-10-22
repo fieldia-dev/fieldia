@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.9",
+  "fieldia": "0.10",
   "id": "chart-of-accounts",
   "title": "Chart of accounts",
   "description": "A trading company's 240 accounts under their classes and groups: the classes a page at a time, each group's accounts asked as it opens — so a group of 60 bank accounts never splits across pages — and a search finding an account whatever its depth, its parent named.",

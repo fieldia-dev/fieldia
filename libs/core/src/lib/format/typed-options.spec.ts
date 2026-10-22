@@ -3,7 +3,7 @@ import { validatePage } from './validate';
 /** A mask and a one-time code's settings, as the format takes and refuses them. */
 
 const page = (node: Record<string, unknown>): unknown => ({
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'typed',
   data: { kind: 'responses' },
   fields: { id_number: { type: 'char', label: 'National ID' } },
@@ -40,7 +40,7 @@ describe('a mask and a one-time code in the format', () => {
 
 describe('a checkbox tree in the format', () => {
   const tree = (options: Record<string, unknown>): unknown => ({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'alert',
     data: { kind: 'responses' },
     fields: { areas: { type: 'many2many', label: 'Areas', relation: 'area' } },

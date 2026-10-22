@@ -34,7 +34,11 @@ export interface PageUpgrade {
  * `searchToFilter`, a text's `translate` and `requiredIn`, a page's `suggest`, a text field's `options.rewrite`, a
  * photo set's options and a field's `options.scan` — so a 0.7 page is a 0.8 page as it is; and 0.9 (Fieldia 0.30) only
  * added — a menu item's `type: "divider"`, its own `menu` and `menuFrom`, a formatted text's `options.edit` — so a 0.8
- * page is a 0.9 page as it is. A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
+ * page is a 0.9 page as it is; and 0.10 (Fieldia 0.31) only added — a list's `detail`, `sequenceField`, `endless`,
+ * `loadChildren` and `gantt`, a date's `precision` and `hijri`, an option's `caption`, `icon` and `color`, a page's
+ * `quiz`, `review`, `flow`, `timeLimit`, `prefill`, `payment`, `outbox` and `templates`, a question's points and
+ * feedback, a step's and a group's `order`, `draw` and `fixed`, a button's `undo` — so a 0.9 page is a 0.10 page as it
+ * is (and 0.10 is after 0.9: versions compare as numbers, `compareFormats`). A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
  * none: the page is the same, and upgradePage writes the new version in it.
  */
 export const PAGE_UPGRADES: readonly PageUpgrade[] = [];

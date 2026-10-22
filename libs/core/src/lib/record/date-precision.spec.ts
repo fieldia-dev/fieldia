@@ -12,7 +12,7 @@ import { MESSAGES } from './messages';
  */
 
 const page = (field: Record<string, unknown>): unknown => ({
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'dates',
   data: { kind: 'responses' },
   fields: { when: { type: 'date', label: 'Billing month', ...field } },

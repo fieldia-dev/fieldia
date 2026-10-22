@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.9",
+  "fieldia": "0.10",
   "id": "map-zones",
   "title": "Orders this week, by district",
   "description": "Each district is shaded by how many of the week's orders it has: the legend says how many each shade means. A round mark with a number counts the orders close together on the map, whichever district they are in; zoom in and it parts into each order. Press a district to list its orders.",

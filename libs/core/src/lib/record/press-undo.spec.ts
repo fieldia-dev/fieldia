@@ -13,7 +13,7 @@ import type { Values } from './values';
 
 function page(buttons: object[], menu: object[] = []): Page {
   const checked = validatePage({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'followup',
     title: 'Follow-up',
     data: { kind: 'record', model: 'followup' },

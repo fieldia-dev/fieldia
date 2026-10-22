@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.9",
+  "fieldia": "0.10",
   "id": "staff-hours",
   "title": "Staff hours this week",
   "description": "A front desk's week: each person's hours by day changed in place as hours and minutes, the week added up as they are typed, and a week over 48 hours refused by the server with why, under its row.",

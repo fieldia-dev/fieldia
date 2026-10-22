@@ -13,7 +13,7 @@ import { FieldiaForm } from './fieldia-form';
  */
 
 const page: Page = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'enquiry',
   title: 'Property enquiry',
   data: { kind: 'record', model: 'crm.enquiry' },

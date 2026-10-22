@@ -19,7 +19,7 @@ import { approvalOf, approvalStatus, approvalWhen } from './form-approvals';
 
 const order = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'purchase-order',
     data: { kind: 'record', model: 'purchase.order' },
     fields: {

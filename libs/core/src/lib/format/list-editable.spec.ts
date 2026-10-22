@@ -19,7 +19,7 @@ const fields = {
 };
 
 const page = (list: Record<string, unknown>, columns = ['name', 'price', 'minutes', 'per_hour', 'code', 'lines', 'photo', 'kind']) => ({
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'prices',
   data: { kind: 'record', model: 'service' },
   fields,

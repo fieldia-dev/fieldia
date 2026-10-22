@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.9",
+  "fieldia": "0.10",
   "id": "event-ticket",
   "title": "Ticket",
   "description": "A ticket to an event, kept for the person who signed up: its code shown at the door, scanned from the screen, and a link to open it on a phone.",

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.9",
+  "fieldia": "0.10",
   "id": "clinic-branch",
   "title": "Clinic branch",
   "records": { "one": "branch", "other": "branches", "a": "a branch" },

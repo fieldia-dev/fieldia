@@ -11,7 +11,7 @@ import { createMemoryDataSource } from './memory-data-source';
 
 const customer = (filter?: unknown[]): Page => {
   const checked = validatePage({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'customer',
     data: { kind: 'record', model: 'partner' },
     fields: { name: { type: 'char', label: 'Name' }, company_id: { type: 'many2one', label: 'Company', relation: 'company' } },

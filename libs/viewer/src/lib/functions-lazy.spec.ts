@@ -10,7 +10,7 @@ import { partsFor } from './viewer-parts';
 
 const page = (compute: string): Page =>
   ({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'visit',
     data: { kind: 'responses' },
     fields: {

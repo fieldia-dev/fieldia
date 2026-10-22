@@ -16,7 +16,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 const SVG = 'data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E';
 const homes: Page = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'homes',
   title: 'Homes',
   data: { kind: 'record', model: 'home' },

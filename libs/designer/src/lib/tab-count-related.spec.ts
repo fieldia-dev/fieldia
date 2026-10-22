@@ -9,7 +9,7 @@ import { choose, field, mount, openTab } from './test-editor';
 
 function customer(): Page {
   return {
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'customer',
     title: 'Customer',
     data: { kind: 'record', model: 'partner' },

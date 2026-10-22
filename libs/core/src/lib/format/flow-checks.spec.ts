@@ -6,7 +6,7 @@ import { createForm } from '../record/form';
 /** How a page of responses is gone through, as its check reads it: a review before sending on a page of responses only. */
 
 const intake = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'intake',
   data: { kind: 'responses' },
   fields: { name: { type: 'char', label: 'Your name' } },

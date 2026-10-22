@@ -10,7 +10,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
 
 const homes = (search: 'bar' | 'fields' = 'bar', on = true): Page =>
   ({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'homes',
     data: { kind: 'record', model: 'home' },
     fields: {

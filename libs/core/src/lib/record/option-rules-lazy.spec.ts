@@ -12,7 +12,7 @@ import { createMemoryDataSource } from './memory-data-source';
 
 const listing = (): Page =>
   ({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'listing',
     data: { kind: 'responses' },
     fields: {

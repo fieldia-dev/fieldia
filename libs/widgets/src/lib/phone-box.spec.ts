@@ -13,7 +13,7 @@ const FIELD: Field = { type: 'char', label: 'Mobile' };
 
 function mount(node: Partial<FieldNode> = {}, options: { phone?: Page['phone']; locale?: Locale; value?: string | null } = {}) {
   const page = {
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 't',
     data: { kind: 'responses' },
     fields: { mobile: FIELD },

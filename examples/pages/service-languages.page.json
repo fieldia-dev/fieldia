@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.9",
+  "fieldia": "0.10",
   "id": "service-languages",
   "title": "A service",
   "description": "One of a clinic's services: its name typed in English and in Arabic, both required, as the booking desk and the clinic's site show it.",

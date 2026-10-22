@@ -83,7 +83,7 @@ describe("a calendar's days", () => {
   });
 
   it('is on the zone its start names, else its page’s, else the reader’s own', () => {
-    const page = { fieldia: '0.9', id: 'p', timeZone: 'Africa/Cairo', data: { kind: 'record', model: 'm' }, fields: { at: { type: 'datetime', label: 'At', timeZone: 'Asia/Tokyo' }, plain: { type: 'datetime', label: 'Plain' }, day: { type: 'date', label: 'Day' } }, layout: { type: 'list', id: 'l', columns: [] } } as unknown as Page;
+    const page = { fieldia: '0.10', id: 'p', timeZone: 'Africa/Cairo', data: { kind: 'record', model: 'm' }, fields: { at: { type: 'datetime', label: 'At', timeZone: 'Asia/Tokyo' }, plain: { type: 'datetime', label: 'Plain' }, day: { type: 'date', label: 'Day' } }, layout: { type: 'list', id: 'l', columns: [] } } as unknown as Page;
     expect(zoneOfCalendar(page, { start: 'at' })).toBe('Asia/Tokyo');
     expect(zoneOfCalendar(page, { start: 'plain' })).toBe('Africa/Cairo');
     expect(zoneOfCalendar(page, { start: 'day' })).toBe('Africa/Cairo');

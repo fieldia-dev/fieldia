@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.9",
+  "fieldia": "0.10",
   "id": "service-prices",
   "title": "Service prices",
   "description": "A clinic's price list kept as a list: each price, length and who does it changed in its cell, each row saved as you leave it, a service added at the end, and rows pasted from a spreadsheet.",

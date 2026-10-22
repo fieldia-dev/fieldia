@@ -76,7 +76,7 @@ function customer(has) {
     has.company && node('vat', { invisible: 'not company', required: 'company' }),
   ].filter(Boolean);
   return {
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'customer',
     title: 'Customer',
     data: { kind: 'record', model: 'customer' },
@@ -143,7 +143,7 @@ function customer(has) {
 /** A list of invoices, with what it has so far. */
 function invoices(has) {
   return {
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'invoices',
     title: 'Invoices',
     data: { kind: 'record', model: 'invoice' },
@@ -179,7 +179,7 @@ function invoices(has) {
 /** Homes for sale on a map, with what it has so far. */
 function homes(has) {
   return {
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'homes',
     title: 'Homes for sale',
     data: { kind: 'record', model: 'home' },
@@ -208,7 +208,7 @@ function homes(has) {
 function booking(has) {
   const slots = has.slots ? { widget: 'slots', options: { schedule: 'showroom', length: 45, ...(has.end ? { endField: 'stop' } : {}) } } : {};
   return {
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'test-drive',
     title: 'Book a test drive',
     ...(has.zone ? { timeZone: 'Europe/Berlin' } : {}),

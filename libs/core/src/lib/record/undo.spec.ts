@@ -11,7 +11,7 @@ import type { Line, Values } from './values';
  */
 
 const checked = validatePage({
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'quote',
   title: 'Quote',
   data: { kind: 'record', model: 'quote' },

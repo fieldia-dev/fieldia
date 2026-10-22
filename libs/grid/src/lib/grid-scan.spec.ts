@@ -10,7 +10,7 @@ import { gridApiOf, gridWidgets } from './grid';
  */
 
 const page: Page = {
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'stock',
   data: { kind: 'record', model: 'stock.move' },
   fields: {

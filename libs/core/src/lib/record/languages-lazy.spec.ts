@@ -12,7 +12,7 @@ import { createMemoryDataSource } from './memory-data-source';
 
 const page = (translate = true): Page =>
   ({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'service',
     data: { kind: 'record', model: 'service' },
     fields: { name: { type: 'char', label: 'Service', required: true, ...(translate ? { translate: ['en', 'ar'] } : {}) } },

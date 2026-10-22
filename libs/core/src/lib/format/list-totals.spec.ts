@@ -17,7 +17,7 @@ const fields = {
   hours: { type: 'float', label: 'Hours' },
 };
 const page = (list: Record<string, unknown>) => ({
-  fieldia: '0.9',
+  fieldia: '0.10',
   id: 'invoices',
   data: { kind: 'record', model: 'invoice' },
   fields,

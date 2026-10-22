@@ -12,7 +12,7 @@ import { choiceTagsWidget, searchWidget } from './choice-tags';
 
 const page = (multiple = false): Page =>
   ({
-    fieldia: '0.9',
+    fieldia: '0.10',
     id: 'event-signup',
     data: { kind: 'responses' },
     fields: {
