@@ -35,6 +35,8 @@ export const toolbox: DesignerWords['toolbox'] = {
   data: 'داده',
   besideThePage: 'کنار صفحه',
   railLabel: 'افزودن، ساختار و داده',
+  openToolbox: 'باز کردن جعبه‌ابزار',
+  closeToolbox: 'بستن جعبه‌ابزار',
   responses: 'پاسخ‌ها این‌گونه نگه‌داری می‌شوند:',
   responsesModel: 'یک رکورد برای هر فرد، یک فیلد برای هر پرسش',
   surveyFields: 'نظرسنجی فیلدهای خودش را می‌سازد: هر پرسشی که افزوده می‌شود فیلدی تازه است، پس همهٔ نوع‌ها ارائه می‌شوند.',

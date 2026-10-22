@@ -55,4 +55,6 @@ export const bar: DesignerWords['bar'] = {
   advanced: 'Gelişmiş',
   simpleTitle: 'Basit: bir öğe seçin ve olduğu yerde düzenleyin',
   advancedTitle: 'Gelişmiş: öğeleri başka öğelerin yanına, altına ya da arasına bırakın, genişlikleri ayarlayın, birkaçını seçin',
+  more: 'Daha fazla',
+  moreTitle: 'Durum, Her şeyde ara, Geri al, görünümler, Görünüm ve Denetimler',
 };

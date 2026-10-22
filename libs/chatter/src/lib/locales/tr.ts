@@ -85,6 +85,8 @@ export const tr: ChatterLabels = {
   toWhom: 'Alıcı: {to}',
   writeBy: '{channel} ile mesaj yazın…',
   sendByChannel: '{channel} ile gönder',
+  typeMessageFirst: 'Önce bir mesaj yazın',
+  typeNoteFirst: 'Önce bir not yazın',
   sending: 'Gönderiliyor',
   sent: 'Gönderildi',
   delivered: 'İletildi',
@@ -99,6 +101,7 @@ export const tr: ChatterLabels = {
   overdueSince: '{when} itibarıyla gecikmiş',
   dueTime: 'Saat',
   approvalAsked: 'Onay istendi',
-  approvalApproved: '{level} için onaylandı',
-  approvalRejected: '{level} için reddedildi',
+  approvalApproved: 'Onaylandı ({level})',
+  approvalRejected: 'Reddedildi ({level})',
+  approvalNotNeeded: 'Onay gerekmiyor',
 };

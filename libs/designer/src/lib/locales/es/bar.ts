@@ -66,4 +66,6 @@ export const bar: DesignerWords['bar'] = {
   advanced: 'Avanzado',
   simpleTitle: 'Sencillo: seleccione un elemento y edítelo donde está',
   advancedTitle: 'Avanzado: suelte elementos junto a otros, debajo o entre ellos, defina anchos y seleccione varios',
+  more: 'Más',
+  moreTitle: 'Estado, Buscar cualquier cosa, Deshacer, las vistas, Apariencia y Comprobaciones',
 };

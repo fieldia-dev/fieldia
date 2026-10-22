@@ -32,6 +32,8 @@ export const toolbox: DesignerWords['toolbox'] = {
   data: 'Veri',
   besideThePage: 'Sayfanın yanında',
   railLabel: 'Ekle, ana hat ve veri',
+  openToolbox: 'Araç kutusunu aç',
+  closeToolbox: 'Araç kutusunu kapat',
   responses: 'Yanıtlar şöyle saklanır:',
   responsesModel: 'her kişi için bir kayıt, her soru için bir alan',
   surveyFields: 'Anket kendi alanlarını oluşturur: eklenen her soru yeni bir alandır, bu yüzden tüm türler sunulur.',

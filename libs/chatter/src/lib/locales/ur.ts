@@ -85,6 +85,8 @@ export const ur: ChatterLabels = {
   toWhom: 'بنام {to}',
   writeBy: '{channel} کے ذریعے پیغام…',
   sendByChannel: '{channel} کے ذریعے بھیجیں',
+  typeMessageFirst: 'پہلے پیغام لکھیں',
+  typeNoteFirst: 'پہلے نوٹ لکھیں',
   sending: 'بھیجا جا رہا ہے',
   sent: 'بھیج دیا گیا',
   delivered: 'پہنچ گیا',
@@ -99,6 +101,7 @@ export const ur: ChatterLabels = {
   overdueSince: '{when} سے تاخیر شدہ',
   dueTime: 'وقت',
   approvalAsked: 'منظوری کی درخواست کی',
-  approvalApproved: '{level} کی جانب سے منظور کیا',
-  approvalRejected: '{level} کی جانب سے مسترد کیا',
+  approvalApproved: 'منظور کیا ({level})',
+  approvalRejected: 'مسترد کیا ({level})',
+  approvalNotNeeded: 'منظوری کی ضرورت نہیں',
 };

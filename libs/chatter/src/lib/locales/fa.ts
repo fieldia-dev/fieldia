@@ -82,6 +82,8 @@ export const fa: ChatterLabels = {
   toWhom: 'به {to}',
   writeBy: 'پیام از طریق {channel}…',
   sendByChannel: 'ارسال از طریق {channel}',
+  typeMessageFirst: 'ابتدا پیامی بنویسید',
+  typeNoteFirst: 'ابتدا یادداشتی بنویسید',
   sending: 'در حال ارسال',
   sent: 'ارسال شد',
   delivered: 'تحویل شد',
@@ -96,6 +98,7 @@ export const fa: ChatterLabels = {
   overdueSince: 'سررسید از {when} گذشته است',
   dueTime: 'ساعت',
   approvalAsked: 'درخواست تأیید کرد',
-  approvalApproved: 'برای {level} تأیید شد',
-  approvalRejected: 'برای {level} رد شد',
+  approvalApproved: 'تأیید شد ({level})',
+  approvalRejected: 'رد شد ({level})',
+  approvalNotNeeded: 'نیازی به تأیید نیست',
 };

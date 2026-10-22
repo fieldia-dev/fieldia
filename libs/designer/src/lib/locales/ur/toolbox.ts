@@ -32,6 +32,8 @@ export const toolbox: DesignerWords['toolbox'] = {
   data: 'ڈیٹا',
   besideThePage: 'صفحے کے ساتھ',
   railLabel: 'شامل کریں، خاکہ اور ڈیٹا',
+  openToolbox: 'ٹول باکس کھولیں',
+  closeToolbox: 'ٹول باکس بند کریں',
   responses: 'جوابات اس طرح محفوظ ہوتے ہیں:',
   responsesModel: 'ہر شخص کا ایک ریکارڈ، ہر سوال کی ایک فیلڈ',
   surveyFields: 'سروے اپنی فیلڈز خود بناتا ہے: شامل کیا گیا ہر سوال ایک نئی فیلڈ ہے، اس لیے ہر قسم پیش کی جاتی ہے۔',

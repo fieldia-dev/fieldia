@@ -82,6 +82,8 @@ export const es: ChatterLabels = {
   toWhom: 'Para {to}',
   writeBy: 'Mensaje por {channel}…',
   sendByChannel: 'Enviar por {channel}',
+  typeMessageFirst: 'Escriba primero un mensaje',
+  typeNoteFirst: 'Escriba primero una nota',
   sending: 'Enviando',
   sent: 'Enviado',
   delivered: 'Entregado',
@@ -96,6 +98,7 @@ export const es: ChatterLabels = {
   overdueSince: 'Vencida desde {when}',
   dueTime: 'Hora',
   approvalAsked: 'Solicitó la aprobación',
-  approvalApproved: 'Aprobó en el nivel {level}',
-  approvalRejected: 'Rechazó en el nivel {level}',
+  approvalApproved: 'Aprobó ({level})',
+  approvalRejected: 'Rechazó ({level})',
+  approvalNotNeeded: 'No se necesita aprobación',
 };

@@ -35,6 +35,8 @@ export const toolbox: DesignerWords['toolbox'] = {
   data: 'Datos',
   besideThePage: 'Junto a la página',
   railLabel: 'Añadir, esquema y datos',
+  openToolbox: 'Abrir las herramientas',
+  closeToolbox: 'Cerrar las herramientas',
   // "Answers are kept as responses": answer and response are one word in Spanish, so it says how they are kept.
   responses: 'Las respuestas se guardan así:',
   responsesModel: 'un registro por persona, un campo por pregunta',
