@@ -5,13 +5,12 @@ import type { Make } from './kind-parts';
 /**
  * What an option says beside its words where its page gives it more (field.ts `Option`): an icon or its colour's dot
  * before them, and a second line under them — a service's length and price, a staff member's role, a stage's colour.
- * Radios and checkboxes draw them (widgets.ts), and Fieldia's own lists (own-list.ts, choice-tags.ts); the browser's
- * own list, which shows one line of words, is never used for a choice whose options have any.
+ * Radios and checkboxes draw them (widgets.ts, given these by the choice part, which a page whose options have any asks
+ * for), and Fieldia's own lists (own-list.ts, choice-tags.ts); the browser's own list, which shows one line of words, is
+ * never used for a choice whose options have any. Their rules are the main sheet's: a link's suggestions draw them too.
  */
 export type OptionLook = Pick<Option, 'caption' | 'icon' | 'color'>;
 
-/** Whether any of a choice's options says more than its words. */
-export const optionsLook = (options: readonly OptionLook[]): boolean => options.some((option) => !!(option.caption || option.icon || option.color));
 
 /** The mark before an option's words: its icon (in its colour, where it has one), else its colour's dot; null for neither. */
 export function optionMark(make: Make, option: OptionLook): HTMLElement | null {

@@ -9,3 +9,5 @@
  */
 export { ownListWidget } from './own-list';
 export { choiceTagsWidget, searchWidget } from './choice-tags';
+// An option's mark and second line, for radios and checkboxes whose options say more (widgets.ts's `choiceGroup`).
+export { optionCaption, optionMark } from './option-look';

@@ -37,9 +37,8 @@ import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
-import { optionCaption, optionMark, optionsLook } from './option-look';
 import { stateDotWidget } from './state-dot';
-import { anyText, businessPart, choicePart, codesPart, datePart, pinsPart, filesPart, languagesPart, linesPart, monthsPart, typedPart, partFactory, partWidget, pathPart, phonePart, photosPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { anyText, businessPart, choicePart, codesPart, datePart, pinsPart, filesPart, languagesPart, linesPart, monthsPart, typedPart, partFactory, partWidget, pathPart, phonePart, photosPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, type BusinessPart, type ChoicePart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTimer, plainTotal } from './business-plain';
 import { plainAddress, plainChosen, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
@@ -698,7 +697,10 @@ const selectWidget: WidgetFactory = (context) => {
   };
 };
 
-function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
+/** What draws an option that says more than its words: the choice part's, where a page's options have any (option-look.ts). */
+type OptionLooks = Pick<ChoicePart, 'optionMark' | 'optionCaption'>;
+
+function choiceGroup(kind: 'radio' | 'checkbox', looks?: OptionLooks): WidgetFactory {
   return ({ form, name, field, node, id, document, labels, locale }) => {
     // Shown shuffled when the page asks; "Other" comes after them all the same.
     const choices = shownOptions(options(field), form, name, node);
@@ -713,9 +715,9 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       const input = make(document, 'input', { type: kind, name: id, value: String(i), id: `${id}-${i}` });
       optionWords.push(make(document, 'span', {}, option.label));
       // Its icon or colour before its words, and its second line under them, where the page gives them.
-      const caption = optionCaption(maker(document), option, `${id}-${i}-more`);
+      const caption = looks?.optionCaption(maker(document), option, `${id}-${i}-more`) ?? null;
       if (caption) input.setAttribute('aria-describedby', caption.id);
-      const mark = optionMark(maker(document), option);
+      const mark = looks?.optionMark(maker(document), option) ?? null;
       const words = caption ? make(document, 'span', { class: 'fd-choice-text' }, optionWords[i], caption) : optionWords[i];
       group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, ...(mark ? [mark] : []), words, seats.marks[i]));
       return input;
@@ -911,6 +913,14 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
 // which comes in the date part: a plain box of the same reader meanwhile. A date and time is shown in local time, stored
 // as an ISO instant in UTC.
 const dateBoxOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateBoxWidget(kind), plainDateWidget(kind));
+/**
+ * Whether any of a choice's options says more than its words (option-look.ts): its mark and its second line are the
+ * choice part's then — a page whose options say nothing more never carries them.
+ */
+const optionsLook = (options: readonly { caption?: unknown; icon?: unknown; color?: unknown }[]): boolean => options.some((option) => !!(option.caption || option.icon || option.color));
+/** Radios or checkboxes, drawn by the main script, an option's mark and second line by the choice part where any has one. */
+const lookingChoices = (kind: 'radio' | 'checkbox'): PartFactory => partFactory(choicePart, (part) => choiceGroup(kind, part), choiceGroup(kind), (_node, _page, field) => !!field && optionsLook(options(field)));
+
 /** A date of a month alone, a year alone, or with the Hijri calendar beside it: the date part's box, the months part's with it. */
 const monthsDate = (field?: Field) => field?.type === 'date' && (!!field.precision || field.hijri === true);
 const datesWithMonths = partWith(datePart, monthsPart);
@@ -1131,8 +1141,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   // it is typed (choice-tags.ts): the choice part's, the browser's own list meanwhile.
   // A choice whose options say more than their words (a second line, an icon, a colour) is Fieldia's own list too.
   selection: partFactory(choicePart, (part) => (context) => (ownList(context.node) || !searched(context.node, context.field) ? part.ownListWidget : part.searchWidget)(context), (context) => selectWidget(context), (node, _page, field) => ownList(node) || searched(node, field) || (!!field && optionsLook(options(field)))),
-  'selection.radio': choiceGroup('radio'),
-  'selection.checkboxes': choiceGroup('checkbox'),
+  // Radios and checkboxes whose options say more than their words: their marks and second lines the choice part's.
+  'selection.radio': lookingChoices('radio'),
+  'selection.checkboxes': lookingChoices('checkbox'),
   // Several answers as tags in a box (choice-tags.ts), in the choice part: their words meanwhile.
   'selection.tags': partFactory(choicePart, (part) => part.choiceTagsWidget, plainChosen),
   'selection.image-choice': surveyKind((part) => part.imageChoiceWidget, (context) => choiceGroup(context.field.type === 'selection' && context.field.multiple ? 'checkbox' : 'radio')(context)),
