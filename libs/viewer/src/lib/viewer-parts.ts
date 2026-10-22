@@ -362,6 +362,9 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   // The parts that join its form — the fields its link fills, proof by a code, a payment, an outbox, a survey's flow, a
   // record's approvals — and what each draws with the page.
   for (const part of formJoins(page)) found.add(joinDrawings[part.name] ?? part).add(part);
+  // A page that keeps its sends without signal (`outbox`): Undo with its other parts, while the signal is there — asked
+  // for as the person first enters the form, as on any other page, it would be fetched with none.
+  if (page.outbox) found.add(undoPart);
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];

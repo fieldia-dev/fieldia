@@ -1,5 +1,6 @@
 import { createMemoryDataSource, memoryOutbox, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from './viewer';
+import { partsFor, undoPart } from './viewer-parts';
 
 /**
  * An offline outbox, as the viewer says it (the outbox part): a response sent without signal ends "Kept on this
@@ -28,6 +29,11 @@ const settled = async () => {
 };
 
 describe('an offline outbox on screen', () => {
+  it('asks for Undo with its parts, while the signal is there, never as the person first enters the form (0.31)', () => {
+    expect(partsFor(visit)).toContain(undoPart);
+    expect(partsFor({ ...visit, outbox: undefined })).not.toContain(undoPart);
+  });
+
   it('says a response is kept on this device, what waits, and sends it as the signal comes back', async () => {
     let off = true;
     const dataSource = createMemoryDataSource({ offline: () => off });

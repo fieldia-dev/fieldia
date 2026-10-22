@@ -1336,7 +1336,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 296 bytes). 511.33 measured before, 511.62 after, to 511.7.
 // 0.30.1 merged into 0.31 — the owner's walk of 0.29 mended and a question's Yes naming what it does, 0.40 KB and 0.15
 // gzipped in 0.30.1 itself, each for every page as it was there: 519.22 measured before, 519.60 after, to 519.6.
-const BUDGET_KB = 519.6;
+// A page that keeps its sends without signal asks for Undo with its other parts, while the signal is there
+// (viewer-parts.ts, 20 bytes): 519.60 measured before, 519.62 after, to 519.7.
+const BUDGET_KB = 519.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -3038,7 +3040,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   ticket.destroy();
   gone('ticket');
   // A treatment's face chart (0.31): the pins part — in since the site visit's floor plan — draws each pin, named.
-  const chart = inPage.mountViewer(host, { page: read('face-chart.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.treatment': { 1: { patient: 'Hana Fouad', injections: [{ x: 0.4, y: 0.29, note: 'Botox, 4 units' }] } } } }) });
+  const chart = inPage.mountViewer(host, { page: read('face-chart.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.chart': { 1: { patient: 'Hana Fouad', injections: [{ x: 0.4, y: 0.29, note: 'Botox, 4 units' }] } } } }) });
   await chart.drawn;
   hasIn("a treatment's face chart", 'business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, lines, list, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('[data-node="f-injections"] .fd-pin')?.getAttribute('aria-label') === 'Pin 1, top, 40% across, 29% down: Botox, 4 units'))) throw new Error(`in a page, a face chart's pins are not drawn: ${host.querySelector('.fd-pins')?.outerHTML.slice(0, 200) ?? 'none'}`);
