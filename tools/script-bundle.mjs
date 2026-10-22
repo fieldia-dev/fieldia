@@ -183,6 +183,7 @@ const CHECKS_IN_PARTS = {
   languages: { file: 'libs/core/src/lib/format/languages-checks.ts', names: ['checkLanguages'] },
   assist: { file: 'libs/core/src/lib/format/assist-checks.ts', names: ['checkSuggest', 'checkRewrite'] },
   scan: { file: 'libs/core/src/lib/format/scan-checks.ts', names: ['checkScan'] },
+  surveyflow: { file: 'libs/core/src/lib/format/flow-checks.ts', names: ['checkSurveyFlow'] },
 };
 const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
 const checksLater = {
@@ -1124,8 +1125,33 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // line hidden from its name and named by its input's aria-describedby (widgets.ts, option-look.ts, 0.09) — as a link's
 // suggestion is named by its record's name again, its details and aside describing it, in the relations part: 509.68
 // measured before, 509.77 after, to 509.8.
-// Merged (0.31.0), with w6-inputs: 514.54 measured, to 514.6.
-const BUDGET_KB = 514.6;
+// Wave 6's survey flow, what every page of the form needs of it (lane w6-survey-flow), each item measured after the one
+// before: a quiz's results — the form asking for the survey part's marking as it opens and keeping its results as the
+// answers go (0.14), the done screen handing them to the survey part (0.12), the survey part named among the page's
+// (0.08) and its checks owed to it (0.10, the reference check's call 0.10) — 506.76 measured before, 507.44 after, to 507.5;
+// a review before sending — the survey's flow made as its questions are drawn, a send waiting for its review and a
+// refused one going back to its question (0.28), the last button's words the flow's own (0.03), the survey part named for
+// a page with a review (0.07) — 507.75 after, to 507.8; one question at a time — the page's submit and Ctrl+Enter going
+// on through the survey's flow where it asks one at a time (0.03 less than the two ways they went), the survey part named
+// for it (0.02) and its check owed (0.02) — 507.83 after, to 507.9; questions in an order drawn and N of M — the form
+// drawing as it opens or as its survey part comes, its steps following the draw, a part not drawn hidden and never
+// asked, the draw kept in drafts and laid again, sent with the answers and drawn anew for another response (0.94), the
+// page's draw found (0.10), its checks owed (0.07), a step's place in the list of steps (0.02) — 508.96 after, to 509.0;
+// a time limit, and the draw with it behind one hook the survey part fills (survey-kit.ts): the form asks its kit
+// whether a part is left out or locked, what a draft keeps and lays, what a send tells, a response started again, a
+// step entered, Start and the countdown — the draw's working out (its steps, the parts left out, a draft's draw checked)
+// moved into the part with the clocks — 508.90 after, to 509.0 (the draw alone measured 508.96). The survey flow in a
+// part of its own (fieldia.surveyflow.js), what only its pages need there behind the form's kit and the viewer's: one
+// test of a page for the whole flow where three stood, the draw's and the clocks' tests in the part, the kit made from
+// the form itself (its state, steps, clock and person read there), a quiz's marking and its results' drawing asked of
+// the kits, a list of steps laid out by its places — 508.27 after, to 508.3: the lane's whole cost on every page (1.54
+// over 0.28.0), the kits' hooks — the form's 0.64 (its state's three fields, a part hidden or locked, a draft kept and
+// laid, a send told and marked, a response started again, a step entered, Start and the countdown, `validate(within)`),
+// the viewer's 0.30 (the review before a send, Enter going on through the flow, the last button's words, the quiz on
+// the thanks) — the checks' call and their stand-in (0.21), the part and its test (0.16), its name among the page's
+// parts (0.09), the runtime's names for it (0.06).
+// Merged (0.31.0), with w6-survey-flow: 516.05 measured, to 516.1.
+const BUDGET_KB = 516.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1387,8 +1413,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 166.89 measured before, 167.18 after, to 167.2. A checkbox tree (listed with the raw budget above): 167.18 measured
 // before, 167.19 after, under 167.2. An option named by its words alone (listed with the raw budget above): 167.19
 // measured before, 167.21 after, to 167.3.
-// Merged (0.31.0), with w6-inputs: 168.92 measured, to 169.0.
-const GZIP_BUDGET_KB = 169.0;
+// Wave 6's survey flow (listed with the raw budget above): a quiz's results, 166.15 measured before, 166.42 after, to 166.5;
+// a review before sending, 166.61 after, to 166.7; one question at a time, 166.68 after, under it; questions in an order
+// drawn and N of M, 167.11 after, to 167.2; a time limit with the draw behind one hook, 167.10 after, under it; the
+// survey flow in a part of its own, its hooks' bodies there, 166.88 after, to 166.9.
+// Merged (0.31.0), with w6-survey-flow: 169.57 measured, to 169.6.
+const GZIP_BUDGET_KB = 169.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1619,8 +1649,19 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // A checkbox tree (0.30, w6-inputs): its search's name and how many are chosen, one and more — three in each: Arabic's
 // 81.19 and 13.72 before, 81.37 and 13.75 after, to 81.4 and 13.8; German's 37.94 and 12.03 to 38.03 and 12.06, to
 // 38.1 and 12.1; French's 38.56 and 12.10 to 38.64 and 12.12, to 38.7 and 12.2.
-// Merged (0.31.0), with w6-inputs: Arabic's 100.03 and 16.61, German's 46.37 and 14.52, French's 47.10 and 14.51 measured.
-const ADD_ON_BUDGET_KB = { ar: [100.1, 16.7], de: [46.4, 14.6], fr: [47.2, 14.6] };
+// Wave 6's survey flow (lane w6-survey-flow), each item measured after the one before: a quiz's results — their
+// heading, the score, right, wrong and not answered, the points, the answer and the right one, results to come: 9 in
+// each — Arabic's 77.88 and 13.29 measured before, 78.55 and 13.44 after, to 78.6 and 13.5; German's 36.27 and 11.64 to
+// 36.62 and 11.76, to 36.7 and 11.8; French's 36.75 and 11.70 to 37.11 and 11.85, to 37.2 and 11.9. A review before
+// sending — its button, heading, Edit, an answer not given, Back to review: 5 in each — Arabic's 78.94 and 13.50 after,
+// to 79.0 and 13.6; German's 36.80 and 11.81, to 36.9 and 11.9; French's 37.28 and 11.90, to 37.3 and 12.0. One
+// question at a time — how far, back, on, OK and Enter: 5 in each — Arabic's 79.29 and 13.55, to 79.3 and 13.6; German's
+// 36.95 and 11.85, to 37.0 and 11.9; French's 37.45 and 11.92, to 37.5 and 12.0. A time limit — its title, what it
+// allows and Start, the time left (a step's too), its warning, and what happened as it ran out: 9 in each — Arabic's
+// 80.59 and 13.75, to 80.6 and 13.8; German's 37.50 and 12.03, to 37.5 and 12.1; French's 38.06 and 12.10, to 38.1 and
+// 12.1.
+// Merged (0.31.0), with w6-survey-flow: Arabic's 102.74 and 17.07, German's 47.60 and 14.92, French's 48.41 and 14.92 measured.
+const ADD_ON_BUDGET_KB = { ar: [102.8, 17.1], de: [47.6, 15.0], fr: [48.5, 15.0] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2128,7 +2169,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // An option named by its words alone, its second line describing it (0.30, w6-inputs): Fieldia's own list's rows and a
 // list that searches — choice 12.46 and 4.92 to 12.56 and 4.96, to 12.6 and 5.0 — and a link's suggestion named by its
 // record's name, its details and its aside describing it — relations 20.88 and 7.89 to 21.05 and 7.96, to 21.1 and 8.0.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [23.5, 8.7], choice: [12.6, 5.0], filters: [23.0, 7.9], date: [23.8, 9.0], months: [14.7, 5.9], typed: [14.4, 6.1], list: [140.9, 45.2], cards: [12.6, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], views: [5.9, 2.6], rows: [19.3, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [21.1, 8.0], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [21.2, 7.6], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
+// Wave 6's survey flow (lane w6-survey-flow) in a part of its own, fieldia.surveyflow.js — the form's code and the
+// viewer's, one script: a quiz's results, the review before sending, one question at a time, questions in an order drawn
+// and N of M, a time limit, and their checks — so a page of survey kinds alone (a slider, a ranking) loads none of it;
+// survey back to 37.88 and 13.00; surveyflow 35.01 and 12.49 — the one-at-a-time flow (6.23 and 2.69), the review and
+// the kit that makes them (5.80 and 2.50), their sheet (6.67 and 1.79), the timer (2.77 and 1.37), the quiz's results
+// drawn (2.21 and 1.00) and marked (1.62 and 0.82), the draw (1.75 and 0.94), the clocks (1.64 and 0.85), the form's kit
+// (1.89 and 0.92), the checks (2.67 and 1.05) — to 35.1 and 12.5.
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [23.5, 8.7], choice: [12.6, 5.0], filters: [23.0, 7.9], date: [23.8, 9.0], months: [14.7, 5.9], typed: [14.4, 6.1], list: [140.9, 45.2], cards: [12.6, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], views: [5.9, 2.6], rows: [19.3, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [21.1, 8.0], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [21.2, 7.6], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0], surveyflow: [35.1, 12.5] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2154,6 +2202,7 @@ const PART_GIVES = {
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
   photos: ['photosWidget', 'editPhoto', 'drawEdited', 'fitted', 'moved', 'sized', 'turnedCrop', 'turnedSize', 'installPhotosStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
+  surveyflow: ['quizResults', 'drawOrder', 'askedInOrder', 'limitsOf', 'countdownNow', 'keepTime', 'surveyKit', 'drawQuizResults', 'showQuiz', 'installFlowStyles', 'surveyFlow', 'flows', 'oneAtATime', 'timeKeeper'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
   relations: ['many2oneWidget', 'tagsWidget', 'charTagsWidget', 'linkCheckboxesWidget', 'referenceWidget'],
@@ -2172,7 +2221,7 @@ const PART_GIVES = {
   decode: ['codeReader'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots; a photo set the files part, whose taking, files on their way, dialog and sheet it draws with.
@@ -2730,6 +2779,19 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   if (!(await until(() => treeRow('New Cairo')?.getAttribute('aria-checked') === 'mixed')) || treeRow('Nasr City')?.getAttribute('aria-checked') !== 'true' || host.querySelector('[data-node="f-areas"] .fd-tree-count')?.textContent !== '2 chosen') throw new Error(`in a page, a many2many is not drawn as a checkbox tree from its part: ${host.querySelector('[data-node="f-areas"]')?.innerHTML.slice(0, 300)}`);
   lead.destroy();
   gone('lead');
+  // A timed training check — a quiz, a review, a question bank drawn, a time limit — the survey flow's part, the form's
+  // and the viewer's in one script, the page drawn once it came: its time limit said with Start in place of its
+  // questions, the questions drawn for this person, its sheet beside the survey kinds'. No survey kind is on it: their
+  // part is in already, from the pages before, and a page of survey kinds alone never asks for this one.
+  const timed = inPage.mountViewer(host, { page: read('training-check.page.json'), dataSource: inPage.createMemoryDataSource(), seed: 'candidate-17' });
+  waits(timed, 'a timed training check');
+  await timed.drawn;
+  hasIn('a timed training check', 'answers, approvals, assist, business, cards, choice, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, months, options, path, phone, photos, print, quiet, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, views');
+  if (!host.querySelector('.fd-time-start:not([hidden])') || [...host.querySelectorAll('.fd-field')].some((field) => !field.closest('[hidden]'))) throw new Error("in a page, a timed form's Start is not said in place of its questions");
+  if (JSON.stringify(timed.form.getState().order) !== JSON.stringify(inPage.formSurveyPart.loaded.drawOrder(read('training-check.page.json'), 'candidate-17'))) throw new Error("in a page, a training check's bank is not drawn for its respondent's seed");
+  if (!doc.getElementById('fieldia-surveyflow-styles')) throw new Error("in a page, the survey flow's sheet was never put in");
+  timed.destroy();
+  gone('timed');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)

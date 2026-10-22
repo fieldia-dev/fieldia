@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { createForm, createMemoryDataSource, type Page, type RecordId } from '@fieldia/core';
+import { createForm, createMemoryDataSource, drawOrder, type Page, type RecordId } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import { createRef, useState } from 'react';
 import { FieldiaForm, useFormState, type FieldComponentProps, type SlotComponentProps } from './fieldia-form';
@@ -311,6 +311,13 @@ describe('<FieldiaForm>', () => {
     await waitFor(() => kept.length === 1);
     expect(kept).toEqual([{ key: 'abc', later: true }]);
     expect(source.drafts['abc']).toMatchObject({ step: 'visit', later: true });
+  });
+
+  it('draws a page’s questions for the respondent the seed names (seed)', async () => {
+    let handle: ViewerHandle | null = null;
+    render(<FieldiaForm page={page('training-check')} dataSource={createMemoryDataSource()} seed="candidate-17" onReady={(ready) => (handle = ready)} />);
+    await waitFor(() => !!handle?.form.getState().order);
+    expect(handle!.form.getState().order).toEqual(drawOrder(page('training-check'), 'candidate-17'));
   });
 
   it('draws the pager and the breadcrumbs the app gives, and tells each record the form shows', async () => {

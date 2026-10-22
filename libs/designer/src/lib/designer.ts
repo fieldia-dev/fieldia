@@ -42,7 +42,7 @@ import { comparable, FIELD_NAME, FORMAT_VERSION, upgradePage } from '@fieldia/co
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, setRowRules, type ListCommands, type RowRulesPatch } from './list-commands';
-import { kindCommands, relabel, type OptionDetails } from './kind-commands';
+import { kindCommands, relabel, type OptionDetails, type QuizQuestionPatch } from './kind-commands';
 import { choiceCommands, type ChoiceCommands } from './choice-commands';
 import { inputCommands, type InputCommands } from './input-commands';
 import { structureCommands, type StructureCommands } from './structure-commands';
@@ -421,6 +421,33 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    */
   setSuggest(patch: { label?: string | null; fields?: string[] | null; fromField?: string | null } | null): boolean;
   /**
+   * A quiz's results shown to the person (`quiz`): as the answers are sent or later, once reviewed (`results`), what a
+   * right answer earns where its question says nothing (`points`), whether a question missed shows its right answer
+   * (`rightAnswers`) — each `null` taking that one away; `null` alone takes the quiz away. A page of responses only.
+   */
+  setPageQuiz(patch: { results?: 'now' | 'later' | null; points?: number | null; rightAnswers?: boolean | null } | null): boolean;
+  /**
+   * A review of the answers before a form of responses is sent (`review`): `{}` turns it on in Fieldia's words, its own
+   * `title` and `text` (empty or `null` takes one away), `null` takes it away. A form of responses only.
+   */
+  setReview(patch: { title?: string | null; text?: string | null } | null): boolean;
+  /** One question at a time on a form of responses (`flow: "one"`); false takes it away. Refused on a record's screen. */
+  setFlowOne(on: boolean): boolean;
+  /**
+   * A step's or a group's draw on a form of responses: its questions in an order drawn for each respondent (`order`),
+   * how many of them each is asked (`draw`, `null` all), and — a step, where the form's pages are drawn — keeping its
+   * place (`fixed`). Refused on a record's screen, and a draw of more questions than it holds.
+   */
+  setDraw(id: string, patch: { order?: boolean; draw?: number | null; fixed?: boolean }): boolean;
+  /** A wizard's pages in an order drawn for each respondent (`order: "random"` on it); false keeps them in theirs. */
+  setPagesOrder(random: boolean): boolean;
+  /**
+   * A time limit (`timeLimit`) for a form of responses (`id` null) or one of its pages (a step's id): its minutes, the
+   * minutes before its end it warns, and what happens as it runs out (`send` or `lock`) — each `null` taking that one
+   * away; `null` alone, or no minutes, takes the limit away. Refused on a record's screen, and a warning not before the end.
+   */
+  setTimeLimit(id: string | null, patch: { minutes?: number | null; warn?: number | null; then?: 'send' | 'lock' | null } | null): boolean;
+  /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
    * home's — `null` takes either away.
@@ -503,6 +530,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setColumnOptionWhen(id: string, column: string, index: number, invisible: string | null): boolean;
   /** An option's picture and points for a quiz; `null` or empty takes either away. */
   setOptionDetails(id: string, index: number, details: OptionDetails): boolean;
+  /**
+   * A quiz's question's own settings (its field's `quiz`): its points, the answers a question typed takes, and what is
+   * said when right and when wrong — each `null` or empty taking that one away. A choice's right answers are its
+   * options' (`setOptionDetails` with `correct`).
+   */
+  setQuizQuestion(id: string, patch: QuizQuestionPatch): boolean;
   /** A matrix's rows or columns, by their words, in order. */
   setMatrixItems(id: string, which: 'rows' | 'columns', labels: string[]): boolean;
   /** Which parts an address asks for: street, city, postcode, country. */
@@ -1600,6 +1633,102 @@ export function createDesigner(options: {
         },
         patch ? `suggest:${Object.keys(patch).join(',')}` : null
       );
+    },
+
+    setPageQuiz(patch) {
+      return apply(
+        (draft) => {
+          if (patch === null) return void delete draft.quiz;
+          if (draft.data.kind !== 'responses') throw new Refusal((w) => w.refusals.quizForResponses);
+          const quiz: Record<string, unknown> = { ...(draft.quiz ?? {}) };
+          for (const [key, value] of Object.entries(patch)) {
+            if (value === null || value === undefined || (key === 'rightAnswers' && value === true) || (key === 'results' && value === 'now')) delete quiz[key];
+            else if (key === 'points' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0)) throw new Refusal((w) => w.refusals.pointsNumber);
+            else quiz[key] = value;
+          }
+          draft.quiz = quiz as Page['quiz'];
+        },
+        `quiz:${patch ? Object.keys(patch).join(',') : 'off'}`
+      );
+    },
+
+    setReview(patch) {
+      return apply(
+        (draft) => {
+          if (patch === null) return void delete draft.review;
+          if (draft.data.kind !== 'responses' || draft.layout.type === 'list') throw new Refusal((w) => w.refusals.reviewForResponses);
+          const review: Record<string, string> = typeof draft.review === 'object' ? { ...draft.review } : {};
+          for (const [key, value] of Object.entries(patch)) {
+            if (value === null || value === undefined || !value.trim()) delete review[key];
+            else review[key] = value;
+          }
+          draft.review = Object.keys(review).length ? review : true;
+        },
+        `review:${patch ? Object.keys(patch).join(',') : 'off'}`
+      );
+    },
+
+    setDraw(id, patch) {
+      return apply(
+        (draft) => {
+          const node = (findContainer(draft, id) ?? findNode(draft, id)?.node) as { type?: string; order?: 'random'; draw?: number; fixed?: boolean; children?: { type: string; fixed?: boolean }[] } | undefined;
+          if (!node || (node.type !== 'step' && node.type !== 'section')) throw new Refusal((w) => w.refusals.noQuestion(id));
+          if (draft.data.kind !== 'responses') throw new Refusal((w) => w.refusals.drawForResponses);
+          if (patch.order !== undefined) {
+            if (patch.order) node.order = 'random';
+            else delete node.order;
+          }
+          if (patch.fixed !== undefined) {
+            if (patch.fixed) node.fixed = true;
+            else delete node.fixed;
+          }
+          if (patch.draw !== undefined) {
+            const questions = (node.children ?? []).filter((child) => (child.type === 'field' || child.type === 'form' || child.type === 'section') && child.fixed !== true).length;
+            if (patch.draw === null) delete node.draw;
+            else if (!Number.isInteger(patch.draw) || patch.draw < 1 || patch.draw > questions) throw new Refusal((w) => w.refusals.drawCount(questions));
+            else node.draw = patch.draw;
+          }
+        },
+        `draw:${id}:${Object.keys(patch).join(',')}`
+      );
+    },
+
+    setPagesOrder(random) {
+      return apply((draft) => {
+        if (draft.layout.type !== 'wizard') throw new Refusal((w) => w.refusals.drawForResponses);
+        if (random && draft.data.kind !== 'responses') throw new Refusal((w) => w.refusals.drawForResponses);
+        if (random) draft.layout.order = 'random';
+        else delete draft.layout.order;
+      }, 'pagesOrder');
+    },
+
+    setTimeLimit(id, patch) {
+      return apply(
+        (draft) => {
+          const owner = (id === null ? draft : findContainer(draft, id)) as { type?: string; timeLimit?: Record<string, unknown> } | undefined;
+          if (!owner || (id !== null && owner.type !== 'step')) throw new Refusal((w) => w.refusals.noQuestion(id ?? ''));
+          if (patch === null) return void delete owner.timeLimit;
+          if (draft.data.kind !== 'responses') throw new Refusal((w) => w.refusals.timeForResponses);
+          const limit: Record<string, unknown> = { ...(owner.timeLimit ?? {}) };
+          for (const [key, value] of Object.entries(patch)) {
+            if (value === null || value === undefined) delete limit[key];
+            else if (key !== 'then' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0)) throw new Refusal((w) => w.refusals.timeMinutes);
+            else limit[key] = value;
+          }
+          if (typeof limit['warn'] === 'number' && typeof limit['minutes'] === 'number' && limit['warn'] >= limit['minutes']) throw new Refusal((w) => w.refusals.timeWarnBefore);
+          if (typeof limit['minutes'] === 'number') owner.timeLimit = limit;
+          else delete owner.timeLimit;
+        },
+        `time:${id ?? 'page'}:${patch ? Object.keys(patch).join(',') : 'off'}`
+      );
+    },
+
+    setFlowOne(on) {
+      return apply((draft) => {
+        if (!on) return void delete draft.flow;
+        if (draft.data.kind !== 'responses' || draft.layout.type === 'list' || draft.layout.type === 'sheet') throw new Refusal((w) => w.refusals.flowForResponses);
+        draft.flow = 'one';
+      }, 'flow');
     },
 
     setDuplicates(patch) {

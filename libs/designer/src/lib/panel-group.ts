@@ -13,6 +13,7 @@ import { printSetting } from './print-setting';
 import { rolesSetting } from './roles-setting';
 import { shownWhileSetting } from './shown-while';
 import { workGroupSetting } from './work-text';
+import { drawSettings } from './draw-settings';
 
 /**
  * A group's settings, on the panel's tabs: its title, whether it folds by
@@ -44,6 +45,8 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
   const roles = rolesSetting(el, designer, id);
   const paper = printSetting(el, designer, id);
   const shownWhile = shownWhileSetting(el, designer, id);
+  // On a form of responses: its questions in an order drawn for each person, and how many each is asked.
+  const draws = drawSettings(el, designer, id);
   const element = el(
     'div',
     { class: 'fd-props' },
@@ -59,7 +62,8 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen, noRules), 'rules', 'When it shows'),
     roles.element,
     shownWhile.element,
-    paper.element
+    paper.element,
+    onTab(el('div', { class: 'fd-prop' }, draws.element), 'rules', 'Questions in random order')
   );
   return {
     element,
@@ -77,6 +81,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
       roles.update(page);
       shownWhile.update(page);
       paper.update(page);
+      draws.update(page);
       showWhen.hidden = !when.element.hidden || !when.canStart();
       noRules.hidden = !when.element.hidden || when.canStart();
     },

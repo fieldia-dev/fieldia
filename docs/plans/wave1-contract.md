@@ -1478,3 +1478,49 @@ In plain words:
   team's with `by`, the person's own with `mine`) and those saved, the person's own, each `view-1`, `view-2`…; one
   default of a kind; another's refused. Without the option it has none of the three members. Tests:
   `libs/core/src/lib/record/memory-views.spec.ts`, `libs/viewer/src/lib/saved-views.spec.ts`.
+
+## 28. A survey's results, draw and clocks on the wire (Wave 6, lane w6-survey-flow)
+
+No new member: what the existing `submit` is answered with, and what it and a draft carry, grow by optional fields. A
+source that answers and reads none of them works as before.
+
+```ts
+interface SubmitResult {
+  // …as §16
+  quiz?: QuizResults;            // a quiz marked on the app's server, shown in place of the page's own marking
+}
+interface QuizResults { score: number; max: number; questions: QuizMark[] }
+interface QuizMark {
+  field: string; points: number; max: number;
+  right: boolean | null;         // null: a question of points alone (its options' `score`)
+  answered: boolean;
+  rightAnswer?: Value;           // the right answer, where the page shows it, to one missed
+  feedback?: string;             // the question's words for a right or a wrong answer
+}
+
+interface SubmitRequest {
+  // …as §16 and §18
+  order?: Record<string, string[]>;   // a page that draws: by part, its parts' ids in the order shown, those not drawn left out
+  started?: string;                   // a page with a time limit: when Start was pressed, ISO, by the browser's clock
+  timeUp?: boolean;                   // and whether it ran out (its answers then sent as they stood)
+}
+
+interface StoredDraft {
+  // …as §18
+  order?: Record<string, string[]>;   // the draw being answered, laid again as the draft opens
+  timers?: Record<string, string>;    // each time limit's start, ISO: `#form`, or a step's id
+}
+```
+
+In plain words:
+
+- **Marked on the server.** A page with `quiz` is marked by the form as it sends (`state.sent.quiz`), from the right
+  answers in the page. A test that keeps them out of the page marks the answers on its server and answers `submit` with
+  `{ quiz }`: the form keeps that, and the viewer shows it, in place of its own.
+- **The draw is the respondent's.** `order` tells which questions this person was shown, in which order: the answers of
+  those not drawn are not in `values`. The draw is seeded by `createForm`'s `seed`, else `user.id`, else the browser; a
+  draft keeps it, so the same person finds the same questions.
+- **The clock is the browser's.** `started` and `timeUp` tell what the page saw; a server that must hold a test to its
+  time keeps its own start (when it served the page) and refuses a late send as it would.
+- The memory source passes them through as any field of the request. Tests: `libs/core/src/lib/record/quiz.spec.ts`,
+  `order.spec.ts`, `timing.spec.ts`.

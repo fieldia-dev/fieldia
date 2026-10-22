@@ -1,4 +1,4 @@
-import { callsPartFunctions, formApprovalsPart, editableColumns, formLimitsPart, functionsPart, hasLanguages, hasLimits, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, relationsPart, scanPart, scans, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -16,6 +16,7 @@ import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
 import type * as ViewsModule from './views-part';
 import type * as RowsModule from './rows-part';
+import type * as SurveyFlowModule from './surveyflow-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -46,6 +47,8 @@ export type AssistPart = typeof AssistModule;
 export type ViewsPart = typeof ViewsModule;
 /** The rows part: a list's rows a person works in — opened in place, re-ranked by hand, a tree's loaded as it opens. */
 export type RowsPart = typeof RowsModule;
+/** The survey flow's viewer part: a quiz's results, the review, one question at a time, the draw laid out, a time limit. */
+export type SurveyFlowPart = typeof SurveyFlowModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -112,6 +115,14 @@ export const assistPart: Part<AssistPart> = lazyPart('assist', () => import('./a
 export const asksAssist = (page: Page): boolean => !!page.suggest || /"rewrite":(?!false)/.test(JSON.stringify(page.layout));
 
 /**
+ * A survey's flow, the viewer's part of it — a quiz's results under the thanks, a review before sending, one question at
+ * a time, the order drawn laid out, a time limit's Start and countdown — loaded with the page's parts where it has any
+ * (`surveyFlow`): in the one-tag script, one script with the form's (fieldia.surveyflow.js). A page of survey kinds
+ * alone — a slider, a ranking — never loads it.
+ */
+export const surveyFlowPart: Part<SurveyFlowPart> = lazyPart('surveyflow', () => import('./surveyflow-part'));
+
+/**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
  * else as soon as it comes (settled then; a part that cannot come puts none). For what draws a list's look without the
  * list: the designer's canvas.
@@ -135,7 +146,7 @@ export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage'
  * Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing —
  * but the decode part, which reads codes only where a browser reads none itself, as Scan is pressed.
  */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
 /** A group holding a text read first alone — Markdown, or one edited by its button — whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -300,6 +311,11 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   }
   // AI help's button, tools and words read as filters: drawn with the page, so in before it is drawn.
   if (asksAssist(page)) found.add(assistPart);
+  // A survey's flow: drawn by the viewer's part of it, kept by the form's.
+  if (surveyFlow(page)) {
+    found.add(surveyFlowPart);
+    found.add(formSurveyPart);
+  }
   if (callsPartFunctions(page)) found.add(functionsPart);
   if (hasOptionRules(page)) found.add(optionRulesPart);
   // A text kept in several languages: its switch where it is typed, the reader's language where a list or a card reads it.
@@ -314,7 +330,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  const by: Record<string, Part> = { list: listPart, editable: editablePart, head: headPart, limits: limitsPart, approvals: approvalsPart, answers: answersPart, assist: assistPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, languages: languagesPart, scan: scanPart };
+  const by: Record<string, Part> = { list: listPart, editable: editablePart, head: headPart, limits: limitsPart, approvals: approvalsPart, answers: answersPart, assist: assistPart, surveyflow: surveyFlowPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, languages: languagesPart, scan: scanPart };
   return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 

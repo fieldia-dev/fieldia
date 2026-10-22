@@ -1,6 +1,10 @@
 export * from './runtime';
 // Why a page takes no answers now, in words: the limits part's (`formLimitsPart`), whole here.
 export { takingWords, whenWords } from './lib/record/form-limits';
+// A quiz's results for answers sent: the survey part's (`formSurveyPart`), whole here — for an app's own marking.
+export { quizResults } from './lib/record/quiz';
+// The order drawn for a respondent: the survey part's (`formSurveyPart`), whole here — for an app's own server or tests.
+export { drawOrder } from './lib/record/order';
 export { isQuestion } from './lib/record/record-words';
 // A text in several languages checked in each, and a language's name: the languages part's (`formLanguagesPart`), whole here.
 export { checkTranslated, languageName, languagesAtFault, textIn, textOf } from './lib/record/languages-part';
@@ -48,6 +52,8 @@ export { PageRecordsSchema } from './lib/format/records';
 export { PageEndingSchema } from './lib/format/endings';
 export { PageLimitsSchema } from './lib/format/limits';
 export { PageApprovalSchema } from './lib/format/approval';
+export { PageQuizSchema, QuizQuestionSchema } from './lib/format/quiz';
+export { PageReviewSchema, TimeLimitSchema } from './lib/format/flow';
 export { DUPLICATE_KINDS, comparable } from './lib/format/duplicate-kinds';
 export { pageJsonSchema } from './lib/format/json-schema';
 // The purposes a browser fills a box in with, from the HTML standard, as the format checks them.

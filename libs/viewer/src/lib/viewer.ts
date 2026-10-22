@@ -79,8 +79,9 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, type AssistPart, type HeadPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, limitsPart, listPart, owedParts, partsFor, surveyFlowPart, type AssistPart, type HeadPart } from './viewer-parts';
 import type { LimitsKit } from './limits';
+import type { FlowKit } from './survey-flow';
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
 import { steadyPresses } from './steady-press';
@@ -1888,6 +1889,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   let limitsKit: LimitsKit | null = null;
   /** A record's approvals over it (`approval`), from the approvals part, waited for with the page's parts: under its alerts. */
   let approvalBand: HTMLElement | null = null;
+  /** A survey's flow, from its own part — a review, one at a time, a draw, a time limit, a quiz's results — made as the page is drawn (survey-flow.ts). */
+  let flowKit: FlowKit | null = null;
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
   /**
@@ -1913,16 +1916,22 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function showDone() {
     content.hidden = true;
     done.hidden = false;
+    // A quiz's results under the thanks, from the survey flow's part: their heading takes the focus where no ending does.
+    const results = flowKit?.quiz(again);
     const answers = doneWords && answersPart.loaded;
-    if (!answers || !doneWords) return;
+    if (!answers || !doneWords) return void results?.focus();
     answers.drawEnding({ doc, page, form, locale, write: asSaid, title: doneTitle, words: doneWords, again, thanks: labels.submitted, another: labels.submitAnother })?.focus();
   }
+
 
   async function submitOrSave() {
     // A record only to read has nothing to save: Ctrl+Enter there does nothing.
     if (form.getState().can?.edit === false) return;
+    // A survey that reviews its answers first shows them in place of sending, until they are shown.
+    if (flowKit && !(await flowKit.sending())) return;
     const saved = await form.save();
     if (!saved) {
+      flowKit?.refused();
       // Stopped by the page's own checks: say which fields; a refused save says so above.
       if (!form.getState().saveProblem) announce(checkText(form.getState()));
       focusFirstProblem();
@@ -2133,7 +2142,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       back.hidden = index === 0;
       skip.hidden = last || !node.children.find((step) => step.id === state.step)?.optional;
       // Its words as they read now: a page's own may name the answers given ("Send to {branch}").
-      const words = last ? node.finishLabel ?? labels.submit : node.nextLabel ?? labels.next;
+      const words = last ? flowKit?.finishWords() ?? node.finishLabel ?? labels.submit : node.nextLabel ?? labels.next;
       forward.textContent = words.includes('{') ? form.words(words) : words;
       for (const [id, go] of stepButtons) {
         const at = steps.indexOf(id);
@@ -2508,6 +2517,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);
     else content.append(...drawnParts);
+    // A survey's flow, once its questions are in the page: what stands in their place, and the buttons it adds.
+    const flow = surveyFlowPart.loaded;
+    if (flow?.flows(page)) {
+      const kit = flow.surveyFlow({ doc, el, page, form, labels, locale, questions: body, uid, announce, focusFirstProblem, submit: submitOrSave });
+      flowKit = kit;
+      updaters.push((state) => kit.update(state));
+      cleanups.push(() => kit.destroy());
+    }
     pageDrawn = true;
   }
   /** How a list's other view makes a record: the app's way, else the model's page in a dialog, else none. */
@@ -2620,11 +2637,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     setAttr(box, 'data-cut-title', cut ? '' : null);
   });
 
+  /** On: the next question where a survey goes one at a time, a wizard's next step, else the save or the send. */
+  const goOn = () => void (flowKit?.forward ? flowKit.forward() : wizardForward ? wizardForward() : submitOrSave());
   root.addEventListener('submit', (event) => {
     event.preventDefault();
-    if (layout.type === 'list') return;
-    if (wizardForward) void wizardForward();
-    else void submitOrSave();
+    if (layout.type !== 'list') goOn();
   });
 
   // ---- keys -------------------------------------------------------------------
@@ -2688,8 +2705,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if ((event.target as Element).closest('.ag-root-wrapper')) return;
       // What is still typed is read first by the save itself (commitTyping, through form.settling).
       event.preventDefault();
-      if (wizardForward) void wizardForward();
-      else void submitOrSave();
+      goOn();
       return;
     }
     const from = event.target as HTMLElement;

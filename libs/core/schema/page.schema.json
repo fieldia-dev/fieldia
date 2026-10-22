@@ -397,6 +397,21 @@
     },
     "suggest": {
       "$ref": "#/$defs/PageSuggest"
+    },
+    "quiz": {
+      "$ref": "#/$defs/PageQuiz"
+    },
+    "review": {
+      "$ref": "#/$defs/PageReview"
+    },
+    "flow": {
+      "type": "string",
+      "enum": [
+        "one"
+      ]
+    },
+    "timeLimit": {
+      "$ref": "#/$defs/TimeLimit"
     }
   },
   "required": [
@@ -460,6 +475,9 @@
             "patternHint": {
               "type": "string",
               "minLength": 1
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             },
             "translate": {
               "minItems": 2,
@@ -672,6 +690,9 @@
             },
             "max": {
               "type": "number"
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -740,6 +761,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -1060,6 +1084,9 @@
             },
             "optionsFrom": {
               "$ref": "#/$defs/OptionsFrom"
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -1771,6 +1798,49 @@
         }
       ]
     },
+    "QuizQuestion": {
+      "type": "object",
+      "properties": {
+        "points": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000
+        },
+        "answers": {
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "\\S"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "feedback": {
+          "type": "object",
+          "properties": {
+            "right": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "\\S"
+            },
+            "wrong": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "\\S"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "LanguageTag": {
       "type": "string",
       "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
@@ -1865,6 +1935,9 @@
         },
         "score": {
           "type": "number"
+        },
+        "correct": {
+          "type": "boolean"
         },
         "alt": {
           "type": "string"
@@ -2125,6 +2198,9 @@
               "type": "string",
               "minLength": 1
             },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
+            },
             "translate": {
               "minItems": 2,
               "type": "array",
@@ -2269,6 +2345,9 @@
             },
             "max": {
               "type": "number"
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -2337,6 +2416,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -2754,6 +2836,9 @@
         "score": {
           "type": "number"
         },
+        "correct": {
+          "type": "boolean"
+        },
         "alt": {
           "type": "string"
         },
@@ -2837,6 +2922,9 @@
             "patternHint": {
               "type": "string",
               "minLength": 1
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             },
             "translate": {
               "not": {}
@@ -2998,6 +3086,9 @@
             },
             "max": {
               "type": "number"
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -3066,6 +3157,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -4066,6 +4160,9 @@
               "type": "string",
               "minLength": 1
             },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
+            },
             "translate": {
               "not": {}
             },
@@ -4226,6 +4323,9 @@
             },
             "max": {
               "type": "number"
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -4294,6 +4394,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "quiz": {
+              "$ref": "#/$defs/QuizQuestion"
             }
           },
           "required": [
@@ -6149,6 +6252,9 @@
         "field": {
           "type": "string",
           "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "fixed": {
+          "type": "boolean"
         },
         "label": {
           "type": "string"
@@ -8148,6 +8254,20 @@
         },
         "maximise": {
           "type": "boolean"
+        },
+        "order": {
+          "type": "string",
+          "enum": [
+            "random"
+          ]
+        },
+        "draw": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "fixed": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -9440,6 +9560,12 @@
         "clickable": {
           "type": "boolean"
         },
+        "order": {
+          "type": "string",
+          "enum": [
+            "random"
+          ]
+        },
         "nextLabel": {
           "type": "string",
           "minLength": 1
@@ -9491,6 +9617,23 @@
         "optional": {
           "type": "boolean"
         },
+        "order": {
+          "type": "string",
+          "enum": [
+            "random"
+          ]
+        },
+        "draw": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "fixed": {
+          "type": "boolean"
+        },
+        "timeLimit": {
+          "$ref": "#/$defs/TimeLimit"
+        },
         "invisible": {
           "$ref": "#/$defs/Modifier"
         },
@@ -9509,6 +9652,32 @@
         "id",
         "label",
         "children"
+      ],
+      "additionalProperties": false
+    },
+    "TimeLimit": {
+      "type": "object",
+      "properties": {
+        "minutes": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1440
+        },
+        "warn": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1440
+        },
+        "then": {
+          "type": "string",
+          "enum": [
+            "send",
+            "lock"
+          ]
+        }
+      },
+      "required": [
+        "minutes"
       ],
       "additionalProperties": false
     },
@@ -10742,6 +10911,50 @@
         }
       },
       "additionalProperties": false
+    },
+    "PageQuiz": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "string",
+          "enum": [
+            "now",
+            "later"
+          ]
+        },
+        "points": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000
+        },
+        "rightAnswers": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PageReview": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "maxLength": 300,
+              "pattern": "\\S"
+            },
+            "text": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "\\S"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     }
   }
 }

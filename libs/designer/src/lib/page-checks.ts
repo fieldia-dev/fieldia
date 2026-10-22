@@ -286,6 +286,22 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
   if (!!before.continueLater !== !!after.continueLater) out.push(w.continueLater(!!after.continueLater));
   if (JSON.stringify(before.approval ?? null) !== JSON.stringify(after.approval ?? null)) out.push(w.approval(!after.approval ? 'off' : !before.approval ? 'on' : 'changed'));
   if (JSON.stringify(before.suggest ?? null) !== JSON.stringify(after.suggest ?? null)) out.push(w.suggest(!after.suggest ? 'off' : !before.suggest ? 'on' : 'changed'));
+  if (JSON.stringify(before.quiz ?? null) !== JSON.stringify(after.quiz ?? null)) out.push(w.quiz(!after.quiz ? 'off' : !before.quiz ? 'on' : 'changed'));
+  if (JSON.stringify(before.review ?? null) !== JSON.stringify(after.review ?? null)) out.push(w.review(!after.review ? 'off' : !before.review ? 'on' : 'changed'));
+  if ((before.flow === 'one') !== (after.flow === 'one')) out.push(w.flowOne(after.flow === 'one'));
+  // Each part's draw alone — its order, how many, kept in place — never where it stands.
+  const draws = (page: Page) => {
+    const out: unknown[] = [];
+    JSON.stringify(page.layout, (key, value) => {
+      const node = value as { id?: string; order?: unknown; draw?: unknown; fixed?: unknown } | null;
+      if (node && typeof node === 'object' && node.id && (node.order === 'random' || node.draw !== undefined || node.fixed !== undefined)) out.push([node.id, node.order === 'random', node.draw, node.fixed]);
+      return value;
+    });
+    return JSON.stringify(out.sort());
+  };
+  if (draws(before) !== draws(after)) out.push(w.questionsDrawn);
+  const times = (page: Page) => JSON.stringify([page.timeLimit ?? null, page.layout.type === 'wizard' ? page.layout.children.filter((step) => step.timeLimit).map((step) => [step.id, step.timeLimit]) : []]);
+  if (times(before) !== times(after)) out.push(w.timeLimit);
   out.push(...lookChanges(before, after, words));
   const layout = layoutChanges(before, after, words);
   const at = (id: string) => layout.placed.get(id) ?? '';

@@ -35,6 +35,10 @@ const SCORED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choi
 const SEATED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice']);
 /** Kinds whose options may say more than their words: a second line, an icon, a colour. */
 const LOOKED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'tags']);
+/** Kinds whose options may be a quiz's right answers: a choice's own. */
+const MARKED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice']);
+/** Kinds a quiz's answer is typed in, and the answers they take named: words, a number. */
+const TYPED_ANSWER = new Set(['short-answer', 'number']);
 
 const optionsOf = (field: Field) => (field.type === 'selection' ? field.options : field.type === 'matrix' ? field.columns : []);
 /** A setting's number as the page holds it, or null. */
@@ -423,6 +427,76 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
     };
   }
 
+  /**
+   * A quiz's question, once the page is a quiz (`quiz`): a choice's right answers ticked, or the answers a typed one
+   * takes; its own points; what is said when right and when wrong. Each box kept as it is typed or left.
+   */
+  function quizQuestion(typed: boolean): Part {
+    const list = el('ul', { class: 'fd-kind-points fd-kind-right' });
+    const answers = textBox(w.answersTaken, w.answersTaken);
+    answers.addEventListener('change', () => {
+      const field = designer.getPage().fields[questionField()];
+      const words = answers.value.split(',').map((one) => one.trim()).filter(Boolean);
+      designer.setQuizQuestion(id, { answers: field?.type === 'char' ? words : words.map((one) => (Number.isFinite(Number(one.replace(',', '.'))) ? Number(one.replace(',', '.')) : one)) });
+    });
+    let worth: number | null = null;
+    const points = numberBox({ label: w.questionPointsLabel, above: 0, optional: true, placeholder: '1', saved: () => worth, commit: (n) => designer.setQuizQuestion(id, { points: n }) });
+    const right = textBox(w.feedbackRight, w.feedbackRight);
+    right.addEventListener('input', () => designer.setQuizQuestion(id, { right: right.value }));
+    const wrong = textBox(w.feedbackWrong, w.feedbackWrong);
+    wrong.addEventListener('input', () => designer.setQuizQuestion(id, { wrong: wrong.value }));
+    const marks: HTMLInputElement[] = [];
+    const names: HTMLElement[] = [];
+    const block = el(
+      'div',
+      { class: 'fd-kind-block fd-kind-quiz' },
+      el('span', { class: 'fd-prop-name' }, typed ? w.answersTaken : w.rightAnswers),
+      typed ? el('div', { class: 'fd-inline-row' }, answers) : list,
+      el('p', { class: 'fd-properties-hint' }, typed ? w.answersTakenHint : w.rightHint),
+      el('div', { class: 'fd-inline-row' }, word(w.questionPoints, points.input), word(w.feedbackRight, right), word(w.feedbackWrong, wrong))
+    );
+    let fieldName = '';
+    const questionField = () => fieldName;
+    return {
+      element: block,
+      standsIn: false,
+      refresh(page, node) {
+        fieldName = node.field;
+        const def = page.fields[node.field];
+        const quiz = (def as { quiz?: { points?: number; answers?: (string | number)[]; feedback?: { right?: string; wrong?: string } } }).quiz;
+        block.hidden = !page.quiz;
+        worth = held(quiz?.points);
+        points.refresh();
+        if (!focused(right)) right.value = quiz?.feedback?.right ?? '';
+        if (!focused(wrong)) wrong.value = quiz?.feedback?.wrong ?? '';
+        if (typed) {
+          if (!focused(answers)) answers.value = (quiz?.answers ?? []).join(', ');
+          return;
+        }
+        const options = def.type === 'selection' ? def.options : [];
+        while (marks.length > options.length) {
+          marks.pop();
+          names.pop();
+          list.lastElementChild?.remove();
+        }
+        while (marks.length < options.length) {
+          const index = marks.length;
+          const mark = el('input', { type: 'checkbox', class: 'fd-check' }) as HTMLInputElement;
+          mark.addEventListener('change', () => designer.setOptionDetails(id, index, { correct: mark.checked }));
+          const name = el('span', { class: 'fd-kind-points-name' });
+          list.append(el('li', { class: 'fd-kind-points-row' }, el('label', { class: 'fd-inline-setting' }, mark, name)));
+          marks.push(mark);
+          names.push(name);
+        }
+        options.forEach((option, i) => {
+          names[i].textContent = option.label;
+          marks[i].setAttribute('aria-label', w.rightAnswerFor(option.label));
+          marks[i].checked = option.correct === true;
+        });
+      },
+    };
+  }
+
   const parts: Part[] = [];
   if (kind === 'slider') parts.push(slider());
   if (kind === 'image-choice') parts.push(pictures());
@@ -434,6 +508,8 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   if (kind && SCORED.has(kind)) parts.push(points());
   if (kind && SEATED.has(kind)) parts.push(places());
   if (kind && LOOKED.has(kind)) parts.push(looks());
+  if (kind && MARKED.has(kind)) parts.push(quizQuestion(false));
+  if (kind && TYPED_ANSWER.has(kind)) parts.push(quizQuestion(true));
   const app = appKindSettings(el, designer, id, kind);
   if (app) parts.push(app);
   if (!parts.length) return null;

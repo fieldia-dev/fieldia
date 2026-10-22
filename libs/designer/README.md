@@ -143,6 +143,36 @@ model's field keeps the model's, and a field made a paragraph or formatted text
 keeps its languages. Publish says what changed: "“Title”: typed in Arabic and
 English".
 
+## A quiz's results
+
+A form of responses' Rules tab offers **Quiz results**: not shown, shown as the
+answers are sent, or once you have reviewed them; then **Points for a right
+answer** and **Show the right answer to one missed**. Once the form is a quiz,
+each choice's settings offer its **Right answers**, ticked option by option, and
+a short answer's or a number's **Answers it takes**, separated by commas; each
+question its own **Points**, and what is **Said when right** and **Said when
+wrong**. `designer.setPageQuiz({ results, points, rightAnswers })` (`null` takes
+the quiz away), `designer.setOptionDetails(id, index, { correct })` and
+`designer.setQuizQuestion(id, { points, answers, right, wrong })` set them; a
+number's answers are numbers, refused in words otherwise. Try it shows the
+results the person will see.
+
+## How a form is gone through
+
+A form of responses' Rules tab offers **Review before sending** — every answer
+shown, by step, each with Edit, before it is sent — and once on, the **Review's
+heading** in place of "Check your answers". `designer.setReview({ title, text })`
+sets it (`{}` in Fieldia's words, `null` takes it away; a record's screen is
+refused in words). **One question at a time** asks the form's questions one by
+one, as Typeform does (`designer.setFlowOne(on)`). **Pages in random order**
+draws a survey's pages for each person (`designer.setPagesOrder(on)`); each
+page's card offers **Questions in random order**, **Ask** — how many of its
+questions each person is asked — **Keeps its place** where pages are drawn, and
+**Minutes for this page** (`designer.setDraw(id, { order, draw, fixed })`,
+`designer.setTimeLimit(id, { minutes })`); a group's Rules tab the same draw.
+**Time limit** gives the form its minutes, then **Warn before the end** and
+**When the time runs out** (`designer.setTimeLimit(null, { minutes, warn, then })`).
+
 ## Trying a field's rules
 
 Under a field's answer rules — on the panel's Rules tab, and in a survey

@@ -724,6 +724,53 @@ export interface ViewerLabels {
   assistWordsMade: string;
   assistWordsNone: string;
   assistWordsFailed: string;
+  /**
+   * A quiz's results once its answers are sent (`quiz`): their heading, the score (`{score}` of `{max}`, `{percent}`),
+   * each question marked right, wrong or not answered with its points (`{points}` of `{max}`), the person's answer and
+   * the right one (`{answer}`) — or, with results given later, that they come once the answers are reviewed.
+   */
+  quizTitle: string;
+  quizScore: string;
+  quizRight: string;
+  quizWrong: string;
+  quizNotAnswered: string;
+  quizPoints: string;
+  quizYourAnswer: string;
+  quizRightAnswer: string;
+  quizLater: string;
+  /**
+   * A review before sending (`review`): the last step's button, or the page's Submit, while it is still to come; its
+   * heading where the page gives none; each answer's Edit (the question named after it, for a screen reader) and an
+   * answer not given; and, on a step before the last after an Edit, the way back to it.
+   */
+  reviewAnswers: string;
+  reviewTitle: string;
+  reviewEdit: string;
+  reviewNotAnswered: string;
+  backToReview: string;
+  /**
+   * One question at a time (`flow: "one"`): how far ({n} of {total}), the bar's buttons back and on, the button that
+   * goes on, and what it says of Enter.
+   */
+  flowQuestionOf: string;
+  flowPrevious: string;
+  flowNext: string;
+  flowOk: string;
+  flowEnterHint: string;
+  /**
+   * A time limit (`timeLimit`): a page's said before its questions with Start ({time}: "20 minutes"), the countdown
+   * over them — the page's, or a step's — its warning said once ({time} left), and what happened as it ran out: the
+   * answers sent as they stood, locked for the person to send ({send}: the page's own words to send), or a step's kept.
+   */
+  timeLimitTitle: string;
+  timeLimitIntro: string;
+  timeStart: string;
+  timeLeft: string;
+  stepTimeLeft: string;
+  timeWarn: string;
+  timeUpSent: string;
+  timeUpLocked: string;
+  stepTimeUp: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1241,6 +1288,34 @@ const en: ViewerLabels = {
   assistWordsMade: 'Read as filters: {filters}',
   assistWordsNone: 'No filter was found in these words.',
   assistWordsFailed: 'Your words could not be read: {why}',
+  quizTitle: 'Your results',
+  quizScore: 'You scored {score} of {max} ({percent})',
+  quizRight: 'Right',
+  quizWrong: 'Wrong',
+  quizNotAnswered: 'Not answered',
+  quizPoints: '{points} of {max}',
+  quizYourAnswer: 'Your answer: {answer}',
+  quizRightAnswer: 'Right answer: {answer}',
+  quizLater: 'Your results will be shown once your answers have been reviewed.',
+  reviewAnswers: 'Review your answers',
+  reviewTitle: 'Check your answers',
+  reviewEdit: 'Edit',
+  reviewNotAnswered: 'Not answered',
+  backToReview: 'Back to review',
+  flowQuestionOf: 'Question {n} of {total}',
+  flowPrevious: 'Previous question',
+  flowNext: 'Next question',
+  flowOk: 'OK',
+  flowEnterHint: 'or press Enter',
+  timeLimitTitle: 'This form has a time limit',
+  timeLimitIntro: 'You have {time} to answer, from when you press Start.',
+  timeStart: 'Start',
+  timeLeft: 'Time left: {time}',
+  stepTimeLeft: 'Time left for this step: {time}',
+  timeWarn: '{time} left.',
+  timeUpSent: 'Time is up: your answers were sent as they were.',
+  timeUpLocked: 'Time is up: your answers are locked. Press {send} to send them.',
+  stepTimeUp: 'Time is up for this step: its answers are kept as they are.',
 };
 
 /**

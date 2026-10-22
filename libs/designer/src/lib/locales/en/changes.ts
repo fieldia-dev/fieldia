@@ -143,6 +143,11 @@ export const changes = {
   continueLater: (on: boolean): string => (on ? 'It offers Continue later' : 'It no longer offers Continue later'),
   approval: (now: 'on' | 'off' | 'changed') => ({ on: 'Its records wait for approval', off: 'Its records no longer wait for approval', changed: 'What stays open while a record waits for approval changed' })[now],
   suggest: (now: 'on' | 'off' | 'changed') => ({ on: 'It offers Fill from text, by your app’s AI', off: 'It no longer offers Fill from text', changed: 'How Fill from text fills the form changed' })[now],
+  quiz: (now: 'on' | 'off' | 'changed') => ({ on: 'It shows a quiz’s results', off: 'It no longer shows a quiz’s results', changed: 'How it shows the quiz’s results changed' })[now],
+  review: (now: 'on' | 'off' | 'changed') => ({ on: 'It shows every answer before it is sent', off: 'It no longer shows the answers before they are sent', changed: 'Its review before sending changed' })[now],
+  flowOne: (on: boolean): string => (on ? 'It asks one question at a time' : 'It asks its questions together again'),
+  questionsDrawn: 'Which questions each person is asked, or their order, changed',
+  timeLimit: 'Its time limits changed',
   thePage: 'the page',
   // ---- the look
   look: {

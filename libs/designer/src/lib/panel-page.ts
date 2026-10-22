@@ -15,6 +15,8 @@ import { endingsEditor } from './endings-editor';
 import { limitsSettings } from './limits-settings';
 import { approvalSettings } from './approval-settings';
 import { assistSettings } from './assist-settings';
+import { quizSettings } from './quiz-settings';
+import { flowSettings } from './flow-settings';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
@@ -94,6 +96,10 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const approval = approvalSettings(el, designer);
   // AI help's Fill from text, on a form's screen (assist-settings.ts).
   const assist = assistSettings(el, designer);
+  // A form of responses' quiz results (quiz-settings.ts).
+  const quiz = quizSettings(el, designer);
+  // How a form of responses is gone through: a review before sending (flow-settings.ts).
+  const flow = flowSettings(el, designer);
   // Its phone numbers: as typed, or checked by their country — the country they start on, and how they are shown.
   const phones = el('select', { class: 'fd-input fd-select', 'aria-label': w.phones }, el('option', { value: '' }, w.phonesAs.typed), el('option', { value: 'checked' }, w.phonesAs.checked)) as HTMLSelectElement;
   phones.addEventListener('change', () => designer.setPhone({ on: phones.value === 'checked' }));
@@ -154,6 +160,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     secondsRow,
     captchaRow,
     ...limits.rows,
+    ...quiz.rows,
+    ...flow.rows,
     sameRow,
     sameOnRow,
     ...approval.rows,
@@ -165,6 +173,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     destroy: () => {
       seconds.destroy();
       limits.destroy();
+      quiz.destroy();
+      flow.destroy();
     },
     update(page) {
       if (!focused(description)) description.value = page.description ?? '';
@@ -183,6 +193,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       if (!endingsRow.hidden) endings.update(page);
       limits.update(page);
       assist.update(page);
+      quiz.update(page);
+      flow.update(page);
       look.update(page);
       moments.update(page);
       head.update(page);

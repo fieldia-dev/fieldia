@@ -93,6 +93,8 @@ export type { ScanFill, ScanFormat, ScanOption, ScanSettings } from './lib/forma
 export type { PageDuplicates } from './lib/format/duplicates';
 export type { PageLimits } from './lib/format/limits';
 export type { PageApproval } from './lib/format/approval';
+export type { PageQuiz, QuizQuestion } from './lib/format/quiz';
+export type { PageReview, TimeLimit } from './lib/format/flow';
 export type { PageRecords } from './lib/format/records';
 export type { PageEnding } from './lib/format/endings';
 // `quotedLabel` here, not in index.ts alone: the widgets' messages read it, and a package's module taking a name only
@@ -170,6 +172,11 @@ export {
 export { evidenceOf, signedBy, signsAnswers, type SignedBy } from './lib/record/signed';
 export { checkValue, checkProperties, decimalsWords, formatBytes, fileProblem, describeTypes } from './lib/record/check';
 export { scoreOf, type Score } from './lib/record/score';
+// A quiz's results (`quiz` on a page): worked out by the survey part as the answers are sent; their shape.
+export type { QuizResults, QuizMark } from './lib/record/quiz';
+export { formSurveyPart, surveyFlow, type FormSurveyPart } from './lib/record/survey';
+export type { Countdown } from './lib/record/timing';
+export type { DrawnOrder } from './lib/record/order';
 export type {
   DataSource,
   LoadRequest,

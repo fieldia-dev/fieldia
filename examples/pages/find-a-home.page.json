@@ -1,0 +1,75 @@
+{
+  "fieldia": "0.7",
+  "id": "find-a-home",
+  "title": "Find your next home",
+  "description": "Six quick questions, one at a time. An agent calls you with homes that fit.",
+  "data": { "kind": "responses" },
+  "flow": "one",
+  "maxWidth": "medium",
+  "fields": {
+    "name": { "type": "char", "label": "What is your name?", "required": true },
+    "kind": {
+      "type": "selection",
+      "label": "What are you looking for, {name}?",
+      "required": true,
+      "options": [
+        { "value": "apartment", "label": "An apartment" },
+        { "value": "villa", "label": "A villa" },
+        { "value": "townhouse", "label": "A townhouse" },
+        { "value": "office", "label": "An office" }
+      ]
+    },
+    "bedrooms": {
+      "type": "selection",
+      "label": "How many bedrooms?",
+      "required": true,
+      "options": [
+        { "value": "1", "label": "One" },
+        { "value": "2", "label": "Two" },
+        { "value": "3", "label": "Three" },
+        { "value": "4", "label": "Four or more" }
+      ]
+    },
+    "areas": {
+      "type": "selection",
+      "label": "Which areas suit you?",
+      "help": "Pick as many as you like, then press OK.",
+      "multiple": true,
+      "required": true,
+      "options": [
+        { "value": "new-cairo", "label": "New Cairo" },
+        { "value": "zayed", "label": "Sheikh Zayed" },
+        { "value": "maadi", "label": "Maadi" },
+        { "value": "zamalek", "label": "Zamalek" }
+      ]
+    },
+    "budget": {
+      "type": "selection",
+      "label": "Your budget",
+      "required": true,
+      "options": [
+        { "value": "under-5", "label": "Under EGP 5M" },
+        { "value": "5-10", "label": "EGP 5M to 10M" },
+        { "value": "10-20", "label": "EGP 10M to 20M" },
+        { "value": "over-20", "label": "Over EGP 20M" }
+      ]
+    },
+    "phone": { "type": "char", "label": "Which number should the agent call?", "required": true },
+    "notes": { "type": "text", "label": "Anything else we should know?" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "home-search",
+    "children": [
+      { "type": "text", "id": "welcome", "text": "Answer one question at a time: Enter or OK goes on, and a choice goes on by itself.", "style": "paragraph" },
+      { "type": "field", "id": "q-name", "field": "name" },
+      { "type": "field", "id": "q-kind", "field": "kind", "widget": "radio" },
+      { "type": "field", "id": "q-bedrooms", "field": "bedrooms", "widget": "radio", "invisible": "kind == 'office'" },
+      { "type": "field", "id": "q-areas", "field": "areas", "widget": "checkboxes" },
+      { "type": "field", "id": "q-budget", "field": "budget", "widget": "radio" },
+      { "type": "field", "id": "q-phone", "field": "phone", "widget": "phone" },
+      { "type": "field", "id": "q-notes", "field": "notes" }
+    ]
+  },
+  "endings": [{ "title": "Thank you, {name}", "text": "An agent will call you on {phone} with homes in your areas." }]
+}

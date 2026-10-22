@@ -6,6 +6,8 @@ import lease from '../../examples/pages/lease.page.json';
 import { LEASE, LEASE_AGENTS, LEASE_SHOWS } from './lease';
 import { AREAS, AREA_SHOWS } from './areas';
 import visitFeedback from '../../examples/pages/visit-feedback.page.json';
+import trainingCheck from '../../examples/pages/training-check.page.json';
+import findAHome from '../../examples/pages/find-a-home.page.json';
 import { demoFunctions } from './functions';
 import delivery from '../../examples/pages/delivery.page.json';
 import mapDelivery from '../../examples/pages/map-delivery.page.json';
@@ -141,6 +143,10 @@ export const pages: Record<string, Page> = {
   lease: lease as Page,
   // A clinic's feedback: the questions after the first offer the treatments ticked in it.
   'visit-feedback': visitFeedback as Page,
+  // A clinic's staff check: a quiz whose results the person sees once they send.
+  'training-check': trainingCheck as Page,
+  // A buyer's home search, one question at a time.
+  'find-a-home': findAHome as Page,
   // A record each of their rows opens: an invoice, a quotation, a viewing.
   invoice: relatedLists.pages.invoice,
   quotation: relatedLists.pages.quotation,

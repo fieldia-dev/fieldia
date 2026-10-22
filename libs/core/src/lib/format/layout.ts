@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { TimeLimitSchema, type TimeLimit } from './flow';
 import { FIELD_NAME, FilterItemSchema, LinkedFieldSchema, ModifierSchema, MoneyLookSchema, type FilterItem, type LinkedField, type MoneyLook } from './field';
 import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
@@ -108,6 +109,8 @@ export interface FieldNode {
   type: 'field';
   id: string;
   field: string;
+  /** Keeps its place, and is always asked, where the group or step round it draws its order or some of its questions. */
+  fixed?: boolean;
   label?: string;
   /** How the value is shown, when not the type's default: radio, tags, email… */
   widget?: string;
@@ -770,6 +773,17 @@ export interface SectionNode {
   foldAt?: 'start' | 'end';
   /** A ⤢ at its heading's end that shows the group alone over the record's body, until pressed again or Escape. Needs a title. */
   maximise?: boolean;
+  // ---- a survey's draw ----
+  /**
+   * Its parts in an order drawn for each respondent (`random`), on a page of responses: its questions change places among
+   * themselves — words, pictures and a part `fixed` in its place keep theirs. The same person's order is kept in their
+   * drafts and sent with their answers.
+   */
+  order?: 'random';
+  /** Of its questions, this many drawn for each respondent, the rest not asked: 5 of a bank of 20. Its words and fixed parts are always shown. */
+  draw?: number;
+  /** Keeps its place, and is always asked, where the part round it draws its order or some of its questions. */
+  fixed?: boolean;
 }
 
 export interface TabNode {
@@ -828,6 +842,22 @@ export interface StepNode {
   icon?: string;
   /** Can be skipped: its answers are then left out, and its required fields not asked for. */
   optional?: boolean;
+  /**
+   * A time limit for this step, on a page of responses: its clock starts as the step is first entered, a countdown at
+   * its head; as it runs out its answers are locked and the form goes on to the next step (`then: "lock"`, the default),
+   * or the whole page's answers are sent as they stand (`send`). See `TimeLimit`.
+   */
+  timeLimit?: TimeLimit;
+  /**
+   * Its parts in an order drawn for each respondent (`random`), on a page of responses: its questions change places among
+   * themselves — words, pictures and a part `fixed` in its place keep theirs. The same person's order is kept in their
+   * drafts and sent with their answers.
+   */
+  order?: 'random';
+  /** Of its questions, this many drawn for each respondent, the rest not asked: 5 of a bank of 20. Its words and fixed parts are always shown. */
+  draw?: number;
+  /** Keeps its place, and is always asked, where the part round it draws its order or some of its questions. */
+  fixed?: boolean;
   invisible?: Modifier;
   roles?: Roles;
   children: LayoutNode[];
@@ -836,6 +866,8 @@ export interface StepNode {
 export interface WizardNode {
   type: 'wizard';
   id: string;
+  /** Its steps in an order drawn for each respondent, on a page of responses: a step `fixed` keeps its place (a welcome, a last step about you). */
+  order?: 'random';
   /** The list of steps can be clicked: back to any step, or forward past steps that are complete. */
   clickable?: boolean;
   nextLabel?: string;
@@ -1747,6 +1779,7 @@ export const FieldNodeSchema = z.strictObject({
   type: z.literal('field'),
   id,
   field: fieldName,
+  fixed: z.boolean().optional(),
   label: z.string().optional(),
   widget: z.string().min(1).optional(),
   options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
@@ -2135,6 +2168,10 @@ export const SectionNodeSchema = z.strictObject({
   gap: z.int().min(0).max(48).optional(),
   foldAt: z.enum(['start', 'end']).optional(),
   maximise: z.boolean().optional(),
+  // A survey's draw.
+  order: z.enum(['random']).optional(),
+  draw: z.int().min(1).max(1000).optional(),
+  fixed: z.boolean().optional(),
 }).meta({ id: 'SectionNode' });
 
 export const TabNodeSchema = z.strictObject({
@@ -2183,6 +2220,10 @@ export const StepNodeSchema = z.strictObject({
   description: z.string().optional(),
   icon: z.string().min(1).optional(),
   optional: z.boolean().optional(),
+  order: z.enum(['random']).optional(),
+  draw: z.int().min(1).max(1000).optional(),
+  fixed: z.boolean().optional(),
+  timeLimit: TimeLimitSchema.optional(),
   invisible, roles,
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
@@ -2193,6 +2234,7 @@ export const WizardNodeSchema = z.strictObject({
   type: z.literal('wizard'),
   id,
   clickable: z.boolean().optional(),
+  order: z.enum(['random']).optional(),
   nextLabel: z.string().min(1).optional(),
   backLabel: z.string().min(1).optional(),
   finishLabel: z.string().min(1).optional(),

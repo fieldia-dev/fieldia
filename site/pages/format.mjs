@@ -202,6 +202,45 @@ ${code(
 )}
 <p>${c('{field}')} shows an answer given in a page's own words beyond a text's and an alert's: a field's ${c('label')} and ${c('help')} — its own, or its part's — each choice's words, a step's ${c('label')} and ${c('description')}, a wizard's ${c('nextLabel')}, ${c('backLabel')} and ${c('finishLabel')}, and a button's ${c('label')}: <em>"How was your visit to {branch}?"</em> reads <em>"How was your visit to Zamalek?"</em> once the branch is chosen, and again as it changes. Each value reads as people read it — a choice by its label, a link by its name, money with its currency, a day in the page's order (${c('look.dateOrder')}: <em>Oct 15, 2026</em> month first), a yes or no in words — and the form's messages name the field as its label reads (<em>Please answer “How was your visit to Zamalek?”</em>: a label that is a question — ending with a question mark, or with an ellipsis the answer completes — is quoted in the language's own marks wherever a sentence names it, and asked for when it is required; a label that is a name reads <em>Your name is required</em>). After a bar, the words said while the answer is empty: ${c('{branch|this branch}')} reads <em>"How was your visit to this branch?"</em> until a branch is chosen — the page's own words, translated with the rest of its words, drawn as the words round them; without them, an empty answer says nothing. A ${c('{name}')} that is no field of the page is refused by the page check, wherever it is written, with words after its bar or not. These words, and the endings, come in a part of their own, ${c('fieldia.answers.js')}, loaded before a page that has any; a page with none never loads it.</p>
 
+<h3 id="quiz">A quiz's results</h3>
+<p>A page of responses with ${c('quiz')} shows each person their results once they send: their score — <em>You scored 5 of 8 (63%)</em> — and each question asked marked <em>Right</em>, <em>Wrong</em> or <em>Not answered</em>, its points, their answer, the right answer to one they missed and the question's feedback. A choice's right answers are its options marked ${c('"correct": true')} (several: right is exactly those); a question typed names the answers it takes in its field's ${c('quiz.answers')} — words whatever their case and spaces, a number by its value. A right answer earns its question's ${c('quiz.points')}, else the page's ${c('quiz.points')}, else 1; a choice whose options carry points (${c('score')}) earns those, marked neither right nor wrong. ${c('"results": "later"')} says the results come once you have reviewed them; ${c('"rightAnswers": false')} keeps the right answers back. A quiz has no pass mark of its own yet: your server may answer the send with a value of its own (${c('values: { passed: true }')}), which an ending's ${c('when')} reads.</p>
+${code(
+  'json',
+  `
+"quiz": { "results": "now" },
+"fields": {
+  "reversible": { "type": "selection", "label": "Which filler can be dissolved?",
+    "options": [{ "value": "ha", "label": "Hyaluronic acid", "correct": true },
+                { "value": "caha", "label": "Calcium hydroxylapatite" }],
+    "quiz": { "feedback": { "right": "Yes: hyaluronidase dissolves it.",
+                            "wrong": "Only hyaluronic acid can be dissolved." } } },
+  "minutes": { "type": "integer", "label": "Minutes to watch a patient after?",
+    "quiz": { "answers": [30], "points": 2 } }
+}`
+)}
+<p>The right answers travel in the page, where anyone who reads its JSON finds them. A test where that matters leaves ${c('correct')} and ${c('answers')} out, marks the answers on your server, and answers the send with its results: ${c('submit')} returns ${c('{ quiz: { score, max, questions: [{ field, points, max, right, answered, rightAnswer?, feedback? }] } }')}, shown in place of the page's own. The form keeps them as ${c('form.getState().sent.quiz')}. The results come in the survey flow's part, ${c('fieldia.surveyflow.js')}, loaded before a page with a quiz is drawn.</p>
+
+<h3 id="review">A review before sending</h3>
+<p>A page of responses with ${c('review')} shows every answer before it is sent: its last step's button — a page of sections', its Submit — reads <em>Review your answers</em>, the answers are checked as Next checks them, and the questions give way to each answer by step (or by titled group), each with <em>Edit</em> back to its question, then <em>Back</em> and the page's own words to send. ${c('true')} says it in Fieldia's words, <em>Check your answers</em>; a ${c('title')} and ${c('text')} in the page's. From a step before the last after an Edit, <em>Back to review</em> shows them again once the steps on the way are complete. A saved form placed in a step is not listed in it yet. It comes in the survey flow's part, ${c('fieldia.surveyflow.js')}.</p>
+${code('json', `"review": { "title": "Before you send", "text": "Press Edit to change an answer." }`)}
+
+<h3 id="flow-one">One question at a time</h3>
+<p>${c('"flow": "one"')} asks a page of responses' questions one at a time, as Typeform does: each question on a screen of its own with the words before it, its group's or step's title over it. Enter or <em>OK</em> goes on once its answer is checked; a choice of one picked by the pointer or by its letter (A, B, C… beside each option) goes on by itself; ↑ and ↓ (and Page Up, Page Down) go back and on where no box takes those keys; <em>Question 3 of 12</em> and a bar say how far. A question an answer hides is passed over. On a wizard its steps are entered, checked and kept in drafts as ever; a form opened with answers starts at the first still to answer. With ${c('review')}, the last screen reviews the answers, and <em>Edit</em> comes back to its question's screen.</p>
+${code('json', `{ "data": { "kind": "responses" }, "flow": "one", "review": true }`)}
+
+<h3 id="draw">Questions in an order drawn, and N of M</h3>
+<p>On a page of responses, a wizard's ${c('"order": "random"')} shows its steps in an order drawn for each respondent, a step ${c('"fixed": true')} keeping its place; a step's or a group's ${c('"order": "random"')} its questions — words, pictures and a question ${c('fixed')} keep their places. ${c('"draw": 5')} asks 5 of its questions, drawn: the others are not asked, not required and not sent. The draw is seeded — your app's ${c('seed')} (an invitation's code), else the person's id, else one of the browser's — so a person who comes back to their draft finds the same questions; it is sent with the answers as ${c('order')}, by part, the ids in the order shown.</p>
+${code(
+  'json',
+  `{ "type": "step", "id": "bank", "label": "From the question bank", "order": "random", "draw": 2,
+  "children": [ { "type": "field", "id": "q1", "field": "kit" }, { "type": "field", "id": "q2", "field": "record" },
+                { "type": "field", "id": "q3", "field": "left" }, { "type": "field", "id": "q4", "field": "signs" } ] }`
+)}
+
+<h3 id="time-limit">A time limit</h3>
+<p>${c('timeLimit')} on a page of responses gives it a time limit: said before its questions with <em>Start</em>, a countdown over them once started, a warning ${c('warn')} minutes before its end (1 unless said), and as it runs out the answers sent as they stand (${c('"then": "send"')}, the default) or locked for the person to send (${c('"lock"')}) — the page says which. A step may have its own: it counts from when the step is first entered and, as it runs out, keeps that step's answers as they are while the form goes on (${c('lock')}, a step's default), or sends the whole page (${c('send')}). Answers sent on time are sent as they stood: a required one not given goes empty. The clocks are kept in drafts, so a page opened again goes on counting, and the send tells ${c('started')} and ${c('timeUp')} — the browser's clock; a server that must be sure keeps its own.</p>
+${code('json', `"timeLimit": { "minutes": 20, "warn": 2, "then": "send" }`)}
+
 <h3 id="columns">Columns at each width</h3>
 <p>${c('columns')} can give a count for each width of the form: ${c('wide')} above 760px, ${c('medium')} up to 760px, ${c('narrow')} up to 520px. A width left out stacks the way the skin does by itself — the outlined skin keeps its columns until the form is narrow, the underline skin, whose labels sit beside their values, stacks at medium. On a narrow form — a phone — every label goes above its value, the page's or a group's ${c('"labels": "beside"')} too, in every theme: the value has the whole width, never cut to <em>+20 100 912 4…</em>; a title gives its picture the line under it rather than break its words.</p>
 ${code('json', `{ "type": "section", "id": "header", "columns": { "wide": 2, "medium": 2 }, "children": [] }`)}

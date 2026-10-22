@@ -10,6 +10,8 @@ import { PageEndingsSchema, type PageEnding } from './endings';
 import { PageLimitsSchema, type PageLimits } from './limits';
 import { PageApprovalSchema, type PageApproval } from './approval';
 import { PageSuggestSchema, type PageSuggest } from './assist';
+import { PageQuizSchema, type PageQuiz } from './quiz';
+import { PageReviewSchema, TimeLimitSchema, type PageReview, type TimeLimit } from './flow';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -230,6 +232,33 @@ export interface Page {
    * accepted, and Undo puts back what was there. Hidden where the source has no `suggest`. See `PageSuggest`.
    */
   suggest?: PageSuggest;
+  /**
+   * A quiz whose results the person sees once their answers are sent: their score, each question's answer marked right
+   * or wrong, the right answer to one missed and each question's feedback — or, with `results: "later"`, that their
+   * results come once the app has reviewed them. Right answers are a choice's options marked `correct`, or the answers a
+   * question typed takes (its field's `quiz.answers`); points are its field's `quiz.points`, the page's, or 1. See
+   * `PageQuiz`. Without it, a page whose options carry points (`score`) shows no results, as before.
+   */
+  quiz?: PageQuiz;
+  /**
+   * A review before a page of responses is sent: every answer shown — by step on a wizard, by titled group on a page of
+   * sections — each with Edit back to its question, then Send. `true` in Fieldia's words ("Check your answers"), or the
+   * page's own heading and words. See `PageReview`.
+   */
+  review?: boolean | PageReview;
+  /**
+   * How a page of responses is gone through: `one`, one question at a time, as Typeform asks — each question on a screen
+   * of its own, the words before it with it; Enter or OK goes on once it is answered, a choice picked goes on by itself,
+   * ↑ and ↓ go back and on, and "Question 3 of 12" says how far. A wizard's steps keep their checks, events and drafts.
+   * Left out, every question of a step (or of the page) at once, as before.
+   */
+  flow?: 'one';
+  /**
+   * A time limit for the whole page of responses: said before its questions with Start, a countdown over them once
+   * started, a warning before its end, then the answers sent as they stand (`then: "send"`, the default) or locked for
+   * the person to send (`lock`) — the page says which. A step may have its own (`timeLimit` on the step). See `TimeLimit`.
+   */
+  timeLimit?: TimeLimit;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -319,6 +348,10 @@ export const PageSchema = z
     continueLater: z.boolean().optional(),
     approval: PageApprovalSchema.optional(),
     suggest: PageSuggestSchema.optional(),
+    quiz: PageQuizSchema.optional(),
+    review: PageReviewSchema.optional(),
+    flow: z.enum(['one']).optional(),
+    timeLimit: TimeLimitSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

@@ -19,6 +19,7 @@ import { clipboardKeys } from './clipboard-keys';
 import { shortcutKeys } from './shortcuts-sheet';
 import { rail as sideRail } from './rail';
 import { inlineSettings } from './inline-settings';
+import { drawSettings } from './draw-settings';
 import { cardRules } from './rules-card';
 import { ruleMarks } from './rules-marks';
 import { installDesignerStyles } from './styles';
@@ -569,10 +570,12 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const condition = el('div', { class: 'fd-step-when' }, when.element);
     const cards = el('div', { class: 'fd-step-cards', 'data-drop-section': id, 'data-drop-flow': 'column' });
     const addQuestion = el('button', { type: 'button', class: 'fd-button fd-button-link fd-add-question' }, designerIcon(doc, 'short-answer'), w.addQuestion);
+    // Its questions in an order drawn for each person, how many of them each is asked, its own place among pages drawn.
+    const draws = drawSettings(el, designer, id);
     addQuestion.setAttribute('aria-label', w.addQuestion);
     addQuestion.addEventListener('click', () => add('short-answer', { parent: id }));
     // The page's own card, its number on a tab over it, as Google Forms heads a section.
-    section.append(el('header', { class: 'fd-step-head' }, number, el('div', { class: 'fd-step-head-row' }, lined(el, name, 'fd-step-title-box'), answerButton(el, designer, name), removeStep), condition), cards, addQuestion);
+    section.append(el('header', { class: 'fd-step-head' }, number, el('div', { class: 'fd-step-head-row' }, lined(el, name, 'fd-step-title-box'), answerButton(el, designer, name), removeStep), condition, draws.element), cards, addQuestion);
 
     return {
       element: section,
@@ -587,6 +590,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         const earlier = stepsOf(page).slice(0, index).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field'));
         condition.hidden = index === 0;
         when.update(page, earlier, step.invisible);
+        draws.update(page);
       },
     };
   }

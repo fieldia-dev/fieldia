@@ -1,4 +1,5 @@
 import type { FilterCondition, Fields, Option, PropertyDefinition } from '../format/field';
+import type { QuizResults } from './quiz';
 import type { JsonValue } from '../format/json';
 import type { Page } from '../format/page';
 import type { FileValue, RecordId, RelatedRecord, Values } from './values';
@@ -509,6 +510,10 @@ export interface StoredDraft {
   unread?: Record<string, { text: string; message: string }>;
   /** The fields the person answered (changed), in the page's order: where they got to. */
   answered?: string[];
+  /** On a page that draws its order or some of its questions: the draw they were answering, kept so it opens the same. */
+  order?: Record<string, string[]>;
+  /** On a page with time limits: when each started, as ISO — the page's under `#form`, a step's by its id. */
+  timers?: Record<string, string>;
   /** When it was kept, as ISO. */
   savedAt: string;
 }
@@ -1101,6 +1106,18 @@ export interface SubmitRequest {
   bot?: BotReport;
   /** The key of the draft these answers were kept in on the server (`saveDraft`): the source may let it go, or mark it sent. */
   draft?: string;
+  /**
+   * On a page that draws its order or some of its questions (`order: "random"`, `draw`): for each part drawn, its parts'
+   * ids in the order this person was shown — those not drawn left out, their answers not among `values`.
+   */
+  order?: Record<string, string[]>;
+  /**
+   * On a page with a time limit (`timeLimit`): when the person pressed Start, as ISO, and whether the time ran out — the
+   * answers then sent as they stood. A step's limit run out says `timeUp: false` with no `started`. The browser's clock:
+   * a server that must be sure keeps its own.
+   */
+  started?: string;
+  timeUp?: boolean;
 }
 
 /**
@@ -1128,6 +1145,11 @@ export interface SubmitResult {
    * answers themselves stay as they were sent.
    */
   values?: Values;
+  /**
+   * A quiz's results as the app marked them on its server (`quiz` on the page), shown in place of those the page works
+   * out: for a test that keeps its right answers out of the page. See `QuizResults`.
+   */
+  quiz?: QuizResults;
 }
 
 /**

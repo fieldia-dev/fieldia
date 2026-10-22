@@ -492,6 +492,82 @@ any is drawn; where it cannot come, the words show each value as its field
 does at rest, and a page sent says the plain thanks. See
 [endings](https://fieldia.dev/pages/#endings).
 
+## A quiz's results
+
+A page of responses with `quiz` shows its results under the thanks once its
+answers are sent — "You scored 5 of 8 (63%)", then each question asked, in the
+order it was asked: marked Right, Wrong or Not answered in words (a ✓ or ✗
+beside, hidden from screen readers), its points, the person's answer, the right
+answer to one missed and the question's feedback. Their heading takes the focus
+where the page shows no ending's words, so a screen reader reads them first.
+With `results: "later"` they say the results come once the answers have been
+reviewed. They come in the survey flow's part (`surveyFlowPart`, `fieldia.surveyflow.js`),
+loaded before a page with a quiz is drawn. Their words are the viewer's labels
+(`quizTitle`, `quizScore`, `quizRight`, `quizWrong`, `quizNotAnswered`,
+`quizPoints`, `quizYourAnswer`, `quizRightAnswer`, `quizLater`). See
+[a quiz's results](https://fieldia.dev/pages/#quiz).
+
+## A review before sending
+
+A page of responses with `review` reads "Review your answers" on its last
+step's button (a page of sections', on its Submit): pressed, the step's answers
+are checked as Next checks them, and the questions give way to every answer —
+by step, or by titled group — each with Edit (the question named after it, for
+a screen reader) and "Not answered" for one left empty; Back, and the page's own
+words to send. Edit goes to that question in its step, focused; from a step
+before the last, **Back to review** checks the steps on the way and shows the
+answers again. Ctrl+Enter reviews as the button does, and sends from the
+review. A send refused goes back to the question it names. A saved form placed
+in a step (a `form` part) is not listed in the review yet: its answers are sent,
+but read on its step. It comes in the
+survey flow's part; its words are the viewer's labels (`reviewAnswers`, `reviewTitle`,
+`reviewEdit`, `reviewNotAnswered`, `backToReview`). See
+[a review before sending](https://fieldia.dev/pages/#review).
+
+## One question at a time
+
+A page of responses with `"flow": "one"` asks its questions as Typeform does:
+each question on a screen of its own, large, with the words before it (a text,
+a picture) and its group's or step's title over it. **OK** — the form's first
+submit button, so Enter in a box presses it — goes on once the answer is
+checked where it stands; a choice of one picked with the pointer, or with its
+letter (A, B, C… shown beside each option, by the key's place on any keyboard),
+goes on by itself a moment later — never one of several, never the arrows
+moving through radios. The bar's ↑ and ↓, and the keys ↑, ↓, Page Up and Page
+Down where no box takes them, go back and on; "Question 3 of 12" and a bar say
+how far. A question an answer hides is passed over, one it shows comes in its
+place. On a wizard, its steps are entered, checked and kept in drafts as ever;
+a form opened with answers starts at the first still to answer. With `review`,
+the last screen's OK reviews them, and Edit comes back to its screen. It comes
+in the survey flow's part; its words are the viewer's labels (`flowQuestionOf`,
+`flowPrevious`, `flowNext`, `flowOk`, `flowEnterHint`). See
+[one question at a time](https://fieldia.dev/pages/#flow-one).
+
+## Questions in an order drawn
+
+A page that draws its order (`order: "random"`) or some of its questions
+(`draw`) shows each respondent the parts the form drew, in its order: a step's or
+a group's questions laid in their grid as drawn, a wizard's steps in its list
+of steps; the questions not drawn are hidden and never asked. The review and
+one question at a time follow the same order. See
+[questions in an order drawn](https://fieldia.dev/pages/#draw).
+
+## A time limit
+
+A page with `timeLimit` says it before its questions — "You have 20 minutes to
+answer, from when you press Start." — with **Start**; once pressed, "Time left:
+19:59" stands over the questions (a `role="timer"`, read when asked, never every
+second aloud), its warning said once as it nears its end ("2 minutes left."),
+and as it runs out the page says what happened: "Time is up: your answers were
+sent as they were." (`send`, then the thanks says so too), or "…are locked.
+Press Submit to send them." (`lock`). A step's own limit counts from when it is
+first entered — "Time left for this step: 4:59" — and as it runs out its answers
+stay as they are while the form goes on. No review stands in the way of a send
+on time. It comes in the survey flow's part; its words are the viewer's labels
+(`timeLimitTitle`, `timeLimitIntro`, `timeStart`, `timeLeft`, `stepTimeLeft`,
+`timeWarn`, `timeUpSent`, `timeUpLocked`, `stepTimeUp`). See
+[a time limit](https://fieldia.dev/pages/#time-limit).
+
 ## Opening, closing and limiting a form; Continue later
 
 A page of responses with `limits` says, as it opens, when it takes no answers —

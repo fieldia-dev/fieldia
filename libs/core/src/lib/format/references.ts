@@ -31,6 +31,8 @@ import { checkSignature } from './signature-checks';
 import { checkRewrite, checkSuggest } from './assist-checks';
 import { checkScan } from './scan-checks';
 import { checkEndings } from './endings-checks';
+import { checkSurveyFlow } from './flow-checks';
+import { surveyFlow } from '../record/survey';
 import { checkAddressSearch, checkMap, checkPlace, type MapTools } from './map-checks';
 import { checkLineKinds, checkTable, type TableTools } from './table-checks';
 import { checkStatusbar } from './statusbar-checks';
@@ -154,8 +156,12 @@ export class ReferenceCheck {
       // Each ending: in the one-tag script, its checks come with the answers part, which a page with any asks for.
       if (Array.isArray(this.page.endings) && this.page.endings.length) checkEndings(this.page, { ...this.fieldTools(), checkModifiers: (owner, path, keys) => this.checkModifiers(owner, path, keys), checkWords: (owner, path, keys, sent) => this.checkWords(owner, path, keys, sent) });
     }
+    const owing = { report: (path: string, message: string) => this.report(path, message), owe: (part: string) => void this.later.add(part) };
     // A page's limits and Continue later: checked where it has either (in the one-tag script, by the limits part it asks for).
-    if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, { report: (path, message) => this.report(path, message), owe: (part) => this.later.add(part) });
+    if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, owing);
+    // A survey's flow — a quiz and each question's own, a review, one at a time, a draw, a time limit — checked where the
+    // page has any (in the one-tag script, by the survey flow's part it asks for).
+    if (!this.line && (surveyFlow(this.page) || JSON.stringify(this.page.fields).includes('"quiz":'))) checkSurveyFlow(this.page, owing);
     // A record's approvals: checked where it has them (in the one-tag script, by the approvals part it asks for).
     if (!this.line && this.page.approval !== undefined) checkApproval(this.page, this.fieldTools());
     // Texts kept in several languages: placed as words people type (in the one-tag script, by the languages part it asks for).

@@ -132,6 +132,9 @@ export const PART_WORDS = {
   survey: {
     widgets: ['notAnswered', 'addressStreet', 'addressCity', 'addressLine2', 'addressRegion', 'addressPostcode', 'addressCountry', 'keepOrder', 'addProperty', 'propertyName', 'propertyType', 'propertyTypes', 'colourCode', 'colourCodeBox', 'noColour', 'rankTop', 'moveUp', 'moveDown', 'movedTo', 'removed'],
   },
+  surveyflow: {
+    viewer: ['quizTitle', 'quizScore', 'quizRight', 'quizWrong', 'quizNotAnswered', 'quizPoints', 'quizYourAnswer', 'quizRightAnswer', 'quizLater', 'reviewAnswers', 'reviewTitle', 'reviewEdit', 'reviewNotAnswered', 'backToReview', 'flowQuestionOf', 'flowPrevious', 'flowNext', 'flowOk', 'flowEnterHint', 'timeLimitTitle', 'timeLimitIntro', 'timeStart', 'timeLeft', 'stepTimeLeft', 'timeWarn', 'timeUpSent', 'timeUpLocked', 'stepTimeUp'],
+  },
   text: {
     widgets: ['textColour', 'linkRecordNamed', 'moreTools', 'switchToMarkdown', 'switchToRich', 'markdownSupported', 'pasteOrSelect', 'editNamed', 'doneEditing', 'addLink', 'existingItem', 'newItem', 'formattingLost', 'cursorInLink', 'attachFile', 'switchAnyway', 'headingLevel',
       'tableTool', 'tableInsert', 'tableSize', 'tableRows', 'tableRowsOne', 'tableColumns', 'tableColumnsOne', 'tableColumn', 'tableRowAbove', 'tableRowBelow', 'tableColumnLeft', 'tableColumnRight', 'tableDeleteRow', 'tableDeleteColumn', 'tableHeaderRow', 'tableDelete', 'tableKeys', 'tableRowAdded', 'tableColumnAdded', 'tableRowDeleted', 'tableColumnDeleted', 'tableDeleted',

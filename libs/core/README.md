@@ -311,6 +311,94 @@ refused by the page check. `createMemoryDataSource`
 answers each response as a server would with ``submitted: (request, count) =>
 ({ id: `B-${1042 + count}` })``.
 
+## A quiz's results
+
+A page of responses with `quiz` shows the person their results once the answers
+are sent: their score, each question marked right or wrong, the right answer to
+one missed and the question's own feedback. A choice's right answers are its
+options marked `correct`; a question typed — a word, a number — names the
+answers it takes (`quiz.answers`: words whatever their case and spaces, a number
+by its value). A right answer earns its question's `quiz.points`, else the
+page's, else 1; a choice whose options carry points (`score`) earns those, as
+before, marked neither right nor wrong. With several answers, right is exactly
+the right ones.
+
+```json
+"quiz": { "results": "now", "points": 1, "rightAnswers": true },
+"fields": {
+  "reversible": { "type": "selection", "label": "Which filler can be dissolved?",
+    "options": [{ "value": "ha", "label": "Hyaluronic acid", "correct": true }, { "value": "caha", "label": "Calcium hydroxylapatite" }],
+    "quiz": { "feedback": { "right": "Yes: hyaluronidase dissolves it.", "wrong": "Only hyaluronic acid can be dissolved." } } },
+  "enzyme": { "type": "char", "label": "Which enzyme dissolves it?", "quiz": { "answers": ["Hyaluronidase"] } }
+}
+```
+
+The form marks the answers as they go — `form.getState().sent.quiz` is
+`{ score, max, questions: [{ field, points, max, right, answered, rightAnswer?,
+feedback? }] }`, in the order they were asked — with the survey flow's part
+(`formSurveyPart`, asked for as the form opens). `results: "later"` says the
+results come once you have reviewed them, and shows none; `rightAnswers: false`
+keeps the right answers back. The right answers travel in the page, where
+anyone who reads its JSON finds them: a test where that matters keeps them out
+of the page, marks the answers on your server and answers the send with them —
+`submit` returns `{ quiz: { score, max, questions } }`, shown in place of the
+page's. `quizResults(page, values, asked?)` marks answers the page's way for
+your own code. A quiz has no pass mark of its own yet: your server may answer
+the send with a value of its own (`values: { passed: true }`), which an
+ending's `when` reads.
+
+## A review before sending
+
+`review` on a page of responses shows every answer before it is sent — by step
+on a wizard, by titled group on a page of sections — each with Edit back to its
+question, then Send: `true` in Fieldia's words ("Check your answers"), or
+`{ "title": "Before you send", "text": "Press Edit to change one." }` in the
+page's. The viewer draws it (the survey flow's part); the answers are checked as a
+step's are before they show. `form.validate(within)` checks the answers inside
+one part alone — a step, a question — as the review and one question at a time
+do.
+
+## One question at a time
+
+`"flow": "one"` on a page of responses asks one question at a time (the
+viewer's survey part draws it): each question on a screen of its own, Enter or
+OK going on once its answer is checked (`form.validate(within)`, the question's
+part alone), a choice picked going on by itself. A wizard's steps are entered,
+checked and kept as ever. A record's sheet, and a list, are refused it.
+
+## Questions in an order drawn, and N of M
+
+On a page of responses, a wizard's `"order": "random"` shows its steps in an
+order drawn for each respondent — a step `"fixed": true` keeps its place (a
+welcome first, a page about you last) — and a step's or a group's shows its
+questions so: words and pictures, and a question `fixed`, keep their places.
+`"draw": 5` asks 5 of its questions, drawn, the rest never asked (nor
+required, nor sent). The draw is seeded — `createForm`'s `seed` (an
+invitation's code, a candidate's id), else the person's `user.id`, else one of
+the browser's for each response — so the same seed draws the same in every
+engine. The form keeps it as `state.order` (by part, its parts' ids in the
+order shown), in its drafts — a page opened again shows the same questions —
+and sends it with the answers (`SubmitRequest.order`). A quiz's results follow
+the order shown. The draw comes in the survey flow's part (`formSurveyPart`, asked for
+as the form opens; a form made before it came draws once it has).
+
+## A time limit
+
+`"timeLimit": { "minutes": 20, "warn": 2, "then": "send" }` on a page of
+responses, or on one of its steps. A page's clock starts with
+`form.startTimer()` (the viewer's Start), a step's as it is first entered; each
+runs on the form's clock (`now`, `scheduler`) and runs out on time
+(`state.timeUp`, by scope: `#form`, or the step's id). Its answers are then
+locked, and their checks refuse nothing: they go as they stood — a required
+answer not given goes empty. `then: "send"` (a page's default) leaves the send
+to the viewer, at once; a headless app calls `form.save()` as `timeUp` changes.
+`lock` (a step's default) keeps them for the person to send; a step's that
+locks gives way to the next step. `form.countdown()` is the countdown showing
+now (`{ scope, left, ends, stage: 'running' | 'warning' | 'up', … }`). Their
+starts are kept in drafts (`StoredDraft.timers`), so a page opened again goes on
+counting; the send tells `started` and `timeUp`. The clock is the browser's: a
+server that must be sure keeps its own.
+
 ## Files stored as they are picked
 
 Give the data source `upload(file, request)` and a file or picture field sends
