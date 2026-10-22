@@ -279,13 +279,48 @@ describe('a list whose cells are changed in place', () => {
     const paste = new Event('paste', { bubbles: true, cancelable: true });
     Object.defineProperty(paste, 'clipboardData', { value: { getData: () => 'Facial\nFacial\nFacial\n' } });
     catcher.dispatchEvent(paste);
+    // Three rows changed at once: asked first.
+    await until(() => document.querySelector('[role="alertdialog"]'));
+    expect(document.querySelector('[role="alertdialog"] p')?.textContent).toBe('Change 3 rows with what you pasted?');
+    (document.querySelector('[role="alertdialog"] .fd-button-primary') as HTMLButtonElement).click();
     await until(() => source.calls.some((call) => call.method === 'writeMany'));
     const many = source.calls.filter((call) => call.method === 'writeMany').map((call) => call.request as { ids: unknown[]; values: unknown; versions: Record<string, unknown> });
     expect(many).toHaveLength(1);
     expect(many[0].ids).toEqual([1, 2, 3]);
     expect(Object.keys(many[0].versions)).toEqual(['1', '2', '3']);
-    await until(() => host.querySelector('.fd-list-paste-note')?.textContent === 'Pasted into 3 cells.');
+    await until(() => host.querySelector('.fd-list-paste-words')?.textContent === 'Pasted into 3 cells.');
     expect(Object.values(source.records['service']).map((one) => one['name'])).toEqual(['Facial', 'Facial', 'Facial']);
+  });
+
+  it('offers Undo after a paste: the rows changed put back and saved again, those it added taken away; Ctrl+Z the same', async () => {
+    const source = createMemoryDataSource({ records: records(), versions: true });
+    const host = await mount({ dataSource: source });
+    const pasteOn = (td: HTMLElement, text: string) => {
+      td.focus();
+      td.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }));
+      const paste = new Event('paste', { bubbles: true, cancelable: true });
+      Object.defineProperty(paste, 'clipboardData', { value: { getData: () => text } });
+      (host.querySelector('.fd-list-paste-catcher') as HTMLTextAreaElement).dispatchEvent(paste);
+    };
+    // Two rows: one on the last service, one added past it.
+    pasteOn(cell(host, 3, 'minutes'), '50\t3300\n30\t1500\n');
+    await until(() => document.querySelector('[role="alertdialog"]'));
+    expect(document.querySelector('[role="alertdialog"] p')?.textContent).toBe('Paste 2 rows: change 1 and add 1?');
+    (document.querySelector('[role="alertdialog"] .fd-button-primary') as HTMLButtonElement).click();
+    // The row added has no name: refused, said under it (one row alone says its own).
+    await until(() => source.records['service']['3']['price'] === 3300 && host.querySelector('.fd-list-undo:not([hidden])'));
+    expect(host.querySelectorAll('.fd-list-row[data-new]')).toHaveLength(1);
+    (host.querySelector('.fd-list-undo') as HTMLButtonElement).click();
+    await until(() => source.records['service']['3']['price'] === 3200 && !host.querySelector('.fd-list-row[data-new]'));
+    expect(source.records['service']['3']['minutes']).toBe(60);
+    expect(host.querySelector('.fd-list-paste-words')?.textContent).toBe('Paste undone.');
+    // One cell, no question; Ctrl+Z right after it, on the list.
+    pasteOn(cell(host, 1, 'price'), '2500');
+    await until(() => source.records['service']['1']['price'] === 2500);
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    await until(() => host.querySelector('.fd-list-undo:not([hidden])'));
+    cell(host, 1, 'price').dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }));
+    await until(() => source.records['service']['1']['price'] === 2200);
   });
 
   it('is read and opened as ever without `editable`, or where the source cannot save', async () => {

@@ -309,7 +309,7 @@ export const DEMOS = [
       'Press another row: Hydrafacial is saved — its price alone — and its row is at rest again.',
       'Type 2 in a service’s Minutes and leave the row: “Not saved: Minutes must be at least 5”, under it; Per hour waits, never worked out from 2. Press Put back.',
       'Press Add a service: type its name, Tab through its cells and leave it — it is saved, and the list counts one more.',
-      'Copy three rows of minutes and prices from a spreadsheet, press a service’s Minutes, Escape, and paste: each row takes its cells and is saved.',
+      'Copy three rows of minutes and prices from a spreadsheet, press a service’s Minutes, Escape, and paste: asked first, each row takes its cells and is saved — Undo, or Ctrl+Z, right after puts them back.',
       'Press “Someone else changes a price”, then change the first service’s minutes and leave the row: who changed it and when, said under it, with Reload and Keep mine.',
       'Press Escape in a cell you typed in: it holds what it held. Hide a column from Columns: Tab passes it.',
       'Narrow the window, or open the page on a phone: each service is a card, changed in a sheet over the list.',

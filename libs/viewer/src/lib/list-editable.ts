@@ -25,7 +25,7 @@ import {
   type Value,
   type Values,
 } from '@fieldia/core';
-import { currencyOf, dateOrderOf, drawIcon, linesPart, type LinesPart, type Widget, type WidgetLabels } from '@fieldia/widgets';
+import { currencyOf, dateOrderOf, drawIcon, formatNumber, inPlural, linesPart, type LinesPart, type Widget, type WidgetLabels } from '@fieldia/widgets';
 import { setAttr, setHidden, setText } from './dom';
 import { installEditableStyles } from './editable-styles';
 import type { ListContext } from './list';
@@ -137,6 +137,10 @@ interface RowEdit {
   on: boolean;
   gone: boolean;
   stops: (() => void)[];
+  /** The record it was saved as: a row added by a paste, which Undo takes away. */
+  savedAs?: RecordId;
+  /** Why it was refused, said once for the rows a paste left refused for the same reason — not under it. */
+  saidOnce?: string;
 }
 
 /**
@@ -311,6 +315,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
   /** Said to a screen reader as it happens: a row saved. */
   const status = el('span', { class: 'fd-sr-only', role: 'status' });
   const hint = el('span', { class: 'fd-sr-only', id: list.uid(`${node.id}-edit-hint`) }, labels.rowEditHint);
+  /** Rows a paste left refused for the same reason, each reason said once: "33 rows not saved: Service is required." */
+  const refusedRows = el('div', { class: 'fd-list-refused-rows', id: list.uid(`${node.id}-refused-rows`), hidden: '' });
 
   const lockedOut = (record: Row | null) => record?.can?.edit === false;
   /** A row its record lets no one change here: its source says so, or none of the cells that change may for it. */
@@ -475,23 +481,36 @@ export function editableRows(context: EditableContext): EditableRows | null {
       setAttr(tr, 'aria-busy', state.status === 'saving' ? 'true' : null);
     }
     edit.safety.update(state);
-    // Refused: why, each problem once — text that does not read, a rule, the source's own words; never while someone
-    // else's save waits for the person's choice, which says its own.
+    const why = refusedWhy(edit, state);
+    // Said once with the rows refused for the same reason, while that is still why; another why, under it again.
+    if (edit.saidOnce !== undefined && edit.saidOnce !== why) {
+      edit.saidOnce = undefined;
+      groupsLater();
+    }
+    const once = !!why && edit.saidOnce === why;
+    const words = why && !once ? fill(labels.rowNotSaved, { why }) : '';
+    setText(edit.noteWords, words);
+    setHidden(edit.refusal, !words);
+    const says = !!words || !!state.conflict || !!state.setAside;
+    setHidden(edit.note, !says);
+    if (tr) setAttr(tr, 'aria-describedby', words ? edit.noteWords.id : once ? refusedRows.id : null);
+    // Saved by Keep mine, or nothing left to save once the changes set aside were let go: the row at rest again.
+    if (edit.refused && !edit.editor && !state.conflict && !state.setAside && state.status !== 'saving' && !state.dirty.length && !Object.keys(state.unread).length) queueMicrotask(() => edit.refused && settleRow(edit));
+  }
+
+  /**
+   * Why a row was refused, each problem once — text that does not read, a rule, the source's own words — each as said,
+   * its own full stop left to the sentence round them; none while someone else's save waits for the person's choice,
+   * which says its own.
+   */
+  function refusedWhy(edit: RowEdit, state: FormState): string {
     const problems: string[] = [];
     if (edit.refused && !state.conflict) {
       for (const [path, unread] of Object.entries(state.unread)) problems.push(problemWords(path, unread.message));
       for (const [path, message] of Object.entries(state.errors)) if (!state.unread[path]) problems.push(problemWords(path, message));
       if (!problems.length && state.saveProblem && state.saveProblem.kind !== 'conflict') problems.push(state.saveProblem.message);
     }
-    // Each problem as said, its own full stop left to the sentence round them.
-    const words = problems.length ? fill(labels.rowNotSaved, { why: problems.map((one) => one.replace(/[.。]\s*$/u, '')).join(isRightToLeft(locale) ? '؛ ' : '; ') }) : '';
-    setText(edit.noteWords, words);
-    setHidden(edit.refusal, !words);
-    const says = !!words || !!state.conflict || !!state.setAside;
-    setHidden(edit.note, !says);
-    if (tr) setAttr(tr, 'aria-describedby', words ? edit.noteWords.id : null);
-    // Saved by Keep mine, or nothing left to save once the changes set aside were let go: the row at rest again.
-    if (edit.refused && !edit.editor && !state.conflict && !state.setAside && state.status !== 'saving' && !state.dirty.length && !Object.keys(state.unread).length) queueMicrotask(() => edit.refused && settleRow(edit));
+    return problems.map((one) => one.replace(/[.。]\s*$/u, '')).join(isRightToLeft(locale) ? '؛ ' : '; ');
   }
 
   /** Nothing of the person's left on a row that was refused: at rest again, as saved — the focus kept where it was in it. */
@@ -542,6 +561,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
   let typing: Element | null = null;
   const onTyped = (event: Event) => {
     if (typedBox(event.target as Element)) typing = event.target as Element;
+    // Something typed after a paste: its Undo would put back over it — no longer offered.
+    if (event.target !== catcher) endUndo();
   };
   const onRead = (event: Event) => {
     if (event.target === typing) typing = null;
@@ -910,6 +931,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const made = !edit.record;
     const record = savedRecord(edit);
     edit.record = record;
+    edit.savedAs = record.id;
     if (made && edit.tr) {
       edit.tr.removeAttribute('data-new');
       edit.tr.setAttribute('data-id', String(record.id));
@@ -928,6 +950,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
   function done(edit: RowEdit) {
     const made = !edit.record;
     const record = savedRecord(edit);
+    edit.savedAs = record.id;
     atRest(edit, record);
     context.saved(record, made);
     setText(status, fill(labels.rowSaved, { name: nameOf(record.values, String(record.id)) }));
@@ -953,6 +976,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     edit.form.dispose();
     edit.note.remove();
     if (edits.get(edit.key) === edit) edits.delete(edit.key);
+    if (edit.saidOnce !== undefined) groupsLater();
     if (edit.tr) {
       edit.tr.removeAttribute('data-changed');
       edit.tr.removeAttribute('aria-busy');
@@ -1050,8 +1074,14 @@ export function editableRows(context: EditableContext): EditableRows | null {
 
   // ---- a block pasted from a spreadsheet ------------------------------------------------------------------------
 
-  /** What a block pasted did, said politely under the list until the person moves on. */
-  const pasteNote = el('p', { class: 'fd-help fd-list-paste-note', role: 'status', hidden: '' });
+  /** What a block pasted did, said politely under the list until the person moves on; Undo beside it a few seconds. */
+  const pasteWords = el('span', { class: 'fd-list-paste-words' });
+  const undoButton = el('button', { type: 'button', class: 'fd-button fd-button-link fd-list-undo', hidden: '' }, labels.pasteUndo) as HTMLButtonElement;
+  const pasteNote = el('p', { class: 'fd-help fd-list-paste-note', role: 'status', hidden: '' }, pasteWords, ' ', undoButton);
+  const sayPasted = (words: string) => {
+    setText(pasteWords, words);
+    pasteNote.hidden = !words;
+  };
   catcher.addEventListener('paste', (event) => {
     const td = catching;
     catching = null;
@@ -1085,8 +1115,128 @@ export function editableRows(context: EditableContext): EditableRows | null {
     true
   );
   body.addEventListener('keydown', (event) => {
-    if (!pasteNote.hidden && !(event.ctrlKey || event.metaKey)) pasteNote.hidden = true;
+    if (!pasteNote.hidden && !undoable && !(event.ctrlKey || event.metaKey)) pasteNote.hidden = true;
   });
+
+  /**
+   * A paste that may be taken back: what each row it changed held before it — its record's as listed — the rows it
+   * added, and the cell it was pasted on. Offered for a few seconds once its rows are saved, and withdrawn as soon as
+   * something is typed or another paste comes.
+   */
+  interface PasteUndo {
+    changed: Map<RowEdit, Values>;
+    made: RowEdit[];
+    from: HTMLTableCellElement;
+    timer: ReturnType<typeof setTimeout> | null;
+  }
+  let undoable: PasteUndo | null = null;
+  /** How long Undo is offered once a paste's rows are saved. */
+  const UNDO_FOR = 10_000;
+  function offerUndo(undo: PasteUndo) {
+    undoable = undo;
+    undoButton.hidden = false;
+  }
+  function endUndo(undo?: PasteUndo) {
+    const now = undoable;
+    if (!now || (undo && undo !== now)) return;
+    if (now.timer) clearTimeout(now.timer);
+    undoable = null;
+    // Its button let go with the focus on it: the focus to the cell pasted on.
+    if (undoButton.contains(doc.activeElement) && now.from.isConnected) now.from.focus({ preventScroll: true });
+    undoButton.hidden = true;
+  }
+  undoButton.addEventListener('click', () => void undoPaste());
+  /** Ctrl or ⌘ and Z right after a paste, anywhere in the list but a box typed in (a box's own Undo): the paste undone. */
+  const onUndoKey = (event: KeyboardEvent) => {
+    if (!undoable || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== 'z' || typedBox(event.target as Element)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    void undoPaste();
+  };
+  context.element.addEventListener('keydown', onUndoKey);
+
+  /** Undo pressed: once the paste's saves are done, after them. */
+  function undoPaste(): Promise<unknown> {
+    const undo = undoable;
+    if (!undo) return pasting;
+    endUndo();
+    pasting = pasting.then(() => undoNow(undo)).catch(() => undefined);
+    return pasting;
+  }
+
+  /** The rows a paste changed put back as they were — saved again — and those it added taken away. */
+  async function undoNow(undo: PasteUndo) {
+    if (destroyed) return;
+    const touched: RowEdit[] = [];
+    for (const [old, before] of undo.changed) {
+      const id = String(old.record?.id);
+      const tr = [...body.querySelectorAll<HTMLTableRowElement>(':scope > tr.fd-list-row[data-id]')].find((one) => one.getAttribute('data-id') === id);
+      const edit = edits.get(id) ?? (tr ? editOf(tr) : null);
+      if (!edit) continue;
+      await edit.ready;
+      if (edit.gone) continue;
+      for (const [name, value] of Object.entries(before)) {
+        edit.form.setUnread(name, null);
+        edit.form.setValue(name, value);
+      }
+      touched.push(edit);
+    }
+    const saved: RecordId[] = [];
+    for (const edit of undo.made) {
+      if (edit.savedAs !== undefined) {
+        saved.push(edit.savedAs);
+        release(edit);
+      } else if (!edit.gone) drop(edit);
+    }
+    await saveMany(touched);
+    if (saved.length && source.delete) {
+      for (const id of saved) await source.delete({ model, id, fields: page.fields }).catch(() => undefined);
+      await context.reload();
+    }
+    if (destroyed) return;
+    sayPasted(labels.pasteUndone);
+    if (undo.from.isConnected && (doc.activeElement === doc.body || !doc.activeElement)) undo.from.focus({ preventScroll: true });
+  }
+
+  /** Rows a paste left refused for the same reason: said once each reason, under the list — each row still marked. */
+  function sayOnce(rows: readonly RowEdit[]) {
+    const by = new Map<string, RowEdit[]>();
+    for (const edit of rows) {
+      const why = edit.gone ? '' : refusedWhy(edit, edit.form.getState());
+      if (why) by.set(why, [...(by.get(why) ?? []), edit]);
+    }
+    for (const [why, group] of by) {
+      if (group.length < 2) continue;
+      for (const edit of group) {
+        edit.saidOnce = why;
+        paint(edit);
+      }
+    }
+    sayGroups();
+  }
+  let groupsQueued = false;
+  const groupsLater = () => {
+    if (groupsQueued) return;
+    groupsQueued = true;
+    queueMicrotask(sayGroups);
+  };
+  /** Each reason said once, with its rows' count, and a button that puts them back — or takes away those added. */
+  function sayGroups() {
+    groupsQueued = false;
+    const by = new Map<string, RowEdit[]>();
+    for (const edit of edits.values()) if (edit.saidOnce !== undefined && !edit.gone) by.set(edit.saidOnce, [...(by.get(edit.saidOnce) ?? []), edit]);
+    refusedRows.replaceChildren(
+      ...[...by].map(([why, group]) => {
+        const button = el('button', { type: 'button', class: 'fd-button fd-button-link' }, group.every((edit) => !edit.record) ? labels.rowsDrop : labels.rowsPutBack);
+        button.addEventListener('click', () => {
+          for (const edit of group) putBackRow(edit, false);
+          (addButton.hidden || !addButton.isConnected ? context.element : addButton).focus();
+        });
+        return el('p', { class: 'fd-list-refused' }, fill(inPlural(labels.rowsNotSaved, labels.rowsNotSavedOne, group.length, locale), { why }), ' ', button);
+      })
+    );
+    refusedRows.hidden = !by.size;
+  }
 
   let pasting: Promise<unknown> = Promise.resolve();
   /** A block pasted on a cell: across the columns shown from it and down the rows, each row then saved. One at a time. */
@@ -1109,6 +1259,17 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const at = drawings;
     const from = rowsShown().indexOf(tr);
     if (from < 0) return;
+    // A paste that changes or adds more than one row is asked first: "Paste 40 rows: change 7 and add 33?".
+    const there = rowsShown().length - from;
+    const changes = Math.min(block.length, there);
+    const adds = canAdd() ? block.slice(there).filter((cells) => cells.some((one) => one.trim())).length : 0;
+    endUndo();
+    if (changes + adds > 1 && list.ask) {
+      const count = (n: number) => formatNumber(n, 0, locale);
+      const asked = changes && adds ? fill(labels.pasteAsk, { n: count(changes + adds), changed: count(changes), added: count(adds) }) : fill(changes ? labels.pasteAskChange : labels.pasteAskAdd, { n: count(changes || adds) });
+      if (!(await list.ask(asked)) || at !== drawings || destroyed || !tr.isConnected) return;
+    }
+    const undo: PasteUndo = { changed: new Map(), made: [], from: td, timer: null };
     // The rows it lands on, each with its form ready to take its cells.
     const landing = rowsShown()
       .slice(from, from + block.length)
@@ -1125,7 +1286,12 @@ export function editableRows(context: EditableContext): EditableRows | null {
       fields: rowPage.fields as Record<string, LineField>,
       columns: context.columns().filter((name) => name in rowPage.fields),
       lines: () => rowsShown().map((row): Line => ({ key: keyOf(row), values: valuesOf(row) })),
-      add: () => addRowQuietly(),
+      add: () => {
+        const key = addRowQuietly();
+        const made = key ? edits.get(key) : undefined;
+        if (made) undo.made.push(made);
+        return key;
+      },
       typable: (line, name) => {
         const row = rowsShown().find((one) => keyOf(one) === line.key);
         const edit = rowEdit(line.key);
@@ -1136,6 +1302,12 @@ export function editableRows(context: EditableContext): EditableRows | null {
       write: (line, name, value) => {
         const edit = rowEdit(line.key);
         if (!edit) return;
+        // What a row of a record held before it, for Undo: once each field, as the row stood.
+        if (edit.record) {
+          const before = undo.changed.get(edit) ?? {};
+          if (!(name in before)) before[name] = (edit.form.getState().values[name] ?? null) as Value;
+          undo.changed.set(edit, before);
+        }
         edit.form.setUnread(name, null);
         edit.form.setValue(name, value);
         touched.add(edit);
@@ -1152,10 +1324,23 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const said = await part.pasteRows(table, from, column, block, { labels: list.widgetLabels ?? ({} as WidgetLabels), locale });
     (scratch as Form | null)?.dispose();
     if (said === null || destroyed) return;
-    pasteNote.textContent = said;
-    pasteNote.hidden = !said;
+    sayPasted(said);
+    // Undo at once, where all it would do can be done whatever is saved: no row added, or a source that takes records away.
+    const offered = !!undo.changed.size || !!undo.made.length;
+    const early = offered && (!undo.made.length || !!source.delete);
+    if (early) offerUndo(undo);
     // Each row pasted on is left at once: saved, rows given the same change in one go where the source can.
     await saveMany([...touched]);
+    if (destroyed) return;
+    sayOnce([...touched]);
+    // Its saves done: Undo for a few seconds — unless it was taken or withdrawn meanwhile; where it waited for them,
+    // only when none of the rows it added was saved, as nothing could take that one away.
+    if (!offered || (early && undoable !== undo)) return;
+    if (!early) {
+      if (undo.made.some((edit) => edit.savedAs !== undefined)) return;
+      offerUndo(undo);
+    }
+    undo.timer = setTimeout(() => endUndo(undo), UNDO_FOR);
   }
 
   /** A row added for a pasted row past the last, its form ready, no cell opened: its key, or null where none can be added. */
@@ -1233,7 +1418,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
 
   // ---- the list's own ---------------------------------------------------------------------------------------------
 
-  const element = el('div', { class: 'fd-list-adds' }, ...(adds ? [addButton] : []), pasteNote, hint, status, catcher);
+  const element = el('div', { class: 'fd-list-adds' }, ...(adds ? [addButton] : []), pasteNote, refusedRows, hint, status, catcher);
 
   return {
     element,
@@ -1328,6 +1513,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
       doc.removeEventListener('focusin', onFocusIn, true);
       doc.removeEventListener('focusout', onFocusOut, true);
       doc.removeEventListener('pointerdown', hideLockNote, true);
+      context.element.removeEventListener('keydown', onUndoKey);
+      endUndo();
       context.element.removeEventListener('input', onTyped, true);
       context.element.removeEventListener('change', onRead, true);
       context.element.removeEventListener('focusout', onRead, true);

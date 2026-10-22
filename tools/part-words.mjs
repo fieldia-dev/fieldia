@@ -63,7 +63,7 @@ export const PART_WORDS = {
     ],
     viewer: ['showAs'],
   },
-  editable: { widgets: ['cellName'], viewer: ['rowEditHint', 'rowAdd', 'rowAddNoun', 'rowDrop', 'rowNotSaved', 'rowSaved', 'rowOpen', 'rowChange', 'rowCell', 'rowLocked', 'rowLockedNoun'] },
+  editable: { widgets: ['cellName'], viewer: ['rowEditHint', 'rowAdd', 'rowAddNoun', 'rowDrop', 'rowNotSaved', 'rowSaved', 'rowOpen', 'rowChange', 'rowCell', 'rowLocked', 'rowLockedNoun', 'pasteAsk', 'pasteAskChange', 'pasteAskAdd', 'pasteUndo', 'pasteUndone', 'rowsNotSaved', 'rowsNotSavedOne', 'rowsDrop', 'rowsPutBack'] },
   evidence: { widgets: ['signedByName', 'signedAt', 'answersAsSigned', 'answersChanged', 'changeAnswers', 'changeAnswersAsk', 'signatureTakenAway', 'notSignedYet', 'readyToSign', 'signNow'] },
   filters: { viewer: ['filterByKeyword', 'clearFilters', 'filterNamed', 'filterSettings', 'rangeAny', 'rangeOrMore', 'filtersOn', 'filtersClearAll', 'showResults', 'showResultsNoun', 'showResultsOne', 'showResultsNounOne', 'showResultsSome'] },
   head: {

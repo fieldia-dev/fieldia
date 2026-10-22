@@ -480,6 +480,20 @@ export interface ViewerLabels {
   rowLocked: string;
   rowLockedNoun?: string;
   /**
+   * A paste that changes or adds more than one row, asked first (`{n}` rows, `{changed}`, `{added}`); its Undo, and
+   * what Undo says; rows it left refused for the same reason, said once (`{n}`, `{why}`), and their button — Remove
+   * them where they were all added, Put them back otherwise.
+   */
+  pasteAsk: string;
+  pasteAskChange: string;
+  pasteAskAdd: string;
+  pasteUndo: string;
+  pasteUndone: string;
+  rowsNotSaved: string;
+  rowsNotSavedOne: string;
+  rowsDrop: string;
+  rowsPutBack: string;
+  /**
    * Over a record: the gear menu (`actions`, its `print` group and its
    * built-in items), the trail to it (`breadcrumbs`, a new record's crumb
    * `newRecord`), and the pager (`records`, `recordAt` with `{n}` and
@@ -1037,6 +1051,15 @@ const en: ViewerLabels = {
   rowCell: '{column} of {name}',
   rowLocked: 'This row can’t be changed here',
   rowLockedNoun: 'This {record} can’t be changed here',
+  pasteAsk: 'Paste {n} rows: change {changed} and add {added}?',
+  pasteAskChange: 'Change {n} rows with what you pasted?',
+  pasteAskAdd: 'Add {n} rows from what you pasted?',
+  pasteUndo: 'Undo',
+  pasteUndone: 'Paste undone.',
+  rowsNotSaved: '{n} rows not saved: {why}.',
+  rowsNotSavedOne: '1 row not saved: {why}.',
+  rowsDrop: 'Remove them',
+  rowsPutBack: 'Put them back',
   actions: 'Actions',
   print: 'Print',
   archive: 'Archive',

@@ -55,6 +55,9 @@ export const EDITABLE_STYLES = `
 .fd-list-add { min-height: 32px; }
 .fd-list-add > span { font-size: 16px; }
 .fd-list-paste-note { margin: 0; }
+.fd-list-undo { min-height: 24px; padding-block: 0; margin-inline-start: 4px; }
+/* Rows a paste left refused for the same reason: each reason once, across the room under the list. */
+.fd-list-refused-rows { flex-basis: 100%; display: grid; gap: 4px; }
 /* What a paste lands in before it is read: out of sight, still able to take the focus. */
 .fd-list-paste-catcher { position: fixed; inset-inline-start: 0; top: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
 /* On a phone the rows are cards: the note under a card, as wide as it. */

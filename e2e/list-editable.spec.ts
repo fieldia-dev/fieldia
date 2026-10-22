@@ -349,7 +349,10 @@ test.describe('a clinic’s service prices', () => {
     await cell(page, 'Botox, crow’s feet', 'minutes').click();
     await page.keyboard.press('Escape');
     await page.keyboard.press('ControlOrMeta+V');
-    await expect(page.locator('.fd-list-paste-note')).toHaveText('Pasted into 6 cells.');
+    // Three rows changed at once: asked first.
+    await expect(page.getByRole('alertdialog')).toContainText('Change 3 rows with what you pasted?');
+    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    await expect(page.locator('.fd-list-paste-words')).toHaveText('Pasted into 6 cells.');
     await expect.poll(() => calls(page, 'save')).toHaveLength(3);
     await expect(cell(page, 'Botox, crow’s feet', 'price')).toHaveText('E£ 3,800');
     await expect(cell(page, 'Botox, forehead', 'minutes')).toHaveText('35');
@@ -359,12 +362,95 @@ test.describe('a clinic’s service prices', () => {
     await cell(page, 'Laser, face', 'done_by').click();
     await page.keyboard.press('Escape');
     await page.keyboard.press('ControlOrMeta+V');
+    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
     await expect.poll(() => calls(page, 'writeMany')).toHaveLength(1);
     const [many] = await calls(page, 'writeMany');
     expect(many.ids).toEqual([13, 12, 11]);
     expect(many.values).toEqual({ done_by: { id: 1, label: 'Doctor' } });
     await expect(cell(page, 'Laser, underarms', 'done_by')).toHaveText('Doctor');
     await screen(page, 'list-editable-pasted', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+
+  test('a long paste asks first; rows refused for the same reason are said once; Undo puts it all back', async ({ page }) => {
+    // The owner's walk of 0.29: 40 rows pasted on Laser, face's Minutes changed 7 services and added 33 nameless rows,
+    // each saying "Not saved: Service is required", and nothing took it back.
+    const { problems } = await prices(page);
+    const rows = Array.from({ length: 40 }, (_, i) => `${20 + i}\t${1000 + i * 100}`).join('\n');
+    await copy(page, `${rows}\n`);
+    await cell(page, 'Laser, face', 'minutes').click();
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('ControlOrMeta+V');
+    const asked = page.getByRole('alertdialog');
+    await expect(asked).toContainText('Paste 40 rows: change 7 and add 33?');
+    await screen(page, 'list-editable-paste-asked', { viewport: true });
+    // Cancel: nothing pasted.
+    await asked.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.locator('.fd-list-row[data-new]')).toHaveCount(0);
+    await expect(cell(page, 'Laser, face', 'minutes')).toHaveText('20');
+    expect(await calls(page, 'save')).toEqual([]);
+    // Again, and yes.
+    await cell(page, 'Laser, face', 'minutes').focus();
+    await page.keyboard.press('ControlOrMeta+V');
+    await asked.getByRole('button', { name: 'OK' }).click();
+    await expect.poll(async () => (await stored(page, 'clinic.service', 5))['minutes']).toBe(23);
+    await expect(page.locator('.fd-list-row[data-new]')).toHaveCount(33);
+    // Said once, not 33 times; each row still marked.
+    const refused = page.locator('.fd-list-refused-rows');
+    await expect(refused).toHaveText(/^33 rows not saved: Service is required\.\s*Remove them$/);
+    await expect(page.locator('.fd-list-note:not([hidden])')).toHaveCount(0);
+    await expect(page.locator('.fd-list-row[data-new] td[data-col="name"][aria-invalid="true"]')).toHaveCount(33);
+    await expect(page.locator('.fd-list-undo')).toBeVisible();
+    await refused.scrollIntoViewIfNeeded();
+    await screen(page, 'list-editable-paste-said-once', { viewport: true });
+    expect(await axeFindings(page, 'a long paste said once', '.fd-list')).toEqual([]);
+    // Undo: the seven put back as they were — saved again — and the 33 rows taken away.
+    await page.locator('.fd-list-undo').click();
+    await expect(page.locator('.fd-list-row[data-new]')).toHaveCount(0);
+    await expect.poll(async () => (await stored(page, 'clinic.service', 5))['minutes']).toBe(45);
+    expect((await stored(page, 'clinic.service', 13))['minutes']).toBe(20);
+    expect((await stored(page, 'clinic.service', 13))['price']).toBe(1100);
+    await expect(cell(page, 'Laser, face', 'minutes')).toHaveText('20');
+    await expect(cell(page, 'Skin consultation', 'price')).toHaveText('E£ 600');
+    await expect(refused).toBeHidden();
+    await expect(page.locator('.fd-list-paste-words')).toHaveText('Paste undone.');
+    await expect(page.locator('.fd-pager-text')).toHaveText('1–13 of 13 services');
+    expect(problems).toEqual([]);
+  });
+
+  test('Ctrl+Z right after a paste undoes it: a row changed put back and saved again, a service it added taken away', async ({ page }) => {
+    const { problems } = await prices(page);
+    await copy(page, 'Skin consultation\tSkin\tDoctor\t20\t650\nLaser, back\tHair removal\tNurse\t30\t1500\n');
+    await cell(page, 'Skin consultation', 'name').click();
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('ControlOrMeta+V');
+    await expect(page.getByRole('alertdialog')).toContainText('Paste 2 rows: change 1 and add 1?');
+    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    await expect(page.locator('.fd-pager-text')).toHaveText('1–14 of 14 services');
+    await expect.poll(async () => (await stored(page, 'clinic.service', 8))['price']).toBe(650);
+    await expect(page.locator('.fd-list-undo')).toBeVisible();
+    await page.keyboard.press('ControlOrMeta+Z');
+    await expect(page.locator('.fd-pager-text')).toHaveText('1–13 of 13 services');
+    await expect.poll(async () => (await stored(page, 'clinic.service', 8))['price']).toBe(600);
+    expect(Object.values(await page.evaluate(() => (window as any).fieldiaDemo.dataSource.records['clinic.service'])).map((one: any) => one.name)).not.toContain('Laser, back');
+    await expect(page.locator('.fd-list-paste-words')).toHaveText('Paste undone.');
+    expect(problems).toEqual([]);
+  });
+
+  test('rows a paste added and the source refused, all for one reason: Remove them takes them away together', async ({ page }) => {
+    const { problems } = await prices(page);
+    await copy(page, '30\t900\n40\t1000\n50\t1100\n');
+    await cell(page, 'Skin consultation', 'minutes').click();
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('ControlOrMeta+V');
+    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    const refused = page.locator('.fd-list-refused-rows');
+    await expect(refused).toContainText('2 rows not saved: Service is required.');
+    await refused.getByRole('button', { name: 'Remove them' }).click();
+    await expect(page.locator('.fd-list-row[data-new]')).toHaveCount(0);
+    await expect(refused).toBeHidden();
+    // The row it changed stays as pasted, saved.
+    expect((await stored(page, 'clinic.service', 8))['minutes']).toBe(30);
     expect(problems).toEqual([]);
   });
 
