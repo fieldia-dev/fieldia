@@ -157,3 +157,68 @@ describe('a search in plain words read as filters', () => {
     expect([...host.querySelectorAll('.fd-facet-text')].map((chip) => chip.textContent)).toEqual(['Home: something nice']);
   });
 });
+
+describe('a search read as filters, kept by name', () => {
+  const asked = (ds: MemoryDataSource) => ds.calls.filter((call) => call.method === 'searchToFilter').length;
+  const chips = () => [...host.querySelectorAll('.fd-facet-text')].map((chip) => plain(chip.textContent));
+  const press = (root: Element, name: string) => ([...root.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent?.trim()) === name && !b.closest('[hidden]')) as HTMLButtonElement).click();
+  const until = async (check: () => unknown) => {
+    for (let turn = 0; turn < 200 && !check(); turn++) await new Promise((done) => setTimeout(done, 5));
+    expect(check()).toBeTruthy();
+  };
+  /** The search bar's menu, opened where it is not. */
+  const menuOpen = () => {
+    if (host.querySelector('.fd-search-panel')?.closest('[hidden]') ?? !host.querySelector('.fd-search-panel')) press(host, 'Search options');
+  };
+  const READ = ['Type: Villa', 'District: New Cairo', 'Price: up to EGP 15,000,000'];
+  const FILTER = [
+    { field: 'kind', op: '=', value: 'villa' },
+    { field: 'district', op: '=', value: 'new_cairo' },
+    { field: 'price', op: '<=', value: 15_000_000 },
+  ];
+  /** The words read as filters by the ✦, then kept by a name from the search bar's menu. */
+  async function readAndKeep(ds: MemoryDataSource) {
+    typeIn(host.querySelector('.fd-search-input') as HTMLInputElement, 'villas in New Cairo under 15M');
+    words()?.click();
+    await until(() => chips().length === 3);
+    expect(chips()).toEqual(READ);
+    menuOpen();
+    press(host, 'Save current search');
+    (host.querySelector('.fd-favourite-form input.fd-input') as HTMLInputElement).value = 'Villas under 15M';
+    press(host.querySelector('.fd-favourite-form') as HTMLElement, 'Save');
+    // The search taken away again: the list's own.
+    for (let left = 3; left > 0 && host.querySelector('.fd-facet-remove'); left--) (host.querySelector('.fd-facet-remove') as HTMLButtonElement).click();
+    await until(() => chips().length === 0 && (lastFilter(ds) ?? []).length === 0);
+    expect(asked(ds)).toBe(1);
+  }
+
+  it('a view on the app’s server keeps the filters the ✦ made, and putting it on never asks the model again', async () => {
+    const ds = createMemoryDataSource({ records: records(), assist: assistStandIn(), views: { homes: [] } });
+    await mount(homes(), ds);
+    await readAndKeep(ds);
+    await until(() => ds.calls.some((call) => call.method === 'saveView'));
+    const saved = ds.calls.find((call) => call.method === 'saveView')?.request as { view: { state: { facets: unknown[] } } };
+    expect(saved.view.state.facets).toHaveLength(3);
+    menuOpen();
+    await until(() => host.querySelector('.fd-favourite .fd-search-option'));
+    (host.querySelector('.fd-favourite .fd-search-option') as HTMLButtonElement).click();
+    await until(() => chips().length === 3);
+    expect(chips()).toEqual(READ);
+    await until(() => (lastFilter(ds) ?? []).length === 3);
+    expect(lastFilter(ds)).toEqual(FILTER);
+    expect(asked(ds)).toBe(1);
+  });
+
+  it('a favourite kept in the browser does the same where the source keeps no views', async () => {
+    const ds = source();
+    await mount(homes(), ds);
+    await readAndKeep(ds);
+    menuOpen();
+    press(host, 'Villas under 15M');
+    await until(() => chips().length === 3);
+    expect(chips()).toEqual(READ);
+    await until(() => (lastFilter(ds) ?? []).length === 3);
+    expect(lastFilter(ds)).toEqual(FILTER);
+    expect(asked(ds)).toBe(1);
+  });
+});
