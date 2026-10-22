@@ -205,3 +205,22 @@ describe('booking slots', () => {
     expect(el.querySelector('.fd-slots-resting')?.textContent).toBe('3 Nov 2026, 10:00 CET');
   });
 });
+
+describe('booking slots’ month: its week from the first day where the page is read', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('an English page read in Cairo from Saturday, in London from Monday, in New York from Sunday', async () => {
+    for (const [languages, first, from] of [
+      [['en-EG', 'en'], 'Saturday', '26'],
+      [['en-GB'], 'Monday', '28'],
+      [['en-US', 'en'], 'Sunday', '27'],
+    ] as const) {
+      jest.spyOn(navigator, 'languages', 'get').mockReturnValue([...languages]);
+      const { el } = await mount();
+      // October 2026 starts on a Thursday: its first row from September's last Saturday, Monday or Sunday.
+      const firstDay = el.querySelector<HTMLButtonElement>('.fd-slots-days button')?.textContent;
+      expect({ languages, first: el.querySelector('thead th')?.getAttribute('abbr'), firstDay }).toEqual({ languages, first, firstDay: from });
+    }
+  });
+});
+

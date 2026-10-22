@@ -215,3 +215,25 @@ describe('a range’s calendar open while a box is typed in', () => {
     expect([note.hidden, note.textContent]).toEqual([false, 'To: February 2027 has 28 days']);
   });
 });
+
+describe('a range’s calendar: its week from the first day where the page is read', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('an English page read in Cairo from Saturday, in London from Monday, in New York from Sunday; Home and End the row’s ends', () => {
+    for (const [languages, first, home] of [
+      [['en-EG', 'en'], 'Saturday', '2026-10-10'],
+      [['en-GB'], 'Monday', '2026-10-12'],
+      [['en-US', 'en'], 'Sunday', '2026-10-11'],
+    ] as const) {
+      jest.spyOn(navigator, 'languages', 'get').mockReturnValue([...languages]);
+      const { el } = mount('date', { request_date_from: '2026-10-14' });
+      (el.querySelector('.fd-range-button') as HTMLButtonElement).click();
+      const focused = day(el, 14);
+      focused.focus();
+      focused.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      const reached = (document.activeElement as HTMLElement).dataset['day'];
+      expect({ languages, first: el.querySelector('.fd-range-calendar thead th')?.getAttribute('abbr'), reached }).toEqual({ languages, first, reached: home });
+    }
+  });
+});
+

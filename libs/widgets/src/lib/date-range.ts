@@ -1,4 +1,4 @@
-import { clocksSkip, dayIn, fill, instantsAt, wallClock, wallOf, wallText, wallTime, dayTag, type Field, type FieldNode, type Locale, type Value } from '@fieldia/core';
+import { clocksSkip, dayIn, fill, firstWeekday, instantsAt, wallClock, wallOf, wallText, wallTime, dayTag, type Field, type FieldNode, type Locale, type Value } from '@fieldia/core';
 import { weekdayHead } from './calendar';
 import { restingText, zoneName, zoneOf } from './date-text';
 import { dateBox } from './date-box';
@@ -15,8 +15,10 @@ import { afterPress } from './press';
  * a paste, text that does not read kept and said), or the range is picked on
  * a calendar — the first day, then the last, put the right way round if picked
  * the other way. A date and time keeps its hours when its day is picked. The
- * calendar is the ARIA date picker: arrows by day and week, mirrored right to
- * left, PageUp and PageDown by month, Enter to pick, Escape to close.
+ * calendar is the ARIA date picker, each row a week from its first day where
+ * the page is read (`firstWeekday`): arrows by day and week, mirrored right to
+ * left, Home and End to the row's ends, PageUp and PageDown by month, Enter to
+ * pick, Escape to close.
  *
  * The end is a field of its own: its required, earliest, latest and days, and
  * that it is not before the start ("Ends can’t be before Starts"), are said
@@ -43,6 +45,9 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const weekday = weekdayHead(lang);
+  // The week's first day where the page is read (`firstWeekday`), each row of the month from it.
+  const firstDay = firstWeekday(locale, form.page);
+  const intoWeek = (day: Date) => (day.getDay() - firstDay + 7) % 7;
   const weekdayLong = new Intl.DateTimeFormat(lang, { weekday: 'long' });
 
   // A date and time's days and hours on its zone's clock (the browser's without one).
@@ -184,10 +189,10 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
     calendar.setAttribute('aria-label', label);
     const today = todayOf();
     const first = new Date(focused.getFullYear(), focused.getMonth(), 1);
-    const monday = addDays(first, -((first.getDay() + 6) % 7));
-    const head = make('tr', {}, ...Array.from({ length: 7 }, (_, i) => make('th', { scope: 'col', abbr: weekdayLong.format(addDays(monday, i)) }, weekday(addDays(monday, i)))));
+    const firstRow = addDays(first, -intoWeek(first));
+    const head = make('tr', {}, ...Array.from({ length: 7 }, (_, i) => make('th', { scope: 'col', abbr: weekdayLong.format(addDays(firstRow, i)) }, weekday(addDays(firstRow, i)))));
     const body = make('tbody');
-    for (let row = monday; row <= new Date(focused.getFullYear(), focused.getMonth() + 1, 0); row = addDays(row, 7)) {
+    for (let row = firstRow; row <= new Date(focused.getFullYear(), focused.getMonth() + 1, 0); row = addDays(row, 7)) {
       const tr = make('tr');
       for (let i = 0; i < 7; i++) {
         const d = addDays(row, i);
@@ -226,8 +231,8 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
       ArrowDown: () => addDays(day, 7),
       PageUp: () => addMonths(day, -1),
       PageDown: () => addMonths(day, 1),
-      Home: () => addDays(day, -((day.getDay() + 6) % 7)),
-      End: () => addDays(day, 6 - ((day.getDay() + 6) % 7)),
+      Home: () => addDays(day, -intoWeek(day)),
+      End: () => addDays(day, 6 - intoWeek(day)),
     };
     if (moves[event.key]) {
       event.preventDefault();
