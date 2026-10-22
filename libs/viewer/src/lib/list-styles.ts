@@ -135,10 +135,13 @@ export const LIST_STYLES = `
 .fd-list-sort { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: flex; align-items: center; gap: 4px; font: inherit; color: inherit; }
 .fd-list-sort::after { content: ''; width: 0; height: 0; border-inline: 4px solid transparent; opacity: 0; }
 .fd-list-sort:hover::after { opacity: 0.35; border-block-start: 5px solid currentColor; }
-.fd-list-table th[aria-sort="ascending"] .fd-list-sort::after { opacity: 1; border-block-start: none; border-block-end: 5px solid currentColor; }
-.fd-list-table th[aria-sort="descending"] .fd-list-sort::after { opacity: 1; border-block-end: none; border-block-start: 5px solid currentColor; }
+.fd-list-table th:is([aria-sort="ascending"], [data-sort="ascending"]) .fd-list-sort::after { opacity: 1; border-block-start: none; border-block-end: 5px solid currentColor; }
+.fd-list-table th:is([aria-sort="descending"], [data-sort="descending"]) .fd-list-sort::after { opacity: 1; border-block-end: none; border-block-start: 5px solid currentColor; }
 .fd-list-table th.fd-num .fd-list-sort { justify-content: flex-end; }
 .fd-list-table th.fd-num .fd-list-sort::after { order: -1; }
+/* Ordered by several headers: each key's place beside its arrow, after it (before it on a number's, whose arrow leads). */
+.fd-list-sort-rank { order: 1; flex: none; box-sizing: border-box; min-width: 16px; height: 16px; padding-inline: 4px; border-radius: 999px; background: var(--fd-accent-soft); color: var(--fd-accent); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }
+.fd-list-table th.fd-num .fd-list-sort-rank { order: -2; }
 .fd-list-sort:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-list-row:hover td { background: var(--fd-page); }
 .fd-list-openable { cursor: pointer; }
@@ -168,6 +171,9 @@ export const LIST_STYLES = `
 .fd-search-spans-name { padding: 5px 6px; padding-inline-start: 26px; font-size: 14px; color: var(--fd-text); }
 .fd-search-spans-list { display: grid; gap: 1px; padding-inline-start: 14px; }
 .fd-list-more td { padding: 4px 10px; padding-inline-start: calc(46px + var(--fd-level, 0) * 22px); }
+/* Rows loaded as the list is scrolled (endless): Show more at their end, pressed by itself in sight. */
+.fd-list-more-rows { display: flex; justify-content: center; padding: 10px 0 2px; }
+.fd-list-more-rows[hidden] { display: none; }
 .fd-list-empty, .fd-list-failed { margin: 0; padding: 28px 12px; text-align: center; color: var(--fd-muted); }
 .fd-list-failed { color: var(--fd-error); }
 

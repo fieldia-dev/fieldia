@@ -63,6 +63,7 @@ import type {
   SearchToFilterResult,
   ClustersRequest,
   ClustersResult,
+  SavedView,
 } from './data-source';
 import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
@@ -70,6 +71,7 @@ import { spanStart } from './periods';
 import { wait, type Scheduler } from './scheduler';
 import { memoryKept, type MemoryKept } from './memory-kept';
 import { memoryApprovals, type MemoryApprovalRoute } from './memory-approvals';
+import { memoryViews } from './memory-views';
 import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 export interface MemoryDataSourceOptions {
@@ -202,6 +204,12 @@ export interface MemoryDataSourceOptions {
     records: Readonly<Record<string, Record<string, Values>>>,
     row: (id: RecordId, values: Values) => ListedRecord
   ) => ClustersResult | false | Promise<ClustersResult | false>;
+  /**
+   * Keep lists' saved views, as an app's server does (`views`, `saveView`, `deleteView`): those it starts with, by page
+   * id — the team's shared ones, each with who made it (`by`), and this person's own (`mine`) — `{}` for none yet.
+   * Without it, the source has none of the three, and a list keeps its favourites in the browser, as before.
+   */
+  views?: Record<string, SavedView[]>;
 }
 
 /** What a memory source's AI help answers with (`MemoryDataSourceOptions.assist`): each given, from its records. */
@@ -220,8 +228,11 @@ type AssistMembers = 'suggest' | 'rewrite' | 'searchToFilter';
  * without a server of its own does. A test or a demo gives it one by setting
  * it. AI help's (`suggest`, `rewrite`, `searchToFilter`) where its `assist`
  * option answers them. `clusters` is there where its option says how it answers.
+ * Saved views (`views`, `saveView`, `deleteView`) where it is given `views`.
  */
-export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords' | 'importRecords' | AssistMembers | 'clusters'>>, Pick<DataSource, 'exportRecords' | 'importRecords' | AssistMembers | 'clusters'> {
+export interface MemoryDataSource
+  extends Required<Omit<DataSource, 'exportRecords' | 'importRecords' | AssistMembers | 'clusters' | 'views' | 'saveView' | 'deleteView'>>,
+    Pick<DataSource, 'exportRecords' | 'importRecords' | AssistMembers | 'clusters' | 'views' | 'saveView' | 'deleteView'> {
   readonly records: Record<string, Record<string, Values>>;
   /**
    * The records said to be someone else for one another, by model: each pair of ids, in the order kept, through
@@ -779,6 +790,9 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       const own = options.definitions?.[request.list]?.(request.values) ?? [];
       addedDefinitions.set(`${request.list}:${JSON.stringify(own)}`, structuredCopy(request.definitions.filter((d) => !own.some((o) => o.name === d.name))));
     },
+
+    // Lists' saved views, where it was given some (memory-views.ts).
+    ...(options.views ? memoryViews(options.views, calls, pause) : {}),
   };
   // AI help's members, where the app gave what answers them (`assist`): each called as a server would be, after the
   // source's pause, from the records it keeps.

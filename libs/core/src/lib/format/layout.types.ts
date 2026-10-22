@@ -7,7 +7,7 @@ import type {
   RootLayout, RootLayoutSchema, FormNode, FormNodeSchema,
   SheetHead, SheetHeadSchema, HeadLink, HeadLinkSchema, TabsNode, TabsNodeSchema,
 } from './layout';
-import type { FilterRange, FilterRangeSchema, ListCalendar, ListCalendarSchema, ListCard, ListCardSchema, ListCell, ListCellSchema, ListEditable, ListEditableSchema, ListGallery, ListGallerySchema, ListNode, ListNodeSchema, RelatedNode, RelatedNodeSchema } from './layout';
+import type { FilterRange, FilterRangeSchema, ListCalendar, ListCalendarSchema, ListCard, ListCardSchema, ListCell, ListCellSchema, ListEditable, ListEditableSchema, ListDetail, ListDetailSchema, ListGallery, ListGallerySchema, ListNode, ListNodeSchema, RelatedNode, RelatedNodeSchema } from './layout';
 
 /**
  * Compile-time proof that the hand-written interfaces (the public types, with
@@ -40,6 +40,7 @@ export type ListChecks = [
   Assert<Same<z.infer<typeof ListCardSchema>, ListCard>>,
   Assert<Same<z.infer<typeof ListGallerySchema>, ListGallery>>,
   Assert<Same<z.infer<typeof ListEditableSchema>, ListEditable>>,
+  Assert<Same<z.infer<typeof ListDetailSchema>, ListDetail>>,
   Assert<Same<z.infer<typeof FilterRangeSchema>, FilterRange>>,
   Assert<Same<z.infer<typeof RelatedNodeSchema>, RelatedNode>>,
 ];

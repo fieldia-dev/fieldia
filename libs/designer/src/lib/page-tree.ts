@@ -155,6 +155,9 @@ export function shownFields(page: Page): Set<string> {
     if (Array.isArray(root.bulkEdit)) for (const name of root.bulkEdit) shown.add(name);
     // And in the fields its Import offers.
     if (Array.isArray(root.import)) for (const name of root.import) shown.add(name);
+    // And in the table of lines its rows open to, and the rank they are moved by.
+    if (root.detail?.lines) shown.add(root.detail.lines);
+    if (root.sequenceField) shown.add(root.sequenceField);
   }
   return shown;
 }

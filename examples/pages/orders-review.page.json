@@ -1,0 +1,212 @@
+{
+  "fieldia": "0.7",
+  "id": "orders-review",
+  "title": "Orders to review",
+  "description": "A sales manager's orders this month: each opens in place to its lines — five at a time, its sections across the rows — so an order is checked without leaving the list. Its row still opens the order itself.",
+  "records": {
+    "one": "order",
+    "other": "orders",
+    "a": "an order"
+  },
+  "data": {
+    "kind": "record",
+    "model": "sale.order"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Order"
+    },
+    "partner_id": {
+      "type": "many2one",
+      "label": "Customer",
+      "relation": "partner"
+    },
+    "date_order": {
+      "type": "datetime",
+      "label": "Ordered on"
+    },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Quotation"
+        },
+        {
+          "value": "sent",
+          "label": "Quotation sent"
+        },
+        {
+          "value": "sale",
+          "label": "Sales order"
+        }
+      ],
+      "default": "draft"
+    },
+    "amount_total": {
+      "type": "monetary",
+      "label": "Total",
+      "currency": "EGP"
+    },
+    "line_ids": {
+      "type": "one2many",
+      "label": "Order lines",
+      "relation": "sale.order.line",
+      "lineKinds": {
+        "field": "display_type",
+        "text": "name"
+      },
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": {
+          "type": "integer",
+          "label": "Sequence"
+        },
+        "display_type": {
+          "type": "selection",
+          "label": "Line type",
+          "options": [
+            {
+              "value": "section",
+              "label": "Section"
+            },
+            {
+              "value": "note",
+              "label": "Note"
+            }
+          ]
+        },
+        "product_id": {
+          "type": "many2one",
+          "label": "Product",
+          "relation": "product"
+        },
+        "name": {
+          "type": "char",
+          "label": "Description"
+        },
+        "qty": {
+          "type": "float",
+          "label": "Quantity",
+          "digits": [
+            8,
+            2
+          ]
+        },
+        "price": {
+          "type": "monetary",
+          "label": "Unit price",
+          "currency": "EGP"
+        },
+        "discount": {
+          "type": "float",
+          "label": "Disc. %",
+          "digits": [
+            5,
+            1
+          ]
+        },
+        "subtotal": {
+          "type": "monetary",
+          "label": "Subtotal",
+          "currency": "EGP",
+          "readonly": true
+        }
+      }
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "orders-review",
+    "columns": [
+      "name",
+      "partner_id",
+      "date_order",
+      "state",
+      "amount_total"
+    ],
+    "sort": [
+      {
+        "field": "date_order",
+        "desc": true
+      }
+    ],
+    "pageSize": 10,
+    "searchFields": [
+      "name",
+      "partner_id"
+    ],
+    "filters": [
+      {
+        "id": "sent",
+        "label": "Quotations sent",
+        "filter": [
+          {
+            "field": "state",
+            "op": "=",
+            "value": "sent"
+          }
+        ]
+      },
+      {
+        "id": "sale",
+        "label": "Sales orders",
+        "filter": [
+          {
+            "field": "state",
+            "op": "=",
+            "value": "sale"
+          }
+        ]
+      }
+    ],
+    "groupBy": [
+      "state",
+      "partner_id"
+    ],
+    "cells": {
+      "state": {
+        "widget": "badge",
+        "options": {
+          "tones": {
+            "draft": "muted",
+            "sent": "info",
+            "sale": "success"
+          }
+        }
+      },
+      "amount_total": {
+        "total": "sum"
+      }
+    },
+    "card": {
+      "title": "name",
+      "subtitle": "partner_id",
+      "status": "state",
+      "lead": true,
+      "fields": [
+        "amount_total",
+        "date_order"
+      ]
+    },
+    "detail": {
+      "lines": "line_ids",
+      "columns": [
+        "product_id",
+        "name",
+        "qty",
+        "price",
+        "discount",
+        "subtotal"
+      ],
+      "sort": [
+        {
+          "field": "sequence"
+        }
+      ],
+      "limit": 5
+    }
+  }
+}

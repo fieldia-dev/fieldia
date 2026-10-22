@@ -1090,7 +1090,17 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // items asked as a menu opens, the dividers left only between items that show, and those checks are the head part's
 // (menu-flyout.ts, sheet-head-checks.ts). Tags inline in a head's row are its stylesheet's, a rich text read first the
 // text part's: 510.59 measured before, 511.21 after, to 511.3.
-const BUDGET_KB = 511.3;
+// Lists people work in (w6-lists): the one-tag script's memory source answering a list's saved views where it is given
+// some (`views`, `saveView`, `deleteView`: their names, the members it makes once its part has come; 58 bytes), and the
+// views part a list asks for where its source keeps views (fieldia.views.js: its name and loader, and the global's
+// `viewsPart`; 64) — 506.77 measured before, 506.89 after, to 506.9. Multi-column sort is the list part's. The rows
+// part a page asks for where its list's rows open in place (fieldia.rows.js: its name and loader, the global's
+// `rowsPart`, and `partsFor` knowing a list with `detail` asks for it, so the page is drawn whole; 115) — 507.00 after,
+// to 507.0; and one with `sequenceField` (rows re-ranked by hand), 507.02 after, to 507.1; and with `loadChildren`, 507.03.
+// A pill's soft shade laid on the surface, its ground its own over a row under the pointer or ticked (every tone at
+// 4.5:1 in every skin, theme and scheme; 82 bytes), 507.11 after, to 507.2.
+// Merged (0.31.0), with w6-lists: 511.54 measured, to 511.6.
+const BUDGET_KB = 511.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1341,7 +1351,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Merged (0.29.0): the lanes together 168.16 measured; the uploads' work in the files part, 167.41, to 167.5.
 // A work item's menus (lane atloria-wi; listed with the raw budget above): a menu's hooks for its dividers and the
 // menus inside it, the head part asked for and its checks owed — 167.41 measured before, 167.75 after, to 167.8.
-const GZIP_BUDGET_KB = 167.8;
+// Lists people work in (listed with the raw budget above): 166.15 measured before, 166.20 after, to 166.3; the rows
+// part's name and its page's need of it, 166.26 after; a pill's ground its own, 166.29.
+// Merged (0.31.0), with w6-lists: 167.87 measured, to 167.9.
+const GZIP_BUDGET_KB = 167.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1548,7 +1561,18 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // to 37.69 and 12.08, to 37.7 and 12.1; French's 36.75 and 11.70 to 38.18 and 12.14, to 38.2 and 12.2.
 // Merged (0.29.0), every lane's words together and AI help's "Proposed in {language}": Arabic's 94.97 and 15.85, to
 // 95.0 and 15.9; German's 43.89 and 13.85, to 43.9 and 13.9; French's 44.42 and 13.84, to 44.5 and 13.9.
-const ADD_ON_BUDGET_KB = { ar: [95.0, 15.9], de: [43.9, 13.9], fr: [44.5, 13.9] };
+// Lists people work in (w6-lists): a header's place among several the list is ordered by, said after its name, 2 words
+// in each: Arabic's 77.88 and 13.29 measured before, 78.11 and 13.33 after, to 78.2 and 13.4; German's 36.27 and 11.64 to
+// 36.38 and 11.68, its raw to 36.4; French's 36.75 and 11.70 to 36.84 and 11.73, to 36.9 and 11.8. A list's views kept
+// on the app's server — shared with the team, by whom, Share with the team, not loaded, not saved, not deleted, the
+// question before a shared one goes — 7 more in each: Arabic's 78.84 and 13.45 after, to 78.9 and 13.5; German's 36.72
+// and 11.78, to 36.8 and 11.8; French's 37.25 and 11.83, to 37.3 and 11.9. What a row opens to in place, its name and
+// its title, 2 more: Arabic's 78.93 and 13.48 after, to 79.0; German's 36.77 and 11.80, its gzipped to 11.9; French's
+// 37.30 and 11.85, its raw to 37.4. A row moved by hand — where it went, its grip's hint, an order not kept — 3 more:
+// Arabic's 79.41 and 13.57 after, to 79.5 and 13.6; German's 36.97 and 11.88, to 37.0; French's 37.52 and 11.93, to 37.6
+// and 12.0.
+// Merged (0.31.0), with w6-lists: Arabic's 96.53 and 16.15, German's 44.61 and 14.10, French's 45.21 and 14.08 measured.
+const ADD_ON_BUDGET_KB = { ar: [96.6, 16.2], de: [44.7, 14.1], fr: [45.3, 14.1] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2006,7 +2030,31 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 0.2) — head 36.50 and 10.80 measured before, 43.37 and 13.22 after, to 43.4 and 13.3. A rich text read first,
 // Edit and Done with it, Escape and a press outside (html-field.ts) — text 73.00 and 24.62 to 73.45 and 24.78, to 73.5
 // and 24.8.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.1, 7.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
+// Lists people work in (w6-lists), each in the part that draws it. A list ordered by several of its headers — Shift and a
+// press adds a key, each key's number and words beside its header — in the list part, as every list's headers sort:
+// list 129.50 and 41.60 to 131.08 and 42.13, to 131.1 and 42.2. A list's views kept on the app's server in a part of
+// their own, asked for as a list whose source keeps views opens — views 5.81 and 2.55, to 5.9 and 2.6: the menu's views
+// drawn, put on, saved, shared and deleted, the one it opens on, their sheet — and in the list part only its hooks (the
+// views asked for before the records, the list's state given and put back, the menu's favourites as they come): list
+// 131.08 and 42.13 to 132.17 and 42.56, to 132.2 and 42.6. In the list part they would have added 3.8 and 1.7 to every
+// list's. The columns part saying and putting back a person's columns (a view's): columns 19.01 and 6.86 to 19.07 and
+// 6.89, under its own. The memory source keeping views where given some: memory 16.08 and 5.71 to 17.16 and 6.12, to
+// 17.2 and 6.2. A row opened in place to its lines or the records pointing at it, in a part of its own — rows 9.56 and
+// 3.94, to 9.6 and 4.0: its toggles, its table of what it opens to and its pager, kept open as the list asks again, its
+// sheet — asked for by a page whose list has `detail`; in the list part its hooks and the setting's checks (what it
+// opens to, its fields and its link to the list's model): list 132.17 and 42.56 to 133.73 and 42.96, to 133.8 and 43.0.
+// Rows re-ranked by hand in the rows part too — rows 14.82 and 5.98, to 14.9 and 6.0: a row carried by its grip (the
+// others sliding aside, the page scrolled at its edge, Escape), Alt and an arrow, the fewest ranks written, its place
+// said, a refusal said and the records asked again — and in the list part its hooks and the rank's checks: list 133.73
+// and 42.96 to 134.93 and 43.32, to 135.0 and 43.4. Rows loaded as the list is scrolled in the list part, as its pages
+// are — the next page asked as the rows' end comes in sight and put after those held, Show more, the keys past the last
+// row, every row held asked again: list 134.93 and 43.32 to 136.58 and 43.84, to 136.6 and 43.9 — and the cards' a
+// header's number in its chip and far cards undrawn in such a list: cards 12.31 and 3.83 to 12.43 and 3.88, to 12.5. A
+// tree too big for a page, its children asked as a parent opens, in the rows part — rows 14.82 and 5.98 to 18.96 and
+// 7.21, to 19.0 and 7.3 (19.21 and 7.29 with a name wrapping under its first word on a phone, to 19.3): the top asked alone, each row's children counted in one ask, a parent's opened a page at a time
+// with Show more, closed, opened again as the list asks again, a search's matches with their parent named — and in the
+// list part its hooks and its check: list 136.58 and 43.84 to 137.14 and 44.02, to 137.2 and 44.1.
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [139.6, 44.8], cards: [12.6, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], views: [5.9, 2.6], rows: [19.3, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [21.2, 7.6], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2020,6 +2068,8 @@ const PART_GIVES = {
   columns: ['columnChoices', 'columnsKey', 'installColumnStyles'],
   import: ['openImport', 'installImportStyles'],
   editable: ['editableRows', 'opens', 'rowReads', 'installEditableStyles'],
+  views: ['savedViews', 'openingView', 'installViewStyles'],
+  rows: ['detailRows', 'rankRows', 'newRanks', 'lazyTree', 'installRowsStyles'],
   themes: ['installThemeStyles'],
   quiet: ['installQuietStyles'],
   lines: ['linesWidget', 'linksTableWidget', 'cardsWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],
@@ -2046,7 +2096,7 @@ const PART_GIVES = {
   decode: ['codeReader'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots; a photo set the files part, whose taking, files on their way, dialog and sheet it draws with.
@@ -2560,6 +2610,28 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   (await inPage.scanPart.load()).useCodeReader(null);
   treatment.destroy();
   gone('treatment');
+  // A sales team's queue whose source keeps its views on its server: the views part, asked for as the list opens — never
+  // by a page, as no page says where its views are kept — the list's records asked once it answered, its menu's
+  // favourites the views, its sheet right after the list's own.
+  const queue = inPage.mountViewer(host, { page: read('leads-queue.page.json'), dataSource: inPage.createMemoryDataSource({ records: { lead: { 1: { name: 'Omar Nabil', stage: 'new' } } }, views: { 'leads-queue': [{ id: 't1', name: 'New ones', shared: true, by: 'Mona Adel', state: { facets: [] } }] } }) });
+  await queue.drawn;
+  if (!(await until(() => host.querySelector('.fd-list-row')))) throw new Error('in a page, a list whose source keeps views draws no row');
+  hasIn('a queue keeping its views on its server', 'answers, approvals, assist, business, cards, choice, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, options, path, phone, photos, print, quiet, relations, scan, slots, survey, text, themes, views');
+  if (!(await until(() => host.querySelector('.fd-view-whose')))?.textContent.includes('Mona Adel') || !doc.getElementById('fd-list-views-styles')) throw new Error("in a page, a list's views are not drawn from their part");
+  queue.destroy();
+  gone('queue');
+  // Orders whose rows open in place to their lines: the rows part, the page drawn once it came — nothing of it before —
+  // a row's arrow before its name, its lines under it as it opens, its sheet right after the list's own.
+  const reviewed = inPage.mountViewer(host, { page: read('orders-review.page.json'), dataSource: inPage.createMemoryDataSource({ records: { 'sale.order': { 1: { name: 'S00118', state: 'sent', amount_total: 100, line_ids: [{ key: 'l1', id: 11, values: { sequence: 10, name: 'Oak top', qty: 2, price: 50, subtotal: 100 } }] } } } }) });
+  waits(reviewed, 'a list whose rows open in place');
+  await reviewed.drawn;
+  hasIn('orders opened in place', 'answers, approvals, assist, business, cards, choice, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, options, path, phone, photos, print, quiet, relations, rows, scan, slots, survey, text, themes, views');
+  const opener = await until(() => host.querySelector('.fd-list-row .fd-list-detail-toggle'));
+  if (!opener || !doc.getElementById('fd-list-rows-styles')) throw new Error("in a page, a list's rows that open in place are not drawn from their part");
+  opener.click();
+  if (!(await until(() => host.querySelector('.fd-list-detail [role="rowgroup"]:last-child > [role="row"]')?.textContent.includes('Oak top')))) throw new Error(`in a page, a row opened in place shows no line: ${host.querySelector('.fd-list-detail')?.textContent ?? 'nothing under it'}`);
+  reviewed.destroy();
+  gone('reviewed');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
   // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25)
@@ -2583,7 +2655,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place; a listing in Arabic and English; a customer filled from an e-mail, AI help drawn with it and a proposal laid; a listing's photo set, with the files part; a treatment's patient scanned by her card, never with the decode part where the app reads codes — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place; a listing in Arabic and English; a customer filled from an e-mail, AI help drawn with it and a proposal laid; a listing's photo set, with the files part; a treatment's patient scanned by her card, never with the decode part where the app reads codes; a queue's views kept on its server; orders opened in place — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

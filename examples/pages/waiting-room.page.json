@@ -1,0 +1,136 @@
+{
+  "fieldia": "0.7",
+  "id": "waiting-room",
+  "title": "Waiting room",
+  "description": "A clinic's patients waiting to be seen, in the order they go in: the front desk carries a patient to another place by the dots at the row's start, or with Alt and an arrow, and the new order is kept for every screen.",
+  "records": {
+    "one": "patient",
+    "other": "patients",
+    "a": "a patient"
+  },
+  "data": {
+    "kind": "record",
+    "model": "clinic.waiting"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Patient"
+    },
+    "treatment": {
+      "type": "selection",
+      "label": "Treatment",
+      "options": [
+        {
+          "value": "consultation",
+          "label": "Consultation"
+        },
+        {
+          "value": "botox",
+          "label": "Botox"
+        },
+        {
+          "value": "filler",
+          "label": "Filler"
+        },
+        {
+          "value": "peel",
+          "label": "Chemical peel"
+        },
+        {
+          "value": "laser",
+          "label": "Laser session"
+        }
+      ]
+    },
+    "doctor": {
+      "type": "char",
+      "label": "Doctor"
+    },
+    "arrived": {
+      "type": "char",
+      "label": "Arrived"
+    },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        {
+          "value": "waiting",
+          "label": "Waiting"
+        },
+        {
+          "value": "ready",
+          "label": "Ready"
+        },
+        {
+          "value": "late",
+          "label": "Running late"
+        }
+      ]
+    },
+    "turn": {
+      "type": "integer",
+      "label": "Turn"
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "waiting-room",
+    "columns": [
+      "name",
+      "treatment",
+      "doctor",
+      "arrived",
+      "state"
+    ],
+    "sort": [
+      {
+        "field": "turn"
+      }
+    ],
+    "sortable": false,
+    "sequenceField": "turn",
+    "pageSize": 20,
+    "searchFields": [
+      "name",
+      "doctor"
+    ],
+    "filters": [
+      {
+        "id": "ready",
+        "label": "Ready",
+        "filter": [
+          {
+            "field": "state",
+            "op": "=",
+            "value": "ready"
+          }
+        ]
+      }
+    ],
+    "cells": {
+      "state": {
+        "widget": "badge",
+        "options": {
+          "tones": {
+            "waiting": "muted",
+            "ready": "success",
+            "late": "warning"
+          }
+        }
+      }
+    },
+    "card": {
+      "title": "name",
+      "status": "state",
+      "fields": [
+        "treatment",
+        [
+          "doctor",
+          "arrived"
+        ]
+      ]
+    }
+  }
+}

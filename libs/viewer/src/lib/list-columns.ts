@@ -1,4 +1,4 @@
-import { labelAt, type JsonValue, type ListNode, type Locale, type Page } from '@fieldia/core';
+import { labelAt, type ColumnState, type JsonValue, type ListNode, type Locale, type Page } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -71,6 +71,10 @@ export interface ColumnChoices {
    * `data-scrolled` once it has left its start, `data-more` while columns lie past its end.
    */
   scrolls(scroller: HTMLElement): void;
+  /** The columns as they are kept for the person — each in its place, shown or hidden, its width — as a saved view keeps them. */
+  state(): ColumnState[];
+  /** Columns kept so put on, and kept for the person as their own choice is (a saved view's): read as the person's own are, the table drawn again. */
+  restore(state: readonly ColumnState[]): void;
   /** Close the menu, as the list goes. */
   destroy(): void;
 }
@@ -137,7 +141,8 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
     if (order.every((name) => hidden.has(name))) hidden.delete(order[0]);
   }
   const clamp = (width: number) => Math.round(Math.max(NARROWEST, Math.min(WIDEST, width)));
-  const keep = () => preferences.set(key, order.map((colId) => ({ colId, width: widths.get(colId) ?? null, hide: hidden.has(colId) })) as unknown as JsonValue);
+  const state = (): ColumnState[] => order.map((colId) => ({ colId, width: widths.get(colId) ?? null, hide: hidden.has(colId) }));
+  const keep = () => preferences.set(key, state() as unknown as JsonValue);
   const shown = () => order.filter((name) => !hidden.has(name));
   read();
 
@@ -701,6 +706,12 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
     shown,
     order: () => [...order],
     width: (name) => widths.get(name) ?? null,
+    state,
+    restore(given) {
+      preferences.set(key, given as unknown as JsonValue);
+      read();
+      context.changed(true);
+    },
     button,
     grip,
     movable,

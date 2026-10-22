@@ -5,6 +5,7 @@ import { Refusal } from './refusal';
 import { formulaProblem, problemWords } from './rules-formula';
 import { en } from './locales/en';
 import type { TableButton } from './table-commands';
+import { setListWork, type ListWorkPatch } from './list-work-commands';
 
 /**
  * A list page, as the designer edits it: its columns, its order, how many
@@ -14,7 +15,7 @@ import type { TableButton } from './table-commands';
  * names it any more.
  */
 
-export interface ListOptionsPatch extends RowRulesPatch {
+export interface ListOptionsPatch extends RowRulesPatch, ListWorkPatch {
   sort?: { field: string; desc?: boolean }[];
   pageSize?: number;
   /** The fields the search bar looks in; empty for the columns. */
@@ -432,6 +433,8 @@ export function listCommands(context: {
         else if (options.gallery !== undefined) list.gallery = { ...options.gallery };
         // A row's own rules: conditions on its record, refused in words where they do not read.
         setRowRules(list, options, draft, draft, context.functions);
+        // Its rows a person works in: what a row opens to in place (list-work-commands.ts).
+        setListWork(list, options, draft, fieldFor);
         if (options.optionalColumn !== undefined) {
           const { field, starts } = options.optionalColumn;
           if (!list.columns.includes(field)) throw new Refusal((w) => w.refusals.notAColumn(field));

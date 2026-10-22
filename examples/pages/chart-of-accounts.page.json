@@ -1,0 +1,94 @@
+{
+  "fieldia": "0.7",
+  "id": "chart-of-accounts",
+  "title": "Chart of accounts",
+  "description": "A trading company's 240 accounts under their classes and groups: the classes a page at a time, each group's accounts asked as it opens — so a group of 60 bank accounts never splits across pages — and a search finding an account whatever its depth, its parent named.",
+  "records": {
+    "one": "account",
+    "other": "accounts",
+    "a": "an account"
+  },
+  "data": {
+    "kind": "record",
+    "model": "coa.account"
+  },
+  "fields": {
+    "code": {
+      "type": "char",
+      "label": "Code"
+    },
+    "name": {
+      "type": "char",
+      "label": "Account"
+    },
+    "parent_id": {
+      "type": "many2one",
+      "label": "Under",
+      "relation": "coa.account"
+    },
+    "type": {
+      "type": "selection",
+      "label": "Type",
+      "options": [
+        {
+          "value": "asset",
+          "label": "Asset"
+        },
+        {
+          "value": "liability",
+          "label": "Liability"
+        },
+        {
+          "value": "equity",
+          "label": "Equity"
+        },
+        {
+          "value": "income",
+          "label": "Income"
+        },
+        {
+          "value": "expense",
+          "label": "Expense"
+        }
+      ]
+    },
+    "balance": {
+      "type": "monetary",
+      "label": "Balance",
+      "currency": "EGP"
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "chart-of-accounts",
+    "columns": [
+      "name",
+      "code",
+      "balance"
+    ],
+    "sort": [
+      {
+        "field": "code"
+      }
+    ],
+    "pageSize": 20,
+    "parentField": "parent_id",
+    "loadChildren": true,
+    "searchFields": [
+      "name",
+      "code"
+    ],
+    "groupBy": [
+      "type"
+    ],
+    "cells": {
+      "code": {
+        "width": 6
+      },
+      "balance": {
+        "align": "end"
+      }
+    },
+    "choose": false
+  }
+}

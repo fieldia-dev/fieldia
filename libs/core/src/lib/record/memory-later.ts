@@ -19,6 +19,9 @@ export const MEMORY_MEMBERS = [
   'approvals', 'decide',
 ] as const;
 
+/** The members a memory source answers only where it is given what they keep: lists' saved views (`views`). */
+export const MEMORY_VIEW_MEMBERS = ['views', 'saveView', 'deleteView'] as const;
+
 /**
  * The one-tag script's memory source: what it keeps — its records, responses, calls, drafts, its versions, and what
  * someone else does to them (`changeElsewhere`, `answeredElsewhere`) — at once, every member answering once the memory
@@ -34,9 +37,9 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   const source = { records: kept.records, notDuplicatePairs: kept.notDuplicatePairs, responses: kept.responses, calls: kept.calls, drafts: kept.drafts, changeElsewhere: kept.changeElsewhere, answeredElsewhere: kept.answeredElsewhere } as Record<string, unknown>;
   // AI help's members, where the app gave what answers them: without, the source has none.
   const assist = (['suggest', 'rewrite', 'searchToFilter'] as const).filter((name) => options.assist?.[name]);
-  for (const name of [...MEMORY_MEMBERS, ...assist]) {
+  for (const name of [...MEMORY_MEMBERS, ...assist, ...(options.views ? MEMORY_VIEW_MEMBERS : [])]) {
     source[name] = (...args: unknown[]) => {
-      const call = (from: MemoryDataSource) => (from[name] as (...given: unknown[]) => Promise<unknown>)(...args);
+      const call = (from: MemoryDataSource) => (from[name] as unknown as (...given: unknown[]) => Promise<unknown>)(...args);
       return made ? call(made) : members().then(call);
     };
   }

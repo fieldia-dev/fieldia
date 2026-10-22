@@ -3,7 +3,7 @@
  * the first time it uses it, each part a script of its own beside fieldia.js —
  * `fieldia.head.js`, `fieldia.text.js`, `fieldia.path.js`, `fieldia.choice.js`,
  * `fieldia.filters.js`, `fieldia.date.js`, `fieldia.list.js`, `fieldia.cards.js`, `fieldia.columns.js`,
- * `fieldia.import.js`, `fieldia.editable.js`, `fieldia.lines.js`, `fieldia.files.js`, `fieldia.evidence.js`, `fieldia.photos.js`, `fieldia.business.js`, `fieldia.survey.js`,
+ * `fieldia.import.js`, `fieldia.editable.js`, `fieldia.views.js`, `fieldia.rows.js`, `fieldia.lines.js`, `fieldia.files.js`, `fieldia.evidence.js`, `fieldia.photos.js`, `fieldia.business.js`, `fieldia.survey.js`,
  * `fieldia.phone.js`, `fieldia.slots.js`, `fieldia.relations.js`, `fieldia.duplicates.js`, `fieldia.answers.js`, `fieldia.limits.js`, `fieldia.approvals.js`,
  * `fieldia.assist.js`, `fieldia.print.js`, `fieldia.themes.js`, `fieldia.quiet.js`, `fieldia.memory.js`, `fieldia.functions.js`, `fieldia.options.js`, `fieldia.mapchecks.js`, `fieldia.languages.js`,
  * `fieldia.scan.js`, `fieldia.decode.js`

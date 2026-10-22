@@ -384,6 +384,40 @@ export interface ViewerLabels {
   none: string;
   loadMore: string;
   /**
+   * A list ordered by several of its headers (Shift and a header's press): what a screen reader hears after a key's
+   * header, its place among them (`{n}` of `{total}`) and its way — its number shows beside its words.
+   */
+  sortKeyUp: string;
+  sortKeyDown: string;
+  /**
+   * What a list's row opens to in place (`detail`): its toggle's name and its table's (`{title}`, the lines' label or
+   * the page's own; `{name}`, the row's record's), and its title where neither names one (`detailTitle`).
+   */
+  detailOf: string;
+  detailTitle: string;
+  /**
+   * A list's rows re-ranked by hand (`sequenceField`): where a row moved (`{name}`, `{n}` of `{total}`), its grip's hint,
+   * and why the new order was not kept (`{why}`, the source's words).
+   */
+  rowMovedTo: string;
+  rowMoveHint: string;
+  rankNotKept: string;
+  /** A tree's match under a search, its parent named after it (`{name}`), where its children load as a parent opens. */
+  treeIn: string;
+  /**
+   * A list's views kept on the app's server (its source's `views`), in the search bar's menu: a view shared with the
+   * team, the person's own (`viewShared`) or another's (`{name}`, who made it); Save current search's Share with the
+   * team; why the views could not be asked, a view not saved (`{why}`) or not deleted (`{name}`, `{why}`); and the
+   * question before one shared with the team is deleted for everyone.
+   */
+  viewShared: string;
+  viewSharedBy: string;
+  shareView: string;
+  viewsFailed: string;
+  viewNotSaved: string;
+  viewNotDeleted: string;
+  viewDeleteAsk: string;
+  /**
    * How many records a list's group holds, in words (`{n}`: more, or one), said with its name by its heading's button:
    * "Cairo, 12 records" where the heading shows "Cairo (12)".
    */
@@ -978,6 +1012,21 @@ const en: ViewerLabels = {
   no: 'No',
   none: 'None',
   loadMore: 'Show {n} more',
+  sortKeyUp: 'sorted {n} of {total}, ascending',
+  sortKeyDown: 'sorted {n} of {total}, descending',
+  detailOf: '{title} of {name}',
+  detailTitle: 'Details',
+  rowMovedTo: '{name} moved to place {n} of {total}',
+  rowMoveHint: 'Drag to move it; Alt+↑ or Alt+↓ from the keyboard',
+  rankNotKept: 'The new order was not kept: {why}.',
+  treeIn: 'in {name}',
+  viewShared: 'Shared with the team',
+  viewSharedBy: 'Shared by {name}',
+  shareView: 'Share with the team',
+  viewsFailed: 'Saved views could not be loaded.',
+  viewNotSaved: 'The view was not saved: {why}.',
+  viewNotDeleted: '{name} was not deleted: {why}.',
+  viewDeleteAsk: 'Delete “{name}” for everyone on the team?',
   groupCount: '{n} records',
   groupCountNoun: '{n} {records}',
   groupCountOne: '{n} record',

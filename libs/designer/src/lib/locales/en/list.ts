@@ -253,4 +253,19 @@ export const list = {
     slots: { 15: '15 minutes', 30: '30 minutes', 60: 'An hour' } as Record<15 | 30 | 60, string>,
     note: 'The app shows the calendar and opens the records made on it. A record outside the hours stretches them.',
   },
+  // ---- rows a person works in
+  work: {
+    title: 'Rows people work in',
+    opensTo: 'A row opens to',
+    opensToHint: 'Its arrow before the name shows them under the row, a page at a time; the row’s press still opens the record.',
+    opensToNothing: 'Nothing: a press opens the record',
+    opensToRecords: 'The records pointing at it (in the JSON)',
+    rankedBy: 'Rows ranked by hand, by',
+    rankedByHint: 'A grip at each row carries it to another place, Alt with an arrow from the keys; the list opens in that order.',
+    rankedByNothing: 'Nothing: the list keeps its order',
+    endless: 'Rows load as the list is scrolled',
+    endlessHint: 'In place of its pages, for a phone’s feed or a log: its count stays, “Show 40 more” at the end for the keys.',
+    loadChildren: 'Children load as a parent opens',
+    loadChildrenHint: 'For a tree too big for a page, a chart of accounts: its pages are the rows with no parent, each parent’s rows asked as it opens.',
+  },
 };

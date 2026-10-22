@@ -824,6 +824,85 @@ the columns come in parts of their own (`fieldia.cards.js`,
 `fieldia.columns.js`), only where a list asks. See
 [lists people shape](https://fieldia.dev/lists/#shape).
 
+### Lists people work in all day
+
+**Several orders at once.** A header's press puts its column first; with
+Shift held, a press adds its column after those chosen ("by agent, then by
+date"), Shift again turns it the other way and a third time takes it away.
+Each column in the order shows its place (1, 2, 3) beside its arrow once there
+is more than one, a screen reader hearing it after the header's name ("sorted
+2 of 3, descending"); the first carries `aria-sort`. The page's `sort` breaks
+the ties after them; the source gets them in `sort`, in order.
+
+**Views kept for the team.** Where the data source keeps views (`views`, and
+`saveView` and `deleteView` where it saves and deletes them), the search bar's
+menu lists them in place of the favourites the browser keeps: the person's own
+and those shared with the team ("Shared by Mona Adel"), each put on with a
+press — its search, its order and its columns (`optionalColumns`). Save current
+search takes a name, Use by default and Share with the team; the list opens on
+the person's own default, else the team's, asked before its records. Only the
+person's own has its × (a shared one asked first). Without `views`, favourites
+as before.
+
+```ts
+views?({ pageId, model, list }): Promise<SavedView[]>;
+saveView?({ pageId, model, list, view: { id?, name, state: { facets, sort?, columns? }, shared?, isDefault? } }): Promise<SavedView>;
+deleteView?({ pageId, model, list, id }): Promise<void>;
+```
+
+**A row opened in place.** With `detail`, each row opens under itself to what
+its record holds — its lines, a table of lines of the page's (`lines`), loaded
+with the record through `load` — or to another model's records pointing at it
+(`model`, `field` and their `fields`, as a related list's, asked of `list`), a
+page at a time (`limit`, 5 unless said), read only: an arrow before the row's
+name (with its words in the card on a phone), Right and Left on the row,
+several open at once, each kept open as the list asks again; the row's press
+still opens the record. A section's heading or a note among the lines
+(`lineKinds`) reads across the row. Without `load` (lines) or `list` (records),
+no arrow. It comes in the rows part (`fieldia.rows.js`).
+
+**Rows re-ranked by hand.** With `sequenceField` — a whole number the records
+are ranked by, the list's `sort` by it — a grip at each row's start carries the
+row to another place (the other rows sliding aside, the page scrolling near its
+edge, Escape putting it back; on a phone, the card's grip), and Alt with an
+arrow moves the focused row a place, its new place said aloud ("Omar Nabil moved
+to place 3 of 12"). Only the records whose rank changes are written — halfway
+between its neighbours where their ranks leave room, else one more than the one
+before and those after moved on — each through the source's `writeMany` (one
+id, its own rank), else `save`; refused, the list says why and asks for its
+records again. Shown while the list is in that order (no other header pressed,
+no Group By, no rows under parents); a record the person may not change has no
+grip. In the rows part too.
+
+**Rows loaded as the list is scrolled.** With `"endless": true` — a phone's
+feed, a log — the next page of rows comes as the rows' end comes in sight, put
+after those already there, in place of the pager's pages: its count stays
+("1–60 of 1,284 entries"), its arrows go, and "Show 30 more" waits at the end
+for a hand or the keys (↓ past the last row loads the next and goes on). As the
+list asks again (a row's button, a record closed) it keeps every row it held; a
+new search or order starts from the first page. On a phone, cards far out of
+sight skip their drawing. Not for rows under their parent (`parentField`).
+
+**A tree too big for a page.** Rows nest under their parent (`parentField`) on
+their page; with `"loadChildren": true` as well — a chart of accounts, a
+project's work, a development's buildings and units — the list's pages are its
+records with no parent (`{ field: parent, op: "notset" }`), each parent's
+children asked of `list` as it opens (`{ field: parent, op: "=", value: id }`),
+a page at a time with "Show 20 more", so a parent's children never split
+across pages. How many children each row has is asked of `groups` in one ask
+for the rows drawn (`{ op: "in", value: ids }`), so only a row with children
+has its toggle; without `groups`, each offers to open, and one with none loses
+its toggle as it opens. Right opens a row and Left closes it; Collapse all
+closes every one, and Expand all, which would load the whole tree, is not
+offered. Those open stay open as the list asks again. Under a search, its
+matches whatever their depth, each with its parent named ("in Current
+assets"). In the rows part.
+
+```json
+"detail": { "lines": "line_ids", "columns": ["product_id", "name", "qty", "price", "subtotal"], "sort": [{ "field": "sequence" }], "limit": 5 }
+"detail": { "title": "Invoices", "model": "invoice", "field": "partner_id", "fields": { … }, "columns": ["name", "amount"] }
+```
+
 ## On paper
 
 Every page prints — Ctrl+P, the browser's menu, or the page's own Print — as a

@@ -45,7 +45,7 @@ ${code(
   <thead><tr><th>Key</th><th>What it does</th></tr></thead>
   <tbody>
     <tr><td>${c('columns')}</td><td>The fields shown, in order. Each value reads as the form shows it: a choice by its label, a link by its record's name, an amount in its currency — a ${c('currencyField')} is fetched though it is not a column.</td></tr>
-    <tr><td>${c('sort')}</td><td>The order the list opens in. A header click puts its column first, then the other way; this order breaks the ties.</td></tr>
+    <tr><td>${c('sort')}</td><td>The order the list opens in. A header click puts its column first, then the other way; with <kbd>Shift</kbd> a click adds its column after those chosen — again, the other way; a third time, it goes — a number beside each header saying its place. This order breaks the ties.</td></tr>
     <tr><td>${c('pageSize')}</td><td>Records to a page, 1 to 500; 40 when left out.</td></tr>
     <tr><td>${c('searchFields')}</td><td>The fields typed text is looked for in; the columns when left out.</td></tr>
     <tr><td>${c('filters')} · ${c('defaultFilters')}</td><td>Named filters for the menu, and the ones the list starts with. A filter compares with values, never with another field; or names a ${c('period')} a date falls in, counted from today — see <a href="#totals">lists that add up</a>.</td></tr>
@@ -60,6 +60,10 @@ ${code(
     <tr><td>${c('filterRanges')} · ${c('filterCounts')} · ${c('filterSheet')}</td><td>A number's or a date's range on the filter bar — From and To, a press for each least value (${c('{ "bedrooms": { "atLeast": [1, 2, 3, 4] } }')}) — one chip; how many records each value, named filter and favourite finds, beside it; and on a phone the filter bar's fields in a sheet with <em>Show 37 homes</em>: see <a href="#filters">filters a buyer and a sales team expect</a>.</td></tr>
     <tr><td>${c('searchToFilter')}</td><td>${c('true')}: a search typed in plain words — <em>“villas in New Cairo under 15M”</em> — turned into the list's own filters by your app's AI, as ✦ beside the box is pressed, with Undo: see <a href="/data/#ai">AI help</a>. Hidden where the data source has no ${c('searchToFilter')}.</td></tr>
     <tr><td>${c('parentField')}</td><td>Rows nested under their parent by this link to the list's own records, with Expand all and Collapse all.</td></tr>
+    <tr><td>${c('loadChildren')}</td><td>${c('true')}, with ${c('parentField')}: a tree too big for a page, each parent's children asked as it opens — see <a href="#tree">a tree too big for a page</a>.</td></tr>
+    <tr><td>${c('endless')}</td><td>${c('true')}: rows load as the list is scrolled, in place of its pages — see <a href="#endless">loaded as you scroll</a>.</td></tr>
+    <tr><td>${c('sequenceField')}</td><td>The whole number the records are ranked by: a row carried to another place by its grip, or moved with <kbd>Alt</kbd> and an arrow, writes it — see <a href="#rank">rows re-ranked by hand</a>.</td></tr>
+    <tr><td>${c('detail')}</td><td>What a row opens to in place, under it: its record's lines, or the records pointing at it, a page at a time — see <a href="#work">lists people work in</a>.</td></tr>
     <tr><td>${c('export')}</td><td>${c('true')}: Export in the list's bar. Off unless said, as Edit is: see <a href="#bulk">taking records away</a>.</td></tr>
     <tr><td>${c('bulkEdit')}</td><td>Edit, for the rows chosen: ${c('true')} offers the columns one value can set, a list of fields offers those. Off unless said: see <a href="#bulk">changing many at once</a>.</td></tr>
     <tr><td>${c('card')} · ${c('gallery')}</td><td>Each record as a card where the list is as narrow as a phone, and a gallery of cards on the switcher on any width: see <a href="#shape">cards, a gallery, and columns people shape</a>.</td></tr>
@@ -126,7 +130,7 @@ totals({ model: 'invoice', filter, totals: { amount: ['sum'] }, groupBy: 'city',
   <li><strong>Chips</strong> show what applies. Values searched in one field share a chip, any of them (<em>Name: nile or amira</em>); chips all apply together. <kbd>Backspace</kbd> in the empty box takes the last one away; each has its ×.</li>
   <li><strong>Filters</strong> turn on and off from the menu, any of the ones on; <em>Add a custom filter</em> builds one from a field, a condition that suits its kind, and a value — for a date, also a period: <em>Invoice date: This month</em>.</li>
   <li><strong>Group By</strong> groups by one field, then another inside it: a row for each value, with how many records have it (and their sums), opening into the next field's groups or into its records, a page at a time. A date groups by its year, quarter, month, week or day. A group's heading is a button: a screen reader hears it open or closed, its name and its count in words (<em>Cairo, 12 invoices</em>), and the list stays a table; the arrow keys move from a record's row to a heading and on, <kbd>→</kbd> opens a heading and <kbd>←</kbd> closes it (the other way round right to left).</li>
-  <li><strong>Favourites</strong> keep the search on screen by name, one of them used by default when the list opens. They are kept where the viewer keeps a person's choices: its ${c('preferences')} store, the browser's storage unless you give one.</li>
+  <li><strong>Favourites</strong> keep the search on screen by name, one of them used by default when the list opens. They are kept where the viewer keeps a person's choices: its ${c('preferences')} store, the browser's storage unless you give one. Where your data source keeps views (${c('views')}), they are <a href="#views">saved views</a> instead: kept on your server, shared with the team or not, an order and columns kept with the search.</li>
 </ul>
 
 <h2 id="backlog">A backlog: cells, a filter bar, rows under their parent</h2>
@@ -376,9 +380,76 @@ mountViewer(host, {
 <p>The calendar is on the clock of the zone its start field names (${c('timeZone')} on a date and time), else its page's, else the reader's own: on a page of ${c('"timeZone": "Europe/Berlin"')}, its week, today, the hours each record is drawn at and the line for now are Berlin's wherever it is looked at from, the zone's short name (CEST) beside the span; a slot pressed, a drag, a stretch and Move to… write the instant that time is in Berlin, and a record moved keeps the time it really lasts across a change of the clocks. In the hour the clocks repeat, a time is its first; in the hour they skip, it is as far past the change.</p>
 <p>The calendar asks ${c('list')} for the records of the span it shows: those starting before it ends and ending after it starts, as ${c('date')} keys or ISO instants, with the list's own search. Its code loads the first time a calendar is shown, in a chunk of its own. A list's switcher takes an app's own views the same way: a function by name in ${c('listViews')}, offered on a list with the page option of its name, or where its ${c('offers(node)')} says, in its own words (${c('label(locale)')}). <a href="/demos/plain/?page=clinic-calendar&skin=outlined">Try the clinic</a> · <a href="/demos/plain/?page=booking-week&skin=outlined">try the booking desk</a> · <a href="/demos/plain/?page=test-drives&skin=outlined">try the showroom's test drives, on Berlin's clock</a>.</p>
 
+<h2 id="work">Lists people work in all day</h2>
+<p><strong>Several orders at once.</strong> A header's press puts its column first, then the other way. With <kbd>Shift</kbd> held, a press adds its column after those already chosen — <em>by agent, then by date</em> — pressed again with <kbd>Shift</kbd>, the other way, and a third time it goes. Each column in the order shows its place beside its arrow (1, 2, 3) once there is more than one; a screen reader hears it after the header's name (<em>sorted 2 of 3, descending</em>), and the first carries ${c('aria-sort')}, as a table says one. The page's own ${c('sort')} breaks the ties after them; your source gets them all in ${c('sort')}, in order — nothing new to answer.</p>
+
+<h3 id="detail">A row opened in place</h3>
+<p>With ${c('detail')}, an arrow before each row's name opens the row under itself to what its record holds — its lines — or to the records that point at it, a page at a time, to read: an order's lines checked without leaving the list, an approval's items, a booking's contents. Several stay open at once, and stay open as the list asks again; <kbd>→</kbd> opens a row from the keys and <kbd>←</kbd> closes it (the other way round right to left), <kbd>↑</kbd> <kbd>↓</kbd> pass over what is open, and the row's own press still opens the record. On a phone the arrow is under the card, with its words.</p>
+${code(
+  'json',
+  `
+"detail": {
+  "lines": "line_ids",
+  "columns": ["product_id", "name", "qty", "price", "discount", "subtotal"],
+  "sort": [{ "field": "sequence" }],
+  "limit": 5
+}`
+)}
+<ul>
+  <li><strong>Its lines</strong> (${c('lines')}: a table of lines of the page's) come with the record, asked once of the source's ${c('load')} as the row first opens; a section's heading or a note among them (${c('lineKinds')}) reads across the row.</li>
+  <li><strong>The records pointing at it</strong> — ${c('"model": "invoice", "field": "partner_id", "fields": { … }')}, as a related list names them — are asked of ${c('list')} a page at a time, with ${c('{ field: "partner_id", op: "=", value: id }')} as their filter.</li>
+  <li>${c('columns')}, ${c('cells')}, ${c('sort')} and ${c('limit')} (5 unless said) as a list's; ${c('title')} names them — <em>Lines of S00118</em> — the lines' label unless said.</li>
+  <li>Without ${c('load')} (for lines) or ${c('list')} (for records), no arrow: the rows are read and opened as ever. It comes in the rows part (${c('fieldia.rows.js')}), only where a list asks for it. In the designer: a list's <em>A row opens to</em>, one of the page's tables of lines. <a href="/demos/plain/?page=orders-review&amp;skin=underline">Try the orders to review</a>.</li>
+</ul>
+
+<h3 id="rank">Rows re-ranked by hand</h3>
+<p>A waiting room's queue, a backlog, the order homes are featured in: with ${c('sequenceField')} — a whole number of the records, the list's ${c('sort')} by it — each row has a grip at its start that carries it to another place, the other rows sliding aside to make room (the page scrolls near its edge, <kbd>Escape</kbd> puts it back), and <kbd>Alt</kbd> with <kbd>↑</kbd> or <kbd>↓</kbd> moves the row with the focus a place, its new place said aloud: <em>Omar Nabil moved to place 3 of 12</em>. On a phone each card has its grip.</p>
+${code(
+  'json',
+  `
+{ "type": "list", "id": "waiting-room", "columns": ["name", "treatment", "doctor", "arrived", "state"],
+  "sort": [{ "field": "turn" }], "sortable": false, "sequenceField": "turn" }`
+)}
+<ul>
+  <li><strong>The fewest writes.</strong> A row moved between two whose ranks leave room takes one halfway between them, and nothing else changes; where they leave none it takes one more than the one before it, and those after it move on while they would fall behind. Each record changed is written its own rank through your source's ${c('writeMany')} (${c('{ ids: [id], values: { turn: 25 } }')}), else its ${c('save')}; a refusal is said — <em>The new order was not kept: …</em> — and the list asks for its records again, in the order your source keeps.</li>
+  <li><strong>Only while it is in that order</strong>: by its rank, ascending, nothing grouped, no rows under their parent, the grips there; a header pressed for another order hides them. A record the person may not change (${c('can.edit: false')}) has none.</li>
+  <li>Moves within the rows shown; ranks are whole numbers, a source's own way of breaking a tie kept. In the rows part (${c('fieldia.rows.js')}). In the designer: a list's <em>Rows ranked by hand, by</em>. <a href="/demos/plain/?page=waiting-room&amp;skin=underline">Try the waiting room</a>.</li>
+</ul>
+
+<h3 id="endless">Loaded as you scroll</h3>
+<p>A phone's feed, a log, results to browse: with ${c('"endless": true')} the next page of rows comes as the end of the rows comes in sight, put after those already there, a phone's thumb ahead — no pages to turn. The count stays, <em>1–60 of 1,284 entries</em>; the arrows go; <em>Show 30 more</em> waits at the end for a hand or the keys, and <kbd>↓</kbd> past the last row loads the next and moves on to it. A row's button, a record closed, an export: the list asks again for every row it held, where it was; a new search or another order starts from the first page. On a phone its cards far out of sight skip their drawing until they come near (${c('content-visibility')}). Your source answers ${c('list')} with ${c('offset')} and ${c('limit')}, as it does for pages. Not for rows under their parent. <a href="/demos/plain/?page=activity-log&amp;skin=underline">Try the team's log</a>.</p>
+
+<h3 id="tree">A tree too big for a page</h3>
+<p>Rows nested under their parent on one page break once a tree holds more than a page: a chart of accounts, a project's work, a development's buildings and units. With ${c('"loadChildren": true')} beside ${c('parentField')}, the list's pages are its records with no parent, and each parent's children come as it opens — a page at a time, <em>Show 20 more</em> under them — so a parent's children never split across pages. Only a row with children has its arrow: how many each has is asked in one ask for the rows drawn. <kbd>→</kbd> opens a row, <kbd>←</kbd> closes it, <em>Collapse all</em> closes every one; <em>Expand all</em>, which would load the whole tree, is not offered. What was open stays open as the list asks again. A search lists its matches whatever their depth, each with its parent named — <em>Bank 3, in Current assets</em>.</p>
+${code(
+  'ts',
+  `
+// The top: records with no parent, a page at a time, as the pager counts them.
+list({ model: 'account', filter: [{ field: 'parent_id', op: 'notset' }], sort, offset: 0, limit: 20 })
+// How many children each row drawn has, in one ask: a group's value is the parent's id.
+groups({ model: 'account', field: 'parent_id', filter: [{ field: 'parent_id', op: 'in', value: [1, 2, 3] }] })
+// A parent opened: its children, a page at a time.
+list({ model: 'account', filter: [{ field: 'parent_id', op: '=', value: 1 }], sort, offset: 0, limit: 20 })`
+)}
+<p>Without ${c('groups')}, every row offers to open, and one with nothing under it loses its arrow as it opens. In the rows part (${c('fieldia.rows.js')}). In the designer: a list's <em>Children load as a parent opens</em>, under its parent link. <a href="/demos/plain/?page=chart-of-accounts&amp;skin=underline">Try the chart of accounts</a>.</p>
+
+<h3 id="views">Saved views, kept for the team</h3>
+<p>Where your data source keeps views, the search bar's menu lists them in place of the favourites the browser keeps: the person's own and those the team shares — <em>Shared by Mona Adel</em> beside another's — each put on with a press: its search, its order and, where people shape the columns, its columns. <em>Save current search</em> takes a name, <em>Use by default</em> and <em>Share with the team</em>; the list opens on the person's own default, else the team's, asked before its records so they come once, already in it. A person's own view has its × (one shared with the team asked first: it goes for everyone); another's is only put on. The same on every device: nothing of it is kept in the browser.</p>
+${code(
+  'ts',
+  `
+views?({ pageId, model, list }): Promise<SavedView[]>;
+saveView?({ pageId, model, list, view: { id?, name, state, shared?, isDefault? } }): Promise<SavedView>;
+deleteView?({ pageId, model, list, id }): Promise<void>;
+
+// SavedView: { id, name, state: { facets, sort?, columns? }, shared?, isDefault?, mine?, by? }
+// columns as the list keeps a person's: [{ colId, width, hide }], in their order`
+)}
+<p>Your server knows the person by its own sign-in — nothing in a request names them — and tells the page whose a view is with ${c('mine')} and ${c('by')}. A view kept as the default is the only one of its kind (the person's own, or the team's): let go of the one before. A refusal is said under the form in your words, what was typed kept; views that could not be asked are said with Retry, and the list opens on its own search. Without ${c('saveView')} views are put on, none saved; without ${c('deleteView')}, none deleted. ${c('createMemoryDataSource({ views: {} })')} keeps them. <a href="/demos/plain/?page=leads-queue&skin=underline">Try the sales team's queue</a>.</p>
+
 <h2 id="details">What it takes care of</h2>
 <ul>
-  <li><strong>A plain table.</strong> Headers that sort say so with ${c('aria-sort')}; rows take the focus, <kbd>↑</kbd> <kbd>↓</kbd> move between them and <kbd>Space</kbd> chooses one. It reads the same in every binding and in the script bundle.</li>
+  <li><strong>A plain table.</strong> Headers that sort say so with ${c('aria-sort')} — the first of several, each one's place in words after its name; rows take the focus, <kbd>↑</kbd> <kbd>↓</kbd> move between them and <kbd>Space</kbd> chooses one. It reads the same in every binding and in the script bundle.</li>
   <li><strong>Each value in its own direction.</strong> On a right-to-left page a phone number or an amount still reads left to right.</li>
   <li><strong>A narrow screen.</strong> The table scrolls inside its own box; the menu's groups stack.</li>
   <li><strong>Four languages</strong>, as all of Fieldia's own words are.</li>

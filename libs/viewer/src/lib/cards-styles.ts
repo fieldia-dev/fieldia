@@ -26,7 +26,7 @@ export const CARD_STYLES = `
 .fd-list[data-as] .fd-list-check-all { display: inline-flex; align-items: center; gap: 8px; box-sizing: border-box; min-height: 32px; padding-inline: 10px 12px; border: 1px solid var(--fd-border); border-radius: 999px; background: var(--fd-surface); font-size: 13.5px; font-weight: 400; cursor: pointer; }
 .fd-list[data-as] .fd-list-check-words { display: inline; }
 .fd-list[data-as] .fd-list-sort { width: auto; box-sizing: border-box; min-height: 32px; padding-inline: 12px; border: 1px solid var(--fd-border); border-radius: 999px; background: var(--fd-surface); color: var(--fd-text); }
-.fd-list[data-as] th[aria-sort] .fd-list-sort { border-color: var(--fd-accent); background: var(--fd-accent-soft); color: var(--fd-accent); }
+.fd-list[data-as] th:is([aria-sort], [data-sort]) .fd-list-sort { border-color: var(--fd-accent); background: var(--fd-accent-soft); color: var(--fd-accent); }
 .fd-list[data-as] .fd-list-table th.fd-num .fd-list-sort { justify-content: flex-start; }
 .fd-list[data-as] .fd-list-table th.fd-num .fd-list-sort::after { order: 0; }
 .fd-list[data-as] .fd-list-sort .fd-list-head { font-size: 13.5px; font-weight: 500; color: inherit; }
@@ -39,6 +39,8 @@ export const CARD_STYLES = `
 .fd-list[data-as] .fd-list-row[data-tone]:hover { border-inline-start-color: var(--fd-row-tone); }
 .fd-list[data-as] .fd-list-row:is([aria-selected="true"], [aria-current="true"], .fd-list-hot) { background: var(--fd-accent-soft); border-color: var(--fd-accent); }
 .fd-list[data-as] .fd-list-row:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+/* A long feed of cards: those far out of sight skip their drawing until they come near (a list loaded as it is scrolled). */
+.fd-list[data-endless][data-as="cards"] .fd-list-row { content-visibility: auto; contain-intrinsic-size: auto 160px; }
 .fd-list[data-as] .fd-list-row > td { display: none; height: auto; max-width: none; padding: 0; border: 0; background: none; color: inherit; white-space: normal; overflow: visible; }
 .fd-list[data-as] .fd-list-row > .fd-list-check { display: block; width: auto; padding-block-start: 2px; }
 .fd-list[data-as] .fd-list-row > .fd-list-card { display: flex; gap: 12px; grid-column: -2; min-width: 0; }

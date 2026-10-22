@@ -14,6 +14,8 @@ import type * as HeadModule from './head-part';
 import type * as ImportModule from './import-part';
 import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
+import type * as ViewsModule from './views-part';
+import type * as RowsModule from './rows-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
@@ -40,6 +42,10 @@ export type LimitsPart = typeof LimitsModule;
 export type ApprovalsPart = typeof ApprovalsModule;
 /** The assist part: AI help — Fill from text, a text field's Draft and Polish, a list's words read as filters — each proposal reviewed. */
 export type AssistPart = typeof AssistModule;
+/** The views part: a list's views kept on the app's server. */
+export type ViewsPart = typeof ViewsModule;
+/** The rows part: a list's rows a person works in — opened in place, re-ranked by hand, a tree's loaded as it opens. */
+export type RowsPart = typeof RowsModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -55,6 +61,10 @@ export const columnsPart: Part<ColumnsPart> = lazyPart('columns', () => import('
 export const importPart: Part<ImportPart> = lazyPart('import', () => import('./import-part'));
 /** A list's cells changed in place, loaded the first time a page draws a list with `editable`. */
 export const editablePart: Part<EditablePart> = lazyPart('editable', () => import('./editable-part'));
+/** A list's views kept on the app's server, loaded as a list whose data source keeps views (`views`) opens: never waited for by the page. */
+export const viewsPart: Part<ViewsPart> = lazyPart('views', () => import('./views-part'));
+/** A list's rows a person works in — opened in place — loaded the first time a page draws a list that asks for any. */
+export const rowsPart: Part<RowsPart> = lazyPart('rows', () => import('./rows-part'));
 /**
  * Possible duplicates and the merge's screen, loaded the first time a page naming fields in `duplicates` is shown with
  * a source that has `duplicates` — never waited for: what it says comes with the source's answer.
@@ -125,7 +135,7 @@ export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage'
  * Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing —
  * but the decode part, which reads codes only where a browser reads none itself, as Scan is pressed.
  */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
 /** A group holding a text read first alone — Markdown, or one edited by its button — whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -246,6 +256,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       // Its rows as cards, on a phone or in its gallery; the columns a person shapes.
       if (node['card'] || node['gallery']) found.add(cardsPart);
       if (node['optionalColumns']) found.add(columnsPart);
+      // Its rows a person works in: opened in place, re-ranked by hand, a tree's children loaded as a parent opens.
+      if (node['detail'] || node['sequenceField'] || node['loadChildren']) found.add(rowsPart);
       if (node['search'] === 'fields') found.add(filtersPart);
       // Its cells changed in place: the part that opens them, and each such column's box's own, as a form's field draws it.
       const changed = node['editable'] ? editableColumns(page, node as unknown as ListNode) : [];

@@ -96,6 +96,15 @@ import servicesLanguages from '../../examples/pages/services-languages.page.json
 import serviceLanguages from '../../examples/pages/service-languages.page.json';
 import { bilingualListings, bilingualServices } from './languages';
 import { scanRecords, stockCountPage, treatmentPage } from './scan';
+import { keepViews, keptViews } from './saved-views';
+import ordersReview from '../../examples/pages/orders-review.page.json';
+import { reviewOrders } from './orders-review';
+import waitingRoom from '../../examples/pages/waiting-room.page.json';
+import { waitingPatientPage, waitingPatients } from './waiting-room';
+import activityLog from '../../examples/pages/activity-log.page.json';
+import { activityEntries, activityEntryPage } from './activity-log';
+import chartOfAccounts from '../../examples/pages/chart-of-accounts.page.json';
+import { accountPage, chartAccounts } from './chart-of-accounts';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -107,6 +116,17 @@ export const pages: Record<string, Page> = {
   invoices: invoices as Page,
   // 1,284 contacts to select all of, export and change in bulk, and the page each opens: shared/contacts.ts.
   contacts: contacts as Page,
+  // Orders whose rows open in place to their lines, and the order each opens: shared/orders-review.ts.
+  'orders-review': ordersReview as Page,
+  // A clinic's waiting room, its patients carried to another place by hand: shared/waiting-room.ts.
+  'waiting-room': waitingRoom as Page,
+  'waiting-patient': waitingPatientPage,
+  // A team's log of 1,284 entries, loaded as it is scrolled, and the entry each opens: shared/activity-log.ts.
+  'activity-log': activityLog as Page,
+  'activity-entry': activityEntryPage,
+  // A chart of 240 accounts, its groups' accounts loaded as each opens, and the account each opens: shared/chart-of-accounts.ts.
+  'chart-of-accounts': chartOfAccounts as Page,
+  account: accountPage,
   contact: contactPage,
   // A customer with its invoices and quotations listed inside it, and a home with its viewings: shared/related-lists.ts.
   'customer-account': customerAccount as Page,
@@ -293,6 +313,10 @@ const RECORD_PAGES: Record<string, string> = {
   'agent-listings': 'listing-photo-set',
   'homes-search': 'map-home',
   'leads-queue': 'lead',
+  'orders-review': 'order',
+  'waiting-room': 'waiting-patient',
+  'activity-log': 'activity-entry',
+  'chart-of-accounts': 'account',
   'map-couriers': 'map-courier',
   'map-zones': 'map-week-order',
   'map-heat': 'map-week-order',
@@ -372,7 +396,7 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('page') === 'contacts' ? { user: { id: 9001, name: 'Mona Adel' } } : {}),
     // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both; the leads'
     // follow-ups too. The sign-up opens and closes on it: `?now=` before sign-ups open, or after they close.
-    ...(params.get('page') === 'invoices' || params.get('page') === 'leads-queue' || params.get('page') === 'event-signup' ? { now: demoNow } : {}),
+    ...(params.get('page') === 'invoices' || params.get('page') === 'leads-queue' || params.get('page') === 'event-signup' || params.get('page') === 'activity-log' ? { now: demoNow } : {}),
     // Who decides on a purchase order or an expense, as the address signs them in (`as=`; shared/approvals.ts).
     ...approvalUser(params),
     // A draft to continue from, by the key in the link Continue later gave (shared/clinic-intake.ts).
@@ -731,6 +755,8 @@ export function sampleDataSource() {
         4: { name: 'Standing desk 160 × 80', price: 6425 },
         5: { name: 'Cable tray, 120 cm', price: 215 },
       },
+      // A clinic's waiting room this morning, its patients in the order they go in (shared/waiting-room.ts).
+      'clinic.waiting': waitingPatients(),
       'sale.order': {
         1: {
           name: 'S00118',
@@ -851,9 +877,23 @@ export function sampleDataSource() {
     },
   });
   // What this tab saved in the demos, in place of the samples (shared/kept.ts) — the customer typed twice's second Nile
-  // Traders, someone else's, to find and merge (shared/duplicates.ts), back unless it was merged away.
-  const extra: Record<string, Record<string, Values>> = params.get('page') === 'customer-card' ? { partner: duplicateCustomers() } : {};
-  const source = createMemoryDataSource({ ...options, records: keptOver(options?.records ?? {}, extra), notDuplicatePairs: keptApart() });
+  // Traders, someone else's, to find and merge (shared/duplicates.ts), back unless it was merged away; the orders to
+  // review, on their list and on the order's page each row opens (shared/orders-review.ts).
+  const extras: Record<string, () => Record<string, Record<string, Values>>> = {
+    'customer-card': () => ({ partner: duplicateCustomers() }),
+    'orders-review': () => ({ 'sale.order': reviewOrders() }),
+    order: () => ({ 'sale.order': reviewOrders() }),
+    // What the team did, 1,284 entries back from now, on its log and the entry each row opens (shared/activity-log.ts).
+    'activity-log': () => ({ 'activity.entry': activityEntries() }),
+    'activity-entry': () => ({ 'activity.entry': activityEntries() }),
+    // A chart of 240 accounts, on its list and on the account each row opens (shared/chart-of-accounts.ts).
+    'chart-of-accounts': () => ({ 'coa.account': chartAccounts() }),
+    account: () => ({ 'coa.account': chartAccounts() }),
+  };
+  const extra = extras[params.get('page') ?? '']?.() ?? {};
+  // The sales team's queue keeps its saved views on its server, the team's shared ones among them (shared/saved-views.ts).
+  const views = params.get('page') === 'leads-queue' ? { views: keptViews() } : {};
+  const source = createMemoryDataSource({ ...options, ...views, records: keptOver(options?.records ?? {}, extra), notDuplicatePairs: keptApart() });
   // `?store=http`: the listing's photos to a real endpoint, through uploadTo, for the browser tests.
   const upload = listingUpload(params);
   if (upload) source.upload = upload;
@@ -872,6 +912,8 @@ export function sampleDataSource() {
   // The clinic's server: a week over 48 hours refused, a service's price per hour worked out again (shared/editable-lists.ts).
   staffWeekRule(source);
   servicePerHour(source);
+  // Each view saved or deleted kept in this tab, as the team's server keeps them.
+  keepViews(source);
   return source;
 }
 

@@ -25,10 +25,11 @@ import {
   type SortOrder,
   type Tone,
   type Values,
+  type ViewState,
 } from '@fieldia/core';
 import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type Widget, type WidgetContext, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
-import { startingFacets } from './favourites';
+import { defaultFacets, laterFavourites, startingFacets } from './favourites';
 import { filterKit } from './filter-range';
 import type { ViewerLabels } from './labels';
 import { listCells, plain, rowRules } from './list-cells';
@@ -42,7 +43,10 @@ import { listTotals } from './list-totals';
 import { keepFootRoom, printout, PRINT_MOST } from './list-print';
 import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
-import { assistPart, cardsPart, columnsPart, editablePart, filtersPart, importPart, type AssistPart, type ColumnsPart } from './viewer-parts';
+import { markSort, pressedSort, sortWith } from './list-sort';
+import { endlessRows } from './list-endless';
+import type { SavedViews, ViewsSource } from './saved-views';
+import { assistPart, cardsPart, columnsPart, editablePart, filtersPart, importPart, rowsPart, viewsPart, type AssistPart, type ColumnsPart } from './viewer-parts';
 import type { EditableRows, NewForm } from './list-editable';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
 
@@ -223,8 +227,13 @@ export function listView(context: ListContext): ListView {
   const pageSize = node.pageSize ?? 40;
   const defaultSort = node.sort ?? [];
   let sort: SortOrder[] = defaultSort;
+  /** The keys a person chose from the headers, the first leading (list-sort.ts); none while the list keeps its own order. */
+  let keys: SortOrder[] = [];
   let offset = 0;
   let total = 0;
+  /** Rows loaded as the list is scrolled, in place of its pages (`endless`): how many it holds, kept as it asks again. */
+  const endless = node.endless === true && context.inRecord !== true;
+  let reach = pageSize;
   /** The page of records, when the list is not grouped. */
   let rows: Row[] = [];
   /** Each record's row, for the records on show however they are grouped. */
@@ -232,7 +241,12 @@ export function listView(context: ListContext): ListView {
   const visible = () => [...body.querySelectorAll('.fd-list-row:not([data-new])')].map((tr) => recordOf.get(tr) as Row);
   // Only a page of records gets this far: the page check refuses a list of anything else.
   const model = page.data.kind === 'record' ? page.data.model : '';
-  let facets: Facet[] = context.search ? [...context.search] : startingFacets(node, context.preferences, page);
+  /**
+   * The list's views kept on the app's server, where its source keeps them and its search bar has a menu
+   * (saved-views.ts): in place of the favourites the browser keeps, and the list opens on the default one.
+   */
+  const viewSource = node.search !== 'fields' && context.inRecord !== true && context.dataSource?.views ? (context.dataSource as ViewsSource) : null;
+  let facets: Facet[] = context.search ? [...context.search] : viewSource ? defaultFacets(node) : startingFacets(node, context.preferences, page);
   /** In the order they were chosen, which is the order the app gets them. */
   const chosen = new Set<RecordId>();
   /** Each record's version and what the person may do with it, from the rows shown: what Edit sends and keeps to. */
@@ -393,12 +407,20 @@ export function listView(context: ListContext): ListView {
       if (UNSORTABLE.has(def.type) || !sortable) th.append(head);
       else {
         const button = el('button', { type: 'button', class: 'fd-list-sort' }, head);
-        button.addEventListener('click', () => {
-          // The header's field leads; the list's own order breaks the ties.
-          const desc = sort[0]?.field === name ? !sort[0].desc : false;
-          sort = [{ field: name, ...(desc ? { desc } : {}) }, ...defaultSort.filter((order) => order.field !== name)];
+        // The header's field leads — with Shift, it joins the keys chosen — and the list's own order breaks the ties.
+        const press = (adding: boolean) => {
+          keys = pressedSort(keys.length ? keys : sort.slice(0, 1), name, adding);
+          sort = sortWith(keys, defaultSort);
           offset = 0;
+          reach = pageSize;
           void load();
+        };
+        button.addEventListener('click', (event) => press(event.shiftKey));
+        // Shift with Enter or Space, from the keys: a press made of keys carries no Shift in every browser.
+        button.addEventListener('keydown', (event) => {
+          if (!event.shiftKey || (event.key !== 'Enter' && event.key !== ' ')) return;
+          event.preventDefault();
+          press(true);
         });
         th.append(button);
       }
@@ -486,7 +508,7 @@ export function listView(context: ListContext): ListView {
   /** The row shown next to this one, down or up, past those folded under a parent. */
   const shownBeside = (tr: Element, down: boolean) => {
     let next = down ? tr.nextElementSibling : tr.previousElementSibling;
-    while (next && ((next as HTMLElement).hidden || next.classList.contains('fd-list-note'))) next = down ? next.nextElementSibling : next.previousElementSibling;
+    while (next && ((next as HTMLElement).hidden || next.classList.contains('fd-list-note') || next.hasAttribute('data-aside'))) next = down ? next.nextElementSibling : next.previousElementSibling;
     return next as HTMLElement | null;
   };
 
@@ -558,6 +580,63 @@ export function listView(context: ListContext): ListView {
 
   /** How many columns a heading's row spans: the leading ones, those shown, the buttons'. */
   const span = () => leading + shownColumns().length + trailing;
+  /**
+   * The rows part, which the page waited for where the list's rows open in place (`detail`) or are re-ranked by hand
+   * (`sequenceField`); where it could not come, its rows are read and opened, as a list's always were. What a row opens
+   * to, drawn as the list draws its cells.
+   */
+  const rowsKit = node.detail || node.sequenceField || node.loadChildren ? rowsPart.loaded : undefined;
+  const details = rowsKit?.detailRows({ page, node, model, dataSource: context.dataSource, el, labels, locale, fill, number, span, cellsOf: (of, list) => listCells({ page: of, node: list, doc, el, locale, icons: context.icons, fill, ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) }) }) ?? null;
+  if (rowsKit) rowsKit.installRowsStyles(doc);
+  /** Its rows re-ranked by hand, while it is in their order: by its own rank, ascending, its rows not under groups or parents. */
+  const ranked = () => !groupedNow && !parentField && sort[0]?.field === node.sequenceField && !sort[0]?.desc && !sort[0]?.near;
+  const ranks =
+    rowsKit?.rankRows({
+      page,
+      node,
+      model,
+      dataSource: context.dataSource,
+      doc,
+      el,
+      labels,
+      fill,
+      number,
+      ranked,
+      rows: () => [...body.querySelectorAll<HTMLTableRowElement>(':scope > .fd-list-row')],
+      recordOf: (tr) => recordOf.get(tr),
+      known: (id) => known.get(String(id)),
+      offset: () => offset,
+      total: () => total,
+      reload: () => load(),
+      ...(context.say ? { say: context.say } : {}),
+    }) ?? null;
+  // The rank each row moves by, asked with the rest.
+  if (ranks && node.sequenceField && !fields.includes(node.sequenceField)) fields.push(node.sequenceField);
+  /** A tree too big for a page, its children loaded as a parent opens (`loadChildren`): the rows part's, where it came. */
+  const tree =
+    parentField && node.loadChildren
+      ? (rowsKit?.lazyTree({
+          node,
+          model,
+          dataSource: context.dataSource,
+          el,
+          labels,
+          fill,
+          number,
+          parentField,
+          filter: () => currentFilter(),
+          sort: () => sort,
+          fields,
+          pageSize,
+          row: (record) => row(record),
+          recordOf: (tr) => recordOf.get(tr),
+          span,
+          searching: () => facets.some((facet) => facet.kind !== 'groupBy'),
+          changed: () => changed(),
+        }) ?? null)
+      : null;
+  // Every parent opened at once would load the whole tree: Expand all is for a tree on its page.
+  if (tree) expandAll.hidden = true;
   /** The columns as last drawn, to know when the totals must follow. */
   let drawnColumns = shownColumns().join();
 
@@ -569,6 +648,7 @@ export function listView(context: ListContext): ListView {
     if (!kept || drawnColumns === shownColumns().join()) return;
     drawnColumns = shownColumns().join();
     for (const cell of body.querySelectorAll<HTMLTableCellElement>(':scope > :is(.fd-list-group, .fd-list-more, .fd-list-note) > td')) cell.colSpan = span();
+    details?.spread(body);
     if (!totals) return;
     const next = makeTotals();
     if (!next) return;
@@ -640,6 +720,8 @@ export function listView(context: ListContext): ListView {
     });
     tr.addEventListener('keydown', (event) => {
       if (event.target !== tr) return;
+      // Alt with an arrow: the row moved a place, where the list is ranked by hand.
+      if (ranks?.key(tr, event)) return event.preventDefault();
       const forward = tr.closest('[dir]')?.getAttribute('dir') === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -650,8 +732,10 @@ export function listView(context: ListContext): ListView {
         box.click();
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
-        // In a gallery, the card over or under this one; else the row.
-        focusRow(element.dataset['as'] === 'gallery' ? cardBeside(tr, event.key === 'ArrowDown') : shownBeside(tr, event.key === 'ArrowDown'));
+        // In a gallery, the card over or under this one; else the row — past the last loaded, the next page first.
+        const beside = element.dataset['as'] === 'gallery' ? cardBeside(tr, event.key === 'ArrowDown') : shownBeside(tr, event.key === 'ArrowDown');
+        if (!beside && event.key === 'ArrowDown' && endless) void more().then(() => focusRow(shownBeside(tr, true)));
+        else focusRow(beside);
       } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && element.hasAttribute('data-as')) {
         // Cards: the next towards the line's end, the one before towards its start.
         event.preventDefault();
@@ -660,6 +744,9 @@ export function listView(context: ListContext): ListView {
         // A parent opens towards the line's end, closes towards its start: flipped right to left.
         event.preventDefault();
         fold(String(record.id), event.key !== forward);
+      } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && (tree?.key(tr, event.key === forward) || details?.key(tr, event.key === forward))) {
+        // What it opens to, opened towards the line's end and closed towards its start.
+        event.preventDefault();
       }
     });
     // Under the pointer or the focus: its pin on the map lights up.
@@ -668,6 +755,8 @@ export function listView(context: ListContext): ListView {
     tr.addEventListener('focus', () => viewParts.highlight(record.id));
     recordOf.set(tr, record);
     rowEdits?.wire(tr, record);
+    details?.wire(tr, record, name);
+    ranks?.wire(tr, record, name);
     return tr;
   }
 
@@ -678,7 +767,8 @@ export function listView(context: ListContext): ListView {
 
   /** A page of records with each under its parent, depth first, where the parent is on the page too; the rest at the top. */
   function nest(records: Row[]): HTMLTableRowElement[] {
-    if (!parentField) return records.map((record) => row(record));
+    // A tree loaded as it opens draws its rows as they come: the rows part puts each under its parent.
+    if (!parentField || tree) return records.map((record) => row(record));
     const ids = new Set(records.map((record) => String(record.id)));
     const parentOf = (record: Row) => {
       const parent = plain(record.values[parentField]);
@@ -746,6 +836,7 @@ export function listView(context: ListContext): ListView {
     drawFolds();
   });
   collapseAll.addEventListener('click', () => {
+    if (tree) return tree.closeAll(body);
     for (const tr of body.querySelectorAll<HTMLElement>(':scope > .fd-list-row[data-parent-of]')) closed.add(tr.dataset['id'] ?? '');
     drawFolds();
   });
@@ -880,15 +971,15 @@ export function listView(context: ListContext): ListView {
     }
     previous.disabled = offset === 0;
     next.disabled = offset + pageSize >= total;
+    // Loaded as it is scrolled: its count alone, and Show more at the rows' end while some are left.
+    previous.hidden = next.hidden = endless;
+    endlessEnd?.drawn(groupedNow || !failed.hidden ? 0 : total - rows.length, fill(labels.loadMore, { n: number(Math.min(pageSize, total - rows.length)) }));
   }
 
   function drawSort() {
-    for (const th of headers.values()) {
-      // Nearest a place is no column's order.
-      const order = !sort[0]?.near && sort[0]?.field === th.dataset['field'] ? sort[0] : null;
-      if (order) th.setAttribute('aria-sort', order.desc ? 'descending' : 'ascending');
-      else th.removeAttribute('aria-sort');
-    }
+    // The keys chosen, else the list's own first; nearest a place is no column's order.
+    const marked = keys.length ? keys : sort.slice(0, 1).filter((order) => !order.near);
+    markSort(headers, marked, (n, of, desc) => fill(desc ? labels.sortKeyDown : labels.sortKeyUp, { n: number(n), total: number(of) }), number);
   }
 
   // ---- asking for the records ------------------------------------------------------
@@ -961,7 +1052,9 @@ export function listView(context: ListContext): ListView {
         matching = groups.reduce((sum, group) => sum + group.count, 0);
         drawn = groups.map((group) => groupRow(grouped(source), group, 0, filter, grouping));
       } else {
-        const answer = source?.list ? await source.list({ model, fields, filter, sort, offset, limit: pageSize }) : { records: [], total: 0 };
+        // Loaded as it is scrolled: every row it held, asked again from the first.
+        // A tree loaded as it opens: its records with no parent, while no search is on.
+        const answer = source?.list ? await source.list({ model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize }) : { records: [], total: 0 };
         if (stale()) return;
         // Past the end, as when the last record of the last page went: back to the page that is left.
         if (!answer.records.length && answer.total > 0 && offset > 0) {
@@ -972,6 +1065,7 @@ export function listView(context: ListContext): ListView {
         total = answer.total;
         matching = total;
         groupedNow = false;
+        reach = Math.max(pageSize, rows.length);
         drawn = nest(rows);
       }
       failed.hidden = true;
@@ -985,6 +1079,10 @@ export function listView(context: ListContext): ListView {
     body.replaceChildren(...drawn);
     // The person's work kept on rows, drawn on them or kept in sight; then whether it holds none.
     rowEdits?.drawn();
+    // What the rows open was open before stays so, under them; their grips while the list is in their order.
+    details?.drawn(body);
+    ranks?.drawn();
+    void tree?.drawn(body);
     empty.hidden = drawn.length > 0 || !failed.hidden || !!body.querySelector(':scope > .fd-list-row');
     empty.textContent = context.none && !facets.length ? context.none : sentence(labels.noRecordsNoun, labels.noRecords);
     table.removeAttribute('aria-busy');
@@ -994,9 +1092,38 @@ export function listView(context: ListContext): ListView {
     if (failed.hidden) context.onCount?.(matching, facets.length > 0);
   }
 
+  /**
+   * The next page of rows, where they load as the list is scrolled: put after those it holds — any already there (moved
+   * meanwhile) never twice — its count, its grips and what is chosen with them. A list that asked again meanwhile draws
+   * them itself; one that cannot be asked says so.
+   */
+  async function more(): Promise<void> {
+    const source = context.dataSource;
+    if (!endless || groupedNow || rows.length >= total || !source?.list) return;
+    const mine = asking;
+    try {
+      const answer = await source.list({ model, fields, filter: currentFilter(), sort, offset: rows.length, limit: pageSize });
+      if (mine !== asking || destroyed) return;
+      const held = new Set(rows.map((record) => String(record.id)));
+      const fresh = answer.records.filter((record) => !held.has(String(record.id)));
+      rows = [...rows, ...fresh];
+      total = answer.total;
+      matching = total;
+      reach = rows.length;
+      body.append(...nest(fresh));
+      ranks?.drawn();
+    } catch {
+      if (!destroyed) context.say?.(sentence(labels.loadFailedNoun, labels.loadFailed), 'danger');
+    }
+    drawPager();
+    changed();
+  }
+  /** Its rows' end, where they load as it is scrolled: Show more, pressed by itself in sight (list-endless.ts). */
+  const endlessEnd = endless ? endlessRows(doc, el, more) : null;
   const searched = (next: Facet[]) => {
     facets = next;
     offset = 0;
+    reach = pageSize;
     searches++;
     // Every record that matched the search before is no choice in this one.
     if (wide) {
@@ -1006,13 +1133,33 @@ export function listView(context: ListContext): ListView {
     void load();
     void viewParts.reload();
   };
+  /** How the list stands, as a saved view keeps it: its search, the keys chosen from its headers, its columns. */
+  function viewState(): ViewState {
+    return { facets, ...(keys.length ? { sort: keys } : {}), ...(choices ? { columns: choices.state() } : {}) };
+  }
+  /** A view's order and columns put on; its search comes after, as the menu's own, and the records with it. */
+  function putView(state: ViewState) {
+    keys = sortable ? (state.sort ?? []).filter((one) => !one.near && headers.has(one.field)) : [];
+    sort = sortWith(keys, defaultSort);
+    if (choices && state.columns) choices.restore(state.columns);
+  }
+  /** The views part, asked for as the list opens where its source keeps views, and its views made with it; null where it could not come. */
+  const kept: Promise<SavedViews | null> | null = viewSource
+    ? viewsPart.load().then(
+        (part) => {
+          part.installViewStyles(doc);
+          return part.savedViews({ page, node, model, source: viewSource, el, labels, fill, doc, state: viewState, put: putView, ...(context.icons ? { icons: context.icons } : {}), ...(context.ask ? { ask: context.ask } : {}), ...(context.say ? { say: context.say } : {}) });
+        },
+        () => null
+      )
+    : null;
   // The search bar, or a keyword and a list of values for each of a few fields.
   // The filter bar comes in the filters part, which the viewer has waited for; the search bar where it could not come.
   const filters = node.search === 'fields' ? filtersPart.loaded : undefined;
   const search =
     filters
       ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], searchFilter, count: countOf, facets, onChange: searched, kit: filterKit })
-      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}), ...(node.filterCounts ? { count: countOf, searchFilter } : {}) });
+      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}), ...(node.filterCounts ? { count: countOf, searchFilter } : {}), ...(kept ? { favourites: laterFavourites(kept.then((made) => made?.part ?? null), el) } : {}) });
   // A search in plain words read as filters (`searchToFilter`): a ✦ beside the box while it holds two words or more;
   // pressed, the assist part reads them — loaded then, so a list no one asks never downloads it — and says under the bar
   // what they were read as. Hidden where the source cannot read words.
@@ -1133,7 +1280,9 @@ export function listView(context: ListContext): ListView {
       sort: () => sort,
       sortBy(order) {
         sort = order ?? defaultSort;
+        keys = order ? order.filter((one) => !one.near) : [];
         offset = 0;
+        reach = pageSize;
         void load();
         void viewParts.reload();
       },
@@ -1616,6 +1765,8 @@ export function listView(context: ListContext): ListView {
       'data-shaped': choices ? '' : undefined,
       // How wide a gallery's card is at least.
       'data-size': gallery ? (node.gallery?.size ?? 'medium') : undefined,
+      // Its rows loaded as it is scrolled.
+      'data-endless': endless ? '' : undefined,
     },
     bar,
     // The ✦'s line, where the list offers it alone: any other list is as it was.
@@ -1624,7 +1775,7 @@ export function listView(context: ListContext): ListView {
     ...(choose ? [selection] : []),
     report,
     ...(key ? [key] : []),
-    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
+    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(endlessEnd ? [endlessEnd.element] : []), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
   // Its cells changed in place: Add a line and what a paste did under the table.
   if (editPart) {
@@ -1663,12 +1814,27 @@ export function listView(context: ListContext): ListView {
     });
     if (rowEdits) element.querySelector('.fd-list-records > .fd-list-scroll')?.after(rowEdits.element);
   }
+  // Where a row moved by hand is said aloud: in the list, there before anything is said in it.
+  if (ranks) element.append(ranks.voice);
   // Scrolled sideways, the first column and the Columns menu's cell, held at its ends, are parted from those going under them.
   choices?.scrolls(element.querySelector('.fd-list-scroll') as HTMLElement);
   showAs(view);
   widths?.observe(element);
   drawShape();
-  void load();
+  // Its saved views asked first, where the source keeps them: it opens on the default one (its search, order and
+  // columns), unless it was opened with a search of its own (View all's).
+  const opening = kept?.then((made) => made?.start() ?? null);
+  if (opening && !context.search) {
+    table.setAttribute('aria-busy', 'true');
+    void opening.then((chosen) => {
+      if (destroyed) return;
+      // Views are kept only where the search bar has its menu: never with a filter bar.
+      if (chosen && !filters) {
+        putView(chosen.state);
+        (search as ReturnType<typeof searchBar>).put(chosen.state.facets);
+      } else void load();
+    });
+  } else void load();
 
   return {
     element,
@@ -1679,6 +1845,7 @@ export function listView(context: ListContext): ListView {
     destroy() {
       destroyed = true;
       rowEdits?.destroy();
+      endlessEnd?.destroy();
       doc.removeEventListener('pointerdown', outsideExport, true);
       search.destroy();
       wordsRead?.typing();
