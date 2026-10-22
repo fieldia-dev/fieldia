@@ -1,7 +1,6 @@
 import type { Field } from '../format/field';
 import type { Page } from '../format/page';
 import { checkValue } from './check';
-import type { SubmitRequest } from './data-source';
 import type { FormJoin, JoinHost } from './joins';
 import { structuredCopy, type Value, type Values } from './values';
 
@@ -117,14 +116,11 @@ export function join(host: JoinHost): FormJoin {
   lay();
   return {
     reset: lay,
-    around(kind, sent, go) {
-      // In the answers themselves: what the response is sent with is what its ending reads, and what the form tells.
-      if (kind === 'submit') {
-        const answers = (sent as SubmitRequest).values;
-        const values = form.getState().values;
-        for (const name of prefilledFields(page).keys()) if (!placed.has(name) && !(name in answers)) answers[name] = structuredCopy(values[name] ?? null);
-      }
-      return go(sent);
+    // In the answers themselves: what the response is sent with is what its ending reads, what the form tells, and what
+    // an app's checkout is handed before it goes.
+    values(answers) {
+      const values = form.getState().values;
+      for (const name of prefilledFields(page).keys()) if (!placed.has(name) && !(name in answers)) answers[name] = structuredCopy(values[name] ?? null);
     },
   };
 }

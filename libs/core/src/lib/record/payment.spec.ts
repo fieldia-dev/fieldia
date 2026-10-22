@@ -87,6 +87,20 @@ describe('a payment the answers wait for', () => {
     expect(form.joined('pay')?.due()?.key).not.toBe(asked[0].due.key);
   });
 
+  it('hands the checkout the values as they will be sent: the hidden fields a link filled among them', async () => {
+    const dataSource = createMemoryDataSource();
+    const { asked, host: steps } = host((due) => ({ amount: due.amount, currency: due.currency, key: due.key, reference: 'PAY-8' }));
+    // A campaign's code no question shows, filled from the link the page was opened with (prefill): the checkout may price by it.
+    const page: Page = { ...enquiry(), fields: { ...enquiry().fields, campaign: { type: 'char', label: 'Campaign' } }, prefill: { fromUrl: [{ param: 'utm_campaign', field: 'campaign' }] } };
+    const form = createForm({ page, dataSource, host: steps, url: 'https://homes.example/enquiry?utm_campaign=open-day' });
+    await form.settle();
+    form.setValues({ name: 'Mona', visit: 'reserve' });
+    expect(await form.save()).toBe(true);
+    expect(asked[0].request.values).toEqual({ name: 'Mona', visit: 'reserve', campaign: 'open-day' });
+    // What was sent is what the checkout was handed.
+    expect(dataSource.responses[0].values).toEqual(asked[0].request.values);
+  });
+
   it('sends again without paying twice where the send failed after the payment', async () => {
     let fail = true;
     const memory = createMemoryDataSource();

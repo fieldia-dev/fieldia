@@ -70,8 +70,9 @@ export function join(host: JoinHost): FormPayment {
         label: due.label,
         ...(due.description ? { description: due.description } : {}),
         key: due.key,
-        // The answers shown, as a send carries them: what a checkout may fill its own boxes from.
-        values: Object.fromEntries(form.shownFields().map((name) => [name, state.values[name] ?? null])),
+        // The values as the send will carry them — hidden fields and those a link filled among them: what a checkout
+        // fills its own boxes from, and a campaign's code it may price by.
+        values: host.sending(),
         language: page.language ?? messages.locale,
       };
       let paid: PaidPayment | null = null;

@@ -2867,6 +2867,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     }
     return shown;
   }
+  /** A response's answers as they go: those shown, and what the parts that join the form add (a link's hidden fields). */
+  function answersSent(): Values {
+    const values = shownValues();
+    for (const join of joins) join.values?.(values);
+    return values;
+  }
 
   async function save(chain: readonly string[] = []): Promise<boolean> {
     return (await saving(chain)) === null;
@@ -3026,7 +3032,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       }
       if (page.data.kind === 'responses') {
         if (!source?.submit) throw new Error('This page has no data source to send its answers to');
-        const sent = shownValues();
+        const sent = answersSent();
         const before = state.values as Values;
         at = generation;
         const resetAt = resets;
@@ -4517,7 +4523,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // The parts its page asks to join it: each made at once where it has come, else as it does.
   const joinParts = formJoins(page);
   if (joinParts.length) {
-    const host = { form, page, options, messages, set, reading };
+    const host = { form, page, options, messages, set, reading, sending: () => (page.data.kind === 'responses' ? answersSent() : sentValues()) };
     const made = (at: number) => (part: JoinPart) => void (disposed || (joins[at] ??= part.join(host)));
     joining = Promise.all(joinParts.map((part, at) => (part.loaded ? made(at)(part.loaded) : track(part.load().then(made(at), () => undefined)))));
   }

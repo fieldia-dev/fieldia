@@ -7,6 +7,7 @@ import type { Messages } from './messages';
 import type { FormOutbox } from './outbox-form';
 import type { FormPayment } from './payment-form';
 import type { FormVerify } from './verify-form';
+import type { Values } from './values';
 
 /**
  * Parts that join a form where its page asks — an offline outbox (`outbox`), the fields its link fills (`prefill`),
@@ -32,6 +33,11 @@ export interface JoinHost {
   set(patch: Partial<FormState>): void;
   /** The record as conditions read it now, and what else they read. */
   reading(): { context: Record<string, unknown>; env: ExpressionEnv };
+  /**
+   * The values a send would carry now: a response's answers with what the parts add to them (the hidden fields a link
+   * filled), a record's values as its save sends them — what an app's checkout is handed (`PayRequest.values`).
+   */
+  sending(): Values;
 }
 
 /** A part's side of a form, made for it (`join`): the one hook it has into the form's send. */
@@ -46,6 +52,8 @@ export interface FormJoin {
    * the network fails it (an outbox) — null then. Each part's around the next one's, the first in `formJoins` innermost.
    */
   around?<T>(kind: SendKind, sent: Sent, go: (sent: Sent) => Promise<T>): Promise<T | null>;
+  /** What it adds to a response's answers before they go — and to the values `sending` tells: a link's hidden fields. */
+  values?(answers: Values): void;
   /** Started again, or another record opened: what the one before had is let go. */
   reset?(): void;
 }

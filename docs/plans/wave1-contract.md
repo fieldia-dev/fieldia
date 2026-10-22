@@ -1618,7 +1618,7 @@ interface PayRequest {
   label: string;                 // what it is for: "Reservation fee"
   description?: string;
   key: string;                   // the same for every try of one response's payment: the provider's idempotency key
-  values: Values;                // the answers it pays for, as the send would carry them
+  values: Values;                // the answers it pays for, as the send will carry them: those a link filled among them
   language: string;
   slot?: unknown;                // where the provider's checkout may be drawn in the payment step (an element)
   signal?: UploadSignal;         // aborts on Cancel, or when the person leaves
