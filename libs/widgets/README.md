@@ -18,7 +18,9 @@ npm install @fieldia/widgets
 
 The widgets' own words (`WIDGET_LABELS`) come in English, Arabic, German and
 French, and in Turkish, Persian, Urdu and Spanish — **machine-assisted, not yet
-reviewed by a native speaker**; a number box on a Persian or Urdu page reads
+reviewed by a native speaker**, each of those four in a chunk of its own,
+fetched where it is spoken (`wordsReady` in @fieldia/core, which the viewer
+awaits before it draws); a number box on a Persian or Urdu page reads
 their digits (۰–۹), and a Turkish page's date box writes a day with dots
 (15.10.2026), as a German one does.
 

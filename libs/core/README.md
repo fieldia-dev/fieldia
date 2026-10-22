@@ -78,6 +78,21 @@ most spoken in: Saturday in Arabic and Persian, Sunday in `en` (the United
 States') and Urdu, Monday in `en-GB`, German, French, Turkish and Spanish — from
 the engine's `Intl.Locale` week info, else CLDR's table.
 
+Those four come in a chunk each of their own, so an app never carries the words
+of a language it does not show: each package says how it fetches its words
+(`wordsInChunks(tableInChunks(table, { tr: () => import('./tr') … }))`), and
+`wordsReady(tag)` fetches every package's for a language, once — the viewer, a
+map and a chatter wait for it before they draw. Asked for, a package's table for
+the language is there at once, English's words, and filled in place as its chunk
+comes; `wordsComing(tag)` says whether it has yet. Something that reads them
+without waiting gets English, and the console says once what to await.
+
+```ts
+import { wordsReady, createForm, MESSAGES } from '@fieldia/core';
+await wordsReady('tr');
+const form = createForm({ page, messages: MESSAGES.tr });
+```
+
 ## A starting page from a schema
 
 `pageFromSchema(input, options)` makes a page from what an app already has: a

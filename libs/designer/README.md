@@ -494,7 +494,9 @@ It speaks Turkish (`tr`), Persian (`fa`), Urdu (`ur`) and Spanish (`es`) too —
 has, checked against it, but not yet read by a native speaker; corrections are
 welcome. Persian and Urdu run right to left, as Arabic does. Their words come in
 a chunk each of their own, so a designer in another language never carries
-them: fetch them before making the designer (`createDesigner.open` does).
+them: fetch them before making the designer (`createDesigner.open` does) —
+`designerWordsReady` fetches the page's widgets' and viewer's words in that
+language too (`wordsReady` in @fieldia/core).
 
 ```ts
 await designerWordsReady('fa');
