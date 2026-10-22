@@ -155,7 +155,8 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
   let shownAside: Readonly<Values> | null = null;
 
   // ---- who else has it open (the data source's `presence`): drawn by the live part, once someone else is ------
-  const presence = el('div', { class: 'fd-presence-slot' });
+  // Hidden while nobody else is: an empty band is no part of the form.
+  const presence = el('div', { class: 'fd-presence-slot', hidden: '' });
   let strip: { update(state: FormState): void } | null = null;
 
   // ---- a record the person may only read ------------------------------------------------------------------
@@ -227,6 +228,7 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
     }
 
     // Others with the record open: the live part's strip, asked for the first time someone else is.
+    setHidden(presence, !state.present?.length);
     if (strip) strip.update(state);
     else if (state.present?.length) void livePart.load().then((part) => (strip ??= part.presenceStrip(el, labels, list, presence)).update(form.getState()), () => undefined);
 
