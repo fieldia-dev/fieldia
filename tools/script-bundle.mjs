@@ -1096,7 +1096,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // changes?" with it, as a record's dialog does, and a question's Escape closes no dialog round it (kind-parts.ts, 34);
 // askFirst handed to the parts, and what else they now take from the main script — isEmpty, drawIcon, formatNumber,
 // inPlural, scanPart (the shared table and the entry, 61). 511.22 measured before, 511.33 after, to 511.4.
-const BUDGET_KB = 511.4;
+// A question's Yes names what it does (0.30.1, the release's own; listed with the gzip budget below): what Yes does
+// carried from what set the run off — a button's label, Archive and Delete in the form's words, a save's Save or Submit —
+// to the question and its box, for every page with a button or a beforeSave (form.ts, run.ts, messages.ts, viewer.ts,
+// 296 bytes). 511.33 measured before, 511.62 after, to 511.7.
+const BUDGET_KB = 511.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1347,7 +1351,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Merged (0.29.0): the lanes together 168.16 measured; the uploads' work in the files part, 167.41, to 167.5.
 // A work item's menus (lane atloria-wi; listed with the raw budget above): a menu's hooks for its dividers and the
 // menus inside it, the head part asked for and its checks owed — 167.41 measured before, 167.75 after, to 167.8.
-const GZIP_BUDGET_KB = 167.8;
+// The owner's walk of 0.29 mended (walkfix29-engine; listed with the raw budget above): 167.75 measured before, 167.78
+// after. A question's Yes names what it does (0.30.1; listed with the raw budget above): 167.78 measured before,
+// 167.90 after, to 167.95.
+const GZIP_BUDGET_KB = 167.95;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1568,7 +1575,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // and 14.04, to 45.2. Photos named by their caption or place, and every dialog holding changes asking before it lets
 // them go (the crop, Reject's question, Fill from text, the import): Arabic's 97.58 and 16.17, to 97.6 and 16.2;
 // German's 45.09 and 14.10, to 45.1 and 14.1 — measured 45.09 inside; French's 45.54 and 14.11, to 45.6 and 14.2.
-const ADD_ON_BUDGET_KB = { ar: [97.6, 16.2], de: [45.1, 14.1], fr: [45.6, 14.2] };
+// A question's Yes naming what it does (0.30.1): Archive, Delete and "Paste {n} rows" — Arabic's 97.71 and 16.20, to
+// 97.8, inside 16.2; German's 45.17 and 14.12, to 45.2 and 14.2; French's 45.62 and 14.13, to 45.7, inside 14.2.
+const ADD_ON_BUDGET_KB = { ar: [97.8, 16.2], de: [45.2, 14.2], fr: [45.7, 14.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2055,7 +2064,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 15.2. A formatted text's table with its header row among its rows (as office apps copy one, as an app may store
 // one) shown and kept with it in the table's head, so a printout repeats it on every sheet — text 73.45 and 24.78
 // measured before, 73.91 and 24.89 after, to 74.0 and 24.9.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [74.0, 24.9], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.6, 15.2], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [34.6, 12.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [32.4, 12.0], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.4, 7.1], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [37.0, 12.6], scan: [21.4, 8.9], decode: [153.8, 39.0] };
+// A question's Yes names what it does (0.30.1): a list's paste answered "Paste 40 rows" — editable 35.16 and 12.63
+// measured before, 35.22 and 12.65 after, to 35.3, inside 12.7; Edit's question by Update and Undo the import's by
+// Delete — list 131.88 and 42.41 to 131.92 and 42.42, to 132.0, inside 42.5; an app's menu item by its own words —
+// head 43.37 and 13.22 to 43.39 and 13.23, inside 43.4 and 13.3.
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [74.0, 24.9], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [132.0, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.6, 15.2], editable: [35.3, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [34.6, 12.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [32.4, 12.0], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.4, 7.1], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [37.0, 12.6], scan: [21.4, 8.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

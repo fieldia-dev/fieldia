@@ -3459,7 +3459,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   });
   // A moment's run is on the record it was set off on: one set off again while its run goes, and run after it, is let
   // go when another record is shown by then (its steps were for that one).
-  const moment = createMoments((key, list, chain, on, yes) => runTop(list, { id: key, chain, generation: on, ...(yes ? { yes } : {}) }), () => generation);
+  const moment = createMoments((key, list, chain, on, yes) => runTop(list, { id: key, chain, generation: on, yes }), () => generation);
 
   /**
    * Whether steps do something before their first save — set a status, call the app, open a page — so a record's
@@ -4021,7 +4021,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         lines: { field: source.field, keys: [...keys], ids: lines.flatMap((line) => (line.id === undefined ? [] : [line.id])), values: lines.map((line) => structuredCopy(line.values)) },
       });
     },
-    run: (list, context = {}) => track(runTop(list, { id: context.id ?? 'run', chain: [], typed: 'first', ...(context.recordIds ? { recordIds: [...context.recordIds] } : {}), ...(context.yes ? { yes: context.yes } : {}) })),
+    run: (list, context = {}) => track(runTop(list, { id: context.id ?? 'run', chain: [], typed: 'first', ...(context.recordIds ? { recordIds: [...context.recordIds] } : {}), yes: context.yes })),
 
     shown(tab) {
       // A wizard's steps are told by the form itself, as they are entered.

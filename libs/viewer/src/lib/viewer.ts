@@ -538,15 +538,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': skinFor(options.skin ?? page.look?.skin, theme), dir, lang: tag, 'data-max-width': page.maxWidth });
   applyLook(root, theme ? { ...page.look, theme } : page.look);
   wearTokens(root, options.tokens);
-  // A question whose Yes does something says what in its Yes, never a bare OK.
-  const confirm = options.confirm ?? ((message: string, how?: AskHow) => dialogConfirm(message, true, { yes: how?.yes }));
+  // A question whose Yes does something says what in its Yes (`how.yes`), never a bare OK.
+  const confirm = options.confirm ?? dialogConfirm;
   /** The "Discard your changes?" asked now, if one is: gone the moment it is answered. */
   let discarding: Promise<boolean> | null = null;
   /**
    * "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. One
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
-  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
+  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, { yes: labels.discard, ended: () => (discarding = null) }));
   const say = sayer(root, el, labels.dismiss);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
@@ -1821,7 +1821,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     seenProblem = state.saveProblem;
     banner.hidden = seenProblem?.kind !== 'network';
     if (!seenProblem) return;
-    if (seenProblem.kind === 'rule') void dialogConfirm(seenProblem.message, false);
+    if (seenProblem.kind === 'rule') void dialogConfirm(seenProblem.message, { alone: true });
     else if (seenProblem.kind === 'fields') announce(checkText(state));
     else if (seenProblem.kind === 'other') announce(seenProblem.message);
   });
@@ -1928,8 +1928,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // A record only to read has nothing to save: Ctrl+Enter there does nothing.
     if (form.getState().can?.edit === false) return;
     // A question its save asks first (the page's beforeSave) says in its Yes what the form's own Save or Submit says.
-    const own = [...root.querySelectorAll<HTMLButtonElement>('button[type="submit"]')].find((one) => one.closest('form') === root && !one.closest('[hidden]'));
-    const saved = await form.save({ yes: own?.textContent?.trim() || undefined });
+    const saved = await form.save({ yes: root.querySelector('button[type="submit"]')?.textContent ?? undefined });
     if (!saved) {
       // Stopped by the page's own checks: say which fields; a refused save says so above.
       if (!form.getState().saveProblem) announce(checkText(form.getState()));
@@ -2796,19 +2795,20 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // ---- confirmation dialog -----------------------------------------------------
 
   /**
-   * A question with Cancel and OK, or with `withCancel` false a notice with OK
+   * A question with Cancel and its Yes, or with `how.alone` a notice with OK
    * alone. A question opens with the focus on Cancel — a button's `confirm`,
    * an `ask` step, Archive, Delete and "Discard your changes?" alike — so an
    * Enter meant for the form, or a second press of the key that asked, never
-   * answers Yes by itself; a notice, on OK. `how.yes` words OK as what it does
-   * (Discard); `how.ended` is told the moment it is answered, before the
-   * promise settles.
+   * answers Yes by itself; a notice, on OK. `how.yes` words Yes as what it
+   * does (the button's own words, Archive, Discard), OK without it;
+   * `how.ended` is told the moment it is answered, before the promise settles.
    */
-  function dialogConfirm(message: string, withCancel = true, how: { yes?: string; ended?: () => void } = {}): Promise<boolean> {
+  function dialogConfirm(message: string, how: AskHow & { alone?: boolean; ended?: () => void } = {}): Promise<boolean> {
+    const withCancel = !how.alone;
     return new Promise((resolve) => {
       const text = el('p', { id: `${prefix}-confirm` }, message);
       const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
-      const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, how.yes ?? labels.ok);
+      const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, how.yes || labels.ok);
       const dialog = el('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id }, text, el('div', { class: 'fd-actions fd-actions-end' }, ...(withCancel ? [cancel, ok] : [ok])));
       const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
       const doc = root.ownerDocument;
