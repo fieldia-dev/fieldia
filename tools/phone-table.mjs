@@ -159,7 +159,13 @@ function machine(patterns) {
   const close = (set) => {
     const seen = new Set(set);
     const todo = [...set];
-    while (todo.length) for (const next of states[todo.pop()].free) if (!seen.has(next)) (seen.add(next), todo.push(next));
+    while (todo.length) {
+      for (const next of states[todo.pop()].free) {
+        if (seen.has(next)) continue;
+        seen.add(next);
+        todo.push(next);
+      }
+    }
     return seen;
   };
   const step = (set, mask) => {

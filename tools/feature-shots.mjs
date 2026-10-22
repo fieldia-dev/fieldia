@@ -6,6 +6,7 @@
  *
  * Take them again after a demo changes how it looks.
  */
+/* global window, document -- read inside page.evaluate, in the browser */
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';

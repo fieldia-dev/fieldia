@@ -37,7 +37,12 @@ export default tseslint.config(
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {
+    // The tools run in Node: its globals, as `node` has them without an import.
     files: ['tools/**/*.mjs'],
-    languageOptions: { globals: { console: 'readonly', process: 'readonly', URL: 'readonly' } },
+    languageOptions: {
+      globals: Object.fromEntries(
+        ['console', 'process', 'URL', 'URLSearchParams', 'Buffer', 'fetch', 'AbortController', 'TextEncoder', 'TextDecoder', 'structuredClone', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask'].map((name) => [name, 'readonly'])
+      ),
+    },
   }
 );
