@@ -31,12 +31,12 @@ export const PART_WORDS = {
     viewer: [
       'approvalWaiting', 'approvalWho', 'approvalNeeded', 'approvalThen', 'approvalApproved', 'approvalRejectedBy', 'approvalRejected', 'approvalFailed', 'approvalOpen', 'approvalLockedAll', 'approvalLevelApproved', 'approvalLevelRejected',
       'approvalLevelWaiting', 'approvalLevelWaitingSome', 'approvalLevelLater', 'approvalLevelSkipped', 'approvalApprove', 'approvalReject', 'approvalApproveFor', 'approvalRejectFor', 'approvalApproving', 'approvalRejecting', 'approvalApprovedFor', 'approvalRejectedFor',
-      'approvalApproveFailed', 'approvalRejectFailed', 'approvalRejectTitle', 'approvalRejectTitleNoun', 'approvalRejectAsk', 'approvalRejectReason', 'approvalHistoryCount', 'approvalAskedEntry', 'approvalApprovedEntry', 'approvalRejectedEntry',
+      'approvalApproveFailed', 'approvalRejectFailed', 'approvalRejectTitle', 'approvalRejectTitleNoun', 'approvalRejectAsk', 'approvalRejectReason', 'approvalKeepEditing', 'approvalHistoryCount', 'approvalAskedEntry', 'approvalApprovedEntry', 'approvalRejectedEntry', 'approvalNotNeeded',
     ],
   },
   assist: {
     viewer: [
-      'assistFill', 'assistFillHint', 'assistFillBox', 'assistFillPlaceholder', 'assistFiles', 'assistFillGo', 'assistReading', 'assistFailed', 'assistNothing', 'assistProposed', 'assistProposedOne',
+      'assistFill', 'assistFillHint', 'assistFillBox', 'assistFillPlaceholder', 'assistFiles', 'assistFillGo', 'assistFillEmpty', 'assistFillEmptyText', 'assistFillEmptyFiles', 'assistKeepEditing', 'assistReading', 'assistFailed', 'assistNothing', 'assistProposed', 'assistProposedOne',
       'assistReview', 'assistAcceptAll', 'assistRejectAll', 'assistAccept', 'assistReject', 'assistProposal', 'assistProposedText', 'assistProposedIn', 'assistInPlaceOf', 'assistEmpty', 'assistLines', 'assistLinesOne',
       'assistKept', 'assistKeptAll', 'assistKeptAllOne', 'assistUndo', 'assistUndone', 'assistLeftTyped', 'assistNotUsed', 'assistOutOfSight', 'assistNoneCalled', 'assistSeveralCalled',
       'assistNotOffered', 'assistNotRead', 'assistDraft', 'assistPolish', 'assistWriting', 'assistRewriteFailed', 'assistWordsReading', 'assistWordsMade',
@@ -59,11 +59,11 @@ export const PART_WORDS = {
     widgets: [
       'uploadImage', 'dropHere', 'addFiles', 'addPhotos', 'dropThem', 'upToSize', 'upToEach', 'upToFiles', 'fileCount', 'oneFile', 'fileCountOf', 'tooMany', 'alreadyAdded', 'fileAt', 'noPreview', 'cannotPlay', 'recordVoice', 'recordVideo', 'recordVoiceUpTo', 'recordVideoUpTo', 'recorderNoPart', 'showFilesAs', 'asList', 'asCards', 'asThumbnails',
       'signaturePad', 'signHere', 'typeSignature', 'clearDrawing', 'uploadSignature', 'uploadPercent', 'uploadWaiting', 'uploadPreparing', 'uploadFailed', 'uploadRefused', 'uploadingNamed', 'retryUploadNamed', 'fileUploaded', 'filesUploaded', 'notUploadedNamed', 'noDocument',
-      'removeAsk', 'removed', 'notSignedNoPart', 'signingNoPart', 'signingRetry', 'notSignedReload', 'signingNoPartReload',
+      'removeAsk', 'removeFile', 'removed', 'notSignedNoPart', 'signingNoPart', 'signingRetry', 'notSignedReload', 'signingNoPartReload',
     ],
     viewer: ['showAs'],
   },
-  editable: { widgets: ['cellName'], viewer: ['rowEditHint', 'rowAdd', 'rowAddNoun', 'rowDrop', 'rowNotSaved', 'rowSaved', 'rowOpen', 'rowChange', 'rowCell'] },
+  editable: { widgets: ['cellName'], viewer: ['rowEditHint', 'rowAdd', 'rowAddNoun', 'rowDrop', 'rowNotSaved', 'rowSaved', 'rowOpen', 'rowChange', 'rowCell', 'rowLocked', 'rowLockedNoun', 'pasteAsk', 'pasteAskChange', 'pasteAskAdd', 'pasteYes', 'pasteUndo', 'pasteUndone', 'rowsNotSaved', 'rowsNotSavedOne', 'rowsDrop', 'rowsPutBack'] },
   record: {
     widgets: [
       'recordVoice', 'recordVideo', 'recordAskMic', 'recordAskCamera', 'recordReady', 'recordStart', 'recordStop', 'recordingNow', 'recordStoppedAt', 'recordStoppedSize', 'recordDone', 'recordUse', 'recordAgain', 'recordDiscardAsk', 'recordDiscard', 'recordGoBack',
@@ -89,7 +89,7 @@ export const PART_WORDS = {
       'importTitle', 'importDrop', 'importChoose', 'importHint', 'importReading', 'importCannotRead', 'importNotSheet', 'importOldExcel', 'importLocked', 'importDamaged', 'importNoRows', 'importNoUnzip', 'importTooMany', 'importColumnLetter',
       'importFileRows', 'importFileRowsOne', 'importNoRowsUnder', 'importMisread', 'importSheet', 'importEncoding', 'importUnicode', 'importSeparator', 'importComma', 'importSemicolon', 'importTab', 'importBar', 'importColumn', 'importExample', 'importField', 'importLeaveOut', 'importLeftOut',
       'importNeeded', 'importMoved', 'importCheck', 'importCheckOne', 'importChecking', 'importReady', 'importReadyOne', 'importRefused', 'importRefusedOne', 'importMore', 'importMoreOne', 'importPreview', 'importNone', 'importStart', 'importStartOne',
-      'importWhy', 'importFixName', 'importing', 'importStop', 'importNotMade', 'importNoneCalled', 'importSeveralCalled', 'importNotYesNo', 'importRow', 'importDownload', 'importFailed',
+      'importWhy', 'importFixName', 'importing', 'importStop', 'importKeepEditing', 'importNotMade', 'importNoneCalled', 'importSeveralCalled', 'importNotYesNo', 'importRow', 'importDownload', 'importFailed',
       'importStartNoun', 'importStartNounOne', 'importNotMadeNoun', 'importFailedNoun',
     ],
   },
@@ -107,7 +107,7 @@ export const PART_WORDS = {
   lines: {
     widgets: [
       'addSection', 'addNote', 'openLine', 'chooseLine', 'chooseAllLines', 'linesChosen', 'addAnother', 'totalWaits', 'cellWaits', 'notPastedCells', 'cellName', 'cellOfHeading', 'notPastedWhy', 'pasteBeyondLines', 'pasteBeyondLinesOne', 'pasteAddedLines', 'pasteAddedLinesOne',
-      'pastedCells', 'pastedCellsOne', 'pasteRowRefused', 'pasteNoMatch', 'pasteSeveralCalled', 'pasteNotLookedUp', 'deleteLine', 'moveUp', 'moveDown', 'movedTo', 'removeAsk', 'removed',
+      'pastedCells', 'pastedCellsOne', 'pasteRowRefused', 'pasteNoMatch', 'pasteSeveralCalled', 'pasteNotLookedUp', 'deleteLine', 'moveUp', 'moveDown', 'movedTo', 'removeAsk', 'removeFile', 'removed',
     ],
   },
   list: {
@@ -130,9 +130,9 @@ export const PART_WORDS = {
   path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds', 'treeSearch', 'treeChosen', 'treeChosenOne'] },
   photos: {
     widgets: [
-      'photosMove', 'photosMoveCover', 'photosMoveTouch', 'photosMoveTouchCover', 'photoCover', 'makeCover', 'coverNow', 'editPhoto', 'photoCaption', 'captionPlaceholder', 'photoNamed', 'photoNamedCover', 'photoCount', 'photoCountOne', 'photoCountOf', 'upToPhotos',
+      'photosMove', 'photosMoveCover', 'photosMoveTouch', 'photosMoveTouchCover', 'photoCover', 'makeCover', 'coverNow', 'editPhoto', 'photoCaption', 'captionPlaceholder', 'photoNamed', 'photoNamedCover', 'photoAt', 'photoAtStart', 'photoAlone', 'photoAloneStart', 'photoCoverAt', 'cropLetGoAsk', 'cropLetGo', 'cropKeepEditing', 'photoCount', 'photoCountOne', 'photoCountOf', 'upToPhotos',
       'photoUploaded', 'photosUploaded', 'photoChanged', 'photoChangedKept', 'originalBack', 'turnLeft', 'turnRight', 'cropShape', 'cropAny', 'cropArea', 'cropKeys', 'applyEdit', 'putBackOriginal', 'photoLoading', 'photoUnreadable', 'photoNotMade',
-      'addPhotos', 'dropThem', 'upToEach', 'removeAsk', 'removed', 'movedTo', 'uploadingNamed', 'retryUploadNamed', 'notUploadedNamed',
+      'addPhotos', 'dropThem', 'upToEach', 'removeAsk', 'removeFile', 'removed', 'movedTo', 'uploadingNamed', 'retryUploadNamed', 'notUploadedNamed',
     ],
   },
   rows: { viewer: ['previousPage', 'nextPage', 'relatedNone', 'detailOf', 'detailTitle', 'rowMovedTo', 'rowMoveHint', 'rankNotKept', 'treeIn', 'loadMore'] },
@@ -148,7 +148,7 @@ export const PART_WORDS = {
   print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },
   scan: {
-    widgets: ['scanButton', 'scanInto', 'scanCountInto', 'scanTitle', 'scanStarting', 'scanAim', 'scanAimCount', 'scanTypeInstead', 'scanDone', 'scanLookingUp', 'scanNoneFound', 'scanSeveral', 'scanLookUpFailed', 'scanNoPart', 'scanRead', 'scanCounted', 'scanRefused', 'scanNoCamera', 'scanCameraBusy', 'scanUnavailable', 'scanNoReader'],
+    widgets: ['scanButton', 'scanInto', 'scanCountInto', 'scanTitle', 'scanStarting', 'scanAim', 'scanAimCount', 'scanTypeInstead', 'scanTypeCode', 'scanTypeCount', 'scanDone', 'scanLookingUp', 'scanNoneFound', 'scanSeveral', 'scanLookUpFailed', 'scanNoPart', 'scanRead', 'scanCounted', 'scanRefused', 'scanNoCamera', 'scanCameraBusy', 'scanUnavailable', 'scanNoReader'],
   },
   schedule: {
     widgets: [

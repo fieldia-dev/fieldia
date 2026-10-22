@@ -284,8 +284,9 @@ test('(e) after a run of drops, every part on its tracks; the canvas draws each 
   await pick(page, 'Customer');
   await gutter(page).focus();
   await page.keyboard.press('ArrowRight');
-  // Follow-up's row stands 29px from the window's foot by now: a part held there a quarter of a second scrolls the page
-  // under it (the canvas's edge scroll), as a slow runner's drag does. A person brings the row into view first.
+  // Follow-up's row stands 29px from the window's foot by now (the demos' frame over the designer puts it lower still):
+  // a part held there a quarter of a second scrolls the page under it (the canvas's edge scroll), as a slow runner's drag
+  // does. A person brings the row into view first.
   await (await cardOf(page, 'Due by')).evaluate((e) => e.scrollIntoView({ block: 'center' }));
   const due = await own(page, 'Due by');
   expect(due.bottom, 'Due by clear of the window’s foot, where the page scrolls under what is carried').toBeLessThan(1000 - 48);

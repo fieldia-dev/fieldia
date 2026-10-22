@@ -321,7 +321,7 @@ test.describe('each template, opened in its designer untouched', () => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto(`/${editor}/?start=template-${t.id}`);
       await expect(page.locator('[data-checks]')).toBeVisible();
-      await expect(page.locator('input').first()).toHaveValue(shown.title);
+      await expect(page.locator('.fd-designer-title')).toHaveValue(shown.title);
       await expect(page).toHaveTitle(`${shown.title} — Fieldia designer`);
       await expect(page.getByText(/untitled/i).filter({ visible: true })).toHaveCount(0);
       expect(await page.locator('body').innerText()).not.toMatch(/Flectra|Sherkety|res\.partner|account\.move/);

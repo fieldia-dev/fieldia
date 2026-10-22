@@ -92,6 +92,25 @@ for (const variant of VARIANTS) {
       await screen(page, `${variant}-chatter-channels-read`, { viewport: true });
     });
 
+    test('Send with nothing typed says so beside it, the reply box focused, and goes as words are typed', async ({ page }) => {
+      // The owner's walk of 0.29: Send by WhatsApp pressed empty did nothing and said nothing.
+      await open(page, variant, ENQUIRY);
+      const panel = chatter(page);
+      await panel.getByRole('button', { name: 'Send message' }).click();
+      await panel.getByRole('button', { name: 'Send by WhatsApp' }).click();
+      const said = panel.locator('.fd-chatter-problem');
+      await expect(said).toHaveText('Type a message first');
+      await expect(panel.locator('.fd-composer textarea')).toBeFocused();
+      if (variant === 'plain') await screen(page, 'chatter-empty-send-said', { viewport: true });
+      await page.keyboard.type('Hello');
+      await expect(said).toBeHidden();
+      // A note, the same in its words.
+      await panel.locator('.fd-composer').getByRole('button', { name: 'Cancel' }).click();
+      await panel.getByRole('button', { name: 'Log note' }).click();
+      await panel.locator('.fd-composer').getByRole('button', { name: 'Log', exact: true }).click();
+      await expect(said).toHaveText('Type a note first');
+    });
+
     test('schedules a follow-up at an hour on the office’s clock, and a note by the team’s own channel', async ({ page }) => {
       await open(page, variant, ENQUIRY);
       const panel = chatter(page);

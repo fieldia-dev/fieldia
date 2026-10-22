@@ -62,4 +62,7 @@ export const bar = {
   advanced: 'Advanced',
   simpleTitle: 'Simple: pick a part and edit it where it stands',
   advancedTitle: 'Advanced: drop parts beside, under or between others, set widths, pick several',
+  // ---- a phone's bar: the title and Publish, the rest under More
+  more: 'More',
+  moreTitle: 'Where it stands, Find, Undo, the views, Look and Checks',
 };

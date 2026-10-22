@@ -82,6 +82,28 @@ const headerRow = (row: HTMLTableRowElement | undefined) => !!row && (row.parent
 /** Whether the table's first row is a header row. */
 export const hasHeader = (table: HTMLTableElement) => headerRow(table.rows[0]);
 
+/**
+ * Formatted text's tables with their header row in their head: a first row of header cells among the rows — as Word,
+ * Excel and Google Docs copy a table, and as an app may store one — moved into a head of its own, so a printout repeats
+ * it at the top of every sheet and a screen reader reads it as the columns' names. A row whose cells run down into the
+ * next stays where it is. The words as they were where no table has such a row.
+ */
+export function headedTables(html: string, doc: Document): string {
+  if (!/<th[\s>]/i.test(html)) return html;
+  const box = doc.createElement('template');
+  box.innerHTML = html;
+  let moved = false;
+  for (const table of box.content.querySelectorAll('table')) {
+    const first = table.rows[0];
+    if (table.tHead || !first || first.parentElement?.tagName === 'TFOOT' || !headerRow(first) || cellsOf(first).some((cell) => (cell.rowSpan || 1) > 1)) continue;
+    const section = first.parentElement === table ? first : (first.parentElement as HTMLElement);
+    table.insertBefore(doc.createElement('thead'), section).append(first);
+    for (const body of [...table.tBodies]) if (!body.rows.length) body.remove();
+    moved = true;
+  }
+  return moved ? box.innerHTML : html;
+}
+
 /** A new table of empty cells, its first row a header row. */
 export function newTable(doc: Document, rows: number, columns: number): HTMLTableElement {
   const table = doc.createElement('table');

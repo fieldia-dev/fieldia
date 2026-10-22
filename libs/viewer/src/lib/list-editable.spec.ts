@@ -128,6 +128,40 @@ describe('a list whose cells are changed in place', () => {
     expect(handle?.form.history().undo).toBeNull();
   });
 
+  it('chooses a cell’s whole value as a press, Enter or Tab opens it, so typing replaces it; F2 puts the caret after it', async () => {
+    // The owner's walk of 0.29: a press left the caret after "2,800", and 3000 typed saved 28,003,000.
+    const notes: Page = { ...prices, fields: { ...prices.fields, notes: { type: 'text', label: 'Notes' } }, layout: { ...prices.layout, columns: ['name', 'minutes', 'price', 'notes'] } as Page['layout'] };
+    const host = await mount({ dataSource: createMemoryDataSource({ records: { service: { 2: { ...records().service[2], notes: 'Twice a month' } } }, versions: true }) }, notes);
+    const chosen = () => {
+      const box = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
+      return [box.value, box.selectionStart, box.selectionEnd];
+    };
+    const keys = (key: string) => (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    cell(host, 2, 'price').click();
+    await until(() => cell(host, 2, 'price').querySelector('input'));
+    // A number's box shows its digits ungrouped as it is entered: all of them chosen.
+    await until(() => chosen()[0] === '2800.00');
+    expect(chosen()).toEqual(['2800.00', 0, 7]);
+    // Tab, on to the next cell: a text of several lines, chosen whole too.
+    keys('Tab');
+    await until(() => cell(host, 2, 'notes').querySelector('textarea'));
+    expect(chosen()).toEqual(['Twice a month', 0, 13]);
+    // F2 in it: the caret after its value, to change within it.
+    keys('F2');
+    expect(chosen()).toEqual(['Twice a month', 13, 13]);
+    keys('Escape');
+    expect(document.activeElement).toBe(cell(host, 2, 'notes'));
+    // F2 on a cell at rest: opened with the caret after its value; Enter: chosen whole.
+    cell(host, 2, 'name').focus();
+    keys('F2');
+    await until(() => cell(host, 2, 'name').querySelector('input'));
+    expect(chosen()).toEqual(['Hydrafacial', 11, 11]);
+    keys('Escape');
+    keys('Enter');
+    await until(() => cell(host, 2, 'name').querySelector('input'));
+    expect(chosen()).toEqual(['Hydrafacial', 0, 11]);
+  });
+
   it('keeps a row its page refuses as typed, says why under it, and puts it back on Put back', async () => {
     const source = createMemoryDataSource({ records: records(), versions: true });
     const host = await mount({ dataSource: source });
@@ -186,6 +220,36 @@ describe('a list whose cells are changed in place', () => {
     expect(opened).toEqual([3, 1]);
   });
 
+  it('marks a row its record lets no one change with a lock, and says why as it is pressed where no app opens records', async () => {
+    // The owner's walk of 0.29: the won stage looked like the others, and a press on it did nothing, saying nothing.
+    const can = (reason?: string) => ({ service: (values: Record<string, unknown>) => (values['code'] === 'MN' ? { edit: false, ...(reason ? { reason } : {}) } : undefined) });
+    let host = await mount({ dataSource: createMemoryDataSource({ records: records(), can: can('Kept by the manager.') }) });
+    const lock = () => row(host, 3).querySelector('td[data-col] .fd-list-lock');
+    expect(lock()?.getAttribute('title')).toBe('Kept by the manager.');
+    expect(lock()?.getAttribute('aria-label')).toBe('Kept by the manager.');
+    expect(host.querySelectorAll('.fd-list-lock')).toHaveLength(1);
+    // In the row's first cell shown, its words after it.
+    expect(row(host, 3).querySelector('td[data-col]')?.firstElementChild).toBe(lock());
+    const said = () => row(host, 3).nextElementSibling as HTMLElement | null;
+    cell(host, 3, 'price').click();
+    expect(cell(host, 3, 'price').querySelector('input')).toBeNull();
+    expect(said()?.classList.contains('fd-list-note')).toBe(true);
+    expect(said()?.hidden).toBe(false);
+    expect(said()?.textContent).toBe('Kept by the manager.');
+    expect(host.querySelector('.fd-list-adds span[role="status"]')?.textContent).toBe('Kept by the manager.');
+    // A press elsewhere: it goes.
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(said()?.hidden).toBe(true);
+    handle?.destroy();
+    document.body.replaceChildren();
+    // No reason given: said in the words the list's records go by.
+    host = await mount({ dataSource: createMemoryDataSource({ records: records(), can: can() }) });
+    expect(lock()?.getAttribute('title')).toBe('This service can’t be changed here');
+    row(host, 3).focus();
+    row(host, 3).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(said()?.textContent).toBe('This service can’t be changed here');
+  });
+
   it('adds a row at the end, saved as a new record once it is left; one left empty goes', async () => {
     const source = createMemoryDataSource({ records: records() });
     const host = await mount({ dataSource: source });
@@ -205,6 +269,24 @@ describe('a list whose cells are changed in place', () => {
     expect(saves(source)).toHaveLength(1);
   });
 
+  it('opens a row added at the first cell a new record needs — required and empty, in the columns’ order — else its first', async () => {
+    // The owner's walk of 0.29: a stage's name typed in Order, the first cell, and refused as no number.
+    const ordered: Page = { ...prices, layout: { ...prices.layout, columns: ['minutes', 'name', 'price'] } as Page['layout'] };
+    const opened = async (page: Page) => {
+      const host = await mount({}, page);
+      (host.querySelector('.fd-list-add') as HTMLButtonElement).click();
+      await until(() => host.querySelector('.fd-list-row[data-new] td[data-editing]'));
+      const column = host.querySelector('.fd-list-row[data-new] td[data-editing]')?.getAttribute('data-col');
+      handle?.destroy();
+      handle = null;
+      document.body.replaceChildren();
+      return column;
+    };
+    expect(await opened(ordered)).toBe('name');
+    // Nothing a new record needs: its first cell that changes.
+    expect(await opened({ ...ordered, fields: { ...ordered.fields, name: { type: 'char', label: 'Service' } } })).toBe('minutes');
+  });
+
   it('writes rows a paste gave the same change in one writeMany, each with its version', async () => {
     const source = createMemoryDataSource({ records: records(), versions: true });
     const host = await mount({ dataSource: source });
@@ -217,13 +299,50 @@ describe('a list whose cells are changed in place', () => {
     const paste = new Event('paste', { bubbles: true, cancelable: true });
     Object.defineProperty(paste, 'clipboardData', { value: { getData: () => 'Facial\nFacial\nFacial\n' } });
     catcher.dispatchEvent(paste);
+    // Three rows changed at once: asked first.
+    await until(() => document.querySelector('[role="alertdialog"]'));
+    expect(document.querySelector('[role="alertdialog"] p')?.textContent).toBe('Change 3 rows with what you pasted?');
+    (document.querySelector('[role="alertdialog"] .fd-button-primary') as HTMLButtonElement).click();
     await until(() => source.calls.some((call) => call.method === 'writeMany'));
     const many = source.calls.filter((call) => call.method === 'writeMany').map((call) => call.request as { ids: unknown[]; values: unknown; versions: Record<string, unknown> });
     expect(many).toHaveLength(1);
     expect(many[0].ids).toEqual([1, 2, 3]);
     expect(Object.keys(many[0].versions)).toEqual(['1', '2', '3']);
-    await until(() => host.querySelector('.fd-list-paste-note')?.textContent === 'Pasted into 3 cells.');
+    await until(() => host.querySelector('.fd-list-paste-words')?.textContent === 'Pasted into 3 cells.');
     expect(Object.values(source.records['service']).map((one) => one['name'])).toEqual(['Facial', 'Facial', 'Facial']);
+  });
+
+  it('offers Undo after a paste: the rows changed put back and saved again, those it added taken away; Ctrl+Z the same', async () => {
+    const source = createMemoryDataSource({ records: records(), versions: true });
+    const host = await mount({ dataSource: source });
+    const pasteOn = (td: HTMLElement, text: string) => {
+      td.focus();
+      td.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }));
+      const paste = new Event('paste', { bubbles: true, cancelable: true });
+      Object.defineProperty(paste, 'clipboardData', { value: { getData: () => text } });
+      (host.querySelector('.fd-list-paste-catcher') as HTMLTextAreaElement).dispatchEvent(paste);
+    };
+    // Two rows: one on the last service, one added past it.
+    pasteOn(cell(host, 3, 'minutes'), '50\t3300\n30\t1500\n');
+    await until(() => document.querySelector('[role="alertdialog"]'));
+    expect(document.querySelector('[role="alertdialog"] p')?.textContent).toBe('Paste 2 rows: change 1 and add 1?');
+    // Its Yes says what it does (the owner's walk read OK there).
+    expect([...document.querySelectorAll('[role="alertdialog"] button')].map((one) => one.textContent)).toEqual(['Cancel', 'Paste 2 rows']);
+    (document.querySelector('[role="alertdialog"] .fd-button-primary') as HTMLButtonElement).click();
+    // The row added has no name: refused, said under it (one row alone says its own).
+    await until(() => source.records['service']['3']['price'] === 3300 && host.querySelector('.fd-list-undo:not([hidden])'));
+    expect(host.querySelectorAll('.fd-list-row[data-new]')).toHaveLength(1);
+    (host.querySelector('.fd-list-undo') as HTMLButtonElement).click();
+    await until(() => source.records['service']['3']['price'] === 3200 && !host.querySelector('.fd-list-row[data-new]'));
+    expect(source.records['service']['3']['minutes']).toBe(60);
+    expect(host.querySelector('.fd-list-paste-words')?.textContent).toBe('Paste undone.');
+    // One cell, no question; Ctrl+Z right after it, on the list.
+    pasteOn(cell(host, 1, 'price'), '2500');
+    await until(() => source.records['service']['1']['price'] === 2500);
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    await until(() => host.querySelector('.fd-list-undo:not([hidden])'));
+    cell(host, 1, 'price').dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }));
+    await until(() => source.records['service']['1']['price'] === 2200);
   });
 
   it('is read and opened as ever without `editable`, or where the source cannot save', async () => {

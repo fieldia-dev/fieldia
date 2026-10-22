@@ -127,7 +127,7 @@ type Plain = ReturnType<typeof plainSource>;
 /** A host that answers each question as told, and keeps what it was asked; its own close counted, as an app's modal's. */
 function host(answer: boolean | boolean[] = false) {
   const answers = Array.isArray(answer) ? [...answer] : null;
-  const asked: { message: string; how?: { discard?: boolean } }[] = [];
+  const asked: { message: string; how?: { discard?: boolean; yes?: string } }[] = [];
   const closed: number[] = [];
   const urls: string[] = [];
   const made: ActionHost = {
@@ -331,15 +331,15 @@ describe('every way the values go passes the check (each fails without it)', () 
     const yes = await atRisk([true]);
     expect((await yes.form.runAction('m-delete')).done).toBe(true);
     await yes.form.settled();
-    expect(yes.asked).toEqual([{ message: 'Are you sure you want to delete this record?' }]);
+    expect(yes.asked).toEqual([{ message: 'Are you sure you want to delete this record?', how: { yes: 'Delete' } }]);
     expect(yes.form.getState()).toMatchObject({ recordId: null, unsent: [] });
-    expect(asked).toEqual([{ message: 'Are you sure you want to delete this record?' }]);
+    expect(asked).toEqual([{ message: 'Are you sure you want to delete this record?', how: { yes: 'Delete' } }]);
   });
 
   it('6. Archive: asked before anything is archived', async () => {
     const { ds, form, asked } = await atRisk([true, false]);
     expect(await form.runAction('m-archive')).toMatchObject({ done: false, reason: 'no' });
-    expect(asked).toEqual([{ message: 'Are you sure that you want to archive this record?' }, DISCARD]);
+    expect(asked).toEqual([{ message: 'Are you sure that you want to archive this record?', how: { yes: 'Archive' } }, DISCARD]);
     expect(count(ds, 'archive')).toBe(0);
     kept(form);
   });

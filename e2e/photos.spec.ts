@@ -14,7 +14,8 @@ import { expectNoSidewaysScroll, node, open, screen } from './support';
 type Photo = { name: string; url?: string; data?: string; fileId?: number; caption?: string; original?: Photo; edit?: { turn: number; crop: { x: number; y: number; width: number; height: number } } };
 const photos = (page: Page, field = 'photos') => page.evaluate((name) => ((window as any).fieldiaDemo.handle.form.getState().values[name] ?? []) as Photo[], field);
 const tiles = (page: Page, id = 'f-photos') => node(page, id).locator('.fd-photo');
-const tile = (page: Page, name: string, id = 'f-photos') => tiles(page, id).filter({ has: page.locator(`.fd-photo-open[aria-label^="${name},"]`) });
+/** A photo's tile, by its caption — as its buttons name it — or by its file, which it is kept by (never named so: by its place). */
+const tile = (page: Page, name: string, id = 'f-photos') => tiles(page, id).filter({ has: page.locator(`.fd-photo-open[aria-label^="${name},"]`) }).or(node(page, id).locator(`.fd-photo[data-key^="${name}"]`));
 const said = (page: Page, id = 'f-photos') => node(page, id).locator('.fd-announce');
 const ORDER = ['Living room.jpg', 'Kitchen.jpg', 'Master bedroom.jpg', 'Balcony view.jpg', 'Bathroom.jpg'];
 const names = async (page: Page, field = 'photos') => (await photos(page, field)).map((photo) => photo.name);
@@ -68,7 +69,8 @@ test.describe('a listing’s photo set', () => {
     await expect(tile(page, 'Kitchen.jpg')).toHaveAttribute('data-lifted', '');
     await screen(page, 'photos-listing-lifted', { viewport: true });
     await page.mouse.up();
-    await expect(said(page)).toHaveText('Kitchen.jpg is the cover now');
+    // Named by the place it was in, never by its file (the owner's walk of 0.29: "Kitchen.jpg is the cover now").
+    await expect(said(page)).toHaveText('Photo 2 of 5 is the cover now');
     expect(await names(page)).toEqual(['Kitchen.jpg', 'Living room.jpg', 'Master bedroom.jpg', 'Balcony view.jpg', 'Bathroom.jpg']);
     await expect(tiles(page).first().locator('.fd-photo-cover')).toBeVisible();
     await expect(tiles(page).nth(1).locator('.fd-photo-cover')).toBeHidden();
@@ -98,19 +100,19 @@ test.describe('a listing’s photo set', () => {
     const bedroom = tile(page, 'Master bedroom.jpg').locator('.fd-photo-open');
     await bedroom.focus();
     await page.keyboard.press('Alt+ArrowLeft');
-    await expect(said(page)).toHaveText('Master bedroom.jpg moved to place 2 of 5');
+    await expect(said(page)).toHaveText('Photo 3 of 5 moved to place 2 of 5');
     await expect(bedroom).toBeFocused();
     await page.keyboard.press('Alt+End');
-    await expect(said(page)).toHaveText('Master bedroom.jpg moved to place 5 of 5');
+    await expect(said(page)).toHaveText('Photo 2 of 5 moved to place 5 of 5');
     expect(await names(page)).toEqual(['Living room.jpg', 'Kitchen.jpg', 'Balcony view.jpg', 'Bathroom.jpg', 'Master bedroom.jpg']);
     // Make cover, its tools shown as the pointer rests on the photo.
     await tile(page, 'Bathroom.jpg').hover();
-    await tile(page, 'Bathroom.jpg').getByRole('button', { name: 'Make Bathroom.jpg the cover' }).click();
-    await expect(said(page)).toHaveText('Bathroom.jpg is the cover now');
+    await tile(page, 'Bathroom.jpg').getByRole('button', { name: 'Make photo 4 of 5 the cover' }).click();
+    await expect(said(page)).toHaveText('Photo 4 of 5 is the cover now');
     expect((await names(page))[0]).toBe('Bathroom.jpg');
     await expect(tiles(page).first().getByRole('button', { name: /Make .* the cover/ })).toBeHidden();
     // A caption typed under a photo, read as the box is left.
-    const caption = tile(page, 'Kitchen.jpg').getByRole('textbox', { name: 'Caption for Kitchen.jpg' });
+    const caption = tile(page, 'Kitchen.jpg').getByRole('textbox', { name: 'Caption for photo 3 of 5' });
     await caption.fill('Newly fitted, with an island');
     await page.keyboard.press('Tab');
     expect((await photos(page)).find((photo) => photo.name === 'Kitchen.jpg')?.caption).toBe('Newly fitted, with an island');
@@ -213,13 +215,23 @@ test.describe('a listing’s photo set', () => {
     await expect(tiles(page)).toHaveCount(12);
     const before = await photos(page);
     await tiles(page).nth(5).hover();
-    await tiles(page).nth(5).getByRole('button', { name: 'Crop and turn Room 1.png' }).click();
+    await tiles(page).nth(5).getByRole('button', { name: 'Crop and turn photo 6 of 12' }).click();
     await expect(editor(page).locator('.fd-photo-picture')).toBeVisible();
     await editor(page).getByRole('button', { name: 'Turn left' }).click();
+    // A turn in it: Escape asks first, in place, as a record's dialog asks (the owner's walk of 0.29: it threw it away).
     await page.keyboard.press('Escape');
+    const asked = editor(page).locator('.fd-file-confirm');
+    await expect(asked).toHaveText('Discard your changes?DiscardKeep editing');
+    await expect(asked.getByRole('button', { name: 'Keep editing' })).toBeFocused();
+    await screen(page, 'photos-crop-escape-asks', { viewport: true });
+    await page.keyboard.press('Enter');
+    await expect(asked).toBeHidden();
+    await expect(editor(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await asked.getByRole('button', { name: 'Discard' }).click();
     await expect(editor(page)).toBeHidden();
     expect(await photos(page)).toEqual(before);
-    await expect(tiles(page).nth(5).getByRole('button', { name: 'Crop and turn Room 1.png' })).toBeFocused();
+    await expect(tiles(page).nth(5).getByRole('button', { name: 'Crop and turn photo 6 of 12' })).toBeFocused();
     expect(problems).toEqual([]);
   });
 
@@ -267,7 +279,7 @@ test.describe('a photo set on a phone', () => {
     for (let step = 1; step <= 12; step++) await hand.move(bedroom.x + (first.box.x + 8 - bedroom.x) * (step / 12), bedroom.y + (first.y - bedroom.y) * (step / 12));
     await screen(page, 'photos-listing-phone-lifted', { viewport: true });
     await hand.up();
-    await expect(said(page)).toHaveText('Master bedroom.jpg is the cover now');
+    await expect(said(page)).toHaveText('Photo 3 of 5 is the cover now');
     expect((await names(page))[0]).toBe('Master bedroom.jpg');
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect(problems).toEqual([]);
@@ -296,7 +308,9 @@ test.describe('a clinic’s before and after', () => {
     await expect.poll(async () => { const now = (await dialog.locator('.fd-photo-picture').boundingBox())!; return now.height > now.width; }).toBe(true);
     await screen(page, 'photos-clinic-turned', { viewport: true });
     await dialog.getByRole('button', { name: 'Apply' }).click();
-    await expect.poll(async () => (await photos(page, 'before'))[2].edit?.turn).toBe(90);
+    // Turned at once, stored a moment later: until its upload is done the value holds no link yet (WebKit's memory store
+    // takes ~40 ms), so the picture is read once the store gave it its file and link.
+    await expect.poll(async () => { const photo = (await photos(page, 'before'))[2]; return [photo.edit?.turn, photo.fileId !== undefined]; }).toEqual([90, true]);
     const turned = (await photos(page, 'before'))[2];
     expect(turned).toMatchObject({ caption: 'Right side', original: { name: 'Right side.jpg' } });
     const size = await page.evaluate(async (src) => {

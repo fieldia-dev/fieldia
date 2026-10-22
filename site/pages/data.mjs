@@ -436,7 +436,7 @@ const dataSource = {
         { id: 'finance', name: 'Finance', approvers: [{ id: 21, name: 'Mona Adel' }, { id: 28, name: 'Hany Lotfy' }], state: 'waiting' },
         { id: 'cfo', name: 'CFO', approvers: [{ id: 26, name: 'Sara Nabil' }], needs: 'all', state: 'later' },
       ],
-      history: route.history,        // [{ decision: 'requested' | 'approved' | 'rejected', level?, by, at, reason? }], oldest first
+      history: route.history,        // [{ decision: 'requested' | 'approved' | 'rejected' | 'notNeeded', level?, by, at, reason? }], oldest first
       mine: route.mine,              // the level ids this person may decide now: ['finance']
       why: 'Orders over EGP 150,000 go to Finance, then the CFO.',
     };
@@ -453,7 +453,8 @@ const dataSource = {
   <li>While a level waits, every field is locked but those ${c('approval.open')} names; ${c('"lock": false')} locks none, and your ${c('save')} refuses what it must. Rejected or approved, nothing is locked by it.</li>
   <li>The lock is the record's page's. A list whose cells change in place knows nothing of approvals: there a record that waits is locked only through the ${c('can.edit')} your source gives its row (${c('{ edit: false }')} while it waits), as your server refuses its save.</li>
   <li>With Fieldia's chatter beside the record (${c('chatterSlot')}), the history is told among its messages, as events never posted to your chatter's source — ${c('chatterSlot({ source, approvals: false })')} where your server posts each decision there itself.</li>
-  <li>An engine such as Flowyard's approval step answers them from a record's run: each approval step on its way a level — not reached ${c('later')}, waiting for its people ${c('waiting')}, gone on its Approved way ${c('approved')}, its Declined way ${c('rejected')}, on a branch not taken ${c('skipped')}, on parallel branches ${c('together')} — ${c('decide')} answering the waiting step for the person, and its run's steps as they went the ${c('history')}.</li>
+  <li>The routing we recommend, and the demos' memory source keeps: <strong>no one approves what they asked for</strong> — the person who sends a record for approval is none of that round's approvers (left out of the levels' ${c('approvers')} and of ${c('mine')}, and ${c('decide')} refuses them), so a manager who sends his employee's claim again does not approve it himself; and <strong>a record whose rules ask no level moves on at once</strong> — sent, it takes its approved state, its history a ${c('requested')} then a ${c('notNeeded')}, and the page says <em>“No approval needed”</em> — never left “To approve” waiting for no one.</li>
+  <li>An engine such as Flowyard's approval step answers them from a record's run: each approval step on its way a level — not reached ${c('later')}, waiting for its people ${c('waiting')}, gone on its Approved way ${c('approved')}, its Declined way ${c('rejected')}, on a branch not taken ${c('skipped')}, on parallel branches ${c('together')} — ${c('decide')} answering the waiting step for the person, and its run's steps as they went the ${c('history')}; the run's starter left out of every approval step's people, and a run that reaches no approval step gone on by its Approved way at once (${c('notNeeded')}).</li>
   <li>${c('form.decide(level, decision, reason?)')}, ${c('form.refreshApprovals()')}, ${c('form.approvalLock(field)')} and ${c('state.approval')} are there for a screen of your own.</li>
 </ul>
 

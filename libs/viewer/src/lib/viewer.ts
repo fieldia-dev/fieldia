@@ -10,6 +10,7 @@ import {
   formJoins,
   type ActionHost,
   type ActionStep,
+  type AskHow,
   type ButtonNode,
   type FieldNode,
   type FormEvents,
@@ -169,8 +170,12 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   /** Labels that win over the language's defaults. */
   labels?: Partial<ViewerLabels>;
   dir?: 'ltr' | 'rtl';
-  /** How a question is asked: a button's `confirm`, and an `ask` step. Defaults to the viewer's own small box. */
-  confirm?: (message: string) => Promise<boolean>;
+  /**
+   * How a question is asked: a button's `confirm`, and an `ask` step. Defaults to the viewer's own small box. `how.yes`
+   * is what answering Yes does, for the Yes button's words — the button's own label, Archive, "Paste 40 rows" —, as the
+   * viewer's own box says it.
+   */
+  confirm?: (message: string, how?: AskHow) => Promise<boolean>;
   /** Where a person's choices about the page's look are kept, such as a table's columns. The browser's storage by default. */
   preferences?: PreferenceStore;
   /** False when something around the page saves it, such as a dialog: the page's own Save, Discard and Submit stay hidden. */
@@ -452,7 +457,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       ),
     say: (message, tone, undo) => say(message, tone, undo),
     // A question that lets the person's work go is the viewer's own, worded Discard, the focus on Cancel.
-    ask: (message, how) => (how?.discard ? letGoAsked(message) : confirm(message)),
+    ask: (message, how) => (how?.discard ? letGoAsked(message) : confirm(message, how)),
     show: (target) => {
       const show = tabs.get(target);
       if (!show?.()) throw new Error(`No tab "${target}" can be shown here`);
@@ -562,6 +567,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': skinFor(options.skin ?? page.look?.skin, theme), dir, lang: tag, 'data-max-width': page.maxWidth });
   applyLook(root, theme ? { ...page.look, theme } : page.look);
   wearTokens(root, options.tokens);
+  // A question whose Yes does something says what in its Yes (`how.yes`), never a bare OK.
   const confirm = options.confirm ?? dialogConfirm;
   /** The "Discard your changes?" asked now, if one is: gone the moment it is answered. */
   let discarding: Promise<boolean> | null = null;
@@ -569,7 +575,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. One
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
-  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
+  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, { yes: labels.discard, ended: () => (discarding = null) }));
   const say = sayer(root, el, labels);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
@@ -1844,7 +1850,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     seenProblem = state.saveProblem;
     banner.hidden = seenProblem?.kind !== 'network';
     if (!seenProblem) return;
-    if (seenProblem.kind === 'rule') void dialogConfirm(seenProblem.message, false);
+    if (seenProblem.kind === 'rule') void dialogConfirm(seenProblem.message, { alone: true });
     else if (seenProblem.kind === 'fields') announce(checkText(state));
     else if (seenProblem.kind === 'other') announce(seenProblem.message);
   });
@@ -1964,7 +1970,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (form.getState().can?.edit === false) return;
     // A survey that reviews its answers first shows them in place of sending, until they are shown.
     if (flowKit && !(await flowKit.sending())) return;
-    const saved = await form.save();
+    // A question its save asks first (the page's beforeSave) says in its Yes what the form's own Save or Submit says.
+    const saved = await form.save({ yes: root.querySelector('button[type="submit"]')?.textContent ?? undefined });
     if (!saved) {
       flowKit?.refused();
       // Stopped by the page's own checks: say which fields; a refused save says so above.
@@ -2529,7 +2536,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         ...newListRecord(),
         // An export's end said, Edit's question asked and its value asked in a dialog, as the page's own steps are.
         say: (message, tone) => actionHost.say(message, tone),
-        ask: (message) => actionHost.ask(message),
+        ask: (message, how) => actionHost.ask(message, how),
         editValues: (request) => dialogs.editValues(request),
         // A phone column's call and WhatsApp links, in the phone field's own words.
         widgetLabels,
@@ -2861,19 +2868,20 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // ---- confirmation dialog -----------------------------------------------------
 
   /**
-   * A question with Cancel and OK, or with `withCancel` false a notice with OK
+   * A question with Cancel and its Yes, or with `how.alone` a notice with OK
    * alone. A question opens with the focus on Cancel — a button's `confirm`,
    * an `ask` step, Archive, Delete and "Discard your changes?" alike — so an
    * Enter meant for the form, or a second press of the key that asked, never
-   * answers Yes by itself; a notice, on OK. `how.yes` words OK as what it does
-   * (Discard); `how.ended` is told the moment it is answered, before the
-   * promise settles.
+   * answers Yes by itself; a notice, on OK. `how.yes` words Yes as what it
+   * does (the button's own words, Archive, Discard), OK without it;
+   * `how.ended` is told the moment it is answered, before the promise settles.
    */
-  function dialogConfirm(message: string, withCancel = true, how: { yes?: string; ended?: () => void } = {}): Promise<boolean> {
+  function dialogConfirm(message: string, how: AskHow & { alone?: boolean; ended?: () => void } = {}): Promise<boolean> {
+    const withCancel = !how.alone;
     return new Promise((resolve) => {
       const text = el('p', { id: `${prefix}-confirm` }, message);
       const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
-      const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, how.yes ?? labels.ok);
+      const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, how.yes || labels.ok);
       const dialog = el('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id }, text, el('div', { class: 'fd-actions fd-actions-end' }, ...(withCancel ? [cancel, ok] : [ok])));
       const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
       const doc = root.ownerDocument;

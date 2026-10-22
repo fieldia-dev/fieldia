@@ -38,6 +38,16 @@ export const EDITABLE_STYLES = `
 .fd-list-refused { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; color: var(--fd-error); font-size: 13.5px; }
 .fd-list-refused .fd-button-link { min-height: 24px; padding-block: 0; }
 .fd-list-row:has(+ .fd-list-note:not([hidden])) > td { border-block-end-color: transparent; }
+/* A row the person may not change: a lock at its start — in its first cell, before its words; by its card's name — and
+   why, under it, as it is pressed. A pinned first cell is already the lock's place (sticky); another is made one. */
+.fd-list-lock { display: inline-flex; align-items: center; color: var(--fd-muted); }
+.fd-list-lock .fd-icon { width: 14px; height: 14px; margin: 0; }
+.fd-list-row[data-locked] > td[data-col] { cursor: default; }
+.fd-list-row[data-locked] > td[data-col]:has(> .fd-list-lock) { padding-inline-start: 26px; }
+.fd-list-row[data-locked] > td[data-col]:has(> .fd-list-lock):not([data-pin]) { position: relative; }
+.fd-list-table td[data-col] > .fd-list-lock { position: absolute; inset-inline-start: 8px; top: 50%; transform: translateY(-50%); }
+.fd-list-card-title > .fd-list-lock { margin-inline-end: 6px; vertical-align: -0.1em; }
+.fd-list-locked-words { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--fd-muted); font-size: 13.5px; }
 /* A row added, and one kept in sight though the search no longer finds it. */
 .fd-list-row[data-new] > td.fd-list-check, .fd-list-row[data-kept] > td.fd-list-check { visibility: hidden; }
 .fd-list-row[data-kept] > td { background: var(--fd-page); }
@@ -47,6 +57,9 @@ export const EDITABLE_STYLES = `
 .fd-list-add { min-height: 32px; }
 .fd-list-add > span { font-size: 16px; }
 .fd-list-paste-note { margin: 0; }
+.fd-list-undo { min-height: 24px; padding-block: 0; margin-inline-start: 4px; }
+/* Rows a paste left refused for the same reason: each reason once, across the room under the list. */
+.fd-list-refused-rows { flex-basis: 100%; display: grid; gap: 4px; }
 /* What a paste lands in before it is read: out of sight, still able to take the focus. */
 .fd-list-paste-catcher { position: fixed; inset-inline-start: 0; top: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
 /* On a phone the rows are cards: the note under a card, as wide as it. */

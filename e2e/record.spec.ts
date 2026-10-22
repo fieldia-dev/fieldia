@@ -56,7 +56,7 @@ for (const variant of VARIANTS) {
       await expect(pagerText(page)).toHaveText('3 / 5');
       await gear(page).click();
       await page.getByRole('menuitem', { name: 'Archive' }).click();
-      await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+      await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
       await expect(page.locator('.fd-ribbon:visible')).toHaveText('Archived');
       await gear(page).click();
       await expect(page.getByRole('menuitem', { name: 'Unarchive' })).toBeVisible();

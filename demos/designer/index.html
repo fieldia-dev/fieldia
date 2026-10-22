@@ -5,16 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fieldia — designer</title>
     <link rel="stylesheet" href="../demo.css" />
+    <link rel="stylesheet" href="../shell.css" />
   </head>
   <body>
-    <nav class="demo-bar" aria-label="Demo">
-      <strong>Fieldia</strong>
-      <span class="demo-framework">designer</span>
-      <a class="demo-back" href="/designer/" hidden>All starting points</a>
-    </nav>
-    <!-- On fieldia.dev, where the designer opens from the Designer page: a way back to it. -->
-    <script>if (location.pathname.startsWith('/demos/')) document.querySelector('.demo-back').hidden = false;</script>
+    <!-- The demos' frame: its name, what to try first, its source; on fieldia.dev, a way back to the starting points. -->
+    <header id="demo-head" data-app="designer"></header>
     <main id="app"></main>
+    <script type="module" src="../shell.mjs"></script>
     <script src="main.js"></script>
   </body>
 </html>

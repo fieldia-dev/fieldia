@@ -162,7 +162,7 @@ for (const variant of VARIANTS) {
       await screen(page, `${variant}-list-chosen`, { viewport: true });
       await bar.getByRole('button', { name: 'Archive' }).click();
       await expect(page.getByRole('alertdialog')).toContainText('Archive the chosen customers?');
-      await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+      await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
       await expect.poll(() => demo<{ action: string; recordIds?: number[] }[]>('requests')).toEqual([expect.objectContaining({ action: 'archive', recordIds: [23, 24] })]);
       // No app behind the demo shows a thing for it: the demo says what the app was given, in plain words.
       await expect(page.locator('.fd-say')).toHaveText(['The app was asked to archive 2 customers: Delta Foods and Giza Plaza.×']);

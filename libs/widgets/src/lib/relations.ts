@@ -6,6 +6,7 @@ import { setAttr, setHidden, typeInto } from './kind-parts';
 import { drawIcon } from './icons';
 import { detailLines, linkAvatar } from './link-avatar';
 import { stillShown, whileShown } from './shown';
+import { scanPart, scans } from './widget-parts';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -112,6 +113,8 @@ function combobox(options: {
    * room, did not hold the name typed — or held it once, where others of that name may come after.
    */
   exact?: (name: string) => Promise<RelatedRecord[]>;
+  /** The record typed words name as a code, asked before they are read as a name: a link scanned into (`typedLink`). */
+  code?: (typed: string) => Promise<RelatedRecord | null>;
   /** How many found records the list shows; a search may find one more, to tell there are others. */
   shown?: number;
   /** The empty box's words: the page's own, else "Search…". */
@@ -303,6 +306,8 @@ function combobox(options: {
    * before one of that name is taken, in case another has it too.
    */
   async function named(text: string, onlyMatch: boolean): Promise<Named> {
+    const coded = options.code ? await options.code(text).catch(() => null) : null;
+    if (coded) return coded;
     const query = asQuery(text.trim());
     const found = await options.search(query).catch(() => [] as RelatedRecord[]);
     const first = among(text, found, onlyMatch);
@@ -671,6 +676,9 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
     // One past what the list shows, to know whether Search more… has more to find.
     search: (query) => form.search(name, query, SHOWN + 1),
     exact: (typed) => form.search(name, typed, EXACT, { exact: true }),
+    // A link scanned into (`options.scan`) reads what is typed as the camera reads a code first — a scanner gun types
+    // it — its record by its code; else, as ever, by its name.
+    ...(scans(node) ? { code: (typed: string) => scanPart.loaded?.typedLink({ form, name, field, node }, typed) ?? Promise.resolve(null) } : {}),
     shown: SHOWN,
     pick: (record) => form.setValue(name, record),
     onCommitEmpty: () => form.setValue(name, null),

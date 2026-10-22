@@ -130,7 +130,7 @@ test.describe('a customer’s contacts brought in from a file', () => {
     await report(page).getByRole('button', { name: 'Undo the import' }).click();
     const question = page.getByRole('alertdialog');
     await expect(question).toHaveText(/Delete the 10 contacts this import made\?/);
-    await question.getByRole('button', { name: 'OK' }).click();
+    await question.getByRole('button', { name: 'Delete', exact: true }).click();
     await expect(page.locator('.fd-say')).toContainText('Import undone: 10 contacts deleted.');
     await expect(page.locator('.fd-pager-text')).toHaveText('1–10 of 1,284 contacts');
     await expect(report(page)).toBeHidden();
@@ -173,6 +173,8 @@ test.describe('a customer’s contacts brought in from a file', () => {
     await dialog(page).getByRole('button', { name: 'Download the rows to fix' }).click();
     const fix = await (await saving).path();
     await dialog(page).getByRole('button', { name: 'Close' }).first().click();
+    // A file chosen and nothing imported: asked first, as a record's dialog asks.
+    await dialog(page).locator('.fd-file-confirm').getByRole('button', { name: 'Discard' }).click();
     await expect(dialog(page)).toBeHidden();
     await page.getByRole('button', { name: 'Import' }).click();
     await dropBytes(page, 'contacts-to-import – not imported.xlsx', [...readFileSync(fix)]);
@@ -180,6 +182,33 @@ test.describe('a customer’s contacts brought in from a file', () => {
     await expect(goesInto(page, 'Name')).toHaveValue('name');
     await expect(dialog(page).locator('.fd-import-said')).toHaveText('Left out: Notes, Why it was not imported');
     await screen(page, 'lists-import-fix-again', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+
+  test('a file chosen, × or Escape asks before it lets the import go, as a record’s dialog asks; before one, it closes', async ({ page }) => {
+    const { problems } = await contacts(page);
+    await page.getByRole('button', { name: 'Import' }).click();
+    await expect(dialog(page).getByRole('button', { name: 'Choose a file' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialog(page)).toBeHidden();
+    await page.getByRole('button', { name: 'Import' }).click();
+    await choose(page, 'contacts-to-import.csv');
+    await expect(goesInto(page, 'Name')).toBeVisible();
+    await dialog(page).getByRole('button', { name: 'Close' }).first().click();
+    const asked = dialog(page).locator('.fd-file-confirm');
+    await expect(asked).toHaveText('Discard your changes?DiscardKeep editing');
+    await screen(page, 'lists-import-asks-before-letting-go', { viewport: true });
+    await asked.getByRole('button', { name: 'Keep editing' }).click();
+    await expect(goesInto(page, 'Name')).toBeVisible();
+    // Escape asks too; the question's own Escape keeps the import.
+    await page.keyboard.press('Escape');
+    await expect(asked.getByRole('button', { name: 'Keep editing' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(asked).toBeHidden();
+    await expect(dialog(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await asked.getByRole('button', { name: 'Discard' }).click();
+    await expect(dialog(page)).toBeHidden();
     expect(problems).toEqual([]);
   });
 

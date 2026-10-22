@@ -234,10 +234,14 @@ export interface ActionHost {
 /**
  * How a question is asked. `discard`: its Yes lets go of the person's work not
  * saved ("Discard your changes?"), so a host words Yes as Discard and puts the
- * focus on Cancel: Enter keeps the work.
+ * focus on Cancel: Enter keeps the work. `yes`: what answering Yes does, in
+ * words its Yes button says — a button's `confirm` is answered by the button's
+ * own words, Archive by Archive, "Paste 40 rows: change 7 and add 33?" by
+ * Paste 40 rows —, never a bare OK.
  */
 export interface AskHow {
   discard?: boolean;
+  yes?: string;
 }
 
 /**
@@ -269,10 +273,14 @@ export interface RunResult {
   error?: unknown;
 }
 
-/** What a run is for: the id calls carry, the records chosen in a list. */
+/**
+ * What a run is for: the id calls carry, the records chosen in a list, and the words of what set it off (a menu item's
+ * label), which an `ask` step's Yes says: answered Yes, the run goes on doing it.
+ */
 export interface RunContext {
   id?: string;
   recordIds?: RecordId[];
+  yes?: string;
 }
 
 /** A step stopped: why, and which (a step of an `open`'s `then`, the deepest). */
@@ -305,6 +313,8 @@ export interface RunScope {
    * reads a box under the person's keys.
    */
   typed?: 'first' | 'read';
+  /** The words of what set the run off — a button's label, a menu item's — which its `ask` steps' Yes says. */
+  yes?: string;
   /**
    * What the run's own steps wrote since its last save, by field: what it held
    * before the first of them, whether that was the person's own change, and
@@ -342,7 +352,8 @@ export interface RunForm {
    * stops — text left in a box that does not read, said under its box as a check says it.
    */
   typedFirst(): Promise<Stopped | null>;
-  save(chain: readonly string[]): Promise<Stopped | null>;
+  /** `yes`: the words of what set it off, which its `beforeSave` questions' Yes says. */
+  save(chain: readonly string[], yes?: string): Promise<Stopped | null>;
   /** The number of the record shown now: each record shown — opened, loaded again, a new one — has its own. */
   generation(): number;
   /** Why a run stops whose record was replaced while it went on. */
@@ -362,7 +373,7 @@ export interface RunForm {
   /** Run `show` of the host while `chain` is the run's, so a tab it shows knows who showed it. */
   showing(chain: readonly string[], show: () => void): void;
   host?: ActionHost;
-  confirm?: (message: string) => boolean | Promise<boolean>;
+  confirm?: (message: string, how?: AskHow) => boolean | Promise<boolean>;
   onAction?: OnAction;
   /** The app answered a call. */
   answered(request: ActionRequest, result: ActionResult | undefined): void;
@@ -521,9 +532,10 @@ export function createRunner(form: RunForm) {
     if (Object.keys(back).length) form.putBack(back, mine);
   }
 
-  async function ask(message: string): Promise<boolean> {
-    if (form.host) return form.host.ask(message);
-    if (form.confirm) return form.confirm(message);
+  async function ask(message: string, yes?: string): Promise<boolean> {
+    const how = yes ? { yes } : undefined;
+    if (form.host) return form.host.ask(message, how);
+    if (form.confirm) return form.confirm(message, how);
     return true;
   }
 
@@ -809,7 +821,7 @@ export function createRunner(form: RunForm) {
       case 'check':
         return form.check(step.fields);
       case 'save': {
-        const stopped = await form.save(scope.chain);
+        const stopped = await form.save(scope.chain, scope.yes);
         // Saved: what the steps wrote is the record's now.
         if (!stopped) scope.wrote?.clear();
         return stopped;
@@ -828,7 +840,8 @@ export function createRunner(form: RunForm) {
         tell(scope, step.message, step.tone ?? 'info');
         return null;
       case 'ask':
-        return (await ask(step.message)) ? null : { reason: 'no', message: step.message };
+        // Yes goes on with what was pressed: its words.
+        return (await ask(step.message, scope.yes)) ? null : { reason: 'no', message: step.message };
       case 'call':
         return call(step, scope);
       case 'open':
@@ -980,7 +993,7 @@ function asRead(values: Values): Record<string, unknown> {
  * meanwhile; the others (beforeSave, afterSave) do not run — a save made
  * meanwhile goes ahead without them, so nothing waits on itself.
  */
-export function createMoments(run: (key: string, steps: readonly ActionStep[], chain: readonly string[], on?: number) => Promise<RunResult>, now?: () => number) {
+export function createMoments(run: (key: string, steps: readonly ActionStep[], chain: readonly string[], on?: number, yes?: string) => Promise<RunResult>, now?: () => number) {
   interface Slot {
     running: Promise<RunResult>;
     queued?: Promise<RunResult>;
@@ -989,7 +1002,8 @@ export function createMoments(run: (key: string, steps: readonly ActionStep[], c
   }
   const slots = new Map<string, Slot>();
 
-  return function moment(key: string, steps: readonly ActionStep[] | undefined, chain: readonly string[], again: boolean): Promise<RunResult> {
+  /** `yes`: the words of what set it off (a save's Submit), which its questions' Yes says. */
+  return function moment(key: string, steps: readonly ActionStep[] | undefined, chain: readonly string[], again: boolean, yes?: string): Promise<RunResult> {
     if (!steps?.length || chain.includes(key)) return Promise.resolve(DONE);
     /** A run of it, known as running before its first step does: a step that sets it off again finds it busy. */
     const go = (slot: Slot, on = now?.()): Promise<RunResult> => {
@@ -999,7 +1013,7 @@ export function createMoments(run: (key: string, steps: readonly ActionStep[], c
       });
       slot.running = running;
       // Set off on a record no longer shown: its steps were for that one, and are let go.
-      settle(on !== undefined && now && on !== now() ? Promise.resolve(DONE) : run(key, steps, [...chain, key], on));
+      settle(on !== undefined && now && on !== now() ? Promise.resolve(DONE) : run(key, steps, [...chain, key], on, yes));
       return running;
     };
     const busy = slots.get(key);

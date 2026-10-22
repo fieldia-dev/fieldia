@@ -8,7 +8,7 @@
  * An app reads codes its own way — a commercial scanning library, a test's stand-in — with
  * `(await scanPart.load()).useCodeReader(reader)`.
  */
-export { scanning } from './scan';
+export { scanning, typedLink } from './scan';
 export { openScanSheet, type ScanAnswer, type ScanEnd, type ScanProblem, type ScanSheet, type ScanSheetOptions } from './scan-sheet';
 export { codeReaderFor, useCodeReader, type CodeReader, type CodeReaderMaker, type FoundCode } from './scan-reader';
 export { gs1Day, gs1Number, gs1Parts, isGs1Day, readGs1 } from './gs1';

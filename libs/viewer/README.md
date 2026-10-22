@@ -361,11 +361,15 @@ a moment does”). The viewer is their host: it draws what they ask for.
   "Customer blocked" left over a customer just made active again. Your app's
   `stop` words come as a warning; a step that cannot run here, or your
   `onAction` throwing, is said too.
-- **A question** is the viewer's own box (Cancel, OK) or your `confirm`. A
-  button's `confirm` is asked once, by the form. Escape answers No and leaves
-  a dialog or panel under it open. Your own `host.ask` gets every question,
-  and the one check's “Discard your changes?” comes with `{ discard: true }`
-  (a dialog's or a panel's Escape and × among them): word its Yes as Discard and put the
+- **A question** is the viewer's own box (Cancel, and a Yes that says what it
+  does) or your `confirm`. A button's `confirm` is asked once, by the form.
+  Escape answers No and leaves a dialog or panel under it open. A question
+  whose Yes does something says what in its Yes, never a bare OK: a button's
+  `confirm` and its `ask` steps by the button's own words, Archive and Delete
+  by Archive and Delete, a list's paste by “Paste 40 rows”, Edit's by Update.
+  Your own `confirm` and `host.ask` get those words as `how.yes`. The one
+  check's “Discard your changes?” comes with `{ discard: true }` (a dialog's or
+  a panel's Escape and × among them): word its Yes as Discard and put the
   focus on Cancel, as the viewer's own box does.
 - **A tab** a `goTo` names is shown, and `form.shown(tab)` runs its `show`
   steps — as for a tab a person picks.

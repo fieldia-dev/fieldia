@@ -188,9 +188,9 @@ describe('a menu inside a menu', () => {
   });
 
   it('runs its own items as the page’s, and the app’s by their own action and params, asking first where they say', async () => {
-    const asks: string[] = [];
+    const asks: [string, string | undefined][] = [];
     const { asked, onAction } = app();
-    const host = await draw(withMenu(TRACKER), { onAction, confirm: async (message) => (asks.push(message), true) });
+    const host = await draw(withMenu(TRACKER), { onAction, confirm: async (message, how) => (asks.push([message, how?.yes]), true) });
     more(host).click();
     const menu = flyout(host, 'm-templates');
     await until(() => read(menu).length === 4);
@@ -207,7 +207,8 @@ describe('a menu inside a menu', () => {
     await until(() => asked.some((one) => one.action === 'apply-template'));
     const applied = asked.find((one) => one.action === 'apply-template') as ActionRequest;
     expect([applied.id, applied.params, applied.recordId]).toEqual(['tpl-2', { id: 2 }, 1]);
-    expect(asks).toEqual(['Apply it over what is typed?']);
+    // Its Yes says what it does: the item's own words.
+    expect(asks).toEqual([['Apply it over what is typed?', 'Wrong stock count']]);
   });
 
   it('is not shown while its menu has nothing to show: its items hidden, or the app giving none', async () => {

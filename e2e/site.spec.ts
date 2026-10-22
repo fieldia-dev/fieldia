@@ -5,6 +5,7 @@ import { AREAS, AREA_IDS, DEMOS, FEATURED, areaOf, demoHref } from '../demos/cat
 import { HERO_JSON, TABS } from '../site/hero.mjs';
 import { expectNoSidewaysScroll, screen } from './support';
 import { axeFindings } from './a11y-support';
+import { cardOf, dragToward, editing, layout } from './designer-support';
 import { gzipSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 
@@ -275,6 +276,61 @@ test('the gallery finds a demo by the words an owner types, whole words before n
   await find.fill('dentsit');
   await expect(names.filter({ hasText: 'A clinic’s appointments' })).toHaveCount(1);
   await expect(page.locator('#gallery-said')).toContainText('words close to them');
+  expect(problems).toEqual([]);
+});
+
+test('the gallery has a way in to the designers: an owner’s words find both, each opens in its frame, its first step works', async ({ page }) => {
+  const problems = watch(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(SITE + '/demos/');
+  const find = page.getByRole('searchbox', { name: 'Find a demo' });
+  const names = page.locator('.gallery-body a.demo-card:visible .demo-name');
+  // As the walk typed them: each found nothing at 0.29.
+  for (const typed of ['designer', 'form builder', 'survey designer', 'drag and drop', 'no code']) {
+    await find.fill(typed);
+    await expect(names.filter({ hasText: 'The survey designer' }), typed).toHaveCount(1);
+    if (typed !== 'survey designer') await expect(names.filter({ hasText: 'The screen designer' }), typed).toHaveCount(1);
+  }
+  await find.fill('designer');
+  await expect(page.locator('#gallery-said')).toHaveText('2 demos match.');
+  await screen(page, 'gallery-search-designer', { viewport: true });
+  // Each in its business area, its picture loaded, saying it opens the designer.
+  const survey = page.locator('.gallery-body a.demo-card:visible').filter({ hasText: 'The survey designer' });
+  await expect(survey).toHaveAttribute('data-area', 'surveys');
+  await expect(survey.locator('.demo-where')).toHaveText('Opens the designer');
+  await expect.poll(() => survey.locator('img').evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(600);
+  await survey.click();
+  // The designer, in the demos' frame: its name, what to try first, a way back to its starting points.
+  await expect(page).toHaveURL(/\/demos\/designer\/\?start=survey$/);
+  await expect(page.locator('.fd-designer')).toBeVisible();
+  await expect(page.locator('.dh-title')).toHaveText('The survey designer');
+  await expect(page.locator('.dh-try-step')).toContainText('Press the question “How would you rate it?”');
+  await expect(page.getByRole('link', { name: 'All starting points' })).toBeVisible();
+  // The tab is the page being made, as the designer names it.
+  await expect(page).toHaveTitle('Product feedback — Fieldia designer');
+  // Its first step, as it says: the question pressed opens to type its words, its kind beside them.
+  await page.locator('.fd-q-closed').filter({ hasText: 'How would you rate it?' }).click();
+  await expect(page.locator('.fd-q-selected .fd-q-label')).toHaveValue('How would you rate it?');
+  await expect(page.locator('.fd-q-selected .fd-q-kind')).toContainText('Rating');
+  await screen(page, 'gallery-designer-survey-opened', { viewport: true });
+  // The screen designer, from the gallery too.
+  await page.goto(SITE + '/demos/');
+  await find.fill('screen designer');
+  await page.locator('.gallery-body a.demo-card:visible').filter({ hasText: 'The screen designer' }).click();
+  await expect(page.locator('.fd-designer')).toBeVisible();
+  await expect(page.locator('.dh-title')).toHaveText('The screen designer');
+  await expect(page.locator('.dh-try-step')).toContainText('Drag Email from the toolbox into the Visit section');
+  // Its first step, as it says, with the mouse at hand speed: Email dragged under Notes, a gap opening there.
+  const email = (await page.locator('.fd-toolbox [data-tool="kind:email"]').boundingBox())!;
+  // Under Notes: on Photos, the field after it, where a gap opens before it.
+  await dragToward(page, { x: email.x + email.width / 2, y: email.y + 20 }, async () => {
+    const photos = (await (await cardOf(page, 'Photos')).boundingBox())!;
+    return { x: photos.x + 40, y: photos.y + 20 };
+  }, { release: false });
+  await expect(page.locator('.fd-drop-slot + .fd-canvas-field .fd-label')).toHaveText('Photos');
+  await page.mouse.up();
+  await expect(editing(page).label).toBeFocused();
+  await expect.poll(async () => (await layout(page))[0].map((part) => part.split(':')[0])).toEqual(['Customer', 'Visit date', 'Notes', 'Untitled question', 'Photos']);
   expect(problems).toEqual([]);
 });
 
@@ -1011,7 +1067,7 @@ test('the Templates page: every template with its picture, and each tried, chang
     await page.goto(SITE + changed);
     // The template itself in the editor, not its usual starting page.
     await expect(page.locator('.fd-designer, .fd-survey-editor, [class*="fd-editor"]').first(), changed).toBeVisible();
-    await expect(page.locator('input').first(), changed).toHaveValue((await file.json()).title);
+    await expect(page.locator('.fd-designer-title'), changed).toHaveValue((await file.json()).title);
   }
   expect(problems).toEqual([]);
 });

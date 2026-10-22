@@ -24,6 +24,7 @@ export const CATEGORIES = [
   { id: 'script', label: 'No build step', colour: '#475569' },
   { id: 'templates', label: 'Templates to start from', colour: '#4f46e5' },
   { id: 'real', label: 'Real screens from a working ERP', colour: '#9a3412' },
+  { id: 'designer', label: 'The designers: build a page by pointing', colour: '#0e7490' },
 ];
 
 /**
@@ -52,8 +53,8 @@ const AREA_OF = {
   operations: ['backlog', 'activity-log', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen', 'stock-count', 'fitout-plan'],
   clinic: ['clinic-calendar', 'waiting-room', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake', 'clinic-treatment', 'service-prices', 'services-languages', 'clinic-before-after', 'training-check', 'face-chart', 'treatment-course', 'clinic-branch'],
   'real-estate': ['map-homes', 'map-many-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'listing-photo-set', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'enquiry', 'listing-languages', 'enquiry-reply', 'lease', 'find-a-home', 'site-visit', 'unit-enquiry', 'embed', 'viewing-report'],
-  surveys: ['survey', 'signup', 'event-signup', 'event-ticket', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
-  'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
+  surveys: ['survey', 'signup', 'event-signup', 'event-ticket', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey', 'designer-survey'],
+  'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic', 'designer-screen'],
 };
 
 /** The area a demo is in, by its id; undefined for one in none (the browser test says which). */
@@ -198,6 +199,8 @@ const SEARCH_WORDS = {
   'real-manufacturing-order': 'manufacturing production make build bill of materials bom components work order factory',
   'real-legal-case': 'legal case law firm lawyer court hearing matter dispute trust billing',
   'real-survey': 'survey settings questions questionnaire exam quiz certification scoring',
+  'designer-survey': 'designer design survey designer survey builder form builder form designer questionnaire builder quiz builder google forms typeform drag and drop drag drop no code nocode build make create edit editor questions cards kinds publish published versions preview',
+  'designer-screen': 'designer design screen designer form builder form designer page builder app builder ui builder drag and drop drag drop no code nocode low code lowcode build make create edit editor layout fields sections record page list columns model publish published versions preview',
 };
 /**
  * The words an owner of each business types for it, which none of its demos may say: a dentist's for a clinic, a
@@ -227,7 +230,7 @@ export const DEMOS = [
     query: 'page=customer&skin=underline',
     blurb: 'A customer on one page: where they stand — draft, active or blocked — their sales and invoices counted at the top, a key-account badge and a warning, tabs, their contacts in a table, links to other records, and the conversation with your team beside it.',
     howTo: [
-      'Press Block and answer OK: the customer is blocked and saved, and a Blocked banner crosses their page. Activate brings them back.',
+      'Press Block, and Block again in its question: the customer is blocked and saved, and a Blocked banner crosses their page. Activate brings them back.',
       'Press Ctrl+Enter (⌘+Enter on a Mac) to save from wherever the cursor is.',
       'Open the Contacts tab and add a contact in the table.',
       'Type in Country and pick one from the list: a link to another record.',
@@ -376,7 +379,7 @@ export const DEMOS = [
       'Press another row: Hydrafacial is saved — its price alone — and its row is at rest again.',
       'Type 2 in a service’s Minutes and leave the row: “Not saved: Minutes must be at least 5”, under it; Per hour waits, never worked out from 2. Press Put back.',
       'Press Add a service: type its name, Tab through its cells and leave it — it is saved, and the list counts one more.',
-      'Copy three rows of minutes and prices from a spreadsheet, press a service’s Minutes, Escape, and paste: each row takes its cells and is saved.',
+      'Copy three rows of minutes and prices from a spreadsheet, press a service’s Minutes, Escape, and paste: asked first, each row takes its cells and is saved — Undo, or Ctrl+Z, right after puts them back.',
       'Press “Someone else changes a price”, then change the first service’s minutes and leave the row: who changed it and when, said under it, with Reload and Keep mine.',
       'Press Escape in a cell you typed in: it holds what it held. Hide a column from Columns: Tab passes it.',
       'Narrow the window, or open the page on a phone: each service is a card, changed in a sheet over the list.',
@@ -404,7 +407,7 @@ export const DEMOS = [
     howTo: [
       'Press Offer’s chance of winning, type 65 and leave the row: 65%, saved as 0.65.',
       'Press Enter on a stage’s row: its first cell opens; Tab and Shift+Tab go across, Enter takes a cell and goes down its column.',
-      'Press the Won stage’s cells: none opens, as the source says only the sales manager changes it.',
+      'The Won stage shows a lock at its start: press it, and why is said under it — the source says only the sales manager changes it.',
       'Press Add a stage, name it and leave it: it is saved at the end.',
     ],
   },
@@ -696,7 +699,7 @@ export const DEMOS = [
       'Press Add a line under Injectables used, then the scan button beside its Lot, and hold up the hyaluronic acid filler’s code: Product, Lot and Expiry fill in.',
       'Press Scan beside Patient and show Hana Fouad’s card: she is the patient now.',
       'Hold up a shelf’s barcode instead: the camera’s sheet says it holds no lot and reads on. Press Escape, or Type it instead, to type the lot.',
-      'Press Block when the browser asks for the camera, or try it on a computer with none: the field says why, and the cursor waits in its box for you to type. A barcode scanner plugged in types into the box as ever.',
+      'Press Block when the browser asks for the camera, or try it on a computer with none: the field says why, and the cursor waits in its box for you to type. A barcode scanner plugged in types into the box: Hana’s card code and Enter finds her, a box’s code fills its line, as the camera does.',
     ],
   },
   {
@@ -709,7 +712,7 @@ export const DEMOS = [
       'Open [the codes to scan](samples/codes-to-scan.html) on your phone or another screen, or print it.',
       'Press Scan under the table and hold up the hand cream’s barcode: a line for it, counted 1.',
       'Move the code away from the camera and back: 2. Held still, it is counted once.',
-      'Hold up the lip balm’s: its line goes from 3 to 4. Then the product the shop does not sell: the sheet says nothing has that code, and counts on.',
+      'Hold up the lip balm’s: its line goes from 3 to 4. Then the product the shop does not sell: the sheet says nothing has that code, and counts on. A code whose label will not scan: type it in the sheet and press Count.',
       'Press Done: the total under the table counts every item.',
     ],
   },
@@ -1333,7 +1336,7 @@ export const DEMOS = [
       'Pick a product: the app checks the stock, says how many are left, and gives the price; the total follows the quantity.',
       'Pick the standing desk: the app says it is out of stock, and the price stays empty.',
       'Press Customer’s page: the customer’s record takes the order’s place. Back brings the order back as it was.',
-      'Press Submit with a field empty: the form shows what is missing. Fill it in, submit again, and answer OK to “Send the order?”: “Order sent”.',
+      'Press Submit with a field empty: the form shows what is missing. Fill it in, submit again, and answer Submit to “Send the order?”: “Order sent”.',
     ],
   },
   {
@@ -1438,7 +1441,7 @@ export const DEMOS = [
       '[Sign in as Sara Nabil, the CFO](?as=sara) and press Approve: the order is approved, and its status moves on to Purchase order.',
       'Open Approval history, and read the conversation beside the order: who asked, who approved, and when.',
       '[Sign in as Omar Said, the buyer](?as=omar): he sees where it stands, and decides nothing.',
-      '[Open an order under the limit](?record=2): it needs no approval, and nothing is said.',
+      '[Open an order under the limit](?record=2): it needs no approval — press Ask for approval, and it is a purchase order at once, “No approval needed” in its history.',
     ],
   },
   {
@@ -1450,7 +1453,7 @@ export const DEMOS = [
     howTo: [
       'You are Omar Said: “Rejected by Mona Adel (Finance)”, her reason under it. The claim is open again: change the amount to 3,200 and press Submit for approval.',
       'It waits for your manager again — “Waiting for Manager: Karim Fathy” — and every field but the notes is locked.',
-      '[Sign in as Karim Fathy, the manager](?as=karim), press Reject, then Reject again with nothing written: it asks why. Write why, and reject it.',
+      '[Sign in as Karim Fathy, the manager](?as=karim): he decides, but only Omar submits his own claim, so Karim is offered no Submit. Press Reject, then Reject again with nothing written: it asks why. Write why, and reject it.',
       'Open Approval history: the first round and the second — who, when, and why.',
     ],
   },
@@ -1533,6 +1536,46 @@ export const DEMOS = [
       'Read the page’s source: one script tag, a page as JSON, and one call.',
     ],
   },
+  // The designers themselves, each opening on a page to build (demos/designer-catalog.mjs has their other starting points).
+  {
+    id: 'designer-survey',
+    name: 'The survey designer',
+    category: 'designer',
+    app: 'designer',
+    query: 'start=survey',
+    code: 'designer',
+    // fieldia.dev's Designer page, its other starting points; the tab is named after the page being made.
+    startingPoints: '/designer/',
+    ownTab: true,
+    blurb: 'Build a survey by pointing at it, the Google Forms way: questions as cards, each opened to type its words and options where it stands, its kind switched from a menu, dragged into place, where each answer leads drawn as a map — then tried as people will answer it, checked and published.',
+    howTo: [
+      'Press the question “How would you rate it?”: its card opens to type its words where they stand, and its kind changes from the menu beside them.',
+      'Press Dropdown in the toolbox: a question of that kind is added under the one picked, its words ready to type.',
+      'Drag a question by the handle at its top to another place, or onto another page.',
+      'Press Try it: the survey works as people will answer it, each answer leading where it says. Design brings you back.',
+      'Press Publish: what changed since the last version is said, and it is published as the next one.',
+      'On a phone, the toolbox waits behind the + at the foot of the screen.',
+    ],
+  },
+  {
+    id: 'designer-screen',
+    name: 'The screen designer',
+    category: 'designer',
+    app: 'screen',
+    query: '',
+    code: 'designer',
+    // fieldia.dev's Designer page, its other starting points; the tab is named after the page being made.
+    startingPoints: '/designer/',
+    ownTab: true,
+    blurb: 'Build an app’s screen where it is seen: the screen drawn as the viewer draws it, fields dragged in from the toolbox — a gap opens where one lands — each picked to type its words in place and set the rest in the panel beside it, a record’s page and a list of records too, tried at a phone’s width, checked and published.',
+    howTo: [
+      'Drag Email from the toolbox into the Visit section, under Notes: a gap opens where it will land.',
+      'Press Visit date: type its label where it stands; the panel on the right sets the rest.',
+      'Press Advanced to lay the screen out by dragging: a line and a chip say where a field goes before you let it go.',
+      'Press Try it, then the phone: the screen works at a phone’s width.',
+      'Open [a customer’s record](?start=sheet), its model’s fields first in the toolbox, or [a list of customers](?start=list), by its columns.',
+    ],
+  },
   // The template library, each in its theme: templates.mjs.
   ...TEMPLATE_DEMOS,
   // A working ERP's own screens, rebuilt in Fieldia: one file per lane in real/.
@@ -1550,6 +1593,8 @@ const SOURCES = {
   code: 'demos/shared/code-page.ts',
   custom: 'demos/shared/custom-page.ts',
   contained: 'demos/shared/contained.ts',
+  'designer-survey': 'demos/designer/main.ts',
+  'designer-screen': 'demos/screen/main.ts',
 };
 /** The repository on GitHub, at its main line. */
 export const GITHUB = 'https://github.com/fieldia-dev/fieldia';
@@ -1614,8 +1659,11 @@ export const OPENED = [
   { page: 'account', name: 'An account', from: 'chart-of-accounts' },
 ];
 
-/** What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock. */
-const SAME = new Set(['skin', 'theme', 'record', 'now']);
+/**
+ * What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock, and
+ * the page a designer starts on.
+ */
+const SAME = new Set(['skin', 'theme', 'record', 'now', 'start']);
 
 /** The demo a page shows: the one whose query the address holds, the most specific first. */
 export function demoAt(app, params) {

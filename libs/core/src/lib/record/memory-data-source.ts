@@ -200,8 +200,10 @@ export interface MemoryDataSourceOptions {
   /**
    * How `approvals` answers, by model: the way a record is approved — its levels, who may approve each, any one or all
    * of them, in turn or together, and whether it is sent for approval now — worked out from the record; null where it
-   * needs none (an order under its limit). The source keeps each decision as an approval engine would and works out
-   * where each level stands; the person deciding is the form's `user`, matched to an approver by id, else by name.
+   * needs none. A route of no levels moves the record on to its `approved` values at once as it is saved sent (an order
+   * under its limit: "No approval needed"). The source keeps each decision as an approval engine would and works out
+   * where each level stands; the person deciding is the form's `user`, matched to an approver by id, else by name —
+   * never the one who sent it, who is no approver of that round.
    * Without it, no record needs approval.
    */
   approvals?: Record<string, (values: Values, id: RecordId) => MemoryApprovalRoute | null | undefined>;
@@ -455,6 +457,8 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       stored[name] = applyLinks((stored[name] as RelatedRecord[] | undefined) ?? [], ops, relationOf(request.fields, name));
     }
     table(request.model)[String(id)] = stored;
+    // Sent for approval, its rules asking no level: moved on at once, as an engine would.
+    approving.sent(request.model, id);
     const version = options.versions ? moveOn(request.model, id, me) : undefined;
     const can = permissions(request.model, id);
     return { id, values: readable(structuredCopy(stored), can), ...told(version, can) };

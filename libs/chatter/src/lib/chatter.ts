@@ -301,7 +301,13 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
   async function submit() {
     const current = record;
     // Words, files or both — those still on their way waited for, saying so; one that did not get there stops it.
-    if (!current || (!box.value.trim() && !files.files().length && !files.busy()) || post.disabled || waitingToSend) return;
+    if (!current || post.disabled || waitingToSend) return;
+    // Nothing typed and no file: said beside it, the box to type in — never a press that does nothing.
+    if (!box.value.trim() && !files.files().length && !files.busy()) {
+      say(mode === 'note' ? labels.typeNoteFirst : labels.typeMessageFirst);
+      box.focus();
+      return;
+    }
     if (files.busy()) {
       waitingToSend = true;
       tellWaiting();
@@ -346,6 +352,10 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
   noteButton.addEventListener('click', () => openComposer('note'));
   post.addEventListener('click', () => void submit());
   cancel.addEventListener('click', closeComposer);
+  // Typed in once it said there was nothing to send: that goes.
+  box.addEventListener('input', () => {
+    if (!problem.hidden && (problem.textContent === labels.typeMessageFirst || problem.textContent === labels.typeNoteFirst)) problem.hidden = true;
+  });
   box.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
       event.preventDefault();

@@ -77,7 +77,8 @@ const touch = (type: string, x: number, y: number) => {
 describe('a photo set', () => {
   it('shows the photos as tiles in their order, the first the cover, how many of the most, and how to move one', () => {
     const { el } = setup();
-    expect(labels(el)).toEqual(['Living room.jpg, the cover, photo 1 of 3', 'Kitchen.jpg, photo 2 of 3', 'Hall.jpg, photo 3 of 3']);
+    // Named by their places, never by their files' names (the owner's walk of 0.29: "Make Kitchen.jpg the cover").
+    expect(labels(el)).toEqual(['The cover, photo 1 of 3', 'Photo 2 of 3', 'Photo 3 of 3']);
     expect(tiles(el).map((tile) => !(tile.querySelector('.fd-photo-cover') as HTMLElement).hidden)).toEqual([true, false, false]);
     expect(el.querySelector('.fd-photos-count')?.textContent).toBe('3 of 6 photos');
     expect(el.querySelector('.fd-photos-how-keys')?.textContent).toBe('Drag a photo to move it, or press Alt and an arrow key. The first is the cover.');
@@ -87,13 +88,13 @@ describe('a photo set', () => {
     expect(el.querySelector('.fd-file-limits')?.textContent).toBe('up to 6 photos');
     // The cover needs no Make cover; the rest have it, with Crop and turn and Remove, each named by its photo.
     expect(tool(tiles(el)[0], 'cover').hidden).toBe(true);
-    expect([tool(tiles(el)[1], 'cover'), tool(tiles(el)[1], 'edit'), tool(tiles(el)[1], 'remove')].map((b) => b.getAttribute('aria-label'))).toEqual(['Make Kitchen.jpg the cover', 'Crop and turn Kitchen.jpg', 'Remove Kitchen.jpg']);
+    expect([tool(tiles(el)[1], 'cover'), tool(tiles(el)[1], 'edit'), tool(tiles(el)[1], 'remove')].map((b) => b.getAttribute('aria-label'))).toEqual(['Make photo 2 of 3 the cover', 'Crop and turn photo 2 of 3', 'Remove photo 2 of 3']);
     expect(tiles(el)[0].querySelector('img')?.getAttribute('src')).toBe('https://files.example/Living room.jpg');
   });
 
   it('marks no cover where the page says so, and keeps to the page’s shape', () => {
     const { el } = setup({ node: { cover: false, aspect: '1:1' } });
-    expect(labels(el)[0]).toBe('Living room.jpg, photo 1 of 3');
+    expect(labels(el)[0]).toBe('Photo 1 of 3');
     expect(el.querySelector('.fd-photo-cover:not([hidden])')).toBeNull();
     expect(tiles(el)[1].querySelector('[data-tool="cover"]')).toBeNull();
     expect(el.querySelector('.fd-photos-how-keys')?.textContent).toBe('Drag a photo to move it, or press Alt and an arrow key.');
@@ -106,14 +107,15 @@ describe('a photo set', () => {
     opens(el)[0].focus();
     key(opens(el)[0], 'ArrowRight', { altKey: true });
     expect(value().map((p) => p.name)).toEqual(['Kitchen.jpg', 'Living room.jpg', 'Hall.jpg']);
-    expect(said(el)).toBe('Living room.jpg moved to place 2 of 3');
+    expect(said(el)).toBe('Photo 1 of 3 moved to place 2 of 3');
     expect(document.activeElement).toBe(opens(el)[1]);
     key(opens(el)[1], 'End', { altKey: true });
     expect(value().map((p) => p.name)).toEqual(['Kitchen.jpg', 'Hall.jpg', 'Living room.jpg']);
     key(opens(el)[1], 'Home', { altKey: true });
     expect(value().map((p) => p.name)).toEqual(['Hall.jpg', 'Kitchen.jpg', 'Living room.jpg']);
-    expect(said(el)).toBe('Hall.jpg is the cover now');
-    expect(labels(el)[0]).toBe('Hall.jpg, the cover, photo 1 of 3');
+    // Named by the place it was found in.
+    expect(said(el)).toBe('Photo 2 of 3 is the cover now');
+    expect(labels(el)[0]).toBe('The cover, photo 1 of 3');
     // An arrow alone moves nothing; nor does Alt past an end.
     key(opens(el)[0], 'ArrowRight');
     key(opens(el)[0], 'ArrowUp', { altKey: true });
@@ -138,16 +140,16 @@ describe('a photo set', () => {
     const { el, value } = setup({ dir: 'rtl', locale: 'ar' });
     key(opens(el)[0], 'ArrowLeft', { altKey: true });
     expect(value().map((p) => p.name)).toEqual(['Kitchen.jpg', 'Living room.jpg', 'Hall.jpg']);
-    expect(said(el)).toBe('أصبح Living room.jpg في المرتبة 2 من 3');
+    expect(said(el)).toBe('أصبح الصورة 1 من 3 في المرتبة 2 من 3');
     key(opens(el)[1], 'ArrowRight', { altKey: true });
-    expect(said(el)).toBe('أصبحت Living room.jpg الغلاف');
+    expect(said(el)).toBe('أصبحت الصورة 2 من 3 الغلاف');
   });
 
   it('makes a photo the cover with its button, the focus on it at its new place', () => {
     const { el, value } = setup();
     tool(tiles(el)[2], 'cover').click();
     expect(value().map((p) => p.name)).toEqual(['Hall.jpg', 'Living room.jpg', 'Kitchen.jpg']);
-    expect(said(el)).toBe('Hall.jpg is the cover now');
+    expect(said(el)).toBe('Photo 3 of 3 is the cover now');
     expect(document.activeElement).toBe(opens(el)[0]);
     expect(tool(tiles(el)[0], 'cover').hidden).toBe(true);
   });
@@ -169,7 +171,7 @@ describe('a photo set', () => {
     expect(value().map((p) => p.name)).toEqual(ROOMS);
     document.dispatchEvent(pointer('pointerup', 20, 45));
     expect(value().map((p) => p.name)).toEqual(['Hall.jpg', 'Living room.jpg', 'Kitchen.jpg']);
-    expect(said(el)).toBe('Hall.jpg is the cover now');
+    expect(said(el)).toBe('Photo 3 of 3 is the cover now');
     expect(tiles(el).every((tile) => tile.style.order === '' && !tile.hasAttribute('data-lifted'))).toBe(true);
     // The click the drag ends with opens nothing.
     opens(el)[0].click();
@@ -216,7 +218,7 @@ describe('a photo set', () => {
   it('keeps a caption typed under a photo once it is read, trimmed; an empty one takes it away', () => {
     const { el, value } = setup();
     const box = tiles(el)[1].querySelector('.fd-photo-caption') as HTMLInputElement;
-    expect(box.getAttribute('aria-label')).toBe('Caption for Kitchen.jpg');
+    expect(box.getAttribute('aria-label')).toBe('Caption for photo 2 of 3');
     expect(box.placeholder).toBe('Add a caption');
     box.value = '  The kitchen, newly fitted ';
     box.dispatchEvent(new Event('change', { bubbles: true }));
@@ -238,11 +240,11 @@ describe('a photo set', () => {
     tool(tiles(el)[1], 'remove').click();
     const question = el.querySelector('.fd-file-confirm') as HTMLElement;
     expect(question.hidden).toBe(false);
-    expect(question.textContent).toContain('Remove Kitchen.jpg?');
+    expect(question.textContent).toContain('Remove photo 2 of 3?');
     expect(document.activeElement?.textContent).toBe('Keep');
     (question.querySelectorAll('button')[0] as HTMLButtonElement).click();
     expect(value().map((p) => p.name)).toEqual(['Living room.jpg', 'Hall.jpg']);
-    expect(el.querySelector('.fd-file-note')?.textContent).toBe('Kitchen.jpg removed');
+    expect(el.querySelector('.fd-file-note')?.textContent).toBe('Photo 2 of 3 removed');
     expect(document.activeElement).toBe(tool(tiles(el)[1], 'remove'));
   });
 
@@ -364,6 +366,40 @@ describe('a photo cropped and turned', () => {
     await until(() => plain.value()[1].data);
     expect(plain.value()[1]).toEqual({ name: 'Hall.jpg', type: 'image/jpeg', size: 7, data: expect.any(String), caption: 'The hall' });
     expect(said(plain.el)).toBe('The hall changed');
+  });
+
+  it('asks before Escape, × or a press outside lets a change go, as a record’s dialog does; Cancel asks nothing', async () => {
+    // The owner's walk of 0.29: Escape threw a turn away without asking.
+    Object.assign(globalThis, { fetch: async () => ({ ok: true, blob: async () => new Blob(['pixels'], { type: 'image/jpeg' }) }) });
+    const { el, value } = setup();
+    const before = value();
+    tool(tiles(el)[1], 'edit').click();
+    await until(() => !(editor().querySelector('.fd-photo-picture') as HTMLElement).hidden);
+    expect(editor().querySelector('h2')?.textContent).toBe('Crop and turn photo 2 of 3');
+    // Nothing changed: Escape closes at once.
+    key(editor(), 'Escape');
+    expect(editor()).toBeNull();
+    tool(tiles(el)[1], 'edit').click();
+    await until(() => !(editor().querySelector('.fd-photo-picture') as HTMLElement).hidden);
+    button('Turn left').click();
+    key(editor(), 'Escape');
+    const asked = editor().querySelector<HTMLElement>('.fd-file-confirm') as HTMLElement;
+    expect([asked.hidden, asked.textContent]).toEqual([false, 'Discard your changes?DiscardKeep editing']);
+    // Its own Escape is its Cancel: back to the photo, the turn kept.
+    key(document.activeElement as HTMLElement, 'Escape');
+    expect(asked.hidden).toBe(true);
+    expect(editor()).not.toBeNull();
+    (editor().querySelector('.fd-dialog-close') as HTMLButtonElement).click();
+    expect(asked.hidden).toBe(false);
+    ([...asked.querySelectorAll('button')].find((b) => b.textContent === 'Discard') as HTMLButtonElement).click();
+    expect(editor()).toBeNull();
+    expect(value()).toEqual(before);
+    // Cancel is the person's own answer: no question.
+    tool(tiles(el)[1], 'edit').click();
+    await until(() => !(editor().querySelector('.fd-photo-picture') as HTMLElement).hidden);
+    button('Turn right').click();
+    button('Cancel').click();
+    expect(editor()).toBeNull();
   });
 
   it('says a photo the page cannot read, with nothing to apply', async () => {

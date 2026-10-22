@@ -10,7 +10,7 @@
  */
 import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, GITHUB, demoAt, demoHref, openedAt, sourceOf, stepParts } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
-import { backlogSnippets, listMapSnippets, saveSafetySnippets, slotsSnippets, snippets, uploadsSnippets } from './snippets.mjs';
+import { backlogSnippets, designerSnippets, listMapSnippets, saveSafetySnippets, slotsSnippets, snippets, uploadsSnippets } from './snippets.mjs';
 
 const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
@@ -95,6 +95,7 @@ function drawHeader() {
       ${frameworks}
       <nav class="dh-links" aria-label="Links">
         ${visitor ? '<button type="button" class="dh-code" aria-controls="demo-code" aria-expanded="false">‹/› Code</button>' : ''}
+        ${startingPoints()}
         <a href="../">← All demos</a>
         <a href="https://github.com/fieldia-dev/fieldia">GitHub</a>
         <a href="https://fieldia.dev">fieldia.dev</a>
@@ -106,6 +107,15 @@ function drawHeader() {
       ${skins}
     </div>
     ${tryThis()}`;
+}
+
+/**
+ * A designer's other starting points, on fieldia.dev's Designer page: there only, where that page is (the demos served
+ * on their own have none).
+ */
+function startingPoints() {
+  if (!demo?.startingPoints || !location.pathname.startsWith('/demos/')) return '';
+  return `<a href="${esc(demo.startingPoints)}">All starting points</a>`;
 }
 
 /**
@@ -255,7 +265,17 @@ function drawCode() {
   const safety = demo?.code === 'save-safety';
   // A test drive booked from the times free: the page, the demo's script with its schedule, and the slots() an app gives.
   const slots = demo?.code === 'slots';
-  const tabs = slots
+  // A designer: the page being made, as it stands, and the designer mounted with no framework and in each.
+  const designing = demo?.code === 'designer';
+  const tabs = designing
+    ? [
+        ['json', 'Page JSON', 'The page you are making, as it stands now: plain JSON, what the viewer draws and the designer publishes.'],
+        ['js', 'JavaScript', 'The designer on a page of your own, with no framework.'],
+        ['react', 'React', 'The same designer in React.'],
+        ['vue', 'Vue', 'The same designer in Vue.'],
+        ['angular', 'Angular', 'The same designer in Angular.'],
+      ]
+    : slots
     ? [
         ['json', 'Page JSON', 'The test drive this demo books: plain JSON, its time zone and its slots, the same the browser tests drive.'],
         ['js', 'JavaScript', 'The demo’s script: the memory source answering from the showroom’s schedule.'],
@@ -311,9 +331,9 @@ function drawCode() {
   let current = 'json';
   const show = (tab) => {
     current = tab;
-    const page = window.fieldiaDemo?.handle?.form?.page ?? window.fieldiaDemo?.page ?? null;
+    const page = designing ? (window.fieldiaDesigner?.designer?.getPage() ?? null) : (window.fieldiaDemo?.handle?.form?.page ?? window.fieldiaDemo?.page ?? null);
     // Coloured as its language reads: the page's JSON, the frameworks' own code.
-    const written = slots ? slotsSnippets(page, params) : uploads ? uploadsSnippets(page, params) : safety ? saveSafetySnippets(page, params) : backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
+    const written = designing ? designerSnippets(page, demo.app === 'screen' ? 'screen' : 'survey') : slots ? slotsSnippets(page, params) : uploads ? uploadsSnippets(page, params) : safety ? saveSafetySnippets(page, params) : backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
     code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', store: 'ts', server: 'ts', source: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
     note.textContent = tabs.find(([id]) => id === tab)[2];
     for (const button of drawer.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
@@ -366,7 +386,8 @@ document.getElementById('dh-theme')?.addEventListener('change', (event) => {
 // The heading and the tab name what is shown: the demo, as a page of the gallery; a page it opened, by its own name;
 // else the page's own title, once the demo has it — never the framework that draws it.
 function named(name) {
-  document.title = `${name} — Fieldia demos`;
+  // A designer names its tab after the page being made, as it is changed: the heading alone is the demo's.
+  if (!demo?.ownTab) document.title = `${name} — Fieldia demos`;
   const title = head?.querySelector('.dh-title');
   if (title && !title.textContent) title.textContent = name;
 }

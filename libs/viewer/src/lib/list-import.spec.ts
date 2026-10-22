@@ -225,8 +225,9 @@ describe('Import, a workbook as Excel writes one', () => {
   it('undoes the import once asked: the records it made deleted, those that cannot be named with why', async () => {
     const source = createMemoryDataSource({ records: records() });
     const asked: string[] = [];
+    const yes: (string | undefined)[] = [];
     const said: string[] = [];
-    const host = await mount({ dataSource: source, confirm: async (message) => (asked.push(message), true), host: { say: (message) => void said.push(message) } });
+    const host = await mount({ dataSource: source, confirm: async (message, how) => (asked.push(message), yes.push(how?.yes), true), host: { say: (message) => void said.push(message) } });
     await open(host);
     await choose(sample('contacts-to-import.xlsx'));
     pick('Full name', 'name');
@@ -235,6 +236,8 @@ describe('Import, a workbook as Excel writes one', () => {
     (report(host).querySelector('.fd-list-report-undo') as HTMLButtonElement).click();
     await until(() => said.length > 0);
     expect(asked).toEqual(['Delete the 10 records this import made?']);
+    // Its Yes says what it does.
+    expect(yes).toEqual(['Delete']);
     expect(said).toEqual(['Import undone: 10 records deleted.']);
     expect(Object.keys(source.records['contact'])).toEqual(['1']);
     expect(report(host).hidden).toBe(true);

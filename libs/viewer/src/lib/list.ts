@@ -9,6 +9,7 @@ import {
   ownZone,
   withCarriedOptions,
   recordSentence,
+  type AskHow,
   type ButtonNode,
   type DayCount,
   type FilterPeriod,
@@ -88,8 +89,11 @@ export interface ListContext {
   now?: () => Date;
   /** Words said over the page, as a toast: an export done, or why it was not. Unsaid without it. */
   say?: (message: string, tone: Tone) => void;
-  /** A question answered Yes or No, as a button's confirmation asks it: "Update 24 records?". Without it, Edit is not offered. */
-  ask?: (message: string) => Promise<boolean>;
+  /**
+   * A question answered Yes or No, as a button's confirmation asks it: "Update 24 records?", `how.yes` what Yes does
+   * ("Update"). Without it, Edit is not offered.
+   */
+  ask?: (message: string, how?: AskHow) => Promise<boolean>;
   /** Values asked in a dialog of fields, as a line's own form asks them: Edit's field and value. Without it, Edit is not offered. */
   editValues?: WidgetDialogs['editValues'];
   /**
@@ -1616,7 +1620,7 @@ export function listView(context: ListContext): ListView {
       const how: BulkList = { page, node, model, dataSource: context.dataSource, labels, fill, locale, known: (id) => known.get(String(id)) };
       const asked = await askBulkValue(how, bulk.editValues, fill(one ? sentence(labels.bulkTitleNounOne, labels.bulkTitleOne) : sentence(labels.bulkTitleNoun, labels.bulkTitle), { n: number(n) }));
       if (!asked || destroyed) return;
-      if (!(await bulk.ask(bulkQuestion(how, n, asked.field, asked.value, number))) || destroyed) return;
+      if (!(await bulk.ask(bulkQuestion(how, n, asked.field, asked.value, number), { yes: labels.bulkApply })) || destroyed) return;
       report.hidden = true;
       // Busy while it writes, not while the person is asked.
       await busy(edit, async () => {
@@ -1718,7 +1722,7 @@ export function listView(context: ListContext): ListView {
   /** The records an import made, deleted again once the person says so; those that could not be, named with why. */
   async function undoImport(ids: RecordId[], undo: (ids: readonly RecordId[], progress: (done: number, total: number) => void) => Promise<{ done: number; failed: { id: RecordId; why: string }[] }>): Promise<void> {
     const one = new Intl.PluralRules(locale).select(ids.length) === 'one';
-    if (!context.ask || !(await context.ask(fill(one ? sentence(labels.importUndoAskNounOne, labels.importUndoAskOne) : sentence(labels.importUndoAskNoun, labels.importUndoAsk), { n: number(ids.length) }))) || destroyed) return;
+    if (!context.ask || !(await context.ask(fill(one ? sentence(labels.importUndoAskNounOne, labels.importUndoAskOne) : sentence(labels.importUndoAskNoun, labels.importUndoAsk), { n: number(ids.length) }), { yes: labels.delete })) || destroyed) return;
     await busy(reportUndo, async () => {
       const { done, failed } = await undo(ids, (at, of) => {
         if (!destroyed) progress.textContent = fill(labels.importUndoing, { done: number(at), n: number(of) });

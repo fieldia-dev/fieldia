@@ -8,6 +8,7 @@ import { designerIcon } from './icons';
 import { checksButton, openPublishDialog, statusWords, versionsMenu, type GoTo } from './publish-ui';
 import { setHidden, setText } from './writes';
 import { answerButton } from './answer-picker';
+import { growingBox } from './growing-box';
 
 /** The parts both editors share: the bar with undo and publish, and the list of options. */
 
@@ -64,11 +65,22 @@ export interface DesignerBar {
   destroy(): void;
 }
 
+/** The bars made, for their parts' ids. */
+let bars = 0;
+/** What a press may land on, opened from the bar's parts under More, that keeps them shown: a menu, a popover, a dialog, a sheet. */
+const OPENED_FROM_BAR = '.fd-menu, .fd-checks, .fd-dialog-backdrop, .fd-find-backdrop, .fd-look-sheet, .fd-keys-backdrop';
+
 /**
  * The page title, where the page stands (draft, published) opening the
  * versions published, Undo and Redo, Checks, and Publish asking first — each
  * shown only when it can act. Ctrl/Cmd+Z and Shift+Z or Y undo and redo
  * anywhere in `root` outside a text box.
+ *
+ * On a phone the bar is one row that keeps to its height: the title, Publish and More. The rest — where the page
+ * stands, Find, Undo and Redo, the ways to look at the page, Look and Checks — waits under More, dropped below the row
+ * while it is open, the focus going into it. A view or a mode picked puts it away; so do More again, Escape, and a
+ * press anywhere but the bar or what its parts opened. Wider, the box holding the rest is no box at all
+ * (`display: contents`): its parts sit in the bar's rows as they always have.
  */
 export function designerBar(
   root: HTMLElement,
@@ -78,7 +90,8 @@ export function designerBar(
   const doc = root.ownerDocument;
   const el = elementFactory(doc);
   const w = designer.words.bar;
-  const title = el('input', { class: 'fd-input fd-designer-title', 'aria-label': options.titleLabel, placeholder: options.placeholder });
+  // A long title wraps onto a second line, never cut: on a phone it shares its row with Publish and More.
+  const title = growingBox(el, { class: 'fd-input fd-designer-title', 'aria-label': options.titleLabel, placeholder: options.placeholder });
   title.addEventListener('input', () => designer.setPageInfo({ title: title.value }));
   // Where the page stands, as words a screen reader hears change; pressed, the versions published.
   const status = el('button', { type: 'button', class: 'fd-designer-status', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: w.versions });
@@ -109,11 +122,45 @@ export function designerBar(
   find.addEventListener('click', () => openFind(el, root, findItems(), designer.words));
   // Where the bar breaks when it has less room than its parts: the ways to look at the page go under the rest.
   const lineBreak = el('span', { class: 'fd-bar-break', 'aria-hidden': 'true' });
-  const element = el('div', { class: 'fd-designer-bar' }, title, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), find, undo, redo, lineBreak, ...(options.extra ?? []), checks.element, publish);
+  const restId = `fd-bar-rest-${++bars}`;
+  const rest = el('div', { class: 'fd-bar-rest', id: restId }, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), find, undo, redo, lineBreak, ...(options.extra ?? []), checks.element);
+  const more = el('button', { type: 'button', class: 'fd-button fd-bar-more', 'aria-label': w.more, title: w.moreTitle, 'aria-expanded': 'false', 'aria-controls': restId }, designerIcon(doc, 'kebab'));
+  const element = el('div', { class: 'fd-designer-bar' }, title, rest, publish, more);
+  let unfolded = false;
+  /** Whether More is on show: the bar is a phone's. */
+  const folding = () => (doc.defaultView?.getComputedStyle(more).display ?? 'none') !== 'none';
+  function unfold(open: boolean, focus?: 'in' | 'more') {
+    unfolded = open;
+    element.classList.toggle('fd-bar-unfolded', open);
+    more.setAttribute('aria-expanded', String(open));
+    if (open && focus === 'in') [...rest.querySelectorAll<HTMLElement>('button, input, select, [tabindex]')].find((part) => part.getClientRects().length > 0 && !part.matches(':disabled, [tabindex="-1"]'))?.focus();
+    if (!open && focus === 'more') more.focus();
+  }
+  more.addEventListener('click', () => unfold(!unfolded, unfolded ? undefined : 'in'));
+  // A view or a mode picked: what it shows is under the bar, so the parts put away, the keys back on More.
+  rest.addEventListener('click', (event) => {
+    if (!unfolded || !(event.target as Element).closest('.fd-mode-button')) return;
+    unfold(false, rest.contains(doc.activeElement) ? 'more' : undefined);
+  });
+  element.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !unfolded || !(rest.contains(event.target as Node) || event.target === more)) return;
+    event.preventDefault();
+    // Put away only: the editor's own Escape would put the card picked down.
+    event.stopPropagation();
+    unfold(false, 'more');
+  });
+  const onPress = (event: PointerEvent) => {
+    const target = event.target as Element | null;
+    if (!unfolded || !target?.isConnected || element.contains(target) || target.closest(OPENED_FROM_BAR)) return;
+    unfold(false);
+  };
+  doc.addEventListener('pointerdown', onPress);
   // What sticks under the bar while the page scrolls (the toolbox, the panel) stops below it, as tall as it is now.
   // And what takes focus is scrolled to below it, never under it (WCAG 2.4.11): the page's scroller keeps that room at its top.
   const scroller = doc.documentElement;
   const room = () => {
+    // Grown past a phone's width while open: nothing is under More any more.
+    if (unfolded && !folding()) unfold(false);
     const height = Math.ceil(element.getBoundingClientRect().height);
     root.style.setProperty('--fd-bar-room', `${height + 12}px`);
     scroller.style.scrollPaddingTop = `${height + 8}px`;
@@ -174,6 +221,7 @@ export function designerBar(
     destroy() {
       stopReading();
       doc.removeEventListener('keydown', onKey);
+      doc.removeEventListener('pointerdown', onPress);
       sized?.disconnect();
       scroller.style.removeProperty('scroll-padding-top');
       checks.destroy();

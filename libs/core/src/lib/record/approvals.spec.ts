@@ -299,8 +299,8 @@ describe('a decision, as the form takes it', () => {
     const dataSource = source();
     const form = open(dataSource, 1);
     await form.settled();
-    await expect(form.decide('finance', 'rejected')).rejects.toThrow('Say why it is rejected');
-    await expect(form.decide('finance', 'rejected', '   ')).rejects.toThrow('Say why it is rejected');
+    await expect(form.decide('finance', 'rejected')).rejects.toThrow('Say why you reject it');
+    await expect(form.decide('finance', 'rejected', '   ')).rejects.toThrow('Say why you reject it');
     expect(calls(dataSource, 'decide')).toEqual([]);
   });
 
@@ -421,6 +421,52 @@ describe('the memory source’s approvals', () => {
     await expect(decide({ decision: 'rejected' })).rejects.toThrow('A rejection says why');
     await decide({});
     await expect(decide({})).rejects.toThrow('Finance is not waiting for a decision');
+  });
+
+  it('never lets the person who sent a record for approval decide a level of that round: they are none of its approvers', async () => {
+    // The owner's walk of 0.29: a manager sent his employee's rejected claim again, and approved it himself.
+    const dataSource = source();
+    const HANY = { id: 28, name: 'Hany Lotfy' };
+    await dataSource.decide({ model: 'purchase.order', recordId: 1, level: 'finance', decision: 'rejected', reason: 'Quote is out of date', user: MONA });
+    dataSource.records['purchase.order'][1]['state'] = 'draft';
+    await ask(dataSource, 1);
+    // Mona, one of Finance's approvers, sends it again herself.
+    dataSource.records['purchase.order'][1]['state'] = 'to_approve';
+    const sent = await ask(dataSource, 1, MONA);
+    expect(sent.history?.at(-1)).toMatchObject({ decision: 'requested', by: 'Mona Adel' });
+    expect(sent.levels[0]).toMatchObject({ id: 'finance', state: 'waiting', approvers: [HANY] });
+    expect(sent.mine).toEqual([]);
+    await expect(dataSource.decide({ model: 'purchase.order', recordId: 1, level: 'finance', decision: 'approved', user: MONA })).rejects.toThrow('Mona Adel asked for this approval, so may not decide it');
+    // By name alone, the same.
+    expect((await dataSource.approvals({ model: 'purchase.order', recordId: 1, user: { id: null, name: 'Mona Adel' } })).mine).toEqual([]);
+    expect((await ask(dataSource, 1, HANY)).mine).toEqual(['finance']);
+    await dataSource.decide({ model: 'purchase.order', recordId: 1, level: 'finance', decision: 'approved', user: HANY });
+    expect((await ask(dataSource, 1, SARA)).levels.map((level) => level.state)).toEqual(['approved', 'waiting']);
+  });
+
+  it('moves a record its rules ask no level of on at once as it is sent: its approved values, and “no approval needed” told', async () => {
+    // The owner's walk of 0.29: an order under its limit, asked for approval, stood at "To approve" with no one asked.
+    const none = (values: Record<string, unknown>): MemoryApprovalRoute => route(values) ?? { levels: [], asked: values['state'] === 'to_approve' || values['state'] === 'purchase', approved: { state: 'purchase' } };
+    const dataSource = source({ approvals: { 'purchase.order': none } });
+    const form = open(dataSource, 2, OMAR);
+    await form.settled();
+    expect(form.getState().approval?.status).toBe('none');
+    form.setValue('state', 'to_approve');
+    expect(await form.save()).toBe(true);
+    await form.settled();
+    expect(form.getState().values['state']).toBe('purchase');
+    expect(dataSource.records['purchase.order'][2]['state']).toBe('purchase');
+    expect(form.getState().approval).toMatchObject({ status: 'none', levels: [] });
+    expect(form.getState().approval?.history.map((entry) => [entry.decision, entry.by])).toEqual([
+      ['requested', 'Omar Said'],
+      ['notNeeded', 'Omar Said'],
+    ]);
+    // Saved again, as it is: nothing more happens.
+    form.setValue('notes', 'Two lamps for the front desk');
+    await form.save();
+    await form.settled();
+    expect(form.getState().approval?.history).toHaveLength(2);
+    expect(approvalOf({ levels: [], history: [{ decision: 'notNeeded', by: 'Omar Said', at: '2026-10-22T09:00:00.000Z' }] }, true).history).toHaveLength(1);
   });
 
   it('starts a round each time the record is sent again: a rejection put right, then asked anew', async () => {

@@ -101,11 +101,13 @@ test.describe('a code scanned with the camera', () => {
     await lot.click();
     const lotSheet = page.getByRole('dialog', { name: 'Scan Lot' });
     await expect(lotSheet.getByRole('status')).toHaveText('Hold the code inside the frame.');
-    // A shelf's barcode is no format the lot reads: nothing happens. A box's code with no lot in it: said, and the camera
-    // reads on.
+    // A shelf's barcode, of a kind the lot never reads: said, as a box's code with no lot in it is — the camera reads on.
+    // (The owner's walk of 0.29: the sheet said only "Hold the code inside the frame.")
     await hold(page, codeSvg('ean_13', String(SHELF[1]['barcode']), { size: 420 }));
-    await page.waitForTimeout(600);
-    await expect(lotSheet.getByRole('status')).toHaveText('Hold the code inside the frame.');
+    await expect(lotSheet.getByRole('status')).toHaveText('This code has no Lot in it. Scan the code on the pack.');
+    await screen(page, 'scan-shelf-code-as-lot', { viewport: true });
+    await hold(page, null);
+    await expect(lotSheet).toBeVisible();
     await hold(page, codeSvg('data_matrix', `01${box(3).gtin}17${box(3).box.expiry}`, { gs1: true, size: 220 }));
     await expect(lotSheet.getByRole('status')).toHaveText('This code has no Lot in it. Scan the code on the pack.');
     await hold(page, boxCode(2));
@@ -145,11 +147,25 @@ test.describe('a code scanned with the camera', () => {
     await hold(page, codeSvg('ean_13', '4006381333931', { size: 420 }));
     await expect(said).toHaveText('Nothing has the code 4006381333931. Scan another, or type it.');
     await screen(page, 'scan-counting', { viewport: true });
+    await hold(page, null);
+    // Typed, as its words say: a code whose label will not scan, read as the camera reads it.
+    // (The owner's walk of 0.29: the sheet had nowhere to type one.)
+    const typed = sheet.getByRole('textbox', { name: 'Or type the code' });
+    await typed.fill(String(SHELF[4]['barcode']));
+    await typed.press('Enter');
+    await expect(said).toHaveText('Face wash 150 ml: 1 counted');
+    await expect(typed).toHaveValue('');
+    await expect(typed).toBeFocused();
+    await typed.fill('4006381333931');
+    await sheet.getByRole('button', { name: 'Count', exact: true }).click();
+    await expect(said).toHaveText('Nothing has the code 4006381333931. Scan another, or type it.');
+    await expect(typed).toHaveValue('4006381333931');
+    await screen(page, 'scan-counting-typed', { viewport: true });
     await sheet.getByRole('button', { name: 'Done' }).click();
     await expect(sheet).toBeHidden();
     await expect.poll(() => cameraOff(page)).toBe(true);
-    expect(await counts()).toEqual({ 'Lip balm': 4, 'Hand cream 50 ml': 2 });
-    await expect(lines.locator('tfoot, .fd-lines-totals').first()).toContainText('6');
+    expect(await counts()).toEqual({ 'Lip balm': 4, 'Hand cream 50 ml': 2, 'Face wash 150 ml': 1 });
+    await expect(lines.locator('tfoot, .fd-lines-totals').first()).toContainText('7');
     expect(problems).toEqual([]);
   });
 
@@ -167,6 +183,53 @@ test.describe('a code scanned with the camera', () => {
     await page.keyboard.type('Salma');
     await page.keyboard.press('Enter');
     await expect(patient.locator('input')).toHaveValue('Salma Nabil');
+    expect(problems).toEqual([]);
+  });
+
+  test('a scanner gun types a code: Enter, or leaving the box, reads it as the camera does — her card, a box’s code', async ({ page }) => {
+    // The owner's walk of 0.29: "P-1043" and Enter said "nothing is called P-1043", and the box's code typed into Lot
+    // stayed as typed, no product, no expiry.
+    const { problems } = await open(page, 'plain', 'page=clinic-treatment&record=1&skin=outlined');
+    const patient = node(page, 'f-patient');
+    await patient.locator('input').click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.type(String(PATIENTS[2]['card']));
+    await page.keyboard.press('Enter');
+    await expect(patient.locator('input')).toHaveValue('Hana Fouad');
+    await expect(patient).not.toContainText('nothing is called');
+    expect((await state(page)).patient_id).toEqual({ id: 2, label: 'Hana Fouad' });
+    // A name typed still finds her by name.
+    await patient.locator('input').click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.type('Salma');
+    await page.keyboard.press('Enter');
+    await expect(patient.locator('input')).toHaveValue('Salma Nabil');
+    // A line's lot: the box's whole code typed, then the box left — its product, lot and expiry, as the camera fills them.
+    const lines = node(page, 'f-lines');
+    await lines.getByRole('button', { name: /Add a line/ }).click();
+    const lot = lines.locator('td[data-column="lot"] input').last();
+    await lot.click();
+    await page.keyboard.type(`01${box(2).gtin}17${box(2).box.expiry}10${box(2).box.lot}`);
+    await page.keyboard.press('Tab');
+    await expect.poll(async () => ((await state(page)).line_ids as { values: Record<string, unknown> }[]).at(-1)?.values).toMatchObject({
+      product_id: { id: 2, label: 'Hyaluronic acid filler 1 ml' },
+      lot: 'HF-2207',
+      expiry: '2027-06-30',
+    });
+    await expect(lot).toHaveValue('HF-2207');
+    await screen(page, 'scan-gun-typed');
+    // A lot typed by hand stays as typed, though it starts as a GS1 part would.
+    await lot.click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.type('10A55');
+    await page.keyboard.press('Enter');
+    await expect.poll(async () => ((await state(page)).line_ids as { values: Record<string, unknown> }[]).at(-1)?.values['lot']).toBe('10A55');
+    // Another box's code, Enter after it, the box kept: read as well.
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.type(`01${box(3).gtin}17${box(3).box.expiry}10${box(3).box.lot}`);
+    await page.keyboard.press('Enter');
+    await expect.poll(async () => ((await state(page)).line_ids as { values: Record<string, unknown> }[]).at(-1)?.values).toMatchObject({ lot: 'LD5521', expiry: '2027-11-30', product_id: { id: 3 } });
+    await expect(lot).toHaveValue('LD5521');
     expect(problems).toEqual([]);
   });
 

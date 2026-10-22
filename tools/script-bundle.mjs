@@ -1324,6 +1324,16 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 519.22 after, to 519.3. Of 0.31's 518.54 before the lane, 0.68 more: the four names registered, a mount's wait for a
 // language still coming and the global's names for the packages' way of fetching one, built empty here (0.50), and what
 // this script writes in them itself — a day's Gregorian tag, the Arabic comma, Persian's «» (0.18).
+// The owner's walk of 0.29 mended (walkfix29-engine), 107 bytes, each for every page or for what parts take from it rather
+// than a copy: a muted pill's shade made over the surface, so a hovered row keeps its words' contrast (styles.ts, 12);
+// asking first in place taking its own answers and owning its Escape — a dialog holding changes asks "Discard your
+// changes?" with it, as a record's dialog does, and a question's Escape closes no dialog round it (kind-parts.ts, 34);
+// askFirst handed to the parts, and what else they now take from the main script — isEmpty, drawIcon, formatNumber,
+// inPlural, scanPart (the shared table and the entry, 61). 511.22 measured before, 511.33 after, to 511.4.
+// A question's Yes names what it does (0.30.1, the release's own; listed with the gzip budget below): what Yes does
+// carried from what set the run off — a button's label, Archive and Delete in the form's words, a save's Save or Submit —
+// to the question and its box, for every page with a button or a beforeSave (form.ts, run.ts, messages.ts, viewer.ts,
+// 296 bytes). 511.33 measured before, 511.62 after, to 511.7.
 const BUDGET_KB = 519.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1612,6 +1622,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The packages' four languages fetched where spoken (listed with the raw budget above): 170.68 before, 170.94 after, to 171.0.
 // The week's first day in the parts that draw a week (listed with the raw budget above): 170.94 measured before, 170.63
 // after, to 170.7 — 0.34 more than 0.31's 170.29 before the lane.
+// The owner's walk of 0.29 mended (walkfix29-engine; listed with the raw budget above): 167.75 measured before, 167.78
+// after. A question's Yes names what it does (0.30.1; listed with the raw budget above): 167.78 measured before,
+// 167.90 after, to 167.95.
 const GZIP_BUDGET_KB = 170.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -1889,6 +1902,22 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // and 21.79, to 155.4 and 21.9; Urdu's 158.05 and 21.88, to 158.1 and 21.9; Spanish's 54.50 and 17.23, to 54.6 and 17.3
 // (a few bytes' room where the measure fell within ten of the tenth).
 // (Persian's and Urdu's letters are written as escapes, six bytes each, as Arabic's are: hence their size before gzip.)
+// The owner's walk of 0.29 mended (walkfix29-engine): a cell's hint says typing replaces its value and F2 changes within
+// it — Arabic's 94.97 and 15.85 measured before, 95.14 and 15.87 after, to 95.2 and 15.9; German's 43.89 and 13.85 to
+// 43.93 and 13.87, to 44.0 and 13.9; French's 44.42 and 13.84 to 44.47 and 13.86, inside its 44.5 and 13.9. A row no
+// one may change here, said so — Arabic's 95.28 and 15.89, to 95.3; German's 43.99 and 13.88, inside 44.0 and 13.9;
+// French's 44.53 and 13.88, to 44.6. A long paste asked first, its Undo, rows refused for one reason said once (9
+// words) — Arabic's 96.17 and 16.01, to 96.2 and 16.1; German's 44.42 and 13.98, to 44.5 and 14.0; French's 44.95 and
+// 13.99, to 45.0 and 14.0. Approvals routed as recommended — "No approval needed", a level named once in brackets —
+// Arabic's 96.22 and 16.03, to 96.3; German's 44.44 and 13.98, inside 44.5 and 14.0; French's 44.99 and 14.00, to 45.1
+// and 14.1. A counted table's sheet with a box to type a code in — Arabic's 96.33 and 16.05, to 96.4; German's 44.50
+// and 14.00, to 44.6 and 14.1; French's 45.05 and 14.02, inside 45.1 and 14.1. Propose values pressed with nothing
+// to read from, said — Arabic's 96.68 and 16.08, to 96.7 and 16.1; German's 44.71 and 14.03, to 44.8; French's 45.19
+// and 14.04, to 45.2. Photos named by their caption or place, and every dialog holding changes asking before it lets
+// them go (the crop, Reject's question, Fill from text, the import): Arabic's 97.58 and 16.17, to 97.6 and 16.2;
+// German's 45.09 and 14.10, to 45.1 and 14.1 — measured 45.09 inside; French's 45.54 and 14.11, to 45.6 and 14.2.
+// A question's Yes naming what it does (0.30.1): Archive, Delete and "Paste {n} rows" — Arabic's 97.71 and 16.20, to
+// 97.8, inside 16.2; German's 45.17 and 14.12, to 45.2 and 14.2; French's 45.62 and 14.13, to 45.7, inside 14.2.
 const ADD_ON_BUDGET_KB = { ar: [124.1, 20.3], de: [56.2, 17.5], fr: [57.1, 17.5], tr: [63.6, 17.8], fa: [155.4, 21.9], ur: [158.1, 21.9], es: [54.6, 17.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
@@ -2462,6 +2491,39 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // day, Home and End to its row's ends (date 22.51 and 8.53 before, 23.37 and 9.06 after, to 23.4 and 9.1); booking
 // slots' month the same (slots 15.14 and 5.84 before, 15.18 and 5.86 after, within 15.2 and 5.9); a week's hours and a
 // repeat's days from it (schedule 20.35 and 7.87 before, 20.51 and 7.93 after, to 20.6 and 8.0).
+// The owner's walk of 0.29 mended (walkfix29-engine): a cell opened by a press chooses its whole value, F2 puts the
+// caret after it, its hint says so — editable 28.94 and 10.66 measured before, 29.16 and 10.76 after, to 29.2 and 10.8;
+// a row added opens at the first cell a new record needs, its card named "New stage" — 29.62 and 10.90, to 29.7 and 11.0;
+// a row no one may change here shows a lock at its start, and a press on it says why (its sheet's 8 rules, its words,
+// its note) — 31.51 and 11.40, to 31.6 and 11.5; a paste of more than one row asked first, Undo for a few seconds after
+// it (and Ctrl+Z), rows it left refused for one reason said once with a button for them all — 35.16 and 12.63, to 35.2
+// and 12.7. Approvals routed as recommended: the memory source leaves the person who sent a record out of its round's
+// approvers and moves a record its rules ask no level of on at once — memory 20.07 and 7.11 measured before, 21.09 and
+// 7.44 after, to 21.1 and 7.5; the band says "No approval needed" over its history — approvals 19.93 and 6.83 to 20.18
+// and 6.90, to 20.2 and 7.0. Scanning as the owner's walk asked: a code of a kind the field takes nothing from said in
+// the sheet, a scanner gun's code typed in the box read as the camera reads one, a counted table's sheet with a box to
+// type a code in — scan 18.63 and 7.87 measured before, 21.38 and 8.84 after, to 21.4 and 8.9; a scanned link's box
+// asking for its record by code first — relations 20.08 and 7.59 to 20.32 and 7.68, to 20.4 and 7.7. (The main script
+// grew 45 bytes, inside its budget: 33 in the shared table, for what these parts now take from it rather than a copy —
+// isEmpty, drawIcon, formatNumber, inPlural, scanPart — and 12 in styles.ts, a muted pill's shade made over the surface
+// so a hovered row keeps its words' contrast; 511.22 and 167.75 measured before, 511.26 and 167.77 after.) A record's
+// status strip on a phone: the step it is in scrolled into view, at rest on a step, a fade and a sign at each edge with
+// more past it, its frame, and the focus where none of its steps takes it — business 31.38 and 11.53 measured before,
+// 34.30 and 12.45 after (the strip's code 1.7 KB, its sheet 1.2 KB); its measures taken on the next frame, never while
+// a form draws (a measure then styled the page half drawn: a locked box's border seen changing) — 34.51 and 12.53, to
+// 34.6 and 12.6. Propose values pressed with
+// nothing pasted or added says what to do — assist 36.27 and 12.36 measured before, 36.70 and 12.45 after, to 36.8
+// and 12.5. Photos named by their caption, else their place ("photo 2 of 5"), never their file; the crop dialog, Reject's
+// question, Fill from text and the import asking "Discard your changes?" before Escape or × lets work go — photos 31.42
+// and 11.59 measured before, 32.34 and 11.95 after, to 32.4 and 12.0; approvals 20.38 and 7.00, to 20.4 and 7.1;
+// assist 36.95 and 12.56, to 37.0 and 12.6; import 38.11 and 15.03 measured before, 38.50 and 15.17 after, to 38.6
+// and 15.2. A formatted text's table with its header row among its rows (as office apps copy one, as an app may store
+// one) shown and kept with it in the table's head, so a printout repeats it on every sheet — text 73.45 and 24.78
+// measured before, 73.91 and 24.89 after, to 74.0 and 24.9.
+// A question's Yes names what it does (0.30.1): a list's paste answered "Paste 40 rows" — editable 35.16 and 12.63
+// measured before, 35.22 and 12.65 after, to 35.3, inside 12.7; Edit's question by Update and Undo the import's by
+// Delete — list 131.88 and 42.41 to 131.92 and 42.42, to 132.0, inside 42.5; an app's menu item by its own words —
+// head 43.37 and 13.22 to 43.39 and 13.23, inside 43.4 and 13.3.
 const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.3, 24.5], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.6, 7.7], date: [23.4, 9.1], months: [13.8, 5.6], typed: [13.6, 5.7], list: [139.9, 45.0], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [37.6, 14.8], editable: [28.1, 10.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [29.6, 11.0], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [30.1, 11.3], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.1, 7.7], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.0, 6.6], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.4, 3.5], print: [16.5, 5.2], memory: [23.0, 8.4], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [35.8, 12.2], scan: [17.8, 7.6], decode: [153.8, 39.0], surveyflow: [34.3, 12.3], prefill: [4.1, 2.0], verify: [11.1, 4.7], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
@@ -3057,8 +3119,9 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   waits(listing, 'a listing whose photos are a set');
   await listing.drawn;
   hasIn("a listing's photo set", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, options, path, phone, photos, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
-  const covers = [...host.querySelectorAll('.fd-photo')].map((tile) => `${tile.querySelector('.fd-photo-open')?.getAttribute('aria-label')}${tile.querySelector('.fd-photo-cover')?.hidden ? '' : ' (cover)'}`);
-  if (covers.join('; ') !== 'Kitchen.png, the cover, photo 1 of 2 (cover); Hall.png, photo 2 of 2') throw new Error(`in a page, a listing's photo set is not drawn in its order, its cover first: ${covers.join('; ')}`);
+  // Each tile kept by its photo's file, named by its place (never its file's name).
+  const covers = [...host.querySelectorAll('.fd-photo')].map((tile) => `${tile.getAttribute('data-key')?.split('\u0000')[0]}: ${tile.querySelector('.fd-photo-open')?.getAttribute('aria-label')}${tile.querySelector('.fd-photo-cover')?.hidden ? '' : ' (cover)'}`);
+  if (covers.join('; ') !== 'Kitchen.png: The cover, photo 1 of 2 (cover); Hall.png: Photo 2 of 2') throw new Error(`in a page, a listing's photo set is not drawn in its order, its cover first: ${covers.join('; ')}`);
   listing.destroy();
   gone('listing');
   // A clinic's treatment whose patient is scanned by the card's code and whose lines' lots by their boxes' (`options.scan`):

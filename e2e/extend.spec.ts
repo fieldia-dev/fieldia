@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { doubleLines, tile, watch } from './designer-support';
+import { doubleLines, fromToolbox, tile, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -85,7 +85,8 @@ test.describe('an app’s own kind of field', () => {
   test('at a phone’s width: the tile, the card and its setting fit', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/designer/');
-    await tile(page, 'kind:iban').click();
+    // On a phone, from the toolbox's sheet behind the +.
+    await (await fromToolbox(page, 'kind:iban')).click();
     await page.keyboard.type('Account');
     await picked(page).getByLabel('Country').selectOption('SA');
     await expectNoSidewaysScroll(page);

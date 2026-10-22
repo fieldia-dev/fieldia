@@ -267,8 +267,13 @@ test.describe('one drop line, in the outline and on the canvas', () => {
   test('a part dragged on the canvas shows in the outline where it lands', async ({ page }) => {
     const problems = watch(page);
     await openOutline(page);
+    // Relation in view first, as a person scrolls to it: under the demos' frame its top stands 42px from a 900px
+    // window's foot, and a part held within 48px of it scrolls the page under the pointer (the canvas's edge scroll) —
+    // the place it lands, and the outline's line with it, then move on with the page.
+    await part(page, 'f-ec-relation').evaluate((e) => e.scrollIntoView({ block: 'center' }));
     const from = (await part(page, 'f-postcode').boundingBox())!;
     const to = (await part(page, 'f-ec-relation').boundingBox())!;
+    expect(to.y + 10, 'held clear of the window’s foot, where the page scrolls under what is carried').toBeLessThan(900 - 48);
     await page.mouse.move(from.x + 4, from.y + 4);
     await page.mouse.down();
     const target = { x: to.x + to.width / 2, y: to.y + 10 };
@@ -276,9 +281,13 @@ test.describe('one drop line, in the outline and on the canvas', () => {
     for (let i = 1; i <= steps; i++) await page.mouse.move(from.x + 4 + ((target.x - from.x - 4) * i) / steps, from.y + 4 + ((target.y - from.y - 4) * i) / steps);
     const line = page.locator('.fd-outline .fd-outline-line.fd-drop-echo');
     await expect(line).toBeVisible();
-    // At the row of the part it lands by: Relation, or the gap after Name above it.
-    const [drawn, relation] = [(await line.boundingBox())!, (await row(page, 'f-ec-relation').boundingBox())!];
-    expect(Math.abs(drawn.y - relation.y)).toBeLessThan(4);
+    // At the row of the part it lands by: Relation, or the gap after Name above it — read as one, each time asked.
+    await expect
+      .poll(async () => {
+        const [drawn, relation] = [await line.boundingBox(), await row(page, 'f-ec-relation').boundingBox()];
+        return drawn && relation ? Math.abs(drawn.y - relation.y) : Infinity;
+      })
+      .toBeLessThan(4);
     await shot(page, '14-echo-in-outline');
     await page.keyboard.press('Escape');
     await page.mouse.up();

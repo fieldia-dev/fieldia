@@ -27,7 +27,9 @@ export const node = (page: Page, id: string) => page.locator(`[data-node="${id}"
  * can come back scrolled to its foot, its own place given back only when something next moves it — the next press,
  * between its down and its up: what was under the pointer at the down has moved by the up, and the press is lost (the
  * tender's Lots tab, 37px lower by its up, its click on the grid above it). So the page is put back where it stood,
- * and a frame awaited that shows it there (or as near as the page's height now lets it).
+ * and a frame awaited that shows it there (or as near as the page's height now lets it). On its way Chromium lays the
+ * page out in a window of 1×1: what watches its size (a status strip, a grid) moves for it. Mid-gesture — a mouse held
+ * down — take what is in view (`viewport: true`): no person's window goes to 1×1 while they drag.
  */
 export async function screen(page: Page, name: string, options: { viewport?: boolean } = {}) {
   // Firefox's and WebKit's beside Chromium's, never over them: screens/firefox/…, screens/webkit/….

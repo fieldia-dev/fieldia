@@ -1,5 +1,5 @@
 import { formLanguagesPart, isEmpty, labelAt, languagesOf, listComma, type DataSource, type Field, type FieldNode, type Form, type FormState, type LineField, type Line, type Locale, type Page, type RecordId, type UploadFile, type Value, type Values } from '@fieldia/core';
-import { displayValue, drawIcon, keepTabIn, type IconSet } from '@fieldia/widgets';
+import { askFirst, displayValue, drawIcon, keepTabIn, type IconSet } from '@fieldia/widgets';
 import { readLines, readProposed, sameValue, type ReadHow } from './assist-read';
 import { SPARKLE } from './assist-icon';
 import { installAssistStyles } from './assist-styles';
@@ -634,16 +634,31 @@ export function watchAssist(context: AssistContext): AssistKit {
       backdrop.remove();
       if (fillButton.isConnected && !fillButton.hidden) fillButton.focus();
     };
+    // Cancel is the person's own answer; × and Escape, with words pasted or files added, ask first, in place, as a
+    // record's dialog asks before it lets them go.
+    const letGo = askFirst(el, { yes: labels.discard, no: labels.assistKeepEditing });
+    body.append(letGo.element);
+    const leave = () => (text.value.trim() || files.length ? letGo.ask(labels.discardChanges, (discard) => (discard ? finish() : (from.includes('text') ? text : pick).focus())) : finish());
     cancel.addEventListener('click', finish);
-    close.addEventListener('click', finish);
+    close.addEventListener('click', leave);
     const tell = (words: string | null) => {
       problem.textContent = words ?? '';
       problem.hidden = !words;
     };
+    // Something pasted or added once it said there was nothing: that goes.
+    const filled = () => {
+      if ([labels.assistFillEmpty, labels.assistFillEmptyText, labels.assistFillEmptyFiles].includes(problem.textContent ?? '')) tell(null);
+    };
+    text.addEventListener('input', filled);
+    picker.addEventListener('change', filled);
     go.addEventListener('click', async () => {
       if (go.hasAttribute('aria-busy')) return;
       const words = text.value.trim();
-      if (!words && !files.length) return (from.includes('text') ? text : pick).focus();
+      // Nothing pasted or added: said beside it, where to put it focused — never a press that does nothing.
+      if (!words && !files.length) {
+        tell(from.includes('text') && from.includes('files') ? labels.assistFillEmpty : from.includes('text') ? labels.assistFillEmptyText : labels.assistFillEmptyFiles);
+        return (from.includes('text') ? text : pick).focus();
+      }
       go.setAttribute('aria-busy', 'true');
       go.textContent = labels.assistReading;
       tell(null);
@@ -658,12 +673,13 @@ export function watchAssist(context: AssistContext): AssistKit {
         go.textContent = labels.assistFillGo;
       }
     });
-    // Its keys are its own: Escape closes it, and no dialog or panel under it; Tab stays in it.
+    // Its keys are its own: Escape closes it — asking first where something is in it — and no dialog or panel under it;
+    // Tab stays in it. The question's own Escape is its Cancel.
     backdrop.addEventListener('keydown', (event) => {
       event.stopPropagation();
       if (event.key === 'Escape') {
         event.preventDefault();
-        finish();
+        if (!letGo.element.contains(event.target as Node)) leave();
       } else keepTabIn(box, event);
     });
     context.root.append(backdrop);

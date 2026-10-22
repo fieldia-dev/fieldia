@@ -11,9 +11,20 @@ import { installPartStyles, PART_RANK } from './styles';
  */
 export const BUSINESS_PART_CSS = /* css */ `
 /* ---- a record's statusbar: its steps as arrows, the current one in the accent ----------------------- */
-.fd-statusbar { display: flex; list-style: none; margin: 0; padding: 0; overflow-x: auto; }
-.fd-statusbar li { display: flex; }
-/* A stage is the li's own child, a button or, when it cannot be clicked, a span; the words inside it take its colour and nothing else. */
+.fd-statusbar { display: flex; list-style: none; margin: 0; padding: 0; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline-start: 24px; scrollbar-width: none; }
+.fd-statusbar::-webkit-scrollbar { display: none; }
+.fd-statusbar:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+/* At rest on a step, never one cut mid-word; past an edge with more steps, a fade and a sign over it, in its frame. */
+.fd-statusbar li { display: flex; scroll-snap-align: start; }
+.fd-statusbar-frame { position: relative; display: flex; min-width: 0; max-width: 100%; }
+.fd-statusbar-frame > .fd-statusbar { flex: 1 1 auto; min-width: 0; }
+.fd-statusbar-frame[hidden] { display: none; }
+.fd-statusbar-sign { position: absolute; inset-block: 0; z-index: 1; display: none; align-items: center; width: 24px; pointer-events: none; color: var(--fd-muted); font-size: 18px; line-height: 1; }
+.fd-statusbar-sign[data-side="before"] { inset-inline-start: 0; padding-inline-start: 2px; }
+.fd-statusbar-sign[data-side="after"] { inset-inline-end: 0; padding-inline-end: 2px; justify-content: flex-end; }
+.fd-statusbar-sign[data-side="before"], .fd-statusbar-sign[data-side="after"]:dir(rtl) { background: linear-gradient(to left, transparent, var(--fd-surface) 60%); }
+.fd-statusbar-sign[data-side="after"], .fd-statusbar-sign[data-side="before"]:dir(rtl) { background: linear-gradient(to right, transparent, var(--fd-surface) 60%); }
+.fd-statusbar[data-more-before] ~ [data-side="before"], .fd-statusbar[data-more-after] ~ [data-side="after"] { display: flex; }
 .fd-statusbar li > * {
   font: inherit; font-size: 13px; border: none; background: var(--fd-page); color: var(--fd-muted);
   padding: 5px 18px 5px 22px; margin-inline-start: -6px; white-space: nowrap;
@@ -96,6 +107,7 @@ export const BUSINESS_PART_CSS = /* css */ `
   .fd-form .fd-statusbar li:not(:has(> [aria-current="step"])) { display: none; }
   .fd-form .fd-statusbar li > [aria-current="step"], .fd-form .fd-statusbar li > [aria-current="step"] > * { transform: none; }
   .fd-form .fd-statusbar li > [aria-current="step"] { clip-path: none; margin: 0; padding: 2px 10px; background: none; color: var(--fd-accent); border: 1px solid; border-radius: 999px; }
+  .fd-form .fd-statusbar-sign { display: none !important; }
 }
 `;
 

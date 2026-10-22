@@ -207,7 +207,15 @@ test.describe('the demo frame', () => {
   });
 
   test('every example page’s code parses, in every tab', async () => {
-    const { snippets } = await import('../demos/snippets.mjs');
+    const { designerSnippets, snippets } = await import('../demos/snippets.mjs');
+    const { transformSync: parse } = await import('esbuild');
+    // A designer's, for a survey and a screen.
+    for (const kind of ['survey', 'screen']) {
+      for (const [tab, source] of Object.entries(designerSnippets(JSON.parse(readFileSync('examples/pages/survey.page.json', 'utf8')), kind))) {
+        const text = tab === 'vue' ? /<script setup lang="ts">([\s\S]*?)<\/script>/.exec(source as string)![1] : (source as string);
+        expect(() => parse(text, { loader: tab === 'json' ? 'json' : 'tsx' }), `designer ${kind} · ${tab}`).not.toThrow();
+      }
+    }
     const { transformSync } = await import('esbuild');
     const files = readdirSync('examples/pages').filter((file) => file.endsWith('.page.json'));
     expect(files.length).toBeGreaterThan(30);
@@ -219,6 +227,42 @@ test.describe('the demo frame', () => {
         expect(() => transformSync(text, { loader: tab === 'json' ? 'json' : 'tsx' }), `${file} · ${tab}`).not.toThrow();
       }
     }
+  });
+
+  test('a designer in its frame: its name, its steps, the page being made as its code, and its tab named for that page', async ({ page }) => {
+    await asVisitor(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const problems = watch(page);
+    // Every starting point of a designer is that designer's demo: a blank survey too.
+    for (const [address, name] of [['/designer/?start=survey', 'The survey designer'], ['/designer/', 'The survey designer'], ['/screen/?start=list', 'The screen designer'], ['/screen/', 'The screen designer']] as const) {
+      await page.goto(address);
+      await expect(page.locator('.fd-designer'), address).toBeVisible();
+      await expect(page.locator('.dh-title'), address).toHaveText(name);
+      // No framework or look to switch: the designer has its own.
+      await expect(page.getByRole('navigation', { name: 'Framework' }), address).toHaveCount(0);
+      await expect(page.getByRole('navigation', { name: 'Look' }), address).toHaveCount(0);
+    }
+    await page.goto('/designer/?start=survey');
+    await expect(page.locator('.dh-try-step')).toHaveText(stepText(DEMOS.find((d) => d.id === 'designer-survey')!.howTo[0]));
+    await expect(page.locator('.dh-source')).toHaveAttribute('href', `${GITHUB}/blob/main/demos/designer/main.ts`);
+    // The tab names the page being made, as the designer names it: changed with it.
+    await expect(page).toHaveTitle('Product feedback — Fieldia designer');
+    await page.locator('.fd-designer-title').fill('Visit feedback');
+    await expect(page).toHaveTitle('Visit feedback — Fieldia designer');
+    // Its code: the page as it stands, and the designer mounted with no framework and in each.
+    await page.getByRole('button', { name: '‹/› Code' }).click();
+    const code = page.locator('#demo-code');
+    await expect(code.locator('code')).toContainText('"title": "Visit feedback"');
+    await code.getByRole('tab', { name: 'JavaScript' }).click();
+    await expect(code.locator('code')).toContainText("mountSurveyEditor(document.getElementById('designer'), { designer });");
+    await code.getByRole('tab', { name: 'React' }).click();
+    await expect(code.locator('code')).toContainText('<SurveyEditor designer={designer} />');
+    await screen(page, 'demo-frame-designer-code', { viewport: true });
+    await page.goto('/screen/?start=list');
+    await page.getByRole('button', { name: '‹/› Code' }).click();
+    await code.getByRole('tab', { name: 'Angular' }).click();
+    await expect(code.locator('code')).toContainText('<fieldia-screen-editor [designer]="designer" />');
+    expect(problems).toEqual([]);
   });
 
   test('switches framework and look, keeping the demo', async ({ page }) => {

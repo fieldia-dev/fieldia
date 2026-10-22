@@ -8,8 +8,9 @@ import { codeReaderFor, type CodeReader, type FoundCode } from './scan-reader';
  * a frame to hold the code in, and what it says under it. It reads the picture several times a second with the reader
  * of the formats asked (scan-reader.ts) and hands each code read to the field (`read`), which says what it came to: kept
  * — the sheet beeps where the browser lets it, buzzes a phone, and closes, or reads on where a table counts — or why
- * not, said in the sheet as it reads on. Escape, × and Type it instead close it, and the camera stops the moment it
- * closes. Where the camera cannot open — not allowed, none, in use, none on the page — or no reader can come, it
+ * not, said in the sheet as it reads on; a code of a kind the field takes nothing from is said too (`others`), never
+ * met with silence. A table counted has a box in the sheet to type a code whose label will not scan, read as one the
+ * camera read. Escape, × and Type it instead close it, and the camera stops the moment it closes. Where the camera cannot open — not allowed, none, in use, none on the page — or no reader can come, it
  * closes at once saying why (`closed`), for the field to say so beside its button.
  */
 
@@ -34,6 +35,10 @@ export interface ScanSheetOptions {
   /** Its first words under the picture once the camera shows: where to hold the code. */
   aim: string;
   formats: readonly string[];
+  /** Codes of other kinds it reads too, to say the field takes nothing from them: `others`'s words. */
+  seen?: readonly string[];
+  /** What a code of a kind the field takes nothing from is said as: "This code has no Lot in it." */
+  others?: string;
   /** A table counting: the sheet stays open, reading on, and its way out is Done. */
   counting: boolean;
   /** A beep for each code read, where the browser lets it (the press that opened the sheet allows it). */
@@ -112,11 +117,15 @@ export function openScanSheet(options: ScanSheetOptions): ScanSheet {
   const frame = make('div', { class: 'fd-scan-frame', 'aria-hidden': 'true' });
   const said = make('p', { class: 'fd-scan-said', role: 'status', 'aria-live': 'polite' }, words.scanStarting);
   const way = make('button', { type: 'button', class: options.counting ? 'fd-button fd-button-primary fd-scan-done' : 'fd-button fd-scan-type' }, options.counting ? words.scanDone : words.scanTypeInstead);
+  // Counting, a code is typed in the sheet itself — there is no box of the field's to type it in.
+  const typed = options.counting ? make('input', { type: 'text', class: 'fd-input fd-scan-typed', id: `${id}-typed`, autocomplete: 'off', spellcheck: 'false', enterkeyhint: 'done' }) : null;
+  const count = typed ? make('button', { type: 'button', class: 'fd-button fd-scan-count' }, words.scanTypeCount) : null;
+  const typing = typed && count ? make('div', { class: 'fd-scan-typing' }, make('label', { class: 'fd-label', for: typed.id }, words.scanTypeCode), make('div', { class: 'fd-scan-typing-row' }, typed, count)) : null;
   const box = make(
     'div',
     { class: 'fd-theme fd-form-dialog fd-size-small fd-scan-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': title.id, 'aria-describedby': `${id}-said`, tabindex: '-1' },
     make('div', { class: 'fd-form-dialog-head' }, title, shut),
-    make('div', { class: 'fd-form-dialog-body fd-scan-body' }, make('div', { class: 'fd-scan-view' }, video, frame), said),
+    make('div', { class: 'fd-form-dialog-body fd-scan-body' }, make('div', { class: 'fd-scan-view' }, video, frame), said, ...(typing ? [typing] : [])),
     make('div', { class: 'fd-actions fd-form-dialog-foot fd-scan-foot' }, way)
   );
   said.id = `${id}-said`;
@@ -160,6 +169,33 @@ export function openScanSheet(options: ScanSheetOptions): ScanSheet {
   }
 
   shut.addEventListener('click', () => close('closed'));
+  /** A code typed in the sheet: read as one the camera read — said, counted — the box emptied once it is kept. */
+  let reading = false;
+  async function readTyped() {
+    const text = typed?.value.trim() ?? '';
+    if (!typed || !text || reading || done) return;
+    reading = true;
+    let answer: ScanAnswer;
+    try {
+      answer = await options.read({ rawValue: text, format: '' }, (words) => !done && say(words));
+    } catch {
+      answer = { kept: false };
+    } finally {
+      reading = false;
+    }
+    if (done) return;
+    tone(audio, answer.kept);
+    if (answer.said) say(answer.said, answer.kept ? 'kept' : 'problem');
+    if (answer.kept) typed.value = '';
+    if (answer.close) close('read');
+    else typed.focus();
+  }
+  count?.addEventListener('click', () => void readTyped());
+  typed?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;
+    event.preventDefault();
+    void readTyped();
+  });
   way.addEventListener('click', () => close(options.counting ? 'closed' : 'type'));
   box.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
@@ -180,13 +216,14 @@ export function openScanSheet(options: ScanSheetOptions): ScanSheet {
     // A frame only once the camera gives one.
     if (video.readyState >= 2) {
       try {
-        found = (await reader.detect(video)).filter((code) => code.rawValue && options.formats.includes(code.format));
+        const seen = [...options.formats, ...(options.seen ?? [])];
+        found = (await reader.detect(video)).filter((code) => code.rawValue && seen.includes(code.format));
       } catch {
         found = [];
       }
     }
     if (done) return;
-    const code = found[0];
+    const code = found.find((one) => options.formats.includes(one.format)) ?? found[0];
     if (!code) {
       once = null;
       return;
@@ -204,7 +241,8 @@ export function openScanSheet(options: ScanSheetOptions): ScanSheet {
     frame.setAttribute('data-read', '');
     let answer: ScanAnswer;
     try {
-      answer = await options.read(code, (text) => !done && say(text));
+      // A code of a kind the field takes nothing from: said so, never left to silence.
+      answer = options.formats.includes(code.format) ? await options.read(code, (text) => !done && say(text)) : { kept: false, said: options.others ?? words.scanAim };
     } catch {
       answer = { kept: false };
     }
@@ -237,7 +275,7 @@ export function openScanSheet(options: ScanSheetOptions): ScanSheet {
       // Played by itself (autoplay), or a browser with no picture to play here: the frames are read as they come.
     }
     try {
-      reader = await codeReaderFor(options.formats, doc);
+      reader = await codeReaderFor(options.formats, doc, options.seen ?? []);
     } catch {
       return close('noReader');
     }

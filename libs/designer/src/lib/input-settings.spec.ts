@@ -82,7 +82,7 @@ describe('the most characters, and a paragraph’s rows', () => {
     expect(inline(host, 'Rows')?.value).toBe('3');
     choose(inline(host, 'Rows') ?? undefined, '6');
     expect(nodeOf(designer, id).options).toEqual({ rows: 6 });
-    expect((host.querySelector('.fd-canvas-field.fd-editing textarea') as HTMLTextAreaElement).rows).toBe(6);
+    expect((host.querySelector('.fd-canvas-field.fd-editing .fd-canvas-widget textarea') as HTMLTextAreaElement).rows).toBe(6);
     const grows = inline(host, 'Grows as people type') as unknown as HTMLButtonElement;
     expect(grows.getAttribute('aria-checked')).toBe('true');
     grows.click();

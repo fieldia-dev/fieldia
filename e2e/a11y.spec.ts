@@ -3,7 +3,7 @@ import { expect, test } from './fixtures';
 import { sitePages } from './site-pages';
 import { DEMOS } from '../demos/catalog.mjs';
 import { ALLOWED, axeFindings } from './a11y-support';
-import { inAdvanced } from './designer-support';
+import { fromToolbox, inAdvanced, inBar, reached } from './designer-support';
 import { node, screen } from './support';
 
 /**
@@ -181,7 +181,7 @@ const RUNS: Run[] = [
     part: '.fd-canvas-field',
     // A blank sheet: a field of the model, status steps and a button over the card, as a person adds them.
     prepare: async (page) => {
-      await page.locator('.fd-toolbox [data-tool="model:email"]').click();
+      await (await fromToolbox(page, 'model:email')).click();
       await page.getByRole('button', { name: 'Add status steps' }).click();
       await page.getByRole('button', { name: 'Add a button' }).click();
       await page.keyboard.press('Escape');
@@ -210,6 +210,14 @@ async function walk(page: Page, run: Run, tag: string): Promise<string[]> {
   await run.prepare?.(page);
   await look('start', true);
   const rail = page.locator('.fd-rail');
+  // On a phone the toolbox waits behind a +: opened as a person opens it, its sheet looked at with each tab.
+  const plus = page.locator('.fd-rail-tools:visible').first();
+  const sheeted = (await plus.count()) > 0;
+  if (sheeted) {
+    await plus.click();
+    await expect(page.locator('.fd-tools-sheet')).toBeVisible();
+    await look('toolbox sheet', true);
+  }
   for (const name of ['Outline', 'Data']) {
     const tab = rail.getByRole('tab', { name, exact: true });
     if (!(await tab.isVisible())) continue;
@@ -217,6 +225,10 @@ async function walk(page: Page, run: Run, tag: string): Promise<string[]> {
     await look(`rail ${name}`);
   }
   await rail.getByRole('tab', { name: 'Add', exact: true }).click();
+  if (sheeted) {
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.fd-tools-sheet')).toBeHidden();
+  }
   await page.locator(run.part).first().click();
   await look('picked', true);
   const panelTabs = page.locator('.fd-properties [role="tab"]');
@@ -225,18 +237,25 @@ async function walk(page: Page, run: Run, tag: string): Promise<string[]> {
     await look(`picked, ${name} tab`);
   }
   for (const view of ['Try it', 'JSON', 'Translations', 'Rules']) {
-    await bar(page, view).click();
+    await (await inBar(page, view)).click();
     await page.waitForTimeout(250);
     await look(`${view} view`, true);
-    await bar(page, 'Design').click();
+    await (await inBar(page, 'Design')).click();
+  }
+  // On a phone, the rest of the bar under More, open.
+  const more = bar(page, 'More');
+  if (await more.isVisible()) {
+    await more.click();
+    await look('more', true);
+    await page.keyboard.press('Escape');
   }
   const dialogs: [string, () => Promise<unknown>][] = [
     ['find anything', () => page.keyboard.press('ControlOrMeta+k')],
-    ['checks', () => page.locator('.fd-checks-button').click()],
+    ['checks', async () => (await reached(page, page.locator('.fd-checks-button'))).click()],
     ['publish', () => bar(page, 'Publish').click()],
     ['shortcuts', () => page.keyboard.type('?')],
-    ['versions', () => page.locator('.fd-designer-status').click()],
-    ...(run.survey ? ([['look', () => bar(page, 'Look').click()]] as [string, () => Promise<unknown>][]) : []),
+    ['versions', async () => (await reached(page, page.locator('.fd-designer-status'))).click()],
+    ...(run.survey ? ([['look', async () => (await inBar(page, 'Look')).click()]] as [string, () => Promise<unknown>][]) : []),
   ];
   for (const [name, open] of dialogs) {
     await page.locator('body').click({ position: { x: 2, y: 2 } });
@@ -295,6 +314,29 @@ test.describe('axe on fieldia.dev', () => {
       });
     }
   }
+});
+
+test('a box under Try it’s drawer on a phone is let go only because the keys bring it clear: left under, it is found', async ({ page }) => {
+  // The sweep's exception for a bar at the foot of the screen (a11y-support.ts), checked to bite where it is used: the
+  // survey designer tried on a phone, its email box partly under the drawer where the page stands.
+  await page.setViewportSize(PHONE);
+  await page.goto('/designer/?start=survey');
+  await expect(page.locator('.fd-designer-bar')).toBeVisible();
+  await (await inBar(page, 'Try it')).click();
+  await expect(page.locator('.fd-try-drawer')).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(250);
+  const email = page.locator('.fd-try-frame [id$="-q-email"]');
+  const drawer = page.locator('.fd-try-drawer');
+  expect((await email.boundingBox())!.y + (await email.boundingBox())!.height, 'the box partly under the drawer').toBeGreaterThan((await drawer.boundingBox())!.y);
+  // The sweep leaves the page as it was: the focus where it was, the page where it stood.
+  const standing = () => page.evaluate(() => [document.activeElement?.outerHTML.slice(0, 80), scrollY]);
+  const before = await standing();
+  expect(await axeFindings(page, 'tried')).toEqual([]);
+  expect(await standing()).toEqual(before);
+  // The designer's move of a focused box from under the drawer taken away (its focusin never heard): found.
+  await page.evaluate(() => document.addEventListener('focusin', (event) => event.stopPropagation(), true));
+  expect(await axeFindings(page, 'left under')).toEqual([expect.stringMatching(/^left under · target-size · #fd\d+-q-email · reached by the keys, still under .*fd-try/)]);
 });
 
 test('the allow-list stays short, and says why for each', () => {

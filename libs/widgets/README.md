@@ -321,7 +321,9 @@ selected, Shift+Tab back, Tab past the last cell adds a row, and Escape leaves
 the table; said once as the cursor first comes into one. In Markdown a table is
 GitHub's (`| a | b |` over `| --- | ---: |`), both ways; switching asks first
 where a table cannot be written so. On paper a table is whole on a sheet where
-it fits, else broken between its rows with its header row again.
+it fits, else broken between its rows with its header row again — a header row
+pasted among its rows, as Word, Excel and Google Docs copy one, or stored so by
+an app, is shown and kept in the table's head, so it repeats too.
 
 Rows copied from a spreadsheet and pasted in a cell of a table of lines — a
 dropdown's too, where no browser sends a paste: Ctrl or ⌘ and V on it is caught by
@@ -376,8 +378,11 @@ the photo as it was is kept beside it (`FileValue.original`, with what was done,
 `FileValue.edit`), so a crop again starts from it and **Put back the original**
 brings it back; `options.keepOriginal: false` keeps none. `options.captions:
 true` puts a caption's box under each photo (`FileValue.caption`), read as the
-box is left, the photo named by it everywhere — its tools, its dialog's title.
-Photos are added as a picture field adds them, made smaller first, up to the
+box is left, the photo named by it everywhere — its tools, its dialog's title;
+one with no caption is named by its place, "photo 2 of 5", never by its file's
+name. Left by Escape, × or a press outside it with a change made, the crop
+dialog asks "Discard your changes?" first, in place, as a record's dialog asks;
+Cancel lets the change go unasked. Photos are added as a picture field adds them, made smaller first, up to the
 field's `maxFiles`, each on its way a tile with its bar.
 
 ```json
@@ -423,7 +428,13 @@ it reads them all, else with ZXing's readers in the decode part
 browser without — Safari, Firefox, a computer's Chrome. Where the camera is not
 allowed, there is none, another app holds it, or the page cannot use one, the
 field says why beside the button and the cursor goes to its box, to type. A
-scanner gun (a keyboard wedge) types into the box as ever.
+code of a kind the field takes nothing from (a shelf's barcode held up for a lot)
+is said in the sheet — "This code has no Lot in it" — never met with silence. A
+scanner gun (a keyboard wedge) types into the box, and what it typed is read as
+the camera reads a code once Enter is pressed or the box is left: a link's record
+by its code (`by`), a GS1 code's part and the fields it fills — a code longer
+than the field's most is read whole — while words a person types stay as typed.
+A table counted has a box in its sheet to type a code whose label will not scan.
 
 ```json
 { "type": "field", "id": "f-patient", "field": "patient_id", "options": { "scan": { "by": "card" } } }

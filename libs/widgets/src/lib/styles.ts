@@ -687,7 +687,7 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-value-badge[data-tone="success"] { --fd-tone: var(--fd-success); --fd-tone-soft: var(--fd-success-soft); }
 .fd-value-badge[data-tone="warning"] { --fd-tone: var(--fd-warning); --fd-tone-soft: var(--fd-warning-soft); }
 .fd-value-badge[data-tone="danger"] { --fd-tone: var(--fd-error); --fd-tone-soft: var(--fd-error-soft); }
-.fd-value-badge[data-tone="muted"] { --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
+.fd-value-badge[data-tone="muted"] { --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, var(--fd-surface)); }
 .fd-date-pick { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
 .fd-date-pick > .fd-input { flex: 1 1 auto; min-width: 0; }
 /* A date and time on another clock than the browser's: its zone's short name beside the box, "CEST". */

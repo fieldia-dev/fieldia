@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { addField, cardOf, doubleLines, inAdvanced, watch } from './designer-support';
+import { addField, cardOf, doubleLines, inAdvanced, reached, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -258,7 +258,8 @@ test.describe('rules in the designers', () => {
     await panel(page).locator('[data-setting="Answer rules"]').scrollIntoViewIfNeeded();
     await check(page, 'phone-rules-tab');
     await expectNoSidewaysScroll(page);
-    await page.locator('.fd-designer-bar [data-mode="rules"]').click();
+    // Under the bar's More on a phone.
+    await (await reached(page, page.locator('.fd-designer-bar [data-mode="rules"]'))).click();
     await expect(page.getByRole('region', { name: 'Rules' }).locator('.fd-rules-item')).toHaveText(['CustomerEnds with Ltd — only warns']);
     await check(page, 'phone-overview');
     await expectNoSidewaysScroll(page);

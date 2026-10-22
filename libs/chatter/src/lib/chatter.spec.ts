@@ -104,6 +104,13 @@ describe('the conversation', () => {
     button(host, 'Send')!.click();
     await flush();
     expect(chatter.posted).toEqual([]);
+    // Said beside it, never a press that does nothing (the owner's walk of 0.29); typing lets it go.
+    const said = host.querySelector('.fd-chatter-problem') as HTMLElement;
+    expect([said.hidden, said.textContent]).toEqual([false, 'Type a message first']);
+    expect(document.activeElement).toBe(host.querySelector('.fd-composer textarea'));
+    type(host.querySelector('.fd-composer textarea') as HTMLTextAreaElement, 'Hello');
+    expect(said.hidden).toBe(true);
+    type(host.querySelector('.fd-composer textarea') as HTMLTextAreaElement, '');
     (host.querySelector('.fd-composer textarea') as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(host.querySelector('.fd-composer')?.hasAttribute('hidden')).toBe(true);
   });

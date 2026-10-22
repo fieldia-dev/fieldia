@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { cellsInOrder, editTable, hasHeader, markdownTable, newTable, tableGrid, type TableEdit } from './rich-table';
+import { cellsInOrder, editTable, hasHeader, headedTables, markdownTable, newTable, tableGrid, type TableEdit } from './rich-table';
 import { htmlToMarkdown, markdownLoses, markdownToHtml } from './markdown';
 import { sanitizeHtml } from './sanitize';
 import { cleanPasted } from './pasted-html';
@@ -90,6 +90,22 @@ describe('a table’s rows and columns, where the caret is', () => {
     expect(tableGrid(table(DOWN)).map((line) => line.map((cell) => cell.textContent))).toEqual([['Lot 1', 'a'], ['Lot 1', 'b'], ['Lot 2', 'c']]);
     expect(newTable(document, 2, 3).outerHTML).toBe('<table><thead><tr><th><br></th><th><br></th><th><br></th></tr></thead><tbody><tr><td><br></td><td><br></td><td><br></td></tr></tbody></table>');
     expect(newTable(document, 1, 1).outerHTML).toBe('<table><thead><tr><th><br></th></tr></thead></table>');
+  });
+});
+
+describe('a table’s header row, in its head', () => {
+  it('moves a first row of header cells among the rows into the table’s head, as office apps copy one; leaves the rest', () => {
+    // The owner's walk of 0.29: a long table pasted with its header row in its body printed it on the first sheet alone.
+    const pasted = '<table><tbody><tr><th>Milestone</th><th>Due</th></tr><tr><td>Instalment 1</td><td>Week 1</td></tr></tbody></table>';
+    expect(headedTables(pasted, document)).toBe('<table><thead><tr><th>Milestone</th><th>Due</th></tr></thead><tbody><tr><td>Instalment 1</td><td>Week 1</td></tr></tbody></table>');
+    expect(cleanPasted('<table border=1><tr><th>Milestone</th><th>Due</th></tr><tr><td>Instalment 1</td><td>Week 1</td></tr></table>', document)).toBe('<table><thead><tr><th>Milestone</th><th>Due</th></tr></thead><tbody><tr><td>Instalment 1</td><td>Week 1</td></tr></tbody></table>');
+    // A head of its own, a first row of plain cells, a header running down into the next row, words with no table: as they were.
+    for (const kept of [
+      '<table><thead><tr><th>A</th></tr></thead><tbody><tr><th>B</th></tr></tbody></table>',
+      '<table><tbody><tr><td>A</td><th>B</th></tr></tbody></table>',
+      '<table><tbody><tr><th rowspan="2">A</th><th>B</th></tr><tr><td>C</td></tr></tbody></table>',
+      '<p>No <b>table</b></p>',
+    ]) expect(headedTables(kept, document)).toBe(kept);
   });
 });
 

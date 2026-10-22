@@ -94,6 +94,9 @@ export interface Messages {
   /** What a record's gear menu asks before its built-in Archive and Delete run. */
   archiveConfirm: string;
   deleteConfirm: string;
+  /** Their Yes, saying what it does. */
+  archiveYes: string;
+  deleteYes: string;
   /**
    * What the record's source does not let this person do, when it gives no
    * reason of its own: change the record, archive it, copy it, delete it.
@@ -264,6 +267,8 @@ const en: Messages = {
   addressParts: 'Street address|Address line 2|City|State or region|Postcode|Country',
   archiveConfirm: 'Are you sure that you want to archive this record?',
   deleteConfirm: 'Are you sure you want to delete this record?',
+  archiveYes: 'Archive',
+  deleteYes: 'Delete',
   mayNotEdit: 'You can read this record, but not change it.',
   mayNotArchive: 'You cannot archive this record.',
   mayNotDuplicate: 'You cannot duplicate this record.',
@@ -304,7 +309,7 @@ const en: Messages = {
   choiceFull: '{option} is full',
   choiceFilled: '{option} is full now: choose another',
   approvalLocked: 'Locked while it waits for approval',
-  approvalReasonNeeded: 'Say why it is rejected',
+  approvalReasonNeeded: 'Say why you reject it',
   approvalNotYours: '{level} is not yours to decide now',
   languagesNeeded: '{label} is required in {languages}',
   languagesNeededQuestion: 'Please answer {label} in {languages}',

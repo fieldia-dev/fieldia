@@ -1,6 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { doubleLines } from './designer-support';
+import { doubleLines, reached } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -20,9 +20,12 @@ async function openOutline(page: Page, url = LAYOUT, options: { advanced?: boole
   await page.setViewportSize({ width: options.width ?? 1280, height: 900 });
   await page.goto(url);
   if (options.advanced) {
-    await page.getByRole('group', { name: 'Editing mode' }).getByRole('button', { name: 'Advanced' }).click();
+    await (await reached(page, page.getByRole('group', { name: 'Editing mode' }).getByRole('button', { name: 'Advanced' }))).click();
     await expect(page.locator('.fd-screen-designer')).toHaveAttribute('data-mode', 'advanced');
   }
+  // On a phone the editor's side is in the toolbox's sheet, behind the + at the foot.
+  const plus = page.locator('.fd-rail-tools:visible').first();
+  if (await plus.count()) await plus.click();
   await page.locator('.fd-rail [data-rail="outline"]').click();
   await expect(page.getByRole('tree', { name: 'The page’s parts' })).toBeVisible();
 }

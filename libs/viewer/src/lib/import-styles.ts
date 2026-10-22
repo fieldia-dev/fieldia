@@ -40,6 +40,8 @@ const IMPORT_CSS = /* css */ `
 .fd-import-refused ul { margin: 0; padding-inline-start: 18px; max-height: 180px; overflow: auto; justify-self: stretch; }
 .fd-import-heading { margin: 4px 0 0; font-size: 14px; font-weight: 600; }
 .fd-import-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* Asked before a file chosen is let go: over the foot, as wide as the body's words. */
+.fd-import > .fd-file-confirm { padding: 10px 20px; background: var(--fd-surface); border-block-start: 1px solid var(--fd-border); }
 .fd-import-status { margin-inline-end: auto; color: var(--fd-muted); font-size: 13px; }
 .fd-import-writing { padding: 28px 0; }
 .fd-import-progress { width: 100%; height: 10px; accent-color: var(--fd-accent); }

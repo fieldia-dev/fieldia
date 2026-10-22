@@ -45,7 +45,7 @@ export default featurePage({
       title: 'The questions and checks before anything is sent',
       body: 'Before a save or a send, a page can check its fields, ask the person, and call your server, which answers with values, words, another page or a stop.',
       ticks: ['beforeSave and afterSave moments, on the page', 'ask: a question with OK and Cancel, Cancel keeping everything', 'call: your app’s own action, answered with values or a stop', 'say: words to the person, in a toast, by tone'],
-      shot: 'ask.png', alt: 'An order with a Send the order? question and Cancel and OK buttons over it, and In stock: 12 said in a toast below', width: 1000, height: 640,
+      shot: 'ask.png', alt: 'An order with a Send the order? question and Cancel and Submit buttons over it, and In stock: 12 said in a toast below', width: 1000, height: 640,
       tryIt: ['Try the phone order', demo('page=quick-order&skin=outlined')], docs: ['Actions, in the docs', '/actions/'],
     },
   ],

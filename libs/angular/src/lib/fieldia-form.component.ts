@@ -116,7 +116,7 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly url = input<PageLink | undefined>(undefined);
   readonly autosave = input<{ delayMs: number } | undefined>(undefined);
   readonly scheduler = input<Scheduler | undefined>(undefined);
-  readonly confirm = input<((message: string) => Promise<boolean>) | undefined>(undefined);
+  readonly confirm = input<ViewerOptions['confirm']>(undefined);
   readonly preferences = input<PreferenceStore | undefined>(undefined);
   /** The app's pages: a saved form placed in the page by its id, a link's record by its model. */
   readonly pages = input<ViewerOptions['pages']>(undefined);

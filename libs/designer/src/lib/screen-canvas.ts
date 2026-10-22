@@ -25,6 +25,7 @@ import { pressMarks } from './steps-marks';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
 import { foldMark, type FoldMark } from './canvas-fold';
+import { growingBox } from './growing-box';
 import { setAttr, setData, setHidden, setText } from './writes';
 import { chromeLanguage, widgetWords } from './chrome-language';
 
@@ -204,10 +205,11 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       return { element, editing, widgetBox, widget: null, painted: '', label, help, bar: null, options: null, settings: null, drawn: null };
     }
     const bar = fieldBar({ el, doc, designer, id, more: options.more });
-    const label = el('input', { class: 'fd-canvas-label-input', 'data-inline': 'label', 'aria-label': w.label, autocomplete: 'off' });
+    // As wide as its words, and wrapped where the field's width ends, never cut (growing-box.ts).
+    const label = growingBox(el, { class: 'fd-canvas-label-input', 'data-inline': 'label', 'aria-label': w.label, autocomplete: 'off' });
     label.addEventListener('input', () => {
-      sizeToWords(label as HTMLInputElement);
-      designer.updateQuestion(id, { label: (label as HTMLInputElement).value });
+      sizeToWords(label);
+      designer.updateQuestion(id, { label: label.value });
     });
     const help = el('input', { class: 'fd-canvas-help-input fd-help', 'data-inline': 'help', 'aria-label': w.help, placeholder: w.addHelp, autocomplete: 'off' });
     help.addEventListener('input', () => designer.updateQuestion(id, { help: (help as HTMLInputElement).value }));
@@ -239,9 +241,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     return { element, editing, widgetBox, widget: null, painted: '', label, help, bar, options: choices, settings, drawn: null };
   }
 
-  /** As wide as its words, so the required mark stays beside them. */
-  function sizeToWords(input: HTMLInputElement) {
-    input.size = Math.max(4, input.value.length + 1);
+  /** As wide as its words, so the required mark stays beside them; wrapped where the field's width ends. */
+  function sizeToWords(box: HTMLTextAreaElement) {
+    box.cols = Math.max(4, box.value.length + 1);
   }
 
   function drawCard(node: FieldNode, labels: Place['labels'], place: Where, quietAround?: boolean): HTMLElement {
@@ -281,7 +283,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const labelText = node.label ?? def.label;
     const helpText = node.help ?? def.help ?? '';
     if (card.editing) {
-      const label = card.label as HTMLInputElement;
+      const label = card.label as HTMLTextAreaElement;
       const help = card.help as HTMLInputElement;
       if (doc.activeElement !== label) {
         label.value = labelText;
@@ -340,7 +342,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     element: HTMLElement;
     legend: HTMLElement;
     title: HTMLButtonElement;
-    titleInput: HTMLInputElement;
+    titleInput: HTMLTextAreaElement;
     description: HTMLElement;
     grid: HTMLElement;
     empty: HTMLElement;
@@ -363,7 +365,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   /** A group is a fieldset, named by its title; an arrangement is no group to name, and a fieldset cannot lay parts on the columns round it. */
   function makeSection(id: string, tag: 'fieldset' | 'div'): SectionView {
     const title = el('button', { type: 'button', class: 'fd-canvas-section-title' });
-    const titleInput = el('input', { class: 'fd-canvas-section-title-input', 'aria-label': w.sectionTitle, placeholder: words.parts.untitledSection, autocomplete: 'off' });
+    // A long title wraps where the group's width ends, never cut (growing-box.ts): on a phone its group is narrow.
+    const titleInput = growingBox(el, { class: 'fd-canvas-section-title-input', 'aria-label': w.sectionTitle, placeholder: words.parts.untitledSection, autocomplete: 'off' });
     titleInput.addEventListener('input', () => designer.renameContainer(id, titleInput.value));
     titleInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') titleInput.blur();

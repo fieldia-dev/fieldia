@@ -607,3 +607,64 @@ const dataSource = {
 mountViewer(document.getElementById('lead'), { page, dataSource, recordId: 1 });`;
   return { json: JSON.stringify(page ?? {}, null, 2), js, server };
 }
+
+/**
+ * A designer (the survey designer's and the screen designer's demos): the page being made, as it stands when the
+ * drawer is opened, and the designer mounted on a page of your own — with no framework, and as each framework's
+ * component — a store of your own keeping its pages and their published versions.
+ */
+export function designerSnippets(page, kind) {
+  const name = page?.id ?? (kind === 'screen' ? 'screen' : 'survey');
+  const mount = kind === 'screen' ? 'mountScreenEditor' : 'mountSurveyEditor';
+  const component = kind === 'screen' ? 'ScreenEditor' : 'SurveyEditor';
+  const tag = kind === 'screen' ? 'fieldia-screen-editor' : 'fieldia-survey-editor';
+  const angularComponent = kind === 'screen' ? 'FieldiaScreenEditorComponent' : 'FieldiaSurveyEditorComponent';
+  const setup = `// Your store keeps each page's draft and the versions published — load, saveDraft, publish
+// against your server; createMemoryPageStore keeps them in memory.
+const designer = createDesigner({ page, store: createMemoryPageStore() });${
+    kind === 'screen'
+      ? `
+// Your backend's fields, first in the toolbox: createDesigner({ page, store, model: { email: { type: 'char', label: 'Email' } } }).`
+      : ''
+  }`;
+  const js = `import { createDesigner, createMemoryPageStore, ${mount} } from '@fieldia/designer';
+import page from './${name}.page.json';
+
+${setup}
+${mount}(document.getElementById('designer'), { designer });`;
+  const react = `import { createDesigner, createMemoryPageStore } from '@fieldia/designer';
+import { ${component} } from '@fieldia/designer/react';
+import page from './${name}.page.json';
+
+${setup}
+
+export function Designer() {
+  return <${component} designer={designer} />;
+}`;
+  const vue = `<script setup lang="ts">
+import { createDesigner, createMemoryPageStore } from '@fieldia/designer';
+import { ${component} } from '@fieldia/designer/vue';
+import page from './${name}.page.json';
+
+${setup}
+</script>
+
+<template>
+  <${component} :designer="designer" />
+</template>`;
+  const angular = `import { Component } from '@angular/core';
+import { createDesigner, createMemoryPageStore } from '@fieldia/designer';
+import { ${angularComponent} } from '@fieldia/designer/angular';
+import page from './${name}.page.json';
+
+@Component({
+  selector: 'app-designer',
+  imports: [${angularComponent}],
+  template: \`<${tag} [designer]="designer" />\`,
+})
+export class DesignerComponent {
+  // Your store keeps each page's draft and the versions published (createMemoryPageStore: in memory).
+  readonly designer = createDesigner({ page, store: createMemoryPageStore() });
+}`;
+  return { json: JSON.stringify(page ?? {}, null, 2), js, react, vue, angular };
+}

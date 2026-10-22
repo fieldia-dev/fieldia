@@ -1,3 +1,4 @@
+import { headedTables } from './rich-table';
 import { sanitizeHtml } from './sanitize';
 import { givenHtml, heldHtml, HELD_STYLE, styleOf, wearStyles } from './style-attributes';
 import { styleNonce } from './style-nonce';
@@ -155,8 +156,9 @@ export function cleanPasted(html: string, doc: Document): string {
     }
   };
   spaces(box.content);
-  // Kept as any value is kept, in its order: what is stored reads the same through `sanitizeHtml` again.
-  return sanitizeHtml(givenHtml(box.innerHTML), doc);
+  // Kept as any value is kept, in its order: what is stored reads the same through `sanitizeHtml` again — a table's
+  // header row in its head.
+  return headedTables(sanitizeHtml(givenHtml(box.innerHTML), doc), doc);
 }
 
 /**

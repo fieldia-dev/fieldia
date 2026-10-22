@@ -257,7 +257,7 @@ test.describe('the inputs’ settings in the screen designer', () => {
     await setting(page, 'Most characters').fill('500');
     await setting(page, 'Most characters').press('Tab');
     await setting(page, 'Rows').selectOption('5');
-    await expect(card(page).locator('textarea')).toHaveAttribute('rows', '5');
+    await expect(card(page).locator('.fd-canvas-widget textarea')).toHaveAttribute('rows', '5');
     await screen(page, 'inputs-designer-paragraph', { viewport: true });
 
     await addField(page, 'number', 'Floor area');

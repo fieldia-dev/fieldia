@@ -717,7 +717,8 @@ describe('a record sheet', () => {
     await flush();
     expect(pressed).toEqual([]);
     button(host, 'Block').click();
-    button(document.querySelector('[role=alertdialog]') as HTMLElement, 'OK').click();
+    // Yes says what it does, as the button does: Block.
+    button(document.querySelector('[role=alertdialog]') as HTMLElement, 'Block').click();
     await form.settled();
     await flush();
     expect(pressed).toEqual(['block']);

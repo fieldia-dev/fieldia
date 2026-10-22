@@ -1,6 +1,7 @@
 import {
   compileModifier,
   editableColumns,
+  isEmpty,
   isRightToLeft,
   labelAt,
   loadedRecord,
@@ -24,7 +25,7 @@ import {
   type Value,
   type Values,
 } from '@fieldia/core';
-import { currencyOf, dateOrderOf, linesPart, type LinesPart, type Widget, type WidgetLabels } from '@fieldia/widgets';
+import { currencyOf, dateOrderOf, drawIcon, formatNumber, inPlural, linesPart, type LinesPart, type Widget, type WidgetLabels } from '@fieldia/widgets';
 import { setAttr, setHidden, setText } from './dom';
 import { installEditableStyles } from './editable-styles';
 import type { ListContext } from './list';
@@ -36,8 +37,9 @@ import { CELL_BOXES } from './viewer-parts';
 /**
  * A list whose cells are changed in place (`ListNode.editable`; the editable part): a press on a cell, or Enter, opens
  * it in its field's own box — the box a form draws, with its rules: what can never be valid refused as it is typed,
- * text that does not read kept with why — Tab and Shift+Tab go from cell to cell and on to the next row, Escape puts
- * back what the cell held. Each row is a record's own form (`newForm`): it is saved through the data source as the
+ * text that does not read kept with why — its whole value chosen, so typing replaces it as in a spreadsheet (F2 or a
+ * second press to change within it); Tab and Shift+Tab go from cell to cell and on to the next row, Escape puts back
+ * what the cell held. Each row is a record's own form (`newForm`): it is saved through the data source as the
  * person leaves it — the fields it changed, as a save of some fields (`partial`) — and one refused stays as typed, why
  * said under it, with Put back; one someone else changed meanwhile is told as a record's page tells it (save-safety.ts:
  * Reload, Keep mine). A row is added at the end, saved once it is left. A block pasted from a spreadsheet goes across
@@ -135,7 +137,17 @@ interface RowEdit {
   on: boolean;
   gone: boolean;
   stops: (() => void)[];
+  /** The record it was saved as: a row added by a paste, which Undo takes away. */
+  savedAs?: RecordId;
+  /** Why it was refused, said once for the rows a paste left refused for the same reason — not under it. */
+  saidOnce?: string;
 }
+
+/**
+ * How a cell is opened: by a press (a yes or no answered by it), by Enter, Tab or a key typed (`replace`) — its whole
+ * value chosen, so typing replaces it — or by F2, the caret after its value, to change within it (`within`).
+ */
+type Opening = 'press' | 'replace' | 'within';
 
 /** A cell open for typing. */
 interface Editor {
@@ -283,6 +295,9 @@ export function editableRows(context: EditableContext): EditableRows | null {
     tr.removeAttribute('data-id');
     tr.querySelector(':scope > .fd-list-check')?.replaceChildren();
     tr.querySelector(':scope > .fd-list-tail')?.replaceChildren();
+    // Its card, nameless yet, goes by "New stage" — never the key the list keeps it by.
+    const title = tr.querySelector('.fd-list-card-title');
+    if (title?.textContent === key) title.replaceChildren(el('bdi', {}, sentence(labels.newRecordNoun, labels.newRecord)));
     return tr;
   }
 
@@ -300,8 +315,14 @@ export function editableRows(context: EditableContext): EditableRows | null {
   /** Said to a screen reader as it happens: a row saved. */
   const status = el('span', { class: 'fd-sr-only', role: 'status' });
   const hint = el('span', { class: 'fd-sr-only', id: list.uid(`${node.id}-edit-hint`) }, labels.rowEditHint);
+  /** Rows a paste left refused for the same reason, each reason said once: "33 rows not saved: Service is required." */
+  const refusedRows = el('div', { class: 'fd-list-refused-rows', id: list.uid(`${node.id}-refused-rows`), hidden: '' });
 
   const lockedOut = (record: Row | null) => record?.can?.edit === false;
+  /** A row its record lets no one change here: its source says so, or none of the cells that change may for it. */
+  const lockedRow = (record: Row | null): record is Row => !!record && (lockedOut(record) || (!!record.can && columns.every((column) => !changeable(record, column))));
+  /** Why such a row cannot be changed: its source's own words, else the list's — "This stage can’t be changed here". */
+  const lockWords = (record: Row) => record.can?.reason || sentence(labels.rowLockedNoun, labels.rowLocked);
   /** Whether a row's cell takes a change now: its column's, its record's permissions and the row's own rules. */
   function changeable(record: Row | null, column: string, form?: Form): boolean {
     if (!columns.includes(column) || lockedOut(record) || record?.can?.readonlyFields?.includes(column) || record?.can?.hiddenFields?.includes(column)) return false;
@@ -460,23 +481,36 @@ export function editableRows(context: EditableContext): EditableRows | null {
       setAttr(tr, 'aria-busy', state.status === 'saving' ? 'true' : null);
     }
     edit.safety.update(state);
-    // Refused: why, each problem once — text that does not read, a rule, the source's own words; never while someone
-    // else's save waits for the person's choice, which says its own.
+    const why = refusedWhy(edit, state);
+    // Said once with the rows refused for the same reason, while that is still why; another why, under it again.
+    if (edit.saidOnce !== undefined && edit.saidOnce !== why) {
+      edit.saidOnce = undefined;
+      groupsLater();
+    }
+    const once = !!why && edit.saidOnce === why;
+    const words = why && !once ? fill(labels.rowNotSaved, { why }) : '';
+    setText(edit.noteWords, words);
+    setHidden(edit.refusal, !words);
+    const says = !!words || !!state.conflict || !!state.setAside;
+    setHidden(edit.note, !says);
+    if (tr) setAttr(tr, 'aria-describedby', words ? edit.noteWords.id : once ? refusedRows.id : null);
+    // Saved by Keep mine, or nothing left to save once the changes set aside were let go: the row at rest again.
+    if (edit.refused && !edit.editor && !state.conflict && !state.setAside && state.status !== 'saving' && !state.dirty.length && !Object.keys(state.unread).length) queueMicrotask(() => edit.refused && settleRow(edit));
+  }
+
+  /**
+   * Why a row was refused, each problem once — text that does not read, a rule, the source's own words — each as said,
+   * its own full stop left to the sentence round them; none while someone else's save waits for the person's choice,
+   * which says its own.
+   */
+  function refusedWhy(edit: RowEdit, state: FormState): string {
     const problems: string[] = [];
     if (edit.refused && !state.conflict) {
       for (const [path, unread] of Object.entries(state.unread)) problems.push(problemWords(path, unread.message));
       for (const [path, message] of Object.entries(state.errors)) if (!state.unread[path]) problems.push(problemWords(path, message));
       if (!problems.length && state.saveProblem && state.saveProblem.kind !== 'conflict') problems.push(state.saveProblem.message);
     }
-    // Each problem as said, its own full stop left to the sentence round them.
-    const words = problems.length ? fill(labels.rowNotSaved, { why: problems.map((one) => one.replace(/[.。]\s*$/u, '')).join(isRightToLeft(locale) ? '؛ ' : '; ') }) : '';
-    setText(edit.noteWords, words);
-    setHidden(edit.refusal, !words);
-    const says = !!words || !!state.conflict || !!state.setAside;
-    setHidden(edit.note, !says);
-    if (tr) setAttr(tr, 'aria-describedby', words ? edit.noteWords.id : null);
-    // Saved by Keep mine, or nothing left to save once the changes set aside were let go: the row at rest again.
-    if (edit.refused && !edit.editor && !state.conflict && !state.setAside && state.status !== 'saving' && !state.dirty.length && !Object.keys(state.unread).length) queueMicrotask(() => edit.refused && settleRow(edit));
+    return problems.map((one) => one.replace(/[.。]\s*$/u, '')).join(isRightToLeft(locale) ? '؛ ' : '; ');
   }
 
   /** Nothing of the person's left on a row that was refused: at rest again, as saved — the focus kept where it was in it. */
@@ -488,12 +522,47 @@ export function editableRows(context: EditableContext): EditableRows | null {
     done(edit);
   }
 
+  // ---- a row the person may not change -------------------------------------------------------------------------
+
+  /** A row its record lets no one change: a lock at its start — its first cell shown, its card's name — saying why. */
+  function markLocked(tr: HTMLTableRowElement, record: Row) {
+    const words = lockWords(record);
+    const lock = () => el('span', { class: 'fd-list-lock', role: 'img', 'aria-label': words, title: words }, drawIcon(doc, 'lock', list.icons) ?? '');
+    tr.setAttribute('data-locked', '');
+    (tr.querySelector(':scope > td[data-col][data-pin]') ?? tr.querySelector(':scope > td[data-col]:not([hidden])'))?.prepend(lock());
+    tr.querySelector('.fd-list-card-title')?.prepend(lock());
+  }
+
+  /** Why a row cannot be changed, said under it as it is pressed, until the next press or key. */
+  const lockNote = el('tr', { class: 'fd-list-note fd-list-locked-note', hidden: '' });
+  function sayLocked(tr: HTMLTableRowElement, record: Row) {
+    const words = lockWords(record);
+    lockNote.replaceChildren(el('td', { colspan: String(context.span()) }, el('p', { class: 'fd-list-locked-words' }, el('span', { class: 'fd-list-lock', 'aria-hidden': 'true' }, drawIcon(doc, 'lock', list.icons) ?? ''), words)));
+    tr.after(lockNote);
+    lockNote.hidden = false;
+    setText(status, words);
+  }
+  /** A press or a row's Enter on a row that cannot change, where the app opens no records: why is said; true. */
+  function lockedPress(tr: HTMLTableRowElement): boolean {
+    const record = rowOf.get(tr);
+    if (!tr.hasAttribute('data-locked') || !lockedRow(record ?? null) || list.onOpenRecord) return false;
+    sayLocked(tr, record as Row);
+    return true;
+  }
+  const hideLockNote = (event: Event) => {
+    if (!lockNote.hidden && !lockNote.contains(event.target as Node)) lockNote.hidden = true;
+  };
+  doc.addEventListener('pointerdown', hideLockNote, true);
+  body.addEventListener('keydown', hideLockNote, true);
+
   // ---- a cell open for typing ----------------------------------------------------------------------------------
 
   /** The box typed in since it last read what it holds: a save does not read under the person's keys. */
   let typing: Element | null = null;
   const onTyped = (event: Event) => {
     if (typedBox(event.target as Element)) typing = event.target as Element;
+    // Something typed after a paste: its Undo would put back over it — no longer offered.
+    if (event.target !== catcher) endUndo();
   };
   const onRead = (event: Event) => {
     if (event.target === typing) typing = null;
@@ -515,17 +584,21 @@ export function editableRows(context: EditableContext): EditableRows | null {
     return { widget: cell.widget, ...(cell.options ? { options: cell.options } : {}) };
   }
 
-  /** Open a cell for typing: its row's form first, then its field's own box in the cell, the focus in it. */
-  function editCell(td: HTMLTableCellElement, keyboard = false, pressed = false): void {
+  /**
+   * Open a cell for typing: its row's form first, then its field's own box in the cell, the focus in it. `how` it was
+   * opened: by a press, Enter, Tab or a key typed, its whole value chosen, so typing replaces it; by F2, the caret after
+   * it, to change within it (`within`).
+   */
+  function editCell(td: HTMLTableCellElement, how: Opening = 'replace'): void {
     const tr = td.parentElement as HTMLTableRowElement | null;
     if (!tr || destroyed) return;
     const edit = editOf(tr);
     if (!edit) return;
     if (edit.editor?.td === td) return;
     const go = () => {
-      open(edit, td, keyboard);
+      open(edit, td, how);
       // A yes or no pressed is answered by the press, as a press on its box would.
-      if (pressed && rowPage.fields[td.getAttribute('data-col') ?? '']?.type === 'boolean') edit.editor?.box.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
+      if (how === 'press' && rowPage.fields[td.getAttribute('data-col') ?? '']?.type === 'boolean') edit.editor?.box.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
     };
     if (edit.loaded) return go();
     void edit.ready.then(() => {
@@ -533,7 +606,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     });
   }
 
-  function open(edit: RowEdit, td: HTMLTableCellElement, keyboard: boolean) {
+  function open(edit: RowEdit, td: HTMLTableCellElement, how: Opening) {
     const column = td.getAttribute('data-col') ?? '';
     if (!changeable(edit.record, column, edit.form)) return;
     if (edit.editor) closeEditor(edit, false);
@@ -569,9 +642,21 @@ export function editableRows(context: EditableContext): EditableRows | null {
     setAttr(td, 'title', null);
     update(state);
     widget.focus();
-    // Reached from the keyboard, its text is chosen, so typing replaces it, as a spreadsheet's cell does.
+    // One rule for every kind of box a cell opens as, as a spreadsheet's cell does: opened by a press, Enter, Tab or a
+    // key, its whole text chosen, so what is typed replaces it; by F2, the caret after it. A second press in the box is
+    // the box's own: the caret where it is pressed.
     const active = doc.activeElement;
-    if (keyboard && active instanceof HTMLInputElement && box.contains(active) && typedBox(active)) active.select();
+    if (active && box.contains(active) && typedBox(active)) choose(active, how !== 'within');
+  }
+
+  /** A box's whole text chosen, or the caret put after it. */
+  function choose(box: HTMLInputElement | HTMLTextAreaElement, whole: boolean) {
+    if (whole) return box.select();
+    try {
+      box.setSelectionRange(box.value.length, box.value.length);
+    } catch {
+      // A box whose kind keeps no caret the page may move (a number's, an e-mail's): the browser's own place.
+    }
   }
 
   /**
@@ -625,11 +710,11 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const tr = td.parentElement as HTMLTableRowElement;
     const here = cellsOf(tr);
     const beside = here[here.indexOf(td) + (forward ? 1 : -1)];
-    if (beside) return editCell(beside, true);
+    if (beside) return editCell(beside);
     const rows = rowsShown();
     for (let at = rows.indexOf(tr) + (forward ? 1 : -1); rows[at]; at += forward ? 1 : -1) {
       const cells = cellsOf(rows[at]);
-      if (cells.length) return editCell(forward ? cells[0] : cells[cells.length - 1], true);
+      if (cells.length) return editCell(forward ? cells[0] : cells[cells.length - 1]);
     }
     if (forward && canAdd()) return void addRow();
     closeEditor(edit, true);
@@ -679,6 +764,10 @@ export function editableRows(context: EditableContext): EditableRows | null {
       event.preventDefault();
       event.stopPropagation();
       putBackCell(edit);
+    } else if (event.key === 'F2' && !mods && typedBox(event.target as Element)) {
+      // F2 in a cell whose value is chosen whole: the caret after it, to change within it.
+      event.preventDefault();
+      choose(event.target as HTMLInputElement | HTMLTextAreaElement, false);
     } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.altKey) {
       // Ctrl+Enter: this row saved now, the cell kept — never the page's own save.
       event.preventDefault();
@@ -707,7 +796,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     if ((event.key === 'Enter' || event.key === 'F2') && !mods) {
       event.preventDefault();
       event.stopPropagation();
-      editCell(td, true);
+      editCell(td, event.key === 'F2' ? 'within' : 'replace');
     } else if (event.key.toLowerCase() === 'v' && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
       catching = td;
       catcher.value = '';
@@ -732,7 +821,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
       // has its values wait for it, in their order.
       const edit = editOf(tr);
       if (!edit) return;
-      if (edit.loaded) return editCell(td, true);
+      if (edit.loaded) return editCell(td);
       event.preventDefault();
       const waiting = early.get(edit);
       if (waiting) return void (waiting.td === td && (waiting.keys += event.key));
@@ -741,7 +830,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
         const typed = early.get(edit);
         early.delete(edit);
         if (!typed || edit.gone || !td.isConnected) return;
-        open(edit, td, true);
+        open(edit, td, 'replace');
         const active = doc.activeElement;
         if (edit.editor && active && edit.editor.box.contains(active) && typedBox(active)) doc.execCommand('insertText', false, typed.keys);
       });
@@ -842,6 +931,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const made = !edit.record;
     const record = savedRecord(edit);
     edit.record = record;
+    edit.savedAs = record.id;
     if (made && edit.tr) {
       edit.tr.removeAttribute('data-new');
       edit.tr.setAttribute('data-id', String(record.id));
@@ -860,6 +950,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
   function done(edit: RowEdit) {
     const made = !edit.record;
     const record = savedRecord(edit);
+    edit.savedAs = record.id;
     atRest(edit, record);
     context.saved(record, made);
     setText(status, fill(labels.rowSaved, { name: nameOf(record.values, String(record.id)) }));
@@ -885,6 +976,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     edit.form.dispose();
     edit.note.remove();
     if (edits.get(edit.key) === edit) edits.delete(edit.key);
+    if (edit.saidOnce !== undefined) groupsLater();
     if (edit.tr) {
       edit.tr.removeAttribute('data-changed');
       edit.tr.removeAttribute('aria-busy');
@@ -921,7 +1013,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
   const addButton = el('button', { type: 'button', class: 'fd-button fd-button-link fd-list-add' }, el('span', { 'aria-hidden': 'true' }, '+'), ' ', sentence(labels.rowAddNoun, labels.rowAdd));
   addButton.addEventListener('click', () => void addRow());
 
-  /** A row added at the end, its first cell open — or, on a phone, its sheet. */
+  /** A row added at the end, the first cell a new record needs open — or, on a phone, its sheet there. */
   function addRow(): RowEdit | null {
     if (!canAdd()) return null;
     const key = `new-${++added}`;
@@ -931,10 +1023,22 @@ export function editableRows(context: EditableContext): EditableRows | null {
     context.changed();
     if (cards()) void sheet(edit);
     else {
-      const first = cellsOf(tr)[0];
-      if (first) editCell(first, true);
+      const cells = cellsOf(tr);
+      const first = firstNeeded(edit, cells.map((td) => td.getAttribute('data-col') ?? ''));
+      const td = cells.find((one) => one.getAttribute('data-col') === first);
+      if (td) editCell(td);
     }
     return edit;
+  }
+
+  /**
+   * Where a row added takes the person first: the first cell a new record needs — required, empty and changeable, in
+   * the person's order of the columns — else the first that changes. A stage's name, though its order comes first.
+   */
+  function firstNeeded(edit: RowEdit, shown: readonly string[]): string | undefined {
+    const values = edit.form.getState().values;
+    const can = shown.filter((name) => changeable(edit.record, name, edit.form));
+    return can.find((name) => (rowPage.fields[name]?.required === true || edit.form.node(nodeId(name)).required) && isEmpty(rowPage.fields[name] as Field, values[name])) ?? can[0];
   }
 
   // ---- on a phone: a card's fields in a sheet ------------------------------------------------------------------
@@ -946,12 +1050,14 @@ export function editableRows(context: EditableContext): EditableRows | null {
     if (edit.gone) return;
     const state = edit.form.getState();
     const shown = context.columns().filter((name) => name in rowPage.fields);
+    // A card added: its sheet opens at the first field a new record needs, as a row added does.
+    const focus = edit.record ? undefined : firstNeeded(edit, shown);
     const fields = Object.fromEntries(Object.entries(rowPage.fields).map(([name, def]) => [name, columns.includes(name) && changeable(edit.record, name, edit.form) ? def : { ...def, readonly: true }])) as Record<string, Field>;
     const values = await list.editValues({
       title: edit.record ? fill(labels.rowChange, { name: nameOf(state.values, edit.key) }) : sentence(labels.rowAddNoun, labels.rowAdd),
       fields,
       values: state.values as Values,
-      layout: [{ type: 'section', id: `${node.id}-sheet`, columns: 1, children: shown.map((name) => ({ type: 'field', id: `${node.id}-sheet-${name}`, field: name })) }],
+      layout: [{ type: 'section', id: `${node.id}-sheet`, columns: 1, children: shown.map((name) => ({ type: 'field', id: `${node.id}-sheet-${name}`, field: name, ...(name === focus ? { focus: true } : {}) })) }],
       ...(page.lowerLabels ? { lowerLabels: true } : {}),
     });
     if (edit.gone) return;
@@ -968,8 +1074,14 @@ export function editableRows(context: EditableContext): EditableRows | null {
 
   // ---- a block pasted from a spreadsheet ------------------------------------------------------------------------
 
-  /** What a block pasted did, said politely under the list until the person moves on. */
-  const pasteNote = el('p', { class: 'fd-help fd-list-paste-note', role: 'status', hidden: '' });
+  /** What a block pasted did, said politely under the list until the person moves on; Undo beside it a few seconds. */
+  const pasteWords = el('span', { class: 'fd-list-paste-words' });
+  const undoButton = el('button', { type: 'button', class: 'fd-button fd-button-link fd-list-undo', hidden: '' }, labels.pasteUndo) as HTMLButtonElement;
+  const pasteNote = el('p', { class: 'fd-help fd-list-paste-note', role: 'status', hidden: '' }, pasteWords, ' ', undoButton);
+  const sayPasted = (words: string) => {
+    setText(pasteWords, words);
+    pasteNote.hidden = !words;
+  };
   catcher.addEventListener('paste', (event) => {
     const td = catching;
     catching = null;
@@ -1003,8 +1115,128 @@ export function editableRows(context: EditableContext): EditableRows | null {
     true
   );
   body.addEventListener('keydown', (event) => {
-    if (!pasteNote.hidden && !(event.ctrlKey || event.metaKey)) pasteNote.hidden = true;
+    if (!pasteNote.hidden && !undoable && !(event.ctrlKey || event.metaKey)) pasteNote.hidden = true;
   });
+
+  /**
+   * A paste that may be taken back: what each row it changed held before it — its record's as listed — the rows it
+   * added, and the cell it was pasted on. Offered for a few seconds once its rows are saved, and withdrawn as soon as
+   * something is typed or another paste comes.
+   */
+  interface PasteUndo {
+    changed: Map<RowEdit, Values>;
+    made: RowEdit[];
+    from: HTMLTableCellElement;
+    timer: ReturnType<typeof setTimeout> | null;
+  }
+  let undoable: PasteUndo | null = null;
+  /** How long Undo is offered once a paste's rows are saved. */
+  const UNDO_FOR = 10_000;
+  function offerUndo(undo: PasteUndo) {
+    undoable = undo;
+    undoButton.hidden = false;
+  }
+  function endUndo(undo?: PasteUndo) {
+    const now = undoable;
+    if (!now || (undo && undo !== now)) return;
+    if (now.timer) clearTimeout(now.timer);
+    undoable = null;
+    // Its button let go with the focus on it: the focus to the cell pasted on.
+    if (undoButton.contains(doc.activeElement) && now.from.isConnected) now.from.focus({ preventScroll: true });
+    undoButton.hidden = true;
+  }
+  undoButton.addEventListener('click', () => void undoPaste());
+  /** Ctrl or ⌘ and Z right after a paste, anywhere in the list but a box typed in (a box's own Undo): the paste undone. */
+  const onUndoKey = (event: KeyboardEvent) => {
+    if (!undoable || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== 'z' || typedBox(event.target as Element)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    void undoPaste();
+  };
+  context.element.addEventListener('keydown', onUndoKey);
+
+  /** Undo pressed: once the paste's saves are done, after them. */
+  function undoPaste(): Promise<unknown> {
+    const undo = undoable;
+    if (!undo) return pasting;
+    endUndo();
+    pasting = pasting.then(() => undoNow(undo)).catch(() => undefined);
+    return pasting;
+  }
+
+  /** The rows a paste changed put back as they were — saved again — and those it added taken away. */
+  async function undoNow(undo: PasteUndo) {
+    if (destroyed) return;
+    const touched: RowEdit[] = [];
+    for (const [old, before] of undo.changed) {
+      const id = String(old.record?.id);
+      const tr = [...body.querySelectorAll<HTMLTableRowElement>(':scope > tr.fd-list-row[data-id]')].find((one) => one.getAttribute('data-id') === id);
+      const edit = edits.get(id) ?? (tr ? editOf(tr) : null);
+      if (!edit) continue;
+      await edit.ready;
+      if (edit.gone) continue;
+      for (const [name, value] of Object.entries(before)) {
+        edit.form.setUnread(name, null);
+        edit.form.setValue(name, value);
+      }
+      touched.push(edit);
+    }
+    const saved: RecordId[] = [];
+    for (const edit of undo.made) {
+      if (edit.savedAs !== undefined) {
+        saved.push(edit.savedAs);
+        release(edit);
+      } else if (!edit.gone) drop(edit);
+    }
+    await saveMany(touched);
+    if (saved.length && source.delete) {
+      for (const id of saved) await source.delete({ model, id, fields: page.fields }).catch(() => undefined);
+      await context.reload();
+    }
+    if (destroyed) return;
+    sayPasted(labels.pasteUndone);
+    if (undo.from.isConnected && (doc.activeElement === doc.body || !doc.activeElement)) undo.from.focus({ preventScroll: true });
+  }
+
+  /** Rows a paste left refused for the same reason: said once each reason, under the list — each row still marked. */
+  function sayOnce(rows: readonly RowEdit[]) {
+    const by = new Map<string, RowEdit[]>();
+    for (const edit of rows) {
+      const why = edit.gone ? '' : refusedWhy(edit, edit.form.getState());
+      if (why) by.set(why, [...(by.get(why) ?? []), edit]);
+    }
+    for (const [why, group] of by) {
+      if (group.length < 2) continue;
+      for (const edit of group) {
+        edit.saidOnce = why;
+        paint(edit);
+      }
+    }
+    sayGroups();
+  }
+  let groupsQueued = false;
+  const groupsLater = () => {
+    if (groupsQueued) return;
+    groupsQueued = true;
+    queueMicrotask(sayGroups);
+  };
+  /** Each reason said once, with its rows' count, and a button that puts them back — or takes away those added. */
+  function sayGroups() {
+    groupsQueued = false;
+    const by = new Map<string, RowEdit[]>();
+    for (const edit of edits.values()) if (edit.saidOnce !== undefined && !edit.gone) by.set(edit.saidOnce, [...(by.get(edit.saidOnce) ?? []), edit]);
+    refusedRows.replaceChildren(
+      ...[...by].map(([why, group]) => {
+        const button = el('button', { type: 'button', class: 'fd-button fd-button-link' }, group.every((edit) => !edit.record) ? labels.rowsDrop : labels.rowsPutBack);
+        button.addEventListener('click', () => {
+          for (const edit of group) putBackRow(edit, false);
+          (addButton.hidden || !addButton.isConnected ? context.element : addButton).focus();
+        });
+        return el('p', { class: 'fd-list-refused' }, fill(inPlural(labels.rowsNotSaved, labels.rowsNotSavedOne, group.length, locale), { why }), ' ', button);
+      })
+    );
+    refusedRows.hidden = !by.size;
+  }
 
   let pasting: Promise<unknown> = Promise.resolve();
   /** A block pasted on a cell: across the columns shown from it and down the rows, each row then saved. One at a time. */
@@ -1027,6 +1259,18 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const at = drawings;
     const from = rowsShown().indexOf(tr);
     if (from < 0) return;
+    // A paste that changes or adds more than one row is asked first: "Paste 40 rows: change 7 and add 33?".
+    const there = rowsShown().length - from;
+    const changes = Math.min(block.length, there);
+    const adds = canAdd() ? block.slice(there).filter((cells) => cells.some((one) => one.trim())).length : 0;
+    endUndo();
+    if (changes + adds > 1 && list.ask) {
+      const count = (n: number) => formatNumber(n, 0, locale);
+      const asked = changes && adds ? fill(labels.pasteAsk, { n: count(changes + adds), changed: count(changes), added: count(adds) }) : fill(changes ? labels.pasteAskChange : labels.pasteAskAdd, { n: count(changes || adds) });
+      // Its Yes says what it does: "Paste 40 rows", Cancel beside it.
+      if (!(await list.ask(asked, { yes: fill(labels.pasteYes, { n: count(changes + adds) }) })) || at !== drawings || destroyed || !tr.isConnected) return;
+    }
+    const undo: PasteUndo = { changed: new Map(), made: [], from: td, timer: null };
     // The rows it lands on, each with its form ready to take its cells.
     const landing = rowsShown()
       .slice(from, from + block.length)
@@ -1043,7 +1287,12 @@ export function editableRows(context: EditableContext): EditableRows | null {
       fields: rowPage.fields as Record<string, LineField>,
       columns: context.columns().filter((name) => name in rowPage.fields),
       lines: () => rowsShown().map((row): Line => ({ key: keyOf(row), values: valuesOf(row) })),
-      add: () => addRowQuietly(),
+      add: () => {
+        const key = addRowQuietly();
+        const made = key ? edits.get(key) : undefined;
+        if (made) undo.made.push(made);
+        return key;
+      },
       typable: (line, name) => {
         const row = rowsShown().find((one) => keyOf(one) === line.key);
         const edit = rowEdit(line.key);
@@ -1054,6 +1303,12 @@ export function editableRows(context: EditableContext): EditableRows | null {
       write: (line, name, value) => {
         const edit = rowEdit(line.key);
         if (!edit) return;
+        // What a row of a record held before it, for Undo: once each field, as the row stood.
+        if (edit.record) {
+          const before = undo.changed.get(edit) ?? {};
+          if (!(name in before)) before[name] = (edit.form.getState().values[name] ?? null) as Value;
+          undo.changed.set(edit, before);
+        }
         edit.form.setUnread(name, null);
         edit.form.setValue(name, value);
         touched.add(edit);
@@ -1070,10 +1325,23 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const said = await part.pasteRows(table, from, column, block, { labels: list.widgetLabels ?? ({} as WidgetLabels), locale });
     (scratch as Form | null)?.dispose();
     if (said === null || destroyed) return;
-    pasteNote.textContent = said;
-    pasteNote.hidden = !said;
+    sayPasted(said);
+    // Undo at once, where all it would do can be done whatever is saved: no row added, or a source that takes records away.
+    const offered = !!undo.changed.size || !!undo.made.length;
+    const early = offered && (!undo.made.length || !!source.delete);
+    if (early) offerUndo(undo);
     // Each row pasted on is left at once: saved, rows given the same change in one go where the source can.
     await saveMany([...touched]);
+    if (destroyed) return;
+    sayOnce([...touched]);
+    // Its saves done: Undo for a few seconds — unless it was taken or withdrawn meanwhile; where it waited for them,
+    // only when none of the rows it added was saved, as nothing could take that one away.
+    if (!offered || (early && undoable !== undo)) return;
+    if (!early) {
+      if (undo.made.some((edit) => edit.savedAs !== undefined)) return;
+      offerUndo(undo);
+    }
+    undo.timer = setTimeout(() => endUndo(undo), UNDO_FOR);
   }
 
   /** A row added for a pasted row past the last, its form ready, no cell opened: its key, or null where none can be added. */
@@ -1151,12 +1419,13 @@ export function editableRows(context: EditableContext): EditableRows | null {
 
   // ---- the list's own ---------------------------------------------------------------------------------------------
 
-  const element = el('div', { class: 'fd-list-adds' }, ...(adds ? [addButton] : []), pasteNote, hint, status, catcher);
+  const element = el('div', { class: 'fd-list-adds' }, ...(adds ? [addButton] : []), pasteNote, refusedRows, hint, status, catcher);
 
   return {
     element,
     wire(tr, record) {
       rowOf.set(tr, record);
+      if (lockedRow(record)) markLocked(tr, record);
       for (const td of tr.querySelectorAll<HTMLTableCellElement>(':scope > td[data-col]')) {
         const column = td.getAttribute('data-col') ?? '';
         if (!changeable(record, column)) continue;
@@ -1177,6 +1446,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
       const td = target.closest('td');
       // A press inside an open box is the box's.
       if (td?.hasAttribute('data-editing') || target.closest('.fd-list-note')) return true;
+      // A row no one may change here, where the app opens no records: why, said under it — never a press that does nothing.
+      if (!target.closest('button, a, input, label') && lockedPress(tr)) return true;
       if (cards()) {
         if (!list.editValues || target.closest('button, a, input, label')) return false;
         const edit = editOf(tr);
@@ -1185,10 +1456,11 @@ export function editableRows(context: EditableContext): EditableRows | null {
         return true;
       }
       if (!td?.hasAttribute('data-edit')) return false;
-      editCell(td as HTMLTableCellElement, false, true);
+      editCell(td as HTMLTableCellElement, 'press');
       return true;
     },
     enter(tr) {
+      if (lockedPress(tr)) return true;
       if (cards()) {
         const edit = list.editValues ? editOf(tr) : null;
         if (edit) void sheet(edit);
@@ -1196,7 +1468,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
       }
       const first = cellsOf(tr)[0];
       if (!first) return false;
-      editCell(first, true);
+      editCell(first);
       return true;
     },
     openButton(record, name) {
@@ -1216,6 +1488,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     },
     drawn() {
       drawings++;
+      lockNote.hidden = true;
       // Under Group By headings no row is added: the end of which group would it be?
       addButton.hidden = !canAdd();
       for (const edit of [...edits.values()]) {
@@ -1240,6 +1513,9 @@ export function editableRows(context: EditableContext): EditableRows | null {
       destroyed = true;
       doc.removeEventListener('focusin', onFocusIn, true);
       doc.removeEventListener('focusout', onFocusOut, true);
+      doc.removeEventListener('pointerdown', hideLockNote, true);
+      context.element.removeEventListener('keydown', onUndoKey);
+      endUndo();
       context.element.removeEventListener('input', onTyped, true);
       context.element.removeEventListener('change', onRead, true);
       context.element.removeEventListener('focusout', onRead, true);

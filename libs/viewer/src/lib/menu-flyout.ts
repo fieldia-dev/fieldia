@@ -133,7 +133,7 @@ export function submenus(tree: MenuTree, entries: readonly MenuEntry[], menu: HT
     const waiting = context.el('div', { class: 'fd-menu-waiting', role: 'none', hidden: '' }, context.labels.loading);
     const run = (one: MenuItem) => {
       tree.close(true);
-      void context.press(tree.opener, () => (given.has(one) ? form.run(stepsOf(one), { id: one.id }) : form.runAction(one.id)));
+      void context.press(tree.opener, () => (given.has(one) ? form.run(stepsOf(one), { id: one.id, ...(one.label ? { yes: one.label } : {}) }) : form.runAction(one.id)));
     };
     const own = menuEntries(context, item.menu ?? [], tree.words, run);
     const ownNested = submenus(tree, own, box);

@@ -84,7 +84,8 @@ function typeIn(input: HTMLInputElement, text: string) {
 }
 const toasts = () => [...document.querySelectorAll<HTMLElement>('.fd-say')];
 const question = () => document.querySelector<HTMLElement>('[role="alertdialog"]');
-const answer = (label: 'OK' | 'Cancel') => press(label, question() as HTMLElement);
+const answer = (label: string) => press(label, question() as HTMLElement);
+const answers = () => [...(question() as HTMLElement).querySelectorAll('button')].map((one) => one.textContent);
 const panel = () => document.querySelector<HTMLElement>('.fd-form-panel');
 const dialog = () => document.querySelector<HTMLElement>('.fd-form-dialog:not(.fd-form-panel)');
 
@@ -183,11 +184,43 @@ describe('a question asked: the viewer’s own box', () => {
     expect(toasts()).toEqual([]);
   });
 
-  it('asks through the app’s own confirm when it gives one', async () => {
-    const viewer = mount(order(), { confirm: async (message) => message === 'Yes?' });
+  it('a question its save asks first says in its Yes the words of the form’s own Save or Submit, pressed or by Ctrl+Enter', async () => {
+    const asked = (kind: 'record' | 'responses') => ({ ...newCustomer(), data: { kind, model: 'partner' }, on: { beforeSave: [{ do: 'ask' as const, message: 'Send it now?' }] } }) as Page;
+    for (const [kind, words] of [['record', 'Save'], ['responses', 'Submit']] as const) {
+      const viewer = mount(asked(kind));
+      await viewer.form.settled();
+      typeIn(box('c-name'), 'Nile Traders');
+      press(words);
+      await until(() => question());
+      expect(question()?.textContent).toContain('Send it now?');
+      expect(answers()).toEqual(['Cancel', words]);
+      answer('Cancel');
+      await until(() => !question());
+      // Ctrl+Enter is the same Save.
+      box('c-name').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
+      await until(() => question());
+      expect(answers()).toEqual(['Cancel', words]);
+      answer(words);
+      await until(() => !question());
+      handle?.destroy();
+      handle = null;
+      host.replaceChildren();
+    }
+  });
+
+  it('asks through the app’s own confirm when it gives one, telling it what Yes does', async () => {
+    const asked: [string, string | undefined][] = [];
+    const viewer = mount(order([button('send', 'Send', [], { confirm: 'Send it now?' })]), { confirm: async (message, how) => (asked.push([message, how?.yes]), message !== 'No?') });
     expect(await viewer.run([{ do: 'ask', message: 'Yes?' }])).toEqual({ done: true });
     expect((await viewer.run([{ do: 'ask', message: 'No?' }])).reason).toBe('no');
+    press('Send');
+    await viewer.form.settled();
     expect(question()).toBeNull();
+    expect(asked).toEqual([
+      ['Yes?', undefined],
+      ['No?', undefined],
+      ['Send it now?', 'Send'],
+    ]);
   });
 
   it('asks a button’s confirmation once, before its steps', async () => {
@@ -198,7 +231,9 @@ describe('a question asked: the viewer’s own box', () => {
     press('Send');
     await flush();
     expect(document.querySelectorAll('[role="alertdialog"]')).toHaveLength(1);
-    answer('OK');
+    // Its Yes says what it does: the button's own words, not OK.
+    expect(answers()).toEqual(['Cancel', 'Send']);
+    answer('Send');
     await viewer.form.settled();
     await flush();
     expect(question()).toBeNull();

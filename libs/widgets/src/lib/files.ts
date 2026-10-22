@@ -370,7 +370,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     const replace = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.replace);
     replace.addEventListener('click', () => input.click());
     // Removing asks first, in place: "Remove report.pdf?  Remove · Keep".
-    const confirm = askFirst(make, words);
+    const confirm = askFirst(make, { yes: words.removeFile, no: words.keep });
     // Why files were not added, and one removed: said politely, and shown.
     const note = make('div', { class: 'fd-help fd-file-note', role: 'status' });
     const way = (as: string, words: string) => {

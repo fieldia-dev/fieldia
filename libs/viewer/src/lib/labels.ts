@@ -285,6 +285,8 @@ export interface ViewerLabels {
   importFixName: string;
   importing: string;
   importStop: string;
+  /** The import's dialog, a file chosen, left by × or Escape: asked first — its answer to stay. */
+  importKeepEditing: string;
   importDone: string;
   importDoneNoun?: string;
   importDoneOne: string;
@@ -529,6 +531,25 @@ export interface ViewerLabels {
   rowOpen: string;
   rowChange: string;
   rowCell: string;
+  /** A row its record lets no one change here, where its source says no why (`can.reason`): its lock and a press on it. */
+  rowLocked: string;
+  rowLockedNoun?: string;
+  /**
+   * A paste that changes or adds more than one row, asked first (`{n}` rows, `{changed}`, `{added}`); its Undo, and
+   * what Undo says; rows it left refused for the same reason, said once (`{n}`, `{why}`), and their button — Remove
+   * them where they were all added, Put them back otherwise.
+   */
+  pasteAsk: string;
+  pasteAskChange: string;
+  pasteAskAdd: string;
+  /** Its Yes: what answering it does. */
+  pasteYes: string;
+  pasteUndo: string;
+  pasteUndone: string;
+  rowsNotSaved: string;
+  rowsNotSavedOne: string;
+  rowsDrop: string;
+  rowsPutBack: string;
   /**
    * Over a record: the gear menu (`actions`, its `print` group and its
    * built-in items), the trail to it (`breadcrumbs`, a new record's crumb
@@ -693,10 +714,14 @@ export interface ViewerLabels {
   approvalRejectTitleNoun?: string;
   approvalRejectAsk: string;
   approvalRejectReason: string;
+  /** Reject's question left with a reason typed: asked first — its answer to stay. */
+  approvalKeepEditing: string;
   approvalHistoryCount: string;
   approvalAskedEntry: string;
   approvalApprovedEntry: string;
   approvalRejectedEntry: string;
+  /** A record sent whose rules asked no level of it, moved on at once: where it stands, and that moment of its history. */
+  approvalNotNeeded: string;
   /**
    * AI help (the assist part), through the app's own model: a page's Fill from text (`suggest`) — its dialog's words,
    * its box, its files, its button, while it reads, why nothing came (`{why}`) — the proposals' review over the page
@@ -710,6 +735,12 @@ export interface ViewerLabels {
   assistFillPlaceholder: string;
   assistFiles: string;
   assistFillGo: string;
+  /** Propose values pressed with nothing pasted or added: said beside it — the text and files, the text, or files alone offered. */
+  assistFillEmpty: string;
+  assistFillEmptyText: string;
+  assistFillEmptyFiles: string;
+  /** Fill from text left with words pasted or files added: asked first — its answer to stay. */
+  assistKeepEditing: string;
   assistReading: string;
   assistFailed: string;
   assistNothing: string;
@@ -1079,6 +1110,7 @@ const en: ViewerLabels = {
   importFixName: '{name} – not imported',
   importing: 'Importing {done} of {n}…',
   importStop: 'Stop',
+  importKeepEditing: 'Keep editing',
   importDone: '{n} records imported.',
   importDoneNoun: '{n} {records} imported.',
   importDoneOne: '{n} record imported.',
@@ -1228,7 +1260,7 @@ const en: ViewerLabels = {
   relatedShown: '{n} of {total}',
   rowsKey: 'Key to the rows',
   relatedShownNoun: '{n} of {total} {records}',
-  rowEditHint: 'Enter changes the cell, Tab moves on, Escape puts it back; a row is saved as you leave it.',
+  rowEditHint: 'Enter or typing replaces the cell’s value, F2 changes within it, Tab moves on, Escape puts it back; a row is saved as you leave it.',
   rowAdd: 'Add a line',
   rowAddNoun: 'Add {aRecord}',
   rowDrop: 'Remove',
@@ -1237,6 +1269,18 @@ const en: ViewerLabels = {
   rowOpen: 'Open {name}',
   rowChange: 'Change {name}',
   rowCell: '{column} of {name}',
+  rowLocked: 'This row can’t be changed here',
+  rowLockedNoun: 'This {record} can’t be changed here',
+  pasteAsk: 'Paste {n} rows: change {changed} and add {added}?',
+  pasteAskChange: 'Change {n} rows with what you pasted?',
+  pasteAskAdd: 'Add {n} rows from what you pasted?',
+  pasteYes: 'Paste {n} rows',
+  pasteUndo: 'Undo',
+  pasteUndone: 'Paste undone.',
+  rowsNotSaved: '{n} rows not saved: {why}.',
+  rowsNotSavedOne: '1 row not saved: {why}.',
+  rowsDrop: 'Remove them',
+  rowsPutBack: 'Put them back',
   actions: 'Actions',
   print: 'Print',
   archive: 'Archive',
@@ -1344,24 +1388,30 @@ const en: ViewerLabels = {
   approvalRejectFor: 'Reject for {level}',
   approvalApproving: 'Approving…',
   approvalRejecting: 'Rejecting…',
-  approvalApprovedFor: 'Approved for {level}',
-  approvalRejectedFor: 'Rejected for {level}',
+  approvalApprovedFor: 'Approved ({level})',
+  approvalRejectedFor: 'Rejected ({level})',
   approvalApproveFailed: 'Not approved: {why}',
   approvalRejectFailed: 'Not rejected: {why}',
   approvalRejectTitle: 'Reject this record?',
   approvalRejectTitleNoun: 'Reject this {record}?',
-  approvalRejectAsk: 'Say why it is rejected for {level}. The reason is kept in its history.',
+  approvalRejectAsk: 'Say why you reject it ({level}). The reason is kept in its history.',
   approvalRejectReason: 'Reason',
+  approvalKeepEditing: 'Keep editing',
   approvalHistoryCount: 'Approval history ({n})',
   approvalAskedEntry: '{name} asked for approval',
-  approvalApprovedEntry: '{name} approved for {level}',
-  approvalRejectedEntry: '{name} rejected it for {level}',
+  approvalApprovedEntry: '{name} approved ({level})',
+  approvalRejectedEntry: '{name} rejected it ({level})',
+  approvalNotNeeded: 'No approval needed',
   assistFill: 'Fill from text',
   assistFillHint: 'Paste an e-mail, a signature or a message. What is found in it is shown on each field for you to accept or reject: nothing is kept until you do.',
   assistFillBox: 'Text to fill the form from',
   assistFillPlaceholder: 'Paste the text here',
   assistFiles: 'Add files',
   assistFillGo: 'Propose values',
+  assistFillEmpty: 'Paste or add what to fill from',
+  assistFillEmptyText: 'Paste what to fill from',
+  assistFillEmptyFiles: 'Add what to fill from',
+  assistKeepEditing: 'Keep editing',
   assistReading: 'Reading…',
   assistFailed: 'Nothing could be proposed: {why}',
   assistNothing: 'Nothing in it fills this form.',
