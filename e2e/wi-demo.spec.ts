@@ -235,7 +235,7 @@ test.describe('the backlog', () => {
     await page.keyboard.press('ArrowDown');
     const menu = page.getByRole('menu', { name: 'Language' });
     await expect(menu).toBeVisible();
-    await expect(menu.getByRole('menuitemradio')).toHaveText(['English', 'العربية', 'Deutsch', 'Français']);
+    await expect(menu.getByRole('menuitemradio')).toHaveText(['English', 'العربية', 'Deutsch', 'Français', 'Türkçe', 'فارسی', 'اردو', 'Español']);
     await expect(menu.getByRole('menuitemradio', { name: 'English' })).toBeFocused();
     await expect(menu.getByRole('menuitemradio', { name: 'English' })).toHaveAttribute('aria-checked', 'true');
     expect(await axeFindings(page, 'User settings open')).toEqual([]);
