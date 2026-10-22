@@ -55,6 +55,8 @@ jobs:
       # And a strict Content-Security-Policy in the packages' source: no code made from text, no style attribute
       # written, every <style> made with the page's nonce (tools/csp-source.test.mjs).
       - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs
+      # The tools themselves, linted as the packages are (`nx lint` reads the packages alone): four errors hid there in 0.31.
+      - run: npx eslint tools eslint.config.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's
       # exports point at missing files or its ESM output would not resolve in
       # Node — the packaging mistakes that pass every source-level test.
@@ -135,10 +137,12 @@ jobs:
           retention-days: 14
 
   engines:
-    name: Browser smoke in ${{ matrix.engine }}
+    name: Browser smoke in ${{ matrix.engine }} (${{ matrix.shard }} of 2)
     needs: scope
     if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
     runs-on: ubuntu-latest
+    # Each engine's smoke set in two halves: one runner took 12–19 minutes of its 25 for the whole set in 0.30.1 (WebKit
+    # hit the limit once), and 0.31 adds some thirty specs to it; a half and the build it needs fit well inside 25.
     timeout-minutes: 25
     # Firefox, and WebKit — Safari's engine, which every browser on an iPhone runs: the smoke set playwright.config.ts
     # names (forms, behaviour, layout, lists, dialogs, the quiet look, a place on a map, right to left, a part that
@@ -147,6 +151,7 @@ jobs:
       fail-fast: false
       matrix:
         engine: [firefox, webkit]
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -178,11 +183,11 @@ jobs:
           NX_DAEMON: 'false'
       - run: node tools/build-demos.mjs
       - run: node tools/build-site.mjs
-      - run: npx playwright test --project=${{ matrix.engine }}
+      - run: npx playwright test --project=${{ matrix.engine }} --shard=${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: screens-${{ matrix.engine }}
+          name: screens-${{ matrix.engine }}-${{ matrix.shard }}
           path: test-results/
           retention-days: 14
 
