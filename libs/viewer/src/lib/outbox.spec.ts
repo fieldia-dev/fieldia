@@ -8,7 +8,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
  */
 
 const visit: Page = {
-  fieldia: '0.7',
+  fieldia: '0.9',
   id: 'site-visit',
   data: { kind: 'responses' },
   outbox: true,

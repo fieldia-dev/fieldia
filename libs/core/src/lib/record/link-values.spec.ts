@@ -10,7 +10,7 @@ import { linkParams, linkValue, linkValues } from './link-values';
  * (`agent` into `agent_code`) — hidden fields, placed nowhere — and the unit asked about, shown for the person to keep.
  */
 const enquiry = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.7',
+  fieldia: '0.9',
   id: 'enquiry',
   data: { kind: 'responses' },
   fields: {
@@ -113,7 +113,7 @@ describe('a page filled from the link it is opened with (prefill)', () => {
     expect(form.getState().values).toMatchObject({ name: null, unit: 'B-12', utm_source: 'whatsapp' });
 
     const records = createMemoryDataSource({ records: { lead: { 7: { name: 'Karim', source: 'walk-in' } } } });
-    const lead: Page = { fieldia: '0.7', id: 'lead', data: { kind: 'record', model: 'lead' }, fields: { name: { type: 'char', label: 'Name' }, source: { type: 'char', label: 'Source' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }] }, prefill: { fromUrl: [{ param: 'utm_source', field: 'source' }] } };
+    const lead: Page = { fieldia: '0.9', id: 'lead', data: { kind: 'record', model: 'lead' }, fields: { name: { type: 'char', label: 'Name' }, source: { type: 'char', label: 'Source' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }] }, prefill: { fromUrl: [{ param: 'utm_source', field: 'source' }] } };
     const opened = createForm({ page: lead, dataSource: records, recordId: 7, url: '?utm_source=whatsapp' });
     await opened.load();
     expect(opened.getState().values['source']).toBe('walk-in');

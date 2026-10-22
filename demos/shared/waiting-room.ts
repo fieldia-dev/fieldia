@@ -22,7 +22,7 @@ export function waitingPatients(): Record<number, Values> {
 
 /** A patient's own page, as a row of the waiting room opens it: who, for what, with whom, since when. */
 export const waitingPatientPage: Page = {
-  fieldia: '0.7',
+  fieldia: '0.9',
   id: 'waiting-patient',
   title: 'Patient waiting',
   data: { kind: 'record', model: 'clinic.waiting' },

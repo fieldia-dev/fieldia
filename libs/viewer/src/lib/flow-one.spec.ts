@@ -34,7 +34,7 @@ const pick = (host: Element, node: string, label: string) => {
 };
 
 const homes = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.7',
+  fieldia: '0.9',
   id: 'homes',
   data: { kind: 'responses' },
   flow: 'one',

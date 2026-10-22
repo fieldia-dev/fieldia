@@ -64,7 +64,7 @@ export function chartAccounts(): Record<number, Values> {
 
 /** An account's own page, as a row of the chart opens it. */
 export const accountPage: Page = {
-  fieldia: '0.7',
+  fieldia: '0.9',
   id: 'account',
   title: 'An account',
   data: { kind: 'record', model: 'coa.account' },

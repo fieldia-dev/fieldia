@@ -46,7 +46,7 @@ export function activityEntries(now = demoNow()): Record<number, Values> {
 
 /** An entry's own page, as a row of the log opens it: when, who, what and to which record. */
 export const activityEntryPage: Page = {
-  fieldia: '0.7',
+  fieldia: '0.9',
   id: 'activity-entry',
   title: 'An entry of the log',
   data: { kind: 'record', model: 'activity.entry' },

@@ -50,7 +50,7 @@ function testClock(start: number) {
 }
 
 const test = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.7',
+  fieldia: '0.9',
   id: 'timed',
   data: { kind: 'responses' },
   timeLimit: { minutes: 10, warn: 2 },

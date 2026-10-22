@@ -13,7 +13,7 @@ import type { FileValue } from './values';
  */
 
 const visit = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.7',
+  fieldia: '0.9',
   id: 'site-visit',
   data: { kind: 'responses' },
   outbox: true,

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.7",
+  "fieldia": "0.9",
   "id": "treatment-course",
   "title": "Treatment course",
   "records": { "one": "course", "other": "courses", "a": "a course" },

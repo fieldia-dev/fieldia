@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.7",
+  "fieldia": "0.9",
   "id": "activity-log",
   "title": "What the team did",
   "description": "Every change the team made, newest first: 1,284 entries that load as the list is scrolled, as a feed does on a phone — its count stays, and \"Show 30 more\" waits at the end for the keys.",

@@ -11,7 +11,7 @@ import { CAMPAIGN_PARAMS, embedFrame } from './embed-frame';
  */
 
 const callBack: Page = {
-  fieldia: '0.7',
+  fieldia: '0.9',
   id: 'call-back',
   title: 'Ask for a call back',
   data: { kind: 'responses' },
