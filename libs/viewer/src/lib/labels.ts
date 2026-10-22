@@ -654,6 +654,8 @@ export interface ViewerLabels {
   approvalAskedEntry: string;
   approvalApprovedEntry: string;
   approvalRejectedEntry: string;
+  /** A record sent whose rules asked no level of it, moved on at once: where it stands, and that moment of its history. */
+  approvalNotNeeded: string;
   /**
    * AI help (the assist part), through the app's own model: a page's Fill from text (`suggest`) — its dialog's words,
    * its box, its files, its button, while it reads, why nothing came (`{why}`) — the proposals' review over the page
@@ -1163,18 +1165,19 @@ const en: ViewerLabels = {
   approvalRejectFor: 'Reject for {level}',
   approvalApproving: 'Approving…',
   approvalRejecting: 'Rejecting…',
-  approvalApprovedFor: 'Approved for {level}',
-  approvalRejectedFor: 'Rejected for {level}',
+  approvalApprovedFor: 'Approved ({level})',
+  approvalRejectedFor: 'Rejected ({level})',
   approvalApproveFailed: 'Not approved: {why}',
   approvalRejectFailed: 'Not rejected: {why}',
   approvalRejectTitle: 'Reject this record?',
   approvalRejectTitleNoun: 'Reject this {record}?',
-  approvalRejectAsk: 'Say why it is rejected for {level}. The reason is kept in its history.',
+  approvalRejectAsk: 'Say why you reject it ({level}). The reason is kept in its history.',
   approvalRejectReason: 'Reason',
   approvalHistoryCount: 'Approval history ({n})',
   approvalAskedEntry: '{name} asked for approval',
-  approvalApprovedEntry: '{name} approved for {level}',
-  approvalRejectedEntry: '{name} rejected it for {level}',
+  approvalApprovedEntry: '{name} approved ({level})',
+  approvalRejectedEntry: '{name} rejected it ({level})',
+  approvalNotNeeded: 'No approval needed',
   assistFill: 'Fill from text',
   assistFillHint: 'Paste an e-mail, a signature or a message. What is found in it is shown on each field for you to accept or reject: nothing is kept until you do.',
   assistFillBox: 'Text to fill the form from',

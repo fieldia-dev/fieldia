@@ -1211,7 +1211,7 @@ export const DEMOS = [
       '[Sign in as Sara Nabil, the CFO](?as=sara) and press Approve: the order is approved, and its status moves on to Purchase order.',
       'Open Approval history, and read the conversation beside the order: who asked, who approved, and when.',
       '[Sign in as Omar Said, the buyer](?as=omar): he sees where it stands, and decides nothing.',
-      '[Open an order under the limit](?record=2): it needs no approval, and nothing is said.',
+      '[Open an order under the limit](?record=2): it needs no approval — press Ask for approval, and it is a purchase order at once, “No approval needed” in its history.',
     ],
   },
   {

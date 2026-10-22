@@ -131,7 +131,10 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
   /** A moment of its history: who did what, when, and why. */
   function historyItem(approval: FormApproval, entry: ApprovalEntry): HTMLElement {
     const level = levelName(approval, entry.level, entry);
-    const what = entry.decision === 'requested' ? fill(labels.approvalAskedEntry, { name: entry.by }) : fill(entry.decision === 'approved' ? labels.approvalApprovedEntry : labels.approvalRejectedEntry, { name: entry.by, level });
+    const what =
+      entry.decision === 'requested' ? fill(labels.approvalAskedEntry, { name: entry.by })
+      : entry.decision === 'notNeeded' ? labels.approvalNotNeeded
+      : fill(entry.decision === 'approved' ? labels.approvalApprovedEntry : labels.approvalRejectedEntry, { name: entry.by, level });
     const at = formApprovalsPart.loaded?.approvalWhen(entry.at, ctx.messages, page) ?? entry.at;
     const item = el('li', { class: 'fd-approval-entry', 'data-decision': entry.decision }, el('span', { class: 'fd-approval-entry-what' }, what), el('time', { class: 'fd-approval-entry-at', datetime: entry.at }, at));
     if (entry.reason) item.append(el('q', { class: 'fd-approval-entry-reason', dir: 'auto' }, entry.reason));
@@ -267,17 +270,19 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
       if (approval === drawn) return;
       const before = drawn;
       drawn = approval;
-      // Nothing told yet for the record shown — new, asked, none needed: nothing shows.
+      // Nothing told yet for the record shown — new, asked, none needed: nothing shows; sent, and moved on as its rules
+      // asked no level of it, that is said — "No approval needed" — with its history.
       const failed = approval?.state === 'failed';
-      const shown = !!approval && (failed || approval.status !== 'none');
+      const notNeeded = !!approval && approval.status === 'none' && approval.history.at(-1)?.decision === 'notNeeded';
+      const shown = !!approval && (failed || approval.status !== 'none' || notNeeded);
       setHidden(element, !shown);
       if (!approval || !shown) {
         if (!approval || before?.levels !== approval.levels) setText(said, '');
         return;
       }
-      element.setAttribute('data-status', failed ? 'failed' : approval.status);
+      element.setAttribute('data-status', failed ? 'failed' : notNeeded ? 'not-needed' : approval.status);
       setAttr(element, 'aria-busy', approval.state === 'asking' ? 'true' : null);
-      setText(title, failed ? fill(labels.approvalFailed, { why: approval.error ?? '' }) : headline(approval));
+      setText(title, failed ? fill(labels.approvalFailed, { why: approval.error ?? '' }) : notNeeded ? labels.approvalNotNeeded : headline(approval));
       setHidden(retry, !failed);
       setText(why, failed ? '' : (approval.why ?? ''));
       setHidden(why, failed || !approval.why);

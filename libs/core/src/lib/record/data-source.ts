@@ -252,9 +252,12 @@ export interface ApprovalLevel {
 
 /** What happened on a record's way to approval: sent for it, or a decision at a level — who, when, and why. */
 export interface ApprovalEntry {
-  /** A decision at a level, or the record sent for approval (`requested`): each round of asking starts with one. */
-  decision: ApprovalDecision | 'requested';
-  /** The level decided at, by its id; none for `requested`. */
+  /**
+   * A decision at a level, the record sent for approval (`requested`: each round of asking starts with one), or sent
+   * and moved on at once as its rules asked no level of it (`notNeeded`: "No approval needed").
+   */
+  decision: ApprovalDecision | 'requested' | 'notNeeded';
+  /** The level decided at, by its id; none for `requested` and `notNeeded`. */
   level?: string;
   /** The level's name, where it is no longer among the record's levels: its id is said otherwise. */
   levelName?: string;

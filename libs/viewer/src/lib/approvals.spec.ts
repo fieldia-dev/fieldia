@@ -145,12 +145,12 @@ describe('a record waiting for approval', () => {
     const dialog = host.querySelector<HTMLElement>('.fd-approval-reject') as HTMLElement;
     expect(dialog.getAttribute('role')).toBe('dialog');
     expect(dialog.querySelector('h2')?.textContent).toBe('Reject this purchase order?');
-    expect(dialog.querySelector('.fd-approval-reject-ask')?.textContent).toBe('Say why it is rejected for Finance. The reason is kept in its history.');
+    expect(dialog.querySelector('.fd-approval-reject-ask')?.textContent).toBe('Say why you reject it (Finance). The reason is kept in its history.');
     const box = dialog.querySelector('textarea') as HTMLTextAreaElement;
     expect(document.activeElement).toBe(box);
     (dialog.querySelector('.fd-actions .fd-button-danger') as HTMLButtonElement).click();
     await until(() => !(dialog.querySelector('.fd-error') as HTMLElement).hidden);
-    expect(dialog.querySelector('.fd-error')?.textContent).toBe('Say why it is rejected');
+    expect(dialog.querySelector('.fd-error')?.textContent).toBe('Say why you reject it');
     expect(box.getAttribute('aria-invalid')).toBe('true');
     expect(dataSource.calls.filter((call) => call.method === 'decide')).toEqual([]);
     box.value = 'The quote is out of date: ask for a new one';
@@ -213,7 +213,7 @@ describe('a record waiting for approval', () => {
     (dialog.querySelector('.fd-actions .fd-button-danger') as HTMLButtonElement).click();
     await until(() => entries().length === 2);
     expect(toggle.textContent).toBe('Approval history (2)');
-    expect(entries()[1].querySelector('.fd-approval-entry-what')?.textContent).toBe('Mona Adel rejected it for Finance');
+    expect(entries()[1].querySelector('.fd-approval-entry-what')?.textContent).toBe('Mona Adel rejected it (Finance)');
     expect(entries()[1].querySelector('q')?.textContent).toBe('Over budget');
   });
 });
@@ -234,6 +234,23 @@ describe('approvals not shown', () => {
     handle = mountViewer(host, { page: order(), dataSource: plain as DataSource, recordId: 1, user: MONA });
     await until(() => handle?.form.getState().status === 'ready');
     expect(band()?.hidden).toBe(true);
+    expect(field('f-vendor').querySelector('input')?.readOnly).toBe(false);
+  });
+
+  it('says “No approval needed” for a record sent and moved on at once, its rules asking no level of it, with its history', async () => {
+    // The owner's walk of 0.29: an order under its limit, asked for approval, stood at "To approve" with nothing said.
+    const none = (values: Record<string, unknown>): MemoryApprovalRoute => route(values) ?? { levels: [], asked: values['state'] === 'to_approve' || values['state'] === 'purchase', approved: { state: 'purchase' } };
+    const dataSource = createMemoryDataSource({ records: { 'purchase.order': { 2: { name: 'PO-0043', vendor: 'Delta Paper', amount: 12000, state: 'draft', notes: '' } } }, approvals: { 'purchase.order': none } });
+    const viewer = await mount(dataSource, 2);
+    expect(band()?.hidden).toBe(true);
+    viewer.form.setValue('state', 'to_approve');
+    await viewer.form.save();
+    await until(() => text('.fd-approval-title') === 'No approval needed' && !band()?.hidden);
+    expect(viewer.form.getState().values['state']).toBe('purchase');
+    expect(band()?.getAttribute('data-status')).toBe('not-needed');
+    expect(text('.fd-approval-toggle')).toBe('Approval history (2)');
+    expect([...(band()?.querySelectorAll('.fd-approval-entry-what') ?? [])].map((one) => one.textContent)).toEqual(['Mona Adel asked for approval', 'No approval needed']);
+    expect(shownButtons()).toEqual([]);
     expect(field('f-vendor').querySelector('input')?.readOnly).toBe(false);
   });
 

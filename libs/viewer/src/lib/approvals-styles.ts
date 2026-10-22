@@ -12,14 +12,14 @@ import { installPartStyles, PART_RANK } from '@fieldia/widgets';
 const APPROVALS_CSS = /* css */ `
 .fd-approval { --fd-approval-tone: var(--fd-warning); --fd-approval-soft: var(--fd-warning-soft); display: grid; gap: 8px; padding: 12px 14px; border: 1px solid var(--fd-border); border-inline-start: 4px solid var(--fd-approval-tone); border-radius: var(--fd-control-radius); background: var(--fd-approval-soft); color: var(--fd-text); font-size: 13.5px; }
 .fd-approval[data-status="needed"] { --fd-approval-tone: var(--fd-info); --fd-approval-soft: var(--fd-info-soft); }
-.fd-approval[data-status="approved"] { --fd-approval-tone: var(--fd-success); --fd-approval-soft: var(--fd-success-soft); }
+.fd-approval:is([data-status="approved"], [data-status="not-needed"]) { --fd-approval-tone: var(--fd-success); --fd-approval-soft: var(--fd-success-soft); }
 .fd-approval:is([data-status="rejected"], [data-status="failed"]) { --fd-approval-tone: var(--fd-error); --fd-approval-soft: var(--fd-error-soft); }
 .fd-approval[hidden], .fd-approval [hidden] { display: none; }
 .fd-approval-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 12px; }
 .fd-approval-mark { flex: none; width: 18px; height: 18px; margin-block-start: 1px; border-radius: 50%; display: inline-grid; place-items: center; background: var(--fd-approval-tone); color: var(--fd-surface); font-size: 12px; font-weight: 700; line-height: 1; }
 .fd-approval-mark::before { content: "…"; }
 .fd-approval[data-status="needed"] .fd-approval-mark::before { content: "i"; }
-.fd-approval[data-status="approved"] .fd-approval-mark::before { content: "✓"; }
+.fd-approval:is([data-status="approved"], [data-status="not-needed"]) .fd-approval-mark::before { content: "✓"; }
 .fd-approval:is([data-status="rejected"], [data-status="failed"]) .fd-approval-mark::before { content: "✕"; }
 .fd-approval-words { flex: 1 1 16em; min-width: 0; display: grid; gap: 2px; }
 .fd-approval-title { margin: 0; font-size: 14.5px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }

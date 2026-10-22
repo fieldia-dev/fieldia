@@ -118,6 +118,8 @@ export interface ChatterLabels {
   approvalAsked: string;
   approvalApproved: string;
   approvalRejected: string;
+  /** Sent, and moved on at once as its rules asked no level of it. */
+  approvalNotNeeded: string;
 }
 
 /**
@@ -224,8 +226,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     overdueSince: 'Overdue since {when}',
     dueTime: 'Time',
     approvalAsked: 'Asked for approval',
-    approvalApproved: 'Approved for {level}',
-    approvalRejected: 'Rejected for {level}',
+    approvalApproved: 'Approved ({level})',
+    approvalRejected: 'Rejected ({level})',
+    approvalNotNeeded: 'No approval needed',
   },
   ar: {
     conversation: 'المحادثة',
@@ -318,8 +321,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     overdueSince: 'متأخر منذ {when}',
     dueTime: 'الوقت',
     approvalAsked: 'طلب الموافقة',
-    approvalApproved: 'وافق عن {level}',
-    approvalRejected: 'رفض عن {level}',
+    approvalApproved: 'وافق ({level})',
+    approvalRejected: 'رفض ({level})',
+    approvalNotNeeded: 'لا حاجة إلى موافقة',
   },
   de: {
     conversation: 'Unterhaltung',
@@ -412,8 +416,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     overdueSince: 'Überfällig seit {when}',
     dueTime: 'Uhrzeit',
     approvalAsked: 'Hat um Genehmigung gebeten',
-    approvalApproved: 'Für {level} genehmigt',
-    approvalRejected: 'Für {level} abgelehnt',
+    approvalApproved: 'Genehmigt ({level})',
+    approvalRejected: 'Abgelehnt ({level})',
+    approvalNotNeeded: 'Keine Genehmigung nötig',
   },
   fr: {
     conversation: 'Conversation',
@@ -506,7 +511,8 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     overdueSince: 'En retard depuis {when}',
     dueTime: 'Heure',
     approvalAsked: 'A demandé l’approbation',
-    approvalApproved: 'Approuvé pour {level}',
-    approvalRejected: 'Refusé pour {level}',
+    approvalApproved: 'Approuvé ({level})',
+    approvalRejected: 'Refusé ({level})',
+    approvalNotNeeded: 'Aucune approbation nécessaire',
   },
 };

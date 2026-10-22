@@ -1013,8 +1013,10 @@ interface ApprovalLevel {
   state: 'waiting' | 'later' | 'approved' | 'rejected' | 'skipped';
 }
 interface ApprovalEntry {
-  decision: 'approved' | 'rejected' | 'requested';   // `requested`: sent for approval — each round starts with one
-  level?: string;               // the level's id; none for `requested`
+  decision: 'approved' | 'rejected' | 'requested' | 'notNeeded';
+                                // `requested`: sent for approval — each round starts with one; `notNeeded`: sent, and
+                                // moved on at once as its rules asked no level of it ("No approval needed")
+  level?: string;               // the level's id; none for `requested` and `notNeeded`
   levelName?: string;           // its name, where it is no longer among the levels
   by: string;                   // who, by name
   at: string;                   // ISO
@@ -1045,7 +1047,7 @@ In plain words:
   none. A source that throws: `state: 'failed'` with why, nothing locked by it, and Retry.
 - **`mine`** is kept to the levels waiting, and only where the source has `decide`: a level not waiting is never
   offered. `form.decide` refuses one not in it ("Finance is not yours to decide now"), and a rejection with no reason
-  ("Say why it is rejected") — no source is asked.
+  ("Say why you reject it") — no source is asked.
 - **A decision is on the record as saved**: what is typed is read and the person's changes saved first (a field left
   open, typed in); a refused save stops it, said. Then `decide`; its answer, where it gives one, is laid at once; and
   the record is loaded again — the decision may have moved it on (its state, its `can`) — its approvals asked with it.
@@ -1061,6 +1063,19 @@ In plain words:
   its messages by when each happened, as events never posted to the chatter's source; `chatterSlot({ approvals: false })`
   where the app's server posts each decision in the conversation itself.
 
+**The routing we recommend** — the memory source's, and what an engine behind these members should do (Fieldia says
+what it is told; these are the source's to keep):
+
+- **No one approves what they asked for.** The person who sends a record for approval — who starts a round
+  (`requested`) — is none of that round's approvers, whoever they are elsewhere: the manager who sends his employee's
+  rejected claim again does not approve it at his own level. Left out of each level's `approvers` and of `mine`, and
+  `decide` refuses them ("Karim Fathy asked for this approval, so may not decide it"). A level whose only approver
+  sent it waits for someone else — another approver, or the app's own way on (a deputy, the next manager up).
+- **A record whose rules ask no level moves on at once.** Sent for approval with no level to pass (an order under its
+  limit), it takes its approved state as it is sent — never left "To approve", waiting for no one — and its history
+  says so: `requested`, then `notNeeded` ("No approval needed"). The band says "No approval needed" over its history;
+  a record never sent, or whose rules ask nothing, shows nothing, as before.
+
 **An approval engine behind the members** — Flowyard's approval step, say (a separate engine Fieldia does not depend
 on): a record's run is the route; each approval step on its way is a level (its step's id, its label as the name, the
 people it asks as approvers). `approvals` reads the run: a step not reached is `later`, one waiting for its people
@@ -1071,14 +1086,19 @@ the waiting steps whose people include the person signed in. `decide` answers th
 Approved or Declined way — with the reason kept with the run (its note, the item it passes on), and the engine moves the
 record on as its next steps say; `history` is the run's steps as they went: started (`requested`), and each answer with
 who, when and why. A timed-out step is the engine's to say: a `rejected` with its words, or a step on to another level.
+The run's starter (who sent the record) is left out of the people of every approval step of that run, and `decide`
+refuses them; a run whose route reaches no approval step goes on by its Approved way at once, its history a `requested`
+then a `notNeeded`.
 
 - The memory source: `approvals` answers from its `approvals` option, by model — `(values, id) => MemoryApprovalRoute |
   null`: the levels, who may approve each, any one or all, in turn or `together`, whether the record is sent for approval
   now (`asked`), `why`, and the values the record takes once every level approved it (`approved`) or one rejected it
   (`rejected`) — keeping each decision as an engine would: a round of asking starts each time the record is sent again
   (`requested`, by the person asking), a level waits in turn unless together, is met by one approver or by all, and a
-  rejection ends the round. `decide` refuses a level not waiting, someone not its approver or who decided already, and a
-  rejection with no reason; the person is the request's `user`, by id, else by name. `approvalHistory` (by `model:id`)
+  rejection ends the round; the person who sent it is none of the round's approvers. A route of no levels, sent, moves
+  the record on to its `approved` values as it is saved (`requested`, then `notNeeded`, told by the next `approvals`,
+  as the person is known then). `decide` refuses a level not waiting, the person who sent it, someone not its approver
+  or who decided already, and a rejection with no reason; the person is the request's `user`, by id, else by name. `approvalHistory` (by `model:id`)
   is what it starts from. Tests: `libs/core/src/lib/record/approvals.spec.ts`, `form-approvals-lazy.spec.ts`,
   `libs/viewer/src/lib/approvals.spec.ts`, `libs/chatter/src/lib/approvals.spec.ts`, `e2e/approvals.spec.ts`.
 - **A list whose cells change in place** (§21) knows nothing of approvals: a record waiting for one is locked there only
