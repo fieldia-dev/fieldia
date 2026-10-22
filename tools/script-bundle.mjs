@@ -1556,8 +1556,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // words) — Arabic's 96.17 and 16.01, to 96.2 and 16.1; German's 44.42 and 13.98, to 44.5 and 14.0; French's 44.95 and
 // 13.99, to 45.0 and 14.0. Approvals routed as recommended — "No approval needed", a level named once in brackets —
 // Arabic's 96.22 and 16.03, to 96.3; German's 44.44 and 13.98, inside 44.5 and 14.0; French's 44.99 and 14.00, to 45.1
-// and 14.1.
-const ADD_ON_BUDGET_KB = { ar: [96.3, 16.1], de: [44.5, 14.0], fr: [45.1, 14.1] };
+// and 14.1. A counted table's sheet with a box to type a code in — Arabic's 96.33 and 16.05, to 96.4; German's 44.50
+// and 14.00, to 44.6 and 14.1; French's 45.05 and 14.02, inside 45.1 and 14.1.
+const ADD_ON_BUDGET_KB = { ar: [96.4, 16.1], de: [44.6, 14.1], fr: [45.1, 14.1] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2024,8 +2025,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 12.7. Approvals routed as recommended: the memory source leaves the person who sent a record out of its round's
 // approvers and moves a record its rules ask no level of on at once — memory 20.07 and 7.11 measured before, 21.09 and
 // 7.44 after, to 21.1 and 7.5; the band says "No approval needed" over its history — approvals 19.93 and 6.83 to 20.18
-// and 6.90, to 20.2 and 7.0.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.2, 7.0], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
+// and 6.90, to 20.2 and 7.0. Scanning as the owner's walk asked: a code of a kind the field takes nothing from said in
+// the sheet, a scanner gun's code typed in the box read as the camera reads one, a counted table's sheet with a box to
+// type a code in — scan 18.63 and 7.87 measured before, 21.38 and 8.84 after, to 21.4 and 8.9; a scanned link's box
+// asking for its record by code first — relations 20.08 and 7.59 to 20.32 and 7.68, to 20.4 and 7.7. (The main script
+// grew 45 bytes, inside its budget: 33 in the shared table, for what these parts now take from it rather than a copy —
+// isEmpty, drawIcon, formatNumber, inPlural, scanPart — and 12 in styles.ts, a muted pill's shade made over the surface
+// so a hovered row keeps its words' contrast; 511.22 and 167.75 measured before, 511.26 and 167.77 after.)
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.2, 7.0], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [21.4, 8.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

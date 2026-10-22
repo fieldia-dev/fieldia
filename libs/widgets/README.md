@@ -258,7 +258,13 @@ it reads them all, else with ZXing's readers in the decode part
 browser without — Safari, Firefox, a computer's Chrome. Where the camera is not
 allowed, there is none, another app holds it, or the page cannot use one, the
 field says why beside the button and the cursor goes to its box, to type. A
-scanner gun (a keyboard wedge) types into the box as ever.
+code of a kind the field takes nothing from (a shelf's barcode held up for a lot)
+is said in the sheet — "This code has no Lot in it" — never met with silence. A
+scanner gun (a keyboard wedge) types into the box, and what it typed is read as
+the camera reads a code once Enter is pressed or the box is left: a link's record
+by its code (`by`), a GS1 code's part and the fields it fills — a code longer
+than the field's most is read whole — while words a person types stay as typed.
+A table counted has a box in its sheet to type a code whose label will not scan.
 
 ```json
 { "type": "field", "id": "f-patient", "field": "patient_id", "options": { "scan": { "by": "card" } } }

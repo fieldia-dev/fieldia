@@ -1,4 +1,4 @@
-import { labelAt, type Field, type Line, type LineField, type RelatedRecord, type SearchOptions, type Value, type Values } from '@fieldia/core';
+import { labelAt, type Field, type Form, type Line, type LineField, type RelatedRecord, type SearchOptions, type Value, type Values } from '@fieldia/core';
 import { gs1Day, gs1Number, gs1Parts, isGs1Day, readGs1 } from './gs1';
 import { drawIcon } from './icons';
 import { announcer, fillIn, maker, setAttr, setHidden, wordsFor } from './kind-parts';
@@ -25,8 +25,10 @@ import type { TypedText, Widget, WidgetContext } from './widgets';
  *   count, until Done.
  *
  * Where the camera cannot open, a note beside the button says why and the focus goes to the box, to type the code. A
- * scanner gun types into the box as ever: this adds a way, it takes none. An answer for a record no longer shown is laid
- * on none, and the sheet closes.
+ * scanner gun types into the box: what it typed is read as the camera reads a code — a GS1 code's part and the fields it
+ * fills, as Enter is pressed or the box is left; a link's record by its code (`typedLink`, which the link's box asks) —
+ * and words a person typed stay as typed. A code of a kind the field takes nothing from is said in the sheet. An answer
+ * for a record no longer shown is laid on none, and the sheet closes.
  */
 
 /** Every format Fieldia reads: a field that names none reads them all. */
@@ -109,47 +111,17 @@ const alike = (a: Value | undefined, b: Value): boolean => {
 /** A value as a sentence says it: a link by its name. */
 const shownOf = (value: Value): string => (value && typeof value === 'object' && !Array.isArray(value) && 'label' in value ? String((value as RelatedRecord).label) : String(value ?? ''));
 
+type Kind = 'lines' | 'link' | 'words' | null;
+const kindOf = (field: Field): Kind => (field.type === 'one2many' ? 'lines' : field.type === 'many2one' ? 'link' : field.type === 'char' || field.type === 'text' ? 'words' : null);
+
 /**
- * A field's widget scanned into (`options.scan`): in a box of its own with the Scan button at its end — a table's under
- * it — and what the codes it reads come to. The main script draws it so once this part has come (`partWidget`), the
- * widget alone until then.
+ * How a field scanned into reads a code, whether the camera read it or a scanner gun typed it: what a part of it is as a
+ * field holds it, the record a code names in a link, and the other fields a GS1 code fills.
  */
-export function scanning(widget: Widget, context: WidgetContext): Widget {
-  const { form, name, field, node, document: doc, labels, locale } = context;
-  const kind = field.type === 'one2many' ? 'lines' : field.type === 'many2one' ? 'link' : field.type === 'char' || field.type === 'text' ? 'words' : null;
-  const settings = settingsOf(node.options?.['scan']);
-  // A kind no code is written into, or a table that names nothing to count by: the widget alone (the page's check says why).
-  if (!kind || (kind === 'lines' && (!settings.field || !settings.count))) return widget;
-  installScanStyles(doc);
-  const make = maker(doc);
-  const holder = make('div', { class: 'fd-scan' }, widget.element);
-  const words = wordsFor(labels, locale);
-  const label = node.label ?? field.label;
-  const lower = form.page.lowerLabels;
-  const named = (template: string) => fillIn(template, { label: labelAt(template, 'label', lower, locale)(label) });
-  const inLine = !!form.line;
-  const id = `${context.id}-scan`;
-
-  const icon = drawIcon(doc, 'scan', { scan: SCAN_ICON });
-  icon?.setAttribute('aria-hidden', 'true');
-  // Named by what it does: a code scanned into the field, or a table counted by scanning.
-  const into = named(kind === 'lines' ? words.scanCountInto : words.scanInto);
-  const button = make('button', { type: 'button', class: 'fd-button fd-scan-button', 'aria-haspopup': 'dialog', 'aria-label': into, title: into }, ...(icon ? [icon] : []), ...(inLine ? [] : [words.scanButton]));
-  const note = make('p', { class: 'fd-scan-note', id: `${id}-note`, role: 'status', hidden: '' });
-  const voice = announcer(make);
-  holder.dataset['scan'] = kind;
-  if (inLine) holder.setAttribute('data-in-line', '');
-  holder.append(button, note, voice.element);
-
+function codeReading(form: Form, name: string, field: Field, kind: Kind, settings: Settings) {
   /** The fields a GS1 code may fill: the line's columns for a cell or a counted line, else the page's. */
   const columns: Record<string, Field | LineField> =
     kind === 'lines' ? ((field as { fields?: Record<string, LineField> }).fields ?? {}) : form.line ? ((form.page.fields[form.line.field] as { fields?: Record<string, LineField> } | undefined)?.fields ?? {}) : form.page.fields;
-  let sheet: ScanSheet | null = null;
-  /**
-   * Whether the sheet outlives this widget: a grid's cell editor (@fieldia/grid) goes as the sheet takes the focus — the
-   * grid stops editing a cell that loses it — and the sheet reads on into the line, through the line's form.
-   */
-  let outlives = false;
 
   /** What a part of a code (or the whole, `id` null) is as `def` holds it; a link's is looked up apart. Null where it is none. */
   function valueOf(def: Field | LineField, id: string | null, part: string): Value | null {
@@ -196,6 +168,88 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
     return values;
   }
 
+  /** The values filled written, before the field's own: what they name replaces what the boxes held, words typed in them that did not read too. */
+  function writeFills(values: Values) {
+    for (const [other, value] of Object.entries(values)) {
+      if (form.getState().unread?.[other]) form.setUnread(other, null);
+      form.setValue(other, value);
+    }
+  }
+
+  return { columns, valueOf, find, filled, writeFills };
+}
+
+/**
+ * What a scanner gun typed, rather than a person: a GS1 code that reads as two parts or more, or one marked as a
+ * scanner marks it (`]d2`, a group separator, "(01)…" as a label prints it). A lot typed by hand that happens to start
+ * as a GS1 part would ("10A55") is words, as typed.
+ */
+function gunTyped(text: string): Record<string, string> | null {
+  const parts = gs1Parts(text);
+  return parts && (parts.length > 1 || /^[\](]/.test(text.trim()) || text.trim().startsWith('\u001d')) ? Object.fromEntries(parts) : null;
+}
+
+/**
+ * The record a code typed in a scanned link's box names — a scanner gun types it, Enter after it — as the camera reads
+ * one: by its GS1 part where the field takes one, by the field holding the linked records' codes (`by`), the fields the
+ * code fills written first. Null where the words name no record by code: the box reads them as a name, as ever. Asked
+ * by the link's box (relations.ts) as Enter is pressed or the box is left.
+ */
+export async function typedLink(context: Pick<WidgetContext, 'form' | 'name' | 'field' | 'node'>, typed: string): Promise<RelatedRecord | null> {
+  const { form, name, field, node } = context;
+  const settings = settingsOf(node.options?.['scan']);
+  const text = typed.trim();
+  if (!text || field.type !== 'many2one' || (!settings.by && !settings.part)) return null;
+  const parts = settings.part || settings.fills.length ? gunTyped(text) : null;
+  const code = settings.part ? parts?.[settings.part] : text;
+  if (!code) return null;
+  const reading = codeReading(form, name, field, 'link', settings);
+  const found = await reading.find(name, code, settings.by).catch((): Found => 'none');
+  if (typeof found !== 'object') return null;
+  reading.writeFills(await reading.filled(parts));
+  return found;
+}
+
+/**
+ * A field's widget scanned into (`options.scan`): in a box of its own with the Scan button at its end — a table's under
+ * it — and what the codes it reads come to. The main script draws it so once this part has come (`partWidget`), the
+ * widget alone until then.
+ */
+export function scanning(widget: Widget, context: WidgetContext): Widget {
+  const { form, name, field, node, document: doc, labels, locale } = context;
+  const kind = kindOf(field);
+  const settings = settingsOf(node.options?.['scan']);
+  // A kind no code is written into, or a table that names nothing to count by: the widget alone (the page's check says why).
+  if (!kind || (kind === 'lines' && (!settings.field || !settings.count))) return widget;
+  installScanStyles(doc);
+  const make = maker(doc);
+  const holder = make('div', { class: 'fd-scan' }, widget.element);
+  const words = wordsFor(labels, locale);
+  const label = node.label ?? field.label;
+  const lower = form.page.lowerLabels;
+  const named = (template: string) => fillIn(template, { label: labelAt(template, 'label', lower, locale)(label) });
+  const inLine = !!form.line;
+  const id = `${context.id}-scan`;
+
+  const icon = drawIcon(doc, 'scan', { scan: SCAN_ICON });
+  icon?.setAttribute('aria-hidden', 'true');
+  // Named by what it does: a code scanned into the field, or a table counted by scanning.
+  const into = named(kind === 'lines' ? words.scanCountInto : words.scanInto);
+  const button = make('button', { type: 'button', class: 'fd-button fd-scan-button', 'aria-haspopup': 'dialog', 'aria-label': into, title: into }, ...(icon ? [icon] : []), ...(inLine ? [] : [words.scanButton]));
+  const note = make('p', { class: 'fd-scan-note', id: `${id}-note`, role: 'status', hidden: '' });
+  const voice = announcer(make);
+  holder.dataset['scan'] = kind;
+  if (inLine) holder.setAttribute('data-in-line', '');
+  holder.append(button, note, voice.element);
+
+  const { columns, valueOf, find, filled, writeFills } = codeReading(form, name, field, kind, settings);
+  let sheet: ScanSheet | null = null;
+  /**
+   * Whether the sheet outlives this widget: a grid's cell editor (@fieldia/grid) goes as the sheet takes the focus — the
+   * grid stops editing a cell that loses it — and the sheet reads on into the line, through the line's form.
+   */
+  let outlives = false;
+
   /** What the code names in `def` (`column`, by `by`): its value, or what to say instead; a link's said looked up meanwhile. */
   async function nameCode(def: Field | LineField, column: string, code: FoundCode, say: (text: string) => void): Promise<{ value: Value } | { said: string }> {
     const parts = settings.part || settings.fills.length ? readGs1(code.rawValue) : null;
@@ -227,10 +281,7 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
     const others = await filled(readGs1(code.rawValue));
     if (!shown()) return { kept: false, close: true };
     // What the code names replaces what the boxes held, words typed in them that did not read too.
-    for (const [other, value] of Object.entries(others)) {
-      if (form.getState().unread?.[other]) form.setUnread(other, null);
-      form.setValue(other, value);
-    }
+    writeFills(others);
     if (form.getState().unread?.[name]) form.setUnread(name, null);
     form.setValue(name, got.value);
     voice.say(fillIn(words.scanRead, { label: labelAt(words.scanRead, 'label', lower, locale)(label), value: shownOf(got.value) }));
@@ -290,12 +341,61 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
       title: kind === 'lines' ? into : named(words.scanTitle),
       aim: kind === 'lines' ? words.scanAimCount : words.scanAim,
       formats: settings.formats,
+      // Codes of the other kinds read too, to say this field takes nothing from them, never silence.
+      seen: EVERY_FORMAT.filter((format) => !settings.formats.includes(format)),
+      others: fillIn(words.scanNoPart, { label: labelAt(words.scanNoPart, 'label', lower, locale)(kind === 'lines' ? (columns[settings.field as string]?.label ?? label) : label) }),
       counting: kind === 'lines',
       sound: settings.sound,
       read: (code, say) => (kind === 'lines' ? countIn(code, shown, say) : readInto(code, shown, say)),
       closed: ended,
     });
   });
+
+  // A scanner gun types its code into the box, Enter after it: read as the camera reads one — its GS1 part, the fields
+  // it fills — as Enter is pressed or the box is left. Words a person typed stay as typed.
+  if (kind === 'words' && (settings.part || settings.fills.length)) {
+    let read = '';
+    const readTyped = async (box: HTMLInputElement | HTMLTextAreaElement) => {
+      // All the gun typed, the keys past the field's most held with the rest: a code is longer than the part it holds.
+      const text = (widget.typedText?.() ?? box.value).trim();
+      if (!text || text === read || !gunTyped(text)) return;
+      read = text;
+      const answer = await readInto({ rawValue: text, format: '' }, stillShown(form), () => undefined);
+      if (answer.kept) {
+        // Its box shows what was taken, not what the gun typed: read again as it is left, it is the part.
+        const now = form.getState().values[name];
+        box.value = typeof now === 'string' ? now : '';
+        read = box.value;
+        note.hidden = true;
+      } else if (answer.said) {
+        note.textContent = answer.said;
+        note.hidden = false;
+        typedSaid = true;
+      }
+    };
+    /** The note says what a typed code came to, not why the camera did not open: it goes as the box is typed in again. */
+    let typedSaid = false;
+    const typedIn = (target: EventTarget | null) => (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) && widget.element.contains(target) ? target : null;
+    // Read once the box has settled what it holds — its keys held past the field's most put back in it — as Enter
+    // commits it (its change) or the box is left; Enter where a browser sends no change, a moment after.
+    holder.addEventListener('change', (event) => {
+      const box = typedIn(event.target);
+      if (box) void readTyped(box);
+    });
+    holder.addEventListener('focusout', (event) => {
+      const box = typedIn(event.target);
+      if (box) void readTyped(box);
+    });
+    holder.addEventListener('keydown', (event) => {
+      const box = typedIn(event.target);
+      if (box && event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) setTimeout(() => void readTyped(box));
+    });
+    holder.addEventListener('input', () => {
+      if (!typedSaid) return;
+      typedSaid = false;
+      note.hidden = true;
+    });
+  }
 
   return {
     element: holder,

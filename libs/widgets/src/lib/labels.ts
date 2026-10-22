@@ -559,6 +559,9 @@ export interface WidgetLabels {
   scanAim: string;
   scanAimCount: string;
   scanTypeInstead: string;
+  /** A table counted: the box in the sheet to type a code whose label will not scan, and its button. */
+  scanTypeCode: string;
+  scanTypeCount: string;
   scanDone: string;
   scanLookingUp: string;
   scanNoneFound: string;
@@ -951,6 +954,8 @@ const en: WidgetLabels = {
   scanAim: 'Hold the code inside the frame.',
   scanAimCount: 'Scan each item: every code read counts one.',
   scanTypeInstead: 'Type it instead',
+  scanTypeCode: 'Or type the code',
+  scanTypeCount: 'Count',
   scanDone: 'Done',
   scanLookingUp: 'Looking up {code}…',
   scanNoneFound: 'Nothing has the code {code}. Scan another, or type it.',

@@ -376,6 +376,8 @@ export const ar: WidgetLabels = {
   scanAim: 'ضع الرمز داخل الإطار.',
   scanAimCount: 'امسح كل قطعة: كل رمز يُقرأ يُحتسب واحدة.',
   scanTypeInstead: 'اكتبه بدلًا من ذلك',
+  scanTypeCode: 'أو اكتب الرمز',
+  scanTypeCount: 'عدّ',
   scanDone: 'تم',
   scanLookingUp: 'جارٍ البحث عن {code}…',
   scanNoneFound: 'لا شيء يحمل الرمز {code}. امسح رمزًا آخر أو اكتبه.',

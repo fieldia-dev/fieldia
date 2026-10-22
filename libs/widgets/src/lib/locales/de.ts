@@ -376,6 +376,8 @@ export const de: WidgetLabels = {
   scanAim: 'Halten Sie den Code in den Rahmen.',
   scanAimCount: 'Scannen Sie jeden Artikel: Jeder gelesene Code zählt eins.',
   scanTypeInstead: 'Stattdessen eintippen',
+  scanTypeCode: 'Oder den Code eintippen',
+  scanTypeCount: 'Zählen',
   scanDone: 'Fertig',
   scanLookingUp: '{code} wird gesucht…',
   scanNoneFound: 'Nichts hat den Code {code}. Scannen Sie einen anderen oder tippen Sie ihn ein.',

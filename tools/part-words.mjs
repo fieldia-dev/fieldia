@@ -117,7 +117,7 @@ export const PART_WORDS = {
   print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },
   scan: {
-    widgets: ['scanButton', 'scanInto', 'scanCountInto', 'scanTitle', 'scanStarting', 'scanAim', 'scanAimCount', 'scanTypeInstead', 'scanDone', 'scanLookingUp', 'scanNoneFound', 'scanSeveral', 'scanLookUpFailed', 'scanNoPart', 'scanRead', 'scanCounted', 'scanRefused', 'scanNoCamera', 'scanCameraBusy', 'scanUnavailable', 'scanNoReader'],
+    widgets: ['scanButton', 'scanInto', 'scanCountInto', 'scanTitle', 'scanStarting', 'scanAim', 'scanAimCount', 'scanTypeInstead', 'scanTypeCode', 'scanTypeCount', 'scanDone', 'scanLookingUp', 'scanNoneFound', 'scanSeveral', 'scanLookUpFailed', 'scanNoPart', 'scanRead', 'scanCounted', 'scanRefused', 'scanNoCamera', 'scanCameraBusy', 'scanUnavailable', 'scanNoReader'],
   },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {
