@@ -61,6 +61,8 @@ export const de: Messages = {
   addressParts: 'Straße und Hausnummer|Adresszeile 2|Ort|Bundesland oder Region|Postleitzahl|Land',
   archiveConfirm: 'Möchten Sie diesen Datensatz wirklich archivieren?',
   deleteConfirm: 'Möchten Sie diesen Datensatz wirklich löschen?',
+  archiveYes: 'Archivieren',
+  deleteYes: 'Löschen',
   mayNotEdit: 'Sie können diesen Datensatz lesen, aber nicht ändern.',
   mayNotArchive: 'Sie können diesen Datensatz nicht archivieren.',
   mayNotDuplicate: 'Sie können diesen Datensatz nicht duplizieren.',

@@ -63,7 +63,7 @@ test('Archive answering after the pager moved on leaves lead 2, and the budget S
   const archive = await hold(page, 'archive');
   await form.getByRole('button', { name: 'Actions' }).click();
   await form.getByRole('menuitem', { name: 'Archive' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
   await archive.asked();
   await onLead2Typing(page);
   await archive.release();
@@ -98,7 +98,7 @@ test('Delete answering after the pager moved on leaves order 2, and the phone ty
   await zzHold(page, 'delete');
   await page.locator('#app').getByRole('button', { name: 'Actions' }).click();
   await page.locator('#app').getByRole('menuitem', { name: 'Delete' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click();
   await zzHeld(page, 'delete');
   await page.keyboard.press('Alt+n');
   await expect(page.locator('#app .fd-title textarea')).toHaveValue('Order two');

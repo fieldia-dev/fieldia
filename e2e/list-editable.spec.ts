@@ -351,7 +351,7 @@ test.describe('a clinic’s service prices', () => {
     await page.keyboard.press('ControlOrMeta+V');
     // Three rows changed at once: asked first.
     await expect(page.getByRole('alertdialog')).toContainText('Change 3 rows with what you pasted?');
-    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Paste 3 rows' }).click();
     await expect(page.locator('.fd-list-paste-words')).toHaveText('Pasted into 6 cells.');
     await expect.poll(() => calls(page, 'save')).toHaveLength(3);
     await expect(cell(page, 'Botox, crow’s feet', 'price')).toHaveText('E£ 3,800');
@@ -362,7 +362,7 @@ test.describe('a clinic’s service prices', () => {
     await cell(page, 'Laser, face', 'done_by').click();
     await page.keyboard.press('Escape');
     await page.keyboard.press('ControlOrMeta+V');
-    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Paste 3 rows' }).click();
     await expect.poll(() => calls(page, 'writeMany')).toHaveLength(1);
     const [many] = await calls(page, 'writeMany');
     expect(many.ids).toEqual([13, 12, 11]);
@@ -383,6 +383,8 @@ test.describe('a clinic’s service prices', () => {
     await page.keyboard.press('ControlOrMeta+V');
     const asked = page.getByRole('alertdialog');
     await expect(asked).toContainText('Paste 40 rows: change 7 and add 33?');
+    // Its buttons say what they do: Paste 40 rows, or Cancel — never a bare OK.
+    await expect(asked.getByRole('button')).toHaveText(['Cancel', 'Paste 40 rows']);
     await screen(page, 'list-editable-paste-asked', { viewport: true });
     // Cancel: nothing pasted.
     await asked.getByRole('button', { name: 'Cancel' }).click();
@@ -392,7 +394,7 @@ test.describe('a clinic’s service prices', () => {
     // Again, and yes.
     await cell(page, 'Laser, face', 'minutes').focus();
     await page.keyboard.press('ControlOrMeta+V');
-    await asked.getByRole('button', { name: 'OK' }).click();
+    await asked.getByRole('button', { name: 'Paste 40 rows' }).click();
     await expect.poll(async () => (await stored(page, 'clinic.service', 5))['minutes']).toBe(23);
     await expect(page.locator('.fd-list-row[data-new]')).toHaveCount(33);
     // Said once, not 33 times; each row still marked.
@@ -425,7 +427,7 @@ test.describe('a clinic’s service prices', () => {
     await page.keyboard.press('Escape');
     await page.keyboard.press('ControlOrMeta+V');
     await expect(page.getByRole('alertdialog')).toContainText('Paste 2 rows: change 1 and add 1?');
-    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Paste 2 rows' }).click();
     await expect(page.locator('.fd-pager-text')).toHaveText('1–14 of 14 services');
     await expect.poll(async () => (await stored(page, 'clinic.service', 8))['price']).toBe(650);
     await expect(page.locator('.fd-list-undo')).toBeVisible();
@@ -443,7 +445,7 @@ test.describe('a clinic’s service prices', () => {
     await cell(page, 'Skin consultation', 'minutes').click();
     await page.keyboard.press('Escape');
     await page.keyboard.press('ControlOrMeta+V');
-    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Paste 3 rows' }).click();
     const refused = page.locator('.fd-list-refused-rows');
     await expect(refused).toContainText('2 rows not saved: Service is required.');
     await refused.getByRole('button', { name: 'Remove them' }).click();

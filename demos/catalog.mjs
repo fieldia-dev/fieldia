@@ -214,7 +214,7 @@ export const DEMOS = [
     query: 'page=customer&skin=underline',
     blurb: 'A customer on one page: where they stand — draft, active or blocked — their sales and invoices counted at the top, a key-account badge and a warning, tabs, their contacts in a table, links to other records, and the conversation with your team beside it.',
     howTo: [
-      'Press Block and answer OK: the customer is blocked and saved, and a Blocked banner crosses their page. Activate brings them back.',
+      'Press Block, and Block again in its question: the customer is blocked and saved, and a Blocked banner crosses their page. Activate brings them back.',
       'Press Ctrl+Enter (⌘+Enter on a Mac) to save from wherever the cursor is.',
       'Open the Contacts tab and add a contact in the table.',
       'Type in Country and pick one from the list: a link to another record.',
@@ -1109,7 +1109,7 @@ export const DEMOS = [
       'Pick a product: the app checks the stock, says how many are left, and gives the price; the total follows the quantity.',
       'Pick the standing desk: the app says it is out of stock, and the price stays empty.',
       'Press Customer’s page: the customer’s record takes the order’s place. Back brings the order back as it was.',
-      'Press Submit with a field empty: the form shows what is missing. Fill it in, submit again, and answer OK to “Send the order?”: “Order sent”.',
+      'Press Submit with a field empty: the form shows what is missing. Fill it in, submit again, and answer Submit to “Send the order?”: “Order sent”.',
     ],
   },
   {

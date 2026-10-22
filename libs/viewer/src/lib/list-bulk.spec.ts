@@ -85,9 +85,9 @@ async function setOnChosen(host: Element, field: string, value: string) {
 describe('Edit, for many records at once', () => {
   it('asks the field and its value in its own box, then the question, then writes it in each record chosen', async () => {
     const source = createMemoryDataSource({ records: records() });
-    const asked: string[] = [];
+    const asked: [string, string | undefined][] = [];
     const said: string[] = [];
-    const host = await mount({ dataSource: source, confirm: async (message) => (asked.push(message), true), host: { say: (message) => void said.push(message) } });
+    const host = await mount({ dataSource: source, confirm: async (message, how) => (asked.push([message, how?.yes]), true), host: { say: (message) => void said.push(message) } });
     expect(edit(host).hidden).toBe(true);
     tick(host, 'Amira Clinics', 'Petra Tours');
     expect(edit(host).hidden).toBe(false);
@@ -104,7 +104,8 @@ describe('Edit, for many records at once', () => {
     expect([...(dialog() as HTMLElement).querySelectorAll('.fd-form-dialog-foot button')].map((b) => b.textContent)).toEqual(['Cancel', 'Update']);
     footButton('Update').click();
     await until(() => said.length > 0);
-    expect(asked).toEqual(['Update 2 records? Status becomes “Customer”.']);
+    // Its Yes says what it does, as the dialog's own button did.
+    expect(asked).toEqual([['Update 2 records? Status becomes “Customer”.', 'Update']]);
     expect(said).toEqual(['2 records updated.']);
     expect([1, 2, 3, 4].map((id) => stateOf(source, id))).toEqual(['customer', 'customer', 'customer', 'blocked']);
     // One call for them all, the field alone.

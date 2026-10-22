@@ -295,6 +295,7 @@ export const ar: ViewerLabels = {
   pasteAsk: 'لصق {n} صفوف: تغيير {changed} وإضافة {added}؟',
   pasteAskChange: 'تغيير {n} صفوف بما لصقته؟',
   pasteAskAdd: 'إضافة {n} صفوف مما لصقته؟',
+  pasteYes: 'لصق {n} صفوف',
   pasteUndo: 'تراجع',
   pasteUndone: 'تم التراجع عن اللصق.',
   rowsNotSaved: 'لم يُحفظ {n} من الصفوف: {why}.',

@@ -146,7 +146,7 @@ type Source = ReturnType<typeof heldSource>;
 
 /** A host that answers each question as told (No when it runs out), or leaves it open for the test to answer (`'open'`). */
 function host(answers: (boolean | 'open')[] = []) {
-  const asked: { message: string; how?: { discard?: boolean } }[] = [];
+  const asked: { message: string; how?: { discard?: boolean; yes?: string } }[] = [];
   const closed: number[] = [];
   const urls: string[] = [];
   const open: ((yes: boolean) => void)[] = [];
@@ -657,7 +657,7 @@ describe('work at risk: worked out from the record as the last finished save lef
     expect(await form.runAction('m-delete')).toMatchObject({ done: false });
     expect(form.getState()).toMatchObject({ recordId: 1, unsent: ['budget'] });
     expect(await form.run([{ do: 'reload' }])).toMatchObject({ done: false, reason: 'no' });
-    expect(made.asked).toEqual([{ message: 'Are you sure you want to delete this record?' }, DISCARD]);
+    expect(made.asked).toEqual([{ message: 'Are you sure you want to delete this record?', how: { yes: 'Delete' } }, DISCARD]);
     expect(form.getState().values['budget']).toBe(4300000);
   });
 
@@ -674,7 +674,7 @@ describe('work at risk: worked out from the record as the last finished save lef
     ds.release('delete');
     expect((await run).done).toBe(true);
     await form.settled();
-    expect(made.asked).toEqual([{ message: 'Are you sure you want to delete this record?' }]);
+    expect(made.asked).toEqual([{ message: 'Are you sure you want to delete this record?', how: { yes: 'Delete' } }]);
     expect(form.getState()).toMatchObject({ recordId: null, unsent: [] });
   });
 

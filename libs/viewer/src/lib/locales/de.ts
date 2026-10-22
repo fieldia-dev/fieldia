@@ -332,6 +332,7 @@ export const de: ViewerLabels = {
   pasteAsk: '{n} Zeilen einfügen: {changed} ändern und {added} hinzufügen?',
   pasteAskChange: '{n} Zeilen mit dem Eingefügten ändern?',
   pasteAskAdd: '{n} Zeilen aus dem Eingefügten hinzufügen?',
+  pasteYes: '{n} Zeilen einfügen',
   pasteUndo: 'Rückgängig',
   pasteUndone: 'Einfügen rückgängig gemacht.',
   rowsNotSaved: '{n} Zeilen nicht gespeichert: {why}.',

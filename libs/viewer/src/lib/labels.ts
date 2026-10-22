@@ -489,6 +489,8 @@ export interface ViewerLabels {
   pasteAsk: string;
   pasteAskChange: string;
   pasteAskAdd: string;
+  /** Its Yes: what answering it does. */
+  pasteYes: string;
   pasteUndo: string;
   pasteUndone: string;
   rowsNotSaved: string;
@@ -1067,6 +1069,7 @@ const en: ViewerLabels = {
   pasteAsk: 'Paste {n} rows: change {changed} and add {added}?',
   pasteAskChange: 'Change {n} rows with what you pasted?',
   pasteAskAdd: 'Add {n} rows from what you pasted?',
+  pasteYes: 'Paste {n} rows',
   pasteUndo: 'Undo',
   pasteUndone: 'Paste undone.',
   rowsNotSaved: '{n} rows not saved: {why}.',

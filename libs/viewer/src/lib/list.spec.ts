@@ -124,7 +124,9 @@ describe('a list of records', () => {
     archive.click();
     await until(() => document.querySelector('[role=alertdialog]'));
     expect(document.querySelectorAll('[role=alertdialog]')).toHaveLength(1);
-    button(document.querySelector('[role=alertdialog]') as HTMLElement, 'OK')!.click();
+    // Yes says what it does, in the button's words.
+    expect([...(document.querySelector('[role=alertdialog]') as HTMLElement).querySelectorAll('button')].map((one) => one.textContent)).toEqual(['Cancel', 'Archive']);
+    button(document.querySelector('[role=alertdialog]') as HTMLElement, 'Archive')!.click();
     await until(() => pressed.length);
     expect(document.querySelector('[role=alertdialog]')).toBeNull();
     expect(archive.getAttribute('aria-busy')).toBe('true');

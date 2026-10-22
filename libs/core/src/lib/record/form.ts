@@ -57,7 +57,7 @@ import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { signedBy, type SignedBy } from './signed';
-import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
+import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type AskHow, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
   initialValues,
@@ -361,8 +361,11 @@ export interface FormOptions {
   onAction?: OnAction;
   /** The UI the core cannot draw — pages opened, words said, questions asked — given by the viewer. */
   host?: ActionHost;
-  /** How a question is asked when there is no host. Without either, a question goes on as though answered Yes. */
-  confirm?: (message: string) => boolean | Promise<boolean>;
+  /**
+   * How a question is asked when there is no host. Without either, a question goes on as though answered Yes. `how.yes`
+   * is what answering Yes does, for its Yes button's words: a button's own label ("Send the quote"), Archive, Delete.
+   */
+  confirm?: (message: string, how?: AskHow) => boolean | Promise<boolean>;
   /**
    * Keep what is typed as a draft, offered again the next time the page opens: in `store` (the browser's localStorage
    * fits) — or, on a page with `continueLater` whose data source has `saveDraft` and `loadDraft`, on the app's server,
@@ -513,7 +516,8 @@ export interface Form {
    */
   reading(): boolean;
   validate(): boolean;
-  save(): Promise<boolean>;
+  /** `how.yes`: the words of what set it off — the Submit button's —, which the page's `beforeSave` questions' Yes says. */
+  save(how?: { yes?: string }): Promise<boolean>;
   reset(): void;
   /**
    * Words of the page's with each `{field}` showing the value the form holds now, as `valueWords` writes it — a label's,
@@ -2678,8 +2682,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return shown;
   }
 
-  async function save(chain: readonly string[] = []): Promise<boolean> {
-    return (await saving(chain)) === null;
+  async function save(chain: readonly string[] = [], yes?: string): Promise<boolean> {
+    return (await saving(chain, yes)) === null;
   }
 
   /** Every value, for a source that saves whole records: those of fields hidden from the person, which they never had, left out. */
@@ -2711,12 +2715,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    * save with the version the first got back, never as someone else's. A save
    * the page's own beforeSave steps ask for runs inside the one that set them off.
    */
-  function saving(chain: readonly string[]): Promise<Stopped | null> {
-    if (chain.includes('on.beforeSave')) return savingNow(chain);
+  function saving(chain: readonly string[], yes?: string): Promise<Stopped | null> {
+    if (chain.includes('on.beforeSave')) return savingNow(chain, yes);
     const before = saveRunning;
     const mine = (async () => {
       if (before) await before;
-      return savingNow(chain);
+      return savingNow(chain, yes);
     })();
     const done = mine.then(
       () => undefined,
@@ -2729,7 +2733,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return mine;
   }
 
-  async function savingNow(chain: readonly string[]): Promise<Stopped | null> {
+  async function savingNow(chain: readonly string[], yes?: string): Promise<Stopped | null> {
     // A record its source does not let this person change is refused here, in its words or the form's: no source is asked.
     if (page.data.kind === 'record' && state.can?.edit === false) {
       const problem: SaveProblem = { kind: 'rule', message: state.can.reason ?? named(messages.mayNotEditNoun, messages.mayNotEdit) };
@@ -2771,7 +2775,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (page.on?.beforeSave) {
       // Its run stops of itself on a record shown by anything but its own steps (a `call`'s `{ record }`, a reload):
       // those move the save on with it.
-      const before = await moment('on.beforeSave', page.on.beforeSave, chain, false);
+      // Its questions' Yes goes on with what set the save off: its words (Submit, a button's).
+      const before = await moment('on.beforeSave', page.on.beforeSave, chain, false, yes);
       if (!before.done) {
         // A check's problems, or an inner save's, are shown already; any other stop is this save's problem.
         if (before.reason !== 'check' && before.reason !== 'save') {
@@ -3454,7 +3459,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   });
   // A moment's run is on the record it was set off on: one set off again while its run goes, and run after it, is let
   // go when another record is shown by then (its steps were for that one).
-  const moment = createMoments((key, list, chain, on) => runTop(list, { id: key, chain, generation: on }), () => generation);
+  const moment = createMoments((key, list, chain, on, yes) => runTop(list, { id: key, chain, generation: on, ...(yes ? { yes } : {}) }), () => generation);
 
   /**
    * Whether steps do something before their first save — set a status, call the app, open a page — so a record's
@@ -3480,13 +3485,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (builtin) list.push({ do: builtin });
     const asked = builtin === 'archive' ? named(messages.archiveConfirmNoun, messages.archiveConfirm) : builtin === 'delete' ? named(messages.deleteConfirmNoun, messages.deleteConfirm) : undefined;
     const confirm = 'confirm' in source && source.confirm !== undefined ? source.confirm : asked;
+    // Its question's Yes, and its ask steps', say what it does: its own words, else Archive or Delete.
+    scope.yes ??= source.label || (builtin === 'archive' ? messages.archiveYes : builtin === 'delete' ? messages.deleteYes : undefined);
     // On the record it was pressed on: another shown while its question is asked, it does nothing to that one.
     scope.generation ??= generation;
     // Pressed by the person: what is typed is read before a step reads the form or hands its values on.
     scope.typed ??= 'first';
     return track(
       (async (): Promise<RunResult> => {
-        if (confirm && !(await runner.ask(confirm))) {
+        if (confirm && !(await runner.ask(confirm, scope.yes))) {
           const result: RunResult = { done: false, reason: 'no', message: confirm };
           emit('run', { id: scope.id, steps: list, result });
           return result;
@@ -3505,7 +3512,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         }
         // Then the save first, then the steps.
         if (saveFirst && (state.recordId == null || state.dirty.length > 0 || Object.keys(state.unread ?? {}).length > 0 || state.uploads.some(uploadGoing))) {
-          const first = await saving(scope.chain);
+          const first = await saving(scope.chain, scope.yes);
           if (first) {
             const result: RunResult = { done: false, step: { do: 'save' }, reason: first.reason, ...(first.message !== undefined ? { message: first.message } : {}), ...(first.error !== undefined ? { error: first.error } : {}) };
             emit('run', { id: scope.id, steps: list, result });
@@ -3678,7 +3685,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       return Object.keys(errors).length === 0;
     },
 
-    save: () => track(save()),
+    save: (how) => track(save([], how?.yes)),
 
     canUpload: () => typeof options.dataSource?.upload === 'function',
     today,
@@ -4014,7 +4021,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         lines: { field: source.field, keys: [...keys], ids: lines.flatMap((line) => (line.id === undefined ? [] : [line.id])), values: lines.map((line) => structuredCopy(line.values)) },
       });
     },
-    run: (list, context = {}) => track(runTop(list, { id: context.id ?? 'run', chain: [], typed: 'first', ...(context.recordIds ? { recordIds: [...context.recordIds] } : {}) })),
+    run: (list, context = {}) => track(runTop(list, { id: context.id ?? 'run', chain: [], typed: 'first', ...(context.recordIds ? { recordIds: [...context.recordIds] } : {}), ...(context.yes ? { yes: context.yes } : {}) })),
 
     shown(tab) {
       // A wizard's steps are told by the form itself, as they are entered.

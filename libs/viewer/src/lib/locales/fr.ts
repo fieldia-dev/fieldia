@@ -322,6 +322,7 @@ export const fr: ViewerLabels = {
   pasteAsk: 'Coller {n} lignes : en modifier {changed} et en ajouter {added} ?',
   pasteAskChange: 'Modifier {n} lignes avec ce que vous avez collé ?',
   pasteAskAdd: 'Ajouter {n} lignes à partir de ce que vous avez collé ?',
+  pasteYes: 'Coller {n} lignes',
   pasteUndo: 'Annuler',
   pasteUndone: 'Collage annulé.',
   rowsNotSaved: '{n} lignes non enregistrées : {why}.',

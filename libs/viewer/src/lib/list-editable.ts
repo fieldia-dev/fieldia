@@ -1267,7 +1267,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
     if (changes + adds > 1 && list.ask) {
       const count = (n: number) => formatNumber(n, 0, locale);
       const asked = changes && adds ? fill(labels.pasteAsk, { n: count(changes + adds), changed: count(changes), added: count(adds) }) : fill(changes ? labels.pasteAskChange : labels.pasteAskAdd, { n: count(changes || adds) });
-      if (!(await list.ask(asked)) || at !== drawings || destroyed || !tr.isConnected) return;
+      // Its Yes says what it does: "Paste 40 rows", Cancel beside it.
+      if (!(await list.ask(asked, { yes: fill(labels.pasteYes, { n: count(changes + adds) }) })) || at !== drawings || destroyed || !tr.isConnected) return;
     }
     const undo: PasteUndo = { changed: new Map(), made: [], from: td, timer: null };
     // The rows it lands on, each with its form ready to take its cells.

@@ -207,7 +207,9 @@ test.describe('customer sheet', () => {
     expect(await demo<string[]>('actions')).toEqual([]);
     await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Active');
     await page.getByRole('button', { name: 'Block', exact: true }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    // Yes says what it does, as the button does.
+    await expect(page.getByRole('alertdialog').getByRole('button')).toHaveText(['Cancel', 'Block']);
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Block' }).click();
     await expect.poll(() => demo<string[]>('actions')).toEqual(['block']);
 
     await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Blocked');
@@ -242,7 +244,7 @@ test.describe('customer sheet', () => {
   test('Block, then Activate at once: only what Activate says stays, never “Customer blocked” over an active customer', async ({ page }) => {
     await open(page, variant, 'page=customer&skin=underline');
     await page.getByRole('button', { name: 'Block', exact: true }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Block' }).click();
     await expect(page.locator('.fd-say')).toHaveText(['Customer blocked: new orders will be refused.×']);
     await page.getByRole('button', { name: 'Activate' }).click();
     await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Active');

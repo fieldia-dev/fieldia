@@ -80,7 +80,7 @@ test.describe('a list people take away and change in bulk', () => {
     await rows(page).first().locator('.fd-list-checkbox').uncheck();
     await expect(count(page)).toHaveText('1,283 selected');
     await page.getByRole('button', { name: 'Send newsletter' }).click();
-    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Send newsletter' }).click();
     await expect.poll(() => demo<{ recordIds: unknown[] }[]>('requests').then((requests) => requests.at(-1)?.recordIds.length)).toBe(1283);
     // The header's box, unticked, lets every one go.
     await header(page).check();
@@ -173,7 +173,7 @@ test.describe('a list people take away and change in bulk', () => {
     await dialog.getByRole('button', { name: 'Update' }).click();
     const question = page.getByRole('alertdialog');
     await expect(question).toHaveText(/Update 10 contacts\? Status becomes “Inactive”\./);
-    await question.getByRole('button', { name: 'OK' }).click();
+    await question.getByRole('button', { name: 'Update' }).click();
     const report = page.locator('.fd-list-report');
     await expect(report).toBeVisible();
     await expect(report.locator('.fd-list-report-words')).toHaveText(`${10 - refused.length} of 10 contacts updated. Not changed:`);
@@ -201,7 +201,7 @@ test.describe('a list people take away and change in bulk', () => {
     await dialog.getByLabel('Field').selectOption({ label: 'Newsletter' });
     await dialog.getByRole('checkbox', { name: 'Newsletter' }).check();
     await dialog.getByRole('button', { name: 'Update' }).click();
-    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Update' }).click();
     await expect(toast(page).filter({ hasText: '3 contacts updated.' })).toBeVisible();
     for (const { name } of free) await expect(rows(page).filter({ hasText: name }).first().locator('td').nth(8)).toHaveText('✓');
     expect(problems).toEqual([]);

@@ -130,7 +130,7 @@ test.describe('a customer’s contacts brought in from a file', () => {
     await report(page).getByRole('button', { name: 'Undo the import' }).click();
     const question = page.getByRole('alertdialog');
     await expect(question).toHaveText(/Delete the 10 contacts this import made\?/);
-    await question.getByRole('button', { name: 'OK' }).click();
+    await question.getByRole('button', { name: 'Delete', exact: true }).click();
     await expect(page.locator('.fd-say')).toContainText('Import undone: 10 contacts deleted.');
     await expect(page.locator('.fd-pager-text')).toHaveText('1–10 of 1,284 contacts');
     await expect(report(page)).toBeHidden();

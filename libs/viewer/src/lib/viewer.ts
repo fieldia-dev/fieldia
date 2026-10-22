@@ -9,6 +9,7 @@ import {
   wideColumns,
   type ActionHost,
   type ActionStep,
+  type AskHow,
   type ButtonNode,
   type FieldNode,
   type FormEvents,
@@ -157,8 +158,12 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   /** Labels that win over the language's defaults. */
   labels?: Partial<ViewerLabels>;
   dir?: 'ltr' | 'rtl';
-  /** How a question is asked: a button's `confirm`, and an `ask` step. Defaults to the viewer's own small box. */
-  confirm?: (message: string) => Promise<boolean>;
+  /**
+   * How a question is asked: a button's `confirm`, and an `ask` step. Defaults to the viewer's own small box. `how.yes`
+   * is what answering Yes does, for the Yes button's words — the button's own label, Archive, "Paste 40 rows" —, as the
+   * viewer's own box says it.
+   */
+  confirm?: (message: string, how?: AskHow) => Promise<boolean>;
   /** Where a person's choices about the page's look are kept, such as a table's columns. The browser's storage by default. */
   preferences?: PreferenceStore;
   /** False when something around the page saves it, such as a dialog: the page's own Save, Discard and Submit stay hidden. */
@@ -434,7 +439,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       ),
     say: (message, tone) => say(message, tone),
     // A question that lets the person's work go is the viewer's own, worded Discard, the focus on Cancel.
-    ask: (message, how) => (how?.discard ? letGoAsked(message) : confirm(message)),
+    ask: (message, how) => (how?.discard ? letGoAsked(message) : confirm(message, how)),
     show: (target) => {
       const show = tabs.get(target);
       if (!show?.()) throw new Error(`No tab "${target}" can be shown here`);
@@ -533,7 +538,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': skinFor(options.skin ?? page.look?.skin, theme), dir, lang: tag, 'data-max-width': page.maxWidth });
   applyLook(root, theme ? { ...page.look, theme } : page.look);
   wearTokens(root, options.tokens);
-  const confirm = options.confirm ?? dialogConfirm;
+  // A question whose Yes does something says what in its Yes, never a bare OK.
+  const confirm = options.confirm ?? ((message: string, how?: AskHow) => dialogConfirm(message, true, { yes: how?.yes }));
   /** The "Discard your changes?" asked now, if one is: gone the moment it is answered. */
   let discarding: Promise<boolean> | null = null;
   /**
@@ -1921,7 +1927,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   async function submitOrSave() {
     // A record only to read has nothing to save: Ctrl+Enter there does nothing.
     if (form.getState().can?.edit === false) return;
-    const saved = await form.save();
+    // A question its save asks first (the page's beforeSave) says in its Yes what the form's own Save or Submit says.
+    const own = [...root.querySelectorAll<HTMLButtonElement>('button[type="submit"]')].find((one) => one.closest('form') === root && !one.closest('[hidden]'));
+    const saved = await form.save({ yes: own?.textContent?.trim() || undefined });
     if (!saved) {
       // Stopped by the page's own checks: say which fields; a refused save says so above.
       if (!form.getState().saveProblem) announce(checkText(form.getState()));
@@ -2473,7 +2481,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         ...newListRecord(),
         // An export's end said, Edit's question asked and its value asked in a dialog, as the page's own steps are.
         say: (message, tone) => actionHost.say(message, tone),
-        ask: (message) => actionHost.ask(message),
+        ask: (message, how) => actionHost.ask(message, how),
         editValues: (request) => dialogs.editValues(request),
         // A phone column's call and WhatsApp links, in the phone field's own words.
         widgetLabels,

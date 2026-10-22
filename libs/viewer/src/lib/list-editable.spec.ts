@@ -306,6 +306,8 @@ describe('a list whose cells are changed in place', () => {
     pasteOn(cell(host, 3, 'minutes'), '50\t3300\n30\t1500\n');
     await until(() => document.querySelector('[role="alertdialog"]'));
     expect(document.querySelector('[role="alertdialog"] p')?.textContent).toBe('Paste 2 rows: change 1 and add 1?');
+    // Its Yes says what it does (the owner's walk read OK there).
+    expect([...document.querySelectorAll('[role="alertdialog"] button')].map((one) => one.textContent)).toEqual(['Cancel', 'Paste 2 rows']);
     (document.querySelector('[role="alertdialog"] .fd-button-primary') as HTMLButtonElement).click();
     // The row added has no name: refused, said under it (one row alone says its own).
     await until(() => source.records['service']['3']['price'] === 3300 && host.querySelector('.fd-list-undo:not([hidden])'));

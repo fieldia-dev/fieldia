@@ -140,7 +140,7 @@ export const FieldiaForm = defineComponent({
     resume: { type: String, default: undefined },
     autosave: { type: Object as PropType<{ delayMs: number }>, default: undefined },
     scheduler: { type: Object as PropType<Scheduler>, default: undefined },
-    confirm: { type: Function as PropType<(message: string) => Promise<boolean>>, default: undefined },
+    confirm: { type: Function as PropType<ViewerOptions['confirm']>, default: undefined },
     preferences: { type: Object as PropType<PreferenceStore>, default: undefined },
     /** The app's pages: a saved form placed in the page by its id, a link's record by its model. */
     pages: { type: [Object, Function] as PropType<ViewerOptions['pages']>, default: undefined },

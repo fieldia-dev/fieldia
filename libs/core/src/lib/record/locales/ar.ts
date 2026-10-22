@@ -61,6 +61,8 @@ export const ar: Messages = {
   addressParts: 'عنوان الشارع|سطر العنوان 2|المدينة|المحافظة أو المنطقة|الرمز البريدي|الدولة',
   archiveConfirm: 'هل أنت متأكد من أرشفة هذا السجل؟',
   deleteConfirm: 'هل أنت متأكد من حذف هذا السجل؟',
+  archiveYes: 'أرشفة',
+  deleteYes: 'حذف',
   mayNotEdit: 'يمكنك قراءة هذا السجل، لكن لا يمكنك تغييره.',
   mayNotArchive: 'لا يمكنك أرشفة هذا السجل.',
   mayNotDuplicate: 'لا يمكنك استنساخ هذا السجل.',
