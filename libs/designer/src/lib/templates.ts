@@ -1,6 +1,6 @@
 import { checkPage, FORMAT_VERSION, validatePage, type Field, type FieldNode, type JsonValue, type Page } from '@fieldia/core';
 import { kindById } from './kinds';
-import { DESIGNER_WORDS, type DesignerLocale, type DesignerWords } from './designer-words';
+import { wordsIn, type DesignerLocale, type DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { Refusal } from './refusal';
 
@@ -65,7 +65,7 @@ function made(kind: 'survey' | 'screen', id: string, title: string, description:
 
 /** Fieldia's surveys to start from, in the designer's language. */
 export function surveyTemplates(locale: DesignerLocale = 'en'): PageTemplate[] {
-  const words = DESIGNER_WORDS[locale];
+  const words = wordsIn(locale);
   const language = locale === 'en' ? undefined : locale;
   const { feedback, event, job } = words.templates;
   const english = en.templates;
@@ -151,7 +151,7 @@ export function surveyTemplates(locale: DesignerLocale = 'en'): PageTemplate[] {
 
 /** Fieldia's screens to start from, in the designer's language. */
 export function screenTemplates(locale: DesignerLocale = 'en'): PageTemplate[] {
-  const words = DESIGNER_WORDS[locale];
+  const words = wordsIn(locale);
   const language = locale === 'en' ? undefined : locale;
   const { contact, order } = words.templates;
   return [

@@ -80,7 +80,7 @@ import { LOOK_PRESETS, wholeLook, type LookValues } from './look-presets';
 import { browserLooks } from './look-store';
 import { setFold, type Fold } from './group-fold';
 import { editChecker } from './validate-edit';
-import { DESIGNER_WORDS, designerLocale, isDefaultOption, type DesignerLocale, type DesignerWords } from './designer-words';
+import { designerLocale, designerWordsReady, isDefaultOption, wordsIn, type DesignerLocale, type DesignerWords } from './designer-words';
 import { answersName, formParts, freeFieldName, refuseCycle, savedFormsCache, updateFormPart, type FormPartPatch, type SavedFormRef } from './saved-forms';
 import { settingRefusal } from './setting-refusals';
 
@@ -121,7 +121,7 @@ export type { EndingPatch, EndingsCommands } from './endings-commands';
 export type { Moment, StepPath, StepsPlace } from './steps-places';
 export { createBrowserLookStore, createMemoryLookStore } from './look-store';
 export type { LookValues } from './look-presets';
-export { DESIGNER_WORDS, designerLocale, type DesignerLocale, type DesignerWords } from './designer-words';
+export { DESIGNER_WORDS, designerLocale, designerWordsReady, type DesignerLocale, type DesignerWords } from './designer-words';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -144,7 +144,7 @@ const slug = (text: string, sep = '_', empty = 'page') =>
  */
 export function blankPage(kind: PageKind, title: string, options: { locale?: string } = {}): Page {
   const locale = designerLocale(options.locale) ?? 'en';
-  const w = DESIGNER_WORDS[locale].defaults;
+  const w = wordsIn(locale).defaults;
   const id = slug(title, '-');
   const written = locale === 'en' ? {} : { language: locale };
   if (kind === 'survey') {
@@ -733,6 +733,18 @@ export interface AppList {
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
+/** Whether the designer's words in a language are at hand: English's and Arabic's always, the others' once fetched. */
+const wordsAtHand = (locale: DesignerLocale) => wordsIn(locale) !== wordsIn('en') || locale === 'en';
+const toldNotYet = new Set<DesignerLocale>();
+/** A designer asked for in a language whose words have not been fetched: it speaks English, and says once how to fix it. */
+function notYet(locale: DesignerLocale): DesignerLocale {
+  if (!toldNotYet.has(locale)) {
+    toldNotYet.add(locale);
+    console.warn(`Fieldia designer: its "${locale}" words come in a chunk of their own and have not been fetched, so it speaks English. Await designerWordsReady('${locale}') before createDesigner (createDesigner.open does).`);
+  }
+  return 'en';
+}
+
 export function createDesigner(options: {
   page: Page;
   store?: PageStore;
@@ -772,8 +784,10 @@ export function createDesigner(options: {
   const store = options.store;
   /** How each editor reads a setting typed and not yet left (`settling`): publish runs them first. */
   const readers = new Set<() => void>();
-  const locale = designerLocale(options.locale);
-  const words = DESIGNER_WORDS[locale ?? 'en'];
+  // A language whose words come in a chunk of their own and have not come yet (designerWordsReady): English, said once.
+  const asked = designerLocale(options.locale);
+  const locale = asked && !wordsAtHand(asked) ? notYet(asked) : asked;
+  const words = wordsIn(locale);
   const appKinds = registerKinds(options.kinds ?? []);
   /** A kind this designer offers: Fieldia's, or one of this app's. */
   const kindOf = (id: string): QuestionKind => {
@@ -2279,7 +2293,7 @@ createDesigner.open = async (
   store: PageStore,
   options: { model?: Record<string, Field>; lists?: AppList[]; functions?: FunctionsKnown; kinds?: readonly AppKind[]; looks?: LookStore; openForm?: (id: string) => void; locale?: DesignerLocale | (string & {}); regionSets?: readonly RegionSet[] } = {}
 ): Promise<Designer> => {
-  const { draft, versions } = await store.load(id);
+  const [{ draft, versions }] = await Promise.all([store.load(id), designerWordsReady(options.locale)]);
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
   return createDesigner({ page, store, versions, model: options.model, lists: options.lists, functions: options.functions, kinds: options.kinds, looks: options.looks, openForm: options.openForm, locale: options.locale, regionSets: options.regionSets });

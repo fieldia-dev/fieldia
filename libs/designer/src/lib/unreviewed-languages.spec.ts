@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { blankPage, createDesigner } from './designer';
-import { DESIGNER_WORDS, designerLocale, DATE_TAGS, designerDirection } from './designer-words';
+import { DESIGNER_WORDS, designerLocale, designerWordsReady, DATE_TAGS, designerDirection } from './designer-words';
 import { en } from './locales/en';
 import { es } from './locales/es';
 import { fa } from './locales/fa';
@@ -40,10 +40,21 @@ describe.each(Object.keys(TABLES) as (keyof typeof TABLES)[])('the designer’s 
     }
   });
 
-  it('are the designer’s for the language’s tag', () => {
+  it('are the designer’s for the language’s tag, fetched in a chunk of their own first', async () => {
     expect(designerLocale(`${locale}-XX`)).toBe(locale);
+    // Not fetched yet: the designer speaks English, and the console says once what to await.
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    expect(DESIGNER_WORDS[locale]).toBeUndefined();
+    const early = createDesigner({ page: blankPage('screen', 'Visit'), locale });
+    expect([early.words, early.locale]).toEqual([en, 'en']);
+    createDesigner({ page: blankPage('screen', 'Visit'), locale });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain(`designerWordsReady('${locale}')`);
+    warn.mockRestore();
+    await designerWordsReady(`${locale}-XX`);
     expect(DESIGNER_WORDS[locale]).toBe(TABLES[locale]);
-    expect(createDesigner({ page: blankPage('screen', 'Visit'), locale }).words).toBe(TABLES[locale]);
+    const designer = createDesigner({ page: blankPage('screen', 'Visit'), locale });
+    expect([designer.words, designer.locale]).toEqual([TABLES[locale], locale]);
   });
 });
 
@@ -65,7 +76,8 @@ describe.each(['fa', 'ur'] as const)('the designer in %s', (locale) => {
     expect(left).toEqual([]);
   });
 
-  it('runs right to left, its dates on the Gregorian calendar', () => {
+  it('runs right to left, its dates on the Gregorian calendar', async () => {
+    await designerWordsReady(locale);
     expect(designerDirection(locale)).toBe('rtl');
     expect(new Intl.DateTimeFormat(DATE_TAGS[locale], { year: 'numeric', timeZone: 'UTC' }).format(Date.UTC(2026, 9, 15))).toBe('2026');
     const element = document.createElement('div');

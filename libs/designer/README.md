@@ -480,7 +480,7 @@ createDesigner({ page, looks }); // the same store for every designer, so they o
 
 `createMemoryLookStore()` keeps them for as long as the page is open, as for a test.
 
-## The designer in Arabic
+## The designer in Arabic, and in other languages
 
 The designer speaks English unless it is given a language: `locale: 'ar'` (any
 Arabic tag, `ar-EG` too) puts every word of its own in Arabic — the bar, the
@@ -488,6 +488,21 @@ toolbox, the panel and its settings, the checks and their fixes, the outline,
 Try it, the JSON view, Translations, Rules, every menu, dialog, refusal and
 line read aloud. Numbers stay in Latin digits, as Arabic business software
 writes them. A language it has no words for is English.
+
+It speaks Turkish (`tr`), Persian (`fa`), Urdu (`ur`) and Spanish (`es`) too —
+**machine-assisted, not yet reviewed by a native speaker**: every word English
+has, checked against it, but not yet read by a native speaker; corrections are
+welcome. Persian and Urdu run right to left, as Arabic does. Their words come in
+a chunk each of their own, so a designer in another language never carries
+them: fetch them before making the designer (`createDesigner.open` does).
+
+```ts
+await designerWordsReady('fa');
+const designer = createDesigner({ page: blankPage('survey', 'نظر شرکت‌کنندگان', { locale: 'fa' }), store, locale: 'fa' });
+```
+
+Made before its words came, a designer in one of them speaks English, and the
+console says once what to await.
 
 ```ts
 const designer = createDesigner({ page: blankPage('survey', 'رأي الحضور', { locale: 'ar' }), store, locale: 'ar' });
@@ -512,8 +527,9 @@ templates are offered in the designer's language, their answers stored under
 the same values in every language.
 
 `designer.words` is the table the editors say things from; `DESIGNER_WORDS`
-holds English and Arabic, typed against the English one (`DesignerWords`), so a
-word missing from a language fails to compile. The demos show it:
+holds English and Arabic, and Turkish, Persian, Urdu and Spanish once fetched,
+each typed against the English one (`DesignerWords`), so a word missing from a
+language fails to compile. The demos show it:
 `/designer/?locale=ar&dir=rtl` and `/screen/?locale=ar&dir=rtl` (with
 `&start=list`, `&start=sheet` or `&start=blank`); `?locale=en&dir=rtl` is the
 English designer on a page right to left.
