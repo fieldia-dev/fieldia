@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { GANTT_LABELS } from './labels';
+import { GANTT_LABELS, ganttWordsReady } from './labels';
 
 /**
  * The timeline's words in Turkish, Persian, Urdu and Spanish (0.31): machine-assisted, not yet reviewed by a native speaker, as each
@@ -28,7 +28,9 @@ function sameWords(words: Record<string, unknown>, english: Record<string, unkno
 }
 
 describe.each(NEW)('the timeline’s words in %s', (locale) => {
-  it('are every word English has, with its blanks', () => {
+  it('are every word English has, with its blanks, fetched in a chunk of their own', async () => {
+    expect(GANTT_LABELS[locale]).toBeUndefined();
+    await ganttWordsReady(locale);
     sameWords(GANTT_LABELS[locale] as unknown as Record<string, unknown>, GANTT_LABELS.en as unknown as Record<string, unknown>);
   });
 

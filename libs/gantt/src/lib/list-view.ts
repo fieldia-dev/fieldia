@@ -31,7 +31,8 @@ function lazyGantt(context: ListViewContext, settings: GanttSettings): ListViewP
   let part: ListViewPart | null = null;
   let gone = false;
   const ready: Promise<ListViewPart | null> = import('./gantt-view').then(
-    ({ ganttPart }) => {
+    async ({ ganttPart, ganttWordsReady }) => {
+      await ganttWordsReady(context.locale);
       if (gone) return null;
       part = ganttPart(context, settings);
       element.replaceChildren(part.element);

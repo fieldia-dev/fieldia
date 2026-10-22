@@ -8,6 +8,9 @@ import { clampBy, groupsOf, kindOf, linksOf, movedBy, shifted, stretches, tasksO
 import type { GanttSettings } from './settings';
 import { installGanttStyles } from './styles';
 
+/** Its words, fetched first where they come in a chunk of their own (Turkish, Persian, Urdu, Spanish). */
+export { ganttWordsReady } from './labels';
+
 const ALL_ZOOMS: GanttZoom[] = ['day', 'week', 'month'];
 /** A row's height and a group heading's, in pixels: the stylesheet's (styles.ts), which the arrows are drawn by. */
 const ROW = 36;

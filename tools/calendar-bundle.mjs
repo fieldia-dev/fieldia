@@ -45,6 +45,13 @@
  * where none of its records is — or where the person put the keys (the
  * owner's walk of 0.25: 08:00 at 12:30) — 19,310 bytes measured, 98 more,
  * to 18.9.
+ * Turkish, Persian, Urdu and Spanish (0.31, w6-languages — machine-assisted, not yet reviewed by a native speaker): the
+ * view's name and its failure on the switcher in them, with the page (628 bytes measured before, 785 after, under 0.8);
+ * the code that fetches their words, and a day's tag on the Gregorian calendar and Persian's Saturday week (19,313 bytes
+ * measured before, 19,448 after, to 19.0); and each language's words in a chunk of its own, fetched with the first
+ * calendar shown in it, each against its own budget (`LANGUAGE_BUDGET`: Turkish 858 bytes, Persian 1,049, Urdu 1,070,
+ * Spanish 773 measured) — a calendar in any other language never carries them (inline, they took the calendar's chunk
+ * to 22,191).
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -53,7 +60,8 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/calendar-bundle');
-const BUDGET = { page: 0.8, calendar: 18.9 };
+const BUDGET = { page: 0.8, calendar: 19.0 };
+const LANGUAGE_BUDGET = { tr: 0.9, fa: 1.1, ur: 1.1, es: 0.8 };
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
@@ -86,12 +94,20 @@ const sizes = Object.keys(outputs)
   .filter((path) => path.endsWith('.js'))
   .map((path) => {
     const text = readFileSync(path);
-    return { file: path.split('/').pop(), raw: text.length, gzip: gzipSync(text).length, later: !withPage.has(path), drawing: /fd-cal-grid/.test(String(text)) };
+    // A language's own words (Turkish, Persian, Urdu, Spanish): a chunk of their own, fetched with the first calendar in them.
+    const language = /locales\/(\w+)\.ts$/.exec(outputs[path].entryPoint ?? '')?.[1];
+    return { file: path.split('/').pop(), raw: text.length, gzip: gzipSync(text).length, later: !withPage.has(path), drawing: /fd-cal-grid/.test(String(text)), language };
   });
 for (const s of sizes) console.log(`calendar · ${s.file}: ${(s.raw / 1024).toFixed(1)} KB, ${(s.gzip / 1024).toFixed(1)} KB gzipped${s.later ? ' (loaded with the first calendar shown)' : ''}`);
 const kb = (n) => (n / 1024).toFixed(1);
 const page = sizes.filter((s) => !s.later).reduce((sum, s) => sum + s.gzip, 0);
-const calendar = sizes.filter((s) => s.later).reduce((sum, s) => sum + s.gzip, 0);
+const calendar = sizes.filter((s) => s.later && !s.language).reduce((sum, s) => sum + s.gzip, 0);
+// Each language that comes in a chunk of its own, in it alone, against its own budget: never in the calendar's chunk.
+for (const [locale, budget] of Object.entries(LANGUAGE_BUDGET)) {
+  const words = sizes.filter((s) => s.language === locale);
+  if (words.length !== 1 || !words[0].later) throw new Error(`The calendar's words in ${locale} are not in a chunk of their own, fetched with the first calendar in them`);
+  if (words[0].gzip > budget * 1024) throw new Error(`The calendar's words in ${locale} are ${kb(words[0].gzip)} KB gzipped, over their ${budget} KB budget`);
+}
 if (sizes.some((s) => !s.later && s.drawing)) throw new Error('The calendar is not in a chunk of its own: every page with a list would load it');
 if (!sizes.some((s) => s.later && s.drawing)) throw new Error('No chunk draws the calendar: the lazy import is gone');
 if (page > BUDGET.page * 1024) throw new Error(`@fieldia/calendar with the page is ${kb(page)} KB gzipped, over its ${BUDGET.page} KB budget`);

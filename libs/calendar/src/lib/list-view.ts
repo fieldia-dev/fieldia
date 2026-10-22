@@ -31,7 +31,8 @@ function lazyCalendar(context: ListViewContext, settings: CalendarSettings): Lis
   let part: ListViewPart | null = null;
   let gone = false;
   const ready: Promise<ListViewPart | null> = import('./calendar-view').then(
-    ({ calendarPart }) => {
+    async ({ calendarPart, calendarWordsReady }) => {
+      await calendarWordsReady(context.locale);
       if (gone) return null;
       part = calendarPart(context, settings);
       element.replaceChildren(part.element);

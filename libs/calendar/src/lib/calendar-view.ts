@@ -11,6 +11,9 @@ import { moveTo, placeUnder } from './move-to';
 import type { CalendarSettings } from './settings';
 import { installCalendarStyles } from './styles';
 
+/** Its words, fetched first where they come in a chunk of their own (Turkish, Persian, Urdu, Spanish). */
+export { calendarWordsReady } from './labels';
+
 const ALL_VIEWS: CalendarView[] = ['day', 'week', 'month', 'agenda'];
 /** The least a slot or a record is tall, so a finger or a pointer can hit it (WCAG's 24 pixels). */
 const TARGET = 24;
