@@ -1,4 +1,4 @@
-import { fill, recordSentence, type DateOrder, type Locale, type PageRecords } from '@fieldia/core';
+import { fill, recordSentence, wordsComing, wordsReady, type DateOrder, type Locale, type PageRecords } from '@fieldia/core';
 import { installStyles, sanitizeHtml, showHtml, type IconSet, type ShrinkOptions } from '@fieldia/widgets';
 import { activitiesPart, momentWords } from './activities';
 import { attachmentList, composerFiles } from './attachments';
@@ -9,6 +9,7 @@ import { chatterLabels, type ChatterLabels } from './labels';
 import { mentions } from './mentions';
 import { reactionBar } from './reactions';
 import type { Channel, ChatterMessage, ChatterSource, Person, RecordRef, ReplyChannel } from './source';
+import { drawnLater } from './later';
 import { installChatterStyles } from './styles';
 
 export interface ChatterOptions {
@@ -121,6 +122,25 @@ const key = (id: ChatterMessage['id']) => String(id);
  * framework; it talks to the server only through the app's `source`.
  */
 export function mountChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle {
+  if (!wordsComing(options.locale)) return drawChatter(host, options);
+  // Its language's words come in a chunk of their own (Turkish, Persian, Urdu, Spanish): drawn once they have, so its
+  // first paint is in them; the record and the entries it is told meanwhile are the ones it draws.
+  let entries: readonly ChatterMessage[] | undefined;
+  let drawn: ChatterHandle | null = null;
+  const later = drawnLater(host, options.record, wordsReady(options.locale).then(() => (record: RecordRef | null) => {
+    drawn = drawChatter(host, { ...options, record });
+    if (entries) drawn.setEntries?.(entries);
+    return drawn;
+  }));
+  return Object.assign(later, {
+    setEntries(next: readonly ChatterMessage[]) {
+      entries = next;
+      drawn?.setEntries?.(next);
+    },
+  });
+}
+
+function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle {
   const doc = host.ownerDocument;
   installStyles(doc);
   installChatterStyles(doc);

@@ -1,11 +1,29 @@
-import type { ListNode, Locale } from '@fieldia/core';
+import { tableInChunks, wordsInChunks, type ListNode, type Locale } from '@fieldia/core';
 import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
+import type { CalendarLabels } from './labels';
 import type { CalendarSettings } from './settings';
 
-/** Its name on the list's switcher, which shows before the calendar's own code has come. */
-// Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
-const NAME: Record<Locale, string> = { en: 'Calendar', ar: 'التقويم', fr: 'Calendrier', de: 'Kalender', tr: 'Takvim', fa: 'تقویم', ur: 'کیلنڈر', es: 'Calendario' };
-const FAILED: Record<Locale, string> = { en: 'The calendar could not be loaded.', ar: 'تعذّر تحميل التقويم.', fr: 'Le calendrier n’a pas pu être chargé.', de: 'Der Kalender konnte nicht geladen werden.', tr: 'Takvim yüklenemedi.', fa: 'تقویم بارگیری نشد.', ur: 'کیلنڈر لوڈ نہیں ہو سکا۔', es: 'No se pudo cargar el calendario.' };
+/**
+ * Its name on the list's switcher, and what it says should its code not come: words that show before the calendar's own
+ * code has come. Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker —
+ * come in chunks of their own (the calendar's words' own, locales/), fetched where they are spoken, before a page in one
+ * is drawn (`wordsReady` in @fieldia/core): a page in any other language never carries them.
+ */
+const WORDS = {
+  en: { calendar: 'Calendar', loadFailed: 'The calendar could not be loaded.' },
+  ar: { calendar: 'التقويم', loadFailed: 'تعذّر تحميل التقويم.' },
+  fr: { calendar: 'Calendrier', loadFailed: 'Le calendrier n’a pas pu être chargé.' },
+  de: { calendar: 'Kalender', loadFailed: 'Der Kalender konnte nicht geladen werden.' },
+} as Record<Locale, Pick<CalendarLabels, 'calendar' | 'loadFailed'>>;
+wordsInChunks(
+  tableInChunks(WORDS, {
+    tr: () => import('./locales/tr').then((words) => words.tr),
+    fa: () => import('./locales/fa').then((words) => words.fa),
+    ur: () => import('./locales/ur').then((words) => words.ur),
+    es: () => import('./locales/es').then((words) => words.es),
+  })
+);
+const wordsOf = (locale: Locale) => WORDS[locale] ?? WORDS.en;
 
 /**
  * A list's records on a calendar, for the viewer's `listViews`: a list with
@@ -17,7 +35,7 @@ const FAILED: Record<Locale, string> = { en: 'The calendar could not be loaded.'
  */
 export function calendarListViews(settings: CalendarSettings = {}): Record<string, ListViewFactory> {
   const calendar: ListViewFactory = Object.assign((context: ListViewContext) => lazyCalendar(context, settings), {
-    label: (locale: Locale) => settings.labels?.[locale]?.calendar ?? NAME[locale] ?? NAME.en,
+    label: (locale: Locale) => settings.labels?.[locale]?.calendar ?? wordsOf(locale).calendar,
     opens: (node: ListNode) => node.calendar?.opens === 'calendar',
   });
   return { calendar };
@@ -42,7 +60,7 @@ function lazyCalendar(context: ListViewContext, settings: CalendarSettings): Lis
     () => {
       element.removeAttribute('aria-busy');
       element.setAttribute('role', 'alert');
-      element.textContent = settings.labels?.[context.locale]?.loadFailed ?? FAILED[context.locale] ?? FAILED.en;
+      element.textContent = settings.labels?.[context.locale]?.loadFailed ?? wordsOf(context.locale).loadFailed;
       return null;
     }
   );

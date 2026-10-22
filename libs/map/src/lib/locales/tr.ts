@@ -1,3 +1,4 @@
+import type { AddressLabels } from '../address-labels';
 import type { FormMapLabels, ListMapLabels, MapLabels } from '../labels';
 
 /**
@@ -103,3 +104,6 @@ export const formMap: FormMapLabels = {
   routeFailed: 'Rota bulunamadı.',
   crowdHere: 'Burada {n} tane: {names}. Görmek için yakınlaştırın.',
 };
+
+/** An address field's words (its suggestions' own come with their code: address-suggest.ts). */
+export const address: Omit<AddressLabels, 'notPlaced' | 'placedNear' | 'locateFailed'> = { suggested: 'Öneriler: {n}', addressKind: 'Adres arama', settingPlace: 'Konumun yazılacağı alan', settingParts: 'Adres parçalarının yazılacağı alan', settingCountry: 'Adreslerin ülkesi', anywhere: 'Tüm ülkeler' };

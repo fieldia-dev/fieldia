@@ -1,3 +1,4 @@
+import type { AddressLabels } from '../address-labels';
 import type { FormMapLabels, ListMapLabels, MapLabels } from '../labels';
 
 /**
@@ -100,3 +101,6 @@ export const formMap: FormMapLabels = {
   routeFailed: 'مسیر پیدا نشد.',
   crowdHere: '{n} مورد در اینجا: {names}. برای دیدن آن‌ها بزرگ‌نمایی کنید.',
 };
+
+/** An address field's words (its suggestions' own come with their code: address-suggest.ts). */
+export const address: Omit<AddressLabels, 'notPlaced' | 'placedNear' | 'locateFailed'> = { suggested: 'پیشنهادها: {n}', addressKind: 'جستجوی نشانی', settingPlace: 'محل ثبت مکان', settingParts: 'محل ثبت اجزای نشانی', settingCountry: 'کشور نشانی‌ها', anywhere: 'هر کشوری' };

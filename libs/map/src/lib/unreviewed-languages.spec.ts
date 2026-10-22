@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { wordsReady } from '@fieldia/core';
+import { ADDRESS_LABELS } from './address-labels';
 import { FORM_MAP_LABELS, LIST_MAP_LABELS, MAP_LABELS } from './labels';
 
 /**
@@ -9,6 +11,9 @@ import { FORM_MAP_LABELS, LIST_MAP_LABELS, MAP_LABELS } from './labels';
  */
 
 const NEW = ['tr', 'fa', 'ur', 'es'] as const;
+
+// Each in a chunk of its own, fetched where it is spoken: here, at once.
+beforeAll(() => Promise.all(NEW.map(wordsReady)));
 const NOUN = /Noun(One|Two|Many)?$/;
 const blanks = (text: string, key: string) =>
   [...new Set([...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].filter((blank) => !(NOUN.test(key) && ['record', 'records', 'aRecord'].includes(blank))).sort();
@@ -29,7 +34,7 @@ function sameWords(words: Record<string, unknown>, english: Record<string, unkno
 
 describe.each(NEW)('the maps’ words in %s', (locale) => {
   it('are every word English has, with its blanks', () => {
-    for (const tables of [MAP_LABELS, LIST_MAP_LABELS, FORM_MAP_LABELS]) sameWords(tables[locale] as unknown as Record<string, unknown>, tables.en as unknown as Record<string, unknown>);
+    for (const tables of [MAP_LABELS, LIST_MAP_LABELS, FORM_MAP_LABELS, ADDRESS_LABELS]) sameWords(tables[locale] as unknown as Record<string, unknown>, tables.en as unknown as Record<string, unknown>);
   });
 
   it('say in their header that they are unreviewed', () => {

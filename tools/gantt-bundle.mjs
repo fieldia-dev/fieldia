@@ -19,7 +19,8 @@
  * width; its words in four languages and its stylesheet — 14,308 bytes
  * measured, to 14.1 (the page's share 643 bytes, under the calendar's 0.8).
  * Turkish, Persian, Urdu and Spanish (0.31, w6-languages — machine-assisted, not yet reviewed by a native speaker): the
- * view's name and its failure on the switcher in them, with the page (642 bytes measured before, 826 after, to 0.9);
+ * view's name and its failure on the switcher in them, fetched with their words where they are spoken, the loader with
+ * the page (642 bytes measured before, 817 after, under 0.8 — inline they took it to 826);
  * the code that fetches their words, and a day's tag on the Gregorian calendar and Persian's Saturday week (14,273 bytes
  * measured before, 14,404 after, under 14.1); and each language's words in a chunk of its own, fetched with the first
  * timeline shown in it, each against its own budget (`LANGUAGE_BUDGET`: Turkish 713 bytes, Persian 878, Urdu 861,
@@ -34,7 +35,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.9, gantt: 14.2 };
+const BUDGET = { page: 0.8, gantt: 14.2 };
 const LANGUAGE_BUDGET = { tr: 0.8, fa: 0.9, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });

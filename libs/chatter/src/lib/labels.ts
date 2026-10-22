@@ -1,8 +1,4 @@
-import type { Locale } from '@fieldia/core';
-import { es } from './locales/es';
-import { fa } from './locales/fa';
-import { tr } from './locales/tr';
-import { ur } from './locales/ur';
+import { tableInChunks, wordsInChunks, type Locale } from '@fieldia/core';
 
 /** Every word the chatter shows. `{name}`, `{n}` and `{date}` are filled in. */
 export interface ChatterLabels {
@@ -129,12 +125,12 @@ export interface ChatterLabels {
  * words for its records (`notSaved` without `notSavedNoun`) is said on such a page too.
  */
 export function chatterLabels(locale: Locale, own: Partial<ChatterLabels> = {}): ChatterLabels {
-  const words: ChatterLabels = { ...CHATTER_LABELS[locale], ...own };
+  const words: ChatterLabels = { ...(CHATTER_LABELS[locale] ?? CHATTER_LABELS.en), ...own };
   for (const [noun, plain] of [['createdNoun', 'created'], ['notSavedNoun', 'notSaved']] as const) if (!(noun in own) && plain in own) delete words[noun];
   return words;
 }
 
-export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
+export const CHATTER_LABELS = {
   en: {
     conversation: 'Conversation',
     stateGraph: 'State Graph',
@@ -513,9 +509,18 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     approvalApproved: 'Approuvé pour {level}',
     approvalRejected: 'Refusé pour {level}',
   },
-  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (locales/).
-  tr,
-  fa,
-  ur,
-  es,
-};
+} as Record<Locale, ChatterLabels>;
+
+/**
+ * Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (locales/) —
+ * each in a chunk of its own, fetched where it is spoken (`wordsReady` in @fieldia/core), English till it came: a chatter
+ * in any other language never carries them. A chatter shown in one waits for them before it draws.
+ */
+wordsInChunks(
+  tableInChunks(CHATTER_LABELS, {
+    tr: () => import('./locales/tr').then((words) => words.tr),
+    fa: () => import('./locales/fa').then((words) => words.fa),
+    ur: () => import('./locales/ur').then((words) => words.ur),
+    es: () => import('./locales/es').then((words) => words.es),
+  })
+);

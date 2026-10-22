@@ -46,7 +46,8 @@
  * owner's walk of 0.25: 08:00 at 12:30) — 19,310 bytes measured, 98 more,
  * to 18.9.
  * Turkish, Persian, Urdu and Spanish (0.31, w6-languages — machine-assisted, not yet reviewed by a native speaker): the
- * view's name and its failure on the switcher in them, with the page (628 bytes measured before, 785 after, under 0.8);
+ * view's name and its failure on the switcher in them, fetched with their words where they are spoken, the loader with
+ * the page (628 bytes measured before, 794 after, under 0.8 — inline they took it to 785);
  * the code that fetches their words, and a day's tag on the Gregorian calendar and Persian's Saturday week (19,313 bytes
  * measured before, 19,448 after, to 19.0); and each language's words in a chunk of its own, fetched with the first
  * calendar shown in it, each against its own budget (`LANGUAGE_BUDGET`: Turkish 858 bytes, Persian 1,049, Urdu 1,070,

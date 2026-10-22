@@ -1,4 +1,4 @@
-import { fill, recordSentence, dayTag } from '@fieldia/core';
+import { fill, recordSentence, dayTag, wordsComing, wordsReady } from '@fieldia/core';
 import { installStyles, sanitizeHtml, showHtml, textPart, WIDGET_LABELS, type TextPart, type TextReference } from '@fieldia/widgets';
 import type { ChatterHandle, ChatterOptions } from './chatter';
 import { initials } from './chatter';
@@ -31,9 +31,10 @@ export interface DiscussionOptions extends ChatterOptions {
 
 export function mountDiscussion(host: HTMLElement, options: DiscussionOptions): ChatterHandle {
   // Its comment box is the formatted text's editor, in the text part: drawn once that has come, when it has not yet.
+  // Its language's words, where they come in a chunk of their own (Turkish, Persian, Urdu, Spanish), too: in them from its first paint.
   const text = textPart.loaded;
-  if (text) return drawDiscussion(host, options, text);
-  return drawnLater(host, options.record, textPart.load().then((part) => (record) => drawDiscussion(host, { ...options, record }, part)));
+  if (text && !wordsComing(options.locale)) return drawDiscussion(host, options, text);
+  return drawnLater(host, options.record, Promise.all([textPart.load(), wordsReady(options.locale)]).then(([part]) => (record) => drawDiscussion(host, { ...options, record }, part)));
 }
 
 function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorateLinks, formattedText }: TextPart): ChatterHandle {

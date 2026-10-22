@@ -1,8 +1,25 @@
-import type { Locale } from '@fieldia/core';
-import * as es from './locales/es';
-import * as fa from './locales/fa';
-import * as tr from './locales/tr';
-import * as ur from './locales/ur';
+import { tableInChunks, wordsInChunks, type Locale } from '@fieldia/core';
+
+/** Where each language's words in a chunk of its own keep each table's: the maps', a list's map's, a form's map's, an address field's. */
+type Kept = 'map' | 'listMap' | 'formMap' | 'address';
+
+/**
+ * A table of the maps' words with Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by
+ * a native speaker (locales/) — each in a chunk of its own, fetched where it is spoken (`wordsReady` in @fieldia/core),
+ * English till it came: a map in any other language never carries them. Called as a pure one, so a bundle that never
+ * reads the table (a place and an area alone: no list's map's words) keeps neither it nor its chunks' loader.
+ */
+export function inChunks<T extends object>(table: Record<string, T>, kept: Kept): Record<Locale, T> {
+  wordsInChunks(
+    tableInChunks(table, {
+      tr: () => import('./locales/tr').then((words) => words[kept] as unknown as T),
+      fa: () => import('./locales/fa').then((words) => words[kept] as unknown as T),
+      ur: () => import('./locales/ur').then((words) => words[kept] as unknown as T),
+      es: () => import('./locales/es').then((words) => words[kept] as unknown as T),
+    })
+  );
+  return table as Record<Locale, T>;
+}
 
 /** The words the maps show themselves. `{label}`, `{n}` are filled in where they stand. */
 export interface MapLabels {
@@ -79,7 +96,7 @@ export interface MapLabels {
   areasNone: string;
 }
 
-export const MAP_LABELS: Record<Locale, MapLabels> = {
+export const MAP_LABELS = /* @__PURE__ */ inChunks<MapLabels>({
   en: {
     mapOf: '{label}, map',
     mapKeys: 'Arrow keys move the map. Plus and minus zoom.',
@@ -340,12 +357,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     areaValue: '{name}: {value}',
     areasNone: 'Keine',
   },
-  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (locales/).
-  tr: tr.map,
-  fa: fa.map,
-  ur: ur.map,
-  es: es.map,
-};
+}, 'map');
 
 /** The words a list's map shows, besides the maps' own: kept apart, so a form with only a place or an area never carries them. */
 export interface ListMapLabels {
@@ -386,7 +398,7 @@ export interface ListMapLabels {
   heatNote: string;
 }
 
-export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
+export const LIST_MAP_LABELS = /* @__PURE__ */ inChunks<ListMapLabels>({
   en: {
     pinKeys: 'Tab goes through the pins. Enter opens a pin’s card; Escape closes it.',
     searchThisArea: 'Search this area',
@@ -478,12 +490,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     nearestFromMiddle: 'Die der Kartenmitte nächsten zuerst: Ihr Standort wurde nicht freigegeben.',
     heatNote: 'Eine Heatmap aus der Ferne: bis zu den Straßen zoomen, um jeden zu sehen.',
   },
-  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (locales/).
-  tr: tr.listMap,
-  fa: fa.listMap,
-  ur: ur.listMap,
-  es: es.listMap,
-};
+}, 'listMap');
 
 /** The words a form's map shows, besides the maps' own and a list map's: kept apart, as theirs are. */
 export interface FormMapLabels {
@@ -498,26 +505,21 @@ export interface FormMapLabels {
   crowdHere: string;
 }
 
-export const FORM_MAP_LABELS: Record<Locale, FormMapLabels> = {
+export const FORM_MAP_LABELS = /* @__PURE__ */ inChunks<FormMapLabels>({
   en: { map: 'Map', lastSeen: 'Last seen {time}', follow: 'Follow', routeFailed: 'The way could not be found.', crowdHere: '{n} here: {names}. Zoom in to see them.' },
   ar: { map: 'خريطة', lastSeen: 'آخر ظهور {time}', follow: 'تتبّع', routeFailed: 'تعذّر إيجاد الطريق.', crowdHere: '{n} هنا: {names}. كبّر الخريطة لرؤيتها.' },
   fr: { map: 'Carte', lastSeen: 'Vu pour la dernière fois {time}', follow: 'Suivre', routeFailed: 'Le trajet est introuvable.', crowdHere: '{n} ici : {names}. Zoomez pour les voir.' },
   de: { map: 'Karte', lastSeen: 'Zuletzt gesehen {time}', follow: 'Folgen', routeFailed: 'Der Weg wurde nicht gefunden.', crowdHere: '{n} hier: {names}. Hineinzoomen, um sie zu sehen.' },
-  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (locales/).
-  tr: tr.formMap,
-  fa: fa.formMap,
-  ur: ur.formMap,
-  es: es.formMap,
-};
+}, 'formMap');
 
 /** The words for a page's language, with the app's own over them. */
 export function mapLabels(locale: Locale | undefined, own?: Partial<MapLabels>): MapLabels {
-  return { ...MAP_LABELS[locale ?? 'en'], ...own };
+  return { ...(MAP_LABELS[locale ?? 'en'] ?? MAP_LABELS.en), ...own };
 }
 
 /** A list's map's words for a page's language, the maps' own with them, and the app's own over both. */
 export function listMapLabels(locale: Locale | undefined, own?: Partial<MapLabels & ListMapLabels>): MapLabels & ListMapLabels {
-  const words = { ...MAP_LABELS[locale ?? 'en'], ...LIST_MAP_LABELS[locale ?? 'en'], ...own };
+  const words = { ...(MAP_LABELS[locale ?? 'en'] ?? MAP_LABELS.en), ...(LIST_MAP_LABELS[locale ?? 'en'] ?? LIST_MAP_LABELS.en), ...own };
   // The app's own sentence, given without its sentence for a page's records: its own on that page too.
   if (own && 'mapFailed' in own && !('mapFailedNoun' in own)) delete words.mapFailedNoun;
   return words;
@@ -529,5 +531,5 @@ export const fill = (words: string, values: Record<string, string | number>) =>
 
 /** A form's map's words for a page's language: the maps' own, a list map's (its pins and cards), its own, the app's over all. */
 export function formMapLabels(locale: Locale | undefined, own?: Partial<MapLabels & ListMapLabels & FormMapLabels>): MapLabels & ListMapLabels & FormMapLabels {
-  return { ...MAP_LABELS[locale ?? 'en'], ...LIST_MAP_LABELS[locale ?? 'en'], ...FORM_MAP_LABELS[locale ?? 'en'], ...own };
+  return { ...(MAP_LABELS[locale ?? 'en'] ?? MAP_LABELS.en), ...(LIST_MAP_LABELS[locale ?? 'en'] ?? LIST_MAP_LABELS.en), ...(FORM_MAP_LABELS[locale ?? 'en'] ?? FORM_MAP_LABELS.en), ...own };
 }

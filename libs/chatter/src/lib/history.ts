@@ -1,10 +1,11 @@
-import { fill, labelAt, recordSentence, dayTag, type Locale, type PageRecords } from '@fieldia/core';
+import { fill, labelAt, recordSentence, dayTag, wordsComing, wordsReady, type Locale, type PageRecords } from '@fieldia/core';
 import { drawIcon, installStyles, sanitizeHtml, showHtml, type IconSet } from '@fieldia/widgets';
 import { initials } from './chatter';
 import { installHistoryStyles } from './history-styles';
 import { chatterLabels, type ChatterLabels } from './labels';
 import { ageOf, empty, firstDayOfWeek, HISTORY_AGES, historyEntries, type HistoryAge, type HistoryEntry } from './history-data';
 import type { ChatterSource, Person, RecordRef } from './source';
+import { drawnLater } from './later';
 
 export { HISTORY_STYLES, installHistoryStyles } from './history-styles';
 export * from './history-data';
@@ -70,6 +71,12 @@ function scrollerOf(element: HTMLElement): HTMLElement | null {
  * shown following the row chosen.
  */
 export function mountHistory(host: HTMLElement, options: MountHistoryOptions): HistoryHandle {
+  // Its language's words come in a chunk of their own (Turkish, Persian, Urdu, Spanish): drawn once they have.
+  if (wordsComing(options.locale)) return drawnLater(host, options.record, wordsReady(options.locale).then(() => (record: RecordRef | null) => drawHistory(host, { ...options, record })));
+  return drawHistory(host, options);
+}
+
+function drawHistory(host: HTMLElement, options: MountHistoryOptions): HistoryHandle {
   const doc = host.ownerDocument;
   installStyles(doc);
   installHistoryStyles(doc);
