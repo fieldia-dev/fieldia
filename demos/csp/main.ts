@@ -5,6 +5,7 @@ import { chatterSlot } from '@fieldia/chatter';
 import { createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import { appPages, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { sampleChatter } from '../shared/sample-chatter';
+import { demoGanttViews } from '../shared/gantt';
 
 /**
  * Fieldia under a strict Content-Security-Policy (index.html, served by tools/serve.mjs under /csp/): the app hands
@@ -31,6 +32,8 @@ if (params.get('designer') === '1') {
     nonce,
     pages: appPages,
     widgets: { ...gridWidgets, ...codeWidgets },
+    // A list's timeline (0.31): the Gantt view on its switcher, drawn under the policy too.
+    listViews: demoGanttViews,
     slots: { chatter: chatterSlot({ source: sampleChatter() }) },
   });
 }

@@ -76,6 +76,69 @@ for (const name of ['signup', 'customer', 'order', 'fields', 'survey', 'customer
   });
 }
 
+/**
+ * The features of 0.29 and 0.31 that colour, size or place what they draw, each drawn and worked in a little under the
+ * policy — every colour, width and place set through an element's style object, which a policy allows, never a style
+ * attribute: an option's icon and colour dot and a link's suggestions with theirs (a lease), a QR code and a barcode (a
+ * ticket), a list's Gantt timeline, a list's cells changed in place, a photo's crop and turn, and AI help's proposals
+ * laid on their fields, the old struck through.
+ */
+const WORKED: [string, string, (page: Page) => Promise<void>][] = [
+  ['an option’s colour dot and icon, and a link’s suggestions', 'lease&now=2026-10-21T09:00:00', async (page) => {
+    await page.locator('[data-node="f-plan"] .fd-own-button').click();
+    await expect(page.getByRole('listbox').getByRole('option')).toHaveCount(4);
+    await page.keyboard.press('Escape');
+    const agent = page.locator('[data-node="f-agent"] input');
+    await agent.click();
+    await agent.fill('al');
+    await expect(page.locator('[data-node="f-agent"] .fd-option-dot').first()).toBeVisible();
+    await page.keyboard.press('Escape');
+  }],
+  ['a QR code and a barcode', 'event-ticket&record=1', async (page) => {
+    await expect(page.locator('[data-node="f-link"] svg[role="img"]')).toBeVisible();
+    await expect(page.locator('[data-node="f-reference"] svg')).toBeVisible();
+  }],
+  ['a list’s Gantt timeline', 'fitout-plan&now=2026-10-14T09:40', async (page) => {
+    await expect(page.locator('.fd-gantt-task').first()).toBeVisible();
+    // Another scale: the timeline drawn again, its bars placed and sized anew.
+    await page.locator('.fd-gantt-zooms button').last().click();
+    await expect(page.locator('.fd-gantt-task').first()).toBeVisible();
+  }],
+  ['a list’s cells changed in place', 'service-prices', async (page) => {
+    const price = page.locator('.fd-list-row td[data-edit][data-col="price"]').first();
+    await price.click();
+    await expect(price.locator('input')).toBeVisible();
+    await price.locator('input').fill('2900');
+    await page.keyboard.press('Tab');
+  }],
+  ['a photo set’s crop and turn', 'listing-photo-set', async (page) => {
+    const tile = page.locator('.fd-photo').first();
+    await tile.hover();
+    await tile.getByRole('button', { name: /^Crop and turn / }).click();
+    await expect(page.getByRole('dialog', { name: /^Crop and turn/ })).toBeVisible();
+    await page.keyboard.press('ArrowLeft');
+  }],
+  ['AI help’s proposals on their fields', 'customer-from-email&record=new', async (page) => {
+    await page.getByRole('button', { name: 'Fill from an e-mail' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Fill from an e-mail' });
+    await dialog.getByRole('textbox', { name: 'Text to fill the form from' }).fill('Mona Adel\nSales Director, Nile Traders\nmona.adel@niletraders.example · +20 100 123 4567');
+    await dialog.getByRole('button', { name: 'Propose values' }).click();
+    await expect(page.locator('.fd-proposal').first()).toBeVisible();
+  }],
+];
+for (const [what, query, work] of WORKED) {
+  test(`${what} draw and work under a strict Content-Security-Policy, nothing refused`, async ({ page }) => {
+    const problems = problemsOf(page);
+    await page.goto(`/csp/?page=${query}`);
+    await expect(page.locator('.fd-form').first()).toBeVisible();
+    await lookIsOn(page);
+    await work(page);
+    expect(await refused(page)).toEqual([]);
+    await screen(page, `csp-${query.split('&')[0]}`);
+    expect(problems).toEqual([]);
+  });
+}
+
 test('a formatted text keeps its own looks — centred, a colour — under a strict policy, none refused', async ({ page }) => {
   await page.goto('/csp/?page=fields');
   await expect(page.locator('.fd-form').first()).toBeVisible();
