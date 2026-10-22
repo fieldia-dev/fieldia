@@ -471,6 +471,8 @@ your words and offers no Retry; any other error offers Retry. Stop with an
 { bytesPerSecond, fails } })` is a store as slow, or as unreliable, as a real
 one. Without `upload`, files travel inside the record as base64, as before.
 See [files stored as they are picked](https://fieldia.dev/data/#upload).
+`uploadTo`'s work comes in the files part (0.31), asked for as its first file
+goes — a page with a file field has it already; one with none never downloads it.
 
 A photo set (`"widget": "photos"`, @fieldia/widgets' README) keeps everything in
 the field's value, so any source that keeps a file value keeps it: the photos in

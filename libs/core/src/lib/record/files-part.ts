@@ -156,3 +156,6 @@ function put(run: UploadsRun, entry: Entry, stored: UploadedFile) {
   });
   if (value !== undefined) run.host.write(entry.field, entry.line, value, !!entry.replaces);
 }
+
+// A data source's `upload` for a plain endpoint (upload-to.ts): `uploadTo`, asked for as its first file goes.
+export { uploadTo } from './upload-to';

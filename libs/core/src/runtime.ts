@@ -299,7 +299,9 @@ export { clocksSkip, dayIn, instantsAt, isOwnZone, isTimeZone, ownZone, wallCloc
 export { zonedPage } from './lib/format/zoned';
 // Files stored as they are picked: the form's uploads, and an upload for a plain endpoint or a signed address.
 export { formUploadsPart, uploadGoing, UPLOADS_AT_ONCE, type FileUpload, type FormUploadsPart, type UploadHow } from './lib/record/uploads';
-export { uploadTo, type UploadAnswer, type UploadTarget, type UploadToOptions } from './lib/record/upload-to';
+// An upload for a plain endpoint, its work in the files part (upload-to-later.ts).
+export { uploadTo } from './lib/record/upload-to-later';
+export type { UploadAnswer, UploadTarget, UploadToOptions } from './lib/record/upload-to';
 export { hostScheduler, wait, type Scheduler } from './lib/record/scheduler';
 export {
   createForm,
