@@ -259,6 +259,19 @@ export interface WidgetLabels {
   captionPlaceholder: string;
   photoNamed: string;
   photoNamedCover: string;
+  /**
+   * A photo with no caption, by its place — in a sentence (`photoAt`), starting one (`photoAtStart`), the one of a set
+   * of one (`photoAlone`, `photoAloneStart`), the cover (`photoCoverAt`) — never by its file's name.
+   */
+  photoAt: string;
+  photoAtStart: string;
+  photoAlone: string;
+  photoAloneStart: string;
+  photoCoverAt: string;
+  /** The crop dialog left with a change in it (Escape, ×, a press outside it): asked first, in place, as a record's dialog asks. */
+  cropLetGoAsk: string;
+  cropLetGo: string;
+  cropKeepEditing: string;
   photoCount: string;
   photoCountOne: string;
   photoCountOf: string;
@@ -767,6 +780,14 @@ const en: WidgetLabels = {
   captionPlaceholder: 'Add a caption',
   photoNamed: '{name}, photo {n} of {total}',
   photoNamedCover: '{name}, the cover, photo {n} of {total}',
+  photoAt: 'photo {n} of {total}',
+  photoAtStart: 'Photo {n} of {total}',
+  photoAlone: 'the photo',
+  photoAloneStart: 'The photo',
+  photoCoverAt: 'The cover, photo {n} of {total}',
+  cropLetGoAsk: 'Discard your changes?',
+  cropLetGo: 'Discard',
+  cropKeepEditing: 'Keep editing',
   photoCount: '{n} photos',
   photoCountOne: '1 photo',
   photoCountOf: '{n} of {max} photos',

@@ -149,12 +149,13 @@ export function clearSelection(document: Document, words: WidgetLabels, clear: (
 /**
  * Removing asks first, in place: "Remove report.pdf?  Remove · Keep", the
  * focus on Keep, Escape keeping it. `ask` shows the question; `then` hears
- * the answer, true to remove.
+ * the answer, true to remove. A dialog holding changes asks so before it lets
+ * them go, its own `answers`: "Discard your changes?  Discard · Cancel".
  */
-export function askFirst(make: Make, words: WidgetLabels) {
+export function askFirst(make: Make, answers: { yes: string; no: string }) {
   const question = make('span');
-  const yes = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.removeFile);
-  const no = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.keep);
+  const yes = make('button', { type: 'button', class: 'fd-button fd-button-link' }, answers.yes);
+  const no = make('button', { type: 'button', class: 'fd-button fd-button-link' }, answers.no);
   const element = make('div', { class: 'fd-file-confirm', hidden: '' }, question, yes, no);
   let then = (_remove: boolean) => undefined as void;
   const answered = (remove: boolean) => {
@@ -163,7 +164,13 @@ export function askFirst(make: Make, words: WidgetLabels) {
   };
   yes.addEventListener('click', () => answered(true));
   no.addEventListener('click', () => answered(false));
-  element.addEventListener('keydown', (event) => event.key === 'Escape' && answered(false));
+  // Escape answers no — its own key, heard by nothing round it (a dialog it stands in would close).
+  element.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    answered(false);
+  });
   return {
     element,
     ask(text: string, answer: (remove: boolean) => void) {

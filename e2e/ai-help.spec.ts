@@ -107,6 +107,20 @@ test.describe('a customer filled from an e-mail, by its keys and its files', () 
     expect((await values(page))['name']).toBe('Amman Fresh Markets');
   });
 
+  test('Escape with words pasted asks before it lets them go, as a record’s dialog asks', async ({ page }) => {
+    await page.getByRole('button', { name: 'Fill from an e-mail' }).click();
+    await dialog(page).getByRole('textbox', { name: 'Text to fill the form from' }).fill(SIGNATURE);
+    await page.keyboard.press('Escape');
+    const asked = dialog(page).locator('.fd-file-confirm');
+    await expect(asked).toHaveText('Discard your changes?DiscardKeep editing');
+    await asked.getByRole('button', { name: 'Keep editing' }).click();
+    await expect(dialog(page).getByRole('textbox', { name: 'Text to fill the form from' })).toHaveValue(SIGNATURE);
+    await page.keyboard.press('Escape');
+    await asked.getByRole('button', { name: 'Discard' }).click();
+    await expect(dialog(page)).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Fill from an e-mail' })).toBeFocused();
+  });
+
   test('Propose values with nothing pasted or added says so beside it, and goes as words are pasted', async ({ page }) => {
     // The owner's walk of 0.29: pressed empty, it did nothing and said nothing.
     await page.getByRole('button', { name: 'Fill from an e-mail' }).click();

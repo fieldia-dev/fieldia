@@ -169,9 +169,17 @@ for (const variant of ['plain', 'react']) {
       await page.keyboard.press('Tab');
       await page.keyboard.press('Tab');
       await expect(dialog.getByRole('textbox', { name: 'Reason' })).toBeFocused();
+      // A reason typed: Escape asks first, as a record's dialog asks; Discard lets it go.
       await page.keyboard.press('Escape');
+      await expect(dialog.locator('.fd-file-confirm')).toHaveText('Discard your changes?DiscardKeep editing');
+      await dialog.getByRole('button', { name: 'Discard', exact: true }).click();
       await expect(dialog).toBeHidden();
       await expect(decide(page, 'Reject')).toBeFocused();
+      // Nothing typed: Escape lets it go at once.
+      await decide(page, 'Reject').click();
+      await expect(dialog.getByRole('textbox', { name: 'Reason' })).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
       await expect(title(page)).toHaveText('Waiting for Manager: Karim Fathy');
     });
   });

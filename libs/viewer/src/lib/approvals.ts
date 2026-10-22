@@ -1,5 +1,5 @@
 import { fill, formApprovalsPart, labelAt, recordSentence, type ApprovalDecision, type ApprovalEntry, type ApprovalLevel, type Form, type FormApproval, type FormState, type Messages, type Page } from '@fieldia/core';
-import { keepTabIn } from '@fieldia/widgets';
+import { askFirst, keepTabIn } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
 import { installApprovalStyles } from './approvals-styles';
@@ -200,6 +200,8 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
     const error = el('p', { class: 'fd-error', id: `${id}-error`, hidden: '' });
     const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
     const confirm = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, labels.approvalReject);
+    // Escaped with a reason typed: asked first, in place, as a record's dialog asks before it lets typing go.
+    const letGo = askFirst(el, { yes: labels.discard, no: labels.approvalKeepEditing });
     const dialog = el(
       'div',
       { class: 'fd-dialog fd-approval-reject', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': heading.id },
@@ -208,6 +210,7 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
       el('label', { class: 'fd-label', for: box.id }, labels.approvalRejectReason),
       box,
       error,
+      letGo.element,
       el('div', { class: 'fd-actions fd-actions-end' }, cancel, confirm)
     );
     const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
@@ -232,19 +235,22 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
       if (failed) return refuse(failed);
       close();
     };
+    // Cancel is the person's own answer: no question.
     cancel.addEventListener('click', close);
+    const leave = () => (box.value.trim() ? letGo.ask(labels.discardChanges, (discard) => (discard ? close() : box.focus())) : close());
     confirm.addEventListener('click', () => void (confirm.getAttribute('aria-busy') === 'true' ? undefined : send()));
     box.addEventListener('input', () => {
       if (error.hidden) return;
       error.hidden = true;
       box.removeAttribute('aria-invalid');
     });
-    // Its keys are its own: Escape cancels here and closes no dialog under it; Tab stays in it.
+    // Its keys are its own: Escape cancels here — asking first where a reason is typed — and closes no dialog under it;
+    // Tab stays in it. The question's own Escape is its Cancel.
     backdrop.addEventListener('keydown', (event) => {
       event.stopPropagation();
       if (event.key === 'Escape') {
         event.preventDefault();
-        close();
+        if (!letGo.element.contains(event.target as Node)) leave();
       } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         void send();

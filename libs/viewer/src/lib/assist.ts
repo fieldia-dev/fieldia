@@ -1,5 +1,5 @@
 import { formLanguagesPart, isEmpty, labelAt, languagesOf, type DataSource, type Field, type FieldNode, type Form, type FormState, type LineField, type Line, type Locale, type Page, type RecordId, type UploadFile, type Value, type Values } from '@fieldia/core';
-import { displayValue, drawIcon, keepTabIn, type IconSet } from '@fieldia/widgets';
+import { askFirst, displayValue, drawIcon, keepTabIn, type IconSet } from '@fieldia/widgets';
 import { readLines, readProposed, sameValue, type ReadHow } from './assist-read';
 import { SPARKLE } from './assist-icon';
 import { installAssistStyles } from './assist-styles';
@@ -625,8 +625,13 @@ export function watchAssist(context: AssistContext): AssistKit {
       backdrop.remove();
       if (fillButton.isConnected && !fillButton.hidden) fillButton.focus();
     };
+    // Cancel is the person's own answer; × and Escape, with words pasted or files added, ask first, in place, as a
+    // record's dialog asks before it lets them go.
+    const letGo = askFirst(el, { yes: labels.discard, no: labels.assistKeepEditing });
+    body.append(letGo.element);
+    const leave = () => (text.value.trim() || files.length ? letGo.ask(labels.discardChanges, (discard) => (discard ? finish() : (from.includes('text') ? text : pick).focus())) : finish());
     cancel.addEventListener('click', finish);
-    close.addEventListener('click', finish);
+    close.addEventListener('click', leave);
     const tell = (words: string | null) => {
       problem.textContent = words ?? '';
       problem.hidden = !words;
@@ -659,12 +664,13 @@ export function watchAssist(context: AssistContext): AssistKit {
         go.textContent = labels.assistFillGo;
       }
     });
-    // Its keys are its own: Escape closes it, and no dialog or panel under it; Tab stays in it.
+    // Its keys are its own: Escape closes it — asking first where something is in it — and no dialog or panel under it;
+    // Tab stays in it. The question's own Escape is its Cancel.
     backdrop.addEventListener('keydown', (event) => {
       event.stopPropagation();
       if (event.key === 'Escape') {
         event.preventDefault();
-        finish();
+        if (!letGo.element.contains(event.target as Node)) leave();
       } else keepTabIn(box, event);
     });
     context.root.append(backdrop);

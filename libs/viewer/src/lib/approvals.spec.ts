@@ -179,8 +179,14 @@ describe('a record waiting for approval', () => {
     await until(() => !(dialog.querySelector('.fd-error') as HTMLElement).hidden);
     expect(dialog.querySelector('.fd-error')?.textContent).toBe('Not rejected: Finance closes its books today');
     expect(box.value).toBe('Too much');
-    // Escape lets it go, and the focus goes back to Reject.
+    // Escape with a reason typed asks first, in place, as a record's dialog does; Discard lets it go, the focus back on
+    // Reject.
     dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(dialog.isConnected).toBe(true);
+    const asked = dialog.querySelector<HTMLElement>('.fd-file-confirm') as HTMLElement;
+    expect([asked.hidden, asked.textContent]).toEqual([false, 'Discard your changes?DiscardKeep editing']);
+    expect(document.activeElement?.textContent).toBe('Keep editing');
+    ([...asked.querySelectorAll('button')].find((b) => b.textContent === 'Discard') as HTMLButtonElement).click();
     expect(dialog.isConnected).toBe(false);
     expect(document.activeElement?.textContent).toBe('Reject');
   });

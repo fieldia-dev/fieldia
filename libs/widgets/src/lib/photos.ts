@@ -91,7 +91,15 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
   const shape = shapeOf(options['aspect']);
   const most = field.maxFiles ?? Infinity;
   const camera = options['camera'];
-  const named = (photo: FileValue) => photo.caption || photo.name;
+  /**
+   * How a photo is named in its buttons and in what is said: its caption, else its place — "photo 2 of 5", "the photo"
+   * of a set of one, with a capital where it starts what is said — never its file's name.
+   */
+  const named = (photo: FileValue, at: number, total: number, start = false) =>
+    photo.caption || (total < 2 ? (start ? words.photoAloneStart : words.photoAlone) : fill(start ? words.photoAtStart : words.photoAt, { n: at + 1, total }));
+  /** Words naming a photo, `key` its place in them: started with it, it takes a capital. */
+  const saying = (template: string, photo: FileValue, at: number, total: number, more: Record<string, string | number> = {}, key = 'name') =>
+    fill(template, { ...more, [key]: named(photo, at, total, template.startsWith(`{${key}}`)) });
 
   const input = make('input', { type: 'file', id, class: 'fd-sr-only', accept: 'image/*', capture: camera ? (camera === 'user' ? 'user' : 'environment') : undefined });
   input.multiple = true;
@@ -112,7 +120,7 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
   const limited = make('span', { class: 'fd-help fd-file-limits' }, limits.join(' · '));
   setHidden(limited, !limits.length);
   // Removing asks first, in place; why photos were not added, and one removed, said politely; what came of the uploads.
-  const confirm = askFirst(make, words);
+  const confirm = askFirst(make, { yes: words.removeFile, no: words.keep });
   const note = make('div', { class: 'fd-help fd-file-note', role: 'status' });
   const news = make('div', { class: 'fd-help fd-file-news', role: 'status' });
   const voice = announcer(make);
@@ -168,8 +176,11 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
       tile.open.replaceChildren(image);
     }
     const first = covered && at === 0;
-    const label = named(photo);
-    setAttr(tile.open, 'aria-label', fill(first ? words.photoNamedCover : words.photoNamed, { name: label, n: at + 1, total: photos.length }));
+    const total = photos.length;
+    const label = named(photo, at, total);
+    // Its caption, the cover and its place; with no caption, its place alone.
+    const said = photo.caption ? fill(first ? words.photoNamedCover : words.photoNamed, { name: label, n: at + 1, total }) : first && total > 1 ? fill(words.photoCoverAt, { n: 1, total }) : named(photo, at, total, true);
+    setAttr(tile.open, 'aria-label', said);
     setAttr(tile.open, 'aria-describedby', readonly ? null : how.id);
     setHidden(tile.cover, !first);
     setAttr(tile.makeCover, 'aria-label', fill(words.makeCover, { name: label }));
@@ -186,7 +197,8 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
       setHidden(tile.caption, readonly);
       setHidden(tile.words, !readonly);
       setText(tile.words, readonly ? (photo.caption ?? '') : '');
-      setAttr(tile.caption, 'aria-label', fill(words.photoCaption, { name: photo.name }));
+      // Named by its place: what it names is being typed in it.
+      setAttr(tile.caption, 'aria-label', fill(words.photoCaption, { name: total < 2 ? words.photoAlone : fill(words.photoAt, { n: at + 1, total }) }));
       // What is typed is the person's until it is read: a box being typed in is never written over.
       if (doc.activeElement !== tile.caption && tile.caption.value !== (photo.caption ?? '')) tile.caption.value = photo.caption ?? '';
     }
@@ -226,8 +238,10 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
   function putInOrder(next: FileValue[], moved: FileValue) {
     if (readonly || next.every((photo, at) => photo === photos[at])) return;
     const at = next.indexOf(moved);
+    // Named by the place it was in: where the person found it.
+    const was = photos.indexOf(moved);
     form.setValue(name, next);
-    voice.say(covered && at === 0 ? fill(words.coverNow, { name: named(moved) }) : fill(words.movedTo, { label: named(moved), n: at + 1, total: next.length }));
+    voice.say(covered && at === 0 ? saying(words.coverNow, moved, was, next.length) : saying(words.movedTo, moved, was, next.length, { n: at + 1, total: next.length }, 'label'));
   }
   function moveTo(tile: Tile, to: number) {
     const from = tiles.indexOf(tile);
@@ -453,12 +467,13 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
 
   function askRemove(tile: Tile) {
     const photo = tile.photo;
-    confirm.ask(fill(words.removeAsk, { name: named(photo) }), (remove) => {
+    const [place, total] = [tiles.indexOf(tile), photos.length];
+    confirm.ask(saying(words.removeAsk, photo, place, total), (remove) => {
       const at = tiles.indexOf(tile);
       if (remove && at >= 0) {
         stopGoing(photo);
         form.setValue(name, photos.filter((_, i) => i !== at));
-        say([fill(words.removed, { name: named(photo) })]);
+        say([saying(words.removed, photo, place, total)]);
       }
       // Back on the next photo's, or the one before, or where photos are added.
       const next = remove ? tiles[Math.min(at, tiles.length - 1)]?.remove : tile.remove;
@@ -483,7 +498,7 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
   async function edit(tile: Tile) {
     const photo = tile.photo;
     const shown = stillShown(form);
-    const result: Edited = await editPhoto({ doc, words, id: `${id}-edit`, photo, shape, home: element, read: files.readPicture });
+    const result: Edited = await editPhoto({ doc, words, id: `${id}-edit`, photo, name: named(photo, tiles.indexOf(tile), photos.length), shape, home: element, read: files.readPicture });
     (tile.edit.isConnected ? tile.edit : tile.open.isConnected ? tile.open : input).focus();
     if (!result || readonly || !shown()) return;
     // Where the photo is now: it may have moved while the dialog was open.
@@ -495,7 +510,7 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
       if (!was.original) return;
       stopGoing(was);
       form.setValue(name, photos.map((one, i) => (i === at ? { ...bare(was.original as FileValue), ...keep } : one)));
-      return voice.say(fill(words.originalBack, { name: named(was) }));
+      return voice.say(saying(words.originalBack, was, at, photos.length));
     }
     const read = await readFile(result.file);
     const now = photos.findIndex((one) => same(one, was));
@@ -505,7 +520,7 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
     stopGoing(was);
     form.setValue(name, photos.map((one, i) => (i === now ? made : one)));
     if (form.canUpload()) for (const upload of form.upload(name, [result.file], { replaces: made })) cropping.add(upload);
-    voice.say(fill(keepOriginal ? words.photoChangedKept : words.photoChanged, { name: named(made) }));
+    voice.say(saying(keepOriginal ? words.photoChangedKept : words.photoChanged, made, now, photos.length));
   }
 
   // ---- photos added, and on their way ---------------------------------------------------------------------------

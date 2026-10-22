@@ -266,6 +266,8 @@ export interface ViewerLabels {
   importFixName: string;
   importing: string;
   importStop: string;
+  /** The import's dialog, a file chosen, left by × or Escape: asked first — its answer to stay. */
+  importKeepEditing: string;
   importDone: string;
   importDoneNoun?: string;
   importDoneOne: string;
@@ -650,6 +652,8 @@ export interface ViewerLabels {
   approvalRejectTitleNoun?: string;
   approvalRejectAsk: string;
   approvalRejectReason: string;
+  /** Reject's question left with a reason typed: asked first — its answer to stay. */
+  approvalKeepEditing: string;
   approvalHistoryCount: string;
   approvalAskedEntry: string;
   approvalApprovedEntry: string;
@@ -673,6 +677,8 @@ export interface ViewerLabels {
   assistFillEmpty: string;
   assistFillEmptyText: string;
   assistFillEmptyFiles: string;
+  /** Fill from text left with words pasted or files added: asked first — its answer to stay. */
+  assistKeepEditing: string;
   assistReading: string;
   assistFailed: string;
   assistNothing: string;
@@ -912,6 +918,7 @@ const en: ViewerLabels = {
   importFixName: '{name} – not imported',
   importing: 'Importing {done} of {n}…',
   importStop: 'Stop',
+  importKeepEditing: 'Keep editing',
   importDone: '{n} records imported.',
   importDoneNoun: '{n} {records} imported.',
   importDoneOne: '{n} record imported.',
@@ -1177,6 +1184,7 @@ const en: ViewerLabels = {
   approvalRejectTitleNoun: 'Reject this {record}?',
   approvalRejectAsk: 'Say why you reject it ({level}). The reason is kept in its history.',
   approvalRejectReason: 'Reason',
+  approvalKeepEditing: 'Keep editing',
   approvalHistoryCount: 'Approval history ({n})',
   approvalAskedEntry: '{name} asked for approval',
   approvalApprovedEntry: '{name} approved ({level})',
@@ -1191,6 +1199,7 @@ const en: ViewerLabels = {
   assistFillEmpty: 'Paste or add what to fill from',
   assistFillEmptyText: 'Paste what to fill from',
   assistFillEmptyFiles: 'Add what to fill from',
+  assistKeepEditing: 'Keep editing',
   assistReading: 'Reading…',
   assistFailed: 'Nothing could be proposed: {why}',
   assistNothing: 'Nothing in it fills this form.',

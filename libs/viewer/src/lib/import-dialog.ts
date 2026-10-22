@@ -1,6 +1,6 @@
 import type { SheetCell } from './xlsx';
 import { MESSAGES, optionsList, recordSentence, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value } from '@fieldia/core';
-import { dateOrderOf, displayValue, drawIcon, keepTabIn, loadLinesPart, loadPhonePart, phoneSettings, WIDGET_LABELS, type IconSet, type LinesPart, type PhonePart } from '@fieldia/widgets';
+import { askFirst, dateOrderOf, displayValue, drawIcon, keepTabIn, loadLinesPart, loadPhonePart, phoneSettings, WIDGET_LABELS, type IconSet, type LinesPart, type PhonePart } from '@fieldia/widgets';
 import { checkRows, type CheckedRow, type RowsCheck } from './import-check';
 import { ENCODING_SCRIPT, ENCODINGS, FileProblem, readFile, SEPARATORS, type FileCell, type FileSheet, type PickedFile, type ReadHow } from './import-file';
 import { matchColumns } from './import-match';
@@ -171,16 +171,27 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     if (opener?.isConnected) opener.focus();
     settle(end);
   }
+  // A file chosen, its columns matched: × and Escape ask first, in place, as a record's dialog asks before it lets
+  // work go; Cancel, before a file is chosen, is the person's own answer.
+  const letGo = askFirst(make, { yes: labels.discard, no: labels.importKeepEditing });
+  box.insertBefore(letGo.element, footer);
+  const leave = () => {
+    if (writing) return;
+    if (!file) return finish(null);
+    letGo.ask(labels.discardChanges, (discard) => (discard ? finish(null) : primary.hidden ? box.focus() : primary.focus()));
+  };
   function onKey(event: KeyboardEvent) {
     if (!box.contains(event.target as Node) && event.target !== doc.body) return;
+    // The question's own Escape is its Keep editing: its own to hear.
+    if (event.key === 'Escape' && letGo.element.contains(event.target as Node)) return;
     if (event.key === 'Escape' && !writing) {
       event.preventDefault();
       event.stopPropagation();
-      finish(null);
+      leave();
     } else keepTabIn(box, event);
   }
   doc.addEventListener('keydown', onKey, true);
-  close.addEventListener('click', () => !writing && finish(null));
+  close.addEventListener('click', leave);
 
   /** The foot's buttons and words for a step. */
   function steps(step: { back?: () => void; backWords?: string; primary?: { words: string; act: () => void }; said?: string }) {

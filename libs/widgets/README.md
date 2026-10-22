@@ -211,8 +211,11 @@ the photo as it was is kept beside it (`FileValue.original`, with what was done,
 `FileValue.edit`), so a crop again starts from it and **Put back the original**
 brings it back; `options.keepOriginal: false` keeps none. `options.captions:
 true` puts a caption's box under each photo (`FileValue.caption`), read as the
-box is left, the photo named by it everywhere — its tools, its dialog's title.
-Photos are added as a picture field adds them, made smaller first, up to the
+box is left, the photo named by it everywhere — its tools, its dialog's title;
+one with no caption is named by its place, "photo 2 of 5", never by its file's
+name. Left by Escape, × or a press outside it with a change made, the crop
+dialog asks "Discard your changes?" first, in place, as a record's dialog asks;
+Cancel lets the change go unasked. Photos are added as a picture field adds them, made smaller first, up to the
 field's `maxFiles`, each on its way a tile with its bar.
 
 ```json

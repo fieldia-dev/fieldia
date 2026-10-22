@@ -1090,7 +1090,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // items asked as a menu opens, the dividers left only between items that show, and those checks are the head part's
 // (menu-flyout.ts, sheet-head-checks.ts). Tags inline in a head's row are its stylesheet's, a rich text read first the
 // text part's: 510.59 measured before, 511.21 after, to 511.3.
-const BUDGET_KB = 511.3;
+// The owner's walk of 0.29 mended (walkfix29-engine), 107 bytes, each for every page or for what parts take from it rather
+// than a copy: a muted pill's shade made over the surface, so a hovered row keeps its words' contrast (styles.ts, 12);
+// asking first in place taking its own answers and owning its Escape — a dialog holding changes asks "Discard your
+// changes?" with it, as a record's dialog does, and a question's Escape closes no dialog round it (kind-parts.ts, 34);
+// askFirst handed to the parts, and what else they now take from the main script — isEmpty, drawIcon, formatNumber,
+// inPlural, scanPart (the shared table and the entry, 61). 511.22 measured before, 511.33 after, to 511.4.
+const BUDGET_KB = 511.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1559,8 +1565,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // and 14.1. A counted table's sheet with a box to type a code in — Arabic's 96.33 and 16.05, to 96.4; German's 44.50
 // and 14.00, to 44.6 and 14.1; French's 45.05 and 14.02, inside 45.1 and 14.1. Propose values pressed with nothing
 // to read from, said — Arabic's 96.68 and 16.08, to 96.7 and 16.1; German's 44.71 and 14.03, to 44.8; French's 45.19
-// and 14.04, to 45.2.
-const ADD_ON_BUDGET_KB = { ar: [96.7, 16.1], de: [44.8, 14.1], fr: [45.2, 14.1] };
+// and 14.04, to 45.2. Photos named by their caption or place, and every dialog holding changes asking before it lets
+// them go (the crop, Reject's question, Fill from text, the import): Arabic's 97.58 and 16.17, to 97.6 and 16.2;
+// German's 45.09 and 14.10, to 45.1 and 14.1 — measured 45.09 inside; French's 45.54 and 14.11, to 45.6 and 14.2.
+const ADD_ON_BUDGET_KB = { ar: [97.6, 16.2], de: [45.1, 14.1], fr: [45.6, 14.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2038,8 +2046,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // more past it, its frame, and the focus where none of its steps takes it — business 31.38 and 11.53 measured before,
 // 34.30 and 12.45 after (the strip's code 1.7 KB, its sheet 1.2 KB), to 34.4 and 12.5. Propose values pressed with
 // nothing pasted or added says what to do — assist 36.27 and 12.36 measured before, 36.70 and 12.45 after, to 36.8
-// and 12.5.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [34.4, 12.5], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.2, 7.0], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.8, 12.5], scan: [21.4, 8.9], decode: [153.8, 39.0] };
+// and 12.5. Photos named by their caption, else their place ("photo 2 of 5"), never their file; the crop dialog, Reject's
+// question, Fill from text and the import asking "Discard your changes?" before Escape or × lets work go — photos 31.42
+// and 11.59 measured before, 32.34 and 11.95 after, to 32.4 and 12.0; approvals 20.38 and 7.00, to 20.4 and 7.1;
+// assist 36.95 and 12.56, to 37.0 and 12.6; import 38.11 and 15.03 measured before, 38.50 and 15.17 after, to 38.6
+// and 15.2.
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.6, 15.2], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [34.4, 12.5], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [32.4, 12.0], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.4, 7.1], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [37.0, 12.6], scan: [21.4, 8.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2568,8 +2580,9 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   waits(listing, 'a listing whose photos are a set');
   await listing.drawn;
   hasIn("a listing's photo set", 'answers, approvals, assist, business, cards, choice, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, options, path, phone, photos, print, quiet, relations, slots, survey, text, themes');
-  const covers = [...host.querySelectorAll('.fd-photo')].map((tile) => `${tile.querySelector('.fd-photo-open')?.getAttribute('aria-label')}${tile.querySelector('.fd-photo-cover')?.hidden ? '' : ' (cover)'}`);
-  if (covers.join('; ') !== 'Kitchen.png, the cover, photo 1 of 2 (cover); Hall.png, photo 2 of 2') throw new Error(`in a page, a listing's photo set is not drawn in its order, its cover first: ${covers.join('; ')}`);
+  // Each tile kept by its photo's file, named by its place (never its file's name).
+  const covers = [...host.querySelectorAll('.fd-photo')].map((tile) => `${tile.getAttribute('data-key')?.split('\u0000')[0]}: ${tile.querySelector('.fd-photo-open')?.getAttribute('aria-label')}${tile.querySelector('.fd-photo-cover')?.hidden ? '' : ' (cover)'}`);
+  if (covers.join('; ') !== 'Kitchen.png: The cover, photo 1 of 2 (cover); Hall.png: Photo 2 of 2') throw new Error(`in a page, a listing's photo set is not drawn in its order, its cover first: ${covers.join('; ')}`);
   listing.destroy();
   gone('listing');
   // A clinic's treatment whose patient is scanned by the card's code and whose lines' lots by their boxes' (`options.scan`):
