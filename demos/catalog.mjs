@@ -1223,7 +1223,7 @@ export const DEMOS = [
     howTo: [
       'You are Omar Said: “Rejected by Mona Adel (Finance)”, her reason under it. The claim is open again: change the amount to 3,200 and press Submit for approval.',
       'It waits for your manager again — “Waiting for Manager: Karim Fathy” — and every field but the notes is locked.',
-      '[Sign in as Karim Fathy, the manager](?as=karim), press Reject, then Reject again with nothing written: it asks why. Write why, and reject it.',
+      '[Sign in as Karim Fathy, the manager](?as=karim): he decides, but only Omar submits his own claim, so Karim is offered no Submit. Press Reject, then Reject again with nothing written: it asks why. Write why, and reject it.',
       'Open Approval history: the first round and the second — who, when, and why.',
     ],
   },

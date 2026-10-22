@@ -8,6 +8,7 @@
   "fields": {
     "name": { "type": "char", "label": "What was it for?", "required": true },
     "employee": { "type": "char", "label": "Employee", "readonly": true },
+    "employee_user_id": { "type": "many2one", "label": "Employee’s user", "relation": "res.users", "readonly": true },
     "date": { "type": "date", "label": "Spent on", "required": true },
     "category": {
       "type": "selection",
@@ -46,7 +47,7 @@
         "id": "b-submit",
         "label": "Submit for approval",
         "style": "primary",
-        "invisible": "state not in ('draft', 'rejected')",
+        "invisible": "state not in ('draft', 'rejected') or employee_user_id != user.id",
         "steps": [{ "do": "set", "field": "state", "value": "'submitted'" }, { "do": "save" }]
       }
     ],
@@ -60,6 +61,7 @@
         "readonlyReason": "An expense is kept as it was approved",
         "children": [
           { "type": "field", "id": "f-employee", "field": "employee" },
+          { "type": "field", "id": "f-employee-user", "field": "employee_user_id", "invisible": true },
           { "type": "field", "id": "f-date", "field": "date" },
           { "type": "field", "id": "f-category", "field": "category" },
           { "type": "field", "id": "f-amount", "field": "total_amount" },

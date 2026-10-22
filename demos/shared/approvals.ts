@@ -109,6 +109,8 @@ export function approvalRecords(): Record<string, Record<string, Values>> {
       1: {
         name: 'Client dinner, Zamalek',
         employee: 'Omar Said',
+        // Whose claim it is, as the app signs them in: only they submit it (the page's rule for its button).
+        employee_user_id: { id: OMAR.id, label: OMAR.name },
         date: day(-6),
         category: 'meals',
         total_amount: 4850,
