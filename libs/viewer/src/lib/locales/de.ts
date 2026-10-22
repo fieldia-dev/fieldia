@@ -327,6 +327,7 @@ export const de: ViewerLabels = {
   rowOpen: '{name} öffnen',
   rowChange: '{name} ändern',
   rowCell: '{column} von {name}',
+  rowLocked: 'Diese Zeile kann hier nicht geändert werden',
   relatedShownNoun: '{n} von {total} {records}',
   actions: 'Aktionen',
   print: 'Drucken',

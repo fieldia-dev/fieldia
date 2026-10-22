@@ -1,4 +1,5 @@
 import { type Page } from '@playwright/test';
+import { axeFindings } from './a11y-support';
 import { expect, test } from './fixtures';
 import { open, screen } from './support';
 
@@ -459,6 +460,43 @@ test.describe('a pipeline’s deal stages', () => {
     expect(problems).toEqual([]);
   });
 
+  test('the won stage, which only the sales manager changes, shows a lock at its start, and a press or Enter on it says why', async ({ page }) => {
+    // The owner's walk of 0.29: it looked like every other row, and a press did nothing, saying nothing.
+    const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline');
+    await expect(row(page, 'Won')).toBeVisible();
+    const lockAt = row(page, 'Won').locator('td[data-col] > .fd-list-lock');
+    await expect(lockAt).toBeVisible();
+    await expect(lockAt).toHaveAttribute('title', 'The won stage is kept by the sales manager.');
+    await expect(page.locator('.fd-list-row:not([data-locked]) .fd-list-lock')).toHaveCount(0);
+    // At the row's start: in its first cell, before its words.
+    const [lock, first] = await Promise.all([lockAt.boundingBox(), row(page, 'Won').locator('td[data-col="sequence"]').boundingBox()]);
+    expect(Math.abs((lock?.x ?? 0) - (first?.x ?? 0))).toBeLessThan(16);
+    // "Press the Won stage’s cells": none opens, and why is said under it.
+    await cell(page, 'Won', 'name').click();
+    await expect(editor(page)).toHaveCount(0);
+    await expect(note(page, 'Won')).toBeVisible();
+    await expect(note(page, 'Won')).toHaveText('The won stage is kept by the sales manager.');
+    await screen(page, 'list-editable-locked-pressed', { viewport: true });
+    expect(await axeFindings(page, 'a locked row pressed', '.fd-list')).toEqual([]);
+    // Pressed elsewhere: gone; Enter on the row: said again.
+    await cell(page, 'Offer', 'name').click();
+    await expect(note(page, 'Won')).toBeHidden();
+    await page.keyboard.press('Escape');
+    await row(page, 'Won').focus();
+    await page.keyboard.press('Enter');
+    await expect(note(page, 'Won')).toHaveText('The won stage is kept by the sales manager.');
+    expect(problems).toEqual([]);
+  });
+
+  test('the won stage in the dark: its lock and why in the dark’s own tones', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline&scheme=dark');
+    await cell(page, 'Won', 'days').click();
+    await expect(note(page, 'Won')).toBeVisible();
+    await screen(page, 'list-editable-locked-pressed-dark', { viewport: true });
+    expect(await axeFindings(page, 'a locked row pressed, dark', '.fd-list')).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
   test('Add a stage opens its Stage, the first cell a new stage needs, though Order comes first: its name typed is saved', async ({ page }) => {
     // The owner's walk of 0.29: the name landed in Order and was refused, "Order: “Contract signed” is not a number".
     const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline');
@@ -480,6 +518,20 @@ test.describe('a pipeline’s deal stages', () => {
 
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
+
+  test('the won stage’s card shows a lock by its name, and a tap on it says why, no sheet opened', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline');
+    await expect(page.locator('.fd-list[data-as="cards"]')).toBeVisible();
+    const card = row(page, 'Won').locator('.fd-list-card');
+    await expect(card.locator('.fd-list-card-title .fd-list-lock')).toBeVisible();
+    await card.click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(note(page, 'Won')).toBeVisible();
+    await expect(note(page, 'Won')).toHaveText('The won stage is kept by the sales manager.');
+    await screen(page, 'list-editable-phone-locked-tapped', { viewport: true });
+    expect(await axeFindings(page, 'a locked card tapped', '.fd-list')).toEqual([]);
+    expect(problems).toEqual([]);
+  });
 
   test('Add a stage opens its sheet at its Stage, the first field a new stage needs', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline');

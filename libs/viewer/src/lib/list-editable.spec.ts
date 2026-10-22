@@ -200,6 +200,36 @@ describe('a list whose cells are changed in place', () => {
     expect(opened).toEqual([3, 1]);
   });
 
+  it('marks a row its record lets no one change with a lock, and says why as it is pressed where no app opens records', async () => {
+    // The owner's walk of 0.29: the won stage looked like the others, and a press on it did nothing, saying nothing.
+    const can = (reason?: string) => ({ service: (values: Record<string, unknown>) => (values['code'] === 'MN' ? { edit: false, ...(reason ? { reason } : {}) } : undefined) });
+    let host = await mount({ dataSource: createMemoryDataSource({ records: records(), can: can('Kept by the manager.') }) });
+    const lock = () => row(host, 3).querySelector('td[data-col] .fd-list-lock');
+    expect(lock()?.getAttribute('title')).toBe('Kept by the manager.');
+    expect(lock()?.getAttribute('aria-label')).toBe('Kept by the manager.');
+    expect(host.querySelectorAll('.fd-list-lock')).toHaveLength(1);
+    // In the row's first cell shown, its words after it.
+    expect(row(host, 3).querySelector('td[data-col]')?.firstElementChild).toBe(lock());
+    const said = () => row(host, 3).nextElementSibling as HTMLElement | null;
+    cell(host, 3, 'price').click();
+    expect(cell(host, 3, 'price').querySelector('input')).toBeNull();
+    expect(said()?.classList.contains('fd-list-note')).toBe(true);
+    expect(said()?.hidden).toBe(false);
+    expect(said()?.textContent).toBe('Kept by the manager.');
+    expect(host.querySelector('.fd-list-adds span[role="status"]')?.textContent).toBe('Kept by the manager.');
+    // A press elsewhere: it goes.
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(said()?.hidden).toBe(true);
+    handle?.destroy();
+    document.body.replaceChildren();
+    // No reason given: said in the words the list's records go by.
+    host = await mount({ dataSource: createMemoryDataSource({ records: records(), can: can() }) });
+    expect(lock()?.getAttribute('title')).toBe('This service can’t be changed here');
+    row(host, 3).focus();
+    row(host, 3).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(said()?.textContent).toBe('This service can’t be changed here');
+  });
+
   it('adds a row at the end, saved as a new record once it is left; one left empty goes', async () => {
     const source = createMemoryDataSource({ records: records() });
     const host = await mount({ dataSource: source });

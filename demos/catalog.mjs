@@ -337,7 +337,7 @@ export const DEMOS = [
     howTo: [
       'Press Offer’s chance of winning, type 65 and leave the row: 65%, saved as 0.65.',
       'Press Enter on a stage’s row: its first cell opens; Tab and Shift+Tab go across, Enter takes a cell and goes down its column.',
-      'Press the Won stage’s cells: none opens, as the source says only the sales manager changes it.',
+      'The Won stage shows a lock at its start: press it, and why is said under it — the source says only the sales manager changes it.',
       'Press Add a stage, name it and leave it: it is saved at the end.',
     ],
   },

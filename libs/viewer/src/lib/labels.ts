@@ -476,6 +476,9 @@ export interface ViewerLabels {
   rowOpen: string;
   rowChange: string;
   rowCell: string;
+  /** A row its record lets no one change here, where its source says no why (`can.reason`): its lock and a press on it. */
+  rowLocked: string;
+  rowLockedNoun?: string;
   /**
    * Over a record: the gear menu (`actions`, its `print` group and its
    * built-in items), the trail to it (`breadcrumbs`, a new record's crumb
@@ -1032,6 +1035,8 @@ const en: ViewerLabels = {
   rowOpen: 'Open {name}',
   rowChange: 'Change {name}',
   rowCell: '{column} of {name}',
+  rowLocked: 'This row can’t be changed here',
+  rowLockedNoun: 'This {record} can’t be changed here',
   actions: 'Actions',
   print: 'Print',
   archive: 'Archive',

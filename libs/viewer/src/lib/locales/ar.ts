@@ -290,6 +290,7 @@ export const ar: ViewerLabels = {
   rowOpen: 'فتح {name}',
   rowChange: 'تغيير {name}',
   rowCell: '{column} في {name}',
+  rowLocked: 'لا يمكن تغيير هذا الصف هنا',
   actions: 'إجراءات',
   print: 'طباعة',
   archive: 'أرشفة',

@@ -25,7 +25,7 @@ import {
   type Value,
   type Values,
 } from '@fieldia/core';
-import { currencyOf, dateOrderOf, linesPart, type LinesPart, type Widget, type WidgetLabels } from '@fieldia/widgets';
+import { currencyOf, dateOrderOf, drawIcon, linesPart, type LinesPart, type Widget, type WidgetLabels } from '@fieldia/widgets';
 import { setAttr, setHidden, setText } from './dom';
 import { installEditableStyles } from './editable-styles';
 import type { ListContext } from './list';
@@ -313,6 +313,10 @@ export function editableRows(context: EditableContext): EditableRows | null {
   const hint = el('span', { class: 'fd-sr-only', id: list.uid(`${node.id}-edit-hint`) }, labels.rowEditHint);
 
   const lockedOut = (record: Row | null) => record?.can?.edit === false;
+  /** A row its record lets no one change here: its source says so, or none of the cells that change may for it. */
+  const lockedRow = (record: Row | null): record is Row => !!record && (lockedOut(record) || (!!record.can && columns.every((column) => !changeable(record, column))));
+  /** Why such a row cannot be changed: its source's own words, else the list's — "This stage can’t be changed here". */
+  const lockWords = (record: Row) => record.can?.reason || sentence(labels.rowLockedNoun, labels.rowLocked);
   /** Whether a row's cell takes a change now: its column's, its record's permissions and the row's own rules. */
   function changeable(record: Row | null, column: string, form?: Form): boolean {
     if (!columns.includes(column) || lockedOut(record) || record?.can?.readonlyFields?.includes(column) || record?.can?.hiddenFields?.includes(column)) return false;
@@ -498,6 +502,39 @@ export function editableRows(context: EditableContext): EditableRows | null {
     if (!edit.record && state.recordId === null) return drop(edit);
     done(edit);
   }
+
+  // ---- a row the person may not change -------------------------------------------------------------------------
+
+  /** A row its record lets no one change: a lock at its start — its first cell shown, its card's name — saying why. */
+  function markLocked(tr: HTMLTableRowElement, record: Row) {
+    const words = lockWords(record);
+    const lock = () => el('span', { class: 'fd-list-lock', role: 'img', 'aria-label': words, title: words }, drawIcon(doc, 'lock', list.icons) ?? '');
+    tr.setAttribute('data-locked', '');
+    (tr.querySelector(':scope > td[data-col][data-pin]') ?? tr.querySelector(':scope > td[data-col]:not([hidden])'))?.prepend(lock());
+    tr.querySelector('.fd-list-card-title')?.prepend(lock());
+  }
+
+  /** Why a row cannot be changed, said under it as it is pressed, until the next press or key. */
+  const lockNote = el('tr', { class: 'fd-list-note fd-list-locked-note', hidden: '' });
+  function sayLocked(tr: HTMLTableRowElement, record: Row) {
+    const words = lockWords(record);
+    lockNote.replaceChildren(el('td', { colspan: String(context.span()) }, el('p', { class: 'fd-list-locked-words' }, el('span', { class: 'fd-list-lock', 'aria-hidden': 'true' }, drawIcon(doc, 'lock', list.icons) ?? ''), words)));
+    tr.after(lockNote);
+    lockNote.hidden = false;
+    setText(status, words);
+  }
+  /** A press or a row's Enter on a row that cannot change, where the app opens no records: why is said; true. */
+  function lockedPress(tr: HTMLTableRowElement): boolean {
+    const record = rowOf.get(tr);
+    if (!tr.hasAttribute('data-locked') || !lockedRow(record ?? null) || list.onOpenRecord) return false;
+    sayLocked(tr, record as Row);
+    return true;
+  }
+  const hideLockNote = (event: Event) => {
+    if (!lockNote.hidden && !lockNote.contains(event.target as Node)) lockNote.hidden = true;
+  };
+  doc.addEventListener('pointerdown', hideLockNote, true);
+  body.addEventListener('keydown', hideLockNote, true);
 
   // ---- a cell open for typing ----------------------------------------------------------------------------------
 
@@ -1202,6 +1239,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     element,
     wire(tr, record) {
       rowOf.set(tr, record);
+      if (lockedRow(record)) markLocked(tr, record);
       for (const td of tr.querySelectorAll<HTMLTableCellElement>(':scope > td[data-col]')) {
         const column = td.getAttribute('data-col') ?? '';
         if (!changeable(record, column)) continue;
@@ -1222,6 +1260,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
       const td = target.closest('td');
       // A press inside an open box is the box's.
       if (td?.hasAttribute('data-editing') || target.closest('.fd-list-note')) return true;
+      // A row no one may change here, where the app opens no records: why, said under it — never a press that does nothing.
+      if (!target.closest('button, a, input, label') && lockedPress(tr)) return true;
       if (cards()) {
         if (!list.editValues || target.closest('button, a, input, label')) return false;
         const edit = editOf(tr);
@@ -1234,6 +1274,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
       return true;
     },
     enter(tr) {
+      if (lockedPress(tr)) return true;
       if (cards()) {
         const edit = list.editValues ? editOf(tr) : null;
         if (edit) void sheet(edit);
@@ -1261,6 +1302,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     },
     drawn() {
       drawings++;
+      lockNote.hidden = true;
       // Under Group By headings no row is added: the end of which group would it be?
       addButton.hidden = !canAdd();
       for (const edit of [...edits.values()]) {
@@ -1285,6 +1327,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
       destroyed = true;
       doc.removeEventListener('focusin', onFocusIn, true);
       doc.removeEventListener('focusout', onFocusOut, true);
+      doc.removeEventListener('pointerdown', hideLockNote, true);
       context.element.removeEventListener('input', onTyped, true);
       context.element.removeEventListener('change', onRead, true);
       context.element.removeEventListener('focusout', onRead, true);
