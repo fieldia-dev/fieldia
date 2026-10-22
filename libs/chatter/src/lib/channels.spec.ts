@@ -301,6 +301,39 @@ describe('messages arriving while the conversation is shown, pushed', () => {
     expect(host.textContent).not.toContain('After it went.');
   });
 
+  it('shares one app function with the record’s own live changes (0.31): each listener takes its own kind of change, lets the rest go', async () => {
+    // The app's one socket: whatever comes for a record goes to every listener of that record, the form's and the chatter's.
+    const listeners = new Map<string, ((change: unknown) => void)[]>();
+    const subscribe = (record: { model: string; id: unknown }, push: (change: never) => void) => {
+      const key = `${record.model}:${String(record.id)}`;
+      listeners.set(key, [...(listeners.get(key) ?? []), push as (change: unknown) => void]);
+      return () => void listeners.set(key, (listeners.get(key) ?? []).filter((one) => one !== push));
+    };
+    const send = (change: unknown) => (listeners.get('enquiry:1') ?? []).forEach((push) => push(change));
+    const host = await mount({ ...source(), subscribe }, { live: undefined });
+    const page: Page = { fieldia: '0.9', id: 'enquiry', data: { kind: 'record', model: 'enquiry' }, fields: { name: { type: 'char', label: 'Name' }, stage: { type: 'char', label: 'Stage' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-stage', field: 'stage' }] } };
+    const records = createMemoryDataSource({ records: { enquiry: { 1: { name: 'Mona Adel', stage: 'new' } } } });
+    const form = createForm({ page, dataSource: { ...records, subscribe }, recordId: 1 });
+    const arrived: unknown[] = [];
+    form.on('arrived', (event) => void arrived.push(event));
+    await form.load();
+    await until(() => listeners.get('enquiry:1')?.length === 2);
+    // A message: the conversation's alone — laid on top there, the record untouched.
+    send({ type: 'message', message: { id: 9, kind: 'message', author: mona, date: '2026-10-20T10:00:00Z', body: '<p>On my way.</p>', channel: 'whatsapp', direction: 'in' } });
+    send({ type: 'delivery', id: 6, delivery: 'read' });
+    await flush();
+    expect(messages(host)[0].textContent).toContain('On my way.');
+    expect(item(host, 6).querySelector('.fd-delivery')?.getAttribute('data-delivery')).toBe('read');
+    expect([form.getState().values['stage'], arrived]).toEqual(['new', []]);
+    // The record's change: the form's alone — laid on the record, the conversation untouched.
+    const shown = messages(host).length;
+    send({ type: 'record', values: { name: 'Mona Adel', stage: 'viewing' }, by: 'Karim Fathy' });
+    await until(() => form.getState().values['stage'] === 'viewing');
+    expect(arrived).toHaveLength(1);
+    expect(messages(host)).toHaveLength(shown);
+    form.dispose();
+  });
+
   it('never takes a delivery back: a late answer saying delivered of a message read', async () => {
     const chatter = source({ live: true });
     let stale: ChatterMessage[] | null = null;
