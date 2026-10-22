@@ -1,6 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { doubleLines, publish, watch } from './designer-support';
+import { doubleLines, inBar, publish, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -18,7 +18,8 @@ async function openTranslations(page: Page, path = '/designer/?start=survey') {
   const problems = watch(page);
   await page.goto(path);
   await expect(page.locator('.fd-designer')).toBeVisible();
-  await page.getByRole('button', { name: 'Translations', exact: true }).click();
+  // Under the bar's More on a phone.
+  await (await inBar(page, 'Translations')).click();
   await expect(view(page)).toBeVisible();
   return problems;
 }

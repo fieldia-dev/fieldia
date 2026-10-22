@@ -1,7 +1,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { axeFindings } from './a11y-support';
-import { inAdvanced } from './designer-support';
+import { fromToolbox, inAdvanced, reached } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -41,7 +41,7 @@ const DATA: [selector: string, why: string][] = [
   ['.fd-assist-name, .fd-assist-note', 'the app’s assistant, in the app’s words'],
   ['code, .fd-data-model', 'names and types as the data has them — a field’s name, its type, the model’s name: code'],
   ['.fd-formula-function', 'a formula’s functions, as they are typed in it: round, min, max, if, abs'],
-  ['.demo-bar', 'the demo page’s own bar, not the designer'],
+  ['.demo-bar, #demo-head', 'the demo page’s own frame — its name, what to try first, its links — not the designer'],
 ];
 
 /**
@@ -64,7 +64,8 @@ const CODE = /\b[a-z_]+\([^)]*\)|#\w+|https?:\/\/\S*|mailto:\S*|\\[a-z]|\{[a-z]+
 function latinLeft(page: Page): Promise<string[]> {
   return page.evaluate(
     ({ kept, data, code }) => {
-      const skip = [...data, 'script', 'style', 'textarea', 'noscript'].join(', ');
+      // A text box's words are what is typed in it; a title's box that grows (growing-box.ts) is still the designer's to name.
+      const skip = [...data, 'script', 'style', 'textarea:not(.fd-growing)', 'noscript'].join(', ');
       const latin = (text: string) => (text.replace(new RegExp(code, 'g'), '').match(/[A-Za-z][A-Za-z0-9_'’-]*/g) ?? []).filter((word) => !kept.includes(word));
       const where = (element: Element) => {
         const named = element.closest('[class*="fd-"]');
@@ -162,8 +163,9 @@ async function lookAndSavedForm(page: Page, look: (state: string, shot?: boolean
   await kinds.locator('[data-choice="tables"]').click();
   await kinds.scrollIntoViewIfNeeded();
   await look('look each kind of part', true);
-  await page.locator('.fd-rail [role="tab"]').first().click();
-  await page.locator('.fd-toolbox [data-tool="form:saved"]').click();
+  if (await page.locator('.fd-rail [role="tab"]').first().isVisible()) await page.locator('.fd-rail [role="tab"]').first().click();
+  // On a phone, from the toolbox's sheet: the menu over it, the sheet gone with the pick.
+  await (await fromToolbox(page, 'form:saved')).click();
   await expect(page.locator('.fd-menu')).toBeVisible();
   await look('saved form menu', true, true);
   await page.locator('.fd-menu [data-item="address"]').click();
@@ -217,10 +219,10 @@ async function steps(page: Page, look: (state: string, shot?: boolean, dialog?: 
   await page.locator('.fd-menu [data-item="ask"]').click();
   await page.keyboard.type('هل تحفظ العميل؟');
   await look('steps moments', true);
-  await page.locator('.fd-mode [data-mode="rules"]').click();
+  await (await reached(page, page.locator('.fd-mode [data-mode="rules"]'))).click();
   await expect(page.locator('.fd-rules-steps')).toHaveCount(3);
   await look('steps rules view', true);
-  await page.locator('.fd-mode [data-mode="design"]').click();
+  await (await reached(page, page.locator('.fd-mode [data-mode="design"]'))).click();
 }
 
 const RUNS: Run[] = [
@@ -253,7 +255,7 @@ const RUNS: Run[] = [
     part: '.fd-canvas-field',
     advanced: true,
     prepare: async (page) => {
-      await page.locator('.fd-toolbox [data-tool="model:email"]').click();
+      await (await fromToolbox(page, 'model:email')).click();
       await page.getByRole('button', { name: 'إضافة مراحل الحالة' }).click();
       await page.getByRole('button', { name: 'إضافة زر' }).first().click();
       await page.keyboard.press('Escape');
@@ -284,13 +286,21 @@ async function walk(page: Page, run: Run, tag: string, phone: boolean): Promise<
   await run.prepare?.(page, look);
   await look('start', true);
 
+  // On a phone the toolbox waits behind a +: its sheet opened as a person opens it, and read with each tab.
+  const plus = page.locator('.fd-rail-tools:visible').first();
+  const sheeted = (await plus.count()) > 0;
+  if (sheeted) {
+    await plus.click();
+    await look('toolbox sheet', true, true);
+  }
   const railTabs = page.locator('.fd-rail [role="tab"]');
   for (let i = 1; i < (await railTabs.count()); i++) {
     if (!(await railTabs.nth(i).isVisible())) continue;
     await railTabs.nth(i).click();
-    await look(`rail ${i}`, i === 1);
+    await look(`rail ${i}`, i === 1, sheeted);
   }
   if (await railTabs.first().isVisible()) await railTabs.first().click();
+  if (sheeted) await page.keyboard.press('Escape');
 
   await page.locator(run.part).first().click();
   await look('picked', true);
@@ -312,19 +322,26 @@ async function walk(page: Page, run: Run, tag: string, phone: boolean): Promise<
   }
 
   for (const mode of ['try', 'json', 'translations', 'rules']) {
-    await page.locator(`.fd-mode [data-mode="${mode}"]`).click();
+    await (await reached(page, page.locator(`.fd-mode [data-mode="${mode}"]`))).click();
     await page.waitForTimeout(250);
     await look(`${mode} view`, true);
-    await page.locator('.fd-mode [data-mode="design"]').click();
+    await (await reached(page, page.locator('.fd-mode [data-mode="design"]'))).click();
+  }
+  // On a phone, the rest of the bar under More, open.
+  const more = page.locator('.fd-bar-more');
+  if (await more.isVisible()) {
+    await more.click();
+    await look('more', true, true);
+    await page.keyboard.press('Escape');
   }
 
   const dialogs: [string, () => Promise<unknown>][] = [
     ['find anything', () => page.keyboard.press('ControlOrMeta+k')],
-    ['checks', () => page.locator('.fd-checks-button').click()],
+    ['checks', async () => (await reached(page, page.locator('.fd-checks-button'))).click()],
     ['publish', () => page.locator('.fd-designer-bar .fd-button-primary').click()],
     ['shortcuts', () => page.keyboard.type('?')],
-    ['versions', () => page.locator('.fd-designer-status').click()],
-    ...(run.survey ? ([['look', () => page.locator('.fd-look-button').click()]] as [string, () => Promise<unknown>][]) : []),
+    ['versions', async () => (await reached(page, page.locator('.fd-designer-status'))).click()],
+    ...(run.survey ? ([['look', async () => (await reached(page, page.locator('.fd-look-button'))).click()]] as [string, () => Promise<unknown>][]) : []),
   ];
   for (const [name, open] of dialogs) {
     await page.locator('body').click({ position: { x: 2, y: 2 } });

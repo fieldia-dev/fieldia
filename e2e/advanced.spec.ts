@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { boxes, cardOf, centre, doubleLines, dropAt, misalignedOnCanvas } from './designer-support';
+import { boxes, cardOf, centre, doubleLines, dropAt, misalignedOnCanvas, reached } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -86,7 +86,8 @@ test('each size shows its own columns, whatever the canvas’s width; Simple sho
 async function openAdvanced(page: Page, width = 1280) {
   await page.setViewportSize({ width, height: 1000 });
   await page.goto(LAYOUT);
-  await page.getByRole('group', { name: 'Editing mode' }).getByRole('button', { name: 'Advanced' }).click();
+  // Under the bar's More on a phone.
+  await (await reached(page, page.getByRole('group', { name: 'Editing mode' }).getByRole('button', { name: 'Advanced' }))).click();
   await expect(page.locator('.fd-screen-designer')).toHaveAttribute('data-mode', 'advanced');
 }
 
@@ -255,6 +256,8 @@ test('the width handle on a picked part’s end edge snaps to the columns, sayin
   await part(page, 'f-nationality').click({ position: { x: 6, y: 6 } });
   const handle = page.locator('.fd-width-handle');
   await expect(handle).toBeVisible();
+  // In view, as a person scrolls to it: the demos' frame over the designer puts it near the window's foot.
+  await handle.scrollIntoViewIfNeeded();
   const h = (await handle.boundingBox())!;
   const nationality = (await part(page, 'f-nationality').boundingBox())!;
   // On the end edge of the part, halfway down it.

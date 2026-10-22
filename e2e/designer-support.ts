@@ -273,3 +273,32 @@ export function misalignedOnCanvas(page: Page): Promise<{ checked: number; off: 
   });
 }
 
+
+/**
+ * A button of the designer's bar, as a person reaches it: on a phone the bar is one row — the title, Publish and More —
+ * and the rest waits under More, which is opened first when the button is under it.
+ */
+export async function inBar(page: Page, name: string | RegExp): Promise<Locator> {
+  return reached(page, page.locator('.fd-designer-bar').getByRole('button', { name, exact: typeof name === 'string' }).first());
+}
+
+/** A part of the bar as a person reaches it: under More on a phone, opened first when it is there. */
+export async function reached(page: Page, part: Locator): Promise<Locator> {
+  // By its place, not its name: the designer may speak another language.
+  const more = page.locator('.fd-designer-bar .fd-bar-more');
+  if (!(await part.isVisible()) && (await more.isVisible()) && (await more.getAttribute('aria-expanded')) !== 'true') await more.click();
+  await expect(part).toBeVisible();
+  return part;
+}
+
+/**
+ * A tile of the toolbox as a person reaches it: beside the page, or — where the toolbox cannot sit there, a phone —
+ * in its sheet, opened by the + first.
+ */
+export async function fromToolbox(page: Page, spec: string): Promise<Locator> {
+  const found = tile(page, spec);
+  const plus = page.locator('.fd-rail-tools:visible').first();
+  if (!(await found.isVisible()) && (await plus.count())) await plus.click();
+  await expect(found).toBeVisible();
+  return found;
+}

@@ -31,6 +31,8 @@ export const toolbox: DesignerWords['toolbox'] = {
   data: 'البيانات',
   besideThePage: 'بجانب الصفحة',
   railLabel: 'الإضافة والمخطط والبيانات',
+  openToolbox: 'فتح صندوق الأدوات',
+  closeToolbox: 'إغلاق صندوق الأدوات',
   responses: 'تُحفظ الإجابات كردود:',
   responsesModel: 'سجل لكل شخص، وحقل لكل سؤال',
   surveyFields: 'ينشئ الاستبيان حقوله بنفسه: كل سؤال يُضاف حقلٌ جديد، لذا تُعرض كل الأنواع.',

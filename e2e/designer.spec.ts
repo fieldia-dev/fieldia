@@ -40,7 +40,7 @@ test.describe('survey designer', () => {
 
   test('a survey from nothing opens blank: no title but the box’s “Untitled form”, and where to start said without red', async ({ page }) => {
     // As the walk opened it from the Designer page: no "Event feedback", no red "Must fix".
-    const title = page.locator('.fd-designer input').first();
+    const title = page.locator('.fd-designer-title');
     await expect(title).toHaveValue('');
     await expect(title).toHaveAttribute('placeholder', 'Untitled form');
     await expect(page.getByText('Event feedback')).toHaveCount(0);

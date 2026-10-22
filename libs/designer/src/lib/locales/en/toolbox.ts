@@ -31,6 +31,9 @@ export const toolbox = {
   data: 'Data',
   besideThePage: 'Beside the page',
   railLabel: 'Add, outline and data',
+  // ---- where the toolbox cannot sit beside the page: in a sheet, behind a +
+  openToolbox: 'Open the toolbox',
+  closeToolbox: 'Close the toolbox',
   // ---- the Data pane
   responses: 'Answers are kept as responses:',
   responsesModel: 'one record per person, one field per question',

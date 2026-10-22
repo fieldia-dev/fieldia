@@ -182,6 +182,22 @@ for (const variant of ['plain', 'react']) {
       await expect(dialog).toBeHidden();
       await expect(title(page)).toHaveText('Waiting for Manager: Karim Fathy');
     });
+
+    test('only the employee is offered Submit for approval: his manager and Finance are not, as in a real app', async ({ page }) => {
+      const submit = page.getByRole('button', { name: 'Submit for approval' });
+      await expect(submit).toBeVisible();
+      // The walk's steps: signed in as the manager, the rejected claim offers him nothing to submit.
+      await signIn(page, /Karim Fathy/);
+      await expect(title(page)).toHaveText('Rejected by Mona Adel (Finance)');
+      await expect(submit).toHaveCount(0);
+      await screen(page, `${variant}-approval-manager-no-submit`, { viewport: true });
+      await signIn(page, /Mona Adel/);
+      await expect(title(page)).toHaveText('Rejected by Mona Adel (Finance)');
+      await expect(submit).toHaveCount(0);
+      // Back as Omar, his own claim is his to send again.
+      await signIn(page, /Omar Said/);
+      await expect(submit).toBeVisible();
+    });
   });
 }
 

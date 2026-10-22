@@ -181,7 +181,7 @@ test.describe('placing a saved form in the screen designer', () => {
 
     // Open it: the editor opens the Address form itself.
     await frame(page).getByRole('button', { name: 'Open it' }).click();
-    await expect(page.locator('.fd-designer-bar input').first()).toHaveValue('Address');
+    await expect(page.locator('.fd-designer-title')).toHaveValue('Address');
     expect(problems).toEqual([]);
   });
 

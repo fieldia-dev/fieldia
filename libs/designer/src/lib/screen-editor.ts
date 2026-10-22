@@ -20,6 +20,9 @@ import { shortcutKeys } from './shortcuts-sheet';
 import { rail } from './rail';
 import { installDesignerStyles } from './styles';
 import { toolbox } from './toolbox';
+import { toolsSheet } from './tools-sheet';
+import { keepClearOfBar } from './bottom-bar';
+import { designerIcon } from './icons';
 import { tryIt } from './try-it';
 import { translationsView } from './translations-view';
 import { jsonView } from './json-view';
@@ -134,8 +137,11 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     maps: !!options.maps,
     forms: true,
     related: true,
-    onPick: (spec) => add(spec, null),
-    onPress: (spec, event, tile) => (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile),
+    // Picked in the sheet, the sheet goes first: the field added takes the focus. A saved form is picked from a menu
+    // under its tile, which the sheet keeps until one is picked.
+    onPick: (spec) => (spec === 'form:saved' ? add(spec, null) : sheet.closeFor(() => add(spec, null))),
+    // A tile is carried onto the screen from beside it; in the sheet over the screen it is only picked.
+    onPress: (spec, event, tile) => !sheet.open && (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile),
   });
   const side = rail({
     el,
@@ -148,7 +154,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       const column = id.startsWith('column:') ? `.fd-list-table th[data-node="${id.slice('column:'.length)}"]` : null;
       root.querySelector(column ?? `[data-node="${id}"], [data-part="${id}"]`)?.scrollIntoView?.({ block: 'nearest' });
     },
-    addModelField: (name) => (isList() ? designer.addColumn(name) : add(`model:${name}`, null)),
+    addModelField: (name) => sheet.closeFor(() => (isList() ? designer.addColumn(name) : add(`model:${name}`, null))),
     onSample(index) {
       canvas.setSample(index);
       render(designer.getState());
@@ -159,7 +165,15 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   panel.setMode(mode);
   // A blank screen: templates to start from.
   const start = startHere({ el, doc, designer, root, survey: false, templates: options.templates, assistant: options.assistant ?? designer.assistant(), blankFocus: () => root.querySelector('.fd-tool-find') });
-  const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, start.element, canvas.element, list.element), panel.element);
+  // Where the toolbox cannot sit beside the screen (a phone, a tablet held upright), it waits behind the + of a bar at the
+  // foot of the screen, in a sheet (tools-sheet.ts), so the screen starts near the top.
+  const openTools = el('button', { type: 'button', class: 'fd-rail-button fd-rail-tools', 'aria-label': designer.words.toolbox.openToolbox, title: designer.words.toolbox.openToolbox, 'aria-haspopup': 'dialog', 'aria-expanded': 'false' }, designerIcon(doc, 'plus'));
+  const foot = el('div', { class: 'fd-foot-bar', role: 'toolbar', 'aria-label': designer.words.toolbox.add }, openTools);
+  const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, start.element, canvas.element, list.element), panel.element, foot);
+  const sheet = toolsSheet({ el, doc, root, side: side.element, words: designer.words });
+  openTools.addEventListener('click', () => sheet.show(openTools));
+  // Nothing a person works on is left under the bar at the foot.
+  const unclear = keepClearOfBar(foot, body);
   const json = jsonView({ el, doc, designer, trial, body });
   root.append(bar.element, bar.issues, body, trial.element, json.element);
   // The editor in its own language; the screen drawn as the page around it runs, as the form will.
@@ -238,6 +252,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       items: found.map((form) => ({ id: form.id, label: form.title, icon: 'saved-form' })),
       note: designer.words.savedForms.menuNote(found.length > 0),
       onPick: async (id) => {
+        // Picked from the toolbox's sheet: the sheet goes with the menu.
+        sheet.close(false);
         await designer.loadSavedForm(id);
         designer.addForm(id, where);
       },
@@ -390,6 +406,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     element: root,
     destroy() {
       leave();
+      sheet.destroy();
+      unclear();
       bar.destroy();
       doc.removeEventListener('keydown', onKey);
       stopPuttingDown();

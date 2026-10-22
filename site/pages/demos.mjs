@@ -13,7 +13,8 @@ const AREA_COLOURS = { sales: '#0b5cad', accounting: '#0f766e', crm: '#7c3aed', 
 function card(demo) {
   const area = AREAS.find((a) => a.id === areaOf(demo.id));
   const category = CATEGORIES.find((c) => c.id === demo.category);
-  const where = demo.app ? 'One HTML file' : FRAMEWORKS.map((f) => f.label).join(' · ');
+  // A designer opens itself, as the Designer page's cards say; another app of its own is one HTML file.
+  const where = demo.code === 'designer' ? 'Opens the designer' : demo.app ? 'One HTML file' : FRAMEWORKS.map((f) => f.label).join(' · ');
   const words = [demo.name, demo.blurb, wordsOf(demo.id), area?.label, category?.label].join(' ').toLowerCase();
   return `<a class="demo-card" href="/demos/${esc(demoHref(demo))}" data-at="${DEMOS.indexOf(demo)}" data-area="${esc(area?.id ?? '')}" data-category="${esc(demo.category)}" data-words="${esc(words)}" style="--cat-area: ${AREA_COLOURS[area?.id] ?? '#0b5cad'}; --cat-feature: ${category?.colour ?? '#0b5cad'}">
     <span class="demo-thumb"><img src="/demos/thumbs/${demo.id}.png" alt="" width="600" height="360" loading="lazy"></span>
