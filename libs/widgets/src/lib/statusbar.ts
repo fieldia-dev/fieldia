@@ -149,13 +149,26 @@ export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, do
       else menu.style.right = `${Math.max(0, (view?.innerWidth ?? at.right) - at.right)}px`;
     }
     if (focused) [...list.querySelectorAll('button')].find((b) => b.dataset['key'] === focused)?.focus();
-    fitEnd();
-    // Another step now, or drawn anew: the one the record is in, in view.
-    if (currentKey !== inView) {
-      inView = currentKey;
-      showCurrent();
-    }
-    edges();
+    // Measured once the page is laid out, never while the form draws: a measure now would style the page half drawn.
+    arrangeSoon(currentKey !== inView);
+    inView = currentKey;
+  }
+
+  /** The bar's room and steps measured on the next frame: the room after the last step, the step it is in brought into view (`show`), its edges. */
+  let arranging: number | null = null;
+  let bring = false;
+  function arrangeSoon(show: boolean) {
+    bring ||= show;
+    const view = document.defaultView;
+    if (arranging !== null || !view) return;
+    arranging = view.requestAnimationFrame(() => {
+      arranging = null;
+      if (!list.isConnected) return;
+      fitEnd();
+      if (bring) showCurrent();
+      bring = false;
+      edges();
+    });
   }
 
   /** The step the record is in when the bar was last brought to it: brought again only when that changes. */
@@ -222,11 +235,7 @@ export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, do
   }
   list.addEventListener('scroll', edges, { passive: true });
   // Its room changed — the page laid out, turned, its window narrowed: the step it is in brought into view again.
-  const resized = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
-    fitEnd();
-    showCurrent();
-    edges();
-  }) : null;
+  const resized = typeof ResizeObserver === 'function' ? new ResizeObserver(() => arrangeSoon(true)) : null;
   resized?.observe(list);
 
   /** The folded stages, in a menu at the bar's end: picked as any step when the bar can be clicked. */
@@ -294,6 +303,7 @@ export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, do
       document.removeEventListener('pointerdown', away);
       document.removeEventListener('scroll', away, true);
       resized?.disconnect();
+      if (arranging !== null) document.defaultView?.cancelAnimationFrame(arranging);
     },
     update(state) {
       const durations = durationsField ? state.values?.[durationsField] : null;

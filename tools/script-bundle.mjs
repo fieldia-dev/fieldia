@@ -2044,7 +2044,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // so a hovered row keeps its words' contrast; 511.22 and 167.75 measured before, 511.26 and 167.77 after.) A record's
 // status strip on a phone: the step it is in scrolled into view, at rest on a step, a fade and a sign at each edge with
 // more past it, its frame, and the focus where none of its steps takes it — business 31.38 and 11.53 measured before,
-// 34.30 and 12.45 after (the strip's code 1.7 KB, its sheet 1.2 KB), to 34.4 and 12.5. Propose values pressed with
+// 34.30 and 12.45 after (the strip's code 1.7 KB, its sheet 1.2 KB); its measures taken on the next frame, never while
+// a form draws (a measure then styled the page half drawn: a locked box's border seen changing) — 34.51 and 12.53, to
+// 34.6 and 12.6. Propose values pressed with
 // nothing pasted or added says what to do — assist 36.27 and 12.36 measured before, 36.70 and 12.45 after, to 36.8
 // and 12.5. Photos named by their caption, else their place ("photo 2 of 5"), never their file; the crop dialog, Reject's
 // question, Fill from text and the import asking "Discard your changes?" before Escape or × lets work go — photos 31.42
@@ -2053,7 +2055,7 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 15.2. A formatted text's table with its header row among its rows (as office apps copy one, as an app may store
 // one) shown and kept with it in the table's head, so a printout repeats it on every sheet — text 73.45 and 24.78
 // measured before, 73.91 and 24.89 after, to 74.0 and 24.9.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [74.0, 24.9], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.6, 15.2], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [34.4, 12.5], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [32.4, 12.0], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.4, 7.1], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [37.0, 12.6], scan: [21.4, 8.9], decode: [153.8, 39.0] };
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [74.0, 24.9], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.6, 15.2], editable: [35.2, 12.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [34.6, 12.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [32.4, 12.0], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.4, 7.7], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.4, 7.1], print: [16.9, 5.4], memory: [21.1, 7.5], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [37.0, 12.6], scan: [21.4, 8.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
