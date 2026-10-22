@@ -15,6 +15,163 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.30.1 — 2026-10-22
+
+**The owner's walk of 0.29, mended.** A business owner walked fieldia.dev's
+0.29 demos as a customer would, following each demo's own steps with the
+mouse. What it met broken or confusing is fixed here, each where it began, for
+every place it could happen; how Arabic writes money and the designer's dark
+scheme wait for a later release. The page format stays 0.9: nothing a page
+says changes.
+
+**Fixes:**
+
+- **A list's cell opened by a press or Enter chooses its whole value**, so what
+  is typed replaces it, as a spreadsheet does. A second press, or F2, puts the
+  caret in it to change within it. One rule for every kind a cell opens as:
+  following the price list's first step with the mouse saved Hydrafacial's
+  price as E£ 28,003,000, staff hours read "00:009:30", a stage "7,065%".
+- **A row added opens at the first cell a new record needs**: the first
+  required, empty and changeable one in the person's order of columns, else the
+  first changeable one. "Add a stage" lands on its name, never on Order. A
+  blank card is titled "New stage".
+- **A row no one may change shows a lock at its start**, and a press on it says
+  why: the record's `can.reason`, else "This row can’t be changed here". It does
+  this on a desktop and on a phone.
+- **A paste of more than one row asks first**: "Paste 40 rows: change 7 and add
+  33?", answered Paste 40 rows or Cancel. Undo, and Ctrl+Z, take it back for a
+  few seconds after: the rows it changed are put back and saved again, and the
+  rows it added are taken away. Rows refused for one reason are said once ("33
+  rows not saved: Service is required.", with Remove them), each still marked.
+- **A question's Yes says what it does**, never a bare OK:
+  - a button's question, and its `ask` steps, by the button's own words (Block,
+    Send newsletter);
+  - Archive and Delete by Archive and Delete;
+  - a `beforeSave` question by the form's own Save or Submit;
+  - Edit's question by Update, and Undo the import's by Delete;
+  - a paste by "Paste 40 rows".
+- **Approvals in the memory source:**
+  - the person who asked for a round never decides a level of it ("Karim Fathy
+    asked for this approval, so may not decide it");
+  - a record whose rules ask no level moves on at once, with "No approval
+    needed" in its history and its band;
+  - the words read "Say why you reject it (Finance)" and "Karim Fathy approved
+    (Manager)".
+
+  Contract §20 recommends this routing to a server, and the Flowyard mapping
+  follows it. In "An expense rejected, with why", only the employee is offered
+  Submit for approval: the page's own rule for its button.
+- **Scanning:**
+  - a code that holds nothing the field takes says so in the sheet ("This code
+    has no Lot in it. Scan the code on the pack."), and a code of another kind
+    is said too;
+  - a scanner gun's code typed in a scanned field's box, and in a table's cell,
+    is read as the camera's is, on Enter or as the box is left: a link found by
+    its code, GS1 parts, `fills`;
+  - the stock count's sheet takes a typed code ("Or type the code", Count).
+- **A record's status strip on a phone** scrolls the step it is in into view
+  and rests on a step. Where it is cut, its edge fades with a ‹ or › sign that
+  it scrolls, and no step is cut mid-word.
+- **An empty Send or Propose values says what to do beside it**: "Type a
+  message first", "Type a note first", "Paste or add what to fill from". The
+  words go as soon as you type.
+- **Photos are named by their caption, else their place** ("photo 2 of 5"),
+  never by their file, in their buttons and messages.
+- **Every dialog holding changes asks before Escape or × lets them go**: the
+  crop dialog, Reject's reason, Fill from text and the import, as a record's
+  dialog does ("Discard your changes?", Discard or Keep editing). Cancel leaves
+  without asking.
+- **The stand-in AI** reads "<25m", "<=" and ">". It matches "apartments",
+  "flat", "apt" and "store" to their options. Polish keeps the capitals of
+  names the record already writes with capitals.
+- **A formatted text's table pasted with its header row among its rows** (as
+  office apps copy one) keeps that row in the table's head, so a printout
+  repeats it on every sheet.
+- **The designers on a phone:**
+  - the bar is one row of title, Publish and More (⋮), with everything else
+    under More;
+  - where the toolbox can't sit beside the page (a survey editor 900px wide or
+    less, a screen editor 1000px or less), it waits behind a + and opens as a
+    sheet with its Add, Outline and Data tabs, so the form starts near the top
+    (the first question about 615px down, where it was about 2,100);
+  - title boxes wrap instead of being cut: the bar's title, the form's heading
+    and description, page titles, a question's words and description, the
+    screen's field labels and group titles;
+  - a page's buttons go under its title when the row has no room, and endings
+    and conditions fit a phone.
+- **The gallery finds the designers.** The survey designer and The screen
+  designer are found by "designer", "form builder", "survey designer", "drag
+  and drop" and "no code". They open in the demo frame with Try this, their
+  source, and a Code drawer that shows the page being built and how to mount
+  the designer.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- A list's cell opened by a press selects its value: a test that pressed a cell
+  and typed to add to its value presses it again, or presses F2, first.
+- A paste of more than one row in a list whose app can ask (`ask`) asks first,
+  its Yes "Paste {n} rows".
+- A question's Yes has its own words: a test that pressed OK on a button's
+  question, Archive's, Delete's, Edit's or a paste's presses the named Yes
+  (Block, Archive, Update, Paste 3 rows). A notice keeps its OK. Your own
+  `confirm` (`FormOptions`, `ViewerOptions`, the React, Vue and Angular
+  components' `confirm`) and `host.ask` are given those words as a second
+  argument's `yes`.
+  - `AskHow` gains `yes`, and `RunContext` gains `yes` (an `ask` step's Yes).
+  - `form.save(how?)` takes `{ yes }`: the words of what set the save off.
+- The memory source never lists a round's requester as one of its approvers,
+  and a route that asks no level is approved at once. A server following §20
+  does the same. `ApprovalEntry.decision` gains `'notNeeded'`.
+- The status strip is a `div.fd-statusbar-frame` holding `ol.fd-statusbar` and
+  two `span.fd-statusbar-sign`: CSS that targeted the list right under the head
+  allows for the frame.
+- Photo words' `{name}` is the caption or the photo's place, not the file name.
+- An app that passes whole `labels`, `messages` or designer words adds the
+  new keys:
+  - viewer: `rowLocked`, `rowLockedNoun`, `pasteAsk`, `pasteAskChange`,
+    `pasteAskAdd`, `pasteYes`, `pasteUndo`, `pasteUndone`, `rowsNotSaved`,
+    `rowsNotSavedOne`, `rowsDrop`, `rowsPutBack`, `approvalNotNeeded`,
+    `approvalKeepEditing`, `assistKeepEditing`, `importKeepEditing`,
+    `assistFillEmpty`, `assistFillEmptyText`, `assistFillEmptyFiles`;
+  - widgets: the scan words (`scanTypeCode`, `scanTypeCount`), the photos'
+    place words (`photoAt`, `photoAtStart`, `photoAlone`, `photoAloneStart`,
+    `photoCoverAt`) and the crop's (`cropLetGoAsk`, `cropLetGo`,
+    `cropKeepEditing`);
+  - chatter: `approvalNotNeeded`, `typeMessageFirst`, `typeNoteFirst`;
+  - core messages: `archiveYes`, `deleteYes`;
+  - designer: `bar.more`, `bar.moreTitle`, `toolbox.openToolbox`,
+    `toolbox.closeToolbox`.
+- Widgets export `askFirst(make, { yes, no })`. `codeReaderFor(formats, doc,
+  also)` gives an app's own reader every format, and the combobox gains a
+  `code` option. `polishText(text, names?)` takes the names to keep.
+- The designer on a phone (620px wide or less) puts the bar's tools under More,
+  and keeps the toolbox in a sheet behind + wherever it can't sit beside the
+  page. Its title boxes are one-row `textarea`s that grow (`.fd-growing`)
+  where they were `input`s: a test or style that found them as `input` finds
+  them by their class.
+
+**Size:** `fieldia.js` 511.6 KB, 167.9 gzipped (0.30.0: 511.2, 167.75). The
+walk's fixes added 0.03 KB gzipped: a muted pill's shade, asking first in place,
+and what the parts now take from the main script. A question's Yes naming what
+it does added 0.12: what Yes does, carried from what set the run off to the
+question. Of the parts, gzipped:
+
+- editable 12.6 KB (from 10.7): a press choosing the value, the lock, the
+  paste's question and its Undo;
+- business 12.5 (11.5): the phone's status strip;
+- scan 8.8 (7.9) and relations 7.7 (7.6): the typed code and a code that holds
+  no part;
+- memory 7.4 (7.1) and approvals 7.0 (6.8): the routing and "No approval
+  needed";
+- photos 12.0 (11.6), assist 12.6 (12.4), import 15.2 (15.0): names by place
+  and dialogs that ask before letting work go;
+- text 24.9 (24.8): a pasted table's header row.
+
+Files and lines grew by a few dozen bytes each for the word Remove, which they
+now carry themselves; list and head for a question's Yes. The rest are as they
+were. A language's add-on is 14.1 to
+16.2 KB gzipped (13.8 to 15.9 in 0.30.0), with the new words.
+
 ## 0.30.0 — 2026-10-21
 
 **A work item as a work tracker draws one: tags inline in its head's row,
