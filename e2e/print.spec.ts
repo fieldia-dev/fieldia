@@ -5,6 +5,7 @@ import { expect, test } from './fixtures';
 import { pdfSheets, squash } from './pdf-text';
 import { chromiumSheets, expectSheetsClean, firefoxSheets, headingsOf, pressPrint } from './print-support';
 import { open, screen } from './support';
+import { stubMaps } from './map-support';
 
 /**
  * On paper (the plain demo): an invoice printed — by Ctrl+P, by the gear's Print › This record, or as the app's own
@@ -873,6 +874,68 @@ test.describe('the print part, on intent', () => {
     expect(await laidOut(page)).toBe(true);
     await expect(page.locator('.fd-tabpanel[data-fd-tab="Other Info"]').first()).toBeVisible();
     await printed(page);
+    expect(problems).toEqual([]);
+  });
+});
+
+test.describe('a list prints the view it shows, the others left off paper', () => {
+  /** On paper: whether the list's table (or its gallery) is printed, and which of its other views are. */
+  const onPaper = async (page: Page) => {
+    await page.emulateMedia({ media: 'print' });
+    const printed = await page.evaluate(() => {
+      const seen = (element: Element | null) => !!element && getComputedStyle(element).display !== 'none' && element.getBoundingClientRect().height > 40;
+      const list = document.querySelector('.fd-list');
+      return { table: seen(list?.querySelector('.fd-list-records') ?? null), views: [...(list?.querySelectorAll('.fd-list-addon') ?? [])].filter(seen).map((one) => one.getAttribute('data-addon')) };
+    });
+    await page.emulateMedia({ media: 'screen' });
+    return printed;
+  };
+  const view = (page: Page, name: string) => page.locator('.fd-list-views').getByRole('button', { name, exact: true });
+
+  test('its table alone, and its gallery', async ({ page }) => {
+    const { problems } = await open(page, 'plain', `page=contacts&skin=underline&${NOW}`);
+    await expect(page.locator('.fd-list-table tbody tr.fd-list-row')).toHaveCount(10);
+    expect(await onPaper(page)).toEqual({ table: true, views: [] });
+    await open(page, 'plain', 'page=homes-gallery&skin=outlined');
+    await expect(page.locator('.fd-list')).toHaveAttribute('data-view', 'gallery');
+    await expect(page.locator('.fd-list-row').first()).toBeVisible();
+    expect(await onPaper(page)).toEqual({ table: true, views: [] });
+    expect(problems).toEqual([]);
+  });
+
+  test('its calendar shown alone prints in the table’s place — never a blank page — and stays off paper once the list shows its table', async ({ page }) => {
+    const { problems } = await open(page, 'plain', `page=clinic-calendar&skin=outlined&${NOW}`);
+    await expect(page.locator('.fd-list')).toHaveAttribute('data-view', 'calendar');
+    await expect(page.locator('.fd-list-addon[data-on] .fd-cal-event').first()).toBeVisible();
+    expect(await onPaper(page)).toEqual({ table: false, views: ['calendar'] });
+    await view(page, 'List').click();
+    await expect(page.locator('.fd-list-row').first()).toBeVisible();
+    expect(await onPaper(page)).toEqual({ table: true, views: [] });
+    expect(problems).toEqual([]);
+  });
+
+  test('its timeline shown alone prints, and its table once shown in its place', async ({ page }) => {
+    const { problems } = await open(page, 'plain', `page=fitout-plan&skin=outlined&${NOW}`);
+    await expect(page.locator('.fd-gantt')).toBeVisible();
+    expect(await onPaper(page)).toEqual({ table: false, views: ['gantt'] });
+    await view(page, 'List').click();
+    await expect(page.locator('.fd-list-row').first()).toBeVisible();
+    expect(await onPaper(page)).toEqual({ table: true, views: [] });
+    expect(problems).toEqual([]);
+  });
+
+  test('its map beside its table prints both; its map alone, the map; its table alone, the table', async ({ page }) => {
+    await stubMaps(page);
+    const { problems } = await open(page, 'plain', 'page=map-homes&skin=outlined');
+    await expect(page.locator('.fd-map-list .fd-map-box')).toBeVisible();
+    const shown = await page.locator('.fd-list').getAttribute('data-view');
+    if (shown === 'both') expect(await onPaper(page)).toEqual({ table: true, views: ['map'] });
+    await view(page, 'Map').click();
+    await expect(page.locator('.fd-list')).toHaveAttribute('data-view', 'map');
+    expect(await onPaper(page)).toEqual({ table: false, views: ['map'] });
+    await view(page, 'List').click();
+    await expect(page.locator('.fd-list-row').first()).toBeVisible();
+    expect(await onPaper(page)).toEqual({ table: true, views: [] });
     expect(problems).toEqual([]);
   });
 });

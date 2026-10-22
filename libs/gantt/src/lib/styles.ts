@@ -120,8 +120,7 @@ export const GANTT_CSS = `
   .fd-gantt-title { flex-basis: 100%; order: -1; }
 }
 @media print {
-  /* A list showing its timeline alone prints it in the table's place (the viewer leaves a list's other views off paper). */
-  .fd-form .fd-list[data-alone] .fd-list-addon[data-on]:has(.fd-gantt) { display: block !important; }
+  /* A list showing its timeline prints it, as the viewer prints the view a list shows; its tools stay off paper. */
   .fd-gantt-bar > .fd-button, .fd-gantt-zooms, .fd-gantt-said, .fd-gantt-alert, .fd-gantt-grip { display: none !important; }
   .fd-gantt-body, .fd-gantt-scroll { overflow: visible; max-height: none; }
   .fd-gantt-head, .fd-gantt-corner, .fd-gantt-name { position: static; box-shadow: none; }

@@ -288,7 +288,9 @@ export const LIST_STYLES = `
   /* A related list's rows as shown, and how many of how many where they run past a page. */
   .fd-form .fd-list-shown:not([hidden]) { display: block; margin: 4px 0 0; font-size: 12px; color: var(--fd-muted); }
   /* Its tools, and the column after the fields — each row's buttons and the Columns menu's cell — with them. */
-  .fd-form .fd-list-bar, .fd-form .fd-list-selection, .fd-form .fd-list-report, .fd-form .fd-list-check, .fd-form .fd-list-tree, .fd-form .fd-list-twisty, .fd-form .fd-pager, .fd-form .fd-list-addon, .fd-form .fd-list-tail { display: none !important; }
+  .fd-form .fd-list-bar, .fd-form .fd-list-selection, .fd-form .fd-list-report, .fd-form .fd-list-check, .fd-form .fd-list-tree, .fd-form .fd-list-twisty, .fd-form .fd-pager, .fd-form .fd-list-tail { display: none !important; }
+  /* The view a list shows prints — its table, its gallery, its calendar, its map, its timeline, or its table and its map
+     side by side — and the others stay off paper, as they are off the screen (a view not shown is display: none). */
   .fd-form .fd-list-scroll { overflow: visible !important; }
   .fd-form .fd-list-table { width: 100%; }
   .fd-form .fd-list-table :is(td, th) { white-space: normal; overflow-wrap: break-word; }
