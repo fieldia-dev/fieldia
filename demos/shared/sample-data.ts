@@ -727,8 +727,9 @@ export function sampleDataSource() {
       'property.visit': siteVisits(),
       // A ticket to an event, its codes to scan (shared/event-ticket.ts).
       'event.ticket': eventTickets(),
-      // A clinic's treatment, its injection points on a face chart (shared/face-chart.ts).
-      'clinic.treatment': treatments(),
+      // A clinic's treatment, its injection points on a face chart (shared/face-chart.ts): a model of its own, apart from
+      // the scanned treatment's injectables (shared/scan.ts), whose records it would replace.
+      'clinic.chart': treatments(),
       // Treatment courses and a branch (shared/treatment-course.ts).
       'clinic.course': sampleCourses(),
       'clinic.branch': sampleBranches(),
