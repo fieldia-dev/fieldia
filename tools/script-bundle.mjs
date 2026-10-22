@@ -1249,7 +1249,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // paint brings and installStyles keeps (`FIELDIA_STYLE_SHEETS`), and a first paint taken away as the form is drawn —
 // the packages' viewer mounts over one; this script draws in its place (noFirstPaint): 508.40 measured before, 508.57
 // after, to 508.6.
-// Merged (0.31.0), with w6-platform: 525.53 measured, to 525.6.
+// Merged (0.31.0), Wave 6's eight lanes together — the hooks above, every page's — 525.53 measured; then the size step:
+// the parts that join a form through one registry and one kit (the survey flow's, a record's approvals and the record
+// made live among them: 525.38), an option's mark and second line drawn by the choice part (525.06), uploadTo's work in
+// the files part, which a page with a file field has (522.16), and the parts taking the main script's names by their
+// place in the shared table, never by their words (518.54): 518.54, to 518.6.
 const BUDGET_KB = 518.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1530,7 +1534,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // A strict Content-Security-Policy (listed with the raw budget above): the nonce on every <style>, carried to the
 // one-tag script's parts, a formatted text's looks held as its HTML is read — 166.15 measured before, 166.86 after, to
 // 166.9. A server's first paint (listed with the raw budget above): 166.86 measured before, 166.93 after, to 167.0.
-// Merged (0.31.0), with w6-platform: 173.24 measured, to 173.3.
+// Merged (0.31.0), Wave 6's lanes together (listed with the raw budget above): 173.24 measured; then the size step — one
+// registry and one kit for the parts that join a form, 173.23; an option's mark in the choice part, 173.15; uploadTo in
+// the files part, 172.02; the shared table by place, 170.29 — to 170.3.
 const GZIP_BUDGET_KB = 170.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -1801,7 +1807,8 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // who else is here and a change laid, said (6) — Arabic's 77.88 and 13.29 measured before, 83.31 and 14.25 after, to
 // 83.4 and 14.3; German's 36.27 and 11.64 to 38.88 and 12.51, to 38.9 and 12.6; French's 36.75 and 11.70 to 39.38 and
 // 12.56, to 39.4 and 12.6.
-// Merged (0.31.0), with w6-records: Arabic's 124.05 and 20.21, German's 56.13 and 17.45, French's 57.08 and 17.43 measured.
+// Merged (0.31.0), every lane's words together: Arabic's 124.05 and 20.21, German's 56.13 and 17.45, French's 57.08 and
+// 17.43 measured.
 const ADD_ON_BUDGET_KB = { ar: [124.1, 20.3], de: [56.2, 17.5], fr: [57.1, 17.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
@@ -2361,6 +2368,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // A strict Content-Security-Policy (w6-platform): a formatted text's looks held as its HTML is read and put on through
 // style objects — what is pasted from an office app, Markdown both ways, its links, its editor's sizes and tables —
 // text 73.00 and 24.62 to 73.72 and 24.87, to 73.8 and 24.9.
+// Merged (0.31.0), each part as measured after the size step: every part a little smaller, taking the main script's
+// names by their place in the shared table; the choice part with an option's mark and second line (11.89 and 4.71), the
+// files part with uploadTo's work (46.41 and 17.31), the list part with Wave 6's hooks of five lanes (139.04 and 44.50).
 const PART_BUDGET_KB = { head: [42.3, 12.9], text: [72.3, 24.5], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.6, 7.7], date: [22.6, 8.6], months: [13.7, 5.6], typed: [13.6, 5.7], list: [139.1, 44.5], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [37.6, 14.8], editable: [28.1, 10.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [29.6, 11.0], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [30.1, 11.3], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.2], slots: [15.2, 5.9], schedule: [20.4, 7.9], relations: [20.1, 7.7], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.0, 6.6], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.4, 3.5], print: [16.5, 5.2], memory: [23.0, 8.4], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [35.8, 12.2], scan: [17.8, 7.6], decode: [153.8, 39.0], surveyflow: [34.3, 12.3], prefill: [4.1, 2.0], verify: [11.1, 4.7], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
