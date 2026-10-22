@@ -1,3 +1,5 @@
+import type { Speaker } from './locales/speak';
+
 /** Common languages, by tag, named in English: offered when adding one, and their names when the browser has none. */
 export const COMMON_LANGUAGES: Record<string, string> = {
   ar: 'Arabic',
@@ -40,18 +42,18 @@ export const COMMON_LANGUAGES: Record<string, string> = {
 const names = new Map<string, string>();
 
 /**
- * A language's name in English or in Arabic, found once each: a list of
+ * A language's name in one the designer speaks (English, Arabic…), found once each: a list of
  * languages sorted by name asks for each many times. The browser's names;
  * failing those, in English the common ones', and else the tag itself.
  */
-export function displayName(locale: 'en' | 'ar', tag: string): string {
+export function displayName(locale: Speaker, tag: string): string {
   const key = `${locale}:${tag}`;
   let name = names.get(key);
   if (name === undefined) names.set(key, (name = nameOf(locale, tag)));
   return name;
 }
 
-function nameOf(locale: 'en' | 'ar', tag: string): string {
+function nameOf(locale: Speaker, tag: string): string {
   try {
     const name = new Intl.DisplayNames([locale], { type: 'language' }).of(tag);
     if (name && name !== tag) return name;

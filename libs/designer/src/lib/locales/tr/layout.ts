@@ -1,0 +1,82 @@
+import type { DesignerWords } from '../../designer-words';
+
+/** The row divided equally among its parts: "satır üçe bölünür". */
+const PARTS_IN: Record<number, string> = { 2: 'ikiye', 3: 'üçe', 4: 'dörde' };
+/** A part by its type as the page writes it, at the start of a refusal. */
+const TYPES: Record<string, string> = { divider: 'Ayırıcı', spacer: 'Boşluk', text: 'Metin', button: 'Düğme', image: 'Görsel', field: 'Alan', section: 'Grup', tabs: 'Sekmeler', tab: 'Sekme', slot: 'Uygulamanın kendi öğesi' };
+
+/**
+ * The designer's words in Turkish: the layout's edits in words — where a drop puts a part, as the drag chip says it,
+ * why a layout edit is refused, and a row's fractions. A name in one is quoted already (`parts.quote`); one in a
+ * refusal is quoted here. A name never takes a suffix: the noun after it does ("“Şehir” öğesinden önce").
+ * UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+ */
+export const layout: DesignerWords['layout'] = {
+  columnInside: (group, after) => `“${group}” grubunun içinde yeni sütun, tüm satırlarından ${after ? 'sonra' : 'önce'} — iki eşit sütun`,
+  intoThePage: 'sayfanın içine',
+  into: (name) => `“${name}” öğesinin içine`,
+  before: (name) => `“${name}” öğesinden önce`,
+  atEndOf: (name) => `“${name}” öğesinin sonuna`,
+  newRowAbove: (name) => `“${name}” öğesinin üstünde tam genişlikte yeni satır`,
+  newRowAtEnd: (name) => `“${name}” öğesinin sonunda tam genişlikte yeni satır`,
+  beside: (name, whole) => `${name} öğesinin yanında${whole ? ' yeni sütun' : ''}`,
+  under: (name, whole) => `${name} öğesinin altında${whole ? ' yeni satır' : ''}`,
+  above: (name, whole) => `${name} öğesinin üstünde${whole ? ' yeni satır' : ''}`,
+  inRoomLeft: (name) => `${name} öğesinin yanında, kalan boşlukta`,
+  between: (a, b) => `${a} ile ${b} arasında`,
+  atRowEnd: (name) => `satırın sonunda, ${name} öğesinden sonra`,
+  atRowStart: (name) => `satırın başında, ${name} öğesinden önce`,
+  divided: (where, parts) => `${where} — satır ${PARTS_IN[parts] ?? `${parts} parçaya`} bölünür`,
+  noPart: (id) => `“${id}” öğesi yok`,
+  tabMoves: 'Bir sekme yalnızca kendi sekmeleri arasında taşınır',
+  notInsideItself: 'Bir öğe kendi içine konamaz',
+  columnInGroup: 'Yeni sütun bir grubun içine konur',
+  putInATab: 'Sekmelerden birine koyun',
+  holdsNoParts: (name) => `“${name}” öğe içermez`,
+  notBesideItself: 'Bir öğe kendi yanına ya da altına konamaz',
+  rowHoldsFour: 'Bir satıra en fazla dört öğe sığar',
+  noKindOfPart: (kind) => `“${kind}” diye bir öğe türü yok`,
+  sameGroup: 'Aynı grupta bulunan öğeleri seçin',
+  twoOrMore: 'Yan yana koymak için iki ya da daha fazla öğe seçin',
+  onlyUngroup: 'Yalnızca bir grup ya da sekmeler çözülebilir',
+  tabAlone: 'Bir sekme tek başına çoğaltılamaz: sekmeleri ya da sekmenin içindekileri çoğaltın',
+  noGroupOrTab: (id) => `“${id}” adlı grup ya da sekme yok`,
+  groupColumns: 'Bir grubun bir ile dört arası sütunu olur ya da on ikide birlerle bölünür',
+  smallerScreens: 'Tablet ya da telefon, masaüstünden fazla sütun göstermez',
+  phoneScreen: 'Telefon, tabletten fazla sütun göstermez',
+  tabWidth: 'Bir sekme, sekmeleri kadar geniştir',
+  nouns: { field: 'Alan', section: 'Grup', tabs: 'Sekmeler', tab: 'Sekme', text: 'Metin', button: 'Düğme', spacer: 'Boşluk', divider: 'Ayırıcı', image: 'Görsel', slot: 'Uygulamanın kendi öğesi' },
+  it: 'Bu öğe',
+  runsAcross: (type) => `${TYPES[type] ?? type}, satırın tamamı boyunca uzanır`,
+  noWiderThanRow: (noun) => `${noun}, satırından daha geniş olamaz`,
+  noWiderThanSection: (noun, columns) => `${noun}, bölümünün ${columns} sütunundan daha geniş olamaz`,
+  aloneInRow: 'Satırında tek başına olduğu için satırı doldurur: daraltmak için grubun satırlarının boşluk bırakmasına izin verin',
+  restNeedsRoom: 'Satırının geri kalanı için yanında yer olmalıdır',
+  labelWidth: 'Yana yerleştirilen etiketler 60 ile 320 px genişliğindedir',
+  noGroup: (id) => `“${id}” adlı grup yok`,
+  onlyGroupRows: 'Satırlarını dolu ya da boşluklu tutan yalnızca gruptur',
+  noField: (id) => `“${id}” adlı alan yok`,
+  colour: 'Renk #rrggbb biçiminde yazılır, örneğin #1f7a4d',
+  wordsNotLabel: 'Metin öğesinin etiketi değil, metni olur',
+  lineHoldsParts: 'Tek satırlık bir grup yalnızca alanları, metinleri ve düğmeleri içerir: önce içindeki grupları ve sekmeleri çıkarın',
+  onlyAlertColour: 'Yalnızca bir uyarı kutusundaki metnin rengi olur',
+  buttonNotText: 'Düğmenin metni değil, etiketi olur',
+  pictureWords: 'Görselin bir adresi ve bir açıklaması olur',
+  pictureAddress: 'Görselin adresi olmalıdır',
+  onlyBlocks: 'Burada yalnızca metin, düğme ya da görsel değiştirilir',
+  pictureWidth: 'Görselin genişliği 16 ile 4000 piksel arasındadır',
+  link: 'Bağlantı bir web adresi (https://…) ya da bir e-posta adresidir (mailto:…)',
+  pickFirst: 'Önce değiştirilecek öğeleri seçin',
+  notAnswered: (noun) => `${noun} yanıtlanmaz: yalnızca alanlar zorunlu olabilir`,
+  noLabels: (noun) => `${noun} için yerleştirilecek etiket yok`,
+  foldsByTitle: 'Bir grup başlığından katlanır: önce ona bir başlık verin',
+  onlyGroupFolds: 'Yalnızca bir grup katlanabilir',
+  rowParts: {
+    whole: { words: 'Tam', label: 'Tüm satır', name: 'Tüm satır' },
+    threeQuarters: { words: '¾', label: 'Satırın ¾’ü', name: 'Dörtte üç' },
+    twoThirds: { words: '⅔', label: 'Satırın ⅔’si', name: 'Üçte iki' },
+    half: { words: '½', label: 'Satırın ½’si', name: 'Yarım' },
+    third: { words: '⅓', label: 'Satırın ⅓’i', name: 'Üçte bir' },
+    quarter: { words: '¼', label: 'Satırın ¼’i', name: 'Dörtte bir' },
+  },
+};

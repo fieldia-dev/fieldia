@@ -612,7 +612,7 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
    * a required answer is typed in.
    */
   function languages(): Part {
-    const locale = designer.locale === 'ar' ? 'ar' : 'en';
+    const locale = designer.locale ?? 'en';
     const several = toggle(w.severalLanguages, (on) => designer.setLanguages(id, on ? firstPair(designer.getPage().language ?? locale) : null));
     const chosen = el('ul', { class: 'fd-kind-languages', 'aria-label': w.typedIn });
     const add = el('select', { class: 'fd-inline-select', 'aria-label': w.addLanguage }) as HTMLSelectElement;
