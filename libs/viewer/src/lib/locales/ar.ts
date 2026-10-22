@@ -282,7 +282,7 @@ export const ar: ViewerLabels = {
   relatedNone: 'لا شيء بعد.',
   relatedShown: '{n} من {total}',
   rowsKey: 'مفتاح الصفوف',
-  rowEditHint: 'Enter يغيّر الخلية، وTab ينتقل، وEscape يعيدها؛ ويُحفظ الصف عند مغادرته.',
+  rowEditHint: 'Enter أو الكتابة يستبدل قيمة الخلية، وF2 يعدّل داخلها، وTab ينتقل، وEscape يعيدها؛ ويُحفظ الصف عند مغادرته.',
   rowAdd: 'إضافة سطر',
   rowDrop: 'إزالة',
   rowNotSaved: 'لم يُحفظ: {why}.',

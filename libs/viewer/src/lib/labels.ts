@@ -1023,7 +1023,7 @@ const en: ViewerLabels = {
   relatedShown: '{n} of {total}',
   rowsKey: 'Key to the rows',
   relatedShownNoun: '{n} of {total} {records}',
-  rowEditHint: 'Enter changes the cell, Tab moves on, Escape puts it back; a row is saved as you leave it.',
+  rowEditHint: 'Enter or typing replaces the cell’s value, F2 changes within it, Tab moves on, Escape puts it back; a row is saved as you leave it.',
   rowAdd: 'Add a line',
   rowAddNoun: 'Add {aRecord}',
   rowDrop: 'Remove',

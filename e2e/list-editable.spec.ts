@@ -50,6 +50,128 @@ async function copy(page: Page, text: string) {
   await page.evaluate(() => document.getElementById('e2e-copied')?.remove());
 }
 
+/** The open cell's box: its text, and the part of it chosen (where nothing is chosen, start and end are the caret). */
+const chosen = (page: Page) =>
+  page.evaluate(() => {
+    const box = document.activeElement as HTMLInputElement | HTMLTextAreaElement | null;
+    return box && 'selectionStart' in box ? { value: box.value, start: box.selectionStart, end: box.selectionEnd } : null;
+  });
+/** Its whole text chosen, so typing replaces it. */
+async function choseWhole(page: Page) {
+  const now = await chosen(page);
+  expect(now?.value).not.toBe('');
+  expect(now).toEqual({ value: now?.value, start: 0, end: now?.value.length });
+}
+
+/**
+ * The owner's walk of 0.29: the demos' own first steps, followed with the mouse — a press on a cell, the keys typed,
+ * Tab — replaced its value as a spreadsheet does. Before, the press left the caret after the old value: Hydrafacial
+ * saved at E£ 28,003,000, Hana's Wednesday "00:009:30", Offer at "7,065%". Every engine.
+ */
+test.describe('a cell opened by a press: its value chosen whole, so what is typed replaces it', () => {
+  test('the price list’s first steps by mouse: Hydrafacial’s price becomes 3,000, saved as 3000', async ({ page }) => {
+    const { problems } = await prices(page);
+    // "Press Hydrafacial’s price, type 3000 and press Tab: its price per hour follows as you type, and Tab goes on to Offered."
+    await cell(page, 'Hydrafacial', 'price').click();
+    await choseWhole(page);
+    await screen(page, 'list-editable-pressed-chosen', { viewport: true });
+    await page.keyboard.type('3000');
+    await expect(cell(page, 'Hydrafacial', 'per_hour')).toHaveText('E£ 3,000');
+    await screen(page, 'list-editable-pressed-typed', { viewport: true });
+    await page.keyboard.press('Tab');
+    await expect(editor(page)).toHaveAttribute('data-col', 'active');
+    await expect(cell(page, 'Hydrafacial', 'price')).toHaveText('E£ 3,000');
+    // "Press another row: Hydrafacial is saved — its price alone."
+    await cell(page, 'Microneedling', 'name').click();
+    await expect.poll(async () => (await stored(page, 'clinic.service', 6))['price']).toBe(3000);
+    expect((await calls(page, 'save'))[0].values).toEqual({ price: 3000, per_hour: 3000 });
+    // Every kind its cells open as, the same: a name, a link, a number, a sum of money.
+    for (const column of ['name', 'done_by', 'minutes', 'price']) {
+      await cell(page, 'Chemical peel', column).click();
+      await expect(editor(page)).toHaveAttribute('data-col', column);
+      await choseWhole(page);
+    }
+    await page.keyboard.type('2500');
+    await page.keyboard.press('Escape');
+    await expect(cell(page, 'Chemical peel', 'price')).toHaveText('E£ 2,200');
+    expect(problems).toEqual([]);
+  });
+
+  test('a second press puts the caret where it is pressed, and F2 after the value: to change within it', async ({ page }) => {
+    const { problems } = await prices(page);
+    await cell(page, 'Hydrafacial', 'name').click();
+    await choseWhole(page);
+    const box = cell(page, 'Hydrafacial', 'name').locator('input');
+    const size = await box.boundingBox();
+    // Pressed again, past its words: the caret there, nothing chosen.
+    await box.click({ position: { x: (size?.width ?? 100) - 6, y: (size?.height ?? 20) / 2 } });
+    await expect.poll(() => chosen(page)).toEqual({ value: 'Hydrafacial', start: 11, end: 11 });
+    await page.keyboard.type(' plus');
+    await expect(box).toHaveValue('Hydrafacial plus');
+    await page.keyboard.press('Escape');
+    await expect(cell(page, 'Hydrafacial', 'name')).toHaveText('Hydrafacial');
+    // F2 on a cell at rest: opened with the caret after its value.
+    await expect(cell(page, 'Hydrafacial', 'name')).toBeFocused();
+    await page.keyboard.press('F2');
+    await expect(editor(page)).toHaveAttribute('data-col', 'name');
+    expect(await chosen(page)).toEqual({ value: 'Hydrafacial', start: 11, end: 11 });
+    await page.keyboard.press('Escape');
+    // F2 in a cell opened by a press, its value chosen whole: the caret after it.
+    await cell(page, 'Hydrafacial', 'minutes').click();
+    await choseWhole(page);
+    await page.keyboard.press('F2');
+    expect(await chosen(page)).toEqual({ value: '60', start: 2, end: 2 });
+    await page.keyboard.type('5');
+    await expect(cell(page, 'Hydrafacial', 'minutes').locator('input')).toHaveValue('605');
+    await page.keyboard.press('Escape');
+    expect(problems).toEqual([]);
+  });
+
+  test('the staff hours’ steps by mouse: Hana’s Wednesday becomes 09:30, her week 54:30; then 2:30 on Thursday saves 48', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=staff-hours&skin=underline');
+    await expect(row(page, 'Hana Wael')).toBeVisible();
+    // "Press Hana Wael’s Wednesday, type 9:30 and press Tab: her week says 54:30 as you type."
+    await cell(page, 'Hana Wael', 'wed').click();
+    await choseWhole(page);
+    await page.keyboard.type('9:30');
+    await page.keyboard.press('Tab');
+    await expect(cell(page, 'Hana Wael', 'wed')).toHaveText('09:30');
+    await expect(cell(page, 'Hana Wael', 'week')).toHaveText('54:30');
+    // "Press the search box: the server refuses her week."
+    await page.locator('.fd-search-input').click();
+    await expect(note(page, 'Hana Wael')).toContainText('the labour rules allow 48');
+    // "Type 2:30 in her Thursday and leave the row: 48 hours, saved."
+    await cell(page, 'Hana Wael', 'thu').click();
+    await choseWhole(page);
+    await page.keyboard.type('2:30');
+    await page.locator('.fd-search-input').click();
+    await expect(note(page, 'Hana Wael')).toBeHidden();
+    await expect.poll(async () => (await stored(page, 'staff.week', 5))['week']).toBe(48);
+    await expect(cell(page, 'Hana Wael', 'thu')).toHaveText('02:30');
+    expect(problems).toEqual([]);
+  });
+
+  test('the deal stages’ first step by mouse: Offer’s chance becomes 65%, saved as 0.65; its words and order the same', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline');
+    await expect(row(page, 'Offer')).toBeVisible();
+    // "Press Offer’s chance of winning, type 65 and leave the row: 65%, saved as 0.65."
+    await cell(page, 'Offer', 'probability').click();
+    await choseWhole(page);
+    await page.keyboard.type('65');
+    await page.locator('.fd-search-input').click();
+    await expect.poll(async () => (await stored(page, 'deal.stage', 4))['probability']).toBe(0.65);
+    await expect(cell(page, 'Offer', 'probability')).toHaveText('65%');
+    // A text of several lines and an order: chosen whole too.
+    for (const column of ['requirements', 'sequence']) {
+      await cell(page, 'Offer', column).click();
+      await expect(editor(page)).toHaveAttribute('data-col', column);
+      await choseWhole(page);
+    }
+    await page.keyboard.press('Escape');
+    expect(problems).toEqual([]);
+  });
+});
+
 test.describe('a clinic’s service prices', () => {
   test('a price typed in its cell, Tab on to the next cell it changes, and the row saved as it is left — its change alone', async ({ page }) => {
     const { problems } = await prices(page);

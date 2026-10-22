@@ -319,7 +319,7 @@ export const de: ViewerLabels = {
   relatedNoneNoun: 'Noch keine {records}.',
   relatedShown: '{n} von {total}',
   rowsKey: 'Legende der Zeilen',
-  rowEditHint: 'Enter ändert die Zelle, Tab geht weiter, Escape stellt sie wieder her; eine Zeile wird beim Verlassen gespeichert.',
+  rowEditHint: 'Enter oder Tippen ersetzt den Wert der Zelle, F2 ändert darin, Tab geht weiter, Escape stellt sie wieder her; eine Zeile wird beim Verlassen gespeichert.',
   rowAdd: 'Zeile hinzufügen',
   rowDrop: 'Entfernen',
   rowNotSaved: 'Nicht gespeichert: {why}.',

@@ -36,8 +36,9 @@ import { CELL_BOXES } from './viewer-parts';
 /**
  * A list whose cells are changed in place (`ListNode.editable`; the editable part): a press on a cell, or Enter, opens
  * it in its field's own box — the box a form draws, with its rules: what can never be valid refused as it is typed,
- * text that does not read kept with why — Tab and Shift+Tab go from cell to cell and on to the next row, Escape puts
- * back what the cell held. Each row is a record's own form (`newForm`): it is saved through the data source as the
+ * text that does not read kept with why — its whole value chosen, so typing replaces it as in a spreadsheet (F2 or a
+ * second press to change within it); Tab and Shift+Tab go from cell to cell and on to the next row, Escape puts back
+ * what the cell held. Each row is a record's own form (`newForm`): it is saved through the data source as the
  * person leaves it — the fields it changed, as a save of some fields (`partial`) — and one refused stays as typed, why
  * said under it, with Put back; one someone else changed meanwhile is told as a record's page tells it (save-safety.ts:
  * Reload, Keep mine). A row is added at the end, saved once it is left. A block pasted from a spreadsheet goes across
@@ -136,6 +137,12 @@ interface RowEdit {
   gone: boolean;
   stops: (() => void)[];
 }
+
+/**
+ * How a cell is opened: by a press (a yes or no answered by it), by Enter, Tab or a key typed (`replace`) — its whole
+ * value chosen, so typing replaces it — or by F2, the caret after its value, to change within it (`within`).
+ */
+type Opening = 'press' | 'replace' | 'within';
 
 /** A cell open for typing. */
 interface Editor {
@@ -515,17 +522,21 @@ export function editableRows(context: EditableContext): EditableRows | null {
     return { widget: cell.widget, ...(cell.options ? { options: cell.options } : {}) };
   }
 
-  /** Open a cell for typing: its row's form first, then its field's own box in the cell, the focus in it. */
-  function editCell(td: HTMLTableCellElement, keyboard = false, pressed = false): void {
+  /**
+   * Open a cell for typing: its row's form first, then its field's own box in the cell, the focus in it. `how` it was
+   * opened: by a press, Enter, Tab or a key typed, its whole value chosen, so typing replaces it; by F2, the caret after
+   * it, to change within it (`within`).
+   */
+  function editCell(td: HTMLTableCellElement, how: Opening = 'replace'): void {
     const tr = td.parentElement as HTMLTableRowElement | null;
     if (!tr || destroyed) return;
     const edit = editOf(tr);
     if (!edit) return;
     if (edit.editor?.td === td) return;
     const go = () => {
-      open(edit, td, keyboard);
+      open(edit, td, how);
       // A yes or no pressed is answered by the press, as a press on its box would.
-      if (pressed && rowPage.fields[td.getAttribute('data-col') ?? '']?.type === 'boolean') edit.editor?.box.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
+      if (how === 'press' && rowPage.fields[td.getAttribute('data-col') ?? '']?.type === 'boolean') edit.editor?.box.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
     };
     if (edit.loaded) return go();
     void edit.ready.then(() => {
@@ -533,7 +544,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     });
   }
 
-  function open(edit: RowEdit, td: HTMLTableCellElement, keyboard: boolean) {
+  function open(edit: RowEdit, td: HTMLTableCellElement, how: Opening) {
     const column = td.getAttribute('data-col') ?? '';
     if (!changeable(edit.record, column, edit.form)) return;
     if (edit.editor) closeEditor(edit, false);
@@ -569,9 +580,21 @@ export function editableRows(context: EditableContext): EditableRows | null {
     setAttr(td, 'title', null);
     update(state);
     widget.focus();
-    // Reached from the keyboard, its text is chosen, so typing replaces it, as a spreadsheet's cell does.
+    // One rule for every kind of box a cell opens as, as a spreadsheet's cell does: opened by a press, Enter, Tab or a
+    // key, its whole text chosen, so what is typed replaces it; by F2, the caret after it. A second press in the box is
+    // the box's own: the caret where it is pressed.
     const active = doc.activeElement;
-    if (keyboard && active instanceof HTMLInputElement && box.contains(active) && typedBox(active)) active.select();
+    if (active && box.contains(active) && typedBox(active)) choose(active, how !== 'within');
+  }
+
+  /** A box's whole text chosen, or the caret put after it. */
+  function choose(box: HTMLInputElement | HTMLTextAreaElement, whole: boolean) {
+    if (whole) return box.select();
+    try {
+      box.setSelectionRange(box.value.length, box.value.length);
+    } catch {
+      // A box whose kind keeps no caret the page may move (a number's, an e-mail's): the browser's own place.
+    }
   }
 
   /**
@@ -625,11 +648,11 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const tr = td.parentElement as HTMLTableRowElement;
     const here = cellsOf(tr);
     const beside = here[here.indexOf(td) + (forward ? 1 : -1)];
-    if (beside) return editCell(beside, true);
+    if (beside) return editCell(beside);
     const rows = rowsShown();
     for (let at = rows.indexOf(tr) + (forward ? 1 : -1); rows[at]; at += forward ? 1 : -1) {
       const cells = cellsOf(rows[at]);
-      if (cells.length) return editCell(forward ? cells[0] : cells[cells.length - 1], true);
+      if (cells.length) return editCell(forward ? cells[0] : cells[cells.length - 1]);
     }
     if (forward && canAdd()) return void addRow();
     closeEditor(edit, true);
@@ -679,6 +702,10 @@ export function editableRows(context: EditableContext): EditableRows | null {
       event.preventDefault();
       event.stopPropagation();
       putBackCell(edit);
+    } else if (event.key === 'F2' && !mods && typedBox(event.target as Element)) {
+      // F2 in a cell whose value is chosen whole: the caret after it, to change within it.
+      event.preventDefault();
+      choose(event.target as HTMLInputElement | HTMLTextAreaElement, false);
     } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.altKey) {
       // Ctrl+Enter: this row saved now, the cell kept — never the page's own save.
       event.preventDefault();
@@ -707,7 +734,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     if ((event.key === 'Enter' || event.key === 'F2') && !mods) {
       event.preventDefault();
       event.stopPropagation();
-      editCell(td, true);
+      editCell(td, event.key === 'F2' ? 'within' : 'replace');
     } else if (event.key.toLowerCase() === 'v' && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
       catching = td;
       catcher.value = '';
@@ -732,7 +759,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
       // has its values wait for it, in their order.
       const edit = editOf(tr);
       if (!edit) return;
-      if (edit.loaded) return editCell(td, true);
+      if (edit.loaded) return editCell(td);
       event.preventDefault();
       const waiting = early.get(edit);
       if (waiting) return void (waiting.td === td && (waiting.keys += event.key));
@@ -741,7 +768,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
         const typed = early.get(edit);
         early.delete(edit);
         if (!typed || edit.gone || !td.isConnected) return;
-        open(edit, td, true);
+        open(edit, td, 'replace');
         const active = doc.activeElement;
         if (edit.editor && active && edit.editor.box.contains(active) && typedBox(active)) doc.execCommand('insertText', false, typed.keys);
       });
@@ -932,7 +959,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     if (cards()) void sheet(edit);
     else {
       const first = cellsOf(tr)[0];
-      if (first) editCell(first, true);
+      if (first) editCell(first);
     }
     return edit;
   }
@@ -1185,7 +1212,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
         return true;
       }
       if (!td?.hasAttribute('data-edit')) return false;
-      editCell(td as HTMLTableCellElement, false, true);
+      editCell(td as HTMLTableCellElement, 'press');
       return true;
     },
     enter(tr) {
@@ -1196,7 +1223,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
       }
       const first = cellsOf(tr)[0];
       if (!first) return false;
-      editCell(first, true);
+      editCell(first);
       return true;
     },
     openButton(record, name) {

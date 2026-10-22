@@ -108,6 +108,40 @@ describe('a list whose cells are changed in place', () => {
     expect(cell(host, 2, 'price').textContent).toContain('3,000');
   });
 
+  it('chooses a cell’s whole value as a press, Enter or Tab opens it, so typing replaces it; F2 puts the caret after it', async () => {
+    // The owner's walk of 0.29: a press left the caret after "2,800", and 3000 typed saved 28,003,000.
+    const notes: Page = { ...prices, fields: { ...prices.fields, notes: { type: 'text', label: 'Notes' } }, layout: { ...prices.layout, columns: ['name', 'minutes', 'price', 'notes'] } as Page['layout'] };
+    const host = await mount({ dataSource: createMemoryDataSource({ records: { service: { 2: { ...records().service[2], notes: 'Twice a month' } } }, versions: true }) }, notes);
+    const chosen = () => {
+      const box = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
+      return [box.value, box.selectionStart, box.selectionEnd];
+    };
+    const keys = (key: string) => (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    cell(host, 2, 'price').click();
+    await until(() => cell(host, 2, 'price').querySelector('input'));
+    // A number's box shows its digits ungrouped as it is entered: all of them chosen.
+    await until(() => chosen()[0] === '2800.00');
+    expect(chosen()).toEqual(['2800.00', 0, 7]);
+    // Tab, on to the next cell: a text of several lines, chosen whole too.
+    keys('Tab');
+    await until(() => cell(host, 2, 'notes').querySelector('textarea'));
+    expect(chosen()).toEqual(['Twice a month', 0, 13]);
+    // F2 in it: the caret after its value, to change within it.
+    keys('F2');
+    expect(chosen()).toEqual(['Twice a month', 13, 13]);
+    keys('Escape');
+    expect(document.activeElement).toBe(cell(host, 2, 'notes'));
+    // F2 on a cell at rest: opened with the caret after its value; Enter: chosen whole.
+    cell(host, 2, 'name').focus();
+    keys('F2');
+    await until(() => cell(host, 2, 'name').querySelector('input'));
+    expect(chosen()).toEqual(['Hydrafacial', 11, 11]);
+    keys('Escape');
+    keys('Enter');
+    await until(() => cell(host, 2, 'name').querySelector('input'));
+    expect(chosen()).toEqual(['Hydrafacial', 0, 11]);
+  });
+
   it('keeps a row its page refuses as typed, says why under it, and puts it back on Put back', async () => {
     const source = createMemoryDataSource({ records: records(), versions: true });
     const host = await mount({ dataSource: source });

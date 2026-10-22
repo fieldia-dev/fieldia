@@ -309,7 +309,7 @@ export const fr: ViewerLabels = {
   relatedNone: 'Aucun pour l’instant.',
   relatedShown: '{n} sur {total}',
   rowsKey: 'Légende des lignes',
-  rowEditHint: 'Entrée modifie la cellule, Tab passe à la suivante, Échap la remet ; une ligne est enregistrée dès que vous la quittez.',
+  rowEditHint: 'Entrée ou la saisie remplace la valeur de la cellule, F2 la modifie sur place, Tab passe à la suivante, Échap la remet ; une ligne est enregistrée dès que vous la quittez.',
   rowAdd: 'Ajouter une ligne',
   rowDrop: 'Retirer',
   rowNotSaved: 'Non enregistré : {why}.',

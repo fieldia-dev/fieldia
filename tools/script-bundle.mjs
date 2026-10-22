@@ -1548,7 +1548,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // to 37.69 and 12.08, to 37.7 and 12.1; French's 36.75 and 11.70 to 38.18 and 12.14, to 38.2 and 12.2.
 // Merged (0.29.0), every lane's words together and AI help's "Proposed in {language}": Arabic's 94.97 and 15.85, to
 // 95.0 and 15.9; German's 43.89 and 13.85, to 43.9 and 13.9; French's 44.42 and 13.84, to 44.5 and 13.9.
-const ADD_ON_BUDGET_KB = { ar: [95.0, 15.9], de: [43.9, 13.9], fr: [44.5, 13.9] };
+// The owner's walk of 0.29 mended (walkfix29-engine): a cell's hint says typing replaces its value and F2 changes within
+// it — Arabic's 94.97 and 15.85 measured before, 95.14 and 15.87 after, to 95.2 and 15.9; German's 43.89 and 13.85 to
+// 43.93 and 13.87, to 44.0 and 13.9; French's 44.42 and 13.84 to 44.47 and 13.86, inside its 44.5 and 13.9.
+const ADD_ON_BUDGET_KB = { ar: [95.2, 15.9], de: [44.0, 13.9], fr: [44.5, 13.9] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2006,7 +2009,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 0.2) — head 36.50 and 10.80 measured before, 43.37 and 13.22 after, to 43.4 and 13.3. A rich text read first,
 // Edit and Done with it, Escape and a press outside (html-field.ts) — text 73.00 and 24.62 to 73.45 and 24.78, to 73.5
 // and 24.8.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.1, 7.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
+// The owner's walk of 0.29 mended (walkfix29-engine): a cell opened by a press chooses its whole value, F2 puts the
+// caret after it, its hint says so — editable 28.94 and 10.66 measured before, 29.16 and 10.76 after, to 29.2 and 10.8.
+const PART_BUDGET_KB = { head: [43.4, 13.3], text: [73.5, 24.8], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [23.0, 7.9], date: [22.2, 8.4], list: [131.9, 42.5], cards: [12.5, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.2, 10.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [40.3, 14.9], evidence: [9.8, 4.4], photos: [31.5, 11.6], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], print: [16.9, 5.4], memory: [20.1, 7.2], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [10.8, 4.6], assist: [36.3, 12.4], scan: [18.7, 7.9], decode: [153.8, 39.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
