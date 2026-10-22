@@ -360,7 +360,9 @@ for (const variant of VARIANTS) {
       await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
       await page.mouse.down();
       for (let step = 1; step <= 8; step++) await page.mouse.move(from.x + from.width / 2, from.y + ((desk.y + 8 - from.y) * step) / 8);
-      await screen(page, `${variant}-grid-dragging`);
+      // What is in view only, mid-drag: a full-page shot lays the page out again through a 1×1 window (support.ts), the
+      // status strip measures and scrolls for it, and the grid takes any scroll as the drag moving — out of a 1×1 page.
+      await screen(page, `${variant}-grid-dragging`, { viewport: true });
       await page.mouse.up();
       await expect
         .poll(async () => (await lines(page)).map((l) => (l['product_id'] as { label?: string } | null)?.label ?? l['name']))
