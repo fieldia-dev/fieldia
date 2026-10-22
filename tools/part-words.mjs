@@ -59,7 +59,7 @@ export const PART_WORDS = {
     widgets: [
       'uploadImage', 'dropHere', 'addFiles', 'addPhotos', 'dropThem', 'upToSize', 'upToEach', 'upToFiles', 'fileCount', 'oneFile', 'fileCountOf', 'tooMany', 'alreadyAdded', 'fileAt', 'noPreview', 'showFilesAs', 'asList', 'asCards', 'asThumbnails',
       'signaturePad', 'signHere', 'typeSignature', 'clearDrawing', 'uploadSignature', 'uploadPercent', 'uploadWaiting', 'uploadPreparing', 'uploadFailed', 'uploadRefused', 'uploadingNamed', 'retryUploadNamed', 'fileUploaded', 'filesUploaded', 'notUploadedNamed', 'noDocument',
-      'removeAsk', 'removed', 'notSignedNoPart', 'signingNoPart', 'signingRetry', 'notSignedReload', 'signingNoPartReload',
+      'removeAsk', 'removeFile', 'removed', 'notSignedNoPart', 'signingNoPart', 'signingRetry', 'notSignedReload', 'signingNoPartReload',
     ],
     viewer: ['showAs'],
   },
@@ -85,7 +85,7 @@ export const PART_WORDS = {
   lines: {
     widgets: [
       'addSection', 'addNote', 'openLine', 'chooseLine', 'chooseAllLines', 'linesChosen', 'addAnother', 'totalWaits', 'cellWaits', 'notPastedCells', 'cellName', 'cellOfHeading', 'notPastedWhy', 'pasteBeyondLines', 'pasteBeyondLinesOne', 'pasteAddedLines', 'pasteAddedLinesOne',
-      'pastedCells', 'pastedCellsOne', 'pasteRowRefused', 'pasteNoMatch', 'pasteSeveralCalled', 'pasteNotLookedUp', 'deleteLine', 'moveUp', 'moveDown', 'movedTo', 'removeAsk', 'removed',
+      'pastedCells', 'pastedCellsOne', 'pasteRowRefused', 'pasteNoMatch', 'pasteSeveralCalled', 'pasteNotLookedUp', 'deleteLine', 'moveUp', 'moveDown', 'movedTo', 'removeAsk', 'removeFile', 'removed',
     ],
   },
   list: {
@@ -110,7 +110,7 @@ export const PART_WORDS = {
     widgets: [
       'photosMove', 'photosMoveCover', 'photosMoveTouch', 'photosMoveTouchCover', 'photoCover', 'makeCover', 'coverNow', 'editPhoto', 'photoCaption', 'captionPlaceholder', 'photoNamed', 'photoNamedCover', 'photoAt', 'photoAtStart', 'photoAlone', 'photoAloneStart', 'photoCoverAt', 'cropLetGoAsk', 'cropLetGo', 'cropKeepEditing', 'photoCount', 'photoCountOne', 'photoCountOf', 'upToPhotos',
       'photoUploaded', 'photosUploaded', 'photoChanged', 'photoChangedKept', 'originalBack', 'turnLeft', 'turnRight', 'cropShape', 'cropAny', 'cropArea', 'cropKeys', 'applyEdit', 'putBackOriginal', 'photoLoading', 'photoUnreadable', 'photoNotMade',
-      'addPhotos', 'dropThem', 'upToEach', 'removeAsk', 'removed', 'movedTo', 'uploadingNamed', 'retryUploadNamed', 'notUploadedNamed',
+      'addPhotos', 'dropThem', 'upToEach', 'removeAsk', 'removeFile', 'removed', 'movedTo', 'uploadingNamed', 'retryUploadNamed', 'notUploadedNamed',
     ],
   },
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
