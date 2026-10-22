@@ -127,7 +127,7 @@ const CORE_RUNTIME = join(WORKSPACE, 'libs/core/src/runtime.ts');
  * The main script: each `import('./x-part')` asks for fieldia.x.js instead — the call itself becomes loadPart('x')
  * (tools/script-parts.ts), an import of the main script's own, so no module is made to wait on a lazy start — and
  * `fieldia:shared` is the table of what the parts take from the main script's modules: for each module, an object of
- * the names the parts use of it, in a fixed order (`table`: [file, names][]). Names alone, so the main script carries
+ * the names the parts use of it, in a fixed order (`table`: [file, names][]), each by its place. Names alone, so the main script carries
  * nothing more than it would — no module's every export kept for one name. (Every export the packages share is a const,
  * a function or a class: a name's value never changes once the main script has started.) Any other import() would be
  * bundled in whole, where it saves nothing: refused.
@@ -161,7 +161,9 @@ const asksForParts = (table, parts) => ({
         // part may be one the table's modules import (the form's, in @fieldia/core), whose consts are not set yet as it
         // is first read.
         `let made;`,
-        `export const SHARED = () => made || (made = [${table.map(([, names], i) => `{ ${names.map((name) => `${name}: m${i}_${name}`).join(', ')} }`).join(', ')}]);`,
+        // Each module's names by their place in its row, never by their words: a part reads `__fieldia[module][place]`, so
+        // neither the main script nor a part carries a name's words for it (0.31: 4.8 KB of them in the main script).
+        `export const SHARED = () => made || (made = [${table.map(([, names], i) => `[${names.map((name) => `m${i}_${name}`).join(', ')}]`).join(', ')}]);`,
       ].join('\n'),
       resolveDir: WORKSPACE,
       loader: 'js',
@@ -232,7 +234,7 @@ const packageOf = (file) => /libs\/([a-z]+)\//.exec(file)?.[1];
  * A part: a module of the main script is taken from the table — `__fieldia`, its factory's argument — or, while the
  * table is worked out (`table` null), left an import of its own, so the part's code says which names it uses of it.
  */
-const takesShared = (inMain, table) => ({
+const takesShared = (inMain, table, needs = null) => ({
   name: 'takes-shared',
   setup(builder) {
     builder.onResolve({ filter: /.*/ }, async (args) => {
@@ -246,7 +248,16 @@ const takesShared = (inMain, table) => ({
       if (i < 0) return { errors: [{ text: `${found.path} is the main script's, but not in the parts' table` }] };
       return { path: String(i), namespace: 'fieldia-shared' };
     });
-    builder.onLoad({ filter: /.*/, namespace: 'fieldia-shared' }, ({ path: i }) => ({ contents: `module.exports = __fieldia[${i}];`, loader: 'js' }));
+    // Each name this part takes of the module (`needs`), by its place in the module's row of the table: the others in
+    // the row are other parts'.
+    builder.onLoad({ filter: /.*/, namespace: 'fieldia-shared' }, ({ path: i }) => {
+      const [file, names] = table[Number(i)];
+      const taken = needs?.get(file);
+      return {
+        contents: names.map((name, at) => (taken && !taken.has(name) ? '' : `const v${at} = __fieldia[${i}][${at}];\nexport { v${at} as ${name} };`)).join('\n'),
+        loader: 'js',
+      };
+    });
   },
 });
 
@@ -338,11 +349,11 @@ const partEntry = (part) =>
     // The checks it carries, put where the main script's reference check finds them as it comes.
     ...(CHECKS_IN_PARTS[part] ? [`import * as checks from ${JSON.stringify(join(WORKSPACE, CHECKS_IN_PARTS[part].file))};`, `import { LATER_CHECKS } from ${JSON.stringify(LATER_CHECKS_FILE)};`, `LATER_CHECKS[${JSON.stringify(part)}] = checks;`] : []),
   ].join('\n');
-const partScript = (part, inMain, table) =>
+const partScript = (part, inMain, table, needs) =>
   build({
     ...common,
     stdin: { contents: partEntry(part), resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
-    plugins: [minifiedStyles, englishOnly, zxingReaders, takesShared(inMain, table)],
+    plugins: [minifiedStyles, englishOnly, zxingReaders, takesShared(inMain, table, needs)],
     globalName: 'part',
     // It hands itself to the main script (tools/script-parts.ts), or waits for it in the queue.
     banner: { js: `/*! Fieldia ${version} · ${part} · MIT · https://fieldia.dev${NOTICES[part] ?? ''} */\n(globalThis.FieldiaParts = globalThis.FieldiaParts || []).push([${JSON.stringify(part)}, ${JSON.stringify(version)}, function (__fieldia) {` },
@@ -372,10 +383,16 @@ const PART_SOURCES = {};
 // The table settles in a round or two: the main script built with it may carry a module a part would otherwise have copied.
 let table = [];
 let main;
+/** What each part takes of each of the main script's modules, by its name: the names its own build reads of the table. */
+let needs = {};
 for (let round = 0; ; round++) {
   main = await mainScript(table);
   const wanted = new Map(table.map(([file, names]) => [file, new Set(names)]));
-  for (const part of main.parts) for (const [file, names] of await partNeeds(part, main.inMain)) wanted.set(file, new Set([...(wanted.get(file) ?? []), ...names]));
+  needs = {};
+  for (const part of main.parts) {
+    needs[part] = await partNeeds(part, main.inMain);
+    for (const [file, names] of needs[part]) wanted.set(file, new Set([...(wanted.get(file) ?? []), ...names]));
+  }
   const next = [...wanted].map(([file, names]) => [file, [...names].sort()]).sort(([a], [b]) => (a < b ? -1 : 1));
   if (JSON.stringify(next) === JSON.stringify(table)) break;
   if (round === 4) throw new Error('the parts\' table of shared names does not settle');
@@ -387,7 +404,7 @@ copyFileSync(join(WORKSPACE, 'libs/widgets/THIRD_PARTY_NOTICES.md'), join(BUNDLE
 const partFiles = {};
 const partInputs = {};
 for (const part of PARTS) {
-  const { metafile } = await partScript(part, main.inMain, table);
+  const { metafile } = await partScript(part, main.inMain, table, needs[part]);
   partFiles[part] = join(BUNDLE, `fieldia.${part}.js`);
   partInputs[part] = Object.keys(metafile.inputs).filter((input) => input.startsWith('libs/'));
   // A part made from another project's work says so where it is read: its first line names the notice.
@@ -1233,7 +1250,7 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // the packages' viewer mounts over one; this script draws in its place (noFirstPaint): 508.40 measured before, 508.57
 // after, to 508.6.
 // Merged (0.31.0), with w6-platform: 525.53 measured, to 525.6.
-const BUDGET_KB = 525.4;
+const BUDGET_KB = 518.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1514,7 +1531,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // one-tag script's parts, a formatted text's looks held as its HTML is read — 166.15 measured before, 166.86 after, to
 // 166.9. A server's first paint (listed with the raw budget above): 166.86 measured before, 166.93 after, to 167.0.
 // Merged (0.31.0), with w6-platform: 173.24 measured, to 173.3.
-const GZIP_BUDGET_KB = 173.3;
+const GZIP_BUDGET_KB = 170.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2344,7 +2361,7 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // A strict Content-Security-Policy (w6-platform): a formatted text's looks held as its HTML is read and put on through
 // style objects — what is pasted from an office app, Markdown both ways, its links, its editor's sizes and tables —
 // text 73.00 and 24.62 to 73.72 and 24.87, to 73.8 and 24.9.
-const PART_BUDGET_KB = { head: [43.4, 13.3], text: [74.2, 25.1], path: [23.5, 8.7], choice: [12.6, 5.0], filters: [22.9, 7.9], date: [23.8, 9.0], months: [14.7, 5.9], typed: [14.4, 6.1], list: [140.9, 45.2], cards: [12.6, 3.9], columns: [19.1, 6.9], import: [38.2, 15.1], editable: [29.0, 10.7], views: [5.8, 2.6], rows: [19.2, 7.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.6, 15.6], business: [31.4, 11.6], files: [45.4, 16.7], evidence: [9.8, 4.4], photos: [31.5, 11.6], record: [11.3, 4.6], codes: [11.1, 5.4], pins: [10.1, 4.3], survey: [37.9, 13.1], phone: [37.9, 16.6], slots: [16.0, 6.2], schedule: [21.4, 8.2], relations: [21.1, 8.0], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.7, 5.1], approvals: [20.0, 6.9], templates: [6.9, 3.1], live: [5.3, 2.5], undo: [7.9, 3.7], print: [16.9, 5.4], memory: [24.5, 8.8], functions: [5.3, 2.3], options: [5.1, 2.3], mapchecks: [6.9, 2.6], languages: [11.1, 4.7], assist: [36.5, 12.5], scan: [18.7, 7.9], decode: [153.8, 39.0], surveyflow: [35.1, 12.6], prefill: [4.5, 2.2], verify: [11.8, 5.0], pay: [8.2, 3.6], element: [5.8, 2.6], outbox: [9.7, 4.3] };
+const PART_BUDGET_KB = { head: [42.3, 12.9], text: [72.3, 24.5], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.6, 7.7], date: [22.6, 8.6], months: [13.7, 5.6], typed: [13.6, 5.7], list: [139.1, 44.5], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [37.6, 14.8], editable: [28.1, 10.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [29.6, 11.0], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [30.1, 11.3], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.2], slots: [15.2, 5.9], schedule: [20.4, 7.9], relations: [20.1, 7.7], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.0, 6.6], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.4, 3.5], print: [16.5, 5.2], memory: [23.0, 8.4], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [35.8, 12.2], scan: [17.8, 7.6], decode: [153.8, 39.0], surveyflow: [34.3, 12.3], prefill: [4.1, 2.0], verify: [11.1, 4.7], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2486,7 +2503,7 @@ for (const part of PARTS) {
   runInNewContext(readFileSync(OUT, 'utf8'), host);
   let shared;
   host.FieldiaParts.push(['shared-names', version, (given) => (shared = given)]);
-  const unset = table.flatMap(([file, names], i) => names.filter((name) => shared?.[i]?.[name] === undefined).map((name) => `${name} (${file.replace(`${WORKSPACE}/`, '')})`));
+  const unset = table.flatMap(([file, names], i) => names.filter((name, at) => shared?.[i]?.[at] === undefined).map((name) => `${name} (${file.replace(`${WORKSPACE}/`, '')})`));
   if (unset.length) throw new Error(`the parts take names the main script has not set as it starts: ${unset.join(', ')}`);
 }
 // Asked for with no address to load it from (no document here), a part not on the page fails — and is asked again next time.
