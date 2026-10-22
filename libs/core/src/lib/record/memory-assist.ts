@@ -335,8 +335,29 @@ const SHORTHAND: [RegExp, string][] = [
   [/\bi\b/g, 'I'],
 ];
 
-/** Words made clearer, the same every time: what it did, in words. */
-export function polishText(text: string): { text: string; did: string[] } {
+/** The days and months as English writes them, with a capital — but May and March, verbs as often. */
+const CALENDAR_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'January', 'February', 'April', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/**
+ * The names a record writes with capitals inside its sentences — "Zamalek", "the Nile", "Cairo", a person — never a
+ * word that only starts one: by their small letters, as the record writes them.
+ */
+export function namesIn(values: Readonly<Record<string, unknown>>): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const value of Object.values(values)) {
+    const text = typeof value === 'string' ? value.replace(/<[^>]*>/g, ' ') : '';
+    for (const sentence of text.split(/[.!?\n]+/)) {
+      const words = sentence.split(/[^\p{L}\p{N}'’-]+/u).filter(Boolean);
+      words.forEach((word, i) => {
+        if (i > 0 && word.length > 1 && /^\p{Lu}/u.test(word)) names.set(word.toLowerCase(), word);
+      });
+    }
+  }
+  return names;
+}
+
+/** Words made clearer, the same every time: what it did, in words. `names`, the record's, are written as it writes them. */
+export function polishText(text: string, names: ReadonlyMap<string, string> = new Map()): { text: string; did: string[] } {
   const did = new Set<string>();
   let out = text.replace(/\r\n?/g, '\n');
   const spaced = out.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').replace(/ +([,.!?;:])/g, '$1').replace(/([,.!?;:])(?=[\p{L}])/gu, '$1 ').trim();
@@ -374,8 +395,12 @@ export function polishText(text: string): { text: string; did: string[] } {
     if (last && !/[.!?:,…)"”]$/.test(sentence)) sentence += short && !/^(thanks|thank you)/i.test(sentence) && i > 0 ? ',' : '.';
     return sentence;
   });
-  const polished = lines.join('\n');
-  if (polished !== out) did.add('put capitals and full stops in');
+  const capitalled = lines.join('\n');
+  if (capitalled !== out) did.add('put capitals and full stops in');
+  // Names as the record writes them, and the days and months: only where written in small letters alone.
+  const known = new Map([...CALENDAR_NAMES.map((name): [string, string] => [name.toLowerCase(), name]), ...names]);
+  const polished = capitalled.replace(/[\p{L}][\p{L}'’-]*/gu, (word) => (word === word.toLowerCase() ? (known.get(word) ?? word) : word));
+  if (polished !== capitalled) did.add('wrote names with their capitals');
   return { text: polished, did: [...did] };
 }
 
@@ -400,7 +425,7 @@ async function rewrite(request: RewriteRequest, options: StandInOptions): Promis
     const text = own ? own(request.values, request) : plainDraft(request);
     return { text: html ? toHtml(text) : text, why: `${STAND_IN} written from this record’s fields by a template.${one}` };
   }
-  const { text, did } = polishText(html ? fromHtml(request.text) : request.text);
+  const { text, did } = polishText(html ? fromHtml(request.text) : request.text, namesIn(request.values));
   return { text: html ? toHtml(text) : text, why: `${STAND_IN} ${did.length ? `${listed(did)}.` : 'nothing to make clearer.'}${one}` };
 }
 
@@ -408,8 +433,11 @@ async function rewrite(request: RewriteRequest, options: StandInOptions): Promis
 
 // A unit read only where no letter, digit or square follows it: "15m" is fifteen million, "200 m²" two hundred.
 const NUMBER = String.raw`(\d+(?:[.,]\d+)*)\s*(k|m|mn|million|millions|thousand|bn|billion)?(?![\p{L}²\d])`;
-const UNDER = String.raw`(?:under|below|less than|up to|upto|max(?:imum)?|at most|no more than|cheaper than|<=?)`;
-const OVER = String.raw`(?:over|above|more than|at least|min(?:imum)?|starting (?:at|from)|>=?)`;
+// Words, never inside another ("admin 3" holds no "min"); a sign may sit right before its number ("<25m").
+const UNDER = String.raw`(?:(?<![\p{L}])(?:under|below|less than|up to|upto|max(?:imum)?|at most|no more than|cheaper than)\s+|<=?\s*)`;
+const OVER = String.raw`(?:(?<![\p{L}])(?:over|above|more than|at least|min(?:imum)?|starting (?:at|from))\s+|>=?\s*)`;
+/** Words for the same thing, as people write them: an option named one is found by the other ("apartments", a Flat). */
+const SAME_WORDS: readonly (readonly string[])[] = [['flat', 'apartment', 'apt'], ['shop', 'store'], ['car', 'vehicle'], ['mobile', 'cell phone']];
 const AREA_UNITS = /^\s*(m²|m2|sqm|sq\.?\s*m|square\s*(?:metres|meters|m))/i;
 const STOPS = new Set(['in', 'at', 'on', 'with', 'for', 'and', 'or', 'the', 'a', 'an', 'of', 'to', 'near', 'by', 'around', 'egp', 'le', 'usd', 'pounds', 'dollars', 'show', 'me', 'find', 'all', 'any', 'some', 'that', 'which', 'is', 'are', 'has', 'have', 'from', 'between']);
 
@@ -446,12 +474,12 @@ function searchToFilter(request: SearchToFilterRequest, records: Records): Searc
       const to = standInNumber(m[3], m[4] ?? m[2] ?? '');
       if (field && from !== null && to !== null) filter.push({ field, op: 'between', value: [from, to] });
     }],
-    [new RegExp(String.raw`${UNDER}\s+${NUMBER}`, 'iu'), (m) => {
+    [new RegExp(String.raw`${UNDER}${NUMBER}`, 'iu'), (m) => {
       const field = numberField(rest.slice(m.index + m[0].length), rest.slice(0, m.index));
       const to = standInNumber(m[1], m[2] ?? '');
       if (field && to !== null) filter.push({ field, op: '<=', value: to });
     }],
-    [new RegExp(String.raw`${OVER}\s+${NUMBER}`, 'iu'), (m) => {
+    [new RegExp(String.raw`${OVER}${NUMBER}`, 'iu'), (m) => {
       const field = numberField(rest.slice(m.index + m[0].length), rest.slice(0, m.index));
       const from = standInNumber(m[1], m[2] ?? '');
       if (field && from !== null) filter.push({ field, op: '>=', value: from });
@@ -485,7 +513,14 @@ function searchToFilter(request: SearchToFilterRequest, records: Records): Searc
   // Choices and links by their names, the longest first, each word once: "garden city" before "garden".
   const named: { field: string; value: JsonValue; words: string; link: boolean }[] = [];
   for (const [name, def] of fields) {
-    if (def.type === 'selection') for (const option of def.options) named.push({ field: name, value: option.value, words: fold(option.label), link: false });
+    if (def.type === 'selection') {
+      for (const option of def.options) {
+        const words = fold(option.label);
+        named.push({ field: name, value: option.value, words, link: false });
+        // The same thing in other words: a Flat found by "apartments".
+        for (const other of SAME_WORDS.find((same) => same.includes(words))?.filter((one) => one !== words) ?? []) named.push({ field: name, value: option.value, words: other, link: false });
+      }
+    }
     if (def.type === 'many2one' || def.type === 'many2many') {
       for (const [id, values] of Object.entries(records[(def as { relation?: string }).relation ?? ''] ?? {})) {
         const label = nameOf(values);

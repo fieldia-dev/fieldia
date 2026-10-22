@@ -189,7 +189,8 @@ test.describe('an enquiry answered with a drafted reply', () => {
     const reply = node(page, 'f-reply');
     await reply.getByRole('button', { name: 'Polish' }).click();
     const text = proposal(page, 'f-reply').locator('.fd-proposal-text');
-    await expect(text).toHaveText('Hi Omar,\n\nThanks for your message. We have 2 flats in zamalek that fit your budget, one with a nile view. Can you come on thursday at 5pm? Please let me know as soon as possible.\n\nRegards,\nMona');
+    // Names as the record writes them, and the days (the owner's walk of 0.29: "zamalek", "nile", "thursday").
+    await expect(text).toHaveText('Hi Omar,\n\nThanks for your message. We have 2 flats in Zamalek that fit your budget, one with a Nile view. Can you come on Thursday at 5pm? Please let me know as soon as possible.\n\nRegards,\nMona');
     await screen(page, 'ai-reply-polish');
     await proposal(page, 'f-reply').getByRole('button', { name: 'Reject' }).click();
     await expect(reply.locator('textarea')).toHaveValue(/^hi omar/);
@@ -245,5 +246,21 @@ test.describe('homes searched in plain words', () => {
     await expect(picked).toHaveText([/^Type: ?Villa$/, /^District: ?Heliopolis$/, /^Price: up to E(£|GP)\s?25M$/]);
     await expect(page.locator('.fd-list-found')).toHaveText('2 homes');
     await screen(page, 'ai-search-words');
+  });
+
+  test('“<25m” is a price up to 25M, and “apartments” the flats: the owner’s words read as filters', async ({ page }) => {
+    // The owner's walk of 0.29: "<25m" was read and set no price; "apartments" matched no type.
+    const keyword = page.locator('.fd-filter-keyword');
+    const picked = page.locator('.fd-filter-field button[data-picked]');
+    await keyword.fill('villa heliopolis <25m');
+    await page.getByRole('button', { name: 'Turn these words into filters' }).click();
+    await expect(picked).toHaveText([/^Type: ?Villa$/, /^District: ?Heliopolis$/, /^Price: up to E(£|GP)\s?25M$/]);
+    await expect(page.locator('.fd-list-found')).toHaveText('2 homes');
+    await page.locator('.fd-assist-read').getByRole('button', { name: 'Undo' }).click();
+    await keyword.fill('apartments under 5 million with a garden');
+    await page.getByRole('button', { name: 'Turn these words into filters' }).click();
+    await expect(picked.filter({ hasText: /^Type/ })).toHaveText(/^Type: ?Flat$/);
+    await expect(picked.filter({ hasText: /^Price/ })).toHaveText(/^Price: up to E(£|GP)\s?5M$/);
+    await screen(page, 'ai-search-apartments');
   });
 });
