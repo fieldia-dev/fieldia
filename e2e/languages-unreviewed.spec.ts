@@ -236,3 +236,62 @@ test.describe('the first paint, the four languages fetched where they are spoken
     });
   }
 });
+
+/** The first column's day, as the date's month names it in full (its `abbr`). */
+async function monthsFirstDay(page: Page, nodeId: string) {
+  const field = node(page, nodeId);
+  await field.locator('.fd-calendar-button').click();
+  return field.locator('.fd-calendar thead th').first().getAttribute('abbr');
+}
+
+test.describe('the week’s first day where the page is read', () => {
+  // A page whose language names no region: the reader's, where the browser asks for its language with one.
+  for (const [reader, first, day] of [
+    ['en-EG', 'Saturday', 6],
+    ['en-GB', 'Monday', 1],
+    ['en-US', 'Sunday', 0],
+  ] as const) {
+    test.describe(`an English page read in ${reader}`, () => {
+      test.use({ locale: reader });
+
+      test(`a date’s month starts on ${first}, in the packages and in the one-tag script, its list part and date part alike`, async ({ page }) => {
+        const { problems } = await open(page, 'plain', 'page=expense-approval&skin=outlined');
+        expect(await monthsFirstDay(page, 'f-date')).toBe(first);
+        expect(problems).toEqual([]);
+
+        // The one-tag script: the week comes with the parts that draw one, the list's and the date's.
+        await page.goto('/script/');
+        await expect(page.locator('.fd-form')).toBeVisible();
+        const fromList = await page.evaluate(async () => {
+          const fieldia = (window as any).Fieldia;
+          await fieldia.listPart.load();
+          return fieldia.firstWeekday('en');
+        });
+        expect(fromList).toBe(day);
+        await page.evaluate(() => {
+          const fieldia = (window as any).Fieldia;
+          const host = document.getElementById('app') as HTMLElement;
+          (window as any).fieldiaDemo.handle.destroy();
+          host.replaceChildren();
+          const day = { fieldia: '0.9', id: 'week', data: { kind: 'responses' }, fields: { day: { type: 'date', label: 'Day' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-day', field: 'day' }] } };
+          fieldia.mountViewer(host, { page: day, dataSource: fieldia.createMemoryDataSource(), skin: 'outlined', locale: 'en' });
+        });
+        expect(await monthsFirstDay(page, 'f-day')).toBe(first);
+      });
+    });
+  }
+
+  test.describe('Persian and Arabic pages read in en-US', () => {
+    test.use({ locale: 'en-US' });
+    for (const [locale, saturday] of [
+      ['fa', 'شنبه'],
+      ['ar', 'السبت'],
+    ] as const) {
+      test(`a page in ${locale} starts its weeks on Saturday, where it is most spoken`, async ({ page }) => {
+        const { problems } = await open(page, 'plain', `page=expense-approval&skin=outlined&locale=${locale}&dir=rtl`);
+        expect(await monthsFirstDay(page, 'f-date')).toBe(saturday);
+        expect(problems).toEqual([]);
+      });
+    }
+  });
+});
