@@ -193,7 +193,7 @@ describe('a business widget made before its part came', () => {
     expect(form.getState().unread['hours']).toBeUndefined();
     expect(document.getElementById('fieldia-business-styles')).not.toBeNull();
     // From now on each is the part's own, at once.
-    expect(createWidget({ form, name: 'state', field: fields['state'], node: NODES[0], id: 'w-again', document }).element.classList.contains('fd-statusbar')).toBe(true);
+    expect(createWidget({ form, name: 'state', field: fields['state'], node: NODES[0], id: 'w-again', document }).element.querySelector(':scope > .fd-statusbar')).not.toBeNull();
     for (const widget of Object.values(widgets)) widget.destroy?.();
   });
 });

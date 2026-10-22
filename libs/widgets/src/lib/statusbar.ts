@@ -17,6 +17,11 @@ import type { WidgetFactory } from './widgets';
  *                   unless the record stands on one
  *   saves           a click also saves the record at once
  *
+ * Where its steps are wider than its room (a phone), it scrolls: the step the
+ * record is in is scrolled into view, at rest it starts on a step — never one cut
+ * mid-word — and each edge with more steps past it fades, with a sign that it
+ * scrolls (`data-more-before`, `data-more-after`).
+ *
  * It comes in the business part (business-part.ts): the viewer waits for it
  * before it draws a sheet with a statusbar, or a form with one.
  */
@@ -50,6 +55,18 @@ export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, do
   list.className = 'fd-statusbar';
   list.id = id;
   list.setAttribute('aria-label', field.label);
+  // Its signs that more steps are past an edge, over the bar's edges, never scrolled with it.
+  const sign = (side: 'before' | 'after') => {
+    const mark = document.createElement('span');
+    mark.className = 'fd-statusbar-sign';
+    mark.dataset['side'] = side;
+    mark.setAttribute('aria-hidden', 'true');
+    mark.textContent = side === 'before' ? '‹' : '›';
+    return mark;
+  };
+  const frame = document.createElement('div');
+  frame.className = 'fd-statusbar-frame';
+  frame.append(list, sign('before'), sign('after'));
 
   const keyOf = (value: unknown) =>
     value && typeof value === 'object' && 'id' in value ? `id:${String((value as RelatedRecord).id)}` : `v:${String(value)}`;
@@ -132,7 +149,85 @@ export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, do
       else menu.style.right = `${Math.max(0, (view?.innerWidth ?? at.right) - at.right)}px`;
     }
     if (focused) [...list.querySelectorAll('button')].find((b) => b.dataset['key'] === focused)?.focus();
+    fitEnd();
+    // Another step now, or drawn anew: the one the record is in, in view.
+    if (currentKey !== inView) {
+      inView = currentKey;
+      showCurrent();
+    }
+    edges();
   }
+
+  /** The step the record is in when the bar was last brought to it: brought again only when that changes. */
+  let inView: string | null | undefined;
+  const rtl = () => getComputedStyle(list).direction === 'rtl';
+  /** A step's start and end against the bar's start, as it reads: from its right, right to left. */
+  const along = (item: Element) => {
+    const room = list.getBoundingClientRect();
+    const at = item.getBoundingClientRect();
+    return rtl() ? { start: room.right - at.right, end: room.right - at.left } : { start: at.left - room.left, end: at.right - room.left };
+  };
+  /** Scroll the bar alone (never the page) by `by` towards its end, as it reads. */
+  const scrollAlong = (by: number) => {
+    if (by) list.scrollLeft += rtl() ? -by : by;
+  };
+  /** Where a step past the first starts at rest: after the room of the sign that more is before (the sheet's scroll-padding). */
+  const SIGN = 24;
+  /**
+   * The step the record is in, in view: the bar starting on the step that shows the most of what comes before it with
+   * it whole — the signs' room at either edge with more past it left free — a step too wide for the bar from its own start.
+   */
+  function showCurrent() {
+    if (list.scrollWidth <= list.clientWidth + 1) return;
+    const items = [...list.children];
+    const at = items.findIndex((item) => item.querySelector('[aria-current="step"]'));
+    if (at < 0) return;
+    const end = along(items[at]).end + (at < items.length - 1 ? SIGN : 0);
+    const room = (i: number) => list.clientWidth - (i > 0 ? SIGN : 0);
+    const first = items.findIndex((item, i) => i <= at && end - along(item).start <= room(i));
+    const start = first < 0 ? at : first;
+    scrollAlong(along(items[start]).start - (start > 0 ? SIGN : 0));
+  }
+  /**
+   * Room after the last step, where the bar scrolls, as much as lets it start on a step when scrolled to its end too:
+   * every place it comes to rest starts on a step, never one cut mid-word.
+   */
+  function fitEnd() {
+    const items = [...list.children] as HTMLElement[];
+    const last = items[items.length - 1];
+    if (!last) return;
+    last.style.removeProperty('padding-inline-end');
+    const room = list.clientWidth;
+    if (list.scrollWidth <= room + 1) return;
+    const scrolled = Math.abs(list.scrollLeft);
+    const end = list.scrollWidth - room;
+    // Each place it rests: the first step at the start, any other after the sign's room.
+    const next = items.map((item, i) => along(item).start + scrolled - (i > 0 ? SIGN : 0)).find((start) => start >= end - 1);
+    // Room inside the last step's own item, after its arrow: every engine scrolls over it, as it would not a margin.
+    if (next !== undefined && next - end > 1) last.style.setProperty('padding-inline-end', `${Math.ceil(next - end)}px`);
+  }
+  /** Each edge with steps past it, said for its fade and its sign. */
+  function edges() {
+    const items = [...list.children];
+    const first = items[0];
+    const last = items[items.length - 1];
+    list.toggleAttribute('data-more-before', !!first && along(first).start < -1);
+    list.toggleAttribute('data-more-after', !!last && along(last).end > list.clientWidth + 1);
+    // Scrolled from the keyboard too: steps no one may press give the bar itself the focus, where it scrolls.
+    const scrolls = list.scrollWidth > list.clientWidth + 1 && !list.querySelector('button');
+    if (scrolls !== list.hasAttribute('tabindex')) {
+      if (scrolls) list.setAttribute('tabindex', '0');
+      else list.removeAttribute('tabindex');
+    }
+  }
+  list.addEventListener('scroll', edges, { passive: true });
+  // Its room changed — the page laid out, turned, its window narrowed: the step it is in brought into view again.
+  const resized = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
+    fitEnd();
+    showCurrent();
+    edges();
+  }) : null;
+  resized?.observe(list);
 
   /** The folded stages, in a menu at the bar's end: picked as any step when the bar can be clicked. */
   function moreItem(folded: Step[], readonly: boolean): HTMLLIElement {
@@ -193,11 +288,12 @@ export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, do
   document.addEventListener('scroll', away, true);
 
   return {
-    element: list,
+    element: frame,
     focus: () => list.querySelector<HTMLElement>('button:not([disabled])')?.focus(),
     destroy() {
       document.removeEventListener('pointerdown', away);
       document.removeEventListener('scroll', away, true);
+      resized?.disconnect();
     },
     update(state) {
       const durations = durationsField ? state.values?.[durationsField] : null;
