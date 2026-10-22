@@ -1,4 +1,4 @@
-import type { Page } from '@fieldia/core';
+import { wordsReady, type Page } from '@fieldia/core';
 import { elementFactory } from './chrome';
 import { createDesigner } from './designer';
 import { tryIt, type TryIt } from './try-it';
@@ -42,6 +42,9 @@ function setup(page: Page) {
   };
   return { designer, picker, select, viewer, label, control, pick };
 }
+
+// Spanish's own words come in a chunk of their own, fetched before a page in it is drawn: here, at once, so it draws as it is tried.
+beforeAll(() => wordsReady('es'));
 
 describe('try it in a language', () => {
   it('offers nothing to pick on a page with no other languages', () => {

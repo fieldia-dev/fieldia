@@ -60,7 +60,7 @@ import { overFirstPaint } from './first-paint-over';
 import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, useStyleNonce, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
-import { relatedInTab, upgradePage, zonedPage } from '@fieldia/core';
+import { relatedInTab, upgradePage, wordsComing, wordsReady, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { nameFieldOf } from './name-field';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
@@ -96,6 +96,7 @@ export type { Breadcrumb, RecordPager } from './record-bar';
 export type { Skin };
 
 import { ownLocale, VIEWER_LABELS, viewerWords, type ViewerLabels } from './labels';
+import { inOwnWords } from './in-own-words';
 import { keepTabIn } from './focus-trap';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 export type { PageFinder, PageRequest } from './related';
@@ -408,6 +409,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const own = tag ? localizePage(other, tag) : other;
     return zonedPage(options.translate ? translatePage(own, options.translate) : own);
   };
+  // The page's language's words where they come in a chunk of their own (Turkish, Persian, Urdu, Spanish): asked for
+  // first — each table there at once, English's words till they come — and the page drawn once they have, as it waits for
+  // its parts, so its first paint is in its language.
+  const words = wordsComing(tag) ? wordsReady(tag) : null;
   const locale = ownLocale(tag);
   const preferences = options.preferences ?? browserPreferences();
   const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone));
@@ -461,7 +466,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   };
   const widgetLabels = WIDGET_LABELS[locale];
   /** How a value reads inside the page's own words on screen (a `{field}`): a day in the page's order, a yes or no in words. */
-  const sentenceWords: SentenceWords = { order: dateOrderOf({ page }), yes: widgetLabels.yes, no: widgetLabels.no };
+  // Read as each value is said, so a language whose words came after the mount (its chunk) says its own yes and no.
+  const sentenceWords: SentenceWords = {
+    order: dateOrderOf({ page }),
+    get yes() {
+      return widgetLabels.yes;
+    },
+    get no() {
+      return widgetLabels.no;
+    },
+  };
   /** So, once the answers part has come (a page that says the answers loads it first); else as each field shows its value. */
   const asSaid: ValueWriter = (def, value, values) => answersPart.loaded?.sentenceValue(def, value, values, locale, sentenceWords) ?? displayValue(def, value, values, locale);
   /** What the page's form is made with; and each row's of a list whose cells change in place, but its drafts, autosave and record. */
@@ -2594,11 +2608,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const appCalls = options.functions && callsPartFunctions(page, Object.keys(options.functions)) ? [functionsPart] : [];
   const awaited = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded);
   let drawn: Promise<void> = Promise.resolve();
-  if (!awaited.length) drawPage();
+  if (!awaited.length && !words) drawPage();
   else {
     root.setAttribute('aria-busy', 'true');
     const drawWaited = () => {
       if (gone) return;
+      // The viewer's own parts made before the page's language's words came: in them now, as the page is drawn.
+      if (words) inOwnWords([status, banner, draft, done, ...safety.elements], locale);
       drawPage();
       // Drawn after the status took its place in a corner or across the top: the page's Save took it back beside itself.
       placeStatus();
@@ -2607,7 +2623,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // A record that opened meanwhile: its focused field takes the focus now, as it would have then.
       if (opened) focusAsOpened(true);
     };
-    drawn = settleParts(awaited).then(() => (checked.later?.length ? checkedWhole().then(drawWaited) : drawWaited()));
+    drawn = Promise.all([settleParts(awaited), words]).then(() => (checked.later?.length ? checkedWhole().then(drawWaited) : drawWaited()));
   }
   // A theme or the quiet skin the app gives, not the page, is worn as its part comes, the page drawn meanwhile
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.

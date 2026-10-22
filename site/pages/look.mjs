@@ -129,11 +129,12 @@ ${code('json', `{ "look": { "helpShown": "tooltip" } }`)}
 <p id="read-only-words">A read-only field shows as its value's words with ${c('look.readonlyShown')}: ${c('"text"')}, as Flectra draws it — a choice by its label with no arrow, an amount with its currency, a date as people write it, a link by its record's name (a link that opens it, where the app can show it), a mail, phone or web address as a link to it, and long words wrapped rather than cut at the box's edge; empty, it draws nothing. A whole form locked by the Edit switch reads the same way. ${c('"box"')}, the default, keeps the greyed boxes. Yes or no boxes, tables, tags, files and the like keep their own look either way. In the designer it is Read-only fields, on the Look tab.</p>
 ${code('json', `{ "look": { "readonlyShown": "text" } }`)}
 
-<h2 id="languages">Four languages</h2>
-<p>Fieldia's own words — Save, Next, validation messages, “Step 2 of 3”, the upload and search prompts — come in English, Arabic, German and French:</p>
-${code('ts', `mountViewer(host, { page, dataSource, locale: 'ar' });   // 'en' | 'ar' | 'de' | 'fr'`)}
-<p>The packages carry all four. The script tag carries English, and each other language in a small script of its own to add after it — ${c('fieldia.ar.js')}, ${c('fieldia.de.js')}, ${c('fieldia.fr.js')}; see <a href="/start/#script">A script tag</a>.</p>
-<p>Arabic lays the whole form out right to left. Pass ${c("dir: 'rtl'")} or ${c("dir: 'ltr'")} to choose the direction yourself. Any word can be replaced with ${c('labels')}:</p>
+<h2 id="languages">Eight languages</h2>
+<p>Fieldia's own words — Save, Next, validation messages, “Step 2 of 3”, the upload and search prompts — come in English, Arabic, German and French, and in Turkish, Persian, Urdu and Spanish:</p>
+${code('ts', `mountViewer(host, { page, dataSource, locale: 'ar' });   // 'en' | 'ar' | 'de' | 'fr' | 'tr' | 'fa' | 'ur' | 'es'`)}
+<p id="unreviewed"><strong>Turkish, Persian, Urdu and Spanish are machine-assisted, not yet reviewed by a native speaker.</strong> Every word English has is there, with the same blanks, but no native speaker has read them yet: corrections are welcome, and ${c('labels')} or ${c('addLanguage')} put your own over any of them.</p>
+<p>The packages carry English, Arabic, German and French, and fetch Turkish, Persian, Urdu and Spanish each in a chunk of its own where it is spoken — the viewer draws a page in one once its words have come, so its first paint is in them, and an app never carries a language it does not show. The script tag carries English, and each other language in a small script of its own to add after it — ${c('fieldia.ar.js')}, ${c('fieldia.de.js')}, ${c('fieldia.fr.js')}, ${c('fieldia.tr.js')}, ${c('fieldia.fa.js')}, ${c('fieldia.ur.js')}, ${c('fieldia.es.js')}; see <a href="/start/#script">A script tag</a>.</p>
+<p>Arabic, Persian and Urdu lay the whole form out right to left, and a number typed in their digits (٠١٢٣…, ۰۱۲۳…) reads as one. Dates and numbers are written by Intl in the page's language, in Latin digits and on the Gregorian calendar a date is kept in, in Persian too. Pass ${c("dir: 'rtl'")} or ${c("dir: 'ltr'")} to choose the direction yourself. Any word can be replaced with ${c('labels')}:</p>
 ${code('ts', `mountViewer(host, { page, dataSource, labels: { submit: 'Send my answers' } });`)}
 <p>The page's own text — titles, labels, help, options — is the page author's. To offer a page in several languages, keep one page per language, or generate the page in the reader's language on your server.</p>
 `,

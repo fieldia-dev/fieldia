@@ -1,4 +1,4 @@
-import { labelAt, recordSentence, type Form, type FormState, type LineField, type Locale, type Page, type RecordPermissions, type Values } from '@fieldia/core';
+import { labelAt, recordSentence, dayTag, listComma, type Form, type FormState, type LineField, type Locale, type Page, type RecordPermissions, type Values } from '@fieldia/core';
 import { displayValue, drawIcon, type IconSet } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { livePart } from './viewer-parts';
@@ -252,7 +252,7 @@ let drawn = 0;
 export function timeWords(at: string, tag: string | undefined, locale: Locale, now = new Date()): string {
   const date = new Date(at);
   if (Number.isNaN(date.getTime())) return '';
-  const lang = tag && tag.includes('-') ? tag : locale === 'en' ? 'en-GB' : locale;
+  const lang = dayTag(tag && tag.includes('-') ? tag : locale);
   const sameDay = date.toDateString() === now.toDateString();
   const day = sameDay ? {} : { day: 'numeric' as const, month: 'short' as const, ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' as const }) };
   return new Intl.DateTimeFormat(lang, { ...day, hour: '2-digit', minute: '2-digit', numberingSystem: 'latn' }).format(date);
@@ -260,7 +260,7 @@ export function timeWords(at: string, tag: string | undefined, locale: Locale, n
 
 /** Names in a list, as the language joins them: "Stage, Budget", "المرحلة، الميزانية". */
 function listWords(tag: string): (names: string[]) => string {
-  const separator = tag.split('-')[0] === 'ar' ? '، ' : ', ';
+  const separator = listComma(tag);
   return (names) => names.join(separator);
 }
 

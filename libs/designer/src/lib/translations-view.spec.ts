@@ -1,4 +1,4 @@
-import type { Page } from '@fieldia/core';
+import { wordsReady, type Page } from '@fieldia/core';
 import { createDesigner } from './designer';
 import { mountSurveyEditor } from './survey-editor';
 import { button, choose, mount, press, type } from './test-editor';
@@ -55,6 +55,9 @@ function typeIn(textarea: HTMLTextAreaElement, text: string) {
   textarea.value = text;
   textarea.dispatchEvent(new Event('input', { bubbles: true }));
 }
+
+// Spanish's own words come in a chunk of their own, fetched before a page in it is drawn: here, at once, so it draws as it is tried.
+beforeAll(() => wordsReady('es'));
 
 describe('opening the Translations view', () => {
   it('sits beside Design and Try it, in place of the editor, and Design brings the editor back', () => {

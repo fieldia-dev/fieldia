@@ -1,4 +1,4 @@
-import { instantsAt, wallTime, zoneOffset, type CalendarView, type ListCalendar, type Locale, type Page, type Value } from '@fieldia/core';
+import { instantsAt, wallTime, zoneOffset, dayTag, firstWeekday, type CalendarView, type ListCalendar, type Locale, type Page, type Value } from '@fieldia/core';
 
 /**
  * A calendar's days, on its zone's clock: the zone its start field names, else its page's (`timeZone`), else the
@@ -86,10 +86,13 @@ export function readDay(text: string): Date | null {
 /** A moment as its field keeps it: a date's day, or a date and time as the date widgets write one — the instant it is on the zone's clock, in UTC. */
 export const writeWhen = (d: Date, kind: WhenKind, zone?: string) => (kind === 'date' ? dayKey(d) : new Date(fromWall(d, zone)).toISOString());
 
-/** The week's first day by language: Saturday in Arabic (as Egypt's week runs), Monday elsewhere, as Fieldia's date picker has it. */
-export function firstDayOf(locale: Locale, own?: number): number {
+/**
+ * The week's first day, unless the page says: CLDR's for the page's own region, else the reader's where the browser
+ * asks for the same language, else the one the language is most spoken in (`firstWeekday`).
+ */
+export function firstDayOf(locale: string, page: { readonly language?: string }, own?: number): number {
   if (own !== undefined) return own;
-  return locale === 'ar' ? 6 : 1;
+  return firstWeekday(locale, page);
 }
 
 export const startOfWeek = (d: Date, firstDay: number) => addDays(startOfDay(d), -((weekdayOf(d) - firstDay + 7) % 7));
@@ -129,7 +132,7 @@ export function stepFrom(view: CalendarView, anchor: Date, by: 1 | -1): Date {
   return dayOn(anchor.getUTCFullYear(), anchor.getUTCMonth() + by, Math.min(anchor.getUTCDate(), last));
 }
 
-/** The language as Intl reads it: British English's day before month, every language's digits Latin, as Fieldia writes dates. */
-export const intlTag = (locale: Locale) => (locale === 'en' ? 'en-GB' : locale);
+/** The language as Intl reads it: British English's day before month, every language on the Gregorian calendar and its digits Latin, as Fieldia writes dates. */
+export const intlTag = (locale: Locale) => dayTag(locale);
 /** A moment on the calendar's clock in words: its UTC fields, which are that clock's day and time. */
 export const format = (locale: Locale, options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(intlTag(locale), { numberingSystem: 'latn', ...options, timeZone: 'UTC' });

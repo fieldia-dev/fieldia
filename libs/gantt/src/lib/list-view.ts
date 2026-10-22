@@ -1,10 +1,29 @@
-import type { ListNode, Locale } from '@fieldia/core';
+import { tableInChunks, wordsInChunks, type ListNode, type Locale } from '@fieldia/core';
 import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
+import type { GanttLabels } from './labels';
 import type { GanttSettings } from './settings';
 
-/** Its name on the list's switcher, which shows before the timeline's own code has come. */
-const NAME: Record<Locale, string> = { en: 'Timeline', ar: 'المخطط الزمني', fr: 'Planning', de: 'Zeitplan' };
-const FAILED: Record<Locale, string> = { en: 'The timeline could not be loaded.', ar: 'تعذّر تحميل المخطط الزمني.', fr: 'Le planning n’a pas pu être chargé.', de: 'Der Zeitplan konnte nicht geladen werden.' };
+/**
+ * Its name on the list's switcher, and what it says should its code not come: words that show before the timeline's own
+ * code has come. Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker —
+ * come in chunks of their own (the timeline's words' own, locales/), fetched where they are spoken, before a page in one
+ * is drawn (`wordsReady` in @fieldia/core): a page in any other language never carries them.
+ */
+const WORDS = {
+  en: { timeline: 'Timeline', loadFailed: 'The timeline could not be loaded.' },
+  ar: { timeline: 'المخطط الزمني', loadFailed: 'تعذّر تحميل المخطط الزمني.' },
+  fr: { timeline: 'Planning', loadFailed: 'Le planning n’a pas pu être chargé.' },
+  de: { timeline: 'Zeitplan', loadFailed: 'Der Zeitplan konnte nicht geladen werden.' },
+} as Record<Locale, Pick<GanttLabels, 'timeline' | 'loadFailed'>>;
+wordsInChunks(
+  tableInChunks(WORDS, {
+    tr: () => import('./locales/tr').then((words) => words.tr),
+    fa: () => import('./locales/fa').then((words) => words.fa),
+    ur: () => import('./locales/ur').then((words) => words.ur),
+    es: () => import('./locales/es').then((words) => words.es),
+  })
+);
+const wordsOf = (locale: Locale) => WORDS[locale] ?? WORDS.en;
 
 /**
  * A list's records on a Gantt timeline, for the viewer's `listViews`: a list
@@ -16,7 +35,7 @@ const FAILED: Record<Locale, string> = { en: 'The timeline could not be loaded.'
  */
 export function ganttListViews(settings: GanttSettings = {}): Record<string, ListViewFactory> {
   const gantt: ListViewFactory = Object.assign((context: ListViewContext) => lazyGantt(context, settings), {
-    label: (locale: Locale) => settings.labels?.[locale]?.timeline ?? NAME[locale] ?? NAME.en,
+    label: (locale: Locale) => settings.labels?.[locale]?.timeline ?? wordsOf(locale).timeline,
     opens: (node: ListNode) => node.gantt?.opens === 'gantt',
   });
   return { gantt };
@@ -30,7 +49,8 @@ function lazyGantt(context: ListViewContext, settings: GanttSettings): ListViewP
   let part: ListViewPart | null = null;
   let gone = false;
   const ready: Promise<ListViewPart | null> = import('./gantt-view').then(
-    ({ ganttPart }) => {
+    async ({ ganttPart, ganttWordsReady }) => {
+      await ganttWordsReady(context.locale);
       if (gone) return null;
       part = ganttPart(context, settings);
       element.replaceChildren(part.element);
@@ -40,7 +60,7 @@ function lazyGantt(context: ListViewContext, settings: GanttSettings): ListViewP
     () => {
       element.removeAttribute('aria-busy');
       element.setAttribute('role', 'alert');
-      element.textContent = settings.labels?.[context.locale]?.loadFailed ?? FAILED[context.locale] ?? FAILED.en;
+      element.textContent = settings.labels?.[context.locale]?.loadFailed ?? wordsOf(context.locale).loadFailed;
       return null;
     }
   );

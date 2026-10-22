@@ -1,5 +1,5 @@
 import { localizePage, type Field, type Locale, type Page } from '@fieldia/core';
-import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
+import { blankPage, createDesigner, createMemoryPageStore, designerWordsReady, mountScreenEditor } from '@fieldia/designer';
 import { demoFunctions } from '../shared/functions';
 import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
@@ -39,7 +39,7 @@ const params = new URLSearchParams(location.search);
 const locale = params.get('locale') ?? undefined;
 const arabic = !!locale?.startsWith('ar');
 // The page the designer sits on: right to left, and in Arabic, as an Arabic app's page is.
-if (params.get('dir') === 'rtl') Object.assign(document.documentElement, { dir: 'rtl', lang: 'ar' });
+if (params.get('dir') === 'rtl') Object.assign(document.documentElement, { dir: 'rtl', lang: locale && /^(fa|ur)\b/.test(locale) ? locale : 'ar' });
 /** The demo's words, in English or in Arabic. */
 const say = (english: string, arabicWords: string) => (arabic ? arabicWords : english);
 const customer: Record<string, Field> = {
@@ -147,42 +147,45 @@ const start = params.get('start');
 const onCalendar = start === 'clinic' ? (structuredClone(pages['clinic-calendar']) as Page) : start === 'fitout' ? (structuredClone(pages['fitout-plan']) as Page) : null;
 const model = onCalendar ? onCalendar.fields : start === 'sheet' || start === 'list' ? customer : start === 'homes' ? pages['map-homes'].fields : start === 'order' ? pages['map-order'].fields : start === 'kitchen' ? pages['map-kitchen'].fields : undefined;
 // `?start=template-<id>`: a page of the template library, to change. A survey's steps are the survey editor's (designer/).
-const template = start?.startsWith('template-') && pages[start]?.layout.type !== 'wizard' ? pages[start] : undefined;
-const first = onCalendar
-  ? onCalendar
-  : template
-  ? (structuredClone(template) as Page)
-  : start === 'blank' ? blankPage('screen', say('New screen', 'شاشة جديدة'), { locale }) : start === 'sheet' ? blankPage('sheet', say('Customer', 'عميل'), { locale }) : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : start === 'homes' ? (structuredClone(pages['map-homes']) as Page) : start === 'order' ? (structuredClone(pages['map-order']) as Page) : start === 'kitchen' ? (structuredClone(pages['map-kitchen']) as Page) : siteVisit();
-// The app's own kind, an IBAN, and the widget that draws it.
-const opened = timeFirstPaint('screen');
-// No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.
-const lists = arabic ? APP_LISTS_AR : APP_LISTS;
-/** “Open it” on a saved form: the editor closes, and opens that form from the store. */
-const openForm = (id: string) => void reopen(id);
-// The app's own functions, offered in a formula's list after Fieldia's: a district's average price (shared/functions.ts).
-const designer = createDesigner({ page: first, store, model, lists, functions: demoFunctions, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
-// The app's lists' choices, for Try it.
-const dataSource = sampleDataSource();
-const skin = (params.get('skin') as Skin) ?? 'outlined';
-// A stand-in for the app's own assistant.
-const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200), locale });
-const app = document.getElementById('app') as HTMLElement;
-/** The app's own widgets, and the code editor for the Code kind's fields, on the canvas and in Try it. */
-const widgets = { ...APP_WIDGETS, ...codeWidgets };
-/** A list's records on the demos' maps in Try it, made-up homes around Cairo, where the demos' shop is. */
-const onMaps = { listViews: demoListViews, maps: demoMaps, sampleCentre: { lat: 30.0444, lng: 31.2357 } };
-const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets, assistant, ...onMaps }), reopen };
-opened();
-// The tab names the page being made, not the tool it is made in: “Invoice — Fieldia designer”.
-const named = () => (document.title = `${demo.designer.getPage().title || say('A new page', 'صفحة جديدة')} — Fieldia designer`);
-named();
-designer.subscribe(named);
-/** Close the editor and open the page again from the store, as an app does the next day — or another page, a saved form opened. */
-async function reopen(id = demo.designer.getPage().id) {
-  demo.handle.destroy();
-  demo.designer = await createDesigner.open(id, store, { model, lists, functions: demoFunctions, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
-  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets, assistant, ...onMaps });
+// The designer's words in Turkish, Persian, Urdu or Spanish come in a chunk of their own: fetched before it is made.
+void designerWordsReady(locale).then(() => {
+  const template = start?.startsWith('template-') && pages[start]?.layout.type !== 'wizard' ? pages[start] : undefined;
+  const first = onCalendar
+    ? onCalendar
+    : template
+    ? (structuredClone(template) as Page)
+    : start === 'blank' ? blankPage('screen', say('New screen', 'شاشة جديدة'), { locale }) : start === 'sheet' ? blankPage('sheet', say('Customer', 'عميل'), { locale }) : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : start === 'homes' ? (structuredClone(pages['map-homes']) as Page) : start === 'order' ? (structuredClone(pages['map-order']) as Page) : start === 'kitchen' ? (structuredClone(pages['map-kitchen']) as Page) : siteVisit();
+  // The app's own kind, an IBAN, and the widget that draws it.
+  const opened = timeFirstPaint('screen');
+  // No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.
+  const lists = arabic ? APP_LISTS_AR : APP_LISTS;
+  /** “Open it” on a saved form: the editor closes, and opens that form from the store. */
+  const openForm = (id: string) => void reopen(id);
+  // The app's own functions, offered in a formula's list after Fieldia's: a district's average price (shared/functions.ts).
+  const designer = createDesigner({ page: first, store, model, lists, functions: demoFunctions, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
+  // The app's lists' choices, for Try it.
+  const dataSource = sampleDataSource();
+  const skin = (params.get('skin') as Skin) ?? 'outlined';
+  // A stand-in for the app's own assistant.
+  const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200), locale });
+  const app = document.getElementById('app') as HTMLElement;
+  /** The app's own widgets, and the code editor for the Code kind's fields, on the canvas and in Try it. */
+  const widgets = { ...APP_WIDGETS, ...codeWidgets };
+  /** A list's records on the demos' maps in Try it, made-up homes around Cairo, where the demos' shop is. */
+  const onMaps = { listViews: demoListViews, maps: demoMaps, sampleCentre: { lat: 30.0444, lng: 31.2357 } };
+  const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets, assistant, ...onMaps }), reopen };
+  opened();
+  // The tab names the page being made, not the tool it is made in: “Invoice — Fieldia designer”.
+  const named = () => (document.title = `${demo.designer.getPage().title || say('A new page', 'صفحة جديدة')} — Fieldia designer`);
   named();
-  demo.designer.subscribe(named);
-}
-Object.assign(window, { fieldiaDesigner: demo });
+  designer.subscribe(named);
+  /** Close the editor and open the page again from the store, as an app does the next day — or another page, a saved form opened. */
+  async function reopen(id = demo.designer.getPage().id) {
+    demo.handle.destroy();
+    demo.designer = await createDesigner.open(id, store, { model, lists, functions: demoFunctions, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
+    demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets, assistant, ...onMaps });
+    named();
+    demo.designer.subscribe(named);
+  }
+  Object.assign(window, { fieldiaDesigner: demo });
+});

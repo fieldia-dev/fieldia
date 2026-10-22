@@ -37,7 +37,7 @@ export function isQuestion(label: string): boolean {
 }
 
 /** Each language's quotation marks round a question its sentence names: “…” where it has none of its own here. */
-const QUOTES: Record<string, readonly [string, string]> = { de: ['„', '“'], fr: ['« ', ' »'], ar: ['«', '»'] };
+const QUOTES: Record<string, readonly [string, string]> = { de: ['„', '“'], fr: ['« ', ' »'], ar: ['«', '»'], fa: ['«', '»'] };
 
 /**
  * A label as a sentence names it: a question (`isQuestion`) between the language's quotation marks — "Please answer

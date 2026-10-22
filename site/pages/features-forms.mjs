@@ -55,7 +55,7 @@ export default featurePage({
     items: [
       ['Nothing lost', 'With a draft store, an unfinished form keeps its answers when the person leaves and comes back.'],
       ['Every reader', 'WCAG 2.2 AA, every field by keyboard, and every problem said to a screen reader.'],
-      ['Any language', 'English, Arabic, German and French built in, right to left in full, and your own words.'],
+      ['Any language', 'English, Arabic, German and French built in — Turkish, Persian, Urdu and Spanish too, machine-assisted, not yet reviewed by a native speaker — right to left in full, and your own words.'],
       ['Answers to you', 'One call hands you the answers as JSON, checked, for your server or anywhere.'],
     ],
   },

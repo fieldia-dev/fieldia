@@ -16,6 +16,14 @@ form with `data-fd-skin`:
 npm install @fieldia/widgets
 ```
 
+The widgets' own words (`WIDGET_LABELS`) come in English, Arabic, German and
+French, and in Turkish, Persian, Urdu and Spanish — **machine-assisted, not yet
+reviewed by a native speaker**, each of those four in a chunk of its own,
+fetched where it is spoken (`wordsReady` in @fieldia/core, which the viewer
+awaits before it draws); a number box on a Persian or Urdu page reads
+their digits (۰–۹), and a Turkish page's date box writes a day with dots
+(15.10.2026), as a German one does.
+
 Most apps never import this package directly: [`@fieldia/viewer`](https://www.npmjs.com/package/@fieldia/viewer)
 lays a page out with these widgets. Import it to write your own widget — a
 `WidgetFactory` returns `{ element, update(state), focus() }` — and register it
@@ -276,7 +284,8 @@ day's hours copied to every day; its value is a booking schedule's hours —
 `{ "1": [["09:00", "13:00"], ["14:00", "18:00"]] }`, by ISO weekday, a day not
 named closed — and a shift ending before it starts, or overlapping another,
 keeps the record from being saved, said under its day. `options.weekStart`
-(1–7) starts its week. Both come in a part of their own, `fieldia.schedule.js`
+(1–7) starts its week; without it, the week's first day where the page is read
+(`firstWeekday` in @fieldia/core), as a repeat's days are offered. Both come in a part of their own, `fieldia.schedule.js`
 (`schedulePart`), with the date part, whose boxes their days and times are;
 `(await schedulePart.load()).repeatWords(rule, locale, labels)` and
 `.hoursWords(value, locale, labels)` say a value in words for your own code.

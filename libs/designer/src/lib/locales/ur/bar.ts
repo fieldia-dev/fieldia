@@ -1,0 +1,63 @@
+import type { DesignerWords } from '../../designer-words';
+import { plural } from '../speak';
+
+/**
+ * The designer's words in Urdu: the bar over both editors — the title, where the page stands, Undo, Checks, Publish
+ * and its versions, Find anything, Simple and Advanced. UNREVIEWED: machine-assisted, not yet reviewed by a native
+ * speaker.
+ */
+export const bar: DesignerWords['bar'] = {
+  screenTitle: 'اسکرین کا عنوان',
+  untitledScreen: 'بے عنوان اسکرین',
+  formTitle: 'فارم کا عنوان',
+  untitledForm: 'بے عنوان فارم',
+  versions: 'ورژنز',
+  undo: 'کالعدم کریں',
+  redo: 'دوبارہ کریں',
+  publish: 'شائع کریں',
+  showChecks: 'جانچ دکھائیں',
+  publishHint: (version) => `ورژن ${version}`,
+  openEarlier: 'پچھلا ورژن کھولیں',
+  versionsHint: 'ورژنز',
+  findAnything: 'کچھ بھی تلاش کریں',
+  findTitle: (keys) => `کچھ بھی تلاش کریں · ${keys} یا /`,
+  draft: 'مسودہ، ابھی شائع نہیں ہوا',
+  unpublished: 'تبدیلیاں ابھی شائع نہیں ہوئیں',
+  published: (version) => `شائع شدہ · ورژن ${version}`,
+  version: (version, live, when) => `ورژن ${version} · ${live ? 'فعال · ' : ''}${when}`,
+  versionsNote: 'کسی ورژن کو منتخب کرنے سے وہ مسودہ بن جاتا ہے؛ «کالعدم کریں» پہلے والا واپس لے آتا ہے۔ شائع ہونے تک لوگوں کے لیے کچھ نہیں بدلتا۔',
+  noVersions: 'ابھی کچھ شائع نہیں ہوا: شائع کرنے سے ورژن 1 بنتا ہے۔',
+  checks: 'جانچ',
+  mustFix: 'درست کرنا لازمی',
+  shouldFix: 'درست کرنا بہتر',
+  startHere: 'یہاں سے شروع کریں',
+  checksDialog: 'شائع کرنے سے پہلے جانچ',
+  toLookAt: (n) => plural('ur', n, { one: 'شائع کرنے سے پہلے دیکھنے کے لیے # نکتہ', other: 'شائع کرنے سے پہلے دیکھنے کے لیے # نکات' }),
+  allClear: 'سب ٹھیک ہے',
+  nothingToFix: 'یہاں ایسا کچھ نہیں جو لوگوں کو روکے یا انہیں غلط سمجھ آئے۔',
+  checksCount: (n) => `جانچ: ${plural('ur', n, { one: 'دیکھنے کے لیے # نکتہ', other: 'دیکھنے کے لیے # نکات' })}`,
+  checksClear: 'جانچ: سب ٹھیک ہے',
+  andMore: (n) => `اور ${n} مزید`,
+  mustFixFirst: 'پہلے درست کرنا لازمی',
+  keepEditing: 'ترمیم جاری رکھیں',
+  publishVersion: (version) => `ورژن ${version} شائع کریں`,
+  publishFailed: 'اسے شائع نہیں کیا جا سکا۔',
+  close: 'بند کریں',
+  publishQuestion: (version) => `ورژن ${version} شائع کریں؟`,
+  changesSince: (n, version) => `ورژن ${version} کے بعد سے ${plural('ur', n, { one: '# تبدیلی', other: '# تبدیلیاں' })}:`,
+  firstVersion: 'لوگوں کو کیا ملے گا:',
+  keepTheirs: (version) =>
+    `جو لوگ اسے بیچ میں بھر رہے ہیں وہ اسی ورژن پر رہتے ہیں جس سے انہوں نے شروع کیا تھا۔ ورژن ${version} حالت کے نیچے صرف ایک کلک کی دوری پر رہتا ہے۔`,
+  keepTheirsFirst: 'جو لوگ اسے بیچ میں بھر رہے ہیں وہ اسی ورژن پر رہتے ہیں جس سے انہوں نے شروع کیا تھا؛ بعد کے ورژن ان کے لیے اسے کبھی نہیں بدلتے۔',
+  findPlaceholder: 'کوئی فیلڈ، قسم، سیٹنگ یا کارروائی تلاش کریں…',
+  found: 'نتائج',
+  nothingFound: 'اس نام سے کچھ نہیں ملا۔',
+  settingChoice: (setting, choice) => `${setting}: ${choice}`,
+  settingHint: (kind, tab) => `${kind} · ${tab}`,
+  setting: 'سیٹنگ',
+  editingMode: 'ترمیم کا موڈ',
+  simple: 'سادہ',
+  advanced: 'اعلیٰ',
+  simpleTitle: 'سادہ: کوئی جز منتخب کریں اور اسی جگہ اس میں ترمیم کریں',
+  advancedTitle: 'اعلیٰ: اجزا کو دوسروں کے ساتھ، نیچے یا درمیان میں چھوڑیں، چوڑائیاں طے کریں، کئی منتخب کریں',
+};

@@ -3,13 +3,14 @@ import { createWidget } from './widgets';
 import { WIDGET_LABELS } from './labels';
 import { isoWeek } from './date-text';
 
-function mountDate(type: 'date' | 'datetime', value: string | null, locale: 'en' | 'de' = 'en') {
+function mountDate(type: 'date' | 'datetime', value: string | null, locale: 'en' | 'de' | 'ar' = 'en', weekNumbers = true, language?: string) {
   const page = {
     fieldia: '0.1',
     id: 'cal',
+    ...(language ? { language } : {}),
     data: { kind: 'responses' },
     fields: { when: { type, label: 'Start' } },
-    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n-when', field: 'when', options: { weekNumbers: true } }] },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n-when', field: 'when', options: { weekNumbers } }] },
   } as unknown as Page;
   const form = createForm({ page });
   if (value) form.setValue('when', value);
@@ -188,5 +189,52 @@ describe('a calendar’s days of the week', () => {
     expect(week('en-GB')).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
     expect(week('ar').every((name) => [...name].length <= 2)).toBe(true);
     expect(weekdayHead('de')(monday)).toBe('Mo');
+  });
+});
+
+describe('a date without week numbers: its week from the first day where the page is read', () => {
+  afterEach(() => jest.restoreAllMocks());
+  const heads = (dialog: HTMLElement) => [...dialog.querySelectorAll('thead th')].map((th) => th.getAttribute('abbr'));
+
+  it('an English page read in Cairo starts on Saturday, in London on Monday, in New York on Sunday', () => {
+    for (const [languages, first] of [
+      [['en-EG', 'en'], 'Saturday'],
+      [['en-GB'], 'Monday'],
+      [['en-US', 'en'], 'Sunday'],
+    ] as const) {
+      jest.spyOn(navigator, 'languages', 'get').mockReturnValue([...languages]);
+      const { button, dialog } = mountDate('date', '2026-10-14', 'en', false);
+      button.click();
+      expect({ languages, first: heads(dialog())[0] }).toEqual({ languages, first });
+    }
+  });
+
+  it('the page’s own region before the reader’s, and Arabic’s Saturday', () => {
+    jest.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
+    const british = mountDate('date', '2026-10-14', 'en', false, 'en-GB');
+    british.button.click();
+    expect(heads(british.dialog())[0]).toBe('Monday');
+    const arabic = mountDate('date', '2026-10-14', 'ar', false);
+    arabic.button.click();
+    expect(heads(arabic.dialog())[0]).toBe('السبت');
+  });
+
+  it('Home and End go to its row’s first and last day', () => {
+    jest.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
+    const { button, dialog, key } = mountDate('date', '2026-10-14', 'en', false);
+    button.click();
+    // Wednesday the 14th: its row Sunday the 11th to Saturday the 17th, the month's first row from Sunday 27 September.
+    expect((dialog().querySelector('tbody button') as HTMLElement).textContent).toBe('27');
+    key(document.activeElement as Element, 'Home');
+    expect((document.activeElement as HTMLElement).textContent).toBe('11');
+    key(document.activeElement as Element, 'End');
+    expect((document.activeElement as HTMLElement).textContent).toBe('17');
+  });
+
+  it('with week numbers, each row is an ISO week, Monday first, wherever it is read', () => {
+    jest.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
+    const { button, dialog } = mountDate('date', '2026-10-14');
+    button.click();
+    expect(heads(dialog())).toEqual(['Week', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
   });
 });

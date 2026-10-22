@@ -1,0 +1,63 @@
+import type { DesignerWords } from '../../designer-words';
+import { quoteAr } from '../speak';
+
+/**
+ * The designer's words in Farsi: a work item's body in the designer — a group's own column widths and gap, its fold
+ * control at the heading's end and its ⤢; help in a light box with an icon; a formatted text's toolbar, tools and
+ * editors; a links box.
+ * UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+ */
+export const workText: DesignerWords['workText'] = {
+  columnWidths: 'پهنای ستون‌ها',
+  columnWidthsHint: 'یک پهنا برای هر ستون، جداشده با فاصله: پیکسل (274px)، سهمی از ردیف (50%) یا از فضای باقی‌مانده (1fr). اگر خالی باشد، ستون‌ها هم‌اندازه‌اند.',
+  gap: 'فاصلهٔ میان ستون‌ها',
+  gapHint: 'بر حسب پیکسل، از 0 تا 48؛ اگر خالی باشد، فاصلهٔ ظاهر.',
+  foldControl: 'دکمهٔ جمع کردن',
+  beforeTitle: 'پیش از عنوان',
+  atHeadingEnd: 'در انتهای سرعنوان',
+  maximise: 'بزرگ کردن',
+  maximiseHint: 'یک ⤢ در انتهای سرعنوان، گروه را به‌تنهایی روی بدنهٔ رکورد نشان می‌دهد.',
+  tracksCount: (columns, widths) => `گروه ${columns} ستون و ${widths} پهنا دارد: برای هر ستون یک پهنا بدهید.`,
+  noWidth: (track) => `${quoteAr(track)} پهنا نیست: پیکسل (274px)، سهمی از ردیف (50%) یا از فضای باقی‌مانده (1fr) بنویسید.`,
+  gapRange: 'فاصلهٔ میان ستون‌ها عددی صحیح بر حسب پیکسل از 0 تا 48 است.',
+  foldNeedsFolding: 'نخست گروه را جمع‌شدنی کنید: دکمهٔ جمع کردن فقط در گروهی جمع‌شدنی جای دارد.',
+  maximiseNeedsTitle: 'نخست به گروه عنوانی بدهید: از سرعنوانش بزرگ می‌شود.',
+  noIconHere: 'فقط متن درون کادر راهنما نماد دارد.',
+  helpBox: 'کادر راهنما',
+  helpBoxTitle: 'در کادری روشن با جایی برای یک نماد، مانند راهنمای یک مورد کاری؛ ‏[متن](https://…) در آن پیوند است',
+  icon: 'نماد',
+  noIcon: 'بدون نماد',
+  toolbarShown: 'نوار ابزار',
+  always: 'همیشه',
+  whileWorkedIn: 'هنگام کار در آن',
+  never: 'هرگز',
+  toolbarAt: 'جای نوار ابزار',
+  atTop: 'بالا',
+  atFoot: 'پایین',
+  editor: 'ویرایشگر',
+  richText: 'متن قالب‌بندی‌شده',
+  markdown: 'Markdown',
+  switchEditor: 'کاربران می‌توانند ویرایشگر را عوض کنند',
+  readFirst: 'نخست برای خواندن، با «ویرایش» تغییر می‌کند',
+  tools: 'ابزارها',
+  mentions: 'افرادی که با @ نام برده می‌شوند از',
+  mentionsPlaceholder: 'res.users',
+  references: 'رکوردهایی که با یک کلید پیوند می‌خورند',
+  referenceKey: 'کلید',
+  referenceModel: 'مدل داده',
+  referenceLabel: 'نام',
+  addReference: 'افزودن نوعی رکورد',
+  removeReference: (key) => `برداشتن رکوردهایی که با ${key} پیوند خورده‌اند`,
+  shownAs: 'نمایش به‌صورت',
+  tags: 'تگ‌ها',
+  linksBox: 'پیوندها با «افزودن پیوند»',
+  addWay: 'افزودن پیوند',
+  addMenu: 'یک منو: مورد موجود یا مورد جدید',
+  addSearch: 'بی‌درنگ جستجو می‌کند',
+  addWords: 'متن آن',
+  helpWords: 'راهنما هنگام خالی بودن',
+  helpIcon: 'نماد راهنما',
+  helpTiled: 'نماد روی یک کاشی',
+  helpTile: 'رنگ کاشی',
+  emptyLink: 'پیوندی در کادر خالی',
+};

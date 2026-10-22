@@ -1,4 +1,4 @@
-import { recordSentence, type Locale, type Page } from '@fieldia/core';
+import { recordSentence, listComma, type Locale, type Page } from '@fieldia/core';
 import { formatNumber } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -15,6 +15,6 @@ export function countMark(el: El, n: number, page: Page, labels: CountWords, fil
   const shown = formatNumber(n, 0, locale);
   const one = new Intl.PluralRules(locale).select(n) === 'one';
   const said = fill(one ? recordSentence(page.records, labels.groupCountNounOne, labels.groupCountOne, locale) : recordSentence(page.records, labels.groupCountNoun, labels.groupCount, locale), { n: shown });
-  const comma = locale.split('-')[0] === 'ar' ? '، ' : ', ';
+  const comma = listComma(locale);
   return { mark: el('span', { class: 'fd-filter-count', 'aria-hidden': 'true' }, shown), named: (words) => `${words}${comma}${said}` };
 }

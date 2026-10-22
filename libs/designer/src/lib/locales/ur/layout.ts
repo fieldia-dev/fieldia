@@ -1,0 +1,82 @@
+import type { DesignerWords } from '../../designer-words';
+import { ltr, quoteAr } from '../speak';
+
+const q = quoteAr;
+const PARTS_IN: Record<number, string> = { 2: 'دو برابر حصوں', 3: 'تین برابر حصوں', 4: 'چار برابر حصوں' };
+/** A part by what it is, in a refusal, before a colon: no verb need agree with it. */
+const TYPES: Record<string, string> = { field: 'فیلڈ', section: 'گروپ', tabs: 'ٹیبز', tab: 'ٹیب', text: 'متن', button: 'بٹن', spacer: 'خالی جگہ', divider: 'تقسیمی لکیر', image: 'تصویر', slot: 'ایپ کا اپنا جز' };
+
+/**
+ * The designer's words in Urdu: the layout's edits in words — where a drop puts a part, as the drag chip says it,
+ * why a layout edit is refused, and a row's fractions. A name in one is quoted already (`parts.quote`); one in a
+ * refusal is quoted here. UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+ */
+export const layout: DesignerWords['layout'] = {
+  columnInside: (group, after) => `${q(group)} کے اندر نیا کالم، اس کی تمام قطاروں ${after ? 'کے بعد' : 'سے پہلے'} — دو برابر حصوں میں`,
+  intoThePage: 'صفحے کے اندر',
+  into: (name) => `${q(name)} کے اندر`,
+  before: (name) => `${q(name)} سے پہلے`,
+  atEndOf: (name) => `${q(name)} کے آخر میں`,
+  newRowAbove: (name) => `${q(name)} کے اوپر پوری چوڑائی کی نئی قطار`,
+  newRowAtEnd: (name) => `${q(name)} کے آخر میں پوری چوڑائی کی نئی قطار`,
+  beside: (name, whole) => `${name} کے ساتھ${whole ? ' نیا کالم' : ''}`,
+  under: (name, whole) => `${name} کے نیچے${whole ? ' نئی قطار' : ''}`,
+  above: (name, whole) => `${name} کے اوپر${whole ? ' نئی قطار' : ''}`,
+  inRoomLeft: (name) => `${name} کے ساتھ، بچی ہوئی جگہ میں`,
+  between: (a, b) => `${a} اور ${b} کے درمیان`,
+  atRowEnd: (name) => `قطار کے آخر میں، ${name} کے بعد`,
+  atRowStart: (name) => `قطار کے شروع میں، ${name} سے پہلے`,
+  divided: (where, parts) => `${where} — قطار ${PARTS_IN[parts] ?? `${parts} برابر حصوں`} میں تقسیم`,
+  noPart: (id) => `کوئی جز ${q(id)} نہیں`,
+  tabMoves: 'ٹیب صرف اپنے ٹیبز کے درمیان منتقل ہوتا ہے',
+  notInsideItself: 'کوئی جز اپنے ہی اندر نہیں جا سکتا',
+  columnInGroup: 'نیا کالم کسی گروپ کے اندر جاتا ہے',
+  putInATab: 'اسے کسی ایک ٹیب میں رکھیں',
+  holdsNoParts: (name) => `${q(name)} میں کوئی جز نہیں رکھا جا سکتا`,
+  notBesideItself: 'کوئی جز اپنے ہی ساتھ یا اپنے ہی نیچے نہیں جا سکتا',
+  rowHoldsFour: 'ایک قطار میں زیادہ سے زیادہ چار اجزا آتے ہیں',
+  noKindOfPart: (kind) => `جز کی کوئی قسم ${q(kind)} نہیں`,
+  sameGroup: 'ایسے اجزا منتخب کریں جو ایک ہی گروپ میں ہوں',
+  twoOrMore: 'ساتھ ساتھ رکھنے کے لیے دو یا زیادہ اجزا منتخب کریں',
+  onlyUngroup: 'صرف گروپ یا ٹیبز کا گروپ ختم کیا جا سکتا ہے',
+  tabAlone: 'اکیلے ٹیب کی نقل نہیں بنائی جا سکتی: ٹیبز کی نقل بنائیں، یا اس کے اندر موجود چیزوں کی',
+  noGroupOrTab: (id) => `کوئی گروپ یا ٹیب ${q(id)} نہیں`,
+  groupColumns: 'گروپ میں ایک سے چار کالم ہوتے ہیں، یا بارہویں حصے',
+  smallerScreens: 'ٹیبلیٹ یا فون ڈیسک ٹاپ سے زیادہ کالم نہیں دکھاتا',
+  phoneScreen: 'فون ٹیبلیٹ سے زیادہ کالم نہیں دکھاتا',
+  tabWidth: 'ٹیب کی چوڑائی اس کے ٹیبز جتنی ہوتی ہے',
+  nouns: { ...TYPES },
+  it: 'یہ جز',
+  runsAcross: (type) => `${TYPES[type] ?? type}: پوری قطار کی چوڑائی میں`,
+  noWiderThanRow: (noun) => `${noun}: چوڑائی اپنی قطار سے زیادہ نہیں ہو سکتی`,
+  noWiderThanSection: (noun, columns) => `${noun}: چوڑائی اپنے حصے کے ${columns} کالموں سے زیادہ نہیں ہو سکتی`,
+  aloneInRow: 'اپنی قطار میں اکیلا ہو تو اسے پورا بھر دیتا ہے: اسے تنگ کرنے کے لیے گروپ کی قطاروں کو خالی جگہ چھوڑنے دیں',
+  restNeedsRoom: 'اس کی قطار کے باقی اجزا کو اس کے ساتھ جگہ درکار ہے',
+  labelWidth: 'ساتھ میں رکھے گئے لیبلز کی چوڑائی 60 سے 320 پکسل تک ہوتی ہے',
+  noGroup: (id) => `کوئی گروپ ${q(id)} نہیں`,
+  onlyGroupRows: 'صرف گروپ ہی اپنی قطاریں بھری ہوئی یا خالی جگہوں کے ساتھ رکھتا ہے',
+  noField: (id) => `کوئی فیلڈ ${q(id)} نہیں`,
+  colour: `رنگ ${ltr('#rrggbb')} کی صورت میں لکھا جاتا ہے، جیسے ${ltr('#1f7a4d')}`,
+  wordsNotLabel: 'متن میں عبارت ہوتی ہے، لیبل نہیں',
+  lineHoldsParts: 'سطر میں فیلڈز، متن اور بٹن ہوتے ہیں: پہلے اس میں سے گروپس اور ٹیبز نکالیں',
+  onlyAlertColour: 'صرف انتباہ کے خانے میں موجود متن کا رنگ ہوتا ہے',
+  buttonNotText: 'بٹن کا لیبل ہوتا ہے، متن نہیں',
+  pictureWords: 'تصویر کا پتہ اور تفصیل ہوتی ہے',
+  pictureAddress: 'تصویر کو اپنا پتہ درکار ہے',
+  onlyBlocks: 'یہاں صرف متن، بٹن یا تصویر بدلی جاتی ہے',
+  pictureWidth: 'تصویر کی چوڑائی 16 سے 4000 پکسل تک ہوتی ہے',
+  link: `لنک ایک ویب پتہ ہوتا ہے، ${ltr('https://…')}، یا ای میل پتہ، ${ltr('mailto:…')}`,
+  pickFirst: 'پہلے وہ اجزا منتخب کریں جنہیں بدلنا ہے',
+  notAnswered: (noun) => `${noun}: اس کا جواب نہیں دیا جاتا، صرف فیلڈز لازمی ہو سکتی ہیں`,
+  noLabels: (noun) => `${noun}: رکھنے کے لیے کوئی لیبل نہیں`,
+  foldsByTitle: 'گروپ اپنے عنوان سے سمٹتا ہے: پہلے اسے عنوان دیں',
+  onlyGroupFolds: 'صرف گروپ سمٹ سکتا ہے',
+  rowParts: {
+    whole: { words: 'پوری', label: 'پوری قطار', name: 'پوری قطار' },
+    threeQuarters: { words: '¾', label: 'قطار کا ¾', name: 'تین چوتھائی' },
+    twoThirds: { words: '⅔', label: 'قطار کا ⅔', name: 'دو تہائی' },
+    half: { words: '½', label: 'قطار کا ½', name: 'نصف' },
+    third: { words: '⅓', label: 'قطار کا ⅓', name: 'ایک تہائی' },
+    quarter: { words: '¼', label: 'قطار کا ¼', name: 'ایک چوتھائی' },
+  },
+};

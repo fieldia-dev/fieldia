@@ -84,7 +84,7 @@ const STORY = [
   ['The conversation beside it', 'Messages, notes, @mentions, files and to-dos stay with the record, beside the sheet.'],
   ['In a list, with search', 'The record takes its place among the others: filter them, group them, act on several at once.'],
   [`In any of ${words(COUNTS.themes)} themes`, 'Material, Fluent, Odoo, Google Forms, Apple and more: the same page, dressed to fit your product.'],
-  ['In Arabic, right to left', 'Every part turns, from the labels to the status bar. English, Arabic, German and French are built in.'],
+  ['In Arabic, right to left', 'Every part turns, from the labels to the status bar. English, Arabic, German and French are built in; Turkish, Persian, Urdu and Spanish too, machine-assisted, not yet reviewed by a native speaker.'],
   ['Saved by your backend', 'One small interface loads and saves. Your server fills in fields as they change, and its refusals land on them.'],
   ['One page. Every framework.', 'All of it from one JSON page, in plain JavaScript, React, Vue or Angular. Open source, MIT.'],
 ];
@@ -101,7 +101,7 @@ const POWERS = [
   ['Lists and search', 'Find, group, act', 'Filters, grouping, favourites, sorting and pages; buttons for the records chosen; rows that open.', '/features/lists/'],
   ['Surveys in steps', 'Branching', 'Pages that follow the answers, a progress bar, optional steps, and a Google Forms look.', '/features/forms/#steps'],
   ['Looks', `${COUNTS.skins} skins, ${COUNTS.themes} themes`, 'Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms, light and dark, in your colours.', '/features/looks/'],
-  ['Languages and access', `${COUNTS.languages} languages, AA`, 'English, Arabic, German and French, right to left in full, WCAG 2.2 AA, and every part by keyboard.', '/features/looks/#arabic'],
+  ['Languages and access', `${COUNTS.languages} languages, AA`, 'English, Arabic, German and French — Turkish, Persian, Urdu and Spanish machine-assisted, not yet reviewed by a native speaker — right to left in full, WCAG 2.2 AA, and every part by keyboard.', '/features/looks/#arabic'],
   ['Your backend', 'One small interface', 'Load and save through a data source; your server fills in fields as they change and puts its refusals on them.', '/features/backend/'],
 ];
 const power = ([name, figure, words, href]) =>
@@ -178,13 +178,13 @@ export default {
     <ul class="ticks">
       <li>Conditions such as <code>framework != 'other'</code>, checked as people type</li>
       <li>Two looks, <code>underline</code> and <code>outlined</code>, scoped to the form</li>
-      <li>English, Arabic, German and French, each a small add-on script</li>
+      <li>English, Arabic, German and French, each a small add-on script; Turkish, Persian, Urdu and Spanish too, machine-assisted, not yet reviewed by a native speaker</li>
     </ul>
   </div>
   <div class="chapter-live hero-live" role="region" aria-label="A live Fieldia form">
     <div class="live-bar">
       <label>Skin <select id="live-skin"><option value="outlined">outlined</option><option value="underline">underline</option></select></label>
-      <label>Language <select id="live-locale"><option value="en">English</option><option value="ar">العربية</option><option value="de">Deutsch</option><option value="fr">Français</option></select></label>
+      <label>Language <select id="live-locale"><option value="en">English</option><option value="ar">العربية</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="tr">Türkçe (unreviewed)</option><option value="fa">فارسی (unreviewed)</option><option value="ur">اردو (unreviewed)</option><option value="es">Español (unreviewed)</option></select></label>
     </div>
     <div id="live-form" class="live-form"></div>
     <p class="live-note" id="live-note" role="status"></p>

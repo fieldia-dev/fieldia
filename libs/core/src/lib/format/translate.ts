@@ -140,3 +140,6 @@ export function isRightToLeft(tag: string): boolean {
   const script = rest.find((part) => part.length === 4 && !/\d/.test(part));
   return script ? /^(arab|hebr|syrc|thaa|nkoo|adlm|rohg)$/.test(script) : /^(ar|he|iw|fa|ur|ps|sd|yi|dv|ckb|ug|ks|syr|prs|pnb|azb)$/.test(language);
 }
+
+/** What parts a list of names, as a sentence writes them: ", ", or the Arabic comma "، " in a language written in Arabic's script (Arabic, Persian, Urdu). */
+export const listComma = (tag: string): string => (/^(ar|fa|ur)(-|$)/i.test(tag) ? '\u060c ' : ', ');

@@ -1065,7 +1065,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // A field's label small inside a message's sentence where the page asks (`lowerLabels`).
   // …and a day written in the page's order where it says one (`look.dateOrder`): "can't be after Oct 20, 2026".
   const dateOrder = page.look?.dateOrder;
-  const messages: Messages = page.lowerLabels || dateOrder ? { ...(options.messages ?? MESSAGES.en), lowerLabels: page.lowerLabels, dateOrder } : (options.messages ?? MESSAGES.en);
+  // The page's ask over the language's messages, each read through to them as it is said: a language whose words come in a
+  // chunk of their own fills its table in place once they have come (words-chunks.ts).
+  const messages: Messages = page.lowerLabels || dateOrder ? Object.assign(Object.create(options.messages ?? MESSAGES.en) as Messages, { lowerLabels: page.lowerLabels, dateOrder }) : (options.messages ?? MESSAGES.en);
   /** One of the form's sentences in the words the page names its records by (`records`), else as the language says it plainly. */
   const named = (noun: string | undefined, plain: string) => recordSentence(page.records, noun, plain, messages.locale);
   /** The app's functions the page's expressions call: a name none may call is refused now. */

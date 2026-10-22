@@ -63,6 +63,56 @@ settings each kind has are `PART_LOOKS`:
 }
 ```
 
+The validation messages (`MESSAGES`) come in English, Arabic, German and French,
+and in Turkish (`tr`), Persian (`fa`), Urdu (`ur`) and Spanish (`es`) —
+**machine-assisted, not yet reviewed by a native speaker**: every message
+English has, with its blanks, not yet read by a native speaker (corrections
+welcome). Persian and Urdu are written right to left; `readNumber` reads their
+digits (۰–۹) and marks (٫ ٬) as it reads Arabic-Indic ones; a day a message
+names is written by Intl on the Gregorian calendar a value is kept in
+(`dayTag`: Intl's own for Persian is the Solar Hijri — Fieldia shows the
+Gregorian day, in Latin digits, in Persian too, for now). `listComma` gives the
+Arabic comma in Arabic, Persian and Urdu.
+
+`firstWeekday(language, page?)` is the week's first day, `0` Sunday to `6`
+Saturday — the one every week Fieldia draws starts on: a list's "this week" and
+its weeks, a calendar's and a timeline's, a date's and a range's month, booking
+slots' month, a week's hours, a repeat's days, a chatter's history. CLDR's day
+for a region, which is decided in this order:
+
+1. the region of the language's own tag: the page's (`"language": "en-GB"`,
+   where the page is shown in its own language) or the one given (`en-GB`);
+2. else the reader's, where the browser asks for the same language with a
+   region (`navigator.languages`, the first that does): an `en` page read in
+   `en-EG` starts on Saturday, in `en-GB` on Monday, in `en-US` on Sunday;
+3. else the region CLDR has the language most spoken in: the United States'
+   for `en` (Sunday), Egypt's for `ar` and Iran's for `fa` (Saturday),
+   Pakistan's for `ur` (Sunday), Germany's, France's, Turkey's and Spain's
+   (Monday).
+
+The day is the engine's own `Intl.Locale` week info, else CLDR's table (Firefox
+has none). A third argument gives the reader's languages instead of the
+browser's, for a server or a test. In the one-tag script it comes with the parts
+that draw a week (`fieldia.list.js`, `fieldia.date.js`), not with `fieldia.js`:
+`Fieldia.firstWeekday` answers once one has come — `await
+Fieldia.datePart.load()` first where your own code calls it on a page that has
+drawn no week.
+
+Those four come in a chunk each of their own, so an app never carries the words
+of a language it does not show: each package says how it fetches its words
+(`wordsInChunks(tableInChunks(table, { tr: () => import('./tr') … }))`), and
+`wordsReady(tag)` fetches every package's for a language, once — the viewer, a
+map and a chatter wait for it before they draw. Asked for, a package's table for
+the language is there at once, English's words, and filled in place as its chunk
+comes; `wordsComing(tag)` says whether it has yet. Something that reads them
+without waiting gets English, and the console says once what to await.
+
+```ts
+import { wordsReady, createForm, MESSAGES } from '@fieldia/core';
+await wordsReady('tr');
+const form = createForm({ page, messages: MESSAGES.tr });
+```
+
 ## A starting page from a schema
 
 `pageFromSchema(input, options)` makes a page from what an app already has: a

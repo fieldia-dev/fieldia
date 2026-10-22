@@ -148,7 +148,8 @@ export { checkPage } from './lib/format/check-page';
 export { fillValues, splitValues, valuesIn } from './lib/format/words';
 export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';
-export { translatePage, localizePage, pageWords, isRightToLeft } from './lib/format/translate';
+export { translatePage, localizePage, pageWords, isRightToLeft, listComma } from './lib/format/translate';
+export { firstWeekday } from './lib/format/week';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
 export { ANY_FUNCTION, functionInfo, functionTable, functionNameProblem, type AppFunction, type AppFunctions, type FunctionInfo, type FunctionsKnown, type ValueKind } from './lib/expression/app-functions';
 export type { FunctionTable, ExpressionEnv } from './lib/expression/functions';
@@ -327,6 +328,7 @@ export type { HistoryStep } from './lib/record/history';
 export type { WaitsFor } from './lib/record/waits';
 export type { ActionFile, ActionHost, ActionResult, AppUndo, AskHow, ChosenLines, OnAction, OpenRequest, OpenResult, PostedMessage, RunContext, RunResult, RunStop, SayUndo } from './lib/record/run';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';
+export { tableInChunks, wordsComing, wordsInChunks, wordsNotYet, wordsReady, type WordsChunks } from './lib/record/words-chunks';
 export {
   stripMarks,
   foldDigits,
@@ -363,7 +365,7 @@ export {
   type TimeRead,
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
-export { hijriWords, monthWords, precisionOf, type DatePrecision } from './lib/record/day-words';
+export { dayTag, hijriWords, monthWords, precisionOf, type DatePrecision } from './lib/record/day-words';
 // The parts that join a form where its page asks — an offline outbox, the fields its link fills (`prefill`), proof of an
 // email or a phone by a code, a payment — each with one hook into its send, the form knowing only that its page asks.
 export { formJoins, type FormInner, type FormJoin, type FormJoins, type JoinHost, type JoinPart, type SendKind, type Sent } from './lib/record/joins';

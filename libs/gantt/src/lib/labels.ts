@@ -192,7 +192,29 @@ const de: GanttLabels = {
   cannotMove: 'Diesen Eintrag können Sie nicht ändern.',
 };
 
-export const GANTT_LABELS: Record<Locale, GanttLabels> = { en, ar, fr, de };
+/**
+ * The timeline's words in each language it speaks. Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not
+ * yet reviewed by a native speaker (locales/) — each come in a chunk of their own, fetched with the first timeline shown
+ * in them (`ganttWordsReady`): a timeline in any other language never carries their words.
+ */
+export const GANTT_LABELS: Partial<Record<Locale, GanttLabels>> = { en, ar, fr, de };
+const LATER: Partial<Record<Locale, () => Promise<Partial<Record<Locale, GanttLabels>>>>> = {
+  tr: () => import('./locales/tr'),
+  fa: () => import('./locales/fa'),
+  ur: () => import('./locales/ur'),
+  es: () => import('./locales/es'),
+};
+
+/** The timeline's words in `locale`, fetched where they come in a chunk of their own; English where they cannot be. */
+export async function ganttWordsReady(locale: Locale): Promise<void> {
+  const load = LATER[locale];
+  if (!load || GANTT_LABELS[locale]) return;
+  try {
+    GANTT_LABELS[locale] = (await load())[locale];
+  } catch {
+    // Their chunk could not be fetched: the timeline speaks English rather than nothing.
+  }
+}
 
 /** The timeline's words in a page's language, the app's own over them. */
 export function ganttLabels(locale: Locale, own?: Partial<GanttLabels>): GanttLabels {

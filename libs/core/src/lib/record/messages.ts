@@ -1,4 +1,6 @@
 import { LANGUAGES } from './locales/all';
+import { LATER } from './locales/later';
+import { tableInChunks, wordsInChunks } from './words-chunks';
 import { labelAt } from './record-words';
 import type { DateOrder } from './input-rules';
 
@@ -192,7 +194,11 @@ export interface Messages {
   dateOrder?: DateOrder;
 }
 
-export type Locale = 'en' | 'ar' | 'de' | 'fr';
+/**
+ * A language Fieldia has its own words in. Turkish, Persian, Urdu and Spanish are machine-assisted and not yet reviewed
+ * by a native speaker (0.31).
+ */
+export type Locale = 'en' | 'ar' | 'de' | 'fr' | 'tr' | 'fa' | 'ur' | 'es';
 
 /** A message every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
 export type MessageKey = Exclude<keyof Messages, `${string}Noun` | 'lowerLabels' | 'dateOrder'>;
@@ -307,12 +313,15 @@ const en: Messages = {
 };
 
 /**
- * The messages in every language Fieldia has. This package holds all four;
- * the one-tag script holds English alone, and a page adds another language
+ * The messages in every language Fieldia has. This package holds all eight
+ * (Turkish, Persian, Urdu and Spanish machine-assisted, not yet reviewed by a
+ * native speaker); the one-tag script holds English alone, and a page adds another language
  * with that language's script (fieldia.ar.js, …), through the viewer's
  * `addLanguage`.
  */
-export const MESSAGES: Record<Locale, Messages> = { en, ...LANGUAGES };
+export const MESSAGES = { en, ...LANGUAGES } as Record<Locale, Messages>;
+// Turkish, Persian, Urdu and Spanish: each in a chunk of its own, there once asked for (`wordsReady`), English till it came.
+wordsInChunks(tableInChunks(MESSAGES, LATER));
 
 /** The blanks of a message a field's label fills: its own, a table's column, a range's start and end. */
 const LABELS = ['label', 'column', 'start', 'end'];

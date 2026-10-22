@@ -102,7 +102,7 @@ mountViewer(host, {
   <li><strong>Safe to show.</strong> Message HTML is cleaned before it is shown — no scripts, no event handlers. What people type is posted as escaped text, a paragraph for each block.</li>
   <li><strong>Its own keys.</strong> <kbd>Ctrl</kbd>+<kbd>Enter</kbd> in the composer sends the message; it does not save the record around it. <kbd>Escape</kbd> closes the composer, or the list of people first.</li>
   <li><strong>Nothing in a form submits.</strong> Every button is a plain button, so a reaction inside a form never sends the form.</li>
-  <li><strong>Four languages</strong>, as Fieldia's own words are: ${c('locale')} and ${c('labels')}, as the viewer takes them.</li>
+  <li><strong>Eight languages</strong>, as Fieldia's own words are (Turkish, Persian, Urdu and Spanish machine-assisted, not yet reviewed by a native speaker): ${c('locale')} and ${c('labels')}, as the viewer takes them.</li>
 </ul>
 `,
 };

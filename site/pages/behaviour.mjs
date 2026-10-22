@@ -68,7 +68,7 @@ async save(request) {
 <p>A record its data source says this person may only read (${c('can: { edit: false }')}) is locked the same way, and stays so: no Edit, no Save — in a dialog no Save &amp; Close, its Discard a Close — no button whose steps save, and a line over the record saying why. See <a href="/data/#permissions">what this person may do</a>.</p>
 
 <h2 id="translate">In your app's own words</h2>
-<p>Fieldia's own words come in four languages. A page's words — labels, help, choices, titles, buttons, messages — can go through your app's translator, for apps that keep translations by text or by key. Record data never does.</p>
+<p>Fieldia's own words come in eight languages (Turkish, Persian, Urdu and Spanish machine-assisted, not yet reviewed by a native speaker). A page's words — labels, help, choices, titles, buttons, messages — can go through your app's translator, for apps that keep translations by text or by key. Record data never does.</p>
 ${code(
   'ts',
   `

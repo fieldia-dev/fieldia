@@ -20,7 +20,7 @@ const gzippedKB = (name) => gzipSync(readFileSync(new URL(name, BUNDLE)), { leve
 /** The quoted names of a `const NAME = [ … ]` in a source file. */
 const listed = (path, name) => [...(new RegExp(`const ${name}\\b[^=]*= \\[([^\\]]*)\\]`).exec(text(path))?.[1] ?? '').matchAll(/'([^']+)'/g)].map((m) => m[1]);
 
-const LANGUAGE_ADD_ONS = ['ar', 'de', 'fr'];
+const LANGUAGE_ADD_ONS = ['ar', 'de', 'fr', 'tr', 'fa', 'ur', 'es'];
 const addOns = LANGUAGE_ADD_ONS.map((code) => gzippedKB(`fieldia.${code}.js`));
 const parts = readdirSync(BUNDLE)
   .filter((name) => /^fieldia\.[a-z]+\.js$/.test(name))

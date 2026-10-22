@@ -1,0 +1,29 @@
+import type { DesignerWords } from '../../designer-words';
+
+/** The designer's words in Turkish: Try it — the page working as people will use it, its bar, Find anything's ways in, and the drawer of data and problems under it. UNREVIEWED: machine-assisted, not yet reviewed by a native speaker. */
+export const tryIt: DesignerWords['tryIt'] = {
+  design: 'Tasarla',
+  tryIt: 'Dene',
+  modes: 'Sayfayı tasarlayın ya da deneyin',
+  tryThePage: 'Sayfayı dene',
+  width: 'Genişlik',
+  sizes: { desktop: 'Masaüstü', tablet: 'Tablet', phone: 'Telefon' },
+  note: 'Sayfa, kişilerin kullanacağı gibi çalışır. Burada yazılan hiçbir şey saklanmaz.',
+  language: 'Dil',
+  wordsIn: 'Metinlerin dili',
+  backToDesigning: 'Tasarıma dön',
+  asPeopleWillUseIt: 'kişilerin kullanacağı gibi',
+  atPhoneWidth: 'Telefon genişliğinde dene',
+  inArabic: 'Arapça olarak, sağdan sola dene',
+  drawer: 'Veriler ve sorunlar',
+  data: 'Veriler',
+  problems: 'Sorunlar',
+  toAnswer: '{n} yanıt bekliyor',
+  copyData: 'Verileri kopyala',
+  answersAsJson: 'JSON olarak yanıtlar',
+  nothingInTheWay: 'Bunu göndermeye engel bir şey yok.',
+  show: 'Göster',
+  hide: 'Gizle',
+  copied: 'Kopyalandı.',
+  selected: 'Seçildi: klavyeyle kopyalayın.',
+};

@@ -1,4 +1,5 @@
 import type { Page } from '@fieldia/core';
+import { firstWeekday } from '@fieldia/core';
 import type { ChatterMessage, TrackedChange } from './source';
 
 /**
@@ -56,17 +57,8 @@ export function historyEntries(messages: readonly ChatterMessage[], stateField?:
     .sort((a, b) => b.at.getTime() - a.at.getTime());
 }
 
-/** The first day of the week where `locale` is spoken, as `Date.getDay()` counts: Sunday 0. Monday where it cannot tell. */
-export function firstDayOfWeek(locale: string): number {
-  try {
-    const found = new Intl.Locale(locale) as Intl.Locale & { getWeekInfo?: () => { firstDay: number }; weekInfo?: { firstDay: number } };
-    const info = found.getWeekInfo?.() ?? found.weekInfo;
-    if (info) return info.firstDay % 7;
-  } catch {
-    // A runtime without week information: Monday, as ISO 8601 has it.
-  }
-  return 1;
-}
+/** The week's first day, as `Date.getDay()` counts (Sunday 0): CLDR's for the reader's region where their browser asks for `locale`'s language with one, else where it is most spoken (@fieldia/core's `firstWeekday`). */
+export const firstDayOfWeek = (locale: string): number => firstWeekday(locale);
 
 /** Which group by age a moment falls in, seen from `now`: today, yesterday, this week, last week, this month, or older. */
 export function ageOf(at: Date, now: Date, firstDay = 1): HistoryAge {

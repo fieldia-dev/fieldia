@@ -1,0 +1,46 @@
+import type { DesignerWords } from '../../designer-words';
+
+/**
+ * The designer's words in Farsi: the words the designer writes into a page as a part is made — a new question's label,
+ * its first option, a new page's or section's name — from then on the page's own, to be typed over.
+ * UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+ */
+export const defaults: DesignerWords['defaults'] = {
+  untitledQuestion: 'پرسش بی‌عنوان',
+  option: (n) => `گزینهٔ ${n}`,
+  row: (n) => `ردیف ${n}`,
+  column: (n) => `ستون ${n}`,
+  page: (n) => `صفحهٔ ${n}`,
+  section: (n) => `بخش ${n}`,
+  tab: (n) => `زبانهٔ ${n}`,
+  name: 'نام',
+  description: 'توضیح',
+  quantity: 'تعداد',
+  draft: 'پیش‌نویس',
+  confirmed: 'تأییدشده',
+  done: 'انجام‌شده',
+  newButton: 'دکمهٔ جدید',
+  counter: 'شمارنده',
+  newMenuAction: 'اقدام جدید',
+  newSubmenu: 'منوی جدید',
+  newReport: 'گزارش',
+  badge: 'نشان',
+  ribbon: 'روبان',
+  alert: 'نکته‌ای که باید دربارهٔ این رکورد بدانید.',
+  noneOfThese: 'هیچ‌کدام از این‌ها',
+  newGroup: 'گروه جدید',
+  newMap: 'نقشه',
+  you: 'شما',
+  left: 'چپ',
+  right: 'راست',
+  first: 'اول',
+  second: 'دوم',
+  newHeading: 'سرعنوان جدید',
+  helpText: 'توضیحی که به افراد در پر کردن این فیلد کمک می‌کند.',
+  button: 'دکمه',
+  npsStart: 'اصلاً محتمل نیست',
+  npsEnd: 'بسیار محتمل است',
+  priorityNone: 'عادی',
+  priorityLevels: ['بالا', 'بسیار بالا'],
+  dotStates: ['در حال انجام', 'متوقف', 'آماده'],
+};

@@ -1,4 +1,4 @@
-import { clocksSkip, dayIn, fill, instantsAt, wallClock, wallOf, wallTime, type Locale, type Value } from '@fieldia/core';
+import { clocksSkip, dayIn, fill, firstWeekday, instantsAt, wallClock, wallOf, wallTime, dayTag, type Locale, type Value } from '@fieldia/core';
 import { isoWeek, restingText, zoneName, zoneOf } from './date-text';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { rightToLeft, setHidden, setText } from './kind-parts';
@@ -8,9 +8,13 @@ import { openOnClick } from './quiet';
 /**
  * A calendar beside a date: Fieldia's own date box has one, with the week
  * numbers when the person needs them (`options.weekNumbers` on a date or
- * date-and-time node). The ARIA date-picker dialog: a grid of days, Monday
- * first, an ISO 8601 week number at the start of each row when asked, arrow
- * keys by day and week (mirrored right to left), PageUp and PageDown by
+ * date-and-time node). The ARIA date-picker dialog: a grid of days from the
+ * week's first day where the page is read (`firstWeekday`: Sunday for an
+ * English page read in the United States, Saturday in Egypt, Monday in
+ * Britain), or Monday first with an ISO 8601 week number at the start of each
+ * row when asked (an ISO week is Monday's to Sunday's), arrow
+ * keys by day and week (mirrored right to left), Home and End to the row's
+ * first and last day, PageUp and PageDown by
  * month, Enter to pick, Escape to close. A day past the field's limits is
  * drawn faint, and picking it says why under the month, and picks nothing. A
  * pick says so: a bubbling `fd-picked` event, its `detail.value` the value
@@ -27,7 +31,7 @@ import { openOnClick } from './quiet';
 
 /** How a calendar is drawn, and what it keeps to. */
 export interface CalendarOptions {
-  /** ISO week numbers at the start of each row: shown unless false. */
+  /** ISO week numbers at the start of each row, each row an ISO week (Monday first): shown unless false. */
   weekNumbers?: boolean;
   /** Why a day — as the field would hold it — may not be picked (before the earliest, after the latest, a day of the week it may not fall on), in words; undefined when it may. */
   refuse?: (value: string) => string | undefined;
@@ -116,7 +120,7 @@ function dayOf(kind: 'date' | 'datetime', value: Value | undefined, zone?: strin
 export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date' | 'datetime', options: CalendarOptions = {}): Widget {
   const { form, name, id, document: doc, locale = 'en' as Locale } = context;
   const labels: WidgetLabels = context.labels ?? WIDGET_LABELS.en;
-  const lang = locale === 'en' ? 'en-GB' : locale;
+  const lang = dayTag(locale);
   const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const weekdayShort = weekdayHead(lang);
@@ -174,6 +178,10 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   note.hidden = true;
   dialog.append(head, grid, note);
   const weeks = options.weekNumbers !== false;
+  // The week's first day where the page is read; Monday where each row is an ISO week, its number before it.
+  const firstDay = weeks ? 1 : firstWeekday(locale, form.page);
+  /** How many days a day is past its row's first. */
+  const intoWeek = (day: Date) => (day.getDay() - firstDay + 7) % 7;
 
   const element = options.into ?? doc.createElement('span');
   element.classList.add('fd-date-pick');
@@ -250,7 +258,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
     title.textContent = label;
     dialog.setAttribute('aria-label', label);
     const first = new Date(focused.getFullYear(), focused.getMonth(), 1);
-    const start = addDays(first, -((first.getDay() + 6) % 7)); // back to Monday
+    const start = addDays(first, -intoWeek(first)); // back to the week's first day
     const headRow = doc.createElement('tr');
     if (weeks) {
       const weekHead = doc.createElement('th');
@@ -322,8 +330,8 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
       ArrowDown: () => addDays(day, 7),
       PageUp: () => addMonths(day, -1),
       PageDown: () => addMonths(day, 1),
-      Home: () => addDays(day, -((day.getDay() + 6) % 7)),
-      End: () => addDays(day, 6 - ((day.getDay() + 6) % 7)),
+      Home: () => addDays(day, -intoWeek(day)),
+      End: () => addDays(day, 6 - intoWeek(day)),
     };
     if (moves[event.key]) {
       event.preventDefault();

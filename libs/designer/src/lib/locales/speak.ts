@@ -5,26 +5,30 @@
  * business software shows them.
  */
 
+/** The languages the designer's words are written in. */
+export type Speaker = 'en' | 'ar' | 'tr' | 'fa' | 'ur' | 'es';
+
 /** A count's words for each plural form the language has: Arabic has six (zero, one, two, few, many, other), English two. `#` is the number. */
 export type PluralForms = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
 
 const rules = new Map<string, Intl.PluralRules>();
 
 /** The words for `n` in the form the language takes for it, `#` written as the number. */
-export function plural(locale: 'en' | 'ar', n: number, forms: PluralForms): string {
+export function plural(locale: Speaker, n: number, forms: PluralForms): string {
   let rule = rules.get(locale);
   if (!rule) rules.set(locale, (rule = new Intl.PluralRules(locale)));
   return (forms[rule.select(n)] ?? forms.other).replaceAll('#', String(n));
 }
 
 /** A number in Latin digits, with the language's separators. */
-export function number(locale: 'en' | 'ar', n: number): string {
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-u-nu-latn' : 'en', { maximumFractionDigits: 20 }).format(n);
+export function number(locale: Speaker, n: number): string {
+  return new Intl.NumberFormat(locale === 'en' ? 'en' : `${locale}-u-nu-latn`, { maximumFractionDigits: 20 }).format(n);
 }
 
 /**
- * A name in a sentence of Arabic words: in guillemets, and isolated, so a
- * name written left to right keeps its own order and its marks stay at its ends.
+ * A name in a sentence of Arabic words — or Persian or Urdu ones: in guillemets,
+ * and isolated, so a name written left to right keeps its own order and its
+ * marks stay at its ends.
  */
 export const quoteAr = (name: string): string => `«\u2068${name}\u2069»`;
 
@@ -32,6 +36,6 @@ export const quoteAr = (name: string): string => `«\u2068${name}\u2069»`;
 export const ltr = (text: string | number): string => `\u2066${text}\u2069`;
 
 /** Several things said as one, the language's way: "A, B and C", "أ وب وج". */
-export function listOf(locale: 'en' | 'ar', items: readonly string[], join: 'and' | 'or'): string {
+export function listOf(locale: Speaker, items: readonly string[], join: 'and' | 'or'): string {
   return new Intl.ListFormat(locale, { type: join === 'and' ? 'conjunction' : 'disjunction' }).format(items);
 }

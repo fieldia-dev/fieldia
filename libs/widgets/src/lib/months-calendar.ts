@@ -1,4 +1,4 @@
-import { hijriWords, type Locale } from '@fieldia/core';
+import { hijriWords, dayTag, type Locale } from '@fieldia/core';
 import type { CalendarHost, CalendarKind } from './calendar';
 import { hijriOf } from './hijri';
 import { wordsFor } from './kind-parts';
@@ -21,8 +21,8 @@ export function periodCalendar(grain: 'month' | 'year', doc: Document, labels: W
   installMonthsStyles(doc);
   const words = wordsFor(labels, locale);
   const years = grain === 'year';
-  const short = new Intl.DateTimeFormat(lang(locale), { month: 'short', numberingSystem: 'latn' });
-  const long = new Intl.DateTimeFormat(lang(locale), { month: 'long', year: 'numeric', numberingSystem: 'latn' });
+  const short = new Intl.DateTimeFormat(dayTag(locale), { month: 'short', numberingSystem: 'latn' });
+  const long = new Intl.DateTimeFormat(dayTag(locale), { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   /** A month or a year moved by `n`. */
   const shift = (at: Date, n: number) => (years ? new Date(at.getFullYear() + n, 0, 1) : new Date(at.getFullYear(), at.getMonth() + n, 1));
   const pad = (n: number) => String(n).padStart(2, '0');

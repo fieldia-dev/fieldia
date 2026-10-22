@@ -298,8 +298,11 @@ export interface AzureMapsOptions {
   fetch?: Fetch;
 }
 
-/** Azure lists the languages it draws; it refuses any other tag, `ar-001` among them. */
-const AZURE_LANGUAGE: Record<Locale, string> = { en: 'en-US', ar: 'ar', fr: 'fr-FR', de: 'de-DE' };
+/**
+ * Azure lists the languages it draws; it refuses any other tag, `ar-001` among them. It draws neither Persian nor Urdu:
+ * there, each place's own name in its own script ("NGT", Neutral Ground Truth).
+ */
+const AZURE_LANGUAGE: Record<Locale, string> = { en: 'en-US', ar: 'ar', fr: 'fr-FR', de: 'de-DE', tr: 'tr-TR', fa: 'NGT', ur: 'NGT', es: 'es-ES' };
 const AZURE_TILESET: Record<BaseMap | 'traffic', string> = { road: 'microsoft.base.road', dark: 'microsoft.base.darkgrey', satellite: 'microsoft.imagery', traffic: 'microsoft.traffic.relative.main' };
 
 /** Microsoft Azure Maps: road, dark and satellite map images, live traffic, credits for the view, and address search. */

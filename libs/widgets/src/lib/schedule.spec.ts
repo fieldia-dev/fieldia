@@ -109,9 +109,12 @@ describe("a week's opening hours", () => {
 
   it('says the week in words, days in a row with the same hours together', () => {
     const week = { '1': [['09:00', '17:00']], '2': [['09:00', '17:00']], '3': [['09:00', '17:00']], '6': [['10:00', '14:00']] };
-    expect(hoursWords(week, 'en', WIDGET_LABELS.en)).toBe('Mon–Wed 09:00–17:00 · Thu–Fri closed · Sat 10:00–14:00 · Sun closed');
+    expect(hoursWords(week, 'en', WIDGET_LABELS.en, 1)).toBe('Mon–Wed 09:00–17:00 · Thu–Fri closed · Sat 10:00–14:00 · Sun closed');
     expect(hoursWords({}, 'en', WIDGET_LABELS.en)).toBe('Closed every day');
     expect(hoursWords(week, 'en', WIDGET_LABELS.en, 6)).toBe('Sat 10:00–14:00 · Sun closed · Mon–Wed 09:00–17:00 · Thu–Fri closed');
+    // Unless it is told, from the week's first day where it is read: jsdom's reader asks for en-US, a German page Germany's.
+    expect(hoursWords(week, 'en', WIDGET_LABELS.en)).toBe('Sun closed · Mon–Wed 09:00–17:00 · Thu–Fri closed · Sat 10:00–14:00');
+    expect(hoursWords(week, 'de', WIDGET_LABELS.de)).toMatch(/^Mo\.?–Mi/);
   });
 
   it('finds a shift ending before it starts, and two that overlap', () => {
@@ -154,5 +157,35 @@ describe("a week's opening hours", () => {
     return source.slots?.({ model: 'visit', field: 'at', recordId: null, schedule: 'branch', from: '2026-11-02', to: '2026-11-02', timeZone: 'UTC', length: 30, values: {} }).then((found) => {
       expect(found.days['2026-11-02'].free).toEqual(['2026-11-02T09:00:00.000Z', '2026-11-02T09:30:00.000Z']);
     });
+  });
+});
+
+describe('a week drawn from its first day where the page is read', () => {
+  afterEach(() => jest.restoreAllMocks());
+  const READERS = [
+    [['en-EG', 'en'], '6', 'SA'],
+    [['en-GB'], '1', 'MO'],
+    [['en-US', 'en'], '7', 'SU'],
+  ] as const;
+
+  it("a week's hours and a repeat's days: an English page read in Cairo from Saturday, in London from Monday, in New York from Sunday", async () => {
+    for (const [languages, hoursFirst, repeatFirst] of READERS) {
+      jest.spyOn(navigator, 'languages', 'get').mockReturnValue([...languages]);
+      const hours = await mount('hours');
+      const sessions = await mount('sessions', { sessions: 'FREQ=WEEKLY;BYDAY=TU,TH' });
+      const firstOf = (el: HTMLElement, selector: string) => el.querySelector<HTMLElement>(selector)?.dataset['day'];
+      expect({ languages, hours: firstOf(hours.el, '.fd-hours-day'), repeat: firstOf(sessions.el, '.fd-repeat-day') }).toEqual({ languages, hours: hoursFirst, repeat: repeatFirst });
+      // The rule keeps RRULE's own order whatever the order its days are offered in.
+      expect(sessions.value()).toBe('FREQ=WEEKLY;BYDAY=TU,TH');
+    }
+  });
+
+  it("the field's weekStart before the reader's", async () => {
+    jest.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
+    const node = (page.layout as { children: FieldNode[] }).children.find((one) => one.field === 'hours') as FieldNode;
+    const form = createForm({ page });
+    const widget = createWidget({ form, name: 'hours', field: page.fields['hours'] as Field, node: { ...node, options: { weekStart: 1 } }, id: 'fd-hours', document, labels: WIDGET_LABELS.en });
+    widget.update({ value: null, values: {}, readonly: false, required: false, invalid: false });
+    expect(widget.element.querySelector<HTMLElement>('.fd-hours-day')?.dataset['day']).toBe('1');
   });
 });

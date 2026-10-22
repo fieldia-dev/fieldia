@@ -1,0 +1,110 @@
+import type { AddressLabels } from '../address-labels';
+import type { FormMapLabels, ListMapLabels, MapLabels } from '../labels';
+
+/**
+ * The maps' words in Urdu: every map's own, a list's map's and a form's map's. UNREVIEWED: machine-assisted, not yet
+ * reviewed by a native speaker.
+ *
+ * A place is جگہ, the reader's location مقام, a pin نشان, an area علاقہ. Key names (Enter, Escape, Tab, Ctrl) stay as
+ * their keys are printed.
+ */
+export const map: MapLabels = {
+  mapOf: '{label}، نقشہ',
+  mapKeys: 'تیر والی کلیدوں سے نقشہ ہلائیں۔ پلس اور مائنس سے زوم کریں۔',
+  placeKeys: 'مقام کو نقشے کے مرکز میں رکھنے کے لیے Enter دبائیں۔',
+  zoomIn: 'زوم ان',
+  zoomOut: 'زوم آؤٹ',
+  search: 'پتہ تلاش کریں',
+  searching: 'تلاش جاری ہے…',
+  noResults: 'کوئی پتہ نہیں ملا',
+  searchFailed: 'تلاش کا جواب نہیں آیا۔ دوبارہ کوشش کریں۔',
+  myLocation: 'میرا مقام',
+  locating: 'آپ کا مقام تلاش کیا جا رہا ہے…',
+  locationBlocked: 'یہ سائٹ آپ کا مقام نہیں پوچھ سکتی۔',
+  locationFailed: 'آپ کا مقام نہیں مل سکا۔',
+  locatedWithin: 'آپ کے مقام سے تقریباً {distance} کے اندر رکھا گیا۔ نشان کو صحیح جگہ پر گھسیٹیں۔',
+  kilometres: '{n} کلومیٹر',
+  metres: '{n} میٹر',
+  clear: 'صاف کریں',
+  latitude: 'عرض بلد',
+  longitude: 'طول بلد',
+  notACoordinate: 'کوآرڈینیٹ درست نہیں',
+  coordinateRange: '{label}: {min} سے {max} تک کوئی عدد',
+  polygon: 'کثیر الاضلاع',
+  box: 'مستطیل',
+  circle: 'دائرہ',
+  drawPolygon: 'نقطے شامل کرنے کے لیے کلک کریں۔ ختم کرنے کے لیے پہلے نقطے پر کلک کریں، ڈبل کلک کریں یا Enter دبائیں۔',
+  drawBox: 'مستطیل بنانے کے لیے نقشے پر گھسیٹیں۔',
+  drawCircle: 'دائرہ بنانے کے لیے مرکز سے گھسیٹیں۔',
+  points: '{n} نقطے',
+  finish: 'ختم کریں',
+  cancel: 'منسوخ کریں',
+  chooseArea: 'علاقہ منتخب کریں',
+  shapeDrawn: 'علاقہ بنا دیا گیا۔',
+  shapeCleared: 'علاقہ صاف کر دیا گیا۔',
+  ctrlZoom: 'نقشہ زوم کرنے کے لیے Ctrl + اسکرول استعمال کریں',
+  cmdZoom: 'نقشہ زوم کرنے کے لیے ⌘ + اسکرول استعمال کریں',
+  twoFingers: 'نقشہ ہلانے کے لیے دو انگلیاں استعمال کریں',
+  point: 'نقطہ {n}',
+  centre: 'مرکز',
+  edge: 'کنارہ',
+  gripKeys: 'تیر والی کلیدوں سے اسے ہلائیں۔',
+  drawKeys: 'کی بورڈ سے: Space نقشے کے مرکز میں نقطہ رکھتا ہے، Enter ختم کرتا ہے، Backspace آخری نقطہ واپس لیتا ہے، Escape روکتا ہے۔',
+  addPoint: 'یہاں نقطہ شامل کرنے کے لیے گھسیٹیں',
+  placeKind: 'مقام',
+  areaKind: 'علاقہ',
+  mapsGroup: 'نقشے',
+  settingMyLocation: '“میرا مقام” بٹن',
+  settingSearch: 'پتے کی تلاش',
+  settingHeight: 'نقشے کی اونچائی',
+  heightSmall: 'چھوٹی',
+  heightMedium: 'درمیانی',
+  heightLarge: 'بڑی',
+  settingShapes: 'اشکال',
+  settingAddress: 'پتے کے لیے فیلڈ',
+  settingNowhere: 'کہیں نہیں',
+  satellite: 'سیٹلائٹ',
+  traffic: 'ٹریفک',
+  fullScreen: 'پوری اسکرین',
+  leaveFullScreen: 'پوری اسکرین سے باہر نکلیں',
+  measure: 'فاصلہ ناپیں',
+  measureHint: 'راستے پر نقطوں پر کلک کریں؛ ختم کرنے کے لیے ڈبل کلک کریں یا Enter دبائیں۔ Escape صاف کرتا ہے۔',
+  measured: 'راستے کی لمبائی {distance} ہے۔',
+  areaValue: '{name}: {value}',
+  areasNone: 'کوئی نہیں',
+};
+
+export const listMap: ListMapLabels = {
+  pinKeys: 'Tab سے ایک نشان سے دوسرے پر جائیں۔ Enter نشان کا کارڈ کھولتا ہے؛ Escape اسے بند کرتا ہے۔',
+  searchThisArea: 'اس علاقے میں تلاش کریں',
+  searchThisAreaCount: '{label} ({n})',
+  inThisArea: 'اس علاقے میں',
+  openRecord: 'کھولیں',
+  choose: 'منتخب کریں',
+  closeCard: 'بند کریں',
+  cluster: '{n} یہاں ہیں۔ انہیں دیکھنے کے لیے زوم ان کریں۔',
+  legendBubble: 'کتنے ایک دوسرے کے قریب ہیں: الگ کرنے کے لیے زوم ان کریں',
+  crowd: 'ایک جگہ پر {n}',
+  crowdMore: 'اور یہاں {n} مزید',
+  notOnMap: '{n} بغیر مقام کے، نقشے پر نہیں',
+  mapShowsFirst: 'نقشہ {total} میں سے {n} دکھاتا ہے۔ باقی کے لیے زوم ان کریں اور اس علاقے میں تلاش کریں۔',
+  mapFailed: 'نقشہ ریکارڈ لوڈ نہیں کر سکا۔',
+  mapFailedNoun: 'نقشہ {records} لوڈ نہیں کر سکا۔',
+  drawArea: 'تلاش کے لیے علاقہ بنائیں',
+  inDrawnArea: 'بنائے گئے علاقے میں',
+  inRegion: '{name} میں',
+  nearestFirst: 'قریب ترین پہلے',
+  nearestFromMiddle: 'نقشے کے وسط کے قریب ترین پہلے: آپ کا مقام نہیں دیا گیا۔',
+  heatNote: 'دور سے ہیٹ میپ: ہر ایک کو دیکھنے کے لیے گلیوں کی سطح تک زوم ان کریں۔',
+};
+
+export const formMap: FormMapLabels = {
+  map: 'نقشہ',
+  lastSeen: 'آخری بار دیکھا گیا: {time}',
+  follow: 'نظر میں رکھیں',
+  routeFailed: 'راستہ نہیں مل سکا۔',
+  crowdHere: '{n} یہاں: {names}۔ انہیں دیکھنے کے لیے زوم ان کریں۔',
+};
+
+/** An address field's words (its suggestions' own come with their code: address-suggest.ts). */
+export const address: Omit<AddressLabels, 'notPlaced' | 'placedNear' | 'locateFailed'> = { suggested: 'تجاویز: {n}', addressKind: 'پتے کی تلاش', settingPlace: 'مقام کے لیے فیلڈ', settingParts: 'اجزا کے لیے فیلڈ', settingCountry: 'پتوں کا ملک', anywhere: 'کوئی بھی ملک' };

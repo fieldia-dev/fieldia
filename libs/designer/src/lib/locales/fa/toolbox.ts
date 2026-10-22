@@ -1,0 +1,53 @@
+/**
+ * The designer's words in Farsi: the editor's left side — the toolbox, its tabs (Add, Outline, Data), and the Data
+ * pane. UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+ */
+import type { DesignerWords } from '../../designer-words';
+import { plural } from '../speak';
+
+export const toolbox: DesignerWords['toolbox'] = {
+  find: 'یافتن فیلد یا نوع',
+  nothing: 'چیزی با این نام نیست.',
+  addAField: 'افزودن فیلد',
+  addNew: (kind) => `${kind}: افزودن فیلد جدید`,
+  fromTheModel: 'از مدل داده',
+  inTheModel: (label, stored) => `${label}: از قبل در مدل داده هست، ذخیره‌شده به‌صورت ${stored}`,
+  layout: 'چیدمان',
+  tabs: 'زبانه‌ها',
+  tabsTip: 'زبانه‌ها: صفحه‌هایی از بخش‌ها روی برگهٔ رکورد',
+  section: 'بخش',
+  sectionTip: 'بخش: گروهی از فیلدها با عنوان',
+  blocks: {
+    group: ['گروه', 'گروهی با عنوان، با ستون‌های خودش'],
+    side: ['کنار هم', 'دو گروه در کنار یکدیگر'],
+    tabs: ['زبانه‌ها', 'صفحه‌هایی از گروه‌ها، که هر بار یکی نمایش داده می‌شود'],
+    heading: ['سرعنوان', 'عنوانی میان اجزا'],
+    text: ['متن', 'یک پاراگراف یا یادداشت'],
+    divider: ['جداکننده', 'خطی سراسری'],
+    spacer: ['فاصله‌گذار', 'فضای خالی، یا خانه‌ای خالی'],
+    image: ['تصویر', 'یک عکس یا لوگو'],
+    button: ['دکمه', 'ارسال، یا اقدامی دیگر'],
+    map: ['نقشه', 'مکان‌های رکورد، مسیری میان آن‌ها، و مکان خود خواننده'],
+  },
+  blockTip: (name, tip) => `${name}: ${tip}`,
+  add: 'افزودن',
+  outline: 'ساختار',
+  data: 'داده',
+  besideThePage: 'کنار صفحه',
+  railLabel: 'افزودن، ساختار و داده',
+  responses: 'پاسخ‌ها این‌گونه نگه‌داری می‌شوند:',
+  responsesModel: 'یک رکورد برای هر فرد، یک فیلد برای هر پرسش',
+  surveyFields: 'نظرسنجی فیلدهای خودش را می‌سازد: هر پرسشی که افزوده می‌شود فیلدی تازه است، پس همهٔ نوع‌ها ارائه می‌شوند.',
+  addAsColumn: 'افزودن به‌عنوان ستون',
+  addField: 'افزودن',
+  onThePage: 'در صفحه',
+  notUsed: 'استفاده‌نشده',
+  storedTitle: (label, stored) => `${label}: ${stored}`,
+  recordOnCanvas: 'رکورد روی بوم طراحی',
+  empty: 'خالی',
+  record: (n) => `رکورد ${n}`,
+  madeUp: 'یک رکورد ساختگی صفحه را پر می‌کند تا همان‌طور خوانده شود که با رکوردهای واقعی خوانده خواهد شد. هیچ چیز اینجا ذخیره نمی‌شود.',
+  listShows: 'این فهرست رکوردهای این مدل داده را نشان می‌دهد:',
+  pageShows: 'این صفحه رکوردهای این مدل داده را نشان می‌دهد:',
+  fieldCount: (all, onPage) => `${plural('fa', all, { one: '# فیلد', other: '# فیلد' })} · ${onPage} در این صفحه`,
+};

@@ -200,6 +200,11 @@ map.reload();        // your search changed
 map.destroy();
 ```
 
+Its words come in English, Arabic, German and French, and in Turkish, Persian,
+Urdu and Spanish — machine-assisted, not yet reviewed by a native speaker — each
+of those four in a chunk of its own, fetched where it is spoken: a viewer's maps
+are drawn once the page's language's words have come, and `mountListMap` waits
+for them too.
 Also `locale` (a tag; the document's language unless said), `sort`, `icons`,
 `isChosen` and `onChoose`, `actions` and `onAction`, `onSort` (Nearest first),
 and every setting `mapListViews` takes. Without `onSearch` the map offers no

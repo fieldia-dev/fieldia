@@ -1,0 +1,75 @@
+import type { DesignerWords } from '../../designer-words';
+import { ltr, quoteAr } from '../speak';
+
+const q = quoteAr;
+
+/**
+ * The designer's words in Farsi: a table's own rules and a field's tone, as the panel words them — what each column's
+ * cells do line by line, the lines' tones, the table's buttons, how it shows on a phone, and the widths a part is
+ * hidden at.
+ * UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+ */
+export const tables: DesignerWords['tables'] = {
+  tone: 'رنگ‌مایه',
+  lineRules: 'قاعده‌های سطرها',
+  tableButtons: 'دکمه‌های جدول',
+  table: 'جدول',
+  hiddenOn: 'پنهان در',
+  tones: { info: 'آبی', success: 'سبز', warning: 'کهربایی', danger: 'قرمز', muted: 'خاکستری' },
+  toneOf: 'رنگ‌مایه',
+  addTone: 'افزودن رنگ‌مایه',
+  toneHint: 'مقدار آن تا زمانی که شرطی برقرار است به رنگی نمایش داده می‌شود: نخستین شرطی که برقرار باشد.',
+  boldWhen: 'پررنگ در صورتی که',
+  when: 'در صورتی که',
+  whenPlaceholder: 'تعداد > تقاضا — نام یک فیلد را تایپ کنید، یا @',
+  removeTone: (n) => `برداشتن رنگ‌مایهٔ ${n}`,
+  linesTone: 'رنگ‌مایهٔ سطرها',
+  deletedOnlyWhen: 'سطرها فقط در صورتی حذف می‌شوند که',
+  linesHint: `شرط هر سطر فیلدهای خود آن سطر را می‌خواند، و رکورد را به‌عنوان والد: ${ltr('parent.state')}.`,
+  column: 'ستون',
+  hiddenOnLineWhen: 'خالی در یک سطر، در صورتی که',
+  readonlyWhen: 'فقط‌خواندنی در صورتی که',
+  requiredWhen: 'الزامی در صورتی که',
+  columnHiddenWhen: 'ستون پنهان در صورتی که',
+  columnHiddenHint: 'روی رکورد خوانده می‌شود، نه روی سطر: کل ستون پنهان می‌شود.',
+  badge: 'به‌صورت نشان',
+  shownAs: 'نمایش به‌صورت',
+  asItsType: 'همان‌گونه که نوعش نشان می‌دهد',
+  width: 'پهنا، بر حسب نویسه',
+  columnShownTo: 'ستون فقط نمایش داده می‌شود به',
+  onEachLine: 'در هر سطر',
+  forChosenLines: 'برای سطرهای انتخاب‌شده',
+  besideAdd: 'کنار «افزودن سطر»',
+  buttonWords: 'متن',
+  action: 'اقدام برنامه',
+  hiddenWhen: 'پنهان در صورتی که',
+  addButton: 'افزودن دکمه',
+  removeButton: (label) => `برداشتن ${q(label)}`,
+  newButton: 'دکمه',
+  lineOpens: 'سطر باز می‌کند',
+  opensFields: 'فیلدهای خود',
+  opensRecord: 'صفحهٔ خود',
+  opensForm: 'فرمی جداگانه',
+  onAPhone: 'در تلفن همراه',
+  rows: 'ردیف‌ها',
+  cardsOnPhone: 'کارت‌ها',
+  cardsAlways: 'همیشه کارت‌ها',
+  columnWidths: 'پهنای ستون‌ها',
+  shareWidth: 'تقسیم پهنا',
+  fitContent: 'به پهنای محتوا',
+  shrinkToFit: 'کوچک شدن برای جا شدن، با شکستن سرستون‌ها (یک شبکه)',
+  copyLine: 'کپی یک سطر',
+  linesOrder: 'ترتیب سطرها بر اساس',
+  linesOrderPlaceholder: 'is_done, manual_consumption desc, sequence',
+  widths: { narrow: 'تلفن همراه', medium: 'تبلت', wide: 'صفحه‌نمایش پهن' },
+  hiddenOnHint: 'تا زمانی که فرم به این پهنا است پنهان می‌ماند: تلفن همراه تا 520 پیکسل، تبلت تا 760 پیکسل.',
+  onlyTables: 'فقط جدول سطرها برای سطرها، دکمه‌ها و کارت‌هایش قاعده دارد',
+  notAColumn: (name) => `${q(name)} ستونی از این جدول نیست`,
+  widthRange: 'پهنا از 1 تا 200 نویسه است',
+  widgetUnsuited: (column, widget) => `${q(column)} را نمی‌توان به‌صورت ${widget} نمایش داد: آنچه آن نشان می‌دهد را نگه نمی‌دارد`,
+  buttonNeedsWords: 'دکمه به متن نیاز دارد',
+  notARole: (role) =>
+    `${q(role)} نام یک نقش نیست: حروف، رقم‌ها، نقطه و ${ltr('_')}، با ${ltr('!')} در آغاز برای پنهان کردن ستون از دارندگان آن نقش`,
+  tableChanged: (name) => `${q(name)}: قاعده‌های جدول آن تغییر کرد`,
+  toneChanged: (name) => `${q(name)}: رنگ‌مایهٔ آن تغییر کرد`,
+};

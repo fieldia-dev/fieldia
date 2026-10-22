@@ -6,7 +6,9 @@ People drag a record to move it, drag its end to stretch it, press an empty
 slot to make one, and move one from the keyboard with **Move to…**. A move is
 written through the data source's `save`, with **Undo**. It shares the list's
 search, filters and favourites, reads right to left, speaks English, Arabic,
-French and German, and its code loads only when a calendar is first shown.
+French and German — and Turkish, Persian, Urdu and Spanish, machine-assisted,
+not yet reviewed by a native speaker — and its code loads only when a calendar
+is first shown.
 
 ```sh
 npm install @fieldia/calendar
@@ -53,7 +55,7 @@ A list page with `calendar` offers **Calendar** beside its table:
 | `views` | The views offered, in order: `day`, `week`, `month`, `agenda`. All four unless said. |
 | `view` | The view it shows first: the first of `views` unless said. On a phone it opens on the agenda. |
 | `opens` | `calendar` opens the list on its calendar; `list` (unless said) on its table. |
-| `firstDay` | The week's first day, `0` Sunday to `6` Saturday: Saturday in Arabic, Monday in English, French and German unless said. |
+| `firstDay` | The week's first day, `0` Sunday to `6` Saturday: where CLDR starts it for the region unless said (`firstWeekday`): the page's own, else the reader's where their browser asks for the page's language with one (an `en` page read in `en-EG`: Saturday, `en-GB`: Monday), else where the language is most spoken: Saturday in Arabic and Persian, Sunday in English (`en`) and Urdu, Monday in German, French, Turkish and Spanish. |
 | `hours` | The hours the day and week show, `0` to `24`: 8 to 20 unless said. A record outside them stretches them. |
 | `slot` | The minutes a drag moves by and a slot holds: `15`, `30` (unless said) or `60`. |
 

@@ -8,6 +8,9 @@ import { clampBy, groupsOf, kindOf, linksOf, movedBy, shifted, stretches, tasksO
 import type { GanttSettings } from './settings';
 import { installGanttStyles } from './styles';
 
+/** Its words, fetched first where they come in a chunk of their own (Turkish, Persian, Urdu, Spanish). */
+export { ganttWordsReady } from './labels';
+
 const ALL_ZOOMS: GanttZoom[] = ['day', 'week', 'month'];
 /** A row's height and a group heading's, in pixels: the stylesheet's (styles.ts), which the arrows are drawn by. */
 const ROW = 36;
@@ -60,7 +63,7 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
   const now = () => toWall(settings.now?.() ?? new Date(), zone);
   const zooms = (spec.zooms?.length ? spec.zooms : ALL_ZOOMS).filter((z, i, all) => all.indexOf(z) === i);
   let zoom: GanttZoom = spec.zoom && zooms.includes(spec.zoom) ? spec.zoom : zooms.includes('week') ? 'week' : zooms[0];
-  const firstDay = firstDayOf(locale, spec.firstDay);
+  const firstDay = firstDayOf(locale, page, spec.firstDay);
   const limit = settings.limit ?? 500;
   const id = `fd-gantt-${++made}`;
   const rtl = () => element.closest('[dir]')?.getAttribute('dir') === 'rtl';

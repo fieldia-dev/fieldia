@@ -1,4 +1,4 @@
-import { instantsAt, isOwnZone, ownZone, readDate, readTime, stripMarks, wallClock, wallDay, wallOf, wallTime, zoneOffset, type DateOrder, type DateProblem, type DateRead, type Form, type Locale, type Value, type WallTime } from '@fieldia/core';
+import { instantsAt, isOwnZone, ownZone, readDate, readTime, stripMarks, wallClock, wallDay, wallOf, wallTime, zoneOffset, dayTag, type DateOrder, type DateProblem, type DateRead, type Form, type Locale, type Value, type WallTime } from '@fieldia/core';
 import { minuteDigitsWords, quoted, refusalHint } from './input-rules';
 import { boxPurpose, fillIn, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
@@ -18,7 +18,7 @@ export type DateKind = 'date' | 'datetime' | 'time';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 /** A language as Intl writes its dates: English as in Britain, day first, as Fieldia writes dates at rest. */
-const langOf = (locale: Locale) => (locale === 'en' ? 'en-GB' : locale);
+const langOf = (locale: Locale) => dayTag(locale);
 
 /**
  * The order a page types its dates in: day/month/year unless its look says otherwise. Every box that reads a date —
@@ -83,11 +83,11 @@ export function localOf(value: Value | undefined, kind: DateKind): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** A day written the page's way for typing: 13/10/2026, 13.10.2026 on a German page, 10/13/2026, 2026-10-13. */
+/** A day written the page's way for typing: 13/10/2026, 13.10.2026 on a German or Turkish page, 10/13/2026, 2026-10-13. */
 function typedDay(d: Pick<WallTime, 'year' | 'month' | 'day'>, order: DateOrder, locale: Locale): string {
   const [y, m, day] = [String(d.year).padStart(4, '0'), pad(d.month), pad(d.day)];
   if (order === 'ymd') return `${y}-${m}-${day}`;
-  const mark = locale === 'de' ? '.' : '/';
+  const mark = locale === 'de' || locale === 'tr' ? '.' : '/';
   return order === 'mdy' ? `${m}/${day}/${y}` : `${day}${mark}${m}${mark}${y}`;
 }
 

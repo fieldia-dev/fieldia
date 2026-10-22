@@ -1,0 +1,63 @@
+import type { DesignerWords } from '../../designer-words';
+import { plural } from '../speak';
+
+/**
+ * The designer's words in Farsi: the bar over both editors — the title, where the page stands, Undo, Checks, Publish
+ * and its versions, Find anything, Simple and Advanced.
+ * UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+ */
+export const bar: DesignerWords['bar'] = {
+  screenTitle: 'عنوان نما',
+  untitledScreen: 'نمای بی‌عنوان',
+  formTitle: 'عنوان فرم',
+  untitledForm: 'فرم بی‌عنوان',
+  versions: 'نسخه‌ها',
+  undo: 'واگرد',
+  redo: 'ازنو',
+  publish: 'منتشر کردن',
+  showChecks: 'نمایش بررسی‌ها',
+  publishHint: (version) => `نسخهٔ ${version}`,
+  openEarlier: 'باز کردن نسخهٔ پیشین',
+  versionsHint: 'نسخه‌ها',
+  findAnything: 'یافتن هر چیز',
+  findTitle: (keys) => `یافتن هر چیز · ${keys} یا /`,
+  draft: 'پیش‌نویس، هنوز منتشر نشده',
+  unpublished: 'تغییرات هنوز منتشر نشده‌اند',
+  published: (version) => `منتشرشده · نسخهٔ ${version}`,
+  version: (version, live, when) => `نسخهٔ ${version} · ${live ? 'فعال · ' : ''}${when}`,
+  versionsNote: 'انتخاب یک نسخه آن را پیش‌نویس می‌کند؛ واگرد آنچه را بود بازمی‌گرداند. تا زمانی که منتشر نشود، برای کاربران چیزی تغییر نمی‌کند.',
+  noVersions: 'هنوز چیزی منتشر نشده است: انتشار، نسخهٔ 1 را می‌سازد.',
+  checks: 'بررسی‌ها',
+  mustFix: 'باید اصلاح شود',
+  shouldFix: 'بهتر است اصلاح شود',
+  startHere: 'از اینجا شروع کنید',
+  checksDialog: 'بررسی‌ها پیش از انتشار',
+  toLookAt: (n) => plural('fa', n, { one: '# مورد برای بررسی پیش از انتشار', other: '# مورد برای بررسی پیش از انتشار' }),
+  allClear: 'همه‌چیز درست است',
+  nothingToFix: 'اینجا چیزی نیست که کاربران را متوقف کند یا برایشان نادرست خوانده شود.',
+  checksCount: (n) => `بررسی‌ها: ${plural('fa', n, { one: '# مورد برای بررسی', other: '# مورد برای بررسی' })}`,
+  checksClear: 'بررسی‌ها: همه‌چیز درست است',
+  andMore: (n) => plural('fa', n, { one: 'و # مورد دیگر', other: 'و # مورد دیگر' }),
+  mustFixFirst: 'نخست باید اصلاح شود',
+  keepEditing: 'ادامهٔ ویرایش',
+  publishVersion: (version) => `منتشر کردن نسخهٔ ${version}`,
+  publishFailed: 'انتشار ممکن نشد.',
+  close: 'بستن',
+  publishQuestion: (version) => `نسخهٔ ${version} منتشر شود؟`,
+  changesSince: (n, version) => `${plural('fa', n, { one: '# تغییر', other: '# تغییر' })} از نسخهٔ ${version}:`,
+  firstVersion: 'آنچه کاربران دریافت خواهند کرد:',
+  keepTheirs: (version) =>
+    `کسانی که در میانهٔ پر کردن آن هستند، نسخه‌ای را که با آن آغاز کرده‌اند نگه می‌دارند. نسخهٔ ${version} با یک کلیک، زیر وضعیت، در دسترس می‌ماند.`,
+  keepTheirsFirst: 'کسانی که در میانهٔ پر کردن آن هستند، نسخه‌ای را که با آن آغاز کرده‌اند نگه می‌دارند؛ نسخه‌های بعدی هرگز آن را برایشان تغییر نمی‌دهند.',
+  findPlaceholder: 'یافتن یک فیلد، یک نوع، یک تنظیم، یک اقدام…',
+  found: 'یافته‌ها',
+  nothingFound: 'چیزی با این نام نیست.',
+  settingChoice: (setting, choice) => `${setting}: ${choice}`,
+  settingHint: (kind, tab) => `${kind} · ${tab}`,
+  setting: 'تنظیم',
+  editingMode: 'حالت ویرایش',
+  simple: 'ساده',
+  advanced: 'پیشرفته',
+  simpleTitle: 'ساده: یک جزء را انتخاب کنید و در همان‌جا ویرایشش کنید',
+  advancedTitle: 'پیشرفته: اجزا را کنار، زیر یا میان دیگر اجزا رها کنید، پهناها را تنظیم کنید، چند جزء را انتخاب کنید',
+};

@@ -1,11 +1,11 @@
-import type { Locale, Messages } from '../messages';
+import type { Messages } from '../messages';
 import { ar } from './ar';
 import { de } from './de';
 import { fr } from './fr';
 
 /**
- * Every language besides English. The packages carry them all; the one-tag
- * script builds this module as an empty one and ships each language as its
- * own add-on script (tools/script-bundle.mjs).
+ * The languages besides English the packages carry at once. The one-tag script builds this module as an empty one and
+ * ships each language as its own add-on script (tools/script-bundle.mjs). Turkish, Persian, Urdu and Spanish come in
+ * chunks of their own, fetched where they are spoken (later.ts).
  */
-export const LANGUAGES: Record<Exclude<Locale, 'en'>, Messages> = { ar, de, fr };
+export const LANGUAGES: Record<'ar' | 'de' | 'fr', Messages> = { ar, de, fr };

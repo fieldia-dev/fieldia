@@ -1,4 +1,4 @@
-import { dayIn, isOwnZone, wallClock, wallOf, wallTime, type Locale, type SlotDay, type SlotsResult, type Value } from '@fieldia/core';
+import { dayIn, firstWeekday, isOwnZone, wallClock, wallOf, wallTime, dayTag, type Locale, type SlotDay, type SlotsResult, type Value } from '@fieldia/core';
 import { markedIn, plainDateWidget, restingText, zoneName, zoneOf } from './date-text';
 import { fillIn, maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { inPlural } from './labels';
@@ -21,7 +21,8 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  *
  * On the field's time zone's clock — its own, its page's, or the browser's —
  * its name said under the picker where the zone is not the browser's. Today
- * is that zone's day, and the days before it are closed.
+ * is that zone's day, and the days before it are closed. Each row a week from
+ * its first day where the page is read (`firstWeekday`).
  *
  * Keyboard first: the month is one stop, the arrows moving by day and week
  * (mirrored right to left), PageUp and PageDown by month, Home and End to the
@@ -48,10 +49,12 @@ function addMonths(d: Date, n: number) {
   const last = new Date(d.getFullYear(), d.getMonth() + n + 1, 0).getDate();
   return new Date(d.getFullYear(), d.getMonth() + n, Math.min(d.getDate(), last));
 }
-/** The Monday a month's first row starts on, and the Sunday its last ends on. */
-const monthGrid = (first: Date): [Date, Date] => {
+/** How many days a day is past the first of its week, the week starting on `firstDay` (0 Sunday … 6 Saturday). */
+const intoWeek = (day: Date, firstDay: number) => (day.getDay() - firstDay + 7) % 7;
+/** The day a month's first row starts on, and the day its last ends on: weeks from `firstDay`. */
+const monthGrid = (first: Date, firstDay: number): [Date, Date] => {
   const last = new Date(first.getFullYear(), first.getMonth() + 1, 0);
-  return [addDays(first, -((first.getDay() + 6) % 7)), addDays(last, 6 - ((last.getDay() + 6) % 7))];
+  return [addDays(first, -intoWeek(first, firstDay)), addDays(last, 6 - intoWeek(last, firstDay))];
 };
 /** A value a field depends on, as its free times are keyed by it: a link by its id. */
 const keyed = (value: unknown) => (value && typeof value === 'object' && 'id' in value ? (value as { id: unknown }).id : (value ?? null));
@@ -77,6 +80,8 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
   }
   installSlotsStyles(doc);
   const words = wordsFor(context.labels, locale);
+  // The week's first day where the page is read (`firstWeekday`), each row of the month from it.
+  const firstDay = firstWeekday(locale, form.page);
   const make = maker(doc);
   const options = node.options ?? {};
   const schedule = typeof options['schedule'] === 'string' ? options['schedule'] : undefined;
@@ -86,7 +91,7 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
   const endName = typeof end === 'string' && form.page.fields[end]?.type === 'datetime' ? end : null;
   const dependsOn = Array.isArray(options['dependsOn']) ? options['dependsOn'].filter((one): one is string => typeof one === 'string') : [];
   const zone = zoneOf(form, field);
-  const lang = locale === 'en' ? 'en-GB' : locale;
+  const lang = dayTag(locale);
   const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const shortName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', numberingSystem: 'latn' });
@@ -173,7 +178,7 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
     const had = months.get(key);
     if (had && had !== 'failed') return;
     months.set(key, 'asking');
-    const [from, to] = monthGrid(first);
+    const [from, to] = monthGrid(first, firstDay);
     form.findSlots(name, ask(keyOf(from), keyOf(to))).then(
       (result) => {
         take(result);
@@ -218,7 +223,7 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
     setAttr(grid, 'aria-label', label);
     const loaded = months.get(keyFor(month));
     setAttr(grid, 'aria-busy', loaded === 'asking' ? 'true' : null);
-    const [from, to] = monthGrid(month);
+    const [from, to] = monthGrid(month, firstDay);
     const today = todayKey();
     const head = make('tr', {});
     for (let i = 0; i < 7; i++) head.append(make('th', { scope: 'col', abbr: weekdayLong.format(addDays(from, i)) }, weekday(addDays(from, i))));
@@ -336,8 +341,8 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
       ArrowDown: () => addDays(day, 7),
       PageUp: () => addMonths(day, -1),
       PageDown: () => addMonths(day, 1),
-      Home: () => addDays(day, -((day.getDay() + 6) % 7)),
-      End: () => addDays(day, 6 - ((day.getDay() + 6) % 7)),
+      Home: () => addDays(day, -intoWeek(day, firstDay)),
+      End: () => addDays(day, 6 - intoWeek(day, firstDay)),
     };
     if (moves[event.key]) {
       event.preventDefault();

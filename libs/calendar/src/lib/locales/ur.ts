@@ -1,0 +1,58 @@
+import type { CalendarLabels } from '../labels';
+
+/**
+ * The calendar's words in Urdu. UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+ *
+ * The sentences in a page's own words for its records name `{record}` and `{records}` only where nothing agrees with
+ * them: "New {record}" says "{record} بنائیں" (make a {record}), since نیا / نئی would agree with the noun's gender.
+ */
+export const ur: CalendarLabels = {
+  calendar: 'کیلنڈر',
+  today: 'آج',
+  previous: { day: 'پچھلا دن', week: 'پچھلا ہفتہ', month: 'پچھلا مہینہ', agenda: 'پچھلا ہفتہ' },
+  next: { day: 'اگلا دن', week: 'اگلا ہفتہ', month: 'اگلا مہینہ', agenda: 'اگلا ہفتہ' },
+  views: { day: 'دن', week: 'ہفتہ', month: 'مہینہ', agenda: 'ایجنڈا' },
+  showAs: 'کیلنڈر کو اس لحاظ سے دکھائیں',
+  moveThrough: 'کیلنڈر میں آگے پیچھے جائیں',
+  newRecord: 'نیا',
+  newRecordNoun: '{record} بنائیں',
+  allDay: 'پورا دن',
+  time: 'وقت',
+  loadFailed: 'کیلنڈر لوڈ نہیں ہو سکا۔',
+  retry: 'دوبارہ کوشش کریں',
+  nothing: 'ان دنوں میں کچھ نہیں۔',
+  more: '+{n} مزید',
+  moreOn: '{when} کو {n} مزید',
+  noResource: 'کوئی نہیں',
+  tooMany: 'کل {total} میں سے پہلے {shown} دکھائے جا رہے ہیں: سب دیکھنے کے لیے تلاش کو محدود کریں۔',
+  fromTo: '{from} سے {to} تک',
+  withWho: '{name} کے ساتھ',
+  free: 'خالی',
+  holds: '{n} ریکارڈ',
+  holdsNoun: '{n} {records}',
+  holdsOne: '1 ریکارڈ',
+  holdsNounOne: '1 {record}',
+  keysOpen: 'Enter سے کھولیں۔',
+  keysMove: 'M سے منتقل کریں۔',
+  keysOpenMove: 'Enter سے کھولیں۔ M سے منتقل کریں۔',
+  keysSlots: 'تیر والی کلیدوں سے دنوں اور اوقات میں جائیں؛ Enter سے وہاں نیا ریکارڈ بنائیں۔',
+  keysSlotsNoun: 'تیر والی کلیدوں سے دنوں اور اوقات میں جائیں؛ Enter سے وہاں {record} بنائیں۔',
+  keysDays: 'تیر والی کلیدوں سے دنوں میں جائیں؛ Enter سے وہاں نیا ریکارڈ بنائیں۔',
+  keysDaysNoun: 'تیر والی کلیدوں سے دنوں میں جائیں؛ Enter سے وہاں {record} بنائیں۔',
+  moveTo: 'منتقل کریں…',
+  moveTitle: '{name} کو منتقل کریں',
+  moveDay: 'دن',
+  moveTime: 'آغاز کا وقت',
+  move: 'منتقل کریں',
+  cancel: 'منسوخ کریں',
+  badDay: '{from} سے {to} تک کوئی دن منتخب کریں۔',
+  badTime: 'وقت منتخب کریں۔',
+  moved: '{name} کو {when} پر منتقل کر دیا گیا۔',
+  stretched: '{name} کا اختتام اب {when} پر ہے۔',
+  undo: 'کالعدم کریں',
+  undone: 'پہلے جیسا کر دیا گیا۔',
+  close: 'بند کریں',
+  notMoved: 'منتقلی نہیں ہو سکی: {why}',
+  cannotMove: 'آپ اسے تبدیل نہیں کر سکتے۔',
+  saving: 'محفوظ ہو رہا ہے…',
+};

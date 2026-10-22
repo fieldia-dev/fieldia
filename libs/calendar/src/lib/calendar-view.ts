@@ -11,6 +11,9 @@ import { moveTo, placeUnder } from './move-to';
 import type { CalendarSettings } from './settings';
 import { installCalendarStyles } from './styles';
 
+/** Its words, fetched first where they come in a chunk of their own (Turkish, Persian, Urdu, Spanish). */
+export { calendarWordsReady } from './labels';
+
 const ALL_VIEWS: CalendarView[] = ['day', 'week', 'month', 'agenda'];
 /** The least a slot or a record is tall, so a finger or a pointer can hit it (WCAG's 24 pixels). */
 const TARGET = 24;
@@ -50,7 +53,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   /** The moment it is now (the app's, as a demo or a test pins it), on the calendar's clock: today is that zone's day. */
   const now = () => toWall(settings.now?.() ?? new Date(), zone);
   const views = (spec.views?.length ? spec.views : ALL_VIEWS).filter((v, i, all) => all.indexOf(v) === i);
-  const firstDay = firstDayOf(locale, spec.firstDay);
+  const firstDay = firstDayOf(locale, page, spec.firstDay);
   const slot = spec.slot ?? 30;
   /** Pixels an hour takes in the day and the week (--fd-cal-hour): 48, or more where a slot would be under 24 pixels. */
   const HOUR = Math.max(48, Math.ceil((TARGET * 60) / slot));

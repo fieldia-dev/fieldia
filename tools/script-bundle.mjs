@@ -6,8 +6,11 @@
  *   <script>Fieldia.mountViewer(element, { page, dataSource })</script>
  *
  * Its own words are English. Arabic, German and French ship as add-on
- * scripts beside it — `fieldia.ar.js`, `fieldia.de.js`, `fieldia.fr.js` — each
- * carrying that language's words alone, which a page loads after the main one:
+ * scripts beside it — `fieldia.ar.js`, `fieldia.de.js`, `fieldia.fr.js` — and
+ * Turkish, Persian, Urdu and Spanish too (`fieldia.tr.js`, `fieldia.fa.js`,
+ * `fieldia.ur.js`, `fieldia.es.js`: machine-assisted, not yet reviewed by a
+ * native speaker), each carrying that language's words alone, which a page
+ * loads after the main one:
  *
  *   <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
  *
@@ -28,7 +31,9 @@ const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle');
 const OUT = join(BUNDLE, 'fieldia.js');
 /** The languages besides English, each an add-on script of its own. */
-const LANGUAGES = { ar: 'Arabic', de: 'German', fr: 'French' };
+const LANGUAGES = { ar: 'Arabic', de: 'German', fr: 'French', tr: 'Turkish', fa: 'Persian', ur: 'Urdu', es: 'Spanish' };
+/** The languages whose words are machine-assisted, not yet reviewed by a native speaker (0.31): their add-on's first line says so. */
+const UNREVIEWED = new Set(['tr', 'fa', 'ur', 'es']);
 const { version } = JSON.parse(readFileSync(join(WORKSPACE, 'libs/viewer/package.json'), 'utf8'));
 
 /**
@@ -74,6 +79,15 @@ const englishOnly = {
   name: 'english-only',
   setup(builder) {
     builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/all\.ts$/ }, () => ({ contents: 'export const LANGUAGES = {};', loader: 'ts' }));
+    // Turkish, Persian, Urdu and Spanish, which the packages fetch in chunks of their own: the add-on scripts here.
+    builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/later\.ts$/ }, () => ({ contents: 'export const LATER = {};', loader: 'ts' }));
+    // With no language in a chunk, the packages' way of fetching them and of putting a mount's early words in theirs has
+    // nothing to do here: what every caller reads of it, and no more.
+    builder.onLoad({ filter: /libs\/core\/src\/lib\/record\/words-chunks\.ts$/ }, () => ({
+      contents: 'export const wordsInChunks = () => undefined; export const wordsComing = () => false; export const wordsNotYet = () => false; export const wordsReady = () => Promise.resolve(); export const tableInChunks = () => ({ coming: () => false, fetch: () => Promise.resolve() });',
+      loader: 'ts',
+    }));
+    builder.onLoad({ filter: /libs\/viewer\/src\/lib\/in-own-words\.ts$/ }, () => ({ contents: 'export const inOwnWords = () => undefined;', loader: 'ts' }));
   },
 };
 
@@ -227,6 +241,30 @@ const checksLater = {
   },
 };
 
+/**
+ * The week's first day (libs/core/src/lib/format/week.ts: which region decides it, and CLDR's table of regions for an
+ * engine whose Intl has no week) is the parts' that draw a week, not the main script's, which draws none: a list's
+ * "this week" and its weeks (the list part), a date's and a range's month (the date part) — booking slots' month and a
+ * week's hours and a repeat's days come with the date part (widget-parts.ts) and take its. Here the module stands in for
+ * itself, asking the one the first of those parts to come put in `WEEK` (tools/script-week.ts); each carries its own
+ * copy, a function and a table, with no state to be had twice (0.31: 0.40 KB, 0.32 gzipped, out of fieldia.js).
+ */
+const WEEK_FILE = join(WORKSPACE, 'libs/core/src/lib/format/week.ts');
+const WEEK_HOLDER = join(WORKSPACE, 'tools/script-week.ts');
+const WEEK_CARRIERS = ['list', 'date'];
+const WEEK_WITH_DATE = ['slots', 'schedule'];
+const weekInParts = {
+  name: 'week-in-parts',
+  setup(builder) {
+    builder.onLoad({ filter: /libs\/core\/src\/lib\/format\/week\.ts$/ }, () => ({
+      // Asked before a part that draws a week has come: never — no module of the main script draws one (checked below).
+      contents: `import { WEEK } from ${JSON.stringify(WEEK_HOLDER)};\nexport const firstWeekday = (...args) => (WEEK.firstWeekday ? WEEK.firstWeekday(...args) : 1);`,
+      resolveDir: WORKSPACE,
+      loader: 'js',
+    }));
+  },
+};
+
 /** The package a module of the workspace is in: core, widgets or viewer. */
 const packageOf = (file) => /libs\/([a-z]+)\//.exec(file)?.[1];
 
@@ -277,7 +315,7 @@ const mainScript = async (table) => {
   const { metafile } = await build({
     ...common,
     entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
-    plugins: [minifiedStyles, englishOnly, noFirstPaint, partWordsOut, checksLater, asksForParts(table, parts)],
+    plugins: [minifiedStyles, englishOnly, noFirstPaint, partWordsOut, checksLater, weekInParts, asksForParts(table, parts)],
     globalName: 'Fieldia',
     banner: { js: `/*! Fieldia ${version} · MIT · https://fieldia.dev */` },
     outfile: OUT,
@@ -287,8 +325,12 @@ const mainScript = async (table) => {
   // packages' memory source, which only its part's members use: the one-tag script's own source stands in for it).
   const [, written] = Object.entries(metafile.outputs).find(([file]) => file.endsWith('/fieldia.js'));
   const inMain = new Set(Object.keys(written.inputs).filter((input) => input.startsWith('libs/') || input.startsWith('tools/')).map((input) => join(WORKSPACE, input)));
-  // A part's checks stand in for themselves here: the part carries them.
+  // A part's checks stand in for themselves here: the part carries them. So does the week's first day.
   for (const { file } of Object.values(CHECKS_IN_PARTS)) inMain.delete(join(WORKSPACE, file));
+  inMain.delete(WEEK_FILE);
+  // No module of the main script draws a week: its stand-in would answer Monday before a part had come.
+  const drawsWeek = [...inMain].filter((file) => /\.ts$/.test(file) && file !== WEEK_HOLDER && !/libs\/core\/src\/(runtime|index)\.ts$/.test(file) && /\bfirstWeekday\b/.test(readFileSync(file, 'utf8')));
+  if (drawsWeek.length) throw new Error(`${drawsWeek.join(', ')} draws a week in the main script: the week's first day is the parts' (WEEK_CARRIERS)`);
   for (const [part, files] of parts) PART_SOURCES[part] = [...files].sort();
   return { inMain, parts: [...parts.keys()].sort(), metafile };
 };
@@ -348,6 +390,8 @@ const partEntry = (part) =>
     ...PART_SOURCES[part].map((file) => `export * from ${JSON.stringify(file)};`),
     // The checks it carries, put where the main script's reference check finds them as it comes.
     ...(CHECKS_IN_PARTS[part] ? [`import * as checks from ${JSON.stringify(join(WORKSPACE, CHECKS_IN_PARTS[part].file))};`, `import { LATER_CHECKS } from ${JSON.stringify(LATER_CHECKS_FILE)};`, `LATER_CHECKS[${JSON.stringify(part)}] = checks;`] : []),
+    // The week's first day, where the part draws a week: put where the main script's stands in for it.
+    ...(WEEK_CARRIERS.includes(part) ? [`import { firstWeekday as week } from ${JSON.stringify(WEEK_FILE)};`, `import { WEEK } from ${JSON.stringify(WEEK_HOLDER)};`, `WEEK.firstWeekday = week;`] : []),
   ].join('\n');
 const partScript = (part, inMain, table, needs) =>
   build({
@@ -399,6 +443,12 @@ for (let round = 0; ; round++) {
   table = next;
 }
 const PARTS = main.parts;
+// A part that asks for the week's first day carries it, or comes with the date part, which does.
+for (const part of PARTS) {
+  if (!needs[part].get(CORE_RUNTIME)?.has('firstWeekday') || WEEK_CARRIERS.includes(part) || WEEK_WITH_DATE.includes(part)) continue;
+  throw new Error(`fieldia.${part}.js draws a week but carries no firstWeekday: add it to WEEK_CARRIERS (tools/script-bundle.mjs)`);
+}
+for (const part of [...WEEK_CARRIERS, ...WEEK_WITH_DATE]) if (!PARTS.includes(part)) throw new Error(`WEEK_CARRIERS names ${part}, which is no part`);
 // The notice a part's banner names, beside it: the bundle's folder is what a CDN serves and @fieldia/viewer ships.
 copyFileSync(join(WORKSPACE, 'libs/widgets/THIRD_PARTY_NOTICES.md'), join(BUNDLE, 'THIRD_PARTY_NOTICES.md'));
 const partFiles = {};
@@ -415,7 +465,8 @@ for (const part of PARTS) {
   const inBoth = partInputs[part].filter((input) => main.inMain.has(join(WORKSPACE, input)));
   if (inBoth.length) throw new Error(`fieldia.${part}.js carries ${inBoth.join(', ')}, which the main script has too`);
   for (const other of PARTS.filter((one) => one > part)) {
-    const twice = partInputs[part].filter((input) => partInputs[other].includes(input));
+    // The week's first day aside: a function and a table, carried by each part that draws a week, no state in it.
+    const twice = partInputs[part].filter((input) => partInputs[other].includes(input) && join(WORKSPACE, input) !== WEEK_FILE);
     if (twice.length) throw new Error(`fieldia.${part}.js and fieldia.${other}.js both carry ${twice.join(', ')}: a part's code belongs to one part`);
   }
 }
@@ -447,7 +498,7 @@ for (const [locale, name] of Object.entries(LANGUAGES)) {
       sourcefile: `fieldia.${locale}.ts`,
       loader: 'ts',
     },
-    banner: { js: `/*! Fieldia ${version} · ${name} · MIT · https://fieldia.dev */` },
+    banner: { js: `/*! Fieldia ${version} · ${name}${UNREVIEWED.has(locale) ? ' (unreviewed: machine-assisted, not yet reviewed by a native speaker)' : ''} · MIT · https://fieldia.dev */` },
     outfile: join(BUNDLE, `fieldia.${locale}.js`),
   });
 }
@@ -1254,7 +1305,25 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // made live among them: 525.38), an option's mark and second line drawn by the choice part (525.06), uploadTo's work in
 // the files part, which a page with a file field has (522.16), and the parts taking the main script's names by their
 // place in the shared table, never by their words (518.54): 518.54, to 518.6.
-const BUDGET_KB = 518.6;
+// Turkish, Persian, Urdu and Spanish (0.31, w6-languages; their words in their add-ons): the four names the console
+// gives for a missing add-on (0.06); a day's tag for Intl on the Gregorian calendar (`dayTag` — Intl's own for Persian
+// is the Solar Hijri, so a date box would write 2026-10-15 at rest as 23 Mehr 1405 and not read it back), the Arabic
+// comma and Saturday's week for Persian and Urdu (`listComma`, `firstWeekday`), Persian's «» round a question and a
+// Turkish date's dots (the call sites each a little shorter): 518.54 measured before, 518.73 after, to 518.8.
+// The week's first day where CLDR starts it for a language's region, the owner's rule (international, never hand-picked):
+// the engine's own `Intl.Locale` week info, else CLDR's table of the regions whose week starts on another day than
+// Monday — Firefox has no week info — 518.73 measured before, 519.13 after, to 519.2.
+// The packages' Turkish, Persian, Urdu and Spanish fetched where spoken (words-chunks.ts in @fieldia/core), which this
+// script leaves to its add-ons: the way of fetching them and of saying a mount's early words in theirs are built empty
+// here; what stays is each table's call to them, a mount's wait for a language still coming, the form's messages and a
+// value's yes and no read through to a table filled in place — 519.13 measured before, 519.58 after, to 519.6.
+// The week's first day out of this script, which draws no week, into the parts that draw one (`weekInParts`: the list
+// part and the date part each carry it, the slots and schedule parts taking the date part's), its rule the reader's
+// region too where the page's tag names none; what stays is a stand-in that asks the part's — 519.58 measured before,
+// 519.22 after, to 519.3. Of 0.31's 518.54 before the lane, 0.68 more: the four names registered, a mount's wait for a
+// language still coming and the global's names for the packages' way of fetching one, built empty here (0.50), and what
+// this script writes in them itself — a day's Gregorian tag, the Arabic comma, Persian's «» (0.18).
+const BUDGET_KB = 519.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1537,7 +1606,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Merged (0.31.0), Wave 6's lanes together (listed with the raw budget above): 173.24 measured; then the size step — one
 // registry and one kit for the parts that join a form, 173.23; an option's mark in the choice part, 173.15; uploadTo in
 // the files part, 172.02; the shared table by place, 170.29 — to 170.3.
-const GZIP_BUDGET_KB = 170.3;
+// Turkish, Persian, Urdu and Spanish (listed with the raw budget above): 170.29 measured before, 170.36 after, to 170.4.
+// The week's first day by CLDR (listed with the raw budget above): 170.36 measured before, 170.68 after, to 170.7.
+// The packages' four languages fetched where spoken (listed with the raw budget above): 170.68 before, 170.94 after, to 171.0.
+// The week's first day in the parts that draw a week (listed with the raw budget above): 170.94 measured before, 170.63
+// after, to 170.7 — 0.34 more than 0.31's 170.29 before the lane.
+const GZIP_BUDGET_KB = 170.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1809,7 +1883,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 12.56, to 39.4 and 12.6.
 // Merged (0.31.0), every lane's words together: Arabic's 124.05 and 20.21, German's 56.13 and 17.45, French's 57.08 and
 // 17.43 measured.
-const ADD_ON_BUDGET_KB = { ar: [124.1, 20.3], de: [56.2, 17.5], fr: [57.1, 17.5] };
+// Turkish, Persian, Urdu and Spanish (0.31, w6-languages — machine-assisted, not yet reviewed by a native speaker), each an
+// add-on of its own with every word English has: Turkish's 63.58 and 17.71 measured, to 63.6 and 17.8; Persian's 155.35
+// and 21.79, to 155.4 and 21.9; Urdu's 158.05 and 21.88, to 158.1 and 21.9; Spanish's 54.50 and 17.23, to 54.6 and 17.3
+// (a few bytes' room where the measure fell within ten of the tenth).
+// (Persian's and Urdu's letters are written as escapes, six bytes each, as Arabic's are: hence their size before gzip.)
+const ADD_ON_BUDGET_KB = { ar: [124.1, 20.3], de: [56.2, 17.5], fr: [57.1, 17.5], tr: [63.6, 17.8], fa: [155.4, 21.9], ur: [158.1, 21.9], es: [54.6, 17.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2371,7 +2450,18 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // Merged (0.31.0), each part as measured after the size step: every part a little smaller, taking the main script's
 // names by their place in the shared table; the choice part with an option's mark and second line (11.89 and 4.71), the
 // files part with uploadTo's work (46.41 and 17.31), the list part with Wave 6's hooks of five lanes (139.04 and 44.50).
-const PART_BUDGET_KB = { head: [42.3, 12.9], text: [72.3, 24.5], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.6, 7.7], date: [22.6, 8.6], months: [13.7, 5.6], typed: [13.6, 5.7], list: [139.1, 44.5], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [37.6, 14.8], editable: [28.1, 10.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [29.6, 11.0], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [30.1, 11.3], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.2], slots: [15.2, 5.9], schedule: [20.4, 7.9], relations: [20.1, 7.7], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.0, 6.6], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.4, 3.5], print: [16.5, 5.2], memory: [23.0, 8.4], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [35.8, 12.2], scan: [17.8, 7.6], decode: [153.8, 39.0], surveyflow: [34.3, 12.3], prefill: [4.1, 2.0], verify: [11.1, 4.7], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// Turkish, Persian, Urdu and Spanish (w6-languages): a head's short date on the Gregorian calendar in Latin digits,
+// Persian's too (head 42.28 measured before, 42.32 after, to 42.4); a month's and a Hijri day's typing with a Turkish
+// page's dots, and the months' names on the Gregorian calendar (months 13.68 before, 13.71 after, to 13.8).
+// The week's first day where CLDR starts it for the page's own tag where it is shown in its own language (en-GB's, not
+// en's): list 139.06 measured before, 139.11 after, to 139.2.
+// The week's first day carried by the parts that draw a week, out of the main script (`weekInParts`), and decided by
+// the reader's region where the page's tag names none — the rule and CLDR's table, 0.83 KB and 0.51 gzipped in each:
+// list 139.11 measured before, 139.87 and 44.97 after, to 139.9 and 45.0; a date's and a range's month from that
+// day, Home and End to its row's ends (date 22.51 and 8.53 before, 23.37 and 9.06 after, to 23.4 and 9.1); booking
+// slots' month the same (slots 15.14 and 5.84 before, 15.18 and 5.86 after, within 15.2 and 5.9); a week's hours and a
+// repeat's days from it (schedule 20.35 and 7.87 before, 20.51 and 7.93 after, to 20.6 and 8.0).
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.3, 24.5], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.6, 7.7], date: [23.4, 9.1], months: [13.8, 5.6], typed: [13.6, 5.7], list: [139.9, 45.0], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [37.6, 14.8], editable: [28.1, 10.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [29.6, 11.0], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [30.1, 11.3], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.1, 7.7], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.0, 6.6], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.4, 3.5], print: [16.5, 5.2], memory: [23.0, 8.4], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [35.8, 12.2], scan: [17.8, 7.6], decode: [153.8, 39.0], surveyflow: [34.3, 12.3], prefill: [4.1, 2.0], verify: [11.1, 4.7], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

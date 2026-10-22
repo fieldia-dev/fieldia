@@ -101,7 +101,7 @@ describe('a list’s map in a page of its own', () => {
     expect(keys(french)).toContain(LIST_MAP_LABELS.fr.pinKeys);
     french.destroy();
     // A language Fieldia has no words in: English, the page as written.
-    const other = mountListMap(host(), { page, provider, records: [], locale: 'tr' });
+    const other = mountListMap(host(), { page, provider, records: [], locale: 'it' });
     expect(named(other)).toBe('Homes, map');
     other.destroy();
   });

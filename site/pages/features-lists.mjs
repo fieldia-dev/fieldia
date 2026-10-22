@@ -70,7 +70,7 @@ export default featurePage({
       no: 'In any language',
       title: 'Right to left, from the search bar to the last column',
       body: 'The same list in Arabic: columns, chips, buttons and pages turned to read right to left, with numbers and money written the reader’s way.',
-      ticks: ['English, Arabic, German and French built in', 'Right to left in full, never only the words', 'Numbers, dates and money in the reader’s way', 'Your app’s own words through its translator'],
+      ticks: ['English, Arabic, German and French built in; Turkish, Persian, Urdu and Spanish machine-assisted, not yet reviewed by a native speaker', 'Right to left in full, never only the words', 'Numbers, dates and money in the reader’s way', 'Your app’s own words through its translator'],
       shot: 'arabic.png', alt: 'The customer list in Arabic, right to left: the search bar, the column titles and the rows reading from the right', width: 1280, height: 600,
       tryIt: ['Try it in Arabic', demo('page=customers&skin=underline&locale=ar&dir=rtl')], docs: ['Languages, in the docs', '/look/'],
     },

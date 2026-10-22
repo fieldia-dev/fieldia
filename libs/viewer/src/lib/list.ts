@@ -2,6 +2,7 @@ import {
   addDays,
   dayStarts,
   facetsToFilter,
+  firstWeekday,
   groupByFields,
   importFields,
   optionsList,
@@ -347,11 +348,13 @@ export function listView(context: ListContext): ListView {
   // ---- days, as the list counts them ----------------------------------------------------
 
   /**
-   * A week from the page's language's first day (Saturday in Arabic, as Egypt's week runs; Monday elsewhere, as
-   * Fieldia's calendars have it); days told in the page's time zone (its `timeZone`), else the browser's — and a date
-   * and time's own days in its own zone, where it names one (the page's is written into each that names none).
+   * A week from the first day CLDR has for the region (`firstWeekday`: the page's own tag's, else the reader's where the
+   * browser asks for the same language, else the one the language is most spoken in — an English page read in Cairo
+   * from Saturday, in London from Monday, in New York from Sunday); days told in the page's time zone (its `timeZone`),
+   * else the browser's — and a date and time's own days in its own zone, where it names one (the page's is written into
+   * each that names none).
    */
-  const count: DayCount = { weekStart: locale === 'ar' ? 6 : 1, timeZone: page.timeZone || ownZone() };
+  const count: DayCount = { weekStart: firstWeekday(locale, page), timeZone: page.timeZone || ownZone() };
   const zoneOfField = (name: string) => {
     const def = page.fields[name];
     return (def?.type === 'datetime' && def.timeZone) || count.timeZone;

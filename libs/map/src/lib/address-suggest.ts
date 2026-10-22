@@ -39,6 +39,11 @@ const NOT_PLACED: Record<Locale, string> = {
   ar: 'لم يُعثر على هذا العنوان على الخريطة، فلم يُحفظ له مكان.',
   fr: 'Introuvable sur la carte : aucun lieu n’a été enregistré pour cette adresse.',
   de: 'Nicht auf der Karte gefunden: Für diese Adresse wurde kein Ort gespeichert.',
+  // Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+  tr: 'Haritada bulunamadı: bu adres için bir konum kaydedilmedi.',
+  fa: 'روی نقشه پیدا نشد: برای این نشانی مکانی ذخیره نشد.',
+  ur: 'یہ پتہ نقشے پر نہیں ملا: اس کے لیے کوئی مقام محفوظ نہیں کیا گیا۔',
+  es: 'No se encontró en el mapa: no se guardó ningún lugar para esta dirección.',
 };
 /** Said when the place could not be asked for (the line dropped, the provider down or refusing): it may well be on the map. */
 const LOCATE_FAILED: Record<Locale, string> = {
@@ -46,6 +51,11 @@ const LOCATE_FAILED: Record<Locale, string> = {
   ar: 'لم تُجب الخريطة، فلم يُحفظ مكان لهذا العنوان: تحقّق من الاتصال، ثم اختره مرة أخرى.',
   fr: 'La carte n’a pas répondu, aucun lieu n’a donc été enregistré pour cette adresse : vérifiez la connexion, puis choisissez-la de nouveau.',
   de: 'Die Karte hat nicht geantwortet, daher wurde für diese Adresse kein Ort gespeichert: Prüfen Sie die Verbindung und wählen Sie sie dann erneut.',
+  // Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+  tr: 'Harita yanıt vermedi, bu yüzden bu adres için bir konum kaydedilmedi: bağlantıyı denetleyin, sonra adresi yeniden seçin.',
+  fa: 'نقشه پاسخی نداد، از این رو برای این نشانی مکانی ذخیره نشد: اتصال را بررسی کنید و سپس دوباره آن را انتخاب کنید.',
+  ur: 'نقشے نے جواب نہیں دیا، اس لیے اس پتے کے لیے کوئی مقام محفوظ نہیں کیا گیا: کنکشن جانچیں، پھر اسے دوبارہ منتخب کریں۔',
+  es: 'El mapa no respondió, así que no se guardó ningún lugar para esta dirección: compruebe la conexión y vuelva a seleccionarla.',
 };
 /** Said when only a place near it is found (`precise: false`): its street, district or town, kilometres off perhaps. */
 const PLACED_NEAR: Record<Locale, string> = {
@@ -53,6 +63,11 @@ const PLACED_NEAR: Record<Locale, string> = {
   ar: 'لم يُعثر على مكان هذا العنوان بالضبط على الخريطة، فوُضع قربه فقط.',
   fr: 'Placé seulement près de cette adresse : son emplacement exact est introuvable sur la carte.',
   de: 'Nur in der Nähe dieser Adresse platziert: Der genaue Ort wurde auf der Karte nicht gefunden.',
+  // Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+  tr: 'Yalnızca bu adresin yakınına yerleştirildi: tam konumu haritada bulunamadı.',
+  fa: 'فقط در نزدیکی این نشانی قرار گرفت: مکان دقیق آن روی نقشه پیدا نشد.',
+  ur: 'صرف اس پتے کے قریب رکھا گیا: اس کا صحیح مقام نقشے پر نہیں ملا۔',
+  es: 'Se colocó solo cerca de esta dirección: no se encontró su lugar exacto en el mapa.',
 };
 
 const round6 = (n: number) => Math.round(n * 1e6) / 1e6;

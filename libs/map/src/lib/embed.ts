@@ -1,4 +1,4 @@
-import { checkPage, localizePage, type DataSource, type ListResult, type Locale, type Page, type RecordId, type ResolvedFilter, type SortOrder } from '@fieldia/core';
+import { checkPage, localizePage, wordsComing, wordsReady, type DataSource, type ListResult, type Locale, type Page, type RecordId, type ResolvedFilter, type SortOrder } from '@fieldia/core';
 import type { ListViewPart } from '@fieldia/viewer';
 import type { IconSet } from '@fieldia/widgets';
 import type { LatLng } from './geo';
@@ -79,10 +79,37 @@ export interface ListMapOptions extends MapSettings {
 /** A list's map in a page: its element (already in the page), and what the page asks of it. */
 export type ListMapHandle = ListViewPart;
 
-const OWN: readonly Locale[] = ['en', 'ar', 'fr', 'de'];
+const OWN: readonly Locale[] = ['en', 'ar', 'fr', 'de', 'tr', 'fa', 'ur', 'es'];
 
 /** Puts a list's map into `host`, loads its records, and hands it back. Throws when the page cannot be shown, saying why. */
 export function mountListMap(host: HTMLElement, options: ListMapOptions): ListMapHandle {
+  const tag = options.locale ?? (host.ownerDocument.documentElement.lang || options.page.language || 'en');
+  if (!wordsComing(tag)) return drawListMap(host, options);
+  // Its language's words come in a chunk of their own (Turkish, Persian, Urdu, Spanish): drawn once they have, so its
+  // first paint is in them. A page that cannot be shown says so at once, as ever.
+  const checked = checkPage(options.page);
+  if (!checked.ok) throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
+  let part: ListMapHandle | null = null;
+  let gone = false;
+  const ready = wordsReady(tag).then(() => {
+    if (!gone) part = drawListMap(host, options);
+  });
+  return {
+    get element() {
+      return part?.element ?? host;
+    },
+    reload: () => ready.then(() => part?.reload()),
+    highlight: (id) => part?.highlight(id),
+    chosenChanged: () => part?.chosenChanged(),
+    shown: () => void ready.then(() => part?.shown()),
+    destroy() {
+      gone = true;
+      part?.destroy();
+    },
+  };
+}
+
+function drawListMap(host: HTMLElement, options: ListMapOptions): ListMapHandle {
   const doc = host.ownerDocument;
   const checked = checkPage(options.page);
   if (!checked.ok) throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);

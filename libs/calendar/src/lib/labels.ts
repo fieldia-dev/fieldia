@@ -263,7 +263,29 @@ const de: CalendarLabels = {
   saving: 'Wird gespeichert…',
 };
 
-export const CALENDAR_LABELS: Record<Locale, CalendarLabels> = { en, ar, fr, de };
+/**
+ * The calendar's words in each language it speaks. Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not
+ * yet reviewed by a native speaker (locales/) — each come in a chunk of their own, fetched with the first calendar shown
+ * in them (`calendarWordsReady`): a calendar in any other language never carries their words.
+ */
+export const CALENDAR_LABELS: Partial<Record<Locale, CalendarLabels>> = { en, ar, fr, de };
+const LATER: Partial<Record<Locale, () => Promise<Partial<Record<Locale, CalendarLabels>>>>> = {
+  tr: () => import('./locales/tr'),
+  fa: () => import('./locales/fa'),
+  ur: () => import('./locales/ur'),
+  es: () => import('./locales/es'),
+};
+
+/** The calendar's words in `locale`, fetched where they come in a chunk of their own; English where they cannot be. */
+export async function calendarWordsReady(locale: Locale): Promise<void> {
+  const load = LATER[locale];
+  if (!load || CALENDAR_LABELS[locale]) return;
+  try {
+    CALENDAR_LABELS[locale] = (await load())[locale];
+  } catch {
+    // Their chunk could not be fetched: the calendar speaks English rather than nothing.
+  }
+}
 
 /** The calendar's words in a page's language, the app's own over them. */
 export function calendarLabels(locale: Locale, own?: Partial<CalendarLabels>): CalendarLabels {

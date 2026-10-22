@@ -134,7 +134,7 @@ ${code(
     }));
 </script>`
 )}
-<p>Arabic, German and French come as small scripts of their own, ${SIZES.languages[0]} to ${SIZES.languages[1]} KB gzipped each: add the language's script after the main one, from the same version, and pass ${c('locale')}. The words only a part shows come with that part, in English, and the language's script has them all, whichever comes first. A page whose language script is missing shows Fieldia's words in English and names the script to add in the console. Installed from npm, the packages have all four languages with no extra import.</p>
+<p>Arabic, German and French come as small scripts of their own, ${SIZES.languages[0]} to ${SIZES.languages[1]} KB gzipped each, and so do Turkish, Persian, Urdu and Spanish (${c('fieldia.tr.js')}, ${c('fieldia.fa.js')}, ${c('fieldia.ur.js')}, ${c('fieldia.es.js')}) — machine-assisted, not yet reviewed by a native speaker: add the language's script after the main one, from the same version, and pass ${c('locale')}. The words only a part shows come with that part, in English, and the language's script has them all, whichever comes first. A page whose language script is missing shows Fieldia's words in English and names the script to add in the console. Installed from npm, the packages have English, Arabic, German and French with no extra import, and fetch Turkish, Persian, Urdu and Spanish each in a chunk of its own where it is spoken: the viewer waits for them before it draws, so a page's first paint is in its language.</p>
 ${code(
   'html',
   `

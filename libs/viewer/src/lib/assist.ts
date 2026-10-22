@@ -1,4 +1,4 @@
-import { formLanguagesPart, isEmpty, labelAt, languagesOf, type DataSource, type Field, type FieldNode, type Form, type FormState, type LineField, type Line, type Locale, type Page, type RecordId, type UploadFile, type Value, type Values } from '@fieldia/core';
+import { formLanguagesPart, isEmpty, labelAt, languagesOf, listComma, type DataSource, type Field, type FieldNode, type Form, type FormState, type LineField, type Line, type Locale, type Page, type RecordId, type UploadFile, type Value, type Values } from '@fieldia/core';
 import { displayValue, drawIcon, keepTabIn, type IconSet } from '@fieldia/widgets';
 import { readLines, readProposed, sameValue, type ReadHow } from './assist-read';
 import { SPARKLE } from './assist-icon';
@@ -124,7 +124,7 @@ export function watchAssist(context: AssistContext): AssistKit {
   const source = context.dataSource;
   const tag = context.tag ?? locale;
   const id = `fd-assist-${++kits}`;
-  const separator = tag.split('-')[0] === 'ar' ? '، ' : ', ';
+  const separator = listComma(tag);
   const icon = () => {
     const drawn = drawIcon(doc, 'sparkle', { ...SPARKLE, ...context.icons });
     return drawn ? [drawn] : [];

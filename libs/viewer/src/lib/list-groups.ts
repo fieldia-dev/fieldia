@@ -1,4 +1,4 @@
-import { addDays, fill, recordSentence, spanStart, DATE_INTERVALS, type DataSource, type DateInterval, type DayCount, type Group, type Locale, type Page, type RecordId, type RecordPermissions, type RecordVersion, type ResolvedFilter, type SortOrder, type Value } from '@fieldia/core';
+import { addDays, fill, recordSentence, spanStart, DATE_INTERVALS, dayTag, type DataSource, type DateInterval, type DayCount, type Group, type Locale, type Page, type RecordId, type RecordPermissions, type RecordVersion, type ResolvedFilter, type SortOrder, type Value } from '@fieldia/core';
 import { formatNumber } from '@fieldia/widgets';
 import type { El } from './dom';
 import { daysFilter, spanEnd } from './list-days';
@@ -66,7 +66,7 @@ function weekNumber(start: string): { week: number; year: number } {
 function spanWords(context: Pick<GroupContext, 'labels' | 'locale'>, start: string, interval: DateInterval): string {
   const [year, month] = start.split('-').map(Number);
   const write = (options: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat(context.locale === 'en' ? 'en-GB' : context.locale, { ...options, timeZone: 'UTC', numberingSystem: 'latn' }).format(Date.parse(`${start}T00:00:00Z`));
+    new Intl.DateTimeFormat(dayTag(context.locale), { ...options, timeZone: 'UTC', numberingSystem: 'latn' }).format(Date.parse(`${start}T00:00:00Z`));
   switch (interval) {
     case 'day':
       return write({ day: 'numeric', month: 'long', year: 'numeric' });

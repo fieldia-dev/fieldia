@@ -11,12 +11,12 @@ import { backlogChatter, backlogData, me, recentPicks } from './data';
  * Fieldia list; a bug opened from it in a large popup over the backlog, the
  * page dimmed by nothing. The address keeps the bug open (`?workitem=4127`),
  * so a reload opens it again, and closing gives the focus back to its row.
- * `?locale=ar|de|fr` and `?scheme=dark|light` say the language and the scheme.
+ * `?locale=ar|de|fr|tr|fa|ur|es` and `?scheme=dark|light` say the language and the scheme.
  * Sample data, all of it invented.
  */
 
 const params = new URLSearchParams(location.search);
-const LOCALES = ['en', 'ar', 'de', 'fr'] as const;
+const LOCALES = ['en', 'ar', 'de', 'fr', 'tr', 'fa', 'ur', 'es'] as const;
 type Language = (typeof LOCALES)[number];
 const locale: Language = (LOCALES as readonly string[]).includes(params.get('locale') ?? '') ? (params.get('locale') as Language) : 'en';
 const dir = isRightToLeft(locale) ? 'rtl' : 'ltr';
@@ -90,6 +90,23 @@ const WORDS = {
     notHere: 'Cette démo ne contient que le backlog et ses bogues.', me: 'Salma Nabil', bug: 'Bogue',
     create: 'Créer', myWork: 'Mes éléments de travail', extensions: 'Extensions', help: 'Aide', userSettings: 'Paramètres utilisateur', loading: 'Chargement…',
     applied: (name: string) => `Modèle appliqué : ${name}.`,
+  },
+  // Turkish, Persian, Urdu and Spanish: machine-assisted, not yet reviewed by a native speaker, as Fieldia's own words in them are.
+  tr: {
+    org: 'Harbor Supply', project: 'Portal', boards: 'Panolar', backlogs: 'Biriktirme listeleri', search: 'Ara', language: 'Dil', path: 'Bulunduğunuz yer', menu: 'Proje', overview: 'Genel bakış', workItems: 'İş öğeleri', sprints: 'Sprintler', queries: 'Sorgular', plans: 'Teslim planları', analyticsViews: 'Analiz görünümleri', code: 'Kod', builds: 'Derlemeler', tests: 'Testler', packages: 'Paketler', settings: 'Proje ayarları', collapse: 'Menüyü daralt', team: 'Portal Ekibi', teams: 'Diğer ekipler', favourite: 'Sık kullanılanlara ekle', members: 'Ekip üyeleri', newItem: 'Yeni iş öğesi', asBoard: 'Pano olarak görüntüle', columns: 'Sütun seçenekleri', more: 'Diğer eylemler', backlog: 'Biriktirme listesi', analytics: 'Analiz', views: 'Biriktirme listesi görünümleri', level: 'Hikayeler', viewOptions: 'Görünüm seçenekleri', filter: 'Filtrele', backlogSettings: 'Ayarlar', fullScreen: 'Tam ekran', notHere: 'Bu demoda yalnızca biriktirme listesi ve hataları bulunur.', me: 'Salma Nabil', bug: 'Hata', create: 'Oluştur', myWork: 'İş öğelerim', extensions: 'Uzantılar', help: 'Yardım', userSettings: 'Kullanıcı ayarları', loading: 'Yükleniyor…',
+    applied: (name: string) => `Şablon uygulandı: ${name}.`,
+  },
+  fa: {
+    org: 'Harbor Supply', project: 'Portal', boards: 'تابلوها', backlogs: 'بک‌لاگ‌ها', search: 'جستجو', language: 'زبان', path: 'موقعیت شما', menu: 'پروژه', overview: 'نمای کلی', workItems: 'موارد کاری', sprints: 'اسپرینت‌ها', queries: 'پرس‌وجوها', plans: 'برنامه‌های تحویل', analyticsViews: 'نماهای تحلیل', code: 'کد', builds: 'ساخت‌ها', tests: 'آزمون‌ها', packages: 'بسته‌ها', settings: 'تنظیمات پروژه', collapse: 'جمع کردن منو', team: 'تیم Portal', teams: 'تیم‌های دیگر', favourite: 'افزودن به علاقه‌مندی‌ها', members: 'اعضای تیم', newItem: 'مورد کاری جدید', asBoard: 'نمایش به‌صورت تابلو', columns: 'گزینه‌های ستون', more: 'اقدامات بیشتر', backlog: 'بک‌لاگ', analytics: 'تحلیل', views: 'نماهای بک‌لاگ', level: 'داستان‌ها', viewOptions: 'گزینه‌های نما', filter: 'فیلتر', backlogSettings: 'تنظیمات', fullScreen: 'تمام‌صفحه', notHere: 'در این نسخهٔ نمایشی فقط بک‌لاگ و باگ‌های آن وجود دارد.', me: 'Salma Nabil', bug: 'باگ', create: 'ایجاد', myWork: 'موارد کاری من', extensions: 'افزونه‌ها', help: 'راهنما', userSettings: 'تنظیمات کاربر', loading: 'در حال بارگیری…',
+    applied: (name: string) => `الگوی «${name}» اعمال شد.`,
+  },
+  ur: {
+    org: 'Harbor Supply', project: 'Portal', boards: 'بورڈز', backlogs: 'بیک لاگز', search: 'تلاش کریں', language: 'زبان', path: 'آپ کا مقام', menu: 'پروجیکٹ', overview: 'جائزہ', workItems: 'ورک آئٹمز', sprints: 'اسپرنٹس', queries: 'کوئریز', plans: 'ڈیلیوری پلانز', analyticsViews: 'تجزیاتی مناظر', code: 'کوڈ', builds: 'بلڈز', tests: 'ٹیسٹس', packages: 'پیکجز', settings: 'پروجیکٹ کی ترتیبات', collapse: 'مینو سمیٹیں', team: 'Portal ٹیم', teams: 'دیگر ٹیمیں', favourite: 'پسندیدہ میں شامل کریں', members: 'ٹیم کے اراکین', newItem: 'نیا ورک آئٹم', asBoard: 'بورڈ کے طور پر دیکھیں', columns: 'کالم کے اختیارات', more: 'مزید کارروائیاں', backlog: 'بیک لاگ', analytics: 'تجزیات', views: 'بیک لاگ کے مناظر', level: 'اسٹوریز', viewOptions: 'منظر کے اختیارات', filter: 'فلٹر', backlogSettings: 'ترتیبات', fullScreen: 'پوری اسکرین', notHere: 'اس ڈیمو میں صرف بیک لاگ اور اس کے بگز شامل ہیں۔', me: 'Salma Nabil', bug: 'بگ', create: 'بنائیں', myWork: 'میرے ورک آئٹمز', extensions: 'ایکسٹینشنز', help: 'مدد', userSettings: 'صارف کی ترتیبات', loading: 'لوڈ ہو رہا ہے…',
+    applied: (name: string) => `سانچہ لاگو ہو گیا: ${name}۔`,
+  },
+  es: {
+    org: 'Harbor Supply', project: 'Portal', boards: 'Paneles', backlogs: 'Trabajos pendientes', search: 'Buscar', language: 'Idioma', path: 'Dónde se encuentra', menu: 'Proyecto', overview: 'Información general', workItems: 'Elementos de trabajo', sprints: 'Sprints', queries: 'Consultas', plans: 'Planes de entrega', analyticsViews: 'Vistas de análisis', code: 'Código', builds: 'Compilaciones', tests: 'Pruebas', packages: 'Paquetes', settings: 'Configuración del proyecto', collapse: 'Contraer el menú', team: 'Equipo de Portal', teams: 'Otros equipos', favourite: 'Añadir a favoritos', members: 'Miembros del equipo', newItem: 'Nuevo elemento de trabajo', asBoard: 'Ver como panel', columns: 'Opciones de columna', more: 'Más acciones', backlog: 'Trabajo pendiente', analytics: 'Análisis', views: 'Vistas del trabajo pendiente', level: 'Historias', viewOptions: 'Opciones de vista', filter: 'Filtrar', backlogSettings: 'Configuración', fullScreen: 'Pantalla completa', notHere: 'Esta demostración solo incluye el trabajo pendiente y sus errores.', me: 'Salma Nabil', bug: 'Error', create: 'Crear', myWork: 'Mis elementos de trabajo', extensions: 'Extensiones', help: 'Ayuda', userSettings: 'Configuración de usuario', loading: 'Cargando…',
+    applied: (name: string) => `Plantilla aplicada: ${name}.`,
   },
 }[locale];
 
@@ -203,7 +220,7 @@ app.dir = dir;
 app.dataset['scheme'] = scheme;
 
 // The bar across the top: where you are, a search box, the person's tools, and the person.
-const LANGUAGES = [['en', 'English'], ['ar', 'العربية'], ['de', 'Deutsch'], ['fr', 'Français']] as const;
+const LANGUAGES = [['en', 'English'], ['ar', 'العربية'], ['de', 'Deutsch'], ['fr', 'Français'], ['tr', 'Türkçe'], ['fa', 'فارسی'], ['ur', 'اردو'], ['es', 'Español']] as const;
 /** The page again in another language. */
 function speak(language: string) {
   if (language === locale) return;
@@ -454,6 +471,11 @@ const COMMENTING = {
   ar: { hint: 'أضف تعليقًا. استخدم # لربط بند عمل، و@ للإشارة إلى شخص، و! لربط طلب سحب.', item: 'بند عمل', pull: 'طلب سحب' },
   de: { hint: 'Kommentar hinzufügen. Mit # verknüpfen Sie ein Arbeitselement, mit @ erwähnen Sie eine Person, mit ! verknüpfen Sie einen Pull Request.', item: 'Arbeitselement', pull: 'Pull Request' },
   fr: { hint: 'Ajoutez un commentaire. Utilisez # pour lier un élément de travail, @ pour mentionner une personne ou ! pour lier une demande de tirage.', item: 'un élément de travail', pull: 'une demande de tirage' },
+  // Turkish, Persian, Urdu and Spanish: machine-assisted, not yet reviewed by a native speaker.
+  tr: { hint: 'Yorum ekleyin. Bir iş öğesini bağlamak için #, bir kişiden bahsetmek için @, bir çekme isteğini bağlamak için ! kullanın.', item: 'İş öğesi', pull: 'Çekme isteği' },
+  fa: { hint: 'نظری اضافه کنید. برای پیوند دادن یک مورد کاری از #، برای اشاره به کسی از @ و برای پیوند دادن یک درخواست ادغام از ! استفاده کنید.', item: 'مورد کاری', pull: 'درخواست ادغام' },
+  ur: { hint: 'تبصرہ شامل کریں۔ کسی ورک آئٹم کو لنک کرنے کے لیے #، کسی شخص کا ذکر کرنے کے لیے @، یا کسی پل ریکویسٹ کو لنک کرنے کے لیے ! استعمال کریں۔', item: 'ورک آئٹم', pull: 'پل ریکویسٹ' },
+  es: { hint: 'Añada un comentario. Use # para vincular un elemento de trabajo, @ para mencionar a una persona o ! para vincular una solicitud de incorporación de cambios.', item: 'un elemento de trabajo', pull: 'una solicitud de incorporación de cambios' },
 }[locale];
 
 /** Records a comment links by their key, found in the demo's data. */
