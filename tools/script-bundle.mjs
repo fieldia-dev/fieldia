@@ -20,6 +20,7 @@
  * it that language's words.
  */
 import { build, transform } from 'esbuild';
+import { Buffer } from 'node:buffer';
 import { copyFileSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -428,7 +429,7 @@ const PART_SOURCES = {};
 let table = [];
 let main;
 /** What each part takes of each of the main script's modules, by its name: the names its own build reads of the table. */
-let needs = {};
+let needs;
 for (let round = 0; ; round++) {
   main = await mainScript(table);
   const wanted = new Map(table.map(([file, names]) => [file, new Set(names)]));
