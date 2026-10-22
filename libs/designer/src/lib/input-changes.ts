@@ -95,6 +95,15 @@ const OPTION_WORDS: Record<string, Words> = {
   unit: (v, _now, kind, w) => (kind !== 'timer' ? null : v === 'minutes' ? w.keptInMinutes : w.keptInHours),
   label: (v, _now, kind, w) => (kind !== 'state-dot' ? null : v ? w.wordsBeside : w.noWordsBeside),
   height: (v, _now, kind, w) => (kind !== 'pdf' && kind !== 'embed' ? null : typeof v === 'number' ? w.height(v) : w.usualHeight),
+  // A value shown as a code: a QR code's error correction, its size, and its words under it.
+  level: (v, _now, kind, w) => (kind !== 'qr-code' ? null : w.qrLevelOf(String(v ?? 'M'))),
+  size: (v, _now, kind, w) => (kind !== 'qr-code' && kind !== 'barcode' ? null : typeof v === 'number' ? w.codeSize(v) : w.usualCodeSize),
+  // Pins on a picture: its picture, the field holding it, what it shows, how many it takes.
+  image: (v, _now, kind, w) => (kind !== 'pins' ? null : v ? w.pinsOnPicture(String(v)) : w.pinsNoPicture),
+  imageField: (v, _now, kind, w) => (kind !== 'pins' ? null : v ? w.pinsOnPictureOf(String(v)) : w.pinsNoPicture),
+  alt: (v, _now, kind, w) => (kind !== 'pins' ? null : v ? w.pictureShows(String(v)) : w.pictureUnsaid),
+  maxPins: (v, _now, kind, w) => (kind !== 'pins' ? null : typeof v === 'number' ? w.pinsAtMost(v) : w.pinsAny),
+  showValue: (v, _now, kind, w) => (kind === 'qr-code' ? (v ? w.codeWordsUnder : w.codeAlone) : kind === 'barcode' ? (v === false ? w.codeAlone : w.codeWordsUnder) : null),
   model: (v, _now, kind, w) => (kind !== 'distribution' ? null : w.accountsFrom(String(v ?? 'account.analytic.account'))),
   currencyField: (v, _now, kind, w) => (kind !== 'tax-totals' && kind !== 'payments' ? null : v ? w.currencyFrom(String(v)) : w.noCurrency),
   editable: (v, _now, kind, w) => (kind !== 'tax-totals' ? null : v ? w.taxTyped : w.taxShown),

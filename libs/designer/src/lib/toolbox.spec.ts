@@ -34,7 +34,7 @@ describe('the toolbox', () => {
     box.update({ modelFields: [], tabs: false });
     expect(groups()).toEqual(['Text', 'Numbers and dates', 'Choices', 'Records', 'More', 'Business', 'Layout']);
     // The widgets an ERP's screens lean on, in a group of their own.
-    expect(tiles('Business')).toEqual(['priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties'].map((id) => `kind:${id}`));
+    expect(tiles('Business')).toEqual(['priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'colour', 'copy', 'pdf', 'embed', 'qr-code', 'barcode', 'pins', 'distribution', 'tax-totals', 'payments', 'properties'].map((id) => `kind:${id}`));
     expect(tiles('Text')).toEqual(['kind:short-answer', 'kind:paragraph', 'kind:email', 'kind:phone', 'kind:one-time-code', 'kind:website', 'kind:keywords']);
     expect(tiles('Records')).toEqual(['kind:link', 'kind:links', 'kind:lines']);
     const email = tile('kind:email');

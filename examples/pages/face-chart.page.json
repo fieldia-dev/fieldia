@@ -1,0 +1,93 @@
+{
+  "fieldia": "0.7",
+  "id": "face-chart",
+  "title": "Treatment",
+  "description": "A treatment at a clinic: where each injection went, on a chart of the face, with the product and the units given there.",
+  "data": {
+    "kind": "record",
+    "model": "clinic.treatment"
+  },
+  "records": {
+    "one": "treatment",
+    "other": "treatments",
+    "a": "a treatment"
+  },
+  "fields": {
+    "patient": {
+      "type": "char",
+      "label": "Patient",
+      "required": true
+    },
+    "treated_on": {
+      "type": "date",
+      "label": "Treated on"
+    },
+    "doctor": {
+      "type": "char",
+      "label": "Doctor"
+    },
+    "injections": {
+      "type": "json",
+      "label": "Injection points",
+      "help": "Each point where the treatment went, and what was given there."
+    },
+    "review": {
+      "type": "text",
+      "label": "Review in two weeks"
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "treatment",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-chart",
+        "title": "Face chart",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-injections",
+            "field": "injections",
+            "widget": "pins",
+            "options": {
+              "image": "../samples/face.svg",
+              "alt": "Face, from the front",
+              "noteLabel": "Product and units",
+              "maxPins": 30
+            }
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-treatment",
+        "title": "The treatment",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-patient",
+            "field": "patient"
+          },
+          {
+            "type": "field",
+            "id": "f-treated",
+            "field": "treated_on"
+          },
+          {
+            "type": "field",
+            "id": "f-doctor",
+            "field": "doctor"
+          },
+          {
+            "type": "field",
+            "id": "f-review",
+            "field": "review",
+            "colspan": 2
+          }
+        ]
+      }
+    ]
+  }
+}

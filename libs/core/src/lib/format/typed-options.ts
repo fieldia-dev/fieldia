@@ -32,22 +32,22 @@ export const MaskOptionsSchema = z
   .meta({ id: 'MaskOptions' });
 
 /** A one-time code's boxes: how many characters (4 to 12; 6 unless said), and whether letters are in it too. */
-export const CodeOptionsSchema = z
+export const OneTimeCodeOptionsSchema = z
   .object({
     length: z.int().min(4).max(12).optional(),
     letters: z.boolean().optional(),
   })
-  .meta({ id: 'CodeOptions' });
+  .meta({ id: 'OneTimeCodeOptions' });
 
 /** Amounts typed in shorthand on a number or an amount: "3.5m", "500k", "٣٫٥ مليون". */
 export const ShorthandOptionsSchema = z.object({ shorthand: z.boolean({ error: 'shorthand is true: amounts typed as 3.5m or 500k are read' }).optional() }).meta({ id: 'ShorthandOptions' });
 
 export type MaskOptions = z.infer<typeof MaskOptionsSchema>;
-export type CodeOptions = z.infer<typeof CodeOptionsSchema>;
+export type OneTimeCodeOptions = z.infer<typeof OneTimeCodeOptionsSchema>;
 
 /** The issues of a field node's mask or code settings, each at its path under `options`. */
 export function typedOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
   const options = node.options ?? {};
-  const schemas = [...(node.widget === 'one-time-code' ? [CodeOptionsSchema] : []), ...('mask' in options || 'maskKeeps' in options ? [MaskOptionsSchema] : []), ...('shorthand' in options ? [ShorthandOptionsSchema] : [])];
+  const schemas = [...(node.widget === 'one-time-code' ? [OneTimeCodeOptionsSchema] : []), ...('mask' in options || 'maskKeeps' in options ? [MaskOptionsSchema] : []), ...('shorthand' in options ? [ShorthandOptionsSchema] : [])];
   return schemas.flatMap((schema) => (schema.safeParse(options).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] })));
 }

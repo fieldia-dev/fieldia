@@ -64,6 +64,12 @@ export interface FileValue {
   original?: FileValue;
   /** What was done to `original` to make this photo: the turn, then the part kept. */
   edit?: PhotoEdit;
+  /**
+   * A film's poster frame, where the app has one (a picture its store made): the address of a picture shown for the film
+   * before it plays, and as its picture among the files. Without it, the frame half a second in. Fieldia reads it, never
+   * writes it.
+   */
+  poster?: string;
 }
 
 /**

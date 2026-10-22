@@ -1,0 +1,182 @@
+{
+  "fieldia": "0.7",
+  "id": "site-visit",
+  "title": "Site visit",
+  "description": "An agent's visit to a flat before it is listed: the video tour plays in place, voice notes and short videos are recorded on the visit, and what to mend is pinned on the floor plan.",
+  "data": {
+    "kind": "record",
+    "model": "property.visit"
+  },
+  "records": {
+    "one": "visit",
+    "other": "visits",
+    "a": "a visit"
+  },
+  "fields": {
+    "unit": {
+      "type": "char",
+      "label": "Unit",
+      "required": true
+    },
+    "visited_on": {
+      "type": "date",
+      "label": "Visited on"
+    },
+    "agent": {
+      "type": "char",
+      "label": "Agent"
+    },
+    "condition": {
+      "type": "selection",
+      "label": "Condition",
+      "options": [
+        {
+          "value": "ready",
+          "label": "Ready to list"
+        },
+        {
+          "value": "minor",
+          "label": "Minor repairs"
+        },
+        {
+          "value": "major",
+          "label": "Major repairs"
+        }
+      ]
+    },
+    "tour": {
+      "type": "binary",
+      "label": "Video tour",
+      "multiple": true,
+      "maxFiles": 6,
+      "accept": [
+        "video/*"
+      ],
+      "maxSize": 52428800
+    },
+    "voice_notes": {
+      "type": "binary",
+      "label": "Voice notes",
+      "multiple": true,
+      "maxFiles": 10,
+      "accept": [
+        "audio/*"
+      ],
+      "maxSize": 10485760
+    },
+    "clips": {
+      "type": "binary",
+      "label": "Short videos",
+      "help": "A crack, a leak, a door that sticks: a few seconds of it.",
+      "multiple": true,
+      "maxFiles": 6,
+      "accept": [
+        "video/*"
+      ],
+      "maxSize": 31457280
+    },
+    "floor_plan": {
+      "type": "image",
+      "label": "Floor plan"
+    },
+    "snags": {
+      "type": "json",
+      "label": "Snags",
+      "help": "Put a pin where each thing to mend is, and say what it is."
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "visit",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-media",
+        "title": "Video and voice",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-tour",
+            "field": "tour",
+            "options": {
+              "files": "cards"
+            }
+          },
+          {
+            "type": "field",
+            "id": "f-voice",
+            "field": "voice_notes",
+            "options": {
+              "record": "audio",
+              "maxSeconds": 120
+            }
+          },
+          {
+            "type": "field",
+            "id": "f-clips",
+            "field": "clips",
+            "options": {
+              "record": "video",
+              "maxSeconds": 30,
+              "files": "cards"
+            }
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-visit",
+        "title": "The visit",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-unit",
+            "field": "unit",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-visited",
+            "field": "visited_on"
+          },
+          {
+            "type": "field",
+            "id": "f-agent",
+            "field": "agent"
+          },
+          {
+            "type": "field",
+            "id": "f-condition",
+            "field": "condition",
+            "widget": "radio",
+            "colspan": 2
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-plan",
+        "title": "Floor plan",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-snags",
+            "field": "snags",
+            "widget": "pins",
+            "options": {
+              "imageField": "floor_plan",
+              "alt": "The flat's floor plan",
+              "noteLabel": "What to mend"
+            }
+          },
+          {
+            "type": "field",
+            "id": "f-plan",
+            "field": "floor_plan"
+          }
+        ]
+      }
+    ]
+  }
+}

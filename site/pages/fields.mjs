@@ -2,10 +2,10 @@ import { SIZES } from '../facts.mjs';
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), one-time-code (a box per digit), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint, translate, requiredIn'],
-  ['text', 'Several lines of text', 'copy, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, translate, requiredIn'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), one-time-code (a box per digit), qrcode, barcode (a code to scan), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint, translate, requiredIn'],
+  ['text', 'Several lines of text', 'copy, qrcode, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, translate, requiredIn'],
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', 'translate, requiredIn'],
-  ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],
+  ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11), barcode', 'min, max'],
   ['float', 'A decimal number', 'progressbar, label, duration (HH:MM), percentage, timer, place (a latitude, with @fieldia/map)', 'min, max, digits'],
   ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits, money'],
   ['boolean', 'Yes or no', 'toggle, priority (one star)', ''],
@@ -18,7 +18,7 @@ const ROWS = [
   ['reference', 'A link to a record of one of several models', '', 'models'],
   ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', 'pdf (shown inline)', 'accept, maxSize, multiple, minFiles, maxFiles, shrink'],
   ['image', 'An image, with a preview; several with multiple, as thumbnails, cards or a list', '', 'maxSize, multiple, minFiles, maxFiles, shrink'],
-  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), monaco (with @fieldia/monaco), place and area (with @fieldia/map), address, distribution, tax-totals, payments', ''],
+  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), monaco (with @fieldia/monaco), place and area (with @fieldia/map), address, pins (on a picture), distribution, tax-totals, payments', ''],
   ['properties', 'Extra values, each edited with the field for its type', '', 'definitions, definitionsFrom'],
 ];
 
@@ -216,7 +216,7 @@ ${code(
     <tr><td>a ${c('monetary')} field</td><td>The currency's symbol inside the box, where the page's language writes it for that currency, as every total and cell of the page does (the field's ${c('money')} ${c('at')} moves it everywhere the field is written); ${c('pickCurrency')}: a currency box beside the amount</td></tr>
     <tr><td>a ${c('date')} or ${c('datetime')}</td><td>${c('weekNumbers')}: a calendar beside the date, with ISO week numbers; on a ${c('datetime')}, ${c('step')} in minutes</td></tr>
     <tr><td>a ${c('binary')} or ${c('image')} field</td><td>${c('files')}: ${c('"list"')} (a file's default), ${c('"thumbnails"')} (an image's) or ${c('"cards"')}: a picture over each file's name and size, the name in two lines at most, cut in the middle so its extension stays; ${c('filesSwitch')}: ${c('true')} puts List and Cards (or Thumbnails, when the page shows thumbnails) over the files, for the person filling the form to choose, kept with the page's preferences; ${c('camera')}: ${c('true')} has a phone offer its rear camera, ${c('"user"')} its front one</td></tr>
-    <tr><td>a ${c('char')}, ${c('text')} or ${c('html')} field</td><td>${c('rewrite')}: AI help by your app's own model — ${c('["draft", "polish"]')} (or ${c('true')}): <em>Draft</em> writes it from the record, <em>Polish</em> makes the words there clearer, and ${c('{ "how": "formal", "label": "More formal" }')} a tool of your own; each answer shown under the field to accept or reject, with Undo: see <a href="/data/#ai">AI help</a>. Hidden where the data source has no ${c('rewrite')}.</td></tr>
+    <tr><td>a ${c('char')}, ${c('text')} or ${c('html')} field</td><td>${c('rewrite')}: AI help by your app's own model — ${c('["draft", "polish"]')} (or ${c('true')}): <em>Draft</em> writes it from the record, <em>Polish</em> makes the words there clearer, and ${c('{ "how": "formal", "label": "More formal" }')} a tool of your own; each answer shown under the field to accept or reject, with Undo: see <a href="/data/#ai">AI help</a>. Hidden where the data source has no ${c('rewrite')}.; on a ${c('binary')}, ${c('record')}: ${c('"audio"')}, ${c('"video"')} or both records <a href="#recording">a voice note or a short film on the page</a>, each at most ${c('maxSeconds')} long</td></tr>
     <tr><td>an ${c('html')} field</td><td>${c('toolbar')}: ${c('false')} leaves the formatting toolbar off. The toolbar's Heading makes a heading in one press. As a work item's text: ${c('toolbar')} ${c('"focus"')} — no edge and no toolbar at rest, a light box when pointed at, the toolbar inside the box while worked in — at ${c('toolbarAt')} ${c('"top"')} or ${c('"bottom"')}; ${c('tools')}: which, in order, of ${c('bold')}, ${c('italic')}, ${c('underline')}, ${c('bulletList')}, ${c('numberList')}, ${c('highlight')}, ${c('colour')}, ${c('emoji')}, ${c('outdent')}, ${c('indent')}, ${c('strike')}, ${c('size')}, ${c('code')}, ${c('mention')}, ${c('reference')}, ${c('clearFormatting')}, ${c('image')}, ${c('link')}, ${c('unlink')}, ${c('taskList')}, ${c('heading')}, ${c('attach')}, ${c('table')} — those with no room go under “…”; what is pasted from Word, Excel, Google Docs or a page comes in plain in either editor — headings, marks, links, lists, tables and alignment kept; fonts, colours and widths left behind, though what is copied from a Fieldia editor keeps its own colours, highlights and sizes — and ${c('table')} puts one in at a size picked on a grid, adds and takes away rows and columns where the cursor is, sets its header row, and Tab goes from cell to cell; ${c('editor')}: ${c('"markdown"')} shows the text as it reads and edits it as Markdown in a card with a Preview, still stored as clean HTML — empty, with no ${c('placeholder')}, alone in a group whose heading holds its ✎, it takes no room until that ✎ starts it; ${c('edit')}: ${c('"button"')} reads the rich editor first too — its text formatted, links that open, pictures in place — with Edit (✎) in its group's heading; Edit, Enter or a press on its words opens the editor, Done or a press outside keeps what was typed, Escape puts it back, and empty it is its editor at rest; ${c('switchEditor')}: ${c('true')} offers the other editor, asking first when formatting would be lost; ${c('mention')}: ${c('{ "model": "res.users" }')} and ${c('references')}: ${c('[{ "key": "#", "model": "work.item", "label": "Work item", "icon": "hash" }]')} find people after @ and records after their key, with your data source's ${c('search')}</td></tr>
     <tr><td>${c('links')} on a ${c('many2many')}</td><td>A work item's links: ${c('add')}: ${c('"menu"')} — Add link opens Existing item (a search) and New item (a new record in a dialog) — or ${c('"search"')}; ${c('addLabel')}: its words; ${c('help')}: words in a light box while none is linked, ${c('[words](https://…)')} as links, with ${c('helpIcon')} before them — white on a tile of ${c('helpTile')}'s colour (${c('"#d84a12"')}), as a tracker marks its code's links; ${c('emptyLink')}: a link in the empty box that finds an existing record. Each record linked opens from its name, and goes with its ×</td></tr>
     <tr><td>a ${c('many2one')} or ${c('many2many')}</td><td>${c('create')}: ${c('false')} never offers to make a record from what was typed. With dialogs, both end their list with Search more… when it has no room, and open a linked record — a ${c('many2many')} from its tag — unless ${c('open')} is ${c('false')}, Flectra's ${c('no_open')}. ${c('avatar')}: ${c('true')} shows the record's picture before its name, or its initials (Flectra's avatar widgets) — and in the quiet look, while no one is picked, a person's outline before the node's ${c('placeholder')}, “No one selected”; on a ${c('many2one')}, ${c('details')}: ${c('true')} shows lines of the record under the link — an address, a tax number, as Flectra's ${c('show_address')}; on a ${c('many2many')}, ${c('colors')}: ${c('true')} draws each tag in its record's colour, 1 to 11 as Flectra numbers them (${c('color_field')}). The picture, lines and colour come from the data source, with each record it finds or loads — see <a href="/data/#related">what a link shows</a></td></tr>
@@ -291,6 +291,74 @@ ${code(
 </ul>
 <p>Everything is kept in the field's value, so any data source that keeps a file value keeps it: the photos in order, each one's ${c('caption')}, and a cropped one's ${c('original')} and ${c('edit')} — ${c('{ "turn": 90, "crop": { "x", "y", "width", "height" } }')}, fractions of the original as turned. A photo set comes in a part of its own, ${c('fieldia.photos.js')}, loaded only for a page that has one. In the designer, it is the <em>Photo set</em> kind, its settings on its card and in the panel.</p>
 <p><strong>Not done yet</strong>, for 0.29: a photo set inside a table line's cell is untested; pictures a second crop or <em>Put back the original</em> replaced stay in your store — the form never deletes a stored file, so they are your store's to clean; a photo stored on another site is cropped only where that store lets the page read it (CORS), else the dialog says it cannot be read.</p>
+
+<h2 id="media">Films and sounds</h2>
+<p>A film or a sound in a file field plays in the browser's own player — a property's video tour, a procedure's clip, a voice note from a site visit. Among the files, a film shows its poster frame under a play mark; opened, it plays in the dialog's player, starting from that frame. A sound in a list plays where it is, its player under its name; on a card or a thumbnail it opens and plays under its name. A file's kind is its media type (${c('video/…')}, ${c('audio/…')}), else, where none is known, its extension (mp4, webm, mov; mp3, m4a, wav, ogg, opus). One the browser cannot play says so in the player's place, with Download over it.</p>
+<p>The poster frame is the app's own where the file has one — a picture its store made, as ${c('poster')} in the file's value — else the film's frame half a second in, drawn by the browser from the film itself. Fieldia reads ${c('poster')}; it never writes it.</p>
+${code(
+  'json',
+  `
+{ "name": "tour.mp4", "type": "video/mp4", "size": 4182016, "url": "https://files.example/tour.mp4", "poster": "https://files.example/tour.jpg" }`
+)}
+<ul>
+  <li>A film held inside the record (as base64, where the source has no ${c('upload')}) plays from an address the page makes for it and lets go once it is drawn again. A large film belongs in your store: give the source ${c('upload')}.</li>
+  <li>A player's own arrows move through its film or sound; elsewhere in the dialog they go to the previous or next file.</li>
+</ul>
+
+<h2 id="recording">A voice note or a short film, recorded on the page</h2>
+<p>A file field whose node says ${c('record')} offers <em>Record a voice note</em> or <em>Record a video</em> beside its picker — on a computer and on an iPhone alike, where a file input alone offers no recorder. The recorder opens over the form and the browser asks for the microphone (and the camera for a film, the rear one on a phone); then <em>Start recording</em>, the time against the limit, and <em>Stop</em>. Stopped, the recording plays back in the browser's own player, with <em>Use this recording</em> and <em>Record again</em>; used, it is the field's as a file picked is — stored as it is made where the data source has ${c('upload')}, else inside the record — and plays in place there.</p>
+${code(
+  'json',
+  `
+"voice_notes": { "type": "binary", "label": "Voice notes", "multiple": true, "accept": ["audio/*"], "maxSize": 10485760 }
+
+{ "type": "field", "id": "f-voice", "field": "voice_notes", "options": { "record": "audio", "maxSeconds": 120 } }`
+)}
+<ul>
+  <li>${c('record')} is ${c('"audio"')}, ${c('"video"')} or both, ${c('["audio", "video"]')}. ${c('maxSeconds')} is the longest a recording may be, 1 to 3600 seconds: 120 for a voice note and 60 for a film unless it says. The limit is said under the field before anyone records ("voice notes up to 2:00"); at the limit — or at the field's ${c('maxSize')} — the recording stops itself and says why.</li>
+  <li>A refused microphone or camera is said in words, with <em>Try again</em> — and so is a device that is not there, or that another app holds. A recording made and not used is let go only once the person says so: Escape, × and Cancel ask first. The microphone's and the camera's light goes out whenever the recorder closes.</li>
+  <li>It is recorded in MP4 where the browser records it (it plays everywhere), else WebM or Ogg — of the kinds the field's ${c('accept')} takes; a field whose ${c('accept')} takes none of a recording's kinds is refused by the page's check. It is named by when it was made, on the page's clock: "Voice note 2026-10-21 11.42.05.webm".</li>
+  <li>Where the browser cannot record — no microphone to ask for, on a page not served over https — the buttons are not shown, and a file is picked as before.</li>
+  <li>The recorder comes in a part of its own, ${c('fieldia.record.js')}, loaded the first time a person presses Record: a page that records nothing never loads it.</li>
+  <li>In the designer, a file upload's card and panel set it: <em>Recorded on the page</em>, then <em>Longest recording</em>.</li>
+</ul>
+
+<h2 id="codes">A value shown as a QR code or a barcode</h2>
+<p>A ticket at the door, "open it on your phone", an asset's label: ${c('"widget": "qrcode"')} on a ${c('char')} or ${c('text')} field shows its value as a QR code, ${c('"widget": "barcode"')} on a ${c('char')} or ${c('integer')} field as a Code 128 barcode — drawn on the page from the record's own value, so no picture is made on a server, and as sharp on paper as on the screen. Editable, the field's box is over the code, which follows what is typed; read-only, the code alone, its words under it where ${c('showValue')} says.</p>
+${code(
+  'json',
+  `
+{ "type": "field", "id": "f-link", "field": "ticket_link", "widget": "qrcode", "options": { "level": "Q", "size": 200 } }
+{ "type": "field", "id": "f-number", "field": "reference", "widget": "barcode" }`
+)}
+<ul>
+  <li>${c('level')}, a QR code's error correction: ${c('"L"')}, ${c('"M"')} (the default), ${c('"Q"')} or ${c('"H"')} — about 7, 15, 25 or 30 per cent of the code may be lost (a crease, a glare, a logo over it) and it still reads. ${c('size')}: a QR code's side, or a barcode's height, in pixels (160 and 64 unless it says, 48 to 640). ${c('showValue')}: the value's words under the code — a barcode's unless ${c('false')}, a QR code's where ${c('true')}.</li>
+  <li>A QR code holds the words as UTF-8 — Arabic, accents and signs too — in the smallest of its 40 sizes that fits them: about 2,300 letters at level M. Words too long for one are said in its place, with what to do. A barcode holds letters without accents, digits and signs (Code 128's ASCII), a run of digits two to a bar; a character it cannot hold is said, by name.</li>
+  <li>Black on white whatever the page's scheme or theme, with the margin a scanner needs; a screen reader hears what it is and what it holds ("QR code: https://…").</li>
+  <li>The encoders are Fieldia's own, in a part of their own, ${c('fieldia.codes.js')}, loaded the first time a page shows a code: ${c('(await codesPart.load()).qrCode(words, "M")')} gives a code's modules, and ${c('.code128(words)')} its bars, for your own drawing.</li>
+  <li>In the designer: <em>QR code</em> and <em>Barcode</em> among a screen's kinds, with a QR code's <em>Error correction</em> and <em>Its words under it</em>.</li>
+</ul>
+<p>The legal codes on an invoice or a receipt (ZATCA's, an e-receipt's) belong on the printed document, which your report engine makes; this is for the screen.</p>
+
+<h2 id="pins">Pins on a picture</h2>
+<p>A clinic's face chart, a floor plan's snags, a car's damage at its return: ${c('"widget": "pins"')} on a ${c('json')} field puts pins with notes on a picture. A click or a tap puts a pin there and goes to its note; a pin is dragged to move it. By the keyboard, Tab reaches the picture, the arrow keys move a cross over it (Shift: further) and Enter puts a pin under it; on a pin, the arrow keys move it, Delete takes it away and Enter goes to its note. Under the picture the pins are a numbered list — each one's place in words, its note's box and Remove — which is what a screen reader reads, each pin a button named "Pin 2, top left, 18% across, 22% down: Botox, 4 units".</p>
+${code(
+  'json',
+  `
+"injections": { "type": "json", "label": "Injection points" }
+
+{ "type": "field", "id": "f-injections", "field": "injections", "widget": "pins",
+  "options": { "image": "/charts/face.svg", "alt": "Face, from the front", "noteLabel": "Product and units", "maxPins": 30 } }`
+)}
+<p>The value is the pins, each where it is on the picture as a share of its width and height from its top left corner, so they stand where they were put at any size the picture is drawn:</p>
+${code('json', `[{ "x": 0.4, "y": 0.29, "note": "Botox, 4 units" }, { "x": 0.5, "y": 0.68, "note": "Filler, 0.5 ml" }]`)}
+<ul>
+  <li>${c('image')}: the picture's address — a web address, or the page's own as ${c('data:')}; or ${c('imageField')}: a field holding it — a picture or file field (a floor plan uploaded with the record), or a web address. One of the two. ${c('alt')}: what the picture is, for those who cannot see it. ${c('maxPins')}: the most it takes (1 to 200), said when a person tries one more. ${c('noteLabel')}: the words in an empty note's box.</li>
+  <li>An app's own keys on a pin (an id, a product's code) are kept as it is moved or its note changed; a pin with no place on the picture is not shown.</li>
+  <li>Read-only, the pins and their notes are shown and nothing moves. The picture is never mirrored right to left: left is the picture's left.</li>
+  <li>It comes in a part of its own, ${c('fieldia.pins.js')}, loaded the first time a page shows pins; their notes in order meanwhile.</li>
+  <li>In the designer: <em>Pins on a picture</em> among a screen's kinds, with its <em>Picture</em> and <em>What it shows</em>.</li>
+</ul>
 
 <h2 id="signature">A signature that signs the answers</h2>
 <p>A consent, an engagement letter, a reservation contract: a signature's picture alone is weak evidence in a dispute. A signature whose node says ${c('signs')} — ${c('"form"')}, every answer shown, or the fields by name — keeps beside its picture who signed, when, and a fingerprint (SHA-256) of the answers it signed, and locks those answers while it is kept. ${c('signerField')} names the field holding the signer's name; left out, the name typed on the pad, else the person the app says is using the form.</p>

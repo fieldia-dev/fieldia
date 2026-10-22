@@ -479,6 +479,40 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /** How much of a QR code may be lost and still read: its error correction, M unless said. */
+  function qrLevel(): Part {
+    const level = select(w.qrLevel, Object.entries(w.qrLevels));
+    level.addEventListener('change', () => designer.setWidgetOptions(id, { level: level.value === 'M' ? null : level.value }));
+    return { element: word(w.qrLevel, level), refresh: (_page, node) => show(level, node.options?.['level'] ?? 'M') };
+  }
+
+  /**
+   * The picture pins are put on: its address, or a field holding it (a picture or file field, or words that are a web
+   * address) — one or the other: setting one takes the other away, as the format takes one picture.
+   */
+  function pinsPicture(): Part[] {
+    const input = el('input', { class: 'fd-inline-input', 'aria-label': w.pinsPicture, placeholder: 'https://…/face.svg', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+    input.addEventListener('change', () => designer.setWidgetOptions(id, { image: input.value.trim() || null, ...(input.value.trim() ? { imageField: null } : {}) }));
+    const pick = select(w.pinsPictureFrom, []);
+    pick.addEventListener('change', () => designer.setWidgetOptions(id, { imageField: pick.value || null, ...(pick.value ? { image: null } : {}) }));
+    const pictures = (field: Field) => field.type === 'image' || field.type === 'binary' || field.type === 'char';
+    return [
+      { element: word(w.pinsPicture, input), refresh: (_page, node) => show(input, node.options?.['image']) },
+      {
+        element: word(w.pinsPictureFrom, pick),
+        refresh(page, node) {
+          const fields = Object.entries(page.fields).filter(([name, field]) => name !== node.field && pictures(field));
+          const keyOf = JSON.stringify(fields.map(([name, field]) => [name, field.label]));
+          if (pick.dataset['fields'] !== keyOf) {
+            pick.dataset['fields'] = keyOf;
+            pick.replaceChildren(el('option', { value: '' }, w.noField), ...fields.map(([name, field]) => el('option', { value: name }, field.label || name)));
+          }
+          show(pick, node.options?.['imageField']);
+        },
+      },
+    ];
+  }
+
   /** A duration's words after it, inside its box: "hours". */
   function after(): Part {
     const input = el('input', { class: 'fd-inline-input fd-inline-unit', 'aria-label': w.unitAfter, placeholder: 'hours', autocomplete: 'off' }) as HTMLInputElement;
@@ -671,6 +705,10 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'timer') parts.push(fieldPick(w.runsFrom, 'startField', (field) => field.type === 'datetime'), keptIn());
   if (kind === 'state-dot') parts.push(optionToggle(w.wordsBeside, 'label'));
   if (kind === 'pdf' || kind === 'embed') parts.push(height());
+  // A QR code's error correction, and its words under it; a barcode's words are under it unless the page says.
+  if (kind === 'qr-code') parts.push(qrLevel(), optionToggle(w.codeWordsUnder, 'showValue'));
+  // Pins: the picture they are put on — its address, or the field holding it — and what it shows, for those who cannot see it.
+  if (kind === 'pins') parts.push(...pinsPicture(), optionText(w.pinsShows, 'alt', 'Face, from the front'));
   if (kind === 'distribution') parts.push(optionText(w.accountsFrom, 'model', 'account.analytic.account'));
   if (kind === 'tax-totals' || kind === 'payments') parts.push(fieldPick(w.currencyFrom, 'currencyField', (field) => field.type === 'many2one' || field.type === 'char'));
   if (kind === 'tax-totals') parts.push(optionToggle(w.taxTyped, 'editable'));

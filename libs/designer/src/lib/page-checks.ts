@@ -377,7 +377,7 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
 
 const isFiles = (field: Field) => field.type === 'binary' || field.type === 'image';
 /** A file field's settings the files' own words say: how chosen files show, a phone's camera, and a photo set's own. */
-const FILE_OPTIONS = ['files', 'filesSwitch', 'camera', 'cover', 'captions', 'edit', 'keepOriginal', 'aspect'];
+const FILE_OPTIONS = ['files', 'filesSwitch', 'camera', 'record', 'maxSeconds', 'cover', 'captions', 'edit', 'keepOriginal', 'aspect'];
 
 /** A file upload's or an image's: the files it takes, how many, how the chosen ones show and whether people can switch, a phone's camera. */
 function fileChanges(name: string, was: { field: Field; node: FieldNode }, now: { field: Field; node: FieldNode }, words: DesignerWords): string[] {
@@ -402,6 +402,15 @@ function fileChanges(name: string, was: { field: Field; node: FieldNode }, now: 
   if (!option(was, 'filesSwitch') !== !option(now, 'filesSwitch')) out.push(w.filesSwitch(name, !!option(now, 'filesSwitch')));
   const camera = (q: { node: FieldNode }) => (option(q, 'camera') ? (option(q, 'camera') === 'user' ? 'front' : 'rear') : null);
   if (camera(was) !== camera(now)) out.push(camera(now) ? w.camera(name, camera(now) === 'front') : w.noCamera(name));
+  // A voice note or a video recorded on the page, and for how long.
+  const recorded = (q: { node: FieldNode }) => {
+    const record = option(q, 'record');
+    const kinds = (Array.isArray(record) ? record : [record]).filter((one) => one === 'audio' || one === 'video');
+    return kinds.length === 2 ? 'both' : String(kinds[0] ?? '');
+  };
+  if (recorded(was) !== recorded(now)) out.push(recorded(now) ? w.recorded(name, words.questions.recordKinds[recorded(now)].toLowerCase()) : w.notRecorded(name));
+  const seconds = (q: { node: FieldNode }) => (typeof option(q, 'maxSeconds') === 'number' ? (option(q, 'maxSeconds') as number) : null);
+  if (recorded(now) && seconds(was) !== seconds(now)) out.push(w.recordingUpTo(name, seconds(now)));
   // Photos made smaller, kept as taken, or as usual.
   const [shrinkWas, shrinkNow] = [a.shrink, b.shrink];
   if (JSON.stringify(shrinkWas ?? null) !== JSON.stringify(shrinkNow ?? null)) {

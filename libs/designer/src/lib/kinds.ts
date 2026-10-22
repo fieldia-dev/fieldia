@@ -115,6 +115,11 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
   { id: 'copy', label: 'Text to copy', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'copy' },
   { id: 'pdf', label: 'PDF shown inline', group: 'more', field: (label) => ({ type: 'binary', label, accept: ['application/pdf'] }), widget: 'pdf' },
   { id: 'embed', label: 'Page shown inline', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'embed' },
+  // A value shown as a code to scan: a ticket's QR, an asset's label (the codes part's).
+  { id: 'qr-code', label: 'QR code', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'qrcode' },
+  { id: 'barcode', label: 'Barcode', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'barcode' },
+  // Pins with notes on a picture: a face chart, a floor plan, a car's damage (the pins part's).
+  { id: 'pins', label: 'Pins on a picture', group: 'more', field: (label) => ({ type: 'json', label }), widget: 'pins' },
   { id: 'distribution', label: 'Analytic distribution', group: 'more', field: (label) => ({ type: 'json', label }), widget: 'distribution' },
   { id: 'tax-totals', label: 'Tax totals', group: 'more', field: (label) => ({ type: 'json', label, readonly: true }), widget: 'tax-totals' },
   { id: 'payments', label: 'Payments', group: 'more', field: (label) => ({ type: 'json', label, readonly: true }), widget: 'payments' },
@@ -122,7 +127,7 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
 ];
 
 /** The business kinds whose own settings are the widget's alone: shown for a field of the model too, which keeps what it holds. */
-export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['code', 'vscode', 'priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties']);
+export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['code', 'vscode', 'priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'colour', 'copy', 'pdf', 'embed', 'qr-code', 'barcode', 'pins', 'distribution', 'tax-totals', 'payments', 'properties']);
 
 /** The kind a field was made as, from its type and widget — an app's kind by the widget that draws it; null for one no kind makes. */
 export function kindOfField(field: Field, node: FieldNode): string | null {
@@ -138,11 +143,12 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
       if (node.widget === 'color') return 'colour';
       if (node.widget === 'code') return 'code';
       if (node.widget === 'monaco') return 'vscode';
-      if (node.widget === 'copy' || node.widget === 'embed') return node.widget;
+      if (node.widget === 'copy' || node.widget === 'embed' || node.widget === 'barcode') return node.widget;
       if (node.widget === 'one-time-code') return 'one-time-code';
+      if (node.widget === 'qrcode') return 'qr-code';
       return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : node.widget === 'url' ? 'website' : node.widget === 'tags' ? 'keywords' : node.widget === 'time' ? 'time' : 'short-answer';
     case 'text':
-      return node.widget === 'copy' ? 'copy' : node.widget === 'code' ? 'code' : node.widget === 'monaco' ? 'vscode' : 'paragraph';
+      return node.widget === 'copy' ? 'copy' : node.widget === 'qrcode' ? 'qr-code' : node.widget === 'code' ? 'code' : node.widget === 'monaco' ? 'vscode' : 'paragraph';
     case 'html':
       return 'rich-text';
     case 'selection':
@@ -153,6 +159,7 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
       return field.multiple ? 'checkboxes' : node.widget === 'radio' ? 'multiple-choice' : node.widget === 'statusbar' ? 'status' : 'dropdown';
     case 'integer':
       if (node.widget === 'color') return 'colour';
+      if (node.widget === 'barcode') return 'barcode';
       return node.widget === 'rating' ? 'rating' : node.widget === 'scale' ? 'scale' : node.widget === 'progressbar' ? 'progress' : node.widget === 'slider' ? 'slider' : 'number';
     case 'float':
       if (node.widget === 'duration' || node.widget === 'percentage' || node.widget === 'timer') return node.widget;
@@ -180,7 +187,7 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
     case 'json':
       if (node.widget === 'code') return 'code';
       if (node.widget === 'monaco') return 'vscode';
-      return node.widget === 'address' || node.widget === 'distribution' || node.widget === 'tax-totals' || node.widget === 'payments' ? node.widget : null;
+      return node.widget === 'address' || node.widget === 'distribution' || node.widget === 'tax-totals' || node.widget === 'payments' || node.widget === 'pins' ? node.widget : null;
     case 'properties':
       return 'properties';
     default:
@@ -279,6 +286,9 @@ const BUSINESS_FITS: Record<string, (field: Field) => boolean> = {
   copy: (field) => field.type === 'char' || field.type === 'text',
   pdf: (field) => field.type === 'binary' && !field.multiple,
   embed: (field) => field.type === 'char',
+  'qr-code': (field) => field.type === 'char' || field.type === 'text',
+  barcode: (field) => field.type === 'char' || field.type === 'integer',
+  pins: (field) => field.type === 'json',
   distribution: (field) => field.type === 'json',
   'tax-totals': (field) => field.type === 'json',
   payments: (field) => field.type === 'json',

@@ -333,6 +333,12 @@ export const questions = {
   photoShape: 'Shape of a crop',
   photoShapeAny: 'Any shape',
   photosHelp: 'People put the photos in the order they want; the first is what a list’s card and a map’s pin show.',
+  /** A file upload that records on the page (`options.record`): what it records, and the longest a recording may be (`maxSeconds`). */
+  recordedOnPage: 'Recorded on the page',
+  recordKinds: { '': 'Nothing', audio: 'A voice note', video: 'A video', both: 'A voice note or a video' } as Record<string, string>,
+  longestRecording: 'Longest recording',
+  recordUsual: 'As usual (2 min, a video 1 min)',
+  recordFor: (seconds: number) => (seconds >= 60 && seconds % 60 === 0 ? (seconds === 60 ? '1 minute' : `${seconds / 60} minutes`) : `${seconds} seconds`),
   // ---- previews of the newer kinds
   addressLines: { street: 'Street address', line2: 'Address line 2', city: 'City', region: 'State or region', postcode: 'Postcode', country: 'Country' },
   entryOne: 'Entry 1',
@@ -368,6 +374,14 @@ export const questions = {
   inMinutes: 'Minutes',
   wordsBeside: 'Its words beside it',
   heightPx: 'Height (px)',
+  /** A QR code's error correction, by how much of it may be lost and still read; its value's words under it. */
+  qrLevel: 'Error correction',
+  qrLevels: { L: 'Low (7%)', M: 'Medium (15%)', Q: 'Quartile (25%)', H: 'High (30%)' } as Record<string, string>,
+  codeWordsUnder: 'Its words under it',
+  /** Pins on a picture: its address, or the field holding it, and what it shows. */
+  pinsPicture: 'Picture',
+  pinsPictureFrom: 'Picture from',
+  pinsShows: 'What it shows',
   accountsFrom: 'Accounts from',
   currencyFrom: 'Currency from',
   taxTyped: 'Tax amounts can be typed',

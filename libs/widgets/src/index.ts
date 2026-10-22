@@ -18,6 +18,14 @@ export type { SignedText } from './lib/signature-evidence';
 // photos part, with the files part, loaded only for a picture field drawn as `"widget": "photos"`.
 export type { Crop, Edited, PhotoEditing } from './lib/photo-editor';
 export type { Signing, SigningContext } from './lib/signature-signing';
+// A voice note or a short film recorded on the page comes in the record part, loaded as a person first presses Record:
+// `(await recordPart.load()).openRecorder(…)`.
+export type { Recorder, RecorderContext } from './lib/recorder';
+// A value shown as a QR code or a barcode, its encoders Fieldia's own, comes in the codes part:
+// `(await codesPart.load()).qrCode(words, 'M')`, `.code128(words)`.
+export type { QrCode, QrLevel } from './lib/qr';
+// Pins with notes on a picture come in the pins part: `(await pinsPart.load()).pinsOf(value)`.
+export type { Pin } from './lib/pins';
 export type { Going, GoingItem } from './lib/files-going';
 export type { ShrinkOptions } from './lib/shrink';
 export * from './lib/extras';
@@ -81,7 +89,7 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // A text box typed to a mask (`options.mask`) and a one-time code's boxes (`"widget": "one-time-code"`) come in the
 // typed part: `(await typedPart.load()).conform(…)`.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-export { textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, decodePart, loadDecodePart, scans, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type MonthsPart, type TypedPart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type PhotosPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type LanguagesPart, type ScanPart, type DecodePart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, relationsPart, languagesPart, scanPart, decodePart, loadDecodePart, scans, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type MonthsPart, type TypedPart, type LinesPart, type BusinessPart, type FilesPart, type EvidencePart, type PhotosPart, type RecordPart, type CodesPart, type PinsPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type LanguagesPart, type ScanPart, type DecodePart, type PartFactory } from './lib/widget-parts';
 export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.

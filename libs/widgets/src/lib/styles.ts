@@ -1043,8 +1043,23 @@ export function installStyles(document: Document): void {
  * in — cut from no rule: it lays out its own boxes alone, their look borrowed from a text box's. It goes after the
  * months part's (neither names the other's parts) and before the themes', so a theme still reshapes the boxes'
  * corners and their focus as it does a text box's: rank 16.
+ *
+ * The recorder's (0.31, the record part, loaded the first time a person presses Record on a file field that records) is
+ * new too, cut from no rule: its dialog's stage — a film's live picture, a voice's level — the time and the recording
+ * played back, laid out alone in a dialog the main sheet draws, its buttons the main sheet's. It goes after the typed
+ * part's (none names another's parts) and before the themes', so a theme still reshapes its dialog, its buttons and their
+ * focus: rank 17.
+ *
+ * A value shown as a code's (0.31, the codes part): the code on its white ground, its words under it and why one cannot
+ * be drawn, under the field's own box — cut from no rule. After the recorder's (neither names the other's parts) and
+ * before the themes', so a theme still reshapes the box over it, its words' type and the note; the code keeps its own
+ * black on white under every theme and scheme: rank 18.
+ *
+ * Pins on a picture's (0.31, the pins part): the picture, its numbered pins, the keyboard's cross and the list of notes
+ * under it — cut from no rule. After the codes' (none names another's parts) and before the themes', so a theme still
+ * reshapes the note boxes, the buttons and their focus: rank 19.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, themes: 17, quiet: 18, picker: 19, head: 20, groups: 21, text: 22, surveyLooks: 23, cards: 24, scan: 25 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, record: 17, codes: 18, pins: 19, themes: 20, quiet: 21, picker: 22, head: 23, groups: 24, text: 25, surveyLooks: 26, cards: 27, scan: 28 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

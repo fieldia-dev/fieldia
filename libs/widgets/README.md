@@ -48,6 +48,23 @@ thumbnails, right to left and dark. Photos are made smaller first by the field's
 `shrink` (`{ maxSide, quality }`, or `false`), their EXIF turn kept;
 `shrinkPhoto(file, { maxSide, quality })` does the same for your own code.
 
+A film or a sound in a file field plays in the browser's own player: among the
+files a film shows its poster frame under a play mark — the app's own picture,
+the value's `poster`, else the film's frame half a second in — and plays in the
+dialog from that frame; a sound in a list plays where it is, its player under
+its name (a voice note listened to in place). Its kind is its media type, else,
+where none is known, its extension. One the browser cannot play says so.
+
+A file field whose node says `"options": { "record": "audio" }` (or `"video"`,
+or both) records a voice note or a short film on the page: Record beside its
+picker opens the recorder over the form — the browser asks for the microphone
+(and the camera), a refusal is said with Try again, then Start, the time against
+`maxSeconds` (120 for a voice note, 60 for a film unless it says) and Stop — and
+the recording, played back, is used as a file picked is: through the data
+source's `upload` where it has one. The recorder comes in `recordPart`
+(`fieldia.record.js`), loaded the first time Record is pressed; where the browser
+cannot record (a page not served over https), the buttons are not shown.
+
 Every box says what the browser may fill it in with and which keyboard a phone
 shows for it: the field node's `autocomplete` (a purpose from the HTML
 standard's list, such as `given-name`, `work email` or `shipping postal-code`,
@@ -64,6 +81,24 @@ address's parts each its own after whose it is (`"autocomplete": "shipping"`):
 value the browser fills in is the person's own, read as typed: cleaned as a
 paste is, never put back where nobody may be looking, read at once in a box the
 person is not in, and saved as any change of theirs.
+
+A value is shown as a code to scan with `"widget": "qrcode"` (a char or text
+field: a QR code, its words as UTF-8, at `options.level` L, M, Q or H) or
+`"widget": "barcode"` (a char or integer field: Code 128), drawn as SVG from the
+value — black on white, crisp on paper, named for a screen reader — under the
+field's own box while it may be typed in; `size` and `showValue` set its size
+and the words under it. Words a code cannot hold are said in its place. The
+encoders are Fieldia's own, in `codesPart` (`fieldia.codes.js`):
+`(await codesPart.load()).qrCode(words, 'M')`, `.code128(words)`.
+
+Pins with notes go on a picture with `"widget": "pins"` on a json field — a
+face chart, a floor plan, a car's damage: `options.image` (its address) or
+`options.imageField` (a field holding it), `alt`, `maxPins`, `noteLabel`. The
+value is the pins, `[{ "x": 0.42, "y": 0.31, "note": "Botox, 4 units" }]`, each
+as shares of the picture's width and height from its top left. A click or a tap
+puts a pin, a pin is dragged, and the keyboard does both (a cross moved by the
+arrows, Enter; on a pin, the arrows, Delete); the pins are a numbered list under
+the picture for a screen reader. It comes in `pinsPart` (`fieldia.pins.js`).
 
 A phone field (`"widget": "phone"`) is read the world over where its page says
 `"phone": { "country": "EG", "shown": "national" }` — or the field itself, with

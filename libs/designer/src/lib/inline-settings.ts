@@ -42,6 +42,8 @@ const FILE_SIZES = [1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 102
 /** The longest sides photos are made smaller to, in pixels, and how sharp: a phone's screen, a laptop's, a print. */
 const PHOTO_SIDES = [1280, 1600, 2048, 2560, 3200, 4096];
 const PHOTO_QUALITIES = [0.7, 0.8, 0.9, 0.95];
+/** How long a recording may be, offered as the longest, in seconds. */
+const RECORD_LENGTHS = [30, 60, 120, 300, 600];
 
 export function inlineSettings(el: ElementFactory, designer: Designer, id: string): InlineSettings {
   const w = designer.words.questions;
@@ -208,6 +210,16 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
       camera.addEventListener('change', () => designer.setWidgetOptions(id, { camera: camera.value === 'user' ? 'user' : camera.value ? true : null }));
       // A photo set is always several photos, drawn as its tiles: neither is a choice there.
       const set = kind === 'photos';
+      // A voice note or a video recorded on the page, for a file upload, and the longest a recording may be.
+      const recorded = select(w.recordedOnPage, Object.keys(w.recordKinds));
+      Object.values(w.recordKinds).forEach((words, i) => (recorded.options[i].textContent = words));
+      recorded.addEventListener('change', () => designer.setWidgetOptions(id, { record: recorded.value === 'both' ? ['audio', 'video'] : recorded.value || null, ...(recorded.value ? {} : { maxSeconds: null }) }));
+      const longest = select(w.longestRecording, ['', ...RECORD_LENGTHS.map(String)]);
+      [w.recordUsual, ...RECORD_LENGTHS.map(w.recordFor)].forEach((words, i) => (longest.options[i].textContent = words));
+      const ownLength = el('option', { hidden: '' }) as HTMLOptionElement;
+      longest.append(ownLength);
+      longest.addEventListener('change', () => designer.setWidgetOptions(id, { maxSeconds: longest.value ? Number(longest.value) : null }));
+      const longestRow = word(w.longestRecording, longest);
       element.replaceChildren(
         ...(kind === 'file' ? [el('div', { class: 'fd-inline-row' }, el('span', {}, w.takesOnly), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.kindsOfFile }, ...types.map((t) => t.button)))] : []),
         el('div', { class: 'fd-inline-row' }, word(w.largestFile, largest), ...(set ? [] : [el('span', { class: 'fd-inline-setting fd-inline-toggle' }, several, el('span', { 'aria-hidden': 'true' }, w.severalFiles))])),
@@ -220,7 +232,8 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
             ]),
         word(w.smallerPhotos, smaller),
         qualityRow,
-        ...(kind !== 'file' ? [word(w.cameraOnPhones, camera)] : [])
+        ...(kind !== 'file' ? [word(w.cameraOnPhones, camera)] : []),
+        ...(kind === 'file' ? [word(w.recordedOnPage, recorded), longestRow] : [])
       );
       refresh = (page, node) => {
         const def = page.fields[node.field];
@@ -244,6 +257,16 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         switchable.setAttribute('aria-checked', String(node.options?.['filesSwitch'] === true));
         const facing = node.options?.['camera'];
         camera.value = facing ? (facing === 'user' ? 'user' : 'environment') : '';
+        const record = node.options?.['record'];
+        const kinds = (Array.isArray(record) ? record : [record]).filter((one) => one === 'audio' || one === 'video');
+        recorded.value = kinds.length === 2 ? 'both' : String(kinds[0] ?? '');
+        const seconds = node.options?.['maxSeconds'];
+        ownLength.hidden = typeof seconds !== 'number' || RECORD_LENGTHS.includes(seconds);
+        ownLength.value = String(seconds ?? '');
+        ownLength.textContent = typeof seconds === 'number' ? w.recordFor(seconds) : '';
+        longest.value = typeof seconds === 'number' ? String(seconds) : '';
+        // How long, only where something is recorded: hidden, not disabled, where nothing is.
+        longestRow.hidden = !kinds.length;
         // An image is made smaller as usual, and may be kept as taken; a file upload is not, unless a side is picked.
         const picture = def.type === 'image';
         smaller.options[0].textContent = picture ? w.smallerUsual : w.smallerNo;

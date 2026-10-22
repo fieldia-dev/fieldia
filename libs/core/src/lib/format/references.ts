@@ -27,7 +27,7 @@ import { checkList, checkRelated, type ListTools } from './list-checks';
 import { checkEditable } from './editable-checks';
 import type { FieldTools } from './part-checks';
 import { checkSlots } from './slots-checks';
-import { checkSignature } from './signature-checks';
+import { checkRecording, checkSignature } from './signature-checks';
 import { checkRewrite, checkSuggest } from './assist-checks';
 import { checkScan } from './scan-checks';
 import { checkEndings } from './endings-checks';
@@ -880,6 +880,13 @@ export class ReferenceCheck {
     if (node.options?.['rewrite'] !== undefined) checkRewrite(node, def, path, this.fieldTools());
     // A photo set is a picture field's of several photos: one photo has no order, no cover.
     if (node.widget === 'photos' && def && (def.type !== 'image' || !def.multiple)) this.report(`${path}.widget`, `photos is for an image field of several photos (multiple); "${node.field}" is not one`);
+    // A value shown as a code: a QR code holds words, a barcode words or a whole number; pins on a picture are a json's.
+    const codes: Record<string, readonly string[]> = { qrcode: ['char', 'text'], barcode: ['char', 'integer'], pins: ['json'] };
+    if (def && node.widget && codes[node.widget] && !codes[node.widget].includes(def.type)) this.report(`${path}.widget`, `${node.widget} is for a ${codes[node.widget].join(' or ')} field; "${node.field}" is a ${def.type}`);
+    // A file field that records a voice note or a film: its checks come with the files part, which draws it.
+    const records = node.options?.['record'] !== undefined || node.options?.['maxSeconds'] !== undefined;
+    if (records && def && def.type !== 'binary') this.report(`${path}.options.record`, `record is for a binary field; "${node.field}" is a ${def.type}`);
+    else if (records && def) checkRecording(node, def, path, this.fieldTools());
     if (def) this.checkPicker(node, def, path);
     // Scanned into with the camera — the field, or a table's columns: checked with the scan part's code, which draws it.
     if (scansAny(node)) checkScan(node, def, path, this.fieldTools());

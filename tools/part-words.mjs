@@ -57,13 +57,26 @@ export const PART_WORDS = {
   },
   files: {
     widgets: [
-      'uploadImage', 'dropHere', 'addFiles', 'addPhotos', 'dropThem', 'upToSize', 'upToEach', 'upToFiles', 'fileCount', 'oneFile', 'fileCountOf', 'tooMany', 'alreadyAdded', 'fileAt', 'noPreview', 'showFilesAs', 'asList', 'asCards', 'asThumbnails',
+      'uploadImage', 'dropHere', 'addFiles', 'addPhotos', 'dropThem', 'upToSize', 'upToEach', 'upToFiles', 'fileCount', 'oneFile', 'fileCountOf', 'tooMany', 'alreadyAdded', 'fileAt', 'noPreview', 'cannotPlay', 'recordVoice', 'recordVideo', 'recordVoiceUpTo', 'recordVideoUpTo', 'recorderNoPart', 'showFilesAs', 'asList', 'asCards', 'asThumbnails',
       'signaturePad', 'signHere', 'typeSignature', 'clearDrawing', 'uploadSignature', 'uploadPercent', 'uploadWaiting', 'uploadPreparing', 'uploadFailed', 'uploadRefused', 'uploadingNamed', 'retryUploadNamed', 'fileUploaded', 'filesUploaded', 'notUploadedNamed', 'noDocument',
       'removeAsk', 'removed', 'notSignedNoPart', 'signingNoPart', 'signingRetry', 'notSignedReload', 'signingNoPartReload',
     ],
     viewer: ['showAs'],
   },
   editable: { widgets: ['cellName'], viewer: ['rowEditHint', 'rowAdd', 'rowAddNoun', 'rowDrop', 'rowNotSaved', 'rowSaved', 'rowOpen', 'rowChange', 'rowCell'] },
+  record: {
+    widgets: [
+      'recordVoice', 'recordVideo', 'recordAskMic', 'recordAskCamera', 'recordReady', 'recordStart', 'recordStop', 'recordingNow', 'recordStoppedAt', 'recordStoppedSize', 'recordDone', 'recordUse', 'recordAgain', 'recordDiscardAsk', 'recordDiscard', 'recordGoBack',
+      'recordMicRefused', 'recordCameraRefused', 'recordNoMic', 'recordNoCamera', 'recordBusy', 'recordCannot', 'recordTryAgain', 'recordingNameVoice', 'recordingNameVideo',
+    ],
+  },
+  codes: { widgets: ['qrCodeOf', 'barcodeOf', 'qrTooLong', 'barcodeRefused'] },
+  pins: {
+    widgets: [
+      'pinsHelp', 'pinsOn', 'pinsNoPicture', 'pinsNone', 'pinAt', 'pinTopLeft', 'pinTop', 'pinTopRight', 'pinLeft', 'pinCentre', 'pinRight', 'pinBottomLeft', 'pinBottom', 'pinBottomRight',
+      'pinNamed', 'pinNamedNote', 'pinNote', 'pinNotePlaceholder', 'pinRemove', 'pinAdded', 'pinMoved', 'pinRemoved', 'pinsFull',
+    ],
+  },
   evidence: { widgets: ['signedByName', 'signedAt', 'answersAsSigned', 'answersChanged', 'changeAnswers', 'changeAnswersAsk', 'signatureTakenAway', 'notSignedYet', 'readyToSign', 'signNow'] },
   filters: { viewer: ['filterByKeyword', 'clearFilters', 'filterNamed', 'filterSettings', 'rangeAny', 'rangeOrMore', 'filtersOn', 'filtersClearAll', 'showResults', 'showResultsNoun', 'showResultsOne', 'showResultsNounOne', 'showResultsSome'] },
   head: {

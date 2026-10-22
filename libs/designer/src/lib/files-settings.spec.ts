@@ -192,6 +192,36 @@ describe('several files, on the card and in the side panel', () => {
     expect(fieldOf(page(), id)).not.toHaveProperty('maxSize');
   });
 
+  it('records a voice note or a video on a file upload, for as long as picked, and says so when published', () => {
+    const { id, host, page, designer } = picked('file');
+    const recorded = named<HTMLSelectElement>(panel(host), 'Recorded on the page')[0];
+    expect([...recorded.options].map((o) => o.textContent)).toEqual(['Nothing', 'A voice note', 'A video', 'A voice note or a video']);
+    // How long, only once something is recorded.
+    expect(named(panel(host), 'Longest recording')).toHaveLength(0);
+    const before = page();
+    choose(recorded, 'audio');
+    expect(nodeOf(page(), id).options).toEqual({ record: 'audio' });
+    const longest = named<HTMLSelectElement>(panel(host), 'Longest recording')[0];
+    expect([...longest.options].filter((o) => !o.hidden).map((o) => o.textContent)).toEqual(['As usual (2 min, a video 1 min)', '30 seconds', '1 minute', '2 minutes', '5 minutes', '10 minutes']);
+    choose(longest, '300');
+    expect(nodeOf(page(), id).options).toEqual({ record: 'audio', maxSeconds: 300 });
+    expect(validatePage(page()).ok).toBe(true);
+    expect(pageChanges(before, page())).toEqual(['“Documents”: a voice note recorded on the page', '“Documents”: a recording up to 5 min']);
+    const both = page();
+    choose(recorded, 'both');
+    expect(nodeOf(page(), id).options).toEqual({ record: ['audio', 'video'], maxSeconds: 300 });
+    expect(pageChanges(both, page())).toEqual(['“Documents”: a voice note or a video recorded on the page']);
+    // Nothing recorded: its length goes with it.
+    const none = page();
+    choose(recorded, '');
+    expect(nodeOf(page(), id).options).toBeUndefined();
+    expect(pageChanges(none, page())).toEqual(['“Documents”: nothing recorded on the page any more']);
+    // A length of the page's own is shown as it is; an image records nothing.
+    designer.setWidgetOptions(id, { record: 'video', maxSeconds: 45 });
+    expect(named<HTMLSelectElement>(panel(host), 'Longest recording')[0].selectedOptions[0].textContent).toBe('45 seconds');
+    expect(named(panel(picked('image').host), 'Recorded on the page')).toHaveLength(0);
+  });
+
   it('shows a largest size of the page’s own as it is', () => {
     const { designer, id, host } = picked('image');
     designer.setFileRules(id, { maxSize: 2 * 1048576 });

@@ -178,6 +178,81 @@ export interface WidgetLabels {
   close: string;
   fileAt: string;
   noPreview: string;
+  /**
+   * A film or a sound the browser cannot play (its format is not one it reads): said where its player would be.
+   */
+  cannotPlay: string;
+  /**
+   * A file field that records (`options.record`): its buttons, how long a recording may be (`{time}`, "2:00"), and the
+   * recorder that could not be loaded. Then the recorder: the browser asked for the microphone (and the camera); ready,
+   * recording, Start and Stop; stopped at the limit (`{time}`) or at the largest file the field takes; recorded (`{time}`)
+   * with Use and Record again; a recording asked about before it is let go; why the devices could not be had, with Try
+   * again; a browser that cannot record; and a recording's name (`{when}`, "2026-10-21 11.42.05").
+   */
+  recordVoice: string;
+  recordVideo: string;
+  recordVoiceUpTo: string;
+  recordVideoUpTo: string;
+  recorderNoPart: string;
+  recordAskMic: string;
+  recordAskCamera: string;
+  recordReady: string;
+  recordStart: string;
+  recordStop: string;
+  recordingNow: string;
+  recordStoppedAt: string;
+  recordStoppedSize: string;
+  recordDone: string;
+  recordUse: string;
+  recordAgain: string;
+  recordDiscardAsk: string;
+  recordDiscard: string;
+  recordGoBack: string;
+  recordMicRefused: string;
+  recordCameraRefused: string;
+  recordNoMic: string;
+  recordNoCamera: string;
+  recordBusy: string;
+  recordCannot: string;
+  recordTryAgain: string;
+  recordingNameVoice: string;
+  recordingNameVideo: string;
+  /**
+   * A value shown as a code (`"widget": "qrcode"`, `"barcode"`): the code's name for a screen reader (`{value}`); words too
+   * long for a QR code; a character a barcode cannot hold (`{character}`).
+   */
+  qrCodeOf: string;
+  barcodeOf: string;
+  qrTooLong: string;
+  barcodeRefused: string;
+  /**
+   * Pins with notes on a picture (`"widget": "pins"`): how they are put and moved; the picture's group (`{label}`), none
+   * yet, no pins yet; where a pin is (`{area}`, one of the nine, `{x}` and `{y}` per cent across and down); a pin's name
+   * (`{n}`, `{at}`, `{note}`), its note's box and Remove; what is said as one is added, moved, removed; the most it takes.
+   */
+  pinsHelp: string;
+  pinsOn: string;
+  pinsNoPicture: string;
+  pinsNone: string;
+  pinAt: string;
+  pinTopLeft: string;
+  pinTop: string;
+  pinTopRight: string;
+  pinLeft: string;
+  pinCentre: string;
+  pinRight: string;
+  pinBottomLeft: string;
+  pinBottom: string;
+  pinBottomRight: string;
+  pinNamed: string;
+  pinNamedNote: string;
+  pinNote: string;
+  pinNotePlaceholder: string;
+  pinRemove: string;
+  pinAdded: string;
+  pinMoved: string;
+  pinRemoved: string;
+  pinsFull: string;
   /** The switch over the files, when the page offers one: the files as a list, as cards, or as thumbnails. */
   showFilesAs: string;
   asList: string;
@@ -757,6 +832,62 @@ const en: WidgetLabels = {
   close: 'Close',
   fileAt: '{n} of {total}',
   noPreview: 'No preview for this kind of file',
+  cannotPlay: 'This browser cannot play it: download it to play it.',
+  recordVoice: 'Record a voice note',
+  recordVideo: 'Record a video',
+  recordVoiceUpTo: 'voice notes up to {time}',
+  recordVideoUpTo: 'videos up to {time}',
+  recorderNoPart: 'The recorder could not be loaded. Press Record to try again.',
+  recordAskMic: 'Allow the microphone when your browser asks.',
+  recordAskCamera: 'Allow the camera and the microphone when your browser asks.',
+  recordReady: 'Ready. Press Start recording.',
+  recordStart: 'Start recording',
+  recordStop: 'Stop',
+  recordingNow: 'Recording…',
+  recordStoppedAt: 'Stopped at {time}, the longest a recording may be here.',
+  recordStoppedSize: 'Stopped: the recording reached the largest file this field takes.',
+  recordDone: 'Recorded {time}. Play it back, then use it or record again.',
+  recordUse: 'Use this recording',
+  recordAgain: 'Record again',
+  recordDiscardAsk: 'Discard this recording?',
+  recordDiscard: 'Discard',
+  recordGoBack: 'Go back',
+  recordMicRefused: 'The microphone was not allowed. Allow it for this site in your browser’s settings, then press Try again, or add a recording as a file.',
+  recordCameraRefused: 'The camera or the microphone was not allowed. Allow them for this site in your browser’s settings, then press Try again, or add a video as a file.',
+  recordNoMic: 'No microphone was found. Connect one, then press Try again.',
+  recordNoCamera: 'No camera or microphone was found. Connect one, then press Try again.',
+  recordBusy: 'The microphone or the camera could not be started: another app may be using it. Close it, then press Try again.',
+  recordCannot: 'This browser cannot record here. Add a recording as a file instead.',
+  recordTryAgain: 'Try again',
+  recordingNameVoice: 'Voice note {when}',
+  recordingNameVideo: 'Video {when}',
+  qrCodeOf: 'QR code: {value}',
+  barcodeOf: 'Barcode: {value}',
+  qrTooLong: 'Too long for a QR code: shorten it, or show a link to it instead.',
+  barcodeRefused: 'A barcode cannot hold “{character}”: only letters without accents, digits and signs.',
+  pinsHelp: 'Click the picture to add a pin, or reach it with Tab, move the cross with the arrow keys and press Enter. Drag a pin, or move it with the arrow keys; Delete takes it away.',
+  pinsOn: '{label}: put pins on it',
+  pinsNoPicture: 'No picture to put pins on yet.',
+  pinsNone: 'No pins yet.',
+  pinAt: '{area}, {x}% across, {y}% down',
+  pinTopLeft: 'top left',
+  pinTop: 'top',
+  pinTopRight: 'top right',
+  pinLeft: 'left',
+  pinCentre: 'centre',
+  pinRight: 'right',
+  pinBottomLeft: 'bottom left',
+  pinBottom: 'bottom',
+  pinBottomRight: 'bottom right',
+  pinNamed: 'Pin {n}, {at}',
+  pinNamedNote: 'Pin {n}, {at}: {note}',
+  pinNote: 'Note for pin {n}',
+  pinNotePlaceholder: 'What was done here',
+  pinRemove: 'Remove pin {n}',
+  pinAdded: 'Pin {n} added: {at}.',
+  pinMoved: 'Pin {n} moved: {at}.',
+  pinRemoved: 'Pin {n} removed.',
+  pinsFull: 'No more pins: {max} at most.',
   showFilesAs: 'Show files as',
   asList: 'List',
   asCards: 'Cards',
