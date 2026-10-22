@@ -15,7 +15,7 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
-## 0.30.0 — 2026-10-21
+## 0.30.0 — 2026-10-22
 
 **A work item as a work tracker draws one: tags inline in its head's row,
 menus inside its menus with lines between their items, and its formatted text
