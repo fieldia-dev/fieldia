@@ -6,8 +6,11 @@
  *   <script>Fieldia.mountViewer(element, { page, dataSource })</script>
  *
  * Its own words are English. Arabic, German and French ship as add-on
- * scripts beside it — `fieldia.ar.js`, `fieldia.de.js`, `fieldia.fr.js` — each
- * carrying that language's words alone, which a page loads after the main one:
+ * scripts beside it — `fieldia.ar.js`, `fieldia.de.js`, `fieldia.fr.js` — and
+ * Turkish, Persian, Urdu and Spanish too (`fieldia.tr.js`, `fieldia.fa.js`,
+ * `fieldia.ur.js`, `fieldia.es.js`: machine-assisted, not yet reviewed by a
+ * native speaker), each carrying that language's words alone, which a page
+ * loads after the main one:
  *
  *   <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
  *
@@ -28,7 +31,9 @@ const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle');
 const OUT = join(BUNDLE, 'fieldia.js');
 /** The languages besides English, each an add-on script of its own. */
-const LANGUAGES = { ar: 'Arabic', de: 'German', fr: 'French' };
+const LANGUAGES = { ar: 'Arabic', de: 'German', fr: 'French', tr: 'Turkish', fa: 'Persian', ur: 'Urdu', es: 'Spanish' };
+/** The languages whose words are machine-assisted, not yet reviewed by a native speaker (0.31): their add-on's first line says so. */
+const UNREVIEWED = new Set(['tr', 'fa', 'ur', 'es']);
 const { version } = JSON.parse(readFileSync(join(WORKSPACE, 'libs/viewer/package.json'), 'utf8'));
 
 /**
@@ -447,7 +452,7 @@ for (const [locale, name] of Object.entries(LANGUAGES)) {
       sourcefile: `fieldia.${locale}.ts`,
       loader: 'ts',
     },
-    banner: { js: `/*! Fieldia ${version} · ${name} · MIT · https://fieldia.dev */` },
+    banner: { js: `/*! Fieldia ${version} · ${name}${UNREVIEWED.has(locale) ? ' (unreviewed: machine-assisted, not yet reviewed by a native speaker)' : ''} · MIT · https://fieldia.dev */` },
     outfile: join(BUNDLE, `fieldia.${locale}.js`),
   });
 }
@@ -1254,7 +1259,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // made live among them: 525.38), an option's mark and second line drawn by the choice part (525.06), uploadTo's work in
 // the files part, which a page with a file field has (522.16), and the parts taking the main script's names by their
 // place in the shared table, never by their words (518.54): 518.54, to 518.6.
-const BUDGET_KB = 518.6;
+// Turkish, Persian, Urdu and Spanish (0.31, w6-languages; their words in their add-ons): the four names the console
+// gives for a missing add-on (0.06); a day's tag for Intl on the Gregorian calendar (`dayTag` — Intl's own for Persian
+// is the Solar Hijri, so a date box would write 2026-10-15 at rest as 23 Mehr 1405 and not read it back), the Arabic
+// comma and Saturday's week for Persian and Urdu (`listComma`, `firstWeekday`), Persian's «» round a question and a
+// Turkish date's dots (the call sites each a little shorter): 518.54 measured before, 518.73 after, to 518.8.
+const BUDGET_KB = 518.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1537,7 +1547,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Merged (0.31.0), Wave 6's lanes together (listed with the raw budget above): 173.24 measured; then the size step — one
 // registry and one kit for the parts that join a form, 173.23; an option's mark in the choice part, 173.15; uploadTo in
 // the files part, 172.02; the shared table by place, 170.29 — to 170.3.
-const GZIP_BUDGET_KB = 170.3;
+// Turkish, Persian, Urdu and Spanish (listed with the raw budget above): 170.29 measured before, 170.36 after, to 170.4.
+const GZIP_BUDGET_KB = 170.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1809,7 +1820,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 12.56, to 39.4 and 12.6.
 // Merged (0.31.0), every lane's words together: Arabic's 124.05 and 20.21, German's 56.13 and 17.45, French's 57.08 and
 // 17.43 measured.
-const ADD_ON_BUDGET_KB = { ar: [124.1, 20.3], de: [56.2, 17.5], fr: [57.1, 17.5] };
+// Turkish, Persian, Urdu and Spanish (0.31, w6-languages — machine-assisted, not yet reviewed by a native speaker), each an
+// add-on of its own with every word English has: Turkish's 63.58 and 17.71 measured, to 63.6 and 17.8; Persian's 155.35
+// and 21.79, to 155.4 and 21.9; Urdu's 158.05 and 21.88, to 158.1 and 21.9; Spanish's 54.50 and 17.23, to 54.6 and 17.3
+// (a few bytes' room where the measure fell within ten of the tenth).
+// (Persian's and Urdu's letters are written as escapes, six bytes each, as Arabic's are: hence their size before gzip.)
+const ADD_ON_BUDGET_KB = { ar: [124.1, 20.3], de: [56.2, 17.5], fr: [57.1, 17.5], tr: [63.6, 17.8], fa: [155.4, 21.9], ur: [158.1, 21.9], es: [54.6, 17.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2371,7 +2387,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // Merged (0.31.0), each part as measured after the size step: every part a little smaller, taking the main script's
 // names by their place in the shared table; the choice part with an option's mark and second line (11.89 and 4.71), the
 // files part with uploadTo's work (46.41 and 17.31), the list part with Wave 6's hooks of five lanes (139.04 and 44.50).
-const PART_BUDGET_KB = { head: [42.3, 12.9], text: [72.3, 24.5], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.6, 7.7], date: [22.6, 8.6], months: [13.7, 5.6], typed: [13.6, 5.7], list: [139.1, 44.5], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [37.6, 14.8], editable: [28.1, 10.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [29.6, 11.0], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [30.1, 11.3], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.2], slots: [15.2, 5.9], schedule: [20.4, 7.9], relations: [20.1, 7.7], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.0, 6.6], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.4, 3.5], print: [16.5, 5.2], memory: [23.0, 8.4], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [35.8, 12.2], scan: [17.8, 7.6], decode: [153.8, 39.0], surveyflow: [34.3, 12.3], prefill: [4.1, 2.0], verify: [11.1, 4.7], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// Turkish, Persian, Urdu and Spanish (w6-languages): a head's short date on the Gregorian calendar in Latin digits,
+// Persian's too (head 42.28 measured before, 42.32 after, to 42.4); a month's and a Hijri day's typing with a Turkish
+// page's dots, and the months' names on the Gregorian calendar (months 13.68 before, 13.71 after, to 13.8).
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.3, 24.5], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.6, 7.7], date: [22.6, 8.6], months: [13.8, 5.6], typed: [13.6, 5.7], list: [139.1, 44.5], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [37.6, 14.8], editable: [28.1, 10.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [29.6, 11.0], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [30.1, 11.3], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.2], slots: [15.2, 5.9], schedule: [20.4, 7.9], relations: [20.1, 7.7], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.0, 6.6], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.4, 3.5], print: [16.5, 5.2], memory: [23.0, 8.4], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [35.8, 12.2], scan: [17.8, 7.6], decode: [153.8, 39.0], surveyflow: [34.3, 12.3], prefill: [4.1, 2.0], verify: [11.1, 4.7], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

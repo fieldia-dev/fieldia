@@ -124,8 +124,14 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * — 1,083 bytes more for all (47,484 to 48,567: 47.5), 1,040 more for a list's
  * map in a page of its own (31,865 to 32,905: 32.2); a place and an area as
  * they were (27,084).
+ * Turkish, Persian, Urdu and Spanish (0.31, w6-languages — machine-assisted, not yet reviewed by a native speaker),
+ * carried as Arabic, German and French are: a place's and an area's words drawn as their boxes are, with the page,
+ * and a list's and a form's map's, each in eight languages; the Arabic comma for Persian and Urdu and a day's tag on
+ * the Gregorian calendar from @fieldia/core. A place and an area 27,088 bytes measured before, 31,514 after, to 30.8;
+ * all 48,566 to 54,854, to 53.6; a list's map in a page of its own 32,907 to 38,586, to 37.7. (The calendar and the
+ * timeline fetch the four's words in chunks of their own, with their view; a place and an area draw theirs at once.)
  */
-const BUDGET = { fields: 26.5, all: 47.5, embed: 32.2, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 30.8, all: 53.6, embed: 37.7, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
@@ -183,4 +189,4 @@ if (embed.own > BUDGET.embed * 1024) throw new Error(`@fieldia/map for a list's 
 if (all.leaflet > BUDGET.leaflet * 1024) throw new Error(`Leaflet's chunk is ${kb(all.leaflet)} KB gzipped, over its ${BUDGET.leaflet} KB budget`);
 if (!all.routes) throw new Error('The routes are not in a chunk of their own: every map would carry them');
 if (all.routes > BUDGET.routes * 1024) throw new Error(`The routes' chunk is ${kb(all.routes)} KB gzipped, over its ${BUDGET.routes} KB budget`);
-console.log(`@fieldia/map: ${kb(fields.own)} KB gzipped for a place and an area (budget ${BUDGET.fields}), ${kb(all.own)} KB with a list's map and a form's (budget ${BUDGET.all}), ${kb(embed.own)} KB for a list's map in a page of its own (budget ${BUDGET.embed}); Leaflet ${kb(all.leaflet)} KB with the first map (budget ${BUDGET.leaflet}); routes ${kb(all.routes)} KB with the first route (budget ${BUDGET.routes})`);
+console.log(`@fieldia/map: ${kb(fields.own)} KB gzipped for a place and an area (budget ${BUDGET.fields}), ${kb(all.own)} KB with a list's map and a form's (budget ${BUDGET.all}), ${kb(embed.own)} KB for a list's map in a page of its own (budget ${BUDGET.embed}); Leaflet ${kb(all.leaflet)} KB with the first map (budget ${BUDGET.leaflet}); routes ${kb(all.routes)} KB with the first route (budget ${BUDGET.routes}) — ${fields.own}, ${all.own} and ${embed.own} bytes`);

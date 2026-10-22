@@ -115,7 +115,7 @@ const esmOnly = new Set(['@fieldia/angular']);
 // Every language in the packages with no extra import: only the script bundle leaves them to add-ons.
 const languagesCheck = (load) => `for (const [name, table] of [['@fieldia/core', 'MESSAGES'], ['@fieldia/widgets', 'WIDGET_LABELS'], ['@fieldia/viewer', 'VIEWER_LABELS']]) {
   const held = Object.keys((${load})[table]).sort().join(',');
-  if (held !== 'ar,de,en,fr') throw new Error(name + ' has ' + table + ' in ' + held + ', not in all four languages');
+  if (held !== 'ar,de,en,es,fa,fr,tr,ur') throw new Error(name + ' has ' + table + ' in ' + held + ', not in all eight languages');
 }
 `;
 
@@ -329,7 +329,7 @@ const sandbox = {};
 runInNewContext(readFileSync(bundle, 'utf8'), sandbox);
 if (typeof sandbox.Fieldia?.mountViewer !== 'function' || sandbox.Fieldia.VERSION !== version) fail('the packed script bundle does not define Fieldia.mountViewer at this version');
 // Each language's add-on beside it: after the main script, Fieldia has that language's words.
-for (const locale of ['ar', 'de', 'fr']) {
+for (const locale of ['ar', 'de', 'fr', 'tr', 'fa', 'ur', 'es']) {
   const addOn = join(SMOKE, `node_modules/@fieldia/viewer/bundle/fieldia.${locale}.js`);
   if (!existsSync(addOn)) fail(`@fieldia/viewer has no bundle/fieldia.${locale}.js`);
   const page = {};

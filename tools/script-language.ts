@@ -1,6 +1,7 @@
 /**
  * What a language's add-on script does (`fieldia.ar.js`, `fieldia.de.js`,
- * `fieldia.fr.js`, built by tools/script-bundle.mjs): hand that language's
+ * `fieldia.fr.js`, `fieldia.tr.js`, `fieldia.fa.js`, `fieldia.ur.js`,
+ * `fieldia.es.js`, built by tools/script-bundle.mjs): hand that language's
  * words to the one-tag script's `Fieldia.addLanguage`. It carries the words
  * alone — never a second copy of Fieldia — so it needs fieldia.js on the page.
  *
