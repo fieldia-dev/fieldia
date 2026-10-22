@@ -8,7 +8,8 @@ import { WIDGET_LABELS } from './labels';
  * A value shown as a code: the encoders — a QR code in byte mode at each level, in the smallest of 40 versions; Code
  * 128 in the code set that writes each run — and the widget that draws one as the value changes, named, saying why one
  * cannot be drawn. Every code made here was also read back by ZXing (21 Oct 2026: 294 QR codes, versions 1 to 40 at
- * every level, and 313 barcodes, each read as made); the code below is one of them, kept as it was read.
+ * every level, and 313 barcodes, each read as made); the code below is one of them, kept as it was read. The round
+ * trip itself, ZXing reading what these encoders make, is codes-zxing.spec.ts.
  */
 
 const rows = (modules: boolean[][]) => modules.map((row) => row.map((dark) => (dark ? '#' : '.')).join(''));
