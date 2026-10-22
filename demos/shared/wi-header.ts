@@ -290,7 +290,7 @@ export const WI_HEAD_RECORDS: Record<string, Record<string, Values>> = {
       state: 'active',
       reason: 'approved',
       area: { id: 1, label: 'Portal' },
-      iteration: { id: 4, label: 'Portal\\Sprint 14' },
+      iteration: { id: 5, label: 'Portal\\Sprint 14' },
       repro_steps: 'Release 3 of the 15 items on order SO-2088 from the warehouse, then open the product: its stock count shows 12, not 15.',
       priority: '1',
       severity: '3',
@@ -304,8 +304,7 @@ export const WI_HEAD_RECORDS: Record<string, Record<string, Values>> = {
     2: { number: 4128, work_type: 'task', title: 'Count stock again after a partial release', state: 'new', related: [], attachments: [] },
   },
   'wi.user': { 1: { name: 'Mona Adel' }, 2: { name: 'Karim Fathy' }, 3: { name: 'Salma Nabil' }, 4: { name: 'Omar Hany' } },
-  'wi.area': { 1: { name: 'Portal' }, 2: { name: 'Portal\\Checkout' }, 3: { name: 'Portal\\Search' }, 4: { name: 'Warehouse' } },
-  'wi.iteration': { 1: { name: 'Portal\\Sprint 12' }, 2: { name: 'Portal\\Sprint 13' }, 4: { name: 'Portal\\Sprint 14' }, 5: { name: 'Portal\\Tasks and Activities' } },
+  // Its areas and iterations are the work tracker's, with their paths (shared/wi-picker.ts): one table of each.
 };
 
 /** The app's answers to the head's buttons: Follow writes whether the bug is followed as the server keeps it, never a change to save. */
