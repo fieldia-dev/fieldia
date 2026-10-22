@@ -2,6 +2,7 @@ import {
   addDays,
   dayStarts,
   facetsToFilter,
+  firstWeekday,
   groupByFields,
   importFields,
   optionsList,
@@ -351,7 +352,7 @@ export function listView(context: ListContext): ListView {
    * Fieldia's calendars have it); days told in the page's time zone (its `timeZone`), else the browser's — and a date
    * and time's own days in its own zone, where it names one (the page's is written into each that names none).
    */
-  const count: DayCount = { weekStart: locale === 'ar' ? 6 : 1, timeZone: page.timeZone || ownZone() };
+  const count: DayCount = { weekStart: firstWeekday(locale), timeZone: page.timeZone || ownZone() };
   const zoneOfField = (name: string) => {
     const def = page.fields[name];
     return (def?.type === 'datetime' && def.timeZone) || count.timeZone;

@@ -192,7 +192,11 @@ export interface Messages {
   dateOrder?: DateOrder;
 }
 
-export type Locale = 'en' | 'ar' | 'de' | 'fr';
+/**
+ * A language Fieldia has its own words in. Turkish, Persian, Urdu and Spanish are machine-assisted and not yet reviewed
+ * by a native speaker (0.31).
+ */
+export type Locale = 'en' | 'ar' | 'de' | 'fr' | 'tr' | 'fa' | 'ur' | 'es';
 
 /** A message every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
 export type MessageKey = Exclude<keyof Messages, `${string}Noun` | 'lowerLabels' | 'dateOrder'>;
@@ -307,8 +311,9 @@ const en: Messages = {
 };
 
 /**
- * The messages in every language Fieldia has. This package holds all four;
- * the one-tag script holds English alone, and a page adds another language
+ * The messages in every language Fieldia has. This package holds all eight
+ * (Turkish, Persian, Urdu and Spanish machine-assisted, not yet reviewed by a
+ * native speaker); the one-tag script holds English alone, and a page adds another language
  * with that language's script (fieldia.ar.js, …), through the viewer's
  * `addLanguage`.
  */

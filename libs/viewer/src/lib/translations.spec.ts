@@ -24,7 +24,7 @@ const page: Page = {
   layout: { type: 'sections', id: 'root', children: [{ type: 'section', id: 's', title: 'About you', children: [{ type: 'field', id: 'n', field: 'name' }] }] },
   translations: {
     ar: { 'Sign up': 'التسجيل', 'Your name': 'اسمك', 'About you': 'عنك' },
-    es: { 'Sign up': 'Registro', 'Your name': 'Tu nombre', 'As on your ID': 'Como en tu documento' },
+    it: { 'Sign up': 'Iscrizione', 'Your name': 'Il tuo nome', 'As on your ID': 'Come sul tuo documento' },
     he: { 'Your name': 'השם שלך' },
   },
 };
@@ -51,13 +51,13 @@ describe('a page shown in a language', () => {
   });
 
   it('takes any language tag for the page’s words; the viewer’s own fall back to English', () => {
-    const host = mount({ locale: 'es' });
-    expect(text(host, '.fd-label')).toBe('Tu nombre');
-    expect(text(host, '.fd-help')).toBe('Como en tu documento');
+    const host = mount({ locale: 'it' });
+    expect(text(host, '.fd-label')).toBe('Il tuo nome');
+    expect(text(host, '.fd-help')).toBe('Come sul tuo documento');
     expect(form(host).getAttribute('dir')).toBeNull();
-    expect(form(host).getAttribute('lang')).toBe('es');
+    expect(form(host).getAttribute('lang')).toBe('it');
     handle?.check();
-    expect(text(host, '[data-node="n"] .fd-error')).toBe('Tu nombre is required');
+    expect(text(host, '[data-node="n"] .fd-error')).toBe('Il tuo nome is required');
   });
 
   it('falls back from a regional tag to its language, for the page’s words and the viewer’s', () => {
@@ -91,9 +91,9 @@ describe('a page shown in a language', () => {
   });
 
   it('puts the page’s own words first, and the app’s translator over the rest', () => {
-    const host = mount({ locale: 'es', translate: (words) => (words === 'About you' ? 'Sobre ti' : words) });
-    expect(text(host, '.fd-label')).toBe('Tu nombre');
-    expect(host.textContent).toContain('Sobre ti');
+    const host = mount({ locale: 'it', translate: (words) => (words === 'About you' ? 'Su di te' : words) });
+    expect(text(host, '.fd-label')).toBe('Il tuo nome');
+    expect(host.textContent).toContain('Su di te');
   });
 });
 
@@ -120,7 +120,7 @@ describe('words left as written on a right-to-left page', () => {
 
 describe('a dialog in a language Fieldia has no words for', () => {
   it('speaks English, rather than nothing', async () => {
-    const found = openSearchDialog({ title: 'Buscar', search: async () => [], locale: 'es' });
+    const found = openSearchDialog({ title: 'Cerca', search: async () => [], locale: 'it' });
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement;
     expect(dialog.querySelector('.fd-dialog-close')?.getAttribute('aria-label')).toBe('Close');
     (dialog.querySelector('.fd-dialog-close') as HTMLButtonElement).click();

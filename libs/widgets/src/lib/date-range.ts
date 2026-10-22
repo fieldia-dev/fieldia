@@ -1,4 +1,4 @@
-import { clocksSkip, dayIn, fill, instantsAt, wallClock, wallOf, wallText, wallTime, type Field, type FieldNode, type Locale, type Value } from '@fieldia/core';
+import { clocksSkip, dayIn, fill, instantsAt, wallClock, wallOf, wallText, wallTime, dayTag, type Field, type FieldNode, type Locale, type Value } from '@fieldia/core';
 import { weekdayHead } from './calendar';
 import { restingText, zoneName, zoneOf } from './date-text';
 import { dateBox } from './date-box';
@@ -39,7 +39,7 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   const endName = typeof node.options?.['endField'] === 'string' && form.page.fields[node.options['endField'] as string] ? (node.options['endField'] as string) : null;
   const endField = endName ? (form.page.fields[endName] as Field) : null;
   const endLabel = endField?.label ?? '';
-  const lang = locale === 'en' ? 'en-GB' : locale;
+  const lang = dayTag(locale);
   const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const weekday = weekdayHead(lang);

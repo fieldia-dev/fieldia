@@ -1,4 +1,4 @@
-import { instantsAt, wallTime, zoneOffset, type ListGantt, type Locale, type Page, type Value } from '@fieldia/core';
+import { instantsAt, wallTime, zoneOffset, dayTag, firstWeekday, listComma, type ListGantt, type Locale, type Page, type Value } from '@fieldia/core';
 
 /**
  * A timeline's days, on its zone's clock: the zone its start field names, else its page's (`timeZone`), else the
@@ -68,21 +68,21 @@ export function readWhen(value: Value | undefined, kind: WhenKind, zone?: string
 /** A moment as its field keeps it: a date's day, or a date and time as the date widgets write one — the instant it is on the zone's clock, in UTC. */
 export const writeWhen = (d: Date, kind: WhenKind, zone?: string) => (kind === 'date' ? dayKey(d) : new Date(fromWall(d, zone)).toISOString());
 
-/** The week's first day by language: Saturday in Arabic (as Egypt's week runs), Monday elsewhere, as Fieldia's date picker has it. */
+/** The week's first day by language: Saturday in Arabic and Persian (as Egypt's and Iran's weeks run), Monday elsewhere, as Fieldia's date picker has it. */
 export function firstDayOf(locale: Locale, own?: number): number {
   if (own !== undefined) return own;
-  return locale === 'ar' ? 6 : 1;
+  return firstWeekday(locale);
 }
 
 export const startOfWeek = (d: Date, firstDay: number) => addDays(startOfDay(d), -((d.getUTCDay() - firstDay + 7) % 7));
 export const startOfMonth = (d: Date) => dayOn(d.getUTCFullYear(), d.getUTCMonth(), 1);
 
-/** The language as Intl reads it: British English's day before month, every language's digits Latin, as Fieldia writes dates. */
-export const intlTag = (locale: Locale) => (locale === 'en' ? 'en-GB' : locale);
+/** The language as Intl reads it: British English's day before month, every language on the Gregorian calendar and its digits Latin, as Fieldia writes dates. */
+export const intlTag = (locale: Locale) => dayTag(locale);
 /** A moment on the timeline's clock in words: its UTC fields, which are that clock's day and time. */
 export const format = (locale: Locale, options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(intlTag(locale), { numberingSystem: 'latn', ...options, timeZone: 'UTC' });
 
-/** What joins the parts of a sentence as the language writes it: ", ", or in Arabic its own comma, "، ". */
+/** What joins the parts of a sentence as the language writes it: ", ", or in Arabic, Persian and Urdu the Arabic comma, "، ". */
 export function comma(locale: Locale): string {
-  return locale.split('-')[0] === 'ar' ? '، ' : ', ';
+  return listComma(locale);
 }

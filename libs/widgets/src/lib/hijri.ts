@@ -66,7 +66,7 @@ export function hijriTyping(value: Value | undefined, order: DateOrder, locale: 
   if (!h) return '';
   const [y, m, d] = [String(h.year), pad(h.month), pad(h.day)];
   if (order === 'ymd') return `${y}-${m}-${d}`;
-  const mark = locale === 'de' ? '.' : '/';
+  const mark = locale === 'de' || locale === 'tr' ? '.' : '/';
   return order === 'mdy' ? `${m}/${d}/${y}` : `${d}${mark}${m}${mark}${y}`;
 }
 

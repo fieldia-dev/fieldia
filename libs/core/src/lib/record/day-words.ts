@@ -17,9 +17,16 @@ export function hijriWords(day: string, locale: string): string {
   return Number.isNaN(at) ? '' : new Intl.DateTimeFormat(`${locale === 'en' ? 'en-GB' : locale}-u-ca-islamic-umalqura`, { day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' }).format(at);
 }
 
+/**
+ * The tag Intl writes a day in for a page's language: English as en-GB writes it (the day first), and every language on
+ * the Gregorian calendar a date's value is kept in — Intl's own for Persian is the Solar Hijri, which would write
+ * 2026-10-15 as 23 Mehr 1405. A tag with Unicode extensions of its own (`-u-…`) is as given.
+ */
+export const dayTag = (locale: string): string => (locale === 'en' ? 'en-GB' : locale.includes('-u-') ? locale : `${locale}-u-ca-gregory`);
+
 /** A month and its year in words, as a month's box writes it at rest: "Oct 2026", "أكتوبر 2026", "oct. 2026". */
 export const monthWords = (at: number, locale: string): string =>
-  new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { month: 'short', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' }).format(at);
+  new Intl.DateTimeFormat(dayTag(locale), { month: 'short', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' }).format(at);
 
 /**
  * A day a message names, written as the page's date boxes write one: in the page's order (`messages.dateOrder`, set on
@@ -34,7 +41,7 @@ export function dayWords(day: string, messages: Pick<Messages, 'locale' | 'dateO
   if (precision !== 'day' && !Number.isNaN(at)) return precision === 'year' ? day.slice(0, 4) : order === 'ymd' ? day.slice(0, 7) : monthWords(at, messages.locale);
   if (order === 'ymd' || Number.isNaN(at)) return day;
   // English as the boxes write it, the day first.
-  const format = new Intl.DateTimeFormat(messages.locale === 'en' ? 'en-GB' : messages.locale, { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' });
+  const format = new Intl.DateTimeFormat(dayTag(messages.locale), { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' });
   if (order === 'dmy') return format.format(at);
   const parts = format.formatToParts(at);
   const part = (type: string) => parts.find((one) => one.type === type)?.value ?? '';

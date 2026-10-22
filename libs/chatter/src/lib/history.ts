@@ -1,4 +1,4 @@
-import { fill, labelAt, recordSentence, type Locale, type PageRecords } from '@fieldia/core';
+import { fill, labelAt, recordSentence, dayTag, type Locale, type PageRecords } from '@fieldia/core';
 import { drawIcon, installStyles, sanitizeHtml, showHtml, type IconSet } from '@fieldia/widgets';
 import { initials } from './chatter';
 import { installHistoryStyles } from './history-styles';
@@ -77,7 +77,7 @@ export function mountHistory(host: HTMLElement, options: MountHistoryOptions): H
   const labels: ChatterLabels = chatterLabels(locale, options.labels);
   const now = options.now ?? (() => new Date());
   const firstDay = firstDayOfWeek(locale);
-  const tag = locale === 'ar' ? 'ar-EG-u-nu-latn' : locale;
+  const tag = locale === 'ar' ? 'ar-EG-u-nu-latn' : locale === 'en' ? locale : `${dayTag(locale)}-nu-latn`;
   const listDate = new Intl.DateTimeFormat(tag, { year: 'numeric', month: 'numeric', day: 'numeric' });
   const graphDate = new Intl.DateTimeFormat(tag, { month: 'short', day: 'numeric' });
   const whole = new Intl.DateTimeFormat(tag, { weekday: 'short', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });

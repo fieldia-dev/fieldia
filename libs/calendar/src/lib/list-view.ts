@@ -3,8 +3,9 @@ import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/vi
 import type { CalendarSettings } from './settings';
 
 /** Its name on the list's switcher, which shows before the calendar's own code has come. */
-const NAME: Record<Locale, string> = { en: 'Calendar', ar: 'التقويم', fr: 'Calendrier', de: 'Kalender' };
-const FAILED: Record<Locale, string> = { en: 'The calendar could not be loaded.', ar: 'تعذّر تحميل التقويم.', fr: 'Le calendrier n’a pas pu être chargé.', de: 'Der Kalender konnte nicht geladen werden.' };
+// Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+const NAME: Record<Locale, string> = { en: 'Calendar', ar: 'التقويم', fr: 'Calendrier', de: 'Kalender', tr: 'Takvim', fa: 'تقویم', ur: 'کیلنڈر', es: 'Calendario' };
+const FAILED: Record<Locale, string> = { en: 'The calendar could not be loaded.', ar: 'تعذّر تحميل التقويم.', fr: 'Le calendrier n’a pas pu être chargé.', de: 'Der Kalender konnte nicht geladen werden.', tr: 'Takvim yüklenemedi.', fa: 'تقویم بارگیری نشد.', ur: 'کیلنڈر لوڈ نہیں ہو سکا۔', es: 'No se pudo cargar el calendario.' };
 
 /**
  * A list's records on a calendar, for the viewer's `listViews`: a list with

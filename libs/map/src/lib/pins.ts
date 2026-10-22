@@ -1,4 +1,4 @@
-import { ANY_FUNCTION, compileModifier, expressionContext, isRightToLeft, type FileValue, type LineField, type Locale, type MoneyLook, type Page, type Pin, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, expressionContext, isRightToLeft, listComma, type FileValue, type LineField, type Locale, type MoneyLook, type Page, type Pin, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
 import { currencyOf, displayValue, drawIcon, moneyReads, writeMoney, type IconSet } from '@fieldia/widgets';
 import { MAP_ICONS } from './map-icons';
 
@@ -165,7 +165,7 @@ export function makePins(options: PinsOptions): Pins {
 }
 
 /** The comma between a name's parts, in the page's language. */
-export const comma = (locale: Locale) => (locale === 'ar' ? '، ' : ', ');
+export const comma = (locale: Locale) => listComma(locale);
 
 /** A record's words in their own direction, whatever the page's: an English name on an Arabic page reads as typed. */
 export function ownWay<T extends HTMLElement>(element: T): T {

@@ -1,4 +1,8 @@
 import type { Locale } from '@fieldia/core';
+import { es } from './locales/es';
+import { fa } from './locales/fa';
+import { tr } from './locales/tr';
+import { ur } from './locales/ur';
 
 /** Every word the chatter shows. `{name}`, `{n}` and `{date}` are filled in. */
 export interface ChatterLabels {
@@ -509,4 +513,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     approvalApproved: 'Approuvé pour {level}',
     approvalRejected: 'Refusé pour {level}',
   },
+  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (locales/).
+  tr,
+  fa,
+  ur,
+  es,
 };

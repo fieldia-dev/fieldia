@@ -1269,7 +1269,8 @@ const en: WidgetLabels = {
 
 /**
  * The widgets' words in every language Fieldia has. This package holds all
- * four; the one-tag script holds English alone, and a page adds another
+ * eight (Turkish, Persian, Urdu and Spanish machine-assisted, not yet reviewed
+ * by a native speaker); the one-tag script holds English alone, and a page adds another
  * language with that language's script (fieldia.ar.js, …), through the
  * viewer's `addLanguage`.
  */

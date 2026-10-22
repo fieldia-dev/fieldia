@@ -1,4 +1,8 @@
 import type { Locale } from '@fieldia/core';
+import * as es from './locales/es';
+import * as fa from './locales/fa';
+import * as tr from './locales/tr';
+import * as ur from './locales/ur';
 
 /** The words the maps show themselves. `{label}`, `{n}` are filled in where they stand. */
 export interface MapLabels {
@@ -336,6 +340,11 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     areaValue: '{name}: {value}',
     areasNone: 'Keine',
   },
+  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (locales/).
+  tr: tr.map,
+  fa: fa.map,
+  ur: ur.map,
+  es: es.map,
 };
 
 /** The words a list's map shows, besides the maps' own: kept apart, so a form with only a place or an area never carries them. */
@@ -469,6 +478,11 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     nearestFromMiddle: 'Die der Kartenmitte nächsten zuerst: Ihr Standort wurde nicht freigegeben.',
     heatNote: 'Eine Heatmap aus der Ferne: bis zu den Straßen zoomen, um jeden zu sehen.',
   },
+  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (locales/).
+  tr: tr.listMap,
+  fa: fa.listMap,
+  ur: ur.listMap,
+  es: es.listMap,
 };
 
 /** The words a form's map shows, besides the maps' own and a list map's: kept apart, as theirs are. */
@@ -489,6 +503,11 @@ export const FORM_MAP_LABELS: Record<Locale, FormMapLabels> = {
   ar: { map: 'خريطة', lastSeen: 'آخر ظهور {time}', follow: 'تتبّع', routeFailed: 'تعذّر إيجاد الطريق.', crowdHere: '{n} هنا: {names}. كبّر الخريطة لرؤيتها.' },
   fr: { map: 'Carte', lastSeen: 'Vu pour la dernière fois {time}', follow: 'Suivre', routeFailed: 'Le trajet est introuvable.', crowdHere: '{n} ici : {names}. Zoomez pour les voir.' },
   de: { map: 'Karte', lastSeen: 'Zuletzt gesehen {time}', follow: 'Folgen', routeFailed: 'Der Weg wurde nicht gefunden.', crowdHere: '{n} hier: {names}. Hineinzoomen, um sie zu sehen.' },
+  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (locales/).
+  tr: tr.formMap,
+  fa: fa.formMap,
+  ur: ur.formMap,
+  es: es.formMap,
 };
 
 /** The words for a page's language, with the app's own over them. */

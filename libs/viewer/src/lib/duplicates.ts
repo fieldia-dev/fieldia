@@ -1,4 +1,4 @@
-import { labelAt, recordSentence, type DuplicateMatch, type Form, type JsonValue, type Locale, type Page, type RecordId, type Tone, type Values } from '@fieldia/core';
+import { labelAt, recordSentence, listComma, type DuplicateMatch, type Form, type JsonValue, type Locale, type Page, type RecordId, type Tone, type Values } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { installDuplicateStyles } from './duplicates-styles';
@@ -81,7 +81,7 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
   const asTyped = setting.on !== 'save';
   const nameField = nameFieldOf(page);
   const view = doc.defaultView ?? globalThis;
-  const separator = (context.tag ?? context.locale).split('-')[0] === 'ar' ? '، ' : ', ';
+  const separator = listComma((context.tag ?? context.locale));
   /** Before its notes' ids, so two forms on a page never share one. */
   const prefix = `fd-duplicates-${++watches}`;
 

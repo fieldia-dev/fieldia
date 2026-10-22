@@ -1,4 +1,8 @@
 import type { GanttZoom, Locale } from '@fieldia/core';
+import { es } from './locales/es';
+import { fa } from './locales/fa';
+import { tr } from './locales/tr';
+import { ur } from './locales/ur';
 
 /** The words a Gantt timeline shows itself. `{name}`, `{when}`, `{n}` are filled in where they stand. */
 export interface GanttLabels {
@@ -192,7 +196,8 @@ const de: GanttLabels = {
   cannotMove: 'Diesen Eintrag können Sie nicht ändern.',
 };
 
-export const GANTT_LABELS: Record<Locale, GanttLabels> = { en, ar, fr, de };
+/** Turkish, Persian, Urdu and Spanish (locales/) are UNREVIEWED: machine-assisted, not yet reviewed by a native speaker. */
+export const GANTT_LABELS: Record<Locale, GanttLabels> = { en, ar, fr, de, tr, fa, ur, es };
 
 /** The timeline's words in a page's language, the app's own over them. */
 export function ganttLabels(locale: Locale, own?: Partial<GanttLabels>): GanttLabels {

@@ -1,4 +1,5 @@
 import type { Locale } from '@fieldia/core';
+import { listComma } from '@fieldia/core';
 
 /**
  * An address on one line, as a field keeps it and a suggestion's second line
@@ -31,7 +32,7 @@ export function addressLine(pieces: unknown[], locale?: Locale, before: unknown[
     said.push(these);
     kept.push(text);
   }
-  return kept.join(locale === 'ar' ? '، ' : ', ');
+  return kept.join(listComma(locale ?? 'en'));
 }
 
 /** Letters written right to left: Arabic's and Hebrew's. */

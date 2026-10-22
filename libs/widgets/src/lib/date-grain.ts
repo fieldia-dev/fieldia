@@ -1,4 +1,4 @@
-import { foldTyped, monthNamed, monthWords, readDate, stripMarks, type DatePrecision, type DateOrder, type Locale, type Value } from '@fieldia/core';
+import { foldTyped, monthNamed, monthWords, readDate, stripMarks, dayTag, type DatePrecision, type DateOrder, type Locale, type Value } from '@fieldia/core';
 import { quoted } from './input-rules';
 import { fillIn, wordsFor } from './kind-parts';
 import type { DateReader, DateReading, GrainBox } from './date-text';
@@ -23,12 +23,12 @@ const held = (value: Value | undefined) => {
   return m ? { year: Number(m[1]), month: Number(m[2]) } : null;
 };
 
-/** A month or a year as its box shows it while it is typed in: 10/2026 (10.2026 on a German page), 2026-10; 2026. */
+/** A month or a year as its box shows it while it is typed in: 10/2026 (10.2026 on a German or Turkish page), 2026-10; 2026. */
 export function grainTyping(value: Value | undefined, grain: Grain, order: DateOrder, locale: Locale): string {
   const at = held(value);
   if (!at) return value === null || value === undefined ? '' : String(value);
   if (grain === 'year') return String(at.year);
-  return order === 'ymd' ? `${at.year}-${pad(at.month)}` : `${pad(at.month)}${locale === 'de' ? '.' : '/'}${at.year}`;
+  return order === 'ymd' ? `${at.year}-${pad(at.month)}` : `${pad(at.month)}${locale === 'de' || locale === 'tr' ? '.' : '/'}${at.year}`;
 }
 
 /** A month or a year as its box shows it at rest, in the page's language: "Oct 2026", "أكتوبر 2026"; 2026. */
@@ -72,7 +72,7 @@ export function readGrainText(text: string, reader: DateReader, grain: Grain): D
     const [y, m, d] = day.value.split('-').map(Number);
     const value = kept(y, grain === 'year' ? 1 : m);
     if (grain === 'month') return d === 1 ? { ok: true, value } : { ok: true, value, leftOut: fillIn(words.dayLeftOut, { label, day: d }) };
-    const left = m === 1 && d === 1 ? '' : new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { day: 'numeric', month: 'long', timeZone: 'UTC', numberingSystem: 'latn' }).format(Date.UTC(y, m - 1, d));
+    const left = m === 1 && d === 1 ? '' : new Intl.DateTimeFormat(dayTag(locale), { day: 'numeric', month: 'long', timeZone: 'UTC', numberingSystem: 'latn' }).format(Date.UTC(y, m - 1, d));
     return left ? { ok: true, value, leftOut: fillIn(words.monthLeftOut, { label, day: left }) } : { ok: true, value };
   }
   const pieces = t.split(/\s*[/.\-\s]\s*/).filter(Boolean);

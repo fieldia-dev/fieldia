@@ -1,4 +1,4 @@
-import { dayIn, isOwnZone, wallClock, wallOf, wallTime, type Locale, type SlotDay, type SlotsResult, type Value } from '@fieldia/core';
+import { dayIn, isOwnZone, wallClock, wallOf, wallTime, dayTag, type Locale, type SlotDay, type SlotsResult, type Value } from '@fieldia/core';
 import { markedIn, plainDateWidget, restingText, zoneName, zoneOf } from './date-text';
 import { fillIn, maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { inPlural } from './labels';
@@ -86,7 +86,7 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
   const endName = typeof end === 'string' && form.page.fields[end]?.type === 'datetime' ? end : null;
   const dependsOn = Array.isArray(options['dependsOn']) ? options['dependsOn'].filter((one): one is string => typeof one === 'string') : [];
   const zone = zoneOf(form, field);
-  const lang = locale === 'en' ? 'en-GB' : locale;
+  const lang = dayTag(locale);
   const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const shortName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', numberingSystem: 'latn' });

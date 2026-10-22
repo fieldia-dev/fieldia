@@ -1,4 +1,5 @@
 import type { LineField, ListCalendar, ListedRecord, Locale, Page, RecordId, Value, Values } from '@fieldia/core';
+import { listComma } from '@fieldia/core';
 import { displayValue } from '@fieldia/widgets';
 import { addDays, addMinutes, daysBetween, format, fromWall, minutesOf, readWhen, startOfDay, writeWhen, zoneOfCalendar, type WhenKind } from './dates';
 
@@ -159,7 +160,7 @@ export function whereTo(event: Pick<CalendarEvent, 'allDay' | 'start'>, start: D
   return event.allDay ? day : `${day}${comma(locale)}${format(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(start)}`;
 }
 
-/** What joins the parts of a sentence as the language writes it: ", ", or in Arabic its own comma, "، ". */
+/** What joins the parts of a sentence as the language writes it: ", ", or in Arabic, Persian and Urdu the Arabic comma, "، ". */
 export function comma(locale: Locale): string {
-  return locale.split('-')[0] === 'ar' ? '، ' : ', ';
+  return listComma(locale);
 }

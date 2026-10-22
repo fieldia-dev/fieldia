@@ -11,9 +11,10 @@ import { fr as frViewer } from './locales/fr';
 
 /**
  * Fieldia's own words in a language. English is always there. The packages
- * carry Arabic, German and French too; the one-tag script carries English
- * alone, and a page adds another language with that language's script
- * (fieldia.ar.js, …), which hands its words to `addLanguage`.
+ * carry Arabic, German, French, Turkish, Persian, Urdu and Spanish too; the
+ * one-tag script carries English alone, and a page adds another language with
+ * that language's script (fieldia.ar.js, …), which hands its words to
+ * `addLanguage`.
  */
 
 const page: Page = {
@@ -63,10 +64,10 @@ afterEach(() => {
 });
 
 describe('the packages', () => {
-  it('give all four languages with no extra import', () => {
-    expect(Object.keys(MESSAGES).sort()).toEqual(['ar', 'de', 'en', 'fr']);
-    expect(Object.keys(WIDGET_LABELS).sort()).toEqual(['ar', 'de', 'en', 'fr']);
-    expect(Object.keys(packaged.VIEWER_LABELS).sort()).toEqual(['ar', 'de', 'en', 'fr']);
+  it('give all eight languages with no extra import', () => {
+    expect(Object.keys(MESSAGES).sort()).toEqual(['ar', 'de', 'en', 'es', 'fa', 'fr', 'tr', 'ur']);
+    expect(Object.keys(WIDGET_LABELS).sort()).toEqual(['ar', 'de', 'en', 'es', 'fa', 'fr', 'tr', 'ur']);
+    expect(Object.keys(packaged.VIEWER_LABELS).sort()).toEqual(['ar', 'de', 'en', 'es', 'fa', 'fr', 'tr', 'ur']);
     expect(MESSAGES.ar.required).toBe('{label} مطلوب');
     expect(WIDGET_LABELS.de.search).toBe('Suchen…');
     expect(packaged.VIEWER_LABELS.fr.submit).toBe('Envoyer');
@@ -107,7 +108,7 @@ describe('the one-tag script, English alone', () => {
 
   it('says nothing for a language Fieldia has no words for in any form', async () => {
     const fieldia = await englishOnly();
-    expect(show(fieldia, 'es').submit).toBe('Submit');
+    expect(show(fieldia, 'it').submit).toBe('Submit');
     expect(warn).not.toHaveBeenCalled();
   });
 

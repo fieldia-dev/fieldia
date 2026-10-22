@@ -1,5 +1,6 @@
 import { displayValue, drawIcon, type IconSet } from '@fieldia/widgets';
 import type { ButtonNode, FieldNode, Form, FormState, HeadLink, LabelPlace, LayoutNode, LineField, Locale, MenuItem, Page, RootLayout, RunResult, SheetHead, SheetNode, Tone, Values } from '@fieldia/core';
+import { dayTag } from '@fieldia/core';
 import { setAttr, setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
 import type { Place } from './place';
@@ -295,7 +296,6 @@ export function shortDate(iso: string, locale: Locale, now = new Date()): string
   const day = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T12:00:00`) : new Date(iso);
   if (Number.isNaN(day.getTime())) return iso;
   const year = day.getFullYear() !== now.getFullYear();
-  // Arabic in Latin digits, as the rest of a record's dates are written.
-  const tag = locale === 'ar' ? 'ar-u-nu-latn' : locale;
-  return new Intl.DateTimeFormat(tag, { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}) }).format(day);
+  // In Latin digits and on the Gregorian calendar, as the rest of a record's dates are written.
+  return new Intl.DateTimeFormat(locale === 'en' ? locale : dayTag(locale), { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}), numberingSystem: 'latn' }).format(day);
 }

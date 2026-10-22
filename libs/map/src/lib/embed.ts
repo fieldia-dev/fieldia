@@ -79,7 +79,7 @@ export interface ListMapOptions extends MapSettings {
 /** A list's map in a page: its element (already in the page), and what the page asks of it. */
 export type ListMapHandle = ListViewPart;
 
-const OWN: readonly Locale[] = ['en', 'ar', 'fr', 'de'];
+const OWN: readonly Locale[] = ['en', 'ar', 'fr', 'de', 'tr', 'fa', 'ur', 'es'];
 
 /** Puts a list's map into `host`, loads its records, and hands it back. Throws when the page cannot be shown, saying why. */
 export function mountListMap(host: HTMLElement, options: ListMapOptions): ListMapHandle {

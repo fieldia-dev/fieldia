@@ -1483,7 +1483,8 @@ const en: ViewerLabels = {
 
 /**
  * The viewer's words in every language Fieldia has. This package holds all
- * four; the one-tag script holds English alone, and a page adds another
+ * eight (Turkish, Persian, Urdu and Spanish machine-assisted, not yet reviewed
+ * by a native speaker); the one-tag script holds English alone, and a page adds another
  * language with that language's script (fieldia.ar.js, …), through
  * `addLanguage`.
  */
@@ -1497,6 +1498,10 @@ const ADD_ONS = new Map([
   ['ar', 'Arabic'],
   ['de', 'German'],
   ['fr', 'French'],
+  ['tr', 'Turkish'],
+  ['fa', 'Persian'],
+  ['ur', 'Urdu'],
+  ['es', 'Spanish'],
 ]);
 const missing = new Set<string>();
 

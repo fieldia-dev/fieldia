@@ -17,9 +17,11 @@ const languagesGiven = new Map<Locale, LanguageWords>();
 
 /**
  * Give Fieldia a language's own words, for every page shown in it from then
- * on. The packages have English, Arabic, German and French already; the
- * one-tag script has English alone, and its add-on scripts — `fieldia.ar.js`,
- * `fieldia.de.js`, `fieldia.fr.js` — call this with theirs. A language given
+ * on. The packages have English, Arabic, German and French already, and
+ * Turkish, Persian, Urdu and Spanish (machine-assisted, not yet reviewed by a
+ * native speaker); the one-tag script has English alone, and its add-on
+ * scripts — `fieldia.ar.js`, `fieldia.de.js`, `fieldia.fr.js`, `fieldia.tr.js`,
+ * `fieldia.fa.js`, `fieldia.ur.js`, `fieldia.es.js` — call this with theirs. A language given
  * again takes the new words.
  */
 export function addLanguage(locale: Locale, words: LanguageWords): void {

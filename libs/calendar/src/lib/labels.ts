@@ -1,4 +1,8 @@
 import type { CalendarView, Locale } from '@fieldia/core';
+import { es } from './locales/es';
+import { fa } from './locales/fa';
+import { tr } from './locales/tr';
+import { ur } from './locales/ur';
 
 /** The words a calendar shows itself. `{name}`, `{when}`, `{n}` are filled in where they stand. */
 export interface CalendarLabels {
@@ -263,7 +267,8 @@ const de: CalendarLabels = {
   saving: 'Wird gespeichert…',
 };
 
-export const CALENDAR_LABELS: Record<Locale, CalendarLabels> = { en, ar, fr, de };
+/** Turkish, Persian, Urdu and Spanish (locales/) are UNREVIEWED: machine-assisted, not yet reviewed by a native speaker. */
+export const CALENDAR_LABELS: Record<Locale, CalendarLabels> = { en, ar, fr, de, tr, fa, ur, es };
 
 /** The calendar's words in a page's language, the app's own over them. */
 export function calendarLabels(locale: Locale, own?: Partial<CalendarLabels>): CalendarLabels {

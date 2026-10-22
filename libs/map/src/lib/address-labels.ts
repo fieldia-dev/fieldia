@@ -35,6 +35,11 @@ export const ADDRESS_LABELS: Record<Locale, Omit<AddressLabels, SaidAfterAPick>>
   ar: { suggested: 'الاقتراحات: {n}', addressKind: 'بحث عن عنوان', settingPlace: 'يُكتب المكان في', settingParts: 'تُكتب أجزاؤه في', settingCountry: 'العناوين في', anywhere: 'أي بلد' },
   fr: { suggested: 'Suggestions : {n}', addressKind: 'Recherche d’adresse', settingPlace: 'Le lieu va dans', settingParts: 'Ses parties vont dans', settingCountry: 'Pays des adresses', anywhere: 'Tous les pays' },
   de: { suggested: 'Vorschläge: {n}', addressKind: 'Adresssuche', settingPlace: 'Ort kommt in', settingParts: 'Teile kommen in', settingCountry: 'Land der Adressen', anywhere: 'Alle Länder' },
+  // Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+  tr: { suggested: 'Öneriler: {n}', addressKind: 'Adres arama', settingPlace: 'Konumun yazılacağı alan', settingParts: 'Adres parçalarının yazılacağı alan', settingCountry: 'Adreslerin ülkesi', anywhere: 'Tüm ülkeler' },
+  fa: { suggested: 'پیشنهادها: {n}', addressKind: 'جستجوی نشانی', settingPlace: 'محل ثبت مکان', settingParts: 'محل ثبت اجزای نشانی', settingCountry: 'کشور نشانی‌ها', anywhere: 'هر کشوری' },
+  ur: { suggested: 'تجاویز: {n}', addressKind: 'پتے کی تلاش', settingPlace: 'جگہ کے لیے فیلڈ', settingParts: 'اجزا کے لیے فیلڈ', settingCountry: 'پتوں کا ملک', anywhere: 'کوئی بھی ملک' },
+  es: { suggested: 'Sugerencias: {n}', addressKind: 'Búsqueda de dirección', settingPlace: 'El lugar va en', settingParts: 'Las partes van en', settingCountry: 'Direcciones en', anywhere: 'Cualquier país' },
 };
 
 /** An address field's words for a page's language, the maps' own with them, and the app's own over both. */

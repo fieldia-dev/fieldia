@@ -3,8 +3,9 @@ import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/vi
 import type { GanttSettings } from './settings';
 
 /** Its name on the list's switcher, which shows before the timeline's own code has come. */
-const NAME: Record<Locale, string> = { en: 'Timeline', ar: 'المخطط الزمني', fr: 'Planning', de: 'Zeitplan' };
-const FAILED: Record<Locale, string> = { en: 'The timeline could not be loaded.', ar: 'تعذّر تحميل المخطط الزمني.', fr: 'Le planning n’a pas pu être chargé.', de: 'Der Zeitplan konnte nicht geladen werden.' };
+// Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker.
+const NAME: Record<Locale, string> = { en: 'Timeline', ar: 'المخطط الزمني', fr: 'Planning', de: 'Zeitplan', tr: 'Zaman çizelgesi', fa: 'خط زمانی', ur: 'ٹائم لائن', es: 'Cronograma' };
+const FAILED: Record<Locale, string> = { en: 'The timeline could not be loaded.', ar: 'تعذّر تحميل المخطط الزمني.', fr: 'Le planning n’a pas pu être chargé.', de: 'Der Zeitplan konnte nicht geladen werden.', tr: 'Zaman çizelgesi yüklenemedi.', fa: 'خط زمانی بارگیری نشد.', ur: 'ٹائم لائن لوڈ نہیں ہو سکی۔', es: 'No se pudo cargar el cronograma.' };
 
 /**
  * A list's records on a Gantt timeline, for the viewer's `listViews`: a list

@@ -1,4 +1,4 @@
-import { clocksSkip, dayIn, fill, instantsAt, wallClock, wallOf, wallTime, type Locale, type Value } from '@fieldia/core';
+import { clocksSkip, dayIn, fill, instantsAt, wallClock, wallOf, wallTime, dayTag, type Locale, type Value } from '@fieldia/core';
 import { isoWeek, restingText, zoneName, zoneOf } from './date-text';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { rightToLeft, setHidden, setText } from './kind-parts';
@@ -116,7 +116,7 @@ function dayOf(kind: 'date' | 'datetime', value: Value | undefined, zone?: strin
 export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date' | 'datetime', options: CalendarOptions = {}): Widget {
   const { form, name, id, document: doc, locale = 'en' as Locale } = context;
   const labels: WidgetLabels = context.labels ?? WIDGET_LABELS.en;
-  const lang = locale === 'en' ? 'en-GB' : locale;
+  const lang = dayTag(locale);
   const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const weekdayShort = weekdayHead(lang);
