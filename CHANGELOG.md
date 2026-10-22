@@ -88,9 +88,10 @@ pick, Enter and the arrows, "Question 3 of 7". **Random order and N of M**
 drafts and sent as `order`. **Time limits** (`timeLimit`) for a form or a step:
 Start, a countdown, one warning, then sent as they stood or locked — the page
 says which. They come in `fieldia.surveyflow.js`, so a page of a slider or a
-ranking alone never downloads them. In the designer: the Rules tab and each
-question's settings. Demos: a clinic's staff training check; a home search one
-question at a time.
+ranking alone never downloads them. In the designer: the Rules tab, each
+question's settings, and a page's order, draw and minutes under its title — on a
+phone once the page is picked, or where it uses them. Demos: a clinic's staff
+training check; a home search one question at a time.
 
 **Films, sounds, codes and pins.** A film among a field's files shows its poster
 (`FileValue.poster`, else the frame at half a second) and plays in the dialog; a
@@ -215,7 +216,9 @@ unreviewed.
 
 **Fixes:** the presence band, empty while nobody else is here, is hidden; the
 outbox's kept photos are made files through the files part (0.29 moved where
-they are made).
+they are made); in WebKit (Safari) the screen designer's bar said a
+ResizeObserver loop as it opened (0.30.1 too) — its room is measured in the next
+frame.
 
 **And:** the page format is **0.10** (`FORMAT_VERSION`): it only added — a
 list's `detail`, `sequenceField`, `endless`, `loadChildren` and `gantt`; a
