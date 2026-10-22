@@ -53,8 +53,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   /** The moment it is now (the app's, as a demo or a test pins it), on the calendar's clock: today is that zone's day. */
   const now = () => toWall(settings.now?.() ?? new Date(), zone);
   const views = (spec.views?.length ? spec.views : ALL_VIEWS).filter((v, i, all) => all.indexOf(v) === i);
-  // The page's own tag where it is shown in its own language (its region's week: en-GB's, not en's), else the language shown.
-  const firstDay = firstDayOf(page.language?.split('-')[0].toLowerCase() === locale ? page.language : locale, spec.firstDay);
+  const firstDay = firstDayOf(locale, page, spec.firstDay);
   const slot = spec.slot ?? 30;
   /** Pixels an hour takes in the day and the week (--fd-cal-hour): 48, or more where a slot would be under 24 pixels. */
   const HOUR = Math.max(48, Math.ceil((TARGET * 60) / slot));

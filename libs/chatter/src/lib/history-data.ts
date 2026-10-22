@@ -57,7 +57,7 @@ export function historyEntries(messages: readonly ChatterMessage[], stateField?:
     .sort((a, b) => b.at.getTime() - a.at.getTime());
 }
 
-/** The first day of the week where `locale` is spoken, as `Date.getDay()` counts (Sunday 0): CLDR's, as @fieldia/core reads it. */
+/** The week's first day, as `Date.getDay()` counts (Sunday 0): CLDR's for the reader's region where their browser asks for `locale`'s language with one, else where it is most spoken (@fieldia/core's `firstWeekday`). */
 export const firstDayOfWeek = (locale: string): number => firstWeekday(locale);
 
 /** Which group by age a moment falls in, seen from `now`: today, yesterday, this week, last week, this month, or older. */

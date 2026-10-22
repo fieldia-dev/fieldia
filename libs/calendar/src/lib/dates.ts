@@ -86,10 +86,13 @@ export function readDay(text: string): Date | null {
 /** A moment as its field keeps it: a date's day, or a date and time as the date widgets write one — the instant it is on the zone's clock, in UTC. */
 export const writeWhen = (d: Date, kind: WhenKind, zone?: string) => (kind === 'date' ? dayKey(d) : new Date(fromWall(d, zone)).toISOString());
 
-/** The week's first day where the page's language is spoken, as CLDR has it for its region (`firstWeekday`), unless the page says. */
-export function firstDayOf(tag: string, own?: number): number {
+/**
+ * The week's first day, unless the page says: CLDR's for the page's own region, else the reader's where the browser
+ * asks for the same language, else the one the language is most spoken in (`firstWeekday`).
+ */
+export function firstDayOf(locale: string, page: { readonly language?: string }, own?: number): number {
   if (own !== undefined) return own;
-  return firstWeekday(tag);
+  return firstWeekday(locale, page);
 }
 
 export const startOfWeek = (d: Date, firstDay: number) => addDays(startOfDay(d), -((weekdayOf(d) - firstDay + 7) % 7));

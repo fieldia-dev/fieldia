@@ -348,12 +348,13 @@ export function listView(context: ListContext): ListView {
   // ---- days, as the list counts them ----------------------------------------------------
 
   /**
-   * A week from the first day CLDR has where the page's language is spoken (`firstWeekday`: its region's, else the one
-   * the language is most spoken in — Saturday in Arabic, Sunday in United States English, Monday in British); days told in the page's time zone (its `timeZone`), else the browser's — and a date
-   * and time's own days in its own zone, where it names one (the page's is written into each that names none).
+   * A week from the first day CLDR has for the region (`firstWeekday`: the page's own tag's, else the reader's where the
+   * browser asks for the same language, else the one the language is most spoken in — an English page read in Cairo
+   * from Saturday, in London from Monday, in New York from Sunday); days told in the page's time zone (its `timeZone`),
+   * else the browser's — and a date and time's own days in its own zone, where it names one (the page's is written into
+   * each that names none).
    */
-  // The page's own tag where it is shown in its own language (its region's week: en-GB's, not en's), else the language shown.
-  const count: DayCount = { weekStart: firstWeekday(page.language?.split('-')[0].toLowerCase() === locale ? page.language : locale), timeZone: page.timeZone || ownZone() };
+  const count: DayCount = { weekStart: firstWeekday(locale, page), timeZone: page.timeZone || ownZone() };
   const zoneOfField = (name: string) => {
     const def = page.fields[name];
     return (def?.type === 'datetime' && def.timeZone) || count.timeZone;
