@@ -16,7 +16,7 @@ import type * as LoadingModule from './loading-part';
  *
  * The words — `text`, a row's Loading more…, a search's Searching… — the dimming, a busy button's ring and a failure are
  * the main script's. The skeletons, the bars, the spinners and the overlay are drawn by the loading part
- * (`fieldia.loading.js`), which a page asks for as it first waits for something (`wantLoadingPart`): until it has come,
+ * (`fieldia.loading.js`), asked for as a wait that draws from it starts (`wantLoadingPart`): until it has come,
  * a loader that draws from it says "Loading…" in words (what is drawn the first time) or is a screen reader's alone,
  * and is drawn as it says once it has.
  */
@@ -107,7 +107,7 @@ export function loadingWay(loading: Loading | undefined, moment: LoadingMoment):
 export const asksLoadingPart = (loading: PageLoading | undefined, moments: readonly LoadingMoment[] = ['first', 'refresh', 'more', 'search', 'action']): boolean =>
   !!loading && moments.some((moment) => IN_PART.has(loading[moment] ?? ''));
 
-/** The loading part asked for, not waited for: a page that is to wait for something has it by the time it does, mostly. */
+/** The loading part asked for, not waited for: a wait that draws from it has it by the time its delay is past, mostly. */
 export function wantLoadingPart(): void {
   if (!loadingPart.loaded) void loadingPart.load().catch(() => undefined);
 }
@@ -296,6 +296,9 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
     else loader?.append(span(doc, 'fd-loader-slow', words.stillLoading));
   };
   const timers = [setTimeout(show, taken || how.now ? 0 : settings.delay), setTimeout(turnSlow, Math.max(settings.slowAfter, settings.delay))];
+  // The loading part asked for once the wait is really one — no answer in the same turn — never waited for: it has the
+  // rest of its delay to come in.
+  if (IN_PART.has(way)) timers.push(setTimeout(wantLoadingPart, 0));
   if (settings.timeout) timers.push(setTimeout(() => wait.fail(Object.assign(new Error(words.tookTooLong), { name: 'TimeoutError' })), settings.timeout));
   if (taken || how.now) show();
 

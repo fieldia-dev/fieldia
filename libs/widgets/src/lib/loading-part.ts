@@ -2,7 +2,7 @@
  * The loading part (parts.ts): what a wait draws beyond words (loading.ts) — a skeleton (a few bars in a place, a form's
  * boxes under their labels, a page's layout while its parts come: page-skeleton.ts), a bar along the top or across the
  * middle, a spinner (a ring or three dots), the overlay over a form while it saves — and their sheet with its tokens
- * (styles-loading-part.ts). Asked for as a page first waits for something, never waited for: until it has come, a wait
+ * (styles-loading-part.ts). Asked for as a wait that draws from it starts, never waited for: until it has come, a wait
  * drawn the first time says "Loading…" in words, any other is a screen reader's alone, and each is drawn as it says once
  * it has. A page, a part of it or an app that names one of its ways itself (a spinner, the overlay) has it waited for
  * with the page's parts (`asksLoadingPart`), so it is never drawn in words first.

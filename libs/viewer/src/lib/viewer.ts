@@ -493,6 +493,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** Who hears each wait's start and end (`loadingstart`, `loadingend`). */
   const heard = { start: new Set<(event: LoadingEvent) => void>(), end: new Set<(event: LoadingEvent) => void>() };
   /**
+   * What a wait told before the mount handed back its handle — the page's first, its record's — told a moment later,
+   * once the app could listen; null after.
+   */
+  let toldEarly: [boolean, LoadingEvent][] | null = [];
+  const tell = (start: boolean, event: LoadingEvent) => {
+    for (const listener of start ? heard.start : heard.end) listener(event);
+  };
+  /**
    * How the page waits for its answers (loading.ts in @fieldia/widgets): the app's settings under the page's, each
    * part's over them; told to the app's listeners; a failure said in a toast with Retry where it says so.
    */
@@ -500,9 +508,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     settings: loadingSettings(options.loading, page.loading),
     ...(options.loading?.custom ? { custom: options.loading.custom } : {}),
     words: widgetLabels,
-    told: (start, event) => {
-      for (const listener of start ? heard.start : heard.end) listener(event);
-    },
+    told: (start, event) => (toldEarly ? void toldEarly.push([start, event]) : tell(start, event)),
     toast: (message, retry) => say(message, 'danger', undefined, { label: widgetLabels.loadRetry, run: retry }),
   };
   /** How a value reads inside the page's own words on screen (a `{field}`): a day in the page's order, a yes or no in words. */
@@ -2695,8 +2701,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // The parts its check owes (the one-tag script's), with the page's own: the check runs again once they came.
   // The app's own functions are called through the functions part: a page whose formulas call one waits for it.
   const appCalls = options.functions && callsPartFunctions(page, Object.keys(options.functions)) ? [functionsPart] : [];
-  // The app's own way of waiting, where the loading part draws it (a spinner, the overlay): in before the first wait shows.
-  const awaited = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later), ...(asksLoadingPart(options.loading) ? [loadingPart] : [])])].filter((part) => !part.loaded);
+  const owed = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded);
+  // The loading part — the page's skeleton while its parts come, a list's rows, the bars and spinners — with the page's
+  // own parts where it waits for any, so its first wait is drawn as it says (asked for alongside them, it delays none);
+  // and where the app's own way names one of its looks. A record to load with nothing else to wait for: asked for, not
+  // waited for — the page is drawn at once, its wait said in words until the part has come.
+  const awaited = owed.length || asksLoadingPart(options.loading) ? [...owed, ...(loadingPart.loaded || !asksLoadingPart(loading.settings) ? [] : [loadingPart])] : owed;
+  if (!awaited.length && form.getState().status === 'idle' && asksLoadingPart(loading.settings, ['first'])) wantLoadingPart();
   let drawn: Promise<void> = Promise.resolve();
   if (!awaited.length && !words) drawPage();
   else {
@@ -3046,9 +3057,6 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   };
   const recordWaitAt = (moment: 'first' | 'refresh') => startLoading(content, moment, loading, { part: page.id, shape: shapes, place: atTop, retry: askAgain });
   if (awaited.length || words || form.getState().status === 'idle') recordWait = recordWaitAt('first');
-  // A page that is to wait for something — its parts, its record, a list's rows, a saved form, a map — has its loading
-  // part asked for now, never waited for: by the time it would show a skeleton, it mostly has it.
-  if (recordWait || /"type":"(list|related|form|map)"/.test(JSON.stringify(page.layout))) wantLoadingPart();
   let saveWait: Wait | null = null;
   const waits = (state: FormState) => {
     // The page drawn, its own boxes in the skeleton's place.
@@ -3114,6 +3122,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   );
   if (form.getState().status === 'idle') void form.load().finally(loaded);
   else loaded();
+  // The waits begun as it mounted, told once the app has the handle to listen with.
+  queueMicrotask(() => {
+    const early = toldEarly ?? [];
+    toldEarly = null;
+    for (const [start, event] of early) tell(start, event);
+  });
 
   return {
     form,

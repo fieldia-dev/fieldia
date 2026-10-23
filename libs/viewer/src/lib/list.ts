@@ -1147,8 +1147,9 @@ export function listView(context: ListContext): ListView {
       const widths = ['72%', '54%', '86%', '40%', '64%', '78%', '48%', '58%'];
       const row = (at: number) =>
         el('tr', { class: 'fd-sk-row', 'aria-hidden': 'true' }, ...[...headRow.children].map((th, column) => {
-          const cell = el('td', {}, el('span', { class: 'fd-sk', style: undefined }));
-          (cell.firstElementChild as HTMLElement).style.inlineSize = widths[(at + column) % widths.length];
+          const bar = el('span', { class: 'fd-sk' });
+          bar.style.inlineSize = widths[(at + column) % widths.length];
+          const cell = el('td', {}, bar);
           if ((th as HTMLElement).hidden) cell.hidden = true;
           return cell;
         }));
