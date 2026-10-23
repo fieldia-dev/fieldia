@@ -174,6 +174,38 @@ for (const variant of ['plain', 'react']) {
       await screen(page, `${variant}-approval-changed-after-rejection`);
     });
 
+    test('what Omar changed after the rejection, his manager reads whole: by whom and what, in its history and its conversation, his to change alone (finding 2’s two halves)', async ({ page }) => {
+      const amount = node(page, 'f-amount').locator('input');
+      const was = await amount.inputValue();
+      const why = page.getByText('Only Omar Said, whose claim it is, can change it.');
+      const said = new RegExp(`Amount: E£\\s${was.replace(/[.]/g, '\\.')} → E£\\s9,999\\.00`);
+      const changed = band(page).locator('.fd-approval-entry[data-decision="changed"]');
+      // Omar, whose claim it is, puts it right after Finance rejected it: his to change, and kept by who and what.
+      await expect(why).toHaveCount(0);
+      await amount.fill('9999');
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(page.locator('.fd-form').first().getByText('Saved', { exact: true })).toBeVisible();
+      // Karim, his manager, opens it: what Omar changed, read whole — the claim's new amount, its history saying who
+      // changed what, the conversation too — and nothing of it his to change.
+      await signIn(page, /Karim Fathy/);
+      await expect(title(page)).toHaveText('Rejected by Mona Adel (Finance)');
+      await expect(why).toBeVisible();
+      await expect(amount).toHaveValue('9,999.00');
+      await expect(amount).not.toBeEditable();
+      await expect(page.locator('.fd-header button[type="submit"]')).toBeHidden();
+      await band(page).getByRole('button', { name: /^Approval history/ }).click();
+      await expect(changed.locator('.fd-approval-entry-what')).toHaveText('Omar Said changed it');
+      await expect(changed.locator('.fd-approval-changes li')).toHaveText(said);
+      await expect(conversation(page).filter({ hasText: 'Amount' })).toContainText(said);
+      await expect(conversation(page).filter({ hasText: 'Amount' })).toContainText('Omar Said');
+      await screen(page, `${variant}-approval-manager-reads-the-change`);
+      // Typed at anyway, nothing of his goes in, and nothing new is said changed.
+      await amount.click();
+      await page.keyboard.type('1');
+      await expect(amount).toHaveValue('9,999.00');
+      await expect(changed).toHaveCount(1);
+    });
+
     test('Reject’s question keeps its keys: Escape lets it go, the focus back on Reject, nothing decided', async ({ page }) => {
       await page.getByRole('button', { name: 'Submit for approval' }).click();
       await expect(title(page)).toHaveText('Waiting for Manager: Karim Fathy');
