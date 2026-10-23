@@ -636,7 +636,7 @@ test('the record tab writes customer.page.json step by step, draws each step, an
   expect(await drawnPage(page)).toEqual(JSON.parse(RECORD.json));
   // A real record: its phone read for its country, money in euros, Lead › Customer, and the rule's VAT number,
   // required now that it is a company.
-  await expect(form.getByRole('combobox', { name: 'Country of Phone' })).toHaveValue('DE');
+  await expect(form.getByRole('button', { name: 'Country of Phone' })).toHaveAccessibleDescription('Germany');
   await expect(form.locator('[data-field="phone"] input[type="tel"]')).toHaveValue('+49 30 1234 5678');
   await expect(form.locator('[data-field="credit"] input')).toHaveValue('25,000.00');
   await expect(form.locator('[data-field="credit"]')).toContainText('€');
