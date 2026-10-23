@@ -20,6 +20,7 @@ import { formatNumber, formatPlain, ungroup } from './numbers';
 import { guard, leftWords, numberFits, numberKeyboard, numberRules, readShort, refusalHint, unreadWords, type NumberBox, type Shorthand } from './input-rules';
 import { textBox, type TextKind } from './text-box';
 import type { WidgetLabels } from './labels';
+import type { Loading } from './loading';
 import { linkCheckboxesWidget, many2oneWidget, plainLinkWidget, plainTagsWidget, referenceWidget, tagsWidget } from './relations-plain';
 import { plainLinesWidget, plainLinksWidget } from './lines-plain';
 import { labelWidget } from './label';
@@ -93,6 +94,11 @@ export interface WidgetContext {
    * puts back the value it last drew (contain.ts). `createWidget` gives every widget its own.
    */
   drew?: (value: Value | undefined) => void;
+  /**
+   * How it waits for what it asks for (loading.ts): a link's suggestions, its choices from the app's lists (`search`) —
+   * the page's way, its own `options.loading` over it. Fieldia's defaults when left out.
+   */
+  loading?: Loading;
 }
 
 /** What a widget may ask of the page around it in a dialog. The viewer provides these. */

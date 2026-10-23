@@ -3,7 +3,7 @@ import { installPartStyles, installStyles, PART_RANK } from './styles';
 /**
  * The parts' sheets in one order (PART_RANK, 0.31): each rank once; every part that draws its own parts — 0.29's four
  * and Wave 6's nine — after the limits' and before the themes', which reshape them; the quiet look, the pickers', the
- * head's, the text's, the survey kinds' looks, the cards' and a code scanned's after the themes, as they were.
+ * head's, the text's, the survey kinds' looks, the cards', a code scanned's and a wait's spinners after the themes.
  */
 describe('the parts’ sheets in one order', () => {
   it('gives each part a rank of its own, the nine of 0.31 between 0.29’s four and the themes', () => {
@@ -13,7 +13,7 @@ describe('the parts’ sheets in one order', () => {
     const before = ['approvals', 'assist', 'photos', 'languages', 'months', 'typed', 'record', 'codes', 'pins', 'verify', 'pay', 'outbox', 'schedule'] as const;
     expect(before.map((name) => PART_RANK[name])).toEqual(before.map((_, i) => PART_RANK.limits + 1 + i));
     expect(PART_RANK.themes).toBe(PART_RANK.schedule + 1);
-    const after = ['quiet', 'picker', 'head', 'groups', 'text', 'surveyLooks', 'cards', 'scan'] as const;
+    const after = ['quiet', 'picker', 'head', 'groups', 'text', 'surveyLooks', 'cards', 'scan', 'loading'] as const;
     expect(after.map((name) => PART_RANK[name])).toEqual(after.map((_, i) => PART_RANK.themes + 1 + i));
   });
 

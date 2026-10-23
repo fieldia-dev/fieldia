@@ -102,3 +102,5 @@ export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from '.
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.
 export { themesPart, quietPart, wearTheme, wearQuiet, type ThemesPart, type QuietPart } from './lib/look-parts';
+// Waiting for an answer, the same way everywhere: the timing machine and how its settings are resolved (loading.ts).
+export { asksLoadingPart, letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, wantLoadingPart, type Loading, type LoadingDrawing, type LoadingEvent, type LoadingOptions, type LoadingPart, type LoadingSettings, type LoadingWords, type Wait, type WaitHow } from './lib/loading';

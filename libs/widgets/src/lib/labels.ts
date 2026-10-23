@@ -438,6 +438,17 @@ export interface WidgetLabels {
   add: string;
   cancel: string;
   loading: string;
+  /**
+   * While something waits (loading.ts): rows under those shown, suggestions asked for, a wait gone on past its
+   * `slowAfter`, a wait that failed — and a search's — a timeout passed, and Retry, which asks again.
+   */
+  loadingMore: string;
+  searching: string;
+  stillLoading: string;
+  cantLoad: string;
+  cantSearch: string;
+  tookTooLong: string;
+  loadRetry: string;
   /** What an amount is for, after it: a rent's "/month" (a money look's `per`). */
   perDay: string;
   perNight: string;
@@ -1086,6 +1097,13 @@ const en: WidgetLabels = {
   add: 'Add',
   cancel: 'Cancel',
   loading: 'Loading…',
+  loadingMore: 'Loading more…',
+  searching: 'Searching…',
+  stillLoading: 'Still loading…',
+  cantLoad: 'Couldn’t load.',
+  cantSearch: 'Couldn’t search.',
+  tookTooLong: 'It took too long.',
+  loadRetry: 'Retry',
   perDay: '/day',
   perNight: '/night',
   perWeek: '/week',
