@@ -129,6 +129,10 @@ from its message; a whole code typed or pasted is checked at once), Confirm,
 how long it works and Send again after its wait, a wrong code's tries left,
 and Confirmed. A send before that is refused under the field, a value changed
 afterwards asks again, and each send carries the app's proof (`verified`).
+Left by a press below it (a tap on the next question), its buttons come once
+the press has ended, so nothing moves under the pointer — as every row a box
+adds or takes away as it is left (its errors, its hints, a phone's links, an
+amount's shorthand line, a possible duplicate's note).
 
 A page with a `payment` (`{ "label": "Reservation fee", "amount": 10000,
 "currency": "EGP" }`) and a source with `pay` has a payment step, in a part of
@@ -409,7 +413,9 @@ changed since it was entered, the browser's own undo goes first; once the box
 shows what it showed as it was entered, the next press is the record's; a
 formatted text keeps its own undo always (its table and list tools too). The
 field taken back takes the focus, and “Undone: Price” is said to a screen
-reader. The keys come in the undo part, asked for as the person first enters
+reader. A save starts the changes afresh — a change saved is none to take back
+— so Ctrl+Z right after Save takes nothing back and says “Nothing to undo since
+it was saved.” (a page with `autosave` keeps its changes across its saves). The keys come in the undo part, asked for as the person first enters
 the form — the box they are in known as it was entered, before they type.
 `keys: { undo: false }` leaves the keys to the browser alone; your own Undo
 button calls `form.undo()` (see `@fieldia/core`).
@@ -427,7 +433,8 @@ changed again, as it was.
 A page with `"templates": true` has a **Templates** menu over its record:
 **Save as template…** keeps what the record holds by a name ("Botox
 package") — never its name, its files, a value worked out or locked; a name
-already kept is replaced — and on a new record each template starts it, its
+already kept is asked about first, "Replace “Botox package”?", Replace or
+Cancel, Cancel asking the name again — and on a new record each template starts it, its
 values written as the person's own changes (Ctrl+Z takes each back).
 **Delete templates…** lets some go. Kept by the data source's `templates`,
 `saveTemplate` and `deleteTemplate`, else in the viewer's `preferences`. It
@@ -648,7 +655,9 @@ sent as they were." (`send`, then the thanks says so too), or "…are locked.
 Press Submit to send them." (`lock`). A step's own limit counts from when it is
 first entered — "Time left for this step: 4:59" — and as it runs out its answers
 stay as they are while the form goes on. No review stands in the way of a send
-on time. It comes in the survey flow's part; its words are the viewer's labels
+on time. A reload goes on with the time left and the answers given — or, past
+its end, says the time is up and sends or locks as the page says — through the
+form's drafts, kept in the tab when the app keeps none. It comes in the survey flow's part; its words are the viewer's labels
 (`timeLimitTitle`, `timeLimitIntro`, `timeStart`, `timeLeft`, `stepTimeLeft`,
 `timeWarn`, `timeUpSent`, `timeUpLocked`, `stepTimeUp`). See
 [a time limit](https://fieldia.dev/pages/#time-limit).
@@ -696,7 +705,12 @@ its box, a refusal of the source's said there — and Escape lets it go. While i
 waits, every field is locked but those `approval.open` names, each lock saying
 "Locked while it waits for approval", and the band says what stays open. Its
 history is folded under "Approval history (n)": who asked, who decided at which
-level, when, and why. The band and its dialog come in a part of their own
+level, when, and why — and who changed the record while it waited for a
+decision, or after a rejection, each field from what to what ("Karim Fathy
+changed it — Amount: E£ 1,450.00 → E£ 9,999.00"), where your source's history
+says so (a `changed` entry: your server records it as the save lands, by the
+person its sign-in knows; the memory source does as a stand-in). A chatter
+beside it tells the same as a tracked change. The band and its dialog come in a part of their own
 (`approvalsPart`, `fieldia.approvals.js`, with the form's own), loaded with the
 page's parts where it has `approval`. Their words are the viewer's labels
 (`approvalWaiting`, `approvalApprove`, `approvalReject`, …). See
@@ -746,7 +760,10 @@ source answers `list` and `groups`; a row opens through `onOpenRecord`, and the
 page's buttons reach `onAction` with the chosen `recordIds`. A group's heading
 is a button that says open or closed, its name and its count in words ("Cairo,
 12 invoices"), the list staying a table; the arrow keys cross it as they move
-between rows, Right opens it and Left closes it. See
+between rows, Right opens it and Left closes it. A menu Fieldia opens over a
+box gives way as the focus or typing moves elsewhere: the search bar's menu as
+its box is pressed or typed in — its suggestions in the menu's place — and a
+filter bar's list as another of its parts takes the focus. See
 [lists and search](https://fieldia.dev/lists/).
 
 Other ways of showing a list's records come from `listViews`, by name: a

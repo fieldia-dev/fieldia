@@ -40,6 +40,7 @@ export const templates: DesignerWords['templates'] = {
     kept: 'تبدیلی کے ساتھ رکھا گیا:',
     leftOut: 'چھوڑ دیا گیا:',
     started: (n, survey) => `اسکیما سے شروع کیا گیا: ${survey ? plural('ur', n, { one: '# سوال', other: '# سوالات' }) : plural('ur', n, { one: '# فیلڈ', other: '# فیلڈز' })}۔`,
+    empty: 'پہلے کوئی اسکیما چسپاں کریں یا فائل منتخب کریں۔',
     notJson: (problem) => `یہ JSON نہیں: ${ltr(problem)}`,
     refused: {
       'not-json-object': 'اسکیما ایک JSON آبجیکٹ ہوتا ہے: JSON Schema، OpenAPI دستاویز یا کسی ماڈل کی فیلڈز۔',

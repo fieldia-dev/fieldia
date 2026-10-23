@@ -158,6 +158,18 @@ test.describe('the backlog', () => {
     expect(problems).toEqual([]);
   });
 
+  test('a field’s values give way as the keyword box is pressed and typed in, as every menu over a box does', async ({ page }) => {
+    await openBacklog(page);
+    await pick(page, 'state').click();
+    const menu = page.getByRole('menu', { name: 'Filter by State' });
+    await expect(menu).toBeVisible();
+    const keyword = page.getByRole('searchbox', { name: 'Filter by keyword' });
+    await keyword.click();
+    await expect(menu).toBeHidden();
+    await keyword.pressSequentially('stock');
+    await expect(menu).toBeHidden();
+  });
+
   test('opens a bug from its row in the popup, keeps it in the address, and gives the focus back to its row', async ({ page }) => {
     const problems = await openBacklog(page);
     await row(page, 4136).click();

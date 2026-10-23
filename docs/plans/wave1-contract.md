@@ -1014,10 +1014,13 @@ interface ApprovalLevel {
   state: 'waiting' | 'later' | 'approved' | 'rejected' | 'skipped';
 }
 interface ApprovalEntry {
-  decision: 'approved' | 'rejected' | 'requested' | 'notNeeded';
+  decision: 'approved' | 'rejected' | 'requested' | 'notNeeded' | 'changed';
                                 // `requested`: sent for approval — each round starts with one; `notNeeded`: sent, and
-                                // moved on at once as its rules asked no level of it ("No approval needed")
-  level?: string;               // the level's id; none for `requested` and `notNeeded`
+                                // moved on at once as its rules asked no level of it ("No approval needed"); `changed`
+                                // (0.31.1): changed while it waited for a decision, or after a rejection
+  changes?: { field: string; label?: string; from: Value; to: Value }[];
+                                // a `changed` entry's fields, each from what to what; one with none is not told
+  level?: string;               // the level's id; none for `requested`, `notNeeded` and `changed`
   levelName?: string;           // its name, where it is no longer among the levels
   by: string;                   // who, by name
   at: string;                   // ISO
@@ -1106,6 +1109,18 @@ then a `notNeeded`.
   through the `can.edit` the source gives its row. The lock, `approval.open` and the band are a record page's.
 - **In the conversation** (`chatterSlot`, §19): the history is told among the messages, each entry's time written as the
   chatter writes a message's — the page's date boxes, on its clock: one way to write a time in the conversation.
+- **Changes on the way to approval (0.31.1, the owner's walk of 0.31)**: a record changed while it waits for a decision,
+  or after a rejection and before it is sent again, keeps a trail of who changed what. *What Fieldia does*: it shows a
+  `changed` entry of `history` in the band's history ("Karim Fathy changed it", each field under it, "Amount: E£ 1,450.00
+  → E£ 9,999.00", written as the page writes the field) and in the conversation as a tracked change by that person; the
+  memory source (the demos' stand-in for an engine) keeps one as each such save lands — by the person who last asked the
+  record's approvals, every field the save changed but the engine's own (those its route's `approved` and `rejected`
+  values name), from and to. A save carries no person: Fieldia never claims who saved. *What the app must do*: record
+  the change on its server as the save lands, by the person its sign-in knows — the only trail that can be trusted — and
+  answer it in `approvals().history` (a server whose chatter keeps tracked changes may post it there instead, with
+  `approvals: false` on `chatterSlot`, as for decisions). Whether such a change is allowed at all — only the record's
+  owner may change a rejected claim — is the page's rule (`readonly` by condition, the source's `can`), not this
+  trail's.
 
 ## 21. A list's cells changed in place (Wave 5, lane w5-editable-list)
 

@@ -1266,6 +1266,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       autoHeight: !!kinds,
       cellClassRules: {
         'fd-grid-kind-text': (p) => !!kindOf(p.data),
+        // A value a person typed, in its own direction: a text cell's, a section's or a note's words.
+        'fd-grid-words': (p) => !p.node.rowPinned && (!!kindOf(p.data) || sub.type === 'char' || sub.type === 'text'),
         'fd-grid-invalid': (p) => !p.node.rowPinned && (!!problemAt(p.data, column, p.api) || !!unreadAt(p.data, column)),
         // Shown as it was typed, in the order it was typed, as its box shows it: "12 34" never "34 12" on a right-to-left page.
         'fd-grid-unread': (p) => !p.node.rowPinned && !!unreadAt(p.data, column),
@@ -2008,11 +2010,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         card.classList.add(`fd-line-card-${kind}`);
         // A section's or a note's words, changed in a form of their own, as its cell is in the grid.
         const words = String(line.values[kinds.text] ?? '');
-        if (!dialogs || readonly) card.textContent = words;
+        if (!dialogs || readonly) card.append(Object.assign(document.createElement('div'), { className: 'fd-grid-words', textContent: words }));
         else {
           const open = document.createElement('button');
           open.type = 'button';
-          open.className = 'fd-line-card-title';
+          open.className = 'fd-line-card-title fd-grid-words';
           open.textContent = words || (def.fields[kinds.text]?.label ?? '');
           open.addEventListener('click', () => void openCard(line.key));
           card.append(open);
@@ -2027,7 +2029,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       const rest = shownHere.filter((column) => column !== first);
       const text = (column: string) => cellWords(line, column, parent);
       const title = document.createElement(dialogs ? 'button' : 'div');
-      title.className = 'fd-line-card-title';
+      /** Words a person typed, in their own direction (`fd-grid-words`). */
+      const typed = (column: string | undefined) => !!column && (def.fields[column]?.type === 'char' || def.fields[column]?.type === 'text');
+      title.className = typed(first) ? 'fd-line-card-title fd-grid-words' : 'fd-line-card-title';
       title.textContent = first ? text(first) || placeName(numberOf(line)) : '';
       if (dialogs && title instanceof HTMLButtonElement) {
         title.type = 'button';
@@ -2039,6 +2043,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         dt.textContent = def.fields[column].label;
         const dd = document.createElement('dd');
         dd.textContent = text(column);
+        if (typed(column)) dd.className = 'fd-grid-words';
         // What its line's change took out of it, under its value, as on a plain table's card.
         const taken = clearedAt(line, column);
         if (taken) dd.append(Object.assign(document.createElement('div'), { className: 'fd-warning fd-grid-taken-out', textContent: taken }));

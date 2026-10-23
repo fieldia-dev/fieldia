@@ -172,9 +172,13 @@ const SKINS_CSS = /* css */ `
 /*
  * A page's words run the way they are written — a sentence left in English on
  * an Arabic page keeps its full stop at its end — and line up with the form.
- * Titles with an icon keep their words apart instead, in a <bdi>.
+ * Titles with an icon keep their words apart instead, in a <bdi>. So does
+ * every value a person typed, wherever it is shown — its box here; a table's
+ * cell and card, a list's cell (<bdi>), a read view, paper (dir="auto") in
+ * their own sheets: one rule.
  */
-.fd-page-title, .fd-page-description, .fd-section-description, .fd-label, .fd-help, .fd-text-heading, .fd-text-paragraph, .fd-text-note, .fd-choice > span {
+.fd-page-title, .fd-page-description, .fd-section-description, .fd-label, .fd-help, .fd-text-heading, .fd-text-paragraph, .fd-text-note, .fd-choice > span,
+.fd-field:is([data-type="char"], [data-type="text"]) :is(input, textarea).fd-input {
   unicode-bidi: plaintext; text-align: match-parent; text-align: -webkit-match-parent;
 }
 .fd-error { color: var(--fd-error); font-size: 12.5px; }

@@ -8,8 +8,10 @@
  * click lands where it was aimed — its own handlers first (Submit's check, a button's steps) — then it is done. Left by
  * the keys (Tab), or by a program, it is done at once, as always.
  *
- * THE one mechanism for every box that says something as it is left: fields, a plain table's cells and the grid's,
- * properties, a date range's ends, a list's custom filter, the boxes' hints.
+ * THE one mechanism for every box that says something as it is left — or adds or takes a row away under itself: fields,
+ * a plain table's cells and the grid's, properties, a date range's ends, a list's custom filter, the boxes' hints, a
+ * phone's Call and WhatsApp, an amount's shorthand line, a proof's Send a code (the verify part), a possible
+ * duplicate's note.
  */
 
 /** How long after a press is lifted its click may still come, in ms: a phone's click follows the lift, the focus first. */

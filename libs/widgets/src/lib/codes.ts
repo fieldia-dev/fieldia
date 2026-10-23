@@ -18,11 +18,41 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  *
  *   level      a QR code's error correction: "L", "M" (the default), "Q" or "H"
  *   size       a QR code's side, or a barcode's height, in pixels: 160 and 64 unless it says
- *   showValue  the value's words under the code: a barcode's unless false, a QR code's where true
+ *   showValue  the value's words under the code: a barcode's unless false, a QR code's where true — a short line
+ *              as it is, a longer payload's summary or nothing (`codeSummary`)
  *
  * The encoders are Fieldia's own (qr.ts, code128.ts), in the codes part with this widget (codes-part.ts), loaded the
  * first time a page shows a code; the field's box meanwhile.
  */
+
+/** A short line: what is said of a code's value as it is. */
+const SHORT = 60;
+
+/**
+ * What is said of a QR code's value under it and to a screen reader: a short line as it is; else its summary — a link
+ * with parameters by its address
+ * (host and path), a contact card (vCard, MECARD) by its name, a network's details (WIFI:) by its name, an email or a
+ * phone link by its address — or nothing, the code alone. Its value stays whole in the code. A barcode's value is an
+ * identifier, said as it is: never a number grouped, in its box at rest too.
+ */
+export function codeSummary(value: string): string {
+  const text = value.trim();
+  const named = (pattern: RegExp) => pattern.exec(text)?.[1]?.replace(/\\([,;:\\])/g, '$1').trim() ?? '';
+  if (/^BEGIN:VCARD/i.test(text)) return named(/^FN[;:][^\r\n]*?:?([^:\r\n]+)$/im) || named(/^ORG[;:]([^\r\n;]+)/im);
+  if (/^MECARD:/i.test(text)) return named(/[:;]N:([^;]+)/i);
+  if (/^WIFI:/i.test(text)) return named(/[:;]S:((?:\\.|[^;])+)/i);
+  if (/^(mailto|tel|sms):/i.test(text)) return text.replace(/^[a-z]+:/i, '').split('?')[0];
+  if (/^https?:\/\//i.test(text) && (/[?#]/.test(text) || text.length > SHORT)) {
+    try {
+      const url = new URL(text);
+      const at = `${url.host}${url.pathname.replace(/\/$/, '')}`;
+      return at.length > SHORT ? url.host : at;
+    } catch {
+      return '';
+    }
+  }
+  return text.length > SHORT || /[\r\n]/.test(text) ? '' : text;
+}
 
 /** A code drawn: its SVG, named, or why it cannot be. */
 function drawCode(doc: Document, kind: 'qr' | 'bar', value: string, options: CodeOptions): { svg: SVGSVGElement } | { refused: unknown } {
@@ -86,8 +116,8 @@ export const codeWidget =
     const kind = node.widget === 'barcode' ? 'bar' : 'qr';
     const options = (node.options ?? {}) as CodeOptions;
     const showValue = options.showValue ?? kind === 'bar';
-    // The field's own box, over the code, while it may be typed in.
-    const box = widgetFor({ ...context, node: { ...node, widget: undefined } });
+    // The field's own box, over the code, while it may be typed in: its value an identifier, a number never grouped.
+    const box = widgetFor({ ...context, node: { ...node, widget: undefined, options: { ...node.options, grouping: false } } });
     const picture = make('div', { class: 'fd-code-picture' });
     const words_ = make('span', { class: 'fd-code-words', dir: 'auto' });
     const why = make('p', { class: 'fd-help fd-code-why', role: 'status' });
@@ -104,8 +134,10 @@ export const codeWidget =
         if (value === drawn) return;
         drawn = value;
         const made = value ? drawCode(doc, kind, value, options) : null;
+        // A barcode's value is an identifier, as it is; a QR code's payload said by its summary.
+        const said = kind === 'qr' ? codeSummary(value) : value;
         if (made && 'svg' in made) {
-          made.svg.setAttribute('aria-label', fillIn(kind === 'qr' ? words.qrCodeOf : words.barcodeOf, { value }));
+          made.svg.setAttribute('aria-label', said ? fillIn(kind === 'qr' ? words.qrCodeOf : words.barcodeOf, { value: said }) : words.qrCode);
           picture.replaceChildren(made.svg);
           setText(why, '');
         } else {
@@ -113,8 +145,8 @@ export const codeWidget =
           const refused = made && 'refused' in made ? made.refused : null;
           setText(why, refused instanceof QrTooLong ? words.qrTooLong : refused instanceof Code128Refused ? fillIn(words.barcodeRefused, { character: refused.character }) : '');
         }
-        setText(words_, value);
-        setHidden(words_, !showValue);
+        setText(words_, said);
+        setHidden(words_, !showValue || !said);
         setHidden(figure, !(made && 'svg' in made));
       },
       destroy: () => box.destroy?.(),

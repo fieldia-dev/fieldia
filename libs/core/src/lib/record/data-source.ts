@@ -2,7 +2,7 @@ import type { FilterCondition, Fields, Option, PropertyDefinition } from '../for
 import type { QuizResults } from './quiz';
 import type { JsonValue } from '../format/json';
 import type { Page } from '../format/page';
-import type { FileValue, RecordId, RelatedRecord, Values } from './values';
+import type { FileValue, RecordId, RelatedRecord, Value, Values } from './values';
 import type { RunStop } from './run';
 import type { DateInterval } from './periods';
 import type { Facet } from './search';
@@ -322,13 +322,26 @@ export interface ApprovalLevel {
   state: ApprovalLevelState;
 }
 
-/** What happened on a record's way to approval: sent for it, or a decision at a level — who, when, and why. */
+/** A field someone changed on a record on its way to approval: what it held, and what it holds now. */
+export interface ApprovalChange {
+  field: string;
+  /** The field's label, as the page said it when it was changed: said where the field is no longer the page's. */
+  label?: string;
+  from: Value;
+  to: Value;
+}
+
+/** What happened on a record's way to approval: sent for it, a decision at a level, or a change — who, when, and why. */
 export interface ApprovalEntry {
   /**
-   * A decision at a level, the record sent for approval (`requested`: each round of asking starts with one), or sent
-   * and moved on at once as its rules asked no level of it (`notNeeded`: "No approval needed").
+   * A decision at a level, the record sent for approval (`requested`: each round of asking starts with one), sent and
+   * moved on at once as its rules asked no level of it (`notNeeded`: "No approval needed") — or the record `changed`
+   * while it waited for a decision, or after a rejection, by someone (`changes`: each field, what it held and holds),
+   * as the app's engine keeps such changes: the trail of who changed what while others were deciding on it.
    */
-  decision: ApprovalDecision | 'requested' | 'notNeeded';
+  decision: ApprovalDecision | 'requested' | 'notNeeded' | 'changed';
+  /** A change's fields, each with what it held and what it holds now: a `changed` entry's. */
+  changes?: ApprovalChange[];
   /** The level decided at, by its id; none for `requested` and `notNeeded`. */
   level?: string;
   /** The level's name, where it is no longer among the record's levels: its id is said otherwise. */

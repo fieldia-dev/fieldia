@@ -134,6 +134,54 @@ test.describe("a list's timeline", () => {
     expect(problems).toEqual([]);
   });
 
+  test('opens showing the plan from its first task, today in view; bars past either edge said with how many (the owner’s walk of 0.31)', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const { problems } = await openPlan(page);
+    // Its first task in view, whole — never the plan's first weeks cut off with no sign of them — and today with it.
+    await expect(bar(page, 'Site survey')).toBeInViewport({ ratio: 1 });
+    await expect(page.locator('.fd-gantt-today')).toBeInViewport();
+    await expect(page.locator('.fd-gantt-edge[data-edge="start"]')).toBeHidden();
+    const later = page.locator('.fd-gantt-edge[data-edge="end"]');
+    await expect(later).toBeVisible();
+    await expect(later).toHaveText(/\d+/);
+    const after = Number((await later.textContent())?.match(/\d+/)?.[0]);
+    await expect(later).toHaveAccessibleName(`After the days shown: ${after}`);
+    await screen(page, 'gantt-opens-on-the-plan', { viewport: true });
+    // Pressed: on to them; the bars passed now said at the start.
+    await later.click();
+    await expect(page.locator('.fd-gantt-edge[data-edge="start"]')).toBeVisible();
+    await expect(page.locator('.fd-gantt-edge[data-edge="start"]')).toHaveText(/\d+/);
+    expect(problems).toEqual([]);
+  });
+
+  test('Ctrl+Z and Ctrl+Shift+Z take a move back and make it again, after a drag and after the keys, as the toast’s Undo does', async ({ page }) => {
+    const { problems } = await openPlan(page);
+    const painting = bar(page, 'Painting');
+    await painting.scrollIntoViewIfNeeded();
+    const box = (await painting.boundingBox())!;
+    await dragTo(page, { x: box.x + 20, y: box.y + box.height / 2 }, { x: box.x + 20 + 2 * 40 + 6, y: box.y + box.height / 2 });
+    await expect(said(page)).toContainText(/Moved Painting/);
+    expect(await task(page, 12)).toMatchObject({ start: '2026-10-26' });
+    await settled(page);
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(said(page)).toHaveText(/Put back as it was\./);
+    await expect.poll(() => task(page, 12)).toMatchObject({ start: '2026-10-24' });
+    await settled(page);
+    await page.keyboard.press('ControlOrMeta+Shift+z');
+    await expect(said(page)).toContainText(/Moved Painting/);
+    await expect.poll(() => task(page, 12)).toMatchObject({ start: '2026-10-26' });
+    await settled(page);
+    // From the keys: a day on, at rest, then Ctrl+Z.
+    await bar(page, 'Flooring').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(said(page)).toContainText(/Moved Flooring/);
+    expect(await task(page, 13)).toMatchObject({ start: '2026-10-29' });
+    await settled(page);
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect.poll(() => task(page, 13)).toMatchObject({ start: '2026-10-28' });
+    expect(problems).toEqual([]);
+  });
+
   test('weeks and months are a press away, and a phase folds away under its heading', async ({ page }) => {
     await openPlan(page);
     const width = async () => (await bar(page, 'Partitions').boundingBox())!.width;

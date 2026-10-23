@@ -11,7 +11,8 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  * of a code sent by SMS (`autocomplete="one-time-code"`) fills it whole, a screen reader reads one box by its label,
  * and a paste of the whole code ("123 456", "123-456") lands across the boxes at once. Typing moves on box by box;
  * Backspace goes back; a press on a box puts the caret there. A key no code has is refused with why, and so is one
- * past its length. The field takes the code once it is whole — so a step that sends it can run on its change; left
+ * past its length; the keys after it go in where they fit, never hidden. A whole message pasted ("Your code is 482
+ * 913. It works for 10 minutes.") gives the one code of its length in it; one with none, or two, is refused, saying why. The field takes the code once it is whole — so a step that sends it can run on its change; left
  * before then, what was typed stays, marked, with how many are still to type. In the typed part.
  */
 
@@ -59,14 +60,19 @@ export const codeWidget: WidgetFactory = (context: WidgetContext): Widget => {
     return [...kept].length > length ? full() : null;
   };
   const rules: InputRules = {
-    hold: true,
+    stay: true,
     judge: (next) => judge(next),
     paste(text) {
       const plain = text.trim();
       const start = input.selectionStart ?? input.value.length;
       const combined = input.value.slice(0, start) + plain + input.value.slice(input.selectionEnd ?? start);
       const refused = judge(combined);
-      if (refused) return { refuse: refused };
+      if (refused) {
+        // A message with the code in it: its one run of the code's length — groups written apart joined — taken whole.
+        const runs = foldDigits(stripMarks(text)).replace(/(\d)[\s\-.](?=\d)/g, '$1').match(letters ? /[\p{Nd}\p{L}]+/gu : /\d+/g) ?? [];
+        const found = [...new Set(runs.filter((run) => [...run].length === length).map(clean))];
+        return found.length === 1 ? { text: found[0], whole: true } : { refuse: refused };
+      }
       const code = clean(plain);
       return { text: code, whole: [...code].length === length };
     },

@@ -4,6 +4,9 @@ import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { rightToLeft, setHidden, setText } from './kind-parts';
 import type { Widget, WidgetContext } from './widgets';
 import { openOnClick } from './quiet';
+import { weekdayHead } from './weekday-head';
+
+export { weekdayHead };
 
 /**
  * A calendar beside a date: Fieldia's own date box has one, with the week
@@ -84,18 +87,6 @@ export interface CalendarKind {
   mark?(button: HTMLButtonElement, at: Date, label: string): void;
 }
 
-/**
- * A day of the week as a calendar's column heads it: its short name ("Mon", "lun", "Mo"), or — where the short name
- * is a whole word, as Arabic's are (الاثنين) — its narrow one (ن), which fits the column; the head's `abbr` says it whole.
- */
-export function weekdayHead(lang: string): (day: Date) => string {
-  const short = new Intl.DateTimeFormat(lang, { weekday: 'short' });
-  const narrow = new Intl.DateTimeFormat(lang, { weekday: 'narrow' });
-  return (day) => {
-    const name = short.format(day).replace(/\.$/, '');
-    return [...name].length > 4 ? narrow.format(day) : name;
-  };
-}
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();

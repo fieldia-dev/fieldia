@@ -119,4 +119,20 @@ describe('a record’s approval history in its conversation', () => {
     expect(entries.map((entry) => entry.body)).toEqual(['<p>Hat um Genehmigung gebeten</p>', '<p>Abgelehnt (Finanzen)</p><blockquote><p>Zu teuer</p></blockquote>', '<p>Genehmigt (Vorstand)</p>', '<p>Keine Genehmigung nötig</p>']);
     expect(entries.every((entry) => entry.kind === 'event')).toBe(true);
   });
+
+  it('tells a change made while it waited, or after a rejection, as a tracked change by who made it (the owner’s walk of 0.31)', () => {
+    const [entry] = approvalEntries(
+      {
+        state: 'told',
+        status: 'rejected',
+        levels: [{ id: 'manager', name: 'Manager', approvers: [], needs: 'any', state: 'rejected' }],
+        together: false,
+        history: [{ decision: 'changed', by: 'Karim Fathy', at: '2026-10-21T08:10:00Z', changes: [{ field: 'amount', label: 'Amount', from: 1450, to: 9999 }, { field: 'notes', from: '', to: 'Fixed' }] }],
+        mine: [],
+      },
+      CHATTER_LABELS.en,
+      (_field, value) => (typeof value === 'number' ? `E£ ${value.toLocaleString('en-GB', { minimumFractionDigits: 2 })}` : String(value))
+    );
+    expect(entry).toMatchObject({ kind: 'event', author: { name: 'Karim Fathy' }, tracking: [{ field: 'amount', label: 'Amount', from: 'E£ 1,450.00', to: 'E£ 9,999.00' }, { field: 'notes', label: 'notes', from: null, to: 'Fixed' }] });
+  });
 });

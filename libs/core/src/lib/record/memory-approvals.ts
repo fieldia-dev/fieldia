@@ -1,4 +1,4 @@
-import type { ApprovalEntry, ApprovalLevel, ApprovalLevelState, Approvals, ApprovalsRequest, DecideRequest, RecordVersion } from './data-source';
+import type { ApprovalChange, ApprovalEntry, ApprovalLevel, ApprovalLevelState, Approvals, ApprovalsRequest, DecideRequest, RecordVersion, SaveRequest } from './data-source';
 import { saveRefused } from './data-source';
 import { structuredCopy, type RecordId, type Values } from './values';
 
@@ -44,8 +44,15 @@ const same = (approver: { id?: RecordId; name: string }, person: Person): boolea
  * they asked for. A decision is refused where the level is not waiting, the person sent it, is none of its approvers or
  * decided already, or a rejection says no reason; the last approval writes the route's `approved` values on the record,
  * a rejection its `rejected` ones. A record sent whose route asks no level moves on at once as it is saved (`sent`).
+ * A save of a record that waits for a decision, or was rejected, is kept in its history (`changed`): who changed which
+ * fields, from what to what — the person looking at it as the form last asked, as a server knows them by its sign-in.
  */
-export function memoryApprovals(use: MemoryApprovalsUse): { approvals(request: ApprovalsRequest): Approvals; decide(request: DecideRequest): Approvals; sent(model: string, id: RecordId): void } {
+export function memoryApprovals(use: MemoryApprovalsUse): {
+  approvals(request: ApprovalsRequest): Approvals;
+  decide(request: DecideRequest): Approvals;
+  sent(model: string, id: RecordId): void;
+  changed(request: SaveRequest, before: Values): void;
+} {
   const histories: Record<string, ApprovalEntry[]> = structuredCopy(use.history ?? {});
   /** Whether each record was sent for approval when last asked: sent again since, a round starts. */
   const sending = new Map<string, boolean>();
@@ -53,6 +60,8 @@ export function memoryApprovals(use: MemoryApprovalsUse): { approvals(request: A
   const askers = new Map<string, Person>();
   /** Records moved on as they were sent, their rules asking no level: told in their history as next asked, by whom. */
   const movedOn = new Map<string, string>();
+  /** Who looks at each record, as the form last asked its approvals: who a save of it is by. */
+  const viewers = new Map<string, Person>();
 
   /** The person who sent the round asked now: as the form told when they sent it, else by the name its history keeps. */
   function askerOf(key: string, history: readonly ApprovalEntry[]): Person {
@@ -68,6 +77,7 @@ export function memoryApprovals(use: MemoryApprovalsUse): { approvals(request: A
     const route = use.routes?.[model]?.(structuredCopy(values), id) ?? null;
     const key = `${model}:${id}`;
     const history = (histories[key] ??= []);
+    if (person) viewers.set(key, person);
     // Sent and moved on as it was saved: who sent it, and that no approval was needed, told now — as the person is known.
     const moved = movedOn.get(key);
     if (moved !== undefined) {
@@ -130,6 +140,26 @@ export function memoryApprovals(use: MemoryApprovalsUse): { approvals(request: A
       Object.assign(use.table(model)[String(recordId)], structuredCopy(ending));
       use.moved(model, recordId, approver.name);
       return routed(model, recordId, request.user);
+    },
+    changed(request, before) {
+      // A record that waits for a decision, or was rejected and not sent again: its changes kept, by whom, from and to.
+      const { model, id } = request;
+      if (id === null || !use.routes?.[model]) return;
+      const key = `${model}:${id}`;
+      const route = use.routes[model](structuredCopy(before), id);
+      const history = histories[key] ?? [];
+      const last = [...history].reverse().find((entry) => entry.decision !== 'changed');
+      const done = !!route?.approved && Object.entries(route.approved).every(([name, value]) => JSON.stringify(before[name] ?? null) === JSON.stringify(value ?? null));
+      const waits = !!route?.levels.length && route.asked && !done && last?.decision !== 'rejected';
+      if (!waits && last?.decision !== 'rejected') return;
+      const now = use.table(model)[String(id)] ?? {};
+      // The fields the engine moves itself (its state, as the route's approved and rejected values name them): never a change of someone's.
+      const own = new Set([...Object.keys(route?.approved ?? {}), ...Object.keys(route?.rejected ?? {})]);
+      const changes: ApprovalChange[] = Object.keys(request.changes.values)
+        .filter((field) => !own.has(field) && JSON.stringify(before[field] ?? null) !== JSON.stringify(now[field] ?? null))
+        .map((field) => ({ field, ...(request.fields[field]?.label ? { label: request.fields[field].label } : {}), from: structuredCopy(before[field] ?? null), to: structuredCopy(now[field] ?? null) }));
+      if (!changes.length) return;
+      (histories[key] ??= []).push({ decision: 'changed', by: viewers.get(key)?.name || 'Someone', at: use.now(), changes });
     },
     sent(model, id) {
       // Saved as sent for approval, its rules asking no level of it: on at once to its approved values, as an engine

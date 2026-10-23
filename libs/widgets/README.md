@@ -22,7 +22,10 @@ reviewed by a native speaker**, each of those four in a chunk of its own,
 fetched where it is spoken (`wordsReady` in @fieldia/core, which the viewer
 awaits before it draws); a number box on a Persian or Urdu page reads
 their digits (۰–۹), and a Turkish page's date box writes a day with dots
-(15.10.2026), as a German one does.
+(15.10.2026), as a German one does. On a page right to left, every value a
+person typed reads in its own direction, lined up with the page — an English
+note on an Arabic order keeps its full stop at its end — in its box, a table's
+cell and card, a list's cell, a read view and on paper: one rule.
 
 Most apps never import this package directly: [`@fieldia/viewer`](https://www.npmjs.com/package/@fieldia/viewer)
 lays a page out with these widgets. Import it to write your own widget — a
@@ -95,7 +98,11 @@ field: a QR code, its words as UTF-8, at `options.level` L, M, Q or H) or
 `"widget": "barcode"` (a char or integer field: Code 128), drawn as SVG from the
 value — black on white, crisp on paper, named for a screen reader — under the
 field's own box while it may be typed in; `size` and `showValue` set its size
-and the words under it. Words a code cannot hold are said in its place. The
+and the words under it. A barcode's value is an identifier, said as it is — a
+number never grouped, in its box at rest too; a QR code's is said by
+`codeSummary`: a short line as it is, else a link with parameters by its
+address, a contact card or a Wi-Fi network by its name, or nothing (the code
+alone, named "QR code"). Words a code cannot hold are said in its place. The
 encoders are Fieldia's own, in `codesPart` (`fieldia.codes.js`):
 `(await codesPart.load()).qrCode(words, 'M')`, `.code128(words)`.
 
@@ -189,8 +196,10 @@ left out (an IBAN's last groups, as long as its country's); every other
 character is the mask's own, written in as the person types — "2 104 " as the
 fifth digit is due — and Backspace over one takes the character before it. A
 key no slot takes there is refused with why ("a digit goes here, not “x”"),
-the keys after it held (the input rules); a paste is laid out against it or
-refused whole, saying why. The field takes the characters typed
+said while the keys after it go in where they fit — never hidden ("10a2345"
+shows "1 023 45"); a paste is laid out against it, one with words round the
+value ("ID 1023456789", "IBAN: SA03 …") gives the one value in them, and one
+with none, or two, is refused whole, saying why. The field takes the characters typed
 (`"2104556789"`) once every slot it needs is filled, or as shown
 (`"maskKeeps": "shown"`: `"4821 RKA"`); `"upper": true` writes its letters in
 capitals. Left before it is whole, what was typed stays, marked, with how many
@@ -218,7 +227,9 @@ digits (`options.length`, 4 to 12, 6 unless said; `options.letters` for
 letters too) over one text box with `autocomplete="one-time-code"`, so the
 phone's autofill of a code sent by SMS fills it whole, a screen reader reads
 one box by its label ("6 digits"), and a code pasted with its spaces or dashes
-lands across the boxes at once. The field takes the code once it is whole — a
+lands across the boxes at once — a whole message pasted ("Your code is 482
+913.") gives the one code of its length in it, else is refused, saying why; a
+key refused is said while the keys after it go in. The field takes the code once it is whole — a
 step on its change can send it; left before then, it says how many are still to
 type. Both come in the typed part (`typedPart`), the text box meanwhile.
 

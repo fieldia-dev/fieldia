@@ -58,7 +58,7 @@ import type { QuizResults } from './quiz';
 import type { Countdown } from './timing';
 import type { Limits } from './form-limits';
 import type { FormApproval } from './approving';
-import { draftRead, resumeStep } from './drafts';
+import { draftRead, resumeStep, timedStore } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -934,7 +934,10 @@ export interface Form {
   undo(): HistoryStep | null;
   /** Make the last change taken back again, as `undo` takes one back; null when none is. Ctrl+Shift+Z, Ctrl+Y. */
   redo(): HistoryStep | null;
-  /** The changes `undo` and `redo` would take now: for a button or a menu that names them (once the undo part has come). */
+  /**
+   * The changes `undo` and `redo` would take now: for a button or a menu that names them (once the undo part has come).
+   * A save starts them afresh (not on a page with `autosave`): a change saved is none to take back.
+   */
   history(): { undo: HistoryStep | null; redo: HistoryStep | null };
   /** Resolves once every onchange, save, autosave and run of steps started so far has finished — a question still waiting for its answer included. */
   settled(): Promise<void>;
@@ -1569,7 +1572,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     started: () => started,
     listened: () => listeners.size > 0,
     disposed: () => disposed,
-    keep: () => void ((options.drafts || onServer()) && scheduleDraft()),
+    // A clock started is kept at once where drafts are kept here: a reload a moment after Start finds it.
+    keep: () => (onServer() ? scheduleDraft() : keepHere(draftNow())),
     order: (list) => void (steps = list ?? layoutSteps),
     refuse(name, message) {
       // Said until the field changes from what it holds, as a refused save's words are.
@@ -2577,8 +2581,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    * form continues one by its key). A page without either keeps its drafts where it always did.
    */
   const onServer = () => !!options.dataSource?.saveDraft && !!options.dataSource.loadDraft && (page.continueLater === true || !!options.resume);
-  /** Whether drafts are kept: the app gave a store, or they are kept on the server. */
-  const draftsOn = () => !!options.drafts || onServer();
+  /** Where drafts are kept in the browser: the app's store, else a timed page's tab (`timedStore`); none else. */
+  const draftStore = options.drafts?.store ?? timedStore(page);
+  /** Whether drafts are kept: in a store, or on the server. */
+  const draftsOn = () => !!draftStore || onServer();
   /** The key of the draft kept on the server for the record shown; null until the source gave one. */
   let serverKey: string | null = null;
   /** Counted each time the draft is let go (sent, discarded, another record shown): a keeping answered after is dropped. */
@@ -2619,7 +2625,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** A draft in the browser's store, where the app gave one: a store that is full keeps none. */
   function keepHere(kept: StoredDraft | { savedAt: string; key: string }) {
     try {
-      options.drafts?.store.setItem(storeKey(), JSON.stringify(kept));
+      draftStore?.setItem(storeKey(), JSON.stringify(kept));
     } catch {
       // The draft is a convenience: the form goes on without it.
     }
@@ -2691,13 +2697,16 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     draftEpoch++;
     serverKey = null;
     if (state.resume) set({ resume: null });
-    options.drafts?.store.removeItem(storeKey());
+    draftStore?.removeItem(storeKey());
   }
 
-  /** A draft found: laid at once (`restore: "auto"`, or a draft continued from its key over nothing typed), else offered. */
-  function offer(draft: StoredDraft, auto = options.drafts?.restore === 'auto') {
+  /**
+   * A draft found: laid at once (`restore: "auto"`, a draft continued from its key over nothing typed, one kept in a
+   * timed page's tab, or one whose clock started — let go, it would start again), else offered.
+   */
+  function offer(draft: StoredDraft, auto = !options.drafts || options.drafts.restore === 'auto') {
     // What the person typed while it was asked for is theirs: the draft is offered, never laid over it.
-    if (auto && !state.dirty.length && !Object.keys(state.unread).length) return applyDraft(draft);
+    if ((auto || draft.timers) && !state.dirty.length && !Object.keys(state.unread).length) return applyDraft(draft);
     found = draft;
     set({ draft: { savedAt: draft.savedAt } });
   }
@@ -2711,7 +2720,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const source = options.dataSource;
     const given = resumeKey;
     resumeKey = undefined;
-    const kept = given ? null : draftRead(options.drafts?.store.getItem(storeKey()) ?? null);
+    const kept = given ? null : draftRead(draftStore?.getItem(storeKey()) ?? null);
     if (!given && !kept) return;
     if (kept && !('key' in kept)) return offer(kept);
     const key = given ?? (kept as { key: string }).key;
@@ -2725,7 +2734,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           if (given) set({ status: 'ready' });
           if (!draft) {
             // Sent, or gone: the form starts empty, and says so where it was asked to continue it.
-            options.drafts?.store.removeItem(storeKey());
+            draftStore?.removeItem(storeKey());
             if (given) set({ resume: { key, missing: true } });
             return;
           }
@@ -3080,6 +3089,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       sentAs = baseline;
       // Its version now, for the next save to carry; and what the person may do now, when the save changed that.
       // The person's changes it did not send are at risk (`unsent`): every way out asks before it leaves them.
+      // A save starts the person's changes afresh, as one saved is no change to take back (the viewer's Ctrl+Z says
+      // nothing changed since). Not on a page that saves itself as it is changed (`autosave`), whose changes are taken
+      // back across its saves; nor where a change made while it saved goes on past it.
+      if (!options.autosave && !dirty.length && got) noted = [];
       set({ status: 'saved', recordId: result.id, values, dirty, warnings: withValues(values, collectWarnings), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
       // Changed while it saved: kept in a draft, and saved as any change is.
       if (dirty.length) {
@@ -4298,7 +4311,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     restoreDraft() {
-      const kept = found ?? draftRead(options.drafts?.store.getItem(storeKey()) ?? null);
+      const kept = found ?? draftRead(draftStore?.getItem(storeKey()) ?? null);
       if (kept && 'values' in kept) applyDraft(kept);
     },
 

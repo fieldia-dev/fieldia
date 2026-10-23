@@ -77,6 +77,9 @@ export interface ViewerLabels {
   templateKeep: string;
   templateSaved: string;
   templateReplaced: string;
+  /** Asked before a template is saved over one of the same name (`{name}`), and its Yes. */
+  templateReplaceAsk: string;
+  templateReplace: string;
   templateUsed: string;
   templatesDelete: string;
   templatesChosen: string;
@@ -607,6 +610,8 @@ export interface ViewerLabels {
   undoneField: string;
   /** Said as Ctrl+Shift+Z makes it again. */
   redoneField: string;
+  /** Said as Ctrl+Z is pressed right after a save the person asked for: nothing changed since to take back. */
+  nothingSinceSave: string;
   nowIs: string;
   readOnlyRecord: string;
   readOnlyRecordNoun?: string;
@@ -720,6 +725,8 @@ export interface ViewerLabels {
   approvalAskedEntry: string;
   approvalApprovedEntry: string;
   approvalRejectedEntry: string;
+  /** A change made while it waited for a decision, or after a rejection, in its history: who (`{name}`); its fields listed under it. */
+  approvalChangedEntry: string;
   /** A record sent whose rules asked no level of it, moved on at once: where it stands, and that moment of its history. */
   approvalNotNeeded: string;
   /**
@@ -950,6 +957,8 @@ const en: ViewerLabels = {
   templateKeep: 'Save template',
   templateSaved: 'Template “{name}” saved.',
   templateReplaced: 'Template “{name}” replaced.',
+  templateReplaceAsk: 'Replace “{name}”?',
+  templateReplace: 'Replace',
   templateUsed: 'Started from “{name}”.',
   templatesDelete: 'Delete templates…',
   templatesChosen: 'Templates to delete',
@@ -1319,6 +1328,7 @@ const en: ViewerLabels = {
   putAllBack: 'Put all back',
   undoneField: 'Undone: {field}',
   redoneField: 'Redone: {field}',
+  nothingSinceSave: 'Nothing to undo since it was saved.',
   nowIs: 'now {value}',
   readOnlyRecord: 'You can read this record, but not change it.',
   readOnlyRecordNoun: 'You can read this {record}, but not change it.',
@@ -1401,6 +1411,7 @@ const en: ViewerLabels = {
   approvalAskedEntry: '{name} asked for approval',
   approvalApprovedEntry: '{name} approved ({level})',
   approvalRejectedEntry: '{name} rejected it ({level})',
+  approvalChangedEntry: '{name} changed it',
   approvalNotNeeded: 'No approval needed',
   assistFill: 'Fill from text',
   assistFillHint: 'Paste an e-mail, a signature or a message. What is found in it is shown on each field for you to accept or reject: nothing is kept until you do.',

@@ -73,6 +73,8 @@ export function join(host: FormInner): SurveyKit {
     const order = form.getState().order;
     return { ...(order ? { order: order as DrawnOrder } : {}), ...time.told() };
   };
+  /** The answers and the step last kept while a clock runs. */
+  let keptAs: unknown[] = [];
   const kit: SurveyKit = {
     hides: (id) => undrawn.has(id),
     locks(id) {
@@ -100,6 +102,14 @@ export function join(host: FormInner): SurveyKit {
       }
     },
     around: (kind, sent, go) => go(kind === 'submit' ? { ...(sent as SubmitRequest), ...told() } : sent),
+    changed() {
+      // While a clock runs, each answer given is kept at once, never a moment later: a reload loses nothing typed, nor
+      // gains the time it took. Nothing once sent, or started again with nothing given.
+      const state = form.getState();
+      if (state.sent || !state.dirty.length || !Object.keys(state.timers).length || (state.values === keptAs[0] && state.step === keptAs[1])) return;
+      keptAs = [state.values, state.step];
+      host.keep();
+    },
     reset() {
       time.reset();
       host.set({ timers: {}, timeUp: [] });

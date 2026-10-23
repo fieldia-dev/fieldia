@@ -106,6 +106,8 @@ describe('a review before sending', () => {
     await flush();
     expect(visible(review)).toBe(false);
     expect(document.activeElement).toBe(box(host, 'q-phone'));
+    // Offered at once, before anything is changed (the owner's walk of 0.31: only once a change was made).
+    expect(visible(button(host, 'Back to review'))).toBe(true);
     type(box(host, 'q-phone'), '+20 100 123 4567');
     button(host, 'Back to review').click();
     await flush();

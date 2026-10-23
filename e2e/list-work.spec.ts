@@ -132,6 +132,29 @@ test.describe('a sales team’s saved views', () => {
     expect(problems).toEqual([]);
   });
 
+  test('the menu gives way as the person types in the search: the how-to’s second step, then its third', async ({ page }) => {
+    await open(page, 'plain', LEADS);
+    await openMenu(page);
+    await view(page, 'Late, by agent').locator('.fd-search-option').click();
+    await expect(page.locator('.fd-facet .fd-facet-text')).toHaveText(['Late']);
+    // Step 3: "Mona" typed in the search — its suggestions in the menu's place, never under it.
+    const search = page.getByRole('combobox', { name: 'Search' });
+    await search.click();
+    await expect(page.locator('.fd-search-panel')).toBeHidden();
+    await page.keyboard.type('Mona');
+    await expect(page.getByRole('option', { name: 'Search Agent for: Mona' })).toBeVisible();
+    await screen(page, 'list-work-typing-after-menu', { viewport: true });
+    await page.getByRole('option', { name: 'Search Agent for: Mona' }).click();
+    await expect(page.locator('.fd-facet .fd-facet-text')).toHaveText(['Late', 'Agent: Mona']);
+    // Typing while the menu is open — opened from its arrow, then the keys back in the box — closes it too.
+    await page.getByRole('button', { name: 'Search options' }).click();
+    await expect(page.locator('.fd-search-panel')).toBeVisible();
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.locator('.fd-search-panel')).toBeHidden();
+    await page.keyboard.type('Sar');
+    await expect(page.locator('.fd-search-suggestions')).toBeVisible();
+  });
+
   test('opens on the person’s own default view, its order with it', async ({ page }) => {
     await open(page, 'plain', LEADS);
     await header(page, 'Budget').getByRole('button').click();

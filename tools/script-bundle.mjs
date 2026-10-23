@@ -1338,7 +1338,17 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // gzipped in 0.30.1 itself, each for every page as it was there: 519.22 measured before, 519.60 after, to 519.6.
 // A page that keeps its sends without signal asks for Undo with its other parts, while the signal is there
 // (viewer-parts.ts, 20 bytes): 519.60 measured before, 519.62 after, to 519.7.
-const BUDGET_KB = 519.7;
+// The owner's walk of 0.31 mended (walkfix31-engine). A timed page's drafts in the tab where the app keeps none, so a
+// reload goes on with the time left — never a way round a limit — and a draft whose clock started laid at once (drafts.ts,
+// form.ts, 87 bytes): where the drafts are kept is known as the form is made, before the survey flow's part has come, as
+// the draft is looked for then. 519.62 measured before, 519.71 after, to 519.8. A save starting the changes afresh (56
+// bytes) and a code's box written at rest as typed (34), each listed with its part's budget below. Every value a person
+// typed in a text box reads in its own direction — an English sentence on an Arabic page keeps its full stop at its end
+// — by the page's words' own rule (styles.ts, 77 bytes): text boxes are on nearly every page. 519.79 measured before,
+// 519.87 after, to 519.9. Templates asked before a name kept is replaced: 28 bytes, the viewer handing the part its
+// question, 519.89. The input rules' `stay` — keys after a refused one going in where they fit, its words said
+// meanwhile, a mask's and a code's boxes (input-rules.ts, 35 bytes, the guard every box shares): 519.93, to 520.0.
+const BUDGET_KB = 520.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1630,7 +1640,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // after. A question's Yes names what it does (0.30.1; listed with the raw budget above): 167.78 measured before,
 // 167.90 after, to 167.95.
 // 0.30.1 merged into 0.31 (listed with the raw budget above): 170.63 measured before, 170.77 after, to 170.8.
-const GZIP_BUDGET_KB = 170.8;
+// The owner's walk of 0.31 mended (walkfix31-engine; listed with the raw budget above): 170.78 measured before, 170.87
+// after, to 170.9; a save starting the changes afresh, a code's box at rest, 170.90; every value typed in a text box in
+// its own direction, 170.91, to 171.0.
+const GZIP_BUDGET_KB = 171.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1927,7 +1940,15 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // measured, to 126.8 and 20.6; German's 57.40 and 17.71, to 57.5 and 17.8; French's 58.28 and 17.72, to 58.3 and 17.8;
 // Turkish's 65.19 and 18.03, to 65.2 and 18.1; Persian's 159.00 and 22.24, to 159.1 and 22.3; Urdu's 161.66 and 22.29,
 // to 161.7 and 22.3; Spanish's 55.69 and 17.52, to 55.7 and 17.6.
-const ADD_ON_BUDGET_KB = { ar: [126.8, 20.6], de: [57.5, 17.8], fr: [58.3, 17.8], tr: [65.2, 18.1], fa: [159.1, 22.3], ur: [161.7, 22.3], es: [55.7, 17.6] };
+// The owner's walk of 0.31 mended (walkfix31-engine): a photo made the cover said "moved to the cover", Ctrl+Z right
+// after a save saying nothing changed since, a QR code named alone where its payload says no summary, a template's name
+// already kept asked about first ("Replace “{name}”?"), and a record changed on its way to approval kept in its history
+// ("{name} changed it") — Arabic's 126.78 and 20.55 measured before, 127.29 and 20.62 after, inside 127.3, to 20.7;
+// German's 57.40 and 17.71, 57.62 and 17.76, to 57.7, inside 17.8; French's 58.28 and 17.72, 58.49 and 17.76, inside
+// 58.5 and 17.8; Turkish's 65.19 and 18.03, 65.44 and 18.08, to 65.5; Persian's 159.00 and 22.24, 159.51 and 22.31, to
+// 159.6 and 22.4; Urdu's 161.66 and 22.29, 162.20 and 22.35, to 162.3 and 22.4; Spanish's 55.69 and 17.52, 55.90 and
+// 17.57, to 56.0.
+const ADD_ON_BUDGET_KB = { ar: [127.3, 20.7], de: [57.7, 17.8], fr: [58.5, 17.8], tr: [65.5, 18.1], fa: [159.6, 22.4], ur: [162.3, 22.4], es: [56.0, 17.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2537,7 +2558,38 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 12.32, business 32.67 and 11.90, scan 20.47 and 8.50, memory 23.87 and 8.68, approvals 19.39 and 6.70, photos
 // 31.04 and 11.57, assist 36.40 and 12.35, import 37.93 and 14.89, text 72.70 and 24.54, relations 20.30 and 7.73,
 // list 139.91 and 44.99, head 42.34 and 12.88, lines 43.77 and 15.03 — each to the tenth above.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.6, 7.7], date: [23.4, 9.1], months: [13.8, 5.6], typed: [13.6, 5.7], list: [140.0, 45.0], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.4], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.4, 3.5], print: [16.5, 5.2], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.3, 12.3], prefill: [4.1, 2.0], verify: [11.1, 4.7], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// The owner's walk of 0.31 mended (walkfix31-engine): while a time limit's clock runs, each answer given is kept in the
+// draft at once, so a reload loses nothing typed nor gains the time it took — surveyflow 34.25 and 12.25 measured before,
+// 34.40 and 12.31 after, to 34.5, inside 12.4. A week's column heads in the language's own script — Urdu's short names
+// where CLDR gives it English's narrow letters — by one rule, the date part's, which booking slots now take from it
+// rather than a copy of their own: date 23.37 and 9.06 measured before, 23.50 and 9.13 after, to 23.6 and 9.2; slots
+// 15.18 and 5.86 before, 15.10 and 5.84 after. Ctrl+Z right after a save says nothing changed since, as a save starts
+// the changes afresh — undo 7.36 and 3.41 measured before, 7.52 and 3.49 after, to 7.6, inside 3.5. (The main script
+// grew 56 bytes for it: the history started afresh at a save, but on a page that saves itself.) A menu over a box gives
+// way as the focus or typing moves elsewhere — the search's menu as its box is pressed or typed in, its suggestions in
+// its place; a filter bar's list as the keyword's box or another button takes the focus — list 139.91 and 44.98
+// measured before, 140.14 and 45.08 after, to 140.2 and 45.1; filters 22.54 and 7.69, 22.63 and 7.72, to 22.7, inside
+// 7.8. What a box adds or takes away under itself as it is left waits for a press going on to end (press.ts), so a
+// press below lands where it was aimed: a phone's Call and WhatsApp — phone 37.12 and 16.19 measured before, 37.17 and
+// 16.21 after, inside 37.2, to 16.3; an amount's shorthand line — typed 13.54 and 5.69, 13.62 and 5.72, to 13.7 and
+// 5.8; the code's buttons as the box appears or goes, its rows inside it at once — verify 11.06 and 4.69, 11.30 and
+// 4.75, to 11.4 and 4.8; a possible duplicate's note — duplicates 15.62 and 6.40, 15.66 and 6.41, inside 15.7, to 6.5.
+// A code's value said as what it is: a QR code's payload by its summary — a link with parameters by its address, a
+// contact card or a network by its name — or the code alone, a barcode's identifier never grouped, its box at rest too
+// (`codeSummary`) — codes 10.68 and 5.19 measured before, 11.35 and 5.53 after, to 11.4 and 5.6; on paper no words for a
+// box its field hides (a read-only code's) — print 16.40 and 5.19, 16.48 and 5.21, inside 16.5, to 5.3. (The main
+// script grew 34 bytes: a number box's `grouping: false`, a code's box, written at rest as typed.) A value typed in a
+// table of lines — a text cell, a section's or a note's words — read in its own direction (styles-lines.ts) — lines
+// 43.77 and 15.03 measured before, 43.95 and 15.09 after, to 44.0, inside 15.1. A template saved under a name already
+// kept asks first, its Yes "Replace", Cancel asking the name again — templates 6.49 and 2.90 measured before, 6.66 and
+// 2.95 after, to 6.7, inside 3.0. (The main script grew 28 bytes: the viewer handing the part its question.) Keys
+// after a refused one going in where they fit, never hidden, and a paste with words round the value giving the one
+// value in them ("ID 1023456789", "IBAN: SA03 …", a whole SMS into a code's boxes; `valueIn`) — typed 13.62 and 5.72
+// measured before, 14.18 and 5.97 after, to 14.2 and 6.0. A record changed on its way to approval — while it waits for
+// a decision, or after a rejection — kept in its history by who and what (`changed`, each field from what to what),
+// shown under who changed it — approvals 19.39 and 6.71 measured before, 20.21 and 6.94 after, to 20.3 and 7.0; the
+// memory source keeping such a change as an engine would — memory 23.87 and 8.68, 24.72 and 8.95, to 24.8 and 9.0.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [24.8, 9.0], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2563,7 +2615,7 @@ const PART_GIVES = {
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
   photos: ['photosWidget', 'editPhoto', 'drawEdited', 'fitted', 'moved', 'sized', 'turnedCrop', 'turnedSize', 'installPhotosStyles'],
   record: ['openRecorder', 'recordingType', 'clock', 'installRecordStyles'],
-  codes: ['codeWidget', 'qrCode', 'qrVersion', 'code128', 'code128Values', 'installCodesStyles'],
+  codes: ['codeWidget', 'codeSummary', 'qrCode', 'qrVersion', 'code128', 'code128Values', 'installCodesStyles'],
   pins: ['pinsWidget', 'pinsOf', 'pinAt', 'installPinsStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   surveyflow: ['quizResults', 'drawOrder', 'askedInOrder', 'limitsOf', 'countdownNow', 'keepTime', 'join', 'drawQuizResults', 'showQuiz', 'installFlowStyles', 'surveyFlow', 'flows', 'oneAtATime', 'timeKeeper'],

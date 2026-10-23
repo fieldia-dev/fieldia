@@ -96,13 +96,12 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const shortName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', numberingSystem: 'latn' });
   const weekdayLong = new Intl.DateTimeFormat(lang, { weekday: 'long' });
+  /**
+   * A day's column head: its short name, or its narrow one where the short is a whole word (Arabic's) — in its own
+   * script — by the date part's rule, in with this part. Its short name until it is.
+   */
   const weekdayShort = new Intl.DateTimeFormat(lang, { weekday: 'short' });
-  const weekdayNarrow = new Intl.DateTimeFormat(lang, { weekday: 'narrow' });
-  /** A day's column head: its short name, or its narrow one where the short is a whole word (Arabic's). */
-  const weekday = (d: Date) => {
-    const short = weekdayShort.format(d).replace(/\.$/, '');
-    return [...short].length > 4 ? weekdayNarrow.format(d) : short;
-  };
+  const weekday = datePartIn()?.weekdayHead(lang) ?? ((d: Date) => weekdayShort.format(d));
   /** A time on the zone's clock: 09:30. */
   const clock = (at: number) => wallClock(wallTime(at, zone));
   /** Today, on the zone's clock: the page's day by the form's clock, or the zone's own. */

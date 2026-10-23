@@ -219,10 +219,12 @@ export interface WidgetLabels {
   recordingNameVoice: string;
   recordingNameVideo: string;
   /**
-   * A value shown as a code (`"widget": "qrcode"`, `"barcode"`): the code's name for a screen reader (`{value}`); words too
-   * long for a QR code; a character a barcode cannot hold (`{character}`).
+   * A value shown as a code (`"widget": "qrcode"`, `"barcode"`): the code's name for a screen reader (`{value}`, its
+   * summary), or a QR code's alone where its payload says no summary; words too long for a QR code; a character a
+   * barcode cannot hold (`{character}`).
    */
   qrCodeOf: string;
+  qrCode: string;
   barcodeOf: string;
   qrTooLong: string;
   barcodeRefused: string;
@@ -931,6 +933,7 @@ const en: WidgetLabels = {
   recordingNameVoice: 'Voice note {when}',
   recordingNameVideo: 'Video {when}',
   qrCodeOf: 'QR code: {value}',
+  qrCode: 'QR code',
   barcodeOf: 'Barcode: {value}',
   qrTooLong: 'Too long for a QR code: shorten it, or show a link to it instead.',
   barcodeRefused: 'A barcode cannot hold “{character}”: only letters without accents, digits and signs.',
@@ -1003,7 +1006,7 @@ const en: WidgetLabels = {
   photosMoveTouchCover: 'Hold a photo a moment, then drag it to move it. The first is the cover.',
   photoCover: 'Cover',
   makeCover: 'Make {name} the cover',
-  coverNow: '{name} is the cover now',
+  coverNow: '{name} moved to the cover',
   editPhoto: 'Crop and turn {name}',
   photoCaption: 'Caption for {name}',
   captionPlaceholder: 'Add a caption',

@@ -1,4 +1,4 @@
-import { caretAfter, conform, masked, maskShape, readMask } from './mask';
+import { caretAfter, conform, masked, maskShape, readMask, valueIn } from './mask';
 
 /**
  * A mask's pattern read, and text laid out against it as it is typed: the mask's own characters written in, a
@@ -61,5 +61,18 @@ describe('a mask', () => {
     const share = readMask('99 %')!;
     expect(conform('12', share)).toMatchObject({ shown: '12 %', typed: '12' });
     expect(conform('1', share, true)).toMatchObject({ shown: '1' });
+  });
+
+  it('finds the one value in pasted words round it, the longest that fills it; none where none does or two differ', () => {
+    const NATIONAL = readMask('9 999 999 999')!;
+    expect(valueIn('ID 1023456789', NATIONAL)).toMatchObject({ shown: '1 023 456 789', typed: '1023456789' });
+    expect(valueIn('IBAN: SA03 8000 0000 6080 1016 7519.', IBAN)).toMatchObject({ typed: 'SA0380000000608010167519' });
+    expect(valueIn('Plate: 4821 rka (the white car)', PLATE)).toMatchObject({ shown: '4821 RKA' });
+    // None that fills it: the letters before the digits, or one digit too many.
+    expect(valueIn('RKA 4821', PLATE)).toBeNull();
+    expect(valueIn('ID 1023-456-7891', NATIONAL)).toBeNull();
+    // Two that read differently: none taken.
+    expect(valueIn('old 1023456789, new 2104556789', NATIONAL)).toBeNull();
+    expect(valueIn('1023456789 or 1023456789', NATIONAL)).toMatchObject({ typed: '1023456789' });
   });
 });

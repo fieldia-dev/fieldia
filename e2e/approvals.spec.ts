@@ -152,9 +152,26 @@ for (const variant of ['plain', 'react']) {
       await expect(title(page)).toHaveText('Rejected by Karim Fathy (Manager)');
       await expect(title(page)).toBeFocused();
       await expect(band(page).locator('.fd-approval-reason')).toHaveText('Attach the receipt, please.');
-      await band(page).getByRole('button', { name: 'Approval history (5)' }).click();
-      await expect(band(page).locator('.fd-approval-entry-what')).toHaveText(['Omar Said asked for approval', 'Karim Fathy approved (Manager)', 'Mona Adel rejected it (Finance)', 'Omar Said asked for approval', 'Karim Fathy rejected it (Manager)']);
+      await band(page).getByRole('button', { name: 'Approval history (6)' }).click();
+      // What he put right after the rejection is kept by who and what, as he sent it again.
+      await expect(band(page).locator('.fd-approval-entry-what')).toHaveText(['Omar Said asked for approval', 'Karim Fathy approved (Manager)', 'Mona Adel rejected it (Finance)', 'Omar Said changed it', 'Omar Said asked for approval', 'Karim Fathy rejected it (Manager)']);
       await expect(band(page).locator('.fd-approval-entry-reason')).toHaveText(['Four of us for two guests is over the meals policy: claim the dinner for you and the two from Nile Traders, and name them.', 'Attach the receipt, please.']);
+    });
+
+    test('a change made after the rejection is kept by who made it and what — in its history and its conversation (the owner’s walk of 0.31)', async ({ page }) => {
+      const amount = node(page, 'f-amount').locator('input');
+      const was = await amount.inputValue();
+      await amount.fill('9999');
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(page.locator('.fd-form').first().getByText('Saved', { exact: true })).toBeVisible();
+      await band(page).getByRole('button', { name: /^Approval history/ }).click();
+      const changed = band(page).locator('.fd-approval-entry[data-decision="changed"]');
+      await expect(changed.locator('.fd-approval-entry-what')).toHaveText('Omar Said changed it');
+      const said = new RegExp(`Amount: E£\\s${was.replace(/[.]/g, '\\.')} → E£\\s9,999\\.00`);
+      await expect(changed.locator('.fd-approval-changes li')).toHaveText(said);
+      await expect(conversation(page).filter({ hasText: 'Amount' })).toContainText(said);
+      await expect(conversation(page).filter({ hasText: 'Amount' })).toContainText('Omar Said');
+      await screen(page, `${variant}-approval-changed-after-rejection`);
     });
 
     test('Reject’s question keeps its keys: Escape lets it go, the focus back on Reject, nothing decided', async ({ page }) => {

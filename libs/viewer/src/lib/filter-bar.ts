@@ -206,10 +206,10 @@ export function filterBar(context: FilterBarContext) {
   }
 
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-  const openMenus: (() => void)[] = [];
-  /** Close every list but `keep`. */
-  const closeOthers = (keep?: () => void) => {
-    for (const close of openMenus) if (close !== keep) close();
+  const openMenus: ((to?: Node) => void)[] = [];
+  /** Close every list but `keep` — and, focus moving `to` a part of the bar, but the one it is in. */
+  const closeOthers = (keep?: (to?: Node) => void, to?: Node) => {
+    for (const close of openMenus) if (close !== keep) close(to);
   };
 
   /**
@@ -239,7 +239,7 @@ export function filterBar(context: FilterBarContext) {
       const first = at === 'last' ? all[all.length - 1] : at === 'checked' ? (all.find((item) => item.getAttribute('aria-checked') === 'true') ?? all[0]) : all[0];
       first?.focus();
     };
-    const closer = () => close();
+    const closer = (to?: Node) => void (to && (menu.contains(to) || button.contains(to)) ? undefined : close());
     openMenus.push(closer);
     button.addEventListener('click', () => (menu.hidden ? void open() : close()));
     button.addEventListener('keydown', (event) => {
@@ -465,6 +465,9 @@ export function filterBar(context: FilterBarContext) {
   element.addEventListener('focusout', (event) => {
     if (!element.contains(event.relatedTarget as Node | null) && event.relatedTarget) closeOthers();
   });
+  // As every menu Fieldia opens over a box: the focus moving to another part of the bar — the keyword's box, another
+  // button — closes the list open, which is never left over what is typed.
+  element.addEventListener('focusin', (event) => closeOthers(undefined, event.target as Node));
   drawButtons();
 
   return {

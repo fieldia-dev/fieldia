@@ -85,6 +85,12 @@ export function ticksOf(span: Span, zoom: GanttZoom, locale: Locale, firstDay: n
     return { upper, lower: units(span, 'week', firstDay).map((u) => tick(u, short.format(u.from), longDay.format(u.from))) };
   }
   const number = format(locale, { day: 'numeric' });
-  const weekday = format(locale, { weekday: 'narrow' });
+  // Its letter, in the language's own script: where CLDR gives a language English's letters (Urdu's S M T W T F S), the
+  // short names, for the whole week.
+  const narrow = format(locale, { weekday: 'narrow' });
+  const short = format(locale, { weekday: 'short' });
+  const latin = /\p{Script=Latin}/u;
+  const own = [7, 8, 9, 10, 11, 12, 13].every((d) => !latin.test(narrow.format(Date.UTC(2024, 0, d))) || latin.test(short.format(Date.UTC(2024, 0, d))));
+  const weekday = own ? narrow : short;
   return { upper, lower: units(span, 'day', firstDay).map((u) => tick(u, number.format(u.from), longDay.format(u.from), weekday.format(u.from))) };
 }

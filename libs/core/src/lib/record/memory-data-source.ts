@@ -449,7 +449,8 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       }
     }
     const id = request.id ?? nextId(request.model);
-    const stored: Values = { ...(table(request.model)[String(id)] ?? {}), ...structuredCopy(request.changes.values) };
+    const before = table(request.model)[String(id)];
+    const stored: Values = { ...(before ?? {}), ...structuredCopy(request.changes.values) };
     for (const [name, ops] of Object.entries(request.changes.lines)) {
       stored[name] = applyLines((stored[name] as Line[] | undefined) ?? [], ops);
     }
@@ -457,6 +458,8 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       stored[name] = applyLinks((stored[name] as RelatedRecord[] | undefined) ?? [], ops, relationOf(request.fields, name));
     }
     table(request.model)[String(id)] = stored;
+    // Changed while it waits for a decision, or after a rejection: kept in its approval history, by whom, as an engine would.
+    if (before && request.id !== null) approving.changed(request, before);
     // Sent for approval, its rules asking no level: moved on at once, as an engine would.
     approving.sent(request.model, id);
     const version = options.versions ? moveOn(request.model, id, me) : undefined;

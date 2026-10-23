@@ -107,6 +107,10 @@ button.fd-line-card-title { color: var(--fd-accent); }
 .fd-grid-row-buttons svg { width: 15px; height: 15px; display: block; }
 .fd-grid-lines .ag-cell.fd-grid-invalid { box-shadow: inset 0 0 0 1px var(--fd-error); background: var(--fd-error-soft); }
 .fd-grid-lines .ag-cell.fd-grid-unread .ag-cell-value { unicode-bidi: plaintext; }
+/* A value a person typed — a text cell, a section's or a note's words, a card's — reads in its own direction: an English
+   note on an Arabic page ends with its full stop (styles.ts in @fieldia/widgets: one rule for every value typed). */
+.fd-grid-lines .ag-cell.fd-grid-words .ag-cell-value, .fd-line-cards .fd-grid-words { unicode-bidi: plaintext; }
+.fd-line-cards .fd-grid-words { text-align: match-parent; text-align: -webkit-match-parent; }
 .fd-grid-lines .fd-line-open { border: none; background: none; cursor: pointer; color: var(--fd-accent); font-size: 14px; padding: 4px 6px; border-radius: 4px; }
 .fd-grid-lines .fd-line-open:hover { background: var(--fd-page); }
 .fd-grid-lines .fd-grid-totals { font-weight: 600; background: var(--fd-surface); }

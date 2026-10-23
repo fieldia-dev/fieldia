@@ -51,15 +51,16 @@ describe('a text box typed to a mask', () => {
     expect(value()).toBe('29010112345678');
   });
 
-  it('refuses a key no slot takes there, saying why, and holds the keys after it', () => {
+  it('refuses a key no slot takes there, saying why, and takes the keys after it where they fit — never hidden', () => {
     const { el, form } = nationalId();
     const box = boxOf(el);
     box.focus();
     keys(box, '29o1');
-    expect(box.value).toBe('2 9');
+    // The owner's walk of 0.31: "10a2345" showed "1 0", the digits after the letter hidden until the box was left.
+    expect(box.value).toBe('2 91');
     expect(hintSays()).toBe('National ID: a digit goes here, not “o”');
     box.blur();
-    expect(form.getState().unread['x']?.message.replace(/[\u2066-\u2069]/g, '')).toBe('National ID: a digit goes here, not “o”');
+    expect(form.getState().unread['x']?.message).toBe('National ID is not whole yet: 11 more to type');
   });
 
   it('keeps what is not whole yet when left, with how many are still to type', () => {

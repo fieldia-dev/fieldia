@@ -118,6 +118,128 @@ describe('a time limit', () => {
     expect(form.validate()).toBe(true);
   });
 
+  describe('a reload', () => {
+    /** The tab's own store (sessionStorage), as a browser has it: what a reload of the tab finds again. */
+    let tab: Map<string, string>;
+    const tabStore = () => ({ getItem: (key: string) => tab.get(key) ?? null, setItem: (key: string, value: string) => void tab.set(key, value), removeItem: (key: string) => void tab.delete(key), get length() { return tab.size; } });
+    beforeEach(() => {
+      tab = new Map();
+      (globalThis as { sessionStorage?: unknown }).sessionStorage = tabStore();
+    });
+    afterEach(() => void delete (globalThis as { sessionStorage?: unknown }).sessionStorage);
+
+    it('goes on with the time left, the answers in place, where the app keeps no drafts: kept in the tab’s store', () => {
+      const clock = testClock(Date.parse('2026-10-20T09:00:00Z'));
+      const first = createForm({ page: timed(), dataSource: createMemoryDataSource(), now: clock.now, scheduler: clock.scheduler });
+      first.startTimer();
+      // The clock's start is kept at once: a reload a moment after Start does not start it again.
+      expect(JSON.parse(tab.get('fieldia:draft:timed:new') ?? '{}').timers).toEqual({ '#form': '2026-10-20T09:00:00.000Z' });
+      first.setValues({ name: 'Mona Adel' });
+      clock.advance(3 * 60_000);
+      first.dispose();
+      // The tab reloaded: the same page, a new form.
+      const again = createForm({ page: timed(), dataSource: createMemoryDataSource(), now: clock.now, scheduler: clock.scheduler });
+      expect(again.getState().values['name']).toBe('Mona Adel');
+      expect(again.getState().draft).toBeNull();
+      expect(again.countdown()).toMatchObject({ scope: '#form', left: 7 * 60_000, stage: 'running' });
+      clock.advance(5 * 60_000);
+      expect(again.countdown()?.stage).toBe('warning');
+      clock.advance(2 * 60_000);
+      expect(again.getState().timeUp).toEqual(['#form']);
+    });
+
+    it('keeps each answer the moment it is given: a reload a moment after loses nothing; sent or started again, nothing', async () => {
+      const clock = testClock(Date.parse('2026-10-20T09:00:00Z'));
+      const first = createForm({ page: timed(), dataSource: createMemoryDataSource(), now: clock.now, scheduler: clock.scheduler });
+      first.startTimer();
+      first.setValue('name', 'Mona Adel', { by: 'person' });
+      first.setValue('answer', 'Hyaluronidase', { by: 'person' });
+      // No time at all for a draft to wait: the tab has them.
+      expect(JSON.parse(tab.get('fieldia:draft:timed:new') ?? '{}').values).toMatchObject({ name: 'Mona Adel', answer: 'Hyaluronidase' });
+      expect(await first.save()).toBe(true);
+      expect(tab.size).toBe(0);
+      // Started again: a new response, no clock, nothing kept until it starts.
+      first.reset();
+      expect(tab.size).toBe(0);
+    });
+
+    it('past its end: the time is up at once, the answers locked to go as the page says', async () => {
+      const clock = testClock(Date.parse('2026-10-20T09:00:00Z'));
+      const sent: Record<string, unknown>[] = [];
+      const ds = createMemoryDataSource();
+      const submit = ds.submit.bind(ds);
+      ds.submit = (request) => (sent.push({ ...request }), submit(request));
+      const first = createForm({ page: timed(), dataSource: ds, now: clock.now, scheduler: clock.scheduler });
+      first.startTimer();
+      first.setValues({ name: 'Mona Adel' });
+      clock.advance(1000);
+      first.dispose();
+      clock.advance(20 * 60_000);
+      const again = createForm({ page: timed(), dataSource: ds, now: clock.now, scheduler: clock.scheduler });
+      clock.advance(0);
+      expect(again.getState().timeUp).toEqual(['#form']);
+      expect(again.countdown()).toMatchObject({ left: 0, stage: 'up' });
+      expect(again.node('q-name').readonly).toBe(true);
+      expect(await again.save()).toBe(true);
+      expect(sent[0]).toMatchObject({ values: { name: 'Mona Adel', answer: null }, started: '2026-10-20T09:00:00.000Z', timeUp: true });
+      // Sent: the draft is let go — the next response is another's, with its own clock.
+      expect(tab.size).toBe(0);
+    });
+
+    it('lays a draft whose clock started at once, even where the app’s store asks first', () => {
+      const clock = testClock(Date.parse('2026-10-20T09:00:00Z'));
+      const kept = new Map<string, string>();
+      const store = { getItem: (key: string) => kept.get(key) ?? null, setItem: (key: string, value: string) => void kept.set(key, value), removeItem: (key: string) => void kept.delete(key) };
+      const first = createForm({ page: timed(), dataSource: createMemoryDataSource(), now: clock.now, scheduler: clock.scheduler, drafts: { store, restore: 'ask' } });
+      first.startTimer();
+      first.setValues({ name: 'Mona Adel' });
+      clock.advance(60_000);
+      first.dispose();
+      const again = createForm({ page: timed(), dataSource: createMemoryDataSource(), now: clock.now, scheduler: clock.scheduler, drafts: { store, restore: 'ask' } });
+      // Never offered to be let go: discarding it would start the clock again.
+      expect(again.getState().draft).toBeNull();
+      expect(again.getState().values['name']).toBe('Mona Adel');
+      expect(again.countdown()).toMatchObject({ left: 9 * 60_000 });
+      // The app's store, not the tab's.
+      expect(tab.size).toBe(0);
+    });
+
+    it('a step’s limit too: the step it was on, counting on', async () => {
+      const clock = testClock(Date.parse('2026-10-20T09:00:00Z'));
+      const page = timed({
+        timeLimit: undefined,
+        layout: {
+          type: 'wizard',
+          id: 'w',
+          children: [
+            { type: 'step', id: 's1', label: 'One', children: [{ type: 'field', id: 'q-name', field: 'name' }] },
+            { type: 'step', id: 's2', label: 'Two', timeLimit: { minutes: 2 }, children: [{ type: 'field', id: 'q-answer', field: 'answer' }] },
+          ],
+        },
+      });
+      const first = createForm({ page, dataSource: createMemoryDataSource(), now: clock.now, scheduler: clock.scheduler });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      first.setValues({ name: 'Mona Adel' });
+      expect(first.next()).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(first.getState().timers).toEqual({ s2: Date.parse('2026-10-20T09:00:00Z') });
+      clock.advance(60_000);
+      first.dispose();
+      const again = createForm({ page, dataSource: createMemoryDataSource(), now: clock.now, scheduler: clock.scheduler });
+      expect(again.getState().step).toBe('s2');
+      expect(again.getState().values['name']).toBe('Mona Adel');
+      expect(again.countdown()).toMatchObject({ scope: 's2', left: 60_000 });
+    });
+
+    it('a page with no limit keeps nothing in the tab', () => {
+      const clock = testClock(Date.parse('2026-10-20T09:00:00Z'));
+      const form = createForm({ page: timed({ timeLimit: undefined }), dataSource: createMemoryDataSource(), now: clock.now, scheduler: clock.scheduler });
+      form.setValues({ name: 'Mona Adel' });
+      clock.advance(60_000);
+      expect(tab.size).toBe(0);
+    });
+  });
+
   it('is checked: on a page of responses, a warning before its end', () => {
     expect(validatePage(timed()).ok).toBe(true);
     expect(validatePage(timed({ timeLimit: { minutes: 5, warn: 5 } })).ok).toBe(false);

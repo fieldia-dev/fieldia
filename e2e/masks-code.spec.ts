@@ -32,7 +32,6 @@ test.describe('masks and a one-time code', () => {
     await page.keyboard.type('x');
     await expect(id).toHaveValue('2 104 ');
     await expect(node(page, 'f-national-id').locator('.fd-refusal-hint')).toHaveText(/Tenant’s national ID: a digit goes here, not “.?x.?”/);
-    await page.keyboard.press('Backspace');
     await page.keyboard.type('55');
     await page.keyboard.press('Tab');
     // Not whole yet: kept as typed, with how many are still to type; the field holds what it held.
@@ -79,9 +78,7 @@ test.describe('masks and a one-time code', () => {
     await expect(code.locator('.fd-code-cell').nth(2)).toHaveClass(/fd-code-caret/);
     await page.keyboard.type('a');
     await expect(code.locator('.fd-refusal-hint')).toHaveText(/the code is digits only/);
-    // Backspace takes back the key held; left at two digits — the last box of the page, left by a press elsewhere — it
-    // says how many are still to type.
-    await page.keyboard.press('Backspace');
+    // Left at two digits — the last box of the page, left by a press elsewhere — it says how many are still to type.
     await node(page, 'f-tenant').locator('input').click();
     await expect(code.locator('.fd-error')).toHaveText('Code sent to the tenant’s phone is not whole yet: 4 more to type');
     await screen(page, 'code-unfinished');
@@ -115,6 +112,60 @@ test.describe('masks and a one-time code', () => {
     const [first, last] = await node(page, 'f-code').locator('.fd-code-cell').evaluateAll((cells) => [cells[0].getBoundingClientRect().left, cells[5].getBoundingClientRect().left]);
     expect(first).toBeLessThan(last);
     await screen(page, 'code-arabic');
+    expect(problems).toEqual([]);
+  });
+
+  test('keys after a refused one still go in where they fit, as the owner typed them (0.31’s walk)', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=lease&skin=underline&now=2026-10-21T09:00:00');
+    const typeAfresh = async (box: import('@playwright/test').Locator, keys: string) => {
+      await box.click();
+      await page.keyboard.press('ControlOrMeta+a');
+      await page.keyboard.press('Backspace');
+      await page.keyboard.type(keys);
+    };
+    // "10a2345": the letter refused and said; the digits after it in the box as they are typed, never hidden.
+    const id = node(page, 'f-national-id').locator('input');
+    await typeAfresh(id, '10a2345');
+    await expect(id).toHaveValue('1 023 45');
+    await expect(node(page, 'f-national-id').locator('.fd-refusal-hint')).toHaveText(/a digit goes here, not “.?a.?”/);
+    await screen(page, 'masks-after-a-refused-key', { viewport: true });
+    // A plate "48a21rka": the letter where a digit goes refused, the rest laid out.
+    const plate = node(page, 'f-plate').locator('input');
+    await typeAfresh(plate, '48a21rka');
+    await expect(plate).toHaveValue('4821 RKA');
+    // The code's boxes "4829a1": the letter refused, the 1 in the fifth box.
+    const code = node(page, 'f-code');
+    await typeAfresh(code.locator('input'), '4829a1');
+    await expect(code.locator('.fd-code-cell')).toHaveText(['4', '8', '2', '9', '1', '']);
+    expect(problems).toEqual([]);
+  });
+
+  test('a paste with words round the value takes the value out of them, else says why not', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=lease&skin=underline&now=2026-10-21T09:00:00');
+    const id = node(page, 'f-national-id').locator('input');
+    await id.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await paste(id, 'ID 1023456789');
+    await expect(id).toHaveValue('1 023 456 789');
+    const iban = node(page, 'f-iban').locator('input');
+    await iban.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await paste(iban, 'IBAN: SA03 8000 0000 6080 1016 7519');
+    await expect(iban).toHaveValue('SA03 8000 0000 6080 1016 7519');
+    // Words with no plate in them: refused whole, and said, never dropped without a word.
+    const plate = node(page, 'f-plate').locator('input');
+    await plate.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await paste(plate, 'RKA 4821');
+    await expect(node(page, 'f-plate').locator('.fd-refusal-hint')).toBeVisible();
+    await expect(node(page, 'f-plate').locator('.fd-refusal-hint')).toContainText('Car plate');
+    // A whole message with the code in it, pasted into its boxes: the code taken out of it.
+    const code = node(page, 'f-code');
+    await code.locator('input').click();
+    await paste(code.locator('input'), 'Your Palm Valley code is 482 913. It works for 10 minutes.');
+    await expect(code.locator('.fd-code-cell')).toHaveText(['4', '8', '2', '9', '1', '3']);
+    expect(await held(page, 'confirm_code')).toBe('482913');
+    await screen(page, 'masks-pasted-with-words', { viewport: true });
     expect(problems).toEqual([]);
   });
 });

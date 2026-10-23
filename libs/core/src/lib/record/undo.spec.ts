@@ -169,6 +169,45 @@ describe('undo and redo while filling', () => {
     expect(form.history()).toEqual({ undo: null, redo: null });
   });
 
+  it('starts afresh at a save: nothing saved is taken back as a change', async () => {
+    const form = await opened();
+    form.setValue('name', 'Nile Traders Co.');
+    form.boxLeft('name');
+    expect(await form.save()).toBe(true);
+    // The owner's walk of 0.31: Ctrl+Z right after Save brought the old name back as a change not saved.
+    expect(form.undo()).toBeNull();
+    expect(form.getState().values['name']).toBe('Nile Traders Co.');
+    expect(form.history()).toEqual({ undo: null, redo: null });
+    expect(form.getState()).toMatchObject({ status: 'saved', dirty: [] });
+    form.setValue('note', 'Call first');
+    expect(form.history()).toEqual({ undo: { field: 'note' }, redo: null });
+    expect(form.undo()).toEqual({ field: 'note' });
+    expect(form.undo()).toBeNull();
+    expect(form.getState().values['name']).toBe('Nile Traders Co.');
+  });
+
+  it('a save refused keeps every change to take back; a page that saves itself starts nothing afresh', async () => {
+    const dataSource = createMemoryDataSource({ records: { quote: { 1: { name: 'Nile Traders', note: '', stage: 'draft', lines: [] } } } });
+    const refuse = dataSource.save.bind(dataSource);
+    let refusing = true;
+    dataSource.save = (request) => (refusing ? Promise.reject(new Error('Offline')) : refuse(request));
+    const form = createForm({ page: quote, dataSource, recordId: 1 });
+    await form.load();
+    form.setValue('name', 'A');
+    form.boxLeft('name');
+    expect(await form.save()).toBe(false);
+    expect(form.history().undo).toEqual({ field: 'name' });
+    refusing = false;
+    const autosaved = createForm({ page: quote, dataSource, recordId: 1, autosave: { delayMs: 1 } });
+    await autosaved.load();
+    autosaved.setValue('note', 'Kept as typed');
+    autosaved.boxLeft('note');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await autosaved.settled();
+    expect(autosaved.getState().dirty).toEqual([]);
+    expect(autosaved.history().undo).toEqual({ field: 'note' });
+  });
+
   it('takes back nothing in a field locked now, nor in a form not being edited', async () => {
     const form = await opened();
     form.setValue('name', 'A');

@@ -5,8 +5,8 @@ import { mountSurveyEditor, type SurveyEditorHandle } from './survey-editor';
 
 /**
  * "Start from a schema…" on a blank page: a dialog to paste a JSON Schema, an OpenAPI document or a model's fields, which
- * shows the fields it makes with their kinds, what is kept with a change and what is left out — and Start only once
- * there is a page to start with. Start puts the page in place as one edit, said with Undo.
+ * shows the fields it makes with their kinds, what is kept with a change and what is left out. Start puts the page in
+ * place as one edit, said with Undo; pressed with nothing to start from, it says what to do.
  */
 
 let handle: ScreenEditorHandle | SurveyEditorHandle | null = null;
@@ -56,12 +56,19 @@ describe('starting from a schema', () => {
     expect(shown(dialog())).toBe(true);
     expect(dialog().getAttribute('role')).toBe('dialog');
     expect(words(dialog().querySelector('.fd-form-dialog-title'))).toBe('Start from a schema');
-    // Nothing to start with yet: no Start.
-    expect(button(dialog(), 'Start')).toBeUndefined();
+    // Start pressed with nothing to start from says what to do, the focus in the box; typing takes the words away.
+    (button(dialog(), 'Start') as HTMLButtonElement).click();
+    expect(shown(dialog())).toBe(true);
+    expect(words(dialog().querySelector('.fd-schema-problem'))).toBe('Paste a schema or choose a file first.');
+    expect(shown(dialog().querySelector('.fd-schema-problem'))).toBe(true);
+    expect(document.activeElement).toBe(dialog().querySelector('textarea'));
 
     paste('{ "type": ');
     expect(words(dialog().querySelector('.fd-schema-problem'))).toMatch(/^This is not JSON:/);
-    expect(button(dialog(), 'Start')).toBeUndefined();
+    // Pressed on what does not read: its problem stays said, nothing starts.
+    (button(dialog(), 'Start') as HTMLButtonElement).click();
+    expect(words(dialog().querySelector('.fd-schema-problem'))).toMatch(/^This is not JSON:/);
+    expect(Object.keys(designer.getPage().fields)).toEqual([]);
 
     paste(schema);
     expect(shown(dialog().querySelector('.fd-schema-problem'))).toBe(false);

@@ -28,6 +28,15 @@ export const GANTT_CSS = `
 .fd-gantt-failed, .fd-gantt-empty { margin: 0; padding: 32px 16px; text-align: center; }
 .fd-gantt-empty { color: var(--fd-muted); }
 .fd-gantt-scroll { overflow: auto; max-height: min(70vh, 720px); overscroll-behavior-x: contain; }
+/* The signs at either edge of the days shown, under the axis: how many bars run off them, pressed to go on to them. */
+.fd-gantt-body { position: relative; }
+.fd-gantt-edge { position: absolute; z-index: 6; inset-block-start: calc(var(--fd-gantt-axis, 0px) + 6px); padding: 2px 8px; border: 1px solid var(--fd-border); border-radius: 999px; background: var(--fd-surface); color: var(--fd-text); font: inherit; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; box-shadow: 0 2px 6px rgb(0 0 0 / 0.12); }
+.fd-gantt-edge[data-edge="start"] { inset-inline-start: calc(var(--fd-gantt-names) + 6px); }
+.fd-gantt-edge[data-edge="end"] { inset-inline-end: 14px; }
+.fd-gantt-edge:hover { border-color: var(--fd-accent); color: var(--fd-accent); }
+.fd-gantt-edge:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-gantt-edge[hidden] { display: none; }
+@media print { .fd-gantt-edge { display: none !important; } }
 .fd-gantt-scroll:focus { outline: none; }
 .fd-gantt-sheet { position: relative; width: max-content; min-width: 100%; }
 

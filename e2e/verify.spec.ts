@@ -74,3 +74,64 @@ for (const variant of ['plain', 'react']) {
     });
   });
 }
+
+test.describe('a row a field adds as it is left moves nothing under the pointer', () => {
+  /**
+   * A person's click: the pointer down on where they aimed, then up — whatever lies there by then gets it. What they
+   * aimed at has not moved while the pointer is down: the box left says what it adds once the press has ended.
+   */
+  async function pointAndPress(page: Page, target: ReturnType<Page['locator']>) {
+    await target.scrollIntoViewIfNeeded();
+    const box = (await target.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    expect((await target.boundingBox())!.y).toBe(box.y);
+    await page.mouse.up();
+  }
+
+  test('the mobile typed, then Book a viewing pressed with the mouse: picked, the code’s buttons shown after', async ({ page }) => {
+    // The owner's walk of 0.31: leaving the mobile added "Send a code" and pushed the form 42px under the pointer.
+    await open(page, 'plain', MONA);
+    const phone = node(page, 'f-phone');
+    await phone.locator('input').first().click();
+    await page.keyboard.type('010 1234 5678');
+    const viewing = node(page, 'f-visit').getByRole('radio', { name: 'Book a viewing' });
+    await pointAndPress(page, viewing);
+    await expect(viewing).toBeChecked();
+    await expect(phone.getByRole('button', { name: 'Send a code by WhatsApp' })).toBeVisible();
+    await screen(page, 'verify-left-by-a-press', { viewport: true });
+  });
+
+  test('an amount in shorthand, left by a press below it: the press lands where it was aimed', async ({ page }) => {
+    await open(page, 'plain', 'page=lease&skin=underline');
+    const rent = page.locator('#fd1-f-rent');
+    await rent.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.type('120k');
+    await expect(page.locator('.fd-shorthand-said')).toBeVisible();
+    // The first rent's month, under it in its column.
+    const below = node(page, 'f-first-rent').locator('input').first();
+    await pointAndPress(page, below);
+    await expect(below).toBeFocused();
+    await expect(page.locator('.fd-shorthand-said')).toBeHidden();
+  });
+});
+
+test.describe('on a phone, a row a field adds as it is left moves nothing under the finger', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test('the mobile typed, then Book a viewing tapped: picked; its links and the code’s buttons shown after', async ({ page }) => {
+    await open(page, 'plain', MONA);
+    const phone = node(page, 'f-phone');
+    await phone.locator('input').first().click();
+    await page.keyboard.type('010 1234 5678');
+    const viewing = node(page, 'f-visit').getByRole('radio', { name: 'Book a viewing' });
+    await viewing.scrollIntoViewIfNeeded();
+    const box = (await viewing.boundingBox())!;
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(viewing).toBeChecked();
+    await expect(phone.getByRole('link', { name: /^Call / })).toBeVisible();
+    await expect(phone.getByRole('button', { name: 'Send a code by WhatsApp' })).toBeVisible();
+    await screen(page, 'verify-left-by-a-tap', { viewport: true });
+  });
+});

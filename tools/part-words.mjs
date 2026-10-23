@@ -31,7 +31,7 @@ export const PART_WORDS = {
     viewer: [
       'approvalWaiting', 'approvalWho', 'approvalNeeded', 'approvalThen', 'approvalApproved', 'approvalRejectedBy', 'approvalRejected', 'approvalFailed', 'approvalOpen', 'approvalLockedAll', 'approvalLevelApproved', 'approvalLevelRejected',
       'approvalLevelWaiting', 'approvalLevelWaitingSome', 'approvalLevelLater', 'approvalLevelSkipped', 'approvalApprove', 'approvalReject', 'approvalApproveFor', 'approvalRejectFor', 'approvalApproving', 'approvalRejecting', 'approvalApprovedFor', 'approvalRejectedFor',
-      'approvalApproveFailed', 'approvalRejectFailed', 'approvalRejectTitle', 'approvalRejectTitleNoun', 'approvalRejectAsk', 'approvalRejectReason', 'approvalKeepEditing', 'approvalHistoryCount', 'approvalAskedEntry', 'approvalApprovedEntry', 'approvalRejectedEntry', 'approvalNotNeeded',
+      'approvalApproveFailed', 'approvalRejectFailed', 'approvalRejectTitle', 'approvalRejectTitleNoun', 'approvalRejectAsk', 'approvalRejectReason', 'approvalKeepEditing', 'approvalHistoryCount', 'approvalAskedEntry', 'approvalApprovedEntry', 'approvalRejectedEntry', 'approvalChangedEntry', 'approvalNotNeeded',
     ],
   },
   assist: {
@@ -70,7 +70,7 @@ export const PART_WORDS = {
       'recordMicRefused', 'recordCameraRefused', 'recordNoMic', 'recordNoCamera', 'recordBusy', 'recordCannot', 'recordTryAgain', 'recordingNameVoice', 'recordingNameVideo',
     ],
   },
-  codes: { widgets: ['qrCodeOf', 'barcodeOf', 'qrTooLong', 'barcodeRefused'] },
+  codes: { widgets: ['qrCodeOf', 'qrCode', 'barcodeOf', 'qrTooLong', 'barcodeRefused'] },
   pins: {
     widgets: [
       'pinsHelp', 'pinsOn', 'pinsNoPicture', 'pinsNone', 'pinAt', 'pinTopLeft', 'pinTop', 'pinTopRight', 'pinLeft', 'pinCentre', 'pinRight', 'pinBottomLeft', 'pinBottom', 'pinBottomRight',
@@ -156,8 +156,8 @@ export const PART_WORDS = {
     ],
   },
   live: { messages: ['deletedElsewhere', 'deletedBy', 'changedElsewhere', 'changedBy'], viewer: ['presentHere', 'presentEditing'] },
-  undo: { messages: ['pressDone', 'pressArchived', 'pressUnarchived'], viewer: ['undoPress', 'pressUndone', 'undoneField', 'redoneField'] },
-  templates: { viewer: ['templatesButton', 'templatesStart', 'templateSave', 'templateName', 'templateKeeps', 'templateKeep', 'templateSaved', 'templateReplaced', 'templateUsed', 'templatesDelete', 'templatesChosen', 'templatesDeleteNow', 'templatesDeleted'] },
+  undo: { messages: ['pressDone', 'pressArchived', 'pressUnarchived'], viewer: ['undoPress', 'pressUndone', 'undoneField', 'redoneField', 'nothingSinceSave'] },
+  templates: { viewer: ['templatesButton', 'templatesStart', 'templateSave', 'templateName', 'templateKeeps', 'templateKeep', 'templateSaved', 'templateReplaced', 'templateReplaceAsk', 'templateReplace', 'templateUsed', 'templatesDelete', 'templatesChosen', 'templatesDeleteNow', 'templatesDeleted'] },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {
     widgets: ['notAnswered', 'addressStreet', 'addressCity', 'addressLine2', 'addressRegion', 'addressPostcode', 'addressCountry', 'keepOrder', 'addProperty', 'propertyName', 'propertyType', 'propertyTypes', 'colourCode', 'colourCodeBox', 'noColour', 'rankTop', 'moveUp', 'moveDown', 'movedTo', 'removed'],

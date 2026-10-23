@@ -1,5 +1,5 @@
-import { fill, type FileValue, type Form, type FormApproval, type FormState, type RecordRequest } from '@fieldia/core';
-import { textPart, type Part, type TextReference } from '@fieldia/widgets';
+import { fill, type FileValue, type Form, type FormApproval, type FormState, type Locale, type RecordRequest, type Value } from '@fieldia/core';
+import { displayValue, textPart, type Part, type TextReference } from '@fieldia/widgets';
 import { mountChatter, textToHtml, wantsChannels, type ChatterHandle, type ChatterOptions } from './chatter';
 import { chatterLabels, type ChatterLabels } from './labels';
 import { channelsPart, discussionPart } from './chatter-parts';
@@ -30,12 +30,24 @@ export interface ChatterSlotOptions extends Omit<ChatterOptions, 'record'> {
 
 /**
  * A record's approval history as the chatter tells it among its messages: who sent it for approval, who approved or
- * rejected it at which level, and why — events, newest first, never posted to the source.
+ * rejected it at which level, and why — and who changed it while it waited for a decision, or after a rejection, as a
+ * tracked change: each field from what to what (`said` writes a value as the page does) — events, newest first, never
+ * posted to the source.
  */
-export function approvalEntries(approval: FormApproval | null | undefined, labels: ChatterLabels): ChatterMessage[] {
+export function approvalEntries(approval: FormApproval | null | undefined, labels: ChatterLabels, said: (field: string, value: Value) => string = (_field, value) => String(value)): ChatterMessage[] {
   if (!approval) return [];
+  const words = (field: string, value: Value) => (value === null || value === undefined || value === '' ? null : said(field, value));
   const levelName = (id: string | undefined, kept: string | undefined) => approval.levels.find((level) => level.id === id)?.name ?? kept ?? id ?? '';
   return approval.history.map((entry, at) => {
+    if (entry.decision === 'changed')
+      return {
+        id: `approval-${at}`,
+        kind: 'event',
+        author: { id: `approval-by-${entry.by}`, name: entry.by },
+        date: entry.at,
+        body: '',
+        tracking: (entry.changes ?? []).map((change) => ({ field: change.field, label: change.label ?? change.field, from: words(change.field, change.from), to: words(change.field, change.to) })),
+      };
     const what = entry.decision === 'requested' ? labels.approvalAsked : entry.decision === 'notNeeded' ? labels.approvalNotNeeded : fill(entry.decision === 'approved' ? labels.approvalApproved : labels.approvalRejected, { level: levelName(entry.level, entry.levelName) });
     return {
       id: `approval-${at}`,
@@ -72,6 +84,13 @@ export function chatterSlot(options: ChatterSlotOptions): ((element: HTMLElement
     // A record's approval history, among its messages: told as the form knows it, kept up as it changes.
     const telling = approvals !== false && look !== 'discussion' && !!form.page.approval;
     const words = chatterLabels(rest.locale ?? 'en', rest.labels);
+    // A value changed on its way to approval, written as the page writes it, its field named by the page's label.
+    const said = (field: string, value: Value) => {
+      const def = form.page.fields[field];
+      return def ? displayValue(def as never, value, form.getState().values, (rest.locale ?? 'en') as Locale) : String(value);
+    };
+    const told = (approval: FormApproval | null | undefined) =>
+      approvalEntries(approval, words, said).map((entry) => (entry.tracking ? { ...entry, tracking: entry.tracking.map((change) => ({ ...change, label: form.page.fields[change.field]?.label ?? change.label })) } : entry));
     let history = form.getState().approval?.history;
     // A discussion's code, and the editor of its comment box, come the first time one is shown: drawn whole once they have.
     const discussion = (part: NonNullable<typeof discussionPart.loaded>, record: RecordRef | null) =>
@@ -88,7 +107,7 @@ export function chatterSlot(options: ChatterSlotOptions): ((element: HTMLElement
             dateOrder: rest.dateOrder ?? form.page.look?.dateOrder,
             now: rest.now ?? (() => form.now()),
             recordShown: rest.recordShown ?? (() => form.recordShown()),
-            ...(telling ? { entries: approvalEntries(form.getState().approval, words) } : {}),
+            ...(telling ? { entries: told(form.getState().approval) } : {}),
           }))
         : discussionPart.loaded && textPart.loaded
           ? discussion(discussionPart.loaded, shown)
@@ -96,7 +115,7 @@ export function chatterSlot(options: ChatterSlotOptions): ((element: HTMLElement
     const unsubscribe = form.subscribe((state) => {
       if (telling && state.approval?.history !== history) {
         history = state.approval?.history;
-        conversation?.setEntries?.(approvalEntries(state.approval, words));
+        conversation?.setEntries?.(told(state.approval));
       }
       const next = recordOf(state);
       if (next?.id !== shown?.id) {

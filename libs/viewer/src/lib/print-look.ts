@@ -243,8 +243,10 @@ export function printLook(context: PrintContext, parts: PrintParts): PrintLook {
   const written: { box: Element; words: HTMLElement }[] = [];
   function writeBoxes() {
     for (const box of root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(BOXES)) {
-      // A form inside this one (a dialog's) prints its own.
+      // A form inside this one (a dialog's) prints its own; a box its field hides (a read-only code's, under its code) none.
       if (box.closest('.fd-form') !== root) continue;
+      const off = box.closest('[hidden]');
+      if (off && box.closest('.fd-field')?.contains(off)) continue;
       const style = win?.getComputedStyle(box);
       const words = context.el('span', { class: 'fd-print-box', dir: 'auto' }, boxWords(box));
       // Where the box keeps its words — a number at its end, a title large, a section's line bold — its words keep them.

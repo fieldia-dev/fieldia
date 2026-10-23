@@ -111,12 +111,26 @@ describe('record templates', () => {
     expect(fresh.form.undo()).toEqual({ field: 'sessions' });
   });
 
-  it('replaces a template saved again under its name, and lets templates go', async () => {
+  it('asks before it replaces a template saved again under its name, in its own words; and lets templates go', async () => {
     const ds = createMemoryDataSource({ records: { course: { 1: { ...RECORD } } }, templates: { course: [{ id: 'botox', name: 'Botox package', values: { price: 4000 } }, { id: 'laser', name: 'Laser course', values: { treatment: 'laser' } }] } });
     const { host } = await mount(ds, 1);
+    const priceOf = async () => (await (ds.templates as NonNullable<typeof ds.templates>)({ model: 'course', pageId: 'course' })).find((one) => one.id === 'botox')?.values['price'];
     await choose(host, 'Save as template…');
     await answer('botox package', 'Save template');
-    expect((await (ds.templates as NonNullable<typeof ds.templates>)({ model: 'course', pageId: 'course' })).find((one) => one.id === 'botox')?.values['price']).toBe(4500);
+    // The owner's walk of 0.31: saved over "Botox package" without a word. Asked first, its Yes the action's own words.
+    const question = () => document.querySelector('[role="alertdialog"]') as HTMLElement | null;
+    expect(question()?.textContent).toContain('Replace “Botox package”?');
+    const buttons = () => [...(question()?.querySelectorAll('button') ?? [])].map((one) => one.textContent);
+    expect(buttons()).toEqual(expect.arrayContaining(['Replace', 'Cancel']));
+    // Cancel: nothing kept over it, the name asked again as it was typed.
+    ([...(question() as HTMLElement).querySelectorAll('button')].find((one) => one.textContent === 'Cancel') as HTMLButtonElement).click();
+    await settle();
+    expect(await priceOf()).toBe(4000);
+    expect((document.querySelector('.fd-form-dialog input') as HTMLInputElement | null)?.value).toBe('botox package');
+    await answer('botox package', 'Save template');
+    ([...(question() as HTMLElement).querySelectorAll('button')].find((one) => one.textContent === 'Replace') as HTMLButtonElement).click();
+    await settle();
+    expect(await priceOf()).toBe(4500);
     await choose(host, 'Delete templates…');
     const dialog = document.querySelector('.fd-form-dialog') as HTMLElement;
     const laser = [...dialog.querySelectorAll('label')].find((label) => label.textContent?.includes('Laser course'))?.querySelector('input') as HTMLInputElement;

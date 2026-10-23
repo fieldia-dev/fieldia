@@ -2015,7 +2015,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function topBar(toolbar: SheetNode['toolbar']): HTMLElement | null {
     if (page.data.kind !== 'record') return null;
     // Record templates people save and name (`templates`): their menu, from the part the page waited for.
-    const extra = templatesPart.loaded?.templatesMenu({ doc, el, form, page, labels, locale, preferences, dataSource: options.dataSource, say: actionHost.say, ask: dialogs.editValues });
+    const extra = templatesPart.loaded?.templatesMenu({ doc, el, form, page, labels, locale, preferences, dataSource: options.dataSource, say: actionHost.say, ask: dialogs.editValues, confirm: (message, how) => actionHost.ask(message, how) });
     const bar = recordBar({
       doc,
       el,
@@ -2788,7 +2788,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // typed in, the browser's own undo first (undo-keys.ts). In the undo part, asked for as the person first enters the
   // form: the box they are in known as it was entered before they type, and each key answered at once as it is pressed.
   if (options.keys?.undo !== false && layout.type !== 'list')
-    root.addEventListener('focusin', () => void undoPart.load().then((part) => gone || cleanups.push(part.undoKeys(root, form, page, el, labels, hotkeysHere)), () => undefined), { once: true });
+    root.addEventListener('focusin', () => void undoPart.load().then((part) => gone || cleanups.push(part.undoKeys(root, form, page, el, labels, hotkeysHere, (words) => actionHost.say(words, 'info'))), () => undefined), { once: true });
 
   // ---- a button's key, with Alt -------------------------------------------------
 

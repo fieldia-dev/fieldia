@@ -448,8 +448,9 @@ function numberBox(context: WidgetContext, shorthand?: (locale: Locale, labels?:
   const fieldPlaces = () => (integer ? 0 : (digits?.[1] ?? (field.type === 'monetary' ? placesOfCurrency(currencyNow) : 2)));
   /** Never fewer places than the value has: the box never shows a rounded picture of a different value. */
   const placesFor = (value: number) => Math.max(fieldPlaces(), Math.min(placesOf(value), 20));
-  const shown = (value: Value | undefined) => (typeof value === 'number' ? (Number.isFinite(value) ? formatNumber(value, placesFor(value), locale) : '') : textOf(value));
   const plain = (value: number) => formatPlain(value, placesFor(value), locale);
+  // An identifier (a code's box, `grouping: false`): written at rest as typed, never grouped.
+  const shown = (value: Value | undefined) => (typeof value === 'number' ? (Number.isFinite(value) ? (node.options?.['grouping'] === false ? plain(value) : formatNumber(value, placesFor(value), locale)) : '') : textOf(value));
   const min = 'min' in field && typeof field.min === 'number' ? field.min : undefined;
   const limits = (): NumberLimits => ({
     integer,

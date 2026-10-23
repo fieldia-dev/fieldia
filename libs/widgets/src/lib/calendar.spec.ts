@@ -190,6 +190,19 @@ describe('a calendar’s days of the week', () => {
     expect(week('ar').every((name) => [...name].length <= 2)).toBe(true);
     expect(weekdayHead('de')(monday)).toBe('Mo');
   });
+
+  it('in the language’s own script, every language: a narrow day CLDR gives in English’s letters is said by its short name', async () => {
+    const { weekdayHead } = await import('./calendar');
+    const week = (lang: string) => Array.from({ length: 7 }, (_, i) => weekdayHead(lang)(new Date(2024, 0, 7 + i)));
+    // Urdu's narrow days are S M T W T F S: its short names head its columns (the owner's walk of 0.31: "S" and "T").
+    expect(week('ur')).toEqual(['اتوار', 'پیر', 'منگل', 'بدھ', 'جمعرات', 'جمعہ', 'ہفتہ']);
+    expect(week('fa')).toEqual(['ی', 'د', 'س', 'چ', 'پ', 'ج', 'ش']);
+    const latin = /\p{Script=Latin}/u;
+    for (const lang of ['ar', 'fa', 'ur', 'tr', 'es', 'de', 'fr', 'en', 'he', 'yi', 'ps', 'ml', 'am', 'ru', 'el', 'zh', 'ja', 'hi']) {
+      const own = new Intl.DateTimeFormat(lang, { weekday: 'long' }).format(new Date(2024, 0, 7));
+      for (const head of week(lang)) expect(`${lang} ${latin.test(head)}`).toBe(`${lang} ${latin.test(own)}`);
+    }
+  });
 });
 
 describe('a date without week numbers: its week from the first day where the page is read', () => {

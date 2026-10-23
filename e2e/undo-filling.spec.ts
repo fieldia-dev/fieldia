@@ -47,3 +47,31 @@ test.describe('plain · undo while filling', () => {
     await expect(email).toHaveValue(was);
   });
 });
+
+test.describe('plain · undo after Save', () => {
+  test('Ctrl+Z right after Save takes nothing back, and says nothing changed since it was saved', async ({ page }) => {
+    // The owner's walk of 0.31: the course's price saved, then Ctrl+Z brought the old price back as a change not saved.
+    await open(page, 'plain', 'page=treatment-course&record=1&skin=outlined');
+    const price = page.locator('#fd1-f-price');
+    await price.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.type('11000');
+    await page.keyboard.press('Tab');
+    await page.getByRole('button', { name: /^Save/ }).first().click();
+    await expect(page.locator('.fd-form').first().getByText('Saved', { exact: true })).toBeVisible();
+    await page.locator('.fd-form').first().click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(page.getByText('Nothing to undo since it was saved.')).toBeVisible();
+    await expect(price).toHaveValue('11,000.00');
+    await expect(page.getByText('Saved, but not all your changes.')).toHaveCount(0);
+    await screen(page, 'undo-after-save', { viewport: true });
+    // A change after it is taken back as any is.
+    const notes = node(page, 'f-notes').locator('textarea, input').first();
+    await notes.click();
+    await page.keyboard.type(' Bring the consent form.');
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(price).toHaveValue('11,000.00');
+    await expect(page.locator('.fd-undo-heard')).toHaveText(/^Undone: /);
+  });
+});

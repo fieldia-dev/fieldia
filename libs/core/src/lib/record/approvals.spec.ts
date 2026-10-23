@@ -295,6 +295,33 @@ describe('a decision, as the form takes it', () => {
     ]);
   });
 
+  it('keeps a change made while it waits, or after a rejection, in its history: who changed which field, from what to what', async () => {
+    // The owner's walk of 0.31: a manager changed an employee's rejected claim, and nothing recorded it.
+    const dataSource = source();
+    const form = open(dataSource, 1);
+    await form.settled();
+    form.setValue('notes', 'Check the delivery date');
+    expect(await form.save()).toBe(true);
+    await form.settled();
+    const changed = form.getState().approval?.history.at(-1);
+    expect(changed).toMatchObject({ decision: 'changed', by: 'Mona Adel', changes: [{ field: 'notes', label: 'Notes', from: '', to: 'Check the delivery date' }] });
+    // Rejected, and changed after by someone else: kept too, by them.
+    await form.decide('finance', 'rejected', 'Over the quarter’s budget');
+    await form.settled();
+    const karim = open(dataSource, 1, KARIM);
+    await karim.settled();
+    karim.setValue('vendor', 'Delta Paper');
+    expect(await karim.save()).toBe(true);
+    await karim.settled();
+    expect(karim.getState().approval?.history.at(-1)).toMatchObject({ decision: 'changed', by: 'Karim Fathy', changes: [{ field: 'vendor', label: 'Vendor', from: 'Nile Office Supply', to: 'Delta Paper' }] });
+    // A record no one is deciding on keeps no trail: a draft changed is a draft changed.
+    const draft = open(dataSource, 2);
+    await draft.settled();
+    draft.setValue('vendor', 'Delta Paper Co.');
+    expect(await draft.save()).toBe(true);
+    expect((await dataSource.approvals!({ model: 'purchase.order', recordId: 2, user: MONA })).history).toEqual([]);
+  });
+
   it('refuses a rejection that says no reason, in words, asking nothing of the source', async () => {
     const dataSource = source();
     const form = open(dataSource, 1);

@@ -1,5 +1,5 @@
 import { foldDigits, saveProblemOf, type DataSource, type FieldNode, type FormState } from '@fieldia/core';
-import { drawIcon } from '@fieldia/widgets';
+import { afterPress, drawIcon } from '@fieldia/widgets';
 import { setAttr, setHidden, setText } from './dom';
 import type { JoinContext, PageJoin } from './joins';
 import { installVerifyStyles } from './verify-styles';
@@ -224,6 +224,22 @@ function fieldVerify(ctx: VerifyContext, node: FieldNode, wrapper: HTMLElement):
     if (sent && !sent.spent && typed.length === sent.length && /^\d+$/.test(typed)) void check();
   });
 
+  /** Whether its box shows, as the state stands: once the field holds an address or a number that reads, on a form that may be changed. */
+  function ready(state: FormState) {
+    const value = state.values[name];
+    return typeof value === 'string' && !!value.trim() && !state.unread[name] && form.problem(name) === null && ctx.editable() && !!form.joined('verify')?.asks(name);
+  }
+  /** Its rows as the state stands. */
+  function rows(state: FormState) {
+    const value = state.values[name];
+    const proved = typeof value === 'string' && !!value.trim() && state.verified?.[name]?.value === value;
+    const asked = ready(state);
+    setHidden(box, !proved && !asked && !sent);
+    setHidden(done, !proved);
+    setHidden(sendRow, proved || !asked || (!!sent && !sent.spent));
+    setHidden(codeRow, proved || !sent || sent.spent === true);
+  }
+
   function render(state: FormState) {
     const value = state.values[name];
     const text = typeof value === 'string' ? value.trim() : '';
@@ -234,12 +250,11 @@ function fieldVerify(ctx: VerifyContext, node: FieldNode, wrapper: HTMLElement):
       stopTicking();
       say('');
     }
-    // Asked for once the field holds an address or a number that reads, on a form that may be changed.
-    const ready = !!text && !state.unread[name] && form.problem(name) === null && ctx.editable() && !!form.joined('verify')?.asks(name);
-    setHidden(box, !proved && !ready && !sent);
-    setHidden(done, !proved);
-    setHidden(sendRow, proved || !ready || (!!sent && !sent.spent));
-    setHidden(codeRow, proved || !sent || sent.spent === true);
+    // Its box comes and goes once a press going on has ended: left by a press elsewhere (Book a viewing), a box shown as
+    // the pointer comes down would move what is below from under it, and the press would be lost (press.ts). Its rows
+    // change at once inside it, as its own buttons are pressed.
+    if (box.hidden === (proved || ready(state) || !!sent)) afterPress(doc, box, () => !gone && rows(form.getState()));
+    else rows(state);
     if (proved && tone === null) setText(said, '');
     for (const button of [...sends, confirm, again]) setAttr(button, 'aria-busy', busy && (button === confirm ? busy === 'checking' : busy === 'sending') ? 'true' : null);
   }

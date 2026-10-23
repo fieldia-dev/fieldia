@@ -401,11 +401,13 @@ describe('the search bar’s named filters and favourites', () => {
     option(host, 'new').click();
     await until(() => rows(host).length === 3);
     expect(['late', 'today', 'new'].map((id) => counted(option(host, id)))).toEqual(['Late 2', 'Today 1', 'New 3']);
-    // A search typed narrows them all.
+    // A search typed narrows them all: the menu gives way as the box is typed in (0.31.1), and counts it opened again.
     const input = host.querySelector('.fd-search-input') as HTMLInputElement;
     input.value = 'Giza';
     input.dispatchEvent(new Event('input'));
+    expect((host.querySelector('.fd-search-panel') as HTMLElement).hidden).toBe(true);
     key(input, 'Enter');
+    (host.querySelector('.fd-search-toggle') as HTMLButtonElement).click();
     await until(() => counted(option(host, 'late')) === 'Late 0');
     expect(['late', 'today', 'new'].map((id) => counted(option(host, id)))).toEqual(['Late 0', 'Today 1', 'New 1']);
   });

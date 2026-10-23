@@ -55,6 +55,26 @@ test.describe('a review before sending', () => {
     await expect(page.locator('.fd-quiz-item[data-field="enzyme"]')).toHaveAttribute('data-mark', 'right');
   });
 
+  test('Edit from the review offers Back to review at once, before anything is changed', async ({ page }) => {
+    await open(page, 'plain', CHECK);
+    await answer(page);
+    await page.getByRole('button', { name: 'Review your answers' }).click();
+    // The how-to's Edit beside the enzyme: its step, with Back to review beside Next — nothing changed yet.
+    await row(page, 'enzyme').getByRole('button', { name: 'Edit Which enzyme dissolves it?' }).click();
+    await expect(box(page, 'q-enzyme')).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Back to review' })).toBeVisible();
+    await screen(page, 'survey-review-edit');
+    await page.getByRole('button', { name: 'Back to review' }).click();
+    await expect(review(page)).toBeVisible();
+    // Your name, on the first step, the same.
+    await row(page, 'name').getByRole('button', { name: 'Edit Your name' }).click();
+    await expect(box(page, 'q-name')).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Back to review' })).toBeVisible();
+    await page.getByRole('button', { name: 'Back to review' }).click();
+    await expect(review(page)).toBeVisible();
+    await expect(row(page, 'name').locator('.fd-review-answer')).toHaveText('Mona Adel');
+  });
+
   test('is reached and left by keyboard alone', async ({ page }) => {
     await open(page, 'plain', CHECK);
     await answer(page);

@@ -1,10 +1,26 @@
+import type { Page } from '../format/page';
 import type { StoredDraft } from './data-source';
+import type { DraftStore } from './form';
 
 /**
  * Drafts: what is typed kept to be offered again, in the browser's store (`drafts.store`) or on the app's server (the
  * data source's `saveDraft` and `loadDraft`), the store keeping only its key then. A draft keeps the answers, the
  * wizard's step and the optional steps passed over, and text typed that does not read yet, as it was typed.
  */
+
+/**
+ * Where a timed page (`timeLimit` on the page or a step: a page of responses, its checks say) keeps its drafts when the
+ * app keeps none: the tab's own store (sessionStorage), so a reload goes on with the time left and the answers given — a
+ * reload is never a way round a limit. None where the browser has none, or refuses it. Known as the form is made, before
+ * the survey flow's part has come: the draft is looked for then.
+ */
+export function timedStore(page: Page): DraftStore | undefined {
+  try {
+    return /"timeLimit":/.test(JSON.stringify(page)) ? (globalThis as { sessionStorage?: DraftStore }).sessionStorage : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** A draft as the browser's store keeps it: the draft itself, or — kept on the app's server — its key. */
 export type KeptDraft = StoredDraft | { savedAt: string; key: string };

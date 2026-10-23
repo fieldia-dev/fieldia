@@ -9,7 +9,8 @@ const structuredCopy = <T>(value: T): T => (value === undefined ? value : (JSON.
 /**
  * Record templates people save and name (`templates` on a record's page): "Botox package", "Standard lease" — a
  * record's values kept by a name, and a new record started from one. A Templates menu over the record: each template
- * to start a new record from, Save as template… (its name asked in a dialog; a name already kept is replaced), and
+ * to start a new record from, Save as template… (its name asked in a dialog; a name already kept asked first —
+ * "Replace “Botox package”?", Replace or Cancel, Cancel asking the name again as it was typed), and
  * Delete templates…. Kept by the data source's `templates`, `saveTemplate` and `deleteTemplate` where it has them —
  * shared as the app shares them — else in the viewer's `preferences`, this person's own.
  *
@@ -31,6 +32,8 @@ export interface TemplatesContext {
   say(message: string, tone: 'info' | 'success' | 'warning' | 'danger'): void;
   /** Values asked in a dialog (the widgets' `editValues`): the name a template is kept as, the templates to let go. */
   ask: WidgetDialogs['editValues'];
+  /** A question, its Yes in the action's own words (`yes`): true where the person answered it. */
+  confirm(message: string, how: { yes: string }): Promise<boolean>;
 }
 
 /** The fields a page's template keeps: its own list, else every field a person fills in but the record's name. */
@@ -127,11 +130,11 @@ export function templatesMenu(context: TemplatesContext): { element: HTMLElement
     startFrom(form, template);
     context.say(fill(labels.templateUsed, { name: template.name }), 'info');
   }
-  async function save() {
+  async function save(typed = ''): Promise<void> {
     const values = templateValues(page, form.getState().values, form.getState().can?.hiddenFields ?? []);
     const asked = await context.ask({
       title: labels.templateSave,
-      values: { name: '' },
+      values: { name: typed },
       fields: { name: { type: 'char', label: labels.templateName, required: true } },
       layout: [{ type: 'text', id: 'what', text: labels.templateKeeps, style: 'help' }, { type: 'field', id: 'f-name', field: 'name' }],
       buttons: { done: labels.templateKeep },
@@ -140,6 +143,8 @@ export function templatesMenu(context: TemplatesContext): { element: HTMLElement
     if (!name) return;
     known = await kept.list().catch(() => known);
     const same = known.find((one) => one.name.trim().toLowerCase() === name.toLowerCase());
+    // A name already kept: asked first, in the action's own words — Cancel asks the name again, as it was typed.
+    if (same && !(await context.confirm(fill(labels.templateReplaceAsk, { name: same.name }), { yes: labels.templateReplace }))) return save(name);
     try {
       await kept.save(name, values, same?.id);
       context.say(fill(same ? labels.templateReplaced : labels.templateSaved, { name }), 'success');
