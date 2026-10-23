@@ -49,6 +49,8 @@ export const fr: ViewerLabels = {
   templateKeep: 'Enregistrer le modèle',
   templateSaved: 'Modèle « {name} » enregistré.',
   templateReplaced: 'Modèle « {name} » remplacé.',
+  templateReplaceAsk: 'Remplacer « {name} » ?',
+  templateReplace: 'Remplacer',
   templateUsed: 'Parti de « {name} ».',
   templatesDelete: 'Supprimer des modèles…',
   templatesChosen: 'Modèles à supprimer',

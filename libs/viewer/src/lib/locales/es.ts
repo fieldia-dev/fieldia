@@ -55,6 +55,8 @@ export const es: ViewerLabels = {
   templateKeep: 'Guardar plantilla',
   templateSaved: 'Plantilla “{name}” guardada.',
   templateReplaced: 'Plantilla “{name}” reemplazada.',
+  templateReplaceAsk: '¿Reemplazar «{name}»?',
+  templateReplace: 'Reemplazar',
   templateUsed: 'Se creó a partir de la plantilla “{name}”.',
   templatesDelete: 'Eliminar plantillas…',
   templatesChosen: 'Plantillas para eliminar',

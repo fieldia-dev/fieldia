@@ -54,6 +54,8 @@ export const tr: ViewerLabels = {
   templateKeep: 'Şablonu kaydet',
   templateSaved: '“{name}” şablonu kaydedildi.',
   templateReplaced: '“{name}” şablonu değiştirildi.',
+  templateReplaceAsk: '“{name}” değiştirilsin mi?',
+  templateReplace: 'Değiştir',
   templateUsed: '“{name}” şablonundan başlandı.',
   templatesDelete: 'Şablonları sil…',
   templatesChosen: 'Silinecek şablonlar',

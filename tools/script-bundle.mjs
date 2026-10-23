@@ -1939,12 +1939,13 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Turkish's 65.19 and 18.03, to 65.2 and 18.1; Persian's 159.00 and 22.24, to 159.1 and 22.3; Urdu's 161.66 and 22.29,
 // to 161.7 and 22.3; Spanish's 55.69 and 17.52, to 55.7 and 17.6.
 // The owner's walk of 0.31 mended (walkfix31-engine): a photo made the cover said "moved to the cover", Ctrl+Z right
-// after a save saying nothing changed since, and a QR code named alone where its payload says no summary — Arabic's
-// 126.78 and 20.55 measured before, 127.08 and 20.59 after, to 127.1, inside 20.6; German's 57.40 and 17.71, 57.50 and
-// 17.74, to 57.6, inside 17.8; French's 58.28 and 17.72, 58.36 and 17.74, to 58.4; Turkish's 65.19 and 18.03, 65.28 and
-// 18.06, to 65.3; Persian's 159.00 and 22.24, 159.23 and 22.28, to 159.3; Urdu's 161.66 and 22.29, 161.98 and 22.32, to
-// 162.0 and 22.4; Spanish's 55.69 and 17.52, 55.78 and 17.54, to 55.8.
-const ADD_ON_BUDGET_KB = { ar: [127.1, 20.6], de: [57.6, 17.8], fr: [58.4, 17.8], tr: [65.3, 18.1], fa: [159.3, 22.3], ur: [162.0, 22.4], es: [55.8, 17.6] };
+// after a save saying nothing changed since, a QR code named alone where its payload says no summary, and a template's
+// name already kept asked about first ("Replace “{name}”?") — Arabic's 126.78 and 20.55 measured before, 127.23 and 20.61
+// after, to 127.3 and 20.7; German's 57.40 and 17.71, 57.58 and 17.75, inside 57.6 and 17.8; French's 58.28 and 17.72,
+// 58.44 and 17.75, to 58.5; Turkish's 65.19 and 18.03, 65.39 and 18.07, to 65.4; Persian's 159.00 and 22.24, 159.40 and
+// 22.30, to 159.5 and 22.4; Urdu's 161.66 and 22.29, 162.12 and 22.34, to 162.2 and 22.4; Spanish's 55.69 and 17.52,
+// 55.86 and 17.56, to 55.9.
+const ADD_ON_BUDGET_KB = { ar: [127.3, 20.7], de: [57.6, 17.8], fr: [58.5, 17.8], tr: [65.4, 18.1], fa: [159.5, 22.4], ur: [162.2, 22.4], es: [55.9, 17.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2576,8 +2577,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // box its field hides (a read-only code's) — print 16.40 and 5.19, 16.48 and 5.21, inside 16.5, to 5.3. (The main
 // script grew 34 bytes: a number box's `grouping: false`, a code's box, written at rest as typed.) A value typed in a
 // table of lines — a text cell, a section's or a note's words — read in its own direction (styles-lines.ts) — lines
-// 43.77 and 15.03 measured before, 43.95 and 15.09 after, to 44.0, inside 15.1.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [13.7, 5.8], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// 43.77 and 15.03 measured before, 43.95 and 15.09 after, to 44.0, inside 15.1. A template saved under a name already
+// kept asks first, its Yes "Replace", Cancel asking the name again — templates 6.49 and 2.90 measured before, 6.66 and
+// 2.95 after, to 6.7, inside 3.0. (The main script grew 28 bytes: the viewer handing the part its question.)
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [13.7, 5.8], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

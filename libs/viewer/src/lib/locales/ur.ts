@@ -56,6 +56,8 @@ export const ur: ViewerLabels = {
   templateKeep: 'سانچہ محفوظ کریں',
   templateSaved: 'سانچہ “{name}” محفوظ ہو گیا۔',
   templateReplaced: 'سانچہ “{name}” بدل دیا گیا۔',
+  templateReplaceAsk: '“{name}” بدل دیں؟',
+  templateReplace: 'بدل دیں',
   templateUsed: '“{name}” سے شروع کیا گیا۔',
   templatesDelete: 'سانچے حذف کریں…',
   templatesChosen: 'حذف کرنے کے لیے سانچے',

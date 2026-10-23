@@ -77,6 +77,9 @@ export interface ViewerLabels {
   templateKeep: string;
   templateSaved: string;
   templateReplaced: string;
+  /** Asked before a template is saved over one of the same name (`{name}`), and its Yes. */
+  templateReplaceAsk: string;
+  templateReplace: string;
   templateUsed: string;
   templatesDelete: string;
   templatesChosen: string;
@@ -952,6 +955,8 @@ const en: ViewerLabels = {
   templateKeep: 'Save template',
   templateSaved: 'Template “{name}” saved.',
   templateReplaced: 'Template “{name}” replaced.',
+  templateReplaceAsk: 'Replace “{name}”?',
+  templateReplace: 'Replace',
   templateUsed: 'Started from “{name}”.',
   templatesDelete: 'Delete templates…',
   templatesChosen: 'Templates to delete',

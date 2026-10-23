@@ -2015,7 +2015,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function topBar(toolbar: SheetNode['toolbar']): HTMLElement | null {
     if (page.data.kind !== 'record') return null;
     // Record templates people save and name (`templates`): their menu, from the part the page waited for.
-    const extra = templatesPart.loaded?.templatesMenu({ doc, el, form, page, labels, locale, preferences, dataSource: options.dataSource, say: actionHost.say, ask: dialogs.editValues });
+    const extra = templatesPart.loaded?.templatesMenu({ doc, el, form, page, labels, locale, preferences, dataSource: options.dataSource, say: actionHost.say, ask: dialogs.editValues, confirm: (message, how) => actionHost.ask(message, how) });
     const bar = recordBar({
       doc,
       el,

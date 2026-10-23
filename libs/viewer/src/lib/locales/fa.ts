@@ -52,6 +52,8 @@ export const fa: ViewerLabels = {
   templateKeep: 'ذخیرهٔ الگو',
   templateSaved: 'الگوی «{name}» ذخیره شد.',
   templateReplaced: 'الگوی «{name}» جایگزین شد.',
+  templateReplaceAsk: '«{name}» جایگزین شود؟',
+  templateReplace: 'جایگزین کن',
   templateUsed: 'از «{name}» شروع شد.',
   templatesDelete: 'حذف الگوها…',
   templatesChosen: 'الگوهایی برای حذف',

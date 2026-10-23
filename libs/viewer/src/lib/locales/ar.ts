@@ -49,6 +49,8 @@ export const ar: ViewerLabels = {
   templateKeep: 'حفظ القالب',
   templateSaved: 'حُفظ القالب «{name}».',
   templateReplaced: 'استُبدل القالب «{name}».',
+  templateReplaceAsk: 'هل تستبدل «{name}»؟',
+  templateReplace: 'استبدال',
   templateUsed: 'بدأ من «{name}».',
   templatesDelete: 'حذف قوالب…',
   templatesChosen: 'القوالب المراد حذفها',

@@ -433,7 +433,8 @@ changed again, as it was.
 A page with `"templates": true` has a **Templates** menu over its record:
 **Save as template…** keeps what the record holds by a name ("Botox
 package") — never its name, its files, a value worked out or locked; a name
-already kept is replaced — and on a new record each template starts it, its
+already kept is asked about first, "Replace “Botox package”?", Replace or
+Cancel, Cancel asking the name again — and on a new record each template starts it, its
 values written as the person's own changes (Ctrl+Z takes each back).
 **Delete templates…** lets some go. Kept by the data source's `templates`,
 `saveTemplate` and `deleteTemplate`, else in the viewer's `preferences`. It

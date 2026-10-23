@@ -49,6 +49,8 @@ export const de: ViewerLabels = {
   templateKeep: 'Vorlage speichern',
   templateSaved: 'Vorlage „{name}“ gespeichert.',
   templateReplaced: 'Vorlage „{name}“ ersetzt.',
+  templateReplaceAsk: '„{name}“ ersetzen?',
+  templateReplace: 'Ersetzen',
   templateUsed: 'Mit „{name}“ begonnen.',
   templatesDelete: 'Vorlagen löschen…',
   templatesChosen: 'Zu löschende Vorlagen',
