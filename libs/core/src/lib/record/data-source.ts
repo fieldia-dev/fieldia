@@ -1127,6 +1127,12 @@ export interface ListRequest {
    * edit. A source that leaves it out is paged through instead.
    */
   allIds?: boolean;
+  /**
+   * Given where the list's waits have a `timeout` (`Page.loading`, a list's `loading`): aborts as the wait ends as
+   * failed, Retry then asking again. A source may stop and reject with an error named `AbortError`; one that ignores it
+   * loses nothing — its late answer is dropped, as any answer a newer ask took the place of.
+   */
+  signal?: UploadSignal;
 }
 
 export interface ListResult {

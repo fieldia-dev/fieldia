@@ -94,8 +94,9 @@ map's block is @fieldia/map's.
 
 ## The data source
 
-Nothing new. Where a page sets a `timeout`, the request a loader waits for (a record's `load`, a list's `list`)
-carries a `signal` (an AbortSignal), as uploads and a map's clusters already do: it aborts as the timeout passes. A
-source that honours it (rejecting with an error named `AbortError`) frees the server sooner; one that ignores it loses
-nothing: the wait has ended as failed, and an answer that comes after is dropped, as a late answer always was. Without
-a `timeout`, requests are as they were.
+Nothing new. Where a page sets a `timeout`, a list's request its wait waits for (`list`: its records, its next rows, a
+map's places) carries a `signal` (an AbortSignal), as uploads and a map's clusters already do: it aborts as the timeout
+passes. A source that honours it (rejecting with an error named `AbortError`) frees the server sooner; one that ignores
+it loses nothing: the wait has ended as failed, and an answer that comes after is dropped, as a late answer always
+was. A record whose `load` answers after its timeout is drawn as it comes, the failure's words taken away. Without a
+`timeout`, requests are as they were.

@@ -447,6 +447,9 @@
           "additionalProperties": false
         }
       ]
+    },
+    "loading": {
+      "$ref": "#/$defs/PageLoading"
     }
   },
   "required": [
@@ -8625,6 +8628,9 @@
           "items": {
             "$ref": "#/$defs/ScreenWidth"
           }
+        },
+        "loading": {
+          "$ref": "#/$defs/PageLoading"
         }
       },
       "required": [
@@ -9001,6 +9007,113 @@
       ],
       "additionalProperties": false
     },
+    "PageLoading": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "string",
+          "enum": [
+            "skeleton",
+            "spinner",
+            "progress",
+            "text",
+            "none",
+            "custom"
+          ]
+        },
+        "refresh": {
+          "type": "string",
+          "enum": [
+            "keep",
+            "dim",
+            "skeleton",
+            "spinner",
+            "none",
+            "custom"
+          ]
+        },
+        "more": {
+          "type": "string",
+          "enum": [
+            "row",
+            "spinner",
+            "skeleton",
+            "none",
+            "custom"
+          ]
+        },
+        "search": {
+          "type": "string",
+          "enum": [
+            "inline",
+            "spinner",
+            "none",
+            "custom"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "button",
+            "bar",
+            "overlay",
+            "none",
+            "custom"
+          ]
+        },
+        "skeleton": {
+          "type": "string",
+          "enum": [
+            "shimmer",
+            "pulse",
+            "static"
+          ]
+        },
+        "spinner": {
+          "type": "string",
+          "enum": [
+            "ring",
+            "dots"
+          ]
+        },
+        "progress": {
+          "type": "string",
+          "enum": [
+            "top",
+            "inline"
+          ]
+        },
+        "delay": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "minShown": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "slowAfter": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 600000
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600000
+        },
+        "error": {
+          "type": "string",
+          "enum": [
+            "inline",
+            "toast",
+            "custom"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "RelatedNode": {
       "type": "object",
       "properties": {
@@ -9286,6 +9399,9 @@
         },
         "print": {
           "type": "boolean"
+        },
+        "loading": {
+          "$ref": "#/$defs/PageLoading"
         }
       },
       "required": [
@@ -10400,6 +10516,9 @@
               "$ref": "#/$defs/ListEditable"
             }
           ]
+        },
+        "loading": {
+          "$ref": "#/$defs/PageLoading"
         }
       },
       "required": [

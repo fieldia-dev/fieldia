@@ -57,6 +57,9 @@ export { PageQuizSchema, QuizQuestionSchema } from './lib/format/quiz';
 export { PageReviewSchema, TimeLimitSchema } from './lib/format/flow';
 export { PagePrefillSchema } from './lib/format/prefill';
 export { PagePaymentSchema } from './lib/format/payment';
+export { PageLoadingSchema } from './lib/format/loading-schema';
+// Each moment's ways, the looks and a failure's ways, as the format knows them: where pages are made (the designer).
+export { LOADING_ERRORS, LOADING_MOMENTS, LOADING_TECHNIQUES, LOADING_VARIANTS } from './lib/format/loading';
 // A link's parameters read as the fields a page's `prefill` fills: the prefill part's, whole here.
 export { linkParams, linkValue, linkValues } from './lib/record/link-values';
 // An outbox kept in memory, or in the browser's IndexedDB: the outbox part's, whole here.
