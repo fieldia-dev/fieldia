@@ -14,7 +14,11 @@ test('a blank screen starts from a JSON Schema: what it makes shown first, then 
   const dialog = page.getByRole('dialog', { name: 'Start from a schema' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('textbox', { name: 'Schema, as JSON' })).toBeFocused();
-  await expect(dialog.getByRole('button', { name: 'Start', exact: true })).toBeHidden();
+  // Start pressed before anything is pasted says what to do (the owner's walk of 0.31: it did nothing).
+  await dialog.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toHaveText('Paste a schema or choose a file first.');
+  await expect(dialog.getByRole('textbox', { name: 'Schema, as JSON' })).toBeFocused();
+  await screen(page, 'designer-start-from-schema-empty', { viewport: true });
   await dialog.getByRole('textbox', { name: 'Schema, as JSON' }).fill(
     JSON.stringify(
       {

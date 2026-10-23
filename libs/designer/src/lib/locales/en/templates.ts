@@ -37,6 +37,7 @@ export const templates = {
     kept: 'Kept with a change:',
     leftOut: 'Left out:',
     started: (n: number, survey: boolean) => `Started from the schema: ${survey ? (n === 1 ? '1 question' : `${n} questions`) : n === 1 ? '1 field' : `${n} fields`}.`,
+    empty: 'Paste a schema or choose a file first.',
     notJson: (problem: string) => `This is not JSON: ${problem}`,
     refused: {
       'not-json-object': 'A schema is a JSON object: a JSON Schema, an OpenAPI document or a model’s fields.',

@@ -39,6 +39,7 @@ export const templates: DesignerWords['templates'] = {
     kept: 'Değiştirilerek alınanlar:',
     leftOut: 'Dışarıda bırakılanlar:',
     started: (n, survey) => `Şemadan başlandı: ${plural('tr', n, survey ? { one: '# soru', other: '# soru' } : { one: '# alan', other: '# alan' })}.`,
+    empty: 'Önce bir şema yapıştırın veya bir dosya seçin.',
     notJson: (problem) => `Bu JSON değil: ${problem}`,
     refused: {
       'not-json-object': 'Şema bir JSON nesnesidir: bir JSON Schema, bir OpenAPI belgesi veya bir veri modelinin alanları.',

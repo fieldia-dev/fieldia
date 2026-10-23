@@ -9,8 +9,8 @@ import { setHidden, setText } from './writes';
  * JSON Schema, an OpenAPI document or a model's fields — or chooses its file — and sees, before anything changes, the
  * fields it makes with their kinds, what is kept with a change and what is left out (`pageFromSchema`). An OpenAPI
  * document says which of its operations and schemas to start from. Start puts the page in place as one edit, said
- * with Undo; Cancel, Escape, the × or a click outside leave the page as it was. Start shows only once there is a page
- * to start with.
+ * with Undo; Cancel, Escape, the × or a click outside leave the page as it was. Start pressed with nothing pasted says
+ * what to do ("Paste a schema or choose a file first."), as an empty Send does.
  */
 
 export interface SchemaDialogOptions {
@@ -45,7 +45,7 @@ export function openSchemaDialog(options: SchemaDialogOptions): { close(): void 
   const leftHead = el('p', { class: 'fd-schema-said' }, w.leftOut);
   const left = el('ul', { class: 'fd-schema-notes' });
   const preview = el('div', { class: 'fd-schema-preview', role: 'status', hidden: '' }, count, fields, keptHead, kept, leftHead, left);
-  const start = el('button', { type: 'button', class: 'fd-button fd-button-primary', hidden: '' }, w.start);
+  const start = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, w.start);
   const cancel = el('button', { type: 'button', class: 'fd-button' }, w.cancel);
   const closeX = el('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': w.close }, '×');
   const dialog = el(
@@ -100,7 +100,6 @@ export function openSchemaDialog(options: SchemaDialogOptions): { close(): void 
     setText(problem, said);
     setHidden(problem, !said);
     setHidden(preview, !read);
-    setHidden(start, !read);
     if (!read) return;
     const page = read.page;
     const nodes = fieldNodes(page.layout);
@@ -140,7 +139,15 @@ export function openSchemaDialog(options: SchemaDialogOptions): { close(): void 
     });
   });
   start.addEventListener('click', () => {
-    if (!read) return;
+    if (!read) {
+      // Nothing to start from: what to do said beside it — or, where something is pasted, why it gives no page, as said.
+      if (!text.value.trim()) {
+        setText(problem, w.empty);
+        setHidden(problem, false);
+      }
+      text.focus();
+      return;
+    }
     const page = read.page;
     const n = fieldNodes(page.layout).length;
     if (!designer.replacePage(page)) return;

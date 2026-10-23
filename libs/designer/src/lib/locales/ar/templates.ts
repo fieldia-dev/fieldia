@@ -33,6 +33,7 @@ export const templates: DesignerWords['templates'] = {
     kept: 'أُخذ مع تغيير:',
     leftOut: 'تُرك:',
     started: (n, survey) => `تم البدء من المخطط: ${survey ? 'الأسئلة' : 'الحقول'} (${n}).`,
+    empty: 'الصق مخططًا أو اختر ملفًا أولًا.',
     notJson: (problem) => `هذا ليس JSON: ${ltr(problem)}`,
     refused: {
       'not-json-object': 'المخطط كائن JSON: مخطط JSON Schema أو مستند OpenAPI أو حقول نموذج.',

@@ -41,6 +41,7 @@ export const templates: DesignerWords['templates'] = {
     kept: 'Conservado con un cambio:',
     leftOut: 'Omitido:',
     started: (n, survey) => `Se empezó desde la definición de datos: ${questionsOrFields(n, survey)}.`,
+    empty: 'Pegue un esquema o elija un archivo primero.',
     notJson: (problem) => `Esto no es JSON: ${problem}`,
     refused: {
       'not-json-object': 'Una definición de datos es un objeto JSON: un JSON Schema, un documento OpenAPI o los campos de un modelo de datos.',

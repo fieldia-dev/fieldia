@@ -46,8 +46,9 @@ schema…** opens a dialog to paste a JSON Schema, an OpenAPI document or a
 model's fields as JSON, or to choose its file. Before anything changes it shows
 the fields it makes, each with its kind, what is kept with a change and what is
 left out (`pageFromSchema` in `@fieldia/core`); an OpenAPI document says which
-of its operations and schemas to start from. **Start** — shown once there is a
-page to start with — puts it in place as one edit, said with Undo. A survey
+of its operations and schemas to start from. **Start** puts it in place as one
+edit, said with Undo; pressed with nothing pasted it says what to do ("Paste a
+schema or choose a file first."), and with what gives no page, why. A survey
 gets its questions, in steps; a screen its fields, in sections.
 
 ## Laying a screen out

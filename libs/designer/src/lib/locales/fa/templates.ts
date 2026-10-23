@@ -42,6 +42,7 @@ export const templates: DesignerWords['templates'] = {
     kept: 'نگه‌داشته با یک تغییر:',
     leftOut: 'کنار گذاشته‌شده:',
     started: (n, survey) => `از طرح‌واره شروع شد: ${parts(n, survey)}.`,
+    empty: 'اول یک طرح‌واره بچسبانید یا یک پرونده انتخاب کنید.',
     notJson: (problem) => `این JSON نیست: ${ltr(problem)}`,
     refused: {
       'not-json-object': 'طرح‌واره یک شیء JSON است: یک JSON Schema، یک سند OpenAPI یا فیلدهای یک مدل داده.',
