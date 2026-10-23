@@ -2,7 +2,7 @@
   "fieldia": "0.10",
   "id": "deal-stages",
   "title": "Deal stages",
-  "description": "A sales pipeline's stages as a settings list: each stage's name, order, chance of winning and days expected changed in place, a stage added at the end, and the won stage the sales manager's alone.",
+  "description": "A sales pipeline's stages as a settings list: each stage's name, order, chance of winning and days expected changed in place, a new stage asked its chance and days and put before the won stage, and the won stage the sales manager's alone.",
   "records": {
     "one": "stage",
     "other": "stages",
@@ -15,8 +15,8 @@
   "fields": {
     "sequence": { "type": "integer", "label": "Order", "min": 1 },
     "name": { "type": "char", "label": "Stage", "required": true, "size": 40 },
-    "probability": { "type": "float", "label": "Chance of winning", "min": 0, "max": 1, "digits": [5, 2] },
-    "days": { "type": "integer", "label": "Days expected", "min": 0 },
+    "probability": { "type": "float", "label": "Chance of winning", "required": true, "min": 0, "max": 1, "digits": [5, 2] },
+    "days": { "type": "integer", "label": "Days expected", "required": true, "min": 0 },
     "folded": { "type": "boolean", "label": "Folded" },
     "won": { "type": "boolean", "label": "Won", "readonly": true },
     "requirements": { "type": "text", "label": "What it takes" }

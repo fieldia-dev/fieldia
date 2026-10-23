@@ -64,3 +64,38 @@ test('the browser’s connection going and coming back: kept, then sent by itsel
   await expect(page.locator('.fd-done .fd-outbox-said')).toBeVisible();
   expect((await sent(page)).map((response) => response.values['unit'])).toEqual(['C-3']);
 });
+
+test('opened again with no signal at all — the connection really off — the page comes from the device, its send still waiting', async ({ page, context, browserName }) => {
+  // The walk of 0.31: with the connection off, a reload gave a blank page. Playwright's WebKit on Linux says it is
+  // offline throughout (above); Playwright's Firefox, set offline, refuses a page's load (NS_ERROR_OFFLINE) before any
+  // service worker is asked, as a real one with its network gone does not.
+  test.skip(browserName === 'webkit', 'WebKit under Playwright on Linux never says it is online');
+  test.skip(browserName === 'firefox', 'Firefox under Playwright, set offline, asks no service worker for a page');
+  ({ problems } = await open(page, 'plain', 'page=viewing-report&skin=outlined'));
+  // Its service worker in place, and what the page loaded kept.
+  await expect
+    .poll(() => page.evaluate(async () => !!navigator.serviceWorker.controller && !!(await caches.match(location.href)) && !!(await caches.match(new URL('main.js', location.href).href))))
+    .toBe(true);
+  await context.setOffline(true);
+  await node(page, 'f-unit').locator('input').fill('D-7');
+  await node(page, 'f-condition').getByRole('radio', { name: 'Ready to move in' }).check();
+  await page.getByRole('button', { name: 'Submit', exact: true }).click();
+  await expect(page.locator('.fd-done .fd-outbox-said')).toHaveText('No signal: 1 send waits on this device.');
+  // A reload with no signal: the page opens, the send still waits.
+  await page.reload();
+  await expect(page.locator('.fd-form')).toBeVisible();
+  await expect(page.locator('.fd-outbox-said')).toHaveText('No signal: 1 send waits on this device.');
+  await expect(page.locator('.dh-title')).toHaveText('A viewing report with no signal');
+  await expect(page.locator('.demo-meanwhile-said')).toHaveText('No signal: what you send is kept on this device.');
+  await screen(page, 'outbox-reopened-offline', { viewport: true });
+  // The signal back: sent by itself.
+  await context.setOffline(false);
+  await expect(page.locator('.fd-outbox-said')).toHaveText('Everything that waited was sent.');
+  expect((await sent(page)).map((response) => response.values['unit'])).toEqual(['D-7']);
+  // Its worker is the viewing report's alone: every other demo here is left to the network.
+  await page.goto('/plain/?page=customer&skin=underline');
+  await expect(page.locator('.fd-form').first()).toBeVisible();
+  expect(await page.evaluate(() => navigator.serviceWorker.controller)).toBeNull();
+  // What the browser said while it had no network is not the page's fault.
+  problems = problems.filter((problem) => !/ERR_INTERNET_DISCONNECTED|Failed to fetch|NetworkError/.test(problem));
+});

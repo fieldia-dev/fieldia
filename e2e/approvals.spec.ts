@@ -200,6 +200,43 @@ for (const variant of ['plain', 'react']) {
       await expect(title(page)).toHaveText('Waiting for Manager: Karim Fathy');
     });
 
+    test('only the employee changes his claim: his manager and Finance read it whole, told why, and a save of theirs is refused', async ({ page }) => {
+      const amount = node(page, 'f-amount').locator('input');
+      const name = page.locator('.fd-title textarea, .fd-title input').first();
+      const why = page.getByText('Only Omar Said, whose claim it is, can change it.');
+      // Read, nothing saved: nothing said to be kept.
+      await expect(page.locator('#demo-head .dh-kept')).toBeHidden();
+      // The walk's steps: signed in as Karim Fathy (Manager), 9999 typed in Amount, then Save.
+      await signIn(page, /Karim Fathy/);
+      await expect(title(page)).toHaveText('Rejected by Mona Adel (Finance)');
+      await expect(why).toBeVisible();
+      await expect(amount).not.toBeEditable();
+      await amount.click();
+      await page.keyboard.type('9999');
+      await expect(amount).toHaveValue('4,850.00');
+      await expect(name).not.toBeEditable();
+      await expect(node(page, 'f-notes').locator('textarea')).not.toBeEditable();
+      await expect(page.locator('.fd-header button[type="submit"]')).toBeHidden();
+      await screen(page, `${variant}-approval-manager-reads`, { viewport: true });
+      // Asked anyway — another app, a script — the source refuses it, as the app's server does.
+      const refused = await page.evaluate(() =>
+        (window as any).fieldiaDemo.dataSource.save({ model: 'hr.expense', id: 1, changes: { values: { total_amount: 9999 } }, fields: {} }).then(
+          () => 'saved',
+          (error: Error) => error.message
+        )
+      );
+      expect(refused).not.toBe('saved');
+      // Finance reads it too.
+      await signIn(page, /Mona Adel/);
+      await expect(why).toBeVisible();
+      await expect(amount).not.toBeEditable();
+      // Omar's own claim, as he left it, is his to change.
+      await signIn(page, /Omar Said/);
+      await expect(why).toHaveCount(0);
+      await expect(amount).toBeEditable();
+      await expect(amount).toHaveValue('4,850.00');
+    });
+
     test('only the employee is offered Submit for approval: his manager and Finance are not, as in a real app', async ({ page }) => {
       const submit = page.getByRole('button', { name: 'Submit for approval' });
       await expect(submit).toBeVisible();

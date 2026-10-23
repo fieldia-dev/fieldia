@@ -333,7 +333,7 @@ function drawCode() {
     current = tab;
     const page = designing ? (window.fieldiaDesigner?.designer?.getPage() ?? null) : (window.fieldiaDemo?.handle?.form?.page ?? window.fieldiaDemo?.page ?? null);
     // Coloured as its language reads: the page's JSON, the frameworks' own code.
-    const written = designing ? designerSnippets(page, demo.app === 'screen' ? 'screen' : 'survey') : slots ? slotsSnippets(page, params) : uploads ? uploadsSnippets(page, params) : safety ? saveSafetySnippets(page, params) : backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
+    const written = designing ? designerSnippets(page, demo.app === 'screen' ? 'screen' : 'survey') : slots ? slotsSnippets(page, params) : uploads ? uploadsSnippets(page, params) : safety ? saveSafetySnippets(page, params) : backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params, { nonce: demo?.app === 'csp' });
     code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', store: 'ts', server: 'ts', source: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
     note.textContent = tabs.find(([id]) => id === tab)[2];
     for (const button of drawer.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));

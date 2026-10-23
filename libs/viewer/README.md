@@ -150,7 +150,10 @@ device" with the bar under it, and what waits is sent as the browser says it is
 reload) and right after another send goes through. "No signal" is said by the
 last try, never by the browser's `navigator.onLine`. A send the server refuses
 then is said, with Try again and Discard. The viewer's `outbox` option takes the
-app's own store in place of the browser's IndexedDB.
+app's own store in place of the browser's IndexedDB. The outbox keeps the sends;
+opening the page itself with no signal (a reload in airplane mode) is the app's
+service worker's — a small network-first one keeps the page and its scripts
+(fieldia.dev's data page shows one; the viewing report demo has it).
 
 ## Saved forms placed in a page
 

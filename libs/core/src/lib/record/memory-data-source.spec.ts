@@ -249,3 +249,16 @@ describe('createMemoryDataSource — a tree’s records, as a path picker shows 
     expect(values['iteration']).toEqual({ id: 2, label: 'Sprint 14', path: ['Portal', 'Sprint 14'], aside: '4/12/2027 - 5/25/2027' });
   });
 });
+
+describe('a memory source’s record templates', () => {
+  it('numbers a new template after those it was given, so one kept on a visit before is never replaced by the next', async () => {
+    const course = { model: 'course', pageId: 'course' };
+    const source = createMemoryDataSource({ templates: { course: [{ id: 'template-1', name: 'Kept last time', values: { price: 9800 } }], other: [{ id: 'template-2', name: 'Elsewhere', values: {} }] } });
+    const made = await source.saveTemplate!({ ...course, template: { name: 'New today', values: { price: 5000 } } });
+    expect(made.id).toBe('template-3');
+    expect((await source.templates!(course)).map((one) => one.name)).toEqual(['Kept last time', 'New today']);
+    // Kept again by its id: in its place.
+    await source.saveTemplate!({ ...course, template: { id: 'template-1', name: 'Kept last time', values: { price: 9900 } } });
+    expect((await source.templates!(course)).map((one) => one.values['price'])).toEqual([9900, 5000]);
+  });
+});

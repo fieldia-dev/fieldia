@@ -42,4 +42,14 @@ describe('a memory source’s saved views', () => {
     expect((await source.views!(list)).map((view) => view.id)).toEqual(['t1']);
     expect(source.calls.map((call) => call.method)).toEqual(['saveView', 'deleteView', 'saveView', 'deleteView', 'views']);
   });
+
+  it('numbers a new view after those it was given, so a view kept on a visit before is never replaced nor doubled', async () => {
+    const before: SavedView = { id: 'view-1', name: 'Kept last time', mine: true, state: { facets: [] } };
+    const source = createMemoryDataSource({ views: { leads: [team, before], deals: [{ ...before, id: 'view-2' }] } });
+    const made = await source.saveView!({ ...list, view: { name: 'New today', state: { facets: [] } } });
+    expect(made.id).toBe('view-3');
+    expect((await source.views!(list)).map((view) => view.name)).toEqual(['Unassigned this week', 'Kept last time', 'New today']);
+    await source.deleteView!({ ...list, id: made.id });
+    expect((await source.views!(list)).map((view) => view.id)).toEqual(['t1', 'view-1']);
+  });
 });

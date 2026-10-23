@@ -77,7 +77,7 @@ import { appointmentRecords, appointmentSlots, keepAppointment } from './appoint
 import { emptyGridsPage, emptyGridsRecords } from './empty-grids';
 import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings, searchFromQuery } from './related-lists';
 import { customerCardPage, duplicateCustomers } from './duplicates';
-import { keepWrites, keptApart, keptApprovals, keptOver } from './kept';
+import { keptSource } from './kept';
 import { consentPage, sampleConsents } from './consents';
 import { photoSetPages, photoSetRecords } from './photo-sets';
 import siteVisit from '../../examples/pages/site-visit.page.json';
@@ -101,17 +101,17 @@ import { demoAssist, sampleEnquiries } from './enquiries';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 import purchaseApproval from '../../examples/pages/purchase-approval.page.json';
 import expenseApproval from '../../examples/pages/expense-approval.page.json';
-import { APPROVAL_ROUTES, approvalHistory, approvalRecords, approvalUser } from './approvals';
+import { APPROVAL_ROUTES, approvalHistory, approvalRecords, approvalUser, claimPermissions } from './approvals';
 import servicePrices from '../../examples/pages/service-prices.page.json';
 import staffHours from '../../examples/pages/staff-hours.page.json';
 import dealStages from '../../examples/pages/deal-stages.page.json';
-import { CLINIC_ROLES, sampleServices, sampleStaffWeeks, sampleStages, servicePerHour, stagePermissions, staffWeekRule } from './editable-lists';
+import { CLINIC_ROLES, sampleServices, sampleStaffWeeks, sampleStages, servicePerHour, stagePermissions, staffWeekRule, stageOrder } from './editable-lists';
 import listingLanguages from '../../examples/pages/listing-languages.page.json';
 import servicesLanguages from '../../examples/pages/services-languages.page.json';
 import serviceLanguages from '../../examples/pages/service-languages.page.json';
 import { bilingualListings, bilingualServices } from './languages';
 import { scanRecords, stockCountPage, treatmentPage } from './scan';
-import { keepViews, keptViews } from './saved-views';
+import { TEAM_VIEWS } from './saved-views';
 import ordersReview from '../../examples/pages/orders-review.page.json';
 import { reviewOrders } from './orders-review';
 import waitingRoom from '../../examples/pages/waiting-room.page.json';
@@ -644,14 +644,15 @@ export function sampleDataSource() {
     offline: demoOffline,
     // The drafts the server keeps, and the link Continue later gives (shared/clinic-intake.ts).
     drafts: keptDrafts(),
-    // How a purchase order and an expense are approved, and what was decided so far — this tab's decisions over the
+    // How a purchase order and an expense are approved, and what was decided so far — this tab's decisions kept over the
     // samples' (shared/approvals.ts, shared/kept.ts).
     approvals: APPROVAL_ROUTES,
-    approvalHistory: keptApprovals(approvalHistory()),
+    approvalHistory: approvalHistory(),
     draftLink,
     attachments: billAttachments(),
-    // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's.
-    can: { 'crm.contact': contactPermissions, 'deal.stage': stagePermissions },
+    // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's; an expense
+    // claim is its employee's alone to change (shared/approvals.ts).
+    can: { 'crm.contact': contactPermissions, 'deal.stage': stagePermissions, 'hr.expense': claimPermissions(params) },
     // The price list keeps versions: a price someone else changes meanwhile is said under its row (shared/editable-lists.ts).
     ...(params.get('page') === 'service-prices' ? { versions: { by: 'Sara Ali' } } : {}),
     // What links show of their records besides their names: an address, a picture, a colour.
@@ -958,8 +959,9 @@ export function sampleDataSource() {
   };
   const extra = extras[params.get('page') ?? '']?.() ?? {};
   // The sales team's queue keeps its saved views on its server, the team's shared ones among them (shared/saved-views.ts).
-  const views = params.get('page') === 'leads-queue' ? { views: keptViews() } : {};
-  const source = createMemoryDataSource({ ...options, ...views, records: keptOver(options?.records ?? {}, extra), notDuplicatePairs: keptApart() });
+  const views = params.get('page') === 'leads-queue' ? { views: TEAM_VIEWS } : {};
+  // Over what this tab kept, and keeping what is saved — records, templates, views, properties, responses (shared/kept.ts).
+  const source = keptSource({ ...options, ...views }, { extra });
   // `?store=http`: the listing's photos to a real endpoint, through uploadTo, for the browser tests.
   const upload = listingUpload(params);
   if (upload) source.upload = upload;
@@ -971,15 +973,13 @@ export function sampleDataSource() {
   const lines = Number(params.get('lines'));
   const posted = source.records['account.move']?.[4102];
   if (lines > 0 && posted) posted['invoice_line_ids'] = longLines(posted['invoice_line_ids'], lines);
-  // Each save, import, merge and delete kept in this tab: the next page the demo goes to shows it.
-  keepWrites(source);
   // Each draft kept in this browser, for the link opened in another tab (shared/clinic-intake.ts).
   keepDrafts(source);
   // The clinic's server: a week over 48 hours refused, a service's price per hour worked out again (shared/editable-lists.ts).
   staffWeekRule(source);
   servicePerHour(source);
-  // Each view saved or deleted kept in this tab, as the team's server keeps them.
-  keepViews(source);
+  // The pipeline's: a new stage before Won, which stays last (shared/editable-lists.ts).
+  stageOrder(source);
   return source;
 }
 

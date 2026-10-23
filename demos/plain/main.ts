@@ -26,7 +26,7 @@ import { meanwhileBar } from '../shared/test-drive';
 import { lastPlacesBar } from '../shared/event-signup';
 import { signedInBar } from '../shared/approvals';
 import { phoneBar, sentLog } from '../shared/unit-enquiry';
-import { offlineBar } from '../shared/viewing-report';
+import { offlineBar, openWithoutSignal } from '../shared/viewing-report';
 import { frontDeskBar } from '../shared/treatment-course';
 import { addressFollowsRecord } from '../shared/address';
 import { priceListBar } from '../shared/editable-lists';
@@ -226,8 +226,10 @@ const signedIn = signedInBar(params);
 if (signedIn) document.getElementById('app')?.before(signedIn);
 // The enquiry says under it what the app was told with each response, its hidden fields marked (shared/unit-enquiry.ts).
 if (name === 'unit-enquiry') document.getElementById('app')?.after(sentLog(document, page, dataSource));
-// The viewing report has a bar over it: Work offline, as a compound with no signal; what it sends is listed under it.
+// The viewing report has a bar over it: Work offline, as a compound with no signal; what it sends is listed under it. Its
+// page opens again with no signal at all, kept by a service worker of its own (shared/viewing-report.ts).
 if (name === 'viewing-report') {
+  openWithoutSignal();
   document.getElementById('app')?.before(offlineBar(document));
   document.getElementById('app')?.after(sentLog(document, page, dataSource));
 }

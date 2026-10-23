@@ -1,6 +1,7 @@
-import { ConflictError, createMemoryDataSource, loadedRecordOf, type DataSource, type Page, type Field, type RecordPermissions, type Values } from '@fieldia/core';
+import { ConflictError, loadedRecordOf, type DataSource, type Page, type Field, type RecordPermissions, type Values } from '@fieldia/core';
 import { mountViewer, openFormDialog, openFormPanel, type FormDialogResult, type ViewerHandle } from '@fieldia/viewer';
 import leadPage from '../../examples/pages/lead.page.json';
+import { keptSource } from '../shared/kept';
 
 /**
  * One lead, open in two tabs on one data source: Sara's (yours) and Mona's.
@@ -75,17 +76,21 @@ const can = (): RecordPermissions =>
   viewer
     ? { edit: false, archive: false, duplicate: false, delete: false, hiddenFields: ['commission'], reason: WORDS.viewerReason }
     : { delete: false, readonlyFields: ['commission'], reason: WORDS.agentReason };
-const dataSource = createMemoryDataSource({
-  records: {
-    lead: {
-      1: { name: locale === 'ar' ? 'فيلا في الشيخ زايد' : 'Villa in Sheikh Zayed', phone: '+20 100 123 4567', email: 'karim.f@example.com', stage: 'new', agent: locale === 'ar' ? 'سارة' : 'Sara', budget: 4000000, commission: 2.5, notes: WORDS.notes, active: true },
-      2: { name: locale === 'ar' ? 'شقة في المعادي' : 'Flat in Maadi', phone: '+20 111 222 3334', email: 'nadia.s@example.com', stage: 'visit', agent: locale === 'ar' ? 'سارة' : 'Sara', budget: 2500000, commission: 2, notes: '', active: true },
+// What either tab saved kept while this one is open, as every demo's is — its leads apart from the other demos' (shared/kept.ts).
+const dataSource = keptSource(
+  {
+    records: {
+      lead: {
+        1: { name: locale === 'ar' ? 'فيلا في الشيخ زايد' : 'Villa in Sheikh Zayed', phone: '+20 100 123 4567', email: 'karim.f@example.com', stage: 'new', agent: locale === 'ar' ? 'سارة' : 'Sara', budget: 4000000, commission: 2.5, notes: WORDS.notes, active: true },
+        2: { name: locale === 'ar' ? 'شقة في المعادي' : 'Flat in Maadi', phone: '+20 111 222 3334', email: 'nadia.s@example.com', stage: 'visit', agent: locale === 'ar' ? 'سارة' : 'Sara', budget: 2500000, commission: 2, notes: '', active: true },
+      },
     },
+    versions: { by: locale === 'ar' ? 'سارة' : 'Sara' },
+    can: { lead: can },
+    delayMs: 200,
   },
-  versions: { by: locale === 'ar' ? 'سارة' : 'Sara' },
-  can: { lead: can },
-  delayMs: 200,
-});
+  { scope: `save-safety/${locale}/` }
+);
 
 /**
  * Mona's tab saves through the same records, in her name. A server does this for every save: it compares the version

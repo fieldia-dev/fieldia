@@ -5,7 +5,7 @@
  * tools/build-demos.mjs).
  */
 import { build } from 'esbuild';
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -14,13 +14,20 @@ const OUT = join(WORKSPACE, 'dist/site');
 const DEMOS = join(WORKSPACE, 'dist/demos');
 const BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle/fieldia.js');
 const PUBLIC_DEMOS = ['plain', 'react', 'vue', 'angular', 'script', 'embed', 'designer', 'screen', 'map-embed', 'backlog', 'save-safety'];
+/**
+ * The pages under a strict Content-Security-Policy (demos/csp), as a static site can serve them: with no server to make
+ * a nonce for every response and send the policy as a header, each page carries the policy as a meta tag, its nonce
+ * written here once — the same for every visitor, as each page says.
+ */
+const STATIC_NONCE = 'ZmllbGRpYS5kZXYgc3RhdGlj';
 
 if (!existsSync(BUNDLE)) throw new Error('the site needs the script bundle: run `npx nx build viewer` first');
-for (const demo of PUBLIC_DEMOS) {
+for (const demo of [...PUBLIC_DEMOS, 'csp']) {
   if (!existsSync(join(DEMOS, demo, 'index.html'))) throw new Error(`the site needs the ${demo} demo: run \`node tools/build-demos.mjs\` first`);
 }
 
 const { layout } = await import(pathToFileURL(join(WORKSPACE, 'site/layout.mjs')).href);
+const { strictPolicy } = await import(pathToFileURL(join(WORKSPACE, 'tools/csp-policy.mjs')).href);
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 
@@ -81,5 +88,14 @@ cpSync(join(DEMOS, 'samples'), join(OUT, 'demos/samples'), { recursive: true });
 // The catalog imports the real pages' cards from here: without it the shell cannot load.
 cpSync(join(DEMOS, 'real'), join(OUT, 'demos/real'), { recursive: true });
 for (const demo of PUBLIC_DEMOS) cpSync(join(DEMOS, demo), join(OUT, 'demos', demo), { recursive: true });
+cpSync(join(DEMOS, 'csp'), join(OUT, 'demos/csp'), { recursive: true });
+for (const file of readdirSync(join(OUT, 'demos/csp')).filter((name) => name.endsWith('.html'))) {
+  const path = join(OUT, 'demos/csp', file);
+  const charset = '<meta charset="utf-8" />';
+  const html = readFileSync(path, 'utf8');
+  if (!html.includes(charset)) throw new Error(`demos/csp/${file} needs ${charset} first in its head, for the policy to follow it`);
+  const policy = `<meta http-equiv="Content-Security-Policy" content="${strictPolicy(STATIC_NONCE, { meta: true })}" />`;
+  writeFileSync(path, html.replaceAll('__CSP_NONCE__', STATIC_NONCE).replace(charset, `${charset}\n    ${policy}`));
+}
 
 console.log(`site: ${[...paths].join(' ')} → dist/site`);

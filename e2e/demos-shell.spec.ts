@@ -374,9 +374,10 @@ test.describe('the demo frame', () => {
     await page.goto('/plain/?page=customer&skin=underline');
     const howTo = page.getByRole('complementary', { name: 'About this demo' });
     await expect(howTo).toBeHidden();
-    await page.locator('#demo-head').getByRole('button', { name: 'All 5 steps' }).click();
+    const steps = DEMOS.find((d) => d.id === 'customer')!.howTo.length;
+    await page.locator('#demo-head').getByRole('button', { name: `All ${steps} steps` }).click();
     await expect(howTo).toBeVisible();
-    await expect(howTo.locator('li')).toHaveCount(5);
+    await expect(howTo.locator('li')).toHaveCount(steps);
   });
 
   test('opens the menu and the how-to together only where the record stays whole beside them; else the how-to waits, a person’s choice kept', async ({ page }) => {

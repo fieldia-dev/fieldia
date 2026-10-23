@@ -1,11 +1,17 @@
 import { createMemoryChatter, type ChatterMessage, type Person } from '@fieldia/chatter';
-import { createMemoryDataSource, type MemoryDataSourceOptions, type RelatedRecord, type Values } from '@fieldia/core';
+import type { MemoryDataSourceOptions, RelatedRecord, Values } from '@fieldia/core';
+import { keepChatter, keptChatter, keptSource } from '../shared/kept';
 
 /**
  * The backlog demo's own data, all of it invented: a team's bugs, the areas
  * and sprints they sit in, the people who work on them, and bug 4127 in full
- * — its comment and the history of its changes, kept by the chatter.
+ * — its comment and the history of its changes, kept by the chatter. What
+ * is changed in it is kept while the tab is open, as every demo's is, apart
+ * from the other demos' records (`BACKLOG`, shared/kept.ts).
  */
+
+/** Where this tab keeps what the backlog's records and conversations became, apart from the other demos'. */
+export const BACKLOG = 'backlog/';
 
 // ---- people ------------------------------------------------------------------------------------------
 
@@ -185,7 +191,7 @@ const shows: MemoryDataSourceOptions['shows'] = {
 };
 
 export function backlogData() {
-  return createMemoryDataSource({
+  const options: MemoryDataSourceOptions = {
     records: {
       'work.item': workItems(),
       'res.users': Object.fromEntries(Object.values(people).map((p) => [p.id, { name: p.name, image: 'avatar' in p ? p.avatar : null }])),
@@ -199,7 +205,8 @@ export function backlogData() {
     shows,
     // A work item is named by its title, as a link to one shows it.
     labelField: { 'work.item': 'title' },
-  });
+  };
+  return keptSource(options, { scope: BACKLOG });
 }
 
 /**
@@ -242,5 +249,5 @@ function history(): ChatterMessage[] {
 }
 
 export function backlogChatter() {
-  return createMemoryChatter({ me, people: Object.values(people), records: { 'work.item:4127': { messages: history() } } });
+  return keepChatter(createMemoryChatter({ me, people: Object.values(people), records: keptChatter({ 'work.item:4127': { messages: history() } }, BACKLOG) }), BACKLOG);
 }

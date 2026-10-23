@@ -20,9 +20,11 @@ let working = typeof sessionStorage === 'undefined' ? false : kept();
 
 /**
  * The browser's connection, as it says it goes and comes back (`offline`, `online`) — the demo's source is in memory,
- * so it fails as a network does only by the browser's word. Taken as there at first: some browsers say offline throughout.
+ * so it fails as a network does only by the browser's word. Taken as there at first on every other page, as some
+ * browsers say offline throughout; the viewing report, opened again with no signal (its service worker's copy), takes
+ * the browser's word as it opens too, so what waits waits.
  */
-let away = false;
+let away = typeof location !== 'undefined' && new URLSearchParams(location.search).get('page') === 'viewing-report' && navigator.onLine === false;
 if (typeof window !== 'undefined') {
   window.addEventListener('offline', () => (away = true));
   window.addEventListener('online', () => (away = false));
@@ -46,8 +48,11 @@ export function offlineBar(doc: Document): HTMLElement {
   said.setAttribute('role', 'status');
   const show = () => {
     button.textContent = working ? 'Back online' : 'Work offline';
-    said.textContent = working ? 'No signal: what you send is kept on this device.' : 'Press Work offline to visit as in a compound with no signal.';
+    said.textContent = working || away ? 'No signal: what you send is kept on this device.' : 'Press Work offline to visit as in a compound with no signal.';
   };
+  // The browser's own connection going and coming back, said as the button's is.
+  doc.defaultView?.addEventListener('offline', () => show());
+  doc.defaultView?.addEventListener('online', () => show());
   button.addEventListener('click', () => {
     working = !working;
     try {
@@ -62,4 +67,26 @@ export function offlineBar(doc: Document): HTMLElement {
   show();
   bar.append(button, said);
   return bar;
+}
+
+/**
+ * The page opened again with no signal at all — reloaded in the compound, the phone in airplane mode: a small service
+ * worker (demos/plain/offline-sw.js), its scope this page alone, keeps the page and every script, sheet and part it
+ * loaded, network first. Fieldia's outbox keeps the sends; opening the page offline is the app's service worker, as
+ * here. What the page loaded before the worker was there to see it is told to it once it is.
+ */
+export function openWithoutSignal(): void {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator) || !isSecureContext) return;
+  navigator.serviceWorker
+    .register('./offline-sw.js', { scope: './?page=viewing-report' })
+    .then(async (registration) => {
+      const worker = registration.active ?? (await new Promise<ServiceWorker | null>((done) => {
+        const coming = registration.installing ?? registration.waiting;
+        if (!coming) return done(null);
+        coming.addEventListener('statechange', () => coming.state === 'activated' && done(coming));
+      }));
+      const loaded = [location.href, ...performance.getEntriesByType('resource').map((entry) => entry.name)].filter((url) => new URL(url).origin === location.origin);
+      worker?.postMessage({ keep: loaded });
+    })
+    .catch(() => undefined);
 }

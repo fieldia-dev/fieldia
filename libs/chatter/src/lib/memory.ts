@@ -50,7 +50,13 @@ export function createMemoryChatter(options: MemoryChatterOptions): ChatterSourc
   const types = options.activityTypes ?? [];
   const records = new Map<string, { messages: ChatterMessage[]; activities: Activity[]; followers: Follower[]; reactions: Map<ChatterId, Reactors> }>();
   const posted: ChatterMessage[] = [];
-  let next = 1000;
+  // Past every id it was given (a visit before kept them): what is made here is never one a record started with.
+  const given = Object.values(options.records ?? {}).flatMap((one) => [
+    ...(one.messages ?? []).flatMap((message) => [message.id, ...(message.attachments ?? []).map((file) => file.id)]),
+    ...(one.activities ?? []).map((activity) => activity.id),
+    ...(one.followers ?? []).map((follower) => follower.id),
+  ]);
+  let next = given.reduce<number>((top, id) => (typeof id === 'number' && id >= top ? id + 1 : top), 1000);
   const key = (record: RecordRef) => `${record.model}:${record.id}`;
   const of = (record: RecordRef) => {
     let found = records.get(key(record));

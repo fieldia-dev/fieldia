@@ -334,6 +334,116 @@ test('the gallery has a way in to the designers: an owner’s words find both, e
   expect(problems).toEqual([]);
 });
 
+test('the gallery knows the new languages and the developer features: each word the walk typed finds its demos', async ({ page }) => {
+  const problems = watch(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(SITE + '/demos/');
+  const find = page.getByRole('searchbox', { name: 'Find a demo' });
+  const names = page.locator('.gallery-body a.demo-card:visible .demo-name');
+  // As the walk of 0.31 typed them: each found nothing, or the wrong demo.
+  for (const [typed, demo] of [
+    ['turkish', 'Customer record'],
+    ['persian', 'Customer record'],
+    ['farsi', 'Customer record'],
+    ['urdu', 'Customer record'],
+    ['spanish', 'Customer record'],
+    ['csp', 'Under a strict Content-Security-Policy'],
+    ['content security policy', 'Under a strict Content-Security-Policy'],
+    ['schema', 'The screen designer'],
+    ['json schema', 'The survey designer'],
+    ['openapi', 'The screen designer'],
+    ['year only', 'A flat let in Riyadh'],
+    ['sort by two columns', 'Customer list'],
+    ['lot number', 'An injectable’s lot scanned into a treatment'],
+    ['artificial intelligence', 'Homes to buy, filtered as a buyer filters them'],
+    ['artificial intelligence', 'A customer filled from an e-mail'],
+    ['smart search', 'Homes to buy, filtered as a buyer filters them'],
+    ['drag rows', 'A waiting room, its queue moved by hand'],
+  ] as const) {
+    await find.fill(typed);
+    await expect(names.filter({ hasText: new RegExp(`^${demo}→?$`) }), typed).toHaveCount(1);
+    await expect(page.locator('#gallery-said'), typed).toHaveText(/^\d+ demos? match(es)?\.$/);
+  }
+  await find.fill('persian');
+  await screen(page, 'gallery-search-persian', { viewport: true });
+  // The customer's how-to reads it in each: Persian right to left, in Persian's own words.
+  await page.goto(SITE + '/demos/plain/?page=customer&skin=underline&locale=fa&dir=rtl');
+  await expect(page.locator('.fd-form').first()).toBeVisible();
+  await expect(page.locator('.fd-form').first()).toHaveAttribute('dir', 'rtl');
+  expect(problems).toEqual([]);
+});
+
+test('a page under a strict Content-Security-Policy on the site, from the docs: its policy a meta tag, its nonce on every tag, nothing refused, said plainly', async ({ page }) => {
+  const problems: string[] = [];
+  page.on('pageerror', (error) => problems.push(error.message));
+  // What the policy refuses is counted on the page; this test's own refusal, at its end, is the one it expects.
+  page.on('console', (message) => message.type() === 'error' && !/Refused to |Content-Security-Policy/.test(message.text()) && problems.push(message.text()));
+  page.on('response', (response) => response.status() >= 400 && problems.push(`${response.status()} ${response.url()}`));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(SITE + '/start/#csp');
+  await page.getByRole('link', { name: 'a sign-up, a customer, an order and every field under a strict policy' }).click();
+  await expect(page).toHaveURL(/\/demos\/csp\/$/);
+  await expect(page.locator('.fd-form').first()).toBeVisible();
+  // The policy, as a static site can give it: a meta tag first in the head, scripts and styles by its nonce alone.
+  const policy = (await page.locator('head meta[http-equiv="Content-Security-Policy"]').getAttribute('content'))!;
+  const nonce = /script-src 'nonce-([^']+)'/.exec(policy)?.[1];
+  expect(nonce).toBeTruthy();
+  expect(policy).toContain(`style-src 'nonce-${nonce}'`);
+  expect(policy).not.toMatch(/unsafe-inline|unsafe-eval/);
+  expect(await page.evaluate(() => [...document.querySelectorAll('script, style, link[rel="stylesheet"]')].map((tag) => (tag as HTMLElement).nonce))).toEqual(expect.arrayContaining([nonce]));
+  expect(await page.evaluate((n) => [...document.querySelectorAll('script, style, link[rel="stylesheet"]')].filter((tag) => (tag as HTMLElement).nonce !== n).length, nonce)).toBe(0);
+  // Said plainly: a real server makes a new nonce for every response; here it was written once.
+  await expect(page.locator('.csp-note')).toContainText('A real server sends the policy as a header and makes a new nonce for every response.');
+  await expect(page.locator('.csp-note')).toContainText('its nonce was written once, when the site was built — the same for every visitor.');
+  // The demos' frame round it, under the policy too.
+  await expect(page.locator('.dh-title')).toHaveText('Under a strict Content-Security-Policy');
+  // Filled in and sent: nothing refused.
+  await page.evaluate(() => (window as any).fieldiaDemo?.handle?.drawn);
+  await page.locator('[data-node="f-name"] input').fill('Mona Adel');
+  await expect(page.locator('#csp-refused')).toHaveText('nothing');
+  await screen(page, 'site-csp-page', { viewport: true });
+  // The policy is in force: a style with no nonce is refused, and counted.
+  await page.evaluate(() => {
+    const sheet = document.createElement('style');
+    sheet.textContent = 'body { outline: 1px solid red }';
+    document.head.append(sheet);
+  });
+  await expect(page.locator('#csp-refused')).toHaveText('1 thing');
+  // On a phone: the note and the form fit, nothing sideways.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(page.locator('.fd-form').first()).toBeVisible();
+  await expectNoSidewaysScroll(page);
+  await screen(page, 'site-csp-page-phone', { viewport: true });
+  // The one-tag script under the same policy.
+  await page.goto(SITE + '/demos/csp/script.html');
+  await expect(page.locator('.fd-form').first()).toBeVisible();
+  await expect(page.locator('#csp-refused')).toHaveText('nothing');
+  await expect(page.locator('head meta[http-equiv="Content-Security-Policy"]')).toHaveAttribute('content', policy);
+  expect(problems).toEqual([]);
+});
+
+test('the gallery on a phone: a search’s results come first, under the search, before the words for developers', async ({ page }) => {
+  const problems = watch(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(SITE + '/demos/');
+  const find = page.getByRole('searchbox', { name: 'Find a demo' });
+  await expect(page.locator('.gallery-dev')).toBeVisible();
+  await find.fill('quiz');
+  await expect(page.locator('#gallery-said')).toHaveText(/^\d+ demos match\.$/);
+  // The walk's: under "4 demos match." came the developers' paragraph, the results out of view below it.
+  await expect(page.locator('.gallery-dev')).toBeHidden();
+  // The first result whole in view, as the search is typed: its section's heading and the card, nothing between.
+  const first = page.locator('.gallery-body a.demo-card:visible').first();
+  const top = (await first.boundingBox())!;
+  await screen(page, 'gallery-search-quiz-phone', { viewport: true });
+  expect(top.y + top.height, 'the first result in view').toBeLessThan(844 + (await page.evaluate(() => scrollY)));
+  // The search emptied, the words for developers are back.
+  await find.fill('');
+  await expect(page.locator('.gallery-dev')).toBeVisible();
+  expect(problems).toEqual([]);
+});
+
 test('the gallery on a phone: a compact list, each demo its name and one line', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(SITE + '/demos/');

@@ -54,7 +54,7 @@ const AREA_OF = {
   clinic: ['clinic-calendar', 'waiting-room', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake', 'clinic-treatment', 'service-prices', 'services-languages', 'clinic-before-after', 'training-check', 'face-chart', 'treatment-course', 'clinic-branch'],
   'real-estate': ['map-homes', 'map-many-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'listing-photo-set', 'booking-week', 'template-property-enquiry', 'property', 'listing', 'enquiry', 'listing-languages', 'enquiry-reply', 'lease', 'find-a-home', 'site-visit', 'unit-enquiry', 'embed', 'viewing-report'],
   surveys: ['survey', 'signup', 'event-signup', 'event-ticket', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey', 'designer-survey'],
-  'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic', 'designer-screen'],
+  'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'csp', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic', 'designer-screen'],
 };
 
 /** The area a demo is in, by its id; undefined for one in none (the browser test says which). */
@@ -68,12 +68,12 @@ export const AREA_IDS = AREA_OF;
  * them with the card's name, blurb, area and feature; every demo has some (a browser test holds each to it).
  */
 const SEARCH_WORDS = {
-  customer: 'client account contact company blocked block status sales invoices counters conversation messages notes team phone whatsapp',
+  customer: 'client account contact company blocked block status sales invoices counters conversation messages notes team phone whatsapp language languages turkish türkçe spanish español persian farsi urdu right to left rtl translated',
   order: 'sale sales order quotation quote lines products items spreadsheet totals tax discount',
-  customers: 'clients accounts contacts list search filter group favourites sort multi sort several columns shift archive table',
+  customers: 'clients accounts contacts list search filter group favourites sort multi sort several columns shift archive table sort by two columns more than one column',
   'chart-of-accounts': 'chart of accounts ledger accounts tree hierarchy parent child nested groups classes balance sheet coa big large expand open load children',
   'activity-log': 'activity log feed history audit trail changes who did what timeline endless infinite scroll load more phone mobile newest',
-  'waiting-room': 'waiting room queue reception front desk patients order turn next drag reorder rank move up down priority who is next',
+  'waiting-room': 'waiting room queue reception front desk patients order turn next drag reorder rank move up down priority who is next drag rows',
   'orders-review': 'orders sales order lines review check approve master detail expand open in place inside rows sections quotation products quantities',
   invoices: 'invoice bill bills billing accounts receivable payments overdue unpaid due totals sum currency dollars pounds month quarter print printout paper pdf phone mobile cards',
   contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize reorder drag move rearrange print cards whatsapp',
@@ -81,12 +81,12 @@ const SEARCH_WORDS = {
   'service-prices': 'price list prices pricing services treatments menu tariff rates fees clinic salon spa edit inline in place spreadsheet excel paste table cells grid settings master data change many quick',
   'staff-hours': 'staff hours timesheet time sheet rota roster shifts schedule week employees team working hours overtime labour labor edit inline in place spreadsheet table cells grid',
   'deal-stages': 'pipeline stages deals crm sales funnel steps probability chance win won settings configuration master data edit inline in place table cells grid order',
-  'homes-search': 'homes houses property properties real estate buy buyer portal search filter filters facets count counts price range from to min max area bedrooms beds 2+ amenities phone mobile sheet show results ai natural language plain words sentence chatgpt',
+  'homes-search': 'homes houses property properties real estate buy buyer portal search filter filters facets count counts price range from to min max area bedrooms beds 2+ amenities phone mobile sheet show results ai natural language plain words sentence chatgpt artificial intelligence smart search',
   'leads-queue': 'leads queue sales team crm follow up follow-up late overdue today this week counts count filters saved searches favourites saved views shared team server agent pipeline areas districts neighbourhoods coverage tree tick checkbox tree multi select hierarchy',
   'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print tab count badge route router own page',
   property: 'property home house real estate listing viewings visits appointments related records inside agent client',
   enquiry: 'enquiry inquiry request lead buyer property home flat whatsapp email e-mail sms text message messages conversation chat chatter inbox channel channels reply ticks delivered read seen blue failed live arriving follow up follow-up reminder call back hour time clock cairo team note',
-  lease: 'lease rent rental tenant landlord tenancy contract flat apartment saudi riyadh ksa hijri umm al-qura islamic calendar arabic month year billing period year built mask input mask national id iban bank account car plate number otp one-time code sms verification verify confirm shorthand 120k 1.2m thousand million amount price',
+  lease: 'lease rent rental tenant landlord tenancy contract flat apartment saudi riyadh ksa hijri umm al-qura islamic calendar arabic month year billing period year built mask input mask national id iban bank account car plate number otp one-time code sms verification verify confirm shorthand 120k 1.2m thousand million amount price year only month only year alone month alone',
   listing: 'listing property home house villa apartment flat studio features garden pool balcony options conditions price per square metre meter district average server function formula handover months age building shorthand 3.5m 6m million',
   'listing-languages': 'listing property home portal title description two languages bilingual arabic english translation translations translate multilingual right to left rtl each language typed',
   'services-languages': 'services service list price list menu clinic salon spa treatments names two languages bilingual arabic english translation translations translate multilingual search cards',
@@ -94,8 +94,8 @@ const SEARCH_WORDS = {
   'find-a-home': 'one question at a time typeform conversational lead buyer home search qualify qualifying enquiry real estate property apartment villa budget bedrooms areas full screen keyboard enter arrows letters',
   'training-check': 'quiz test exam assessment training staff check certification compliance score results marks grade right wrong answers correct answer feedback points clinic filler injectables nurse review check your answers before sending edit summary random order shuffle questions bank draw pool timed time limit countdown timer minutes',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
-  'customer-from-email': 'ai assistant customer client contact company email e-mail signature paste fill auto fill autofill extract read parse business card vcard lead capture review accept reject undo chatgpt',
-  'enquiry-reply': 'ai assistant enquiry inquiry lead buyer message reply answer respond draft write rewrite polish improve grammar email whatsapp real estate property villa template review accept undo chatgpt',
+  'customer-from-email': 'ai assistant customer client contact company email e-mail signature paste fill auto fill autofill extract read parse business card vcard lead capture review accept reject undo chatgpt artificial intelligence',
+  'enquiry-reply': 'ai assistant enquiry inquiry lead buyer message reply answer respond draft write rewrite polish improve grammar email whatsapp real estate property villa template review accept undo chatgpt artificial intelligence',
   'clinic-consent': 'consent form signature sign signed esign e-signature evidence proof audit trail fingerprint hash tamper locked patient clinic treatment contract agreement',
   'viewing-report': 'offline no signal no internet no network connection outbox queue queued sync later sent later field work site visit inspection viewing compound broker photos camera phone mobile delivery proof rural reload kept saved device',
   embed: 'embed embedded iframe frame widget website wordpress wix squarespace partner site broker blog listing page html script tag custom element web component fieldia-form no code no build one line copy paste resize height',
@@ -104,7 +104,7 @@ const SEARCH_WORDS = {
   'clinic-branch': 'opening hours business hours schedule week shifts break lunch closed friday copy to all days branch clinic salon shop booking slots times',
   'event-signup': 'event sign up signup register registration rsvp tickets seats places capacity limit limited full sold out session workshop close closes closing deadline open opens one per person quota gym club membership members class classes',
   'clinic-intake': 'patient intake clinic long form wizard steps save continue later resume draft link phone laptop another device partial answers drop off',
-  'clinic-treatment': 'scan scanner scanning barcode bar code qr code datamatrix data matrix gs1 camera phone lot batch expiry expiration serial gtin injectable medicine pharmacy track trace traceability medicines authority patient card check in clinic treatment botox filler',
+  'clinic-treatment': 'scan scanner scanning barcode bar code qr code datamatrix data matrix gs1 camera phone lot batch expiry expiration serial gtin injectable medicine pharmacy track trace traceability medicines authority patient card check in clinic treatment botox filler lot number batch number serial number',
   'stock-count': 'scan scanner scanning barcode bar code ean upc camera phone stock count counting stocktake inventory cycle count warehouse shelf store shop retail quantity items products',
   'test-drives': 'calendar week schedule planner test drives cars showroom time zone berlin diary agenda drag',
   'fitout-plan': 'gantt gantt chart timeline time line project plan planning planner schedule programme tasks dependencies depends waits for predecessors milestone milestones construction fit out fitout contractor contractors build building renovation refurbishment shop cafe trades phases roadmap drag',
@@ -127,7 +127,7 @@ const SEARCH_WORDS = {
   rules: 'order totals calculate calculation discount warning validation checks email postcode rules',
   'contract-fees': 'contract agreement clause clauses legal terms fees prices price list quote quotation table tables paste pasted word excel google docs sheets rich text formatted rows columns header print',
   lists: 'country city cities dropdown choices options delivery address shipping server',
-  'agent-tools': 'ai agent assistant bot automation tools integrations connections gmail slack drive hubspot triggers lines dependent choices dropdown follows column',
+  'agent-tools': 'ai agent assistant bot automation tools integrations connections gmail slack drive hubspot triggers lines dependent choices dropdown follows column artificial intelligence',
   'map-delivery': 'map place location address pin gps coordinates delivery openstreetmap where you are',
   'map-address': 'address autocomplete suggestions lookup street search type ahead location',
   'map-zone': 'map area zone shape polygon circle box draw delivery region territory',
@@ -161,6 +161,7 @@ const SEARCH_WORDS = {
   'signup-keys': 'keyboard keys enter tab next field fast typing data entry',
   'customer-toast': 'save saving saved toast notification message',
   script: 'script tag html no build plain web page cdn embed call back callback',
+  csp: 'csp content security policy strict policy nonce security secure bank government enterprise unsafe-inline unsafe-eval inline script style header meta tag',
   'template-contact-us': 'contact us enquiry inquiry message email phone mobile form website whatsapp',
   'template-newsletter': 'newsletter subscribe subscription mailing list email marketing members membership club',
   'template-customer-feedback': 'feedback review rating stars satisfaction nps recommend survey branch visit thank you ending',
@@ -199,8 +200,8 @@ const SEARCH_WORDS = {
   'real-manufacturing-order': 'manufacturing production make build bill of materials bom components work order factory',
   'real-legal-case': 'legal case law firm lawyer court hearing matter dispute trust billing',
   'real-survey': 'survey settings questions questionnaire exam quiz certification scoring',
-  'designer-survey': 'designer design survey designer survey builder form builder form designer questionnaire builder quiz builder google forms typeform drag and drop drag drop no code nocode build make create edit editor questions cards kinds publish published versions preview',
-  'designer-screen': 'designer design screen designer form builder form designer page builder app builder ui builder drag and drop drag drop no code nocode low code lowcode build make create edit editor layout fields sections record page list columns model publish published versions preview',
+  'designer-survey': 'designer design survey designer survey builder form builder form designer questionnaire builder quiz builder google forms typeform drag and drop drag drop no code nocode build make create edit editor questions cards kinds publish published versions preview schema json schema openapi open api swagger model import start from a schema',
+  'designer-screen': 'designer design screen designer form builder form designer page builder app builder ui builder drag and drop drag drop no code nocode low code lowcode build make create edit editor layout fields sections record page list columns model publish published versions preview schema json schema openapi open api swagger model import start from a schema',
 };
 /**
  * The words an owner of each business types for it, which none of its demos may say: a dentist's for a clinic, a
@@ -228,13 +229,14 @@ export const DEMOS = [
     name: 'Customer record',
     category: 'records',
     query: 'page=customer&skin=underline',
-    blurb: 'A customer on one page: where they stand — draft, active or blocked — their sales and invoices counted at the top, a key-account badge and a warning, tabs, their contacts in a table, links to other records, and the conversation with your team beside it.',
+    blurb: 'A customer on one page: where they stand — draft, active or blocked — their sales and invoices counted at the top, a key-account badge and a warning, tabs, their contacts in a table, links to other records, and the conversation with your team beside it. In Turkish, Spanish, Persian or Urdu too.',
     howTo: [
       'Press Block, and Block again in its question: the customer is blocked and saved, and a Blocked banner crosses their page. Activate brings them back.',
       'Press Ctrl+Enter (⌘+Enter on a Mac) to save from wherever the cursor is.',
       'Open the Contacts tab and add a contact in the table.',
       'Type in Country and pick one from the list: a link to another record.',
       'In the conversation on the right, write a message and mention someone with @.',
+      'Read it in [Turkish](?locale=tr&dir=ltr) or [Spanish](?locale=es&dir=ltr), or right to left in [Persian](?locale=fa&dir=rtl) or [Urdu](?locale=ur&dir=rtl): Fieldia’s own words, dates and numbers in each, not yet reviewed by a native speaker. [Back to English](?locale=en&dir=ltr).',
     ],
   },
   {
@@ -403,12 +405,12 @@ export const DEMOS = [
     name: 'A pipeline’s deal stages, as settings',
     category: 'lists',
     query: 'page=deal-stages&skin=underline',
-    blurb: 'A sales pipeline’s stages kept as a list of settings: each stage’s order, name, chance of winning and days expected changed in its cell, a stage added at the end — and the won stage the sales manager’s alone, read by everyone else and never opened for typing.',
+    blurb: 'A sales pipeline’s stages kept as a list of settings: each stage’s order, name, chance of winning and days expected changed in its cell, a new stage asked its chance and days and put just before Won — and the won stage the sales manager’s alone, read by everyone else and never opened for typing.',
     howTo: [
       'Press Offer’s chance of winning, type 65 and leave the row: 65%, saved as 0.65.',
       'Press Enter on a stage’s row: its first cell opens; Tab and Shift+Tab go across, Enter takes a cell and goes down its column.',
       'The Won stage shows a lock at its start: press it, and why is said under it — the source says only the sales manager changes it.',
-      'Press Add a stage, name it and leave it: it is saved at the end.',
+      'Press Add a stage and name it: leave it, and it asks its chance of winning and days expected. Give them and leave it: it is saved with the next order, 60, before Won’s 100 — the list has it there when it is opened again.',
     ],
   },
   {
@@ -623,7 +625,7 @@ export const DEMOS = [
     name: 'A branch’s opening hours',
     category: 'fields',
     query: 'page=clinic-branch&record=1&skin=outlined',
-    blurb: 'A week’s opening hours, a row a day: open or closed, shifts with a lunch break, a day copied to every day, said in words — and booking follows them, the times a patient may book changing as the hours do. Its week starts on Saturday.',
+    blurb: 'A week’s opening hours, a row a day: open or closed, shifts with a lunch break, a day copied to every day, said in words — and booking follows them, the times a patient may book changing as the hours do. The branch is in Cairo and its page says so (en-EG): every week on it starts on Egypt’s Saturday, the hours and the booking calendar alike, wherever it is read.',
     howTo: [
       'Tick Friday open: it takes Thursday’s hours. Untick it again.',
       'On Monday, press Copy to all days: every day has Monday’s hours, said over the week.',
@@ -671,7 +673,7 @@ export const DEMOS = [
     howTo: [
       'Press Work offline over the form, fill in the unit and the condition, add a photo and Submit: “Kept on this device”, and under it, 1 send waits.',
       'Reload the page, still offline: it still waits. Press Back online: it is sent — what the app was told is listed under the form, the photo stored first.',
-      'Turn your connection off instead (or put the phone in airplane mode): the same, and it goes by itself as the connection comes back.',
+      'Turn your connection off instead (or put the phone in airplane mode): the same, and it goes by itself as the connection comes back. Reload with the connection off: the page opens from the device — a service worker of its own keeps it — its send still waiting.',
     ],
   },
   {
@@ -1449,11 +1451,11 @@ export const DEMOS = [
     name: 'An expense rejected, with why',
     category: 'records',
     query: 'page=expense-approval&record=1&skin=outlined',
-    blurb: 'An expense claim its manager approved and Finance rejected: the reason said on it, quoted, and in its conversation. Rejected, it is open again — put it right and submit it again, and it goes back to the manager. Reject always asks why.',
+    blurb: 'An expense claim its manager approved and Finance rejected: the reason said on it, quoted, and in its conversation. Rejected, it is open again to its employee — put it right and submit it again, and it goes back to the manager. Only the employee changes his claim: his manager and Finance read it and decide it. Reject always asks why.',
     howTo: [
       'You are Omar Said: “Rejected by Mona Adel (Finance)”, her reason under it. The claim is open again: change the amount to 3,200 and press Submit for approval.',
       'It waits for your manager again — “Waiting for Manager: Karim Fathy” — and every field but the notes is locked.',
-      '[Sign in as Karim Fathy, the manager](?as=karim): he decides, but only Omar submits his own claim, so Karim is offered no Submit. Press Reject, then Reject again with nothing written: it asks why. Write why, and reject it.',
+      '[Sign in as Karim Fathy, the manager](?as=karim): the claim is Omar’s, so Karim reads it but changes nothing in it — “Only Omar Said, whose claim it is, can change it” — and is offered no Submit. He decides it: press Reject, then Reject again with nothing written: it asks why. Write why, and reject it.',
       'Open Approval history: the first round and the second — who, when, and why.',
     ],
   },
@@ -1536,6 +1538,19 @@ export const DEMOS = [
       'Read the page’s source: one script tag, a page as JSON, and one call.',
     ],
   },
+  {
+    id: 'csp',
+    name: 'Under a strict Content-Security-Policy',
+    category: 'script',
+    app: 'csp',
+    query: '',
+    blurb: 'A sign-up on a page served as a bank’s or a government’s site serves its own: scripts and styles run only with the page’s nonce — no inline code, no eval, nothing from another site. The app hands Fieldia the nonce, every style Fieldia adds carries it, and the policy refuses nothing: the note over the form counts what it refused.',
+    howTo: [
+      'Fill in the sign-up and send it: the note over the form still says the policy refused nothing.',
+      'See [a customer](?page=customer), its conversation beside it, [a sales order](?page=order) or [every field](?page=fields) under the same policy: nothing refused.',
+      'Read the page’s source: each script and style tag carries the nonce. A real server sends the policy as a header with a new nonce for every response; fieldia.dev, a static site, writes it into the page once.',
+    ],
+  },
   // The designers themselves, each opening on a page to build (demos/designer-catalog.mjs has their other starting points).
   {
     id: 'designer-survey',
@@ -1574,6 +1589,7 @@ export const DEMOS = [
       'Press Advanced to lay the screen out by dragging: a line and a chip say where a field goes before you let it go.',
       'Press Try it, then the phone: the screen works at a phone’s width.',
       'Open [a customer’s record](?start=sheet), its model’s fields first in the toolbox, or [a list of customers](?start=list), by its columns.',
+      '[Start a blank screen](?start=blank) and press Start from a schema…: paste a JSON Schema, an OpenAPI document or a model’s fields, or choose its file — the fields it makes are listed with their kinds before Start.',
     ],
   },
   // The template library, each in its theme: templates.mjs.
@@ -1589,6 +1605,7 @@ const SOURCES = {
   'two-tabs': 'demos/save-safety/main.ts',
   'viewer-role': 'demos/save-safety/main.ts',
   script: 'demos/script/index.html',
+  csp: 'demos/csp/main.ts',
   embed: 'demos/embed/index.html',
   code: 'demos/shared/code-page.ts',
   custom: 'demos/shared/custom-page.ts',

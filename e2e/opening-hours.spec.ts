@@ -49,3 +49,22 @@ test.describe('plain · opening hours', () => {
     expect(await page.evaluate(() => (window as any).fieldiaDemo.dataSource.records['clinic.branch']['1'].hours['4'])).toEqual([['10:00', '16:00']]);
   });
 });
+
+// The walk of 0.31, read in Britain: the hours started on Saturday, the booking calendar under them on Monday. The
+// branch is in Cairo: its page says so (`language: "en-EG"`), and every week on it starts on Egypt's Saturday — the
+// hours and the booking calendar alike — wherever it is read.
+for (const reader of ['en-GB', 'en-US', 'en-EG']) {
+  test.describe(`a reader in ${reader}`, () => {
+    test.use({ locale: reader });
+
+    test('the hours and the booking calendar under them start the week on the same day: the branch’s Saturday', async ({ page }) => {
+      await open(page, 'plain', 'page=clinic-branch&record=1&skin=outlined');
+      const hours = node(page, 'f-hours');
+      await expect(hours.locator('.fd-hours-words')).toHaveText('Sat–Wed 10:00–14:00, 15:00–20:00 · Thu 10:00–16:00 · Fri closed');
+      await expect(hours.getByRole('group', { name: /^(Saturday|Sunday|Monday)$/ }).first()).toHaveAccessibleName('Saturday');
+      const heads = node(page, 'f-trial').locator('thead th');
+      await expect(heads).toHaveText(['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+      if (reader === 'en-GB') await screen(page, 'opening-hours-booking-same-week');
+    });
+  });
+}

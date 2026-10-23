@@ -1,5 +1,6 @@
 import type { DataSource, Locale, Values } from '@fieldia/core';
 import { chatterSlot, createMemoryChatter } from '@fieldia/chatter';
+import { keepChatter, keptChatter } from './kept';
 
 /**
  * The work item's body (examples/pages/wi-text.page.json): bug 4127's
@@ -51,19 +52,21 @@ export function wiTextRecords(): Record<string, Record<number, Values>> {
 }
 
 /** The bug's discussion: Karim's comment, and a change that belongs to its history, not here. */
-export const wiTextChatter = createMemoryChatter({
-  me: salma,
-  people: [mona, karim, salma, omar],
-  now: () => new Date('2026-10-12T09:00:00Z'),
-  records: {
-    'wi.text:1': {
-      messages: [
-        { id: 501, kind: 'message', author: karim, date: '2026-06-14T10:20:00Z', body: '<p>I need the night shift’s warehouse log before I can reproduce it; the scanner there is offline until Sunday.</p>' },
-        { id: 500, kind: 'event', author: mona, date: '2026-06-11T08:00:00Z', body: '', tracking: [{ field: 'state', label: 'State', from: 'New', to: 'Active' }] },
-      ],
-    },
-  },
-});
+export const wiTextChatter = keepChatter(
+  createMemoryChatter({
+    me: salma,
+    people: [mona, karim, salma, omar],
+    now: () => new Date('2026-10-12T09:00:00Z'),
+    records: keptChatter({
+      'wi.text:1': {
+        messages: [
+          { id: 501, kind: 'message', author: karim, date: '2026-06-14T10:20:00Z', body: '<p>I need the night shift’s warehouse log before I can reproduce it; the scanner there is offline until Sunday.</p>' },
+          { id: 500, kind: 'event', author: mona, date: '2026-06-11T08:00:00Z', body: '', tracking: [{ field: 'state', label: 'State', from: 'New', to: 'Active' }] },
+        ],
+      },
+    }),
+  })
+);
 
 /** The words in the empty comment box, in each language the demo shows. */
 const HINT: Record<Locale, string> = {
