@@ -31,7 +31,7 @@ export const PART_WORDS = {
     viewer: [
       'approvalWaiting', 'approvalWho', 'approvalNeeded', 'approvalThen', 'approvalApproved', 'approvalRejectedBy', 'approvalRejected', 'approvalFailed', 'approvalOpen', 'approvalLockedAll', 'approvalLevelApproved', 'approvalLevelRejected',
       'approvalLevelWaiting', 'approvalLevelWaitingSome', 'approvalLevelLater', 'approvalLevelSkipped', 'approvalApprove', 'approvalReject', 'approvalApproveFor', 'approvalRejectFor', 'approvalApproving', 'approvalRejecting', 'approvalApprovedFor', 'approvalRejectedFor',
-      'approvalApproveFailed', 'approvalRejectFailed', 'approvalRejectTitle', 'approvalRejectTitleNoun', 'approvalRejectAsk', 'approvalRejectReason', 'approvalKeepEditing', 'approvalHistoryCount', 'approvalAskedEntry', 'approvalApprovedEntry', 'approvalRejectedEntry', 'approvalNotNeeded',
+      'approvalApproveFailed', 'approvalRejectFailed', 'approvalRejectTitle', 'approvalRejectTitleNoun', 'approvalRejectAsk', 'approvalRejectReason', 'approvalKeepEditing', 'approvalHistoryCount', 'approvalAskedEntry', 'approvalApprovedEntry', 'approvalRejectedEntry', 'approvalChangedEntry', 'approvalNotNeeded',
     ],
   },
   assist: {

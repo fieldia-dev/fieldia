@@ -486,6 +486,7 @@ export const ur: ViewerLabels = {
   approvalAskedEntry: '{name} نے منظوری کی درخواست کی',
   approvalApprovedEntry: '{name} نے منظور کیا ({level})',
   approvalRejectedEntry: '{name} نے مسترد کیا ({level})',
+  approvalChangedEntry: '{name} نے اسے بدلا',
   approvalNotNeeded: 'منظوری کی ضرورت نہیں',
   assistFill: 'متن سے بھریں',
   assistFillHint: 'کوئی ای میل، دستخط یا پیغام چسپاں کریں۔ اس میں جو کچھ ملے گا وہ ہر فیلڈ پر دکھایا جائے گا تاکہ آپ اسے قبول یا مسترد کریں: جب تک آپ قبول نہ کریں، کچھ محفوظ نہیں ہوتا۔',

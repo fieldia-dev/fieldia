@@ -472,6 +472,7 @@ export const fr: ViewerLabels = {
   approvalAskedEntry: '{name} a demandé l’approbation',
   approvalApprovedEntry: '{name} a approuvé ({level})',
   approvalRejectedEntry: '{name} a refusé ({level})',
+  approvalChangedEntry: '{name} l’a modifié',
   approvalNotNeeded: 'Aucune approbation nécessaire',
   assistFill: 'Remplir depuis un texte',
   assistFillHint: 'Collez un e-mail, une signature ou un message. Ce qui y est trouvé s’affiche sur chaque champ, à accepter ou à refuser : rien n’est gardé avant que vous l’acceptiez.',

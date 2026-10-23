@@ -440,6 +440,7 @@ export const ar: ViewerLabels = {
   approvalAskedEntry: 'طلب {name} الموافقة',
   approvalApprovedEntry: 'وافق {name} ({level})',
   approvalRejectedEntry: 'رفض {name} ({level})',
+  approvalChangedEntry: 'غيّره {name}',
   approvalNotNeeded: 'لا حاجة إلى موافقة',
   assistFill: 'ملء من نص',
   assistFillHint: 'الصق بريدًا إلكترونيًا أو توقيعًا أو رسالة. ما يُعثر عليه فيها يظهر عند كل حقل لتقبله أو ترفضه: لا يُحفظ شيء قبل أن تقبله.',

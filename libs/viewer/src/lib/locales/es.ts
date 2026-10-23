@@ -483,6 +483,7 @@ export const es: ViewerLabels = {
   approvalAskedEntry: '{name} solicitó la aprobación',
   approvalApprovedEntry: '{name} aprobó ({level})',
   approvalRejectedEntry: '{name} lo rechazó ({level})',
+  approvalChangedEntry: '{name} lo cambió',
   approvalNotNeeded: 'No se necesita aprobación',
   assistFill: 'Completar a partir de texto',
   assistFillHint: 'Pegue un correo electrónico, una firma o un mensaje. Lo que se encuentre en él se mostrará en cada campo para que lo acepte o lo rechace: no se guarda nada hasta que lo haga.',

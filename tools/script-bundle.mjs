@@ -1941,13 +1941,14 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Turkish's 65.19 and 18.03, to 65.2 and 18.1; Persian's 159.00 and 22.24, to 159.1 and 22.3; Urdu's 161.66 and 22.29,
 // to 161.7 and 22.3; Spanish's 55.69 and 17.52, to 55.7 and 17.6.
 // The owner's walk of 0.31 mended (walkfix31-engine): a photo made the cover said "moved to the cover", Ctrl+Z right
-// after a save saying nothing changed since, a QR code named alone where its payload says no summary, and a template's
-// name already kept asked about first ("Replace “{name}”?") — Arabic's 126.78 and 20.55 measured before, 127.23 and 20.61
-// after, to 127.3 and 20.7; German's 57.40 and 17.71, 57.58 and 17.75, inside 57.6 and 17.8; French's 58.28 and 17.72,
-// 58.44 and 17.75, to 58.5; Turkish's 65.19 and 18.03, 65.39 and 18.07, to 65.4; Persian's 159.00 and 22.24, 159.40 and
-// 22.30, to 159.5 and 22.4; Urdu's 161.66 and 22.29, 162.12 and 22.34, to 162.2 and 22.4; Spanish's 55.69 and 17.52,
-// 55.86 and 17.56, to 55.9.
-const ADD_ON_BUDGET_KB = { ar: [127.3, 20.7], de: [57.6, 17.8], fr: [58.5, 17.8], tr: [65.4, 18.1], fa: [159.5, 22.4], ur: [162.2, 22.4], es: [55.9, 17.6] };
+// after a save saying nothing changed since, a QR code named alone where its payload says no summary, a template's name
+// already kept asked about first ("Replace “{name}”?"), and a record changed on its way to approval kept in its history
+// ("{name} changed it") — Arabic's 126.78 and 20.55 measured before, 127.29 and 20.62 after, inside 127.3, to 20.7;
+// German's 57.40 and 17.71, 57.62 and 17.76, to 57.7, inside 17.8; French's 58.28 and 17.72, 58.49 and 17.76, inside
+// 58.5 and 17.8; Turkish's 65.19 and 18.03, 65.44 and 18.08, to 65.5; Persian's 159.00 and 22.24, 159.51 and 22.31, to
+// 159.6 and 22.4; Urdu's 161.66 and 22.29, 162.20 and 22.35, to 162.3 and 22.4; Spanish's 55.69 and 17.52, 55.90 and
+// 17.57, to 56.0.
+const ADD_ON_BUDGET_KB = { ar: [127.3, 20.7], de: [57.7, 17.8], fr: [58.5, 17.8], tr: [65.5, 18.1], fa: [159.6, 22.4], ur: [162.3, 22.4], es: [56.0, 17.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2584,8 +2585,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 2.95 after, to 6.7, inside 3.0. (The main script grew 28 bytes: the viewer handing the part its question.) Keys
 // after a refused one going in where they fit, never hidden, and a paste with words round the value giving the one
 // value in them ("ID 1023456789", "IBAN: SA03 …", a whole SMS into a code's boxes; `valueIn`) — typed 13.62 and 5.72
-// measured before, 14.18 and 5.97 after, to 14.2 and 6.0.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// measured before, 14.18 and 5.97 after, to 14.2 and 6.0. A record changed on its way to approval — while it waits for
+// a decision, or after a rejection — kept in its history by who and what (`changed`, each field from what to what),
+// shown under who changed it — approvals 19.39 and 6.71 measured before, 20.21 and 6.94 after, to 20.3 and 7.0; the
+// memory source keeping such a change as an engine would — memory 23.87 and 8.68, 24.72 and 8.95, to 24.8 and 9.0.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [24.8, 9.0], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

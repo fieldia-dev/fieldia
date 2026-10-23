@@ -483,6 +483,7 @@ export const de: ViewerLabels = {
   approvalAskedEntry: '{name} hat um Genehmigung gebeten',
   approvalApprovedEntry: '{name} hat genehmigt ({level})',
   approvalRejectedEntry: '{name} hat abgelehnt ({level})',
+  approvalChangedEntry: '{name} hat es geändert',
   approvalNotNeeded: 'Keine Genehmigung nötig',
   assistFill: 'Aus Text ausfüllen',
   assistFillHint: 'Fügen Sie eine E-Mail, eine Signatur oder eine Nachricht ein. Was darin gefunden wird, steht bei jedem Feld zum Übernehmen oder Ablehnen: Nichts wird behalten, bevor Sie es übernehmen.',

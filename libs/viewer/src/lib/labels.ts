@@ -725,6 +725,8 @@ export interface ViewerLabels {
   approvalAskedEntry: string;
   approvalApprovedEntry: string;
   approvalRejectedEntry: string;
+  /** A change made while it waited for a decision, or after a rejection, in its history: who (`{name}`); its fields listed under it. */
+  approvalChangedEntry: string;
   /** A record sent whose rules asked no level of it, moved on at once: where it stands, and that moment of its history. */
   approvalNotNeeded: string;
   /**
@@ -1409,6 +1411,7 @@ const en: ViewerLabels = {
   approvalAskedEntry: '{name} asked for approval',
   approvalApprovedEntry: '{name} approved ({level})',
   approvalRejectedEntry: '{name} rejected it ({level})',
+  approvalChangedEntry: '{name} changed it',
   approvalNotNeeded: 'No approval needed',
   assistFill: 'Fill from text',
   assistFillHint: 'Paste an e-mail, a signature or a message. What is found in it is shown on each field for you to accept or reject: nothing is kept until you do.',

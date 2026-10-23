@@ -705,7 +705,12 @@ its box, a refusal of the source's said there — and Escape lets it go. While i
 waits, every field is locked but those `approval.open` names, each lock saying
 "Locked while it waits for approval", and the band says what stays open. Its
 history is folded under "Approval history (n)": who asked, who decided at which
-level, when, and why. The band and its dialog come in a part of their own
+level, when, and why — and who changed the record while it waited for a
+decision, or after a rejection, each field from what to what ("Karim Fathy
+changed it — Amount: E£ 1,450.00 → E£ 9,999.00"), where your source's history
+says so (a `changed` entry: your server records it as the save lands, by the
+person its sign-in knows; the memory source does as a stand-in). A chatter
+beside it tells the same as a tracked change. The band and its dialog come in a part of their own
 (`approvalsPart`, `fieldia.approvals.js`, with the form's own), loaded with the
 page's parts where it has `approval`. Their words are the viewer's labels
 (`approvalWaiting`, `approvalApprove`, `approvalReject`, …). See

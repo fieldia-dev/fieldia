@@ -1,5 +1,5 @@
-import { fill, formApprovalsPart, labelAt, recordSentence, type ApprovalDecision, type ApprovalEntry, type ApprovalLevel, type Form, type FormApproval, type FormState, type Messages, type Page } from '@fieldia/core';
-import { askFirst, keepTabIn } from '@fieldia/widgets';
+import { fill, formApprovalsPart, labelAt, recordSentence, type ApprovalDecision, type ApprovalEntry, type ApprovalLevel, type Form, type FormApproval, type FormState, type Locale, type Messages, type Page } from '@fieldia/core';
+import { askFirst, displayValue, keepTabIn } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
 import { installApprovalStyles } from './approvals-styles';
@@ -17,7 +17,8 @@ import { installApprovalStyles } from './approvals-styles';
  *   the buttons, and nothing is decided.
  * - **What stays open** while it waits: "While it waits, only Notes can be changed." — every other field's lock saying
  *   why (the form's `approvalLock`).
- * - **Its history**, folded under a button that counts it: who asked, who decided, when, and why.
+ * - **Its history**, folded under a button that counts it: who asked, who decided, when, and why — and who changed it
+ *   while it waited for a decision, or after a rejection: each field, from what to what (the source's `changed`).
  *
  * Nothing shows while the record is new, has no levels, or before its source told them; a source that could not tell
  * them is said to have failed, with Try again.
@@ -134,10 +135,19 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
     const what =
       entry.decision === 'requested' ? fill(labels.approvalAskedEntry, { name: entry.by })
       : entry.decision === 'notNeeded' ? labels.approvalNotNeeded
+      : entry.decision === 'changed' ? fill(labels.approvalChangedEntry, { name: entry.by })
       : fill(entry.decision === 'approved' ? labels.approvalApprovedEntry : labels.approvalRejectedEntry, { name: entry.by, level });
     const at = formApprovalsPart.loaded?.approvalWhen(entry.at, ctx.messages, page) ?? entry.at;
     const item = el('li', { class: 'fd-approval-entry', 'data-decision': entry.decision }, el('span', { class: 'fd-approval-entry-what' }, what), el('time', { class: 'fd-approval-entry-at', datetime: entry.at }, at));
     if (entry.reason) item.append(el('q', { class: 'fd-approval-entry-reason', dir: 'auto' }, entry.reason));
+    // Each field changed, from what to what, written as the page writes its values: each in its own direction.
+    if (entry.changes?.length) {
+      const said = (field: string, value: unknown) => {
+        const def = page.fields[field];
+        return value === null || value === undefined || value === '' ? '—' : def ? displayValue(def as never, value as never, form.getState().values, locale.split('-')[0] as Locale) : String(value);
+      };
+      item.append(el('ul', { class: 'fd-approval-changes' }, ...entry.changes.map((change) => el('li', {}, el('bdi', {}, page.fields[change.field]?.label ?? change.label ?? change.field), ': ', el('bdi', {}, said(change.field, change.from)), ' → ', el('bdi', {}, said(change.field, change.to))))));
+    }
     return item;
   }
 

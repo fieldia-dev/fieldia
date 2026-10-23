@@ -57,6 +57,8 @@ const APPROVALS_CSS = /* css */ `
 .fd-approval-entry-what { overflow-wrap: anywhere; }
 .fd-approval-entry-at { color: var(--fd-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .fd-approval-entry-reason { grid-column: 1 / -1; color: var(--fd-text); padding-inline-start: 10px; border-inline-start: 2px solid var(--fd-border); overflow-wrap: anywhere; }
+/* What a change changed, each field from what to what, under who changed it. */
+.fd-approval-changes { grid-column: 1 / -1; margin: 0; padding-inline-start: 10px; border-inline-start: 2px solid var(--fd-border); list-style: none; color: var(--fd-text); overflow-wrap: anywhere; }
 .fd-approval-reject { max-width: 460px; display: grid; gap: 10px; }
 .fd-approval-reject-title { margin: 0; font-size: 17px; font-weight: 650; }
 .fd-approval-reject-ask { margin: 0; color: var(--fd-muted); line-height: 1.45; }

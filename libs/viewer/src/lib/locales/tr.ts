@@ -497,6 +497,7 @@ export const tr: ViewerLabels = {
   approvalAskedEntry: '{name} onay istedi',
   approvalApprovedEntry: '{name} onayladı ({level})',
   approvalRejectedEntry: '{name} reddetti ({level})',
+  approvalChangedEntry: '{name} değiştirdi',
   approvalNotNeeded: 'Onay gerekmiyor',
   assistFill: 'Metinden doldur',
   assistFillHint: 'Bir e-posta, imza veya mesaj yapıştırın. İçinde bulunanlar, kabul etmeniz ya da reddetmeniz için her alanın üzerinde gösterilir: siz kabul edene kadar hiçbir şey saklanmaz.',

@@ -258,6 +258,7 @@ export type {
   ApprovalLevelState,
   Approver,
   ApprovalLevel,
+  ApprovalChange,
   ApprovalEntry,
   Approvals,
   DecideRequest,

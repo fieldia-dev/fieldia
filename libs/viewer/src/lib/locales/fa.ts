@@ -503,6 +503,7 @@ export const fa: ViewerLabels = {
   approvalAskedEntry: '{name} درخواست تأیید کرد',
   approvalApprovedEntry: '{name} تأیید کرد ({level})',
   approvalRejectedEntry: '{name} آن را رد کرد ({level})',
+  approvalChangedEntry: '{name} آن را تغییر داد',
   approvalNotNeeded: 'نیازی به تأیید نیست',
   assistFill: 'پر کردن از متن',
   assistFillHint: 'یک ایمیل، امضا یا پیام را بچسبانید. آنچه در آن پیدا شود روی هر فیلد نشان داده می‌شود تا آن را بپذیرید یا رد کنید: تا شما نپذیرید، چیزی نگه داشته نمی‌شود.',
