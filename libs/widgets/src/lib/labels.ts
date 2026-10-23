@@ -1003,7 +1003,7 @@ const en: WidgetLabels = {
   photosMoveTouchCover: 'Hold a photo a moment, then drag it to move it. The first is the cover.',
   photoCover: 'Cover',
   makeCover: 'Make {name} the cover',
-  coverNow: '{name} is the cover now',
+  coverNow: '{name} moved to the cover',
   editPhoto: 'Crop and turn {name}',
   photoCaption: 'Caption for {name}',
   captionPlaceholder: 'Add a caption',

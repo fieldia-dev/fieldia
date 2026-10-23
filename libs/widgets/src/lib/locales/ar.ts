@@ -240,7 +240,7 @@ export const ar: WidgetLabels = {
   photosMoveTouchCover: 'المس صورة لحظة ثم اسحبها لنقلها. الصورة الأولى هي الغلاف.',
   photoCover: 'الغلاف',
   makeCover: 'اجعل {name} الغلاف',
-  coverNow: 'أصبحت {name} الغلاف',
+  coverNow: 'نُقلت {name} إلى الغلاف',
   editPhoto: 'قص {name} وتدويرها',
   photoCaption: 'تعليق {name}',
   captionPlaceholder: 'أضف تعليقًا',

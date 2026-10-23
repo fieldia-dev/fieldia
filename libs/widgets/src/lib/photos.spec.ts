@@ -114,7 +114,7 @@ describe('a photo set', () => {
     key(opens(el)[1], 'Home', { altKey: true });
     expect(value().map((p) => p.name)).toEqual(['Hall.jpg', 'Kitchen.jpg', 'Living room.jpg']);
     // Named by the place it was found in.
-    expect(said(el)).toBe('Photo 2 of 3 is the cover now');
+    expect(said(el)).toBe('Photo 2 of 3 moved to the cover');
     expect(labels(el)[0]).toBe('The cover, photo 1 of 3');
     // An arrow alone moves nothing; nor does Alt past an end.
     key(opens(el)[0], 'ArrowRight');
@@ -142,14 +142,14 @@ describe('a photo set', () => {
     expect(value().map((p) => p.name)).toEqual(['Kitchen.jpg', 'Living room.jpg', 'Hall.jpg']);
     expect(said(el)).toBe('أصبح الصورة 1 من 3 في المرتبة 2 من 3');
     key(opens(el)[1], 'ArrowRight', { altKey: true });
-    expect(said(el)).toBe('أصبحت الصورة 2 من 3 الغلاف');
+    expect(said(el)).toBe('نُقلت الصورة 2 من 3 إلى الغلاف');
   });
 
   it('makes a photo the cover with its button, the focus on it at its new place', () => {
     const { el, value } = setup();
     tool(tiles(el)[2], 'cover').click();
     expect(value().map((p) => p.name)).toEqual(['Hall.jpg', 'Living room.jpg', 'Kitchen.jpg']);
-    expect(said(el)).toBe('Photo 3 of 3 is the cover now');
+    expect(said(el)).toBe('Photo 3 of 3 moved to the cover');
     expect(document.activeElement).toBe(opens(el)[0]);
     expect(tool(tiles(el)[0], 'cover').hidden).toBe(true);
   });
@@ -171,7 +171,7 @@ describe('a photo set', () => {
     expect(value().map((p) => p.name)).toEqual(ROOMS);
     document.dispatchEvent(pointer('pointerup', 20, 45));
     expect(value().map((p) => p.name)).toEqual(['Hall.jpg', 'Living room.jpg', 'Kitchen.jpg']);
-    expect(said(el)).toBe('Photo 3 of 3 is the cover now');
+    expect(said(el)).toBe('Photo 3 of 3 moved to the cover');
     expect(tiles(el).every((tile) => tile.style.order === '' && !tile.hasAttribute('data-lifted'))).toBe(true);
     // The click the drag ends with opens nothing.
     opens(el)[0].click();

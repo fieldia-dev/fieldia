@@ -69,8 +69,9 @@ test.describe('a listing’s photo set', () => {
     await expect(tile(page, 'Kitchen.jpg')).toHaveAttribute('data-lifted', '');
     await screen(page, 'photos-listing-lifted', { viewport: true });
     await page.mouse.up();
-    // Named by the place it was in, never by its file (the owner's walk of 0.29: "Kitchen.jpg is the cover now").
-    await expect(said(page)).toHaveText('Photo 2 of 5 is the cover now');
+    // Named by the place it was in, never by its file (the owner's walk of 0.29: "Kitchen.jpg is the cover now"), and
+    // saying what happened to it, as it now stands first (0.31's: "Photo 2 of 5 is the cover now").
+    await expect(said(page)).toHaveText('Photo 2 of 5 moved to the cover');
     expect(await names(page)).toEqual(['Kitchen.jpg', 'Living room.jpg', 'Master bedroom.jpg', 'Balcony view.jpg', 'Bathroom.jpg']);
     await expect(tiles(page).first().locator('.fd-photo-cover')).toBeVisible();
     await expect(tiles(page).nth(1).locator('.fd-photo-cover')).toBeHidden();
@@ -108,7 +109,7 @@ test.describe('a listing’s photo set', () => {
     // Make cover, its tools shown as the pointer rests on the photo.
     await tile(page, 'Bathroom.jpg').hover();
     await tile(page, 'Bathroom.jpg').getByRole('button', { name: 'Make photo 4 of 5 the cover' }).click();
-    await expect(said(page)).toHaveText('Photo 4 of 5 is the cover now');
+    await expect(said(page)).toHaveText('Photo 4 of 5 moved to the cover');
     expect((await names(page))[0]).toBe('Bathroom.jpg');
     await expect(tiles(page).first().getByRole('button', { name: /Make .* the cover/ })).toBeHidden();
     // A caption typed under a photo, read as the box is left.
@@ -279,7 +280,7 @@ test.describe('a photo set on a phone', () => {
     for (let step = 1; step <= 12; step++) await hand.move(bedroom.x + (first.box.x + 8 - bedroom.x) * (step / 12), bedroom.y + (first.y - bedroom.y) * (step / 12));
     await screen(page, 'photos-listing-phone-lifted', { viewport: true });
     await hand.up();
-    await expect(said(page)).toHaveText('Photo 3 of 5 is the cover now');
+    await expect(said(page)).toHaveText('Photo 3 of 5 moved to the cover');
     expect((await names(page))[0]).toBe('Master bedroom.jpg');
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect(problems).toEqual([]);

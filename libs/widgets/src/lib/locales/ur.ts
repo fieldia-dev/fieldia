@@ -244,7 +244,7 @@ export const ur: WidgetLabels = {
   photosMoveTouchCover: 'کسی تصویر کو ایک لمحہ دبائے رکھیں، پھر منتقل کرنے کے لیے اسے گھسیٹیں۔ پہلی تصویر سرورق ہے۔',
   photoCover: 'سرورق',
   makeCover: '{name} کو سرورق بنائیں',
-  coverNow: '{name} اب سرورق ہے',
+  coverNow: '{name} کو سرورق پر منتقل کر دیا گیا',
   editPhoto: '{name} کو تراشیں اور گھمائیں',
   photoCaption: '{name} کا کیپشن',
   captionPlaceholder: 'کیپشن شامل کریں',

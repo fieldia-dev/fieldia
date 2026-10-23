@@ -248,7 +248,7 @@ export const fa: WidgetLabels = {
   photosMoveTouchCover: 'عکسی را لحظه‌ای نگه دارید، سپس برای جابه‌جا کردن، آن را بکشید. نخستین عکس، عکس جلد است.',
   photoCover: 'جلد',
   makeCover: 'انتخاب {name} به‌عنوان عکس جلد',
-  coverNow: '{name} اکنون عکس جلد است',
+  coverNow: '{name} به عکس جلد منتقل شد',
   editPhoto: 'برش و چرخش {name}',
   photoCaption: 'زیرنویس {name}',
   captionPlaceholder: 'افزودن زیرنویس',

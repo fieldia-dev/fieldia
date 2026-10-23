@@ -242,7 +242,7 @@ export const tr: WidgetLabels = {
   photosMoveTouchCover: 'Bir fotoğrafı taşımak için bir süre basılı tutun, ardından sürükleyin. İlk fotoğraf kapak fotoğrafıdır.',
   photoCover: 'Kapak',
   makeCover: 'Kapak yap: {name}',
-  coverNow: '{name} artık kapak fotoğrafı',
+  coverNow: '{name} kapağa taşındı',
   editPhoto: 'Kırp ve döndür: {name}',
   photoCaption: '{name} için alt yazı',
   captionPlaceholder: 'Alt yazı ekleyin',

@@ -240,7 +240,7 @@ export const de: WidgetLabels = {
   photosMoveTouchCover: 'Halten Sie ein Foto einen Moment und ziehen Sie es dann, um es zu verschieben. Das erste ist das Titelbild.',
   photoCover: 'Titelbild',
   makeCover: '{name} als Titelbild',
-  coverNow: '{name} ist jetzt das Titelbild',
+  coverNow: '{name} ans Titelbild verschoben',
   editPhoto: '{name} zuschneiden und drehen',
   photoCaption: 'Bildunterschrift für {name}',
   captionPlaceholder: 'Bildunterschrift hinzufügen',

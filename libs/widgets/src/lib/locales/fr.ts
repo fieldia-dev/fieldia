@@ -240,7 +240,7 @@ export const fr: WidgetLabels = {
   photosMoveTouchCover: 'Maintenez une photo un instant, puis faites-la glisser pour la déplacer. La première est la couverture.',
   photoCover: 'Couverture',
   makeCover: 'Mettre {name} en couverture',
-  coverNow: '{name} est maintenant la couverture',
+  coverNow: '{name} déplacée en couverture',
   editPhoto: 'Recadrer et pivoter {name}',
   photoCaption: 'Légende de {name}',
   captionPlaceholder: 'Ajouter une légende',

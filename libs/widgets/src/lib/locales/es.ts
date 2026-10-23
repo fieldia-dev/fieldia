@@ -242,7 +242,7 @@ export const es: WidgetLabels = {
   photosMoveTouchCover: 'Mantenga presionada una foto un momento y luego arrástrela para moverla. La primera es la portada.',
   photoCover: 'Portada',
   makeCover: 'Usar {name} como portada',
-  coverNow: '{name} es ahora la portada',
+  coverNow: '{name} se movió a la portada',
   editPhoto: 'Recortar y girar {name}',
   photoCaption: 'Pie de foto de {name}',
   captionPlaceholder: 'Añadir un pie de foto',
