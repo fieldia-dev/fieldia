@@ -151,7 +151,7 @@ export function keptSource(options: MemoryDataSourceOptions = {}, how: { extra?:
   });
   // The responses sent from this tab: counted again, as the server counts them (a form's limits, a booking's number).
   (source.responses as SubmitRequest[]).push(...(readKept<SubmitRequest[]>(at(STORE.responses)) ?? []));
-  keepWrites(source, { scope, definitions: options.definitions, added });
+  keepWrites(source, { scope, definitions: options.definitions, added, histories: options.approvalHistory });
   return source;
 }
 
@@ -159,7 +159,7 @@ type Request = { model: string; id?: RecordId | null; mergeIds?: RecordId[]; pag
 type Member = (request: Request, ...rest: unknown[]) => Promise<unknown>;
 
 /** The source's writes kept in this tab, each store as it is written; the frame told each time. */
-function keepWrites(source: MemoryDataSource, how: { scope: string; definitions?: Definitions; added: Record<string, PropertyDefinition[]> }): void {
+function keepWrites(source: MemoryDataSource, how: { scope: string; definitions?: Definitions; added: Record<string, PropertyDefinition[]>; histories?: Record<string, ApprovalEntry[]> }): void {
   const storage = store();
   if (!storage) return;
   const at = (name: string) => KEPT + how.scope + name;
@@ -204,13 +204,14 @@ function keepWrites(source: MemoryDataSource, how: { scope: string; definitions?
   // "It's someone new", kept as the server keeps it: another page of this tab lets that record be too.
   after(['markNotDuplicate'], () => writeKept(at(STORE.apart), source.notDuplicatePairs));
   // Each record's approval history as the source answers it — a decision, a record sent for approval — kept as the
-  // engine keeps it: the next person signed in sees it.
+  // engine keeps it: the next person signed in sees it. A history only read, as it was, is nothing saved.
   const histories = readKept<Record<string, ApprovalEntry[]>>(at(STORE.approvals)) ?? {};
   after(['approvals', 'decide'], (request, _method, answer) => {
     const history = (answer as Approvals | undefined)?.history;
     const asked = request as unknown as { model: string; recordId: RecordId };
-    if (!history) return;
-    histories[`${asked.model}:${asked.recordId}`] = history;
+    const key = `${asked.model}:${asked.recordId}`;
+    if (!history || JSON.stringify(history) === JSON.stringify(histories[key] ?? how.histories?.[key] ?? [])) return;
+    histories[key] = history;
     writeKept(at(STORE.approvals), histories);
   });
   // A page's record templates and a list's saved views, each page's as the source answers them now.
