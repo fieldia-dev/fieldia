@@ -16,6 +16,12 @@ const stored = (page: Page, id: number, name: string) => page.evaluate(([i, n]) 
 const box = (page: Page, id: string) => node(page, id).locator('.fd-phone-input');
 const country = (page: Page, id: string) => node(page, id).locator('.fd-phone-country');
 const link = (page: Page, id: string, name: 'Call' | 'WhatsApp') => node(page, id).getByRole('link', { name: new RegExp(`^${name === 'Call' ? 'Call' : 'Message'} `) });
+/** A country picked as a person picks it: its flag pressed, its name typed, Enter. */
+async function pickCountry(page: Page, id: string, typed: string) {
+  await country(page, id).click();
+  await page.getByRole('combobox', { name: 'Search countries' }).fill(typed);
+  await page.keyboard.press('Enter');
+}
 
 let problems: string[] = [];
 test.afterEach(() => expect(problems).toEqual([]));
@@ -75,9 +81,8 @@ test.describe('a contact’s phone numbers', () => {
   });
 
   test('reads a number in the country picked from the list', async ({ page }) => {
-    const select = country(page, 'f-phone').locator('select');
-    await expect(select).toHaveAccessibleName('Country of Phone');
-    await select.selectOption('SA');
+    await expect(country(page, 'f-phone')).toHaveAccessibleName('Country of Phone');
+    await pickCountry(page, 'f-phone', 'Saudi Arabia');
     const phone = box(page, 'f-phone');
     // The number it held, its Egyptian code swapped for Saudi Arabia's, read there: no Saudi number starts so.
     await expect(node(page, 'f-phone').locator('.fd-error')).toBeHidden();
@@ -128,7 +133,7 @@ test.describe('a contact’s phone numbers', () => {
 
   test('the owner’s walk: "0151 abc" in Germany says letters are not allowed, never "too short"', async ({ page }) => {
     const mobile = box(page, 'f-mobile');
-    await country(page, 'f-mobile').locator('select').selectOption('DE');
+    await pickCountry(page, 'f-mobile', 'Germany');
     await mobile.click();
     await mobile.press('Control+A');
     await mobile.pressSequentially('0151 abc');
@@ -142,8 +147,9 @@ test.describe('a contact’s phone numbers', () => {
   });
 
   test('says when a number has no country to be read in, or a code no country has', async ({ page }) => {
+    // Contact us, for any business: no country until one is picked or the number comes with its +.
+    ({ problems } = await open(page, 'plain', 'page=template-contact-us&theme=apple'));
     const phone = box(page, 'f-phone');
-    await country(page, 'f-phone').locator('select').selectOption('');
     await phone.click();
     await phone.press('Control+A');
     await phone.pressSequentially('02 2537 4100');
@@ -184,7 +190,10 @@ test('in Arabic, right to left: the countries by their Arabic names, the number 
   await page.setViewportSize(WIDE);
   ({ problems } = await open(page, 'plain', 'page=real-contact&record=7001&skin=underline&locale=ar&dir=rtl'));
   await expect(box(page, 'f-mobile')).toHaveValue('010 0537 4100');
-  await expect(country(page, 'f-mobile').locator('select option[value="EG"]')).toHaveText(/مصر/);
+  await country(page, 'f-mobile').click();
+  await page.getByRole('combobox', { name: 'ابحث عن بلد' }).fill('مصر');
+  await expect(page.getByRole('listbox', { name: 'البلدان' }).getByRole('option').first()).toHaveText('🇪🇬مصر+20');
+  await page.keyboard.press('Escape');
   await expect(link(page, 'f-mobile', 'WhatsApp')).toHaveCount(0);
   await expect(node(page, 'f-mobile').getByRole('link', { name: /واتساب/ })).toHaveAttribute('href', 'https://wa.me/201005374100');
   await expectNoSidewaysScroll(page);

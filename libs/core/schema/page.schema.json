@@ -10955,6 +10955,13 @@
             "international",
             "national"
           ]
+        },
+        "countries": {
+          "type": "string",
+          "enum": [
+            "list",
+            "native"
+          ]
         }
       },
       "additionalProperties": false

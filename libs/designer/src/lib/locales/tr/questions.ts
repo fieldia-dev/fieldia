@@ -284,6 +284,8 @@ export const questions: DesignerWords['questions'] = {
   phoneShown: 'Gösterim',
   thePages: 'Sayfanınki',
   phoneShownAs: { international: 'Uluslararası biçim: +20 10 1234 5678', national: 'Ulusal biçim: 010 1234 5678' },
+  phoneCountries: 'Ülke seçimi',
+  phoneCountriesAs: { list: 'Fieldia listesi, yazarak aranır', native: 'Tarayıcının kendi listesi' },
   addALine: 'Satır ekle',
   whenEmpty: 'Boşken',
   noLines: 'Henüz satır yok',

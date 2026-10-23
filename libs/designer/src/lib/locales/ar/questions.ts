@@ -273,6 +273,8 @@ export const questions: DesignerWords['questions'] = {
   phoneShown: 'طريقة العرض',
   thePages: 'كما في الصفحة',
   phoneShownAs: { international: 'دوليًا: \u2066+20 10 1234 5678\u2069', national: 'محليًا: \u2066010 1234 5678\u2069' },
+  phoneCountries: 'اختيار البلد من',
+  phoneCountriesAs: { list: 'قائمة Fieldia، يُبحث فيها بالكتابة', native: 'قائمة المتصفح نفسه' },
   addALine: 'إضافة بند',
   whenEmpty: 'عندما يكون فارغًا',
   noLines: 'لا بنود بعد',

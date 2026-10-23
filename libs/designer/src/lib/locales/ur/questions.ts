@@ -282,6 +282,8 @@ export const questions: DesignerWords['questions'] = {
   phoneShown: 'دکھانے کا طریقہ',
   thePages: 'صفحے کے مطابق',
   phoneShownAs: { international: 'بین الاقوامی: ⁦+20 10 1234 5678⁩', national: 'مقامی: ⁦010 1234 5678⁩' },
+  phoneCountries: 'ملک کا انتخاب',
+  phoneCountriesAs: { list: 'Fieldia کی فہرست، ٹائپ کر کے تلاش', native: 'براؤزر کی اپنی فہرست' },
   addALine: 'سطر شامل کریں',
   whenEmpty: 'خالی ہونے پر',
   noLines: 'ابھی کوئی سطر نہیں',

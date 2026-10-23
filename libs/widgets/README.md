@@ -118,8 +118,11 @@ the picture for a screen reader. It comes in `pinsPart` (`fieldia.pins.js`).
 A phone field (`"widget": "phone"`) is read the world over where its page says
 `"phone": { "country": "EG", "shown": "national" }` — or the field itself, with
 `"options": { "country": "AE" }` or `"shown"`. Its country is picked before the
-number (its flag and dialling code, every country by its name in the page's
-language) or typed with it: "010 1234 5678" is read in the country picked,
+number — its flag and dialling code, pressed to open a list of every country
+found by typing its name in the page's language or in English, its code ("ae")
+or its dialling code ("+971"), the page's country and the reader's first, a
+sheet on a phone (`"countries": "native"` puts the browser's own list there) —
+or typed with it: "010 1234 5678" is read in the country picked,
 "+20 10 1234 5678" or "0020…" in Egypt whatever was picked. The number is
 checked by its country — how long it is by how it starts, and whether any number
 there starts so — kept as E.164 (`"+201012345678"`), and shown at rest abroad's

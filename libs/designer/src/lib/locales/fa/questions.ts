@@ -284,6 +284,8 @@ export const questions: DesignerWords['questions'] = {
   phoneShown: 'شیوهٔ نمایش',
   thePages: 'همانند صفحه',
   phoneShownAs: { international: 'بین‌المللی: ⁦+20 10 1234 5678⁩', national: 'داخلی: ⁦010 1234 5678⁩' },
+  phoneCountries: 'انتخاب کشور از',
+  phoneCountriesAs: { list: 'فهرست Fieldia، با تایپ جستجو می‌شود', native: 'فهرست خود مرورگر' },
   addALine: 'افزودن سطر',
   whenEmpty: 'وقتی خالی است',
   noLines: 'هنوز سطری نیست',

@@ -588,19 +588,25 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
-  /** A phone's own country to start on and how it is shown, else the page's: either read the field the world over. */
+  /**
+   * A phone's own country to start on, how it is shown and the list its country is picked from (Fieldia's, found by
+   * typing, or the browser's own), else the page's: any of them read the field the world over.
+   */
   function phone(): Part {
     const country = select(w.phoneCountry, [['', w.thePages]]);
     country.addEventListener('change', () => designer.setWidgetOptions(id, { country: country.value || null }));
     const shown = select(w.phoneShown, [['', w.thePages], ['international', w.phoneShownAs.international], ['national', w.phoneShownAs.national]]);
     shown.addEventListener('change', () => designer.setWidgetOptions(id, { shown: shown.value || null }));
+    const countries = select(w.phoneCountries, [['', w.thePages], ['list', w.phoneCountriesAs.list], ['native', w.phoneCountriesAs.native]]);
+    countries.addEventListener('change', () => designer.setWidgetOptions(id, { countries: countries.value || null }));
     return {
-      element: row(word(w.phoneCountry, country), word(w.phoneShown, shown)),
+      element: el('div', {}, row(word(w.phoneCountry, country), word(w.phoneShown, shown)), row(word(w.phoneCountries, countries))),
       refresh(_page, node) {
         // The countries, by their names in the designer's language, listed once the setting is first drawn.
         if (country.options.length === 1) country.append(...countriesIn(designer.locale ?? 'en').map(([code, name]) => el('option', { value: code }, name)));
         show(country, node.options?.['country']);
         show(shown, node.options?.['shown']);
+        show(countries, node.options?.['countries']);
       },
     };
   }

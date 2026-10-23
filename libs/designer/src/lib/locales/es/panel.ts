@@ -64,6 +64,7 @@ const NAMES: Record<string, string> = {
   'Phone numbers': 'Números de teléfono',
   'Phone country to start on': 'País inicial del teléfono',
   'Phone numbers shown': 'Formato de los números de teléfono',
+  'Phone countries picked from': 'País del teléfono elegido de',
   'Printout’s header': 'Encabezado de la impresión',
   'Printout’s footer': 'Pie de la impresión',
   'Logo’s address': 'Dirección del logotipo',
@@ -366,6 +367,8 @@ export const panel: DesignerWords['panel'] = {
   noPhoneCountry: 'Ninguno: se escribe con + y el código de país',
   phoneShown: 'Formato de los números de teléfono',
   phoneShownAs: { international: 'Internacional: +20 10 1234 5678', national: 'Nacional: 010 1234 5678' },
+  phoneCountries: 'País del teléfono elegido de',
+  phoneCountriesAs: { list: 'La lista de Fieldia, buscando al escribir', native: 'La lista del propio navegador' },
   // ---- columns, rows, width, labels
   screens: { wide: 'Escritorio', medium: 'Tableta', narrow: 'Teléfono' },
   columnsOn: { wide: 'Columnas en un escritorio', medium: 'Columnas en una tableta', narrow: 'Columnas en un teléfono' },

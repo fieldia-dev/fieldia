@@ -120,6 +120,10 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const phoneShown = el('select', { class: 'fd-input fd-select', 'aria-label': w.phoneShown }, el('option', { value: 'international' }, w.phoneShownAs.international), el('option', { value: 'national' }, w.phoneShownAs.national)) as HTMLSelectElement;
   phoneShown.addEventListener('change', () => designer.setPhone({ shown: phoneShown.value === 'national' ? 'national' : null }));
   const phoneShownRow = setting(el, 'content', 'Phone numbers shown', phoneShown, { words: w.phoneShown });
+  // Its countries picked from Fieldia's list, found by typing, or from the browser's own.
+  const phoneCountries = el('select', { class: 'fd-input fd-select', 'aria-label': w.phoneCountries }, el('option', { value: 'list' }, w.phoneCountriesAs.list), el('option', { value: 'native' }, w.phoneCountriesAs.native)) as HTMLSelectElement;
+  phoneCountries.addEventListener('change', () => designer.setPhone({ countries: phoneCountries.value === 'native' ? 'native' : null }));
+  const phoneCountriesRow = setting(el, 'content', 'Phone countries picked from', phoneCountries, { words: w.phoneCountries });
   // The zone every date and time on the page is on the clock of: empty, the browser's own.
   const zone = zoneBox(el, w.pageTimeZone, w.browserZone);
   zone.addEventListener('change', () => designer.setTimeZone(null, zone.value.trim() || null));
@@ -155,6 +159,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     phonesRow,
     phoneCountryRow,
     phoneShownRow,
+    phoneCountriesRow,
     ...printRows,
     endingsRow,
     el('p', { class: 'fd-properties-hint' }, w.nothingPicked),
@@ -193,11 +198,12 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     update(page) {
       if (!focused(description)) description.value = page.description ?? '';
       phones.value = page.phone ? 'checked' : '';
-      phoneCountryRow.hidden = phoneShownRow.hidden = !page.phone;
+      phoneCountryRow.hidden = phoneShownRow.hidden = phoneCountriesRow.hidden = !page.phone;
       // The countries, by their names in the designer's language, listed once the setting is first shown.
       if (page.phone && phoneCountry.options.length === 1) phoneCountry.append(...countriesIn(designer.locale ?? 'en').map(([code, name]) => el('option', { value: code }, name)));
       phoneCountry.value = page.phone?.country ?? '';
       phoneShown.value = page.phone?.shown ?? 'international';
+      phoneCountries.value = page.phone?.countries ?? 'list';
       if (!focused(zone)) zone.value = page.timeZone ?? '';
       if (!focused(printHeader)) printHeader.value = page.print?.header ?? '';
       if (!focused(printFooter)) printFooter.value = page.print?.footer ?? '';

@@ -169,6 +169,8 @@ export const panel = {
   noPhoneCountry: 'None: written with + and the country code',
   phoneShown: 'Phone numbers shown',
   phoneShownAs: { international: 'Abroad’s way: +20 10 1234 5678', national: 'At home’s way: 010 1234 5678' },
+  phoneCountries: 'Phone countries picked from',
+  phoneCountriesAs: { list: 'Fieldia’s list, found by typing', native: 'The browser’s own list' },
   // ---- columns, rows, width, labels
   screens: { wide: 'Desktop', medium: 'Tablet', narrow: 'Phone' },
   columnsOn: { wide: 'Columns on a desktop', medium: 'Columns on a tablet', narrow: 'Columns on a phone' },

@@ -66,6 +66,7 @@ const NAMES: Record<string, string> = {
   'Phone numbers': 'شماره‌های تلفن',
   'Phone country to start on': 'کشور آغازین تلفن',
   'Phone numbers shown': 'نمایش شماره‌های تلفن',
+  'Phone countries picked from': 'انتخاب کشور تلفن از',
   'Printout’s header': 'سرصفحهٔ چاپ',
   'Printout’s footer': 'پاصفحهٔ چاپ',
   'Logo’s address': 'نشانی لوگو',
@@ -365,6 +366,8 @@ export const panel: DesignerWords['panel'] = {
   noPhoneCountry: 'هیچ: با + و کد کشور نوشته می‌شود',
   phoneShown: 'نمایش شماره‌های تلفن',
   phoneShownAs: { international: 'بین‌المللی: ⁦+20 10 1234 5678⁩', national: 'داخلی: ⁦010 1234 5678⁩' },
+  phoneCountries: 'انتخاب کشور تلفن از',
+  phoneCountriesAs: { list: 'فهرست Fieldia، با تایپ جستجو می‌شود', native: 'فهرست خود مرورگر' },
   // ---- columns, rows, width, labels
   screens: { wide: 'رایانهٔ رومیزی', medium: 'تبلت', narrow: 'تلفن همراه' },
   columnsOn: { wide: 'ستون‌ها در رایانهٔ رومیزی', medium: 'ستون‌ها در تبلت', narrow: 'ستون‌ها در تلفن همراه' },
