@@ -155,6 +155,8 @@ export function searchBar(context: SearchContext) {
   }
 
   input.addEventListener('input', () => {
+    // Typing in the box: its suggestions in the menu's place, never under it.
+    if (!panel.hidden) showPanel(false);
     offered = suggestions(input.value, page, node, { searchFor: labels.searchFor }, context.locale);
     active = 0;
     drawOffered();
@@ -294,11 +296,19 @@ export function searchBar(context: SearchContext) {
     toggle.focus();
   });
   const element = el('div', { class: 'fd-search' }, el('div', { class: 'fd-search-field' }, ...icon('search'), chips, input, ...(menu ? [toggle] : [])), offeredList, ...(menu ? [panel] : []));
-  // A press anywhere else closes the menu.
+  // A press anywhere else closes the menu; and, as every menu Fieldia opens over a box, so does the focus moving
+  // anywhere but the menu and its arrow — the search's box among them, where typing shows its suggestions instead.
   const outside = (event: Event) => {
     if (!panel.hidden && !element.contains(event.target as Node)) showPanel(false);
   };
+  const away = (event: Event) => {
+    const to = event.target as Element;
+    // A question its own press asked (Delete a view?) is over it, not elsewhere.
+    const asked = to.closest?.('[role="alertdialog"], [role="dialog"]');
+    if (!panel.hidden && !panel.contains(to) && to !== toggle && !(asked && !asked.contains(element))) showPanel(false);
+  };
   doc.addEventListener('pointerdown', outside);
+  doc.addEventListener('focusin', away);
 
   drawChips();
   drawPanel();
@@ -321,6 +331,9 @@ export function searchBar(context: SearchContext) {
       const words = facet.kind === 'custom' ? facet.label : null;
       change([...facets.filter((f) => !(words !== null && f.kind === 'custom' && f.label === words)), facet]);
     },
-    destroy: () => doc.removeEventListener('pointerdown', outside),
+    destroy() {
+      doc.removeEventListener('pointerdown', outside);
+      doc.removeEventListener('focusin', away);
+    },
   };
 }

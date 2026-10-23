@@ -750,7 +750,10 @@ source answers `list` and `groups`; a row opens through `onOpenRecord`, and the
 page's buttons reach `onAction` with the chosen `recordIds`. A group's heading
 is a button that says open or closed, its name and its count in words ("Cairo,
 12 invoices"), the list staying a table; the arrow keys cross it as they move
-between rows, Right opens it and Left closes it. See
+between rows, Right opens it and Left closes it. A menu Fieldia opens over a
+box gives way as the focus or typing moves elsewhere: the search bar's menu as
+its box is pressed or typed in — its suggestions in the menu's place — and a
+filter bar's list as another of its parts takes the focus. See
 [lists and search](https://fieldia.dev/lists/).
 
 Other ways of showing a list's records come from `listViews`, by name: a
