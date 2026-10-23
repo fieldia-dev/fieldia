@@ -110,11 +110,15 @@ function parts(needs) {
 
 const capital = (name) => name.replace(/(^|-)([a-z])/g, (_, __, c) => c.toUpperCase());
 
-/** The code for each tab, for this page and this demo's address. */
-export function snippets(page, params) {
+/** The code for each tab, for this page and this demo's address; `nonce`, a page under a strict Content-Security-Policy's. */
+export function snippets(page, params, how = {}) {
   const name = page?.id ?? 'page';
   const needs = pageNeeds(page);
   const { imports, setup, options } = parts(needs);
+  if (how.nonce) {
+    setup.push("// The nonce your server wrote into this response's Content-Security-Policy and onto its tags: new for every response.");
+    options.push(['nonce', "document.querySelector('script[nonce]')?.nonce ?? ''"]);
+  }
   const look = looks(params);
   const enterToNext = params.get('enterToNext') === '1';
   const translate = !!params.get('translate');

@@ -4,13 +4,15 @@
 // holds, the demos with a word one letter off it ("invoce"), never in place of one that holds ("lease" is not
 // "leave"). While a search is on, each heading counts the demos it still shows, of its whole count. The cards are
 // drawn once, in their areas (site/pages/demos.mjs); the switch moves them into the feature groups and back. Featured
-// stays on top, out of the way while a search is on.
+// stays on top, out of the way while a search is on, and so do the words for developers and each area's line about
+// itself: the results come first under the search, on a phone too.
 (function () {
   'use strict';
   var body = document.querySelector('.gallery-body');
   var find = document.getElementById('gallery-find');
   var said = document.getElementById('gallery-said');
   var none = document.querySelector('.gallery-none');
+  var developers = document.querySelector('.gallery-dev');
   if (!body || !find) return;
   var featured = document.getElementById('featured');
   var buttons = Array.prototype.slice.call(document.querySelectorAll('.gallery-by button'));
@@ -80,6 +82,9 @@
       if (count) count.textContent = words.length ? left + ' of ' + count.dataset.of : count.dataset.of;
     });
     if (featured) featured.hidden = words.length > 0;
+    if (developers) developers.hidden = words.length > 0;
+    // Each area's line about itself too: under its heading, its results.
+    body.querySelectorAll('.gallery-about').forEach(function (about) { about.hidden = words.length > 0; });
     none.hidden = found.length > 0;
     var many = found.length === 1 ? '1 demo matches.' : found.length + ' demos match.';
     said.textContent = !words.length ? '' : loose && found.length ? 'Nothing has those words as typed: ' + (found.length === 1 ? '1 demo has' : found.length + ' demos have') + ' words close to them.' : many;

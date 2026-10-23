@@ -11,14 +11,26 @@
     -->
     <script nonce="__CSP_NONCE__">
       window.cspViolations = [];
-      document.addEventListener('securitypolicyviolation', (event) => window.cspViolations.push({ directive: event.violatedDirective, blocked: event.blockedURI, sample: event.sample, source: event.sourceFile, line: event.lineNumber, target: (event.target && event.target.id) || '' }));
+      document.addEventListener('securitypolicyviolation', (event) => {
+        window.cspViolations.push({ directive: event.violatedDirective, blocked: event.blockedURI, sample: event.sample, source: event.sourceFile, line: event.lineNumber, target: (event.target && event.target.id) || '' });
+        const said = document.getElementById('csp-refused');
+        if (said) said.textContent = window.cspViolations.length === 1 ? '1 thing' : window.cspViolations.length + ' things';
+      });
     </script>
     <style nonce="__CSP_NONCE__">
       body { margin: 0; font-family: system-ui, sans-serif; }
       #app { max-width: 900px; margin: 0 auto; padding: 24px 16px 64px; }
+      .csp-note { max-width: 900px; box-sizing: border-box; margin: 0 auto; padding: 16px 16px 0; font-size: 14px; line-height: 1.5; color: #4b5563; }
+      .csp-note b { color: #1b1f24; }
     </style>
   </head>
   <body>
+    <p class="csp-note">
+      <b>Fieldia’s one script tag under a strict Content-Security-Policy:</b> the tag carries the page’s nonce, and
+      fieldia.js puts it on every style and every part it adds. Refused by the policy so far:
+      <b id="csp-refused">nothing</b>. A real server sends the policy as a header and makes a new nonce for every
+      response; fieldia.dev, a static site, has it as a meta tag with a nonce written once, the same for every visitor.
+    </p>
     <main id="app"></main>
     <script nonce="__CSP_NONCE__" src="../script/fieldia.js"></script>
     <script nonce="__CSP_NONCE__">
