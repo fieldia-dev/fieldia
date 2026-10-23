@@ -1345,8 +1345,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // bytes) and a code's box written at rest as typed (34), each listed with its part's budget below. Every value a person
 // typed in a text box reads in its own direction — an English sentence on an Arabic page keeps its full stop at its end
 // — by the page's words' own rule (styles.ts, 77 bytes): text boxes are on nearly every page. 519.79 measured before,
-// 519.87 after, to 519.9.
-const BUDGET_KB = 519.9;
+// 519.87 after, to 519.9. Templates asked before a name kept is replaced: 28 bytes, the viewer handing the part its
+// question, 519.89. The input rules' `stay` — keys after a refused one going in where they fit, its words said
+// meanwhile, a mask's and a code's boxes (input-rules.ts, 35 bytes, the guard every box shares): 519.93, to 520.0.
+const BUDGET_KB = 520.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2579,8 +2581,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // table of lines — a text cell, a section's or a note's words — read in its own direction (styles-lines.ts) — lines
 // 43.77 and 15.03 measured before, 43.95 and 15.09 after, to 44.0, inside 15.1. A template saved under a name already
 // kept asks first, its Yes "Replace", Cancel asking the name again — templates 6.49 and 2.90 measured before, 6.66 and
-// 2.95 after, to 6.7, inside 3.0. (The main script grew 28 bytes: the viewer handing the part its question.)
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [13.7, 5.8], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// 2.95 after, to 6.7, inside 3.0. (The main script grew 28 bytes: the viewer handing the part its question.) Keys
+// after a refused one going in where they fit, never hidden, and a paste with words round the value giving the one
+// value in them ("ID 1023456789", "IBAN: SA03 …", a whole SMS into a code's boxes; `valueIn`) — typed 13.62 and 5.72
+// measured before, 14.18 and 5.97 after, to 14.2 and 6.0.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

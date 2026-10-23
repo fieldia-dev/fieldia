@@ -196,8 +196,10 @@ left out (an IBAN's last groups, as long as its country's); every other
 character is the mask's own, written in as the person types — "2 104 " as the
 fifth digit is due — and Backspace over one takes the character before it. A
 key no slot takes there is refused with why ("a digit goes here, not “x”"),
-the keys after it held (the input rules); a paste is laid out against it or
-refused whole, saying why. The field takes the characters typed
+said while the keys after it go in where they fit — never hidden ("10a2345"
+shows "1 023 45"); a paste is laid out against it, one with words round the
+value ("ID 1023456789", "IBAN: SA03 …") gives the one value in them, and one
+with none, or two, is refused whole, saying why. The field takes the characters typed
 (`"2104556789"`) once every slot it needs is filled, or as shown
 (`"maskKeeps": "shown"`: `"4821 RKA"`); `"upper": true` writes its letters in
 capitals. Left before it is whole, what was typed stays, marked, with how many
@@ -225,7 +227,9 @@ digits (`options.length`, 4 to 12, 6 unless said; `options.letters` for
 letters too) over one text box with `autocomplete="one-time-code"`, so the
 phone's autofill of a code sent by SMS fills it whole, a screen reader reads
 one box by its label ("6 digits"), and a code pasted with its spaces or dashes
-lands across the boxes at once. The field takes the code once it is whole — a
+lands across the boxes at once — a whole message pasted ("Your code is 482
+913.") gives the one code of its length in it, else is refused, saying why; a
+key refused is said while the keys after it go in. The field takes the code once it is whole — a
 step on its change can send it; left before then, it says how many are still to
 type. Both come in the typed part (`typedPart`), the text box meanwhile.
 

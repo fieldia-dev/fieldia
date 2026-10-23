@@ -153,6 +153,11 @@ export interface InputRules {
   paste?(text: string): { text: string; say?: string; whole?: boolean } | { refuse: string };
   /** Keys typed after a refused one, at the same place, are held with it: a number's "1.5" never becomes 15. */
   hold?: boolean;
+  /**
+   * Keys typed after a refused one go in where they fit, and its words stay said meanwhile, until a deletion or the box
+   * is left: a mask's, a code's boxes — never keys hidden.
+   */
+  stay?: boolean;
 }
 
 /** A box being guarded. */
@@ -420,7 +425,7 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
     const after = held && before.value === held.value && before.start === held.start && before.end === held.end && before.value === taken.value ? held : null;
     const words = after ? after.words : rules.judge(box.value, taken.value);
     if (!words) {
-      hint.hide();
+      if (!rules.stay || !type.startsWith('insert')) hint.hide();
       return accept();
     }
     // An edit that could not be stopped: the last text taken comes back, and the widget never hears of it.

@@ -2,7 +2,7 @@ import { stripMarks, type Value } from '@fieldia/core';
 import { guard, quoted, refusalHint, type InputRules } from './input-rules';
 import { boxPurpose, fillIn, maker, setAttr, typeInto, wordsFor } from './kind-parts';
 import { inPlural } from './labels';
-import { caretAfter, conform, masked, maskShape, readMask, type Conformed, type Mask } from './mask';
+import { caretAfter, conform, masked, maskShape, readMask, valueIn, type Conformed, type Mask } from './mask';
 import { installTypedStyles } from './styles-typed';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
@@ -10,8 +10,9 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  * A text box typed to a mask (`options.mask` on a char field, mask.ts): a national ID, an IBAN, a car plate. The
  * mask's own characters are written in as the person types — "2901 " as the fifth digit is due — and Backspace over
  * one takes the character before it. A key no slot takes there is refused with why ("a digit goes here, not “o”"),
- * and the keys typed after it wait with it (the 0.21 input rules): left so, all that was typed is the box's, read as
- * it is. A paste is laid out against the mask: one that does not fit is refused whole, saying why. The field takes the
+ * and the keys typed after it go in where they fit, as typed — never hidden ("10a2345" shows "1 023 45"). A paste is
+ * laid out against the mask; one with words round the value ("ID 1023456789", "IBAN: SA03 …") gives the one value in
+ * them; one that has none, or two, is refused whole, saying why. The field takes the
  * value once every slot it needs is filled — the characters typed (`"29010112345678"`), or as shown with the mask's
  * own (`options.maskKeeps: "shown"`); left before then, what was typed stays in the box, marked, with how many are
  * still to type, and the field keeps what it held. A value from outside that the mask does not fit is shown as it came,
@@ -48,7 +49,7 @@ export const maskWidget: WidgetFactory = (context: WidgetContext): Widget => {
   /** The text with `text` in place of the box's selection. */
   const spliced = (text: string) => input.value.slice(0, input.selectionStart ?? input.value.length) + text + input.value.slice(input.selectionEnd ?? input.value.length);
   const rules: InputRules = {
-    hold: true,
+    stay: true,
     judge(next) {
       const read = conform(next, mask);
       return read.ok ? null : why(read);
@@ -56,7 +57,11 @@ export const maskWidget: WidgetFactory = (context: WidgetContext): Widget => {
     paste(text) {
       const plain = stripMarks(text).replace(/(\r\n|[\r\n])+$/, '').trim();
       const read = conform(spliced(plain), mask);
-      if (!read.ok) return { refuse: why(read) };
+      if (!read.ok) {
+        // Words round the value: the one value in them, taken whole.
+        const found = valueIn(plain, mask);
+        return found ? { text: found.shown, whole: true } : { refuse: why(read) };
+      }
       // A whole value pasted over all the box holds: written the mask's way at once.
       const replacing = (input.selectionStart ?? 0) === 0 && (input.selectionEnd ?? 0) >= input.value.length;
       return replacing ? { text: read.shown, whole: true } : { text: plain };

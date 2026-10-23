@@ -109,6 +109,22 @@ export function conform(text: string, mask: Mask, open = false): Conformed {
   return { ok: true, shown, typed, filled };
 }
 
+/**
+ * The one value a mask takes in pasted words round it ("ID 1023456789", "IBAN: SA03 8000 …"): the longest run of the
+ * words that fills the mask, where every such run reads the same; null where none does, or two read differently.
+ */
+export function valueIn(text: string, mask: Mask): Extract<Conformed, { ok: true }> | null {
+  const words = text.split(/[\s:;,()[\]{}"'«»“”‘’<>|]+/u).filter(Boolean);
+  let best: Extract<Conformed, { ok: true }>[] = [];
+  for (let i = 0; i < words.length; i++)
+    for (let j = i + 1; j <= words.length; j++) {
+      const read = conform(words.slice(i, j).join(' '), mask);
+      if (!read.ok || read.filled < mask.needed || (best.length && read.filled < best[0].filled)) continue;
+      best = best.length && read.filled === best[0].filled ? [...best, read] : [read];
+    }
+  return best.length && best.every((one) => one.typed === best[0].typed) ? best[0] : null;
+}
+
 /** A value as the mask shows it, when it fits; null for one it does not (a value from outside, kept as it came). */
 export function masked(value: string, mask: Mask): string | null {
   const read = conform(value, mask);
