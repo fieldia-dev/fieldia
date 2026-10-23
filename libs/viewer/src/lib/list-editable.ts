@@ -1057,7 +1057,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
       title: edit.record ? fill(labels.rowChange, { name: nameOf(state.values, edit.key) }) : sentence(labels.rowAddNoun, labels.rowAdd),
       fields,
       values: state.values as Values,
-      layout: [{ type: 'section', id: `${node.id}-sheet`, columns: 1, children: shown.map((name) => ({ type: 'field', id: `${node.id}-sheet-${name}`, field: name, ...(name === focus ? { focus: true } : {}) })) }],
+      // Each box in the look its column's cells take — a per cent typed as one, hours as HH:MM — as on a wide screen.
+      layout: [{ type: 'section', id: `${node.id}-sheet`, columns: 1, children: shown.map((name) => ({ type: 'field', id: `${node.id}-sheet-${name}`, field: name, ...lookOf(name), ...(name === focus ? { focus: true } : {}) })) }],
       ...(page.lowerLabels ? { lowerLabels: true } : {}),
     });
     if (edit.gone) return;
