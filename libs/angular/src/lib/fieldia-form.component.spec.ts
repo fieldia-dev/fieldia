@@ -117,6 +117,18 @@ class StaffHostComponent {
   readonly shown: unknown[] = [];
 }
 
+/** A record on a slow source, waiting in words, each wait's start and end heard. */
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<fieldia-form [page]="page" [dataSource]="dataSource" [recordId]="1" [loading]="loading" (loadingStart)="heard.push('start ' + $event.moment)" (loadingEnd)="heard.push('end ' + $event.moment)" />`,
+})
+class SlowHostComponent {
+  readonly page = staffPage;
+  readonly dataSource = createMemoryDataSource({ records: { 'hr.employee': { 1: { name: 'Mona Adel' } } }, delayMs: 300 });
+  readonly loading = { first: 'text', delay: 0 } as const;
+  readonly heard: string[] = [];
+}
+
 /** A product priced by the app, saved as a record. */
 const pricing: Page = {
   fieldia: '0.1',
@@ -537,6 +549,17 @@ describe('<fieldia-form> for Angular', () => {
     (el.querySelector('[aria-label="Next record"]') as HTMLButtonElement).click();
     await waitFor(() => fixture.componentInstance.shown.length === 2);
     expect(fixture.componentInstance.shown).toEqual([1, 2]);
+  });
+
+  it('waits as its `loading` input says, telling each wait’s start and end', async () => {
+    const fixture = TestBed.createComponent(SlowHostComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    await waitFor(() => el.querySelector('.fd-loader[data-way="text"]'));
+    expect(el.querySelector('.fd-loader[data-way="text"]')?.textContent).toBe('Loading…');
+    await waitFor(() => fixture.componentInstance.heard.length === 2);
+    expect(fixture.componentInstance.heard).toEqual(['start first', 'end first']);
   });
 
   it('cleans up when it is destroyed', async () => {

@@ -1,5 +1,5 @@
 import type { Field, FieldNode, Form, FormEvents, FormState, Value } from '@fieldia/core';
-import { mountViewer, newestFunctions, skinFor, type SlotRenderer, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, newestFunctions, skinFor, type SlotRenderer, type ViewerEvents, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
 import { firstPaint as drawFirstPaint, type FirstPaintOptions } from '@fieldia/viewer/server';
 import type { WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
@@ -88,10 +88,17 @@ export interface FieldiaFormProps extends Omit<ViewerOptions, 'slots'> {
   onDelete?: (event: FormEvents['delete']) => void;
   /** A draft was kept on the app's server (`saveDraft`): its key, and whether Continue later was pressed. */
   onDraft?: (event: FormEvents['draft']) => void;
+  /**
+   * A wait began and ended — a record, a list's rows, a search, a save (`loading`): its moment, its part, how long it
+   * took and whether it failed — for the app's own indicator. How each wait looks is the `loading` prop's, with the
+   * app's own drawing in `loading.custom`.
+   */
+  onLoadingStart?: (event: ViewerEvents['loadingstart']) => void;
+  onLoadingEnd?: (event: ViewerEvents['loadingend']) => void;
 }
 
 /** The form's events a prop hears, by the prop's name. */
-const EVENTS = { onChange: 'change', onSave: 'save', onSend: 'send', onStep: 'step', onRun: 'run', onRecord: 'open', onArchive: 'archive', onDuplicate: 'duplicate', onDelete: 'delete', onDraft: 'draft' } as const;
+const EVENTS = { onChange: 'change', onSave: 'save', onSend: 'send', onStep: 'step', onRun: 'run', onRecord: 'open', onArchive: 'archive', onDuplicate: 'duplicate', onDelete: 'delete', onDraft: 'draft', onLoadingStart: 'loadingstart', onLoadingEnd: 'loadingend' } as const;
 
 /** A form's state as React state: the component re-renders on every change. */
 export function useFormState(form: Form): FormState {
@@ -255,7 +262,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       };
     }
 
-    const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, firstPaint: _paint, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, onRecord: _record, onArchive: _archive, onDuplicate: _duplicate, onDelete: _delete, onDraft: _draft, ...options } = latest.current;
+    const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, firstPaint: _paint, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, onRecord: _record, onArchive: _archive, onDuplicate: _duplicate, onDelete: _delete, onDraft: _draft, onLoadingStart: _started, onLoadingEnd: _ended, ...options } = latest.current;
     const mounted = mountViewer(element, {
       ...options,
       functions: newestFunctions(() => latest.current.functions),
@@ -271,7 +278,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       onOpen: (request) => latest.current.onOpen?.(request),
     });
     // Each event through the newest handler, as for actions.
-    for (const [prop, event] of Object.entries(EVENTS) as [keyof typeof EVENTS, keyof FormEvents][]) {
+    for (const [prop, event] of Object.entries(EVENTS) as [keyof typeof EVENTS, keyof ViewerEvents][]) {
       mounted.on(event, (payload) => (latest.current[prop] as ((event: unknown) => void) | undefined)?.(payload));
     }
     setHandle(mounted);

@@ -224,6 +224,17 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('waits as its `loading` prop says, emitting each wait’s start and end', async () => {
+    const dataSource = createMemoryDataSource({ records: { 'hr.employee': { 1: { name: 'Mona Adel' } } }, delayMs: 300 });
+    const wrapper = mount(FieldiaForm, { props: { page: staffPage, dataSource, recordId: 1, loading: { first: 'text', delay: 0 } }, attachTo: document.body });
+    await waitFor(() => wrapper.find('.fd-loader[data-way="text"]').exists());
+    expect(wrapper.find('.fd-loader[data-way="text"]').text()).toBe('Loading…');
+    await waitFor(() => wrapper.emitted('loadingend')?.length === 1);
+    expect(wrapper.emitted('loadingstart')?.map(([event]) => (event as { moment: string }).moment)).toEqual(['first']);
+    expect(wrapper.emitted('loadingend')?.map(([event]) => (event as { failed: boolean }).failed)).toEqual([false]);
+    wrapper.unmount();
+  });
+
   it('emits the form’s events: change, run, save, send and step', async () => {
     const wrapper = mount(FieldiaForm, { props: { page: pricing, dataSource: createMemoryDataSource(), onAction: () => ({ values: { price: 380 } }) }, attachTo: document.body });
     const product = wrapper.find('[data-node="f-product"] input');
