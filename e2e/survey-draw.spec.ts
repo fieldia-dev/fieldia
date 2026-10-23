@@ -35,10 +35,11 @@ test.describe('a question bank', () => {
     await expect
       .poll(() => page.evaluate(() => Object.entries(localStorage).find(([key]) => key.startsWith('fieldia:draft:training-check'))?.[1] ?? ''))
       .toContain('"step-bank"');
-    // The same device, the page opened again: its draft restored, the same two, in the same order (kept in the draft).
+    // The same device, the page opened again: its draft restored, the same two, in the same order (kept in the draft) —
+    // at once, never offered to be let go, as its clock started: a draft let go would start it again.
     await page.reload();
-    await page.getByRole('button', { name: 'Restore' }).click();
     await expect(asked).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'Restore' })).toHaveCount(0);
     expect(await asked.evaluateAll((parts) => parts.map((part) => part.getAttribute('data-node')))).toEqual(first);
     // Reviewed in the order shown: the bank's two after the care's.
     await page.getByRole('button', { name: 'Review your answers' }).click();

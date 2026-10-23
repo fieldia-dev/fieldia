@@ -481,9 +481,18 @@ to the viewer, at once; a headless app calls `form.save()` as `timeUp` changes.
 `lock` (a step's default) keeps them for the person to send; a step's that
 locks gives way to the next step. `form.countdown()` is the countdown showing
 now (`{ scope, left, ends, stage: 'running' | 'warning' | 'up', … }`). Their
-starts are kept in drafts (`StoredDraft.timers`), so a page opened again goes on
-counting; the send tells `started` and `timeUp`. The clock is the browser's: a
-server that must be sure keeps its own.
+starts are kept in drafts (`StoredDraft.timers`) with the answers, so a page
+opened again goes on counting: a reload is never a way round a limit. A clock's
+start is kept the moment it starts, and a draft whose clock started is laid at
+once — never offered to be let go, even with `drafts.restore: "ask"`. Where the
+app keeps no drafts (no `drafts`, no `saveDraft`), a timed page keeps them in
+the tab's own store (`sessionStorage`): a reload goes on with the time left, or
+— past its end — says the time is up and sends or locks as the page says. Sent,
+or started again (`form.reset()`), the draft is let go: the next response is a
+new one, with its own clock. The send tells `started` and `timeUp`. The clock is
+the browser's, and another tab or device starts afresh: a server that must be
+sure keeps its own (it has `started`), and takes one response per person
+(`limits.onePerPerson`).
 
 ## Files stored as they are picked
 

@@ -38,4 +38,52 @@ test.describe('a time limit', () => {
     await expect(page.locator('.fd-time-done')).toHaveText('Time is up: your answers were sent as they were.');
     await screen(page, 'survey-timed-sent');
   });
+
+  /** The walk's steps: Start, a name and a role, Next, the first answer, a while — then the tab reloaded. */
+  async function halfWay(page: Page) {
+    await page.clock.install({ time: new Date('2026-10-20T09:00:00Z') });
+    await open(page, 'plain', CHECK);
+    // The page asks before a reload lets typed answers go; the person goes on with it.
+    page.on('dialog', (dialog) => void dialog.accept());
+    await page.getByRole('button', { name: 'Start' }).click();
+    await page.getByLabel('Your name').fill('Nadia Samir');
+    await page.getByLabel('Nurse').check();
+    await page.getByRole('button', { name: /^Next/ }).click();
+    await page.getByLabel(/Hyaluronic acid/).check();
+    await page.clock.runFor(3 * 60_000);
+    await expect(page.locator('.fd-time-bar')).toContainText('Time left: 7:00');
+  }
+
+  test('a reload goes on with the time left and the answers given: never a way round the limit', async ({ page }) => {
+    await halfWay(page);
+    // The clock held still, so what is left reads the same before and after.
+    await page.clock.pauseAt(new Date('2026-10-20T09:03:30Z'));
+    await expect(page.locator('.fd-time-bar')).toContainText(/Time left: 6:3[01]/);
+    await page.reload();
+    await expect(page.locator('.fd-form')).toBeVisible();
+    // No Start again, no full ten minutes: the clock goes on from where it stood, on the step it was on.
+    await expect(page.locator('.fd-time-bar')).toContainText(/Time left: 6:3[01]/);
+    await expect(page.locator('.fd-time-start')).toBeHidden();
+    await expect(page.getByLabel(/Hyaluronic acid/)).toBeChecked();
+    // On again: a screen waits for the page's frames, which a held clock holds too.
+    await page.clock.resume();
+    await screen(page, 'survey-timed-reloaded');
+    await page.getByRole('button', { name: /^Back/ }).click();
+    await expect(page.getByLabel('Your name')).toHaveValue('Nadia Samir');
+    await expect(page.getByLabel('Nurse')).toBeChecked();
+    await page.clock.runFor(7 * 60_000);
+    await expect(page.locator('.fd-time-done')).toHaveText('Time is up: your answers were sent as they were.');
+  });
+
+  test('a reload after the time ran out says so and sends the answers as they stood', async ({ page }) => {
+    await halfWay(page);
+    // The tab put away — a phone's browser asleep, the page not running — and opened again long after its ten minutes.
+    await page.goto('about:blank');
+    await page.clock.setSystemTime(new Date('2026-10-20T09:30:00Z'));
+    await open(page, 'plain', CHECK);
+    await expect(page.locator('.fd-done')).toBeVisible();
+    await expect(page.locator('.fd-time-done')).toHaveText('Time is up: your answers were sent as they were.');
+    await expect(page.locator('.fd-time-start')).toBeHidden();
+    await screen(page, 'survey-timed-reloaded-late');
+  });
 });
