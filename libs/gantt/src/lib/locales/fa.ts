@@ -38,4 +38,6 @@ export const fa: GanttLabels = {
   close: 'بستن',
   notMoved: 'جابه‌جا نشد: {why}',
   cannotMove: 'شما نمی‌توانید این مورد را تغییر دهید.',
+  edgeBefore: 'پیش از روزهای نمایش‌داده‌شده: {n}',
+  edgeAfter: 'پس از روزهای نمایش‌داده‌شده: {n}',
 };

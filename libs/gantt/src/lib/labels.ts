@@ -48,6 +48,9 @@ export interface GanttLabels {
   notMoved: string;
   /** Why a record cannot be moved, when its source gives no reason of its own. */
   cannotMove: string;
+  /** The signs at either edge of the days shown: how many bars run off them (`{n}`), pressed to go on to them. */
+  edgeBefore: string;
+  edgeAfter: string;
 }
 
 const en: GanttLabels = {
@@ -84,6 +87,8 @@ const en: GanttLabels = {
   close: 'Close',
   notMoved: 'Not moved: {why}',
   cannotMove: 'You cannot change this one.',
+  edgeBefore: 'Before the days shown: {n}',
+  edgeAfter: 'After the days shown: {n}',
 };
 
 const ar: GanttLabels = {
@@ -118,6 +123,8 @@ const ar: GanttLabels = {
   close: 'إغلاق',
   notMoved: 'لم يُنقل: {why}',
   cannotMove: 'لا يمكنك تغيير هذا السجل.',
+  edgeBefore: 'قبل الأيام المعروضة: {n}',
+  edgeAfter: 'بعد الأيام المعروضة: {n}',
 };
 
 const fr: GanttLabels = {
@@ -154,6 +161,8 @@ const fr: GanttLabels = {
   close: 'Fermer',
   notMoved: 'Pas déplacé : {why}',
   cannotMove: 'Vous ne pouvez pas modifier celle-ci.',
+  edgeBefore: 'Avant les jours affichés : {n}',
+  edgeAfter: 'Après les jours affichés : {n}',
 };
 
 const de: GanttLabels = {
@@ -190,6 +199,8 @@ const de: GanttLabels = {
   close: 'Schließen',
   notMoved: 'Nicht verschoben: {why}',
   cannotMove: 'Diesen Eintrag können Sie nicht ändern.',
+  edgeBefore: 'Vor den gezeigten Tagen: {n}',
+  edgeAfter: 'Nach den gezeigten Tagen: {n}',
 };
 
 /**

@@ -44,8 +44,9 @@ let made = 0;
  * A list's records on a Gantt timeline, for the list's switcher: the list's own search, its records as bars on a time
  * axis by days, weeks or months, in groups under their headings, each joined by an arrow to the records it waits for
  * (finish to start, red where it starts too soon); today's line; a bar dragged to move it or by its ends to stretch it,
- * or moved a day at a time from the keyboard, written through the data source's save with Undo; on paper, the whole
- * plan on the page's width.
+ * or moved a day at a time from the keyboard, written through the data source's save with Undo — and Ctrl+Z, and
+ * Ctrl+Shift+Z or Ctrl+Y to make it again; on paper, the whole plan on the page's width. It opens on the plan, from its
+ * first task (today in view where it fits), and says at either edge how many bars run off the days shown.
  */
 export function ganttPart(context: ListViewContext, settings: GanttSettings = {}): ListViewPart {
   const { page, node, document: doc, locale } = context;
@@ -94,8 +95,10 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
   let current: string | null = null;
   /** Whether the timeline has been brought to today once, as it is first shown. */
   let placed = false;
-  /** What Undo writes back, and the version the record holds after the move. */
-  let undo: { id: RecordId; values: Values; version?: RecordVersion } | null = null;
+  /** What Undo writes back, the words its move said, and the version the record holds after the move. */
+  let undo: { id: RecordId; values: Values; words: string; version?: RecordVersion } | null = null;
+  /** What Redo writes again — the move Undo took back — and its words. */
+  let redo: { id: RecordId; values: Values; words: string } | null = null;
   /** A move from the keys not written yet: so many days, of the whole bar or its end. */
   let pending: { task: GanttTask; by: number; edge: Edge; timer: ReturnType<typeof setTimeout> } | null = null;
   /** The saves in turn: a move waits for the one before it, and its answer. */
@@ -146,6 +149,37 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
   const keysMoves = make('span', { id: `${id}-keys`, class: 'fd-sr-only' }, keysWords.filter(Boolean).join(' '));
   const keysStill = make('span', { id: `${id}-keys-still`, class: 'fd-sr-only' }, [keysWords[0], labels.keysRows].filter(Boolean).join(' '));
   const element = make('div', { class: 'fd-gantt', role: 'group', 'aria-label': labels.timeline }, bar, said, alert, note, body, live, keysMoves, keysStill);
+  /** The signs at either edge of the days shown: how many bars run off them, pressed to go on to them. */
+  const edges = (['start', 'end'] as const).map((edge) => {
+    const sign = make('button', { type: 'button', class: 'fd-gantt-edge', 'data-edge': edge, hidden: '' });
+    sign.addEventListener('click', () => {
+      const scroller = body.querySelector<HTMLElement>('.fd-gantt-scroll');
+      if (!scroller) return;
+      const by = Math.round(Math.max(dayWidth, (scroller.clientWidth - namesWidth()) * 0.75)) * (edge === 'start' ? -1 : 1);
+      scroller.scrollLeft += by * (rtl() ? -1 : 1);
+      markEdges();
+    });
+    return sign;
+  });
+  /** The names' column's width: what the days shown start after. */
+  const namesWidth = () => body.querySelector<HTMLElement>('.fd-gantt-corner')?.offsetWidth ?? 0;
+  /** How many bars of the rows shown run off the days shown at each edge, said by its sign; none, no sign. */
+  function markEdges() {
+    const scroller = body.querySelector<HTMLElement>('.fd-gantt-scroll');
+    if (!scroller || printing) return edges.forEach((sign) => (sign.hidden = true));
+    const from = Math.abs(scroller.scrollLeft);
+    const to = from + Math.max(0, scroller.clientWidth - namesWidth());
+    const shown = tasks.filter((t) => t.start && t.end && !closed.has(t.group ?? ''));
+    const counts = { start: shown.filter((t) => x(t.start as Date) < from - 1).length, end: shown.filter((t) => x(t.milestone ? (t.start as Date) : (t.end as Date)) > to + 1).length };
+    for (const sign of edges) {
+      const edge = sign.dataset['edge'] as 'start' | 'end';
+      const n = counts[edge];
+      sign.hidden = !n;
+      sign.textContent = edge === 'start' ? `‹ ${n}` : `${n} ›`;
+      sign.setAttribute('aria-label', fill(edge === 'start' ? labels.edgeBefore : labels.edgeAfter, { n }));
+      sign.title = sign.getAttribute('aria-label') ?? '';
+    }
+  }
 
   // ---- asking for the records ------------------------------------------------------------------------------
 
@@ -233,7 +267,10 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     const groups = groupsOf(tasks, spec, page, labels.noGroup);
     // No stop of its own for the keys (Firefox gives a box that scrolls one): its bars are, each brought into view.
     const scroll = make('div', { class: 'fd-gantt-scroll', tabindex: '-1' }, make('div', { class: 'fd-gantt-sheet' }, axis(width), rows(groups, width)));
-    body.replaceChildren(scroll);
+    body.replaceChildren(scroll, ...edges);
+    // Its signs under the axis, past the names: where the days shown start and end.
+    body.style.setProperty('--fd-gantt-axis', `${body.querySelector<HTMLElement>('.fd-gantt-head')?.offsetHeight ?? 0}px`);
+    scroll.addEventListener('scroll', markEdges, { passive: true });
     if (scrolled) [scroll.scrollLeft, scroll.scrollTop] = scrolled;
     // The keys' one stop: where they stood, else the first bar.
     const stops = [...body.querySelectorAll<HTMLElement>('[data-focus]')];
@@ -244,8 +281,9 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     }
     if (!placed && body.clientWidth > 0) {
       placed = true;
-      toToday(false);
+      toPlan();
     }
+    markEdges();
   }
 
   /** The axis: a corner over the names, then months over days or weeks, or years over months, today's day marked. */
@@ -454,6 +492,21 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     if (again && shownDay) again.scrollLeft = Math.round(x(shownDay)) * (rtl() ? -1 : 1);
   }
 
+  /**
+   * The plan shown as it opens: from its first task, a day in — and from today where the plan starts later and both
+   * fit — so no bar of its first weeks is cut with nothing to say so; today in view where it fits.
+   */
+  function toPlan() {
+    const scroller = body.querySelector<HTMLElement>('.fd-gantt-scroll');
+    const starts = tasks.filter((t) => t.start && t.end).map((t) => (t.start as Date).getTime());
+    if (!scroller || !starts.length) return toToday(false);
+    const room = Math.max(0, scroller.clientWidth - namesWidth());
+    const first = x(new Date(Math.min(...starts)));
+    const at = x(now());
+    const from = at < first && first - at <= room * 0.75 ? at : first;
+    scroller.scrollLeft = Math.round(Math.max(0, from - dayWidth)) * (rtl() ? -1 : 1);
+  }
+
   /** Today brought into view, a little in from the timeline's start; the keys on the bar nearest it, when asked by its button. */
   function toToday(keys: boolean) {
     const scroller = body.querySelector<HTMLElement>('.fd-gantt-scroll');
@@ -462,6 +515,7 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     // Whole pixels: a bar half a pixel past the names would show a sliver of itself beside them.
     const target = Math.round(Math.max(0, x(now()) - Math.max(0, scroller.clientWidth - names) / 4));
     scroller.scrollLeft = target * (rtl() ? -1 : 1);
+    markEdges();
     if (!keys) return;
     const at = now().getTime();
     const nearest = tasks.filter((t) => t.start && t.end && !closed.has(t.group ?? '')).sort((a, b) => distance(a, at) - distance(b, at))[0];
@@ -670,7 +724,8 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       const version = records.find((r) => String(r.id) === key)?.version;
       try {
         const result = await source.save?.(moveSave(task.id, values, version));
-        undo = { id: task.id, values: before, ...(result?.version ? { version: result.version } : {}) };
+        undo = { id: task.id, values: before, words, ...(result?.version ? { version: result.version } : {}) };
+        redo = null;
         say(words, task.id, true);
       } catch (error) {
         const problem = saveProblemOf(error);
@@ -682,7 +737,7 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     return run;
   }
 
-  /** Undo: the moved fields as they were, and no others; the keys, when they were on Undo, back on the record. */
+  /** Undo: the moved fields as they were, and no others; the keys, when they were on Undo, back on the record. Redo after it. */
   async function undoLast() {
     const last = undo;
     if (!last || !source?.save) return;
@@ -690,8 +745,11 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     undo = null;
     say('');
     await saving;
+    const record = records.find((r) => String(r.id) === String(last.id));
+    const moved: Values = Object.fromEntries(Object.keys(last.values).map((name) => [name, record?.values[name] ?? null]));
     try {
-      await source.save(moveSave(last.id, last.values, last.version ?? records.find((r) => String(r.id) === String(last.id))?.version));
+      await source.save(moveSave(last.id, last.values, last.version ?? record?.version));
+      redo = { id: last.id, values: moved, words: last.words };
       say(labels.undone, last.id);
     } catch (error) {
       alert.textContent = fill(labels.notMoved, { why: saveProblemOf(error).message });
@@ -700,6 +758,46 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     await reload();
     if (keys && (!doc.activeElement || doc.activeElement === doc.body)) body.querySelector<HTMLElement>(`[data-focus="t:${last.id}"]`)?.focus();
   }
+
+  /** Redo: the move Undo took back, made again — with Undo once more. */
+  async function redoLast() {
+    const next = redo;
+    if (!next || !source?.save) return;
+    redo = null;
+    say('');
+    await saving;
+    const record = records.find((r) => String(r.id) === String(next.id));
+    const back: Values = Object.fromEntries(Object.keys(next.values).map((name) => [name, record?.values[name] ?? null]));
+    try {
+      const result = await source.save(moveSave(next.id, next.values, record?.version));
+      undo = { id: next.id, values: back, words: next.words, ...(result?.version ? { version: result.version } : {}) };
+      say(next.words, next.id, true);
+    } catch (error) {
+      alert.textContent = fill(labels.notMoved, { why: saveProblemOf(error).message });
+    }
+    if (!destroyed) await reload();
+  }
+
+  /**
+   * Ctrl+Z (⌘Z) takes the last move back, as the toast's Undo does — and Ctrl+Shift+Z or Ctrl+Y makes it again — from
+   * anywhere on the page but a box typed in, or a dialog over it, which keep their own: one undo for the page. A move of
+   * the keys not written yet is written first.
+   */
+  const onUndoKey = (e: KeyboardEvent) => {
+    if (e.defaultPrevented || e.altKey || !(e.ctrlKey || e.metaKey) || !element.isConnected || element.closest('[hidden]')) return;
+    const key = e.key.toLowerCase();
+    const again = (key === 'z' && e.shiftKey) || (key === 'y' && !e.shiftKey);
+    if (key !== 'z' && !again) return;
+    const target = e.target as Element;
+    const over = target.closest?.('[role="dialog"], [role="alertdialog"]');
+    if (target.closest?.('input, textarea, select, [contenteditable="true"]') || (over && !over.contains(element))) return;
+    if (again ? !redo : !undo && !pending) return;
+    e.preventDefault();
+    if (again) return void redoLast();
+    flush();
+    void saving.then(() => undoLast());
+  };
+  doc.addEventListener('keydown', onUndoKey);
 
   /** Words in the status line about a record, with Undo after a move and a way to close them, which leaves the keys on that record. */
   function say(words: string, about?: RecordId, withUndo = false) {
@@ -745,6 +843,7 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       resized?.disconnect();
       view?.removeEventListener('beforeprint', before);
       view?.removeEventListener('afterprint', after);
+      doc.removeEventListener('keydown', onUndoKey);
       paper?.removeEventListener?.('change', onPaper);
       element.remove();
     },

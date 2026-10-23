@@ -38,4 +38,6 @@ export const es: GanttLabels = {
   close: 'Cerrar',
   notMoved: 'No se movió: {why}',
   cannotMove: 'No puede modificar este registro.',
+  edgeBefore: 'Antes de los días mostrados: {n}',
+  edgeAfter: 'Después de los días mostrados: {n}',
 };

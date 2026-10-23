@@ -79,11 +79,15 @@ a group says "4 tasks".
 - **See** the plan: the axis of months over days, months over weeks or years
   over months; each record's row, its name kept in sight as the days scroll;
   its bar, coloured; the groups under their headings; the arrows; a red line
-  for today. **Today** brings it into view; **Days**, **Weeks** and **Months**
-  change the scale.
+  for today. It opens on the plan, from its first task — today in view where it
+  fits — and a sign at either edge of the days shown says how many bars run off
+  it ("‹ 3", "7 ›"), pressed to go on to them. **Today** brings today into view;
+  **Days**, **Weeks** and **Months** change the scale.
 - **Move** a bar by dragging it to other days, and **stretch** it by dragging
   its start or its end, by whole days (a time of day is kept). Escape while
-  dragging puts it back. The move is saved at once; **Undo** puts it back.
+  dragging puts it back. The move is saved at once; **Undo** puts it back, and
+  so does **Ctrl+Z** (⌘Z) from anywhere on the page but a box typed in or a
+  dialog over it — **Ctrl+Shift+Z** or **Ctrl+Y** makes it again.
 - **Open** a record by pressing its bar or its name, or Enter: the app's
   `onOpenRecord`, as a row of the table opens it.
 - **Keys**: one stop for the whole timeline. Up and down reach the bar above

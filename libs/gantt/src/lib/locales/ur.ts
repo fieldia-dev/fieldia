@@ -40,4 +40,6 @@ export const ur: GanttLabels = {
   close: 'بند کریں',
   notMoved: 'منتقلی نہیں ہو سکی: {why}',
   cannotMove: 'آپ اسے تبدیل نہیں کر سکتے۔',
+  edgeBefore: 'دکھائے گئے دنوں سے پہلے: {n}',
+  edgeAfter: 'دکھائے گئے دنوں کے بعد: {n}',
 };

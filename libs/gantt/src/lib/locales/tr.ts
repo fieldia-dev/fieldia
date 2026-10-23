@@ -38,4 +38,6 @@ export const tr: GanttLabels = {
   close: 'Kapat',
   notMoved: 'Taşınmadı: {why}',
   cannotMove: 'Bunu değiştiremezsiniz.',
+  edgeBefore: 'Gösterilen günlerden önce: {n}',
+  edgeAfter: 'Gösterilen günlerden sonra: {n}',
 };

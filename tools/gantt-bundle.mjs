@@ -27,6 +27,11 @@
  * Spanish 661 measured) — a timeline in any other language never carries them (inline, they took its chunk to 16,540).
  * The week's first day where CLDR starts it for the page's own tag where it is shown in its own language (en-GB's, not
  * en's): 14,404 bytes measured before, 14,444 after, to 14.2.
+ * The owner's walk of 0.31 mended (walkfix31-engine): a day's letter in the language's own script (Urdu's short names),
+ * the timeline opened on the plan from its first task, a sign at either edge of the days shown saying how many bars run
+ * off it, and Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y taking a move back and making it again — 14,486 bytes measured before,
+ * 15,525 after, to 15.2; Persian's words 878 before, 925 after, to 1.0 (Turkish's 751, Urdu's 908, Spanish's 701,
+ * inside theirs).
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -35,8 +40,8 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.8, gantt: 14.2 };
-const LANGUAGE_BUDGET = { tr: 0.8, fa: 0.9, ur: 0.9, es: 0.7 };
+const BUDGET = { page: 0.8, gantt: 15.2 };
+const LANGUAGE_BUDGET = { tr: 0.8, fa: 1.0, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
