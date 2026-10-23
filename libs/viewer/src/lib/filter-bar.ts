@@ -1,5 +1,5 @@
 import { facetsToFilter, labelAt, optionsList, suggestions, type DataSource, type Facet, type Field, type Group, type ListNode, type Locale, type Page, type ResolvedFilter } from '@fieldia/core';
-import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import { drawIcon, startLoading, type IconSet, type Loading, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { FilterKit, RangeEnds } from './filter-range';
 import { rangeControl, type RangeControl } from './filter-range-control';
@@ -38,6 +38,8 @@ export interface FilterBarContext {
   onChange: (facets: Facet[]) => void;
   /** A range's boxes and words and a count's mark, the list part's (filter-range.ts): handed, never carried twice. */
   kit: FilterKit;
+  /** How the list waits (loading.ts in @fieldia/widgets): a field's values as they are asked for (`search`). */
+  loading?: Loading;
 }
 
 /** Neither end of a range: nothing filtered. */
@@ -336,10 +338,24 @@ export function filterBar(context: FilterBarContext) {
         })
       );
     };
-    const { close } = menuFor(button, menu, async () => {
-      known = await valuesOf(field, state);
-      draw();
-    });
+    // Its values as they are asked for (`search`): "Searching…" in its list past the delay; failed, said there, with Retry.
+    const asked = async (): Promise<void> => {
+      const wait = startLoading(menu, 'search', context.loading, {
+        part: field,
+        place: (loader) => {
+          loader.setAttribute('role', 'none');
+          menu.replaceChildren(loader);
+        },
+        retry: () => void asked(),
+      });
+      try {
+        known = await valuesOf(field, state);
+      } catch (error) {
+        return wait.fail(error);
+      }
+      await wait.done(draw);
+    };
+    const { close } = menuFor(button, menu, asked);
     const holder = el('span', { class: 'fd-filter-field', 'data-field': field }, button, menu);
     return { field, def, button, words, holder, close, control: null };
   });

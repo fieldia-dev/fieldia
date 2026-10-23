@@ -1,4 +1,5 @@
 import type { DataSource, ListNode, RecordId, ResolvedFilter, SortOrder } from '@fieldia/core';
+import { startLoading, type Loading, type Wait } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 import type { Row } from './list-groups';
@@ -24,6 +25,8 @@ export interface TreeContext {
   recordOf: (tr: Element) => Row | undefined;
   /** How many columns a row spans. */
   span: () => number;
+  /** How the list waits (loading.ts in @fieldia/widgets): a parent's rows as they come (`more`). */
+  loading?: Loading;
   /** Whether a search is on: the tree is then its matches, each said under its parent. */
   searching: () => boolean;
   /** Rows came or went. */
@@ -117,11 +120,31 @@ export function lazyTree(context: TreeContext): LazyTree | null {
     }
   }
 
+  /**
+   * A parent's next rows' wait (`more`): "Loading more…" in a row of its own where they will come, at their depth — its
+   * Show more out of sight meanwhile — and, failed, said there with Retry.
+   */
+  const waitAt = (region: HTMLElement, parent: HTMLElement, after: Element, retry: () => void) =>
+    startLoading(region, 'more', context.loading, {
+      part: `${context.node.id}-${parent.dataset['id'] ?? ''}`,
+      retry,
+      place: (loader) => {
+        const row = el('tr', { class: 'fd-list-tree-more', 'data-aside': '' }, el('td', { colspan: String(context.span()) }, loader));
+        row.style.setProperty('--fd-depth', String(depthOf(parent) + 1));
+        after.after(row);
+        return row;
+      },
+    });
+
   /** A page of a parent's children, from `offset`, put under it — after those of its already there — and a row for the rest. */
-  async function children(parent: HTMLElement, offset: number, body: HTMLElement, after: Element): Promise<boolean> {
+  async function children(parent: HTMLElement, offset: number, body: HTMLElement, after: Element, wait: Wait): Promise<boolean> {
     const id = idOf(parent);
     const answer = await (source as Required<Pick<DataSource, 'list'>>).list({ model, fields: context.fields, filter: [...context.filter(), { field: parentField, op: '=', value: id }], sort: context.sort(), offset, limit: context.pageSize });
-    if (!parent.isConnected) return false;
+    if (!parent.isConnected) {
+      wait.stop();
+      return false;
+    }
+    await wait.done();
     const rows = answer.records.map((record) => context.row(record));
     const left = answer.total - offset - answer.records.length;
     const more: HTMLElement[] = [];
@@ -129,12 +152,17 @@ export function lazyTree(context: TreeContext): LazyTree | null {
       const button = el('button', { type: 'button', class: 'fd-button fd-button-link' }, fill(labels.loadMore, { n: number(Math.min(left, context.pageSize)) }));
       const moreRow = el('tr', { class: 'fd-list-tree-more', 'data-aside': '' }, el('td', { colspan: String(context.span()) }, button));
       moreRow.style.setProperty('--fd-depth', String(depthOf(parent) + 1));
-      button.addEventListener('click', async () => {
-        button.setAttribute('aria-busy', 'true');
-        const first = await children(parent, offset + answer.records.length, body, moreRow);
-        moreRow.remove();
-        if (first) (moreRow.previousElementSibling as HTMLElement | null)?.focus?.();
-      });
+      const next = async () => {
+        const wait = waitAt(moreRow, parent, moreRow, () => void next());
+        try {
+          const first = await children(parent, offset + answer.records.length, body, moreRow, wait);
+          moreRow.remove();
+          if (first) (moreRow.previousElementSibling as HTMLElement | null)?.focus?.();
+        } catch (error) {
+          wait.fail(error);
+        }
+      };
+      button.addEventListener('click', () => void next());
       more.push(moreRow);
     }
     after.after(...rows, ...more);
@@ -159,15 +187,14 @@ export function lazyTree(context: TreeContext): LazyTree | null {
     twisty?.setAttribute('aria-expanded', String(open));
     if (open && !tr.hasAttribute('data-loaded')) {
       tr.setAttribute('data-loaded', '');
-      tr.setAttribute('aria-busy', 'true');
+      const wait = waitAt(tr, tr, tr, () => void toggle(tr, true, body));
       try {
-        await children(tr, 0, body, tr);
-      } catch {
+        await children(tr, 0, body, tr, wait);
+      } catch (error) {
         tr.removeAttribute('data-loaded');
         opened.delete(id);
         twisty?.setAttribute('aria-expanded', 'false');
-      } finally {
-        tr.removeAttribute('aria-busy');
+        wait.fail(error);
       }
       return;
     }

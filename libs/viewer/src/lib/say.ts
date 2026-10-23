@@ -20,16 +20,18 @@ const MOST = 4;
  * never under "Customer blocked" once it has made the customer active again.
  *
  * Words a one-tap press said with `undo` carry **Undo** for a few seconds: drawn by the undo part (undo-toast.ts), which
- * the press that offers it has brought; said plainly where it cannot come.
+ * the press that offers it has brought; said plainly where it cannot come. Words with `act` carry its button — a
+ * failed wait's Retry (loading.ts) — which does it and lets the words go.
  */
-export function sayer(root: HTMLElement, el: El, words: ViewerLabels): ((message: string, tone: Tone, undo?: SayUndo) => void) & { clear(): void } {
+export function sayer(root: HTMLElement, el: El, words: ViewerLabels): ((message: string, tone: Tone, undo?: SayUndo, act?: { label: string; run(): void }) => void) & { clear(): void } {
   // There before anything is said, so a screen reader hears what comes into it.
   const region = el('div', { class: 'fd-says', role: 'status', 'aria-live': 'polite' });
   root.append(region);
-  const say = (message: string, tone: Tone, undo?: SayUndo) => {
+  const say = (message: string, tone: Tone, undo?: SayUndo, act?: { label: string; run(): void }) => {
     if (undo) return void undoPart.load().then((part) => part.undoToast(region, el, words, message, tone, undo), () => say(message, tone));
     const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': words.dismiss }, '×');
-    const toast = el('div', { class: 'fd-say', 'data-tone': tone }, el('span', {}, message), close);
+    const button = act ? el('button', { type: 'button', class: 'fd-button fd-button-link' }, act.label) : null;
+    const toast = el('div', { class: 'fd-say', 'data-tone': tone }, el('span', {}, message), ...(button ? [button] : []), close);
     // Its edge in its tone's colour, from the scheme's own: a danger is the error colour.
     toast.style.setProperty('--fd-tone', `var(--fd-${tone === 'danger' ? 'error' : tone})`);
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -43,6 +45,10 @@ export function sayer(root: HTMLElement, el: El, words: ViewerLabels): ((message
       timer = setTimeout(go, tone === 'warning' || tone === 'danger' ? STAY_LONG_MS : STAY_MS);
     };
     close.addEventListener('click', go);
+    button?.addEventListener('click', () => {
+      go();
+      act?.run();
+    });
     toast.addEventListener('mouseenter', hold);
     toast.addEventListener('focusin', hold);
     toast.addEventListener('mouseleave', wait);

@@ -75,14 +75,19 @@ describe('rows loaded as the list is scrolled', () => {
     expect(rows(host)).toBe(10);
   });
 
-  it('shows no more where every row has come, and says when the next page could not be loaded', async () => {
+  it('shows no more where every row has come, and says where they would come when the next page could not be loaded, with Retry', async () => {
     const source = entries();
     const list = source.list.bind(source);
-    source.list = (request) => (request.offset > 0 ? Promise.reject(new Error('offline')) : list(request));
+    let down = true;
+    source.list = (request) => (request.offset > 0 && down ? Promise.reject(new Error('The log is offline.')) : list(request));
     const host = await mount({ dataSource: source });
     (more(host).querySelector('button') as HTMLButtonElement).click();
-    await until(() => host.querySelector('.fd-say')?.textContent?.includes('Could not load the entries.'));
+    await until(() => more(host).querySelector('.fd-loader[data-way="failed"]')?.textContent === 'Couldn’t load. The log is offline. Retry');
     expect(rows(host)).toBe(10);
+    down = false;
+    (more(host).querySelector('.fd-loader[data-way="failed"] button') as HTMLButtonElement).click();
+    await until(() => rows(host) === 20);
+    expect(more(host).querySelector('.fd-loader')).toBeNull();
     // A short list: all of it at once, nothing more.
     const few = createMemoryDataSource({ records: { 'log.entry': { 1: { name: 'Only one', n: 1, kind: 'odd' } } } });
     handle?.destroy();

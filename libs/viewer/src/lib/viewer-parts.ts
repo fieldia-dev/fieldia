@@ -1,5 +1,5 @@
-import { callsPartFunctions, formJoins, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type SectionNode, type SheetTitle } from '@fieldia/core';
-import { businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { callsPartFunctions, formJoins, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { asksLoadingPart, loadingPart, businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as ElementModule from './element-part';
@@ -182,7 +182,7 @@ export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage'
  * Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing —
  * but the decode part, which reads codes only where a browser reads none itself, as Scan is pressed.
  */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
+const EVERY_PART: readonly Part[] = [loadingPart, headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
 /** A group holding a text read first alone — Markdown, or one edited by its button — whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -248,6 +248,10 @@ const markdownAlone = (node: SectionNode) => {
  *
  * The parts that join a page's form (@fieldia/core's `formJoins`: an outbox, the fields its link fills, proof by a code,
  * a payment) are asked for with what each draws (`joinDrawings`) — in the one-tag script, the same script.
+ *
+ * A page whose way of waiting — its own `loading`, a list's, a related list's, a map's, a field's `options.loading` —
+ * names a look the loading part draws (a spinner, the inline bar, the overlay: `asksLoadingPart`) asks for that part, so
+ * its first wait is drawn as it says, never in words first.
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
@@ -287,6 +291,9 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     const node = value as { type?: unknown; [key: string]: unknown };
     // A group or a field that asks for the quiet look.
     if (node['quiet'] === true) found.add(quietPart);
+    // A list's, a related list's, a map's or a field's own way of waiting (a field's in its options) that the loading
+    // part draws: a spinner, the inline bar, the overlay.
+    if (asksLoadingPart(node['loading'] as PageLoading | undefined)) found.add(loadingPart);
     // A button or a menu item that offers Undo after its press: the undo part, in before it is pressed.
     if (node['undo'] !== undefined) found.add(undoPart);
     // A sheet's statusbar, drawn unless its head is (which shows the state its own way).
@@ -367,6 +374,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (page.outbox) found.add(undoPart);
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
+  // The page's own way of waiting, where the loading part draws it.
+  if (asksLoadingPart(page.loading)) found.add(loadingPart);
   return [...found];
 }
 

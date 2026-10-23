@@ -63,6 +63,11 @@ const part = (host: Element, id: string) => host.querySelector(`[data-node="${id
 const box = (within: Element, node: string) => within.querySelector(`[data-node="${node}"] input`) as HTMLInputElement;
 const visible = (el: Element | null) => !!el && !el.closest('[hidden]');
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+/** Waited for, as a person sees it come: a loader shows past its delay and stays its minimum. */
+const until = async (holds: () => boolean) => {
+  for (let tries = 0; tries < 200 && !holds(); tries++) await new Promise((resolve) => setTimeout(resolve, 10));
+  expect(holds()).toBe(true);
+};
 function type(input: HTMLInputElement, text: string) {
   input.focus();
   input.value = text;
@@ -120,7 +125,7 @@ describe('a saved form placed in another', () => {
     });
   });
 
-  it('shows a quiet placeholder while the page comes, then the form', async () => {
+  it('waits as the page says while the page comes — busy at once, a skeleton past the delay — then the form', async () => {
     let give: (page: Page) => void = () => undefined;
     const asked: PageRequest[] = [];
     const { host, form } = mount(delivery({ version: 2 }), {
@@ -130,15 +135,25 @@ describe('a saved form placed in another', () => {
       },
     });
     const work = part(host, 'work');
-    expect(work.querySelector('.fd-form-part-note')?.textContent).toBe('Loading…');
     expect(work.getAttribute('aria-busy')).toBe('true');
+    expect(work.querySelector('.fd-loader')).toBeNull();
     expect(asked).toEqual([{ id: 'address' }, { id: 'address', version: 2 }]);
+    await until(() => !!work.querySelector('.fd-loader[data-way="skeleton"]'));
+    expect(work.querySelectorAll('.fd-loader .fd-sk')).toHaveLength(3);
     give(address);
-    await flush();
-    expect(work.querySelector('.fd-form-part-note')).toBeNull();
-    expect(work.hasAttribute('aria-busy')).toBe(false);
+    await until(() => !work.hasAttribute('aria-busy'));
+    expect(work.querySelector('.fd-loader')).toBeNull();
     type(box(work, 'street'), 'Kept to version 2');
     expect(form.getState().values['work']).toEqual({ street: 'Kept to version 2', city: null });
+  });
+
+  it('says “Loading…” in its place where the page’s first wait is in words, as 0.31 did', async () => {
+    let give: (page: Page) => void = () => undefined;
+    const { host } = mount({ ...delivery(), loading: { first: 'text' } }, { pages: () => new Promise<Page>((resolve) => (give = resolve)) });
+    const work = part(host, 'work');
+    await until(() => work.querySelector('.fd-loader[data-way="text"]')?.textContent === 'Loading…');
+    give(address);
+    await until(() => !work.querySelector('.fd-loader') && !!box(work, 'street'));
   });
 
   it('finds a version kept to by `id@version` in a record of pages', () => {

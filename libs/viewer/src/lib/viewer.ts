@@ -48,6 +48,7 @@ import {
   type RunResult,
   type Values,
   type WaitsFor,
+  type PageLoading,
   MESSAGES,
   hotkeyWords,
   labelAt,
@@ -59,6 +60,7 @@ import {
 } from '@fieldia/core';
 import { overFirstPaint } from './first-paint-over';
 import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, useStyleNonce, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses } from '@fieldia/widgets';
+import { asksLoadingPart, letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, wantLoadingPart, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { relatedInTab, upgradePage, wordsComing, wordsReady, zonedPage } from '@fieldia/core';
@@ -210,6 +212,14 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   showValid?: boolean;
   /** Where a save's progress shows: beside Save (the default), as a toast in a corner, or as a bar across the top. */
   saveStatus?: 'inline' | 'toast' | 'bar';
+  /**
+   * How every page this viewer shows looks while it waits for an answer — drawn the first time (`first`), asked again
+   * (`refresh`), its next rows (`more`), a link's suggestions (`search`), a save or a button's steps (`action`) — with
+   * the looks, the timing and a failure's way: the app's defaults, under the page's own `loading` and each part's.
+   * `custom` draws a moment set to `custom` the app's own way, inside the container it is handed. Left out, Fieldia's
+   * (docs/plans/loading.md): a skeleton first, what is shown kept with a bar over it as it is asked again.
+   */
+  loading?: LoadingOptions;
   /** Show the whole form read-only: every field locked, no Save. Buttons still run. */
   readonly?: boolean;
   /** An Edit button that unlocks a read-only form, and a Done that saves and locks it again. */
@@ -279,6 +289,12 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   breadcrumbs?: readonly Breadcrumb[];
 }
 
+/** What the viewer's handle tells: the form's events, and each wait's true start and end (`loadingstart`, `loadingend`). */
+export interface ViewerEvents extends FormEvents {
+  loadingstart: LoadingEvent;
+  loadingend: LoadingEvent;
+}
+
 export interface ViewerHandle {
   readonly form: Form;
   readonly element: HTMLElement;
@@ -302,8 +318,12 @@ export interface ViewerHandle {
    * `{ lit: false }` leaves its row unmarked, as no row was pressed. A record page has no rows: nothing happens.
    */
   openRecord(id: RecordId, options?: OpenRowOptions): Promise<void>;
-  /** Listen to one of the form's events — change, save, send, action, run, step, open; returns what stops listening. */
-  on<E extends keyof FormEvents>(event: E, listener: (event: FormEvents[E]) => void): () => void;
+  /**
+   * Listen to one of the form's events — change, save, send, action, run, step, open — or to a wait's start and end,
+   * for an app's own indicator (`loadingstart`, `loadingend`: the moment, the part, how long, whether it failed);
+   * returns what stops listening.
+   */
+  on<E extends keyof ViewerEvents>(event: E, listener: (event: ViewerEvents[E]) => void): () => void;
   /** Write several fields at once, as the app: the page's change steps do not run for it. */
   setValues(values: Values): void;
   /**
@@ -470,6 +490,21 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     ...options.host,
   };
   const widgetLabels = WIDGET_LABELS[locale];
+  /** Who hears each wait's start and end (`loadingstart`, `loadingend`). */
+  const heard = { start: new Set<(event: LoadingEvent) => void>(), end: new Set<(event: LoadingEvent) => void>() };
+  /**
+   * How the page waits for its answers (loading.ts in @fieldia/widgets): the app's settings under the page's, each
+   * part's over them; told to the app's listeners; a failure said in a toast with Retry where it says so.
+   */
+  const loading: Loading = {
+    settings: loadingSettings(options.loading, page.loading),
+    ...(options.loading?.custom ? { custom: options.loading.custom } : {}),
+    words: widgetLabels,
+    told: (start, event) => {
+      for (const listener of start ? heard.start : heard.end) listener(event);
+    },
+    toast: (message, retry) => say(message, 'danger', undefined, { label: widgetLabels.loadRetry, run: retry }),
+  };
   /** How a value reads inside the page's own words on screen (a `{field}`): a day in the page's order, a yes or no in words. */
   // Read as each value is said, so a language whose words came after the mount (its chunk) says its own yes and no.
   const sentenceWords: SentenceWords = {
@@ -567,6 +602,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': skinFor(options.skin ?? page.look?.skin, theme), dir, lang: tag, 'data-max-width': page.maxWidth });
   applyLook(root, theme ? { ...page.look, theme } : page.look);
   wearTokens(root, options.tokens);
+  // A save's or a button's wait drawn otherwise than on the button: the buttons' rings stay away. A delay of its own,
+  // which a busy button's ring keeps to as well.
+  const acting = loadingWay(loading, 'action');
+  if (acting !== 'button') root.setAttribute('data-fd-action', acting);
+  if (loading.settings.delay !== 150) root.style.setProperty('--fd-loading-delay', `${loading.settings.delay}ms`);
   // A question whose Yes does something says what in its Yes (`how.yes`), never a bare OK.
   const confirm = options.confirm ?? dialogConfirm;
   /** The "Discard your changes?" asked now, if one is: gone the moment it is answered. */
@@ -593,7 +633,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   async function press(button: HTMLElement, run: () => Promise<RunResult>) {
     if (button.hasAttribute('aria-busy')) return;
     say.clear();
-    button.setAttribute('aria-busy', 'true');
+    // Its wait (`action`): the button busy, its ring drawn after the delay and kept its minimum — or over the form, as
+    // the page says, the button busy all the same.
+    const wait = startAction(button);
+    const ownBusy = !wait || acting !== 'button';
+    if (ownBusy) button.setAttribute('aria-busy', 'true');
     button.setAttribute('aria-disabled', 'true');
     try {
       const { reason } = await run();
@@ -602,9 +646,25 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         focusFirstProblem();
       }
     } finally {
-      button.removeAttribute('aria-busy');
+      if (ownBusy) button.removeAttribute('aria-busy');
       button.removeAttribute('aria-disabled');
+      endAction(wait);
     }
+  }
+  /** The wait of a save or of a button's steps going on: one at a time. */
+  let actionWait: Wait | null = null;
+  /** The wait for the page and its record, then for each load of it (`first`, `refresh`): made as the viewer goes. */
+  let recordWait: Wait | null = null;
+  /** A save's or a button's steps' wait: on the button pressed, or over the form where the page draws it there. */
+  function startAction(button: HTMLElement | null): Wait | null {
+    const region = acting === 'button' ? button : content;
+    if (actionWait || !region) return null;
+    return (actionWait = startLoading(region, 'action', loading, { part: button?.getAttribute('data-node') ?? page.id }));
+  }
+  function endAction(wait: Wait | null) {
+    if (!wait) return;
+    if (actionWait === wait) actionWait = null;
+    void wait.done();
   }
 
   // ---- the parts -------------------------------------------------------
@@ -745,7 +805,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         mark.classList.add('fd-valid-mark');
         label.append(mark);
       }
-      const context: WidgetContext = { form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report };
+      // How it waits — a link's suggestions, its choices from the app — its own `options.loading` over the page's.
+      const context: WidgetContext = { form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report, loading: loadingOver(loading, node.options?.['loading'] as PageLoading | undefined) };
       // Choices whose words show the answers given follow them, as the answers part draws them.
       const draw = (own: WidgetContext) => createWidget(own, options.widgets);
       const widget = answersPart.loaded?.wordedWidget(context, draw) ?? draw(context);
@@ -1584,6 +1645,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
                 }
               : undefined,
           recordsOf: modelRecords,
+          loading,
         });
         part.update(form.getState());
       };
@@ -1614,7 +1676,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         warnedMaps = true;
         return el('div', { class: 'fd-map-part', 'data-node': node.id, hidden: '' });
       }
-      const part = options.maps({ node, page, form, document: doc, locale, icons: options.icons });
+      const part = options.maps({ node, page, form, document: doc, locale, icons: options.icons, loading: loadingOver(loading, node.loading) });
       part.element.classList.add('fd-map-part');
       part.element.dataset['node'] = node.id;
       // The whole row unless its page says: a map is read across.
@@ -1653,8 +1715,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
     /**
      * A saved form placed here, drawn from the page the app gives for its id
-     * with a form of its own inside this one. A quiet placeholder while the
-     * page comes; words in its place when it cannot be found, would hold
+     * with a form of its own inside this one. Waiting as the page says while the
+     * page comes (`first`: a skeleton unless it says otherwise); words in its place when it cannot be found, would hold
      * itself, or cannot sit in a form.
      */
     function formItem(node: FormNode, place: Place): HTMLElement {
@@ -1663,16 +1725,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         'data-node': node.id,
         'data-style': 'card',
         'data-on-page': place.onPage ? '' : undefined,
-        'aria-busy': 'true',
       });
       spans(box, node.colspan);
-      const note = el('p', { class: 'fd-form-part-note' }, labels.loading);
-      box.append(note);
+      const wait = startLoading(box, 'first', loading, { part: node.id });
       hideWhen(box, node.id);
       const refuse = (words: string) => {
-        box.removeAttribute('aria-busy');
-        note.textContent = words;
-        note.classList.add('fd-form-part-problem');
+        wait.stop();
+        box.append(el('p', { class: 'fd-form-part-note fd-form-part-problem' }, words));
       };
       const draw = (found: Page | null, waited = false) => {
         if (gone) return;
@@ -1709,11 +1768,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           path: `${scope.path}${node.name}.`,
         });
         const layout = saved.layout as SectionsNode | TabsNode;
-        // Its parts sit in the part's box: a card there draws none of its own.
-        note.replaceWith(own.grid(layout.type === 'tabs' ? [layout] : layout.children, 1, { columns: 1, onPage: false, labels: place.labels, quiet: place.quiet }));
-        box.removeAttribute('aria-busy');
+        // Its parts sit in the part's box: a card there draws none of its own — in once its loader, if one showed, goes.
+        const parts = own.grid(layout.type === 'tabs' ? [layout] : layout.children, 1, { columns: 1, onPage: false, labels: place.labels, quiet: place.quiet });
         cleanups.push(inner.subscribe(renderNow));
-        if (mounted) renderNow();
+        void wait.done(() => {
+          if (gone) return;
+          box.append(parts);
+          if (mounted) renderNow();
+        });
       };
       let asked: Page | null | Promise<Page | null>;
       try {
@@ -1832,7 +1894,6 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       waitingFor(state) ||
       (state.status === 'saving' ? labels.saving
       : state.status === 'saved' ? savedWords()
-      : state.status === 'loading' ? labels.loading
       : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? problem.message : notDone())
       : state.status === 'error' ? state.error ?? ''
       : '');
@@ -2547,6 +2608,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         icons: options.icons,
         preferences,
         onOpenRecord: options.onOpenRecord,
+        // How it waits; its first wait drawn at once where the page's, while the list part came, was in sight.
+        loading,
+        loadingNow: !!recordWait?.shown,
         ...(options.now ? { now: options.now } : {}),
         ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
         ...(options.listSearch ? { search: options.listSearch } : {}),
@@ -2631,7 +2695,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // The parts its check owes (the one-tag script's), with the page's own: the check runs again once they came.
   // The app's own functions are called through the functions part: a page whose formulas call one waits for it.
   const appCalls = options.functions && callsPartFunctions(page, Object.keys(options.functions)) ? [functionsPart] : [];
-  const awaited = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded);
+  // The app's own way of waiting, where the loading part draws it (a spinner, the overlay): in before the first wait shows.
+  const awaited = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later), ...(asksLoadingPart(options.loading) ? [loadingPart] : [])])].filter((part) => !part.loaded);
   let drawn: Promise<void> = Promise.resolve();
   if (!awaited.length && !words) drawPage();
   else {
@@ -2956,6 +3021,63 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   cleanups.push(steadyPresses(root));
   // And a box left for a press shows its problem once the press has ended (press.ts): watched from the first press.
   watchPresses(doc);
+  // ---- the page and its record as they come (loading.ts in @fieldia/widgets) ----------------------------------------
+  // One wait while the page's parts come and its record loads (`first`): the page's layout as its skeleton until the page
+  // is drawn, then its own boxes, until both are in. Each load after it — the pager, a reload, Retry — asked again
+  // (`refresh`). A save, as its wait (`action`), on Save.
+  let pageShape: HTMLElement | null = null;
+  const shapes = {
+    show: (kit: NonNullable<typeof loadingPart.loaded>) => {
+      if (pageDrawn) return;
+      pageShape = kit.pageSkeleton(doc, page);
+      content.prepend(pageShape);
+    },
+    hide: () => {
+      pageShape?.remove();
+      pageShape = null;
+    },
+  };
+  /** Its loader and a failure at the top of the form's place, over its first part. */
+  const atTop = (loader: HTMLElement) => content.prepend(loader);
+  /** Retry, after a failure or a timeout: its record asked for again, a wait of its own drawn for it. */
+  const askAgain = () => {
+    recordWait = null;
+    void (loadedOnce ? form.run([{ do: 'reload' }]) : form.load());
+  };
+  const recordWaitAt = (moment: 'first' | 'refresh') => startLoading(content, moment, loading, { part: page.id, shape: shapes, place: atTop, retry: askAgain });
+  if (awaited.length || words || form.getState().status === 'idle') recordWait = recordWaitAt('first');
+  // A page that is to wait for something — its parts, its record, a list's rows, a saved form, a map — has its loading
+  // part asked for now, never waited for: by the time it would show a skeleton, it mostly has it.
+  if (recordWait || /"type":"(list|related|form|map)"/.test(JSON.stringify(page.layout))) wantLoadingPart();
+  let saveWait: Wait | null = null;
+  const waits = (state: FormState) => {
+    // The page drawn, its own boxes in the skeleton's place.
+    if (pageDrawn && pageShape) shapes.hide();
+    const asking = state.status === 'loading' || state.status === 'idle';
+    if (recordWait && pageDrawn && !asking) {
+      const wait = recordWait;
+      recordWait = null;
+      // A record that could not be loaded says so in its place, with Retry; a save's failure is said its own way.
+      if (state.status === 'error' && !state.saveProblem) wait.fail(new Error(state.error ?? ''), askAgain);
+      else {
+        loadedOnce = true;
+        // Answered past its timeout: drawn as it comes, what was said of it taken away.
+        letFailureGo(content);
+        void wait.done();
+      }
+    } else if (!recordWait && state.status === 'loading') recordWait = recordWaitAt(loadedOnce ? 'refresh' : 'first');
+    if (state.status === 'saving' && !saveWait) saveWait = startAction(root.querySelector<HTMLElement>('button[type="submit"]:not([hidden])'));
+    else if (state.status !== 'saving' && saveWait) {
+      endAction(saveWait);
+      saveWait = null;
+    }
+  };
+  let loadedOnce = false;
+  updaters.push(waits);
+  cleanups.push(() => {
+    recordWait?.stop();
+    actionWait?.stop();
+  });
   const unsubscribe = form.subscribe(render);
   // A run that could not go on says why: a step that cannot run here, or what the app threw. A stop with words the form says itself.
   cleanups.push(
@@ -3037,7 +3159,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         await openInList?.(id, options);
       }),
     on: (event, listener) => {
-      const off = form.on(event, listener);
+      if (event === 'loadingstart' || event === 'loadingend') {
+        const set = event === 'loadingstart' ? heard.start : heard.end;
+        set.add(listener as (event: LoadingEvent) => void);
+        return () => void set.delete(listener as (event: LoadingEvent) => void);
+      }
+      const off = form.on(event as keyof FormEvents, listener as (event: FormEvents[keyof FormEvents]) => void);
       cleanups.push(off);
       return off;
     },

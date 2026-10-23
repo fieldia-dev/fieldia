@@ -1,5 +1,5 @@
 import { recordSentence, type DataSource, type Facet, type Form, type FormState, type ListNode, type Locale, type OpenRequest, type OpenResult, type Page, type PageRecords, type RecordId, type RelatedNode, type ResolvedFilter, type RunResult, type TabNode, type Tone, type Values } from '@fieldia/core';
-import { formatNumber, whileShown, type IconSet, type PreferenceStore, type WidgetDialogs } from '@fieldia/widgets';
+import { formatNumber, whileShown, type IconSet, type Loading, type PreferenceStore, type WidgetDialogs } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 import { listView, type ListContext, type ListView } from './list';
@@ -48,6 +48,8 @@ export interface RelatedContext {
    * found: "New invoice", "View all invoices", "No invoices yet". Nothing named without it.
    */
   recordsOf?: (model: string) => PageRecords | undefined | Promise<PageRecords | undefined>;
+  /** How the record's page waits (loading.ts in @fieldia/widgets): the list's own `loading` over it. */
+  loading?: Loading;
 }
 
 /** A related list drawn: told each state of the form, as a part of the page is. */
@@ -81,6 +83,8 @@ export function relatedListPage(page: Page, node: RelatedNode, records?: PageRec
     ...(node.rowBoldLabel ? { rowBoldLabel: node.rowBoldLabel } : {}),
     ...(node.rowButtons ? { rowButtons: node.rowButtons } : {}),
     ...(node.searchFields ? { searchFields: node.searchFields } : {}),
+    // How it waits, its own way over its record's page's.
+    ...(node.loading ? { loading: node.loading } : {}),
   };
   return {
     fieldia: page.fieldia,
@@ -201,6 +205,7 @@ export function relatedList(context: RelatedContext): RelatedPart {
     ...(context.icons ? { icons: context.icons } : {}),
     ...(context.now ? { now: context.now } : {}),
     ...(openRecord ? { onOpenRecord: openRecord } : {}),
+    ...(context.loading ? { loading: context.loading } : {}),
   };
 
   /**
