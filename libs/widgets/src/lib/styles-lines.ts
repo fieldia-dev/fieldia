@@ -92,6 +92,9 @@ export const LINES_CSS = /* css */ `
 .fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-grip, .fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-tools { grid-column: 1 / -1; width: auto; }
 .fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-tools { text-align: end; }
 /* A section heads the lines below it; a note reads as a remark between them. */
+/* A value typed in a line — a text cell, a section's or a note's words — reads in its own direction, lined up with the
+   table (styles.ts: one rule for every value a person typed). */
+.fd-lines-table :is(td:is([data-fit="char"], [data-fit="text"]), .fd-line-section, .fd-line-note) :is(input, textarea) { unicode-bidi: plaintext; text-align: match-parent; text-align: -webkit-match-parent; }
 .fd-line-section td { background: var(--fd-page); }
 .fd-line-section .fd-input { font-weight: 600; }
 .fd-line-note .fd-input { font-style: italic; }

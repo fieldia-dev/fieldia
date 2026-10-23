@@ -22,7 +22,10 @@ reviewed by a native speaker**, each of those four in a chunk of its own,
 fetched where it is spoken (`wordsReady` in @fieldia/core, which the viewer
 awaits before it draws); a number box on a Persian or Urdu page reads
 their digits (۰–۹), and a Turkish page's date box writes a day with dots
-(15.10.2026), as a German one does.
+(15.10.2026), as a German one does. On a page right to left, every value a
+person typed reads in its own direction, lined up with the page — an English
+note on an Arabic order keeps its full stop at its end — in its box, a table's
+cell and card, a list's cell, a read view and on paper: one rule.
 
 Most apps never import this package directly: [`@fieldia/viewer`](https://www.npmjs.com/package/@fieldia/viewer)
 lays a page out with these widgets. Import it to write your own widget — a

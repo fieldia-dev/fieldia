@@ -1341,8 +1341,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // The owner's walk of 0.31 mended (walkfix31-engine). A timed page's drafts in the tab where the app keeps none, so a
 // reload goes on with the time left — never a way round a limit — and a draft whose clock started laid at once (drafts.ts,
 // form.ts, 87 bytes): where the drafts are kept is known as the form is made, before the survey flow's part has come, as
-// the draft is looked for then. 519.62 measured before, 519.71 after, to 519.8.
-const BUDGET_KB = 519.8;
+// the draft is looked for then. 519.62 measured before, 519.71 after, to 519.8. A save starting the changes afresh (56
+// bytes) and a code's box written at rest as typed (34), each listed with its part's budget below. Every value a person
+// typed in a text box reads in its own direction — an English sentence on an Arabic page keeps its full stop at its end
+// — by the page's words' own rule (styles.ts, 77 bytes): text boxes are on nearly every page. 519.79 measured before,
+// 519.87 after, to 519.9.
+const BUDGET_KB = 519.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1635,8 +1639,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 167.90 after, to 167.95.
 // 0.30.1 merged into 0.31 (listed with the raw budget above): 170.63 measured before, 170.77 after, to 170.8.
 // The owner's walk of 0.31 mended (walkfix31-engine; listed with the raw budget above): 170.78 measured before, 170.87
-// after, to 170.9.
-const GZIP_BUDGET_KB = 170.9;
+// after, to 170.9; a save starting the changes afresh, a code's box at rest, 170.90; every value typed in a text box in
+// its own direction, 170.91, to 171.0.
+const GZIP_BUDGET_KB = 171.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2569,8 +2574,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // contact card or a network by its name — or the code alone, a barcode's identifier never grouped, its box at rest too
 // (`codeSummary`) — codes 10.68 and 5.19 measured before, 11.35 and 5.53 after, to 11.4 and 5.6; on paper no words for a
 // box its field hides (a read-only code's) — print 16.40 and 5.19, 16.48 and 5.21, inside 16.5, to 5.3. (The main
-// script grew 34 bytes: a number box's `grouping: false`, a code's box, written at rest as typed.)
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [13.7, 5.8], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// script grew 34 bytes: a number box's `grouping: false`, a code's box, written at rest as typed.) A value typed in a
+// table of lines — a text cell, a section's or a note's words — read in its own direction (styles-lines.ts) — lines
+// 43.77 and 15.03 measured before, 43.95 and 15.09 after, to 44.0, inside 15.1.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [13.7, 5.8], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
