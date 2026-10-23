@@ -156,7 +156,10 @@ it would leave out before it is taken.
 A box left by a press of the pointer — its focus going to the button pressed — may say or unsay words under itself as it
 is left (a refused paste's words going, a name found to be none). Those words wait for the press to end
 (`press.ts` `afterPress`, used by every `refusalHint`), so nothing under the pointer moves before the release: the click
-is the button's — Apply, Save — never lost on what moved under it.
+is the button's — Apply, Save — never lost on what moved under it. So do the rows a box adds or takes away under itself
+as it is left (0.31.1: a proof's Send a code, a phone's links, an amount's shorthand line, a possible duplicate's note)
+and a part a condition shows or hides while the press goes on (viewer.ts `shownAsItsCondition`): a box may give its
+value only as it is left — a name looked up, a choice typed — and the field it shows would push what was pressed.
 The search bar, the filter bar, the map's search box and a chatter's composer are not saved with the record.
 
 ### A code scanned

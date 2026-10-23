@@ -987,7 +987,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const toned = node.tones !== undefined || node.bold !== undefined;
       const update = (state: FormState) => {
         const shown = form.node(node.id);
-        setHidden(wrapper, shown.invisible);
+        shownAsItsCondition(wrapper, node.id);
         wrapper.classList.toggle('fd-required', shown.required);
         // Its value's tone and bold while a condition holds: Flectra's decoration-* on a field.
         if (toned) {
@@ -1117,7 +1117,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
 
     function hideWhen(element: HTMLElement, id: string) {
-      watch(() => setHidden(element, form.node(id).invisible));
+      watch(() => shownAsItsCondition(element, id));
+    }
+    /**
+     * A part shown or hidden as its condition says: at once — but while a press goes on, once it has ended (press.ts).
+     * A box left for a press below it may give its value only then (a name looked up, a choice typed): the part it
+     * shows, drawn as the pointer comes down, would push what was aimed at from under it. One rule with what a box adds
+     * under itself as it is left.
+     */
+    function shownAsItsCondition(element: HTMLElement, id: string) {
+      if (element.hidden !== form.node(id).invisible) afterPress(doc, element, () => setHidden(element, form.node(id).invisible));
     }
 
     function buttonItem(node: ButtonNode): HTMLElement {

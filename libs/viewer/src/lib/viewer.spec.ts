@@ -589,6 +589,26 @@ describe('a sections page', () => {
     expect(visible(at(host, 'f-dietary'))).toBe(true);
   });
 
+  it('shows a field its condition shows once a press going on has ended: nothing moves under the pointer (0.31.1)', async () => {
+    const { host } = mount('signup');
+    const mobile = input(host, 'f-phone');
+    // The pointer comes down on the mobile below as the role's box is left, giving its value only then.
+    mobile.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    const role = input(host, 'f-role') as unknown as HTMLSelectElement;
+    role.value = '3';
+    role.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(visible(at(host, 'f-other-role'))).toBe(false);
+    // Its click lands on the mobile, where it was aimed; then the question is shown.
+    mobile.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+    mobile.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+    expect(visible(at(host, 'f-other-role'))).toBe(true);
+    // No press going on: at once, as always.
+    role.value = '0';
+    role.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(visible(at(host, 'f-other-role'))).toBe(false);
+  });
+
   it('links help text to its input', () => {
     const { host } = mount('signup');
     const help = at(host, 'f-email').querySelector('.fd-help') as HTMLElement;

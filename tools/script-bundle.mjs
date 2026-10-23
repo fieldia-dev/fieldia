@@ -1348,6 +1348,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 519.87 after, to 519.9. Templates asked before a name kept is replaced: 28 bytes, the viewer handing the part its
 // question, 519.89. The input rules' `stay` — keys after a refused one going in where they fit, its words said
 // meanwhile, a mask's and a code's boxes (input-rules.ts, 35 bytes, the guard every box shares): 519.93, to 520.0.
+// 0.31.1's merge: a part a condition shows or hides waits for a press going on to end, as what a box adds as it is
+// left does — a name looked up as the box is left showed Region under Country, pushing Tags from under the pointer
+// (viewer.ts, 40 bytes, every page with a condition): 519.93 measured before, 519.97 after, inside 520.0.
 const BUDGET_KB = 520.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1643,6 +1646,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's walk of 0.31 mended (walkfix31-engine; listed with the raw budget above): 170.78 measured before, 170.87
 // after, to 170.9; a save starting the changes afresh, a code's box at rest, 170.90; every value typed in a text box in
 // its own direction, 170.91, to 171.0.
+// 0.31.1's merge: a part a condition shows waiting for a press to end (listed with the raw budget above): 170.94
+// measured before and after, inside 171.0.
 const GZIP_BUDGET_KB = 171.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);

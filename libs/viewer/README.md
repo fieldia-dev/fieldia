@@ -132,7 +132,9 @@ afterwards asks again, and each send carries the app's proof (`verified`).
 Left by a press below it (a tap on the next question), its buttons come once
 the press has ended, so nothing moves under the pointer — as every row a box
 adds or takes away as it is left (its errors, its hints, a phone's links, an
-amount's shorthand line, a possible duplicate's note).
+amount's shorthand line, a possible duplicate's note), and as every part a
+condition shows or hides meanwhile (a country typed and left shows Region under
+it once the press on Tags has ended).
 
 A page with a `payment` (`{ "label": "Reservation fee", "amount": 10000,
 "currency": "EGP" }`) and a source with `pay` has a payment step, in a part of

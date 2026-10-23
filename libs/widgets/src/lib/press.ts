@@ -11,7 +11,7 @@
  * THE one mechanism for every box that says something as it is left — or adds or takes a row away under itself: fields,
  * a plain table's cells and the grid's, properties, a date range's ends, a list's custom filter, the boxes' hints, a
  * phone's Call and WhatsApp, an amount's shorthand line, a proof's Send a code (the verify part), a possible
- * duplicate's note.
+ * duplicate's note — and a part a condition shows or hides (the viewer's `shownAsItsCondition`).
  */
 
 /** How long after a press is lifted its click may still come, in ms: a phone's click follows the lift, the focus first. */

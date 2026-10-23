@@ -115,6 +115,27 @@ test.describe('a row a field adds as it is left moves nothing under the pointer'
     await expect(below).toBeFocused();
     await expect(page.locator('.fd-shorthand-said')).toBeHidden();
   });
+
+  test('a field a condition shows as a box is left: a country typed, then Tags below pressed — the region shown after', async ({ page }) => {
+    // The customer's how-to: “Type in Country”. A name typed and left is looked up as the box is left, and Region
+    // (shown once there is a country) appears under it — which pushed Tags down under the pointer pressing it.
+    await open(page, 'plain', 'page=customer&skin=outlined');
+    const country = node(page, 'f-country').locator('input');
+    const region = node(page, 'f-region');
+    await country.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Tab');
+    await expect(region).toBeHidden();
+    await country.click();
+    await page.keyboard.type('Egypt');
+    const tags = node(page, 'f-tags').locator('input').first();
+    await pointAndPress(page, tags);
+    await expect(tags).toBeFocused();
+    await expect(country).toHaveValue('Egypt');
+    await expect(region).toBeVisible();
+    await screen(page, 'condition-shown-after-a-press', { viewport: true });
+  });
 });
 
 test.describe('on a phone, a row a field adds as it is left moves nothing under the finger', () => {
@@ -133,5 +154,25 @@ test.describe('on a phone, a row a field adds as it is left moves nothing under 
     await expect(phone.getByRole('link', { name: /^Call / })).toBeVisible();
     await expect(phone.getByRole('button', { name: 'Send a code by WhatsApp' })).toBeVisible();
     await screen(page, 'verify-left-by-a-tap', { viewport: true });
+  });
+
+  test('a country typed, then Tags below tapped: Tags has the focus; the region a condition shows comes after', async ({ page }) => {
+    await open(page, 'plain', 'page=customer&skin=outlined');
+    const country = node(page, 'f-country').locator('input');
+    const region = node(page, 'f-region');
+    await country.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Tab');
+    await expect(region).toBeHidden();
+    await country.click();
+    await page.keyboard.type('Egypt');
+    const tags = node(page, 'f-tags').locator('input').first();
+    await tags.scrollIntoViewIfNeeded();
+    const box = (await tags.boundingBox())!;
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(tags).toBeFocused();
+    await expect(region).toBeVisible();
+    await screen(page, 'condition-shown-after-a-tap', { viewport: true });
   });
 });
