@@ -186,6 +186,11 @@ export function surveyFlow(context: FlowContext): FlowKit {
   const nav = questions.querySelector<HTMLElement>('.fd-wizard-nav');
   const submitButton = wizard ? null : questions.querySelector<HTMLButtonElement>(':scope > .fd-actions button[type="submit"]');
   if (review && wizard && nav) nav.querySelector('button[type="submit"]')?.before(backToReview);
+  /** Back to review, on a step reached by Edit from the review — at once, before anything changes — but the last one's. */
+  function placeBack() {
+    const steps = form.steps();
+    setHidden(backToReview, !editing || reviewing || !wizard || form.getState().step === steps[steps.length - 1]);
+  }
 
   /** Every answer shown now, by step or group, each with Edit. */
   function drawReview() {
@@ -250,13 +255,13 @@ export function surveyFlow(context: FlowContext): FlowKit {
   /** A question's box, focused: on its step, the review put away. */
   function editAt(asked: Asked) {
     showReview(false);
+    editing = true;
     if (one) {
-      editing = true;
       one.goTo(asked.node.id);
-      return;
+      return placeBack();
     }
     if (asked.step && form.getState().step !== asked.step.id) form.goTo(asked.step.id);
-    editing = true;
+    placeBack();
     // Drawn as the step shows: the box in sight, then focused.
     const box = questions.querySelector<HTMLElement>(`[data-node="${asked.node.id}"]`);
     box?.scrollIntoView?.({ block: 'center' });
@@ -308,9 +313,7 @@ export function surveyFlow(context: FlowContext): FlowKit {
       }
       // A page of sections' own Submit reviews them first, as a wizard's last button does.
       if (submitButton) setText(submitButton, review && !reviewing ? labels.reviewAnswers : labels.submit);
-      const steps = form.steps();
-      const last = steps[steps.length - 1];
-      setHidden(backToReview, !editing || reviewing || !wizard || state.step === last);
+      placeBack();
       // A send on its way from the review says so on its button.
       if (state.status === 'saving') reviewSend.setAttribute('aria-busy', 'true');
       else reviewSend.removeAttribute('aria-busy');
