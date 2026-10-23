@@ -41,8 +41,8 @@ export const DESIGNER_CSS = /* css */ `
   background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: 10px; box-shadow: 0 18px 44px rgba(15, 20, 25, 0.18);
   padding: 6px; display: grid; gap: 4px; animation: fd-menu-in 120ms cubic-bezier(0, 0, 0.2, 1);
 }
-.fd-check { display: grid; gap: 6px; justify-items: start; padding: 10px; border-radius: 8px; }
-.fd-check + .fd-check { border-block-start: 1px solid var(--fd-border); border-radius: 0; }
+.fd-checks > .fd-check { display: grid; gap: 6px; justify-items: start; padding: 10px; border-radius: 8px; }
+.fd-checks > .fd-check + .fd-check { border-block-start: 1px solid var(--fd-border); border-radius: 0; }
 .fd-check-severity { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; }
 .fd-check[data-severity="must"] .fd-check-severity { color: var(--fd-error); background: var(--fd-error-soft); }
 .fd-check[data-severity="should"] .fd-check-severity { color: var(--fd-warning); background: var(--fd-warning-soft); }

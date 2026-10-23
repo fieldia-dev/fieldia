@@ -26,8 +26,11 @@ import { installPartStyles, PART_RANK } from './styles';
  */
 export const QUIET_CSS = /* css */ `
 /* ---- the quiet look --------------------------------------------------------- */
-/* In a quiet place labels are quieter than values, which read as words: every field's, whatever its own face. */
-.fd-form .fd-field[data-in-quiet] > .fd-label { color: var(--fd-muted); }
+/* In a quiet place labels are quieter than values, which read as words: every field's, whatever its own face — but a
+   tick box's words after it, which are what is ticked, as an option's are: in the body's colour, never read as off.
+   Its box and a radio's drawn with a light line. */
+.fd-form .fd-field[data-in-quiet]:not([data-labels="after"]) > .fd-label { color: var(--fd-muted); }
+.fd-form [data-in-quiet] { --fd-tick-line: 1px; }
 /* Words set in from a box's edge, though a skin or a theme sets its boxes' words at the edge (Google Forms'). */
 .fd-form .fd-field[data-quiet] { --fd-quiet-pad: max(var(--fd-pad-x), 6px); }
 .fd-form .fd-field[data-quiet] :where(.fd-input) { padding-inline-start: var(--fd-quiet-pad); }

@@ -51,7 +51,7 @@ export const DESIGNER_PANEL_CSS = /* css */ `
 .fd-properties .fd-kind-note { margin-block-start: 0; }
 .fd-properties .fd-props-actions { border-block-start: 0; padding-block-start: 0; gap: 6px; }
 .fd-properties .fd-q-required { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px; cursor: pointer; }
-.fd-properties .fd-q-required > input { width: 16px; height: 16px; margin: 0; accent-color: var(--fd-accent); }
+.fd-properties .fd-q-required > input { margin: 0; }
 /* "Only when…", "Show only when…": links in line with the words above them. */
 .fd-properties .fd-q-when, .fd-properties .fd-when-add { padding-inline: 0; min-height: 26px; }
 /* Why a field is read-only, under its rule: the whole width, its name over its box. */

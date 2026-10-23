@@ -310,7 +310,49 @@ const SKINS_CSS = /* css */ `
 .fd-pending { color: var(--fd-muted); font-style: italic; }
 .fd-pending:empty::before { content: "—"; }
 
-.fd-checkbox, .fd-choice input { width: 16px; height: 16px; accent-color: var(--fd-accent); margin: 0; }
+/* ---- a radio and a tick box, Fieldia's own --------------------------------------------------------------------
+   Every one in a form or in Fieldia's own box over the page — a field's tick box, a group's options and its "Other", a
+   matrix's, a table's tick cells, a list's rows, a dialog's, the designers' settings — drawn the same way in every skin
+   and theme over the browser's own input, which stays (a form posts it, the keys and a screen reader work it): 18px,
+   its edge in the muted colour; chosen, filled in the accent with a tick or a dot in the accent's own words' colour, a
+   dash for some; pressed anywhere in 24px round it (WCAG 2.5.8); ringed in the accent when the keys reach it; filled
+   grey when it cannot be changed. A switch draws its own (below); a theme reshapes them by its tokens. With no colours
+   of its own (Windows High Contrast) it is the browser's again, which the system draws in its colours; on paper, ink:
+   a page printed without its backgrounds still shows the one chosen. */
+:where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch)) {
+  appearance: none; position: relative; display: inline-grid; place-content: center; flex: none;
+  width: var(--fd-tick-size, 18px); height: var(--fd-tick-size, 18px); margin: 0; padding: 0; vertical-align: -4px;
+  border: var(--fd-tick-line, 1.5px) solid var(--fd-tick-edge, var(--fd-muted)); border-radius: clamp(2px, var(--fd-control-radius), 4px);
+  background: var(--fd-surface); color: var(--fd-accent-text); cursor: pointer; transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+:where(.fd-form, .fd-theme) input:where([type="radio"]):not(:where(.fd-switch)) { border-radius: 50%; }
+/* Its tick, its dot or its dash, drawn with lines alone (ink on paper); its press target round it. */
+:where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch))::before {
+  content: ""; box-sizing: border-box; width: 6px; height: 11px; margin-block-start: -2px; border: solid currentColor; border-width: 0 2px 2px 0;
+  transform: rotate(45deg); visibility: hidden;
+}
+:where(.fd-form, .fd-theme) input:where([type="radio"]):not(:where(.fd-switch))::before { width: 8px; height: 8px; margin: 0; border-width: 4px; border-radius: 50%; transform: none; }
+:where(.fd-form, .fd-theme) input:where([type="checkbox"]:indeterminate):not(:where(.fd-switch))::before { width: 10px; height: 0; margin: 0; border-width: 0 0 2px; transform: none; }
+:where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch))::after {
+  content: ""; position: absolute; inset: -5px;
+}
+:where(.fd-form, .fd-theme) input:where([type="checkbox"]:indeterminate, :checked):not(:where(.fd-switch)) { border-color: var(--fd-accent); background: var(--fd-accent); }
+:where(.fd-form, .fd-theme) input:where([type="checkbox"]:indeterminate, :checked):not(:where(.fd-switch))::before { visibility: visible; }
+@media (hover: hover) { :where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch, :disabled, :checked, :indeterminate)):where(:hover) { border-color: var(--fd-accent); } }
+:where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch)):where(:focus-visible) { outline: 2px solid var(--fd-accent); outline-offset: 2px; }
+:where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch)):where(:disabled) {
+  cursor: default; border-color: color-mix(in srgb, var(--fd-muted) 45%, var(--fd-surface)); background: color-mix(in srgb, var(--fd-text) 7%, var(--fd-surface));
+}
+:where(.fd-form, .fd-theme) input:where([type="checkbox"]:indeterminate, :checked):not(:where(.fd-switch)):where(:disabled) {
+  border-color: transparent; background: color-mix(in srgb, var(--fd-muted) 70%, var(--fd-surface)); color: var(--fd-surface);
+}
+@media (forced-colors: active) {
+  :where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch)) { appearance: auto; }
+  :where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch))::before { content: none; }
+}
+@media print {
+  :where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch)) { border-color: var(--fd-text) !important; background: none !important; color: var(--fd-text) !important; }
+}
 .fd-switch {
   appearance: none; width: 34px; height: 20px; margin: 0; border-radius: 999px; position: relative;
   background: var(--fd-border-strong); cursor: pointer; transition: background 0.2s ease;
