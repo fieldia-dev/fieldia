@@ -163,4 +163,33 @@ describe('a value shown as a code', () => {
     expect(figure(words.el).hidden).toBe(true);
     expect(words.el.querySelector('.fd-code-why')?.textContent).toBe('A barcode cannot hold “é”: only letters without accents, digits and signs.');
   });
+
+  it('writes a code’s value as an identifier: a number in its box and under it never grouped (the owner’s walk of 0.31)', () => {
+    const { form, el } = setup('barcode', { type: 'integer' });
+    form.setValue('x', 20261105);
+    const box = el.querySelector('input') as HTMLInputElement;
+    expect(box.value).toBe('20261105');
+    expect(el.querySelector('.fd-code-words')?.textContent).toBe('20261105');
+  });
+
+  it('says a payload that is no short line by its summary, or by nothing: a vCard by its name, a link with its parameters by its address', () => {
+    const { form, el } = setup('qrcode', { type: 'text' }, { readonly: true, node: { showValue: true } });
+    const svg = () => figure(el).querySelector('svg') as SVGSVGElement;
+    const words = () => el.querySelector('.fd-code-words') as HTMLElement;
+    form.setValue('x', ['BEGIN:VCARD', 'VERSION:3.0', 'FN:Summit desk', 'ORG:Cairo Real Estate Summit', 'TEL;TYPE=WORK:+20 2 2537 4100', 'END:VCARD'].join('\n'));
+    expect(svg().getAttribute('aria-label')).toBe('QR code: Summit desk');
+    expect([words().textContent, words().hidden]).toEqual(['Summit desk', false]);
+    form.setValue('x', 'https://tickets.example/t/TKT-2026-0042?utm_source=whatsapp&agent=mona&session=8f3a91c2');
+    expect(svg().getAttribute('aria-label')).toBe('QR code: tickets.example/t/TKT-2026-0042');
+    expect(words().textContent).toBe('tickets.example/t/TKT-2026-0042');
+    form.setValue('x', 'WIFI:T:WPA;S:Clinic guests;P:s3cret-pass;;');
+    expect(words().textContent).toBe('Clinic guests');
+    // A long text that names nothing: the code alone, named as a code.
+    form.setValue('x', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.');
+    expect([words().textContent, words().hidden]).toEqual(['', true]);
+    expect(svg().getAttribute('aria-label')).toBe('QR code');
+    // A short line, as it is.
+    form.setValue('x', 'Table 12');
+    expect([words().textContent, svg().getAttribute('aria-label')]).toEqual(['Table 12', 'QR code: Table 12']);
+  });
 });

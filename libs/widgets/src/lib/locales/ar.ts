@@ -168,6 +168,7 @@ export const ar: WidgetLabels = {
   recordingNameVoice: 'ملاحظة صوتية {when}',
   recordingNameVideo: 'فيديو {when}',
   qrCodeOf: 'رمز الاستجابة السريعة: {value}',
+  qrCode: 'رمز الاستجابة السريعة',
   barcodeOf: 'رمز شريطي: {value}',
   qrTooLong: 'أطول من أن يُعرض كرمز استجابة سريعة: اختصره، أو اعرض رابطًا إليه بدلًا منه.',
   barcodeRefused: 'لا يستطيع الرمز الشريطي أن يحمل «{character}»: الحروف اللاتينية دون علامات، والأرقام، والرموز فقط.',

@@ -168,6 +168,7 @@ export const fr: WidgetLabels = {
   recordingNameVoice: 'Note vocale {when}',
   recordingNameVideo: 'Vidéo {when}',
   qrCodeOf: 'Code QR : {value}',
+  qrCode: 'Code QR',
   barcodeOf: 'Code-barres : {value}',
   qrTooLong: 'Trop long pour un code QR : raccourcissez-le, ou montrez plutôt un lien vers lui.',
   barcodeRefused: 'Un code-barres ne peut pas contenir « {character} » : seulement des lettres sans accents, des chiffres et des signes.',

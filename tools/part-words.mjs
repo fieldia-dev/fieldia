@@ -70,7 +70,7 @@ export const PART_WORDS = {
       'recordMicRefused', 'recordCameraRefused', 'recordNoMic', 'recordNoCamera', 'recordBusy', 'recordCannot', 'recordTryAgain', 'recordingNameVoice', 'recordingNameVideo',
     ],
   },
-  codes: { widgets: ['qrCodeOf', 'barcodeOf', 'qrTooLong', 'barcodeRefused'] },
+  codes: { widgets: ['qrCodeOf', 'qrCode', 'barcodeOf', 'qrTooLong', 'barcodeRefused'] },
   pins: {
     widgets: [
       'pinsHelp', 'pinsOn', 'pinsNoPicture', 'pinsNone', 'pinAt', 'pinTopLeft', 'pinTop', 'pinTopRight', 'pinLeft', 'pinCentre', 'pinRight', 'pinBottomLeft', 'pinBottom', 'pinBottomRight',

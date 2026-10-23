@@ -176,6 +176,7 @@ export const fa: WidgetLabels = {
   recordingNameVoice: 'یادداشت صوتی {when}',
   recordingNameVideo: 'ویدیو {when}',
   qrCodeOf: 'کد QR: {value}',
+  qrCode: 'کد QR',
   barcodeOf: 'بارکد: {value}',
   qrTooLong: 'برای کد QR بیش از حد طولانی است: آن را کوتاه کنید، یا به‌جای آن پیوندی به آن نشان دهید.',
   barcodeRefused: 'بارکد نمی‌تواند «{character}» را در خود داشته باشد: فقط حروف لاتین بدون اعراب، ارقام و نمادها.',

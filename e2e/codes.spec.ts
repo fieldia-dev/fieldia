@@ -54,4 +54,22 @@ test.describe('a value shown as a QR code or a barcode', () => {
     await expect(node(page, 'f-reference').getByRole('img')).toBeVisible();
     expect(problems).toEqual([]);
   });
+
+  test('a code’s value on paper and on screen: an identifier never grouped, a vCard by its name, never its raw lines', async ({ page }) => {
+    // The owner's walk of 0.31: the printed ticket showed "BEGIN:VCARD VERSION:3.0 …" over the desk's code, and the
+    // badge as "20,261,105".
+    const { problems } = await open(page, 'plain', 'page=event-ticket&record=1&skin=outlined');
+    const desk = node(page, 'f-card');
+    await expect(desk.getByRole('img', { name: 'QR code: Summit desk' })).toBeVisible();
+    // Printing begins as a browser's Print says it does; the page laid out for paper.
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.locator('.fd-form')).not.toContainText('BEGIN:VCARD');
+    await expect(page.locator('.fd-form')).not.toContainText('20,261,105');
+    await expect(node(page, 'f-badge').locator('.fd-code-words')).toHaveText('20261105');
+    await screen(page, 'codes-ticket-paper');
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    await page.emulateMedia({ media: 'screen' });
+    expect(problems).toEqual([]);
+  });
 });

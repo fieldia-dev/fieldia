@@ -168,6 +168,7 @@ export const de: WidgetLabels = {
   recordingNameVoice: 'Sprachnotiz {when}',
   recordingNameVideo: 'Video {when}',
   qrCodeOf: 'QR-Code: {value}',
+  qrCode: 'QR-Code',
   barcodeOf: 'Strichcode: {value}',
   qrTooLong: 'Zu lang für einen QR-Code: Kürzen Sie es oder zeigen Sie stattdessen einen Link dazu.',
   barcodeRefused: 'Ein Strichcode kann „{character}“ nicht enthalten: nur Buchstaben ohne Akzente, Ziffern und Zeichen.',

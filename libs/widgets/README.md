@@ -95,7 +95,11 @@ field: a QR code, its words as UTF-8, at `options.level` L, M, Q or H) or
 `"widget": "barcode"` (a char or integer field: Code 128), drawn as SVG from the
 value — black on white, crisp on paper, named for a screen reader — under the
 field's own box while it may be typed in; `size` and `showValue` set its size
-and the words under it. Words a code cannot hold are said in its place. The
+and the words under it. A barcode's value is an identifier, said as it is — a
+number never grouped, in its box at rest too; a QR code's is said by
+`codeSummary`: a short line as it is, else a link with parameters by its
+address, a contact card or a Wi-Fi network by its name, or nothing (the code
+alone, named "QR code"). Words a code cannot hold are said in its place. The
 encoders are Fieldia's own, in `codesPart` (`fieldia.codes.js`):
 `(await codesPart.load()).qrCode(words, 'M')`, `.code128(words)`.
 

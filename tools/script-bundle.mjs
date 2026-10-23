@@ -1933,13 +1933,13 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // measured, to 126.8 and 20.6; German's 57.40 and 17.71, to 57.5 and 17.8; French's 58.28 and 17.72, to 58.3 and 17.8;
 // Turkish's 65.19 and 18.03, to 65.2 and 18.1; Persian's 159.00 and 22.24, to 159.1 and 22.3; Urdu's 161.66 and 22.29,
 // to 161.7 and 22.3; Spanish's 55.69 and 17.52, to 55.7 and 17.6.
-// The owner's walk of 0.31 mended (walkfix31-engine): a photo made the cover said "moved to the cover", and Ctrl+Z right
-// after a save saying nothing changed since — Arabic's 126.78 and 20.55 measured before, 126.96 and 20.58 after, to
-// 127.0, inside 20.6; German's 57.40 and 17.71, 57.48 and 17.74, inside 57.5 and 17.8; French's 58.28 and 17.72, 58.35
-// and 17.74, to 58.4; Turkish's 65.19 and 18.03, 65.27 and 18.06, to 65.3; Persian's 159.00 and 22.24, 159.20 and 22.27,
-// to 159.3; Urdu's 161.66 and 22.29, 161.95 and 22.32, to 162.0 and 22.4; Spanish's 55.69 and 17.52, 55.76 and 17.54,
-// to 55.8.
-const ADD_ON_BUDGET_KB = { ar: [127.0, 20.6], de: [57.5, 17.8], fr: [58.4, 17.8], tr: [65.3, 18.1], fa: [159.3, 22.3], ur: [162.0, 22.4], es: [55.8, 17.6] };
+// The owner's walk of 0.31 mended (walkfix31-engine): a photo made the cover said "moved to the cover", Ctrl+Z right
+// after a save saying nothing changed since, and a QR code named alone where its payload says no summary — Arabic's
+// 126.78 and 20.55 measured before, 127.08 and 20.59 after, to 127.1, inside 20.6; German's 57.40 and 17.71, 57.50 and
+// 17.74, to 57.6, inside 17.8; French's 58.28 and 17.72, 58.36 and 17.74, to 58.4; Turkish's 65.19 and 18.03, 65.28 and
+// 18.06, to 65.3; Persian's 159.00 and 22.24, 159.23 and 22.28, to 159.3; Urdu's 161.66 and 22.29, 161.98 and 22.32, to
+// 162.0 and 22.4; Spanish's 55.69 and 17.52, 55.78 and 17.54, to 55.8.
+const ADD_ON_BUDGET_KB = { ar: [127.1, 20.6], de: [57.6, 17.8], fr: [58.4, 17.8], tr: [65.3, 18.1], fa: [159.3, 22.3], ur: [162.0, 22.4], es: [55.8, 17.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2565,7 +2565,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 16.21 after, inside 37.2, to 16.3; an amount's shorthand line — typed 13.54 and 5.69, 13.62 and 5.72, to 13.7 and
 // 5.8; the code's buttons as the box appears or goes, its rows inside it at once — verify 11.06 and 4.69, 11.30 and
 // 4.75, to 11.4 and 4.8; a possible duplicate's note — duplicates 15.62 and 6.40, 15.66 and 6.41, inside 15.7, to 6.5.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [13.7, 5.8], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.2], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// A code's value said as what it is: a QR code's payload by its summary — a link with parameters by its address, a
+// contact card or a network by its name — or the code alone, a barcode's identifier never grouped, its box at rest too
+// (`codeSummary`) — codes 10.68 and 5.19 measured before, 11.35 and 5.53 after, to 11.4 and 5.6; on paper no words for a
+// box its field hides (a read-only code's) — print 16.40 and 5.19, 16.48 and 5.21, inside 16.5, to 5.3. (The main
+// script grew 34 bytes: a number box's `grouping: false`, a code's box, written at rest as typed.)
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [13.7, 5.8], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2591,7 +2596,7 @@ const PART_GIVES = {
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
   photos: ['photosWidget', 'editPhoto', 'drawEdited', 'fitted', 'moved', 'sized', 'turnedCrop', 'turnedSize', 'installPhotosStyles'],
   record: ['openRecorder', 'recordingType', 'clock', 'installRecordStyles'],
-  codes: ['codeWidget', 'qrCode', 'qrVersion', 'code128', 'code128Values', 'installCodesStyles'],
+  codes: ['codeWidget', 'codeSummary', 'qrCode', 'qrVersion', 'code128', 'code128Values', 'installCodesStyles'],
   pins: ['pinsWidget', 'pinsOf', 'pinAt', 'installPinsStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   surveyflow: ['quizResults', 'drawOrder', 'askedInOrder', 'limitsOf', 'countdownNow', 'keepTime', 'join', 'drawQuizResults', 'showQuiz', 'installFlowStyles', 'surveyFlow', 'flows', 'oneAtATime', 'timeKeeper'],

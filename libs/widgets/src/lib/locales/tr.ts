@@ -170,6 +170,7 @@ export const tr: WidgetLabels = {
   recordingNameVoice: 'Sesli not {when}',
   recordingNameVideo: 'Video {when}',
   qrCodeOf: 'QR kod: {value}',
+  qrCode: 'QR kod',
   barcodeOf: 'Barkod: {value}',
   qrTooLong: 'QR kod için çok uzun: kısaltın ya da bunun yerine ona giden bir bağlantı gösterin.',
   barcodeRefused: 'Barkod “{character}” karakterini içeremez: yalnızca aksansız harfler, rakamlar ve işaretler kullanılabilir.',

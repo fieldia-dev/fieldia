@@ -172,6 +172,7 @@ export const ur: WidgetLabels = {
   recordingNameVoice: 'صوتی نوٹ {when}',
   recordingNameVideo: 'ویڈیو {when}',
   qrCodeOf: 'QR کوڈ: {value}',
+  qrCode: 'QR کوڈ',
   barcodeOf: 'بارکوڈ: {value}',
   qrTooLong: 'QR کوڈ کے لیے بہت طویل: اسے مختصر کریں، یا اس کے بجائے اس کا لنک دکھائیں۔',
   barcodeRefused: 'بارکوڈ میں “{character}” نہیں آ سکتا: صرف اعراب کے بغیر لاطینی حروف، ہندسے اور علامات۔',
