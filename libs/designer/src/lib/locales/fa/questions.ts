@@ -56,6 +56,8 @@ export const questions: DesignerWords['questions'] = {
   pageTitle: 'عنوان صفحه',
   untitledPage: 'صفحهٔ بی‌عنوان',
   deletePage: 'حذف صفحه',
+  deleteQuestion: 'حذف پرسش',
+  questionTools: 'ابزارهای پرسش',
   pageOf: (n, total) => `صفحهٔ ${n} از ${total}`,
   // ---- each kind's settings
   from: 'از',

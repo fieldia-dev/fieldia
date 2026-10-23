@@ -665,6 +665,27 @@ export const DESIGNER_CSS = /* css */ `
 .fd-q-tool:focus-visible { outline: 2px solid var(--fd-focus); }
 .fd-q-tool > .fd-dicon { width: 21px; height: 21px; }
 .fd-q-tool-danger:hover { color: var(--fd-error); }
+/* Delete says so: a bin and its words ("Delete question", a page's "Delete page" once it is picked), the bin alone where
+   there is no room (a phone), still named for a screen reader. */
+.fd-q-tool:has(> .fd-q-tool-words) { width: auto; grid-auto-flow: column; gap: 6px; padding-inline: 10px 14px; border-radius: 20px; }
+.fd-q-tool-words { font-size: 14px; font-weight: 500; white-space: nowrap; }
+.fd-design-step:not(.fd-step-selected) .fd-step-delete > .fd-q-tool-words { display: none; }
+.fd-design-step:not(.fd-step-selected) .fd-step-delete { width: 40px; padding: 0; }
+@container (max-width: 560px) {
+  .fd-q-tool > .fd-q-tool-words { display: none; }
+  .fd-q-tool:has(> .fd-q-tool-words) { width: 40px; padding: 0; }
+}
+/* A question not picked: its words open it (a button drawn as words), its tools a ⋮ at its top corner, shown where it
+   is pointed at or the keys reach it — always on a screen with no pointer to hover with. */
+.fd-q-open { all: unset; cursor: pointer; overflow-wrap: anywhere; }
+.fd-q-open:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 3px; border-radius: 2px; }
+.fd-q-closed > .fd-q-title { padding-inline-end: 36px; }
+.fd-q-more { position: absolute; inset-block-start: 8px; inset-inline-end: 8px; opacity: 0; transition: opacity 150ms; }
+.fd-q-closed:is(:hover, :focus-within) > .fd-q-more, .fd-q-more[aria-expanded="true"] { opacity: 1; }
+@media (hover: none) { .fd-q-more { opacity: 1; } }
+/* What a Delete took away, at the foot of the screen with Undo (deleted-toast.ts): a toast as the viewer's words are. */
+.fd-deleted > .fd-say-undo { flex: none; font-weight: 600; padding-inline: 8px; }
+@media (prefers-reduced-motion: reduce) { .fd-q-more { transition: none; } }
 .fd-survey-canvas .fd-q-sep { height: 32px; margin-inline: 10px; }
 .fd-survey-canvas .fd-q-required-words { font-size: 14px; font-weight: 500; margin-inline-end: 8px; }
 .fd-survey-canvas .fd-q-foot .fd-switch { margin-inline-end: 6px; }

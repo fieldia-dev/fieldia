@@ -95,7 +95,8 @@ test.describe('2.5.7 every drag has a way without dragging', () => {
     // The example survey's "Your experience": four questions, nothing else.
     const step = 'step-experience';
     const order = await kids(page, step);
-    await page.locator(`.fd-q[data-node="${order[0]}"]`).focus();
+    // Its words, a button the keys reach, open it.
+    await page.locator(`.fd-q[data-node="${order[0]}"] .fd-q-open`).focus();
     await page.keyboard.press('Enter');
     await page.keyboard.press('ControlOrMeta+Shift+J');
     await expect.poll(() => kids(page, step)).toEqual([order[1], order[0], ...order.slice(2)]);

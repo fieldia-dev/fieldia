@@ -481,6 +481,20 @@ createDesigner({ page, looks }); // the same store for every designer, so they o
 
 `createMemoryLookStore()` keeps them for as long as the page is open, as for a test.
 
+## Deleting
+
+Delete asks nothing: what it takes away — a question, a page, a field, a group,
+tabs, a part of a record's head, a list's column — goes at once, and a toast at
+the foot of the screen says what went, with **Undo**: "Question deleted · Undo".
+Undo brings it back as it was, picked, the focus in its words; the toast stays
+ten seconds (longer while it is pointed at or holds the focus) and goes at the
+next change. In the survey editor a picked question's bin says **Delete
+question** (its icon alone on a phone, still named for a screen reader), a
+question not picked shows a **⋮** where it is pointed at or the keys reach it —
+Duplicate, Delete question, Move up and down — and a picked page's bin says
+**Delete page**. Every delete goes through `removeWithUndo(designer, id)`; an
+app's own chrome over the Designer can call it too.
+
 ## On a phone
 
 Where the editor is a phone's width (620px or less), its bar is one row that

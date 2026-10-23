@@ -154,7 +154,8 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     const card = target.closest?.<HTMLElement>(cardSelector);
     if (!card || !canvas.contains(card)) return;
     const grip = target.closest('[data-grip]');
-    if (card.classList.contains('fd-editing') ? !grip : target.closest('input, select, textarea, button:not([data-grip]), a, [contenteditable]')) return;
+    // A question not picked is carried by its words too, a button only for the keys that open it (survey-editor.ts).
+    if (card.classList.contains('fd-editing') ? !grip : target.closest('input, select, textarea, button:not([data-grip], .fd-q-open), a, [contenteditable]')) return;
     begin({ node: card.dataset['node'] as string }, card, event.clientX, event.clientY);
   }
 

@@ -3,6 +3,7 @@ import type { ListViewFactory, MapPartFactory, Skin } from '@fieldia/viewer';
 import { installStyles, useStyleNonce, type WidgetFactory } from '@fieldia/widgets';
 import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mode';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
+import { deletedToast, removeWithUndo } from './deleted-toast';
 import { speakIn } from './chrome-language';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import { kindName } from './kinds';
@@ -354,7 +355,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
         designer.moveHeaderPart(selected, back ? -1 : 1);
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
-        designer.removeHeaderPart(selected);
+        removeWithUndo(designer, selected, () => designer.removeHeaderPart(selected), 'part');
       }
       return;
     }
@@ -364,10 +365,12 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       designer.moveNode(selected, event.key === 'ArrowUp' ? -1 : 1);
     } else if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
-      designer.removeNode(selected);
+      removeWithUndo(designer, selected);
     }
   };
   doc.addEventListener('keydown', onKey);
+  // What a Delete took away, said with Undo at the foot of the screen.
+  const deletions = deletedToast(root, designer, el, false);
   // A click on empty room puts the field down; one on a field, a part of the page or a control does not.
   const stopPuttingDown = putDownOnClickOutside(
     root,
@@ -425,6 +428,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       json.destroy();
       ruleList.destroy();
       echoes.destroy();
+      deletions.destroy();
       root.remove();
     },
   };

@@ -54,6 +54,7 @@ export const canvas: DesignerWords['canvas'] = {
   moveLeft: 'Sola taşı',
   moveRight: 'Sağa taşı',
   delete: 'Sil',
+  deleted: { question: 'Soru silindi', field: 'Alan silindi', page: 'Sayfa silindi', section: 'Bölüm silindi', tabs: 'Sekmeler silindi', tab: 'Sekme silindi', part: 'Silindi', undo: 'Geri al' },
   statusSteps: 'Durum adımları',
   dragToMove: 'Taşımak için sürükleyin',
   required: 'Zorunlu',

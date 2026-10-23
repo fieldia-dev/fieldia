@@ -53,6 +53,7 @@ export const canvas: DesignerWords['canvas'] = {
   moveLeft: 'نقل إلى السابق',
   moveRight: 'نقل إلى التالي',
   delete: 'حذف',
+  deleted: { question: 'حُذف السؤال', field: 'حُذف الحقل', page: 'حُذفت الصفحة', section: 'حُذف القسم', tabs: 'حُذفت علامات التبويب', tab: 'حُذفت علامة التبويب', part: 'حُذف', undo: 'تراجع' },
   statusSteps: 'مراحل الحالة',
   dragToMove: 'اسحب للنقل',
   required: 'مطلوب',

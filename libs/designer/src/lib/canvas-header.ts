@@ -9,6 +9,7 @@ import { setHidden } from './writes';
 import { widgetWords } from './chrome-language';
 import { canvasHead } from './canvas-head';
 import { isDivider, opensMenu } from './menu-items';
+import { removeWithUndo } from './deleted-toast';
 
 /**
  * A record's header on the canvas, drawn the way the viewer draws it: the
@@ -161,7 +162,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     };
     const left = tool(w.moveLeft, 'left', () => designer.moveHeaderPart(part.id, -1));
     const right = tool(w.moveRight, 'right', () => designer.moveHeaderPart(part.id, 1));
-    const bar = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': itemWords(part) }, left, right, tool(w.delete, 'delete', () => designer.removeHeaderPart(part.id)));
+    const bar = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': itemWords(part) }, left, right, tool(w.delete, 'delete', () => removeWithUndo(designer, part.id, () => designer.removeHeaderPart(part.id), 'part')));
     return { bar, left, right };
   }
 

@@ -20,6 +20,7 @@ import { shownWhileSetting } from './shown-while';
 import { fieldHotkeySetting } from './head-properties';
 import { placeholderWhenList } from './placeholder-when';
 import { withAnswers } from './answer-picker';
+import { removeWithUndo } from './deleted-toast';
 
 /**
  * A field's settings, on the panel's tabs: its words and how it is shown
@@ -89,7 +90,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     if (copy) designer.select(copy);
   });
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteField);
-  remove.addEventListener('click', () => designer.removeNode(id));
+  remove.addEventListener('click', () => removeWithUndo(designer, id));
 
   // ---- Layout: how wide it is, and where it sits ----
   const width = widthSetting(el, designer, id);

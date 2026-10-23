@@ -6,6 +6,7 @@ import { across, isWrapper, locate, nameOf, spanOf } from './layout-tree';
 import { laidInTwelfths, rowShare } from './layout-twelfths';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
+import { removeWithUndo } from './deleted-toast';
 
 /**
  * Moving parts on the Advanced canvas from the keyboard, as a drag would:
@@ -106,7 +107,7 @@ export function canvasKeys(options: { el: ElementFactory; designer: Designer; rt
       return true;
     }
     if (event.key === 'Delete' || event.key === 'Backspace') {
-      designer.remove(state.picked);
+      removeWithUndo(designer, state.picked[0], () => designer.remove(state.picked), state.picked.length > 1 ? 'part' : undefined);
       say(designer.getState().issues[0] ?? w.tookOff(state.picked.length));
       return true;
     }

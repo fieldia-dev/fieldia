@@ -55,6 +55,8 @@ export const questions: DesignerWords['questions'] = {
   pageTitle: 'Título de la página',
   untitledPage: 'Página sin título',
   deletePage: 'Eliminar página',
+  deleteQuestion: 'Eliminar pregunta',
+  questionTools: 'Herramientas de la pregunta',
   pageOf: (n, total) => `Página ${n} de ${total}`,
   // ---- each kind's settings
   from: 'Desde',

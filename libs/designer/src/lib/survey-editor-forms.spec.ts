@@ -74,9 +74,13 @@ describe('survey editor — the Google Forms way', () => {
     // For the pointer: the keys move a question too, so it is no control of its own, inside the card's button.
     const grip = card.querySelector('[data-grip]') as HTMLElement;
     expect([grip.tagName, grip.getAttribute('aria-hidden')]).toEqual(['SPAN', 'true']);
-    // The card is a button in the Tab order (WCAG 2.1.1); Enter opens it, the cursor in its words.
-    expect([card.getAttribute('role'), card.getAttribute('tabindex')]).toEqual(['button', '0']);
-    card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    // Its words are a button in the Tab order (WCAG 2.1.1), as a click on the card opens it; Enter (a press of the
+    // button) opens it, the cursor in its words. Its tools are a button of their own beside it, never inside it.
+    const words = card.querySelector('.fd-q-open') as HTMLButtonElement;
+    expect([words.tagName, card.getAttribute('role'), card.hasAttribute('tabindex')]).toEqual(['BUTTON', null, false]);
+    const tools = card.querySelector('.fd-q-more') as HTMLButtonElement;
+    expect([tools.tagName, tools.getAttribute('aria-haspopup'), tools.getAttribute('aria-label'), words.contains(tools)]).toEqual(['BUTTON', 'menu', 'Question tools', false]);
+    words.click();
     expect(designer.getState().selected).toBe(q);
     expect(document.activeElement?.classList.contains('fd-q-label')).toBe(true);
   });

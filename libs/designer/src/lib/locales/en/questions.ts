@@ -54,6 +54,8 @@ export const questions = {
   pageTitle: 'Page title',
   untitledPage: 'Untitled page',
   deletePage: 'Delete page',
+  deleteQuestion: 'Delete question',
+  questionTools: 'Question tools',
   pageOf: (n: number, total: number) => `Page ${n} of ${total}`,
   // ---- each kind's settings
   from: 'From',

@@ -58,6 +58,7 @@ export const canvas: DesignerWords['canvas'] = {
   moveLeft: 'Mover a la izquierda',
   moveRight: 'Mover a la derecha',
   delete: 'Eliminar',
+  deleted: { question: 'Pregunta eliminada', field: 'Campo eliminado', page: 'Página eliminada', section: 'Sección eliminada', tabs: 'Pestañas eliminadas', tab: 'Pestaña eliminada', part: 'Eliminado', undo: 'Deshacer' },
   statusSteps: 'Pasos de estado',
   // ---- the field picked, and its bar
   dragToMove: 'Arrastre para mover',

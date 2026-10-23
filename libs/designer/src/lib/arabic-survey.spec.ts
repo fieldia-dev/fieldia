@@ -39,7 +39,7 @@ describe('the survey editor, in Arabic', () => {
     expect((card.querySelector('.fd-q-label') as HTMLInputElement).placeholder).toBe('السؤال');
     expect(card.querySelector('.fd-q-kind')?.getAttribute('aria-label')).toBe('نوع السؤال: إجابة قصيرة');
     expect(text(card, '.fd-q-required-words')).toBe('مطلوب');
-    expect(shownButtons(card).map((b) => b.getAttribute('aria-label')).filter(Boolean)).toEqual(expect.arrayContaining(['تكرار', 'حذف', 'مطلوب', 'خيارات أخرى']));
+    expect(shownButtons(card).map((b) => b.getAttribute('aria-label')).filter(Boolean)).toEqual(expect.arrayContaining(['تكرار', 'حذف السؤال', 'مطلوب', 'خيارات أخرى']));
     (card.querySelector('[aria-label="خيارات أخرى"]') as HTMLButtonElement).click();
     expect([...root.querySelectorAll('.fd-menu .fd-menu-label')].map((l) => l.textContent)).toEqual(['الوصف', 'قواعد الإجابة', 'محسوب من إجابات أخرى']);
     expect((root.querySelector('.fd-menu') as HTMLElement).dir).toBe('rtl');

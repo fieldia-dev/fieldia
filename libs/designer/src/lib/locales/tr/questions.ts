@@ -55,6 +55,8 @@ export const questions: DesignerWords['questions'] = {
   pageTitle: 'Sayfa başlığı',
   untitledPage: 'Adsız sayfa',
   deletePage: 'Sayfayı sil',
+  deleteQuestion: 'Soruyu sil',
+  questionTools: 'Soru araçları',
   pageOf: (n, total) => `Sayfa ${n} / ${total}`,
   // ---- each kind's settings
   from: 'En düşük',
