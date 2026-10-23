@@ -1029,7 +1029,9 @@ A form keeps the person's changes to the record shown, for `form.undo()` and
 moved — typing on in one box is one change until the box is left
 (`boxLeft`). Each returns what it took (`{ field, line? }`), or null when
 nothing is left; `form.history()` names the next of each without taking it.
-The changes are noted from the first; walking them is the undo part's
+A save starts them afresh, as a change saved is none to take back — but on a
+page with `autosave`, whose changes are taken back across its saves, and where
+a change made while it saved goes on past it. The changes are noted from the first; walking them is the undo part's
 (`pressUndoPart`), asked for with the first change — in by the time a person
 presses Ctrl+Z, and in at once where an app loads it first (`await
 pressUndoPart.load()`): until it has come, `undo` and `redo` take nothing.

@@ -403,6 +403,7 @@ export const es: ViewerLabels = {
   putAllBack: 'Recuperar todos',
   undoneField: 'Deshecho: {field}',
   redoneField: 'Rehecho: {field}',
+  nothingSinceSave: 'No hay nada que deshacer desde que se guardó.',
   nowIs: 'ahora {value}',
   readOnlyRecord: 'Puede leer este registro, pero no modificarlo.',
   fieldNotYours: 'Puede ver este campo, pero no modificarlo.',

@@ -403,6 +403,7 @@ export const de: ViewerLabels = {
   putAllBack: 'Alle übernehmen',
   undoneField: 'Rückgängig gemacht: {field}',
   redoneField: 'Wiederhergestellt: {field}',
+  nothingSinceSave: 'Seit dem Speichern gibt es nichts rückgängig zu machen.',
   nowIs: 'jetzt {value}',
   readOnlyRecord: 'Sie können diesen Datensatz lesen, aber nicht ändern.',
   fieldNotYours: 'Sie können dieses Feld sehen, aber nicht ändern.',

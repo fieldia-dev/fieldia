@@ -403,6 +403,7 @@ export const ur: ViewerLabels = {
   putAllBack: 'سب واپس لائیں',
   undoneField: 'کالعدم: {field}',
   redoneField: 'دوبارہ کیا گیا: {field}',
+  nothingSinceSave: 'محفوظ کرنے کے بعد واپس لینے کو کچھ نہیں۔',
   nowIs: 'اب {value}',
   readOnlyRecord: 'آپ یہ ریکارڈ پڑھ سکتے ہیں، لیکن تبدیل نہیں کر سکتے۔',
   readOnlyRecordNoun: 'آپ یہ {record} پڑھ سکتے ہیں، لیکن تبدیل نہیں کر سکتے۔',

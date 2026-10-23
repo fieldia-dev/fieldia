@@ -13,7 +13,8 @@ const textOf = (box: HTMLElement) => (box.isContentEditable ? box.innerHTML : (b
  * (`form.undo()`) — and Ctrl+Shift+Z or Ctrl+Y (⌘⇧Z) makes it again. In a box whose text was changed since it was
  * entered, the browser's own undo goes through it first; once the box shows what it showed as it was entered, the
  * record's. In a formatted text, always its own. The field taken back takes the focus, and what was done is said
- * politely. In the undo part: the viewer asks for it as the person first enters the form, so the box they are in is
+ * politely. Right after a save, nothing is taken back — a change saved is none to take back — and
+ * Ctrl+Z says so ("Nothing to undo since it was saved."). In the undo part: the viewer asks for it as the person first enters the form, so the box they are in is
  * known as it was entered before they type — and a key's answer, the browser's own undo or the record's, is given at
  * once, as it is pressed. Gives back what takes the keys away again.
  */
@@ -24,7 +25,9 @@ export function undoKeys(
   el: El,
   labels: ViewerLabels,
   /** Whether a key pressed on this target is this form's: not a dialog's over it, nor another form's. */
-  hotkeysHere: (target: EventTarget | null) => boolean
+  hotkeysHere: (target: EventTarget | null) => boolean,
+  /** Words shown and said to the person, as a step's are. */
+  say: (words: string) => void
 ): () => void {
   const doc = root.ownerDocument;
   /** What a box showed as it was entered, and the browser's own undos in it since its last typing: what its redo has. */
@@ -57,7 +60,15 @@ export function undoKeys(
     const edits = editable(target) ? boxEdits.get(target) : undefined;
     if (edits && (redo ? edits.undone > 0 : textOf(target as HTMLElement) !== edits.text)) return;
     const step = redo ? form.redo() : form.undo();
-    if (!step) return;
+    if (!step) {
+      // Saved, nothing changed since (a save starts the changes afresh): said, so a key pressed is never met with silence.
+      const state = form.getState();
+      if (!redo && state.status === 'saved' && !state.dirty.length) {
+        event.preventDefault();
+        say(labels.nothingSinceSave);
+      }
+      return;
+    }
     event.preventDefault();
     const name = page.fields[step.field]?.label ?? step.field;
     if (!heard) root.append((heard = el('div', { class: 'fd-sr-only fd-undo-heard', role: 'status', 'aria-live': 'polite' })));

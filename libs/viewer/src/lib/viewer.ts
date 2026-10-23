@@ -2788,7 +2788,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // typed in, the browser's own undo first (undo-keys.ts). In the undo part, asked for as the person first enters the
   // form: the box they are in known as it was entered before they type, and each key answered at once as it is pressed.
   if (options.keys?.undo !== false && layout.type !== 'list')
-    root.addEventListener('focusin', () => void undoPart.load().then((part) => gone || cleanups.push(part.undoKeys(root, form, page, el, labels, hotkeysHere)), () => undefined), { once: true });
+    root.addEventListener('focusin', () => void undoPart.load().then((part) => gone || cleanups.push(part.undoKeys(root, form, page, el, labels, hotkeysHere, (words) => actionHost.say(words, 'info'))), () => undefined), { once: true });
 
   // ---- a button's key, with Alt -------------------------------------------------
 

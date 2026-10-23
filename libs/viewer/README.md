@@ -409,7 +409,9 @@ changed since it was entered, the browser's own undo goes first; once the box
 shows what it showed as it was entered, the next press is the record's; a
 formatted text keeps its own undo always (its table and list tools too). The
 field taken back takes the focus, and “Undone: Price” is said to a screen
-reader. The keys come in the undo part, asked for as the person first enters
+reader. A save starts the changes afresh — a change saved is none to take back
+— so Ctrl+Z right after Save takes nothing back and says “Nothing to undo since
+it was saved.” (a page with `autosave` keeps its changes across its saves). The keys come in the undo part, asked for as the person first enters
 the form — the box they are in known as it was entered, before they type.
 `keys: { undo: false }` leaves the keys to the browser alone; your own Undo
 button calls `form.undo()` (see `@fieldia/core`).

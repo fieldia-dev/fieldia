@@ -415,6 +415,7 @@ export const tr: ViewerLabels = {
   putAllBack: 'Tümünü geri koy',
   undoneField: 'Geri alındı: {field}',
   redoneField: 'Yinelendi: {field}',
+  nothingSinceSave: 'Kaydedildiğinden beri geri alınacak bir şey yok.',
   nowIs: 'şu an {value}',
   readOnlyRecord: 'Bu kaydı okuyabilirsiniz ancak değiştiremezsiniz.',
   fieldNotYours: 'Bu alanı görebilirsiniz ancak değiştiremezsiniz.',

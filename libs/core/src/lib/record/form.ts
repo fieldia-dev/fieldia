@@ -934,7 +934,10 @@ export interface Form {
   undo(): HistoryStep | null;
   /** Make the last change taken back again, as `undo` takes one back; null when none is. Ctrl+Shift+Z, Ctrl+Y. */
   redo(): HistoryStep | null;
-  /** The changes `undo` and `redo` would take now: for a button or a menu that names them (once the undo part has come). */
+  /**
+   * The changes `undo` and `redo` would take now: for a button or a menu that names them (once the undo part has come).
+   * A save starts them afresh (not on a page with `autosave`): a change saved is none to take back.
+   */
   history(): { undo: HistoryStep | null; redo: HistoryStep | null };
   /** Resolves once every onchange, save, autosave and run of steps started so far has finished — a question still waiting for its answer included. */
   settled(): Promise<void>;
@@ -3086,6 +3089,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       sentAs = baseline;
       // Its version now, for the next save to carry; and what the person may do now, when the save changed that.
       // The person's changes it did not send are at risk (`unsent`): every way out asks before it leaves them.
+      // A save starts the person's changes afresh, as one saved is no change to take back (the viewer's Ctrl+Z says
+      // nothing changed since). Not on a page that saves itself as it is changed (`autosave`), whose changes are taken
+      // back across its saves; nor where a change made while it saved goes on past it.
+      if (!options.autosave && !dirty.length && got) noted = [];
       set({ status: 'saved', recordId: result.id, values, dirty, warnings: withValues(values, collectWarnings), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
       // Changed while it saved: kept in a draft, and saved as any change is.
       if (dirty.length) {

@@ -156,7 +156,7 @@ export const PART_WORDS = {
     ],
   },
   live: { messages: ['deletedElsewhere', 'deletedBy', 'changedElsewhere', 'changedBy'], viewer: ['presentHere', 'presentEditing'] },
-  undo: { messages: ['pressDone', 'pressArchived', 'pressUnarchived'], viewer: ['undoPress', 'pressUndone', 'undoneField', 'redoneField'] },
+  undo: { messages: ['pressDone', 'pressArchived', 'pressUnarchived'], viewer: ['undoPress', 'pressUndone', 'undoneField', 'redoneField', 'nothingSinceSave'] },
   templates: { viewer: ['templatesButton', 'templatesStart', 'templateSave', 'templateName', 'templateKeeps', 'templateKeep', 'templateSaved', 'templateReplaced', 'templateUsed', 'templatesDelete', 'templatesChosen', 'templatesDeleteNow', 'templatesDeleted'] },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {

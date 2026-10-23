@@ -607,6 +607,8 @@ export interface ViewerLabels {
   undoneField: string;
   /** Said as Ctrl+Shift+Z makes it again. */
   redoneField: string;
+  /** Said as Ctrl+Z is pressed right after a save the person asked for: nothing changed since to take back. */
+  nothingSinceSave: string;
   nowIs: string;
   readOnlyRecord: string;
   readOnlyRecordNoun?: string;
@@ -1319,6 +1321,7 @@ const en: ViewerLabels = {
   putAllBack: 'Put all back',
   undoneField: 'Undone: {field}',
   redoneField: 'Redone: {field}',
+  nothingSinceSave: 'Nothing to undo since it was saved.',
   nowIs: 'now {value}',
   readOnlyRecord: 'You can read this record, but not change it.',
   readOnlyRecordNoun: 'You can read this {record}, but not change it.',

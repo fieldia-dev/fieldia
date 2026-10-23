@@ -1933,9 +1933,13 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // measured, to 126.8 and 20.6; German's 57.40 and 17.71, to 57.5 and 17.8; French's 58.28 and 17.72, to 58.3 and 17.8;
 // Turkish's 65.19 and 18.03, to 65.2 and 18.1; Persian's 159.00 and 22.24, to 159.1 and 22.3; Urdu's 161.66 and 22.29,
 // to 161.7 and 22.3; Spanish's 55.69 and 17.52, to 55.7 and 17.6.
-// The owner's walk of 0.31 mended (walkfix31-engine): a photo made the cover said "moved to the cover" — Urdu's 161.66
-// and 22.29 measured before, 161.74 and 22.29 after, to 161.8; the others inside theirs.
-const ADD_ON_BUDGET_KB = { ar: [126.8, 20.6], de: [57.5, 17.8], fr: [58.3, 17.8], tr: [65.2, 18.1], fa: [159.1, 22.3], ur: [161.8, 22.3], es: [55.7, 17.6] };
+// The owner's walk of 0.31 mended (walkfix31-engine): a photo made the cover said "moved to the cover", and Ctrl+Z right
+// after a save saying nothing changed since — Arabic's 126.78 and 20.55 measured before, 126.96 and 20.58 after, to
+// 127.0, inside 20.6; German's 57.40 and 17.71, 57.48 and 17.74, inside 57.5 and 17.8; French's 58.28 and 17.72, 58.35
+// and 17.74, to 58.4; Turkish's 65.19 and 18.03, 65.27 and 18.06, to 65.3; Persian's 159.00 and 22.24, 159.20 and 22.27,
+// to 159.3; Urdu's 161.66 and 22.29, 161.95 and 22.32, to 162.0 and 22.4; Spanish's 55.69 and 17.52, 55.76 and 17.54,
+// to 55.8.
+const ADD_ON_BUDGET_KB = { ar: [127.0, 20.6], de: [57.5, 17.8], fr: [58.4, 17.8], tr: [65.3, 18.1], fa: [159.3, 22.3], ur: [162.0, 22.4], es: [55.8, 17.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2550,8 +2554,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 34.40 and 12.31 after, to 34.5, inside 12.4. A week's column heads in the language's own script — Urdu's short names
 // where CLDR gives it English's narrow letters — by one rule, the date part's, which booking slots now take from it
 // rather than a copy of their own: date 23.37 and 9.06 measured before, 23.50 and 9.13 after, to 23.6 and 9.2; slots
-// 15.18 and 5.86 before, 15.10 and 5.84 after.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.6, 7.7], date: [23.6, 9.2], months: [13.8, 5.6], typed: [13.6, 5.7], list: [140.0, 45.0], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.4], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.4, 3.5], print: [16.5, 5.2], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.1, 4.7], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// 15.18 and 5.86 before, 15.10 and 5.84 after. Ctrl+Z right after a save says nothing changed since, as a save starts
+// the changes afresh — undo 7.36 and 3.41 measured before, 7.52 and 3.49 after, to 7.6, inside 3.5. (The main script
+// grew 56 bytes for it: the history started afresh at a save, but on a page that saves itself.)
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.6, 7.7], date: [23.6, 9.2], months: [13.8, 5.6], typed: [13.6, 5.7], list: [140.0, 45.0], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [43.8, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [10.7, 5.2], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.4], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [19.4, 6.8], templates: [6.5, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.2], memory: [23.9, 8.7], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.1, 4.7], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

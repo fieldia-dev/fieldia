@@ -418,6 +418,7 @@ export const fa: ViewerLabels = {
   putAllBack: 'بازگرداندن همه',
   undoneField: 'واگرد شد: {field}',
   redoneField: 'ازنو انجام شد: {field}',
+  nothingSinceSave: 'از زمان ذخیره، چیزی برای واگرد نیست.',
   nowIs: 'اکنون {value}',
   readOnlyRecord: 'می‌توانید این رکورد را بخوانید، اما نمی‌توانید آن را تغییر دهید.',
   readOnlyRecordNoun: 'می‌توانید این {record} را بخوانید، اما نمی‌توانید آن را تغییر دهید.',
