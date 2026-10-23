@@ -101,7 +101,7 @@ import { demoAssist, sampleEnquiries } from './enquiries';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
 import purchaseApproval from '../../examples/pages/purchase-approval.page.json';
 import expenseApproval from '../../examples/pages/expense-approval.page.json';
-import { APPROVAL_ROUTES, approvalHistory, approvalRecords, approvalUser } from './approvals';
+import { APPROVAL_ROUTES, approvalHistory, approvalRecords, approvalUser, claimPermissions } from './approvals';
 import servicePrices from '../../examples/pages/service-prices.page.json';
 import staffHours from '../../examples/pages/staff-hours.page.json';
 import dealStages from '../../examples/pages/deal-stages.page.json';
@@ -650,8 +650,9 @@ export function sampleDataSource() {
     approvalHistory: approvalHistory(),
     draftLink,
     attachments: billAttachments(),
-    // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's.
-    can: { 'crm.contact': contactPermissions, 'deal.stage': stagePermissions },
+    // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's; an expense
+    // claim is its employee's alone to change (shared/approvals.ts).
+    can: { 'crm.contact': contactPermissions, 'deal.stage': stagePermissions, 'hr.expense': claimPermissions(params) },
     // The price list keeps versions: a price someone else changes meanwhile is said under its row (shared/editable-lists.ts).
     ...(params.get('page') === 'service-prices' ? { versions: { by: 'Sara Ali' } } : {}),
     // What links show of their records besides their names: an address, a picture, a colour.

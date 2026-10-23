@@ -1,4 +1,4 @@
-import type { ApprovalEntry, FormUser, MemoryApprovalRoute, Values } from '@fieldia/core';
+import type { ApprovalEntry, FormUser, MemoryApprovalRoute, RecordPermissions, RelatedRecord, Values } from '@fieldia/core';
 
 /**
  * Approvals on a record, as an app's approval engine answers them through the data source's `approvals` and `decide` —
@@ -44,6 +44,20 @@ const person = (params: URLSearchParams) => {
 export function approvalUser(params: URLSearchParams): { user?: FormUser } {
   const found = person(params);
   return found ? { user: found.user } : {};
+}
+
+/**
+ * Who may change an expense claim, as the app's server says (the source's `can`): its employee alone. His manager and
+ * Finance read it whole and decide it — Approve, Reject with why — but change nothing in it, rejected or not: the form
+ * says why once over the claim and offers no Save, and a save of theirs is refused, as the server refuses it.
+ */
+export function claimPermissions(params: URLSearchParams): (values: Values) => RecordPermissions | undefined {
+  const signedIn = person(params)?.user;
+  return (values) => {
+    const employee = values['employee_user_id'] as RelatedRecord | null;
+    if (!signedIn || !employee || employee.id === signedIn.id) return undefined;
+    return { edit: false, reason: `Only ${employee.label}, whose claim it is, can change it.` };
+  };
 }
 
 /** A purchase order's total: its lines' quantities by their prices. */

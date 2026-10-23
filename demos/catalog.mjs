@@ -1449,11 +1449,11 @@ export const DEMOS = [
     name: 'An expense rejected, with why',
     category: 'records',
     query: 'page=expense-approval&record=1&skin=outlined',
-    blurb: 'An expense claim its manager approved and Finance rejected: the reason said on it, quoted, and in its conversation. Rejected, it is open again — put it right and submit it again, and it goes back to the manager. Reject always asks why.',
+    blurb: 'An expense claim its manager approved and Finance rejected: the reason said on it, quoted, and in its conversation. Rejected, it is open again to its employee — put it right and submit it again, and it goes back to the manager. Only the employee changes his claim: his manager and Finance read it and decide it. Reject always asks why.',
     howTo: [
       'You are Omar Said: “Rejected by Mona Adel (Finance)”, her reason under it. The claim is open again: change the amount to 3,200 and press Submit for approval.',
       'It waits for your manager again — “Waiting for Manager: Karim Fathy” — and every field but the notes is locked.',
-      '[Sign in as Karim Fathy, the manager](?as=karim): he decides, but only Omar submits his own claim, so Karim is offered no Submit. Press Reject, then Reject again with nothing written: it asks why. Write why, and reject it.',
+      '[Sign in as Karim Fathy, the manager](?as=karim): the claim is Omar’s, so Karim reads it but changes nothing in it — “Only Omar Said, whose claim it is, can change it” — and is offered no Submit. He decides it: press Reject, then Reject again with nothing written: it asks why. Write why, and reject it.',
       'Open Approval history: the first round and the second — who, when, and why.',
     ],
   },
