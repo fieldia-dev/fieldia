@@ -69,7 +69,9 @@ test.describe('plain · undo after Save', () => {
     const notes = node(page, 'f-notes').locator('textarea, input').first();
     await notes.click();
     await page.keyboard.type(' Bring the consent form.');
-    await page.keyboard.press('Tab');
+    // Left for the form round it, as after Save: the notes are the page's last box, and Tab from it leaves Firefox's
+    // page for the browser's own bar, the box still the page's focus — its own undo, not the record's.
+    await page.locator('.fd-form').first().click({ position: { x: 5, y: 5 } });
     await page.keyboard.press('ControlOrMeta+z');
     await expect(price).toHaveValue('11,000.00');
     await expect(page.locator('.fd-undo-heard')).toHaveText(/^Undone: /);
