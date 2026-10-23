@@ -1,5 +1,6 @@
 import { createMemoryChatter, type ChatterMessage, type Person } from '@fieldia/chatter';
 import type { Page, Values } from '@fieldia/core';
+import { keepChatter, keptChatter } from './kept';
 
 /**
  * A bug's History tab, tried on its own: the page `wi-history`, its record,
@@ -108,7 +109,7 @@ export const WI_HISTORY_MESSAGES: ChatterMessage[] = [
 
 /** The chatter the History tab reads: the bug's history, kept in memory. */
 export function wiHistoryChatter() {
-  return createMemoryChatter({ me: salma, people: [salma, mona, karim, omar], records: { 'wi.history:1': { messages: WI_HISTORY_MESSAGES } } });
+  return keepChatter(createMemoryChatter({ me: salma, people: [salma, mona, karim, omar], records: keptChatter({ 'wi.history:1': { messages: WI_HISTORY_MESSAGES } }) }));
 }
 
 /** The bug as it stands after its history. */

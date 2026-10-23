@@ -1,10 +1,10 @@
 import { chatterSlot, historySlot } from '@fieldia/chatter';
 import { isRightToLeft, localizePage, type ActionRequest, type ActionResult, type Facet, type JsonValue, type Locale, type Page, type RecordId } from '@fieldia/core';
 import { mountViewer, openFormDialog, type FormDialogOptions, type FormDialogResult, type Tokens } from '@fieldia/viewer';
-import { memoryPreferences } from '@fieldia/widgets';
 import backlogJson from '../../examples/pages/backlog.page.json';
 import bugJson from '../../examples/pages/work-item-bug.page.json';
-import { backlogChatter, backlogData, me, recentPicks } from './data';
+import { BACKLOG, backlogChatter, backlogData, me, recentPicks } from './data';
+import { keptPreferences } from '../shared/kept';
 
 /**
  * A work tracker's backlog, drawn by the app's own HTML and CSS round a
@@ -388,7 +388,6 @@ app.append(top, el('div', { class: 'bl-frame' }, nav, el('main', { class: 'bl-pa
 
 // ---- what the person keeps: the backlog's default filter, and their latest Area and Iteration picks ----------------------
 
-const preferences = memoryPreferences();
 /** A choice of the backlog picked in its filter bar, in the reader's language. */
 const shownBacklog = localizePage(backlogPage, locale);
 const picked = (field: string, value: string): Facet => {
@@ -396,9 +395,12 @@ const picked = (field: string, value: string): Facet => {
   const label = def.type === 'selection' ? (def.options.find((option) => option.value === value)?.label ?? value) : value;
   return { kind: 'field', field, label: def.label, values: [{ op: '=', value, label }] };
 };
-// The backlog opens on the active bugs, as the team keeps it: the person's default search.
-preferences.set('favourites:backlog', [{ name: 'Active bugs', isDefault: true, facets: [picked('work_type', 'bug'), picked('state', 'active')] }] as unknown as JsonValue);
-for (const [key, picks] of Object.entries(recentPicks)) preferences.set(key, picks as unknown as JsonValue);
+// The backlog opens on the active bugs, as the team keeps it: the person's default search. What they change of it, and
+// their picks, kept while the tab is open, as every demo's (shared/kept.ts).
+const preferences = keptPreferences(
+  { 'favourites:backlog': [{ name: 'Active bugs', isDefault: true, facets: [picked('work_type', 'bug'), picked('state', 'active')] }] as unknown as JsonValue, ...(recentPicks as unknown as Record<string, JsonValue>) },
+  BACKLOG
+);
 
 // ---- the list --------------------------------------------------------------------------------------------------------------
 
