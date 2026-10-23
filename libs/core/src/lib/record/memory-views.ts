@@ -10,6 +10,13 @@ import { structuredCopy } from './values';
 export function memoryViews(given: Record<string, SavedView[]>, calls: { method: keyof DataSource; request: unknown }[], pause: () => Promise<void>): Required<Pick<DataSource, 'views' | 'saveView' | 'deleteView'>> {
   const kept: Record<string, SavedView[]> = structuredCopy(given);
   let made = 0;
+  /** A new view's id: one no view kept has — those it was given (a visit before) among them. */
+  const newId = () => {
+    let id: string;
+    do id = `view-${++made}`;
+    while (Object.values(kept).some((views) => views.some((view) => view.id === id)));
+    return id;
+  };
   const of = (request: ViewsRequest) => (kept[request.pageId] ??= []);
   return {
     async views(request: ViewsRequest): Promise<SavedView[]> {
@@ -26,7 +33,7 @@ export function memoryViews(given: Record<string, SavedView[]>, calls: { method:
       const before = id === undefined ? undefined : views.find((view) => view.id === id);
       if (id !== undefined && !before) throw new Error('That view is no longer there.');
       if (before && !before.mine) throw new Error(`${before.name} is ${before.by ?? 'someone else'}’s view: save it under a name of your own.`);
-      const view: SavedView = { ...asked, id: before?.id ?? `view-${++made}`, mine: true };
+      const view: SavedView = { ...asked, id: before?.id ?? newId(), mine: true };
       if (!view.shared) delete view.shared;
       if (!view.isDefault) delete view.isDefault;
       // One default of a kind: the person's own, or the team's.

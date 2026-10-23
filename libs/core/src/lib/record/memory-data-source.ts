@@ -374,6 +374,13 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   const savedTemplates: Record<string, RecordTemplate[]> = structuredCopy(options.templates ?? {});
   const templatesOf = (pageId: string) => (savedTemplates[pageId] ??= []);
   let templateIds = 0;
+  /** A new template's id: one no template kept has — those it was given (a visit before) among them. */
+  const newTemplateId = () => {
+    let id: string;
+    do id = `template-${++templateIds}`;
+    while (Object.values(savedTemplates).some((list) => list.some((one) => String(one.id) === id)));
+    return id;
+  };
   async function templates(request: TemplatesRequest): Promise<RecordTemplate[]> {
     calls.push({ method: 'templates', request });
     await pause();
@@ -383,7 +390,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     calls.push({ method: 'saveTemplate', request });
     await pause();
     const list = templatesOf(request.pageId);
-    const kept: RecordTemplate = { id: request.template.id ?? `template-${++templateIds}`, name: request.template.name, values: structuredCopy(request.template.values) };
+    const kept: RecordTemplate = { id: request.template.id ?? newTemplateId(), name: request.template.name, values: structuredCopy(request.template.values) };
     const at = list.findIndex((one) => String(one.id) === String(kept.id));
     if (at >= 0) list[at] = kept;
     else list.push(kept);

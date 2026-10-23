@@ -142,4 +142,24 @@ describe('createMemoryChatter', () => {
       jest.useRealTimers();
     }
   });
+
+  it('numbers what it makes after every id it was given, so a conversation kept on a visit before keeps its own', async () => {
+    const kept = createMemoryChatter({
+      me,
+      people: [me, mona],
+      activityTypes: [{ id: 'call', name: 'Call', icon: 'phone', daysUntilDue: 2 }],
+      records: {
+        'sale.order:7': {
+          messages: [{ id: 1004, kind: 'note', author: me, date: '2026-10-01T08:00:00Z', body: '<p>Kept</p>', attachments: [{ id: 1006, name: 'a.txt', type: 'text/plain', size: 1, url: 'data:,a' }] }],
+          activities: [{ id: 1005, type: { id: 'call', name: 'Call', icon: 'phone' }, summary: null, note: null, due: '2026-10-03', assignee: me }],
+          followers: [{ id: 1002, person: mona }],
+        },
+      },
+    });
+    const posted = await kept.post(order, { kind: 'note', body: '<p>New</p>' });
+    expect(posted.id).toBe(1007);
+    expect((await kept.messages(order)).map((message) => message.id)).toEqual([1007, 1004]);
+    // Given none so high, it starts where it always did.
+    expect((await chatter().post(order, { kind: 'note', body: '<p>New</p>' })).id).toBe(1000);
+  });
 });
