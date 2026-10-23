@@ -78,8 +78,9 @@ jobs:
     needs: scope
     if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
     runs-on: ubuntu-latest
-    # The first quarter took 19 minutes on 0.22's first green run: room above it, so a slow runner is not a failure.
-    timeout-minutes: 30
+    # The first quarter took 19 minutes on 0.22's first green run: room above it, so a slow runner is not a failure;
+    # 23 Oct the runners' Ubuntu mirror crawled (a 13 MB package in minutes) and ate 10 of the 30: room for that too.
+    timeout-minutes: 45
     # Four runners, each the whole build and a quarter of the scenarios: one alone
     # had grown to 19 of its 20 minutes, and so had half of them by Phase 26; a
     # third of them passed 20 minutes once 0.22 brought some 400 more.
@@ -100,7 +101,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       # Chromium and the system packages it needs. An apt mirror can stall for good (three times on
-      # 7 Oct): apt gives up on a silent mirror after 30 s and retries; each try has 4 minutes; and a
+      # 7 Oct): apt gives up on a silent mirror after 30 s and retries; each try has 7 minutes (a slow one crawls); and a
       # try cut off mid-apt leaves its lock and half-set packages, so the next one clears them first.
       - name: Install Chromium for Playwright
         run: |
@@ -112,7 +113,7 @@ jobs:
               sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
               sudo dpkg --configure -a || true
             fi
-            timeout 240 npx playwright install --with-deps chromium && exit 0
+            timeout 420 npx playwright install --with-deps chromium && exit 0
             echo "Install try $try stalled or failed."
           done
           exit 1
@@ -142,8 +143,9 @@ jobs:
     if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
     runs-on: ubuntu-latest
     # Each engine's smoke set in two halves: one runner took 12–19 minutes of its 25 for the whole set in 0.30.1 (WebKit
-    # hit the limit once), and 0.31 adds some thirty specs to it; a half and the build it needs fit well inside 25.
-    timeout-minutes: 25
+    # hit the limit once), and 0.31 adds some thirty specs to it; a half and the build it needs fit well inside 25 —
+    # but not with a crawling Ubuntu mirror (23 Oct: three 5-minute install tries ran out mid-download): 40.
+    timeout-minutes: 40
     # Firefox, and WebKit — Safari's engine, which every browser on an iPhone runs: the smoke set playwright.config.ts
     # names (forms, behaviour, layout, lists, dialogs, the quiet look, a place on a map, right to left, a part that
     # fails), in the plain demo. Chromium runs everything, in the job above.
@@ -174,7 +176,7 @@ jobs:
               sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
               sudo dpkg --configure -a || true
             fi
-            timeout 300 npx playwright install --with-deps ${{ matrix.engine }} && exit 0
+            timeout 600 npx playwright install --with-deps ${{ matrix.engine }} && exit 0
             echo "Install try $try stalled or failed."
           done
           exit 1
@@ -220,7 +222,7 @@ jobs:
               sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
               sudo dpkg --configure -a || true
             fi
-            timeout 240 npx playwright install --with-deps chromium && exit 0
+            timeout 420 npx playwright install --with-deps chromium && exit 0
             echo "Install try $try stalled or failed."
           done
           exit 1
