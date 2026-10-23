@@ -69,8 +69,10 @@ function pressesOf(doc: Document): Presses {
   // Cancelled (a scroll took it), or a key pressed — Tab to the next box, the person's next step: the press is over.
   doc.addEventListener('pointercancel', () => presses.pressing && ended(), true);
   doc.addEventListener('keydown', () => presses.pressing && ended(), true);
-  // Its click handled — Submit's check, a button's steps — first, then what waited.
-  doc.addEventListener('click', () => presses.pressing && wait(0), true);
+  // Its click handled — Submit's check, a button's steps — first, then what waited. The press is over as its click
+  // comes: what the click itself changes (a switch's question shown, a step's badge) is done at once, as it moves
+  // nothing a press is aimed at any more.
+  doc.addEventListener('click', () => presses.pressing && ((presses.pressing = false), wait(0)), true);
   return presses;
 }
 

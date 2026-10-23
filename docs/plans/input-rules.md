@@ -160,6 +160,7 @@ is the button's — Apply, Save — never lost on what moved under it. So do the
 as it is left (0.31.1: a proof's Send a code, a phone's links, an amount's shorthand line, a possible duplicate's note)
 and a part a condition shows or hides while the press goes on (viewer.ts `shownAsItsCondition`): a box may give its
 value only as it is left — a name looked up, a choice typed — and the field it shows would push what was pressed.
+A press is over as its click comes: what the click itself changes (a switch's question, a step's badge) shows at once.
 The search bar, the filter bar, the map's search box and a chatter's composer are not saved with the record.
 
 ### A code scanned

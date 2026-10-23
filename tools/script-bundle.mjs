@@ -1349,9 +1349,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // question, 519.89. The input rules' `stay` — keys after a refused one going in where they fit, its words said
 // meanwhile, a mask's and a code's boxes (input-rules.ts, 35 bytes, the guard every box shares): 519.93, to 520.0.
 // 0.31.1's merge: a part a condition shows or hides waits for a press going on to end, as what a box adds as it is
-// left does — a name looked up as the box is left showed Region under Country, pushing Tags from under the pointer
-// (viewer.ts, 40 bytes, every page with a condition): 519.93 measured before, 519.97 after, inside 520.0.
-const BUDGET_KB = 520.0;
+// left does — a name looked up as the box is left showed Region under Country, pushing Tags from under the pointer —
+// a row of badges with them; and a press is over as its click comes, so what the click itself changes (a switch's
+// question, a step's badge) is shown at once (viewer.ts, press.ts, 115 bytes, every page with a condition): 519.93
+// measured before, 520.04 after, to 520.1.
+const BUDGET_KB = 520.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1647,7 +1649,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // after, to 170.9; a save starting the changes afresh, a code's box at rest, 170.90; every value typed in a text box in
 // its own direction, 170.91, to 171.0.
 // 0.31.1's merge: a part a condition shows waiting for a press to end (listed with the raw budget above): 170.94
-// measured before and after, inside 171.0.
+// measured before, 170.92 after, inside 171.0.
 const GZIP_BUDGET_KB = 171.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);

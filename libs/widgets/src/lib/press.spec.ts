@@ -101,6 +101,22 @@ describe('what a box shows as a press leaves it', () => {
     submit.remove();
   });
 
+  it('what the click itself changes is done at once: the press is over as its click comes, what waited still after', () => {
+    watchPresses(document);
+    const toggle = document.createElement('button');
+    document.body.append(toggle);
+    const shown: string[] = [];
+    toggle.addEventListener('click', () => afterPress(document, {}, () => shown.push('the question it shows')));
+    pointer('pointerdown', toggle);
+    afterPress(document, {}, () => shown.push('box error'));
+    pointer('pointerup', toggle);
+    toggle.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(shown).toEqual(['the question it shows']);
+    jest.advanceTimersByTime(0);
+    expect(shown).toEqual(['the question it shows', 'box error']);
+    toggle.remove();
+  });
+
   it('a finger’s click that follows the lift is waited for; with none, it runs a moment after the lift', () => {
     watchPresses(document);
     const shown: string[] = [];

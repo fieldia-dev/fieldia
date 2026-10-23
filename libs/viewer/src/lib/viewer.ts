@@ -641,6 +641,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * The parts of one page, drawn with its own form: the page shown, or a saved
    * form placed in it. Inside, `form` and `page` are the scope's.
    */
+  /**
+   * A part shown or hidden as `hidden` says: at once — but while a press goes on, once it has ended (press.ts), so
+   * nothing moves under the pointer. What waits is asked by the part's `dataset`, an object of its own that no other
+   * asker uses (a box's words as it is left are asked by the box).
+   */
+  function hiddenAfterPress(element: HTMLElement, hidden: () => boolean) {
+    if (element.hidden !== hidden()) afterPress(doc, element.dataset, () => setHidden(element, hidden()));
+  }
+
   function drawer(scope: Scope) {
     const { form, page } = scope;
     const uid = (id: string) => ownUid(scope.prefix + id);
@@ -1126,7 +1135,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
      * under itself as it is left.
      */
     function shownAsItsCondition(element: HTMLElement, id: string) {
-      if (element.hidden !== form.node(id).invisible) afterPress(doc, element, () => setHidden(element, form.node(id).invisible));
+      hiddenAfterPress(element, () => form.node(id).invisible);
     }
 
     function buttonItem(node: ButtonNode): HTMLElement {
@@ -2311,9 +2320,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         hideWhen(chip, badge.id);
         badges.append(chip);
       }
-      updaters.push(() => {
-        badges.hidden = [...badges.children].every((chip) => (chip as HTMLElement).hidden);
-      });
+      // Their row with them: shown or hidden as their conditions say, when they are (shownAsItsCondition).
+      const all = node.badges;
+      updaters.push(() => hiddenAfterPress(badges, () => all.every((badge) => form.node(badge.id).invisible)));
       card.append(badges);
     }
     if (node.title) {
