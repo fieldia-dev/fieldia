@@ -38,6 +38,7 @@ import {
   type SheetNode,
   type StepNode,
   type TabsNode,
+  type PageLoading,
 } from '@fieldia/core';
 import { comparable, FIELD_NAME, FORMAT_VERSION, upgradePage } from '@fieldia/core';
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
@@ -469,6 +470,11 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setPayment(patch: { label?: string; amount?: number | string | null; currency?: string | null; description?: string } | null): boolean;
   /** An offline outbox (`outbox`): sends made without signal kept on the device and sent when it comes back; false takes it away. Refused on a list of records. */
   setOutbox(on: boolean): boolean;
+  /**
+   * How the page looks while it waits (`loading`): each moment's way, a look, a time or a failure's way set — `null`
+   * gives one back to the app's, else Fieldia's, default; the setting goes once nothing is left in it.
+   */
+  setLoading(patch: { [K in keyof PageLoading]?: PageLoading[K] | null }): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
@@ -1773,6 +1779,18 @@ export function createDesigner(options: {
         if (draft.data.kind !== 'responses' || draft.layout.type === 'list' || draft.layout.type === 'sheet') throw new Refusal((w) => w.refusals.flowForResponses);
         draft.flow = 'one';
       }, 'flow');
+    },
+
+    setLoading(patch) {
+      return apply((draft) => {
+        const loading: Record<string, unknown> = { ...draft.loading };
+        for (const [key, value] of Object.entries(patch)) {
+          if (value === null || value === undefined) delete loading[key];
+          else loading[key] = value;
+        }
+        if (Object.keys(loading).length) draft.loading = loading as PageLoading;
+        else delete draft.loading;
+      }, 'loading');
     },
 
     setOutbox(on) {

@@ -8,6 +8,7 @@ import { lookRow } from './look-row';
 import { onTab, segmented, setting, type Choice, type Segmented } from './panel-controls';
 import type { DesignerWords } from './designer-words';
 import { partLookSettings } from './panel-look-parts';
+import { loadingLookSettings } from './panel-look-loading';
 import { settingNumber } from './number-box';
 
 /**
@@ -153,12 +154,15 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
   const skinRow = rows.shift() as HTMLElement;
 
   const parts = partLookSettings(el, designer);
+  // How the page waits for its answers, each moment with its preview (panel-look-loading.ts).
+  const waiting = loadingLookSettings(el, designer);
   const note = onTab(el('p', { class: 'fd-properties-hint' }, w.tokensNote), 'look');
   return {
-    rows: [themeRow, ...presets.rows, skinRow, accent, ...rows, parts.row, note],
+    rows: [themeRow, ...presets.rows, skinRow, accent, ...rows, parts.row, ...waiting.rows, note],
     update(page) {
       presets.update(page);
       parts.update(page);
+      waiting.update(page);
       const look: PageLook = page.look ?? {};
       themes.value = look.theme ?? '';
       swatches.set(look.accent?.toLowerCase());
