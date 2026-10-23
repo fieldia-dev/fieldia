@@ -39,7 +39,7 @@ export interface SearchListOptions {
   make: Make;
   /** The ids its parts take theirs from. */
   id: string;
-  /** Where it lives while closed: the widget's element. */
+  /** The widget's element: where it opens from (it is out of the page while closed). */
   home: HTMLElement;
   /** The button that opens it. */
   button: HTMLElement;
@@ -174,7 +174,8 @@ export function searchList(options: SearchListOptions): SearchList {
     options.pick(value);
   }
 
-  const floating = popup(home, button, panel, () => undefined, { alignTo: button, gap: 4 });
+  // Out of the page while closed — no second box, no second Close in it — however it closed (a press beside it too).
+  const floating = popup(home, button, panel, () => panel.remove(), { alignTo: button, gap: 4 });
   /** The look of the form it is on, worn by the sheet, which opens over the page outside it. */
   const LOOK = (name: string) => (name.startsWith('data-') && name !== 'data-max-width') || name === 'style' || name === 'dir' || name === 'lang';
   function open(typed = '') {
@@ -193,7 +194,10 @@ export function searchList(options: SearchListOptions): SearchList {
       (doc.body ?? doc.documentElement).append(sheet);
       panel.hidden = false;
       button.setAttribute('aria-expanded', 'true');
-    } else floating.open();
+    } else {
+      home.append(panel);
+      floating.open();
+    }
     draw();
     find.focus();
     if (typed) find.setSelectionRange(typed.length, typed.length);
@@ -203,7 +207,7 @@ export function searchList(options: SearchListOptions): SearchList {
     if (sheet) {
       panel.hidden = true;
       button.setAttribute('aria-expanded', 'false');
-      home.append(panel);
+      panel.remove();
       for (const { name } of [...panel.attributes]) if (LOOK(name) || name === 'role' || name.startsWith('aria-')) panel.removeAttribute(name);
       panel.classList.remove('fd-theme', 'fd-search-sheet');
       sheet.remove();
@@ -212,7 +216,7 @@ export function searchList(options: SearchListOptions): SearchList {
     find.value = '';
     if (focusBack) button.focus();
   }
-  const isOpen = () => !panel.hidden;
+  const isOpen = () => panel.isConnected && !panel.hidden;
 
   find.addEventListener('input', draw);
   find.addEventListener('keydown', (event) => {
@@ -255,6 +259,5 @@ export function searchList(options: SearchListOptions): SearchList {
       open();
     }
   });
-  home.append(panel);
   return { open, close: shut, isOpen };
 }
