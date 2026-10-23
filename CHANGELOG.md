@@ -110,10 +110,10 @@ page format stays 0.10: nothing a page says changes.
   draft whose clock started is laid at once, even with `drafts.restore: "ask"`.
 - After a save (except on autosave pages), Ctrl+Z and `form.undo()` find
   nothing to undo.
-- Parts a condition shows or hides while a press is going on change once it
-  ends — a moment after the click's own handlers. A test that presses and reads
-  a part's visibility in the same breath waits for it (Playwright's `expect`
-  does).
+- A field, group or badge a condition shows or hides as a box is left by a
+  press (its value taken as it is left) changes once the press has ended, a
+  moment after the click's own handlers. A press is over as its click comes:
+  what the click itself changes still shows at once.
 - The search bar's menu closes when its box is focused or typed in: a test
   that reads counts in it opens it again.
 - Masks and one-time code boxes no longer hold keys after a refused one;
@@ -136,7 +136,7 @@ page format stays 0.10: nothing a page says changes.
   `approvalChangedEntry`; widgets `qrCode`; designer `schema.empty`; gantt
   `edgeBefore`, `edgeAfter`. The words of `coverNow` changed.
 
-**Size:** `fieldia.js` 520.0 KB, 170.9 gzipped (0.31.0: 519.6, 170.8): 0.16 KB
+**Size:** `fieldia.js` 520.0 KB, 170.9 gzipped (0.31.0: 519.6, 170.8): 0.14 KB
 gzipped for what every page needs — where a timed page's drafts are kept (known
 as the form is made), a save starting the changes afresh, a code's box written
 at rest as typed, text boxes reading in their own direction, the template
