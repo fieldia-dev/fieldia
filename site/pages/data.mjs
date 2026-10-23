@@ -229,7 +229,32 @@ ${code(
   `
 { "id": "viewing-report", "data": { "kind": "responses" }, "outbox": true, … }`
 )}
-<p>A failure that reads as the network's — a ${c('TypeError')} from ${c('fetch')} — is kept in the browser's IndexedDB (never lost on a reload, shared by your site's tabs) and said: the form ends <em>Kept on this device</em>, and a bar over it says how many sends wait, with <em>Send now</em>. They go in order when the browser says it is online, every half a minute while something waits, as the page opens, and right after a send that went through (which goes first); each is taken by one sender only, and carries ${c('queued: { key, at }')} — the same key every try — so your server can refuse a second try of a send whose answer was lost on the way. A photo taken without signal is stored through ${c('upload')} just before its send goes. A send your server refuses then is kept, said, and offered <em>Try again</em> and <em>Discard</em>. A record saved again while its first save waits is saved once, as it is now, and takes its id when it went. Give the viewer ${c('outbox')} — a store of your own (${c('list')}, ${c('put')}, ${c('delete')}, ${c('claim')}) — to keep them elsewhere. In the designer, <em>Without signal</em> on a page's Rules tab. The <a href="/demos/plain/?page=site-visit&amp;skin=outlined">site visit demo</a> works offline at a press.</p>
+<p>A failure that reads as the network's — a ${c('TypeError')} from ${c('fetch')} — is kept in the browser's IndexedDB (never lost on a reload, shared by your site's tabs) and said: the form ends <em>Kept on this device</em>, and a bar over it says how many sends wait, with <em>Send now</em>. They go in order when the browser says it is online, every half a minute while something waits, as the page opens, and right after a send that went through (which goes first); each is taken by one sender only, and carries ${c('queued: { key, at }')} — the same key every try — so your server can refuse a second try of a send whose answer was lost on the way. A photo taken without signal is stored through ${c('upload')} just before its send goes. A send your server refuses then is kept, said, and offered <em>Try again</em> and <em>Discard</em>. A record saved again while its first save waits is saved once, as it is now, and takes its id when it went. Give the viewer ${c('outbox')} — a store of your own (${c('list')}, ${c('put')}, ${c('delete')}, ${c('claim')}) — to keep them elsewhere. In the designer, <em>Without signal</em> on a page's Rules tab. The <a href="/demos/plain/?page=viewing-report&amp;skin=outlined">viewing report demo</a> works offline at a press, or with your connection really off.</p>
+<p>Fieldia's outbox keeps the <em>sends</em>. Opening the <em>page</em> with no signal — a reload in the compound, the phone in airplane mode — is your app's service worker's: without one, the browser has nothing to show. A small one does it: it keeps the page and every script, sheet and part it loaded, and serves them only when the network fails, so online the page is always the newest. The viewing report demo has one (<a href="https://github.com/fieldia-dev/fieldia/blob/main/demos/plain/offline-sw.js">offline-sw.js</a>), its scope that page alone:</p>
+${code(
+  'js',
+  `
+// sw.js — network first; what came kept for the day there is no signal.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+  event.respondWith(
+    fetch(event.request).then(
+      (response) => {
+        const copy = response.clone();
+        if (response.ok) event.waitUntil(caches.open('app').then((cache) => cache.put(event.request, copy)));
+        return response;
+      },
+      async (failed) => (await caches.match(event.request)) ?? Promise.reject(failed)
+    )
+  );
+});
+
+// The page: Fieldia's parts come as the page first uses them, so let it be opened once online.
+navigator.serviceWorker.register('/sw.js', { scope: '/reports/' });`
+)}
+<p>What the page loaded before its worker was there — its first visit — is not kept unless the page tells the worker (the demo posts it the addresses the browser loaded: ${c("performance.getEntriesByType('resource')")}), or a build tool lists them for it (Workbox, ${c('vite-plugin-pwa')}).</p>
 
 <h2 id="upload">Files stored as they are picked</h2>
 <p>A phone's photo is 3 to 12 MB. Twenty of them inside one save fail on mobile data, and one in a draft fills the browser's store. Give your data source ${c('upload')}, and a file or picture field sends each file to your store <em>as soon as it is picked</em>: photos are made smaller first, each shows on its way with a bar, × to cancel it and Retry when it failed, and the field keeps only what ${c('upload')} returns — ${c('{ url, name, size, type, fileId }')}, never the bytes. Three go at once, the rest wait their turn; a field of several keeps them in the order they were picked.</p>

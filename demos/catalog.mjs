@@ -673,7 +673,7 @@ export const DEMOS = [
     howTo: [
       'Press Work offline over the form, fill in the unit and the condition, add a photo and Submit: “Kept on this device”, and under it, 1 send waits.',
       'Reload the page, still offline: it still waits. Press Back online: it is sent — what the app was told is listed under the form, the photo stored first.',
-      'Turn your connection off instead (or put the phone in airplane mode): the same, and it goes by itself as the connection comes back.',
+      'Turn your connection off instead (or put the phone in airplane mode): the same, and it goes by itself as the connection comes back. Reload with the connection off: the page opens from the device — a service worker of its own keeps it — its send still waiting.',
     ],
   },
   {

@@ -111,7 +111,8 @@ for (const variant of variants) {
     writeFileSync(join(OUT, variant, 'index.html'), html.replace('<!--FIRST_PAINT-->', render()));
     rmSync(dirname(server), { recursive: true, force: true });
   }
-  // A demo with a stylesheet of its own beside its page (the backlog's chrome), or other pages (csp's one-tag page): copied with it.
-  for (const file of readdirSync(join(WORKSPACE, 'demos', variant))) if (file.endsWith('.css') || (file.endsWith('.html') && file !== 'index.html')) cpSync(join(WORKSPACE, 'demos', variant, file), join(OUT, variant, file));
+  // A demo with a stylesheet of its own beside its page (the backlog's chrome), other pages (csp's one-tag page), or a
+  // service worker (the viewing report's, plain's offline-sw.js): copied with it.
+  for (const file of readdirSync(join(WORKSPACE, 'demos', variant))) if (file.endsWith('.css') || file.endsWith('-sw.js') || (file.endsWith('.html') && file !== 'index.html')) cpSync(join(WORKSPACE, 'demos', variant, file), join(OUT, variant, file));
   console.log(`demo ${variant}: ${join('dist/demos', variant)}`);
 }
