@@ -1,6 +1,7 @@
 import { foldDigits, foldForSearch, readNumber, stripMarks, type Locale, type NumberRead, type NumberReadOptions } from '@fieldia/core';
 import type { Shorthand } from './input-rules';
 import { fillIn, wordsFor } from './kind-parts';
+import { afterPress } from './press';
 import { installTypedStyles } from './styles-typed';
 import type { WidgetLabels } from './labels';
 
@@ -114,7 +115,8 @@ export function shorthandFor(locale: Locale, labels?: WidgetLabels): Shorthand {
         const value = read(input.value);
         say(value?.ok && value.value !== null ? fillIn(words.shorthandIs, { typed: input.value.trim(), amount: written(value.value) }) : '');
       });
-      input.addEventListener('blur', () => say(''));
+      // Left by a press below it: gone once the press has ended, so what is below never moves from under it (press.ts).
+      input.addEventListener('blur', () => afterPress(input.ownerDocument, said, () => input.ownerDocument.activeElement !== input && say('')));
     },
   };
 }

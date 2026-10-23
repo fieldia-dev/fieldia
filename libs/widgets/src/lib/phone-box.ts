@@ -3,6 +3,7 @@ import { guard, refusalHint } from './input-rules';
 import { boxPurpose, describeState, fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { phoneSettings } from './phone-settings';
 import { flagOf, phoneCountries, phoneCountry, phoneLinks, phoneParts, readPhone, shownPhone, typedCode, writePhone, type PhoneReading } from './phone-numbers';
+import { afterPress } from './press';
 import { installPhoneStyles } from './styles-phone';
 import { textRules } from './text-box';
 import type { WidgetFactory } from './widgets';
@@ -79,9 +80,13 @@ export const phoneWidget: WidgetFactory = (context) => {
 
   function linksTo(number: string | null) {
     const to = number ? phoneLinks(number) : undefined;
-    setHidden(call, !to);
-    // WhatsApp only for a number that may be a mobile: a fixed line is called (hidden, never disabled).
-    setHidden(chat, !to?.whatsapp);
+    // Under the box on a phone: they come and go once a press going on has ended, so a tap below that leaves the box
+    // lands where it was aimed (press.ts).
+    afterPress(element.ownerDocument, links, () => {
+      setHidden(call, !to);
+      // WhatsApp only for a number that may be a mobile: a fixed line is called (hidden, never disabled).
+      setHidden(chat, !to?.whatsapp);
+    });
     if (!to || !number) return;
     const said = writePhone(number, 'international');
     setAttr(call, 'href', to.call);

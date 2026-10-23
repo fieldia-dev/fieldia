@@ -129,6 +129,10 @@ from its message; a whole code typed or pasted is checked at once), Confirm,
 how long it works and Send again after its wait, a wrong code's tries left,
 and Confirmed. A send before that is refused under the field, a value changed
 afterwards asks again, and each send carries the app's proof (`verified`).
+Left by a press below it (a tap on the next question), its buttons come once
+the press has ended, so nothing moves under the pointer — as every row a box
+adds or takes away as it is left (its errors, its hints, a phone's links, an
+amount's shorthand line, a possible duplicate's note).
 
 A page with a `payment` (`{ "label": "Reservation fee", "amount": 10000,
 "currency": "EGP" }`) and a source with `pay` has a payment step, in a part of

@@ -1,5 +1,5 @@
 import { labelAt, recordSentence, listComma, type DuplicateMatch, type Form, type JsonValue, type Locale, type Page, type RecordId, type Tone, type Values } from '@fieldia/core';
-import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import { afterPress, drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { installDuplicateStyles } from './duplicates-styles';
 import type { ViewerLabels } from './labels';
@@ -117,9 +117,8 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
     const { recordId } = form.getState();
     // The matches wait for what the source keeps as let be for this record: none said that another device let be.
     Promise.all([form.findDuplicates(), recordId !== null && onServer ? apartFrom(recordId).asked : null]).then(
-      ([matches]) => {
-        if (!gone && mine === asking && still()) draw(matches);
-      },
+      // Drawn under its field once a press going on has ended, so nothing below moves from under the pointer (press.ts).
+      ([matches]) => afterPress(doc, notes, () => !gone && mine === asking && still() && draw(matches)),
       // A source that failed says nothing here: the record is typed and saved as ever.
       () => undefined
     );
