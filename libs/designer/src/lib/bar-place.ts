@@ -28,27 +28,43 @@ export interface BarPlacing {
 type Box = { left: number; top: number; right: number; bottom: number };
 const overlap = (a: Box, b: Box) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
 
-/** The words and boxes in the area a bar may not cover, within a band of it: everything but the part's own and the bars'. */
+/** What is a box whose words are anywhere in it, or whose room is its own to press: a label's, a group's name's. */
+const BOXES = 'input:not([type="hidden"]), textarea, select, [contenteditable="true"], img, canvas, video, .fd-label, .fd-canvas-section-title';
+
+/**
+ * The words and boxes in the area a bar may not cover, within a band of it: everything but the part's own and the
+ * bars'. Walked from the area down, a box nowhere near the band left unopened — a page of five hundred fields is
+ * looked at only round the part.
+ */
 function wordsAround(area: HTMLElement, part: HTMLElement, band: { top: number; bottom: number }): Box[] {
-  const doc = area.ownerDocument;
-  const mine = (node: Node) => part.contains(node) || !!(node instanceof Element ? node : node.parentElement)?.closest('.fd-field-bar');
+  const range = area.ownerDocument.createRange();
   const inBand = (box: Box) => box.bottom > band.top && box.top < band.bottom && box.right > box.left;
   const found: Box[] = [];
-  const walker = doc.createTreeWalker(area, 4 /* NodeFilter.SHOW_TEXT */);
-  const range = doc.createRange();
-  for (let text = walker.nextNode(); text; text = walker.nextNode()) {
-    if (!text.textContent?.trim() || !text.parentElement || mine(text)) continue;
-    // A quick look at what holds it first: most of the canvas is nowhere near the bar.
-    if (!inBand(text.parentElement.getBoundingClientRect())) continue;
-    range.selectNodeContents(text);
-    for (const box of range.getClientRects()) if (inBand(box)) found.push(box);
-  }
-  // A box's words are anywhere in it; a label's and a group's name's room is theirs, pressed to pick them.
-  for (const box of area.querySelectorAll<HTMLElement>('input:not([type="hidden"]), textarea, select, [contenteditable="true"], img, canvas, video, .fd-label, .fd-canvas-section-title')) {
-    if (mine(box)) continue;
-    const at = box.getBoundingClientRect();
-    if (inBand(at) && at.height > 0) found.push(at);
-  }
+  const words = (holder: Element) => {
+    for (const node of holder.childNodes) {
+      if (node.nodeType !== 3 || !node.textContent?.trim()) continue;
+      range.selectNodeContents(node);
+      for (const box of range.getClientRects()) if (inBand(box)) found.push(box);
+    }
+  };
+  const visit = (holder: Element) => {
+    for (const child of holder.children) {
+      if (child === part || child.classList.contains('fd-field-bar')) continue;
+      const at = child.getBoundingClientRect();
+      const around = child.contains(part);
+      // Laid out as nothing of its own (display: contents), its children are looked at all the same.
+      const boxless = !at.width && !at.height;
+      if (!around && !boxless && !inBand(at)) continue;
+      if (!around && child.matches(BOXES)) {
+        if (inBand(at)) found.push(at);
+        continue;
+      }
+      words(child);
+      visit(child);
+    }
+  };
+  words(area);
+  visit(area);
   return found;
 }
 
