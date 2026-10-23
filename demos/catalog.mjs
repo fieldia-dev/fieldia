@@ -625,7 +625,7 @@ export const DEMOS = [
     name: 'A branch’s opening hours',
     category: 'fields',
     query: 'page=clinic-branch&record=1&skin=outlined',
-    blurb: 'A week’s opening hours, a row a day: open or closed, shifts with a lunch break, a day copied to every day, said in words — and booking follows them, the times a patient may book changing as the hours do. Its week starts on Saturday.',
+    blurb: 'A week’s opening hours, a row a day: open or closed, shifts with a lunch break, a day copied to every day, said in words — and booking follows them, the times a patient may book changing as the hours do. The branch is in Cairo and its page says so (en-EG): every week on it starts on Egypt’s Saturday, the hours and the booking calendar alike, wherever it is read.',
     howTo: [
       'Tick Friday open: it takes Thursday’s hours. Untick it again.',
       'On Monday, press Copy to all days: every day has Monday’s hours, said over the week.',

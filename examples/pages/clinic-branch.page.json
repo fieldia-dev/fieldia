@@ -2,6 +2,7 @@
   "fieldia": "0.10",
   "id": "clinic-branch",
   "title": "Clinic branch",
+  "language": "en-EG",
   "records": { "one": "branch", "other": "branches", "a": "a branch" },
   "data": { "kind": "record", "model": "clinic.branch" },
   "fields": {
@@ -20,7 +21,7 @@
         "id": "s-branch",
         "children": [
           { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
-          { "type": "field", "id": "f-hours", "field": "hours", "widget": "hours", "options": { "weekStart": 6 } }
+          { "type": "field", "id": "f-hours", "field": "hours", "widget": "hours" }
         ]
       },
       {
