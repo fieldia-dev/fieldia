@@ -129,11 +129,18 @@ function startEnd(box: Element): number {
 /** A tab's name on paper, over its first part (print-styles.ts). */
 const TAB_NAME = 37;
 
-/** A titled group short enough to be one box on paper (keepRooms): all it holds, a quarter more, within KEEP_MOST. */
+/**
+ * A titled group short enough to be one box on paper (keepRooms): all it holds, a quarter more, within WHOLE_MOST —
+ * half the room of a Letter sheet within its margins (965px; A4's is more), less a printout's head. A short group is
+ * never broken over two sheets — carried whole to the next, it leaves at most half a sheet blank; a taller one breaks
+ * where it may, its title kept with its start (KEEP_MOST). Set apart from KEEP_MOST since 0.31.1: a ticket's group of
+ * a third of a sheet, a quarter more just past a heading's room, was broken over two.
+ */
+const WHOLE_MOST = 480;
 function whole(group: Element): boolean {
   if (!group.matches('fieldset.fd-section') || !group.querySelector(':scope > .fd-section-title')) return false;
   const { top, bottom } = group.getBoundingClientRect();
-  return bottom > top && (bottom - top) * 1.25 + 8 <= KEEP_MOST;
+  return bottom > top && (bottom - top) * 1.25 + 8 <= WHOLE_MOST;
 }
 /** A table a field draws (lines, a grid of lines, a list), and the least room its label, header and first line take on paper. */
 const TABLES = 'table, .fd-grid-lines, .fd-lines, .fd-list';
@@ -142,8 +149,8 @@ const TABLE_START = 110;
 /**
  * Each heading's room measured and given (`--fd-print-keep`): what its start takes with the form as wide as a sheet
  * (print-styles.ts), its columns and labels as paper lays them out, and a quarter more for what paper draws otherwise —
- * but never more than all it heads takes: a short tab goes on as far as it fits. A titled group no taller than
- * KEEP_MOST so is one box on paper, kept whole (`--fd-print-whole`): Firefox left a framed one's top edge at a sheet's
+ * but never more than all it heads takes: a short tab goes on as far as it fits. A short titled group (WHOLE_MOST)
+ * is one box on paper, kept whole (`--fd-print-whole`): Firefox left a framed one's top edge at a sheet's
  * foot, its title on the next — and printed nothing in one it may not break, but the frame. The boxes given them, to
  * take them back once printed.
  */
@@ -158,7 +165,7 @@ function keepRooms(root: HTMLElement): HTMLElement[] {
     const all = Math.max(box.getBoundingClientRect().bottom, end) - from;
     const room = Math.ceil(Math.min(KEEP_MOST, start * 1.25 + 8, all + 8));
     box.style.setProperty('--fd-print-keep', `${room}px`);
-    // A group that fits in that much: one box on paper, never broken, its frame never left at a sheet's foot.
+    // A short group: one box on paper, never broken, its frame never left at a sheet's foot.
     if (whole(box)) box.style.setProperty('--fd-print-whole', 'inline-block');
     given.push(box);
   };

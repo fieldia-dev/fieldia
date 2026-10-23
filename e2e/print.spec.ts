@@ -380,6 +380,18 @@ test.describe('the sales orders of the owner’s walk, on paper in each engine',
     if (browserName === 'chromium') expect(of('Incoterm Location')).toBe(of('Fiscal Position'));
     expect(problems).toEqual([]);
   });
+
+  test('a ticket: its short “Your ticket” group whole on one sheet, its title with all it holds — never broken over two (the owner’s walk of 0.31)', async ({ page, browserName, playwright, baseURL }) => {
+    // 0.31.1 took the desk's raw vCard off paper: the group above grew shorter, and “Your ticket” came to start at the
+    // first sheet's foot, its badge on the next.
+    const { all, problems, text } = await sheets(page, browserName, playwright, baseURL!, `page=event-ticket&record=1&skin=outlined&${NOW}`, 'print-walk-ticket');
+    const of = (words: string) => all.findIndex((sheet) => text(sheet).includes(squash(words)));
+    const titled = (words: string) => all.findIndex((sheet) => sheet.lines.some((line) => squash(line.text) === squash(words)));
+    expect(titled('Your ticket')).toBeGreaterThanOrEqual(0);
+    for (const words of ['Name', 'Session', 'Hall B, row 4, seat 12', 'Badge number']) expect(of(words), words).toBe(titled('Your ticket'));
+    expect(titled('At the door')).toBe(of('Ticket number'));
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('a record’s footer on paper, in every engine', () => {

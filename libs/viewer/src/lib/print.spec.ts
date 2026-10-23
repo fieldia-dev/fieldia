@@ -295,7 +295,14 @@ describe('a heading kept with the start of what follows it', () => {
     expect(group.style.getPropertyValue('--fd-print-whole')).toBe('inline-block');
     window.dispatchEvent(new Event('afterprint'));
     expect(group.style.getPropertyValue('--fd-print-whole')).toBe('');
-    // Taller than 420px with a quarter more: broken where it may, its title kept with its first field.
+    // A third of a sheet, as a ticket's “Your ticket” (332px; a quarter more and 8, 423 — past a heading's 420 but
+    // within half a sheet, 480): short, kept whole — 0.31 broke it over two sheets.
+    laidOut({ Terms: [100, 432], reference: [130, 170], note: [180, 432] });
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(group.style.getPropertyValue('--fd-print-keep')).toBe('96px');
+    expect(group.style.getPropertyValue('--fd-print-whole')).toBe('inline-block');
+    window.dispatchEvent(new Event('afterprint'));
+    // Taller than half a sheet (480px) with a quarter more: broken where it may, its title kept with its first field.
     laidOut({ Terms: [100, 500], reference: [130, 170], note: [180, 500] });
     window.dispatchEvent(new Event('beforeprint'));
     expect(group.style.getPropertyValue('--fd-print-keep')).toBe('96px');
