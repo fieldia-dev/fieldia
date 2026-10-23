@@ -1,8 +1,9 @@
 import { recordSentence, type ButtonNode, type LineField, type ListNode, type Page } from '@fieldia/core';
 import { installListStyles, VIEWER_LABELS, type ViewerLabels } from '@fieldia/viewer';
 import { displayValue } from '@fieldia/widgets';
-import { canvasDrag, type CanvasDrag } from './canvas-drag';
+import { barsPlaced, stopWatchingBars } from './bar-place';
 import { removeWithUndo } from './deleted-toast';
+import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { pageLocale } from './chrome-language';
 import type { ElementFactory } from './chrome';
 import type { Designer, DesignerState } from './designer';
@@ -268,6 +269,19 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
     },
   });
 
+  // Its bars — a column's, an action's — placed by the canvas's one rule, in the frame after a change is drawn.
+  const view = element.ownerDocument.defaultView;
+  let asked = false;
+  const placeBars = () => {
+    if (asked || !view?.requestAnimationFrame) return;
+    asked = true;
+    view.requestAnimationFrame(() => {
+      asked = false;
+      if (element.isConnected) barsPlaced(element)();
+    });
+  };
+  const unwatch = () => stopWatchingBars(element);
+
   return {
     element,
     drag,
@@ -292,8 +306,10 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       // steps lane: a button that does something wears a mark.
       pressMarks(actions, page, designer);
       drawTable(page, list, selected);
+      placeBars();
     },
     destroy() {
+      unwatch();
       drag.destroy();
       views.clear();
     },

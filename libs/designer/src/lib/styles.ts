@@ -461,16 +461,14 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-add-part:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-canvas-add-part .fd-dicon { width: 13px; height: 13px; }
 
-/* The bar on the field being edited: just above it; over its group's name in a first row; below it right under the tabs. */
+/* The bar on the part being edited: just above it at its end edge until the canvas places it (bar-place.ts) — above,
+   or below where above has no room, never over a group's name or another part's words; a field makes room under
+   itself for it there (--fd-bar-room). */
 .fd-field-bar {
-  position: absolute; bottom: calc(100% + 8px); inset-inline-end: 0; z-index: 5; display: flex; align-items: center; gap: 1px; padding: 3px;
+  position: absolute; bottom: calc(100% + 8px); inset-inline-end: 0; z-index: 5; display: flex; align-items: center; gap: 1px; padding: 3px; width: max-content;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px; box-shadow: 0 6px 16px rgba(15, 20, 25, 0.14); cursor: default;
 }
-.fd-bar-below > .fd-field-bar { bottom: auto; top: calc(100% + 8px); }
-/* Nudged back inside the canvas when the field's far edge would put it past the near one: the canvas measures it. */
-.fd-canvas-field > .fd-field-bar { translate: var(--fd-bar-nudge, 0px) 0; }
-/* In a group's first row, over the group's name, which the canvas measures as --fd-name-room. */
-.fd-bar-over-name > .fd-field-bar { bottom: calc(100% + var(--fd-name-room, 0px) + 8px); }
+.fd-canvas-field[data-bar-room] { margin-block-end: calc(-6px + var(--fd-bar-room, 0px)); }
 .fd-bar-button {
   all: unset; box-sizing: border-box; height: 26px; min-width: 26px; padding: 0 5px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   color: var(--fd-text); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
@@ -781,7 +779,9 @@ export const DESIGNER_CSS = /* css */ `
 .fd-list-canvas .fd-list-table .fd-list-checkbox { cursor: default; }
 .fd-list-canvas .fd-list-row:hover td { background: none; }
 .fd-list-canvas .fd-list-row:hover td.fd-picked { background: var(--fd-accent-soft); }
-.fd-column-bar { bottom: auto; top: calc(100% + 6px); inset-inline-end: auto; inset-inline-start: 0; }
+/* A column picked shows its bar, which its header's own clip hid: its words cut in their own box instead. */
+.fd-list-canvas .fd-list-table th.fd-canvas-column.fd-picked { overflow: visible; }
+.fd-list-canvas .fd-list-table th.fd-canvas-column.fd-picked > .fd-list-sort { overflow: hidden; }
 /* "+ Column" stays at the row's end however far the table scrolls. */
 .fd-list-canvas .fd-list-table .fd-canvas-add-column { position: sticky; inset-inline-end: 0; z-index: 1; width: 1%; padding-inline: 8px; background: var(--fd-surface); border-inline-start: 1px solid var(--fd-border); box-shadow: -6px 0 8px -6px rgba(15, 23, 42, 0.18); }
 .fd-canvas-add-column .fd-canvas-add-part { padding: 2px 6px; font-weight: 400; border: 0; color: var(--fd-accent); }

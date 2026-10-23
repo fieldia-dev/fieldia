@@ -234,43 +234,14 @@ describe('the screen canvas — sections, tabs and the title', () => {
     expect(canvas.element.querySelector(`.fd-canvas-field[data-node="${field}"]`)).toBeNull();
   });
 
-  it('puts the bar under a field right below the tabs, so the tabs stay readable', () => {
-    const { designer } = setup(blankPage('sheet', 'Customer'));
-    designer.addTabs();
-    const tabSection = (designer.getPage().layout as unknown as { children: { type: string; children: { children: { id: string }[] }[] }[] }).children.find((n) => n.type === 'tabs')!.children[0].children[0].id;
-    const first = designer.addQuestion('amount', { parent: tabSection }) as string;
-    const field = (id: string) => canvas.element.querySelector(`.fd-canvas-field[data-node="${id}"]`) as HTMLElement;
-    expect(field(first).classList.contains('fd-bar-below')).toBe(true);
-    const third = designer.addQuestion('date', { parent: tabSection }) as string;
-    designer.addQuestion('date', { parent: tabSection });
-    designer.select(third);
-    expect(field(third).classList.contains('fd-bar-below')).toBe(true);
-    const fourth = designer.addQuestion('date', { parent: tabSection }) as string;
-    expect(field(fourth).classList.contains('fd-bar-below')).toBe(false);
-  });
-
-  it('lifts the bar over a group’s name from a field in its first row, so the name stays readable and can be picked', () => {
+  it('gives the bar of the field picked no fixed place of its own: the canvas places it beside its field (bar-place.ts)', () => {
     const { designer } = setup();
-    const field = (id: string) => canvas.element.querySelector(`.fd-canvas-field[data-node="${id}"]`) as HTMLElement;
-    const over = (id: string) => [field(id).classList.contains('fd-bar-over-name'), field(id).classList.contains('fd-bar-below')];
     designer.setColumns('section-1', 2);
     const first = designer.addQuestion('short-answer', { parent: 'section-1' }) as string;
-    expect(over(first)).toEqual([true, false]);
-    const second = designer.addQuestion('date', { parent: 'section-1' }) as string;
-    expect(over(second)).toEqual([true, false]);
-    // The second row has the first above it, not the name: the bar sits just above the field, over the gap.
-    const third = designer.addQuestion('date', { parent: 'section-1' }) as string;
-    expect(over(third)).toEqual([false, false]);
-  });
-
-  it('keeps the bar under a field in the first group of a tab, so neither the tabs’ names nor the group’s are covered', () => {
-    const { designer } = setup(blankPage('sheet', 'Customer'));
-    designer.addTabs();
-    const tabSection = (designer.getPage().layout as unknown as { children: { type: string; children: { children: { id: string }[] }[] }[] }).children.find((n) => n.type === 'tabs')!.children[0].children[0].id;
-    designer.renameContainer(tabSection, 'Contact');
-    const first = designer.addQuestion('amount', { parent: tabSection }) as string;
     const card = canvas.element.querySelector(`.fd-canvas-field[data-node="${first}"]`) as HTMLElement;
-    expect([card.classList.contains('fd-bar-over-name'), card.classList.contains('fd-bar-below')]).toEqual([false, true]);
+    // The bar is the field's own child, so it moves with it; no class lifts it over a group's name or the tabs.
+    expect(card.querySelector(':scope > .fd-field-bar')).not.toBeNull();
+    expect([...card.classList].filter((name) => name.startsWith('fd-bar-'))).toEqual([]);
   });
 
   it('shows a sheet’s title big over everything, and picks the page from it', () => {
