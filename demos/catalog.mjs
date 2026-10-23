@@ -405,12 +405,12 @@ export const DEMOS = [
     name: 'A pipeline’s deal stages, as settings',
     category: 'lists',
     query: 'page=deal-stages&skin=underline',
-    blurb: 'A sales pipeline’s stages kept as a list of settings: each stage’s order, name, chance of winning and days expected changed in its cell, a stage added at the end — and the won stage the sales manager’s alone, read by everyone else and never opened for typing.',
+    blurb: 'A sales pipeline’s stages kept as a list of settings: each stage’s order, name, chance of winning and days expected changed in its cell, a new stage asked its chance and days and put just before Won — and the won stage the sales manager’s alone, read by everyone else and never opened for typing.',
     howTo: [
       'Press Offer’s chance of winning, type 65 and leave the row: 65%, saved as 0.65.',
       'Press Enter on a stage’s row: its first cell opens; Tab and Shift+Tab go across, Enter takes a cell and goes down its column.',
       'The Won stage shows a lock at its start: press it, and why is said under it — the source says only the sales manager changes it.',
-      'Press Add a stage, name it and leave it: it is saved at the end.',
+      'Press Add a stage and name it: leave it, and it asks its chance of winning and days expected. Give them and leave it: it is saved with the next order, 60, before Won’s 100 — the list has it there when it is opened again.',
     ],
   },
   {

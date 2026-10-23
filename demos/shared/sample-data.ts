@@ -105,7 +105,7 @@ import { APPROVAL_ROUTES, approvalHistory, approvalRecords, approvalUser, claimP
 import servicePrices from '../../examples/pages/service-prices.page.json';
 import staffHours from '../../examples/pages/staff-hours.page.json';
 import dealStages from '../../examples/pages/deal-stages.page.json';
-import { CLINIC_ROLES, sampleServices, sampleStaffWeeks, sampleStages, servicePerHour, stagePermissions, staffWeekRule } from './editable-lists';
+import { CLINIC_ROLES, sampleServices, sampleStaffWeeks, sampleStages, servicePerHour, stagePermissions, staffWeekRule, stageOrder } from './editable-lists';
 import listingLanguages from '../../examples/pages/listing-languages.page.json';
 import servicesLanguages from '../../examples/pages/services-languages.page.json';
 import serviceLanguages from '../../examples/pages/service-languages.page.json';
@@ -978,6 +978,8 @@ export function sampleDataSource() {
   // The clinic's server: a week over 48 hours refused, a service's price per hour worked out again (shared/editable-lists.ts).
   staffWeekRule(source);
   servicePerHour(source);
+  // The pipeline's: a new stage before Won, which stays last (shared/editable-lists.ts).
+  stageOrder(source);
   return source;
 }
 

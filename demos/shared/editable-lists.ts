@@ -46,7 +46,7 @@ export function sampleStaffWeeks(): Record<number, Values> {
   return Object.fromEntries(rows.map(([name, as, hours], i) => [i + 1, { name, role: as, ...Object.fromEntries(days.map((day, d) => [day, hours[d]])), week: hours.reduce((sum, h) => sum + h, 0) }]));
 }
 
-/** A pipeline's stages, in their order: the won stage last. */
+/** A pipeline's stages, in their order, ten apart as a pipeline's are kept — room for a stage between two — the won stage last. */
 export function sampleStages(): Record<number, Values> {
   const rows: [string, number, number, string][] = [
     ['New', 0.1, 2, 'A lead that came in: called back the same day.'],
@@ -56,12 +56,33 @@ export function sampleStages(): Record<number, Values> {
     ['Contract', 0.9, 21, 'A contract sent to sign.'],
     ['Won', 1, 0, 'Signed and paid the first instalment.'],
   ];
-  return Object.fromEntries(rows.map(([name, probability, days, requirements], i) => [i + 1, { sequence: i + 1, name, probability, days, folded: false, won: name === 'Won', requirements }]));
+  return Object.fromEntries(rows.map(([name, probability, days, requirements], i) => [i + 1, { sequence: name === 'Won' ? 100 : (i + 1) * 10, name, probability, days, folded: false, won: name === 'Won', requirements }]));
 }
 
 /** The won stage is kept by the sales manager: everyone else reads it, and is told why. */
 export function stagePermissions(values: Values): RecordPermissions | undefined {
   return values['won'] === true ? { edit: false, reason: 'The won stage is kept by the sales manager.' } : undefined;
+}
+
+/**
+ * The pipeline's stages in order as its server keeps them, the won stage last: a new stage given no order of its own
+ * takes the next one after the others' — ten on, before Won — and Won moves on past any stage saved at or after it.
+ */
+export function stageOrder(source: MemoryDataSource): void {
+  const save = source.save.bind(source);
+  const orderOf = (values: Values | undefined) => (typeof values?.['sequence'] === 'number' ? (values['sequence'] as number) : null);
+  source.save = async (request: SaveRequest) => {
+    if (request.model !== 'deal.stage') return save(request);
+    const stages = Object.entries(source.records['deal.stage'] ?? {});
+    const won = stages.find(([, values]) => values['won'] === true);
+    const others = stages.filter(([id]) => id !== won?.[0] && id !== String(request.id)).map(([, values]) => orderOf(values) ?? 0);
+    if (request.id == null && orderOf(request.changes.values) === null) {
+      request = { ...request, changes: { ...request.changes, values: { ...request.changes.values, sequence: Math.max(0, ...others) + 10 } } };
+    }
+    const order = orderOf(request.changes.values);
+    if (won && String(request.id) !== won[0] && order !== null && order >= (orderOf(won[1]) ?? 0)) won[1]['sequence'] = order + 10;
+    return save(request);
+  };
 }
 
 /** The labour rules' week, as the clinic's server holds it: 48 hours at most. */

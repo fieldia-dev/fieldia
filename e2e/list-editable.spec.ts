@@ -587,19 +587,39 @@ test.describe('a pipeline’s deal stages', () => {
 
   test('Add a stage opens its Stage, the first cell a new stage needs, though Order comes first: its name typed is saved', async ({ page }) => {
     // The owner's walk of 0.29: the name landed in Order and was refused, "Order: “Contract signed” is not a number".
+    // The walk of 0.31: saved with no order, chance or days, below Won. A new stage is asked its chance and days, and
+    // goes before Won, which stays last.
     const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline');
     await expect(row(page, 'Offer')).toBeVisible();
-    // "Press Add a stage, name it and leave it: it is saved at the end."
+    // "Press Add a stage, name it, give its chance and days, and leave it: it is saved before Won."
     await page.getByRole('button', { name: 'Add a stage' }).click();
     const added = page.locator('.fd-list-row[data-new]');
     await expect(added.locator('td[data-col="name"] input')).toBeFocused();
     await page.keyboard.type('Contract signed');
     await screen(page, 'list-editable-stage-added', { viewport: true });
     await page.locator('.fd-search-input').click();
+    // Left with only its name: asked for its chance and its days, nothing saved, what was typed kept.
+    await expect(page.locator('.fd-list-note:not([hidden])')).toContainText('Chance of winning');
+    await expect(page.locator('.fd-list-note:not([hidden])')).toContainText('Days expected');
+    expect(await calls(page, 'save')).toHaveLength(0);
+    await screen(page, 'list-editable-stage-asked', { viewport: true });
+    await added.locator('td[data-col="probability"]').click();
+    await page.keyboard.type('95');
+    await page.keyboard.press('Tab');
+    await page.keyboard.type('25');
+    await page.locator('.fd-search-input').click();
     await expect.poll(() => calls(page, 'save')).toHaveLength(1);
-    expect((await calls(page, 'save'))[0].values).toMatchObject({ name: 'Contract signed' });
+    expect((await calls(page, 'save'))[0].values).toMatchObject({ name: 'Contract signed', probability: 0.95, days: 25 });
     await expect(page.locator('.fd-list-row[data-new]')).toHaveCount(0);
     await expect(page.locator('.fd-list-note:not([hidden])')).toHaveCount(0);
+    // The next order, before Won's: the stages are ten apart, Won last at 100. The row stays where it was added while
+    // the list is worked in, as any list keeps them; opened again, the list has it in its place, before Won.
+    await expect(page.locator('.fd-list-row', { hasText: 'Contract signed' }).locator('td[data-col="sequence"]')).toHaveText('60');
+    await expect(cell(page, 'Won', 'sequence')).toHaveText('100');
+    await screen(page, 'list-editable-stage-saved', { viewport: true });
+    await page.reload();
+    await expect.poll(() => page.locator('.fd-list-row td[data-col="name"]').allTextContents()).toEqual(['New', 'Qualified', 'Viewing', 'Offer', 'Contract', 'Contract signed', 'Won']);
+    await screen(page, 'list-editable-stage-before-won', { viewport: true });
     expect(problems).toEqual([]);
   });
 });
@@ -630,10 +650,12 @@ test.describe('on a phone', () => {
     // Its card behind the sheet goes by its words, never by the key the list keeps it by.
     await expect(page.locator('.fd-list-row[data-new] .fd-list-card-title')).toHaveText('New stage');
     await page.keyboard.type('Contract signed');
+    await sheet.getByLabel('Chance of winning').fill('95');
+    await sheet.getByLabel('Days expected').fill('25');
     await screen(page, 'list-editable-phone-stage-added', { viewport: true });
     await sheet.getByRole('button', { name: 'Save & Close' }).click();
     await expect.poll(() => calls(page, 'save')).toHaveLength(1);
-    expect((await calls(page, 'save'))[0].values).toMatchObject({ name: 'Contract signed' });
+    expect((await calls(page, 'save'))[0].values).toMatchObject({ name: 'Contract signed', probability: 0.95, days: 25 });
     expect(problems).toEqual([]);
   });
 
