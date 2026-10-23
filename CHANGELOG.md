@@ -15,6 +15,147 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.31.1 — 2026-10-23
+
+**The owner's walk of 0.31, mended.** A business owner walked fieldia.dev's
+0.31 demos as a customer would, following each demo's own steps with the
+mouse. What it met broken or confusing is fixed here, each where it began, for
+every place it could happen. How Arabic writes money, the designer's dark
+scheme and the floating + bar passing over text wait for a later release. The
+page format stays 0.10: nothing a page says changes.
+
+**Fixes:**
+
+- **A time limit survives a reload, and never resets.** A timed page keeps its
+  answers and its clock's start in its draft — in the tab's own store
+  (`sessionStorage`) where the app keeps no drafts. A reload goes on with the
+  time left; past the end, it says the time is up and sends or locks as the
+  page says. Once the answers are sent, a reload starts a new response: one
+  response per person is the app's `limits.onePerPerson`, as on any page of
+  responses.
+- **Nothing moves under the pointer as a box is left.** What a box adds under
+  itself as it is left — a proof's Send a code, a phone's Call and WhatsApp, an
+  amount's shorthand line, a possible duplicate's note — waits for the press
+  to end, so the click lands where it was aimed ("Book a viewing" after the
+  mobile). So does a field or a group a condition shows or hides meanwhile: a
+  country typed and left shows Region under it only once the press on Tags has
+  ended.
+- **Masks and one-time code boxes keep what is typed.** After a refused key,
+  the keys that follow go in where they fit: "10a2345" shows "1 023 45", saying
+  a digit goes there, not "a". A paste with words around the value gives the one
+  value in it ("ID 1023456789", "IBAN: SA03 …", a whole SMS into a code's
+  boxes); else it is refused, saying why — never dropped silently.
+- **A code's value is said as what it is.** A barcode's value is an identifier,
+  never grouped: "20261105", not "20,261,105". A QR code shows its payload by
+  its summary — a link with parameters by its address, a contact card or a
+  network by its name — or nothing, and is named "QR code: Summit desk". On
+  paper, no raw "BEGIN:VCARD" over the code.
+- **A short group prints whole on one sheet.** A titled group up to half a
+  sheet is carried whole to the next sheet where it does not fit, never broken
+  over two: the ticket's "Your ticket" kept its badge.
+- **Right to left, every value a person typed reads in its own direction** —
+  in boxes, a table's line cells, notes and sections, grid cells and line
+  cards: an English note on an Arabic page keeps its full stop at its end.
+- **Weekday heads in the language's own script.** Where a language's narrow
+  letters are Latin (Urdu's "S" and "T"), the whole week takes its short names:
+  date and range calendars, booking slots, the timeline's day letters.
+- **The Gantt opens on the plan**, from its first task (today in view where it
+  fits). Bars past either edge are signed ("‹ 3", "7 ›"); pressing a sign moves
+  to them. Ctrl+Z and Ctrl+Shift+Z (or Ctrl+Y) undo and redo its moves, as the
+  toast's Undo does.
+- **A save starts the record's Undo afresh**: Ctrl+Z right after Save says
+  "Nothing to undo since it was saved" instead of bringing the old value back
+  as an unsaved change (not on pages that save themselves).
+- **A menu over a box gives way.** The search bar's saved-views menu closes as
+  its box is pressed or typed in, its suggestions in its place; a filter bar's
+  list closes as another part of the bar takes the focus.
+- **Changes on the way to approval are kept by who and what.** A record
+  changed while it waits for a decision, or after a rejection, has a `changed`
+  entry in its approval history — "Omar Said changed it — Amount: E£ 4,850.00
+  → E£ 9,999.00" — and a tracked change in its conversation. Contract §20 says
+  what Fieldia records and what the app must (record it on its server, return
+  it in the history); the memory source does it as an engine would.
+- **An expense claim is its employee's alone to change.** In "An expense
+  rejected, with why", Omar's manager and Finance read it whole — what he
+  changed after the rejection with it — and decide it, told "Only Omar Said,
+  whose claim it is, can change it."; a save of theirs is refused.
+- **Saving a template under a name already kept asks first**: "Replace “Botox
+  package”?", Replace or Cancel (which asks for the name again).
+- **Small words:** Edit on a survey's review offers Back to review at once; a
+  photo made the cover says "Photo 2 of 5 moved to the cover"; Start from a
+  schema with nothing pasted says "Paste a schema or choose a file first."
+- **The demos keep what was saved while the tab is open** — records,
+  templates, saved views, properties added in place, responses sent,
+  conversations, the backlog — so "Start a new course" no longer loses the
+  template just saved; Start over clears it all. The in-memory data source and
+  chatter number new templates, views, messages, to-dos and followers after
+  the ones they were given.
+- **A card's sheet on a phone draws each field the way its column does**, so a
+  per cent is typed as one.
+- **Demos:** a new deal stage is asked its chance and days, and goes before
+  Won; the clinic branch page is marked Egyptian English (en-EG), its hours and
+  booking calendar both starting on Saturday; the viewing report opens again
+  with no signal, through a service worker of its own, and the outbox docs show
+  how an app does the same (Fieldia's outbox keeps the sends; opening the page
+  offline is the app's service worker).
+- **fieldia.dev:** a page under a strict Content-Security-Policy, at
+  /demos/csp/, linked from /start/#csp, with a gallery card; the gallery finds
+  the new languages and the developer features ("urdu", "persian", "csp",
+  "json schema", "openapi", "year only", "lot number", …), and on a phone a
+  search's results come first.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- A timed page with no drafts store keeps its draft in `sessionStorage`, and a
+  draft whose clock started is laid at once, even with `drafts.restore: "ask"`.
+- After a save (except on autosave pages), Ctrl+Z and `form.undo()` find
+  nothing to undo.
+- Parts a condition shows or hides while a press is going on change once it
+  ends — a moment after the click's own handlers. A test that presses and reads
+  a part's visibility in the same breath waits for it (Playwright's `expect`
+  does).
+- The search bar's menu closes when its box is focused or typed in: a test
+  that reads counts in it opens it again.
+- Masks and one-time code boxes no longer hold keys after a refused one;
+  Backspace after a refused key deletes the last character shown. New
+  `InputRules.stay`.
+- A titled group up to half a sheet prints whole, carried to the next sheet
+  where it does not fit: a printout may break between sheets at a different
+  place.
+- `ApprovalEntry.decision` gains `'changed'`, with `changes`, and the new type
+  `ApprovalChange` (`{ field, label?, from, to }`). The chatter's
+  `approvalEntries` takes a value formatter.
+- A QR code's accessible name is "QR code: {summary}" or "QR code". The codes
+  part exports `codeSummary`. An integer shown as a barcode is not grouped in
+  its box either.
+- The Gantt opens at its first task, not at today.
+- The memory source numbers a new template, view or message after the ids it
+  was given, never reusing one.
+- An app that passes whole `labels`, `messages` or designer words adds the new
+  keys: viewer `nothingSinceSave`, `templateReplaceAsk`, `templateReplace`,
+  `approvalChangedEntry`; widgets `qrCode`; designer `schema.empty`; gantt
+  `edgeBefore`, `edgeAfter`. The words of `coverNow` changed.
+
+**Size:** `fieldia.js` 520.0 KB, 170.9 gzipped (0.31.0: 519.6, 170.8): 0.16 KB
+gzipped for what every page needs — where a timed page's drafts are kept (known
+as the form is made), a save starting the changes afresh, a code's box written
+at rest as typed, text boxes reading in their own direction, the template
+question handed to its part, the input rules' `stay`, and a condition's part
+waiting for a press. Of the parts, gzipped:
+
+- memory 9.0 KB (from 8.7): changes kept on the way to approval, ids numbered
+  after the given ones;
+- typed 6.0 (5.7): keys after a refused one, the value in a paste;
+- approvals 6.9 (6.7) and codes 5.5 (5.2): the `changed` entry; a code's
+  summary;
+- list 45.1 (45.0) and filters 7.7 (7.7): a menu giving way;
+- surveyflow 12.3 (12.3), date 9.1 (9.1), undo 3.5 (3.4), verify 4.8 (4.7),
+  templates 3.0 (2.9), lines 15.1 (15.0), print 5.2 (5.2), phone 16.2 (16.2),
+  duplicates 6.4 (6.4): the walk's fixes; slots 5.8 (5.9), its weekday heads
+  now the date part's;
+- the language add-ons by 0.05–0.07 each (the new words); the Gantt's timeline
+  15.2 (14.1): its edge signs, Ctrl+Z and its words in every language.
+
 ## 0.31.0 — 2026-10-22
 
 **The study's "nice to have" list, done: lists people work in all day and a
