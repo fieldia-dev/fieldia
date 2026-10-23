@@ -662,7 +662,11 @@ first entered — "Time left for this step: 4:59" — and as it runs out its ans
 stay as they are while the form goes on. No review stands in the way of a send
 on time. A reload goes on with the time left and the answers given — or, past
 its end, says the time is up and sends or locks as the page says — through the
-form's drafts, kept in the tab when the app keeps none. It comes in the survey flow's part; its words are the viewer's labels
+form's drafts, kept in the tab when the app keeps none. Once the answers are
+sent, the draft goes with them: a reload then starts a new response with a
+clock of its own. One response per person is the app's to keep, with
+`limits.onePerPerson` (and its source's `limits`), as it is for any page of
+responses. It comes in the survey flow's part; its words are the viewer's labels
 (`timeLimitTitle`, `timeLimitIntro`, `timeStart`, `timeLeft`, `stepTimeLeft`,
 `timeWarn`, `timeUpSent`, `timeUpLocked`, `stepTimeUp`). See
 [a time limit](https://fieldia.dev/pages/#time-limit).
