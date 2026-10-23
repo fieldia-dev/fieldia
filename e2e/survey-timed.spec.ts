@@ -56,13 +56,16 @@ test.describe('a time limit', () => {
 
   test('a reload goes on with the time left and the answers given: never a way round the limit', async ({ page }) => {
     await halfWay(page);
-    // The clock held still, so what is left reads the same before and after.
-    await page.clock.pauseAt(new Date('2026-10-20T09:03:30Z'));
-    await expect(page.locator('.fd-time-bar')).toContainText(/Time left: 6:3[01]/);
+    // The clock held still, so what is left reads the same before and after. Held half a minute on from the page's own
+    // now: the fake clock runs in real time between steps, so a slow runner starts the quiz a second or two late.
+    await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 30_000));
+    const bar = page.locator('.fd-time-bar');
+    await expect(bar).toContainText(/Time left: 6:[23]\d/);
+    const left = ((await bar.textContent()) ?? '').match(/Time left: \d+:\d\d/)?.[0] ?? '';
     await page.reload();
     await expect(page.locator('.fd-form')).toBeVisible();
     // No Start again, no full ten minutes: the clock goes on from where it stood, on the step it was on.
-    await expect(page.locator('.fd-time-bar')).toContainText(/Time left: 6:3[01]/);
+    await expect(bar).toContainText(left);
     await expect(page.locator('.fd-time-start')).toBeHidden();
     await expect(page.getByLabel(/Hyaluronic acid/)).toBeChecked();
     // On again: a screen waits for the page's frames, which a held clock holds too.
