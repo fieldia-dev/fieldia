@@ -67,6 +67,21 @@ describe('the themes', () => {
     expect(low).toEqual([]);
   });
 
+  // A wait's looks in each theme's own (loading.ts): every theme says them, light and dark; a skeleton's shape stands
+  // apart from the card it is on, its shimmer's band apart from it, and the spinner and the bar read as a control does
+  // (WCAG 1.4.11, 3:1) on the card.
+  it.each(THEMES.flatMap((theme) => (['light', 'dark'] as const).map((scheme) => [theme, scheme] as const)))('%s, %s: a wait’s skeleton, shimmer, spinner and bar its own, in sight', (theme, scheme) => {
+    const t: ThemeTokens = scheme === 'light' ? THEME_TOKENS[theme].light : { ...THEME_TOKENS[theme].light, ...THEME_TOKENS[theme].dark };
+    for (const token of ['skeleton', 'skeleton-shine', 'shimmer', 'spinner', 'bar'] as const) expect(t[token]).toBeTruthy();
+    for (const token of ['skeleton', 'skeleton-shine', 'spinner'] as const) expect(THEME_TOKENS[theme].dark[token]).toBeTruthy();
+    const on = (colour: string) => `#${over(colour, t.surface as string).map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')}`;
+    const skeleton = on(t.skeleton as string);
+    expect(contrast(skeleton, t.surface as string)).toBeGreaterThanOrEqual(1.05);
+    expect(contrast(on(t['skeleton-shine'] as string), skeleton)).toBeGreaterThanOrEqual(1.04);
+    expect(contrast(t.spinner as string, t.surface as string)).toBeGreaterThanOrEqual(3);
+    expect(THEME_TOKENS_CSS).toContain(`--fd-skeleton: ${THEME_TOKENS[theme][scheme].skeleton};`);
+  });
+
   // A themed form paints its own ground. Dark, it sits on an app's dark page — GitHub's #0d1117, VS Code's #1e1e1e, the
   // demos' #111418 — as the plain dark scheme's (#16191e) does: a shade apart at most, never a black slab in a grey
   // page (Apple's and Ant's black bases were). Its lightness (CIELAB L*) between 5 and 15, as those pages' are.
