@@ -138,5 +138,8 @@ describe('the days a timeline shows', () => {
     expect(ticksOf({ from: dayOn(2026, 9, 5), days: 14 }, 'week', 'en', 1).lower.map((t) => t.text)).toEqual(['5 Oct', '12 Oct']);
     expect(ticksOf({ from: dayOn(2026, 10, 1), days: 61 }, 'month', 'en', 1)).toMatchObject({ upper: [{ text: '2026' }], lower: [{ text: 'Nov' }, { text: 'Dec' }] });
     expect(ticksOf(span, 'day', 'ar', 6).upper[0].text).toBe('أكتوبر 2026');
+    // Each day's letter in the language's own script: Urdu's narrow days are English's letters, so its short names.
+    expect(ticksOf(span, 'day', 'ur', 0).lower.map((t) => t.sub)).toEqual(['جمعہ', 'ہفتہ', 'اتوار']);
+    expect(ticksOf(span, 'day', 'fa', 6).lower.map((t) => t.sub)).toEqual(['ج', 'ش', 'ی']);
   });
 });

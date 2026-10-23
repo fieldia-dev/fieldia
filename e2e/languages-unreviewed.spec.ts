@@ -95,6 +95,23 @@ for (const locale of ['tr', 'es'] as const) {
   });
 }
 
+test('a date’s calendar heads its days in the language’s own script, every language — Urdu’s by their short names', async ({ page }) => {
+  const latin = /\p{Script=Latin}/u;
+  for (const locale of ['ur', 'fa', 'ar', 'tr', 'es']) {
+    // The walk's: the flat let in Riyadh, its Ends on's calendar opened.
+    await open(page, 'plain', `page=lease&skin=underline&locale=${locale}`);
+    await page.locator('#fd1-f-ends').locator('xpath=../..').getByRole('button').first().click();
+    const heads = page.locator('.fd-calendar:not([hidden]) thead th');
+    await expect(heads).toHaveCount(7);
+    const words = await heads.allInnerTexts();
+    expect(`${locale}: ${words.filter((head) => latin.test(head) !== ['tr', 'es'].includes(locale)).join(' ')}`).toBe(`${locale}: `);
+    if (locale === 'ur') {
+      expect(words).toContain('اتوار');
+      await screen(page, 'lang-ur-calendar-heads', { viewport: true });
+    }
+  }
+});
+
 test('a Turkish page writes a typed day with dots, as a German one does', async ({ page }) => {
   const { problems } = await open(page, 'plain', 'page=fields&skin=outlined&locale=tr');
   const start = node(page, 'f-start').locator('input.fd-input').first();
