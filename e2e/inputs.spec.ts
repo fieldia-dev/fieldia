@@ -202,12 +202,13 @@ test.describe('web addresses, phones, emails and money', () => {
   test('a record’s web address, phone and email say what to type', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=fields&skin=outlined');
     await node(page, 'f-portal').locator('input').fill('the client portal');
-    // Letters never land in a phone number's box (the input rules, 0.21): too few digits are said instead.
+    // Letters never land in a phone number's box (the input rules, 0.21): too few digits are said instead — read the
+    // world over (the page says its phones' country), in its country's words.
     await node(page, 'f-phone').locator('input').fill('0100 12');
     await node(page, 'f-email').locator('input').fill('site@');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(errorOf(page, 'f-portal')).toHaveText('Enter a web address, like example.com');
-    await expect(errorOf(page, 'f-phone')).toHaveText('Enter a phone number, like +20 100 123 4567');
+    await expect(errorOf(page, 'f-phone')).toHaveText('Site phone: too short for a +20 number (Egypt)');
     await expect(errorOf(page, 'f-email')).toHaveText('Enter an email address, like name@example.com');
     await node(page, 'f-email').scrollIntoViewIfNeeded();
     await screen(page, 'inputs-web-phone-email', { viewport: true });
@@ -218,6 +219,17 @@ test.describe('web addresses, phones, emails and money', () => {
     for (const id of ['f-portal', 'f-phone', 'f-email']) await expect(errorOf(page, id)).toBeHidden();
     await expect(node(page, 'f-portal').locator('input')).toHaveAttribute('autocomplete', 'url');
     await expect(node(page, 'f-email').locator('input')).toHaveAttribute('autocomplete', 'email');
+    expect(problems).toEqual([]);
+  });
+
+  test('a phone box on a page saying nothing of its phones says what to type', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=lead&record=1&skin=outlined');
+    const phone = node(page, 'f-phone').locator('input');
+    await phone.fill('0100 12');
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(errorOf(page, 'f-phone')).toHaveText('Enter a phone number, like +20 100 123 4567');
+    await phone.fill('(02) 2345-6700');
+    await expect(errorOf(page, 'f-phone')).toBeHidden();
     expect(problems).toEqual([]);
   });
 

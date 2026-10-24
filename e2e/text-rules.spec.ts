@@ -113,14 +113,24 @@ test.describe('a text’s most characters', () => {
   });
 });
 
+/**
+ * A phone in each of its two ways: Every field's, read the world over (its page says its phones' country), kept as
+ * E.164; and a lead's, a box that checks a phone number (its page says nothing of its phones), kept as typed.
+ */
+const PHONES = [
+  { kind: 'read the world over', page: 'page=fields&skin=outlined', kept: (typed: string) => `+${typed.replace(/\D/g, '').replace(/^0/, '20')}` },
+  { kind: 'a box that checks it', page: 'page=lead&record=1&skin=outlined', kept: (typed: string) => typed },
+] as const;
+
 test.describe('a phone number, an email and a web address', () => {
   for (const [locale, query, said] of [
     ['en', '', 'A phone number takes digits, spaces and + ( ) . - only'],
     ['ar', '&locale=ar&dir=rtl', 'رقم الهاتف أرقام ومسافات و+ ( ) . - فقط'],
     ['fr', '&locale=fr', 'Un numéro de téléphone ne contient que des chiffres, des espaces et + ( ) . -'],
-  ] as const) {
-    test(`${locale}: a phone number refuses letters as they are typed, and keeps its digits in 0-9 once left`, async ({ page }) => {
-      const { problems } = await open(page, 'plain', `page=fields&skin=outlined${query}`);
+  ] as const)
+  for (const phones of PHONES)
+    test(`${locale}: a phone number (${phones.kind}) refuses letters as they are typed, and keeps its digits in 0-9 once left`, async ({ page }) => {
+      const { problems } = await open(page, 'plain', `${phones.page}${query}`);
       const phone = node(page, 'f-phone');
       const box = phone.locator('input');
       await box.fill('');
@@ -129,30 +139,30 @@ test.describe('a phone number, an email and a web address', () => {
       await expect(hintOf(phone)).toHaveText(said);
       await expect(box).toHaveAttribute('aria-describedby', new RegExp(`${await hintOf(phone).getAttribute('id')}`));
       await phone.scrollIntoViewIfNeeded();
-      await screen(page, `text-rules-phone-${locale}`, { viewport: true });
+      if (phones === PHONES[0]) await screen(page, `text-rules-phone-${locale}`, { viewport: true });
       // The keys after the refused one wait with it: Backspace takes them back one by one, and the words go with the last.
       for (let i = 0; i < 'call'.length; i++) await box.press('Backspace');
       await expect(hintOf(phone)).toBeHidden();
       await box.pressSequentially(locale === 'ar' ? '٠١٠١٢٣٤٥٦٧٨' : '+20 (10) 1234-5678');
       await expect(hintOf(phone)).toBeHidden();
       await box.press('Tab');
-      expect(await valueOf(page, 'phone')).toBe(locale === 'ar' ? '01012345678' : '+20 (10) 1234-5678');
+      expect(await valueOf(page, 'phone')).toBe(phones.kept(locale === 'ar' ? '01012345678' : '+20 (10) 1234-5678'));
       await expect(errorOf(page, 'f-phone')).toBeHidden();
       expect(problems).toEqual([]);
     });
-  }
 
-  test('ar: a phone number pasted with direction marks — from a chat, from Fieldia’s own message — is taken without them', async ({ page }) => {
-    await open(page, 'plain', 'page=fields&skin=outlined&locale=ar&dir=rtl');
-    const box = node(page, 'f-phone').locator('input');
-    for (const pasted of ['\u200e+20 10 1234 5678', '\u202a+20 10 1234 5678\u202c', '\u2066+20 100 123 4567\u2069']) {
-      await box.fill('');
-      await paste(page, box, pasted);
-      await box.press('Tab');
-      expect(await valueOf(page, 'phone')).toBe(pasted.replace(/[\u200e\u202a\u202c\u2066\u2069]/g, ''));
-      await expect(errorOf(page, 'f-phone')).toBeHidden();
-    }
-  });
+  for (const phones of PHONES)
+    test(`ar: a phone number (${phones.kind}) pasted with direction marks — from a chat, from Fieldia’s own message — is taken without them`, async ({ page }) => {
+      await open(page, 'plain', `${phones.page}&locale=ar&dir=rtl`);
+      const box = node(page, 'f-phone').locator('input');
+      for (const pasted of ['\u200e+20 10 1234 5678', '\u202a+20 10 1234 5678\u202c', '\u2066+20 100 123 4567\u2069']) {
+        await box.fill('');
+        await paste(page, box, pasted);
+        await box.press('Tab');
+        expect(await valueOf(page, 'phone')).toBe(phones.kept(pasted.replace(/[\u200e\u202a\u202c\u2066\u2069]/g, '')));
+        await expect(errorOf(page, 'f-phone')).toBeHidden();
+      }
+    });
 
   test('an email or a web address is said as soon as it is left, not only at Save', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=fields&skin=outlined');

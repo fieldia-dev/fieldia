@@ -69,7 +69,10 @@ const WORDS = {
     ar: 'Start date: يأخذ يومًا فقط، فتُرك الوقت 14:30',
     fr: 'Start date ne prend qu’un jour : l’heure 14:30 a été laissée de côté',
   },
-  phone: { en: 'Enter a phone number, like +20 100 123 4567', ar: 'أدخل رقم هاتف، مثل ⁦+20 100 123 4567⁩', fr: 'Saisissez un numéro de téléphone, par exemple +33 1 23 45 67 89' },
+  // A phone read the world over (Every field's: its page says its phones' country), and a box that checks a phone
+  // number (a lead's: its page says nothing of its phones).
+  phone: { en: 'Site phone: letters are not allowed in a phone number', ar: 'Site phone: لا يُسمح بالحروف في رقم الهاتف', fr: 'Site phone : les lettres ne sont pas autorisées dans un numéro de téléphone' },
+  phoneBox: { en: 'Enter a phone number, like +20 100 123 4567', ar: 'أدخل رقم هاتف، مثل ⁦+20 100 123 4567⁩', fr: 'Saisissez un numéro de téléphone, par exemple +33 1 23 45 67 89' },
   oneCell: { en: 'Pasted into 1 cell.', ar: 'لُصق في خلية واحدة.', fr: 'Collé dans 1 cellule.' },
 } as const;
 
@@ -160,6 +163,16 @@ for (const [locale, query] of LOCALES) {
       expect(await stored(page, 'project', 'phone')).not.toBe('+20 1oo 123 4567');
       expect(await stored(page, 'project', 'email')).not.toBe('ahmedali@example.com');
       await screen(page, `input-keys-phone-${locale}`, { viewport: true });
+      // A box that checks a phone number, on a page saying nothing of its phones: the same keys, its own words.
+      ({ problems } = await open(page, 'plain', `page=lead&record=1&skin=outlined${query}`));
+      const box = boxOf(page, 'f-phone');
+      await enter(box);
+      await box.pressSequentially('+20 1oo 123 4567');
+      await expect(box).toHaveValue('+20 1');
+      await box.press('Tab');
+      await expect(box).toHaveValue('+20 1oo 123 4567');
+      await expect(errorOf(page, 'f-phone')).toHaveText(WORDS.phoneBox[locale]);
+      expect(await stored(page, 'lead', 'phone')).not.toBe('+20 1oo 123 4567');
     });
 
     test('a colour code is never made of the keys round a refused one', async ({ page }) => {

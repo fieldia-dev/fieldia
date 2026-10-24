@@ -89,7 +89,8 @@ for (const variant of VARIANTS) {
       await banner.getByRole('button', { name: 'Retry' }).click();
       await expect(banner).toBeHidden();
       await expect(page.locator('.fd-status')).toHaveText('Saved');
-      expect(await demo<string>('dataSource.records.partner.1.phone')).toBe('+20 2 1111 2222');
+      // The customer's page reads its phones the world over: the number kept as E.164.
+      expect(await demo<string>('dataSource.records.partner.1.phone')).toBe('+20211112222');
     });
 
     test('the save’s status can be a toast in a corner, which goes once saved, or a bar across the top', async ({ page }) => {
@@ -132,7 +133,7 @@ for (const variant of VARIANTS) {
       await page.getByRole('button', { name: 'Done', exact: true }).click();
       await expect(phone).not.toBeEditable();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
-      expect(await demo<string>('dataSource.records.partner.1.phone')).toBe('+20 2 1111 2222');
+      expect(await demo<string>('dataSource.records.partner.1.phone')).toBe('+20211112222');
     });
 
     test('a link’s filter with an OR offers only the people either side of it allows', async ({ page }) => {
