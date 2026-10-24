@@ -8,7 +8,11 @@
  * it follows the part wherever the canvas scrolls; the canvas places it again as a window is resized or zoomed and as
  * the part grows or shrinks. A bar its sheet puts elsewhere (not absolutely placed) is left there.
  *
- * Measured in a frame of its own, after the canvas has drawn the change: read all, then write.
+ * Measured in a frame of its own, after the canvas has drawn the change: read all, then write. Cheap on a page of five
+ * hundred parts: each bar is known as it is drawn (`floatingBar`), never looked for; it is placed again only when its
+ * part's box, its own size or the area it is in changed since it was last placed; and the words it keeps clear of are
+ * looked for among what the canvas names as the part's neighbours (`near`) — its row and the rows above and below it,
+ * a group's name — never across the whole canvas.
  */
 
 /** Room between the bar and its part. */
@@ -23,7 +27,29 @@ export interface BarPlacing {
   readonly area: HTMLElement;
   /** Room made under the part for the bar below it, in pixels (0 takes it away); none where a part cannot make room. */
   readonly room?: (px: number) => void;
+  /**
+   * What the bar may reach, whose words and boxes it keeps clear of: the part's neighbours, asked only when the bar is
+   * placed. Where none is said (or none is known for this part), the whole area is looked at.
+   */
+  readonly near?: () => readonly HTMLElement[] | undefined;
 }
+
+/** Every floating bar a designer has drawn, held weakly: a bar dropped with its part goes with it. */
+const drawnBars = new Set<WeakRef<HTMLElement>>();
+
+/** A floating bar, known from now on wherever it is put: the canvas places it without looking for it. */
+export function floatingBar<T extends HTMLElement>(bar: T): T {
+  drawnBars.add(new WeakRef(bar));
+  return bar;
+}
+
+/**
+ * What each bar was last placed for — its direction and the room its part made, its part's box and its own size in the
+ * area, the area's size and scroll — and where it was put against its part. Read the same again (to a pixel), with the
+ * bar standing where it was put, it is left as it stands.
+ */
+const placedFor = new WeakMap<HTMLElement, number[]>();
+const samePlace = (was: number[] | undefined, now: number[]) => !!was && was.length === now.length && was.every((n, i) => n === now[i] || Math.abs(n - now[i]) < 1);
 
 type Box = { left: number; top: number; right: number; bottom: number };
 const overlap = (a: Box, b: Box) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
@@ -36,7 +62,7 @@ const BOXES = 'input:not([type="hidden"]), textarea, select, [contenteditable="t
  * bars'. Walked from the area down, a box nowhere near the band left unopened — a page of five hundred fields is
  * looked at only round the part.
  */
-function wordsAround(area: HTMLElement, part: HTMLElement, band: { top: number; bottom: number }): Box[] {
+function wordsAround(area: HTMLElement, part: HTMLElement, band: { top: number; bottom: number }, near?: readonly HTMLElement[]): Box[] {
   const range = area.ownerDocument.createRange();
   // A document no engine lays out (jsdom, an app's tests of the designer) has no boxes for words or parts: nothing to
   // keep clear — never a throw in the frame that places the bars, landing on whatever runs then.
@@ -66,6 +92,21 @@ function wordsAround(area: HTMLElement, part: HTMLElement, band: { top: number; 
       visit(child);
     }
   };
+  if (near) {
+    // Each neighbour as a child of the area is: its box, if it is one, or its words and what is in it, where in the band.
+    for (const one of near) {
+      if (one === part || one.contains(part)) continue;
+      const at = one.getBoundingClientRect();
+      if ((at.width || at.height) && !inBand(at)) continue;
+      if (one.matches(BOXES)) {
+        if (inBand(at)) found.push(at);
+        continue;
+      }
+      words(one);
+      visit(one);
+    }
+    return found;
+  }
   words(area);
   visit(area);
   return found;
@@ -101,12 +142,15 @@ export function readBarPlace(placing: BarPlacing): (() => void) | null {
   const [own, at, room] = [part.getBoundingClientRect(), bar.getBoundingClientRect(), seenIn(area, part)];
   const width = at.width;
   const height = at.height;
+  // Placed already for this part's box, its own size and the area as they are, and standing where it was put: left so.
+  const placedAs = (madeNow: number, barLeft: number, barTop: number) => [rtl ? 1 : 0, madeNow, own.left - room.left, own.top - room.top, own.width, own.height, width, height, room.right - room.left, room.bottom - room.top, area.scrollTop, area.scrollLeft, barLeft - own.left, barTop - own.top];
+  if (bar.dataset['side'] && samePlace(placedFor.get(bar), placedAs(Number(part.dataset['barRoom'] ?? 0), at.left, at.top))) return null;
   // Lined up with the part's end edge (its start right to left), kept inside the area.
   const left = Math.max(room.left + 4, Math.min(rtl ? own.left : own.right - width, room.right - 4 - width));
   const made = Number(part.dataset['barRoom'] ?? 0);
   const above: Box = { left, right: left + width, top: own.top - GAP - height, bottom: own.top - GAP };
   const below: Box = { left, right: left + width, top: own.bottom + GAP, bottom: own.bottom + GAP + height };
-  const words = wordsAround(area, part, { top: above.top, bottom: below.bottom + made });
+  const words = wordsAround(area, part, { top: above.top, bottom: below.bottom + made }, placing.near?.());
   const covers = (box: Box) => words.reduce((sum, word) => sum + overlap(box, word), 0);
   const aboveCovers = above.top < room.top ? Infinity : covers(above);
   let side: 'above' | 'below';
@@ -136,6 +180,8 @@ export function readBarPlace(placing: BarPlacing): (() => void) | null {
       else delete part.dataset['barRoom'];
       placing.room?.(Math.ceil(roomNow * scale));
     }
+    // What it was placed for, the room it made and where it was put: the same again next frame, it is left as it stands.
+    placedFor.set(bar, placedAs(roomNow, left, side === 'above' ? above.top : below.top));
     bar.dataset['side'] = side;
     bar.style.setProperty('top', `${Math.round(top)}px`);
     bar.style.setProperty('left', `${Math.round(x)}px`);
@@ -150,24 +196,39 @@ function fieldRoom(part: HTMLElement) {
 }
 
 /** What watches the parts with a bar in each area, to place their bars again as a part changes size. */
-const watching = new WeakMap<HTMLElement, { observer: ResizeObserver; parts: Set<HTMLElement> }>();
+const watching = new WeakMap<HTMLElement, { observer: ResizeObserver; parts: Set<HTMLElement>; near?: (part: HTMLElement) => readonly HTMLElement[] | undefined }>();
 
-/** Every floating bar in an area placed by the rule, read now: the writing, to do after every other read. */
-export function barsPlaced(area: HTMLElement): () => void {
+/** The floating bars drawn in an area, from those known: none looked for on the page. */
+function barsIn(area: HTMLElement): HTMLElement[] {
+  const found: HTMLElement[] = [];
+  for (const ref of drawnBars) {
+    const bar = ref.deref();
+    if (!bar) drawnBars.delete(ref);
+    else if (bar.isConnected && area.contains(bar)) found.push(bar);
+  }
+  return found;
+}
+
+/**
+ * Every floating bar in an area placed by the rule, read now: the writing, to do after every other read. `near` names
+ * a part's neighbours, whose words its bar keeps clear of (else the whole area is looked at).
+ */
+export function barsPlaced(area: HTMLElement, near?: (part: HTMLElement) => readonly HTMLElement[] | undefined): () => void {
   const parts: HTMLElement[] = [];
-  const writes = [...area.querySelectorAll<HTMLElement>('.fd-field-bar')].map((bar) => {
+  const writes = barsIn(area).map((bar) => {
     const part = bar.parentElement;
     if (part) parts.push(part);
-    return part ? readBarPlace({ bar, part, area, room: part.matches('.fd-canvas-field') ? fieldRoom(part) : undefined }) : null;
+    const around = near && part ? { near: () => near(part) } : {};
+    return part ? readBarPlace({ bar, part, area, room: part.matches('.fd-canvas-field') ? fieldRoom(part) : undefined, ...around }) : null;
   });
   return () => {
     writes.forEach((write) => write?.());
-    watchParts(area, parts);
+    watchParts(area, parts, near);
   };
 }
 
 /** A part with a bar that grows or shrinks — its words typed, its settings opened — has its bar placed again, in a frame of its own. */
-function watchParts(area: HTMLElement, parts: HTMLElement[]) {
+function watchParts(area: HTMLElement, parts: HTMLElement[], near?: (part: HTMLElement) => readonly HTMLElement[] | undefined) {
   const view = area.ownerDocument.defaultView;
   if (!view?.ResizeObserver || !view.requestAnimationFrame) return;
   let watch = watching.get(area);
@@ -178,11 +239,12 @@ function watchParts(area: HTMLElement, parts: HTMLElement[]) {
       asked = true;
       view.requestAnimationFrame(() => {
         asked = false;
-        if (area.isConnected) barsPlaced(area)();
+        if (area.isConnected) barsPlaced(area, watch?.near)();
       });
     });
-    watching.set(area, (watch = { observer, parts: new Set() }));
+    watching.set(area, (watch = { observer, parts: new Set(), near }));
   }
+  watch.near = near;
   for (const part of watch.parts) if (!parts.includes(part)) {
     watch.observer.unobserve(part);
     watch.parts.delete(part);

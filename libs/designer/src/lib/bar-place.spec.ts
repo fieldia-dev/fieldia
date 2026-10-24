@@ -1,4 +1,4 @@
-import { readBarPlace } from './bar-place';
+import { barsPlaced, floatingBar, readBarPlace } from './bar-place';
 
 /**
  * Where a designer's floating bar goes (bar-place.ts), on boxes measured as a browser would lay them out: just above
@@ -120,6 +120,55 @@ describe('a designer’s floating bar, placed', () => {
     // Its end at the canvas's, less 4px: never past it.
     const { left } = place(wide);
     expect(450 - 50 + left + 250).toBe(996);
+  });
+
+  it('is left as it stands when nothing it was placed for changed; placed again when its part moves, or it is not where it was put', () => {
+    const at = canvas();
+    const read = () => readBarPlace({ bar: at.bar, part: at.part, area: at.area });
+    expect(place(at).side).toBe('above');
+    // Read again, the same part's box, the same canvas, the bar where it was put (450, 58): nothing to write.
+    expect(read()).toBeNull();
+    // Its part moved down: placed again.
+    measure(at.part, { left: 400, top: 140, width: 300, height: 200 });
+    measure(at.bar, { left: 450, top: 98, width: 250, height: 34 });
+    const moved = read();
+    expect(moved).not.toBeNull();
+    moved?.();
+    expect(read()).toBeNull();
+    // Not standing where it was put (an engine laying it out a few pixels off): placed again.
+    measure(at.bar, { left: 458, top: 98, width: 250, height: 34 });
+    expect(read()).not.toBeNull();
+  });
+
+  it('places the bars it knows, never looking for them on the canvas', () => {
+    const at = canvas();
+    floatingBar(at.bar);
+    at.bar.style.left = '50px';
+    at.bar.style.top = '-42px';
+    const looked = jest.spyOn(Element.prototype, 'querySelectorAll');
+    try {
+      barsPlaced(at.area, () => [at.name, at.next])();
+      expect(looked).not.toHaveBeenCalled();
+    } finally {
+      looked.mockRestore();
+    }
+    expect(at.bar.dataset['side']).toBe('above');
+  });
+
+  it('keeps clear of the words of the neighbours its canvas names, and looks at nothing else', () => {
+    // The group's name under where the bar would go above: named a neighbour, the bar goes below; not named, above.
+    const named = canvas({ nameWide: 700, nextLeft: 20 });
+    readBarPlace({ bar: named.bar, part: named.part, area: named.area, near: () => [named.name, named.next] })?.();
+    expect(named.bar.dataset['side']).toBe('below');
+    document.body.replaceChildren();
+    const other = canvas({ nameWide: 700, nextLeft: 20 });
+    readBarPlace({ bar: other.bar, part: other.part, area: other.area, near: () => [other.next] })?.();
+    expect(other.bar.dataset['side']).toBe('above');
+    // None known for the part: the whole area, as without neighbours.
+    document.body.replaceChildren();
+    const none = canvas({ nameWide: 700, nextLeft: 20 });
+    readBarPlace({ bar: none.bar, part: none.part, area: none.area, near: () => undefined })?.();
+    expect(none.bar.dataset['side']).toBe('below');
   });
 
   it('in a document no engine lays out (jsdom: no boxes for words), goes above with nothing to keep clear, never throwing', () => {

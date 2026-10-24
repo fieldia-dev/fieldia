@@ -1,7 +1,7 @@
 import { recordSentence, type ButtonNode, type LineField, type ListNode, type Page } from '@fieldia/core';
 import { installListStyles, VIEWER_LABELS, type ViewerLabels } from '@fieldia/viewer';
 import { displayValue } from '@fieldia/widgets';
-import { barsPlaced, stopWatchingBars } from './bar-place';
+import { barsPlaced, floatingBar, stopWatchingBars } from './bar-place';
 import { removeWithUndo } from './deleted-toast';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { pageLocale } from './chrome-language';
@@ -128,7 +128,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
     });
     const remove = el('button', { type: 'button', class: 'fd-bar-button', 'aria-label': w.delete, title: w.delete }, designerIcon(doc, 'delete'));
     remove.addEventListener('click', () => removeWithUndo(designer, action.id, () => designer.removeListAction(action.id), 'part'));
-    const tools = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': action.label }, remove);
+    const tools = floatingBar(el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': action.label }, remove));
     const element = el('span', { class: `fd-button fd-button-${action.style ?? 'secondary'} fd-canvas-part fd-editing`, 'data-part': action.id }, tools, input);
     return { element, key: '', input };
   }
@@ -196,12 +196,14 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       });
       return button;
     };
-    return el(
-      'div',
-      { class: 'fd-field-bar fd-column-bar', role: 'toolbar', 'aria-label': w.column },
-      ...(index > 0 ? [tool(w.moveLeft, 'left', () => designer.moveColumn(name, index - 1))] : []),
-      ...(index < count - 1 ? [tool(w.moveRight, 'right', () => designer.moveColumn(name, index + 1))] : []),
-      tool(w.removeColumn, 'delete', () => removeWithUndo(designer, name, () => designer.removeColumn(name), 'part'))
+    return floatingBar(
+      el(
+        'div',
+        { class: 'fd-field-bar fd-column-bar', role: 'toolbar', 'aria-label': w.column },
+        ...(index > 0 ? [tool(w.moveLeft, 'left', () => designer.moveColumn(name, index - 1))] : []),
+        ...(index < count - 1 ? [tool(w.moveRight, 'right', () => designer.moveColumn(name, index + 1))] : []),
+        tool(w.removeColumn, 'delete', () => removeWithUndo(designer, name, () => designer.removeColumn(name), 'part'))
+      )
     );
   }
 

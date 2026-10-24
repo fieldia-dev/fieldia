@@ -12,6 +12,7 @@ import { chromeLanguage } from './chrome-language';
 import type { DesignerWords } from './designer-words';
 import { groupName } from './toolbox';
 import { removeWithUndo } from './deleted-toast';
+import { floatingBar } from './bar-place';
 
 /**
  * The bar on the field being edited: what changes most, one press away — how
@@ -82,7 +83,7 @@ export function fieldBar(options: FieldBarOptions): FieldBar {
   const remove = tool(w.delete, 'delete');
   const more = tool(w.moreSettings, 'more');
   const sep = () => el('span', { class: 'fd-bar-sep', 'aria-hidden': 'true' });
-  const element = el('div', { class: 'fd-field-bar', role: 'toolbar', 'aria-label': w.field, ...chromeLanguage(designer) }, grip, kind, sep(), required, width, when, sep(), duplicate, remove, more);
+  const element = floatingBar(el('div', { class: 'fd-field-bar', role: 'toolbar', 'aria-label': w.field, ...chromeLanguage(designer) }, grip, kind, sep(), required, width, when, sep(), duplicate, remove, more));
   let page = designer.getPage();
 
   kind.addEventListener('click', () => {

@@ -20,7 +20,7 @@ import { fieldBar, type FieldBar } from './field-bar';
 import { barsPlaced, stopWatchingBars } from './bar-place';
 import { designerIcon } from './icons';
 import { inlineSettings, type InlineSettings } from './inline-settings';
-import { locate } from './layout-tree';
+import { locate, rowsOf } from './layout-tree';
 import { ruleMarks } from './rules-marks';
 import { pressMarks } from './steps-marks';
 import { tabHolds } from './page-tree';
@@ -153,6 +153,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   let worn: { look: Page['look'] } | null = null;
   /** Every part drawn this time round, by id. */
   let drawnIds = new Set<string>();
+  /** The element each part of the page is drawn as, this time round: what a picked part's bar keeps clear of is found by it. */
+  const shown = new Map<string, HTMLElement>();
 
   // The widgets are drawn from a form of the page, made again only when the page, or the record filling it, changes.
   let sample: number | null = null;
@@ -441,6 +443,11 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   /** Any part where it sits: a field, a group or an arrangement, tabs, or a block between fields. */
   function drawItem(node: LayoutNode, place: Place, at: Where): HTMLElement {
     drawnIds.add(node.id);
+    const element = drawKind(node, place, at);
+    shown.set(node.id, element);
+    return element;
+  }
+  function drawKind(node: LayoutNode, place: Place, at: Where): HTMLElement {
     if (node.type === 'field') return drawCard(node, place.labels, at, place.quiet);
     if (node.type === 'section') return drawSection(node, place);
     if (node.type === 'tabs') return drawTabs(node, place);
@@ -453,6 +460,45 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     element.classList.toggle('fd-canvas-selected', selected === node.id);
     element.classList.toggle('fd-canvas-picked', picked.includes(node.id) && picked.length > 1);
     return element;
+  }
+
+  /**
+   * What a picked part's bar may reach, whose words it keeps clear of (bar-place.ts): the other parts of its row and
+   * the rows above and below it in its group, read from the page's layout — and at its group's first or last row, the
+   * group's name and what is past that edge, in what holds the group, up to the page's own head — each by the element
+   * it is drawn as. A part of the record's head: the parts beside it, and what is above and below their row.
+   */
+  function nearOf(part: HTMLElement): readonly HTMLElement[] | undefined {
+    const id = part.dataset['node'];
+    if (!id || !shown.has(id)) {
+      const row = part.parentElement;
+      if (!row) return undefined;
+      return [...row.children, row.previousElementSibling, row.nextElementSibling].filter((one): one is HTMLElement => one instanceof HTMLElement && one !== part);
+    }
+    const found: HTMLElement[] = [];
+    const add = (node: { id: string }) => {
+      const drawn = shown.get(node.id);
+      if (drawn) found.push(drawn);
+    };
+    for (let at = id, depth = 0; depth < 12; depth++) {
+      const spot = locate(page, at);
+      if (!spot) break;
+      const holder = spot.parent;
+      const rows = rowsOf(page, holder);
+      const row = rows.findIndex((one) => one.items.some((item) => item.id === at));
+      for (const near of [rows[row - 1], rows[row], rows[row + 1]]) for (const item of near?.items ?? []) if (item.id !== at) add(item);
+      if (row > 0 && row < rows.length - 1) return found;
+      // At its group's edge: the group's name and description, a tab's tabs, and what is past the group, in what holds it.
+      const group = sections.get(holder.id);
+      if (group) found.push(group.legend, group.description);
+      const tabs = tabsViews.get(holder.id);
+      if (tabs) found.push(tabs.list, tabs.add);
+      if (holder.id === page.layout.id) break;
+      at = holder.id;
+    }
+    // At the page's own edge: what sits over its parts.
+    found.push(header.top, header.card, titleCard, stage);
+    return found;
   }
 
   // ---- tabs --------------------------------------------------------------------
@@ -636,7 +682,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       if (gone) return;
       // Read, all of it, before anything is written.
       const sized = mode === 'advanced' ? resize.read() : null;
-      const bars = barsPlaced(element);
+      const bars = barsPlaced(element, nearOf);
       if (latest) widths.update(latest, mode === 'advanced');
       bars();
       sized?.();
@@ -674,6 +720,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       picked = state.picked;
       visible = [];
       drawnIds = new Set();
+      shown.clear();
       // The page's look, worn as the form wears it: an attribute or token for each setting, none left from before — when it changed.
       if (worn === null || worn.look !== page.look) {
         worn = { look: page.look };
