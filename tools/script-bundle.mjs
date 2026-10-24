@@ -21,6 +21,7 @@
  */
 import { build, transform } from 'esbuild';
 import { Buffer } from 'node:buffer';
+import { createHash } from 'node:crypto';
 import { copyFileSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -322,10 +323,13 @@ const namesUsed = (code) => {
   return used;
 };
 
-const mainScript = async (table) => {
+const mainScript = async (table, hashes = {}) => {
   const parts = new Map();
   const { metafile } = await build({
     ...common,
+    // Each part's hash, which the tag the main script adds for it carries (tools/script-parts.ts): none until the parts
+    // are built, then the main script built once more with them.
+    define: { ...common.define, __FIELDIA_PART_HASHES__: JSON.stringify(hashes) },
     entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
     plugins: [minifiedStyles, englishOnly, noFirstPaint, partWordsOut, checksLater, weekInParts, asksForParts(table, parts)],
     globalName: 'Fieldia',
@@ -481,6 +485,19 @@ for (const part of PARTS) {
     const twice = partInputs[part].filter((input) => partInputs[other].includes(input) && join(WORKSPACE, input) !== WEEK_FILE);
     if (twice.length) throw new Error(`fieldia.${part}.js and fieldia.${other}.js both carry ${twice.join(', ')}: a part's code belongs to one part`);
   }
+}
+// Each part checked before it runs (tools/script-parts.ts): the main script built once more, now carrying every part's
+// file's sha256 — the modules it carries and the parts it asks for as before, and no part built against it again (a
+// part takes nothing of the main script's own bytes, only its table of names). A part's tag carries its hash as
+// `integrity`, and the browser runs no other file in its place. 52 hashes of 44 characters, 2.4 KB gzipped (a hash is
+// not shortened by any compression); sha384's 64 would add 0.9 KB more, for no check a browser does better.
+const PART_HASHES = Object.fromEntries(PARTS.map((part) => [part, createHash('sha256').update(readFileSync(partFiles[part])).digest('base64')]));
+{
+  const before = main;
+  main = await mainScript(table, PART_HASHES);
+  if (main.parts.join() !== before.parts.join() || [...main.inMain].sort().join() !== [...before.inMain].sort().join()) throw new Error("the main script built with its parts' hashes carries other modules, or asks for other parts");
+  const carried = readFileSync(OUT, 'utf8');
+  for (const part of PARTS) if (!carried.includes(JSON.stringify(PART_HASHES[part]))) throw new Error(`fieldia.js does not carry fieldia.${part}.js's hash`);
 }
 // The words the main script leaves out (tools/part-words.mjs) are read by none of its modules, and each one by the
 // modules of the parts that bring it alone: read here from the modules this build put in each script.
@@ -1387,7 +1404,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // a state's menu, a payment's details (popup.ts), a date's calendar, a filter's menu and the search's suggestions; the
 // calendar's place over its box in the main sheet (styles.ts), as the calendar's own rules are. 524.24 measured before,
 // 525.24 after, to 525.3.
-const BUDGET_KB = 525.3;
+// Each part checked before it runs (harden-release; the audits' S-M8 and R-H9), for every page that loads one: the
+// sha256 of each of the 52 parts' files, which the tag the main script adds for a part carries as `integrity` — 2.75 KB,
+// 44 characters of base64 and a name each — and the tag asked for without credentials, a part this script has no hash
+// for refused, and the words for a part that could not come or is not the file it was built with (script-parts.ts,
+// 0.46 KB). 525.24 measured before, 528.46 after, to 528.5.
+const BUDGET_KB = 528.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1689,7 +1711,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.32's merge: the undo keys heard from the first entry, out of the undo part (listed with the raw budget above):
 // 171.33 measured before, 171.78 after, to 171.8. A popup opened over its box where there is no room under it (listed
 // with the raw budget above): 171.78 measured before, 172.08 after, to 172.1.
-const GZIP_BUDGET_KB = 172.1;
+// Each part checked before it runs (harden-release; listed with the raw budget above): 172.08 measured before, 174.61
+// after, to 174.7 — 2.37 of it the parts' hashes, which no compression shortens (sha384's would be 0.9 more), 0.16 the
+// code and its words.
+const GZIP_BUDGET_KB = 174.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
