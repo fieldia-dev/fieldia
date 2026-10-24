@@ -17,6 +17,8 @@ import {
   type Facet,
   type Form,
   type ListNode,
+  type ListRequest,
+  type ListResult,
   type Locale,
   type RangeDays,
   type ResolvedFilter as Resolved,
@@ -215,6 +217,17 @@ export interface ListView {
 const NUMBERS = new Set(['integer', 'float', 'monetary']);
 /** Fields no list can put in order. */
 const UNSORTABLE = new Set(['one2many', 'many2many', 'binary', 'image', 'html', 'json', 'properties']);
+/**
+ * The early answer, where it answers this request: the same but for its fields, among which are all this one asks for.
+ * Undefined else: the list asks itself.
+ */
+function earlyFor(early: EarlyList | undefined, request: ListRequest): Promise<ListResult> | undefined {
+  if (!early) return undefined;
+  const { fields, ...rest } = early.request;
+  const { fields: asked, ...same } = request;
+  return JSON.stringify(rest) === JSON.stringify(same) && asked.every((name) => fields.includes(name)) ? early.answer : undefined;
+}
+
 /** As wide as a list is when it turns into cards: a phone's, as a table of lines does (520px). */
 const NARROW = 520;
 const isPromise = (value: unknown): value is Promise<unknown> => !!value && typeof (value as Promise<unknown>).then === 'function';
@@ -1069,8 +1082,8 @@ export function listView(context: ListContext): ListView {
         // Loaded as it is scrolled: every row it held, asked again from the first.
         // A tree loaded as it opens: its records with no parent, while no search is on.
         const request = { model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize };
-        // The first page asked for already, as the list's part came, where it is this very request: taken once.
-        const early = context.early && JSON.stringify(context.early.request) === JSON.stringify(request) ? context.early.answer : undefined;
+        // The first page asked for already, as the list's part came, where it answers this request: taken once.
+        const early = earlyFor(context.early, request);
         context.early = undefined;
         const answer = source?.list ? await (early ?? source.list(request)) : { records: [], total: 0 };
         if (stale()) return;

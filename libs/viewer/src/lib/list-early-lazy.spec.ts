@@ -47,22 +47,28 @@ const mount = (page: Page, dataSource: DataSource) => {
 const names = (host: Element) => [...host.querySelectorAll('.fd-list-row')].map((row) => row.querySelector('td[data-col="name"]')?.textContent);
 
 describe('a list page’s first records', () => {
-  it('are asked for before the list’s part has come, once, and drawn from that answer — where the page alone says what the list asks first', async () => {
+  it('are asked for before the list’s part has come, once, and drawn from that answer — a list of cards too — where the page alone says what the list asks first', async () => {
     expect(listPart.loaded).toBeUndefined();
     const plain = counted();
     const toned = counted();
+    const carded = counted();
     const first = mount(customers(), plain.counting);
+    // Cards on a phone, a line of each naming a field no column shows: asked for with the rest.
+    const third = mount(customers({ card: { title: 'name', fields: ['email', 'currency_id'] } }), carded.counting);
     // A row's tone reads a field more: what the list asks first is its own to say.
     const second = mount(customers({ rowTones: [{ tone: 'danger', when: 'credit > 1000' }] }), toned.counting);
     // Asked as the page is mounted, its part still on its way.
     expect(plain.asked).toHaveLength(1);
     expect(plain.asked[0]).toMatchObject({ partIn: false, request: { model: 'partner', fields: ['name', 'email', 'credit', 'currency_id'], filter: [], sort: [{ field: 'name' }], offset: 0, limit: 20 } });
     expect(toned.asked).toHaveLength(0);
-    await until(() => names(first).length === 2 && names(second).length === 2);
+    expect(carded.asked).toEqual([expect.objectContaining({ partIn: false })]);
+    expect(carded.asked[0].request.fields).toEqual(expect.arrayContaining(['name', 'email', 'credit', 'currency_id']));
+    await until(() => names(first).length === 2 && names(second).length === 2 && third.querySelectorAll('.fd-list-row').length === 2);
     expect(names(first)).toEqual(['Delta Foods', 'Nile Traders']);
     expect(names(second)).toEqual(['Delta Foods', 'Nile Traders']);
     // The list took that answer: its first page asked for once. The other asked once its part had come, as ever.
     expect(plain.asked.filter((one) => one.request.offset === 0)).toHaveLength(1);
     expect(toned.asked.filter((one) => one.request.offset === 0)).toEqual([expect.objectContaining({ partIn: true })]);
+    expect(carded.asked.filter((one) => one.request.offset === 0)).toHaveLength(1);
   });
 });
