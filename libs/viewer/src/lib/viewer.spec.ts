@@ -5,7 +5,16 @@ import { openFormDialog, openSearchDialog } from './dialog';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
-const page = (name: string): Page => JSON.parse(readFileSync(join(EXAMPLES, `${name}.page.json`), 'utf8'));
+/**
+ * An example page as written; the customer's without its `phone` (0.32: its numbers read the world over, as the box is
+ * left), so its Phone is the box these tests type in, taking what is typed as it is typed. The phone read the world
+ * over is phone-box.spec's, typing-save.spec's and the browser tests'.
+ */
+const page = (name: string): Page => {
+  const read: Page = JSON.parse(readFileSync(join(EXAMPLES, `${name}.page.json`), 'utf8'));
+  if (name === 'customer') delete read.phone;
+  return read;
+};
 
 let handle: ViewerHandle | null = null;
 afterEach(() => {

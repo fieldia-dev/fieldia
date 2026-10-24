@@ -25,12 +25,14 @@ afterEach(() => {
 
 const saved = { name: 'Office fit-out', seats: 4, area: 120, margin: 0.2, time_on_site: 6, email: 'site@example.com', phone: '+20 100 123 4567' };
 
-async function mount(locale: Locale = 'en') {
+/** Every field's page — its phones read the world over (`phone`), or, `phones: false`, a page saying nothing of them: its phone a box that checks what is typed. */
+async function mount(locale: Locale = 'en', { phones = true } = {}) {
   const dataSource = createMemoryDataSource({ records: { project: { 1: { ...saved } } } });
   const host = document.createElement('div');
   if (locale === 'ar') host.dir = 'rtl';
   document.body.append(host);
-  handle = mountViewer(host, { page: page('fields'), dataSource, recordId: 1, locale });
+  const { phone, ...saysNothing } = page('fields');
+  handle = mountViewer(host, { page: phones ? { ...saysNothing, phone } : saysNothing, dataSource, recordId: 1, locale });
   await handle.form.settled();
   return { host, form: handle.form, record: () => dataSource.records['project'][1] };
 }
@@ -128,8 +130,11 @@ describe.each(['en', 'ar', 'fr'] as const)('%s: Ctrl+Enter with a box still type
     expect(form.getState().unread[field]?.text).toBe(typed);
   });
 
-  it('a phone number with a letter in it is saved as typed, never as the digits round the letter: refused', async () => {
-    const { host, form, record } = await mount(locale);
+  it.each([
+    ['read the world over', true, () => fill(words.phoneLetters, { label: 'Site phone' })],
+    ['a box that checks it, on a page saying nothing of its phones', false, () => messages.phone],
+  ] as const)('a phone number with a letter in it is saved as typed, never as the digits round the letter: refused (%s)', async (_, phones, said) => {
+    const { host, form, record } = await mount(locale, { phones });
     const phone = box(host, 'f-phone');
     enter(phone);
     keys(phone, '01001234567 ext 12');
@@ -137,7 +142,7 @@ describe.each(['en', 'ar', 'fr'] as const)('%s: Ctrl+Enter with a box still type
     await form.settled();
     expect(record()['phone']).toBe(saved.phone);
     expect(phone.value).toBe('01001234567 ext 12');
-    expect(errorOf(host, 'f-phone')?.textContent).toBe(messages.phone);
+    expect(errorOf(host, 'f-phone')?.textContent).toBe(said());
   });
 
   it('the app’s own save reads the box first too', async () => {
