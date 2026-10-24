@@ -319,7 +319,6 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
   // rest of its delay to come in.
   if (IN_PART.has(way)) timers.push(setTimeout(wantLoadingPart, 0));
   if (settings.timeout) timers.push(setTimeout(() => wait.fail(Object.assign(new Error(words.tookTooLong), { name: 'TimeoutError' })), settings.timeout));
-  if (taken || how.now) show();
 
   /** Everything drawn taken away: the loader, the app's drawing — and while the region is still this wait's, its marks and shapes. */
   const clear = () => {
@@ -369,6 +368,8 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
     const said = voiceOf();
     if (said && speakers.get(said) === before) speakers.set(said, mine);
   }
+  // Drawn at once where it goes on from one in sight: never after the delay, never gone and back.
+  if (taken || how.now) show();
 
   const wait: Wait = {
     signal: stopper.signal,

@@ -250,6 +250,15 @@ describe('a wait, on its clock', () => {
     expect(loader(region)).toBeNull();
   });
 
+  it('draws at once, said at once, a wait that goes on from one already in sight', () => {
+    const { region, root } = form();
+    const wait = startLoading(region, 'first', loading({ set: { first: 'text' } }), { now: true });
+    expect(loader(region)?.textContent).toBe('Loading…');
+    expect(said(root)).toBe('Loading…');
+    wait.stop();
+    expect(said(root)).toBe('');
+  });
+
   it('draws a part’s own shapes where it has them, and stops at once when let go', () => {
     const { region } = form();
     const shape = { show: jest.fn(), hide: jest.fn() };
