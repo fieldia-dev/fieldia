@@ -40,10 +40,15 @@ export const CARD_STYLES = `
 .fd-list[data-as] .fd-list-row[data-tone]:hover { border-inline-start-color: var(--fd-row-tone); }
 .fd-list[data-as] .fd-list-row:is([aria-selected="true"], [aria-current="true"], .fd-list-hot) { background: var(--fd-accent-soft); border-color: var(--fd-accent); }
 .fd-list[data-as] .fd-list-row:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
-/* Cards far out of sight skip their style, layout and drawing until they come near: a long list's, a gallery's, a feed
-   loaded as it is scrolled (0.34: every card list, not only an endless one). Each remembers its size once drawn. A
-   table's rows cannot (a browser skips no table row: content-visibility does not apply to them). */
-.fd-list[data-as] .fd-list-row { content-visibility: auto; contain-intrinsic-size: auto 160px; }
+/* A long feed of cards: those far out of sight skip their drawing until they come near (a list loaded as it is scrolled).
+   Every card list's too (0.34), a phone's and a gallery's, where the browser keeps what is in sight still as cards
+   above it are drawn at their own height (scroll anchoring, overflow-anchor): without it (Safari) a card pressed
+   could move from under the finger as it is scrolled to. Each remembers its size once drawn. A table's rows cannot be
+   skipped so: no browser applies content-visibility to a table row. */
+.fd-list[data-endless][data-as="cards"] .fd-list-row { content-visibility: auto; contain-intrinsic-size: auto 160px; }
+@supports (overflow-anchor: auto) {
+  .fd-list[data-as] .fd-list-row { content-visibility: auto; contain-intrinsic-size: auto 160px; }
+}
 .fd-list[data-as] .fd-list-row > td { display: none; height: auto; max-width: none; padding: 0; border: 0; background: none; color: inherit; white-space: normal; overflow: visible; }
 .fd-list[data-as] .fd-list-row > .fd-list-check { display: block; width: auto; padding-block-start: 2px; }
 .fd-list[data-as] .fd-list-row > .fd-list-card { display: flex; gap: 12px; grid-column: -2; min-width: 0; }

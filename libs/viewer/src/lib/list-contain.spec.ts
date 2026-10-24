@@ -73,6 +73,7 @@ describe('a key typed in a cell of an editable list', () => {
 describe('the containment rules', () => {
   it('contain the line typed in a cell, aligned as it sits without it, and every card list’s cards', () => {
     expect(EDITABLE_STYLES).toMatch(/\.fd-list-editor :is\(input:not\(\[type\]\), input\[type="text"\][^)]*\) \{ contain: size layout; vertical-align: top; \}/);
-    expect(CARD_STYLES).toMatch(/\.fd-list\[data-as\] \.fd-list-row \{ content-visibility: auto; contain-intrinsic-size: auto 160px; \}/);
+    // Every card list's where the browser anchors the scroll (cards above drawn at their height move nothing in sight).
+    expect(CARD_STYLES).toMatch(/@supports \(overflow-anchor: auto\) \{\s*\.fd-list\[data-as\] \.fd-list-row \{ content-visibility: auto; contain-intrinsic-size: auto 160px; \}/);
   });
 });
