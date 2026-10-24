@@ -183,6 +183,23 @@ export interface Messages {
   languagesNeededQuestion: string;
   /** An email or a phone that asks for a code (`options.verify`) sent before the person confirmed it with one. */
   notVerified: string;
+  /**
+   * A send stopped because a part that guards it could not load (fail closed): `{part}`, the part's name below, and
+   * `{again}`, what to do — try again where the part can be asked for anew, else reload the page. Nothing went.
+   */
+  guardNotSent: string;
+  guardNotSaved: string;
+  guardTryAgain: string;
+  guardReload: string;
+  /** The parts that guard a send, as those sentences name them. */
+  guardPay: string;
+  guardVerify: string;
+  guardTimeLimit: string;
+  guardPrefill: string;
+  guardApprovals: string;
+  guardOptions: string;
+  guardLanguages: string;
+  guardLimits: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -314,6 +331,18 @@ const en: Messages = {
   languagesNeeded: '{label} is required in {languages}',
   languagesNeededQuestion: 'Please answer {label} in {languages}',
   notVerified: '{label} is not confirmed: send a code and type it in',
+  guardNotSent: '{part} could not load, so nothing was sent. {again}',
+  guardNotSaved: '{part} could not load, so nothing was saved. {again}',
+  guardTryAgain: 'Try again.',
+  guardReload: 'Reload the page and try again.',
+  guardPay: 'The payment step',
+  guardVerify: 'The code check',
+  guardTimeLimit: 'The time limit',
+  guardPrefill: 'The answers from the link',
+  guardApprovals: 'The approvals',
+  guardOptions: 'The check of the choices',
+  guardLanguages: 'The check of each language',
+  guardLimits: 'The check of whether this form takes answers',
   locale: 'en',
 };
 

@@ -26,6 +26,8 @@ export interface Part<M = unknown> {
    * offers it only where it can work.
    */
   readonly asksAgain?: boolean;
+  /** Whether it is asked for now and has not come nor failed yet: what waits for it waits for that answer first. */
+  readonly coming?: boolean;
 }
 
 /** Whether this page's parts come by script tags of their own (the one-tag script) rather than by import(). */
@@ -46,6 +48,9 @@ export function lazyPart<M>(name: string, load: () => Promise<M>): Part<M> {
     },
     get asksAgain() {
       return byScriptTag;
+    },
+    get coming() {
+      return pending !== undefined && loaded === undefined;
     },
     load() {
       return (pending ??= load().then(
@@ -81,6 +86,9 @@ export function partWith<M>(part: Part<M>, ...others: readonly Part[]): Part<M> 
     },
     get asksAgain() {
       return part.asksAgain === true && others.every((other) => other.asksAgain === true);
+    },
+    get coming() {
+      return [part, ...others].some((one) => one.coming === true);
     },
     load: () => Promise.all([part.load(), ...others.map((other) => other.load())]).then(([module]) => module),
   };

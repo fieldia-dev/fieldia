@@ -1,5 +1,6 @@
 import type { Page } from '../format/page';
 import { checkPage } from '../format/check-page';
+import { validatePage } from '../format/validate';
 import { createForm } from './form';
 import { createMemoryDataSource } from './memory-data-source';
 import type { PaidPayment, PaymentDue, PayRequest } from './data-source';
@@ -143,5 +144,18 @@ describe('a payment the answers wait for', () => {
     expect(said(enquiry({ label: 'Fee', amount: 'nights' }))).toEqual(['payment.currency: say its currency: a code of three capitals ("EGP"), or a field holding one']);
     expect(said(enquiry({ label: 'Fee', amount: 5, currency: 'EGP', when: 'colour == 1' }))[0]).toMatch(/^payment\.when: /);
     expect(said(enquiry())).toEqual([]);
+  });
+
+  it('warns where a link fills the amount: anyone can change it in the address, and the server works out what is due', () => {
+    const page = { ...enquiry({ label: 'Deposit', amount: 'deposit' }), prefill: { fromUrl: ['deposit'] } } as Page;
+    const checked = validatePage(page);
+    expect(checked.ok).toBe(true);
+    expect(checked.warnings).toEqual([
+      {
+        path: 'payment.amount',
+        message: `"deposit" is filled from the page's link (prefill): anyone can change the amount in the address. Work out what is due on your server (checkSubmission's due), never charge the amount the browser sends`,
+      },
+    ]);
+    expect(validatePage(enquiry({ label: 'Deposit', amount: 'deposit' })).warnings).toBeUndefined();
   });
 });

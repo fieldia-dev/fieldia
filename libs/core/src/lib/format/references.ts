@@ -636,6 +636,7 @@ export class ReferenceCheck {
       page: this.page,
       need: (name, path, scope) => this.need(name, path, scope),
       report: (path, message) => this.report(path, message),
+      warn: (path, message) => void this.warnings.push({ path, message }),
       owe: (part) => this.later.add(part),
       checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
     };

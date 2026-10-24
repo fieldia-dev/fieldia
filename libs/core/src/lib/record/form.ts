@@ -65,7 +65,8 @@ import { hostScheduler, type Scheduler } from './scheduler';
 import { signedBy, type SignedBy } from './signed';
 import type { PageLink } from './link-values';
 import type { OutboxStore } from './outbox-form';
-import { formJoins, type FormInner, type FormJoin, type FormJoins, type JoinPart, type SendKind } from './joins';
+import { formJoins, joinGate, type FormInner, type FormJoin, type FormJoins, type GuardWords, type JoinPart, type SendKind } from './joins';
+import type { Part } from '../parts';
 import type { HistoryStep, Noted } from './history';
 import { pressUndoPart } from './undo-later';
 import { createMoments, createRunner, takenNow, type ActionHost, type ActionRequest, type ActionResult, type AskHow, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
@@ -1173,6 +1174,16 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const joinParts = formJoins(page, options).filter((part) => !outer || part.name !== 'approvals');
   let joining: Promise<unknown> | undefined;
   let laid: StoredDraft | null = null;
+  /** A part that joins the form, made for it as it comes: a draft laid before laid on it, a record loaded before asked of it. */
+  function joinMade(at: number) {
+    return (part: JoinPart) => {
+      if (disposed || joins[at]) return;
+      const join = (joins[at] = part.join(inner));
+      if (laid) join.lay?.(laid);
+      // Its record loaded before it came: what it asks of a loaded record, asked now.
+      if (loadedOnce) join.loaded?.();
+    };
+  }
   /** A part's side of this form, by its name, once it came. */
   const joined = <K extends keyof FormJoins>(name: K): FormJoins[K] | null => (joins[joinParts.findIndex((part) => part.name === name)] ?? null) as FormJoins[K] | null;
   /** Whether a part that joins the form says so of a part of the page, or of a field. */
@@ -2935,6 +2946,49 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return mine;
   }
 
+  /**
+   * Every part that guards a send, in before it goes — fail closed, never skipped: the parts that join the form where
+   * they guard it (`joinGate`: a payment, a code check, a time limit's clock, a link's hidden fields, a record's
+   * approvals) and the form's own checking parts (its options by condition, its texts in several languages, its limits).
+   * Each is waited for where it is coming; one that could not come — offline, or refused as another version's — is asked
+   * for once more; still missing, the send is refused in words naming it ("The payment step could not load, so nothing
+   * was sent. Try again."), and nothing goes. Null once every one is in. The one way a send passes them (`savingNow`).
+   */
+  /** Whether a part that guards a send is not in yet: what `guardsIn` waits for, asks for once more, and refuses without. */
+  function guardsOwed(): boolean {
+    return (
+      joinParts.some((part, at) => !joins[at] && joinGate(part, page, options) !== undefined) ||
+      (hasOptionRules(page) && !optionKit) ||
+      (hasLanguages(page) && !formLanguagesPart.loaded) ||
+      (keepsLimits() && !limitsKit)
+    );
+  }
+
+  async function guardsIn(): Promise<SaveProblem | null> {
+    /** A part waited for where it is coming, then asked for once more where it did not come: in, or still missing. */
+    const once = async <M,>(part: Part<M>, take: (module: M) => unknown): Promise<boolean> => {
+      if (part.coming) await part.load().then(take, () => undefined);
+      if (part.loaded === undefined) await part.load().then(take, () => undefined);
+      return part.loaded !== undefined;
+    };
+    const found = await Promise.all([
+      ...joinParts.map(async (part, at): Promise<[GuardWords, Part] | null> => {
+        const words = joins[at] ? undefined : joinGate(part, page, options);
+        if (!words) return null;
+        await once(part, joinMade(at));
+        return joins[at] ? null : [words, part];
+      }),
+      (async (): Promise<[GuardWords, Part] | null> => (hasOptionRules(page) && !optionKit && !(await once(optionRulesPart, () => optionsCode())) ? ['guardOptions', optionRulesPart] : null))(),
+      (async (): Promise<[GuardWords, Part] | null> => (hasLanguages(page) && !(await once(formLanguagesPart, () => undefined)) ? ['guardLanguages', formLanguagesPart] : null))(),
+      (async (): Promise<[GuardWords, Part] | null> => (keepsLimits() && !limitsKit && !(await once(formLimitsPart, () => limitsCode())) ? ['guardLimits', formLimitsPart] : null))(),
+    ]);
+    const missing = found.find((one) => one !== null);
+    if (!missing || disposed) return null;
+    const [words, part] = missing;
+    const again = part.asksAgain === false ? messages.guardReload : messages.guardTryAgain;
+    return { kind: 'other', message: fillMessage(messages, page.data.kind === 'responses' ? messages.guardNotSent : messages.guardNotSaved, { part: messages[words], again }) };
+  }
+
   async function savingNow(chain: readonly string[], yes?: string): Promise<Stopped | null> {
     // A record its source does not let this person change is refused here, in its words or the form's: no source is asked.
     if (page.data.kind === 'record' && state.can?.edit === false) {
@@ -2950,15 +3004,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const waiting = readTyped();
     if (waiting) await waiting;
     if (asked !== generation) return elsewhere();
-    // Options by condition waited for where they have not come: what is saved never holds one they would take out.
-    if (!optionKit && hasOptionRules(page)) {
-      await optionsCode();
-      if (asked !== generation) return elsewhere();
-    }
-    // A text in several languages, checked in each once its part has come.
-    if (!formLanguagesPart.loaded && hasLanguages(page)) {
-      await languagesCode();
-      if (asked !== generation) return elsewhere();
+    // Every part that guards a send in before anything goes (fail closed): one that could not come is asked for once more,
+    // and still missing, nothing is sent — the person told which, in words, with Retry. Options by condition among them:
+    // what is saved never holds one they would take out; a text in several languages checked in each.
+    // Nothing is waited for where every one is in: a save the page's own steps make meanwhile goes ahead, never waiting on itself.
+    const unguarded = guardsOwed() ? await guardsIn() : null;
+    if (asked !== generation) return elsewhere();
+    if (unguarded) {
+      set({ status: 'error', error: unguarded.message, saveProblem: unguarded, conflict: null });
+      return { reason: 'save', message: unguarded.message };
     }
     // Values the app's functions are asked for are waited for — those that failed asked again — so what is saved is worked out.
     if (asking.size || Object.values(state.asked).some((found) => found.failed !== undefined)) {
@@ -2991,7 +3045,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Whether the page still takes answers — its dates, its counts asked again — and each choice held still has room.
     const refused = await stillTaking(asked);
     if (refused) return refused;
-    // The parts that join the form (`formJoins`), waited for where they have not come.
+    // The parts that join the form and guard nothing (an outbox, a record made live), waited for where they have not come.
     if (joining) {
       await joining;
       if (asked !== generation) return elsewhere();
@@ -3000,7 +3054,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // join the form find: an email or a phone not proved by a code; a payment not taken sends nothing.
     const errors = { ...collectErrors(), ...fileProblems() };
     for (const join of joins) {
-      // A part that never came (a hole) has nothing to say.
+      // A part still to come here guards nothing (an outbox, a record made live): every one that guards is in (`guardsIn`).
       if ((await join?.before?.(errors)) === false) return { reason: 'save' };
       if (asked !== generation) return elsewhere();
     }
@@ -4520,16 +4574,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // The parts its page or its source asks to join it — a survey's draw made before a draft is laid, which lays its own
   // draw over it; a record's approvals ready by the time its record is loaded; the record made live — each made at once
   // where it has come, else as it does, a draft laid meanwhile laid on it.
-  if (joinParts.length) {
-    const made = (at: number) => (part: JoinPart) => {
-      if (disposed || joins[at]) return;
-      const join = (joins[at] = part.join(inner));
-      if (laid) join.lay?.(laid);
-      // Its record loaded before it came: what it asks of a loaded record, asked now.
-      if (loadedOnce) join.loaded?.();
-    };
-    joining = Promise.all(joinParts.map((part, at) => (part.loaded ? made(at)(part.loaded) : track(part.load().then(made(at), () => undefined)))));
-  }
+  if (joinParts.length) joining = Promise.all(joinParts.map((part, at) => (part.loaded ? joinMade(at)(part.loaded) : track(part.load().then(joinMade(at), () => undefined)))));
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

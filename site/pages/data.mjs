@@ -115,6 +115,26 @@ interface DataSource {
 </ul>
 <p>A slow answer is handled for you: if someone keeps typing, an ${c('onchange')} or ${c('search')} answer that arrives after a newer question is ignored.</p>
 
+<h2 id="trust">Your server is the final gate</h2>
+<p>Every rule a page holds — required, a pattern, a size, the options offered, a code proved, a payment taken, a time limit, one response each — is checked in the person's browser, and a request made by hand passes none of them. Run the same page's checks where its answers arrive, with ${c('checkSubmission')} from ${c('@fieldia/core')}, on the page as your server keeps it:</p>
+${code(
+  'ts',
+  `
+import { checkSubmission, saveRefused } from '@fieldia/core';
+
+async function received(request, session) {
+  const { ok, errors, problems, values, due } = await checkSubmission(pages[request.pageId], request.values, {
+    verified: request.verified, // each proof present for the value sent: then check the proof is one you signed
+    payment: request.payment, // paid in full for what these answers owe (due): then check its reference with your provider
+    order: request.order, // a question not drawn for this person is not asked
+    user: { id: session.userId, roles: session.roles },
+  });
+  if (!ok) throw saveRefused({ kind: 'fields', message: problems[0] ?? 'Check the answers', fields: errors });
+  return store(values); // what the page works out, worked out here
+}`
+)}
+<p>It answers each field's problem in the page's words, what else is wrong (answers over ${c('maxBytes')}, 1 MB unless said; a field the page has not; a payment missing or short), the answers as the page's rules leave them, and what is due. What only your server can know stays yours: a proof's signature, a payment's reference, when it served the page, how many responses a person sent. In the browser, a part that guards a send — the payment step, the code check, a time limit's clock, a link's hidden fields, a record's approvals, options by condition, a text's languages, a page's limits — fails closed: where it could not load, nothing is sent and the form says which (<em>The payment step could not load, so nothing was sent. Try again.</em>), with Retry.</p>
+
 <h2 id="bots">A public form's bot check</h2>
 <p>A page of responses anyone may send — a sign-up, a contact form — can check that a person sent it: ${c('botCheck')} draws a box no person sees, reaches with Tab or hears read out, which a bot filling every box fills (${c('honeypot')}, on unless ${c('false')}); times the answers from the page shown to its send, against the fewest seconds a person takes (${c('minSeconds')}, 3 unless said; 0 tells none); and holds the place for your app's own captcha — Turnstile, reCAPTCHA, hCaptcha — in a slot of the page (${c('captcha')}, the slot's name).</p>
 ${code(
@@ -209,18 +229,36 @@ ${code(
 ${code(
   'ts',
   `
-async pay({ amount, currency, label, key, values, slot, signal }) {
+async pay({ pageId, values, key, slot, signal }) {
   // key: the same for every try of this response's payment — your provider's idempotency key.
-  const session = await myServer.checkout({ amount, currency, label, key });
+  // The amount is worked out on your server from the answers: the browser's is the person's to change.
+  const session = await myServer.checkout({ pageId, values, key });
   const result = await myProvider.mount(slot, session, { signal }); // or window.open(session.url) and wait for its webhook
   return result.ok ? { status: 'paid', reference: result.id } : { status: result.cancelled ? 'cancelled' : 'failed', message: result.error };
 },
 async submit({ values, payment }) {
-  // payment: { amount: 10000, currency: 'EGP', key: 'pay-…', reference: 'pi_3Q…' } — check it with your provider
-  return { id: await store(values, payment) };
+  // payment: { amount: 10000, currency: 'EGP', key: 'pay-…', reference: 'pi_3Q…' } — checked on your server, below
+  return { id: await myServer.send({ values, payment }) };
 }`
 )}
-<p>Paid, the answers go with ${c('payment')}; failed or cancelled, the step says nothing was sent, with <em>Pay again</em> and <em>Back to the answers</em>. A send that fails after paying is sent again without paying twice, and every send path — Ctrl+Enter, a wizard's finish, your own ${c('form.save()')} — waits for the payment the same way. In the designer, <em>Payment before sending</em> on a page's Rules tab. The <a href="/demos/plain/?page=unit-enquiry&amp;skin=outlined">enquiry demo</a> reserves a unit through a stand-in for a provider's checkout.</p>
+${code(
+  'ts',
+  `
+// On your server, with the page as you keep it — never the amount, nor the page, the browser sends.
+import { checkSubmission } from '@fieldia/core';
+
+async function checkout({ pageId, values, key }) {
+  const { due } = await checkSubmission(pages[pageId], values);
+  if (!due) throw new Error('Nothing is due for these answers');
+  return myProvider.createSession({ amount: due.amount, currency: due.currency, idempotencyKey: key });
+}
+async function send({ values, payment }) {
+  const check = await checkSubmission(pages['enquiry'], values, { payment });
+  if (!check.ok || !(await myProvider.paid(payment.reference, check.due))) throw saveRefused({ kind: 'rule', message: 'The payment does not cover these answers' });
+  return store(check.values, payment);
+}`
+)}
+<p>A page whose amount is a field its link fills (${c('prefill')}) is warned of in its checks: anyone can change an address. Paid, the answers go with ${c('payment')}; failed or cancelled, the step says nothing was sent, with <em>Pay again</em> and <em>Back to the answers</em>. A send that fails after paying is sent again without paying twice, and every send path — Ctrl+Enter, a wizard's finish, your own ${c('form.save()')} — waits for the payment the same way. In the designer, <em>Payment before sending</em> on a page's Rules tab. The <a href="/demos/plain/?page=unit-enquiry&amp;skin=outlined">enquiry demo</a> reserves a unit through a stand-in for a provider's checkout.</p>
 
 <h2 id="outbox">Sends kept without signal</h2>
 <p>A broker at a viewing in a compound, an inspector in a basement, a courier at a door: ${c('"outbox": true')} keeps a send that finds no network on the device — its answers, its photos' bytes — and sends it when the signal comes back. No new member: what your source already has (${c('submit')}, ${c('save')}, ${c('upload')}) takes it then.</p>

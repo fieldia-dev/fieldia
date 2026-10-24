@@ -1370,7 +1370,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // a state's menu, a payment's details (popup.ts), a date's calendar, a filter's menu and the search's suggestions; the
 // calendar's place over its box in the main sheet (styles.ts), as the calendar's own rules are. 524.24 measured before,
 // 525.24 after, to 525.3.
-const BUDGET_KB = 525.3;
+// harden-data: a part that guards a send fails closed — one place every send passes (form.ts, `guardsIn`) waits for
+// each, asks once more for one that did not come, and refuses in words naming it ("The payment step could not load, so
+// nothing was sent. Try again."); the words are what every page that sends needs, the part being the one thing missing
+// then. 525.24 measured before, 527.04 after, to 527.1.
+const BUDGET_KB = 527.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1672,7 +1676,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.32's merge: the undo keys heard from the first entry, out of the undo part (listed with the raw budget above):
 // 171.33 measured before, 171.78 after, to 171.8. A popup opened over its box where there is no room under it (listed
 // with the raw budget above): 171.78 measured before, 172.08 after, to 172.1.
-const GZIP_BUDGET_KB = 172.1;
+// harden-data: a part that guards a send fails closed (listed with the raw budget above): 172.08 measured before,
+// 172.77 after, to 172.8.
+const GZIP_BUDGET_KB = 172.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1983,7 +1989,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 58.7, inside 17.8; Turkish's 65.44 and 18.08, 65.57 and 18.13, to 65.6 and 18.2; Persian's 159.51 and 22.31, 159.79
 // and 22.33, to 159.8, inside 22.4; Urdu's 162.20 and 22.35, 162.49 and 22.40, to 162.5 and 22.5; Spanish's 55.90 and
 // 17.57, 56.03 and 17.61, to 56.1 and 17.7.
-const ADD_ON_BUDGET_KB = { ar: [127.6, 20.7], de: [57.8, 17.9], fr: [58.7, 17.8], tr: [65.6, 18.2], fa: [159.8, 22.4], ur: [162.5, 22.5], es: [56.1, 17.7] };
+// harden-data: a part that guards a send fails closed — its sentence and the names of the parts — Arabic's 127.54 and
+// 20.67 measured before, 129.08 and 20.89 after, to 129.1 and 20.9; German's 57.75 and 17.80, 58.34 and 17.97, to 58.4
+// and 18.0; French's 58.62 and 17.79, 59.21 and 17.95, to 59.3 and 18.0; Turkish's 65.57 and 18.13, 66.18 and 18.30, to
+// 66.2 and 18.4; Persian's 159.79 and 22.33, 161.34 and 22.54, to 161.4 and 22.6; Urdu's 162.49 and 22.40, 164.05 and
+// 22.61, to 164.1 and 22.7; Spanish's 56.03 and 17.61, 56.65 and 17.79, to 56.7 and 17.8.
+const ADD_ON_BUDGET_KB = { ar: [129.1, 20.9], de: [58.4, 18.0], fr: [59.3, 18.0], tr: [66.2, 18.4], fa: [161.4, 22.6], ur: [164.1, 22.7], es: [56.7, 17.8] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

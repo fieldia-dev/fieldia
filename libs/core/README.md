@@ -916,7 +916,9 @@ sends the code its own way. `form.joined('verify')?.mark(field, { value, proof
 })` keeps a proof while the field holds that value (`state.verified`); a send is refused
 while a shown field asking for a code holds a value not proved ("Mobile is not
 confirmed: send a code and type it in"), and every send carries `verified` — by
-field, the value and the proof — for the server to trust.
+field, the value and the proof. Anyone can call `mark()` in their own browser:
+the server trusts a value only by a proof it signed itself (`checkSubmission`
+checks each is there, for the value sent).
 `form.joined('verify')?.asks(field)` says whether a field asks for one: never
 where the source lacks either member.
 The memory source sends and checks codes as a service would (its `codes`
@@ -939,6 +941,14 @@ sent again without paying twice. `form.joined('pay')?.due()` says what is due
 now, `state.paid` what was taken. A new payment in the designer asks 100 USD
 until its amount and currency are set. Fieldia holds no keys and no provider's code. The
 memory source answers paid unless its `pay` option says otherwise.
+
+What the browser works out as due is the person's to change — in their own
+devtools, or in the address where a link fills the amount (the page's checks
+warn of that). The app's server works out what is due itself, from the page it
+keeps and the answers it was sent — `(await checkSubmission(page, values)).due`
+— and its checkout charges that, never an amount the browser hands it; once
+the answers arrive, `checkSubmission(page, values, { payment })` refuses a
+payment short or in another currency. Check its `reference` with your provider.
 
 ## Sends kept without signal
 
@@ -969,6 +979,47 @@ kept on the device), and `reset` as another response or record starts. Their
 state, their words and their checks come with them. `form.joined(name)` is a
 part's side of the form once it came — null before, and on a page that asks for
 none; a send made before it came waits for it.
+
+A part that guards a send fails closed: a payment, a code check, a time limit's
+clock, a link's hidden fields, a record's approvals — and the form's own options
+by condition, texts in several languages and limits. Where one cannot come
+(offline, a deploy that removed its file, a cached `fieldia.js` beside a part of
+another version), the send waits for it, asks for it once more, and then sends
+nothing: its save problem says which (`{ kind: 'other', message: "The payment
+step could not load, so nothing was sent. Try again." }` — "Reload the page and
+try again." where the part comes by `import()`, which a page keeps failed), the
+viewer shows it with Retry, and what was typed stays. An outbox and a record made
+live guard nothing: without them a send goes as it would have.
+
+## The server is the final gate
+
+Everything a page checks — required, patterns, sizes, options, a code proved, a
+payment taken, a time limit, one response each — runs in the person's browser,
+and a request made by hand passes none of it. `checkSubmission(page, values,
+context)` runs the page's checks again where the answers arrive (Node, or any
+server that runs JavaScript), from the page as the server keeps it:
+
+```ts
+import { checkSubmission } from '@fieldia/core';
+
+const { ok, errors, problems, values, due } = await checkSubmission(page, request.values, {
+  verified: request.verified, // each proof present for the value sent — then check the proof is yours
+  payment: request.payment, // paid in full, in its currency, for what the page asks for these answers
+  order: request.order, // a question not drawn for this respondent is not required
+  user: { id: session.userId, roles: session.roles }, // as the server knows them, never the browser
+});
+if (!ok) throw saveRefused({ kind: 'fields', message: problems[0] ?? 'Check the answers', fields: errors });
+await store(values); // values worked out here: what it computes, computed again
+```
+
+It answers `{ ok, errors, problems, values, due }`: each field's problem in the
+page's words, what else is wrong (answers over `maxBytes` — 1 MB unless said —
+a field the page has not, a payment missing or short), the answers as the
+page's rules leave them, and what is due. The parts its checks need are loaded
+first; one that cannot be is a problem, never a check skipped. What it cannot
+know is the server's: a proof's signature, a payment's reference with the
+provider, when the page was served (for a time limit), and how many responses
+each person sent.
 
 ## What a page's records are called
 
