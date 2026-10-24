@@ -95,6 +95,8 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.
     const version = asked ?? JSON.parse(readFileSync(join(WORKSPACE, 'libs/core/package.json'), 'utf8')).version;
     const commit = execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], { cwd: WORKSPACE, encoding: 'utf8' }).trim();
     const released = releasedVersions(WORKSPACE).find((one) => one.version === version);
-    printRelease(WORKSPACE, version, released ? released.commit.slice(0, 12) : commit);
+    // Tagged already (as a release is before it is published: release-guards.mjs), its tag is there to push.
+    const tagged = execFileSync('git', ['tag', '--list', `v${version}`], { cwd: WORKSPACE, encoding: 'utf8' }).trim() !== '';
+    printRelease(WORKSPACE, version, released ? released.commit.slice(0, 12) : commit, { tagged });
   }
 }
