@@ -112,6 +112,17 @@ describe('a related list inside a record', () => {
     await until(() => rows(host)[0] === 'INV/4 | 20 | Posted' && rows(host)[1] === 'INV/2 | 50 | Draft');
   });
 
+  it('waits for its next page as a refresh: the page shown is replaced by the next, never rows put under it (`more`)', async () => {
+    const { host, handle } = await mount();
+    await until(() => rows(host).length === 2);
+    const waits: string[] = [];
+    handle.on('loadingstart', ({ moment, part }) => waits.push(`${moment} ${part}`));
+    (part(host).querySelector('[aria-label="Next page"]') as HTMLButtonElement).click();
+    await until(() => rows(host)[0] === 'INV/4 | 20 | Posted');
+    expect(rows(host)).toEqual(['INV/4 | 20 | Posted']);
+    expect(waits).toEqual(['refresh invoices-list']);
+  });
+
   it('searches its records alone, its count staying theirs; within a page, no search and no pager', async () => {
     const { host } = await mount();
     await until(() => rows(host).length === 2);

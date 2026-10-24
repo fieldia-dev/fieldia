@@ -5,8 +5,9 @@
  * the most specific winning, setting by setting; what nobody sets is `LOADING_DEFAULTS`.
  *
  * - `first`: a form, a list, a card, a map, a related list drawn for the first time.
- * - `refresh`: a list or a part asked again — a search, a filter, an order, a page, a record reloaded.
- * - `more`: rows under those shown — endless scroll, Show more, a tree's children, a related list's next page.
+ * - `refresh`: a list or a part asked again — a search, a filter, an order, a record reloaded; a page turned (a list's
+ *   pager, a related list's), a calendar's next week or month: whatever replaces what is shown.
+ * - `more`: rows put under those shown — endless scroll, Show more, a tree's children.
  * - `search`: a link's or a dropdown's suggestions, choices from the app's lists, a filter's values.
  * - `action`: a save, a send, a button's steps, a delete, an export.
  *

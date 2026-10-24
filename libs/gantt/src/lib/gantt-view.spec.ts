@@ -83,6 +83,19 @@ describe("a list's Gantt timeline", () => {
     expect(bar(host, 'Painting')).toBeDefined();
   });
 
+  it('waits for its records asked again as a refresh, the bars shown kept; days, weeks and months ask nothing', async () => {
+    const host = await mount();
+    const waits: string[] = [];
+    handle?.on('loadingstart', ({ moment, part }) => waits.push(`${moment} ${part}`));
+    button(host, 'Weeks').click();
+    expect(waits).toEqual([]);
+    await handle?.reload();
+    await settle();
+    // The timeline's wait (the list's own records are asked again beside it, a refresh too).
+    expect(waits.filter((wait) => wait.endsWith('-gantt'))).toEqual(['refresh list-gantt']);
+    expect(bar(host, 'Wiring')).toBeDefined();
+  });
+
   it('moves a bar a day at a time from the keys, written once they rest, with Undo; Shift moves its end; Enter opens it', async () => {
     const source = fitoutSource();
     const opened: unknown[] = [];

@@ -108,6 +108,16 @@ describe("a list's calendar", () => {
     expect(host.querySelector('.fd-cal-ranges [data-range="day"]')?.getAttribute('aria-pressed')).toBe('true');
   });
 
+  it('waits for the week stepped to as a refresh: the week shown is replaced, never rows put under it (`more`)', async () => {
+    const host = await mount();
+    const waits: string[] = [];
+    handle?.on('loadingstart', ({ moment, part }) => waits.push(`${moment} ${part}`));
+    button(host, 'Next week').click();
+    await until(() => title(host) === '19–25 Oct 2026');
+    await settle();
+    expect(waits).toEqual(['refresh list-calendar']);
+  });
+
   it('draws the month in whole weeks, with how many more a crowded day has', async () => {
     const records = clinicRecords();
     for (let i = 0; i < 4; i++) records[`9${i}`] = { patient: `Extra ${i}`, start: at(16, 9 + i), stop: at(16, 10 + i), doctor: KARIM, kind: 'check' };
