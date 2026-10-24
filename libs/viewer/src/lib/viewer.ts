@@ -78,6 +78,7 @@ import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
 import { openPage } from './open';
 import { sayer } from './say';
+import { earlyList, type EarlyList } from './list-early';
 import { tabStrip } from './tab-strip';
 import { valueWords, type ValueWriter } from './value-words';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
@@ -445,7 +446,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const locale = ownLocale(tag);
   // A signed-in person's own: the next person on the device never meets their templates or the records they opened last.
   const preferences = options.preferences ?? browserPreferences(undefined, options.user?.id);
-  const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone));
+  // What it opens — dialogs, panels, a page in its place — taken away with it (`destroy()`).
+  const owned = new AbortController();
+  const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone), owned.signal);
   const ownsForm = !options.form;
   // Read as each word is drawn: a part's words are there once it has come (the one-tag script's).
   const labels: ViewerLabels = viewerWords(locale, options.labels);
@@ -477,6 +480,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           name: () => recordName() || sentence(labels.newRecordNoun, labels.newRecord),
           leave: () => form.leave(),
           leaveNow: () => form.leaveNow(),
+          signal: owned.signal,
         },
         request
       ),
@@ -702,6 +706,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** Set once the viewer is on the page; set again when it is taken away. */
   let mounted = false;
   let gone = false;
+  /** A list page's first page of records, asked for beside its part (list-early.ts). */
+  let earlyRows: EarlyList | undefined;
   /** Whether the form has opened a record yet (its `open` event). */
   let opened = false;
 
@@ -1545,16 +1551,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
             for (const update of p.own) update(state);
           }
         }
-        // Measured only when it can have changed: the strip's tabs, or the one chosen.
+        // Measured only when it can have changed — the strip's tabs, or the one chosen — once the page is laid out.
         const key = shown.map((p) => p.tab.id).join(' ');
-        if (key !== shownKey) {
+        if (key !== shownKey || active !== revealed) {
           shownKey = key;
-          strip.measure();
-        }
-        if (active !== revealed && list.clientWidth) {
           revealed = active;
-          const chosen = parts.find((p) => p.tab.id === active);
-          if (chosen) strip.reveal(chosen.button);
+          strip.later(parts.find((p) => p.tab.id === active)?.button);
         }
       });
       return box;
@@ -2656,6 +2658,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
         ...(options.listSearch ? { search: options.listSearch } : {}),
         ...(options.listViews ? { views: options.listViews } : {}),
+        // Its first page, asked for beside its part (list-early.ts): taken where it asks the same first.
+        ...(earlyRows ? { early: earlyRows } : {}),
         ...newListRecord(),
         // An export's end said, Edit's question asked and its value asked in a dialog, as the page's own steps are.
         say: (message, tone) => actionHost.say(message, tone),
@@ -2744,6 +2748,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const waitsForData = form.getState().status === 'idle' || /"type":"(list|related|form|map)"/.test(JSON.stringify(page.layout));
   const drawsFromPart = (!!owed.length && waitsForData && asksLoadingPart(loading.settings, ['first', 'refresh', 'more'])) || asksLoadingPart(options.loading);
   const awaited = drawsFromPart && !loadingPart.loaded ? [...owed, loadingPart] : owed;
+  // A list page's records asked for now, as its part comes, not once it has.
+  if (awaited.includes(listPart)) earlyRows = earlyList(page, options);
   let drawn: Promise<void> = Promise.resolve();
   if (!awaited.length && !words) drawPage();
   else {
@@ -3250,6 +3256,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     drawn: dressed,
     destroy() {
       gone = true;
+      owned.abort();
       unsubscribe();
       for (const cleanup of cleanups) {
         try {

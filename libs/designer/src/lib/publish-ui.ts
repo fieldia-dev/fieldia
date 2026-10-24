@@ -5,6 +5,7 @@ import { openMenu } from './menu';
 import { pageChanges, type PageCheck } from './page-checks';
 import { DATE_TAGS, type DesignerWords } from './designer-words';
 import { speakLike } from './chrome-language';
+import { intlFormat } from '@fieldia/core';
 
 /**
  * The bar's part in publishing: Checks, a count of what people would trip
@@ -226,7 +227,7 @@ export function openPublishDialog(el: ElementFactory, designer: Designer, root: 
 export function versionsMenu(el: ElementFactory, designer: Designer, anchor: HTMLElement): void {
   const { versions } = designer.getState();
   const w = designer.words.bar;
-  const when = (iso: string) => new Intl.DateTimeFormat(DATE_TAGS[designer.locale ?? 'en'], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  const when = (iso: string) => intlFormat('DateTimeFormat', DATE_TAGS[designer.locale ?? 'en'], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
   const newest = [...versions].reverse();
   openMenu({
     el,

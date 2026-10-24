@@ -1,4 +1,4 @@
-import { fill, type FormState, type Locale } from '@fieldia/core';
+import { fill, type FormState, type Locale, intlFormat } from '@fieldia/core';
 import { setHidden, setText } from './dom';
 import type { FlowContext } from './survey-flow';
 
@@ -27,7 +27,7 @@ export interface TimerKit {
 /** A span of time as words in the page's language: "20 minutes", "1 minute, 30 seconds" — Latin digits, as everywhere. */
 export function timeWords(ms: number, locale: Locale): string {
   const seconds = Math.round(ms / 1000);
-  const unit = (n: number, of: 'hour' | 'minute' | 'second') => new Intl.NumberFormat(locale, { style: 'unit', unit: of, unitDisplay: 'long', numberingSystem: 'latn' } as Intl.NumberFormatOptions).format(n);
+  const unit = (n: number, of: 'hour' | 'minute' | 'second') => intlFormat('NumberFormat', locale, { style: 'unit', unit: of, unitDisplay: 'long', numberingSystem: 'latn' } as Intl.NumberFormatOptions).format(n);
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const rest = seconds % 60;

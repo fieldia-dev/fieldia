@@ -1,5 +1,6 @@
 import type { DataSource, FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
 import type { ListViewFactory, MapPartFactory, Skin } from '@fieldia/viewer';
+import { askCanvasParts } from './canvas-parts';
 import { installStyles, useStyleNonce, type WidgetFactory } from '@fieldia/widgets';
 import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mode';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
@@ -32,7 +33,7 @@ import type { DesignerAssistant } from './assistant';
 import type { PageTemplate } from './templates';
 import { startHere } from './templates-start';
 import { dropEcho } from './drop-echo';
-import { openMenu } from './menu';
+import { closeMenusIn, openMenu } from './menu';
 import { setHidden } from './writes';
 
 /**
@@ -77,6 +78,8 @@ const topOf = (page: Page) => (page.layout as { children: LayoutNode[] }).childr
 export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOptions): ScreenEditorHandle {
   const { designer } = options;
   const doc = host.ownerDocument;
+  // Every part the canvas draws the page from asked for at once, as the editor opens (canvas-parts.ts).
+  askCanvasParts(designer.getPage(), options.widgets);
   useStyleNonce(doc, options.nonce);
   installStyles(doc);
   installDesignerStyles(doc);
@@ -429,6 +432,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       ruleList.destroy();
       echoes.destroy();
       deletions.destroy();
+      closeMenusIn(root);
       root.remove();
     },
   };

@@ -1,3 +1,4 @@
+import { intlFormat } from '@fieldia/core';
 import type { LookStore, SavedLook } from './designer';
 import { wellMadeLooks } from './look-store';
 
@@ -34,7 +35,7 @@ export interface LooksHub {
 /** The words of a store's error — its message, or the words it was — or '' when it gave none. */
 export const reasonOf = (error: unknown): string => (error instanceof Error ? error.message : typeof error === 'string' ? error : '').trim();
 
-const byName = (looks: readonly SavedLook[]) => [...looks].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+const byName = (looks: readonly SavedLook[]) => [...looks].sort((a, b) => intlFormat('Collator', undefined, { numeric: true, sensitivity: 'base' }).compare(a.name, b.name));
 
 const hubs = new WeakMap<LookStore, LooksHub>();
 

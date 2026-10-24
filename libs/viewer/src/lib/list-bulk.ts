@@ -1,4 +1,4 @@
-import { bulkEditFields, recordSentence, saveProblemOf, type DataSource, type Field, type LayoutNode, type LineField, type ListNode, type Locale, type Page, type RecordId, type RecordPermissions, type RecordVersion, type SaveProblem, type Value, type Values } from '@fieldia/core';
+import { bulkEditFields, recordSentence, saveProblemOf, type DataSource, type Field, type LayoutNode, type LineField, type ListNode, type Locale, type Page, type RecordId, type RecordPermissions, type RecordVersion, type SaveProblem, type Value, type Values, intlFormat } from '@fieldia/core';
 import { displayValue, type WidgetDialogs } from '@fieldia/widgets';
 import type { ViewerLabels } from './labels';
 
@@ -95,7 +95,7 @@ export async function askBulkValue(list: BulkList, editValues: WidgetDialogs['ed
 export function bulkQuestion(list: BulkList, count: number, field: string, value: Value, number: (n: number) => string): string {
   const { labels, fill } = list;
   const def = list.page.fields[field];
-  const one = new Intl.PluralRules(list.locale).select(count) === 'one';
+  const one = intlFormat('PluralRules', list.locale).select(count) === 'one';
   const words = value === null || value === undefined ? '' : def.type === 'boolean' ? (value ? labels.yes : labels.no) : displayValue(def as LineField, value, {}, list.locale);
   const what = words ? fill(labels.bulkSet, { field: def.label, value: words }) : fill(labels.bulkClear, { field: def.label });
   const ask = one ? recordSentence(list.page.records, labels.bulkAskNounOne, labels.bulkAskOne, list.locale) : recordSentence(list.page.records, labels.bulkAskNoun, labels.bulkAsk, list.locale);

@@ -1,4 +1,4 @@
-import { csvCell, DOWNLOAD_URL, safeUrl, placesOf, placesOfCurrency, stripMarks, wallClock, wallDay, wallTime, type CsvValue, type DataSource, type ExportedFile, type Field, type ListedRecord, type Locale, type RecordId, type ResolvedFilter, type SortOrder, type Value, type Values } from '@fieldia/core';
+import { csvCell, DOWNLOAD_URL, safeUrl, placesOf, placesOfCurrency, stripMarks, wallClock, wallDay, wallTime, type CsvValue, type DataSource, type ExportedFile, type Field, type ListedRecord, type Locale, type RecordId, type ResolvedFilter, type SortOrder, type Value, type Values, intlFormat } from '@fieldia/core';
 import { currencyOf, currencySymbol } from '@fieldia/widgets';
 import type { ViewerLabels } from './labels';
 import { xlsxOf, XLSX_TYPE, type SheetCell } from './xlsx';
@@ -67,7 +67,7 @@ export function exportName(title: string, format: ExportFormat, when: Date): str
 /** Between a CSV file's values: a comma, or a semicolon where the language writes a decimal comma — what a spreadsheet there reads. */
 export function csvSeparator(locale: Locale): string {
   try {
-    return new Intl.NumberFormat(locale).formatToParts(1.5).find((part) => part.type === 'decimal')?.value === ',' ? ';' : ',';
+    return intlFormat('NumberFormat', locale).formatToParts(1.5).find((part) => part.type === 'decimal')?.value === ',' ? ';' : ',';
   } catch {
     return ',';
   }

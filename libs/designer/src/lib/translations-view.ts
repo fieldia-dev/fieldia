@@ -1,3 +1,4 @@
+import { intlFormat } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { FindItem } from './find-anything';
@@ -227,7 +228,7 @@ export function translationsView(options: TranslationsViewOptions): Translations
     const [before, rest = ''] = w.note(words, languages).split('{language}');
     count.textContent = before;
     // The common languages by name, and the page's own when it is not one of them.
-    const offered = [...new Set([language, ...Object.keys(COMMON_LANGUAGES)])].sort((a, b) => nameOf(a).localeCompare(nameOf(b), designer.locale ?? undefined));
+    const offered = [...new Set([language, ...Object.keys(COMMON_LANGUAGES)])].sort((a, b) => intlFormat('Collator', designer.locale ?? undefined).compare(nameOf(a), nameOf(b)));
     if ([...own.options].map((o) => o.value).join() !== offered.join()) own.replaceChildren(...offered.map((tag) => el('option', { value: tag }, nameOf(tag))));
     own.value = language;
     after.textContent = rest;

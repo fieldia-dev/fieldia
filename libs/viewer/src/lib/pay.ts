@@ -1,4 +1,4 @@
-import { saveProblemOf, type DataSource, type PaidPayment, type PaymentDue, type PayRequest } from '@fieldia/core';
+import { saveProblemOf, type DataSource, type PaidPayment, type PaymentDue, type PayRequest, intlFormat } from '@fieldia/core';
 import { setHidden, setText } from './dom';
 import type { JoinContext, PageJoin } from './joins';
 import { installPayStyles } from './pay-styles';
@@ -39,7 +39,7 @@ export function draw(ctx: JoinContext): PageJoin | null {
 /** An amount in its currency, as the page's language writes money: its digits Latin, as everywhere in Fieldia. */
 export function amountWords(amount: number, currency: string, tag: string): string {
   try {
-    return new Intl.NumberFormat(tag, { style: 'currency', currency, numberingSystem: 'latn' }).format(amount);
+    return intlFormat('NumberFormat', tag, { style: 'currency', currency, numberingSystem: 'latn' }).format(amount);
   } catch {
     return `${currency} ${amount}`;
   }

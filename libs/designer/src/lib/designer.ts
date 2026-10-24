@@ -741,6 +741,8 @@ export interface AppList {
 
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+/** How many edits Undo takes back: the last 200 (each a whole page kept). */
+export const UNDO_STEPS = 200;
 
 /** Whether the designer's words in a language are at hand: English's and Arabic's always, the others' once fetched. */
 const wordsAtHand = (locale: DesignerLocale) => wordsIn(locale) !== wordsIn('en') || locale === 'en';
@@ -812,8 +814,10 @@ export function createDesigner(options: {
   let selected: string | null = null;
   let picked: string[] = [];
   let issues: string[] = [];
+  /** The edits Undo takes back, the last UNDO_STEPS of them: a long session kept every page it ever had (0.32). */
   let past: Page[] = [];
   let future: Page[] = [];
+  const kept = (pages: Page[]) => (pages.length > UNDO_STEPS ? pages.slice(-UNDO_STEPS) : pages);
   let mergeKey: string | null = null;
   let versions: PublishedVersion[] = clone(options.versions ?? []);
   const listeners = new Set<(state: DesignerState) => void>();
@@ -921,7 +925,7 @@ export function createDesigner(options: {
       notify();
       return false;
     }
-    if (!(merge && merge === mergeKey)) past = [...past, page];
+    if (!(merge && merge === mergeKey)) past = kept([...past, page]);
     mergeKey = merge;
     future = [];
     leave(page);
@@ -2112,7 +2116,7 @@ export function createDesigner(options: {
       const next = future[0];
       if (!next) return;
       future = future.slice(1);
-      past = [...past, page];
+      past = kept([...past, page]);
       leave(page);
       page = next;
       arrive();

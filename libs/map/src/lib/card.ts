@@ -1,4 +1,4 @@
-import { LINK_URL, PICTURE_URL, safeUrl, cardLines, type CardLine, type CardLinePart, type Locale, type MapCard, type Page, type PluralWords, type Value, type Values } from '@fieldia/core';
+import { LINK_URL, PICTURE_URL, safeUrl, cardLines, type CardLine, type CardLinePart, type Locale, type MapCard, type Page, type PluralWords, type Value, type Values, intlFormat } from '@fieldia/core';
 import { fill, type ListMapLabels, type MapLabels } from './labels';
 import { imageSource, shown, type MapRecord } from './pins';
 
@@ -74,7 +74,7 @@ const plurals = new Map<Locale, Intl.PluralRules>();
 function unitWords(unit: string | PluralWords, value: Value | undefined, locale: Locale): string {
   if (typeof unit === 'string') return unit;
   let rules = plurals.get(locale);
-  if (!rules) plurals.set(locale, (rules = new Intl.PluralRules(locale)));
+  if (!rules) plurals.set(locale, (rules = intlFormat('PluralRules', locale)));
   const form = typeof value === 'number' ? (rules.select(value) as keyof PluralWords) : 'other';
   return unit[form] ?? unit.other;
 }

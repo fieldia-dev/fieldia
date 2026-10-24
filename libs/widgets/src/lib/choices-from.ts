@@ -66,7 +66,7 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
   if (listed && !form.getState().choices[name]) form.loadChoices(name);
   return {
     element: box,
-    focus: () => inner.focus(),
+    focus: (options?: FocusOptions) => inner.focus(options),
     destroy: () => {
       wait?.stop();
       inner.destroy?.();

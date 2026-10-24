@@ -28,6 +28,8 @@ export interface Opener {
   leave(): Promise<boolean>;
   /** Whether that check lets this record go at once (`form.leaveNow()`). */
   leaveNow(): boolean;
+  /** Aborts as the viewer is taken away (`destroy()`): what it opened — a dialog, a panel, a page in its place — goes too. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -68,8 +70,8 @@ export async function openPage(opener: Opener, request: OpenRequest): Promise<Op
   const over: ViewerOptions = { ...shared, host: { ...options.host, say: opener.say, post: opener.post } };
   const result =
     request.as === 'page' ? await inPlace(opener, { ...shared, host: { ...options.host, post: opener.post } })
-    : request.as === 'panel' ? await openFormPanel({ ...over, title, side: request.side })
-    : await openFormDialog({ ...over, title, size: found.layout.type === 'sheet' ? 'large' : 'medium' });
+    : request.as === 'panel' ? await openFormPanel({ ...over, title, side: request.side, signal: opener.signal })
+    : await openFormDialog({ ...over, title, size: found.layout.type === 'sheet' ? 'large' : 'medium', signal: opener.signal });
   const name = nameFieldOf(found);
   const label = name ? result.values[name] : undefined;
   return { ...result, ...(typeof label === 'string' && label ? { label } : {}) };
@@ -97,6 +99,7 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
     const end = (saved: boolean) => {
       if (done) return;
       done = true;
+      opener.signal?.removeEventListener('abort', gone);
       const state = opened.form.getState();
       opened.destroy();
       root.hidden = false;
@@ -121,6 +124,9 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
     const trail = opener.options.breadcrumbs ? [...opener.options.breadcrumbs.map((crumb) => throughOpener(opener, crumb, doc)), { label: opener.name(), open: () => void endChecked(false) }] : undefined;
     // Its form takes this close once, its one check before it: a `close` step returns once nothing is at risk, or let go.
     const opened = mountViewer(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => end(false) } });
+    // The viewer under it taken away: this page goes with it.
+    const gone = () => end(false);
+    opener.signal?.addEventListener('abort', gone, { once: true });
     opened.on('run', ({ result }) => {
       if (stayed(result)) stayedAt = saves;
     });

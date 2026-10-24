@@ -1,6 +1,6 @@
 import { displayValue, drawIcon, type IconSet, type Loading } from '@fieldia/widgets';
 import type { ButtonNode, FieldNode, Form, FormState, HeadLink, LabelPlace, LayoutNode, LineField, Locale, MenuItem, Page, RootLayout, RunResult, SheetHead, SheetNode, Tone, Values } from '@fieldia/core';
-import { dayTag } from '@fieldia/core';
+import { dayTag, intlFormat } from '@fieldia/core';
 import { setAttr, setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
 import type { Place } from './place';
@@ -194,7 +194,7 @@ export function recordHead(context: RecordHeadContext): RecordHead {
     // Going nowhere and doing nothing, it is its words alone, never a button that does nothing.
     const acts = !!link.target || !!link.steps?.length;
     const button = el(acts ? 'button' : 'span', { ...(acts ? { type: 'button' } : {}), class: 'fd-head-link', 'data-node': link.id }, ...[drawIcon(doc, link.icon, context.icons)].filter((icon): icon is SVGSVGElement => !!icon), words);
-    const plural = new Intl.PluralRules(context.locale);
+    const plural = intlFormat('PluralRules', context.locale);
     button.addEventListener('click', () => {
       if (link.steps?.length) void context.press(button, () => form.runAction(link.id));
       if (link.target) reveal(link.target);
@@ -299,5 +299,5 @@ export function shortDate(iso: string, locale: Locale, now = new Date()): string
   if (Number.isNaN(day.getTime())) return iso;
   const year = day.getFullYear() !== now.getFullYear();
   // In Latin digits and on the Gregorian calendar, as the rest of a record's dates are written.
-  return new Intl.DateTimeFormat(locale === 'en' ? locale : dayTag(locale), { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}), numberingSystem: 'latn' }).format(day);
+  return intlFormat('DateTimeFormat', locale === 'en' ? locale : dayTag(locale), { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}), numberingSystem: 'latn' }).format(day);
 }

@@ -38,6 +38,24 @@ export interface MenuOptions {
 }
 
 let open: { close(focus?: boolean): void } | null = null;
+
+/** The menus and lists open now, each with what it opened from: an editor taken away closes those it holds. */
+const popups = new Set<{ from: Element; close(): void }>();
+
+/** A menu or a list opened from `from`, closed by `closeMenusIn` too; what it gives back lets it go once closed. */
+export function keepPopup(from: Element, close: () => void): () => void {
+  const popup = { from, close };
+  popups.add(popup);
+  return () => popups.delete(popup);
+}
+
+/**
+ * Close the menus and lists opened from inside `root`, as the editor they belong to is taken away (`destroy()`): each
+ * holds a listener on the document for a press elsewhere, which 0.32 left there.
+ */
+export function closeMenusIn(root: Element): void {
+  for (const popup of [...popups]) if (!popup.from.isConnected || root.contains(popup.from)) popup.close();
+}
 /** Ids for menus' notes, unique on the page. */
 let notes = 0;
 
@@ -95,13 +113,15 @@ export function openMenu(options: MenuOptions): { element: HTMLElement; close():
     if (!menu.contains(event.target as Node) && event.target !== anchor && !anchor.contains(event.target as Node)) close(false);
   };
   doc.addEventListener('pointerdown', onOutside, true);
+  const unkept = keepPopup(anchor, () => close(false));
 
   function close(focusAnchor = false) {
+    doc.removeEventListener('pointerdown', onOutside, true);
+    unkept();
+    if (open?.close === close) open = null;
     if (!menu.isConnected) return;
     menu.remove();
-    doc.removeEventListener('pointerdown', onOutside, true);
     anchor.setAttribute('aria-expanded', 'false');
-    if (open?.close === close) open = null;
     if (focusAnchor) anchor.focus();
   }
 

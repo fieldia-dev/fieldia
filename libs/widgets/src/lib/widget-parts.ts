@@ -373,7 +373,7 @@ export function partWidget<M>(part: Part<M>, context: WidgetContext, real: (modu
       current.update(state);
       lingering?.update(state);
     },
-    focus: () => current.focus(),
+    focus: (options?: FocusOptions) => current.focus(options),
     destroy() {
       gone = true;
       current.destroy?.();

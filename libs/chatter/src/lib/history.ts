@@ -1,4 +1,4 @@
-import { PICTURE_URL, safeUrl, fill, labelAt, recordSentence, dayTag, wordsComing, wordsReady, type Locale, type PageRecords } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, fill, labelAt, recordSentence, dayTag, wordsComing, wordsReady, type Locale, type PageRecords, intlFormat } from '@fieldia/core';
 import { drawIcon, installStyles, sanitizeHtml, showHtml, type IconSet } from '@fieldia/widgets';
 import { initials } from './chatter';
 import { installHistoryStyles } from './history-styles';
@@ -85,9 +85,9 @@ function drawHistory(host: HTMLElement, options: MountHistoryOptions): HistoryHa
   const now = options.now ?? (() => new Date());
   const firstDay = firstDayOfWeek(locale);
   const tag = locale === 'ar' ? 'ar-EG-u-nu-latn' : locale === 'en' ? locale : `${dayTag(locale)}-nu-latn`;
-  const listDate = new Intl.DateTimeFormat(tag, { year: 'numeric', month: 'numeric', day: 'numeric' });
-  const graphDate = new Intl.DateTimeFormat(tag, { month: 'short', day: 'numeric' });
-  const whole = new Intl.DateTimeFormat(tag, { weekday: 'short', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const listDate = intlFormat('DateTimeFormat', tag, { year: 'numeric', month: 'numeric', day: 'numeric' });
+  const graphDate = intlFormat('DateTimeFormat', tag, { month: 'short', day: 'numeric' });
+  const whole = intlFormat('DateTimeFormat', tag, { weekday: 'short', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   // The day, the date and the time in the language's own forms, set apart by spaces where it puts commas: "Wed 7/22/2026 12:59 PM".
   const fullDate = (at: Date) =>
     whole

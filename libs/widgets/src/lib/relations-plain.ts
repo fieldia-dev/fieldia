@@ -114,7 +114,7 @@ function plainNameBox({ form, name, field, node, id, document, labels, locale }:
 
   return {
     element,
-    focus: () => input.focus(),
+    focus: (options?: FocusOptions) => input.focus(options),
     destroy() {
       // A name still being looked up is still read for a save: its reader goes once it is found, or not.
       if (reading) void reading.then(() => stopReading?.());
@@ -148,7 +148,7 @@ export const plainReferenceWidget: WidgetFactory = ({ id, document }) => {
   output.tabIndex = -1;
   return {
     element: output,
-    focus: () => output.focus(),
+    focus: (options?: FocusOptions) => output.focus(options),
     update(state) {
       setText(output, (state.value as ReferenceValue | null | undefined)?.label ?? '');
       describeState(output, state);

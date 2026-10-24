@@ -3,6 +3,7 @@ import { localDay } from '../expression/functions';
 import { dayIn } from './zones';
 import { fillMessage, type Messages } from './messages';
 import { dayWords, precisionOf } from './day-words';
+import { intlFormat } from '../intl-format';
 
 /**
  * A date's limits: its earliest and latest day (`min`, `max`), each a day
@@ -22,7 +23,7 @@ export function dayOf(limit: string, today = localDay(new Date())): string {
 
 /** A weekday in words, in the messages' language: "Friday", "الجمعة". */
 const written = (options: Intl.DateTimeFormatOptions, messages: Messages, at: number) =>
-  new Intl.DateTimeFormat(messages.locale, { ...options, timeZone: 'UTC', numberingSystem: 'latn' }).format(at);
+  intlFormat('DateTimeFormat', messages.locale, { ...options, timeZone: 'UTC', numberingSystem: 'latn' }).format(at);
 
 /** What a day breaks of its field's limits, or undefined: before its earliest, after its latest, on a day of the week it may not fall on. */
 export function checkDay(field: Field | LineField, value: string, today: string | undefined, messages: Messages): string | undefined {

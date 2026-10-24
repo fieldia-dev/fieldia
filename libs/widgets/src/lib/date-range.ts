@@ -1,4 +1,4 @@
-import { clocksSkip, dayIn, fill, firstWeekday, instantsAt, wallClock, wallOf, wallText, wallTime, dayTag, type Field, type FieldNode, type Locale, type Value } from '@fieldia/core';
+import { clocksSkip, dayIn, fill, firstWeekday, instantsAt, wallClock, wallOf, wallText, wallTime, dayTag, type Field, type FieldNode, type Locale, type Value, intlFormat } from '@fieldia/core';
 import { weekdayHead } from './calendar';
 import { restingText, zoneName, zoneOf } from './date-text';
 import { dateBox } from './date-box';
@@ -43,13 +43,13 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   const endField = endName ? (form.page.fields[endName] as Field) : null;
   const endLabel = endField?.label ?? '';
   const lang = dayTag(locale);
-  const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
-  const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
+  const monthName = intlFormat('DateTimeFormat', lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
+  const dayName = intlFormat('DateTimeFormat', lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const weekday = weekdayHead(lang);
   // The week's first day where the page is read (`firstWeekday`), each row of the month from it.
   const firstDay = firstWeekday(locale, form.page);
   const intoWeek = (day: Date) => (day.getDay() - firstDay + 7) % 7;
-  const weekdayLong = new Intl.DateTimeFormat(lang, { weekday: 'long' });
+  const weekdayLong = intlFormat('DateTimeFormat', lang, { weekday: 'long' });
 
   // A date and time's days and hours on its zone's clock (the browser's without one).
   const zone = zoneOf(form, field);

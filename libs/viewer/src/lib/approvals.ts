@@ -1,4 +1,4 @@
-import { fill, formApprovalsPart, labelAt, recordSentence, type ApprovalDecision, type ApprovalEntry, type ApprovalLevel, type Form, type FormApproval, type FormState, type Locale, type Messages, type Page } from '@fieldia/core';
+import { fill, formApprovalsPart, labelAt, recordSentence, type ApprovalDecision, type ApprovalEntry, type ApprovalLevel, type Form, type FormApproval, type FormState, type Locale, type Messages, type Page, intlFormat } from '@fieldia/core';
 import { askFirst, displayValue, keepTabIn } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -79,7 +79,7 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
   const element = el('section', { class: 'fd-approval', 'aria-labelledby': titleId, hidden: '' }, head, levels, open, said, toggle, history);
 
   /** Names joined as the page's language joins them: "Mona Adel or Hany Lotfy" where any one is enough, "… and …" where all must. */
-  const joined = (names: readonly string[], type: 'conjunction' | 'disjunction' = 'conjunction') => (names.length < 2 ? (names[0] ?? '') : new Intl.ListFormat(locale, { type }).format(names));
+  const joined = (names: readonly string[], type: 'conjunction' | 'disjunction' = 'conjunction') => (names.length < 2 ? (names[0] ?? '') : intlFormat('ListFormat', locale, { type }).format(names));
   /** A level's name by its id, as told — else as the history kept it, else its id. */
   const levelName = (approval: FormApproval, id: string | undefined, entry?: ApprovalEntry) => approval.levels.find((level) => level.id === id)?.name ?? entry?.levelName ?? id ?? '';
   /** Who has yet to decide at a level: its approvers who have not, by name. */

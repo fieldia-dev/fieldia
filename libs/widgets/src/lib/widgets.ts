@@ -173,7 +173,11 @@ export interface TypedText {
 export interface Widget {
   element: HTMLElement;
   update(state: WidgetState): void;
-  focus(): void;
+  /**
+   * The focus in it. `preventScroll` where what asks has brought it into sight already, or will: a cell opened in a
+   * long list, which would otherwise lay the whole table out to scroll to it (the browser's own focus does).
+   */
+  focus(options?: FocusOptions): void;
   destroy?(): void;
   /**
    * A part's widget taking its plain stand-in's place while the stand-in's box holds text typed and not yet read
@@ -306,7 +310,7 @@ function textWidget(inputType: string): WidgetFactory {
     input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
     return counted({
       element: input,
-      focus: () => input.focus(),
+      focus: (options?: FocusOptions) => input.focus(options),
       destroy: () => box?.destroy(),
       update(state) {
         const text = textOf(state.value);
@@ -370,7 +374,7 @@ function wrappingLine(context: WidgetContext): Widget {
   return counted(
     {
       element: area,
-      focus: () => area.focus(),
+      focus: (options?: FocusOptions) => area.focus(options),
       destroy: () => {
         sized?.disconnect();
         View?.cancelAnimationFrame(frame);
@@ -406,7 +410,7 @@ const textareaWidget: WidgetFactory = (context) => {
   });
   return counted({
     element: area,
-    focus: () => area.focus(),
+    focus: (options?: FocusOptions) => area.focus(options),
     destroy: () => box.destroy(),
     update(state) {
       const text = textOf(state.value);
@@ -596,7 +600,7 @@ function numberBox(context: WidgetContext, shorthand?: (locale: Locale, labels?:
 
   return {
     element,
-    focus: () => input.focus(),
+    focus: (options?: FocusOptions) => input.focus(options),
     // As typed, keys held after a refused one with it: what a slider taking this box's place is handed.
     typedText: () => checks.held()?.text ?? input.value,
     // Its hint stands beside it, outside its element: it goes with it (a slider's number box, swapped for the slider).
@@ -654,7 +658,7 @@ function checkboxWidget(look: 'box' | 'switch' | 'tick' = 'box'): WidgetFactory 
     box.addEventListener('change', () => form.setValue(name, box.checked));
     return {
       element: box,
-      focus: () => box.focus(),
+      focus: (options?: FocusOptions) => box.focus(options),
       update(state) {
         box.checked = state.value === true;
         if (box.disabled !== state.readonly) box.disabled = state.readonly;
@@ -688,7 +692,7 @@ const selectWidget: WidgetFactory = (context) => {
   select.addEventListener('change', () => form.setValue(name, select.value === '' ? null : choices[Number(select.value)].value));
   return {
     element: select,
-    focus: () => select.focus(),
+    focus: (options?: FocusOptions) => select.focus(options),
     update(state) {
       // An option's words as they read now — one that shows an answer given follows it (the viewer's answers part) — and
       // its places left after them, where the page counts them: "Morning workshop (3 left)", "… (Full)".
@@ -812,7 +816,7 @@ function choiceGroup(kind: 'radio' | 'checkbox', looks?: OptionLooks): WidgetFac
         : null;
     return {
       element: clear ? make(document, 'div', { class: 'fd-choices-box' }, group, clear.button) : group,
-      focus: () => (inputs.find((input) => input.checked) ?? (otherChoice?.checked ? otherBox : null) ?? inputs[0])?.focus(),
+      focus: (options?: FocusOptions) => (inputs.find((input) => input.checked) ?? (otherChoice?.checked ? otherBox : null) ?? inputs[0])?.focus(options),
       update(state) {
         const chosen = Array.isArray(state.value) ? state.value : [state.value];
         // At the most a question takes, "Up to 3" says so; a box more, pressed, says why (hide, never disable).
@@ -896,7 +900,7 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
     if (ends.some(Boolean)) group.setAttribute('aria-description', ends.filter(Boolean).join(' … '));
     return {
       element: make(document, 'div', { class: 'fd-choices-box' }, shown, clear.button),
-      focus: () => (points.find((p) => p.getAttribute('aria-checked') === 'true') ?? points[0])?.focus(),
+      focus: (options?: FocusOptions) => (points.find((p) => p.getAttribute('aria-checked') === 'true') ?? points[0])?.focus(options),
       update(state) {
         const value = typeof state.value === 'number' ? state.value : null;
         required = state.required;
@@ -980,7 +984,7 @@ function plainFilesWidget({ field, id, document }: WidgetContext): Widget {
   output.tabIndex = -1;
   return {
     element: output,
-    focus: () => output.focus(),
+    focus: (options?: FocusOptions) => output.focus(options),
     update(state) {
       setText(output, summary(state.value, field));
     },
@@ -1018,7 +1022,7 @@ function plainPins({ id, document }: WidgetContext): Widget {
   output.tabIndex = -1;
   return {
     element: output,
-    focus: () => output.focus(),
+    focus: (options?: FocusOptions) => output.focus(options),
     update(state) {
       const pins = Array.isArray(state.value) ? (state.value as { note?: unknown }[]) : [];
       setText(output, pins.map((pin, i) => `${i + 1}.${typeof pin?.note === 'string' && pin.note ? ` ${pin.note}` : ''}`).join(' · '));

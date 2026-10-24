@@ -4,6 +4,7 @@
  * them in. Numbers are written in Latin digits in every language, as Arabic
  * business software shows them.
  */
+import { intlFormat } from '@fieldia/core';
 
 /** The languages the designer's words are written in. */
 export type Speaker = 'en' | 'ar' | 'tr' | 'fa' | 'ur' | 'es';
@@ -16,13 +17,13 @@ const rules = new Map<string, Intl.PluralRules>();
 /** The words for `n` in the form the language takes for it, `#` written as the number. */
 export function plural(locale: Speaker, n: number, forms: PluralForms): string {
   let rule = rules.get(locale);
-  if (!rule) rules.set(locale, (rule = new Intl.PluralRules(locale)));
+  if (!rule) rules.set(locale, (rule = intlFormat('PluralRules', locale)));
   return (forms[rule.select(n)] ?? forms.other).replaceAll('#', String(n));
 }
 
 /** A number in Latin digits, with the language's separators. */
 export function number(locale: Speaker, n: number): string {
-  return new Intl.NumberFormat(locale === 'en' ? 'en' : `${locale}-u-nu-latn`, { maximumFractionDigits: 20 }).format(n);
+  return intlFormat('NumberFormat', locale === 'en' ? 'en' : `${locale}-u-nu-latn`, { maximumFractionDigits: 20 }).format(n);
 }
 
 /**
@@ -37,5 +38,5 @@ export const ltr = (text: string | number): string => `\u2066${text}\u2069`;
 
 /** Several things said as one, the language's way: "A, B and C", "أ وب وج". */
 export function listOf(locale: Speaker, items: readonly string[], join: 'and' | 'or'): string {
-  return new Intl.ListFormat(locale, { type: join === 'and' ? 'conjunction' : 'disjunction' }).format(items);
+  return intlFormat('ListFormat', locale, { type: join === 'and' ? 'conjunction' : 'disjunction' }).format(items);
 }

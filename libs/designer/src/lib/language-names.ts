@@ -1,4 +1,5 @@
 import type { Speaker } from './locales/speak';
+import { intlFormat } from '@fieldia/core';
 
 /** Common languages, by tag, named in English: offered when adding one, and their names when the browser has none. */
 export const COMMON_LANGUAGES: Record<string, string> = {
@@ -55,7 +56,7 @@ export function displayName(locale: Speaker, tag: string): string {
 
 function nameOf(locale: Speaker, tag: string): string {
   try {
-    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(tag);
+    const name = intlFormat('DisplayNames', [locale], { type: 'language' }).of(tag);
     if (name && name !== tag) return name;
   } catch {
     // A browser with no names of languages, or a tag it cannot read.

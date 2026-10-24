@@ -1,5 +1,6 @@
 import type { DateOrder } from './input-rules';
 import type { Messages } from './messages';
+import { intlFormat } from '../intl-format';
 
 /** How much of a date a field keeps: a day, unless its `precision` says a month or a year alone (field.ts). */
 export type DatePrecision = 'day' | 'month' | 'year';
@@ -14,7 +15,7 @@ export const precisionOf = (field: { type: string; precision?: unknown } | undef
  */
 export function hijriWords(day: string, locale: string): string {
   const at = Date.parse(`${day.slice(0, 10)}T00:00Z`);
-  return Number.isNaN(at) ? '' : new Intl.DateTimeFormat(`${locale === 'en' ? 'en-GB' : locale}-u-ca-islamic-umalqura`, { day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' }).format(at);
+  return Number.isNaN(at) ? '' : intlFormat('DateTimeFormat', `${locale === 'en' ? 'en-GB' : locale}-u-ca-islamic-umalqura`, { day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' }).format(at);
 }
 
 /**
@@ -26,7 +27,7 @@ export const dayTag = (locale: string): string => (locale === 'en' ? 'en-GB' : l
 
 /** A month and its year in words, as a month's box writes it at rest: "Oct 2026", "أكتوبر 2026", "oct. 2026". */
 export const monthWords = (at: number, locale: string): string =>
-  new Intl.DateTimeFormat(dayTag(locale), { month: 'short', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' }).format(at);
+  intlFormat('DateTimeFormat', dayTag(locale), { month: 'short', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' }).format(at);
 
 /**
  * A day a message names, written as the page's date boxes write one: in the page's order (`messages.dateOrder`, set on
@@ -41,7 +42,7 @@ export function dayWords(day: string, messages: Pick<Messages, 'locale' | 'dateO
   if (precision !== 'day' && !Number.isNaN(at)) return precision === 'year' ? day.slice(0, 4) : order === 'ymd' ? day.slice(0, 7) : monthWords(at, messages.locale);
   if (order === 'ymd' || Number.isNaN(at)) return day;
   // English as the boxes write it, the day first.
-  const format = new Intl.DateTimeFormat(dayTag(messages.locale), { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' });
+  const format = intlFormat('DateTimeFormat', dayTag(messages.locale), { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' });
   if (order === 'dmy') return format.format(at);
   const parts = format.formatToParts(at);
   const part = (type: string) => parts.find((one) => one.type === type)?.value ?? '';

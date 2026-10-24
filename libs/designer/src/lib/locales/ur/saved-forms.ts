@@ -1,8 +1,9 @@
 import type { DesignerWords } from '../../designer-words';
 import { ltr, quoteAr } from '../speak';
+import { intlFormat } from '@fieldia/core';
 
 const q = quoteAr;
-const DATE = new Intl.DateTimeFormat('ur-u-nu-latn', { dateStyle: 'medium' });
+const DATE = intlFormat('DateTimeFormat', 'ur-u-nu-latn', { dateStyle: 'medium' });
 
 /**
  * The designer's words in Urdu: a saved form placed in another — the toolbox's tile and its menu, the frame on the

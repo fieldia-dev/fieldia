@@ -1,4 +1,4 @@
-import { PICTURE_URL, safeUrl, fill, recordSentence, dayTag, wordsComing, wordsReady } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, fill, recordSentence, dayTag, wordsComing, wordsReady, intlFormat } from '@fieldia/core';
 import { installStyles, sanitizeHtml, showHtml, textPart, WIDGET_LABELS, type TextPart, type TextReference } from '@fieldia/widgets';
 import type { ChatterHandle, ChatterOptions } from './chatter';
 import { initials } from './chatter';
@@ -178,9 +178,9 @@ function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorat
   // ---- the comments ---------------------------------------------------------------------
   const now = options.now ?? (() => new Date());
   const tag = locale === 'ar' ? 'ar-EG-u-nu-latn' : locale === 'en' ? locale : `${dayTag(locale)}-nu-latn`;
-  const sameYear = new Intl.DateTimeFormat(tag, { month: 'short', day: 'numeric' });
-  const otherYear = new Intl.DateTimeFormat(tag, { month: 'short', day: 'numeric', year: 'numeric' });
-  const full = new Intl.DateTimeFormat(tag, { dateStyle: 'full', timeStyle: 'short' });
+  const sameYear = intlFormat('DateTimeFormat', tag, { month: 'short', day: 'numeric' });
+  const otherYear = intlFormat('DateTimeFormat', tag, { month: 'short', day: 'numeric', year: 'numeric' });
+  const full = intlFormat('DateTimeFormat', tag, { dateStyle: 'full', timeStyle: 'short' });
 
   function comment(message: ChatterMessage): HTMLElement {
     const date = new Date(message.date);

@@ -407,6 +407,18 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * quiet skin the app itself gives the viewer is not the page's: its part is
  * `themesPart` or `quietPart` (@fieldia/widgets), `.load()`ed the same way.
  */
+/**
+ * The one-tag script's files a page draws from — `fieldia.list.js`, `fieldia.cards.js`, … — each part `partsFor` names:
+ * what a server writes into the page as `<script async src="…">` tags before fieldia.js, from the folder fieldia.js
+ * comes from, so they come beside it rather than once it has run and looked at the page (measured on a mid-range phone:
+ * a list of customers usable 23% sooner on 4G and 27% on Fast 3G, a record with tabs 16% on both). fieldia.js takes a
+ * tag it finds for a part still on its way, never asking for it twice. A page given `createMemoryDataSource` adds
+ * `fieldia.memory.js`. In the browser, the one-tag script's `partTags(page)` gives each with what its own tag carries.
+ */
+export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): string[] {
+  return partsFor(page, widgets, slots).map((part) => `fieldia.${part.name}.js`);
+}
+
 export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {
   // With the parts that join a form, asked for as they are loaded: their module may come after this one's.
   await Promise.all((page ? partsFor(page, widgets, slots) : [...EVERY_PART, ...formJoins()]).map((part) => part.load()));

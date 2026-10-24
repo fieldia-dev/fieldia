@@ -23,6 +23,10 @@ export const EDITABLE_STYLES = `
 .fd-list-editor[data-type="text"] { min-width: 16em; }
 .fd-list-editor > :not(label) { width: 100%; }
 .fd-list-editor :is(input:not([type="checkbox"]):not([type="radio"]), select) { min-height: 30px; box-sizing: border-box; }
+/* The line being typed in, contained: what is typed lays out its box alone, never the table round it (0.32: every key
+   in a cell of a list of 1,000 rows laid out every row again, 27 ms a key on a desktop). Its size is its own already
+   (as wide as the cell, a line high); aligned to its top, as it sits without the containment. */
+.fd-list-editor :is(input:not([type]), input[type="text"], input[type="search"], input[type="email"], input[type="tel"], input[type="url"], input[type="number"], input[type="password"]) { contain: size layout; vertical-align: top; }
 .fd-list-table td.fd-num[data-editing] input { text-align: end; }
 /* A cell changed and not saved yet, tinted; one whose text does not read, or refused, in the error's tones. */
 .fd-list-row[data-changed] > td[data-changed]:not([data-editing]) { background: var(--fd-accent-soft); }

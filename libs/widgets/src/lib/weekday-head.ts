@@ -1,4 +1,5 @@
 /** A Latin letter: what CLDR gives as a narrow day where a language has none of its own. */
+import { intlFormat } from '@fieldia/core';
 const LATIN = /\p{Script=Latin}/u;
 
 /**
@@ -9,8 +10,16 @@ const LATIN = /\p{Script=Latin}/u;
  * whole. The date part's; booking slots take it from there.
  */
 export function weekdayHead(lang: string): (day: Date) => string {
-  const short = new Intl.DateTimeFormat(lang, { weekday: 'short' });
-  const narrow = new Intl.DateTimeFormat(lang, { weekday: 'narrow' });
+  let found = heads.get(lang);
+  if (!found) heads.set(lang, (found = headOf(lang)));
+  return found;
+}
+
+/** Each language's, worked out the first time a calendar in it opens: the same for every calendar. */
+const heads = new Map<string, (day: Date) => string>();
+function headOf(lang: string): (day: Date) => string {
+  const short = intlFormat('DateTimeFormat', lang, { weekday: 'short' });
+  const narrow = intlFormat('DateTimeFormat', lang, { weekday: 'narrow' });
   const name = (day: Date) => short.format(day).replace(/\.$/, '');
   // A week from Sunday 7 January 2024.
   const week = [7, 8, 9, 10, 11, 12, 13].map((d) => new Date(2024, 0, d));

@@ -1,4 +1,4 @@
-import { languagesOf, hijriWords, monthWords, placesOf, placesOfCurrency, precisionOf, dayTag, type LineField, type Locale, type Value } from '@fieldia/core';
+import { languagesOf, hijriWords, monthWords, placesOf, placesOfCurrency, precisionOf, dayTag, type LineField, type Locale, type Value, intlFormat } from '@fieldia/core';
 import { anyText, languagesPart } from './widget-parts';
 import { formatMoney, formatNumber } from './numbers';
 import { writeMoney } from './money';
@@ -75,7 +75,7 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
       // A month alone, or a year alone, as its box writes it at rest: "Oct 2026", "2026".
       const precision = precisionOf(def);
       if (precision !== 'day') return precision === 'year' ? String(date.getFullYear()) : monthWords(Date.UTC(date.getFullYear(), date.getMonth(), 1), locale);
-      const day = new Intl.DateTimeFormat(dayTag(locale), { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn' }).format(date);
+      const day = intlFormat('DateTimeFormat', dayTag(locale), { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn' }).format(date);
       // A Hijri date, its Hijri day beside it: "13 Oct 2026 · 2 Jumada I 1448 AH".
       return def.hijri ? `${day} · ${hijriWords(String(value), locale)}` : day;
     }

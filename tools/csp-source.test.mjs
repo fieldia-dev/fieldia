@@ -104,8 +104,9 @@ const NOT_SINKS = [
   // The page's JSON the designers write, not an element.
   { file: 'libs/designer/src/lib/layout-settings.ts', has: 'node.src = patch.src.trim()' },
   { file: 'libs/designer/src/lib/list-properties.ts', has: '(map.card ??= {}).href = cardLink.value' },
-  // A part's script, by its name at build time, beside the main script's own address (a strict policy's gate: csp.spec).
-  { file: 'tools/script-parts.ts', has: 'tag.src = `${base}fieldia.${name}.js`' },
+  // A part's script, by its name at build time, beside the main script's own address (`partTag`, the one place its
+  // address is made; a strict policy's gate: csp.spec).
+  { file: 'tools/script-parts.ts', has: 'script.src = src' },
   { file: 'libs/designer/src/lib/panel-block.ts', has: 'designer.updateBlock(id, { src: src.value })' },
   { file: 'libs/designer/src/lib/panel-block.ts', has: 'designer.updateBlock(id, { href: href.value })' },
   // The embed script's frame, at the host page's own data-src, its protocol checked on the line before: it carries no core.

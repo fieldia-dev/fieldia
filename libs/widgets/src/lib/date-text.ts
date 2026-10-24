@@ -1,4 +1,4 @@
-import { DATE_TEXT_MOST, instantsAt, isOwnZone, ownZone, readDate, readTime, stripMarks, wallClock, wallDay, wallOf, wallTime, zoneOffset, dayTag, type DateOrder, type DateProblem, type DateRead, type Form, type Locale, type Value, type WallTime } from '@fieldia/core';
+import { DATE_TEXT_MOST, instantsAt, isOwnZone, ownZone, readDate, readTime, stripMarks, wallClock, wallDay, wallOf, wallTime, zoneOffset, dayTag, type DateOrder, type DateProblem, type DateRead, type Form, type Locale, type Value, type WallTime, intlFormat } from '@fieldia/core';
 import { minuteDigitsWords, quoted, refusalHint } from './input-rules';
 import { boxPurpose, fillIn, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
@@ -44,10 +44,10 @@ export function zoneName(at: number, zone: string, locale: Locale = 'en', how: '
   let format = zoneWords.get(key);
   if (!format) {
     try {
-      format = new Intl.DateTimeFormat(langOf(locale), { timeZone: zone, timeZoneName: how, numberingSystem: 'latn' });
+      format = intlFormat('DateTimeFormat', langOf(locale), { timeZone: zone, timeZoneName: how, numberingSystem: 'latn' });
     } catch {
       // A browser that knows no generic names says the season's: Central European Summer Time.
-      format = new Intl.DateTimeFormat(langOf(locale), { timeZone: zone, timeZoneName: how === 'short' ? 'short' : 'long', numberingSystem: 'latn' });
+      format = intlFormat('DateTimeFormat', langOf(locale), { timeZone: zone, timeZoneName: how === 'short' ? 'short' : 'long', numberingSystem: 'latn' });
     }
     zoneWords.set(key, format);
   }
@@ -123,7 +123,7 @@ export function restingText(value: Value | undefined, kind: DateKind, locale: Lo
   const key = `${locale}:${kind}:${zone ?? ''}`;
   let format = restingFormats.get(key);
   if (!format) {
-    format = new Intl.DateTimeFormat(langOf(locale), {
+    format = intlFormat('DateTimeFormat', langOf(locale), {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -223,7 +223,7 @@ function readProblem(read: Extract<ReturnType<typeof readDate>, { ok: false }>, 
     case 'minuteDigits':
       return { ok: false, words: minuteDigitsWords(label, t, read.times, words, reader.locale), problem: 'minuteDigits' };
     case 'noSuchDay': {
-      const month = new Intl.DateTimeFormat(langOf(reader.locale), { month: 'long', numberingSystem: 'latn' }).format(new Date(2000, read.month - 1, 1));
+      const month = intlFormat('DateTimeFormat', langOf(reader.locale), { month: 'long', numberingSystem: 'latn' }).format(new Date(2000, read.month - 1, 1));
       return { ok: false, words: fillIn(words.noSuchDay, { label, month, year: read.year, days: read.days }), problem: 'noSuchDay' };
     }
     case 'noSuchMonth':
@@ -360,7 +360,7 @@ export function plainDateWidget(kind: DateKind): WidgetFactory {
     });
     return {
       element: input,
-      focus: () => input.focus(),
+      focus: (options?: FocusOptions) => input.focus(options),
       // Its hint stands beside it, outside its element: it goes with it, as the date part's box takes its place.
       destroy: () => hint.element.remove(),
       update(state) {

@@ -12,6 +12,7 @@
  */
 
 import { clocksSkip, instantsAt, wallClock, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './zones';
+import { intlFormat } from '../intl-format';
 
 /** Invisible direction marks: LRM, RLM, ALM, the embeddings and overrides, the isolates, and a byte-order mark. */
 const MARKS = /[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g;
@@ -100,7 +101,7 @@ export function numberMarks(locale: string): NumberMarks {
   if (!found) {
     let parts: Intl.NumberFormatPart[];
     try {
-      parts = new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).formatToParts(12345.6);
+      parts = intlFormat('NumberFormat', locale, { numberingSystem: 'latn' }).formatToParts(12345.6);
     } catch {
       parts = [];
     }
@@ -484,7 +485,7 @@ function formsOf(currency: string, locale: string): string[] {
     for (const language of new Set([locale, 'en', 'ar'])) {
       for (const currencyDisplay of ['symbol', 'narrowSymbol', 'code'] as const) {
         try {
-          const part = new Intl.NumberFormat(language, { style: 'currency', currency, currencyDisplay }).formatToParts(1).find((p) => p.type === 'currency');
+          const part = intlFormat('NumberFormat', language, { style: 'currency', currency, currencyDisplay }).formatToParts(1).find((p) => p.type === 'currency');
           if (part) forms.add(stripMarks(part.value).trim());
         } catch {
           // A name that is no currency code: only its own words.
@@ -689,8 +690,8 @@ function monthNames(locale?: string): Map<string, number> {
       let alone: Intl.DateTimeFormat;
       let inDate: Intl.DateTimeFormat;
       try {
-        alone = new Intl.DateTimeFormat(language, { month, calendar: 'gregory' });
-        inDate = new Intl.DateTimeFormat(language, { day: 'numeric', month, year: 'numeric', calendar: 'gregory' });
+        alone = intlFormat('DateTimeFormat', language, { month, calendar: 'gregory' });
+        inDate = intlFormat('DateTimeFormat', language, { day: 'numeric', month, year: 'numeric', calendar: 'gregory' });
       } catch {
         continue; // a language Intl does not know: its names are not read
       }
@@ -882,7 +883,7 @@ export function placesOfCurrency(currency: string | null | undefined): number {
   let found = currencyPlaces.get(currency);
   if (found === undefined) {
     try {
-      found = new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2;
+      found = intlFormat('NumberFormat', 'en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2;
     } catch {
       found = 2;
     }

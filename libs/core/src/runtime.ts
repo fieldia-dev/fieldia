@@ -151,6 +151,8 @@ export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';
 export { translatePage, localizePage, pageWords, isRightToLeft, listComma } from './lib/format/translate';
 export { firstWeekday } from './lib/format/week';
+// Every Intl formatter, made once for a language and its options (0.34): the one place Fieldia makes them.
+export { intlFormat, type IntlKind } from './lib/intl-format';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
 export { ANY_FUNCTION, functionInfo, functionTable, functionNameProblem, type AppFunction, type AppFunctions, type FunctionInfo, type FunctionsKnown, type ValueKind } from './lib/expression/app-functions';
 export type { FunctionTable, ExpressionEnv } from './lib/expression/functions';

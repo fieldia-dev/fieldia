@@ -13,6 +13,8 @@ import { across, locate, nodeOf } from './layout-tree';
 
 export interface CanvasGuides {
   update(state: DesignerState, advanced: boolean): void;
+  /** The cells watched let go: the canvas taken away. */
+  destroy(): void;
 }
 
 /**
@@ -35,7 +37,8 @@ export function canvasGuides(options: { root: HTMLElement; designer: Designer })
    * guides.
    */
   const narrowCells = new WeakMap<Element, boolean>();
-  const watched = new WeakSet<Element>();
+  /** The shared cells watched: each let go once the canvas no longer has it (a part moved, the page redrawn). */
+  const watched = new Set<Element>();
   let last: { state: DesignerState; advanced: boolean } | null = null;
   const view = doc.defaultView;
   const sized = view?.ResizeObserver
@@ -93,6 +96,11 @@ export function canvasGuides(options: { root: HTMLElement; designer: Designer })
 
   function update(state: DesignerState, advanced: boolean) {
     last = { state, advanced };
+    for (const cell of watched) {
+      if (cell.isConnected) continue;
+      sized?.unobserve(cell);
+      watched.delete(cell);
+    }
     for (const old of root.querySelectorAll('.fd-guides')) old.remove();
       const id = state.selected;
     if (!advanced || !id || !locate(state.page, id)) return;
@@ -103,5 +111,12 @@ export function canvasGuides(options: { root: HTMLElement; designer: Designer })
     for (const grid of [around, own]) if (grid && grid !== root) draw(grid);
   }
 
-  return { update };
+  return {
+    update,
+    destroy() {
+      sized?.disconnect();
+      watched.clear();
+      last = null;
+    },
+  };
 }

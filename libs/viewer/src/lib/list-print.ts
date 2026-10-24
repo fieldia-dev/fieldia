@@ -1,4 +1,4 @@
-import { PICTURE_URL, safeUrl, recordSentence, type DataSource, type DayCount, type Facet, type ListNode, type Locale, type Page, type ResolvedFilter, type SortOrder, type Values } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, recordSentence, type DataSource, type DayCount, type Facet, type ListNode, type Locale, type Page, type ResolvedFilter, type SortOrder, type Values, intlFormat } from '@fieldia/core';
 import { formatNumber, restingText } from '@fieldia/widgets';
 import type { El } from './dom';
 import { gather } from './list-export';
@@ -156,7 +156,7 @@ export async function printout(list: PrintList, progress: (done: number, total: 
     ...(filters.length ? [list.fill(labels.printFilters, { filters: filters.join(' · ') })] : []),
     ...(grouped.length ? [list.fill(labels.printGroups, { groups: grouped.join(' > ') })] : []),
     list.fill(
-      new Intl.PluralRules(list.locale).select(total) === 'one' ? recordSentence(page.records, labels.printCountNounOne, labels.printCountOne, list.locale) : recordSentence(page.records, labels.printCountNoun, labels.printCount, list.locale),
+      intlFormat('PluralRules', list.locale).select(total) === 'one' ? recordSentence(page.records, labels.printCountNounOne, labels.printCountOne, list.locale) : recordSentence(page.records, labels.printCountNoun, labels.printCount, list.locale),
       { n: number(total) }
     ),
   ];

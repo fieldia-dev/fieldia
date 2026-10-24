@@ -143,7 +143,7 @@ export const ownListWidget: WidgetFactory = ({ form, name, field, node, id, docu
 
   return {
     element,
-    focus: () => button.focus(),
+    focus: (options?: FocusOptions) => button.focus(options),
     destroy: () => close(false),
     update(state) {
       const at = choices.findIndex((option) => option.value === state.value);

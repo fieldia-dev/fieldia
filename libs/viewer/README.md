@@ -856,6 +856,12 @@ its box is pressed or typed in — its suggestions in the menu's place — and a
 filter bar's list as another of its parts takes the focus. See
 [lists and search](https://fieldia.dev/lists/).
 
+A long list keeps the browser's work to what changed: a key typed in a cell
+lays out that cell's box alone. Rows out of sight are still drawn (no browser
+skips a table row with `content-visibility`), so until rows are windowed keep
+an `endless` or `editable` list under about 1,000 loaded rows for smooth
+scrolling on phones, and page through more.
+
 Other ways of showing a list's records come from `listViews`, by name: a
 list's `map` (`mapListViews` from `@fieldia/map`), its `calendar`
 (`calendarListViews` from `@fieldia/calendar`), its `gantt` timeline
@@ -1483,6 +1489,31 @@ checks each part it fetches the same way: it carries the hash of every part it
 was built with, and refuses one that is not that file. Served from your own
 site, keep the bundle's folder together; from another origin than the page's,
 that origin sends `Access-Control-Allow-Origin`, as a CDN does.
+
+### Sooner on a phone: a page's parts in its HTML
+
+The one-tag script asks for the parts a page draws from as it starts, once it
+has come and run: on a phone, a round trip after it. A server that knows the
+page writes their tags into the HTML before `fieldia.js`, from the same folder,
+so they come beside it — measured on a mid-range phone, a list of customers
+usable 23% sooner on 4G and 27% on Fast 3G, a record with tabs 16% on both.
+`partFiles(page)` from `@fieldia/viewer/server` names them; a page given
+`Fieldia.createMemoryDataSource` adds `fieldia.memory.js`:
+
+```ts
+import { partFiles } from '@fieldia/viewer/server';
+const base = 'https://cdn.jsdelivr.net/npm/@fieldia/viewer@<version>/bundle/';
+const parts = partFiles(page).map((file) => `<script async src="${base}${file}"></script>`).join('');
+// …then fieldia.js's own tag, from the same folder.
+```
+
+`fieldia.js` takes a part whose tag it finds still on its way, and never asks
+for it a second time. A `<link rel="preload" as="script">` is used only by a
+request made the same way: write it with what the part's own tag carries —
+`Fieldia.partTags(page)` gives each, its address and attributes. A list's first
+page of records is asked for as its part is, not once it has come (where the
+page alone says what the list asks first); the designer asks for every part the
+page it opens draws from at once.
 
 For React, Vue and Angular, use `@fieldia/react`, `@fieldia/vue` or
 `@fieldia/angular` — thin shells over this viewer. MIT licensed.

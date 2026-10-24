@@ -1,5 +1,5 @@
 import type { SheetCell } from './xlsx';
-import { MESSAGES, optionsList, recordSentence, type CsvValue, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value } from '@fieldia/core';
+import { MESSAGES, optionsList, recordSentence, type CsvValue, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value, intlFormat } from '@fieldia/core';
 import { askFirst, dateOrderOf, displayValue, drawIcon, keepTabIn, loadLinesPart, loadPhonePart, phoneSettings, WIDGET_LABELS, type IconSet, type LinesPart, type PhonePart } from '@fieldia/widgets';
 import { checkRows, type CheckedRow, type RowsCheck } from './import-check';
 import { ENCODING_SCRIPT, ENCODINGS, FileProblem, readFile, SEPARATORS, type FileCell, type FileSheet, type PickedFile, type ReadHow } from './import-file';
@@ -128,7 +128,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     element.append(...children);
     return element;
   };
-  const plural = (n: number, other: string, one: string) => fill(new Intl.PluralRules(locale).select(n) === 'one' ? one : other, { n: number(n) });
+  const plural = (n: number, other: string, one: string) => fill(intlFormat('PluralRules', locale).select(n) === 'one' ? one : other, { n: number(n) });
   const opener = doc.activeElement instanceof HTMLElement ? doc.activeElement : null;
 
   // ---- the box: a dialog of the page's look --------------------------------------------------------------------
@@ -304,7 +304,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     const picked = file as PickedFile;
     // The file's name in bold, where the words put it: "contacts.xlsx: 1,284 rows".
     // A header and nothing under it: said so, and nothing offered to check.
-    const counted = !now.total ? labels.importNoRowsUnder : new Intl.PluralRules(locale).select(now.total) === 'one' ? labels.importFileRowsOne : labels.importFileRows;
+    const counted = !now.total ? labels.importNoRowsUnder : intlFormat('PluralRules', locale).select(now.total) === 'one' ? labels.importFileRowsOne : labels.importFileRows;
     const [before, after = ''] = fill(counted, { name: '\u0000', n: number(now.total) }).split('\u0000');
     const rows = make('p', { class: 'fd-import-file' }, before, make('strong', {}, make('bdi', {}, picked.name)), after);
     const pickers: HTMLElement[] = [];
@@ -319,7 +319,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     if (now.kind === 'csv') {
       let scripts: Intl.DisplayNames | null = null;
       try {
-        scripts = new Intl.DisplayNames([locale], { type: 'script' });
+        scripts = intlFormat('DisplayNames', [locale], { type: 'script' });
       } catch {
         scripts = null;
       }

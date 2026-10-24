@@ -4,6 +4,7 @@ import type { Card } from './card';
 import type { LatLng } from './geo';
 import type { LeafletModule } from './leaflet';
 import type { PinFace } from './pins';
+import { intlFormat } from '@fieldia/core';
 
 /**
  * What every map of records does with its marks: each as large as its face
@@ -64,7 +65,7 @@ export function bubbleFace(doc: Document, n: number, locale: Locale): HTMLElemen
   const face = doc.createElement('div');
   face.className = 'fd-map-bubble';
   face.dataset['size'] = n < 10 ? 's' : n < 100 ? 'm' : 'l';
-  face.textContent = new Intl.NumberFormat(locale, { notation: 'compact', numberingSystem: 'latn' }).format(n);
+  face.textContent = intlFormat('NumberFormat', locale, { notation: 'compact', numberingSystem: 'latn' }).format(n);
   return face;
 }
 

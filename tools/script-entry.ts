@@ -8,11 +8,12 @@
  * date's box, a theme, the quiet look, a memory source's members — comes in
  * parts loaded the first time a page uses them (tools/script-parts.ts).
  */
-import { addLanguage, defineFieldiaForm } from '@fieldia/viewer';
+import type { Page } from '@fieldia/core';
+import { addLanguage, defineFieldiaForm, partFiles } from '@fieldia/viewer';
 import { partsComeByScriptTag } from '@fieldia/widgets';
 import { partWords } from '../libs/viewer/src/lib/add-language';
 import type { LanguageHost } from './script-language';
-import { startParts } from './script-parts';
+import { partTag, startParts } from './script-parts';
 
 // The runtime alone: the format's schemas and validation library stay out of a page with no build step.
 export * from '../libs/core/src/runtime';
@@ -21,6 +22,13 @@ export * from '../libs/core/src/runtime';
 export { createMemoryDataSource, memoryPart, type MemoryPart } from '../libs/core/src/lib/record/memory-later';
 export * from '@fieldia/widgets';
 export * from '@fieldia/viewer';
+
+/**
+ * The tags of the parts a page draws from (`partFiles`), as this script asks for each: its address beside fieldia.js and
+ * all it carries — for a page that knows its page before it mounts it, to write them as `<script async>` tags or
+ * `<link rel="preload" as="script">` links with the same attributes, which the browser then uses as they are.
+ */
+export const partTags = (page: Page): ReturnType<typeof partTag>[] => partFiles(page).map((file) => partTag(file.slice(8, -3)));
 
 declare const __FIELDIA_VERSION__: string;
 /** The version of @fieldia/viewer this bundle was built from. */

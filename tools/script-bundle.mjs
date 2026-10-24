@@ -1478,7 +1478,20 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // onchange, search, options; a signal; a Discard ends a save stuck past 5 s), a part or a language's chunk that stalls
 // settled as failed (parts.ts, `inTime`) — what every page that asks its source needs. 536.04 measured before, 537.78
 // after, to 537.8.
-const BUDGET_KB = 555.6;
+// 0.34's speed (harden-perf): a page's parts written into it before fieldia.js are taken as they come, never asked for
+// twice (script-parts.ts: one place a part's tag is made, `partTag`, and a part's tag on its way waited for) and named
+// for a server (`partFiles`) and a page (`partTags`); a list page's first page of records asked for beside its part, not
+// once it has come (list-early.ts) — every page starts all it loads at once: 525.16 measured before, 526.15 after, to
+// 526.2.
+// 0.34's speed (harden-perf): a tab strip measured once the page is laid out, never while it is being built
+// (tab-strip.ts, `later`); a widget's focus given the browser's options, so a cell opened in a long list is focused
+// without the scroll it is already in sight for: 526.15 measured before, 526.25 after, to 526.3.
+// 0.34's speed (harden-perf): a viewer taken away takes what it opened with it — a dialog, a side panel, a page in its
+// place, a related record's dialog, a Search more… list (dialog.ts, open.ts, related.ts: each closed as its viewer's
+// `signal` aborts) — every page may open one: 526.25 measured before, 526.72 after, to 526.8. A list of cards asks for
+// its first page beside its part too, every field its cards name with its columns (list-early.ts): 526.72 measured
+// before, 526.82 after (172.83 and 172.87 gzipped, inside its budget), to 526.9.
+const BUDGET_KB = 557.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1798,7 +1811,17 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // to 174.7. One send discipline (listed with the raw budget above): 174.60 measured before, 174.84 after, to 174.9.
 // Drafts and sends kept a person's (listed with the raw budget above): 174.84 measured before, 175.71 after, to 175.8.
 // Nothing waits for ever (listed with the raw budget above): 175.71 measured before, 176.44 after, to 176.5.
-const GZIP_BUDGET_KB = 185.3;
+// 0.34's speed (harden-perf): every Intl formatter made once for a language and its options (intl-format.ts,
+// `intlFormat`, the one place they are made) and a currency's symbol worked out once — every page writes numbers and
+// days; the caches of their own five modules kept took out (money's short numbers, a box's per cents, a progress
+// bar's, a decimals message's plurals, a count's words, the minutes' choice): 172.08 measured before, 172.14 after
+// (525.24 and 525.16 raw, inside its budget), to 172.2.
+// 0.34's speed (harden-perf): a page's parts taken as they come where the page wrote their tags, its list's first page
+// asked for beside its part (listed with the raw budget above): 172.14 measured before, 172.62 after, to 172.7. A tab
+// strip measured once the page is laid out, a focus with no scroll where none is needed (listed with the raw budget
+// above): 172.62 measured before, 172.75 after, to 172.8. What a viewer opened taken away with it (listed with the raw
+// budget above): 172.75 measured before, 172.83 after, to 172.9.
+const GZIP_BUDGET_KB = 186.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2860,7 +2883,25 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // keeps nothing past the page, 9.00 and 4.00 measured before, 10.34 and 4.44 after, to 10.4 and 4.5; the memory source
 // keeps a send once by its key, 24.90 and 9.10, 25.19 and 9.11, to 25.2 and 9.2. The outbox's sends a person's own, and
 // let go at sign-out: 10.34 and 4.44 measured before, 10.77 and 4.59 after, to 10.8 and 4.6.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [141.8, 45.7], cards: [12.8, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.7, 6.5], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [10.8, 4.6], loading: [8.7, 2.8] };
+// 0.34's speed (harden-perf): a date's calendar names its month, its days and its weekday heads as it first opens, not
+// as each date box is drawn, the heads worked out once a language — date 23.74 and 9.18 measured before, 23.89 and
+// 9.25 after, to 23.9 and 9.3. The parts that write numbers, days, plurals and lists in words take `intlFormat` from
+// the main script (its place in the shared table, and its name at each call for Intl's own): business 32.67 and 11.90
+// measured before, 32.69 and 11.91 after, to 12.0; phone 44.93 and 19.19, 44.96 and 19.20, to 19.3; import 37.93 and
+// 14.89, 37.94 and 14.90, to 15.0; typed 14.19 and 5.97, 14.20 and 5.98, to 14.3; languages 10.19 and 4.31, 10.23 and
+// 4.32, to 10.3.
+// 0.34's speed (harden-perf): a key typed in a cell writes its row's other cells only where they show something new,
+// and the line typed in is contained, so a key lays out that box alone, never the table (list-editable.ts,
+// editable-styles.ts) — editable 34.39 and 12.32 measured before, 34.67 and 12.45 after, to 34.7 and 12.5. A list takes
+// its first page where it was asked for beside its part, as the same request (list-early.ts) — list 140.40 and 45.18,
+// 140.51 and 45.23, to 140.6 and 45.3. Taken where its fields are among the ones asked for, a list of cards' too —
+// list 140.51 and 45.23, 140.61 and 45.28, to 140.7. A cell opened by Tab read where it is before anything is written,
+// and focused with no scroll where it is in sight — one layout of the table a Tab, not five (list-editable.ts) —
+// editable 34.67 and 12.45, 35.13 and 12.63, to 35.2 and 12.7.
+// 0.34's speed (harden-perf): the outbox in IndexedDB opens one connection a database, shared by every form that keeps
+// its sends there, and lets it go when another tab opens a newer version (0.32 opened one a mount and closed none) —
+// outbox 8.96 and 3.98 measured before, 9.16 and 4.06 after, to 9.2 and 4.1.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.9, 9.3], months: [13.8, 5.6], typed: [14.3, 6.0], list: [142.1, 45.8], cards: [12.8, 3.8], columns: [18.7, 6.8], import: [38.9, 15.4], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.4], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.7, 6.5], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [8.7, 2.8] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

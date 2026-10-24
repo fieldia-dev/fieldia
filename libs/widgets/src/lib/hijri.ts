@@ -1,4 +1,4 @@
-import { foldForSearch, foldTyped, hijriWords, stripMarks, type DateOrder, type Locale, type Value } from '@fieldia/core';
+import { foldForSearch, foldTyped, hijriWords, stripMarks, type DateOrder, type Locale, type Value, intlFormat } from '@fieldia/core';
 import { quoted } from './input-rules';
 import { fillIn, wordsFor } from './kind-parts';
 import type { DateReader, DateReading } from './date-text';
@@ -18,7 +18,7 @@ export interface HijriDay {
 
 const DAY = 86_400_000;
 const pad = (n: number) => String(n).padStart(2, '0');
-const numbers = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { day: 'numeric', month: 'numeric', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' });
+const numbers = intlFormat('DateTimeFormat', 'en-u-ca-islamic-umalqura', { day: 'numeric', month: 'numeric', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' });
 
 /** A Gregorian day as an instant (midnight UTC) in the Hijri calendar. */
 function hijriAt(at: number): HijriDay {
@@ -81,7 +81,7 @@ function hijriMonths(locale: Locale): Map<string, number> {
   found = new Map();
   for (const language of new Set(['en-GB', 'ar', 'fr', 'de', locale])) {
     for (const month of ['long', 'short'] as const) {
-      const format = new Intl.DateTimeFormat(`${language}-u-ca-islamic-umalqura`, { day: 'numeric', month, year: 'numeric', timeZone: 'UTC' });
+      const format = intlFormat('DateTimeFormat', `${language}-u-ca-islamic-umalqura`, { day: 'numeric', month, year: 'numeric', timeZone: 'UTC' });
       // The first day of each month of 1447: Intl finds its names, in its own words.
       for (let m = 1; m <= 12; m++) {
         const at = firstOf(1447, m);
@@ -147,7 +147,7 @@ export function readHijriText(text: string, reader: DateReader): DateReading {
   if (!found.days) return unfinished;
   // "Jumada I 1448 AH has 29 days": the month by its Hijri name, the year with its era, as Intl writes them.
   const first = firstOf(Number(year), month) ?? 0;
-  const parts = new Intl.DateTimeFormat(`${locale === 'en' ? 'en-GB' : locale}-u-ca-islamic-umalqura`, { month: 'long', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' }).formatToParts(first);
+  const parts = intlFormat('DateTimeFormat', `${locale === 'en' ? 'en-GB' : locale}-u-ca-islamic-umalqura`, { month: 'long', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' }).formatToParts(first);
   const of = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
   return { ok: false, words: fillIn(words.noSuchDay, { label, month: of('month'), year: `${of('year')} ${of('era')}`.trim(), days: found.days }), problem: 'noSuchDay' };
 }
