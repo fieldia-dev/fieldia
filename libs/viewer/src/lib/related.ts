@@ -73,7 +73,7 @@ function lookupsOf(source: DataSource | undefined): DataSource | undefined {
  * A linked record's page says its words through `say`, the opener's, so they
  * show over the dialog and outlive it.
  */
-export function pageDialogs(options: ViewerOptions, say?: (message: string, tone: Tone) => void): WidgetDialogs {
+export function pageDialogs(options: ViewerOptions, say?: (message: string, tone: Tone) => void, signal?: AbortSignal): WidgetDialogs {
   const pageFor = (model: string) => findPage(options, { model });
   // A dialog's page looks and reads like the page that opened it, and can open dialogs of its own.
   const shared = {
@@ -98,6 +98,8 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     context: options.context,
     // The app's own functions, as the opener's expressions call them.
     functions: options.functions,
+    // Closed with the viewer that opened them.
+    signal,
   };
   return {
     canOpen: (model) => pageFor(model) !== null,
@@ -123,7 +125,7 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
       // Its values as its page saved them, for a line of a table that opened it to take back.
       return request.withValues ? { id: result.recordId, label, values: result.values } : { id: result.recordId, label };
     },
-    searchMore: (request) => openSearchDialog({ title: request.title, search: request.search, locale: options.locale, skin: options.skin, theme: options.theme, tokens: options.tokens, dir: options.dir, look: options.page.look }),
+    searchMore: (request) => openSearchDialog({ title: request.title, search: request.search, locale: options.locale, skin: options.skin, theme: options.theme, tokens: options.tokens, dir: options.dir, look: options.page.look, signal }),
     async editValues(request) {
       const result = await openFormDialog({
         ...shared,

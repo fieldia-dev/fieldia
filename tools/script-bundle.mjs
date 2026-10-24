@@ -1378,7 +1378,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.34's speed (harden-perf): a tab strip measured once the page is laid out, never while it is being built
 // (tab-strip.ts, `later`); a widget's focus given the browser's options, so a cell opened in a long list is focused
 // without the scroll it is already in sight for: 526.15 measured before, 526.25 after, to 526.3.
-const BUDGET_KB = 526.3;
+// 0.34's speed (harden-perf): a viewer taken away takes what it opened with it — a dialog, a side panel, a page in its
+// place, a related record's dialog, a Search more… list (dialog.ts, open.ts, related.ts: each closed as its viewer's
+// `signal` aborts) — every page may open one: 526.25 measured before, 526.72 after, to 526.8.
+const BUDGET_KB = 526.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1688,8 +1691,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.34's speed (harden-perf): a page's parts taken as they come where the page wrote their tags, its list's first page
 // asked for beside its part (listed with the raw budget above): 172.14 measured before, 172.62 after, to 172.7. A tab
 // strip measured once the page is laid out, a focus with no scroll where none is needed (listed with the raw budget
-// above): 172.62 measured before, 172.75 after, to 172.8.
-const GZIP_BUDGET_KB = 172.8;
+// above): 172.62 measured before, 172.75 after, to 172.8. What a viewer opened taken away with it (listed with the raw
+// budget above): 172.75 measured before, 172.83 after, to 172.9.
+const GZIP_BUDGET_KB = 172.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2680,7 +2684,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 140.51 and 45.23, to 140.6 and 45.3. A cell opened by Tab read where it is before anything is written, and focused
 // with no scroll where it is in sight — one layout of the table a Tab, not five (list-editable.ts) — editable 34.67 and
 // 12.45, 35.13 and 12.63, to 35.2 and 12.7.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.9, 9.3], months: [13.8, 5.6], typed: [14.3, 6.0], list: [140.6, 45.3], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 15.0], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 12.0], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// 0.34's speed (harden-perf): the outbox in IndexedDB opens one connection a database, shared by every form that keeps
+// its sends there, and lets it go when another tab opens a newer version (0.32 opened one a mount and closed none) —
+// outbox 8.96 and 3.98 measured before, 9.16 and 4.06 after, to 9.2 and 4.1.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.9, 9.3], months: [13.8, 5.6], typed: [14.3, 6.0], list: [140.6, 45.3], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 15.0], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 12.0], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.2, 4.1] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

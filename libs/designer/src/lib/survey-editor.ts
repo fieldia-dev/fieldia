@@ -13,7 +13,7 @@ import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { kindById, kindName as nameOfKind } from './kinds';
 import { kindPreview } from './kind-previews';
-import { openMenu, type MenuItem } from './menu';
+import { closeMenusIn, openMenu, type MenuItem } from './menu';
 import { lookSheet } from './panel-look-sheet';
 import { clipboardKeys } from './clipboard-keys';
 import { shortcutKeys } from './shortcuts-sheet';
@@ -791,6 +791,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       json.destroy();
       ruleList.destroy();
       deletions.destroy();
+      closeMenusIn(root);
       root.remove();
     },
   };

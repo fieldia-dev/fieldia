@@ -32,7 +32,7 @@ import type { DesignerAssistant } from './assistant';
 import type { PageTemplate } from './templates';
 import { startHere } from './templates-start';
 import { dropEcho } from './drop-echo';
-import { openMenu } from './menu';
+import { closeMenusIn, openMenu } from './menu';
 import { setHidden } from './writes';
 
 /**
@@ -432,6 +432,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       ruleList.destroy();
       echoes.destroy();
       deletions.destroy();
+      closeMenusIn(root);
       root.remove();
     },
   };

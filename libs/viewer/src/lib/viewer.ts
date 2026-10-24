@@ -422,7 +422,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const words = wordsComing(tag) ? wordsReady(tag) : null;
   const locale = ownLocale(tag);
   const preferences = options.preferences ?? browserPreferences();
-  const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone));
+  // What it opens — dialogs, panels, a page in its place — taken away with it (`destroy()`).
+  const owned = new AbortController();
+  const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone), owned.signal);
   const ownsForm = !options.form;
   // Read as each word is drawn: a part's words are there once it has come (the one-tag script's).
   const labels: ViewerLabels = viewerWords(locale, options.labels);
@@ -454,6 +456,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           name: () => recordName() || sentence(labels.newRecordNoun, labels.newRecord),
           leave: () => form.leave(),
           leaveNow: () => form.leaveNow(),
+          signal: owned.signal,
         },
         request
       ),
@@ -3077,6 +3080,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     drawn: dressed,
     destroy() {
       gone = true;
+      owned.abort();
       unsubscribe();
       for (const cleanup of cleanups) {
         try {

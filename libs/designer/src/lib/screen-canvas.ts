@@ -794,6 +794,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       resize.destroy();
       header.destroy();
       resized?.disconnect();
+      guides.destroy();
       unwatch();
       for (const card of cards.values()) dropCard(card);
       cards.clear();

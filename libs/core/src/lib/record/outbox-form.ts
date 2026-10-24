@@ -119,6 +119,9 @@ interface IdbDatabase {
   transaction(name: string, mode: 'readonly' | 'readwrite'): IdbTransaction;
   createObjectStore(name: string, options: { keyPath: string }): unknown;
   objectStoreNames: { contains(name: string): boolean };
+  close(): void;
+  onversionchange: (() => void) | null;
+  onclose: (() => void) | null;
 }
 interface IdbFactory {
   open(name: string, version: number): IdbRequest<IdbDatabase> & { onupgradeneeded: (() => void) | null };
@@ -138,17 +141,32 @@ const asked = <T>(request: IdbRequest<T>) =>
 export function indexedOutbox(name = 'fieldia-outbox'): OutboxStore | null {
   const factory = (globalThis as unknown as { indexedDB?: IdbFactory }).indexedDB;
   if (!factory) return null;
-  let opened: Promise<IdbDatabase> | null = null;
+  // One connection a database, shared by every form that keeps sends in it: a page mounting forms one after another
+  // opened one each and closed none (0.32: 30 mounts, 30 connections open).
+  let open = connections.get(factory);
+  if (!open) connections.set(factory, (open = new Map()));
+  const shared = open;
   const db = () => {
+    const opened = shared.get(name);
     if (opened) return opened;
     const request = factory.open(name, 1);
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains('items')) request.result.createObjectStore('items', { keyPath: 'key' });
     };
-    opened = asked(request);
+    const made = asked(request).then((database) => {
+      // Another tab opening a newer version: this one lets it go at once, and opens it again when next asked.
+      const forget = () => shared.get(name) === made && shared.delete(name);
+      database.onversionchange = () => {
+        database.close();
+        forget();
+      };
+      database.onclose = forget;
+      return database;
+    });
+    shared.set(name, made);
     // A database that could not open is asked again next time.
-    opened.catch(() => (opened = null));
-    return opened;
+    made.catch(() => shared.get(name) === made && shared.delete(name));
+    return made;
   };
   const write = async (work: (store: IdbStore) => void | Promise<boolean>): Promise<boolean> => {
     const transaction = (await db()).transaction('items', 'readwrite');
@@ -178,6 +196,9 @@ export function indexedOutbox(name = 'fieldia-outbox'): OutboxStore | null {
     },
   };
 }
+
+/** The connections open, by the browser's IndexedDB they are of, by name. */
+const connections = new WeakMap<IdbFactory, Map<string, Promise<IdbDatabase>>>();
 
 /** A key no other kept send has. */
 const newKey = (now: number) => `outbox-${now.toString(36)}-${Math.random().toString(36).slice(2, 10)}`;

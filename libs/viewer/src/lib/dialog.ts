@@ -47,6 +47,8 @@ export interface FormDialogOptions extends ViewerOptions {
   container?: HTMLElement;
   /** The look of the page that opened it, worn by the dialog and the page in it, unless that page has a look of its own. */
   look?: PageLook;
+  /** Closed, as not saved and nothing asked, when it aborts: the viewer that opened it is taken away (`destroy()`). */
+  signal?: AbortSignal;
 }
 
 export interface FormDialogResult {
@@ -134,6 +136,8 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
 }
 
 function openNow(options: FormDialogOptions, shape: string, side: PanelSide | undefined, opener: HTMLElement | null): Promise<FormDialogResult> {
+  // Its viewer taken away while its parts came: never opened.
+  if (options.signal?.aborted) return Promise.resolve({ saved: false, recordId: null, values: {} });
   const panel = !!side;
   const layout = options.page.layout;
   /** The head part's window tools and look; drawn plainly where it could not come. */
@@ -258,9 +262,13 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
   });
 
   return new Promise((resolve) => {
+    // The viewer that opened it taken away: it goes with it, as not saved — the app took the page away, nothing asked.
+    const gone = () => close(false);
+    options.signal?.addEventListener('abort', gone, { once: true });
     close = (saved: boolean) => {
       if (done) return;
       done = true;
+      options.signal?.removeEventListener('abort', gone);
       const state = handle.form.getState();
       // The form never changes its values in place, so these are safe to hand back. A change let go after a save (Discard
       // on "Discard your changes?") went back to the record as saved as it was let go: it is no value handed back.
@@ -403,6 +411,8 @@ export interface SearchDialogOptions {
   theme?: Theme;
   /** The opener's host's tokens, over everything else. */
   tokens?: Tokens;
+  /** Closed, with nothing picked, when it aborts: the viewer that opened it is taken away. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -455,10 +465,13 @@ export function openSearchDialog(options: SearchDialogOptions): Promise<RelatedR
     const close = (picked: RelatedRecord | null) => {
       clearTimeout(timer);
       asked++;
+      options.signal?.removeEventListener('abort', gone);
       backdrop.remove();
       opener?.focus();
       resolve(picked);
     };
+    const gone = () => close(null);
+    options.signal?.addEventListener('abort', gone, { once: true });
     const draw = () => {
       list.replaceChildren(
         ...found.map((record, i) => {

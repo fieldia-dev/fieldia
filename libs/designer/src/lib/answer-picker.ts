@@ -2,6 +2,7 @@ import type { Field, Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { speakLike } from './chrome-language';
 import type { Designer } from './designer';
+import { keepPopup } from './menu';
 
 /** The kinds whose value reads as words inside a sentence: what an answer put in words may be. */
 const SAID = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference']);
@@ -71,12 +72,14 @@ export function answerButton(el: ElementFactory, designer: Designer, box: HTMLIn
       if (!pop.contains(event.target as Node) && !button.contains(event.target as Node)) close(false);
     };
     doc.addEventListener('pointerdown', outside, true);
+    const unkept = keepPopup(button, () => close(false));
     function close(refocus: boolean) {
+      doc.removeEventListener('pointerdown', outside, true);
+      unkept();
+      if (open === shut) open = null;
       if (!pop.isConnected) return;
       pop.remove();
-      doc.removeEventListener('pointerdown', outside, true);
       button.setAttribute('aria-expanded', 'false');
-      if (open === shut) open = null;
       if (refocus) button.focus();
     }
     const shut = () => close(false);
