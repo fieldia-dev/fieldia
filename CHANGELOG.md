@@ -109,7 +109,9 @@ enters a form, so no key waits for a part. Of the parts, gzipped:
 - survey 12.51 (12.52), list 45.07 (45.08), filters 7.71 (7.72), duplicates 6.36
   (6.41), path 8.21 (8.20): their own tick styles given up for the one rule in the
   main sheet;
-- the language add-ons by 0.02–0.05 each (the phone list's words).
+- the language add-ons by 0.02–0.05 each (the phone list's words);
+- `@fieldia/map` with a list's map 47.9 (47.8): a card's tick box the size
+  every tick box is.
 
 ## 0.31.1 — 2026-10-23
 
