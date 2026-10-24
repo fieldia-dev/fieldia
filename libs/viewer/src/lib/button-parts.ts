@@ -1,5 +1,5 @@
 import type { ActionStep, ButtonNode, Form, FormState, RunResult, Tone } from '@fieldia/core';
-import type { IconSet } from '@fieldia/widgets';
+import type { IconSet, Loading } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 
@@ -18,6 +18,8 @@ export interface ButtonContext {
   /** Its updater, run at every change of the form. */
   watch(update: (state: FormState) => void): void;
   cleanups: (() => void)[];
+  /** How the page waits (loading.ts): a menu's items the app gives, as they come. */
+  loading?: Loading;
 }
 
 /** Whether a button asks for more than words and steps: its icon alone, a toggle, a menu, a look that follows the record's changes. */

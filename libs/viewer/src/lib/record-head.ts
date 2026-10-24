@@ -1,4 +1,4 @@
-import { displayValue, drawIcon, type IconSet } from '@fieldia/widgets';
+import { displayValue, drawIcon, type IconSet, type Loading } from '@fieldia/widgets';
 import type { ButtonNode, FieldNode, Form, FormState, HeadLink, LabelPlace, LayoutNode, LineField, Locale, MenuItem, Page, RootLayout, RunResult, SheetHead, SheetNode, Tone, Values } from '@fieldia/core';
 import { dayTag } from '@fieldia/core';
 import { setAttr, setHidden, setText, type El } from './dom';
@@ -50,6 +50,8 @@ export interface RecordHeadContext {
   unfold(part: HTMLElement): void;
   /** The form's element, where its parts are found. */
   root(): HTMLElement;
+  /** How the page waits (loading.ts): its gear menu's items the app gives, as they come. */
+  loading?: Loading;
 }
 
 export interface RecordHead {
@@ -127,7 +129,7 @@ export function recordHead(context: RecordHeadContext): RecordHead {
   const menu = sheet.toolbar?.menu ?? [];
   if (menu.length) {
     const updaters: (() => void)[] = [];
-    actions.append(recordMenu({ doc, el, form, labels, locale: context.locale, uid: context.uid, withIcon: context.withIcon, press: context.press, submenus }, menu as MenuItem[], updaters, context.cleanups, 'more'));
+    actions.append(recordMenu({ doc, el, form, labels, locale: context.locale, uid: context.uid, withIcon: context.withIcon, press: context.press, submenus, ...(context.loading ? { loading: context.loading } : {}) }, menu as MenuItem[], updaters, context.cleanups, 'more'));
     watch(() => updaters.forEach((update) => update()));
   }
   row.append(meta, actions);

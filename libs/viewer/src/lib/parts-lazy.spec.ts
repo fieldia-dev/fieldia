@@ -145,7 +145,7 @@ describe('the parts a page draws from', () => {
     expect(listPart.loaded).toBeDefined();
     expect(filtersPart.loaded).toBeUndefined();
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
-    expect(host.querySelector('.fd-list-waiting')).toBeNull();
+    expect(host.querySelector('.fd-list > .fd-loader')).toBeNull();
     expect(host.querySelector('.fd-search-input')).not.toBeNull();
     await until(() => host.querySelectorAll('.fd-list-table tbody tr.fd-list-row').length === 2);
     expect(document.getElementById('fd-list-styles')).not.toBeNull();
@@ -679,32 +679,36 @@ describe('a part that cannot come', () => {
     return { offline, host, handle, opened, freshList };
   }
 
-  it('leaves a list saying “Loading…” in its place while it is asked for again, then the records could not be loaded, with Retry; Retry brings it in place', async () => {
+  it('leaves a list waiting in its place, the one way every wait is drawn, while it is asked for again, then the records could not be loaded, with Retry; Retry brings it in place', async () => {
     await jest.isolateModulesAsync(async () => {
       const { offline, host, handle, freshList } = await offlineList();
       expect(freshList.loaded).toBeUndefined();
       expect(handle.element.hasAttribute('aria-busy')).toBe(false);
-      // The page round it is drawn; in the list's place, its words while the part is asked for again.
+      // The page round it is drawn; in the list's place, its first wait at once while the part is asked for again.
       const holder = host.querySelector('.fd-list[data-node="list"]') as HTMLElement;
-      expect(holder.querySelector('.fd-list-waiting')?.textContent).toBe('Loading…');
-      expect(holder.querySelector('.fd-list-waiting')?.getAttribute('role')).toBe('status');
+      expect(holder.querySelector('.fd-loader')?.getAttribute('data-moment')).toBe('first');
+      expect(holder.getAttribute('data-fd-wait')).toBe('first');
       expect(holder.getAttribute('aria-busy')).toBe('true');
-      // It could not come again: the list's own words, and Retry.
+      // It could not come again: the list's own words, and Retry; no loader left.
       await until(() => !holder.hasAttribute('aria-busy'));
       const failed = holder.querySelector('.fd-list-failed') as HTMLElement;
       expect(failed.hidden).toBe(false);
       expect(failed.getAttribute('role')).toBe('alert');
       expect(failed.textContent).toContain('Could not load the records.');
-      expect((holder.querySelector('.fd-list-waiting') as HTMLElement).hidden).toBe(true);
-      // Back online: Retry asks again, "Loading…" meanwhile, and the list takes the holder's place.
+      expect(holder.querySelector('.fd-loader')).toBeNull();
+      // Back online: Retry asks again, waiting meanwhile, and the list takes the holder's place.
       offline.now = false;
       (failed.querySelector('button') as HTMLButtonElement).click();
-      expect((holder.querySelector('.fd-list-waiting') as HTMLElement).hidden).toBe(false);
+      expect(failed.hidden).toBe(true);
+      expect(holder.getAttribute('aria-busy')).toBe('true');
+      expect(holder.querySelector('.fd-loader')).not.toBeNull();
+      // The list's own first wait goes on from the one in sight, its skeleton at once, its rows once it has been seen its minimum.
+      await new Promise((done) => setTimeout(done, 350));
       await until(() => host.querySelectorAll('.fd-list-table tbody tr.fd-list-row').length === 2);
       expect(freshList.loaded).toBeDefined();
       expect(holder.isConnected).toBe(false);
       expect(host.querySelectorAll('.fd-list[data-node="list"]')).toHaveLength(1);
-      expect(host.querySelector('.fd-list-waiting')).toBeNull();
+      expect(host.querySelector('.fd-list > .fd-loader')).toBeNull();
       // The app's reload is the list's own now.
       await handle.reload();
       expect(host.querySelectorAll('.fd-list-table tbody tr.fd-list-row')).toHaveLength(2);

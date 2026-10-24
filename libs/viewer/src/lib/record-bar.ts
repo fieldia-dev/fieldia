@@ -1,5 +1,5 @@
 import { recordSentence, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult } from '@fieldia/core';
-import { drawIcon, type IconSet } from '@fieldia/widgets';
+import { drawIcon, type IconSet, type Loading } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
 import type { ViewerLabels } from './labels';
@@ -53,6 +53,8 @@ export interface RecordBarContext {
   submenus?: SubmenuMaker;
   /** A menu of the page's own before the gear: its record templates (the templates part). */
   extra?: { element: HTMLElement; update(): void };
+  /** How the page waits (loading.ts in @fieldia/widgets): a menu's items the app gives, as they come. Fieldia's without it. */
+  loading?: Loading;
 }
 
 const GEAR: IconSet = {
@@ -142,7 +144,7 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
 }
 
 /** What the record's menu needs of the viewer that draws it. */
-export type RecordMenuContext = Pick<RecordBarContext, 'doc' | 'el' | 'form' | 'labels' | 'locale' | 'uid' | 'withIcon' | 'press' | 'submenus'>;
+export type RecordMenuContext = Pick<RecordBarContext, 'doc' | 'el' | 'form' | 'labels' | 'locale' | 'uid' | 'withIcon' | 'press' | 'submenus' | 'loading'>;
 
 /** An item of a menu as drawn: its button, or a divider's line. */
 export interface MenuEntry {

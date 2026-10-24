@@ -1,4 +1,5 @@
 import { formLimitsPart, type Form, type FormState, type Messages, type Page, type SavedDraft } from '@fieldia/core';
+import { startLoading, type Loading, type Wait } from '@fieldia/widgets';
 import { setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
 import { installLimitsStyles } from './limits-styles';
@@ -9,7 +10,8 @@ import { installLimitsStyles } from './limits-styles';
  * - **A closed form says so as it opens**, in place of its questions: before it opens ("This form opens on 1 November
  *   2026 at 09:00."), after it closed, with all its responses taken, or this person's one sent — and the page's own
  *   words under it (`limits.message`). Nothing is typed in a form that would refuse it: while its counts are asked of
- *   the data source, its questions wait. A form that closes while answers are typed keeps them on screen, a banner
+ *   the data source, its questions wait — the one way every wait is drawn (loading.ts in @fieldia/widgets: after its
+ *   delay, a skeleton in their place unless the page says otherwise). A form that closes while answers are typed keeps them on screen, a banner
  *   over them saying they can no longer be sent; the form refuses them as they go.
  * - **Continue later**: a button beside Submit (and a wizard's Next) where the source keeps drafts. Pressed, what is
  *   typed is read and kept on the app's server (`form.continueLater`), and the questions give way to "Your answers
@@ -37,6 +39,8 @@ export interface LimitsContext {
   done(): boolean;
   /** Words said at once to a screen reader. */
   announce(text: string): void;
+  /** How the page waits (loading.ts): while its counts are asked, as anything drawn the first time. Fieldia's without it. */
+  loading?: Loading;
 }
 
 /** What the viewer places of it: before its questions, after them, and the button among its own. */
@@ -62,6 +66,9 @@ export function drawLimits(ctx: LimitsContext): LimitsKit {
   const later = form.canContinueLater() ? laterKit(ctx) : null;
   /** Whether the questions were put away by this part — for a closed form, or what was kept — and so are its to bring back. */
   let away = false;
+  /** Its counts asked of the source: waited for in the closed form's place, once asked, and again each time. */
+  let wait: Wait | null = null;
+  let asked = false;
   const aside = (hide: boolean) => {
     const content = ctx.content();
     if (!content) return;
@@ -85,11 +92,17 @@ export function drawLimits(ctx: LimitsContext): LimitsKit {
       const typed = state.dirty.length > 0 || Object.keys(state.unread).length > 0;
       const quiet = ctx.done() || !!later?.open();
       const closed = !quiet && (asking || (!!why && !typed));
-      setText(title, asking ? labels.loading : why ?? '');
+      if (asking && !wait) {
+        wait = startLoading(screen, asked ? 'refresh' : 'first', ctx.loading, { part: `${page.id}-limits` });
+        asked = true;
+      } else if (!asking && wait) {
+        void wait.done();
+        wait = null;
+      }
+      setText(title, asking ? '' : why ?? '');
       setText(own, limits?.message ?? '');
       setHidden(own, asking || !limits?.message);
       setHidden(screen, !closed);
-      screen.toggleAttribute('aria-busy', asking);
       setText(bannerText, why ? `${why} ${labels.closedTyped}` : '');
       setHidden(banner, quiet || !why || !typed);
       setHidden(missing, !state.resume?.missing);

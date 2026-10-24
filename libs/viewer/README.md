@@ -85,10 +85,10 @@ suggestions, a save. Fieldia's defaults need nothing set:
 
 | Moment | What waits | Default | Its other ways |
 |---|---|---|---|
-| `first` | a form's record, a list, its cards, a map, a related list, a saved form placed — drawn the first time | `skeleton`: grey shapes where it will be — the list's rows in its own columns (cards on a phone), the form's boxes under their labels, the page's layout while its parts come | `spinner`, `progress`, `text` ("Loading…", what 0.31 said), `none`, `custom` |
-| `refresh` | a list searched, filtered, sorted or paged; a record reloaded or moved to with the pager | `keep`: what is shown stays where it is, a thin bar along its top | `dim`, `skeleton`, `spinner`, `none`, `custom` |
-| `more` | endless scroll, a tree's children | `row`: "Loading more…" where the rows will come | `spinner`, `skeleton`, `none`, `custom` |
-| `search` | a link's suggestions, choices from the app's lists, a filter's values | `inline`: "Searching…" in the list | `spinner` (a ring at the box's end), `none`, `custom` |
+| `first` | a form's record, a list, its cards, a map, a related list, a saved form placed, what a row opens to, a form's limits asked — drawn the first time | `skeleton`: grey shapes where it will be — the list's rows in its own columns (cards on a phone), the form's boxes under their labels, the page's layout while its parts come | `spinner`, `progress`, `text` ("Loading…", what 0.31 said), `none`, `custom` |
+| `refresh` | a list searched, filtered, sorted or paged (a related list's pager too); a calendar's next week or month; a record reloaded or moved to with the pager — whatever replaces what is shown | `keep`: what is shown stays where it is, a thin bar along its top | `dim`, `skeleton`, `spinner`, `none`, `custom` |
+| `more` | endless scroll, a tree's children — rows put under those shown | `row`: "Loading more…" where the rows will come | `spinner`, `skeleton`, `none`, `custom` |
+| `search` | a link's suggestions, choices from the app's lists, a filter's values, a menu's items the app gives | `inline`: "Searching…" in the list | `spinner` (a ring at the box's end), `none`, `custom` |
 | `action` | a button's steps, a page of responses sent | `button`: the pressed button busy, a ring beside its words past the delay (every busy button's ring waits so: a list's Export, Print, Edit) | `bar` (a bar along the form's top), `overlay` (the form covered, nothing pressed under it), `none`, `custom` |
 
 A quick answer shows nothing at all: a loader is drawn only after `delay`

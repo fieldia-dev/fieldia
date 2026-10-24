@@ -1,5 +1,5 @@
 import type { ActionStep, MenuItem } from '@fieldia/core';
-import { drawIcon } from '@fieldia/widgets';
+import { drawIcon, startLoading, type Wait } from '@fieldia/widgets';
 import { setHidden } from './dom';
 import { installHeadStyles } from './head-styles';
 import { menuEntries, opensMenu, type MenuEntry, type MenuTree, type Submenus } from './record-bar';
@@ -130,7 +130,8 @@ export function submenus(tree: MenuTree, entries: readonly MenuEntry[], menu: HT
     const box = context.el('div', { class: 'fd-record-menu fd-menu-flyout', role: 'menu', id, 'aria-labelledby': button.id, tabindex: '-1', hidden: '' });
     const topLayer = typeof box.showPopover === 'function';
     if (topLayer) box.setAttribute('popover', 'manual');
-    const waiting = context.el('div', { class: 'fd-menu-waiting', role: 'none', hidden: '' }, context.labels.loading);
+    /** The app's items asked for: waited for as every wait is (loading.ts in @fieldia/widgets), "Loading…" after their own items. */
+    let wait: Wait | null = null;
     const run = (one: MenuItem) => {
       tree.close(true);
       void context.press(tree.opener, () => (given.has(one) ? form.run(stepsOf(one), { id: one.id, ...(one.label ? { yes: one.label } : {}) }) : form.runAction(one.id)));
@@ -143,7 +144,7 @@ export function submenus(tree: MenuTree, entries: readonly MenuEntry[], menu: HT
     let answered = item.menuFrom === undefined;
     let asked = 0;
     const all = () => [...own, ...theirs];
-    box.prepend(...own.map((one) => one.button), waiting);
+    box.prepend(...own.map((one) => one.button));
     menu.append(box);
 
     box.addEventListener('keydown', (event) => {
@@ -202,7 +203,6 @@ export function submenus(tree: MenuTree, entries: readonly MenuEntry[], menu: HT
         box.hidden = false;
         if (topLayer && !box.matches(':popover-open')) box.showPopover();
         button.setAttribute('aria-expanded', 'true');
-        box.setAttribute('aria-busy', String(!answered));
         place();
         doc.addEventListener('scroll', follow, true);
         doc.defaultView?.addEventListener('resize', follow);
@@ -230,7 +230,8 @@ export function submenus(tree: MenuTree, entries: readonly MenuEntry[], menu: HT
       const round = ++asked;
       const shown = form.recordShown();
       answered = false;
-      box.setAttribute('aria-busy', 'true');
+      // Its loader where the app's items come, after its own (a search's way: "Loading…" in it unless the page says otherwise).
+      const mine = (wait = startLoading(box, 'search', context.loading, { part: item.id, words: context.labels.loading, place: (loader) => void box.append(loader) }));
       let answer: unknown;
       const heard = form.on('action', ({ request, result }) => {
         if (request.id === item.id && request.action === action) answer = result?.menu;
@@ -241,24 +242,31 @@ export function submenus(tree: MenuTree, entries: readonly MenuEntry[], menu: HT
         .catch(() => undefined)
         .then(() => {
           heard();
-          if (round !== asked || !shown()) return;
-          answered = true;
-          box.setAttribute('aria-busy', 'false');
-          const waited = doc.activeElement === box;
-          theirNested?.drop();
-          for (const one of theirs) one.button.remove();
-          theirs = menuEntries(context, takeGiven(answer), tree.words, run);
-          box.append(...theirs.map((one) => one.button));
-          theirNested = submenus(tree, theirs, box);
-          tree.refresh();
-          if (!isOpen()) return;
-          place();
-          // Waited for in the open menu: its first item, now there is one; with none, its item again (or the menu's first).
-          if (!waited) return;
-          const first = menuItemsShown(all())[0];
-          if (first) first.focus();
-          else (button.hidden ? menuItemsShown(entries)[0] : button)?.focus();
+          if (round !== asked || !shown()) return mine.stop();
+          // Laid in as its loader goes (once seen its minimum), while it is still the latest ask, on the record asked on.
+          void mine.done(() => {
+            if (round === asked && shown()) drawTheirs(answer);
+          });
         });
+    }
+
+    /** The app's items laid in, after the page's own; the focus on the first where the open menu waited for them. */
+    function drawTheirs(answer: unknown) {
+      answered = true;
+      const waited = doc.activeElement === box;
+      theirNested?.drop();
+      for (const one of theirs) one.button.remove();
+      theirs = menuEntries(context, takeGiven(answer), tree.words, run);
+      box.append(...theirs.map((one) => one.button));
+      theirNested = submenus(tree, theirs, box);
+      tree.refresh();
+      if (!isOpen()) return;
+      place();
+      // Waited for in the open menu: its first item, now there is one; with none, its item again (or the menu's first).
+      if (!waited) return;
+      const first = menuItemsShown(all())[0];
+      if (first) first.focus();
+      else (button.hidden ? menuItemsShown(entries)[0] : button)?.focus();
     }
 
     /**
@@ -270,13 +278,13 @@ export function submenus(tree: MenuTree, entries: readonly MenuEntry[], menu: HT
       ownNested.openersOnly();
       theirNested?.openersOnly();
       tidyRules(all());
-      setHidden(waiting, answered);
       if (answered && !menuItemsShown(all()).length) setHidden(button, true);
       if (button.hidden) shut(false);
     }
 
     function drop() {
       shut(false);
+      wait?.stop();
       ownNested.drop();
       theirNested?.drop();
       box.remove();

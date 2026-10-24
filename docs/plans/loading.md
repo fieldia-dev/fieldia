@@ -19,7 +19,8 @@ the most specific winning setting by setting — with the viewer's hooks: its ev
 
 ## The moments
 
-**`first` — a form, a list, a card, a map, a related list drawn for the first time.** Default `skeleton`: grey shapes
+**`first` — a form, a list, a card, a map, a related list drawn for the first time** — and what a list's row opens to
+(its `detail`), a form's limits while their counts are asked, a list whose part had to be asked for again. Default `skeleton`: grey shapes
 where the content will be, shaped like it. A record's form is drawn whole while its record comes, its boxes shown as
 skeleton bars under their labels (the labels are the page's, known before the record is); while the page's own parts
 are still coming, a skeleton made from the page's layout stands in its place — its groups, its fields' labels and
@@ -35,13 +36,16 @@ the app draw.
 nothing jumps, the place keeps its height. `dim` greys what is shown while it waits (0.31's list), `skeleton` puts
 skeleton rows in place of the rows, `spinner` turns a ring over what is shown, `none`, `custom`. A record moved to
 with the pager, or loaded again (a reload step, Retry), is a refresh of the form: its values stay, the bar over them.
+Whatever replaces what is shown is a refresh: a list's or a related list's next page from its pager, a calendar's next
+week or month, a timeline's records asked again.
 
-**`more` — the next rows under those shown: endless scroll, "Show more", a tree's children, a related list's next
-page.** Default `row`: a row saying "Loading more…" where the rows will come, in the table's width (a card's place
+**`more` — the next rows put under those shown: endless scroll, "Show more", a tree's children.** Only what is added
+after what is shown, never what replaces it (a pager's next page is a `refresh`). Default `row`: a row saying "Loading more…" where the rows will come, in the table's width (a card's place
 in a gallery). `spinner` turns a ring there, `skeleton` draws three skeleton rows there, `none`, `custom`. What is
 already shown never moves.
 
-**`search` — a link's or a dropdown's suggestions, choices from the app's lists, a filter's values.** Default
+**`search` — a link's or a dropdown's suggestions, choices from the app's lists, a filter's values, a menu's items
+the app gives (`menuFrom`, "Loading…" after the menu's own).** Default
 `inline`: "Searching…" in the list under the box, where the suggestions come (for a field's choices from the app,
 "Loading choices…" under the field, as 0.31 said it — now after the delay, never as a flash). `spinner` turns a small
 ring at the box's end, `none`, `custom`. The box is never locked: the person types on, and only the latest answer is

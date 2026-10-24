@@ -1,5 +1,5 @@
 import { loadedRecordOf, matchesFilter, type DataSource, type Line, type ListNode, type Locale, type Page, type RecordId, type SortOrder, type Values } from '@fieldia/core';
-import { moneyReads } from '@fieldia/widgets';
+import { moneyReads, startLoading, type Loading } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 import type { Cells } from './list-cells';
@@ -25,6 +25,8 @@ export interface DetailContext {
   cellsOf: (page: Page, node: ListNode) => Cells;
   /** How many columns a row of the list spans now. */
   span: () => number;
+  /** How the list waits (loading.ts in @fieldia/widgets): what a row opens to, drawn the first time, then another page of it. */
+  loading?: Loading;
 }
 
 /** What a list's rows open in place to show (`ListNode.detail`), wired into its rows. */
@@ -112,7 +114,7 @@ export function detailRows(context: DetailContext): DetailRows | null {
   /** The row under a record's row, drawn as it opens: a table of what it opens to (read only), its pager past a page. */
   function opening(id: RecordId, name: string, level: string | undefined): Opened {
     const named = fill(labels.detailOf, { title, name });
-    const grid = el('div', { class: 'fd-list-detail-table', role: 'table', 'aria-label': named, 'aria-busy': 'true' });
+    const grid = el('div', { class: 'fd-list-detail-table', role: 'table', 'aria-label': named });
     grid.style.setProperty('--fd-detail-columns', String(detail?.columns.length ?? 1));
     const head = el(
       'div',
@@ -123,12 +125,16 @@ export function detailRows(context: DetailContext): DetailRows | null {
     grid.append(el('div', { role: 'rowgroup' }, head), rows);
     const none = el('p', { class: 'fd-list-detail-none', hidden: '' }, labels.relatedNone);
     const retry = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry);
-    const failed = el('p', { class: 'fd-list-detail-failed', role: 'alert', hidden: '' }, labels.loadFailed, ' ', retry);
+    const why = el('span', {});
+    const failed = el('p', { class: 'fd-list-detail-failed', role: 'alert', hidden: '' }, labels.loadFailed, why, ' ', retry);
     const range = el('span', { class: 'fd-pager-text' });
     const previous = el('button', { type: 'button', class: 'fd-button fd-pager-button', 'aria-label': labels.previousPage }, '‹');
     const next = el('button', { type: 'button', class: 'fd-button fd-pager-button', 'aria-label': labels.nextPage }, '›');
     const pager = el('div', { class: 'fd-pager fd-list-detail-pager', role: 'group', 'aria-label': named, hidden: '' }, range, previous, next);
-    const cell = el('td', { colspan: String(context.span()) }, el('div', { class: 'fd-list-detail-box' }, el('div', { class: 'fd-list-detail-scroll' }, grid), none, failed, pager));
+    const box = el('div', { class: 'fd-list-detail-box' }, el('div', { class: 'fd-list-detail-scroll' }, grid), none, failed, pager);
+    const cell = el('td', { colspan: String(context.span()) }, box);
+    /** Whether it was drawn once: a wait after that (another page, the list asking again) is a refresh. */
+    let drew = false;
     // Not a record's row: the list's keys and presses pass over it; its level its record's, so a group closing takes it away.
     const row = el('tr', { class: 'fd-list-detail', 'data-aside': '', 'data-detail-of': String(id), 'data-level': level }, cell);
     const opened: Opened = {
@@ -138,15 +144,36 @@ export function detailRows(context: DetailContext): DetailRows | null {
       asking: 0,
       async draw() {
         const mine = ++opened.asking;
-        grid.setAttribute('aria-busy', 'true');
+        // Its wait, as every wait is (loading.ts): drawn the first time, then another page of it (what is shown kept, a bar
+        // over it, unless the page says otherwise); a failure in its own words, the source's after them, and Retry.
+        const wait = startLoading(box, drew ? 'refresh' : 'first', context.loading, {
+          part: `${node.id}-detail`,
+          failed: (_message, _retry, said) => {
+            // Its lines asked again on Retry: a record that could not be read is read again.
+            opened.lines = undefined;
+            why.textContent = said ? ` ${said}` : '';
+            failed.hidden = false;
+            none.hidden = true;
+            return true;
+          },
+        });
         try {
           const { rows: found, total } = await pageOf(id, opened);
-          if (mine !== opened.asking) return;
+          if (mine !== opened.asking) return wait.stop();
           // Past the end, as when the last line of the last page went: back to the page that is left.
           if (!found.length && total > 0 && opened.offset > 0) {
             opened.offset = Math.floor((total - 1) / limit) * limit;
+            wait.stop();
             return opened.draw();
           }
+          await wait.done(() => drawFound(found, total));
+        } catch (error) {
+          if (mine !== opened.asking) return wait.stop();
+          wait.fail(error);
+        }
+        /** A page of what it opens to drawn, its pager under it past a page. */
+        function drawFound(found: Values[], total: number) {
+          drew = true;
           const columns = detail?.columns ?? [];
           rows.replaceChildren(
             ...found.map((values) => {
@@ -163,14 +190,6 @@ export function detailRows(context: DetailContext): DetailRows | null {
           range.textContent = fill(labels.range, { from: number(opened.offset + 1), to: number(Math.min(opened.offset + found.length, total)), total: number(total) });
           previous.disabled = opened.offset === 0;
           next.disabled = opened.offset + limit >= total;
-        } catch {
-          if (mine !== opened.asking) return;
-          // Its lines asked again on Retry: a record that could not be read is read again.
-          opened.lines = undefined;
-          failed.hidden = false;
-          none.hidden = true;
-        } finally {
-          if (mine === opened.asking) grid.removeAttribute('aria-busy');
         }
       },
     };

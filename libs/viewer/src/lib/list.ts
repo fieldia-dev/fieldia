@@ -605,7 +605,7 @@ export function listView(context: ListContext): ListView {
    * to, drawn as the list draws its cells.
    */
   const rowsKit = node.detail || node.sequenceField || node.loadChildren ? rowsPart.loaded : undefined;
-  const details = rowsKit?.detailRows({ page, node, model, dataSource: context.dataSource, el, labels, locale, fill, number, span, cellsOf: (of, list) => listCells({ page: of, node: list, doc, el, locale, icons: context.icons, fill, ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) }) }) ?? null;
+  const details = rowsKit?.detailRows({ page, node, model, dataSource: context.dataSource, el, labels, locale, fill, number, span, loading: waiting, cellsOf: (of, list) => listCells({ page: of, node: list, doc, el, locale, icons: context.icons, fill, ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) }) }) ?? null;
   if (rowsKit) rowsKit.installRowsStyles(doc);
   /** Its rows re-ranked by hand, while it is in their order: by its own rank, ascending, its rows not under groups or parents. */
   const ranked = () => !groupedNow && !parentField && sort[0]?.field === node.sequenceField && !sort[0]?.desc && !sort[0]?.near;

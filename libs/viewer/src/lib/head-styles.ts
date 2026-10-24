@@ -212,14 +212,14 @@ span.fd-head-link { cursor: default; color: var(--fd-text); }
 .fd-head .fd-button[aria-pressed="true"]:not(.fd-button-primary) { color: var(--fd-text); }
 
 /* A menu inside a menu (menu-flyout.ts): › at its item's end, mirrored right to left; its item lit while it is open;
-   the menu itself beside it, over everything (placed by its code), "Loading…" muted while the app's items come. */
+   the menu itself beside it, over everything (placed by its code); while the app's items come, its wait (loading.ts)
+   after its own items, where theirs will be, as an item's line. */
 .fd-record-menu-item > .fd-menu-more { margin-inline-start: auto; }
 .fd-record-menu-item > .fd-menu-more:dir(rtl) { transform: scaleX(-1); }
 .fd-record-menu-item[aria-haspopup][aria-expanded="true"] { background: var(--fd-accent-soft); }
 .fd-menu-flyout { z-index: 41; overflow: visible; }
 .fd-menu-flyout:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; }
-.fd-menu-waiting { padding: 6px 12px; color: var(--fd-muted); font-size: 13px; line-height: 20px; }
-.fd-menu-waiting[hidden] { display: none; }
+.fd-menu-flyout > .fd-loader { justify-content: flex-start; padding: 6px 12px; line-height: 20px; }
 
 /* A split button: its press, a rule, its chevron or its own icon (Follow's gear); its menu under it. */
 .fd-split { position: relative; display: inline-flex; align-items: stretch; flex: none; }

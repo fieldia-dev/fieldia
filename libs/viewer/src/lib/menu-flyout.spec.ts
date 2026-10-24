@@ -241,9 +241,12 @@ describe('a menu inside a menu', () => {
     await until(() => round === 1);
     const menu = flyout(host, 'm-templates');
     node(host, 'm-templates').click();
-    // Waiting: said in it, the menu itself focused, busy.
+    // Waiting as every wait is: busy at once, "Loading…" in it after its own items once past the delay.
     expect(menu.getAttribute('aria-busy')).toBe('true');
-    expect(menu.querySelector('.fd-menu-waiting:not([hidden])')?.textContent).toBe('Loading…');
+    expect(menu.querySelector('.fd-loader')).toBeNull();
+    await until(() => menu.querySelector('.fd-loader[data-moment="search"]'));
+    expect(menu.lastElementChild?.matches('.fd-loader')).toBe(true);
+    expect(menu.querySelector('.fd-loader')?.textContent).toBe('Loading…');
     expect(document.activeElement).toBe(node(host, 'm-capture'));
     // Another record shown meanwhile: its answer is not laid in.
     await handle?.form.openRecord(2);

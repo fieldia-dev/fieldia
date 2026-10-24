@@ -127,6 +127,29 @@ describe('a row opened in place', () => {
     expect(detailOf(host, 1)).toBeNull();
   });
 
+  it('waits as every wait does: drawn the first time past the delay, another page of it a refresh, what is shown kept', async () => {
+    const source = customersSource();
+    const list = source.list.bind(source);
+    source.list = (request) => (request.model === 'invoice' ? new Promise((done) => setTimeout(() => done(list(request)), 250)) : list(request));
+    const layout = customers.layout as ListNode;
+    const host = await mount({ ...customers, layout: { ...layout, detail: { ...layout.detail, limit: 1 } } } as Page, { dataSource: source });
+    const waits: string[] = [];
+    handle?.on('loadingstart', ({ moment, part }) => waits.push(`${moment} ${part}`));
+    toggleOf(row(host, 'Nile Traders')).click();
+    const box = () => detailOf(host, 1)?.querySelector('.fd-list-detail-box') as HTMLElement;
+    expect(box().getAttribute('aria-busy')).toBe('true');
+    expect(box().querySelector('.fd-loader')).toBeNull();
+    await until(() => box().querySelector('.fd-loader[data-moment="first"]'));
+    await until(() => shown(detailOf(host, 1)).length === 1);
+    expect(box().hasAttribute('aria-busy')).toBe(false);
+    // Its next page in place of the one shown: a refresh, the row shown kept under a bar until the next comes.
+    (box().querySelector('[aria-label="Next page"]') as HTMLButtonElement).click();
+    await until(() => box().querySelector('.fd-loader[data-moment="refresh"]'));
+    expect(shown(detailOf(host, 1))).toEqual(['INV/1 | E£ 100.00']);
+    await until(() => shown(detailOf(host, 1))[0] === 'INV/3 | E£ 75.00');
+    expect(waits).toEqual(['first list-detail', 'refresh list-detail']);
+  });
+
   it('keeps a row open as the list asks again, asking what it opens to again', async () => {
     const source = ordersSource();
     const host = await mount(orders, { dataSource: source });
@@ -153,16 +176,17 @@ describe('a row opened in place', () => {
     expect(shown(detailOf(host, 1))).toHaveLength(2);
   });
 
-  it('says what it could not load, with Retry', async () => {
+  it('says what it could not load, the source’s words after its own, with Retry', async () => {
     const source = customersSource();
     const list = source.list.bind(source);
     let fail = true;
-    source.list = (request) => (request.model === 'invoice' && fail ? Promise.reject(new Error('down')) : list(request));
+    source.list = (request) => (request.model === 'invoice' && fail ? Promise.reject(new Error('The archive is offline.')) : list(request));
     const host = await mount(customers, { dataSource: source });
     toggleOf(row(host, 'Nile Traders')).click();
     const failed = () => detailOf(host, 1)?.querySelector('.fd-list-detail-failed') as HTMLElement;
     await until(() => failed() && !failed().hidden);
-    expect(failed().textContent).toBe('Could not load the records. Retry');
+    expect(failed().textContent).toBe('Could not load the records. The archive is offline. Retry');
+    expect(detailOf(host, 1)?.querySelector('[aria-busy]')).toBeNull();
     fail = false;
     (failed().querySelector('button') as HTMLButtonElement).click();
     await until(() => shown(detailOf(host, 1)).length === 2);

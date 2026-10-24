@@ -1210,7 +1210,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Its icon alone, a toggle, a menu beside it, a look that follows the record's changes: drawn by button-parts.ts.
       const head = isRichButton(node) ? headPart.loaded : undefined;
       if (head) {
-        const rich = head.richButton({ doc, el, form, labels, icons: options.icons, uid, withIcon, press, say: (message, tone) => actionHost.say(message, tone), watch, cleanups }, node);
+        const rich = head.richButton({ doc, el, form, labels, icons: options.icons, uid, withIcon, press, say: (message, tone) => actionHost.say(message, tone), watch, cleanups, loading }, node);
         spans(rich, node.colspan);
         return hiddenOn(node, rich);
       }
@@ -2120,6 +2120,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       name: recordName,
       render: renderNow,
       submenus: headPart.loaded?.submenus,
+      loading,
       async leave() {
         // What is still typed is read first (a name being looked up, waited for): text that does not read keeps the
         // record on screen, said, as a change does. The changes are saved first, as the pager always has; a file still
@@ -2516,6 +2517,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       watch: (update) => updaters.push(update),
       cleanups,
       showTab: (id) => tabs.get(id)?.() ?? false,
+      loading,
       unfold(part) {
         for (let folded = part.closest<HTMLElement>('.fd-section-folded'); folded; folded = folded.parentElement?.closest<HTMLElement>('.fd-section-folded') ?? null) folds.get(folded)?.();
       },
@@ -2582,7 +2584,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
     const limits = limitsAsked ? limitsPart.loaded : undefined;
     if (limits) {
-      const kit = limits.drawLimits({ ...drawing, messages: options.messages ?? MESSAGES[locale], done: () => !done.hidden });
+      const kit = limits.drawLimits({ ...drawing, messages: options.messages ?? MESSAGES[locale], done: () => !done.hidden, loading });
       updaters.push((state) => kit.update(state));
       limitsKit = kit;
     }

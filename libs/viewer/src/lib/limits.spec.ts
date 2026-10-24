@@ -112,13 +112,22 @@ describe('a page that takes no answers now says so as it opens', () => {
     expect(source.responses).toEqual([]);
   });
 
-  it('full, or sent by this person already, once the source told; its questions wait while it asks', async () => {
-    const source = createMemoryDataSource({ delayMs: 200, limits: { 'event-signup': { responses: 50 } } });
+  it('full, or sent by this person already, once the source told; its questions wait while it asks, as every wait is drawn', async () => {
+    const source = createMemoryDataSource({ delayMs: 400, limits: { 'event-signup': { responses: 50 } } });
     await mount(signup({ limits: { maxResponses: 50 } }), { dataSource: source });
     expect(questions()).toBeNull();
-    expect(shown('.fd-closed[aria-busy]')?.textContent).toBe('Loading…');
-    await pass(200);
+    // Busy at once; drawn past the delay (never a flash), in the closed form's place, as anything drawn the first time.
+    expect(shown('.fd-closed[aria-busy="true"]')).not.toBeNull();
+    expect(shown('.fd-closed .fd-loader')).toBeNull();
+    await pass(150);
+    expect(shown('.fd-closed[data-fd-wait="first"] > .fd-loader[data-moment="first"]')).not.toBeNull();
+    expect(host.querySelector('.fd-loading-said')?.textContent).toBe('Loading…');
+    await pass(250);
     expect(closedWords()).toEqual(['This form has all the responses it takes.']);
+    // Seen its minimum, it goes: the words alone.
+    await pass(300);
+    expect(shown('.fd-closed .fd-loader')).toBeNull();
+    expect(shown('.fd-closed[aria-busy]')).toBeNull();
   });
 
   it('takes one from each person: Thank you, with no other response offered', async () => {
