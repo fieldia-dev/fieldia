@@ -63,7 +63,7 @@ describe('the Look tab’s section on waiting', () => {
     const press = (name: string, words: string) => [...row(name).querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === words)?.click();
     press('Loading looks', 'Pulse');
     press('Loading looks', 'Dots');
-    press('When loading fails', 'A toast');
+    press('When loading fails', 'Toast');
     expect(loading()).toEqual({ skeleton: 'pulse', spinner: 'dots', error: 'toast' });
     const box = (label: string) => row('Loading times').querySelector(`input[aria-label="${label}"]`) as HTMLInputElement;
     const typeIn = (input: HTMLInputElement, text: string) => {
@@ -81,7 +81,7 @@ describe('the Look tab’s section on waiting', () => {
     expect(pageChanges({ ...designer.getPage(), loading: undefined }, designer.getPage())).toContain('How the page waits changed');
     press('Loading looks', 'Pulse');
     press('Loading looks', 'Dots');
-    press('When loading fails', 'A toast');
+    press('When loading fails', 'Toast');
     typeIn(box('Wait before showing'), '');
     typeIn(box('Give up after'), '');
     expect(loading()).toBeUndefined();

@@ -88,17 +88,19 @@ export const DESIGNER_PANEL_CSS = /* css */ `
 .fd-insp-unit { font-size: 12px; color: var(--fd-muted); }
 /* The accent: round swatches, then any colour, and the skin's own back. */
 /* While it waits: each moment's way beside a small preview waiting that way; the looks; the timing in milliseconds. */
-.fd-insp-loading-moment { display: grid; grid-template-columns: minmax(0, 1fr) 128px; gap: 8px; align-items: center; }
+.fd-insp-loading-moment { display: grid; gap: 6px; }
 .fd-insp-loading-preview { min-width: 0; }
 .fd-insp-loading-preview > .fd-form { display: block; padding: 4px 6px; border: 1px solid var(--fd-border); border-radius: 6px; background: var(--fd-surface); font-size: 11px; line-height: 1.35; overflow: hidden; pointer-events: none; }
-.fd-insp-loading-region { position: relative; display: grid; align-content: start; gap: 2px; min-block-size: 52px; }
+.fd-insp-loading-region { position: relative; display: grid; align-content: start; gap: 2px; min-block-size: 56px; }
 .fd-insp-loading-preview .fd-loader { padding: 2px 4px; font-size: 11px; }
 .fd-insp-loading-preview [data-fd-wait="first"]:not([data-fd-shaped]) { min-height: 52px; }
 .fd-insp-loading-preview .fd-spin { inline-size: 16px; block-size: 16px; border-width: 2px; }
 .fd-insp-loading-preview .fd-button { justify-self: start; min-height: 24px; padding: 0 10px; font-size: 11px; }
 .fd-insp-loading-row { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .fd-insp-loading-app { color: var(--fd-muted); font-style: italic; }
-.fd-insp-loading-look, .fd-insp-loading-time { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; }
+.fd-insp-loading-look { display: grid; gap: 4px; }
+.fd-insp-loading-look + .fd-insp-loading-look { margin-block-start: 6px; }
+.fd-insp-loading-time { display: grid; align-items: center; gap: 4px 8px; }
 .fd-insp-loading-time { grid-template-columns: minmax(0, 1fr) auto auto; }
 .fd-insp-loading-look-name, .fd-insp-loading-time > span:first-child { font-size: 12.5px; color: var(--fd-muted); }
 .fd-properties .fd-insp-swatches { width: auto; display: flex; flex-wrap: wrap; gap: 8px; padding: 2px; border: 0; background: none; }
