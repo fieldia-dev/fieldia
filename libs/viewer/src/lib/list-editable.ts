@@ -616,6 +616,11 @@ export function editableRows(context: EditableContext): EditableRows | null {
   function open(edit: RowEdit, td: HTMLTableCellElement, how: Opening) {
     const column = td.getAttribute('data-col') ?? '';
     if (!changeable(edit.record, column, edit.form)) return;
+    // Where the cell is, read before anything is written — the page as the browser last laid it out, so reading it
+    // lays nothing out (0.32 read it after closing the cell before, and focused it after drawing: two layouts of the
+    // whole table for each Tab, 120 ms of a Tab across 1,000 rows on a desktop).
+    const at = td.getBoundingClientRect();
+    const seen = inSight(td, at);
     if (edit.editor) closeEditor(edit, false);
     const def = rowPage.fields[column] as Field;
     const id = list.uid(`${node.id}-${edit.key}-${column}`);
@@ -642,18 +647,32 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const editor: Editor = { td, column, widget, box, before: state.values[column], unreadBefore: state.unread[column] ?? null, twisty, stop: edit.form.subscribe(update) };
     edit.editor = editor;
     // As wide as the cell was: the columns stay where they stood while it is open.
-    const width = td.getBoundingClientRect().width;
-    if (width) td.style.setProperty('width', `${width}px`);
+    if (at.width) td.style.setProperty('width', `${at.width}px`);
     td.replaceChildren(box);
     td.setAttribute('data-editing', '');
     setAttr(td, 'title', null);
     update(state);
-    widget.focus();
+    // In sight already, as it nearly always is: focused where it is. Else brought into sight, as the browser's focus would.
+    widget.focus({ preventScroll: true });
+    if (!seen) td.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     // One rule for every kind of box a cell opens as, as a spreadsheet's cell does: opened by a press, Enter, Tab or a
     // key, its whole text chosen, so what is typed replaces it; by F2, the caret after it. A second press in the box is
     // the box's own: the caret where it is pressed.
     const active = doc.activeElement;
     if (active && box.contains(active) && typedBox(active)) choose(active, how !== 'within');
+  }
+
+  /**
+   * Whether a cell is wholly in sight, from where it was laid out: inside each box round it that scrolls (the list's
+   * sideways scroll, a dialog's body, the app's own), and the window. Read only: the page is as it was laid out.
+   */
+  function inSight(td: HTMLElement, at: DOMRect): boolean {
+    const inside = (room: { top: number; bottom: number; left: number; right: number }) => at.top >= room.top - 1 && at.bottom <= room.bottom + 1 && at.left >= room.left - 1 && at.right <= room.right + 1;
+    for (let up = td.parentElement; up && up !== doc.body && up !== doc.documentElement; up = up.parentElement) {
+      if (up.scrollHeight > up.clientHeight || up.scrollWidth > up.clientWidth) if (!inside(up.getBoundingClientRect())) return false;
+    }
+    const win = doc.defaultView;
+    return inside({ top: 0, left: 0, bottom: win?.innerHeight ?? Infinity, right: win?.innerWidth ?? Infinity });
   }
 
   /** A box's whole text chosen, or the caret put after it. */

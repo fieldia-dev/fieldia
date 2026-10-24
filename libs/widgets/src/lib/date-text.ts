@@ -358,7 +358,7 @@ export function plainDateWidget(kind: DateKind): WidgetFactory {
     });
     return {
       element: input,
-      focus: () => input.focus(),
+      focus: (options?: FocusOptions) => input.focus(options),
       // Its hint stands beside it, outside its element: it goes with it, as the date part's box takes its place.
       destroy: () => hint.element.remove(),
       update(state) {

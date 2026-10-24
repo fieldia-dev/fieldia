@@ -11,6 +11,12 @@ export interface TabStrip {
   measure(): void;
   /** Scroll the strip, and only the strip, so this tab is in sight. */
   reveal(tab: HTMLElement): void;
+  /**
+   * Look again at the edges, and bring this tab into sight, once the page is laid out — before the next frame is drawn,
+   * never in the middle of drawing the page (0.32 measured the strip as the form was being built, laying the half-built
+   * page out for it: 53 ms of a phone's first draw of a record with tabs). A tab already brought into sight is left.
+   */
+  later(tab?: HTMLElement): void;
   destroy(): void;
 }
 
@@ -55,8 +61,33 @@ export function tabStrip(list: HTMLElement, el: El): TabStrip {
 
   list.addEventListener('scroll', measure, { passive: true });
   const view = list.ownerDocument.defaultView;
-  const watcher = view && 'ResizeObserver' in view ? new view.ResizeObserver(() => measure()) : null;
+  let wanted: HTMLElement | undefined;
+  let revealed: HTMLElement | undefined;
+  let frame = 0;
+  /** In a frame, the page laid out already by the browser's own turn: measured once, whatever asked. */
+  const settle = () => {
+    frame = 0;
+    // A strip not drawn (its tabs hidden, or the form not on the page yet) is looked at again once it is (its size).
+    if (!list.clientWidth) return;
+    if (wanted && wanted !== revealed) {
+      revealed = wanted;
+      reveal(wanted);
+    } else measure();
+  };
+  const watcher = view && 'ResizeObserver' in view ? new view.ResizeObserver(settle) : null;
   watcher?.observe(list);
 
-  return { element, measure, reveal, destroy: () => watcher?.disconnect() };
+  return {
+    element,
+    measure,
+    reveal,
+    later(tab) {
+      if (tab) wanted = tab;
+      if (!frame) frame = view?.requestAnimationFrame(settle) ?? 0;
+    },
+    destroy: () => {
+      if (frame) view?.cancelAnimationFrame(frame);
+      watcher?.disconnect();
+    },
+  };
 }

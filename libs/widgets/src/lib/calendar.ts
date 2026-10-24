@@ -412,7 +412,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
 
   return {
     element,
-    focus: () => inner.focus(),
+    focus: (options?: FocusOptions) => inner.focus(options),
     ...(inner.takeTyped ? { takeTyped: inner.takeTyped } : {}),
     update(state) {
       readonly = state.readonly;

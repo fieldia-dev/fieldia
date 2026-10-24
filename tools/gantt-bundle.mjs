@@ -32,6 +32,9 @@
  * off it, and Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y taking a move back and making it again — 14,486 bytes measured before,
  * 15,525 after, to 15.2; Persian's words 878 before, 925 after, to 1.0 (Turkish's 751, Urdu's 908, Spanish's 701,
  * inside theirs).
+ * 0.34's speed (harden-perf): a bar moved drawn once — not again when its save brings back what is shown — the chart
+ * read before it is written, and its axis's height told by the browser once it is laid out (a ResizeObserver), never
+ * read in the middle of drawing: 15,541 bytes measured before, 15,723 after, to 15.4.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -40,7 +43,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.8, gantt: 15.2 };
+const BUDGET = { page: 0.8, gantt: 15.4 };
 const LANGUAGE_BUDGET = { tr: 0.8, fa: 1.0, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });

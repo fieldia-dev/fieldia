@@ -161,6 +161,17 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     });
     return sign;
   });
+  /**
+   * The axis's height, told by the browser once the chart is laid out: on the signs, which stand under it. Never read
+   * in the middle of drawing (a layout of the whole chart for it); as it was the last time until it is told.
+   */
+  const sizedView = doc.defaultView;
+  const axisSized = sizedView && 'ResizeObserver' in sizedView
+    ? new sizedView.ResizeObserver(([entry]) => {
+        const height = `${Math.round(entry.borderBoxSize?.[0]?.blockSize ?? (entry.target as HTMLElement).offsetHeight)}px`;
+        for (const sign of edges) if (sign.style.getPropertyValue('--fd-gantt-axis') !== height) sign.style.setProperty('--fd-gantt-axis', height);
+      })
+    : null;
   /** The names' column's width: what the days shown start after. */
   const namesWidth = () => body.querySelector<HTMLElement>('.fd-gantt-corner')?.offsetWidth ?? 0;
   /** How many bars of the rows shown run off the days shown at each edge, said by its sign; none, no sign. */
@@ -197,9 +208,21 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       failed = true;
     }
     body.removeAttribute('aria-busy');
+    // What came back as drawn already — a move saved as it was shown at once — is not drawn again (0.32 drew a drop
+    // twice, 520 ms on a desktop at 500 tasks): its versions taken, the bars left as they are.
+    const shown = drawnAs(records, total, failed);
+    if (shown === drawnKey) {
+      setTasks();
+      return;
+    }
     setTasks();
     draw();
   }
+
+  /** What a drawing shows of the records: each one's values and what may be done with it; the count, a failure. */
+  const drawnAs = (list: readonly ListedRecord[], count: number, failure: boolean) => JSON.stringify([failure, count, list.map((r) => [r.id, r.values, r.can ?? null])]);
+  /** What the drawing on the page shows: compared with what a reload brings. */
+  let drawnKey = '';
 
   // ---- words ----------------------------------------------------------------------------------------------
 
@@ -246,10 +269,14 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
   }
 
   function draw() {
+    // Everything read of the page first, as it was laid out — never between writes, which would lay the chart out
+    // again for each read (0.32: three layouts of 15,000 elements a drop).
     const active = doc.activeElement as HTMLElement | null;
     const keys = active && body.contains(active) ? active.dataset['focus'] : undefined;
     const scroller = body.querySelector<HTMLElement>('.fd-gantt-scroll');
     const scrolled = scroller ? [scroller.scrollLeft, scroller.scrollTop] : null;
+    const room = body.clientWidth;
+    drawnKey = drawnAs(records, total, failed);
     const planned = tasks.filter((t) => t.start && t.end);
     drawTitle(planned);
     note.hidden = total <= records.length;
@@ -260,16 +287,19 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       return void body.replaceChildren(make('p', { class: 'fd-gantt-failed', role: 'alert' }, labels.loadFailed, ' ', retry));
     }
     if (!tasks.length) return void body.replaceChildren(make('p', { class: 'fd-gantt-empty' }, labels.nothing));
-    measured = body.clientWidth;
+    measured = room;
     const names = measured > 0 && measured <= 640 ? 140 : 240;
-    span = spanOf(planned, now(), zoom, firstDay, Math.max(0, body.clientWidth - names - 2));
+    span = spanOf(planned, now(), zoom, firstDay, Math.max(0, room - names - 2));
     const width = span.days * dayWidth;
     const groups = groupsOf(tasks, spec, page, labels.noGroup);
     // No stop of its own for the keys (Firefox gives a box that scrolls one): its bars are, each brought into view.
     const scroll = make('div', { class: 'fd-gantt-scroll', tabindex: '-1' }, make('div', { class: 'fd-gantt-sheet' }, axis(width), rows(groups, width)));
     body.replaceChildren(scroll, ...edges);
-    // Its signs under the axis, past the names: where the days shown start and end.
-    body.style.setProperty('--fd-gantt-axis', `${body.querySelector<HTMLElement>('.fd-gantt-head')?.offsetHeight ?? 0}px`);
+    // Its signs under the axis, past the names: where the days shown start and end — the axis's height told once it is
+    // laid out (`axisSized`), as it was the last time meanwhile.
+    const head = body.querySelector<HTMLElement>('.fd-gantt-head');
+    axisSized?.disconnect();
+    if (head) axisSized?.observe(head);
     scroll.addEventListener('scroll', markEdges, { passive: true });
     if (scrolled) [scroll.scrollLeft, scroll.scrollTop] = scrolled;
     // The keys' one stop: where they stood, else the first bar.
@@ -279,7 +309,7 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       stop.tabIndex = 0;
       if (keys && stop.dataset['focus'] === keys) stop.focus({ preventScroll: true });
     }
-    if (!placed && body.clientWidth > 0) {
+    if (!placed && room > 0) {
       placed = true;
       toPlan();
     }
@@ -841,6 +871,7 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       if (pending) clearTimeout(pending.timer);
       clearInterval(ticking);
       resized?.disconnect();
+      axisSized?.disconnect();
       view?.removeEventListener('beforeprint', before);
       view?.removeEventListener('afterprint', after);
       doc.removeEventListener('keydown', onUndoKey);

@@ -35,7 +35,7 @@ export const yesNoWidget: WidgetFactory = ({ form, name, node, id, document, lab
   }, node);
   return {
     element: make('div', { class: 'fd-choices-box' }, group, clear.button),
-    focus: () => (buttons.find((b) => b.getAttribute('aria-checked') === 'true') ?? buttons[0]).focus(),
+    focus: (options?: FocusOptions) => (buttons.find((b) => b.getAttribute('aria-checked') === 'true') ?? buttons[0]).focus(options),
     update(state) {
       readonly = state.readonly;
       const picked = state.value === true ? 0 : state.value === false ? 1 : -1;

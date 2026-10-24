@@ -594,10 +594,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     if (card) {
       const id = card.dataset['node'] as string;
       if (selected === id && picked.length <= 1) return;
-      // Clicking a field's words opens it with the cursor in those words.
+      // Clicking a field's words opens it with the cursor in those words — in sight already, where it was clicked.
       const part = target.closest('.fd-label') ? 'label' : target.closest('.fd-help') ? 'help' : null;
       designer.select(id);
-      if (part) focusIn(id, part, false);
+      if (part) focusIn(id, part, false, true);
       return;
     }
     // A block, a group, an arrangement or tabs: the nearest part round what was clicked.
@@ -617,14 +617,18 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     event.preventDefault();
     const id = card.dataset['node'] as string;
     designer.select(id);
-    focusIn(id, 'label', false);
+    focusIn(id, 'label', false, true);
   });
 
-  function focusIn(id: string, part: 'label' | 'help', selectAll: boolean) {
+  /**
+   * The cursor in a field's words. `seen`, the card was in sight as it was picked (pressed, or picked by the keys on
+   * it): focused where it is, with no scroll to work out — else brought into sight as the browser's focus does.
+   */
+  function focusIn(id: string, part: 'label' | 'help', selectAll: boolean, seen = false) {
     const card = cards.get(id);
     if (!card?.editing) return;
     const input = (part === 'label' ? card.label : card.help) as HTMLInputElement;
-    input.focus();
+    input.focus(seen ? { preventScroll: true } : undefined);
     if (selectAll) input.select();
     else input.setSelectionRange(input.value.length, input.value.length);
   }
@@ -713,6 +717,12 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       advanced.setEnabled(next === 'advanced');
     },
     update(state) {
+      // The focus in a card about to be drawn anew — the one picked, a card at rest until now, or the one picked before,
+      // its words typed in: let go before anything is written. Taken away with its card, the browser lays the whole
+      // canvas out to move the focus (0.32: on each pick); the card picked takes it again as it is drawn.
+      const focused = doc.activeElement;
+      const card = focused instanceof HTMLElement && body.contains(focused) ? focused.closest<HTMLElement>('.fd-canvas-field[data-node]') : null;
+      if (card && card.classList.contains('fd-editing') !== (card.dataset['node'] === state.selected)) (focused as HTMLElement).blur();
       setData(element, 'size', shownSize());
       ownWidth();
       page = state.page;

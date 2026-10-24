@@ -1472,16 +1472,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
             for (const update of p.own) update(state);
           }
         }
-        // Measured only when it can have changed: the strip's tabs, or the one chosen.
+        // Measured only when it can have changed — the strip's tabs, or the one chosen — once the page is laid out.
         const key = shown.map((p) => p.tab.id).join(' ');
-        if (key !== shownKey) {
+        if (key !== shownKey || active !== revealed) {
           shownKey = key;
-          strip.measure();
-        }
-        if (active !== revealed && list.clientWidth) {
           revealed = active;
-          const chosen = parts.find((p) => p.tab.id === active);
-          if (chosen) strip.reveal(chosen.button);
+          strip.later(parts.find((p) => p.tab.id === active)?.button);
         }
       });
       return box;

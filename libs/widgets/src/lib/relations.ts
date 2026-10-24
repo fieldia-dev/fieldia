@@ -751,7 +751,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   }
   return {
     element,
-    focus: () => box.input.focus(),
+    focus: (options?: FocusOptions) => box.input.focus(options),
     // Words typed in the plain box drawn before this one came: still the person's, found as they are typed on.
     takeTyped: (typed) => {
       if (box.input.readOnly) return false;
@@ -850,7 +850,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
   let drawn = '';
   return {
     element,
-    focus: () => box.input.focus(),
+    focus: (options?: FocusOptions) => box.input.focus(options),
     // Words typed in the plain box drawn before this one came, a tag to add: still the person's, found as they are typed
     // on — in the box its button opens, where tags are added from a button.
     takeTyped: (typed) => {
@@ -1078,7 +1078,7 @@ export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, doc
   let drawn = '';
   return {
     element,
-    focus: () => box.input.focus(),
+    focus: (options?: FocusOptions) => box.input.focus(options),
     destroy: () => {
       clearTimeout(marked);
       checks.destroy();
@@ -1144,7 +1144,7 @@ export const linkCheckboxesWidget: WidgetFactory = ({ form, name, id, document }
   });
   return {
     element,
-    focus: () => element.querySelector('input')?.focus(),
+    focus: (options?: FocusOptions) => element.querySelector('input')?.focus(options),
     update(state) {
       latest = { readonly: state.readonly, value: (state.value as RelatedRecord[] | null) ?? [] };
       sync();

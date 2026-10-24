@@ -62,7 +62,7 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
   if (listed && !form.getState().choices[name]) form.loadChoices(name);
   return {
     element: box,
-    focus: () => inner.focus(),
+    focus: (options?: FocusOptions) => inner.focus(options),
     destroy: () => inner.destroy?.(),
     update(state) {
       let choices = listed ? form.getState().choices[name] : undefined;
