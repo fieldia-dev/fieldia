@@ -744,6 +744,12 @@ export interface StoredDraft {
   order?: Record<string, string[]>;
   /** On a page with time limits: when each started, as ISO — the page's under `#form`, a step's by its id. */
   timers?: Record<string, string>;
+  /**
+   * A record's draft: the version the changes were typed against, and each changed field's value as it was then — laid
+   * again on a record that moved since, someone else's change is said as a conflict, never reverted in silence.
+   */
+  version?: RecordVersion;
+  from?: Values;
   /** When it was kept, as ISO. */
   savedAt: string;
 }

@@ -291,6 +291,8 @@ export interface QuestionPatch {
   autocomplete?: string;
   /** The keyboard a phone shows for its box (the node's `inputmode`); empty for its kind's own. */
   inputmode?: InputMode | '';
+  /** Never kept in a draft (the field's `secret`): a PIN, an ID number. A field of the app's model keeps its own. */
+  secret?: boolean;
 }
 
 /** Where something is added: after an element, or in a container — at a place among its children, or at its end. */
@@ -1129,6 +1131,10 @@ export function createDesigner(options: {
           }
           const field = draft.fields[node.field] as Field & { help?: string; required?: boolean };
           if (patch.label !== undefined) field.label = patch.label;
+          if (patch.secret !== undefined) {
+            if (patch.secret) field.secret = true;
+            else delete field.secret;
+          }
           if (patch.required !== undefined) {
             if (patch.required) field.required = true;
             else delete field.required;

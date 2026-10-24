@@ -290,6 +290,8 @@ export type {
   SaveTemplateRequest,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
+// What Fieldia keeps in the browser, a person's: let go at sign-out (`drafts.clear()`, `outbox.clear()`).
+export { drafts, outbox, ownerOf } from './lib/record/browser-kept';
 // A record's values as its source sent them, read as its fields hold theirs: what every load goes through.
 export { valuesFromSource, type FromSource } from './lib/record/from-source';
 export { matchesFilter } from './lib/record/filter';

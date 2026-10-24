@@ -169,6 +169,11 @@ const common = {
   help: z.string().optional(),
   required: z.boolean().optional(),
   readonly: z.boolean().optional(),
+  /**
+   * A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into
+   * a draft (in the browser's store or on the app's server), as a password box's never does.
+   */
+  secret: z.boolean().optional(),
   default: JsonValueSchema.optional(),
   /**
    * A new record's — or a new line's — first value, worked out: an expression

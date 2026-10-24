@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createMemoryDataSource, saveRefused, type DraftStore, type Page } from '@fieldia/core';
+import { createMemoryDataSource, ownerOf, saveRefused, type DraftStore, type Page } from '@fieldia/core';
 import { openFormDialog, openSearchDialog } from './dialog';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
@@ -1193,7 +1193,7 @@ describe('the viewer itself', () => {
 
   it('offers a saved draft back', () => {
     const items = new Map<string, string>([
-      ['fieldia:draft:product-feedback:new', JSON.stringify({ savedAt: '2026-10-02T09:00:00.000Z', values: { name: 'Sara' } })],
+      [`fieldia:draft:${ownerOf(null)}:product-feedback:new`, JSON.stringify({ savedAt: '2026-10-02T09:00:00.000Z', values: { name: 'Sara' } })],
     ]);
     const store: DraftStore = { getItem: (k) => items.get(k) ?? null, setItem: (k, v) => void items.set(k, v), removeItem: (k) => void items.delete(k) };
     const { host } = mount('survey', { drafts: { store } });

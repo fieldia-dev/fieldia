@@ -116,6 +116,26 @@ interface DataSource {
 <p id="keys">Every ${c('save')} and ${c('submit')} carries ${c('key')}: its idempotency key, made at its first try and the same for every try after — Retry after an answer lost on the way, a copy kept without signal and sent later — until it went (a new record's until it has its id, a response's until the form starts another). A request with a key you kept is the same send tried again: store its values over that one's and answer as you did, never a second record or response. ${c('form.save()')} asked twice with nothing changed is one save, and a response's answers are never sent twice as they were.</p>
 <p>A slow answer is handled for you: if someone keeps typing, an ${c('onchange')} or ${c('search')} answer that arrives after a newer question is ignored.</p>
 
+<h2 id="kept">What Fieldia keeps in the browser</h2>
+<p>Everything Fieldia keeps on a device is a person's, by whose it is: the signed-in person's (the viewer's ${c('user')}), else the tab's it was typed in — so the next person on a shared tablet is never offered the last one's typing, nor sends it under their own session.</p>
+<ul>
+  <li><strong>Drafts</strong> — in your ${c('drafts.store')} (localStorage fits) as ${c('fieldia:draft:<owner>:<page>:<record|new>')}, a timed page's in the tab's own store: a record's draft keeps only the fields changed, with the version they were typed against — laid again on a record someone saved since, it is said as a conflict, never reverting their work — and never a secret field (a password box, or ${c('"secret": true')} on a field: a PIN, an ID number).</li>
+  <li><strong>The tab's id</strong> — ${c('fieldia:tab')} in the tab's own store, while it is open.</li>
+  <li><strong>Sends kept without signal</strong> — IndexedDB ${c('fieldia-outbox')}: each with its owner, sent by their forms alone.</li>
+  <li><strong>Preferences</strong> — localStorage ${c('fieldia:<key>')}, a signed-in person's under ${c('fieldia:u:<id>:')}: a list's columns, its filters shown, favourites, saved record templates, the records picked last.</li>
+  <li><strong>The designer</strong> — ${c('fieldia.designer.mode')}, ${c('fieldia.designer.size')}, ${c('fieldia.designer.looks')}.</li>
+</ul>
+${code(
+  'ts',
+  `
+import { drafts, outbox } from '@fieldia/core';
+
+async function signOut(userId) {
+  drafts.clear({ user: userId }); // or drafts.clear() for every draft on the device
+  await outbox.clear({ user: userId }); // their sends kept without signal, let go unsent
+}`
+)}
+
 <h2 id="trust">Your server is the final gate</h2>
 <p>Every rule a page holds — required, a pattern, a size, the options offered, a code proved, a payment taken, a time limit, one response each — is checked in the person's browser, and a request made by hand passes none of them. Run the same page's checks where its answers arrive, with ${c('checkSubmission')} from ${c('@fieldia/core')}, on the page as your server keeps it:</p>
 ${code(

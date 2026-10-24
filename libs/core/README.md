@@ -1007,6 +1007,29 @@ try again." where the part comes by `import()`, which a page keeps failed), the
 viewer shows it with Retry, and what was typed stays. An outbox and a record made
 live guard nothing: without them a send goes as it would have.
 
+## What Fieldia keeps in the browser
+
+Everything Fieldia keeps on a device is a person's, kept by whose it is — the
+signed-in person's (`user.id`: `u:<id>`), else the tab's it was typed in (an id
+the tab keeps in `sessionStorage` as `fieldia:tab`: a reload keeps it, another
+tab or person never sees it) — so the next person on a shared device is never
+offered the last one's typing, nor sends it under their own session:
+
+| What | Where | Holds |
+|---|---|---|
+| Drafts | the app's `drafts.store` (localStorage fits), key `fieldia:draft:<owner>:<page>:<record \| new>`; a timed page's without one, `sessionStorage`; on the app's server (`saveDraft`), the store keeps only `{ savedAt, key }` | a record's: the fields changed, the version they were typed against and each one's value then; a response's: its answers — never a secret field's (a password box, a field with `"secret": true`); the step, steps skipped, text that does not read yet, a draw, a time limit's starts |
+| The tab's id | `sessionStorage` `fieldia:tab` | an id, while the tab is open |
+| Sends kept without signal | IndexedDB `fieldia-outbox`, store `items` (memory where the browser has none: said so, never "kept on this device") | each send as it would have gone — its answers, photos' bytes (base64), its key — with its owner; sent by its owner's forms alone |
+| Preferences | the viewer's `preferences`, by default localStorage `fieldia:<key>` — a signed-in person's `fieldia:u:<id>:<key>` | a list's columns (`<page>.<list>.columns`), a grid's, a filter bar's filters shown (`filters:<page>:<list>`), favourites (`favourites:<page>`), saved record templates (`templates:<page>`: values), records picked last (`recent:<model>`: their names), duplicates told apart (`duplicates.<model>`), a files field's view |
+| The designer | localStorage `fieldia.designer.mode`, `fieldia.designer.size` and its width, `fieldia.designer.looks` | how its canvas is shown, looks saved |
+
+At sign-out, let a person's go: `drafts.clear({ user })` and `await
+outbox.clear({ user })` (from `@fieldia/core`; with no `user`, every one —
+drafts in the given `store`, else the browser's local and tab stores, which list
+their keys; sends in the given `store`, else IndexedDB). Sends let go never go.
+Preferences under `fieldia:u:<id>:` are yours to remove. A draft of 0.33 or
+before, kept by page alone, is never offered again; `drafts.clear()` removes it.
+
 ## The server is the final gate
 
 Everything a page checks — required, patterns, sizes, options, a code proved, a

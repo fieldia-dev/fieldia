@@ -60,6 +60,7 @@ import type { Limits } from './form-limits';
 import type { FormApproval } from './approving';
 import { draftRead, resumeStep, timedStore } from './drafts';
 import { envelopeOf, valuesFromSource } from './from-source';
+import { ownerOf } from './browser-kept';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -446,7 +447,9 @@ export interface FormOptions {
    * Keep what is typed as a draft, offered again the next time the page opens: in `store` (the browser's localStorage
    * fits) — or, on a page with `continueLater` whose data source has `saveDraft` and `loadDraft`, on the app's server,
    * the store keeping only its key (such a page keeps its drafts there without this too). A draft keeps the wizard's
-   * step and text typed that does not read yet. `restore`: `ask` (the default) offers it, `auto` lays it at once.
+   * step and text typed that does not read yet. `restore`: `ask` (the default) offers it, `auto` lays it at once. A
+   * draft is the person's (`user`, else the tab's), a record's its changes alone with their version, and never holds a
+   * secret field: see "What Fieldia keeps in the browser" in the README.
    */
   drafts?: { store: DraftStore; restore?: 'auto' | 'ask'; delayMs?: number };
   /**
@@ -1211,7 +1214,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const joined = <K extends keyof FormJoins>(name: K): FormJoins[K] | null => (joins[joinParts.findIndex((part) => part.name === name)] ?? null) as FormJoins[K] | null;
   /** Whether a part that joins the form says so of a part of the page, or of a field. */
   const anyJoin = (says: (join: FormJoin) => boolean | undefined) => joins.some((join) => join && says(join));
-  const storeKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
+  /**
+   * Where a draft is kept: by whose it is — the signed-in person's, else this tab's (`ownerOf`) — the page and the record:
+   * the next person on a shared device is never offered the last one's typing.
+   */
+  const storeKey = () => `fieldia:draft:${ownerOf(options.user)}:${page.id}:${state.recordId ?? 'new'}`;
   /** Today, on the clock of the page's time zone (the browser's own when it names none). */
   const today = () => dayIn(options.now?.() ?? new Date(), page.timeZone);
   /** Whether a field's own words — a label, a choice's — show a value: found once, so a page with none checks as before. */
@@ -2681,19 +2688,32 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     }, options.drafts?.delayMs ?? (onServer() ? 1500 : 400));
   }
 
-  /** The draft of what is typed now: the answers, the wizard's step and the steps passed over, text that does not read. */
+  /**
+   * The draft of what is typed now: the answers, the wizard's step and the steps passed over, text that does not read —
+   * never a secret field's (a password box, a field marked `secret`). A record's draft keeps only the fields changed, with
+   * the version they were typed against and each one's value then (`from`): laid again, it is the person's changes alone,
+   * never the rest of the record as it was — a colleague's save since is never reverted.
+   */
   function draftNow(): StoredDraft {
+    const answered = Object.keys(fields).filter((name) => state.dirty.includes(name) && !secretFields.has(name));
+    const record = page.data.kind === 'record' && state.recordId != null;
+    const kept: Values = record ? Object.fromEntries(answered.map((name) => [name, state.values[name]])) : Object.fromEntries(Object.entries(state.values).filter(([name]) => !secretFields.has(name)));
     // Where files are stored apart, never a file's bytes: they would fill the browser's store (uploads.ts). Without, kept as always.
-    const values = options.dataSource?.upload ? draftOf(state.values) : structuredCopy(state.values as Values);
+    const values = options.dataSource?.upload ? draftOf(kept) : structuredCopy(kept);
+    const unread = Object.fromEntries(Object.entries(state.unread).filter(([path]) => !secretFields.has(path.split('.')[0])));
     return {
       values,
       ...(steps.length ? { step: state.step, skipped: [...state.skipped] } : {}),
       ...Object.assign({}, ...joins.map((join) => join?.kept?.())),
-      ...(Object.keys(state.unread).length ? { unread: structuredCopy(state.unread as Record<string, UnreadText>) } : {}),
-      answered: Object.keys(fields).filter((name) => state.dirty.includes(name)),
+      ...(Object.keys(unread).length ? { unread: structuredCopy(unread as Record<string, UnreadText>) } : {}),
+      answered,
+      ...(record ? { from: structuredCopy(Object.fromEntries(answered.map((name) => [name, baseline[name] ?? null]))), ...(state.version ? { version: state.version } : {}) } : {}),
       savedAt: new Date(clock()).toISOString(),
     };
   }
+
+  /** Fields never kept in the browser: those marked `secret`, and any drawn as a password box. */
+  const secretFields = new Set([...Object.keys(page.fields).filter((name) => (page.fields[name] as { secret?: boolean }).secret === true), ...[...index.values()].filter((node) => node.kind === 'field' && (node.source as FieldNode).widget === 'password').map((node) => node.field as string)]);
 
   /** A draft in the browser's store, where the app gave one: a store that is full keeps none. */
   function keepHere(kept: StoredDraft | { savedAt: string; key: string }) {
@@ -2744,13 +2764,25 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return values;
   }
 
-  /** A draft laid on the form: its answers as a starting point, its wizard step (or the nearest before it that applies), its text that does not read. */
+  /**
+   * A draft laid on the form: its answers as a starting point — those of fields the page still has, never a secret one —
+   * its wizard step (or the nearest before it that applies), its text that does not read. A record's, typed against a
+   * version the record has moved from (or a field someone else changed since), is laid as the person's changes and said
+   * as a conflict: Reload takes theirs (the draft set aside, to put back), Keep mine saves it over theirs.
+   */
   function applyDraft(draft: StoredDraft) {
     found = null;
     // Its draw and its clocks, by the survey flow's part: now, or once it came.
     laid = draft;
     for (const join of joins) join?.lay?.(draft);
-    writeValues(withDraft(draft.values ?? {}), { draft: null }, true);
+    const kept = Object.fromEntries(Object.entries(draft.values ?? {}).filter(([name]) => Object.prototype.hasOwnProperty.call(page.fields, name) && !secretFields.has(name)));
+    const from = draft.from ?? {};
+    const moved = page.data.kind === 'record' && state.recordId != null && ((!!draft.version && !!state.version && draft.version.token !== state.version.token) || Object.keys(from).some((name) => name in kept && !sameValue(fields[name], baseline[name], from[name])));
+    writeValues(withDraft(kept), { draft: null }, true);
+    if (moved) {
+      const changed = Object.keys(from).filter((name) => name in kept && !sameValue(fields[name], baseline[name], from[name]));
+      set({ conflict: { version: state.version ?? { token: '' }, theirs: structuredCopy(baseline), changed, both: changed.filter((name) => !sameValue(fields[name], baseline[name], kept[name])) } });
+    }
     const known = (draft.skipped ?? []).filter((id) => steps.includes(id));
     // Text typed that did not read stays as typed, said as it was, where its field is still on the page.
     const unread = Object.fromEntries(Object.entries(draft.unread ?? {}).filter(([path]) => !!page.fields[path.split('.')[0]] && typeof draft.unread?.[path]?.text === 'string'));

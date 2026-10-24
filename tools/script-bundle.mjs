@@ -1382,7 +1382,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // harden-data: one send discipline — every save and send carries one key from its first try, a second asked with nothing
 // changed is the first, a response's same answers never go twice, a new record answered with no id said — what every
 // send goes through. 533.33 measured before, 533.94 after, to 534.0.
-const BUDGET_KB = 534.0;
+// harden-data: drafts and sends kept are a person's — kept by the signed-in person's id or the tab's (browser-kept.ts),
+// a record's draft its changes alone with their version (a moved record said as a conflict), a secret field never kept,
+// `drafts.clear()` and `outbox.clear()` for sign-out — what every page that keeps drafts needs. 533.94 measured before,
+// 536.04 after, to 536.1.
+const BUDGET_KB = 536.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1687,7 +1691,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // harden-data: a part that guards a send fails closed (listed with the raw budget above): 172.08 measured before,
 // 172.77 after, to 172.8. One load boundary (listed with the raw budget above): 172.78 measured before, 174.60 after,
 // to 174.7. One send discipline (listed with the raw budget above): 174.60 measured before, 174.84 after, to 174.9.
-const GZIP_BUDGET_KB = 174.9;
+// Drafts and sends kept a person's (listed with the raw budget above): 174.84 measured before, 175.71 after, to 175.8.
+const GZIP_BUDGET_KB = 175.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2684,8 +2689,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // before, 7.78 and 3.44 after, to 7.8 and 3.5; the live part reads a change pushed as a load reads it, 4.60 and 2.23, 4.61
 // and 2.23, to 4.7. The outbox part drains kept saves before a live one, renews its claims and says where the browser
 // keeps nothing past the page, 9.00 and 4.00 measured before, 10.34 and 4.44 after, to 10.4 and 4.5; the memory source
-// keeps a send once by its key, 24.90 and 9.10, 25.19 and 9.11, to 25.2 and 9.2.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.4, 45.2], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.4, 2.4], outbox: [10.4, 4.5] };
+// keeps a send once by its key, 24.90 and 9.10, 25.19 and 9.11, to 25.2 and 9.2. The outbox's sends a person's own, and
+// let go at sign-out: 10.34 and 4.44 measured before, 10.77 and 4.59 after, to 10.8 and 4.6.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.4, 45.2], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.4, 2.4], outbox: [10.8, 4.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

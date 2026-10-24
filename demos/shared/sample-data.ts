@@ -432,6 +432,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(listSearch ? { listSearch } : {}),
     // The contacts' person signed in: Mona Adel, one of their owners — her own contacts bold (the page's rowBold).
     ...(params.get('page') === 'contacts' ? { user: { id: 9001, name: 'Mona Adel' } } : {}),
+    // The viewing report's broker, signed in: what she sends without signal is kept as hers, past a closed tab.
+    ...(params.get('page') === 'viewing-report' ? { user: { id: 'broker-mona', name: 'Mona Adel' } } : {}),
     // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both; the leads'
     // follow-ups too. The sign-up opens and closes on it: `?now=` before sign-ups open, or after they close.
     ...(params.get('page') === 'invoices' || params.get('page') === 'leads-queue' || params.get('page') === 'event-signup' || params.get('page') === 'activity-log' ? { now: demoNow } : {}),

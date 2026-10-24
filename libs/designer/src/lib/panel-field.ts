@@ -110,6 +110,10 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     if (requiredWhen.element.hidden === false) designer.setRule(id, 'required', null);
     designer.updateQuestion(id, { required: always });
   });
+  // Never kept in a draft (`secret`): a PIN, an ID number — its answer goes with the save alone.
+  const secret = el('input', { type: 'checkbox', 'aria-label': w.secret, 'data-secret': '' }) as HTMLInputElement;
+  secret.addEventListener('change', () => designer.updateQuestion(id, { secret: secret.checked }));
+  const secretRow = onTab(el('div', { class: 'fd-prop' }, el('label', { class: 'fd-q-required' }, secret, el('span', {}, w.secret)), el('p', { class: 'fd-properties-hint fd-set-hint' }, w.secretHint)), 'rules', 'Never kept in a draft');
   // Required, or read-only, only when a rule holds.
   const requiredWhen = conditionEditor(el, designer, id, 'question', 'required');
   const requiredOnly = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when', 'aria-label': w.requiredOnlyWhen }, w.onlyWhen);
@@ -168,6 +172,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     setting(el, 'layout', 'Section', section, { words: w.section }),
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('div', { class: 'fd-q-required-row' }, el('label', { class: 'fd-q-required' }, required, el('span', {}, w.required)), requiredOnly), requiredWhen.element), 'rules', 'Required'),
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, readonlyWhen.element, readonlyOnly, readonlyReasonRow), 'rules', 'Read-only'),
+    secretRow,
     whenBox,
     roles.element,
     shownWhile.element,
@@ -245,6 +250,9 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
 
       // Rules.
       required.checked = def.required === true || found.node.required === true;
+      secret.checked = (def as { secret?: boolean }).secret === true;
+      // A field of the app's model keeps its own definition: what it keeps secret is the model's to say.
+      secretRow.hidden = fromModel;
       const others = allSections(page).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field' && n.id !== id && choicesOf(page.fields[n.field]) !== null));
       requiredWhen.update(page, others, found.node.required);
       requiredOnly.hidden = required.checked || !requiredWhen.element.hidden || !requiredWhen.canStart();

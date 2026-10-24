@@ -18,6 +18,7 @@ const NAMES: Record<string, string> = {
   Section: 'Bölüm',
   Required: 'Zorunlu',
   'Read-only': 'Salt okunur',
+  'Never kept in a draft': 'Taslakta asla saklanmaz',
   'When it shows': 'Ne zaman görünür',
   'Field name': 'Alan adı',
   'Stored as': 'Saklama biçimi',
@@ -618,6 +619,8 @@ export const panel: DesignerWords['panel'] = {
   /** A code scanned with the camera into the field (`options.scan`), and for a link the field of its records holding their codes. */
   scanWithCamera: 'Kamerayla tara',
   scanHint: 'Kutunun yanındaki Tara düğmesi kamerayla barkod, QR ya da DataMatrix kodu okur. Barkod okuyucu tabanca kutuya her zamanki gibi yazar.',
+  secret: 'Taslakta asla saklanmaz',
+  secretHint: 'Yanıtı kayıtla gider, ancak ne bu cihazda ne de sunucunuzda bir taslakta asla saklanmaz: bir PIN, bir kimlik numarası.',
   scanCodeField: 'Kodun saklandığı alan',
   scanCodeFieldHint: 'Bağlı kayıtların kodunu tutan alan, örneğin barkod. Boş bırakılırsa kod bir ad olarak aranır.',
   keyboards: {

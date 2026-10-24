@@ -1,3 +1,4 @@
+import { ownerOf } from './browser-kept';
 import type { Page } from '../format/page';
 import type { DataSource, SaveDraftRequest } from './data-source';
 import { createForm, type DraftStore } from './form';
@@ -83,7 +84,7 @@ describe('drafts on the app’s server', () => {
     expect(saves.map((save) => save.key)).toEqual([null, 'draft-1']);
     expect(saves[1]).toMatchObject({ pageId: 'patient-intake', model: '', recordId: null, draft: { values: { name: 'Mona Adel', weight: 64.5 }, step: 'about', skipped: [], answered: ['name', 'weight'] } });
     expect(Object.keys(source.drafts)).toEqual(['draft-1']);
-    expect(JSON.parse(store.items.get('fieldia:draft:patient-intake:new') as string)).toEqual({ savedAt: expect.any(String), key: 'draft-1' });
+    expect(JSON.parse(store.items.get(`fieldia:draft:${ownerOf(null)}:patient-intake:new`) as string)).toEqual({ savedAt: expect.any(String), key: 'draft-1' });
     expect(form.getState().resume).toEqual({ key: 'draft-1' });
     expect(told).toEqual(['draft-1', 'draft-1']);
   });
@@ -195,7 +196,7 @@ describe('drafts on the app’s server', () => {
     form.setValue('name', 'Mona Adel');
     clock.advance(1500);
     await form.settled();
-    expect(JSON.parse(store.items.get('fieldia:draft:patient-intake:new') as string)).toMatchObject({ values: { name: 'Mona Adel' } });
+    expect(JSON.parse(store.items.get(`fieldia:draft:${ownerOf(null)}:patient-intake:new`) as string)).toMatchObject({ values: { name: 'Mona Adel' } });
   });
 
   it('lets a draft on its way go first, so the send names the draft it ends', async () => {
@@ -224,7 +225,7 @@ describe('without the server’s drafts', () => {
     form.setValue('name', 'Mona Adel');
     form.next();
     clock.advance(300);
-    expect(JSON.parse(store.items.get('fieldia:draft:patient-intake:new') as string)).toMatchObject({ values: { name: 'Mona Adel' }, step: 'health' });
+    expect(JSON.parse(store.items.get(`fieldia:draft:${ownerOf(null)}:patient-intake:new`) as string)).toMatchObject({ values: { name: 'Mona Adel' }, step: 'health' });
     const again = createForm({ page: intake(), dataSource: source, drafts: { store, restore: 'auto' }, scheduler: clock });
     expect(again.getState()).toMatchObject({ step: 'health', values: { name: 'Mona Adel' } });
   });

@@ -420,7 +420,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // its parts, so its first paint is in its language.
   const words = wordsComing(tag) ? wordsReady(tag) : null;
   const locale = ownLocale(tag);
-  const preferences = options.preferences ?? browserPreferences();
+  // A signed-in person's own: the next person on the device never meets their templates or the records they opened last.
+  const preferences = options.preferences ?? browserPreferences(undefined, options.user?.id);
   const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone));
   const ownsForm = !options.form;
   // Read as each word is drawn: a part's words are there once it has come (the one-tag script's).

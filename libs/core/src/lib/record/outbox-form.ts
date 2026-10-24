@@ -1,6 +1,7 @@
 import type { Fields } from '../format/field';
 import { saveProblemOf, type DataSource, type RecordVersion, type SaveProblem, type SaveRequest, type SubmitRequest, type UploadedFile, type UploadFile } from './data-source';
 import type { FormInner, FormJoin } from './joins';
+import { lastsPastThePage, ownerOf } from './browser-kept';
 import { fileBytesIn, formUploadsPart } from './uploads';
 import { structuredCopy, type FileValue } from './values';
 
@@ -23,6 +24,11 @@ export interface OutboxItem {
   at: string;
   /** A new record's own key on the form that kept it: a later save of the same record while this waits takes its place. */
   record?: string;
+  /**
+   * Whose it is: the signed-in person's (`u:<id>`), else the tab's it was kept in (`t:<id>`). Only their own forms send
+   * it, so it never goes under the next person's session. None on an item kept before 0.34: any form of its page sends it.
+   */
+  owner?: string;
   /** How many times it was tried. */
   tries: number;
   /** Refused when it was sent (not the network's doing): why, kept for the person to see, and nothing sent after it waits on it. */
@@ -42,6 +48,8 @@ export interface OutboxStore {
   delete(key: string): Promise<void>;
   /** Take an item to send it, unless another sender holds it still: whether it was taken. */
   claim(key: string, by: string, until: number): Promise<boolean>;
+  /** Let go every item — or an owner's alone — unsent: sign-out (`outbox.clear()`). */
+  clear?(owner?: string): Promise<void>;
 }
 
 /** A form's outbox, made for it (`join`; `form.joined('outbox')`). */
@@ -95,6 +103,9 @@ export function memoryOutbox(): OutboxStore & { readonly items: OutboxItem[] } {
       if (!item || (item.claim && item.claim.by !== by && item.claim.until > Date.now())) return false;
       item.claim = { by, until };
       return true;
+    },
+    async clear(owner) {
+      for (let at = items.length - 1; at >= 0; at--) if (owner === undefined || items[at].owner === owner) items.splice(at, 1);
     },
   };
 }
@@ -180,6 +191,11 @@ export function indexedOutbox(name = 'fieldia-outbox'): OutboxStore | null {
         return true;
       });
     },
+    clear: (owner) =>
+      write(async (store) => {
+        for (const item of await asked(store.getAll())) if (owner === undefined || item.owner === owner) store.delete(item.key);
+        return true;
+      }).then(() => undefined),
   };
 }
 
@@ -237,7 +253,16 @@ export function join(joined: FormInner): FormOutbox {
   const host: OutboxHost = { pageId: page.id, fields: page.fields, dataSource: options.dataSource };
   // Where a browser keeps nothing past the page (no IndexedDB): held in memory, and said so — never "kept on this device".
   const lasting = options.outbox ?? indexedOutbox();
-  const store = lasting ?? memoryOutbox();
+  const shared = lasting ?? memoryOutbox();
+  // This person's sends alone: the signed-in person's, else this tab's — never another's, sent under their session.
+  const owner = ownerOf(form.user());
+  const mine = (item: OutboxItem) => item.owner === undefined || item.owner === owner;
+  const store: OutboxStore = {
+    list: async (pageId) => (await shared.list(pageId)).filter(mine),
+    put: (item) => shared.put(item),
+    delete: (key) => shared.delete(key),
+    claim: (key, by, until) => shared.claim(key, by, until),
+  };
   const me = `sender-${++sender}-${Math.random().toString(36).slice(2, 8)}`;
   let sending: Promise<void> | null = null;
   /** Whether the last try found no network: a send kept, or one of those kept tried and not taken. */
@@ -261,7 +286,8 @@ export function join(joined: FormInner): FormOutbox {
         offline,
         kept,
         refused: items.filter((item) => item.refused).map((item) => ({ key: item.key, message: item.refused?.message ?? '', at: item.at })),
-        lasting: lasting !== null,
+        // Kept past the page: in a store that lasts, for a signed-in person (a tab's own go with the tab).
+        lasting: lasting !== null && lastsPastThePage(owner),
       },
     });
   };
@@ -328,7 +354,7 @@ export function join(joined: FormInner): FormOutbox {
       // Kept by the send's own key, the one its first try carried: a server that had that try keeps no second.
       const item: OutboxItem = same
         ? { ...same, request: structuredCopy({ ...request, key: same.key }) }
-        : { key: request.key ?? newKey(Date.now()), pageId: host.pageId, kind, request: structuredCopy(request), at: new Date().toISOString(), ...(own ? { record: own } : {}), tries: 0 };
+        : { key: request.key ?? newKey(Date.now()), pageId: host.pageId, kind, request: structuredCopy(request), at: new Date().toISOString(), ...(own ? { record: own } : {}), owner, tries: 0 };
       await store.put(item);
       offline = true;
       await refresh();

@@ -1901,3 +1901,35 @@ In plain words:
   (`state.outbox.lasting: false`): "Not sent yet" and "1 send waits in this page: keep it open…", never "Kept on this
   device".
 - Tests: `libs/core/src/lib/record/send-discipline.spec.ts`, `e2e/send-discipline.spec.ts`.
+
+## 37. Drafts and kept sends are a person's (0.34, lane harden-data)
+
+Nothing a source must add; the draft a source keeps (`saveDraft`) and the store an app gives grow optional fields.
+
+```ts
+// StoredDraft gains version?: RecordVersion; from?: Values — a record's draft: the version its changes were typed
+// against, and each changed field's value then.
+// OutboxItem gains owner?: string ('u:<id>' | 't:<tab>'); OutboxStore gains clear?(owner?: string): Promise<void>.
+// Field gains secret?: boolean (the page format 0.11 grows: a field never kept in a draft).
+// @fieldia/core exports drafts.clear({ user?, store? }) and outbox.clear({ user?, store? }), and ownerOf(user).
+// browserPreferences(storage?, user?) keeps a signed-in person's under fieldia:u:<id>:.
+```
+
+In plain words:
+
+- **Whose**: a draft and a kept send are the signed-in person's (`user.id` → `u:<id>`), else the tab's they were typed
+  in (`t:<id>`, an id the tab keeps as `fieldia:tab` while it is open). A draft is kept as
+  `fieldia:draft:<owner>:<page>:<record|new>`; a kept send carries `owner`, and only its owner's forms send it (an item
+  kept before 0.34, with none, any form of its page). A tab's own sends go with the tab: `state.outbox.lasting` is false,
+  and the viewer says to keep the page open.
+- **A record's draft is its changes**: only the fields changed, with the version they were typed against and each one's
+  value then (`from`). Laid again on a record whose version moved, or a field of which someone else changed since, it
+  is the person's changes over the record as it is now, said as a conflict (`state.conflict`: Reload takes theirs and
+  sets the draft aside, Keep mine saves it). A response's draft keeps its answers, as ever. A field the page no longer
+  has is never laid.
+- **Secret**: a password box's value and a field marked `"secret": true` are never kept in a draft — the browser's or the
+  server's — and go with the save alone. The designer offers it on a field's Rules tab ("Never kept in a draft").
+- **Sign-out**: `drafts.clear({ user })` and `outbox.clear({ user })` let a person's go (every one, with no `user`).
+- **Preferences** — a list's columns, templates, the records picked last — are a signed-in person's own.
+- Tests: `libs/core/src/lib/record/kept-by-person.spec.ts`, `libs/widgets/src/lib/preferences.spec.ts`,
+  `e2e/kept-by-person.spec.ts`.
