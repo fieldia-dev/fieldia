@@ -38,6 +38,9 @@ const BOXES = 'input:not([type="hidden"]), textarea, select, [contenteditable="t
  */
 function wordsAround(area: HTMLElement, part: HTMLElement, band: { top: number; bottom: number }): Box[] {
   const range = area.ownerDocument.createRange();
+  // A document no engine lays out (jsdom, an app's tests of the designer) has no boxes for words or parts: nothing to
+  // keep clear — never a throw in the frame that places the bars, landing on whatever runs then.
+  if (typeof range.getClientRects !== 'function') return [];
   const inBand = (box: Box) => box.bottom > band.top && box.top < band.bottom && box.right > box.left;
   const found: Box[] = [];
   const words = (holder: Element) => {

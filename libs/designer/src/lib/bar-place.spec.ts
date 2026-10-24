@@ -15,19 +15,20 @@ const measure = (node: Element, r: Rect) => {
   (node as HTMLElement).getBoundingClientRect = () => rects.get(node) as DOMRect;
 };
 let realRange: typeof document.createRange;
+/** A text's own boxes: its words where its element is measured to hold them. */
+const measuredRange = () => {
+  const range = realRange();
+  let of: Node | null = null;
+  range.selectNodeContents = (node: Node) => void (of = node);
+  range.getClientRects = () => {
+    const at = of ? (rects.get(of) ?? rects.get(of.parentNode as Node)) : undefined;
+    return (at ? [at] : []) as unknown as DOMRectList;
+  };
+  return range;
+};
 beforeAll(() => {
   realRange = document.createRange.bind(document);
-  // A text's own boxes: its words where its element is measured to hold them.
-  document.createRange = () => {
-    const range = realRange();
-    let of: Node | null = null;
-    range.selectNodeContents = (node: Node) => void (of = node);
-    range.getClientRects = () => {
-      const at = of ? (rects.get(of) ?? rects.get(of.parentNode as Node)) : undefined;
-      return (at ? [at] : []) as unknown as DOMRectList;
-    };
-    return range;
-  };
+  document.createRange = measuredRange;
 });
 afterAll(() => (document.createRange = realRange));
 afterEach(() => {
@@ -119,5 +120,16 @@ describe('a designer’s floating bar, placed', () => {
     // Its end at the canvas's, less 4px: never past it.
     const { left } = place(wide);
     expect(450 - 50 + left + 250).toBe(996);
+  });
+
+  it('in a document no engine lays out (jsdom: no boxes for words), goes above with nothing to keep clear, never throwing', () => {
+    const at = canvas();
+    document.createRange = realRange;
+    try {
+      expect(typeof document.createRange().getClientRects).not.toBe('function');
+      expect(place(at).side).toBe('above');
+    } finally {
+      document.createRange = measuredRange;
+    }
   });
 });
