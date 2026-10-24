@@ -68,8 +68,8 @@ const pick = (select: HTMLSelectElement, code: string) => {
 };
 /** The country's button, and its list as a person works it: opened, typed in, a key pressed in its box. */
 const countryButton = (el: HTMLElement) => el.querySelector('button.fd-phone-country') as HTMLButtonElement;
-const findBox = () => document.querySelector('.fd-search-find') as HTMLInputElement;
-const rowsShown = () => [...document.querySelectorAll<HTMLElement>('.fd-search-list:not([hidden]) [role="option"]')];
+const findBox = () => document.querySelector('.fd-lookup-find') as HTMLInputElement;
+const rowsShown = () => [...document.querySelectorAll<HTMLElement>('.fd-lookup-list:not([hidden]) [role="option"]')];
 const rowWords = (row: HTMLElement) => [...row.children].map((part) => part.textContent);
 const press = (target: HTMLElement, key: string) => target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
 function search(el: HTMLElement, typed: string) {
@@ -143,7 +143,7 @@ describe('a phone read the world over', () => {
     // Nothing found says so.
     search(el, 'xyzzy');
     expect(rowsShown()).toEqual([]);
-    expect(document.querySelector('.fd-search-none')?.textContent).toBe('No country matches “xyzzy”');
+    expect(document.querySelector('.fd-lookup-none')?.textContent).toBe('No country matches “xyzzy”');
   });
 
   it('puts the page’s country and the reader’s first, a line under them, the one picked ticked', () => {

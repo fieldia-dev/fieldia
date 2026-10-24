@@ -38,7 +38,7 @@ test.describe('a phone’s country, found by typing', () => {
     await expect(rows(page).nth(2)).toHaveText('🇦🇫Afghanistan+93');
     expect(await rows(page).count()).toBeGreaterThan(240);
     // The list hangs under the flag, over the page, inside the window.
-    const [under, list] = [await button.boundingBox(), await page.locator('.fd-search-list:not([hidden])').boundingBox()];
+    const [under, list] = [await button.boundingBox(), await page.locator('.fd-lookup-list:not([hidden])').boundingBox()];
     expect(list!.y).toBeGreaterThan(under!.y + under!.height - 1);
     expect(Math.abs(list!.x - under!.x)).toBeLessThan(2);
     await screen(page, 'phone-countries-open', { viewport: true });
@@ -85,9 +85,9 @@ test.describe('a phone’s country, found by typing', () => {
     await page.keyboard.press('ArrowDown');
     await expect(finder(page)).toBeFocused();
     // Opened on the one picked, in the whole list; the next row is a key away.
-    await expect(page.locator('.fd-search-row[data-active]')).toContainText('Jordan');
+    await expect(page.locator('.fd-lookup-row[data-active]')).toContainText('Jordan');
     await page.keyboard.press('ArrowDown');
-    await expect(page.locator('.fd-search-row[data-active]')).toContainText('Kazakhstan');
+    await expect(page.locator('.fd-lookup-row[data-active]')).toContainText('Kazakhstan');
     await page.keyboard.press('Escape');
     await expect(rows(page)).toHaveCount(0);
     await expect(button).toBeFocused();
@@ -147,6 +147,20 @@ test('on a phone it opens as a sheet from the foot of the screen, and Close puts
   expect(Math.round(box.y + box.height)).toBe(844);
   // Each row a finger's height.
   expect((await rows(page).first().boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  // Dark on a dark page: the sheet opens outside the form, and wears its scheme — its ground the form's own surface,
+  // its words light — as the page's other sheets and dialogs do.
+  const [ground, words, surface] = await sheet.evaluate((box) => {
+    const probe = document.createElement('div');
+    probe.style.background = 'var(--fd-surface)';
+    document.querySelector('.fd-form')!.append(probe);
+    const own = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return [getComputedStyle(box).backgroundColor, getComputedStyle(box).color, own];
+  });
+  expect(ground).toBe(surface);
+  const light = (rgb: string) => (rgb.match(/\d+/g) ?? []).slice(0, 3).reduce((sum, n) => sum + Number(n), 0);
+  expect(light(ground)).toBeLessThan(200);
+  expect(light(words)).toBeGreaterThan(550);
   await finder(page).fill('fra');
   await expect(rows(page).first()).toContainText('France');
   await expectNoSidewaysScroll(page);
@@ -166,6 +180,26 @@ test('on a phone it opens as a sheet from the foot of the screen, and Close puts
   await expect(button).toContainText('+44');
 });
 
+test('a page with a phone keeps Search more…’s list as it was: its rows one under another, as wide as its dialog', async ({ page }) => {
+  // The country list's own classes are its own: none of its rules reach the list of a link's Search more… (the same
+  // page's, once the phone part has come).
+  await page.setViewportSize({ width: 1440, height: 900 });
+  ({ problems } = await open(page, 'plain', 'page=fields&skin=outlined'));
+  await expect(country(page, 'f-phone')).toBeVisible();
+  const client = node(page, 'f-client').locator('input').first();
+  await client.click();
+  await client.fill('a');
+  await page.getByText('Search more…').first().click();
+  const dialog = page.getByRole('dialog', { name: 'Client' });
+  const options = dialog.getByRole('option');
+  await expect(options.nth(4)).toBeVisible();
+  const boxes = await options.evaluateAll((all) => all.slice(0, 6).map((one) => one.getBoundingClientRect().toJSON()));
+  for (let i = 1; i < boxes.length; i++) expect(boxes[i].top).toBeGreaterThanOrEqual(boxes[i - 1].bottom - 1);
+  const [list, body] = [await dialog.getByRole('listbox').boundingBox(), await dialog.locator('.fd-form-dialog-body').boundingBox()];
+  expect(list!.width).toBeGreaterThan(body!.width - 48);
+  await page.keyboard.press('Escape');
+});
+
 test('in Arabic, right to left: the countries by their Arabic names, found in English too, the codes left to right', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   ({ problems } = await open(page, 'plain', 'page=real-contact&record=7001&skin=outlined&locale=ar&dir=rtl'));
@@ -178,9 +212,9 @@ test('in Arabic, right to left: the countries by their Arabic names, found in En
     await expect(page.getByRole('listbox', { name: 'البلدان' }).getByRole('option').first()).toHaveText('🇪🇬مصر+20');
   }
   // Under the flag from the start of the line: its right edge at the flag's.
-  const [under, list] = [await button.boundingBox(), await page.locator('.fd-search-list:not([hidden])').boundingBox()];
+  const [under, list] = [await button.boundingBox(), await page.locator('.fd-lookup-list:not([hidden])').boundingBox()];
   expect(Math.abs(list!.x + list!.width - (under!.x + under!.width))).toBeLessThan(2);
-  await expect(page.locator('.fd-search-row .fd-search-trail').first()).toHaveAttribute('dir', 'ltr');
+  await expect(page.locator('.fd-lookup-row .fd-lookup-trail').first()).toHaveAttribute('dir', 'ltr');
   await screen(page, 'phone-countries-arabic', { viewport: true });
   await find.press('Enter');
   await expect(button).toContainText('+20');

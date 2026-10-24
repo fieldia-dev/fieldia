@@ -83,7 +83,7 @@ export function searchList(options: SearchListOptions): SearchList {
   const listId = `${id}-list`;
   const find = make('input', {
     type: 'search',
-    class: 'fd-input fd-search-find',
+    class: 'fd-input fd-lookup-find',
     role: 'combobox',
     'aria-autocomplete': 'list',
     'aria-expanded': 'true',
@@ -96,11 +96,11 @@ export function searchList(options: SearchListOptions): SearchList {
     // What is typed reads its own way: "+20" left to right on an Arabic page, a name in Arabic right to left.
     dir: 'auto',
   }) as HTMLInputElement;
-  const list = make('div', { id: listId, role: 'listbox', class: 'fd-search-rows', 'aria-label': words.list });
-  const none = make('p', { class: 'fd-search-none', role: 'status', 'aria-live': 'polite' });
-  const close = make('button', { type: 'button', class: 'fd-dialog-close fd-search-close', 'aria-label': words.close, title: words.close }, '×');
-  const head = make('div', { class: 'fd-search-head' }, make('h2', { id: `${id}-title`, class: 'fd-search-title' }, words.title), close);
-  const panel = make('div', { class: 'fd-search-list', hidden: '' }, head, find, list, none);
+  const list = make('div', { id: listId, role: 'listbox', class: 'fd-lookup-rows', 'aria-label': words.list });
+  const none = make('p', { class: 'fd-lookup-none', role: 'status', 'aria-live': 'polite' });
+  const close = make('button', { type: 'button', class: 'fd-dialog-close fd-lookup-close', 'aria-label': words.close, title: words.close }, '×');
+  const head = make('div', { class: 'fd-lookup-head' }, make('h2', { id: `${id}-title`, class: 'fd-lookup-title' }, words.title), close);
+  const panel = make('div', { class: 'fd-lookup-list', hidden: '' }, head, find, list, none);
 
   // Each row drawn once, the first time the list opens (a page of many phones draws none until then), its words folded
   // as a search finds them; the first rows are copies of theirs, before the rest.
@@ -120,10 +120,10 @@ export function searchList(options: SearchListOptions): SearchList {
   const rowOf = (row: SearchRow, key: string) => {
     const element = make(
       'div',
-      { id: `${listId}-${key}`, role: 'option', class: 'fd-search-row', 'aria-selected': 'false', 'data-value': row.value },
-      make('span', { class: 'fd-search-lead', 'aria-hidden': 'true' }, row.lead ?? ''),
-      make('span', { class: 'fd-search-words' }, row.words),
-      ...(row.trail ? [make('span', { class: 'fd-search-trail', dir: 'ltr' }, row.trail)] : [])
+      { id: `${listId}-${key}`, role: 'option', class: 'fd-lookup-row', 'aria-selected': 'false', 'data-value': row.value },
+      make('span', { class: 'fd-lookup-lead', 'aria-hidden': 'true' }, row.lead ?? ''),
+      make('span', { class: 'fd-lookup-words' }, row.words),
+      ...(row.trail ? [make('span', { class: 'fd-lookup-trail', dir: 'ltr' }, row.trail)] : [])
     );
     element.addEventListener('mousedown', (event) => event.preventDefault()); // the box keeps the focus
     element.addEventListener('click', () => choose(row.value));
@@ -176,7 +176,11 @@ export function searchList(options: SearchListOptions): SearchList {
 
   // Out of the page while closed — no second box, no second Close in it — however it closed (a press beside it too).
   const floating = popup(home, button, panel, () => panel.remove(), { alignTo: button, gap: 4 });
-  /** The look of the form it is on, worn by the sheet, which opens over the page outside it. */
+  /**
+   * The look of the form it is on, worn by the sheet, which opens over the page outside it: its skin and theme
+   * (`fd-theme`), and its scheme, accent, font and corners, which a dialog of the page's wears (`fd-form-dialog`) — dark
+   * on a dark page, as the scan sheet and Import are.
+   */
   const LOOK = (name: string) => (name.startsWith('data-') && name !== 'data-max-width') || name === 'style' || name === 'dir' || name === 'lang';
   function open(typed = '') {
     if (isOpen()) return;
@@ -185,11 +189,11 @@ export function searchList(options: SearchListOptions): SearchList {
     if (narrow) {
       const root = home.closest<HTMLElement>('.fd-form');
       for (const { name, value } of [...(root?.attributes ?? [])]) if (LOOK(name)) panel.setAttribute(name, value);
-      panel.classList.add('fd-theme', 'fd-search-sheet');
+      panel.classList.add('fd-theme', 'fd-form-dialog', 'fd-lookup-sheet');
       setAttr(panel, 'role', 'dialog');
       setAttr(panel, 'aria-modal', 'true');
       setAttr(panel, 'aria-labelledby', `${id}-title`);
-      sheet = make('div', { class: 'fd-dialog-backdrop fd-search-back' }, panel);
+      sheet = make('div', { class: 'fd-dialog-backdrop fd-lookup-back' }, panel);
       sheet.addEventListener('pointerdown', (event) => event.target === sheet && shut(true));
       (doc.body ?? doc.documentElement).append(sheet);
       panel.hidden = false;
@@ -209,7 +213,7 @@ export function searchList(options: SearchListOptions): SearchList {
       button.setAttribute('aria-expanded', 'false');
       panel.remove();
       for (const { name } of [...panel.attributes]) if (LOOK(name) || name === 'role' || name.startsWith('aria-')) panel.removeAttribute(name);
-      panel.classList.remove('fd-theme', 'fd-search-sheet');
+      panel.classList.remove('fd-theme', 'fd-form-dialog', 'fd-lookup-sheet');
       sheet.remove();
       sheet = null;
     } else floating.close();

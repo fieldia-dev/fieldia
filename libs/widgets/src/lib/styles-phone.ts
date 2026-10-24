@@ -33,36 +33,36 @@ export const PHONE_CSS = /* css */ `
 /* The list of countries found by typing, under the flag: a box to type in over the rows, each a flag, a name and a
    dialling code; the page's and the reader's countries first, a line under them. On a phone, a sheet from the foot of
    the screen with its title and Close, its rows a finger's height, its box's words 16px (no zoom on an iPhone). */
-.fd-search-list {
+.fd-lookup-list {
   z-index: 40; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 6px; box-sizing: border-box;
   width: min(340px, calc(100vw - 16px)); max-height: min(380px, 70vh); padding: 8px; border: 1px solid var(--fd-border);
   border-radius: max(var(--fd-radius), 6px); background: var(--fd-surface); color: var(--fd-text); font-size: 14px; line-height: 20px;
   box-shadow: 0 8px 24px rgb(15 20 25 / 0.18);
 }
-.fd-search-list[hidden] { display: none; }
-.fd-search-head { display: none; align-items: center; gap: 8px; }
-.fd-search-title { flex: 1; margin: 0; font-size: 16px; font-weight: 600; }
-.fd-search-list > .fd-search-find { width: 100%; }
-.fd-search-rows { min-height: 0; margin-inline: -8px; overflow-y: auto; overscroll-behavior: contain; }
-.fd-search-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 36px; padding-inline: 12px; cursor: pointer; }
-.fd-search-row[data-first="last"] { border-block-end: 1px solid var(--fd-border); }
-.fd-search-row[aria-selected="true"] { font-weight: 600; }
-@media (hover: hover) { .fd-search-row:hover { background: color-mix(in srgb, var(--fd-text) 5%, transparent); } }
-.fd-search-row[data-active] { background: var(--fd-accent-soft); box-shadow: inset 0 0 0 1px var(--fd-accent); }
-.fd-search-lead { font-size: 1.15em; line-height: 1; }
-.fd-search-words { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fd-search-trail { color: var(--fd-muted); font-variant-numeric: tabular-nums; }
-.fd-search-none { margin: 4px; color: var(--fd-muted); }
-.fd-search-none[hidden] { display: none; }
-.fd-search-back { place-items: end stretch; padding: 0; }
-.fd-search-list.fd-search-sheet {
-  width: 100%; height: min(85vh, 640px); max-height: none; padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
-  border: 0; border-radius: 14px 14px 0 0;
+.fd-lookup-list[hidden] { display: none; }
+.fd-lookup-head { display: none; align-items: center; gap: 8px; }
+.fd-lookup-title { flex: 1; margin: 0; font-size: 16px; font-weight: 600; }
+.fd-lookup-list > .fd-lookup-find { width: 100%; }
+.fd-lookup-rows { min-height: 0; margin-inline: -8px; overflow-y: auto; overscroll-behavior: contain; }
+.fd-lookup-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 36px; padding-inline: 12px; cursor: pointer; }
+.fd-lookup-row[data-first="last"] { border-block-end: 1px solid var(--fd-border); }
+.fd-lookup-row[aria-selected="true"] { font-weight: 600; }
+@media (hover: hover) { .fd-lookup-row:hover { background: color-mix(in srgb, var(--fd-text) 5%, transparent); } }
+.fd-lookup-row[data-active] { background: var(--fd-accent-soft); box-shadow: inset 0 0 0 1px var(--fd-accent); }
+.fd-lookup-lead { font-size: 1.15em; line-height: 1; }
+.fd-lookup-words { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-lookup-trail { color: var(--fd-muted); font-variant-numeric: tabular-nums; }
+.fd-lookup-none { margin: 4px; color: var(--fd-muted); }
+.fd-lookup-none[hidden] { display: none; }
+.fd-lookup-back { place-items: end stretch; padding: 0; }
+.fd-lookup-list.fd-lookup-sheet {
+  display: grid; width: 100%; height: min(85vh, 640px); max-height: none; padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  border: 0; border-radius: 14px 14px 0 0; background: var(--fd-surface); overflow: visible;
 }
-.fd-search-sheet > .fd-search-head { display: flex; }
-.fd-search-sheet .fd-search-find { min-height: 44px; font-size: 16px; }
-.fd-search-sheet .fd-search-rows { margin-inline: -12px; }
-.fd-search-sheet .fd-search-row { min-height: 44px; padding-inline: 16px; }
+.fd-lookup-sheet > .fd-lookup-head { display: flex; }
+.fd-lookup-sheet .fd-lookup-find { min-height: 44px; font-size: 16px; }
+.fd-lookup-sheet .fd-lookup-rows { margin-inline: -12px; }
+.fd-lookup-sheet .fd-lookup-row { min-height: 44px; padding-inline: 16px; }
 /* Why a key was refused: under the number, across the row. */
 .fd-phone > .fd-refusal-hint { flex-basis: 100%; order: 3; }
 /* On paper: the number as it is written, not its Call and WhatsApp links. */
