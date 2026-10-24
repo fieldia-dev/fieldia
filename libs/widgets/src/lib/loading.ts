@@ -110,7 +110,11 @@ export function loadingWay(loading: Loading | undefined, moment: LoadingMoment):
 export const asksLoadingPart = (loading: PageLoading | undefined, moments: readonly LoadingMoment[] = ['first', 'refresh', 'more', 'search', 'action']): boolean =>
   !!loading && moments.some((moment) => IN_PART.has(loading[moment] ?? ''));
 
-/** The loading part asked for, not waited for: a wait that draws from it has it by the time its delay is past, mostly. */
+/**
+ * The loading part asked for, not waited for: a wait that draws from it has it by the time its delay is past, mostly.
+ * This module's own (not exported from the package): every wait asks for it itself, and a page that must have it first
+ * says so with its settings (`asksLoadingPart`); an app that wants it early loads `loadingPart`.
+ */
 export function wantLoadingPart(): void {
   if (!loadingPart.loaded) void loadingPart.load().catch(() => undefined);
 }
