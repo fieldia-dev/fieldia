@@ -4,6 +4,7 @@ import { addressLine } from './address-line';
 import { knownCity, knownRegion, nameIn, nameKey, sameKnown } from './address-names';
 import { warnOnce } from './map-core';
 import type { PlaceFound, SearchRequest } from './providers';
+import { intlFormat } from '@fieldia/core';
 
 /**
  * How each provider's addresses read, loaded with the first search that
@@ -75,7 +76,7 @@ export const mapboxParts = (p: unknown) => {
 export const inCountries = <T extends { parts?: AddressParts }>(places: T[], countries?: string[]) =>
   countries?.length ? places.filter((place) => countries.includes(place.parts?.country ?? '')) : places;
 
-const regionNames = (locale: string) => (typeof Intl.DisplayNames === 'function' ? new Intl.DisplayNames([locale], { type: 'region', fallback: 'none' }) : null);
+const regionNames = (locale: string) => (typeof Intl.DisplayNames === 'function' ? intlFormat('DisplayNames', [locale], { type: 'region', fallback: 'none' }) : null);
 
 /**
  * The countries a provider can be asked to keep to: ISO codes, each once,

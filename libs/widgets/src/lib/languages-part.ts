@@ -5,7 +5,7 @@
  * the reader's language, else another's, marked. Nothing is translated by a machine. It comes with the form's code for
  * it, @fieldia/core's (`formLanguagesPart`): checked in each language, read in the reader's.
  */
-import { formLanguagesPart, isRightToLeft, languagesOf, type Field, type Form, type FormLanguagesPart, type LineField, type Value } from '@fieldia/core';
+import { formLanguagesPart, isRightToLeft, languagesOf, type Field, type Form, type FormLanguagesPart, type LineField, type Value, intlFormat } from '@fieldia/core';
 import { fillIn, maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { installLanguagesStyles } from './styles-languages';
 export { installLanguagesStyles } from './styles-languages';
@@ -29,7 +29,7 @@ export function readerFirst(languages: readonly string[], reader: string): strin
 /** A language's name in itself, as a switch between languages names each: "English", "العربية", "Français"; else its tag. */
 export function ownName(tag: string): string {
   try {
-    const name = new Intl.DisplayNames([tag], { type: 'language' }).of(tag);
+    const name = intlFormat('DisplayNames', [tag], { type: 'language' }).of(tag);
     if (name && name !== tag) return name.charAt(0).toLocaleUpperCase(tag) + name.slice(1);
   } catch {
     // A browser with no names of languages, or a tag it cannot read.

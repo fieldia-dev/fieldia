@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import { cardLineFields, recordSentence, type DataSource, type JsonValue, type ListMap, type ListRequest, type ListResult, type MapCluster, type RecordId, type ResolvedFilter, type Values } from '@fieldia/core';
+import { cardLineFields, recordSentence, type DataSource, type JsonValue, type ListMap, type ListRequest, type ListResult, type MapCluster, type RecordId, type ResolvedFilter, type Values, intlFormat } from '@fieldia/core';
 import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
@@ -106,7 +106,7 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
       ...(areaSpec ? [areaSpec.field] : []),
     ]),
   ];
-  const count = (n: number) => new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(n);
+  const count = (n: number) => intlFormat('NumberFormat', locale, { numberingSystem: 'latn' }).format(n);
 
   installListMapStyles(doc);
   const element = doc.createElement('div');

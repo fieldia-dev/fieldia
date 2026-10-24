@@ -1,9 +1,10 @@
 import type { DesignerWords } from '../../designer-words';
 import { ltr, quoteAr } from '../speak';
+import { intlFormat } from '@fieldia/core';
 
 const q = quoteAr;
 /** Fieldia's dates are Gregorian: Intl's Persian default is the Solar Hijri calendar. */
-const DATE = new Intl.DateTimeFormat('fa-u-ca-gregory-nu-latn', { dateStyle: 'medium' });
+const DATE = intlFormat('DateTimeFormat', 'fa-u-ca-gregory-nu-latn', { dateStyle: 'medium' });
 
 /**
  * The designer's words in Farsi: a saved form placed in another — the toolbox's tile and its menu, the frame on the

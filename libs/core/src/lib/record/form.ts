@@ -81,6 +81,7 @@ import {
   type Value,
   type Values,
 } from './values';
+import { intlFormat } from '../intl-format';
 
 export type FormStatus = 'idle' | 'loading' | 'ready' | 'saving' | 'saved' | 'error';
 
@@ -2038,7 +2039,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Options in words, as a sentence joins them: "Garden and Pool". */
   function listedLabels(labels: string[]): string {
     try {
-      return new Intl.ListFormat(messages.locale, { type: 'conjunction' }).format(labels);
+      return intlFormat('ListFormat', messages.locale, { type: 'conjunction' }).format(labels);
     } catch {
       return labels.join(', ');
     }

@@ -1,4 +1,4 @@
-import { labelAt, type Value } from '@fieldia/core';
+import { labelAt, type Value, intlFormat } from '@fieldia/core';
 import { guard, refusalHint } from './input-rules';
 import { boxPurpose, describeState, fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { phoneSettings } from './phone-settings';
@@ -267,12 +267,12 @@ function countryNames(locale: string) {
   if (!found) {
     let names: Intl.DisplayNames | undefined;
     try {
-      names = new Intl.DisplayNames([locale], { type: 'region', fallback: 'code' });
+      names = intlFormat('DisplayNames', [locale], { type: 'region', fallback: 'code' });
     } catch {
       names = undefined;
     }
     const sorted = phoneCountries().map(({ code }): [string, string] => [code, names?.of(code) ?? code]);
-    sorted.sort((a, b) => a[1].localeCompare(b[1], locale));
+    sorted.sort((a, b) => intlFormat('Collator', locale).compare(a[1], b[1]));
     found = { sorted, byCode: new Map(sorted) };
     named.set(locale, found);
   }

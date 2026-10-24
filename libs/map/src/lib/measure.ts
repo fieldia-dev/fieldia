@@ -5,6 +5,7 @@ import { metresBetween, type LatLng } from './geo';
 import { fill, type MapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import type { MapBox } from './map-core';
+import { intlFormat } from '@fieldia/core';
 
 /**
  * Measuring a way on a map: points clicked along it (or put at the cross by
@@ -32,7 +33,7 @@ function installMeasureStyles(doc: Document) {
 
 /** A length as people read it: metres up to a kilometre, then kilometres to one decimal. */
 export function distanceWords(metres: number, labels: MapLabels, locale: Locale): string {
-  const number = (n: number, digits: number) => new Intl.NumberFormat(locale, { numberingSystem: 'latn', maximumFractionDigits: digits }).format(n);
+  const number = (n: number, digits: number) => intlFormat('NumberFormat', locale, { numberingSystem: 'latn', maximumFractionDigits: digits }).format(n);
   return metres < 1000 ? fill(labels.metres, { n: number(Math.round(metres), 0) }) : fill(labels.kilometres, { n: number(metres / 1000, 1) });
 }
 

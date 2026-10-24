@@ -1672,7 +1672,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.32's merge: the undo keys heard from the first entry, out of the undo part (listed with the raw budget above):
 // 171.33 measured before, 171.78 after, to 171.8. A popup opened over its box where there is no room under it (listed
 // with the raw budget above): 171.78 measured before, 172.08 after, to 172.1.
-const GZIP_BUDGET_KB = 172.1;
+// 0.34's speed (harden-perf): every Intl formatter made once for a language and its options (intl-format.ts,
+// `intlFormat`, the one place they are made) and a currency's symbol worked out once — every page writes numbers and
+// days; the caches of their own five modules kept took out (money's short numbers, a box's per cents, a progress
+// bar's, a decimals message's plurals, a count's words, the minutes' choice): 172.08 measured before, 172.14 after
+// (525.24 and 525.16 raw, inside its budget), to 172.2.
+const GZIP_BUDGET_KB = 172.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2649,7 +2654,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 45.07, 140.38 and 45.15, to 140.4 and 45.2; a range's calendar placed before its day takes the focus — date 23.50 and
 // 9.13, 23.74 and 9.18, to 23.8; the country list's rows drawn before it is placed — phone 44.90 and 19.17, 44.93 and
 // 19.18, to 45.0.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.4, 45.2], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// 0.34's speed (harden-perf): a date's calendar names its month, its days and its weekday heads as it first opens, not
+// as each date box is drawn, the heads worked out once a language — date 23.74 and 9.18 measured before, 23.89 and
+// 9.25 after, to 23.9 and 9.3. The parts that write numbers, days, plurals and lists in words take `intlFormat` from
+// the main script (its place in the shared table, and its name at each call for Intl's own): business 32.67 and 11.90
+// measured before, 32.69 and 11.91 after, to 12.0; phone 44.93 and 19.19, 44.96 and 19.20, to 19.3; import 37.93 and
+// 14.89, 37.94 and 14.90, to 15.0; typed 14.19 and 5.97, 14.20 and 5.98, to 14.3; languages 10.19 and 4.31, 10.23 and
+// 4.32, to 10.3.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.9, 9.3], months: [13.8, 5.6], typed: [14.3, 6.0], list: [140.4, 45.2], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 15.0], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 12.0], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

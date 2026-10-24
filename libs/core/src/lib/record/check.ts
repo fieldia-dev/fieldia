@@ -6,6 +6,7 @@ import { charCount, foldDigits, MOST_DIGITS, placesOf, stripMarks } from './inpu
 import { isQuestion } from './record-words';
 import { formLanguagesPart, languagesOf } from './languages';
 import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type Value } from './values';
+import { intlFormat } from '../intl-format';
 
 /**
  * Check one value against its field. Returns the message to show, or
@@ -169,21 +170,16 @@ export function decimalsWords(label: string, places: number, messages: Messages 
   return fillMessage(messages, places === 0 ? messages.integer : messages[decimalsKey(places, messages.locale)], { label, digits: places });
 }
 
-const pluralRules = new Map<string, Intl.PluralRules>();
-
 /**
  * The decimals message for `places`, in the plural form the language takes for
  * it: one; two (Arabic's dual); 3 to 10; 11 and more (Arabic's singular after them).
  */
 function decimalsKey(places: number, locale: string): 'decimals' | 'decimalsOne' | 'decimalsTwo' | 'decimalsMany' {
-  let rules = pluralRules.get(locale);
-  if (!rules) {
-    try {
-      rules = new Intl.PluralRules(locale);
-    } catch {
-      rules = new Intl.PluralRules('en');
-    }
-    pluralRules.set(locale, rules);
+  let rules: Intl.PluralRules;
+  try {
+    rules = intlFormat('PluralRules', locale);
+  } catch {
+    rules = intlFormat('PluralRules', 'en');
   }
   const form = rules.select(places);
   return form === 'one' ? 'decimalsOne' : form === 'two' ? 'decimalsTwo' : form === 'many' || (form === 'other' && locale === 'ar') ? 'decimalsMany' : 'decimals';

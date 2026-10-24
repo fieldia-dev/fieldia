@@ -1,4 +1,4 @@
-import { ANY_FUNCTION, compileModifier, expressionContext, isRightToLeft, listComma, type FileValue, type LineField, type Locale, type MoneyLook, type Page, type Pin, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, expressionContext, isRightToLeft, listComma, type FileValue, type LineField, type Locale, type MoneyLook, type Page, type Pin, type RecordId, type Tone, type Value, type Values, intlFormat } from '@fieldia/core';
 import { currencyOf, displayValue, drawIcon, moneyReads, writeMoney, type IconSet } from '@fieldia/widgets';
 import { MAP_ICONS } from './map-icons';
 
@@ -198,7 +198,7 @@ export function pinMoney(page: Page, pin: Pin, homeCurrency?: string): MoneyLook
  */
 function wholeSymbol(text: string, currency: string | null, locale: Locale): string {
   if (!currency || !isRightToLeft(locale) || !/^[A-Z]{3}$/.test(currency)) return text;
-  const symbol = new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).formatToParts(1).find((part) => part.type === 'currency')?.value ?? '';
+  const symbol = intlFormat('NumberFormat', locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).formatToParts(1).find((part) => part.type === 'currency')?.value ?? '';
   return !symbol || /^\p{L}+$/u.test(symbol) || !text.includes(symbol) ? text : text.replace(symbol, `\u2068${symbol}\u2069`);
 }
 
@@ -226,12 +226,12 @@ export function pinText(page: Page, name: string, values: Values, locale: Locale
     const currency = currencyOf(def as LineField, values);
     const plain = { notation: 'compact', numberingSystem: 'latn', maximumFractionDigits: 1 } as const;
     try {
-      if (currency) return wholeSymbol(new Intl.NumberFormat(locale, { ...plain, style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).format(value), currency, locale);
+      if (currency) return wholeSymbol(intlFormat('NumberFormat', locale, { ...plain, style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).format(value), currency, locale);
     } catch {
       // A currency named by words that are no code: written before the amount, as it is.
-      return `${currency} ${new Intl.NumberFormat(locale, plain).format(value)}`;
+      return `${currency} ${intlFormat('NumberFormat', locale, plain).format(value)}`;
     }
-    return new Intl.NumberFormat(locale, plain).format(value);
+    return intlFormat('NumberFormat', locale, plain).format(value);
   }
   return shown(page, name, values, locale);
 }

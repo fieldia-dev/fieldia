@@ -1,4 +1,4 @@
-import { isOwnZone, recordSentence, saveProblemOf, type Fields, type GanttZoom, type ListGantt, type ListedRecord, type RecordId, type RecordVersion, type SaveRequest, type Values } from '@fieldia/core';
+import { intlFormat, isOwnZone, recordSentence, saveProblemOf, type Fields, type GanttZoom, type ListGantt, type ListedRecord, type RecordId, type RecordVersion, type SaveRequest, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
 import { moneyReads, zoneName } from '@fieldia/widgets';
 import { addDays, comma, daysFrom, firstDayOf, format, toWall, zoneOfGantt } from './dates';
@@ -212,7 +212,7 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
   const fromTo = (start: Date, end: Date) => ({ from: when(start), to: when(kind === 'date' ? addDays(end, -1) : end) });
   const lasting = (start: Date, end: Date) => {
     const n = Math.round(daysFrom(start, end) * 10) / 10;
-    return n === 1 ? labels.dayOne : fill(labels.days, { n: n.toLocaleString(locale === 'en' ? 'en-GB' : locale, { numberingSystem: 'latn' } as Intl.NumberFormatOptions) });
+    return n === 1 ? labels.dayOne : fill(labels.days, { n: intlFormat('NumberFormat', locale === 'en' ? 'en-GB' : locale, { numberingSystem: 'latn' }).format(n) });
   };
   /** What a bar says to a screen reader: its words, its days, how long, what it waits for, and whether too soon. */
   function spoken(task: GanttTask, at: { start: Date; end: Date } | null = task.start && task.end ? { start: task.start, end: task.end } : null, why = '') {

@@ -1,6 +1,7 @@
 import type { Field, Locale } from '@fieldia/core';
 import { installSurveyStyles } from './styles-survey';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
+import { intlFormat } from '@fieldia/core';
 
 /**
  * A number shown as a bar that fills towards a maximum, coloured by how far
@@ -16,14 +17,8 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  * which the registry hands over (widgets.ts), so this part never imports it.
  */
 
-const percents = new Map<Locale, Intl.NumberFormat>();
 function percent(value: number, locale: Locale) {
-  let format = percents.get(locale);
-  if (!format) {
-    format = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0, numberingSystem: 'latn' });
-    percents.set(locale, format);
-  }
-  return format.format(value / 100);
+  return intlFormat('NumberFormat', locale, { style: 'percent', maximumFractionDigits: 0, numberingSystem: 'latn' }).format(value / 100);
 }
 
 export const progressbarWidget = (widgetFor: (context: WidgetContext) => Widget): WidgetFactory => (context) => {

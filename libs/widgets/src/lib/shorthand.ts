@@ -1,4 +1,4 @@
-import { foldDigits, foldForSearch, readNumber, stripMarks, type Locale, type NumberRead, type NumberReadOptions } from '@fieldia/core';
+import { foldDigits, foldForSearch, readNumber, stripMarks, type Locale, type NumberRead, type NumberReadOptions, intlFormat } from '@fieldia/core';
 import type { Shorthand } from './input-rules';
 import { fillIn, wordsFor } from './kind-parts';
 import { afterPress } from './press';
@@ -28,7 +28,7 @@ function wordsOf(locale: Locale): Map<string, number> {
     for (const compactDisplay of ['short', 'long'] as const) {
       let format: Intl.NumberFormat;
       try {
-        format = new Intl.NumberFormat(language, { notation: 'compact', compactDisplay, numberingSystem: 'latn' });
+        format = intlFormat('NumberFormat', language, { notation: 'compact', compactDisplay, numberingSystem: 'latn' });
       } catch {
         continue;
       }
@@ -58,7 +58,7 @@ export function shorthandFor(locale: Locale, labels?: WidgetLabels): Shorthand {
   const table = wordsOf(locale);
   const words = wordsFor(labels, locale);
   const plain = (text: string) => foldDigits(stripMarks(text)).trim();
-  const example = new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1, numberingSystem: 'latn' }).format(3_500_000);
+  const example = intlFormat('NumberFormat', locale, { notation: 'compact', maximumFractionDigits: 1, numberingSystem: 'latn' }).format(3_500_000);
   /** The number and the power of ten its last word names ("3.5m": "3.5", 6); null where it names none. */
   const split = (text: string) => {
     const found = SPLIT.exec(plain(text));

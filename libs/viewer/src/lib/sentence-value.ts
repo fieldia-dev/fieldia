@@ -1,4 +1,4 @@
-import { instantsAt, isOwnZone, wallClock, wallTime, dayTag, type DateOrder, type LineField, type Locale, type Value } from '@fieldia/core';
+import { instantsAt, isOwnZone, wallClock, wallTime, dayTag, type DateOrder, type LineField, type Locale, type Value, intlFormat } from '@fieldia/core';
 import { displayValue, restingText, typingText, zoneName } from '@fieldia/widgets';
 
 /** How a value is written inside a sentence of the page's: its days in the page's order, and its words for yes and no. */
@@ -39,7 +39,7 @@ export function orderedDay(value: string, kind: 'date' | 'datetime', order: Date
   const mark = (text: string) => (marked && zone ? `${text} ${zoneName(at, zone, locale)}` : text);
   // As it is typed (which names the zone itself where the time comes twice).
   if (order === 'ymd') return twice ? typingText(value, kind, 'ymd', locale, zone) : mark(typingText(value, kind, 'ymd', locale, zone));
-  const parts = new Intl.DateTimeFormat(dayTag(locale), { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn', ...(kind === 'datetime' && zone ? { timeZone: zone } : {}) }).formatToParts(d);
+  const parts = intlFormat('DateTimeFormat', dayTag(locale), { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn', ...(kind === 'datetime' && zone ? { timeZone: zone } : {}) }).formatToParts(d);
   const part = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
   const words = `${part('month')} ${part('day')}, ${part('year')}`;
   return kind === 'date' ? words : mark(`${words}, ${wallClock(wallTime(at, zone))}`);

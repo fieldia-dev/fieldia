@@ -1,4 +1,4 @@
-import { foldTyped, monthNamed, monthWords, readDate, stripMarks, dayTag, type DatePrecision, type DateOrder, type Locale, type Value } from '@fieldia/core';
+import { foldTyped, monthNamed, monthWords, readDate, stripMarks, dayTag, type DatePrecision, type DateOrder, type Locale, type Value, intlFormat } from '@fieldia/core';
 import { quoted } from './input-rules';
 import { fillIn, wordsFor } from './kind-parts';
 import type { DateReader, DateReading, GrainBox } from './date-text';
@@ -72,7 +72,7 @@ export function readGrainText(text: string, reader: DateReader, grain: Grain): D
     const [y, m, d] = day.value.split('-').map(Number);
     const value = kept(y, grain === 'year' ? 1 : m);
     if (grain === 'month') return d === 1 ? { ok: true, value } : { ok: true, value, leftOut: fillIn(words.dayLeftOut, { label, day: d }) };
-    const left = m === 1 && d === 1 ? '' : new Intl.DateTimeFormat(dayTag(locale), { day: 'numeric', month: 'long', timeZone: 'UTC', numberingSystem: 'latn' }).format(Date.UTC(y, m - 1, d));
+    const left = m === 1 && d === 1 ? '' : intlFormat('DateTimeFormat', dayTag(locale), { day: 'numeric', month: 'long', timeZone: 'UTC', numberingSystem: 'latn' }).format(Date.UTC(y, m - 1, d));
     return left ? { ok: true, value, leftOut: fillIn(words.monthLeftOut, { label, day: left }) } : { ok: true, value };
   }
   const pieces = t.split(/\s*[/.\-\s]\s*/).filter(Boolean);

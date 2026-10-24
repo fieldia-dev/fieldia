@@ -27,8 +27,7 @@ import {
   type SortOrder,
   type Tone,
   type Values,
-  type ViewState,
-} from '@fieldia/core';
+  type ViewState, intlFormat } from '@fieldia/core';
 import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type Widget, type WidgetContext, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import { defaultFacets, laterFavourites, startingFacets } from './favourites';
@@ -1453,7 +1452,7 @@ export function listView(context: ListContext): ListView {
     const ids = chosen.size;
     exportWhat.textContent = ids
       ? fill(labels.selected, { n: number(ids) })
-      : fill(new Intl.PluralRules(locale).select(matching) === 'one' ? sentence(labels.exportAllNounOne, labels.exportAllOne) : sentence(labels.exportAllNoun, labels.exportAll), { n: number(matching) });
+      : fill(intlFormat('PluralRules', locale).select(matching) === 'one' ? sentence(labels.exportAllNounOne, labels.exportAllOne) : sentence(labels.exportAllNoun, labels.exportAll), { n: number(matching) });
     exportMenu.hidden = false;
     // From the button's start, unless that runs past the screen's edge: then from its end.
     exportMenu.removeAttribute('data-end');
@@ -1521,7 +1520,7 @@ export function listView(context: ListContext): ListView {
         if (destroyed) return;
         if ('message' in end) context.say?.(end.message, 'info');
         else if (end.done < end.total) context.say?.(fill(sentence(labels.exportCutNoun, labels.exportCut), { n: number(end.done), total: number(end.total) }), 'warning');
-        else context.say?.(fill(new Intl.PluralRules(locale).select(end.done) === 'one' ? sentence(labels.exportedNounOne, labels.exportedOne) : sentence(labels.exportedNoun, labels.exported), { n: number(end.done) }), 'success');
+        else context.say?.(fill(intlFormat('PluralRules', locale).select(end.done) === 'one' ? sentence(labels.exportedNounOne, labels.exportedOne) : sentence(labels.exportedNoun, labels.exported), { n: number(end.done) }), 'success');
       } catch {
         if (!destroyed) context.say?.(sentence(labels.exportFailedNoun, labels.exportFailed), 'danger');
       }
@@ -1616,7 +1615,7 @@ export function listView(context: ListContext): ListView {
     try {
       const ids = chosenInOrder();
       const n = ids.length;
-      const one = new Intl.PluralRules(locale).select(n) === 'one';
+      const one = intlFormat('PluralRules', locale).select(n) === 'one';
       const how: BulkList = { page, node, model, dataSource: context.dataSource, labels, fill, locale, known: (id) => known.get(String(id)) };
       const asked = await askBulkValue(how, bulk.editValues, fill(one ? sentence(labels.bulkTitleNounOne, labels.bulkTitleOne) : sentence(labels.bulkTitleNoun, labels.bulkTitle), { n: number(n) }));
       if (!asked || destroyed) return;
@@ -1641,7 +1640,7 @@ export function listView(context: ListContext): ListView {
           reportFix.hidden = reportUndo.hidden = true;
           reported = edit;
           report.hidden = false;
-        } else context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? sentence(labels.bulkDoneNounOne, labels.bulkDoneOne) : sentence(labels.bulkDoneNoun, labels.bulkDone), { n: number(done) }), 'success');
+        } else context.say?.(fill(intlFormat('PluralRules', locale).select(done) === 'one' ? sentence(labels.bulkDoneNounOne, labels.bulkDoneOne) : sentence(labels.bulkDoneNoun, labels.bulkDone), { n: number(done) }), 'success');
         await Promise.all([load(), viewParts.reload()]);
       });
     } finally {
@@ -1701,7 +1700,7 @@ export function listView(context: ListContext): ListView {
         return;
       }
       const made = end.made.length;
-      const one = new Intl.PluralRules(locale).select(made) === 'one';
+      const one = intlFormat('PluralRules', locale).select(made) === 'one';
       reportWords.textContent = end.stopped
         ? fill(sentence(labels.importStoppedNoun, labels.importStopped), { n: number(made), total: number(end.total) })
         : end.notImported.length
@@ -1721,7 +1720,7 @@ export function listView(context: ListContext): ListView {
 
   /** The records an import made, deleted again once the person says so; those that could not be, named with why. */
   async function undoImport(ids: RecordId[], undo: (ids: readonly RecordId[], progress: (done: number, total: number) => void) => Promise<{ done: number; failed: { id: RecordId; why: string }[] }>): Promise<void> {
-    const one = new Intl.PluralRules(locale).select(ids.length) === 'one';
+    const one = intlFormat('PluralRules', locale).select(ids.length) === 'one';
     if (!context.ask || !(await context.ask(fill(one ? sentence(labels.importUndoAskNounOne, labels.importUndoAskOne) : sentence(labels.importUndoAskNoun, labels.importUndoAsk), { n: number(ids.length) }), { yes: labels.delete })) || destroyed) return;
     await busy(reportUndo, async () => {
       const { done, failed } = await undo(ids, (at, of) => {
@@ -1736,7 +1735,7 @@ export function listView(context: ListContext): ListView {
         reportList.replaceChildren(...failed.map(({ id, why }) => el('li', {}, fill(labels.bulkWhy, { name: names.get(String(id)) ?? String(id), why }))));
       } else {
         report.hidden = true;
-        context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? sentence(labels.importUndoneNounOne, labels.importUndoneOne) : sentence(labels.importUndoneNoun, labels.importUndone), { n: number(done) }), 'success');
+        context.say?.(fill(intlFormat('PluralRules', locale).select(done) === 'one' ? sentence(labels.importUndoneNounOne, labels.importUndoneOne) : sentence(labels.importUndoneNoun, labels.importUndone), { n: number(done) }), 'success');
         importButton.focus();
       }
       await Promise.all([load(), viewParts.reload()]);

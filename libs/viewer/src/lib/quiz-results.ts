@@ -1,4 +1,4 @@
-import { fill, type Form, type LineField, type Locale, type Page, type QuizResults, type Value, type Values } from '@fieldia/core';
+import { fill, type Form, type LineField, type Locale, type Page, type QuizResults, type Value, type Values, intlFormat } from '@fieldia/core';
 import { displayValue } from '@fieldia/widgets';
 import type { ViewerLabels } from './labels';
 import { installFlowStyles } from './flow-styles';
@@ -47,8 +47,8 @@ export function drawQuizResults(context: QuizContext): HTMLElement | null {
     return box;
   }
   // Numbers as everywhere in Fieldia: Latin digits, in the page's language's way.
-  const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 2, numberingSystem: 'latn' } as Intl.NumberFormatOptions);
-  const percent = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0, numberingSystem: 'latn' } as Intl.NumberFormatOptions);
+  const number = intlFormat('NumberFormat', locale, { maximumFractionDigits: 2, numberingSystem: 'latn' } as Intl.NumberFormatOptions);
+  const percent = intlFormat('NumberFormat', locale, { style: 'percent', maximumFractionDigits: 0, numberingSystem: 'latn' } as Intl.NumberFormatOptions);
   box.setAttribute('data-score', String(results.score));
   box.append(make('p', 'fd-quiz-score', fill(labels.quizScore, { score: number.format(results.score), max: number.format(results.max), percent: percent.format(results.max ? results.score / results.max : 0) })));
   const list = make('ol', 'fd-quiz-list');

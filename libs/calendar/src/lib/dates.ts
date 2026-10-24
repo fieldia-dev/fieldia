@@ -1,4 +1,4 @@
-import { instantsAt, wallTime, zoneOffset, dayTag, firstWeekday, type CalendarView, type ListCalendar, type Locale, type Page, type Value } from '@fieldia/core';
+import { instantsAt, wallTime, zoneOffset, dayTag, firstWeekday, type CalendarView, type ListCalendar, type Locale, type Page, type Value, intlFormat } from '@fieldia/core';
 
 /**
  * A calendar's days, on its zone's clock: the zone its start field names, else its page's (`timeZone`), else the
@@ -135,4 +135,4 @@ export function stepFrom(view: CalendarView, anchor: Date, by: 1 | -1): Date {
 /** The language as Intl reads it: British English's day before month, every language on the Gregorian calendar and its digits Latin, as Fieldia writes dates. */
 export const intlTag = (locale: Locale) => dayTag(locale);
 /** A moment on the calendar's clock in words: its UTC fields, which are that clock's day and time. */
-export const format = (locale: Locale, options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(intlTag(locale), { numberingSystem: 'latn', ...options, timeZone: 'UTC' });
+export const format = (locale: Locale, options: Intl.DateTimeFormatOptions) => intlFormat('DateTimeFormat', intlTag(locale), { numberingSystem: 'latn', ...options, timeZone: 'UTC' });

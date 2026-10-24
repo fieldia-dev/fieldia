@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import { ANY_FUNCTION, compileModifier, expressionContext, type FormState, type Line, type MapLayer, type Page, type Value, type Values } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, expressionContext, type FormState, type Line, type MapLayer, type Page, type Value, type Values, intlFormat } from '@fieldia/core';
 import type { MapPart, MapPartContext, MapPartFactory } from '@fieldia/viewer';
 import { stillShown } from '@fieldia/widgets';
 import { drawCard, drawCrowd, type Card } from './card';
@@ -308,7 +308,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
 
   /** A place whose news is old says when it was last seen, in the page's language, and greys. */
   function restale() {
-    const words = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
+    const words = intlFormat('RelativeTimeFormat', locale, { numeric: 'always' });
     for (const mark of marks.values()) {
       const after = mark.layer.live?.staleAfter;
       const face = mark.marker.getElement()?.querySelector<HTMLElement>('.fd-map-face');
@@ -340,7 +340,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
 
   /** The bubbles of pins that crowd with no place that moves among them, by the places they hold: the same bubble while it holds the same. */
   const bubbles = new Map<string, Leaflet.Marker>();
-  const number = (n: number) => new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(n);
+  const number = (n: number) => intlFormat('NumberFormat', locale, { numberingSystem: 'latn' }).format(n);
   /** What a gathering says: how many, and whose, in the map's order. */
   const crowdWords = (keys: string[]) => fill(labels.crowdHere, { n: number(keys.length), names: keys.map((key) => marks.get(key)?.short).join(comma(locale)) });
   /** A pin's own words: its name, and when it was last seen once its news is old. */

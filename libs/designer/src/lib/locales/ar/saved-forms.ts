@@ -1,8 +1,9 @@
 import type { DesignerWords } from '../../designer-words';
 import { ltr, quoteAr } from '../speak';
+import { intlFormat } from '@fieldia/core';
 
 const q = quoteAr;
-const DATE = new Intl.DateTimeFormat('ar-u-nu-latn', { dateStyle: 'medium' });
+const DATE = intlFormat('DateTimeFormat', 'ar-u-nu-latn', { dateStyle: 'medium' });
 
 export const savedForms: DesignerWords['savedForms'] = {
   savedForm: 'النموذج المحفوظ',

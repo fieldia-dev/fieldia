@@ -1,4 +1,4 @@
-import { evidenceOf, labelAt, type FieldNode, type FileValue, type Form, type Locale, type Value, type Values } from '@fieldia/core';
+import { evidenceOf, labelAt, type FieldNode, type FileValue, type Form, type Locale, type Value, type Values, intlFormat } from '@fieldia/core';
 import { fillIn, maker, setAttr, setHidden, setText } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import { restingText, zoneOf } from './date-text';
@@ -87,7 +87,7 @@ export function signingFor(context: SigningContext): Signing {
     const labelsOf = wrong.map((field) => asLabel(form.page.fields[field]?.label ?? field));
     let list: string;
     try {
-      list = new Intl.ListFormat(locale ?? 'en', { type: 'conjunction' }).format(labelsOf);
+      list = intlFormat('ListFormat', locale ?? 'en', { type: 'conjunction' }).format(labelsOf);
     } catch {
       list = labelsOf.join(', ');
     }

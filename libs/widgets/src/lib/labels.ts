@@ -1,4 +1,4 @@
-import { tableInChunks, wordsInChunks, type Locale } from '@fieldia/core';
+import { tableInChunks, wordsInChunks, type Locale, intlFormat } from '@fieldia/core';
 import { LANGUAGES } from './locales/all';
 import { LATER } from './locales/later';
 
@@ -1315,21 +1315,17 @@ export const WIDGET_LABELS = { en, ...LANGUAGES } as Record<Locale, WidgetLabels
 // Turkish, Persian, Urdu and Spanish: each in a chunk of its own, there once asked for (`wordsReady`), English till it came.
 wordsInChunks(tableInChunks(WIDGET_LABELS, LATER));
 
-const plurals = new Map<string, Intl.PluralRules>();
 /**
  * Words for a count, `{n}` filled in: `one` where the page's language says that count apart — 1 in English, German
  * and Arabic, 0 and 1 in French — else `other`. "Pasted into 1 cell.", never "1 cells".
  */
 export function inPlural(other: string, one: string, n: number, locale: string | undefined): string {
   const language = locale ?? 'en';
-  let rules = plurals.get(language);
-  if (!rules) {
-    try {
-      rules = new Intl.PluralRules(language);
-    } catch {
-      rules = new Intl.PluralRules('en');
-    }
-    plurals.set(language, rules);
+  let rules: Intl.PluralRules;
+  try {
+    rules = intlFormat('PluralRules', language);
+  } catch {
+    rules = intlFormat('PluralRules', 'en');
   }
   return (rules.select(n) === 'one' ? one : other).replace(/\{n\}/g, String(n));
 }

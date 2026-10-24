@@ -1,7 +1,8 @@
 import type { DesignerWords } from '../../designer-words';
+import { intlFormat } from '@fieldia/core';
 
 const q = (name: string) => `“${name}”`;
-const DATE = new Intl.DateTimeFormat('tr-u-nu-latn', { dateStyle: 'medium' });
+const DATE = intlFormat('DateTimeFormat', 'tr-u-nu-latn', { dateStyle: 'medium' });
 
 /** The designer's words in Turkish: a saved form placed in another — the toolbox's tile and its menu, the frame on the canvas, its panel, what the Checks list and the edits say of it. UNREVIEWED: machine-assisted, not yet reviewed by a native speaker. */
 export const savedForms: DesignerWords['savedForms'] = {

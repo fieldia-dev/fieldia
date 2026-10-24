@@ -1,4 +1,5 @@
 import type { Field, FieldNode, JsonValue, Page } from '@fieldia/core';
+import { intlFormat } from '@fieldia/core';
 import { countriesIn } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -657,7 +658,7 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
           })
         );
         const offered = Object.keys(COMMON_LANGUAGES).filter((tag) => !tags.some((own) => own.toLowerCase() === tag.toLowerCase()));
-        add.replaceChildren(el('option', { value: '' }, w.addLanguage), ...offered.map((tag) => el('option', { value: tag }, displayName(locale, tag))).sort((a, b) => (a.textContent ?? '').localeCompare(b.textContent ?? '', locale)));
+        add.replaceChildren(el('option', { value: '' }, w.addLanguage), ...offered.map((tag) => el('option', { value: tag }, displayName(locale, tag))).sort((a, b) => intlFormat('Collator', locale).compare(a.textContent ?? '', b.textContent ?? '')));
         // The languages a required answer is typed in: while it is required.
         required.hidden = !on || !(def.required === true || node.required === true);
         required.replaceChildren(

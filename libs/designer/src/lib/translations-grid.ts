@@ -1,4 +1,4 @@
-import { isRightToLeft, type Page } from '@fieldia/core';
+import { isRightToLeft, type Page, intlFormat } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
@@ -36,7 +36,7 @@ export interface WordsGrid {
 /** A language's own name for itself, such as العربية, when the browser knows it and it differs from the English. */
 function ownName(tag: string, words: DesignerWords): string | null {
   try {
-    const name = new Intl.DisplayNames([tag], { type: 'language' }).of(tag);
+    const name = intlFormat('DisplayNames', [tag], { type: 'language' }).of(tag);
     return name && name !== tag && name !== languageName(tag, words) ? name : null;
   } catch {
     return null;
