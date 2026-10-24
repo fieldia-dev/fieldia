@@ -111,6 +111,14 @@ export function loadingLookSettings(el: ElementFactory, designer: Designer): Loo
 
   return {
     rows: [heading, ...momentRows, looksRow, timingRow, errorRow],
+    // Each preview's wait ended with the panel that shows it: an endless wait holds its region and its timers (its
+    // "Still loading…", a timeout up to ten minutes) — a designer opened again kept every one of the last's.
+    destroy() {
+      for (const preview of previews) {
+        preview.wait?.stop();
+        preview.wait = null;
+      }
+    },
     update(page: Page) {
       const before = JSON.stringify([loading, skin]);
       loading = page.loading ?? {};

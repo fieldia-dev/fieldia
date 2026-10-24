@@ -189,6 +189,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   return {
     element,
     destroy: () => {
+      look.destroy?.();
       seconds.destroy();
       limits.destroy();
       quiz.destroy();
