@@ -77,7 +77,8 @@ test.describe('file and picture fields in a part of their own', () => {
     expect(drawnAtOnce).toBe(false);
     const papers = page.locator('[data-node="f-papers"]');
     await expect(papers.locator('.fd-file .fd-file-item')).toHaveCount(2);
-    expect(scripts()).toEqual(['/script/fieldia.files.js', '/script/fieldia.js']);
+    // The loading part beside the page's own: its skeleton while they come — asked for, never waited for.
+    expect(scripts()).toEqual(['/script/fieldia.files.js', '/script/fieldia.js', '/script/fieldia.loading.js']);
     await expect(papers.locator('.fd-file-name')).toHaveText(['Contract.pdf', 'Floor plan.txt']);
     // Its sheet among Fieldia's, before the page's own looks.
     expect(await page.evaluate(() => [...document.head.querySelectorAll('style[id^="fieldia"]')].map((style) => style.id))).toEqual(['fieldia-styles', 'fieldia-files-styles', 'fieldia-styles-looks']);
@@ -99,7 +100,7 @@ test.describe('file and picture fields in a part of their own', () => {
     await expect(page.getByRole('dialog')).toContainText('hello');
     await page.keyboard.press('Escape');
     // Asked for once.
-    expect(scripts()).toEqual(['/script/fieldia.files.js', '/script/fieldia.js']);
+    expect(scripts()).toEqual(['/script/fieldia.files.js', '/script/fieldia.js', '/script/fieldia.loading.js']);
     expect(problems).toEqual([]);
   });
 

@@ -93,7 +93,8 @@ test.describe('the themes and the quiet look in parts of their own, from one <sc
     await expect(form).toHaveAttribute('data-fd-theme', 'material');
     await expect(page.locator('#app [data-node="f-name"] input')).toBeVisible();
     expect(await backgroundOf(page, 'Submit')).toBe(MATERIAL);
-    expect(scripts()).toEqual(['/script/fieldia.js', '/script/fieldia.themes.js']);
+    // The loading part beside the page's own: its skeleton while they come — asked for, never waited for.
+    expect(scripts()).toEqual(['/script/fieldia.js', '/script/fieldia.loading.js', '/script/fieldia.themes.js']);
     // Another theme, the part in: at once, nothing more asked for.
     expect(await page.evaluate(() => {
       const handle = (window as any).fieldiaDemo.handle;
@@ -101,7 +102,7 @@ test.describe('the themes and the quiet look in parts of their own, from one <sc
       return handle.element.getAttribute('data-fd-theme');
     })).toBe('google-forms');
     expect(await backgroundOf(page, 'Submit')).toBe('rgb(103, 58, 183)');
-    expect(scripts()).toEqual(['/script/fieldia.js', '/script/fieldia.themes.js']);
+    expect(scripts()).toEqual(['/script/fieldia.js', '/script/fieldia.loading.js', '/script/fieldia.themes.js']);
     expect(problems).toEqual([]);
   });
 
@@ -127,7 +128,8 @@ test.describe('the themes and the quiet look in parts of their own, from one <sc
     await expect(box).toHaveValue('Omar Farouk');
     await expect(page.locator('#app [data-node="f-name"]')).toHaveAttribute('data-quiet', '');
     expect(transparent(await edgeOf(page, 'f-name'))).toBe(true);
-    expect(scripts()).toEqual(['/script/fieldia.quiet.js']);
+    // The loading part beside the page's own: its skeleton while they come — asked for, never waited for.
+    expect(scripts()).toEqual(['/script/fieldia.loading.js', '/script/fieldia.quiet.js']);
     expect(problems).toEqual([]);
   });
 

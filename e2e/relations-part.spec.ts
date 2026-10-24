@@ -84,7 +84,8 @@ test.describe('a link to other records in a part of its own', () => {
     const box = page.locator('[data-node="f-partner"] input[role="combobox"]');
     await expect(box).toBeVisible();
     await expect(page.locator('[data-node="f-tags"] .fd-chip')).toHaveText(['Urgent×']);
-    expect(asked()).toEqual(['/script/fieldia.js', '/script/fieldia.relations.js']);
+    // The loading part beside the page's own: its skeleton while they come — asked for, never waited for.
+    expect(asked()).toEqual(['/script/fieldia.js', '/script/fieldia.loading.js', '/script/fieldia.relations.js']);
     // Typed and picked as ever: the list of matches, a record taken.
     await box.click();
     await page.keyboard.type('Del');
@@ -93,7 +94,7 @@ test.describe('a link to other records in a part of its own', () => {
     await page.keyboard.press('Enter');
     await expect(box).toHaveValue('Delta Foods');
     await screen(page, 'relations-part-drawn');
-    expect(asked()).toEqual(['/script/fieldia.js', '/script/fieldia.relations.js']);
+    expect(asked()).toEqual(['/script/fieldia.js', '/script/fieldia.loading.js', '/script/fieldia.relations.js']);
     expect(problems).toEqual([]);
   });
 
@@ -197,7 +198,8 @@ test.describe('a link to other records in a part of its own', () => {
     await expect(page.locator('[data-node="f-floor"] .fd-choice-search input')).toBeVisible();
     await expect(page.locator('[data-node="f-guests"] .fd-repeat-card')).toHaveCount(1);
     await expect(page.locator('[data-node="f-code"] .fd-copy .fd-copy-button')).toBeVisible();
-    expect(asked()).toEqual(['/script/fieldia.business.js', '/script/fieldia.choice.js', '/script/fieldia.js', '/script/fieldia.lines.js']);
+    // The loading part beside the page's own: its skeleton while they come — asked for, never waited for.
+    expect(asked()).toEqual(['/script/fieldia.business.js', '/script/fieldia.choice.js', '/script/fieldia.js', '/script/fieldia.lines.js', '/script/fieldia.loading.js']);
     // Each sheet in its place: the cards' after every other part's, before the page's own looks.
     const sheets = await page.evaluate(() => [...document.head.querySelectorAll('style[id^="fieldia"]')].map((style) => style.id));
     expect(sheets.indexOf('fieldia-cards-styles')).toBe(sheets.indexOf('fieldia-styles-looks') - 1);
