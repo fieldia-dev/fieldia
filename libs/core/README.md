@@ -1099,7 +1099,11 @@ await store(values); // values worked out here: what it computes, computed again
 It answers `{ ok, errors, problems, values, due }`: each field's problem in the
 page's words, what else is wrong (answers over `maxBytes` — 1 MB unless said —
 a field the page has not, a payment missing or short), the answers as the
-page's rules leave them, and what is due. The parts its checks need are loaded
+page's rules leave them, and what is due. A page its own checks refuse —
+`checkPage`'s, as the browser runs them: a pattern that could take seconds on
+an answer, a field named `constructor` — takes no answers here either, and its
+patterns are checked by the browser's own function (an answer over 1,000
+characters fails its pattern, never tried). The parts its checks need are loaded
 first; one that cannot be is a problem, never a check skipped. What it cannot
 know is the server's: a proof's signature, a payment's reference with the
 provider, when the page was served (for a time limit), and how many responses

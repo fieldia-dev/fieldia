@@ -1,4 +1,6 @@
 import type { Page } from '../format/page';
+import { checkPage } from '../format/check-page';
+import { PATTERN_MOST } from '../format/pattern';
 import { checkSubmission } from './submission';
 
 /**
@@ -82,6 +84,27 @@ describe('checkSubmission: the browser’s checks, again where the answers arriv
     const page = enquiry({ payment: { label: 'Deposit', amount: 'fee' } } as Partial<Page>);
     const check = await checkSubmission(page, { name: 'Hana', fee: 2500 }, { payment: { amount: 2500, currency: 'EGP', key: 'k' } });
     expect(check).toMatchObject({ ok: true, due: { amount: 2500, currency: 'EGP' } });
+  });
+
+  it('checks a pattern as the browser does, one checker for both: a pattern refused in a page refuses the answers, a long answer fails its pattern untried', async () => {
+    // A pattern that could take seconds on a short answer: the browser's page check refuses the page, and so does this.
+    const risky = enquiry({ fields: { ...enquiry().fields, email: { type: 'char', label: 'Email', pattern: '(a+)+@x' } } } as Partial<Page>);
+    expect(checkPage(risky).ok).toBe(false);
+    const refused = await checkSubmission(risky, { name: 'Hana', email: 'aaaa@x' });
+    expect(refused.ok).toBe(false);
+    expect(refused.problems.join(' ')).toMatch(/^The page cannot take answers: fields\.email\.pattern: .*seconds/);
+    // And an answer rule's: refused the same way.
+    const plain = enquiry();
+    const children = (plain.layout as { children: { id: string }[] }).children.map((node) => (node.id === 'f-name' ? { ...node, validate: [{ pattern: '(x|x)*y' }] } : node));
+    const rule = enquiry({ layout: { ...plain.layout, children } } as Partial<Page>);
+    expect(checkPage(rule).ok).toBe(false);
+    expect((await checkSubmission(rule, { name: 'xxxy' })).ok).toBe(false);
+    // An answer longer than a pattern is tried on is not of it, here as in the browser: never tried, at once.
+    const long = `${'a'.repeat(PATTERN_MOST)}@nile.example`;
+    const started = Date.now();
+    const checked = await checkSubmission(enquiry(), { name: 'Hana', email: long });
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(checked.errors['email']).toBeTruthy();
   });
 
   it('refuses answers larger than they may be, before reading them', async () => {

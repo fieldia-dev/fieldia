@@ -2,6 +2,7 @@ import type { JsonValue } from '../format/json';
 import type { FieldNode } from '../format/layout';
 import type { Page } from '../format/page';
 import { upgradePage } from '../format/upgrade';
+import { checkPage } from '../format/check-page';
 import { hasOptionRules, optionRulesPart } from '../format/choice-options';
 import { callsPartFunctions, functionsPart } from '../expression/functions';
 import type { AppFunctions } from '../expression/app-functions';
@@ -99,6 +100,11 @@ export async function checkSubmission(input: Page, sent: Readonly<Values>, conte
   const bytes = utf8Length(JSON.stringify(sent));
   const most = context.maxBytes ?? MB;
   if (bytes > most) return { ...empty, problems: [`The answers take ${bytes} bytes, more than the ${most} they may`] };
+  // The page as the browser takes it: one its checks refuse — a pattern that could take seconds on an answer
+  // (`patternRisk`), a field named as every object's own — is never drawn there, so no answers of it are taken here
+  // either. The same check, the one pattern checker (pattern.ts) for both: a pattern refused in a page is refused here.
+  const shape = checkPage(page);
+  if (!shape.ok) return { ...empty, problems: shape.issues.map((issue) => `The page cannot take answers: ${issue.path}: ${issue.message}`) };
   for (const name of Object.keys(sent)) if (!Object.prototype.hasOwnProperty.call(page.fields, name)) problems.push(`"${name}" is no field of this page`);
   // Every field of the page: one the answers left out is empty, never its default — the browser sent what it held.
   const values: Values = Object.fromEntries(Object.keys(page.fields).map((name) => [name, Object.prototype.hasOwnProperty.call(sent, name) ? (sent[name] ?? null) : null]));
