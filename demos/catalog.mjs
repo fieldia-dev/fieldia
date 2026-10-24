@@ -235,6 +235,7 @@ export const DEMOS = [
       'Press Ctrl+Enter (⌘+Enter on a Mac) to save from wherever the cursor is.',
       'Open the Contacts tab and add a contact in the table.',
       'Type in Country and pick one from the list: a link to another record.',
+      'Press the flag beside Phone and type a country — “jordan”, “JO” or “+962” — then Enter: the number is read in that country.',
       'In the conversation on the right, write a message and mention someone with @.',
       'Read it in [Turkish](?locale=tr&dir=ltr) or [Spanish](?locale=es&dir=ltr), or right to left in [Persian](?locale=fa&dir=rtl) or [Urdu](?locale=ur&dir=rtl): Fieldia’s own words, dates and numbers in each, not yet reviewed by a native speaker. [Back to English](?locale=en&dir=ltr).',
     ],
@@ -760,6 +761,7 @@ export const DEMOS = [
     howTo: [
       'Fold a section by its title, and open it again.',
       'Type a number into Budget: it is grouped as you type, and its currency can be picked beside it.',
+      'Press the flag beside Site phone and type a country, its code or its dialling code: the list finds it as you type.',
       'Open the calendar of the start date: it shows the weeks’ numbers.',
       'Add tags to a field of tags, and a new one by its name.',
       'Format text in the rich text box with its toolbar.',

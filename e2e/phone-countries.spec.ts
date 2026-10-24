@@ -97,6 +97,41 @@ test.describe('a phone’s country, found by typing', () => {
   });
 });
 
+/**
+ * Where the owner looked: the gallery's first demo, the Customer record, and its Every field. Each page says its
+ * phones' country (`phone`), so its Phone is read the world over, its country found by typing — not a text box. Opened,
+ * the stored number is shown as it is and the record is not changed by it.
+ */
+for (const [demo, query, id, stored, shown] of [
+  ['the Customer record', 'page=customer&skin=underline', 'f-phone', '+20 2 2345 6789', '+20 2 2345 6789'],
+  ['Every field', 'page=fields&skin=outlined', 'f-phone', '+20 2 2345 6700', '+20 2 2345 6700'],
+] as const) {
+  test(`${demo}: its phone's country pressed and a country typed, as the owner did`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    ({ problems } = await open(page, 'plain', query));
+    const button = country(page, id);
+    await expect(button).toHaveAccessibleDescription('Egypt');
+    const phone = node(page, id).locator('.fd-phone-input');
+    await expect(phone).toHaveValue(shown);
+    expect(await value(page, 'phone')).toBe(stored);
+    expect(await page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().dirty)).toEqual([]);
+    await button.click();
+    await expect(finder(page)).toBeFocused();
+    await expect(rows(page).first()).toHaveText('🇪🇬Egypt+20');
+    await finder(page).fill('jord');
+    await expect(rows(page).first()).toContainText('Jordan');
+    await page.keyboard.press('Enter');
+    await expect(button).toContainText('+962');
+    await expect(button).toHaveAccessibleDescription('Jordan');
+    await expect(phone).toBeFocused();
+    await phone.press('ControlOrMeta+A');
+    await phone.pressSequentially('06 461 2200');
+    await phone.press('Tab');
+    await expect(phone).toHaveValue('+962 6 461 2200');
+    await expect.poll(() => value(page, 'phone')).toBe('+96264612200');
+  });
+}
+
 test('on a phone it opens as a sheet from the foot of the screen, and Close puts it away', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   ({ problems } = await open(page, 'plain', 'page=real-contact&record=7001&skin=quiet&scheme=dark'));

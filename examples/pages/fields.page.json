@@ -4,6 +4,7 @@
   "title": "Every field",
   "description": "One record that uses every widget Fieldia has: an office fit-out project.",
   "data": { "kind": "record", "model": "project" },
+  "phone": { "country": "EG" },
   "fields": {
     "name": { "type": "char", "label": "Project", "required": true },
     "email": { "type": "char", "label": "Site contact email" },

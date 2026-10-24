@@ -3,6 +3,7 @@
   "id": "customer",
   "title": "Customer",
   "data": { "kind": "record", "model": "partner" },
+  "phone": { "country": "EG" },
   "fields": {
     "name": { "type": "char", "label": "Name", "required": true, "size": 120 },
     "image": { "type": "image", "label": "Photo", "maxSize": 2097152 },
