@@ -21,13 +21,16 @@ async function waitForAddress(page: Page, partId = 'delivery-address') {
 
 test.describe('a saved form placed twice', () => {
   test('waits as a skeleton while the Address form comes, then the form', async ({ page }) => {
-    // The demo's app takes two seconds to fetch a saved form here.
-    const { problems } = await open(page, 'plain', 'page=delivery&skin=outlined&pagesDelay=2000');
+    // The demo's app holds the saved form until the test lets it go: the wait looked at while it is certain to be one,
+    // however long the page took to open.
+    const { problems } = await open(page, 'plain', 'page=delivery&skin=outlined&pagesDelay=hold');
     const delivery = part(page, 'delivery-address');
     // Busy at once; past the wait's delay, a few skeleton bars in its place (loading.ts).
     await expect(delivery).toHaveAttribute('aria-busy', 'true');
     await expect(delivery.locator('.fd-loader[data-way="skeleton"] .fd-sk')).toHaveCount(3);
     await screen(page, 'embedded-loading', { viewport: true });
+    await expect.poll(() => page.evaluate(() => (window as unknown as { fieldiaDemo: { pagesHeld(): number } }).fieldiaDemo.pagesHeld())).toBeGreaterThan(0);
+    await page.evaluate(() => (window as unknown as { fieldiaDemo: { releasePages(): number } }).fieldiaDemo.releasePages());
     await waitForAddress(page);
     await expect(delivery).not.toHaveAttribute('aria-busy');
     await expect(delivery.locator(':scope > legend')).toHaveText('Delivery address');

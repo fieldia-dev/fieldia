@@ -15,7 +15,9 @@ import { demoListViews } from '../shared/maps';
  *
  * The query string says the starting point, for the tests and for a link: `?first=spinner&refresh=dim&more=skeleton&
  * search=spinner&action=overlay&skeleton=pulse&spinner=dots&error=toast&delay=150&minShown=300&timeout=4000&slow=1500&
- * customer=3&scheme=dark&dir=rtl`. `slow=0` answers at once; `dir=rtl` draws the forms right to left. Sample data.
+ * customer=3&scheme=dark&dir=rtl`. `slow=0` answers at once; `dir=rtl` draws the forms right to left. `hold=1` holds
+ * every answer until it is let go (`fieldiaDemo.release()`), so a test looks at a wait while it is certain to be one,
+ * however long the page took to open. Sample data.
  */
 
 const params = new URLSearchParams(location.search);
@@ -70,8 +72,50 @@ const memory = createMemoryDataSource({ records: { customer: customers, user: us
 
 // ---- a network as slow as you like, and an answer that fails when asked to ----------------------------------------
 
-/** How slow the network is now (milliseconds a source's answer takes), and whether its next answer fails. */
-const net = { slow: Number(params.get('slow') ?? 1500), failNext: false };
+/**
+ * How slow the network is now (milliseconds a source's answer takes), whether its next answer fails, and whether its
+ * answers are held until they are let go (`hold`).
+ */
+const net = { slow: Number(params.get('slow') ?? 1500), failNext: false, hold: params.get('hold') === '1' };
+const stopped = () => Object.assign(new Error('Stopped'), { name: 'AbortError' });
+/** An answer held: what was asked (the source's member and its request), and how it is let go. */
+interface Held {
+  member: string;
+  request: unknown;
+  go: () => void;
+}
+/** The answers held now, in the order asked. */
+const held: Held[] = [];
+/** An answer held until it is let go — or its request stopped meanwhile (`signal`), which ends it as aborted. */
+const holding = (member: string, request: unknown, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) return reject(stopped());
+    const one: Held = {
+      member,
+      request,
+      go: () => {
+        signal?.removeEventListener('abort', stop);
+        resolve();
+      },
+    };
+    const stop = () => {
+      const at = held.indexOf(one);
+      if (at >= 0) held.splice(at, 1);
+      reject(stopped());
+    };
+    held.push(one);
+    signal?.addEventListener('abort', stop, { once: true });
+  });
+/**
+ * The answers held now let go — every one, or those `which` picks (a list's first rows, not its next) — each then as
+ * slow as the network is; how many. Those asked after are held too while `hold` is on.
+ */
+const release = (which: (ask: Omit<Held, 'go'>) => boolean = () => true) => {
+  const now = held.filter((one) => which({ member: one.member, request: one.request }));
+  for (const one of now) held.splice(held.indexOf(one), 1);
+  for (const one of now) one.go();
+  return now.length;
+};
 /** The source's members a person waits for: each answers after the network's delay, or fails when asked to. */
 const ASKS = new Set(['load', 'list', 'search', 'groups', 'save', 'totals', 'options']);
 const pause = (ms: number, signal?: AbortSignal) =>
@@ -89,6 +133,7 @@ const dataSource = new Proxy(memory, {
     return async (...args: unknown[]) => {
       // A request a wait with a timeout carries a signal: honoured, as an app's own source may.
       const signal = (args[0] as { signal?: AbortSignal } | undefined)?.signal;
+      if (net.hold) await holding(String(key), args[0], signal);
       if (net.slow) await pause(net.slow, signal);
       if (net.failNext) {
         net.failNext = false;
@@ -235,17 +280,17 @@ app.append(
 // ---- the app's own indicator and what it heard -----------------------------------------------------------------
 
 const indicator = document.querySelector('.ld-indicator') as HTMLElement;
-/** Every loadingstart and loadingend heard, newest last, and the waits going on: the app's own indicator. */
-const heard: { start: boolean; event: LoadingEvent }[] = [];
+/** Every loadingstart and loadingend heard (and when, by the page's clock), newest last, and the waits going on: the app's own indicator. */
+const heard: { start: boolean; event: LoadingEvent; at: number }[] = [];
 let going = 0;
 function hear(handle: ViewerHandle) {
   handle.on('loadingstart', (event) => {
-    heard.push({ start: true, event });
+    heard.push({ start: true, event, at: Date.now() });
     going++;
     indicator.toggleAttribute('data-on', going > 0);
   });
   handle.on('loadingend', (event) => {
-    heard.push({ start: false, event });
+    heard.push({ start: false, event, at: Date.now() });
     going = Math.max(0, going - 1);
     indicator.toggleAttribute('data-on', going > 0);
     heardLine.replaceChildren('The app heard: ', el('strong', {}, `${event.moment} of ${event.part}`), ` ended after ${Math.round(event.duration)} ms${event.failed ? ', failed' : ''}.`);
@@ -276,7 +321,11 @@ function openCustomer(id: RecordId) {
 againButton.addEventListener('click', () => void Promise.all([handles.list, handles.record, ...handles.twins].map((handle) => handle?.reload())));
 mountAll();
 
-/** For the browser tests: the forms, the source, the network and what the app heard. */
+/**
+ * For the browser tests: the forms, the source, the network and what the app heard — and the answers held: `hold()`
+ * holds every answer from now, `held` says how many wait now, `release(which?)` lets those go — or those it picks —
+ * holding going on, `hold(false)` stops holding and lets every one go.
+ */
 (window as unknown as { fieldiaDemo: unknown }).fieldiaDemo = {
   get list() {
     return handles.list;
@@ -290,6 +339,14 @@ mountAll();
   dataSource,
   net,
   heard,
+  hold(on = true) {
+    net.hold = on;
+    if (!on) release();
+  },
+  get held() {
+    return held.length;
+  },
+  release,
   settings,
   remount: mountAll,
 };

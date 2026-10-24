@@ -37,10 +37,29 @@ const listed = async (page: Page) => {
 const demo = <T>(page: Page, script: string) => page.evaluate(`(() => { const d = window.fieldiaDemo; return ${script}; })()`) as Promise<T>;
 /** Nothing waits anywhere on the page: the app's own indicator, which every wait's start and end drive, is off. */
 const settled = (page: Page) => expect(page.locator('.ld-indicator')).not.toHaveAttribute('data-on', /.*/);
+/**
+ * The source's answers held until the test lets them go (`hold=1` in the address, `d.hold()`): a wait is looked at
+ * while it is certain to be one, however long the page took to open or the looking takes — never raced against a slow
+ * answer. Timing is raced only where it is the subject, and measured from the wait's own start.
+ */
+const hold = (page: Page) => demo(page, '(d.hold(), 0)');
+/** Holding stopped, every answer held let go. */
+const letGo = (page: Page) => demo(page, '(d.hold(false), 0)');
+/**
+ * The page's first answers let go — the list's first rows, the customer — never the list's next rows (asked as its end
+ * comes in sight, held), until its first twelve are in.
+ */
+const firstTwelve = (page: Page) =>
+  expect
+    .poll(async () => {
+      await demo(page, "d.release((ask) => !(ask.member === 'list' && ask.request.offset > 0))");
+      return rows(page).count();
+    }, { timeout: 15000 })
+    .toBe(12);
 
 test.describe('Loading, as you like it', () => {
   test('drawn the first time: a skeleton in the list’s own columns and the customer’s own boxes, then the records', async ({ page }) => {
-    const problems = await go(page, 'slow=1500');
+    const problems = await go(page, 'slow=0&hold=1');
     // Busy at once, for a screen reader; drawn past the delay.
     await expect(records(page)).toHaveAttribute('aria-busy', 'true');
     await expect(records(page)).toHaveAttribute('data-fd-way', 'skeleton');
@@ -55,6 +74,7 @@ test.describe('Loading, as you like it', () => {
     await expect(pane(page, 'Customers').locator('.fd-loading-said')).toHaveText('Loading…');
     await screen(page, 'loading-first-skeleton');
     expect(await axeFindings(page, 'drawn the first time, a skeleton')).toEqual([]);
+    await letGo(page);
     await listed(page);
     await expect(records(page).locator('.fd-sk-row')).toHaveCount(0);
     await expect(records(page)).not.toHaveAttribute('aria-busy', /.*/);
@@ -65,33 +85,37 @@ test.describe('Loading, as you like it', () => {
   });
 
   test('drawn the first time, as a spinner, a progress bar, words, or the app’s own drawing', async ({ page }) => {
-    await go(page, 'slow=1500&first=spinner');
+    await go(page, 'slow=0&hold=1&first=spinner');
     await expect(records(page).locator('.fd-loader[data-way="spinner"] .fd-spin')).toBeVisible();
     await expect(customer(page).locator('.fd-loader[data-way="spinner"] .fd-spin')).toBeVisible();
     // The words a screen reader's alone, the ring in sight; what is not there yet out of sight.
     await expect(records(page).locator('.fd-list-scroll')).toHaveCSS('visibility', 'hidden');
     await screen(page, 'loading-first-spinner');
     expect(await axeFindings(page, 'drawn the first time, a spinner')).toEqual([]);
+    await letGo(page);
     await listed(page);
 
-    await go(page, 'slow=1500&first=progress');
+    await go(page, 'slow=0&hold=1&first=progress');
     await expect(records(page).locator('.fd-loader[data-way="progress"][data-look="top"] .fd-bar')).toBeVisible();
+    await letGo(page);
     await listed(page);
 
-    await go(page, 'slow=1500&first=text');
+    await go(page, 'slow=0&hold=1&first=text');
     await expect(records(page).locator('.fd-loader[data-way="text"]')).toHaveText('Loading…');
     await expect(customer(page).locator('.fd-loader[data-way="text"]')).toHaveText('Loading…');
+    await letGo(page);
     await listed(page);
 
-    await go(page, 'slow=1500&first=custom');
+    await go(page, 'slow=0&hold=1&first=custom');
     await expect(records(page).locator('.ld-custom')).toContainText('Asking the warehouse…');
     await expect(customer(page).locator('.ld-custom')).toContainText('Asking the warehouse…');
     await screen(page, 'loading-first-custom');
+    await letGo(page);
     await listed(page);
     await expect(records(page).locator('.ld-custom')).toHaveCount(0);
   });
 
-  test('a quick answer flashes no loader at all, anywhere on the page', async ({ page }) => {
+  test('a quick answer flashes no loader at all, anywhere on the page — timed from each wait’s own start', async ({ page }) => {
     // Every loader the page ever puts in, counted from its first moment.
     await page.addInitScript(() => {
       (window as unknown as { seen: string[] }).seen = [];
@@ -102,23 +126,39 @@ test.describe('Loading, as you like it', () => {
         }
       }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-fd-wait'] });
     });
-    // Answers in a twentieth of a second; a loader would show past three fifths of one.
-    await go(page, 'slow=50&delay=600');
+    await go(page, 'slow=0&delay=600');
     await listed(page);
     await expect(nameBox(page)).toHaveValue('Nile Traders');
+    await settled(page);
+    // From here every part is in. Each answer comes a twentieth of a second after its wait starts and a loader would
+    // come three fifths of one after: both on the page's own clock, from the wait's start, so the answer is first however
+    // slow the machine — never raced against the page opening or this test's looking.
+    await page.evaluate(() => {
+      const w = window as unknown as { seen: string[]; fieldiaDemo: { net: { slow: number } } };
+      w.seen = [];
+      w.fieldiaDemo.net.slow = 50;
+    });
+    const from = await demo<number>(page, 'd.heard.length');
     await pane(page, 'Customers').getByRole('combobox').first().fill('Delta');
     await pane(page, 'Customers').getByRole('combobox').first().press('Enter');
     await expect(rows(page)).toHaveCount(5);
+    await demo(page, 'd.record.reload()');
+    await settled(page);
+    // Past the delay of the last of them: still nothing drawn.
+    await page.waitForTimeout(700);
+    const ended = await demo<string[]>(page, `d.heard.slice(${from}).filter((one) => !one.start).map((one) => one.event.moment + ' ' + one.event.part)`);
+    expect(ended).toEqual(expect.arrayContaining(['refresh customers', 'refresh loading-customer']));
     expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen)).toEqual([]);
   });
 
   test('asked again, what is shown stays where it is, a thin bar over it, until the new records come', async ({ page }) => {
-    await go(page, 'slow=1200');
+    await go(page, 'slow=0');
     await listed(page);
     const first = rows(page).first();
     const before = await first.boundingBox();
     const search = pane(page, 'Customers').getByRole('combobox').first();
     const shown = await rows(page).count();
+    await hold(page);
     await search.fill('Delta');
     await search.press('Enter');
     const bar = records(page).locator('.fd-loader[data-way="keep"] .fd-bar');
@@ -129,12 +169,13 @@ test.describe('Loading, as you like it', () => {
     await expect(rows(page)).toHaveCount(shown);
     await screen(page, 'loading-refresh-keep');
     expect(await axeFindings(page, 'asked again, kept')).toEqual([]);
+    await letGo(page);
     await expect(rows(page)).toHaveCount(5);
     await expect(bar).toHaveCount(0);
   });
 
   test('asked again, dimmed, as a skeleton or with a spinner, as the panel says', async ({ page }) => {
-    await go(page, 'slow=1200');
+    await go(page, 'slow=0');
     await listed(page);
     const ask = async () => {
       const search = pane(page, 'Customers').getByRole('combobox').first();
@@ -149,10 +190,12 @@ test.describe('Loading, as you like it', () => {
     ] as const) {
       await page.locator('select[data-setting="refresh"]').selectOption(way);
       await listed(page);
+      await hold(page);
       await ask();
       await expect(records(page)).toHaveAttribute('data-fd-way', way);
       await expect(seen).toBeVisible();
       if (way === 'dim') await expect(seen).toHaveCSS('opacity', '0.55');
+      await letGo(page);
       await expect(rows(page)).toHaveCount(5);
     }
   });
@@ -172,7 +215,8 @@ test.describe('Loading, as you like it', () => {
     // shapes over the calendar or its box.
     await since.locator('.fd-calendar-button').click();
     await expect(calendar).toBeVisible();
-    await demo(page, '(d.net.slow = 1500, d.record.reload(), 0)');
+    await hold(page);
+    await demo(page, '(d.record.reload(), 0)');
     await expect(customer(page)).toHaveAttribute('data-fd-wait', 'refresh');
     await expect(customer(page)).toHaveAttribute('data-fd-way', 'keep');
     await expect(customer(page)).not.toHaveAttribute('data-fd-shaped', /.*/);
@@ -183,25 +227,29 @@ test.describe('Loading, as you like it', () => {
     await calendar.locator('tbody button:not(.fd-outside)').filter({ hasText: /^10$/ }).click();
     await expect(calendar).toBeHidden();
     await expect(since.locator('input')).toHaveValue(/^10 /);
+    await letGo(page);
     await expect(customer(page)).not.toHaveAttribute('data-fd-wait', /.*/);
     await settled(page);
 
     // Asked again with a ring over what is shown: a calendar opened while it waits is over the ring, and works.
     await page.locator('select[data-setting="refresh"]').selectOption('spinner');
     await expect(nameBox(page)).toHaveValue('Nile Traders');
-    await demo(page, '(d.net.slow = 1500, d.record.reload(), 0)');
+    await hold(page);
+    await demo(page, '(d.record.reload(), 0)');
     await expect(customer(page).locator('.fd-loader[data-way="spinner"] .fd-spin')).toBeVisible();
     await since.locator('.fd-calendar-button').click();
     await expect(calendar).toBeVisible();
     expect(await onTop(calendar)).toBe(true);
     await calendar.locator('tbody button:not(.fd-outside)').filter({ hasText: /^12$/ }).click();
     await expect(since.locator('input')).toHaveValue(/^12 /);
+    await letGo(page);
     await settled(page);
 
     // The list asked again, its records under a ring and dimmed: its search's panel opened meanwhile, over the rows,
     // is the thing drawn there, and a filter pressed in it is taken.
     await listed(page);
-    await demo(page, '(d.net.slow = 1500, d.list.reload(), 0)');
+    await hold(page);
+    await demo(page, '(d.list.reload(), 0)');
     await expect(records(page)).toHaveAttribute('data-fd-way', 'spinner');
     await pane(page, 'Customers').locator('.fd-search-toggle').click();
     const panel = pane(page, 'Customers').locator('.fd-search-panel');
@@ -209,6 +257,7 @@ test.describe('Loading, as you like it', () => {
     expect(await onTop(panel)).toBe(true);
     await panel.locator('.fd-search-option[data-filter="active"]').click();
     await expect(panel.locator('.fd-search-option[data-filter="active"]')).toHaveAttribute('aria-pressed', 'true');
+    await letGo(page);
     await expect(rows(page).first()).toBeVisible();
     await settled(page);
     expect(await axeFindings(page, 'a popup open as it is asked again')).toEqual([]);
@@ -216,7 +265,9 @@ test.describe('Loading, as you like it', () => {
   });
 
   test('the next rows: “Loading more…” where they will come, then twelve more', async ({ page }) => {
-    await go(page, 'slow=1500');
+    // Every answer held: the first let go, the next rows held as they are asked — as the end comes in sight.
+    await go(page, 'slow=0&hold=1');
+    await firstTwelve(page);
     await expect(rows(page).first()).toContainText('Delta Foods');
     const end = records(page).locator('.fd-list-more-rows');
     await end.scrollIntoViewIfNeeded();
@@ -227,68 +278,80 @@ test.describe('Loading, as you like it', () => {
     await expect(rows(page)).toHaveCount(12);
     await screen(page, 'loading-more-row');
     expect(await axeFindings(page, 'the next rows, Loading more…')).toEqual([]);
+    await letGo(page);
     await expect.poll(() => rows(page).count()).toBeGreaterThanOrEqual(24);
     await expect(rows(page).nth(12)).toContainText('Isis Pharma');
   });
 
   test('the next rows as a skeleton, or a spinner', async ({ page }) => {
     for (const way of ['skeleton', 'spinner'] as const) {
-      await go(page, `slow=1500&more=${way}`);
+      await go(page, `slow=0&hold=1&more=${way}`);
+      await firstTwelve(page);
       await expect(rows(page).first()).toContainText('Delta Foods');
       const end = records(page).locator('.fd-list-more-rows');
       await end.scrollIntoViewIfNeeded();
       await expect(end.locator(`.fd-loader[data-way="${way}"] ${way === 'spinner' ? '.fd-spin' : '.fd-sk'}`).first()).toBeVisible();
+      await letGo(page);
       await expect.poll(() => rows(page).count()).toBeGreaterThanOrEqual(24);
     }
   });
 
   test('a search: “Searching…” in the list under the box, then the people found; or a ring at the box’s end', async ({ page }) => {
-    await go(page, 'slow=1200');
+    await go(page, 'slow=0');
     await expect(nameBox(page)).toHaveValue('Nile Traders');
     const manager = pane(page, 'Customer').locator('[data-node="f-manager"] input[role="combobox"]');
+    await hold(page);
     await manager.fill('Mo');
     const list = pane(page, 'Customer').locator('[data-node="f-manager"] [role="listbox"]');
     await expect(list.locator('.fd-loader[data-way="inline"]')).toHaveText('Searching…');
     await expect(list).toHaveAttribute('aria-busy', 'true');
     await screen(page, 'loading-search-inline');
     expect(await axeFindings(page, 'a search, Searching…')).toEqual([]);
+    await letGo(page);
     await expect(list.getByRole('option', { name: 'Mona Adel' })).toBeVisible();
     await expect(list.locator('.fd-loader')).toHaveCount(0);
 
-    await go(page, 'slow=1200&search=spinner');
+    await go(page, 'slow=0&search=spinner');
     await expect(nameBox(page)).toHaveValue('Nile Traders');
+    await hold(page);
     await manager.fill('Om');
     await expect(pane(page, 'Customer').locator('[data-node="f-manager"] .fd-combo > .fd-loader[data-way="spinner"] .fd-spin')).toBeVisible();
+    await letGo(page);
     await expect(list.getByRole('option', { name: 'Omar Said' })).toBeVisible();
 
     // The app's own drawing, in the list where the suggestions come.
-    await go(page, 'slow=1200&search=custom');
+    await go(page, 'slow=0&search=custom');
     await expect(nameBox(page)).toHaveValue('Nile Traders');
+    await hold(page);
     await manager.fill('Sa');
     await expect(list.locator('.ld-custom')).toContainText('Asking the warehouse…');
+    await letGo(page);
     await expect(list.getByRole('option', { name: 'Sara Fathy' })).toBeVisible();
     await expect(list.locator('.ld-custom')).toHaveCount(0);
   });
 
   test('a button’s steps: the button busy, its ring past the delay; or a bar along the top, or the form covered', async ({ page }) => {
-    await go(page, 'slow=1200');
+    await go(page, 'slow=0');
     await expect(nameBox(page)).toHaveValue('Nile Traders');
-    // Its steps set the status and save, the source answering slowly.
+    // Its steps set the status and save, the source's answer held.
     const mark = pane(page, 'Customer').getByRole('button', { name: 'Mark as active' });
+    await hold(page);
     await mark.click();
     await expect(mark).toHaveAttribute('aria-busy', 'true');
     await expect(mark).toHaveAttribute('data-fd-wait', 'action');
     expect(await mark.evaluate((one) => getComputedStyle(one, '::after').display)).not.toBe('none');
     await screen(page, 'loading-action-button');
+    await letGo(page);
     // A record's Save steps aside while it saves, as ever: its status says so.
     await expect(pane(page, 'Customer').locator('.fd-status')).toHaveText('Saved');
     await expect(mark).not.toHaveAttribute('aria-busy', /.*/);
     await expect(mark).not.toHaveAttribute('data-fd-wait', /.*/);
 
     for (const way of ['bar', 'overlay'] as const) {
-      await go(page, `slow=1200&action=${way}`);
+      await go(page, `slow=0&action=${way}`);
       await expect(nameBox(page)).toHaveValue('Nile Traders');
       const button = pane(page, 'Customer').getByRole('button', { name: 'Mark as active' });
+      await hold(page);
       await button.click();
       // Busy, never pressed twice — its own ring away: the form says it.
       await expect(button).toHaveAttribute('aria-busy', 'true');
@@ -299,6 +362,7 @@ test.describe('Loading, as you like it', () => {
         await screen(page, 'loading-action-overlay');
         expect(await axeFindings(page, 'a button’s steps, the form covered')).toEqual([]);
       }
+      await letGo(page);
       await expect(pane(page, 'Customer').locator('.fd-status')).toHaveText('Saved');
       await expect(customer(page)).not.toHaveAttribute('inert', /.*/);
     }
@@ -361,41 +425,54 @@ test.describe('Loading, as you like it', () => {
   });
 
   test('a timeout ends a slow wait as failed, the request told to stop; a record that answers after is drawn', async ({ page }) => {
-    await go(page, 'slow=1500&timeout=600');
+    // Every answer held: each wait ends by its timeout, never by an answer racing it.
+    await go(page, 'slow=0&hold=1&timeout=600');
     await expect(records(page).locator('.fd-list-failed')).toHaveText('Could not load the customers. It took too long. Retry');
     await expect(customer(page).locator('.fd-loader[data-way="failed"]')).toHaveText('Couldn’t load. It took too long. Retry');
-    // The customer's answer came after all: drawn, what was said of it taken away.
+    // Ended no sooner than its timeout, from the wait's own start — to the page clock's tick: a browser rounds `Date.now()`
+    // (Firefox's reduced precision measured 599 for a 600 ms timer).
+    const failed = await demo<number[]>(page, "d.heard.filter((one) => !one.start && one.event.failed && one.event.part === 'customers').map((one) => one.event.duration)");
+    expect(failed.length).toBeGreaterThan(0);
+    for (const duration of failed) expect(duration).toBeGreaterThanOrEqual(595);
+    // The customer's answer comes after all: drawn, what was said of it taken away.
+    await letGo(page);
     await expect(nameBox(page)).toHaveValue('Nile Traders');
     await expect(customer(page).locator('.fd-loader[data-way="failed"]')).toHaveCount(0);
-    // The list's request was aborted: its late answer is never drawn.
+    // The list's request was aborted as it timed out: its answer, let go, is never drawn.
     await expect(rows(page)).toHaveCount(0);
+    await hold(page);
     await records(page).getByRole('button', { name: 'Retry' }).click();
     await expect(records(page).locator('.fd-list-failed')).toHaveText('Could not load the customers. It took too long. Retry');
+    await letGo(page);
   });
 
   test('tells the app each wait’s start and end, for its own indicator', async ({ page }) => {
-    await go(page, 'slow=1000');
+    await go(page, 'slow=0&hold=1');
     // The app's own bar along the page's top, on while anything waits.
     await expect(page.locator('.ld-indicator')).toHaveAttribute('data-on', '');
+    const letGoAt = await demo<number>(page, '(d.hold(false), Date.now())');
     await listed(page);
     await expect(nameBox(page)).toHaveValue('Nile Traders');
     await expect(page.locator('.ld-indicator')).not.toHaveAttribute('data-on', /.*/);
-    const heard = await demo<{ start: boolean; event: { moment: string; part: string; duration: number; failed: boolean } }[]>(page, 'd.heard');
+    const heard = await demo<{ start: boolean; at: number; event: { moment: string; part: string; duration: number; failed: boolean } }[]>(page, 'd.heard');
     const parts = (start: boolean) => heard.filter((one) => one.start === start).map((one) => `${one.event.moment} ${one.event.part}`).sort();
     expect(parts(true)).toEqual(parts(false));
     expect(parts(true)).toEqual(expect.arrayContaining(['first customers', 'first loading-customer']));
     const list = heard.find((one) => !one.start && one.event.part === 'customers');
     expect(list?.event.failed).toBe(false);
-    expect(list?.event.duration).toBeGreaterThanOrEqual(900);
+    // As long, from the wait's own start, as its answer was held at least (to the page clock's tick).
+    const started = heard.find((one) => one.start && one.event.part === 'customers') as { at: number } | undefined;
+    expect(list?.event.duration).toBeGreaterThanOrEqual(letGoAt - (started?.at ?? letGoAt) - 5);
+    expect(list?.event.duration).toBeGreaterThan(0);
   });
 
   test('every way stands still for a reader who asks for no motion, and none shows on paper', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await go(page, 'slow=1500');
+    await go(page, 'slow=0&hold=1');
     const bar = records(page).locator('.fd-sk').first();
     await expect(bar).toBeVisible();
     expect(await bar.evaluate((one) => getComputedStyle(one).animationName)).toBe('none');
-    await go(page, 'slow=1500&first=spinner');
+    await go(page, 'slow=0&hold=1&first=spinner');
     const ring = records(page).locator('.fd-spin');
     await expect(ring).toBeVisible();
     expect(await ring.evaluate((one) => getComputedStyle(one).animationName)).toBe('none');
@@ -407,32 +484,35 @@ test.describe('Loading, as you like it', () => {
   });
 
   test('in the dark, right to left, on a phone and under two themes', async ({ page, browserName }) => {
-    await go(page, 'slow=1500&scheme=dark');
+    await go(page, 'slow=0&hold=1&scheme=dark');
     await expect(records(page).locator('.fd-sk-row').first()).toBeVisible();
     // The shapes in the dark scheme's own tint, apart from the dark card.
     const tint = await records(page).locator('.fd-sk').first().evaluate((one) => getComputedStyle(one).backgroundColor);
     expect(tint).not.toBe('rgba(0, 0, 0, 0)');
     await screen(page, 'loading-first-dark');
     expect(await axeFindings(page, 'drawn the first time, dark')).toEqual([]);
+    await letGo(page);
     await listed(page);
 
-    await go(page, 'slow=1500&dir=rtl');
+    await go(page, 'slow=0&hold=1&dir=rtl');
     await expect(records(page).locator('.fd-sk-row').first()).toBeVisible();
     await expect(pane(page, 'Customers').locator('.fd-form')).toHaveAttribute('dir', 'rtl');
     await screen(page, 'loading-first-rtl');
+    await letGo(page);
     await listed(page);
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await go(page, 'slow=1500');
+    await go(page, 'slow=0&hold=1');
     // A phone's list is cards: their skeleton is cards too.
     await expect(records(page).locator('.fd-sk-row').first()).toBeVisible();
     await expect(pane(page, 'Customers').locator('.fd-list')).toHaveAttribute('data-as', 'cards');
     await expectNoSidewaysScroll(page);
     await screen(page, 'loading-first-phone');
+    await letGo(page);
     await expect(records(page).locator('.fd-list-row').first()).toBeVisible();
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await go(page, 'slow=1500');
+    await go(page, 'slow=0&hold=1');
     const twins = page.locator('.ld-twins');
     await expect(twins.locator('.fd-form[data-fd-theme="material"] [data-fd-shaped]')).toBeVisible();
     await expect(twins.locator('.fd-form[data-fd-theme="fluent"] [data-fd-shaped]')).toBeVisible();
