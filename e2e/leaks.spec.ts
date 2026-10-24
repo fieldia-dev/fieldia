@@ -272,6 +272,11 @@ test.describe('mounted and taken away twenty times, nothing is left behind', () 
     await page.addInitScript(counters);
     await page.goto('/screen/');
     await page.waitForFunction(() => (window as unknown as { fieldiaDesigner?: unknown }).fieldiaDesigner);
+    // Its page kept in the demo's store, as an app's is: opened again from there each time.
+    await page.evaluate(() => {
+      const demo = (window as unknown as { fieldiaDesigner: { designer: { getPage(): unknown }; store: { saveDraft(p: unknown): Promise<void> } } }).fieldiaDesigner;
+      return demo.store.saveDraft(demo.designer.getPage());
+    });
     const cdp = await page.context().newCDPSession(page);
     const left = await leftAfter(page, cdp, async () => {
       // A field's menu open (its ⋯), then the editor taken away and opened again, as an app does.
