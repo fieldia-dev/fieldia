@@ -88,12 +88,15 @@ export function loadingSettings(...layers: (PageLoading | undefined)[]): Loading
   return settled as LoadingSettings;
 }
 
-/** The default settings and words, for a part drawn with none. */
-const PLAIN: Loading = { settings: LOADING_DEFAULTS as LoadingSettings, words: WIDGET_LABELS.en };
+/**
+ * The default settings and words, for a part drawn with none (a box an app makes itself). Read as it is asked for, never
+ * kept as this module is read: in the one-tag script Fieldia's defaults may be set after it, `undefined` until then.
+ */
+const plain = (): Loading => ({ settings: LOADING_DEFAULTS as LoadingSettings, words: WIDGET_LABELS.en });
 
 /** A part's own settings over those it sits in: the same hooks and words, its settings winning. */
 export function loadingOver(under: Loading | undefined, over: PageLoading | undefined): Loading {
-  const base = under ?? PLAIN;
+  const base = under ?? plain();
   return over && Object.keys(over).length ? { ...base, settings: loadingSettings(base.settings, over) } : base;
 }
 
@@ -192,7 +195,7 @@ const span = (doc: Document, className: string, text = '') => {
  * is busy from now; what it draws, it draws after the delay.
  */
 export function startLoading(region: HTMLElement, moment: LoadingMoment, loading: Loading | undefined, how: WaitHow = {}): Wait {
-  const given = loading ?? PLAIN;
+  const given = loading ?? plain();
   const { settings, words } = given;
   const way = loadingWay(given, moment);
   const doc = region.ownerDocument;
