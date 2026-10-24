@@ -1893,3 +1893,97 @@ In plain words:
   search for the same words.
 - The memory source answers after `delayMs` (`createMemoryDataSource({ delayMs: 1500 })`), so a demo shows each wait;
   the loading demo wraps it to fail its next answer on purpose ("Fail the next answer") and to honour `signal`.
+
+## 37. One send discipline: a send's own key, kept sends first (0.34, lane harden-data)
+
+One more optional field in the requests a source already takes, read by a source that dedupes; nothing to add.
+
+```ts
+// SaveRequest and SubmitRequest gain key?: string — the send's idempotency key, made at its first try.
+// FormState.outbox gains lasting?: boolean — false where the browser keeps nothing past the page (no IndexedDB).
+```
+
+In plain words:
+
+- **One key from the first try**: every save and send carries `key`, the same for every try of it — a Retry after an
+  answer lost on the way, an outbox's copy sent later (whose `queued.key` is that key too) — until it went: a record's
+  until a save of it went (a new record's every save until it has its id), a response's every send until the form
+  starts another (`reset`). **A server that kept a send with that key keeps no second**: it stores these values over
+  that one's (a later try of the same, the person's latest) and answers as it did — its id — never a second record or
+  response, nor a conflict with its own first try. The memory source does so (`createMemoryDataSource`).
+- **Asked again with nothing changed, the same save**: `form.save()` called while one is on its way, the values as they
+  were when it was asked (a double press, an app's own Submit pressed twice), waits for it and — it went — is it: one
+  send, both answered true. Stopped or refused (a question answered Cancel), it is asked anew. Changed since, it waits for
+  the first and saves what is left, with the version it got back, as before.
+- **A response's same answers never go twice**: once sent, `form.save()` with the answers as they went sends nothing
+  (false); changed since — an answer edited while it was on its way — they go again with the same key, the same
+  response; `form.reset()` starts another, with a key of its own.
+- **A new record answered with no id** (`undefined`, `{ id: undefined }`) is not taken as saved: said ("The record went,
+  but its data source gave back no id: save again — it is the same save, never a second record."), its key kept.
+- **Kept sends first**: a save of a record the outbox holds kept saves of (a new record's own, a stored one's by its
+  model and id) sends them first, in order; still without signal, it is kept behind them. Once they went it goes, a new
+  record's as a save of the record they made, each at the version the one before left — the person's own saves are
+  never refused as someone else's.
+- **A claim held while its send goes**: renewed each third of its two minutes, so a send that takes longer (a film on a
+  slow signal) is never taken by a second tab.
+- **Where the browser keeps nothing past the page** (no IndexedDB), the outbox holds sends in memory and says so
+  (`state.outbox.lasting: false`): "Not sent yet" and "1 send waits in this page: keep it open…", never "Kept on this
+  device".
+- Tests: `libs/core/src/lib/record/send-discipline.spec.ts`, `e2e/send-discipline.spec.ts`.
+
+## 38. Drafts and kept sends are a person's (0.34, lane harden-data)
+
+Nothing a source must add; the draft a source keeps (`saveDraft`) and the store an app gives grow optional fields.
+
+```ts
+// StoredDraft gains version?: RecordVersion; from?: Values — a record's draft: the version its changes were typed
+// against, and each changed field's value then.
+// OutboxItem gains owner?: string ('u:<id>' | 't:<tab>'); OutboxStore gains clear?(owner?: string): Promise<void>.
+// Field gains secret?: boolean (the page format 0.11 grows: a field never kept in a draft).
+// @fieldia/core exports drafts.clear({ user?, store? }) and outbox.clear({ user?, store? }), and ownerOf(user).
+// browserPreferences(storage?, user?) keeps a signed-in person's under fieldia:u:<id>:.
+```
+
+In plain words:
+
+- **Whose**: a draft and a kept send are the signed-in person's (`user.id` → `u:<id>`), else the tab's they were typed
+  in (`t:<id>`, an id the tab keeps as `fieldia:tab` while it is open). A draft is kept as
+  `fieldia:draft:<owner>:<page>:<record|new>`; a kept send carries `owner`, and only its owner's forms send it (an item
+  kept before 0.34, with none, any form of its page). A tab's own sends go with the tab: `state.outbox.lasting` is false,
+  and the viewer says to keep the page open.
+- **A record's draft is its changes**: only the fields changed, with the version they were typed against and each one's
+  value then (`from`). Laid again on a record whose version moved, or a field of which someone else changed since, it
+  is the person's changes over the record as it is now, said as a conflict (`state.conflict`: Reload takes theirs and
+  sets the draft aside, Keep mine saves it). A response's draft keeps its answers, as ever. A field the page no longer
+  has is never laid.
+- **Secret**: a password box's value and a field marked `"secret": true` are never kept in a draft — the browser's or the
+  server's — and go with the save alone. The designer offers it on a field's Rules tab ("Never kept in a draft").
+- **Sign-out**: `drafts.clear({ user })` and `outbox.clear({ user })` let a person's go (every one, with no `user`).
+- **Preferences** — a list's columns, templates, the records picked last — are a signed-in person's own.
+- Tests: `libs/core/src/lib/record/kept-by-person.spec.ts`, `libs/widgets/src/lib/preferences.spec.ts`,
+  `e2e/kept-by-person.spec.ts`.
+
+## 39. Nothing waits for ever (0.34, lane harden-data)
+
+One optional field more in the requests a person waits on; nothing to add.
+
+```ts
+// SaveRequest, SubmitRequest, OnchangeRequest, SearchRequest and OptionsRequest gain signal?: AbortSignal (not enumerable:
+// never copied, compared or kept with the request). FormOptions (and the viewer's options) gain timeout?: number (ms).
+```
+
+In plain words:
+
+- **One deadline** where a form's requests meet its source (deadline.ts, `withDeadlines`): `save`, `submit`, `onchange`,
+  `search` and `options` each answer within `timeout` — 30 000 ms unless the app says, 0 for none — or end as the
+  network's problem ("The server did not answer in time"), said with the form's Retry; their `signal` aborts then. A
+  source that honours it (rejecting with an error named `AbortError`) frees its server sooner; one that ignores it loses
+  nothing: a late answer is dropped, and a save tried again carries its first try's key (§37), so it is kept once. A
+  send kept on the device is sent under the same deadline.
+- **A Discard wins**: `leave({ discard: true })` waits for a save on its way as saves answer (a dialog's new record is
+  its caller's), and ends one still unanswered after 5 s (`DISCARD_GRACE_MS`) — never longer behind a stuck save; a save
+  that fails after the person's Discard (`reset`) says nothing.
+- **A part or a language's chunk that stalls** settles as failed after `PART_WAIT_MS` (30 s): the page draws without it
+  (a part that guards a send then refuses it, §R-H1), a language in English with its words put in should they come.
+- Same shape as 0.33's loading `timeout` for a record's load and a list's requests: a time, and a `signal`.
+- Tests: `libs/core/src/lib/record/deadline.spec.ts`, `e2e/deadlines.spec.ts`.

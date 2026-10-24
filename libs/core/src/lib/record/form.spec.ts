@@ -383,7 +383,8 @@ describe('createForm — loading and saving a record', () => {
     const form = createForm({ page: page('customer'), dataSource: customerSource(), recordId: 99 });
     await form.load();
     expect(form.getState().status).toBe('error');
-    expect(form.getState().error).toBe('No partner record with id 99');
+    expect(form.getState().error).toBe('This record could not be loaded: No partner record with id 99');
+    expect(form.getState().loadProblem).toEqual({ kind: 'other', message: 'This record could not be loaded: No partner record with id 99' });
   });
 
   it('sends only what changed, with Odoo-style line and link operations', async () => {
@@ -587,6 +588,8 @@ describe('createForm — a survey', () => {
     expect(ds.responses).toEqual([
       {
         pageId: 'product-feedback',
+        // The send's own key, the same for every try of it (its idempotency key).
+        key: expect.stringMatching(/^send-/),
         values: { name: 'Sara', email: null, uses_product: 'no', reason_not: 'Too expensive', contact_ok: false },
       },
     ]);

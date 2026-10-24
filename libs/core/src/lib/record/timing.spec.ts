@@ -3,6 +3,7 @@ import { checkPage } from '../format/check-page';
 import { validatePage } from '../format/validate';
 import { createForm } from './form';
 import { createMemoryDataSource } from './memory-data-source';
+import { ownerOf } from './browser-kept';
 import type { Scheduler } from './scheduler';
 import { countdownOf, limitsOf } from './timing';
 
@@ -133,7 +134,7 @@ describe('a time limit', () => {
       const first = createForm({ page: timed(), dataSource: createMemoryDataSource(), now: clock.now, scheduler: clock.scheduler });
       first.startTimer();
       // The clock's start is kept at once: a reload a moment after Start does not start it again.
-      expect(JSON.parse(tab.get('fieldia:draft:timed:new') ?? '{}').timers).toEqual({ '#form': '2026-10-20T09:00:00.000Z' });
+      expect(JSON.parse(tab.get(`fieldia:draft:${ownerOf(null)}:timed:new`) ?? '{}').timers).toEqual({ '#form': '2026-10-20T09:00:00.000Z' });
       first.setValues({ name: 'Mona Adel' });
       clock.advance(3 * 60_000);
       first.dispose();
@@ -155,7 +156,7 @@ describe('a time limit', () => {
       first.setValue('name', 'Mona Adel', { by: 'person' });
       first.setValue('answer', 'Hyaluronidase', { by: 'person' });
       // No time at all for a draft to wait: the tab has them.
-      expect(JSON.parse(tab.get('fieldia:draft:timed:new') ?? '{}').values).toMatchObject({ name: 'Mona Adel', answer: 'Hyaluronidase' });
+      expect(JSON.parse(tab.get(`fieldia:draft:${ownerOf(null)}:timed:new`) ?? '{}').values).toMatchObject({ name: 'Mona Adel', answer: 'Hyaluronidase' });
       expect(await first.save()).toBe(true);
       expect(tab.size).toBe(0);
       // Started again: a new response, no clock, nothing kept until it starts.

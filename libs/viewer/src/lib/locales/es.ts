@@ -614,4 +614,8 @@ export const es: ViewerLabels = {
   outboxDiscardAsk: '¿Descartar este envío? Sus respuestas se perderán.',
   outboxKeptTitle: 'Guardado en este dispositivo',
   outboxKeptWords: 'No hay conexión: sus respuestas se guardan aquí y se enviarán en cuanto vuelva, aunque cierre esta página.',
+  outboxPageTitle: 'Aún no enviado',
+  outboxPageWords: 'No hay conexión, y este navegador no puede guardar sus respuestas una vez cerrada esta página: déjela abierta y se enviarán en cuanto vuelva la conexión.',
+  outboxWaitingPage: '{count} envíos esperan en esta página: déjela abierta, este navegador no puede guardarlos una vez cerrada.',
+  outboxWaitingPageOne: '1 envío espera en esta página: déjela abierta, este navegador no puede guardarlo una vez cerrada.',
 };

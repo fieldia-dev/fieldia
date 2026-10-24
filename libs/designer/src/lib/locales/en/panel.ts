@@ -410,6 +410,9 @@ export const panel = {
   /** A code scanned with the camera into the field (`options.scan`), and for a link the field of its records holding their codes. */
   scanWithCamera: 'Scan with the camera',
   scanHint: 'A Scan button beside the box reads a barcode, a QR or a DataMatrix code with the camera. A scanner gun types into the box as ever.',
+  /** A field never kept in a draft (its `secret`): a PIN, an ID number. */
+  secret: 'Never kept in a draft',
+  secretHint: 'Its answer goes with the save, but is never kept in a draft — on this device or on your server: a PIN, an ID number.',
   scanCodeField: 'Code kept in',
   scanCodeFieldHint: 'The field of the linked records that holds their code, such as barcode. Left empty, the code is searched as a name.',
   keyboards: { '': 'As its kind says', text: 'Letters', numeric: 'Digits', decimal: 'Digits and a decimal mark', tel: 'A phone’s keypad', email: 'For an email', url: 'For a web address', search: 'For a search' } as Record<string, string>,

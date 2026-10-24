@@ -1,3 +1,4 @@
+import { inTime, PART_WAIT_MS } from '../parts';
 /**
  * Languages whose words come in chunks of their own: in the packages, Turkish, Persian, Urdu and Spanish (machine-
  * assisted, not yet reviewed by a native speaker), so an app never carries the words of a language it does not show.
@@ -78,7 +79,9 @@ export function tableInChunks<T extends object>(table: Record<string, T>, later:
       if (already) return already;
       if (!Object.prototype.hasOwnProperty.call(later, locale)) return Promise.resolve();
       const own = (table[locale] ??= { ...table['en'] } as T) as Record<string, unknown>;
-      const fetched = later[locale]().then(
+      const said = (error: unknown) =>
+        (globalThis as unknown as { console?: { warn(...what: unknown[]): void } }).console?.warn(`Fieldia: the words in "${locale}" could not be fetched, so they show in English.`, error);
+      const arriving = later[locale]().then(
         (words) => {
           for (const key of Object.keys(own)) if (!(key in words)) delete own[key];
           Object.assign(own, words);
@@ -86,9 +89,12 @@ export function tableInChunks<T extends object>(table: Record<string, T>, later:
         },
         (error: unknown) => {
           done.add(locale);
-          (globalThis as unknown as { console?: { warn(...what: unknown[]): void } }).console?.warn(`Fieldia: the words in "${locale}" could not be fetched, so they show in English.`, error);
+          said(error);
         }
       );
+      // A chunk that stalls settles in English after `PART_WAIT_MS`, so what waits draws; its words still go in their
+      // table in place, should they come after.
+      const fetched = inTime(arriving, PART_WAIT_MS, `the words in "${locale}" did not come within ${PART_WAIT_MS / 1000} s`).catch(said);
       fetching.set(locale, fetched);
       return fetched;
     },

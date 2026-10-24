@@ -103,7 +103,7 @@ interface DataSource {
 
 <h2 id="requests">What each method receives</h2>
 <ul>
-  <li>${c('load({ model, id, fields })')} — the page's fields come along, so you can read exactly the columns the page shows.</li>
+  <li>${c('load({ model, id, fields })')} — the page's fields come along, so you can read exactly the columns the page shows. Answer one record's values (or ${c('loadedRecord(values, { version, can })')}): a list — Odoo's ${c('read()')} answers one, give its first — or an envelope round the record (${c('{ data: … }')}) is refused as a failed load. Values are read as their fields hold them: a decimal sent as text, Odoo's ${c('false')} for empty, a link as ${c('[7, "Nile Traders"]')} or ${c('{ id, name }')}. One that cannot be read is said under its field and never sent back over what you hold. A failed load is said over the page with a Retry of its own; until a record's first load ends well its fields are inert and nothing of it is saved.</li>
   <li>${c('save({ model, id, fields, changes, values })')} — to refuse it, throw ${c('saveRefused({ kind, message, fields })')}: the fields, a business rule or the network, each shown where it belongs (see <a href="/behaviour/#refused">a save the server refuses</a>). ${c('id')} is ${c('null')} for a new record. ${c('changes')} holds only what changed since the record was loaded; ${c('values')} holds everything, for backends that save whole records. A save made outside a form, such as a calendar's move, a timeline's bar moved or stretched, or its Undo, carries ${c('partial: true')}: ${c('values')} and ${c('fields')} then hold only the fields it changes, so a backend that saves whole records writes those and keeps the rest as stored. Return ${c('{ id }')}, and ${c('values')} if your backend recalculated anything.</li>
   <li>${c('onchange({ model, id, changed, values })')} — return ${c('{ values }')} for the fields to update, and an optional ${c('warning')}. The warning appears under the field that changed, without blocking, and goes away with the next answer that has none. A line edited in a dialog also asks it, with that line changed, to show what it would become; nothing is saved, so answer without side effects.</li>
   <li>${c('search({ model, query, filter, limit })')} — the field's filter arrives with every ${c('valueFrom')} already replaced by its value, its groups kept: an ${c('{ any: [...] }')} is an OR, an ${c('{ all: [...] }')} an AND. Translate both, or the OR is lost; ${c('matchesFilter(values, filter)')} from ${c('@fieldia/core')} judges a record the same way, for sources that filter in JavaScript. Return ${c('[{ id, label }]')}. With ${c('exact: true')}, return only the records named exactly ${c('query')}, in any case: a box asks so for a name typed when a search's first answers, cut at their ${c('limit')}, did not hold it, and to tell two records of one name apart. A source that leaves ${c('exact')} out still works: the box looks for the name among what comes.</li>
@@ -113,7 +113,59 @@ interface DataSource {
   <li id="related">What a link shows of its record besides its name, a found or loaded link may carry: ${c('avatar')} (a picture's address or a ${c('data:')} URI), ${c('color')} (1 to 11, Flectra's colours), ${c('details')} (lines under its name, such as an address, joined by new lines) and, for a stage, ${c('folded')}. The page asks for them with its nodes' ${c('avatar')}, ${c('colors')} and ${c('details')} options and a statusbar's ${c('fold')}; a source gives them where its model has them. A record of a tree — an area, an iteration — may carry its ${c('path')}, its names from the top down (${c('["Portal", "Sprint 14"]')}), and an ${c('aside')}, words a path picker shows at the end of its row (an iteration's dates). ${c('createMemoryDataSource')} takes ${c('shows')}: by model, the fields each comes from — ${c('{ "res.users": { avatar: "image_128" }, tag: { color: "color" }, stage: { folded: "fold" }, partner: { details: ["street", "city"] }, iteration: { path: "path", aside: "dates" } }')}; a ${c('path')} field holds a list of names, or names joined by a backslash, and a search finds such a record by its whole path too.</li>
   <li>${c('submit({ pageId, values, bot })')} — the answers to the questions that were shown; skipped steps are left out. ${c('bot')} comes on a page with a bot check, below. Return ${c('{ id }')} — the reference you give the response, ${c('"B-1043"')} — and any ${c('values')} you worked out as you kept it, by the page's fields (the time you confirmed): the page's <a href="/pages/#endings">ending</a> reads them, ${c('{id}')} in its words saying the reference. On a <a href="/pages/#quiz">quiz</a>, ${c('quiz')} — the results you marked on your server — is shown in place of the page's own marking. A page that <a href="/pages/#draw">draws</a> its questions sends ${c('order')} too: by part, the ids of the parts this person was shown, in their order. The answers on the form stay as they were sent; ${c('form.getState().sent')} keeps what you answered.</li>
 </ul>
+<p id="keys">Every ${c('save')} and ${c('submit')} carries ${c('key')}: its idempotency key, made at its first try and the same for every try after — Retry after an answer lost on the way, a copy kept without signal and sent later — until it went (a new record's until it has its id, a response's until the form starts another). A request with a key you kept is the same send tried again: store its values over that one's and answer as you did, never a second record or response. ${c('form.save()')} asked twice with nothing changed is one save, and a response's answers are never sent twice as they were.</p>
 <p>A slow answer is handled for you: if someone keeps typing, an ${c('onchange')} or ${c('search')} answer that arrives after a newer question is ignored.</p>
+
+<h2 id="deadlines">Nothing waits for ever</h2>
+<p>Each request a person waits on — ${c('save')}, ${c('submit')}, ${c('onchange')}, ${c('search')}, ${c('options')} — answers within the viewer's ${c('timeout')} (milliseconds, 30 000 unless you say, 0 for none), or ends as the network's problem: the banner over the form, with Retry. Its ${c('signal')} aborts then: pass it to ${c('fetch')} to free your server sooner. A late answer is dropped, and Retry carries the first try's ${c('key')}, so you keep it once. A Discard waits for a save on its way at most 5 seconds, then ends it. A part or a language's words that do not come within 30 s settle as failed: the page draws without them.</p>
+${code(
+  'ts',
+  `
+async save({ model, id, changes, key, signal }) {
+  const response = await fetch(\`/api/\${model}/\${id ?? ''}\`, { method: 'POST', body: JSON.stringify({ changes, key }), signal });
+  return response.json();
+}`
+)}
+
+<h2 id="kept">What Fieldia keeps in the browser</h2>
+<p>Everything Fieldia keeps on a device is a person's, by whose it is: the signed-in person's (the viewer's ${c('user')}), else the tab's it was typed in — so the next person on a shared tablet is never offered the last one's typing, nor sends it under their own session.</p>
+<ul>
+  <li><strong>Drafts</strong> — in your ${c('drafts.store')} (localStorage fits) as ${c('fieldia:draft:<owner>:<page>:<record|new>')}, a timed page's in the tab's own store: a record's draft keeps only the fields changed, with the version they were typed against — laid again on a record someone saved since, it is said as a conflict, never reverting their work — and never a secret field (a password box, or ${c('"secret": true')} on a field: a PIN, an ID number).</li>
+  <li><strong>The tab's id</strong> — ${c('fieldia:tab')} in the tab's own store, while it is open.</li>
+  <li><strong>Sends kept without signal</strong> — IndexedDB ${c('fieldia-outbox')}: each with its owner, sent by their forms alone.</li>
+  <li><strong>Preferences</strong> — localStorage ${c('fieldia:<key>')}, a signed-in person's under ${c('fieldia:u:<id>:')}: a list's columns, its filters shown, favourites, saved record templates, the records picked last.</li>
+  <li><strong>The designer</strong> — ${c('fieldia.designer.mode')}, ${c('fieldia.designer.size')}, ${c('fieldia.designer.looks')}.</li>
+</ul>
+${code(
+  'ts',
+  `
+import { drafts, outbox } from '@fieldia/core';
+
+async function signOut(userId) {
+  drafts.clear({ user: userId }); // or drafts.clear() for every draft on the device
+  await outbox.clear({ user: userId }); // their sends kept without signal, let go unsent
+}`
+)}
+
+<h2 id="trust">Your server is the final gate</h2>
+<p>Every rule a page holds — required, a pattern, a size, the options offered, a code proved, a payment taken, a time limit, one response each — is checked in the person's browser, and a request made by hand passes none of them. Run the same page's checks where its answers arrive, with ${c('checkSubmission')} from ${c('@fieldia/core')}, on the page as your server keeps it:</p>
+${code(
+  'ts',
+  `
+import { checkSubmission, saveRefused } from '@fieldia/core';
+
+async function received(request, session) {
+  const { ok, errors, problems, values, due } = await checkSubmission(pages[request.pageId], request.values, {
+    verified: request.verified, // each proof present for the value sent: then check the proof is one you signed
+    payment: request.payment, // paid in full for what these answers owe (due): then check its reference with your provider
+    order: request.order, // a question not drawn for this person is not asked
+    user: { id: session.userId, roles: session.roles },
+  });
+  if (!ok) throw saveRefused({ kind: 'fields', message: problems[0] ?? 'Check the answers', fields: errors });
+  return store(values); // what the page works out, worked out here
+}`
+)}
+<p>It answers each field's problem in the page's words, what else is wrong (answers over ${c('maxBytes')}, 1 MB unless said; a field the page has not; a payment missing or short), the answers as the page's rules leave them, and what is due. What only your server can know stays yours: a proof's signature, a payment's reference, when it served the page, how many responses a person sent. In the browser, a part that guards a send — the payment step, the code check, a time limit's clock, a link's hidden fields, a record's approvals, options by condition, a text's languages, a page's limits — fails closed: where it could not load, nothing is sent and the form says which (<em>The payment step could not load, so nothing was sent. Try again.</em>), with Retry.</p>
 
 <h2 id="bots">A public form's bot check</h2>
 <p>A page of responses anyone may send — a sign-up, a contact form — can check that a person sent it: ${c('botCheck')} draws a box no person sees, reaches with Tab or hears read out, which a bot filling every box fills (${c('honeypot')}, on unless ${c('false')}); times the answers from the page shown to its send, against the fewest seconds a person takes (${c('minSeconds')}, 3 unless said; 0 tells none); and holds the place for your app's own captcha — Turnstile, reCAPTCHA, hCaptcha — in a slot of the page (${c('captcha')}, the slot's name).</p>
@@ -209,18 +261,36 @@ ${code(
 ${code(
   'ts',
   `
-async pay({ amount, currency, label, key, values, slot, signal }) {
+async pay({ pageId, values, key, slot, signal }) {
   // key: the same for every try of this response's payment — your provider's idempotency key.
-  const session = await myServer.checkout({ amount, currency, label, key });
+  // The amount is worked out on your server from the answers: the browser's is the person's to change.
+  const session = await myServer.checkout({ pageId, values, key });
   const result = await myProvider.mount(slot, session, { signal }); // or window.open(session.url) and wait for its webhook
   return result.ok ? { status: 'paid', reference: result.id } : { status: result.cancelled ? 'cancelled' : 'failed', message: result.error };
 },
 async submit({ values, payment }) {
-  // payment: { amount: 10000, currency: 'EGP', key: 'pay-…', reference: 'pi_3Q…' } — check it with your provider
-  return { id: await store(values, payment) };
+  // payment: { amount: 10000, currency: 'EGP', key: 'pay-…', reference: 'pi_3Q…' } — checked on your server, below
+  return { id: await myServer.send({ values, payment }) };
 }`
 )}
-<p>Paid, the answers go with ${c('payment')}; failed or cancelled, the step says nothing was sent, with <em>Pay again</em> and <em>Back to the answers</em>. A send that fails after paying is sent again without paying twice, and every send path — Ctrl+Enter, a wizard's finish, your own ${c('form.save()')} — waits for the payment the same way. In the designer, <em>Payment before sending</em> on a page's Rules tab. The <a href="/demos/plain/?page=unit-enquiry&amp;skin=outlined">enquiry demo</a> reserves a unit through a stand-in for a provider's checkout.</p>
+${code(
+  'ts',
+  `
+// On your server, with the page as you keep it — never the amount, nor the page, the browser sends.
+import { checkSubmission } from '@fieldia/core';
+
+async function checkout({ pageId, values, key }) {
+  const { due } = await checkSubmission(pages[pageId], values);
+  if (!due) throw new Error('Nothing is due for these answers');
+  return myProvider.createSession({ amount: due.amount, currency: due.currency, idempotencyKey: key });
+}
+async function send({ values, payment }) {
+  const check = await checkSubmission(pages['enquiry'], values, { payment });
+  if (!check.ok || !(await myProvider.paid(payment.reference, check.due))) throw saveRefused({ kind: 'rule', message: 'The payment does not cover these answers' });
+  return store(check.values, payment);
+}`
+)}
+<p>A page whose amount is a field its link fills (${c('prefill')}) is warned of in its checks: anyone can change an address. Paid, the answers go with ${c('payment')}; failed or cancelled, the step says nothing was sent, with <em>Pay again</em> and <em>Back to the answers</em>. A send that fails after paying is sent again without paying twice, and every send path — Ctrl+Enter, a wizard's finish, your own ${c('form.save()')} — waits for the payment the same way. In the designer, <em>Payment before sending</em> on a page's Rules tab. The <a href="/demos/plain/?page=unit-enquiry&amp;skin=outlined">enquiry demo</a> reserves a unit through a stand-in for a provider's checkout.</p>
 
 <h2 id="outbox">Sends kept without signal</h2>
 <p>A broker at a viewing in a compound, an inspector in a basement, a courier at a door: ${c('"outbox": true')} keeps a send that finds no network on the device — its answers, its photos' bytes — and sends it when the signal comes back. No new member: what your source already has (${c('submit')}, ${c('save')}, ${c('upload')}) takes it then.</p>
@@ -229,7 +299,7 @@ ${code(
   `
 { "id": "viewing-report", "data": { "kind": "responses" }, "outbox": true, … }`
 )}
-<p>A failure that reads as the network's — a ${c('TypeError')} from ${c('fetch')} — is kept in the browser's IndexedDB (never lost on a reload, shared by your site's tabs) and said: the form ends <em>Kept on this device</em>, and a bar over it says how many sends wait, with <em>Send now</em>. They go in order when the browser says it is online, every half a minute while something waits, as the page opens, and right after a send that went through (which goes first); each is taken by one sender only, and carries ${c('queued: { key, at }')} — the same key every try — so your server can refuse a second try of a send whose answer was lost on the way. A photo taken without signal is stored through ${c('upload')} just before its send goes. A send your server refuses then is kept, said, and offered <em>Try again</em> and <em>Discard</em>. A record saved again while its first save waits is saved once, as it is now, and takes its id when it went. Give the viewer ${c('outbox')} — a store of your own (${c('list')}, ${c('put')}, ${c('delete')}, ${c('claim')}) — to keep them elsewhere. In the designer, <em>Without signal</em> on a page's Rules tab. The <a href="/demos/plain/?page=viewing-report&amp;skin=outlined">viewing report demo</a> works offline at a press, or with your connection really off.</p>
+<p>A failure that reads as the network's — a ${c('TypeError')} from ${c('fetch')} — is kept in the browser's IndexedDB (never lost on a reload, shared by your site's tabs) and said: the form ends <em>Kept on this device</em>, and a bar over it says how many sends wait, with <em>Send now</em>. They go in order when the browser says it is online, every half a minute while something waits, as the page opens, and right after a send that went through (which goes first); each is taken by one sender only (its claim renewed while it goes, so a long upload is never sent by a second tab), and carries the key of its first try — ${c('key')}, and ${c('queued: { key, at }')} — so your server keeps it once. A save of a record with sends of it kept sends those first, and goes after them, each at its version now. Where the browser keeps nothing past the page (no IndexedDB), the form says so — keep the page open — never <em>Kept on this device</em>. A photo taken without signal is stored through ${c('upload')} just before its send goes. A send your server refuses then is kept, said, and offered <em>Try again</em> and <em>Discard</em>. A record saved again while its first save waits is saved once, as it is now, and takes its id when it went. Give the viewer ${c('outbox')} — a store of your own (${c('list')}, ${c('put')}, ${c('delete')}, ${c('claim')}) — to keep them elsewhere. In the designer, <em>Without signal</em> on a page's Rules tab. The <a href="/demos/plain/?page=viewing-report&amp;skin=outlined">viewing report demo</a> works offline at a press, or with your connection really off.</p>
 <p>Fieldia's outbox keeps the <em>sends</em>. Opening the <em>page</em> with no signal — a reload in the compound, the phone in airplane mode — is your app's service worker's: without one, the browser has nothing to show. A small one does it: it keeps the page and every script, sheet and part it loaded, and serves them only when the network fails, so online the page is always the newest. The viewing report demo has one (<a href="https://github.com/fieldia-dev/fieldia/blob/main/demos/plain/offline-sw.js">offline-sw.js</a>), its scope that page alone:</p>
 ${code(
   'js',

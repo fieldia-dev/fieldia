@@ -947,7 +947,9 @@ sends the code its own way. `form.joined('verify')?.mark(field, { value, proof
 })` keeps a proof while the field holds that value (`state.verified`); a send is refused
 while a shown field asking for a code holds a value not proved ("Mobile is not
 confirmed: send a code and type it in"), and every send carries `verified` — by
-field, the value and the proof — for the server to trust.
+field, the value and the proof. Anyone can call `mark()` in their own browser:
+the server trusts a value only by a proof it signed itself (`checkSubmission`
+checks each is there, for the value sent).
 `form.joined('verify')?.asks(field)` says whether a field asks for one: never
 where the source lacks either member.
 The memory source sends and checks codes as a service would (its `codes`
@@ -971,6 +973,14 @@ now, `state.paid` what was taken. A new payment in the designer asks 100 USD
 until its amount and currency are set. Fieldia holds no keys and no provider's code. The
 memory source answers paid unless its `pay` option says otherwise.
 
+What the browser works out as due is the person's to change — in their own
+devtools, or in the address where a link fills the amount (the page's checks
+warn of that). The app's server works out what is due itself, from the page it
+keeps and the answers it was sent — `(await checkSubmission(page, values)).due`
+— and its checkout charges that, never an amount the browser hands it; once
+the answers arrive, `checkSubmission(page, values, { payment })` refuses a
+payment short or in another currency. Check its `reference` with your provider.
+
 ## Sends kept without signal
 
 A page with `"outbox": true` keeps a send that finds no network — a site
@@ -982,12 +992,28 @@ IndexedDB (`indexedOutbox()`: never lost on a reload, shared by a site's tabs),
 or the store given as `outbox` (`memoryOutbox()` for tests). A photo the network
 could not take stays in its field as its bytes and is stored through `upload`
 just before its send goes. `form.joined('outbox')` sends what waits in order —
-each item claimed by one sender, sent with `queued: { key, at }` so a server
-can refuse a second try — and keeps a refusal to `retry` or `discard`. Kept sends
-go in the order they were kept; a send made once the signal is back goes first,
-and what waited goes right after it. A new record
-saved twice without signal is saved once, and the form takes its id when it
-went. The memory source's `offline` option fails as a network does.
+each item claimed by one sender (the claim renewed while its send goes, so a
+long upload is never taken by a second tab), sent with the key of its first try
+(`key`, and `queued: { key, at }`) so a server keeps it once — and keeps a refusal
+to `retry` or `discard`. Kept sends go in the order they were kept; a save of a
+record with kept saves sends them first and goes after them (still without
+signal, it is kept behind them), each at the version the one before left. A new
+record saved twice without signal is saved once, and the form takes its id when
+it went. Where the browser keeps nothing past the page (no IndexedDB), sends wait
+in memory and `state.outbox.lasting` is false: the viewer says to keep the page
+open, never "Kept on this device". The memory source's `offline` option fails as
+a network does.
+
+Every save and send carries one idempotency key from its first try (`key`):
+a Retry after an answer lost on the way, and an outbox's copy, carry the same,
+until it went — a new record's until it has its id, a response's until the form
+starts another. A server that kept a send with that key keeps no second: it
+stores the values over that one's and answers as it did (the memory source
+does). `form.save()` asked again while a save is on its way, nothing changed
+since, is that save once it went (stopped or refused, it is asked anew); a
+response's answers once sent are never sent again as
+they were (`form.reset()` starts another); a new record whose source answers
+with no id is not taken as saved.
 
 ## Parts that join a form
 
@@ -1000,6 +1026,83 @@ kept on the device), and `reset` as another response or record starts. Their
 state, their words and their checks come with them. `form.joined(name)` is a
 part's side of the form once it came — null before, and on a page that asks for
 none; a send made before it came waits for it.
+
+A part that guards a send fails closed: a payment, a code check, a time limit's
+clock, a link's hidden fields, a record's approvals — and the form's own options
+by condition, texts in several languages and limits. Where one cannot come
+(offline, a deploy that removed its file, a cached `fieldia.js` beside a part of
+another version), the send waits for it, asks for it once more, and then sends
+nothing: its save problem says which (`{ kind: 'other', message: "The payment
+step could not load, so nothing was sent. Try again." }` — "Reload the page and
+try again." where the part comes by `import()`, which a page keeps failed), the
+viewer shows it with Retry, and what was typed stays. An outbox and a record made
+live guard nothing: without them a send goes as it would have.
+
+## Nothing waits for ever
+
+Each request a person waits on — a save, a send, an onchange, a search, a list's
+options — answers within the form's `timeout` (milliseconds, 30 000 unless
+said; 0 for none) or ends as the network's problem ("The server did not answer
+in time"), the viewer's banner with Retry; its `signal` (an AbortSignal, on the
+request) aborts then, and a late answer is dropped. A Retry carries the first
+try's key, so a server keeps it once. A Discard waits for a save on its way at
+most 5 s, then ends it — the person's choice never waits behind a stuck save. A part or a
+language's chunk that does not come within 30 s settles as failed: the page is
+drawn without it (one that guards a send then refuses it), the language in
+English until its words come.
+
+## What Fieldia keeps in the browser
+
+Everything Fieldia keeps on a device is a person's, kept by whose it is — the
+signed-in person's (`user.id`: `u:<id>`), else the tab's it was typed in (an id
+the tab keeps in `sessionStorage` as `fieldia:tab`: a reload keeps it, another
+tab or person never sees it) — so the next person on a shared device is never
+offered the last one's typing, nor sends it under their own session:
+
+| What | Where | Holds |
+|---|---|---|
+| Drafts | the app's `drafts.store` (localStorage fits), key `fieldia:draft:<owner>:<page>:<record \| new>`; a timed page's without one, `sessionStorage`; on the app's server (`saveDraft`), the store keeps only `{ savedAt, key }` | a record's: the fields changed, the version they were typed against and each one's value then; a response's: its answers — never a secret field's (a password box, a field with `"secret": true`); the step, steps skipped, text that does not read yet, a draw, a time limit's starts |
+| The tab's id | `sessionStorage` `fieldia:tab` | an id, while the tab is open |
+| Sends kept without signal | IndexedDB `fieldia-outbox`, store `items` (memory where the browser has none: said so, never "kept on this device") | each send as it would have gone — its answers, photos' bytes (base64), its key — with its owner; sent by its owner's forms alone |
+| Preferences | the viewer's `preferences`, by default localStorage `fieldia:<key>` — a signed-in person's `fieldia:u:<id>:<key>` | a list's columns (`<page>.<list>.columns`), a grid's, a filter bar's filters shown (`filters:<page>:<list>`), favourites (`favourites:<page>`), saved record templates (`templates:<page>`: values), records picked last (`recent:<model>`: their names), duplicates told apart (`duplicates.<model>`), a files field's view |
+| The designer | localStorage `fieldia.designer.mode`, `fieldia.designer.size` and its width, `fieldia.designer.looks` | how its canvas is shown, looks saved |
+
+At sign-out, let a person's go: `drafts.clear({ user })` and `await
+outbox.clear({ user })` (from `@fieldia/core`; with no `user`, every one —
+drafts in the given `store`, else the browser's local and tab stores, which list
+their keys; sends in the given `store`, else IndexedDB). Sends let go never go.
+Preferences under `fieldia:u:<id>:` are yours to remove. A draft of 0.33 or
+before, kept by page alone, is never offered again; `drafts.clear()` removes it.
+
+## The server is the final gate
+
+Everything a page checks — required, patterns, sizes, options, a code proved, a
+payment taken, a time limit, one response each — runs in the person's browser,
+and a request made by hand passes none of it. `checkSubmission(page, values,
+context)` runs the page's checks again where the answers arrive (Node, or any
+server that runs JavaScript), from the page as the server keeps it:
+
+```ts
+import { checkSubmission } from '@fieldia/core';
+
+const { ok, errors, problems, values, due } = await checkSubmission(page, request.values, {
+  verified: request.verified, // each proof present for the value sent — then check the proof is yours
+  payment: request.payment, // paid in full, in its currency, for what the page asks for these answers
+  order: request.order, // a question not drawn for this respondent is not required
+  user: { id: session.userId, roles: session.roles }, // as the server knows them, never the browser
+});
+if (!ok) throw saveRefused({ kind: 'fields', message: problems[0] ?? 'Check the answers', fields: errors });
+await store(values); // values worked out here: what it computes, computed again
+```
+
+It answers `{ ok, errors, problems, values, due }`: each field's problem in the
+page's words, what else is wrong (answers over `maxBytes` — 1 MB unless said —
+a field the page has not, a payment missing or short), the answers as the
+page's rules leave them, and what is due. The parts its checks need are loaded
+first; one that cannot be is a problem, never a check skipped. What it cannot
+know is the server's: a proof's signature, a payment's reference with the
+provider, when the page was served (for a time limit), and how many responses
+each person sent.
 
 ## What a page's records are called
 
@@ -1109,6 +1212,40 @@ by a name, to start new records from. The data source's `templates`,
 `preferences` without them. The memory source has them where its `templates`
 option is given (`{}` for none yet), kept by page id.
 
+## A record as it loads
+
+`form.load()` is the one way a record's values come in. Its source's `load`
+answers one record's values (or `loadedRecord(values, { version, can })`):
+anything else — nothing, a list (Odoo's `read()` answers one: give its first),
+a REST envelope round the record (`{ data: { … } }`) — is refused as a failed
+load, never read as a record whose every field is empty. Each value is read as
+its field holds one (`valuesFromSource`): a number sent as text ("1200.50", as
+Django REST and Postgres send decimals) as a number, Odoo's `false` as empty, a
+link as `{ id, label }` from Odoo's `[7, "Nile Traders"]` or a REST `{ id, name
+}`, a table's records as its lines. One that cannot be read is named in
+`state.unreadable` (by field, with why), shown empty, said under its field
+("Tags is stored in a way this page cannot show: it is kept as it is"), and left
+out of the `values` a save sends — the source keeps what it holds — unless the
+person writes the field.
+
+A load that fails is said in words in `state.loadProblem` ("This record could
+not be loaded: Gateway Timeout"), with a Retry of its own (`form.load()` again;
+the viewer draws it over the page), never as a save's problem. Until a record's
+first load ends well, `state.loaded` is false: the viewer draws its fields
+inert, and a save is refused ("This record has not loaded yet, so nothing was
+saved") — a whole-record save would empty it. What is typed while it loads is
+the person's: laid over the record as it lands, as changes to save. A record an
+app hands the form with its `values` and never asks to load is the app's to
+vouch for, and saves as ever.
+
+A value the source holds that its field's own checks would not take — 1.005 in
+a field of 2 places, an option since retired, an email of another shape — is
+said under the field as a warning while the person leaves it, never refusing a
+save that does not touch it; changed, it is checked as any change is. Required
+still asks, and a table's cells, a matrix's rows and a text's languages are
+checked as ever. `form.save()` never throws: a save that breaks on its way is
+a save problem in words ("Something went wrong, so nothing was saved: …").
+
 ## Two people, one record
 
 A source that keeps versions returns each record with its version, and what this
@@ -1141,7 +1278,8 @@ and sets this person's changes aside in `setAside`, each put back with
 now, their values kept wherever this person changed nothing (read again first
 when the conflict did not carry the record, so `values` never wipes theirs; when
 it cannot be read, nothing is saved and `conflict.unread` says so). A second save
-while one is on its way waits for it and carries the version it got back.
+while one is on its way — something changed since — waits for it and carries the
+version it got back; nothing changed, it is the first.
 Every way a form's values go — `openRecord` (the pager, an action's answer
 naming a record, Duplicate's copy), a reload (the step, an answer's
 `reload: true`, `form.load()` again), a `reset` step, the host's `close` (yours

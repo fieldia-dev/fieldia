@@ -40,7 +40,8 @@ test('a report sent without signal is kept on the device, kept through a reload,
   await expect(page.locator('.fd-outbox-said')).toHaveText('Everything that waited was sent.');
   const [response] = await sent(page);
   expect(response.values).toMatchObject({ unit: 'B-12', condition: 'finishing' });
-  expect(response.queued?.key).toMatch(/^outbox-/);
+  // Kept by the key its first try carried, sent with it as its own and as `queued.key`.
+  expect(response.queued?.key).toMatch(/^send-/);
   const photos = response.values['photos'] as { name: string; url?: string; data?: string }[];
   expect(photos).toHaveLength(1);
   expect(photos[0]).toMatchObject({ name: 'kitchen.png' });

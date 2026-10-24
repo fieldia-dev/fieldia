@@ -628,4 +628,8 @@ export const tr: ViewerLabels = {
   outboxDiscardAsk: 'Bu gönderim silinsin mi? Yanıtları kaybolacak.',
   outboxKeptTitle: 'Bu cihazda saklandı',
   outboxKeptWords: 'Bağlantı yok: yanıtlarınız burada saklanıyor ve bu sayfayı kapatsanız bile bağlantı gelir gelmez gönderilecek.',
+  outboxPageTitle: 'Henüz gönderilmedi',
+  outboxPageWords: 'Bağlantı yok ve bu tarayıcı yanıtlarınızı bu sayfa kapandıktan sonra saklayamaz: sayfayı açık tutun, bağlantı gelir gelmez gönderilecekler.',
+  outboxWaitingPage: '{count} gönderim bu sayfada bekliyor: sayfayı açık tutun, bu tarayıcı sayfa kapandıktan sonra onları saklayamaz.',
+  outboxWaitingPageOne: '1 gönderim bu sayfada bekliyor: sayfayı açık tutun, bu tarayıcı sayfa kapandıktan sonra onu saklayamaz.',
 };

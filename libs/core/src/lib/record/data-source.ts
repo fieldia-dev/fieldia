@@ -744,6 +744,12 @@ export interface StoredDraft {
   order?: Record<string, string[]>;
   /** On a page with time limits: when each started, as ISO — the page's under `#form`, a step's by its id. */
   timers?: Record<string, string>;
+  /**
+   * A record's draft: the version the changes were typed against, and each changed field's value as it was then — laid
+   * again on a record that moved since, someone else's change is said as a conflict, never reverted in silence.
+   */
+  version?: RecordVersion;
+  from?: Values;
   /** When it was kept, as ISO. */
   savedAt: string;
 }
@@ -968,10 +974,16 @@ export function loadedRecord(values: Values, more: { version?: RecordVersion; ca
   return { $loaded: true, values, ...(more.version ? { version: more.version } : {}), ...(more.can ? { can: more.can } : {}) };
 }
 
-/** What a load gave, in one shape: bare values, as every source gave them before, are a record with nothing more to tell. */
+/**
+ * What a load gave, in one shape: bare values, as every source gave them before, are a record with nothing more to tell.
+ * Anything but one record's values is refused (thrown, as a failed load is): nothing at all, a list — Odoo's `read()`
+ * answers one, `[{ … }]` — or a value that is no object; each would read as a record whose every field is empty.
+ */
 export function loadedRecordOf(loaded: Values | LoadedRecord): LoadedRecord {
-  const marked = loaded as Partial<LoadedRecord>;
-  return marked.$loaded === true && marked.values !== null && typeof marked.values === 'object' ? (loaded as LoadedRecord) : { $loaded: true, values: loaded as Values };
+  const marked = loaded as Partial<LoadedRecord> | null | undefined;
+  const record = marked?.$loaded === true ? marked.values : loaded;
+  if (!record || typeof record !== 'object' || Array.isArray(record)) throw new Error(`the data source's load answered ${Array.isArray(record) ? 'a list' : String(record)}, not one record's values`);
+  return marked?.$loaded === true ? (loaded as LoadedRecord) : { $loaded: true, values: loaded as Values };
 }
 
 /** One stored record, by its model and id. */
@@ -1000,6 +1012,8 @@ export interface OptionsRequest {
    * may change with (`parent.` in its `dependsOn`). Left out for a page's own field.
    */
   parent?: Values;
+  /** Aborts at the form's deadline (`timeout`): see `SaveRequest.signal`. */
+  signal?: UploadSignal;
 }
 
 export interface CreateRequest {
@@ -1049,6 +1063,20 @@ export interface SaveRequest {
   /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
   payment?: PaidPayment;
   /**
+   * Aborts as its deadline passes (the form's `timeout`, 30 s unless said) or a Discard ends it: stop, and reject with an
+   * error named `AbortError`. One that ignores it loses nothing — the form has moved on, and drops a late answer. Never
+   * copied with the request (not enumerable).
+   */
+  signal?: UploadSignal;
+  /**
+   * This send's idempotency key: made at its first try and the same for every try of it — a retry after an answer lost
+   * on the way, an outbox's copy sent later (`queued.key` too) — until it went; a new record's every save until it has its
+   * id; a response's every send until the form starts another (`reset`). A server that kept a send with this key keeps no
+   * second: it stores these values over that one's (a later try of the same) and answers as it did — never a second
+   * record or response.
+   */
+  key?: string;
+  /**
    * A send kept on the device without signal and sent later (a page's `outbox`): its key — the same for every try, so a
    * server that kept the first can tell a second — and when it was made.
    */
@@ -1071,6 +1099,8 @@ export interface OnchangeRequest {
   /** The field that changed. */
   changed: string;
   values: Values;
+  /** Aborts at the form's deadline (`timeout`): see `SaveRequest.signal`. */
+  signal?: UploadSignal;
 }
 
 export interface OnchangeResult {
@@ -1096,6 +1126,8 @@ export interface SearchRequest {
    * what comes.
    */
   exact?: boolean;
+  /** Aborts at the form's deadline (`timeout`): see `SaveRequest.signal`. */
+  signal?: UploadSignal;
 }
 
 export type ResolvedFilterCondition = Omit<FilterCondition, 'valueFrom' | 'value'> & { value: JsonValue };
@@ -1367,6 +1399,20 @@ export interface SubmitRequest {
   verified?: Record<string, VerifiedValue>;
   /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
   payment?: PaidPayment;
+  /**
+   * Aborts as its deadline passes (the form's `timeout`, 30 s unless said) or a Discard ends it: stop, and reject with an
+   * error named `AbortError`. One that ignores it loses nothing — the form has moved on, and drops a late answer. Never
+   * copied with the request (not enumerable).
+   */
+  signal?: UploadSignal;
+  /**
+   * This send's idempotency key: made at its first try and the same for every try of it — a retry after an answer lost
+   * on the way, an outbox's copy sent later (`queued.key` too) — until it went; a new record's every save until it has its
+   * id; a response's every send until the form starts another (`reset`). A server that kept a send with this key keeps no
+   * second: it stores these values over that one's (a later try of the same) and answers as it did — never a second
+   * record or response.
+   */
+  key?: string;
   /**
    * A send kept on the device without signal and sent later (a page's `outbox`): its key — the same for every try, so a
    * server that kept the first can tell a second — and when it was made.

@@ -7,7 +7,8 @@
  * (tools/script-bundle.mjs).
  *
  * A part is asked for once; a failure (offline, say) is forgotten, so the next
- * use asks again. What draws from a part draws from it at once when it has
+ * use asks again; one that does not come within `PART_WAIT_MS` (a network that
+ * stalls) fails so too. What draws from a part draws from it at once when it has
  * come; the viewer waits for the parts a page needs before it draws that page,
  * and a widget made before its part has come is drawn plainly, then by its
  * part in the same place as soon as it comes (`partWidget`).
@@ -26,6 +27,8 @@ export interface Part<M = unknown> {
    * offers it only where it can work.
    */
   readonly asksAgain?: boolean;
+  /** Whether it is asked for now and has not come nor failed yet: what waits for it waits for that answer first. */
+  readonly coming?: boolean;
 }
 
 /** Whether this page's parts come by script tags of their own (the one-tag script) rather than by import(). */
@@ -33,6 +36,39 @@ let byScriptTag = false;
 /** Said by the one-tag script as it starts: its parts come by script tags, each asked for anew after a failure. */
 export function partsComeByScriptTag(): void {
   byScriptTag = true;
+}
+
+/** How long a part may take to come before it settles as failed (a network that stalls): the page goes on without it. */
+export const PART_WAIT_MS = 30_000;
+
+interface HostTimers {
+  setTimeout(run: () => void, ms: number): unknown;
+  clearTimeout(handle: unknown): void;
+}
+
+/**
+ * Whatever comes in time, or a failure once `ms` passed with nothing — a part's script, a language's chunk on a network
+ * that stalls: what waits for it (a page undrawn, `aria-busy`) goes on, never for ever. The timer keeps no process
+ * alive by itself.
+ */
+export function inTime<M>(coming: Promise<M>, ms: number, why: string): Promise<M> {
+  const timers = globalThis as unknown as Partial<HostTimers>;
+  // A place with no timers (a bare script context): as it comes.
+  if (typeof timers.setTimeout !== 'function' || typeof timers.clearTimeout !== 'function') return coming;
+  return new Promise<M>((resolve, reject) => {
+    const timer = (timers as HostTimers).setTimeout(() => reject(new Error(why)), ms);
+    (timer as { unref?: () => void } | null)?.unref?.();
+    coming.then(
+      (value) => {
+        (timers as HostTimers).clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        (timers as HostTimers).clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
 }
 
 /** A part, asked for by `load` (a dynamic import of the part's module) the first time something needs it. */
@@ -47,8 +83,12 @@ export function lazyPart<M>(name: string, load: () => Promise<M>): Part<M> {
     get asksAgain() {
       return byScriptTag;
     },
+    get coming() {
+      return pending !== undefined && loaded === undefined;
+    },
     load() {
-      return (pending ??= load().then(
+      // One that does not come in time settles as failed — asked for again by the next use — never waited on for ever.
+      return (pending ??= inTime(load(), PART_WAIT_MS, `fieldia.${name}.js did not come within ${PART_WAIT_MS / 1000} s`).then(
         (module) => (loaded = module),
         (error: unknown) => {
           pending = undefined;
@@ -81,6 +121,9 @@ export function partWith<M>(part: Part<M>, ...others: readonly Part[]): Part<M> 
     },
     get asksAgain() {
       return part.asksAgain === true && others.every((other) => other.asksAgain === true);
+    },
+    get coming() {
+      return [part, ...others].some((one) => one.coming === true);
     },
     load: () => Promise.all([part.load(), ...others.map((other) => other.load())]).then(([module]) => module),
   };

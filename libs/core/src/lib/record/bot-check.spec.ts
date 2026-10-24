@@ -37,7 +37,7 @@ describe('a public page’s bot check', () => {
     form.on('send', (event) => sent.push(event));
     form.setValue('name', 'Sara');
     expect(await form.save()).toBe(true);
-    expect(ds.responses).toEqual([{ pageId: 'signup', values: { name: 'Sara', email: null } }]);
+    expect(ds.responses).toEqual([{ pageId: 'signup', key: expect.stringMatching(/^send-/), values: { name: 'Sara', email: null } }]);
     expect(sent).toEqual([{ values: { name: 'Sara', email: null } }]);
   });
 
@@ -48,7 +48,7 @@ describe('a public page’s bot check', () => {
     form.setValue('name', 'Sara');
     clock.move(12.34);
     expect(await form.save()).toBe(true);
-    expect(ds.responses[0]).toEqual({ pageId: 'signup', values: { name: 'Sara', email: null }, bot: { honeypot: false, tooFast: false, seconds: 12.3 } });
+    expect(ds.responses[0]).toEqual({ pageId: 'signup', key: expect.stringMatching(/^send-/), values: { name: 'Sara', email: null }, bot: { honeypot: false, tooFast: false, seconds: 12.3 } });
   });
 
   it('tells a send sooner than the least as too fast, and never refuses it: the app decides', async () => {
@@ -97,9 +97,12 @@ describe('a public page’s bot check', () => {
     clock.move(8);
     await form.save();
     expect(ds.responses[0].bot).toEqual({ honeypot: false, tooFast: false, seconds: 8, captcha: null });
+    // Another response: the same answers are never sent twice as one.
+    form.reset();
     form.botCheck({ captcha: 'XXXX.token' });
     await form.save();
     expect(ds.responses[1].bot?.captcha).toBe('XXXX.token');
+    form.reset();
     await form.save();
     expect(ds.responses[2].bot?.captcha).toBeNull();
   });

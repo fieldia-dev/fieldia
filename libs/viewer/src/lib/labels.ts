@@ -891,7 +891,8 @@ export interface ViewerLabels {
   /**
    * An offline outbox (`outbox`, the outbox part): how many sends wait on this device (`{count}`), no signal, while they
    * are sent, all sent, Send now, a send refused once it went (`{why}`) with Try again and Discard (asked first), and a
-   * response kept without signal's ending.
+   * response kept without signal's ending — and where the browser keeps nothing past the page (no IndexedDB), the
+   * ending and the bar saying so (`outboxPage…`).
    */
   outboxWaiting: string;
   outboxWaitingOne: string;
@@ -905,6 +906,10 @@ export interface ViewerLabels {
   outboxDiscardAsk: string;
   outboxKeptTitle: string;
   outboxKeptWords: string;
+  outboxPageTitle: string;
+  outboxPageWords: string;
+  outboxWaitingPage: string;
+  outboxWaitingPageOne: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1544,6 +1549,10 @@ const en: ViewerLabels = {
   outboxDiscardAsk: 'Discard this send? Its answers will be lost.',
   outboxKeptTitle: 'Kept on this device',
   outboxKeptWords: 'There is no signal: your answers are kept here and sent as soon as it comes back, even if you close this page.',
+  outboxPageTitle: 'Not sent yet',
+  outboxPageWords: 'There is no signal, and this browser cannot keep your answers once this page is closed: keep it open, and they are sent as soon as the signal comes back.',
+  outboxWaitingPage: '{count} sends wait in this page: keep it open, as this browser cannot keep them once it is closed.',
+  outboxWaitingPageOne: '1 send waits in this page: keep it open, as this browser cannot keep it once it is closed.',
 };
 
 /**

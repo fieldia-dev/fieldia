@@ -11,6 +11,14 @@ describe('preferences', () => {
     expect(browserPreferences().get('order.f-lines.columns')).toEqual([{ colId: 'qty', width: 140 }]);
   });
 
+  it('keeps a signed-in person’s under their own id: the next person on the device never meets them (S-L4)', () => {
+    browserPreferences(undefined, 'mona').set('templates.lead', [{ id: 't1', name: 'VIP lead', values: { budget: 9000000 } }]);
+    expect(localStorage.getItem('fieldia:u:mona:templates.lead')).toContain('VIP lead');
+    expect(browserPreferences(undefined, 'karim').get('templates.lead')).toBeNull();
+    expect(browserPreferences().get('templates.lead')).toBeNull();
+    expect(browserPreferences(undefined, 'mona').get('templates.lead')).toEqual([{ id: 't1', name: 'VIP lead', values: { budget: 9000000 } }]);
+  });
+
   it('never throws when the browser refuses storage or holds something unreadable', () => {
     localStorage.setItem('fieldia:broken', '{not json');
     expect(browserPreferences().get('broken')).toBeNull();

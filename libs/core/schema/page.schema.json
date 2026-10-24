@@ -486,6 +486,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -568,6 +571,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -640,6 +646,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -707,6 +716,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -758,6 +770,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -829,6 +844,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -910,6 +928,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -952,6 +973,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -1025,6 +1049,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -1087,6 +1114,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -1167,6 +1197,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -1262,6 +1295,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -1349,6 +1385,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -1413,6 +1452,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -1489,6 +1531,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -1569,6 +1614,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -1619,6 +1667,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -1674,6 +1725,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -1716,6 +1770,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -2208,6 +2265,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -2290,6 +2350,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -2362,6 +2425,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -2413,6 +2479,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -2484,6 +2553,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -2565,6 +2637,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -2607,6 +2682,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -2680,6 +2758,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -2744,6 +2825,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -2806,6 +2890,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -2933,6 +3020,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -2998,6 +3088,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -3053,6 +3146,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -3101,6 +3197,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -3154,6 +3253,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -3225,6 +3327,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -3306,6 +3411,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -3348,6 +3456,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -3421,6 +3532,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -3483,6 +3597,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -3560,6 +3677,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -3655,6 +3775,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -3742,6 +3865,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -3806,6 +3932,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -3884,6 +4013,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -3934,6 +4066,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -3989,6 +4124,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -4031,6 +4169,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -4170,6 +4311,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -4235,6 +4379,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -4290,6 +4437,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -4338,6 +4488,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -4391,6 +4544,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -4462,6 +4618,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -4543,6 +4702,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -4585,6 +4747,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -4658,6 +4823,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -4720,6 +4888,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -4797,6 +4968,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -4892,6 +5066,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -4979,6 +5156,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -5043,6 +5223,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -5121,6 +5304,9 @@
             "readonly": {
               "type": "boolean"
             },
+            "secret": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
@@ -5171,6 +5357,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {
@@ -5224,6 +5413,9 @@
               "type": "boolean"
             },
             "readonly": {
+              "type": "boolean"
+            },
+            "secret": {
               "type": "boolean"
             },
             "default": {

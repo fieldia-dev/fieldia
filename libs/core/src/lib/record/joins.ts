@@ -143,19 +143,44 @@ export interface JoinPart {
   join(host: FormInner): FormJoin;
 }
 
+/** A part that joins a form and guards no send: its absence lets a send go as it would have. */
+const OPEN = 'open' as const;
+
+/**
+ * The words naming a part that guards a send (`joinGate`, and the form's own checking parts: its options by condition, its
+ * texts in several languages, its limits): what a send that could not have it says it waited for.
+ */
+export type GuardWords = 'guardPay' | 'guardVerify' | 'guardTimeLimit' | 'guardPrefill' | 'guardApprovals' | 'guardOptions' | 'guardLanguages' | 'guardLimits';
+
+/**
+ * Whether a page's form proves an email or a phone by a code (a field's `options.verify`) — the verify part asked for. A
+ * part that guards its send only where its source can send and check a code.
+ */
+const asksVerify = (page: Page) => /"verify":(?!false)/.test(JSON.stringify(page.layout));
+/** Whether a page times its answers (`timeLimit` on the page or a step): the survey flow's clock guards its send. */
+export const timesAnswers = (page: Page): boolean => /"timeLimit":/.test(JSON.stringify(page));
+
 /**
  * The parts, in the order a send goes through them — the outbox innermost, so what it keeps is the request as it would
- * have gone — each with what in a page (or in the form's options, where they are known) asks for it. In the one-tag
- * script each is a script of its own, with the viewer's part of the same name (fieldia.<name>.js).
+ * have gone — each with what in a page (or in the form's options, where they are known) asks for it, and, for one that
+ * guards a send, the words naming it: such a part that could not come — offline, or refused as another version's — stops
+ * the send (fail closed: form.ts asks for it once more as the send goes, then refuses in these words), never lets it go
+ * unchecked. One that guards nothing says why (`OPEN`). In the one-tag script each is a script of its own, with the
+ * viewer's part of the same name (fieldia.<name>.js).
  */
-const JOINS: [Part<JoinPart>, (page: Page, options?: FormOptions) => unknown][] = [
-  [lazyPart('outbox', () => import('./outbox-part')), (page) => page.outbox],
-  [lazyPart('prefill', () => import('./prefill-part')), (page) => page.prefill],
-  [lazyPart('verify', () => import('./verify-part')), (page) => /"verify":(?!false)/.test(JSON.stringify(page.layout))],
-  [lazyPart('pay', () => import('./pay-part')), (page) => page.payment],
-  [formSurveyPart, surveyFlow],
-  [formApprovalsPart, (page, options) => page.approval && (!options || options.dataSource?.approvals)],
-  [recordLivePart, (_page, options) => options?.dataSource?.subscribe || options?.dataSource?.presence],
+const JOINS: [Part<JoinPart>, (page: Page, options?: FormOptions) => unknown, ((page: Page, options?: FormOptions) => GuardWords | undefined) | typeof OPEN][] = [
+  // Without it, a send that finds no network fails as any does, the answers kept in the form: nothing goes unchecked.
+  [lazyPart('outbox', () => import('./outbox-part')), (page) => page.outbox, OPEN],
+  // A link's hidden fields go with the answers: without them a send would go without what the link said.
+  [lazyPart('prefill', () => import('./prefill-part')), (page) => page.prefill, () => 'guardPrefill'],
+  [lazyPart('verify', () => import('./verify-part')), asksVerify, (_page, options) => (options?.dataSource?.sendCode && options.dataSource.checkCode ? 'guardVerify' : undefined)],
+  [lazyPart('pay', () => import('./pay-part')), (page) => page.payment, (_page, options) => (options?.dataSource?.pay ? 'guardPay' : undefined)],
+  // A quiz's marking, a review and a draw guard nothing (the answers given are those sent); a time limit's clock does.
+  [formSurveyPart, surveyFlow, (page) => (timesAnswers(page) ? 'guardTimeLimit' : undefined)],
+  // A record waiting for approval locks its fields: without its part, nothing would.
+  [formApprovalsPart, (page, options) => page.approval && (!options || options.dataSource?.approvals), () => 'guardApprovals'],
+  // Changes made elsewhere and who else is here: a save over someone else's is still refused by its version.
+  [recordLivePart, (_page, options) => options?.dataSource?.subscribe || options?.dataSource?.presence, OPEN],
 ];
 
 /**
@@ -163,3 +188,12 @@ const JOINS: [Part<JoinPart>, (page: Page, options?: FormOptions) => unknown][] 
  * at a send and the viewer draws with it; or all of them.
  */
 export const formJoins = (page?: Page, options?: FormOptions): Part<JoinPart>[] => JOINS.filter(([, asks]) => !page || asks(page, options)).map(([part]) => part);
+
+/** The words naming a part that joins this page's form, where it guards its send: undefined for one that guards nothing here. */
+export function joinGate(part: Part<JoinPart>, page: Page, options?: FormOptions): GuardWords | undefined {
+  const gate = JOINS.find(([one]) => one === part)?.[2];
+  return gate && gate !== OPEN ? gate(page, options) : undefined;
+}
+
+/** Each part that joins a form, by its name, and whether it may guard a send (a test holds every part to saying so). */
+export const joinGuards = (): { name: string; guards: boolean }[] => JOINS.map(([part, , gate]) => ({ name: part.name, guards: gate !== OPEN }));

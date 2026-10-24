@@ -1458,7 +1458,27 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // named as every object's own (names.ts, references.ts), a message fills its blanks from the values given alone
 // (messages.ts), and a page of the app's own site in an embed widget runs with no origin (embed.ts). 529.47 measured
 // before, 529.88 after, to 529.9.
-const BUDGET_KB = 543.1;
+// harden-data: a part that guards a send fails closed — one place every send passes (form.ts, `guardsIn`) waits for
+// each, asks once more for one that did not come, and refuses in words naming it ("The payment step could not load, so
+// nothing was sent. Try again."); the words are what every page that sends needs, the part being the one thing missing
+// then. 525.24 measured before, 527.04 after, to 527.1.
+// harden-data: one load boundary — a record's values read as their fields hold them (from-source.ts: a decimal sent as
+// text, Odoo's false and its [id, name], a REST { id, name }, a table's records as lines; one that cannot be read named,
+// never sent back over the source's), anything but one record refused, a failed load said with its own Retry and its
+// fields inert until it loads, a value as stored warned of and never refusing a save that leaves it, a save that never
+// throws — what every record's load and save goes through. 527.10 measured before, 533.33 after, to 533.4.
+// harden-data: one send discipline — every save and send carries one key from its first try, a second asked with nothing
+// changed is the first, a response's same answers never go twice, a new record answered with no id said — what every
+// send goes through. 533.33 measured before, 533.94 after, to 534.0.
+// harden-data: drafts and sends kept are a person's — kept by the signed-in person's id or the tab's (browser-kept.ts),
+// a record's draft its changes alone with their version (a moved record said as a conflict), a secret field never kept,
+// `drafts.clear()` and `outbox.clear()` for sign-out — what every page that keeps drafts needs. 533.94 measured before,
+// 536.04 after, to 536.1.
+// harden-data: nothing waits for ever — one deadline where a form's requests meet its source (deadline.ts: save, send,
+// onchange, search, options; a signal; a Discard ends a save stuck past 5 s), a part or a language's chunk that stalls
+// settled as failed (parts.ts, `inTime`) — what every page that asks its source needs. 536.04 measured before, 537.78
+// after, to 537.8.
+const BUDGET_KB = 555.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1773,7 +1793,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // measured before, 172.88 after, to 172.9. Patterns, dates and worked-out values kept from taking seconds (listed with
 // the raw budget above): 172.88 measured before, 174.06 after, to 174.1. Own properties, names, fills and the embed
 // widget's sandbox (listed with the raw budget above): 174.06 measured before, 174.24 after, to 174.3.
-const GZIP_BUDGET_KB = 180.9;
+// harden-data: a part that guards a send fails closed (listed with the raw budget above): 172.08 measured before,
+// 172.77 after, to 172.8. One load boundary (listed with the raw budget above): 172.78 measured before, 174.60 after,
+// to 174.7. One send discipline (listed with the raw budget above): 174.60 measured before, 174.84 after, to 174.9.
+// Drafts and sends kept a person's (listed with the raw budget above): 174.84 measured before, 175.71 after, to 175.8.
+// Nothing waits for ever (listed with the raw budget above): 175.71 measured before, 176.44 after, to 176.5.
+const GZIP_BUDGET_KB = 185.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2106,7 +2131,27 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Turkish's 65.72 and 18.16, 65.92 and 18.25, to 66.0 and 18.3; Persian's 160.15 and 22.38, 160.72 and 22.48, to
 // 160.8 and 22.5; Urdu's 162.86 and 22.45, 163.29 and 22.52, to 163.3 and 22.6; Spanish's 56.18 and 17.64, 56.33 and
 // 17.70, to 56.4 and 17.8.
-const ADD_ON_BUDGET_KB = { ar: [129.1, 21.0], de: [58.4, 17.9], fr: [59.2, 18.1], tr: [66.3, 18.3], fa: [161.5, 22.6], ur: [164.0, 22.6], es: [56.6, 17.8] };
+// harden-data: a part that guards a send fails closed — its sentence and the names of the parts — Arabic's 127.54 and
+// 20.67 measured before, 129.08 and 20.89 after, to 129.1 and 20.9; German's 57.75 and 17.80, 58.34 and 17.97, to 58.4
+// and 18.0; French's 58.62 and 17.79, 59.21 and 17.95, to 59.3 and 18.0; Turkish's 65.57 and 18.13, 66.18 and 18.30, to
+// 66.2 and 18.4; Persian's 159.79 and 22.33, 161.34 and 22.54, to 161.4 and 22.6; Urdu's 162.49 and 22.40, 164.05 and
+// 22.61, to 164.1 and 22.7; Spanish's 56.03 and 17.61, 56.65 and 17.79, to 56.7 and 17.8.
+// harden-data: one load boundary — a load that failed, a save of a record never loaded, a value as stored, a save that
+// broke — Arabic's 129.08 and 20.89 measured before, 130.03 and 21.00 after, to 130.1 and 21.1; German's 58.34 and
+// 17.97, 58.75 and 18.06, to 58.8 and 18.1; French's 59.21 and 17.95, 59.67 and 18.04, to 59.7 and 18.1; Turkish's
+// 66.18 and 18.30, 66.65 and 18.39, to 66.7, inside 18.4; Persian's 161.34 and 22.54, 162.63 and 22.66, to 162.7 and
+// 22.7; Urdu's 164.05 and 22.61, 165.30 and 22.73, to 165.4 and 22.8; Spanish's 56.65 and 17.79, 57.04 and 17.87, to
+// 57.1 and 17.9.
+// harden-data: one send discipline — a new record answered with no id, and an outbox the browser cannot keep past the
+// page — Arabic's 130.03 and 21.00 measured before, 132.22 and 21.23 after, to 132.3 and 21.3; German's 58.75 and 18.06,
+// 59.48 and 18.22, to 59.5 and 18.3; French's 59.67 and 18.04, 60.35 and 18.20, to 60.4 and 18.3; Turkish's 66.65 and
+// 18.39, 67.42 and 18.54, to 67.5 and 18.6; Persian's 162.63 and 22.66, 165.01 and 22.87, to 165.1 and 22.9; Urdu's
+// 165.30 and 22.73, 167.83 and 22.96, to 167.9 and 23.0; Spanish's 57.04 and 17.87, 57.67 and 18.03, to 57.7 and 18.1.
+// harden-data: nothing waits for ever — "The server did not answer in time" — Arabic's 132.22 measured before, 132.39
+// after, to 132.4; German's 59.48, 59.53, to 59.6; French's 60.35, 60.40, to 60.5; Turkish's 67.42, 67.47, inside 67.5;
+// Persian's 165.01, 165.13, to 165.2; Urdu's 167.83, 167.98, to 168.0; Spanish's 57.67, 57.72, to 57.8 (each gzipped
+// inside its budget).
+const ADD_ON_BUDGET_KB = { ar: [133.9, 21.6], de: [60.2, 18.3], fr: [61.0, 18.6], tr: [68.2, 18.7], fa: [166.9, 23.1], ur: [169.5, 23.1], es: [58.3, 18.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2809,7 +2854,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 38.84 and 15.25 after, to 38.9; AI help proposing for the fields a page draws alone — assist 36.40 and 12.35, 36.44
 // and 12.36, to 36.5; a framed form telling only the sites its allowed-origins names — element 5.38 and 2.38, 5.83 and
 // 2.59, to 5.9 and 2.6.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [141.8, 45.7], cards: [12.8, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.7, 6.5], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.9, 2.6], outbox: [9.0, 4.0], loading: [8.7, 2.8] };
+// harden-data: the pay part's page checks warn where a link fills the amount (payment-checks.ts), 7.50 and 3.30 measured
+// before, 7.78 and 3.44 after, to 7.8 and 3.5; the live part reads a change pushed as a load reads it, 4.60 and 2.23, 4.61
+// and 2.23, to 4.7. The outbox part drains kept saves before a live one, renews its claims and says where the browser
+// keeps nothing past the page, 9.00 and 4.00 measured before, 10.34 and 4.44 after, to 10.4 and 4.5; the memory source
+// keeps a send once by its key, 24.90 and 9.10, 25.19 and 9.11, to 25.2 and 9.2. The outbox's sends a person's own, and
+// let go at sign-out: 10.34 and 4.44 measured before, 10.77 and 4.59 after, to 10.8 and 4.6.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [141.8, 45.7], cards: [12.8, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.7, 6.5], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [10.8, 4.6], loading: [8.7, 2.8] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

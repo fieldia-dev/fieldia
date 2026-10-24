@@ -1,3 +1,4 @@
+import { ownerOf } from './browser-kept';
 import type { Page } from '../format/page';
 import { checkPage } from '../format/check-page';
 import { validatePage } from '../format/validate';
@@ -127,7 +128,7 @@ describe('a page filled from the link it is opened with (prefill)', () => {
   it('keeps what the person typed: a draft laid over the link’s values wins', () => {
     const store = new Map<string, string>();
     const drafts = { store: { getItem: (key: string) => store.get(key) ?? null, setItem: (key: string, value: string) => void store.set(key, value), removeItem: (key: string) => void store.delete(key) }, restore: 'auto' as const };
-    store.set('fieldia:draft:enquiry:new', JSON.stringify({ values: { unit: 'D-1', name: 'Mona' }, savedAt: '2026-10-20T10:00:00Z' }));
+    store.set(`fieldia:draft:${ownerOf(null)}:enquiry:new`, JSON.stringify({ values: { unit: 'D-1', name: 'Mona' }, savedAt: '2026-10-20T10:00:00Z' }));
     const form = createForm({ page: enquiry(), drafts, url: '?unit=B-12&utm_source=whatsapp' });
     expect(form.getState().values).toMatchObject({ unit: 'D-1', name: 'Mona', utm_source: 'whatsapp' });
   });

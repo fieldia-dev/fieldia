@@ -64,6 +64,8 @@ export { LOADING_ERRORS, LOADING_MOMENTS, LOADING_TECHNIQUES, LOADING_VARIANTS }
 export { linkParams, linkValue, linkValues } from './lib/record/link-values';
 // An outbox kept in memory, or in the browser's IndexedDB: the outbox part's, whole here.
 export { indexedOutbox, memoryOutbox } from './lib/record/outbox-form';
+// The server's own check of a page's answers as they arrive: the browser's checks are a convenience, the server the final gate.
+export { checkSubmission, type SubmissionCheck, type SubmissionContext } from './lib/record/submission';
 export { DUPLICATE_KINDS, comparable } from './lib/format/duplicate-kinds';
 export { pageJsonSchema } from './lib/format/json-schema';
 // A starting page from a JSON Schema, an OpenAPI document or a model's fields — what could not be taken as it is, said.
