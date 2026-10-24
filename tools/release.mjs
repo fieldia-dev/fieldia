@@ -39,6 +39,7 @@ import { checkFormatShape } from './format-shape.mjs';
 import { withoutAuth } from './release-env.mjs';
 import { gitFacts, patchProblem, releaseProblems } from './release-guards.mjs';
 import { publishPacks, readPacks, writePacks } from './release-publish.mjs';
+import { auditProblems } from './release-audit.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const WORK = join(WORKSPACE, 'tmp/release');
@@ -115,13 +116,52 @@ if (!fromRegistry) writePacks(PACKS, { version, commit: run('git', ['rev-parse',
 const root = read(join(WORKSPACE, 'package.json'));
 const pin = (name) => `${name}@${(root.dependencies ?? {})[name] ?? root.devDependencies[name]}`.replace(/@[~^]/, '@');
 mkdirSync(SMOKE, { recursive: true });
-writeFileSync(join(SMOKE, 'package.json'), JSON.stringify({ name: 'fieldia-smoke', private: true, version: '0.0.0' }, null, 2));
 const peers = ['react', 'react-dom', '@types/react', 'vue', '@angular/core', '@angular/compiler', 'rxjs', 'ag-grid-community', '@playwright/test', '@types/node'].map(pin);
+/** `name@version` as a package.json has it: [name, version]. */
+const nameAndVersion = (pinned) => [pinned.slice(0, pinned.lastIndexOf('@')), pinned.slice(pinned.lastIndexOf('@') + 1)];
+writeFileSync(
+  join(SMOKE, 'package.json'),
+  JSON.stringify(
+    {
+      name: 'fieldia-smoke',
+      private: true,
+      version: '0.0.0',
+      // What an app installs: the packs (or, verifying, the version on npm), with their dependencies — audited below.
+      dependencies: Object.fromEntries(packages.map(({ manifest }, i) => [manifest.name, fromRegistry ? version : `file:${tarballs[i]}`])),
+      // What an app brings itself, the packages' peers: installed to check them against, not audited as Fieldia's.
+      devDependencies: Object.fromEntries(peers.map(nameAndVersion)),
+    },
+    null,
+    2
+  )
+);
 // No package's install scripts run: what is installed is only read, imported and type-checked.
-run('npm', ['install', '--no-audit', '--no-fund', '--ignore-scripts', '--loglevel=error', ...tarballs, ...peers], SMOKE);
+run('npm', ['install', '--no-audit', '--no-fund', '--ignore-scripts', '--loglevel=error'], SMOKE);
 for (const { manifest } of packages) {
   const installed = read(join(SMOKE, 'node_modules', manifest.name, 'package.json')).version;
   if (installed !== version) fail(`${manifest.name} installed as ${installed}, not ${version}`);
+}
+// npm's advisories for what an app installs with Fieldia, as each range resolves today (release-audit.mjs): high and
+// critical refuse the release, unless reviewed and allowed for a time in tools/audit-allowed.json.
+{
+  let report;
+  try {
+    report = run('npm', ['audit', '--omit=dev', '--json'], SMOKE);
+  } catch (error) {
+    report = error.stdout; // npm audit fails when it finds any advisory: its report is still written
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(report);
+  } catch {
+    fail(`npm audit gave no report for what an app installs: ${String(report).slice(0, 400)}`);
+  }
+  if (parsed.error) fail(`npm audit could not be run for what an app installs: ${parsed.error.summary ?? JSON.stringify(parsed.error)}`);
+  const allowed = read(join(WORKSPACE, 'tools/audit-allowed.json'));
+  const problems = auditProblems(parsed, allowed, new Date().toISOString().slice(0, 10));
+  if (problems.length) fail(`npm audit finds what an app installs with Fieldia vulnerable:\n  ${problems.join('\n  ')}\nUpgrade the dependency, or review the advisory and allow it until a date in tools/audit-allowed.json, saying why it cannot reach an app.`);
+  const counts = parsed.metadata?.vulnerabilities ?? {};
+  console.log(`  npm audit of what an app installs (${parsed.metadata?.dependencies?.prod ?? '?'} packages): no high or critical advisory${allowed.length ? ` beyond the ${allowed.length} reviewed in tools/audit-allowed.json` : ''} (${['critical', 'high', 'moderate', 'low'].map((level) => `${counts[level] ?? 0} ${level}`).join(', ')})`);
 }
 
 // What each package must export, by name.
