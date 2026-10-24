@@ -1864,3 +1864,32 @@ In plain words:
   record open — each form that opens it with a `user`, and whoever `arrive` brings (`leave` takes them away). Without
   `live` it has none of `subscribe`, `presence`, `arrive` and `leave`, as a source without a socket. Tests:
   `libs/core/src/lib/record/live.spec.ts`, `libs/viewer/src/lib/live.spec.ts`.
+
+## 36. While it waits (0.33, lane w7-loading)
+
+How a page looks while it waits for its source is the page's and the app's (`Page.loading`, the viewer's `loading`;
+docs/plans/loading.md): **the data source does nothing new.** It answers `load`, `list`, `search`, `options` and
+`save` as it always has, as quickly or as slowly as it does, and the viewer draws the wait — after its delay, never a
+flash; kept its minimum; "Still loading…" when slow; a failure in its place, with Retry, which asks again exactly
+what failed.
+
+```ts
+// ListRequest gains signal?: UploadSignal — given only where the list's waits have a `timeout`.
+```
+
+In plain words:
+
+- **A failure's words are the source's own.** A rejection with an `Error` whose message says why ("The archive is
+  offline until 6.") is shown after "Couldn't load." — or after a list's own sentence, "Could not load the
+  customers." A network's own failure (`TypeError`) and an abort are said without words of theirs: they say nothing a
+  person can act on.
+- **`signal` is honoured where it is given.** A page with a `timeout` ends a wait as failed once it passes; a list's
+  request — its records, its next rows, a map's places — carries an AbortSignal that aborts then. A source that stops
+  and rejects with an error named `AbortError` frees its server sooner; one that ignores it loses nothing: its answer,
+  coming late, is dropped, as any answer a newer ask took the place of. Without a `timeout`, no request carries one.
+- **A record that answers past its timeout** is drawn as it comes, the failure's words taken away: a record's `load`
+  carries no signal.
+- **What Retry asks** is what failed, again: the same list with the same search and page, the same record, the same
+  search for the same words.
+- The memory source answers after `delayMs` (`createMemoryDataSource({ delayMs: 1500 })`), so a demo shows each wait;
+  the loading demo wraps it to fail its next answer on purpose ("Fail the next answer") and to honour `signal`.

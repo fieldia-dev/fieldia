@@ -4,7 +4,7 @@ export default {
   path: '/look/',
   wide: true,
   title: 'Themes, skins and languages',
-  description: 'Eight themes in the style of Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms; Fieldia’s three skins, the quiet look, the CSS custom properties that restyle them, a look for each kind of part, and the four languages with right-to-left Arabic.',
+  description: 'Eight themes in the style of Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms; Fieldia’s three skins, the quiet look, the CSS custom properties that restyle them, a look for each kind of part, how a form looks while it waits, and the four languages with right-to-left Arabic.',
   body: `
 <p class="lead">How a form looks is set per form, not per page: the same page can be a quiet business sheet in one place and a friendly survey in another.</p>
 
@@ -122,6 +122,30 @@ ${code(
   <li>${c('tables')} — tables of lines and a matrix’s grid: the heading row’s ground, the lines, the words.</li>
 </ul>
 <p>Corners are ${c('square')}, ${c('soft')} or ${c('round')}, as the page’s; text is ${c('small')} (13px) or ${c('large')} (16px). Words always stay readable: a colour they could not be read on is drawn lighter or darker, only as far as it has to be — a ground stays light on a light page and dark on a dark one, and an accent reads at 4.5:1 on the page and on every ground given. A border is drawn as given. Each kind’s settings reach the stylesheet as its own custom properties (${c('--fd-inputs-bg')}, ${c('--fd-buttons-accent')}, …), named on the form (${c('data-inputs="bg radius"')}), so your own CSS can follow them too.</p>
+
+<h2 id="loading">While it waits</h2>
+<p>Everything that waits for an answer waits the same way, as the app, the page or a part of it says. Drawn the first time (${c('first')}), a form, a list or a map shows a <strong>skeleton</strong> shaped like what comes — the list’s rows in its own columns, cards on a phone, the form’s boxes under their labels. Asked again (${c('refresh')}), what is shown <strong>stays where it is</strong>, a thin bar along its top. The next rows (${c('more')}) say “Loading more…” where they will come; a link’s suggestions (${c('search')}) say “Searching…” in the list; a button’s steps (${c('action')}) keep the button busy. A quick answer shows nothing at all; a loader that shows stays long enough never to flicker; a failure says why in its place, with Retry.</p>
+${code('json', `{ "loading": { "first": "spinner", "refresh": "dim", "skeleton": "pulse", "delay": 250, "timeout": 20000 } }`)}
+<ul>
+  <li>${c('first')}: ${c('skeleton')} (default), ${c('spinner')}, ${c('progress')}, ${c('text')}, ${c('none')}, ${c('custom')}.</li>
+  <li>${c('refresh')}: ${c('keep')} (default), ${c('dim')}, ${c('skeleton')}, ${c('spinner')}, ${c('none')}, ${c('custom')}.</li>
+  <li>${c('more')}: ${c('row')} (default), ${c('spinner')}, ${c('skeleton')}, ${c('none')}, ${c('custom')}.</li>
+  <li>${c('search')}: ${c('inline')} (default), ${c('spinner')}, ${c('none')}, ${c('custom')}.</li>
+  <li>${c('action')}: ${c('button')} (default), ${c('bar')}, ${c('overlay')}, ${c('none')}, ${c('custom')}.</li>
+  <li>Looks: ${c('skeleton')} ${c('shimmer')} | ${c('pulse')} | ${c('static')}; ${c('spinner')} ${c('ring')} | ${c('dots')}; ${c('progress')} ${c('top')} | ${c('inline')}. Timing in milliseconds: ${c('delay')} 150, ${c('minShown')} 300, ${c('slowAfter')} 5000 (“Still loading…”), ${c('timeout')} none. A failure: ${c('error')} ${c('inline')} | ${c('toast')} | ${c('custom')}.</li>
+</ul>
+<p>The app sets its own defaults with the viewer’s ${c('loading')} option, and draws ${c('custom')} itself — Fieldia still keeps the time, ${c('aria-busy')}, what a screen reader hears and the clean-up; a list, a related list and a map say their own in ${c('loading')}, a field with a search in ${c('options.loading')}; the most specific wins. Every theme gives the shapes, the ring and the bar its own colours, light and dark (${c('--fd-skeleton')}, ${c('--fd-skeleton-shine')}, ${c('--fd-shimmer')}, ${c('--fd-spinner')}, ${c('--fd-bar')}); nothing moves for a reader who asks for no motion, and nothing shows on paper.</p>
+${code(
+  'ts',
+  `const viewer = mountViewer(host, {
+  page,
+  dataSource,
+  loading: { first: 'custom', custom: ({ container, slow }) => container.append(myLoader(slow)) },
+});
+viewer.on('loadingstart', ({ moment, part }) => appBar.start(part));
+viewer.on('loadingend', ({ part, duration, failed }) => appBar.end(part));`
+)}
+<p>Try every way on a slow network in <a href="/demos/loading/">Loading, as you like it</a>; the designer sets the page’s on its Look tab, under While it waits, with a preview of each.</p>
 
 <h2 id="help">Where help shows</h2>
 <p>A field's ${c('help')} shows as words under it, or behind a (?) beside its label, as Flectra shows it — shorter on a busy sheet — or both. The page sets its way in ${c('look.helpShown')}, and any field may have its own ${c('helpShown')}: ${c('below')} (the default), ${c('tooltip')} or ${c('both')}. The (?) opens on hover, on focus or with a tap, and Escape closes it; the box stays described by the help, so a screen reader still says it. In the designer it is Help, on the Look tab for the page and under a field's Layout.</p>

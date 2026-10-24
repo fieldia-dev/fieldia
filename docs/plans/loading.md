@@ -1,4 +1,4 @@
-# Loading — one model for every control (0.32, lane w7-loading)
+# Loading — one model for every control (0.33, lane w7-loading)
 
 Every part of Fieldia that waits for an answer — a record, a list's rows, a map's places, a link's suggestions, a
 save — waits the same way. A page says how it looks while it waits, an app says it for all its pages, a list or a
@@ -25,7 +25,7 @@ skeleton bars under their labels (the labels are the page's, known before the re
 are still coming, a skeleton made from the page's layout stands in its place — its groups, its fields' labels and
 boxes, as wide as they will be. A list draws skeleton rows in its own columns (as many as fit a page, up to eight), or
 skeleton cards where its rows are cards (a phone, a gallery); a map is one skeleton block as tall as the map, until
-its map and its places are in; a saved form placed in a page, three skeleton fields. `spinner` turns a ring (or three
+its map and its places are in; a saved form placed in a page, three skeleton bars in its place. `spinner` turns a ring (or three
 dots) in the middle of the place, `progress` runs a bar along its top (or across its middle: `inline`), `text` says
 "Loading…" there (what 0.31 did), `none` draws nothing (the region is still busy for a screen reader), `custom` lets
 the app draw.
@@ -47,10 +47,12 @@ already shown never moves.
 ring at the box's end, `none`, `custom`. The box is never locked: the person types on, and only the latest answer is
 shown.
 
-**`action` — a save, a send, a button's steps, a delete, an export.** Default `button`: the pressed button is busy, a
-ring beside its words (0.31's), drawn after the delay and kept its minimum. `bar` runs a bar along the top of the form
-instead, `overlay` covers the form with a veil and a ring (nothing pressed or typed until it ends), `none` keeps only
-`aria-busy`, `custom`. A button stays busy — not pressed twice — in every case.
+**`action` — a button's steps, a send, a save.** Default `button`: the pressed button is busy, a ring beside its words
+(0.31's), drawn after the delay and kept its minimum, the button free again as its steps end. `bar` runs a bar along
+the top of the form instead, `overlay` covers the form with a veil and a ring (nothing pressed or typed until it ends),
+`none` keeps only `aria-busy`, `custom`. A button stays busy — not pressed twice — in every case. A record's own Save
+steps aside while it saves, as it always has, its status saying "Saving…": under `bar` and `overlay` the form shows
+the save too.
 
 ## Looks and timing
 
@@ -84,13 +86,17 @@ system's own colours; right to left mirrors them; on paper no loader shows.
 
 ## Where the code lives
 
-The timing machine, the resolution, the `text` technique, the skeleton's and the top bar's looks (`skeleton` and
-`keep` are the defaults: every page with a record or a list draws them), the page-shaped skeleton (drawn while the
-page's parts come, so it cannot wait for one) and the inline failure are in the main script. The spinners, the
-inline bar, the overlay and the action bar are the loading part's (`fieldia.loading.js`), asked for with the page's
-parts where the page, a part of it or the app's option names one; until it has come, a loader that would have drawn
-from it says "Loading…" in words. A list's skeleton rows and cards and its "Loading more…" row are the list part's; a
-map's block is @fieldia/map's.
+In the main script, what every page that waits needs: the timing machine, the resolution of the settings, the words
+(`text`, a row's "Loading more…", a search's "Searching…", "Still loading…"), `dim`, a busy button's ring (drawn past
+the delay by the stylesheet itself, so every busy button waits so) and a failure in its place with Retry. In the
+loading part (`fieldia.loading.js`): the skeletons — a few bars, a form's boxes under their labels, the page's layout
+while its parts come (page-skeleton.ts) — the bars along the top and across the middle, the spinners, the overlay,
+and their tokens. A page that waits for its own parts asks for the loading part with them (it delays nothing: it comes
+alongside); a page whose record loads with nothing else to wait for asks for it as it mounts, not waiting for it; any
+other wait asks for it as it begins. Until it has come, a wait drawn the first time says "Loading…" in words, any
+other is a screen reader's alone, and each is drawn as it says once it has. A page, a part of it or an app that names
+a spinner or the overlay has it waited for with the page's parts. A list's skeleton rows and cards are the list's and
+the cards' parts'; a map's block is @fieldia/map's.
 
 ## The data source
 
