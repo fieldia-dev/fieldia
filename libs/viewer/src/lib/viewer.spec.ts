@@ -6,8 +6,8 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
 /**
- * An example page as written; the customer's without its `phone` (0.32: its numbers read the world over, as the box is
- * left), so its Phone is the box these tests type in, taking what is typed as it is typed. The phone read the world
+ * An example page as written; the customer's without its `phone` (0.32: its numbers read the world over, kept as
+ * E.164), so its Phone is the box these tests type in, keeping what is typed as it was typed. The phone read the world
  * over is phone-box.spec's, typing-save.spec's and the browser tests'.
  */
 const page = (name: string): Page => {

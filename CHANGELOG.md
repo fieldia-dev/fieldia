@@ -39,8 +39,12 @@ could happen. The page format is 0.11 — a phone's country list is a new settin
   best first — in place of the browser's list of every country. Each row has its
   flag and code; the page's country and the reader's region come first. It works
   by the keys (typing on the flag opens it, the arrows, Enter, Escape), opens as
-  a sheet from the foot of a phone's screen, and reads right to left. On by
-  default (`countries`, below).
+  a sheet from the foot of a phone's screen — in the page's scheme, dark on a dark
+  page — and reads right to left. On by default (`countries`, below).
+- **A phone number is the record's as it is typed, once it reads**, as a text's
+  and an amount's are: Save shows while the person is still in the box (it
+  showed only once the box was left). A part of a number waits for the box to be
+  left, which says why it does not read; the field keeps what it held.
 - **Delete in the designers is easy to find, and asks nothing.** A picked
   question's bin says "Delete question" (the bin alone on a phone, still named for
   screen readers); a question not picked shows a ⋮ on hover and focus with
@@ -82,6 +86,9 @@ could happen. The page format is 0.11 — a phone's country list is a new settin
 - A phone field's country is a button that opens a list, not a `<select>`: a
   test that picked from the select picks from the list (or the page sets
   `countries: "native"`).
+- A phone field writes a number that reads as it is typed, not only as its box
+  is left: its `change` event and the page's `on.change` steps for it come then,
+  as a text box's do.
 - An unpicked survey card is no longer a button itself; its words are
   (`.fd-q-open`).
 - The screen designer bar's `fd-bar-below` and `fd-bar-over-name` classes and its
