@@ -1,0 +1,52 @@
+{
+  "fieldia": "0.10",
+  "id": "loading-customers",
+  "title": "Customers",
+  "description": "A wholesaler's customers across Egypt: a page at a time, the next ones as the list is scrolled, and on a map.",
+  "data": { "kind": "record", "model": "customer" },
+  "records": { "one": "customer", "other": "customers", "a": "a customer" },
+  "fields": {
+    "name": { "type": "char", "label": "Customer" },
+    "city": {
+      "type": "selection",
+      "label": "City",
+      "options": [
+        { "value": "cairo", "label": "Cairo" },
+        { "value": "giza", "label": "Giza" },
+        { "value": "alexandria", "label": "Alexandria" },
+        { "value": "mansoura", "label": "Mansoura" },
+        { "value": "aswan", "label": "Aswan" }
+      ]
+    },
+    "manager_id": { "type": "many2one", "label": "Account manager", "relation": "user" },
+    "status": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "active", "label": "Active" },
+        { "value": "prospect", "label": "Prospect" },
+        { "value": "paused", "label": "Paused" }
+      ]
+    },
+    "phone": { "type": "char", "label": "Phone" },
+    "lat": { "type": "float", "label": "Latitude" },
+    "lng": { "type": "float", "label": "Longitude" },
+    "since": { "type": "date", "label": "Customer since" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "customers",
+    "columns": ["name", "city", "manager_id", "status"],
+    "sort": [{ "field": "name" }],
+    "pageSize": 12,
+    "endless": true,
+    "searchFields": ["name", "city", "manager_id"],
+    "card": { "title": "name", "status": "status", "fields": ["city", "manager_id"] },
+    "cells": { "status": { "widget": "badge", "options": { "tones": { "active": "success", "prospect": "info", "paused": "warning" } } } },
+    "filters": [
+      { "id": "active", "label": "Active", "filter": [{ "field": "status", "op": "=", "value": "active" }] },
+      { "id": "cairo", "label": "In Cairo", "filter": [{ "field": "city", "op": "=", "value": "cairo" }] }
+    ],
+    "map": { "latitude": "lat", "longitude": "lng", "card": { "title": "name", "fields": ["city", "status"] } }
+  }
+}
