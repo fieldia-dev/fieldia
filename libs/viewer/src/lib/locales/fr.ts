@@ -161,6 +161,7 @@ export const fr: ViewerLabels = {
   importDamaged: 'il est endommagé',
   importNoRows: 'il ne contient aucune ligne',
   importNoUnzip: 'ce navigateur ne peut pas ouvrir les classeurs Excel : enregistrez-le en CSV',
+  importTooLarge: 'il contient plus qu’un tableur n’en tient — une cellule de plus de 32 767 caractères, ou plus de 100 Mo une fois ouvert',
   importTooMany: '{name} compte {n} lignes : au plus {most} peuvent être importées ici à la fois. Découpez-le en fichiers de {most} lignes au plus.',
   importColumnLetter: 'Colonne {letter}',
   importFileRows: '{name} : {n} lignes',

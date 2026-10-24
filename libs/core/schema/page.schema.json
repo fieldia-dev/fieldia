@@ -68,7 +68,7 @@
       "type": "object",
       "propertyNames": {
         "type": "string",
-        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
       },
       "additionalProperties": {
         "$ref": "#/$defs/Field"
@@ -1381,7 +1381,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "type": "string",
@@ -1447,7 +1447,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "type": "string",
@@ -1458,7 +1458,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "$ref": "#/$defs/LinkedField"
@@ -1517,7 +1517,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "$ref": "#/$defs/LineField"
@@ -1528,13 +1528,13 @@
             },
             "sequenceField": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "lineDefaults": {
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "type": "string",
@@ -1817,7 +1817,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         }
       },
@@ -2062,7 +2062,7 @@
       "properties": {
         "field": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "picked": {
           "type": "boolean"
@@ -2840,7 +2840,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "type": "string",
@@ -3774,7 +3774,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "type": "string",
@@ -3840,7 +3840,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "type": "string",
@@ -3851,7 +3851,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "$ref": "#/$defs/LinkedField"
@@ -4059,7 +4059,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "$ref": "#/$defs/InnerLineField"
@@ -4067,13 +4067,13 @@
             },
             "sequenceField": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "lineDefaults": {
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "type": "string",
@@ -4096,7 +4096,7 @@
       "properties": {
         "name": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "label": {
           "type": "string"
@@ -4140,7 +4140,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         }
       },
@@ -5011,7 +5011,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "type": "string",
@@ -5077,7 +5077,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "type": "string",
@@ -5088,7 +5088,7 @@
               "type": "object",
               "propertyNames": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "additionalProperties": {
                 "$ref": "#/$defs/LinkedField"
@@ -5258,11 +5258,11 @@
       "properties": {
         "field": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "text": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "section": {
           "type": "string",
@@ -5317,18 +5317,18 @@
           "properties": {
             "field": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "label": {
               "type": "string"
             },
             "subtitleField": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "avatarField": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "placeholder": {
               "type": "string"
@@ -5378,7 +5378,7 @@
           "properties": {
             "field": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "visibleStates": {
               "type": "array",
@@ -5401,7 +5401,7 @@
             },
             "durationsField": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "fold": {
               "type": "boolean"
@@ -5558,7 +5558,7 @@
               },
               "labelField": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "steps": {
                 "minItems": 1,
@@ -5573,18 +5573,18 @@
               },
               "field": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "unit": {
                 "type": "string"
               },
               "unitField": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "secondField": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "secondLabel": {
                 "type": "string"
@@ -5621,7 +5621,7 @@
             },
             "labelField": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "tooltip": {
               "type": "string"
@@ -5663,7 +5663,7 @@
               },
               "labelField": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "tooltip": {
                 "type": "string"
@@ -5706,7 +5706,7 @@
               },
               "messageField": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "buttons": {
                 "minItems": 1,
@@ -5972,7 +5972,7 @@
           "properties": {
             "field": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
@@ -6267,11 +6267,11 @@
           "properties": {
             "byField": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "atField": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "opens": {
               "type": "string",
@@ -6295,14 +6295,14 @@
       "properties": {
         "field": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "label": {
           "type": "string"
         },
         "numberField": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "colour": {
           "type": "string",
@@ -6351,7 +6351,7 @@
         },
         "field": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "fixed": {
           "type": "boolean"
@@ -6413,7 +6413,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         },
         "totals": {
@@ -6421,14 +6421,14 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         },
         "optionalColumns": {
           "type": "object",
           "propertyNames": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           },
           "additionalProperties": {
             "type": "string",
@@ -6449,7 +6449,7 @@
           "type": "object",
           "propertyNames": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           },
           "additionalProperties": {
             "$ref": "#/$defs/CellRules"
@@ -6965,7 +6965,7 @@
       "properties": {
         "field": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "desc": {
           "type": "boolean"
@@ -8236,7 +8236,7 @@
             },
             "name": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "title": {
               "type": "string"
@@ -8539,7 +8539,7 @@
           "anyOf": [
             {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             {
               "$ref": "#/$defs/TabCount"
@@ -8654,19 +8654,19 @@
         },
         "point": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "latitude": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "longitude": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "lines": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "pin": {
           "$ref": "#/$defs/Pin"
@@ -8718,7 +8718,7 @@
             },
             "choose": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             }
           },
           "required": [
@@ -8758,15 +8758,15 @@
         },
         "iconField": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "image": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "label": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "tones": {
           "minItems": 1,
@@ -8777,7 +8777,7 @@
         },
         "turn": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "widget": {
           "type": "string",
@@ -8794,11 +8794,11 @@
       "properties": {
         "title": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "image": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "fields": {
           "minItems": 1,
@@ -8829,7 +8829,7 @@
         },
         "href": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "choose": {
           "type": "boolean"
@@ -8841,14 +8841,14 @@
       "anyOf": [
         {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         {
           "type": "object",
           "properties": {
             "field": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "unit": {
               "anyOf": [
@@ -8926,15 +8926,15 @@
           "properties": {
             "seconds": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "metres": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "line": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             }
           },
           "additionalProperties": false
@@ -8981,7 +8981,7 @@
         },
         "area": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "within": {
           "type": "string",
@@ -9140,13 +9140,13 @@
         },
         "field": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "fields": {
           "type": "object",
           "propertyNames": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           },
           "additionalProperties": {
             "$ref": "#/$defs/LinkedField"
@@ -9157,14 +9157,14 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         },
         "cells": {
           "type": "object",
           "propertyNames": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           },
           "additionalProperties": {
             "$ref": "#/$defs/ListCell"
@@ -9325,7 +9325,7 @@
             "properties": {
               "field": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "desc": {
                 "type": "boolean"
@@ -9347,7 +9347,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         },
         "viewAll": {
@@ -9439,7 +9439,7 @@
           "properties": {
             "field": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             },
             "looks": {
               "type": "object",
@@ -9521,15 +9521,15 @@
       "properties": {
         "title": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "subtitle": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "image": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "fields": {
           "minItems": 1,
@@ -9551,7 +9551,7 @@
         },
         "status": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "labels": {
           "type": "boolean"
@@ -9616,7 +9616,7 @@
         },
         "distinct": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "holds": {
           "type": "string",
@@ -9655,7 +9655,7 @@
         },
         "field": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "words": {
           "$ref": "#/$defs/PluralWords"
@@ -10015,7 +10015,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         },
         "sort": {
@@ -10025,7 +10025,7 @@
             "properties": {
               "field": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "desc": {
                 "type": "boolean"
@@ -10046,7 +10046,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         },
         "filters": {
@@ -10102,7 +10102,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         },
         "actions": {
@@ -10241,7 +10241,7 @@
           "type": "object",
           "propertyNames": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           },
           "additionalProperties": {
             "$ref": "#/$defs/ListCell"
@@ -10265,14 +10265,14 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         },
         "filterLabels": {
           "type": "object",
           "propertyNames": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           },
           "additionalProperties": {
             "type": "string",
@@ -10283,7 +10283,7 @@
           "type": "object",
           "propertyNames": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           },
           "additionalProperties": {
             "$ref": "#/$defs/FilterRange"
@@ -10300,14 +10300,14 @@
         },
         "parentField": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "detail": {
           "$ref": "#/$defs/ListDetail"
         },
         "sequenceField": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "endless": {
           "type": "boolean"
@@ -10328,7 +10328,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               }
             }
           ]
@@ -10343,7 +10343,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               }
             }
           ]
@@ -10361,7 +10361,7 @@
           "type": "object",
           "propertyNames": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           },
           "additionalProperties": {
             "type": "string",
@@ -10535,7 +10535,7 @@
       "properties": {
         "field": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "is": {
           "type": "string",
@@ -10564,15 +10564,15 @@
       "properties": {
         "point": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "latitude": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "longitude": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "pin": {
           "$ref": "#/$defs/Pin"
@@ -10633,7 +10633,7 @@
             },
             "field": {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             }
           },
           "required": [
@@ -10653,7 +10653,7 @@
               "properties": {
                 "weight": {
                   "type": "string",
-                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                  "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
                 }
               },
               "additionalProperties": false
@@ -10693,23 +10693,23 @@
       "properties": {
         "start": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "end": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "title": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "colour": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "resource": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "views": {
           "minItems": 1,
@@ -10793,31 +10793,31 @@
       "properties": {
         "start": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "end": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "duration": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "title": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "group": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "colour": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "dependsOn": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "zooms": {
           "minItems": 1,
@@ -10881,7 +10881,7 @@
         },
         "lines": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "model": {
           "type": "string",
@@ -10889,13 +10889,13 @@
         },
         "field": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
         },
         "fields": {
           "type": "object",
           "propertyNames": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           },
           "additionalProperties": {
             "$ref": "#/$defs/LinkedField"
@@ -10906,14 +10906,14 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         },
         "cells": {
           "type": "object",
           "propertyNames": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           },
           "additionalProperties": {
             "$ref": "#/$defs/ListCell"
@@ -10926,7 +10926,7 @@
             "properties": {
               "field": {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               "desc": {
                 "type": "boolean"
@@ -10978,7 +10978,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
           }
         },
         "add": {
@@ -11324,7 +11324,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
               },
               {
                 "type": "object",
@@ -11335,7 +11335,7 @@
                   },
                   "field": {
                     "type": "string",
-                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
                   }
                 },
                 "required": [
@@ -11369,7 +11369,7 @@
             },
             {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             }
           ]
         },
@@ -11381,7 +11381,7 @@
             },
             {
               "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              "pattern": "^(?!(?:constructor|__proto__|prototype)$)[A-Za-z_][A-Za-z0-9_]*$"
             }
           ]
         },

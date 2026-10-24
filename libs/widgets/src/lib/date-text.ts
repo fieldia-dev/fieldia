@@ -1,4 +1,4 @@
-import { instantsAt, isOwnZone, ownZone, readDate, readTime, stripMarks, wallClock, wallDay, wallOf, wallTime, zoneOffset, dayTag, type DateOrder, type DateProblem, type DateRead, type Form, type Locale, type Value, type WallTime } from '@fieldia/core';
+import { DATE_TEXT_MOST, instantsAt, isOwnZone, ownZone, readDate, readTime, stripMarks, wallClock, wallDay, wallOf, wallTime, zoneOffset, dayTag, type DateOrder, type DateProblem, type DateRead, type Form, type Locale, type Value, type WallTime } from '@fieldia/core';
 import { minuteDigitsWords, quoted, refusalHint } from './input-rules';
 import { boxPurpose, fillIn, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
@@ -196,6 +196,8 @@ export function readDateText(text: string, reader: DateReader): DateReading {
   const { kind, label } = reader;
   const t = text.trim();
   if (!stripMarks(t)) return { ok: true, value: null };
+  // Longer than a date is written: none, said at once (a zone's mark is never looked for in it).
+  if (t.length > DATE_TEXT_MOST) return kind === 'time' ? { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }), problem: 'time' } : readProblem({ ok: false, problem: 'unfinished' }, t, reader);
   if (kind === 'time') {
     const time = readTime(t);
     if (time.ok) return { ok: true, value: time.value };

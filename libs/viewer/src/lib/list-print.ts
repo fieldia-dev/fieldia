@@ -1,4 +1,4 @@
-import { recordSentence, type DataSource, type DayCount, type Facet, type ListNode, type Locale, type Page, type ResolvedFilter, type SortOrder, type Values } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, recordSentence, type DataSource, type DayCount, type Facet, type ListNode, type Locale, type Page, type ResolvedFilter, type SortOrder, type Values } from '@fieldia/core';
 import { formatNumber, restingText } from '@fieldia/widgets';
 import type { El } from './dom';
 import { gather } from './list-export';
@@ -166,7 +166,7 @@ export async function printout(list: PrintList, progress: (done: number, total: 
     el(
       'div',
       { class: 'fd-print-head' },
-      ...(own.logo ? [el('img', { class: 'fd-print-logo', src: own.logo, alt: '' })] : []),
+      ...(own.logo ? [el('img', { class: 'fd-print-logo', src: safeUrl(own.logo, PICTURE_URL), alt: '' })] : []),
       ...(header ? [el('div', { class: 'fd-print-words', dir: 'auto' }, ...header.nodes)] : []),
       el(
         'div',

@@ -74,6 +74,7 @@ export const de: Messages = {
   changedBy: '{name} hat {fields} geändert.',
   discardChanges: 'Ihre Änderungen verwerfen?',
   recordReplaced: 'Jetzt wird ein anderer Datensatz angezeigt: die übrigen Schritte wurden nicht ausgeführt.',
+  addressRefused: 'Diese Adresse wurde nicht geöffnet: Geöffnet wird nur eine Webseite, eine E-Mail-Adresse oder eine Telefonnummer.',
   pressDone: 'Erledigt: {label}',
   pressArchived: 'Archiviert.',
   pressUnarchived: 'Aus dem Archiv geholt.',

@@ -1438,7 +1438,27 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // for refused, and the words for a part that could not come or is not the file it was built with (script-parts.ts,
 // 0.46 KB). 525.24 measured before, 528.46 after. The console's line for a language's script missing names this
 // script's own version, never the newest (labels.ts, 130 bytes): 528.59, to 528.6.
-const BUDGET_KB = 538.5;
+// The security audit of 24 Oct (harden-edges): every address a link, a picture, a player, a frame or a page sent elsewhere
+// is given goes through one `safeUrl` (core, safe-url.ts, 0.87 KB) — read with the URL parser, its scheme one the place
+// allows — and an `openUrl` step refuses any other, said (run.ts, messages.ts); the page checks refuse an `openUrl` that
+// writes one (references.ts). Every page has links and pictures. How a file is shown in place — the formats Fieldia
+// shows, their bytes checked — is the files part's, which a sheet's attachment preview now loads. 525.24 measured
+// before, 526.75 after, to 526.8.
+// The security audit of 24 Oct: every cell of a CSV file written through one `csvCell` (core, csv.ts) — words a
+// spreadsheet would run as a formula ("=…", "+…", "-…", "@…") kept as words with a ' before them — and read back by
+// `csvWords`: a list's export and its import (their parts) and the designer's translations, from the main script's
+// table, as every part takes core. 526.75 measured before, 527.06 after, to 527.1.
+// The security audit of 24 Oct: a page's patterns that could backtrack for seconds refused before any answer is tried
+// on them (pattern.ts, `patternRisk`, 2.16 KB with what was there) — in the main script, where the patterns are checked:
+// a form's email, phone or code most often has one, and a part would hold such a page back a request — an answer
+// longer than a pattern is tried on refused (check.ts, rules.ts), text longer than a date is written read as none
+// (input-rules.ts, date-text.ts), and a value the page works out held to its most (compute.ts). 527.06 measured before,
+// 529.47 after, to 529.5.
+// The security audit of 24 Oct: an expression reads a value's own properties alone (evaluator.ts), a field is never
+// named as every object's own (names.ts, references.ts), a message fills its blanks from the values given alone
+// (messages.ts), and a page of the app's own site in an embed widget runs with no origin (embed.ts). 529.47 measured
+// before, 529.88 after, to 529.9.
+const BUDGET_KB = 543.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1748,7 +1768,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Each part checked before it runs (harden-release; listed with the raw budget above): 172.08 measured before, 174.61
 // after — 2.37 of it the parts' hashes, which no compression shortens (sha384's would be 0.9 more), 0.16 the code and
 // its words; the console's line for a language's script naming this script's version, 174.71, to 174.8.
-const GZIP_BUDGET_KB = 178.7;
+// The security audit of 24 Oct: one `safeUrl` for every address (listed with the raw budget above): 172.08 measured
+// before, 172.73 after, to 172.8. One `csvCell` for every CSV file's cells (listed with the raw budget above): 172.73
+// measured before, 172.88 after, to 172.9. Patterns, dates and worked-out values kept from taking seconds (listed with
+// the raw budget above): 172.88 measured before, 174.06 after, to 174.1. Own properties, names, fills and the embed
+// widget's sandbox (listed with the raw budget above): 174.06 measured before, 174.24 after, to 174.3.
+const GZIP_BUDGET_KB = 180.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2070,7 +2095,18 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // and 17.79, 58.87 and 17.87, to 58.9 and 17.9; Turkish's 65.57 and 18.13, 65.81 and 18.19, to 65.9, inside 18.2;
 // Persian's 159.79 and 22.33, 160.48 and 22.40, to 160.5 and 22.5; Urdu's 162.49 and 22.40, 163.19 and 22.48, to 163.2,
 // inside 22.5; Spanish's 56.03 and 17.61, 56.25 and 17.67, to 56.3, inside 17.7.
-const ADD_ON_BUDGET_KB = { ar: [128.3, 20.8], de: [58.1, 17.9], fr: [58.9, 17.9], tr: [65.9, 18.2], fa: [160.5, 22.5], ur: [163.2, 22.5], es: [56.3, 17.7] };
+// The security audit of 24 Oct: why an `openUrl` step opened nothing ("This address was not opened: …") — Arabic's
+// 127.54 and 20.67 measured before, 127.94 and 20.72 after, to 128.0 and 20.8; German's 57.75 and 17.80, 57.88 and
+// 17.84, to 57.9; French's 58.62 and 17.79, 58.77 and 17.83, to 58.8 and 17.9; Turkish's 65.57 and 18.13, 65.72 and
+// 18.16, to 65.8; Persian's 159.79 and 22.33, 160.15 and 22.38, to 160.2; Urdu's 162.49 and 22.40, 162.86 and 22.45, to
+// 162.9; Spanish's 56.03 and 17.61, 56.18 and 17.64, to 56.2.
+// The security audit of 24 Oct: a file holding more than a spreadsheet does, said why ("…a cell of more than 32,767
+// characters…") — Arabic's 127.94 and 20.72 measured before, 128.40 and 20.81 after, to 128.4 and 20.9; German's 57.88
+// and 17.84, 58.02 and 17.89, to 58.1, inside 17.9; French's 58.77 and 17.83, 58.92 and 17.90, to 59.0 and 18.0;
+// Turkish's 65.72 and 18.16, 65.92 and 18.25, to 66.0 and 18.3; Persian's 160.15 and 22.38, 160.72 and 22.48, to
+// 160.8 and 22.5; Urdu's 162.86 and 22.45, 163.29 and 22.52, to 163.3 and 22.6; Spanish's 56.18 and 17.64, 56.33 and
+// 17.70, to 56.4 and 17.8.
+const ADD_ON_BUDGET_KB = { ar: [129.1, 21.0], de: [58.4, 17.9], fr: [59.2, 18.1], tr: [66.3, 18.3], fa: [161.5, 22.6], ur: [164.0, 22.6], es: [56.6, 17.8] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2755,7 +2791,25 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // gzipped; a form's counts asked in its closed screen's place (limits.ts) — limits 10.73 and 4.69, 10.83 and 4.76, to
 // 10.9 and 4.8. A popup open in a part that waits kept clear of its shapes, its ring and its dimming — loading 8.09 and
 // 2.70 measured before, 8.68 and 2.75 after, to 8.7, inside 2.8.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [141.6, 45.7], cards: [12.7, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0], loading: [8.7, 2.8] };
+// The security audit of 24 Oct (harden-edges): how a file is shown in place — the formats Fieldia shows, each file's
+// bytes checked against its format's start and shown from a blob typed from it, never from the type it says; a PDF at
+// the app's own address read before it is framed; an SVG a picture alone (file-formats.ts, 1.5 KB gz) — in the files
+// part, which a sheet's attachment preview and a conversation's pictures load: files 46.46 and 17.33 measured before,
+// 50.49 and 18.81 after, to 50.5 and 18.9. Each address a part writes through `safeUrl`, a few bytes each: text 72.70
+// and 24.54, 72.82 and 24.58, to 72.9; list 140.38 and 45.15, 140.52 and 45.18, to 140.6; cards 12.15, 12.21, to 12.3;
+// photos 31.04 and 11.57, 31.14 and 11.60, to 31.2 and 11.7; record 10.78 and 4.38, 10.84 and 4.40, to 10.9 and 4.5;
+// pins 9.53, 9.61, to 9.7; phone 19.18, 19.21 gzipped, to 19.3; answers 4.26, 4.32, to 4.4.
+// The security audit of 24 Oct: a CSV file's cells read back as they were written, a formula's start kept as words
+// without its ' (`csvWords`) — import 37.93 and 14.89 measured before, 37.96 and 14.91 after, inside 38.0, to 15.0.
+// The security audit of 24 Oct: a workbook read once through — each element's end looked for from where it opens, none
+// after one left open — its archive's files opened to the size they say and no more than 100 MB each, 200 MB in all,
+// and a cell longer than a spreadsheet's own refused (import-file.ts, unzip.ts) — import 37.96 and 14.91 measured
+// before, 38.76 and 15.22 after, to 38.8 and 15.3.
+// The security audit of 24 Oct: an archive's file inflated a piece at a time — import 38.76 and 15.22 measured before,
+// 38.84 and 15.25 after, to 38.9; AI help proposing for the fields a page draws alone — assist 36.40 and 12.35, 36.44
+// and 12.36, to 36.5; a framed form telling only the sites its allowed-origins names — element 5.38 and 2.38, 5.83 and
+// 2.59, to 5.9 and 2.6.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [141.8, 45.7], cards: [12.8, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.7, 6.5], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.9, 2.6], outbox: [9.0, 4.0], loading: [8.7, 2.8] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2778,7 +2832,7 @@ const PART_GIVES = {
   loading: ['installLoadingStyles', 'pageSkeleton', 'drawLoader'],
   lines: ['linesWidget', 'linksTableWidget', 'cardsWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget', 'copyWidget', 'timerWidget'],
-  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles', 'pumpUploads', 'fileFromBytes'],
+  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles', 'pumpUploads', 'fileFromBytes', 'fileShown', 'formatOf', 'shownFile', 'whenShown'],
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
   photos: ['photosWidget', 'editPhoto', 'drawEdited', 'fitted', 'moved', 'sized', 'turnedCrop', 'turnedSize', 'installPhotosStyles'],
   record: ['openRecorder', 'recordingType', 'clock', 'installRecordStyles'],
@@ -3661,7 +3715,9 @@ console.log("on paper: a page no one printed asks for no print part; the browser
  * parameters passed on (none it was not told to); grown as its form tells its height, from the frame's own origin only.
  */
 // 0.30 (w6-public-forms): 1.54 and 0.88 measured, to 1.6 and 0.9.
-const EMBED_BUDGET_KB = [1.6, 0.9];
+// The security audit of 24 Oct: its frame only at a web address (embed-frame.ts) — 1.54 and 0.88 measured before, 1.59
+// and 0.91 after, to 0.92.
+const EMBED_BUDGET_KB = [1.6, 0.92];
 {
   const embed = readFileSync(EMBED, 'utf8');
   const [raw, gzip] = EMBED_BUDGET_KB;

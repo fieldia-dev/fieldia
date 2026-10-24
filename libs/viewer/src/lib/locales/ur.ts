@@ -168,6 +168,7 @@ export const ur: ViewerLabels = {
   importDamaged: 'یہ خراب ہے',
   importNoRows: 'اس میں کوئی قطار نہیں',
   importNoUnzip: 'یہ براؤزر Excel ورک بکس نہیں کھول سکتا: اسے CSV کے طور پر محفوظ کریں',
+  importTooLarge: 'اس میں اسپریڈشیٹ کی حد سے زیادہ ہے — 32,767 سے زیادہ حروف والا خانہ، یا کھلنے پر 100 MB سے زیادہ',
   importTooMany: '{name} میں {n} قطاریں ہیں: یہاں ایک وقت میں زیادہ سے زیادہ {most} درآمد کی جا سکتی ہیں۔ اسے {most} یا اس سے کم قطاروں کی فائلوں میں تقسیم کریں۔',
   importColumnLetter: 'کالم {letter}',
   importFileRows: '{name}: {n} قطاریں',

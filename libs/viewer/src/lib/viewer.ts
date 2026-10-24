@@ -1,4 +1,7 @@
 import {
+  LINK_URL,
+  PICTURE_URL,
+  safeUrl,
   createForm,
   callsPartFunctions,
   checkPage,
@@ -483,8 +486,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const show = tabs.get(target);
       if (!show?.()) throw new Error(`No tab "${target}" can be shown here`);
     },
-    // A new tab opened apart from this page, or this one sent there.
-    openUrl: (url, newTab) => (newTab ? doc.defaultView?.open(url, '_blank', 'noopener,noreferrer') : doc.defaultView?.location.assign(url)),
+    // A new tab opened apart from this page, or this one sent there: a web, mail or phone address, or a path of this site
+    // (the runner's check, made again for an app that calls the host itself); nothing for any other.
+    openUrl: (url, newTab) => {
+      if (!safeUrl(url, LINK_URL)) return;
+      if (newTab) doc.defaultView?.open(safeUrl(url, LINK_URL), '_blank', 'noopener,noreferrer');
+      else doc.defaultView?.location.assign(safeUrl(url, LINK_URL) as string);
+    },
     // This form on paper, alone; the app's file shown over it, or saved — by the files part, which shows a file field's.
     print: () => paper.print(),
     file: (file) => filesPart.load().then((part) => part.showAppFile({ doc, labels: widgetLabels, home: root, file })),
@@ -1707,12 +1715,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
     /** A picture as wide and where its page says, opening its link in a new tab — a web or mail address only — its caption under it. */
     function figure(node: ImageNode): HTMLElement {
-      const image = el('img', { class: 'fd-image', src: node.src, alt: node.alt, loading: 'lazy' });
-      const href = node.href && /^(https?:\/\/|mailto:)/i.test(node.href) ? node.href : undefined;
+      const image = el('img', { class: 'fd-image', src: safeUrl(node.src, PICTURE_URL), alt: node.alt, loading: 'lazy' });
+      const href = safeUrl(node.href, ['http', 'https', 'mailto']);
       const element = el(
         'figure',
         { class: 'fd-block fd-figure', 'data-node': node.id, 'data-align': node.align },
-        href ? el('a', { href, target: '_blank', rel: 'noopener noreferrer' }, image) : image,
+        href ? el('a', { href: safeUrl(href, LINK_URL), target: '_blank', rel: 'noopener noreferrer' }, image) : image,
         ...(node.caption ? [el('figcaption', { class: 'fd-caption' }, node.caption)] : [])
       );
       const width = typeof node.width === 'number' ? `${node.width}px` : node.width && { small: '160px', medium: '320px', large: '480px', full: '100%' }[node.width];

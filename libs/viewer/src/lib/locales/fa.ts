@@ -171,6 +171,7 @@ export const fa: ViewerLabels = {
   importDamaged: 'آسیب دیده است',
   importNoRows: 'هیچ ردیفی ندارد',
   importNoUnzip: 'این مرورگر نمی‌تواند فایل‌های Excel را باز کند: آن را به‌صورت CSV ذخیره کنید',
+  importTooLarge: 'بیش از آنچه یک صفحه‌گسترده نگه می‌دارد دارد — خانه‌ای با بیش از ۳۲٬۷۶۷ نویسه، یا بیش از ۱۰۰ مگابایت پس از باز شدن',
   importTooMany: '{name} ‏{n} ردیف دارد: اینجا هر بار حداکثر {most} ردیف درون‌بُرد می‌شود. آن را به فایل‌هایی با {most} ردیف یا کمتر تقسیم کنید.',
   importColumnLetter: 'ستون {letter}',
   importFileRows: '{name}: ‏{n} ردیف',

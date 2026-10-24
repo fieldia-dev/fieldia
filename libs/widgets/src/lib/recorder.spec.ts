@@ -53,7 +53,7 @@ class Recorder {
   stop() {
     this.state = 'inactive';
     setTimeout(() => {
-      for (const listener of this.listeners['dataavailable'] ?? []) listener(Object.assign(new Event('dataavailable'), { data: new Blob(['abcd'], { type: this.mimeType }) }));
+      for (const listener of this.listeners['dataavailable'] ?? []) listener(Object.assign(new Event('dataavailable'), { data: new Blob([new Uint8Array([0x1a, 0x45, 0xdf, 0xa3])], { type: this.mimeType }) }));
       for (const listener of this.listeners['stop'] ?? []) listener(new Event('stop'));
     }, 5);
   }
@@ -158,7 +158,7 @@ describe('Record beside a file field’s picker', () => {
     expect(recorder()).toBeNull();
     // Inside the record, as a file picked is without a store: its media type plain, as a file field checks it.
     await until(() => value().length);
-    expect(value()).toEqual([{ name: 'Voice note 2026-10-21 07.30.05.webm', type: 'audio/webm', size: 4, data: 'YWJjZA==' }]);
+    expect(value()).toEqual([{ name: 'Voice note 2026-10-21 07.30.05.webm', type: 'audio/webm', size: 4, data: 'GkXfow==' }]);
     expect(document.activeElement).toBe(record);
     // It plays in the field, in place, as any voice note does.
     expect(el.querySelector('audio.fd-file-player')?.getAttribute('aria-label')).toBe('Voice note 2026-10-21 07.30.05.webm');

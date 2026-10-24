@@ -1,4 +1,4 @@
-import type { OpenRequest, OpenResult, Page, PostedMessage, SayUndo, Tone, Values } from '@fieldia/core';
+import { LINK_URL, safeUrl, type OpenRequest, type OpenResult, type Page, type PostedMessage, type SayUndo, type Tone, type Values } from '@fieldia/core';
 import { FIRST_FIELD, focusField, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
 import { stayed } from './discard';
 import type { Breadcrumb } from './record-bar';
@@ -151,7 +151,7 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
 function throughOpener(opener: Opener, crumb: Breadcrumb, doc: Document): Breadcrumb {
   const go = () => {
     if (crumb.open) crumb.open();
-    else if (crumb.href !== undefined) doc.defaultView?.location.assign(crumb.href);
+    else if (safeUrl(crumb.href, LINK_URL)) doc.defaultView?.location.assign(safeUrl(crumb.href, LINK_URL) as string);
   };
   return { ...crumb, open: () => (opener.leaveNow() ? go() : void opener.leave().then((yes) => yes && go())) };
 }

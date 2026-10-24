@@ -1,4 +1,4 @@
-import { ANY_FUNCTION, compileModifier, expressionContext, isRightToLeft, listComma, type FileValue, type LineField, type Locale, type MoneyLook, type Page, type Pin, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, ANY_FUNCTION, compileModifier, expressionContext, isRightToLeft, listComma, type FileValue, type LineField, type Locale, type MoneyLook, type Page, type Pin, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
 import { currencyOf, displayValue, drawIcon, moneyReads, writeMoney, type IconSet } from '@fieldia/widgets';
 import { MAP_ICONS } from './map-icons';
 
@@ -134,7 +134,7 @@ export function makePins(options: PinsOptions): Pins {
         img.className = 'fd-map-face-photo';
         img.alt = '';
         img.decoding = 'async';
-        img.src = source;
+        img.src = safeUrl(source, PICTURE_URL) ?? '';
         element.append(img);
       } else element.append(span('fd-map-face-photo', ...[drawIcon(doc, 'user', icons)].filter((n): n is SVGSVGElement => !!n)));
       if (said) element.append(ownWay(span('fd-map-face-text', said)));
@@ -240,6 +240,6 @@ export function pinText(page: Page, name: string, values: Values, locale: Locale
 export function imageSource(value: Value | undefined): string {
   const file = (Array.isArray(value) ? value[0] : value) as FileValue | string | null | undefined;
   if (!file) return '';
-  if (typeof file === 'string') return file;
-  return file.data ? `data:${file.type};base64,${file.data}` : (file.url ?? '');
+  if (typeof file === 'string') return safeUrl(file, PICTURE_URL) ?? '';
+  return safeUrl(file.data ? `data:${file.type};base64,${file.data}` : file.url, PICTURE_URL) ?? '';
 }

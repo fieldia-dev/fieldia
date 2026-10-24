@@ -1,4 +1,4 @@
-import { pageWords, type Page } from '@fieldia/core';
+import { csvCell, csvWords, pageWords, type Page } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { languagesOf, languageTag, pageLanguage } from './translations';
@@ -23,7 +23,10 @@ function splitOf(text: string): string {
   return Object.keys(counts).reduce((best, split) => (counts[split] > counts[best] ? split : best), ',');
 }
 
-/** Rows of fields, as RFC 4180 has them: fields in quotes may hold the split, line breaks and doubled quotes. Blank lines are skipped. */
+/**
+ * Rows of fields, as RFC 4180 has them: fields in quotes may hold the split, line breaks and doubled quotes. Blank lines
+ * are skipped. Each field as it was written: a formula's start a file kept as words (`toCsv`, `csvCell`) without its '.
+ */
 export function parseCsv(input: string): string[][] {
   const text = input.replace(/^\uFEFF/, '');
   const split = splitOf(text);
@@ -32,7 +35,7 @@ export function parseCsv(input: string): string[][] {
   let field = '';
   let at = 0;
   const endRow = () => {
-    row.push(field);
+    row.push(csvWords(field));
     if (row.length > 1 || row[0] !== '') rows.push(row);
     row = [];
     field = '';
@@ -60,7 +63,7 @@ export function parseCsv(input: string): string[][] {
       }
       at = end;
     } else if (char === split) {
-      row.push(field);
+      row.push(csvWords(field));
       field = '';
       at++;
     } else if (char === '\n' || char === '\r') {
@@ -76,10 +79,13 @@ export function parseCsv(input: string): string[][] {
   return rows;
 }
 
-/** Rows as CSV: a field with a comma, quote, tab, semicolon, line break or space at an end goes in quotes, its quotes doubled. */
+/**
+ * Rows as CSV, each field as `csvCell` writes one: words a spreadsheet would run as a formula ("=…", "+…", "-…", "@…")
+ * kept as words with a `'` before them, read back without it; a field with a comma, quote, tab, semicolon, line break
+ * or space at an end in quotes, its quotes doubled.
+ */
 export function toCsv(rows: string[][]): string {
-  const field = (text: string) => (/[",;\t\r\n]|^\s|\s$/.test(text) ? `"${text.replace(/"/g, '""')}"` : text);
-  return rows.map((row) => row.map(field).join(',') + '\r\n').join('');
+  return rows.map((row) => row.map((text) => csvCell(text, ',;\t')).join(',') + '\r\n').join('');
 }
 
 /** The page's words and their translations as CSV: the page's language, then each language it keeps. */

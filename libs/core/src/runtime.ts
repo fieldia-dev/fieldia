@@ -344,6 +344,7 @@ export {
   cleanPastedNumber,
   readDuration,
   readDate,
+  DATE_TEXT_MOST,
   foldTyped,
   couldBeMonth,
   monthNamed,
@@ -385,7 +386,13 @@ export { formApprovalsPart, type ApprovalStatus, type FormApproval, type FormApp
 export { formLanguagesPart, hasLanguages, languagesOf, type FormLanguagesPart, type Translated } from './lib/record/languages';
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
-export { fieldPattern } from './lib/format/pattern';
+export { fieldPattern, patternRisk, PATTERN_MOST, rulePattern } from './lib/format/pattern';
+// The most a value the page works out may hold: text's characters, a list's items.
+export { COMPUTED_MOST } from './lib/record/compute';
+// Every address a link, a picture, a player, a frame or a page sent elsewhere is given: its scheme one the place allows.
+export { DOWNLOAD_URL, LINK_URL, MEDIA_URL, PICTURE_URL, safeUrl, type UrlKind } from './lib/safe-url';
+// Every cell of a CSV file written, words a spreadsheet would run as a formula kept as words; read back as they were.
+export { csvCell, csvWords, type CsvValue } from './lib/csv';
 // Code a page loads the first time it uses it (a part): the loader the widgets' and the viewer's parts are made with.
 export { lazyPart, partWith, partsOf, partsComeByScriptTag, settleParts, type Part } from './lib/parts';
 // The bodies of Fieldia's functions beyond the plain ones, loaded before a page that calls one is drawn.

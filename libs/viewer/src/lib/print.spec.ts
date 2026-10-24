@@ -394,7 +394,7 @@ describe('the app’s own file', () => {
   });
 
   it('a PDF is shown over the record in the browser’s viewer, with Download; closed, its bytes are let go of', async () => {
-    const host = await mount({ onAction: () => ({ file: { name: 'INV_2026_0042.pdf', type: 'application/pdf', bytes: new Uint8Array([37, 80, 68, 70]) } }) });
+    const host = await mount({ onAction: () => ({ file: { name: 'INV_2026_0042.pdf', type: 'application/pdf', bytes: new Uint8Array([37, 80, 68, 70, 45, 49, 46, 52]) } }) });
     (host.querySelector('.fd-record-gear') as HTMLButtonElement).click();
     (host.querySelector('[data-node="m-pdf"]') as HTMLButtonElement).click();
     await until(() => host.querySelector('.fd-file-viewer'));

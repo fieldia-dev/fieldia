@@ -741,6 +741,7 @@ export function couldBeMonth(word: string, locale?: string): boolean {
 export function readDate(text: string, options: { order?: DateOrder; time?: boolean; locale?: string; zone?: string } = {}): DateRead {
   const t = folded(text).trim();
   if (!t) return { ok: true, value: null };
+  if (t.length > DATE_TEXT_MOST) return { ok: false, problem: 'unfinished' };
   const instant = INSTANT.exec(t);
   if (instant) {
     const [, y, mo, d, h, mi, seconds = '0', fraction = '0', zone] = instant;
@@ -776,6 +777,13 @@ export function readDate(text: string, options: { order?: DateOrder; time?: bool
   // A wall clock's time is one moment where it is read: one the clocks skip or pass twice is said, never moved.
   return read.ok && read.value !== null && options.time ? (clocksMove(read.value, options.zone) ?? read) : read;
 }
+
+/**
+ * The most characters a date takes as people write one, its time and its zone's mark with it — "Wednesday, 30 September
+ * 2026, 14:30 Central European Summer Time" is 66: longer text is no date, said at once, never read by every pattern in
+ * turn (40,000 characters took seconds).
+ */
+export const DATE_TEXT_MOST = 100;
 
 /** A time after a date, and an offset from UTC after it: "… 02:30 +01:00", "… 2:30 pm UTC-5". */
 const OFFSET_AFTER_TIME = new RegExp(`^(.*\\d{1,2}\\s*[:hH.]\\s*\\d{2}(?:\\s*(?:${HALF}))?)\\s*(?:UTC|GMT)?\\s*([+\\-\\u2212])(\\d{1,2})(?::?(\\d{2}))?$`, 'i');

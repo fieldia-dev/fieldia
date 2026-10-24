@@ -927,7 +927,12 @@ a decimal comma where the file is parted by semicolons, as a German or French
 spreadsheet reads it) — each amount's currency in a column of its own beside
 it (`Lifetime value currency`), or in the header where the field has one
 (`Amount (EGP)`), and its days and times as ISO 8601 writes them
-(`2026-10-15`, `2026-10-15 14:30`, on the clock the list shows). With `"bulkEdit": true` (or the fields) **Edit** sets one field
+(`2026-10-15`, `2026-10-15 14:30`, on the clock the list shows). Words a
+spreadsheet would run as a formula — a value starting `=`, `+`, `-`, `@`, a tab
+or a line return, or their fullwidth forms — are kept as words with a `'` before
+them (`'=HYPERLINK(…)`), so a colleague opening the file runs nothing another
+person typed; numbers stay numbers. Import, and `csvWords` from `@fieldia/core`,
+read such a cell back without its `'` (`csvCell` writes one). With `"bulkEdit": true` (or the fields) **Edit** sets one field
 to one value on the records chosen, after a question, by `writeMany` or a save
 per record, each record's `can` kept, and names what it could not change and
 why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
@@ -1454,7 +1459,12 @@ of Fieldia's in it) places an iframe of your form's page where its tag stands,
 and your page's `<fieldia-form frame>` tells it its height as it changes, so the
 frame grows and shrinks with the form, and `fieldia-ready`, `fieldia-step` and
 `fieldia-send` (the reference, never the answers) as events on the iframe, from
-your page's origin only. The tag passes on `data-locale`, `data-theme`,
+your page's origin only — and to the sites your
+`<fieldia-form frame allowed-origins="https://partner.example">` names alone (and
+your own): another site that frames it is told nothing, its height neither, and
+the console says so; `allowed-origins="*"` tells any, never by default. Send
+`Content-Security-Policy: frame-ancestors …` with your form's page to keep other
+sites from framing it at all. The tag passes on `data-locale`, `data-theme`,
 `data-skin` and the page's campaign parameters (`utm_*`, or those `data-params`
 names), for a page that fills hidden fields from its link.
 

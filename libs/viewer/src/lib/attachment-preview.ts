@@ -1,5 +1,5 @@
-import type { AttachmentPreview, DataSource, FileValue, Form, FormState, Page, RecordId } from '@fieldia/core';
-import { fileShown } from '@fieldia/widgets';
+import { MEDIA_URL, safeUrl, type AttachmentPreview, type DataSource, type FileValue, type Form, type FormState, type Page, type RecordId } from '@fieldia/core';
+import { filesPart, type FilesPart } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
 
@@ -14,9 +14,6 @@ export interface PreviewContext {
   labels: ViewerLabels;
   fill(template: string, values: Record<string, string | number>): string;
 }
-
-/** A file the browser shows itself: a picture or a PDF. */
-const showable = (file: FileValue) => /^image\//.test(file.type) || /pdf/i.test(file.type) || /\.pdf$/i.test(file.name);
 
 const filesOf = (value: unknown): FileValue[] => (Array.isArray(value) ? (value as FileValue[]) : value ? [value as FileValue] : []).filter((file) => file && typeof file === 'object' && 'name' in file);
 
@@ -47,19 +44,29 @@ export function attachmentPreview(context: PreviewContext): { element: HTMLEleme
   let status: FormState['status'] | undefined;
   let held: unknown;
 
+  /** The files part, which shows a file in place: its formats, each file's bytes checked against its own (`fileShown`). */
+  let part: FilesPart | null = null;
+  let takes = 0;
+
   function draw() {
     shown?.free();
     shown = null;
     const file = files[at];
-    if (!file) return body.replaceChildren();
-    const made = fileShown(context.doc, file);
+    if (!file || !part) return body.replaceChildren();
+    const made = part.fileShown(context.doc, file);
     shown = made;
     body.replaceChildren(...(made ? [made.element] : []));
     setText(name, file.name);
     setText(count, files.length > 1 ? context.fill(labels.recordAt, { n: at + 1, total: files.length }) : '');
     setHidden(previous, files.length < 2);
     setHidden(next, files.length < 2);
-    setAttr(open, 'href', made?.url ?? null);
+    // Opened in a tab of its own once it is known to be what it says: never a picture drawn from markup.
+    const opens = (url: string) => {
+      setAttr(open, 'href', safeUrl(url, MEDIA_URL) ?? null);
+      setHidden(open, !open.hasAttribute('href'));
+    };
+    opens(made?.url ?? '');
+    void made?.ready.then((url) => shown === made && opens(url));
     setAttr(element, 'aria-label', context.fill(labels.attachment, { name: file.name }));
   }
   const step = (by: number) => {
@@ -69,11 +76,22 @@ export function attachmentPreview(context: PreviewContext): { element: HTMLEleme
   previous.addEventListener('click', () => step(-1));
   next.addEventListener('click', () => step(1));
 
+  /**
+   * The files a browser shows itself — a picture or a PDF, by the formats Fieldia shows, never HTML named .pdf — once
+   * the files part has come; none, said by nothing shown, where it cannot.
+   */
   const take = (found: FileValue[]) => {
-    files = found.filter(showable);
-    at = 0;
-    draw();
-    show();
+    const mine = ++takes;
+    const shownBy = (loaded: FilesPart | null) => {
+      if (mine !== takes) return;
+      part = loaded;
+      files = loaded ? found.filter((file) => /^(image|pdf)$/.test(loaded.formatOf(file)?.kind ?? '')) : [];
+      at = 0;
+      draw();
+      show();
+    };
+    if (!found.length || filesPart.loaded) return shownBy(filesPart.loaded ?? null);
+    filesPart.load().then(shownBy, () => shownBy(null));
   };
   const show = () => setHidden(element, form.node('#preview').invisible || !files.length);
 

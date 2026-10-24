@@ -1,4 +1,4 @@
-import type { RecordedKind } from '@fieldia/core';
+import { MEDIA_URL, safeUrl, type RecordedKind } from '@fieldia/core';
 import { keepTabIn } from './focus-trap';
 import { fillIn, maker, setHidden, setText } from './kind-parts';
 import type { WidgetLabels } from './labels';
@@ -296,7 +296,7 @@ export function openRecorder(context: RecorderContext): Recorder {
     const url = URL.createObjectURL(blob);
     made = { file, url };
     // Played back in the browser's own player, named by what it is.
-    const player = make(film ? 'video' : 'audio', { src: url, controls: '', preload: 'metadata', 'aria-label': name, ...(film ? { playsinline: '' } : {}) });
+    const player = make(film ? 'video' : 'audio', { src: safeUrl(url, MEDIA_URL), controls: '', preload: 'metadata', 'aria-label': name, ...(film ? { playsinline: '' } : {}) });
     review.replaceChildren(player);
     setHidden(review, false);
     setHidden(stage, true);

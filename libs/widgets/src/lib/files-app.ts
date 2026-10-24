@@ -1,4 +1,5 @@
-import type { ActionFile, FileValue } from '@fieldia/core';
+import { DOWNLOAD_URL, safeUrl, type ActionFile, type FileValue } from '@fieldia/core';
+import { formatOf } from './file-formats';
 import { viewFiles } from './files';
 import { maker } from './kind-parts';
 import type { WidgetLabels } from './labels';
@@ -25,6 +26,13 @@ export interface AppFileContext {
   file: ActionFile;
 }
 
+/** Bytes as base64, a piece at a time: a large file never passes as one call's arguments. */
+function base64(bytes: Uint8Array): string {
+  let text = '';
+  for (let at = 0; at < bytes.length; at += 0x8000) text += String.fromCharCode(...bytes.subarray(at, at + 0x8000));
+  return btoa(text);
+}
+
 /** Shown, or saved: once it is on the screen, or handed to the browser to save. */
 export function showAppFile(context: AppFileContext): void {
   const { doc, file } = context;
@@ -41,15 +49,19 @@ export function showAppFile(context: AppFileContext): void {
   }
   const free = () => url.startsWith('blob:') && URL.revokeObjectURL(url);
   const save = () => {
-    const link = maker(doc)('a', { href: url, download: file.name, hidden: '' });
+    const link = maker(doc)('a', { href: safeUrl(url, DOWNLOAD_URL), download: file.name, hidden: '' });
     (doc.body ?? doc.documentElement).append(link);
     link.click();
     link.remove();
     // Let go of the bytes once the browser has taken them.
     setTimeout(free, 60000);
   };
-  if (file.show === 'download' || !(/pdf/i.test(type) || /^image\//.test(type))) return save();
-  const shown: FileValue = { name: file.name, type, size, url };
+  // Shown only as a format Fieldia shows (`formatOf`); the dialog reads its bytes before it does.
+  if (file.show === 'download' || !/^(pdf|image)$/.test(formatOf({ name: file.name, type })?.kind ?? '')) return save();
+  // Its bytes, where they came with it, shown from themselves (`shownFile` checks them); an address alone is read first.
+  const given = file.bytes;
+  const held = file.data ?? (given instanceof ArrayBuffer || ArrayBuffer.isView(given) ? base64(new Uint8Array(given as ArrayBuffer)) : undefined);
+  const shown: FileValue = { name: file.name, type, size, url, ...(held ? { data: held } : {}) };
   // Back where the person was once it is closed: the gear's button, as a menu's item hands the focus back to it.
   const before = doc.activeElement as HTMLElement | null;
   viewFiles({ doc, words: context.labels, id: `fd-file-${Date.now().toString(36)}`, files: [shown], at: 0, home: context.home, back: () => (before?.isConnected ? before : null), closed: free });

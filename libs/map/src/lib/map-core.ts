@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import type { Locale } from '@fieldia/core';
+import { LINK_URL, PICTURE_URL, safeUrl, type Locale } from '@fieldia/core';
 import type { LatLng } from './geo';
 import { fill, type MapLabels } from './labels';
 import { loadLeaflet, tileLayer, type LeafletModule } from './leaflet';
@@ -135,13 +135,13 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     const mark = doc.createElement(provider.logo.href ? 'a' : 'span');
     mark.className = 'fd-map-logo';
     if (mark instanceof HTMLAnchorElement && provider.logo.href) {
-      mark.href = provider.logo.href;
+      mark.href = safeUrl(provider.logo.href, LINK_URL) ?? '';
       mark.target = '_blank';
       mark.rel = 'noopener';
     }
     if (provider.logo.image) {
       const img = doc.createElement('img');
-      img.src = provider.logo.image;
+      img.src = safeUrl(provider.logo.image, PICTURE_URL) ?? '';
       img.alt = provider.logo.text;
       mark.append(img);
     } else {
@@ -202,7 +202,7 @@ export function createMapBox(options: MapBoxOptions): MapBox {
       if (i) credits.append(' · ');
       if (credit.href) {
         const link = doc.createElement('a');
-        link.href = credit.href;
+        link.href = safeUrl(credit.href, LINK_URL) ?? '';
         link.target = '_blank';
         link.rel = 'noopener';
         link.textContent = credit.text;

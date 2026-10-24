@@ -77,6 +77,7 @@ export const tr: Messages = {
   changedBy: '{name} değiştirdi: {fields}.',
   discardChanges: 'Değişiklikleriniz atılsın mı?',
   recordReplaced: 'Şimdi başka bir kayıt gösteriliyor: bu adımların geri kalanı çalıştırılmadı.',
+  addressRefused: 'Bu adres açılmadı: yalnızca bir web sayfası, bir e-posta adresi ya da bir telefon numarası açılır.',
   pressDone: 'Tamamlandı: {label}',
   pressArchived: 'Arşivlendi.',
   pressUnarchived: 'Arşivden çıkarıldı.',

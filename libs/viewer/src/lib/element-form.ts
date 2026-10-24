@@ -65,14 +65,39 @@ export function actionSource(action: string, fetcher: typeof fetch = globalThis.
   };
 }
 
-/** Say something to the page round the frame: its height, and what the form did. */
+/** A site as `allowed-origins` names it — "https://partner.example/" is https://partner.example — or "*". */
+const originOf = (written: string) => {
+  try {
+    return written === '*' ? written : new URL(written).origin;
+  } catch {
+    return written;
+  }
+};
+
+/** The frames told once that the page round them is not one the form may tell anything. */
+const unheard = new WeakSet<FieldiaFormElement>();
+
+/**
+ * Say something to the page round the frame: its height, and what the form did — to the page that placed the frame
+ * alone, where it said which it is (`fieldia-origin`, as fieldia-embed.js passes it), and only where that is this page's
+ * own site or one the element names in `allowed-origins` ("https://partner.example https://shop.example"; "*" for any
+ * site, never so unless written). Any other is told nothing, its height neither — said once in the console.
+ */
 function toFrame(element: FieldiaFormElement, message: Record<string, unknown>) {
   const win = element.ownerDocument.defaultView;
   if (!win || win.parent === win) return;
   const params = new URLSearchParams(win.location.search);
-  // Only to the page that placed the frame, where it said which it is.
+  const own = win.location.origin;
+  const asked = params.get('fieldia-origin') ?? '';
+  const allowed = (element.getAttribute('allowed-origins') ?? '').split(/\s+/).filter(Boolean).map(originOf);
+  const to = asked || (allowed.includes('*') ? '*' : own);
+  if (to !== own && !allowed.includes('*') && !allowed.includes(to)) {
+    if (!unheard.has(element)) console.warn(`Fieldia: this form is framed by ${to || 'a page that did not say its site'}, which its allowed-origins does not name: that page is told nothing of it, its height neither.`);
+    unheard.add(element);
+    return;
+  }
   const { type, ...told } = message;
-  win.parent.postMessage({ fieldia: type, frame: params.get('fieldia-frame') ?? '', ...told }, params.get('fieldia-origin') || '*');
+  win.parent.postMessage({ fieldia: type, frame: params.get('fieldia-frame') ?? '', ...told }, to);
 }
 
 /** In a frame: the form's height told as it changes, so the frame grows and shrinks with it. */

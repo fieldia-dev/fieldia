@@ -153,7 +153,8 @@ function normalize(value: unknown): unknown {
 }
 
 /**
- * Get a nested value from an object using dot notation
+ * Get a nested value from an object using dot notation: each part an own property of what it is read on — a record's
+ * field, a link's name, a text's length — never one every object inherits (`constructor`, `__proto__`, `toString`).
  *
  * @param obj - The object to traverse
  * @param path - Dot-separated path (e.g., 'partner_id.country_id.name')
@@ -171,7 +172,7 @@ function getNestedValue(obj: unknown, path: string): unknown {
     if (current === null || current === undefined) {
       return undefined;
     }
-    current = (current as Record<string, unknown>)[part];
+    current = Object.prototype.hasOwnProperty.call(current, part) ? (current as Record<string, unknown>)[part] : undefined;
   }
 
   return current;

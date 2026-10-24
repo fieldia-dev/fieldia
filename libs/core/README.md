@@ -113,6 +113,37 @@ await wordsReady('tr');
 const form = createForm({ page, messages: MESSAGES.tr });
 ```
 
+## What a page and its values cannot make Fieldia do
+
+A page may be written by an admin, an AI agent or an imported schema, and its
+values by anyone; neither can make a form run script or take seconds:
+
+- **Addresses.** Every address a link, a picture, a player, a frame or a page
+  sent elsewhere is given goes through `safeUrl(value, allowed, base?)`: read
+  with the browser's own URL parser (tabs, line breaks and control characters
+  dropped, the scheme in any case), and kept only when its scheme is one the
+  place allows — `LINK_URL` (http, https, mailto, tel, a path of this site),
+  `PICTURE_URL` (and a blob the page made, a picture written as data),
+  `MEDIA_URL`, `DOWNLOAD_URL`. An `openUrl` step that gives any other opens
+  nothing and says so ("This address was not opened: …"); `checkPage` and
+  `validatePage` refuse one the page writes (`'javascript:…'`).
+- **Patterns.** A field's `pattern` and an answer rule's are refused —
+  `checkPage` and `validatePage` name them, an answer is never tried on them —
+  where they could backtrack for seconds: a part that repeats holding a repeat
+  that can take what its next round starts with (`([a-z]+\s?)*`, `(a+)+`), one
+  that may match nothing (`(a?)*`) or whose choices start alike (`(a|ab)*`), or
+  two repeats without end side by side, only optional parts between them
+  (`\d+\d+`, `\w+\s*\w+`). Every pattern whose repeats each start with what
+  the one before cannot take is fine — `(-[A-Za-z0-9]{2,8})*`,
+  `[^@\s]+@[^@\s]+\.[^@\s]+`. An answer longer than `PATTERN_MOST` (1,000)
+  characters is not of its pattern. On your server, check answers with the same
+  `checkValue`, or run a page's patterns under RE2 or with a time limit.
+- **Sizes.** Text read as a date is at most `DATE_TEXT_MOST` (100) characters;
+  a value the page works out (`compute`, `set`, `setWhen`) at most
+  `COMPUTED_MOST` — 100,000 characters, 10,000 items — or none.
+- **Names.** A field is never named `constructor`, `__proto__` or `prototype`,
+  and an expression reads a value's own properties alone.
+
 ## A starting page from a schema
 
 `pageFromSchema(input, options)` makes a page from what an app already has: a

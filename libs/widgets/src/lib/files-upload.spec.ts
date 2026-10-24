@@ -1,7 +1,7 @@
 import { createForm, saveRefused, type DataSource, type Field, type FieldNode, type FileValue, type Page, type UploadedFile, type UploadFile, type UploadRequest } from '@fieldia/core';
 import { createWidget } from './widgets';
 import { INLINE_FILE_WARNING } from './files';
-import { fileShown } from './file-shown';
+import { fileShown } from './file-formats';
 import { WIDGET_LABELS } from './labels';
 
 /**
@@ -243,8 +243,9 @@ describe('a file field where the source does not store files', () => {
     warn.mockRestore();
   });
 
-  it('shows a stored file whose link holds its bytes from a blob, as a browser shows a PDF', () => {
-    const shown = fileShown(document, { name: 'Plan.pdf', type: 'application/pdf', size: 4, url: 'data:application/pdf;base64,JVBERg==' });
+  it('shows a stored file whose link holds its bytes from a blob, as a browser shows a PDF', async () => {
+    const shown = fileShown(document, { name: 'Plan.pdf', type: 'application/pdf', size: 4, url: 'data:application/pdf;base64,JVBERi0=' });
+    expect(await shown?.ready).toBe('blob:1');
     expect(shown?.url).toBe('blob:1');
     expect(shown?.element.getAttribute('src')).toMatch(/^blob:1#/);
   });

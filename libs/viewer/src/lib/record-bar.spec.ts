@@ -63,7 +63,12 @@ const people = () =>
     attachments: { 'hr.employee:2': [{ name: 'notes.txt', type: 'text/plain', size: 4, url: '/notes.txt' }, { name: 'contract.pdf', type: 'application/pdf', size: 900, url: '/contract.pdf' }, { name: 'photo.png', type: 'image/png', size: 300, url: '/photo.png' }] },
   });
 
-beforeAll(() => Object.assign(URL, { createObjectURL: () => 'blob:1', revokeObjectURL: () => undefined }));
+beforeAll(() => {
+  Object.assign(URL, { createObjectURL: () => 'blob:1', revokeObjectURL: () => undefined });
+  // The app's own site answers its files: the contract a PDF's bytes.
+  const pdf = Uint8Array.from('%PDF-1.4\n%%EOF', (c) => c.charCodeAt(0));
+  Object.assign(globalThis, { fetch: async (url: string) => ({ ok: url === '/contract.pdf', arrayBuffer: async () => pdf.buffer }) });
+});
 
 let handle: ViewerHandle | null = null;
 afterEach(() => {
@@ -298,8 +303,10 @@ describe('the attachment beside the sheet', () => {
     const host = await mount({ page: withPreview({}), recordId: 2 });
     await until(() => !preview(host).hidden);
     expect(preview(host).getAttribute('aria-label')).toBe('Attachment: contract.pdf');
-    expect(preview(host).querySelector('iframe')?.getAttribute('src')).toBe('/contract.pdf#view=FitH&navpanes=0');
-    expect(preview(host).querySelector('a.fd-attachment-open')?.getAttribute('href')).toBe('/contract.pdf');
+    // A PDF at the app's own address is read first, and framed from its bytes once they are a PDF's (`shownFile`).
+    await until(() => preview(host).querySelector('iframe')?.getAttribute('src'));
+    expect(preview(host).querySelector('iframe')?.getAttribute('src')).toBe('blob:1#view=FitH&navpanes=0');
+    expect(preview(host).querySelector('a.fd-attachment-open')?.getAttribute('href')).toBe('blob:1');
     expect(preview(host).querySelector('.fd-attachment-count')?.textContent).toBe('1 / 2');
     (preview(host).querySelector('[aria-label="Next attachment"]') as HTMLButtonElement).click();
     expect(preview(host).querySelector('img')?.getAttribute('src')).toBe('/photo.png');
@@ -318,7 +325,7 @@ describe('the attachment beside the sheet', () => {
   it('shows a file field’s file, as it changes', async () => {
     const host = await mount({ page: withPreview({ field: 'cv' }) });
     expect(preview(host).hidden).toBe(true);
-    handle?.form.setValue('cv', [{ name: 'cv.pdf', type: 'application/pdf', size: 3, data: 'JVBERg==' }]);
+    handle?.form.setValue('cv', [{ name: 'cv.pdf', type: 'application/pdf', size: 3, data: 'JVBERi0=' }]);
     expect(preview(host).hidden).toBe(false);
     expect(preview(host).querySelector('.fd-attachment-name')?.textContent).toBe('cv.pdf');
     expect(preview(host).querySelector('iframe')?.getAttribute('src')).toBe('blob:1#view=FitH&navpanes=0');

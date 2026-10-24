@@ -5,6 +5,7 @@ import { localDay } from '../expression/functions';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { isNumber } from '../expression/operations';
 import { foldDigits, stripMarks } from './input-rules';
+import { PATTERN_MOST, rulePattern } from '../format/pattern';
 import { fillMessage, type MessageKey, type Messages } from './messages';
 import { isEmpty, lineKind, type Line, type RelatedRecord, type Value } from './values';
 
@@ -20,7 +21,7 @@ import { isEmpty, lineKind, type Line, type RelatedRecord, type Value } from './
 export interface CompiledRule {
   readonly rule: AnswerRule;
   readonly when: CompiledModifier;
-  readonly pattern: RegExp | null;
+  readonly pattern: RegExp | Error | null;
   readonly holds: CompiledModifier | null;
 }
 
@@ -28,8 +29,8 @@ export function compileRules(rules: readonly AnswerRule[] | undefined, functions
   return (rules ?? []).map((rule) => ({
     rule,
     when: compileModifier(rule.when ?? true, functions),
-    // A pattern is about the whole answer, not a part of it.
-    pattern: rule.pattern === undefined ? null : new RegExp(`^(?:${rule.pattern})$`),
+    // A pattern is about the whole answer, not a part of it; one that could take seconds is never tried (checkPage names it).
+    pattern: rule.pattern === undefined ? null : rulePattern(rule.pattern),
     holds: rule.holds === undefined ? null : compileModifier(rule.holds, functions),
   }));
 }
@@ -69,7 +70,7 @@ function brokenAsk({ rule, pattern }: CompiledRule, field: Field, value: Value, 
   if (text !== null && rule.minLength !== undefined && text.length < rule.minLength) return { say: 'minLength', values: { min: rule.minLength } };
   if (text !== null && rule.maxLength !== undefined && text.length > rule.maxLength) return { say: 'maxLength', values: { max: rule.maxLength } };
   // Its digits as 0-9, no direction marks, trimmed: "١١٥١١" is five digits.
-  if (pattern && (text !== null || isNumber(value)) && !pattern.test(text !== null ? foldDigits(stripMarks(text)).trim() : String(value))) return { say: 'pattern' };
+  if (pattern instanceof RegExp && (text !== null || isNumber(value)) && ((text?.length ?? 0) > PATTERN_MOST || !pattern.test(text !== null ? foldDigits(stripMarks(text)).trim() : String(value)))) return { say: 'pattern' };
   if (text !== null && rule.endsWith !== undefined && !text.trim().toLowerCase().endsWith(rule.endsWith.toLowerCase())) {
     return { say: 'endsWith', values: { ending: rule.endsWith } };
   }

@@ -1,3 +1,4 @@
+import { safeUrl } from '@fieldia/core';
 import { boxPurpose, maker, wordsFor } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 
@@ -12,7 +13,6 @@ import type { WidgetFactory } from './widgets';
 
 /** A frame's height: the page's, in pixels, or 480. */
 export const heightOf = (value: unknown) => (typeof value === 'number' && value > 0 ? value : 480);
-const isWeb = (text: string) => /^https?:\/\//i.test(text);
 
 export const embedWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
   const make = maker(document);
@@ -21,7 +21,7 @@ export const embedWidget: WidgetFactory = ({ form, name, field, node, id, docume
   if (node.placeholder) input.placeholder = node.placeholder;
   input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
   // Its own scripts run, as an embedded deck's must; it cannot reach the form, nor leave the frame but for a new tab.
-  const frame = make('iframe', { class: 'fd-embed-frame', title: field.label, sandbox: 'allow-scripts allow-same-origin allow-popups allow-presentation', referrerpolicy: 'no-referrer', loading: 'lazy' });
+  const frame = make('iframe', { class: 'fd-embed-frame', title: field.label, sandbox: 'allow-scripts allow-popups allow-presentation', referrerpolicy: 'no-referrer', loading: 'lazy' });
   frame.style.height = `${heightOf(node.options?.['height'])}px`;
   const open = make('a', { class: 'fd-button fd-button-link fd-embed-open', target: '_blank', rel: 'noopener noreferrer', hidden: '' }, words.openInNewTab);
   const view = make('div', { class: 'fd-embed-view' });
@@ -34,14 +34,19 @@ export const embedWidget: WidgetFactory = ({ form, name, field, node, id, docume
       if (document.activeElement !== input && input.value !== (typeof state.value === 'string' ? state.value : '')) input.value = typeof state.value === 'string' ? state.value : '';
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
       input.hidden = state.readonly;
-      const web = isWeb(text) ? text : '';
+      const web = safeUrl(text, ['http', 'https']) ?? '';
       if (web !== shown) {
         shown = web;
-        if (web) frame.src = web;
+        // Another site's page keeps its own origin (a deck's sign-in, its storage), which the browser keeps apart from
+        // the form's; a page of this site's own runs with none — never as the form's page, which it could reach.
+        const here = document.defaultView?.location.href;
+        const own = !!here && new URL(web || here, here).origin === new URL(here).origin;
+        frame.setAttribute('sandbox', `allow-scripts${own ? '' : ' allow-same-origin'} allow-popups allow-presentation`);
+        if (web) frame.src = safeUrl(web, ['http', 'https']) ?? '';
         view.replaceChildren(...(web ? [frame] : []));
       }
       open.hidden = !web;
-      if (web) open.href = web;
+      if (web) open.href = safeUrl(web, ['http', 'https']) ?? '';
     },
   };
 };

@@ -81,6 +81,7 @@ export const ur: Messages = {
   changedBy: '{name} نے {fields} میں تبدیلی کی۔',
   discardChanges: 'اپنی تبدیلیاں ترک کریں؟',
   recordReplaced: 'اب دوسرا ریکارڈ دکھایا جا رہا ہے: ان مراحل کا باقی حصہ نہیں چلا۔',
+  addressRefused: 'یہ پتہ نہیں کھولا گیا: صرف ویب صفحہ، ای میل پتہ یا فون نمبر کھولا جاتا ہے۔',
   pressDone: 'ہو گیا: {label}',
   pressArchived: 'آرکائیو ہو گیا۔',
   pressUnarchived: 'آرکائیو سے نکال لیا گیا۔',

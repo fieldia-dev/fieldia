@@ -247,7 +247,8 @@ describe('read-only', () => {
 });
 
 describe('the viewer', () => {
-  const three = [stored('photo.png', 'image/png'), stored('notes.txt', 'text/plain'), { name: 'plan.pdf', type: 'application/pdf', size: 2048, url: 'https://files.example/plan.pdf' }];
+  // A photo whose bytes are a PNG's: the dialog shows only what its bytes say it is (`shownFile`).
+  const three = [stored('photo.png', 'image/png', 'iVBORw0KGgo='), stored('notes.txt', 'text/plain'), { name: 'plan.pdf', type: 'application/pdf', size: 2048, url: 'https://files.example/plan.pdf' }];
   function opened(index = 0, options: { dir?: string } = {}) {
     const result = setup({ type: 'binary', multiple: true }, options);
     result.form.setValue('x', three);
@@ -263,9 +264,9 @@ describe('the viewer', () => {
     expect(document.getElementById(box.getAttribute('aria-labelledby') as string)?.textContent).toBe('photo.png');
     expect(box.contains(document.activeElement)).toBe(true);
     expect(text(box.querySelector('.fd-form-dialog-head'))).toContain('5 bytes · 1 of 3');
-    // An image whole, from an object URL of its data.
+    // An image whole, from an object URL of its data; downloaded from one of its own.
     const img = box.querySelector('.fd-file-viewer-body img') as HTMLImageElement;
-    expect(img.getAttribute('src')).toBe('blob:1');
+    expect(img.getAttribute('src')).toBe('blob:2');
     expect(box.querySelector('a[download]')?.getAttribute('href')).toBe('blob:1');
     key(box, 'Escape');
   });
@@ -273,7 +274,7 @@ describe('the viewer', () => {
   it('goes through the files with Previous and Next, and the arrows, freeing each object URL', async () => {
     const { box } = opened();
     (box.querySelector('[aria-label="Next"]') as HTMLButtonElement).click();
-    expect(revoked).toEqual(['blob:1']);
+    expect(revoked).toEqual(['blob:1', 'blob:2']);
     expect(text(box.querySelector('h2'))).toBe('notes.txt');
     await until(() => box.querySelector('pre')?.textContent);
     expect(box.querySelector('pre')?.textContent).toBe('hello');

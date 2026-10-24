@@ -30,6 +30,8 @@ export function embedFrame(script: HTMLScriptElement): HTMLIFrameElement | null 
   const src = script.dataset['src'];
   if (!src || !win) return null;
   const at = new URL(src, doc.baseURI);
+  // A form on the web, never a script: the one place an address is not `safeUrl`'s, the embed script carrying no core.
+  if (!/^https?:$/.test(at.protocol)) return null;
   const id = String(++frames);
   at.searchParams.set('fieldia-frame', id);
   at.searchParams.set('fieldia-origin', win.location.origin);

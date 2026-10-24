@@ -14,7 +14,9 @@ export { stillShown, whileShown } from './lib/shown';
 // File and picture fields, files on their way, photos made smaller and a signature's pad come in the files part, loaded
 // the first time a page shows one: `(await filesPart.load()).goingItem(…)`. Their types are here; their code is not. A
 // file shown as its dialog shows it (a sheet's attachment preview) is here, and so is shrinkPhoto, which asks for the part.
-export { fileShown, readFile, INLINE_FILE_WARNING, SHRINK_DEFAULTS } from './lib/file-shown';
+export { readFile, INLINE_FILE_WARNING, SHRINK_DEFAULTS } from './lib/file-shown';
+// How a file is shown in place — `fileShown`, `formatOf`, `shownFile` — is the files part's: `(await filesPart.load()).fileShown(…)`.
+export type { FileFormat, Shown, ShownKind } from './lib/file-formats';
 // A signature's evidence — the canonical form of the answers it signs, their SHA-256, its line under the signature —
 // comes in the evidence part, loaded only for a signature that signs answers: `(await evidencePart.load()).answersMatch(…)`.
 export type { SignedText } from './lib/signature-evidence';

@@ -1,4 +1,4 @@
-import { placesOf, placesOfCurrency, stripMarks, wallClock, wallDay, wallTime, type DataSource, type ExportedFile, type Field, type ListedRecord, type Locale, type RecordId, type ResolvedFilter, type SortOrder, type Value, type Values } from '@fieldia/core';
+import { csvCell, DOWNLOAD_URL, safeUrl, placesOf, placesOfCurrency, stripMarks, wallClock, wallDay, wallTime, type CsvValue, type DataSource, type ExportedFile, type Field, type ListedRecord, type Locale, type RecordId, type ResolvedFilter, type SortOrder, type Value, type Values } from '@fieldia/core';
 import { currencyOf, currencySymbol } from '@fieldia/widgets';
 import type { ViewerLabels } from './labels';
 import { xlsxOf, XLSX_TYPE, type SheetCell } from './xlsx';
@@ -73,10 +73,12 @@ export function csvSeparator(locale: Locale): string {
   }
 }
 
-/** Rows of words as a CSV file: quoted where a value needs it, a line break between rows, and a mark at its start that says UTF-8. */
-export function csvOf(rows: readonly (readonly string[])[], separator = ','): string {
-  const quoted = (value: string) => (value.includes(separator) || /["\r\n]|^\s|\s$/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
-  return `\ufeff${rows.map((row) => row.map(quoted).join(separator)).join('\r\n')}\r\n`;
+/**
+ * Rows as a CSV file: each cell as `csvCell` writes it — words a spreadsheet would run as a formula kept as words,
+ * quoted where a value needs it — a line break between rows, and a mark at its start that says UTF-8.
+ */
+export function csvOf(rows: readonly (readonly CsvValue[])[], separator = ','): string {
+  return `\ufeff${rows.map((row) => row.map((cell) => csvCell(cell, separator)).join(separator)).join('\r\n')}\r\n`;
 }
 
 const DAY = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/;
@@ -162,7 +164,7 @@ export function csvHeaders(list: ExportList): string[] {
  * sign; a day as 2026-10-15 and a time as 2026-10-15 14:30, on the clock the list shows; yes or no, and anything else,
  * in the words the list says it with.
  */
-export function csvCells(list: ExportList, name: string, values: Values, decimal = '.'): string[] {
+export function csvCells(list: ExportList, name: string, values: Values, decimal = '.'): CsvValue[] {
   const def = list.fields[name];
   const value = values[name];
   const own = ownCurrency(def);
@@ -173,7 +175,7 @@ export function csvCells(list: ExportList, name: string, values: Values, decimal
     const currency = def.type === 'monetary' ? currencyOf(def, values) : null;
     const field = def.type === 'integer' ? 0 : def.type === 'monetary' ? (def.digits?.[1] ?? placesOfCurrency(currency)) : (def.digits?.[1] ?? 0);
     const number = value.toFixed(placesFor(value, field)).replace('.', decimal);
-    return own ? [number, currency ?? ''] : [number];
+    return own ? [{ number }, currency ?? ''] : [{ number }];
   }
   if (typeof value === 'string' && def.type === 'date' && /^\d{4}-\d{2}-\d{2}/.test(value)) return [value.slice(0, 10)];
   if (typeof value === 'string' && def.type === 'datetime') {
@@ -224,7 +226,7 @@ export async function gather(list: Pick<ExportList, 'dataSource' | 'model' | 're
 export function saveFile(doc: Document, name: string, file: Blob | string): void {
   const url = typeof file === 'string' ? file : URL.createObjectURL(file);
   const link = doc.createElement('a');
-  link.href = url;
+  link.href = safeUrl(url, DOWNLOAD_URL) ?? '';
   link.download = name;
   link.hidden = true;
   (doc.body ?? doc.documentElement).append(link);

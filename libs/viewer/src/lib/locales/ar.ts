@@ -145,6 +145,7 @@ export const ar: ViewerLabels = {
   importDamaged: 'إنه تالف',
   importNoRows: 'لا يحتوي على أي صف',
   importNoUnzip: 'هذا المتصفح لا يفتح مصنفات Excel: احفظه بصيغة CSV',
+  importTooLarge: 'إنه يحوي أكثر مما يحويه جدول بيانات — خلية بأكثر من 32,767 حرفًا، أو أكثر من 100 ميغابايت بعد فتحه',
   importTooMany: 'في {name} ‏{n} صف: يمكن استيراد {most} صف على الأكثر هنا في المرة. قسّمه إلى ملفات من {most} صف أو أقل.',
   importColumnLetter: 'العمود {letter}',
   importFileRows: '{name}: ‏{n} من الصفوف',

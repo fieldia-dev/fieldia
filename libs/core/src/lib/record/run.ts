@@ -11,6 +11,8 @@ import type { PaidPayment, PaymentDue, PayRequest, ResolvedFilter } from './data
 import { resolveFilter } from './filter';
 import type { Facet } from './search';
 import { emptyValue, sameValue, structuredCopy, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
+import type { Messages } from './messages';
+import { LINK_URL, safeUrl } from '../safe-url';
 
 /**
  * The engine that runs steps — a button's, a moment's, or the app's own —
@@ -328,6 +330,8 @@ export interface RunScope {
 /** What a run reaches its form by: the form gives these. */
 export interface RunForm {
   readonly fields: Readonly<Record<string, Field>>;
+  /** The form's words, for what a step says it did not do. */
+  readonly messages: Messages;
   values(): Readonly<Values>;
   recordId(): RecordId | null;
   /** The values as expressions read them, and what else they read. */
@@ -856,12 +860,15 @@ export function createRunner(form: RunForm) {
         if (!openUrl) return cannot('Nothing can open a web address here: the form has no host that opens one');
         const url = read(step.url, false);
         if (typeof url !== 'string' || !url.trim()) return cannot(`"${step.url}" gives no address to open`);
+        // A web, mail or phone address, or a path of this site — never a script, whoever wrote it: the page or a value.
+        const address = safeUrl(url, LINK_URL);
+        if (!address) return cannot(form.messages.addressRefused);
         // In this tab, the page goes: the person's work is asked about first.
         if (step.newTab === false) {
           const kept = await form.letGo(scope.chain);
           if (kept) return kept;
         }
-        openUrl.call(form.host, url.trim(), step.newTab ?? true);
+        openUrl.call(form.host, address, step.newTab ?? true);
         return null;
       }
       case 'archive':

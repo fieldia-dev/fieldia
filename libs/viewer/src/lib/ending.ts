@@ -1,4 +1,4 @@
-import { fillValues, valuesIn, type Fields, type Form, type Locale, type Page, type Values } from '@fieldia/core';
+import { LINK_URL, safeUrl, fillValues, valuesIn, type Fields, type Form, type Locale, type Page, type Values } from '@fieldia/core';
 import { linkedWords } from '@fieldia/widgets';
 import { valueWords, type ValueWriter } from './value-words';
 
@@ -75,7 +75,7 @@ export function linkedValueWords(doc: Document, fields: Fields, text: string, lo
     const link = node as HTMLAnchorElement;
     link.replaceChildren(...drawn.nodes);
     const address = link.getAttribute('href') ?? '';
-    if (valuesIn(address).length) updates.push((values) => link.setAttribute('href', fillValues(address, (name) => encodeURIComponent(keptAs(values[name])))));
+    if (valuesIn(address).length) updates.push((values) => link.setAttribute('href', safeUrl(fillValues(address, (name) => encodeURIComponent(keptAs(values[name]))), LINK_URL) ?? '#'));
     return [link];
   });
   return { nodes, update: (values) => updates.forEach((update) => update(values)) };
