@@ -64,7 +64,7 @@ export interface PageLoading {
   error?: (typeof LOADING_ERRORS)[number];
 }
 
-/** What nobody set: the coordinator's proposal, 23 Oct (0.32). */
+/** What nobody set: the coordinator's proposal, 23 Oct (0.33). */
 export const LOADING_DEFAULTS = {
   first: 'skeleton',
   refresh: 'keep',

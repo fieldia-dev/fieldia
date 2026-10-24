@@ -1100,7 +1100,7 @@ export function installStyles(document: Document): void {
  * record 17, codes 18, pins 19, verify 20, pay 21, outbox 22, schedule 23, themes 24, quiet 25, picker 26, head 27,
  * groups 28, text 29, surveyLooks 30, cards 31, scan 32.
  *
- * A wait's spinners, its inline bar and the overlay over a form (0.32, the loading part): cut from no rule, and styling
+ * A wait's spinners, its inline bar and the overlay over a form (0.33, the loading part): cut from no rule, and styling
  * only its own elements — a ring, three dots, a bar's track, a veil — which no theme, no quiet look and no other part
  * reshapes (a theme speaks to them through the tokens, `--fd-spinner` and `--fd-bar`, alone). So it takes the last rank,
  * after the scan's, moving none: rank 33.

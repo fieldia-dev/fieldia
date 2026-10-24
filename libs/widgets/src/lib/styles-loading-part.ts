@@ -31,7 +31,7 @@ export const LOADING_PART_CSS = /* css */ `
   position: absolute; inset: 0; z-index: 3; display: grid; align-content: center; justify-items: center; gap: 10px; padding: 16px;
 }
 .fd-loader[data-way="skeleton"] { align-content: start; justify-items: stretch; }
-.fd-loader[data-moment="more"][data-way="skeleton"] { display: grid; }
+.fd-loader[data-moment="more"][data-way="skeleton"] { display: grid; justify-content: stretch; inline-size: 100%; }
 .fd-loader:is([data-way="spinner"], [data-way="overlay"], [data-way="progress"]) > .fd-loader-words { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .fd-form [data-fd-wait="refresh"][data-fd-way="spinner"] > :not(.fd-loader) { opacity: 0.55; transition: opacity 0.2s; }
 /* A bar along the top: what is shown kept as it is asked again, an action's, a first's progress. */

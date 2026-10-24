@@ -271,8 +271,10 @@ function combobox(options: {
       },
       place: (loader) => {
         if (!inline) return void element.append(loader);
+        // In the list, never one of its options: a screen reader hears the wait said once, in the form's live region.
         const row = doc.createElement('li');
         row.className = 'fd-empty';
+        row.setAttribute('role', 'none');
         // Its Retry pressed keeps the focus in the box, as a suggestion does.
         row.addEventListener('mousedown', (event) => event.preventDefault());
         row.append(loader);

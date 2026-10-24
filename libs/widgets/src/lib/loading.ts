@@ -164,6 +164,8 @@ const going = new WeakMap<Element, Going>();
 const failures = new WeakMap<Element, HTMLElement>();
 /** Where a loader went in, taken away with it — a row of a table, an item of a list — whichever wait it was handed on to. */
 const holders = new WeakMap<HTMLElement, HTMLElement>();
+/** Which wait said what a live region says now: only it takes its words away, never another's said since. */
+const speakers = new WeakMap<HTMLElement, object>();
 
 /** A failure said in a region's place taken away: what failed came after all (a record answered past its timeout). */
 export function letFailureGo(region: Element): void {
@@ -207,20 +209,37 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
   let undo: void | (() => void);
   let lingering: ReturnType<typeof setTimeout> | undefined;
   const said = how.words ?? (moment === 'more' ? words.loadingMore : moment === 'search' ? words.searching : words.loading);
-  // Said once, politely, in the form's own live region (a dialog's, the page's): never for an action, which its form says.
-  const home = moment === 'action' ? null : ((region.closest('[aria-modal="true"], .fd-form') as HTMLElement | null) ?? doc.body);
-  let voice = home?.querySelector<HTMLElement>(':scope > .fd-loading-said') ?? null;
-  if (home && !voice) {
-    voice = Object.assign(doc.createElement('div'), { className: 'fd-loading-said fd-sr-only' });
-    voice.setAttribute('role', 'status');
-    home.append(voice);
-  }
-  // What a wait taken over said is this one's to clear.
-  let saying = taken ? (voice?.textContent ?? '') : '';
+  /**
+   * Said once, politely, in the form's own live region (a dialog's, the page's) — there from the start where the region
+   * is in the page, else from its first words — never for an action, which its form says itself.
+   */
+  let voice: HTMLElement | null = null;
+  /** Made only now: its first words a moment later, so a screen reader hears what comes into it. */
+  let fresh = false;
+  const voiceOf = (): HTMLElement | null => {
+    if (voice || moment === 'action' || !region.isConnected) return voice;
+    const home = (region.closest('[aria-modal="true"], .fd-form') as HTMLElement | null) ?? doc.body;
+    voice = home.querySelector<HTMLElement>(':scope > .fd-loading-said');
+    if (!voice) {
+      voice = Object.assign(doc.createElement('div'), { className: 'fd-loading-said fd-sr-only' });
+      voice.setAttribute('role', 'status');
+      home.append(voice);
+      fresh = true;
+    }
+    return voice;
+  };
+  voiceOf();
+  fresh = false;
+  /** Said in the live region; taken away only where this wait said what it says now. */
   const say = (text: string) => {
-    // Cleared only where nothing else was said since.
-    if (!voice || (!text && voice.textContent !== saying)) return;
-    voice.textContent = saying = text;
+    const said = text ? voiceOf() : voice;
+    if (!said || (!text && speakers.get(said) !== mine)) return;
+    speakers.set(said, mine);
+    if (!fresh || !text) return void (said.textContent = text);
+    fresh = false;
+    setTimeout(() => {
+      if (!over && speakers.get(said) === mine) said.textContent = text;
+    }, 50);
   };
   region.setAttribute('aria-busy', 'true');
   given.told?.(true, { moment, part, duration: 0, failed: false });
@@ -345,6 +364,11 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
     },
   };
   going.set(region, mine);
+  // What a wait taken over said is this one's to take away.
+  if (taken && before && moment !== 'action') {
+    const said = voiceOf();
+    if (said && speakers.get(said) === before) speakers.set(said, mine);
+  }
 
   const wait: Wait = {
     signal: stopper.signal,
