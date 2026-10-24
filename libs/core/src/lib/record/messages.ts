@@ -212,6 +212,8 @@ export interface Messages {
   /** A save or a send that broke on the way (`{problem}`, what broke): nothing went. */
   saveBroken: string;
   sendBroken: string;
+  /** A new record its source answered without an id: Save again sends the same save (its key), never a second record. */
+  saveNoId: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -362,6 +364,7 @@ const en: Messages = {
   unreadableValue: '{label} is stored in a way this page cannot show: it is kept as it is',
   saveBroken: 'Something went wrong, so nothing was saved: {problem}',
   sendBroken: 'Something went wrong, so nothing was sent: {problem}',
+  saveNoId: 'The record went, but its data source gave back no id: save again — it is the same save, never a second record.',
   locale: 'en',
 };
 

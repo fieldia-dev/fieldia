@@ -338,6 +338,8 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   const addedDefinitions = new Map<string, PropertyDefinition[]>();
   // A new line's id comes after every line id of the records given (kept from an earlier visit, say), never one of them.
   let lineIds = Math.max(1000, highestLineId(records));
+  /** The record each save's key made, by its key: a later try of the same save is written over it. */
+  const savedKeys = new Map<string, { model: string; id: RecordId }>();
   let fileIds = 0;
   /** Each file's tries at the store, by its name and size: what `storage.fails` is told. */
   const tries = new Map<string, number>();
@@ -628,7 +630,13 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       calls.push({ method: 'save', request });
       await pause();
       noSignal();
-      const saved = write(request);
+      // A send it kept already, by its key (`key`, or an outbox's `queued.key`): a later try of the same save, written over
+      // the record that one made — never a second record, nor a conflict with its own first try.
+      const key = request.key ?? request.queued?.key;
+      const made = key !== undefined ? savedKeys.get(key) : undefined;
+      const { version: _version, ...again } = request;
+      const saved = write(made ? { ...again, model: made.model, id: made.id } : request);
+      if (key !== undefined) savedKeys.set(key, { model: request.model, id: saved.id });
       // Saved: the draft its changes were kept in is let go, as a server does.
       if (request.draft) delete drafts[request.draft];
       return saved;
@@ -846,6 +854,13 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       calls.push({ method: 'submit', request });
       await pause();
       noSignal();
+      // A response it kept already, by its key: a later try of the same send, its answers over that one's — never a second.
+      const key = request.key ?? request.queued?.key;
+      const at = key !== undefined ? responses.findIndex((one) => (one.key ?? one.queued?.key) === key) : -1;
+      if (at >= 0) {
+        responses[at] = structuredCopy(request);
+        return options.submitted ? options.submitted(structuredCopy(request), at + 1) : { id: at + 1 };
+      }
       responses.push(structuredCopy(request));
       // Sent: the draft it was kept in is let go, as a server does.
       if (request.draft) delete drafts[request.draft];

@@ -39,7 +39,7 @@ describe('an offline outbox', () => {
     expect(await form.save()).toBe(true);
     expect(form.getState().sent).toEqual({ id: null, values: { unit: 'B-12', notes: 'Cracked tile in the kitchen', photos: [] } });
     expect(form.getState().saveProblem).toBeNull();
-    expect(form.getState().outbox).toEqual({ waiting: 1, sending: false, offline: true, kept: true, refused: [] });
+    expect(form.getState().outbox).toEqual({ waiting: 1, sending: false, offline: true, kept: true, refused: [], lasting: true });
     expect(dataSource.responses).toEqual([]);
     // Still no signal: it waits where it was.
     await form.joined('outbox')?.send();
@@ -47,8 +47,10 @@ describe('an offline outbox', () => {
     set(true);
     await form.joined('outbox')?.send();
     expect(dataSource.responses).toHaveLength(1);
-    expect(dataSource.responses[0]).toMatchObject({ pageId: 'site-visit', values: { unit: 'B-12' }, queued: { key: expect.stringMatching(/^outbox-/), at: expect.any(String) } });
-    expect(form.getState().outbox).toEqual({ waiting: 0, sending: false, offline: false, kept: true, refused: [] });
+    // Kept by the key its first try carried: the same key sent with it, and as `queued.key`.
+    expect(dataSource.responses[0]).toMatchObject({ pageId: 'site-visit', values: { unit: 'B-12' }, queued: { key: expect.stringMatching(/^send-/), at: expect.any(String) } });
+    expect(dataSource.responses[0].key).toBe(dataSource.responses[0].queued?.key);
+    expect(form.getState().outbox).toEqual({ waiting: 0, sending: false, offline: false, kept: true, refused: [], lasting: true });
     // Another response, sent with signal: its ending is the plain thanks.
     form.reset();
     expect(form.getState().outbox?.kept).toBe(false);
@@ -113,7 +115,7 @@ describe('an offline outbox', () => {
     await form.save();
     online = true;
     await form.joined('outbox')?.send();
-    expect(form.getState().outbox).toEqual({ waiting: 0, sending: false, offline: false, kept: true, refused: [{ key: store.items[0].key, message: 'This unit is no longer listed', at: store.items[0].at }] });
+    expect(form.getState().outbox).toEqual({ waiting: 0, sending: false, offline: false, kept: true, refused: [{ key: store.items[0].key, message: 'This unit is no longer listed', at: store.items[0].at }], lasting: true });
     refuse = false;
     await form.joined('outbox')?.retry(store.items[0].key);
     expect(memory.responses).toHaveLength(1);

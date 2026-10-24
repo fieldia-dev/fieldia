@@ -122,5 +122,6 @@ export const es: Messages = {
   unreadableValue: '{label} está guardado de una forma que esta página no puede mostrar: se conserva tal cual',
   saveBroken: 'Algo salió mal, así que no se guardó nada: {problem}',
   sendBroken: 'Algo salió mal, así que no se envió nada: {problem}',
+  saveNoId: 'El registro se envió, pero su fuente de datos no devolvió ningún id: guarde de nuevo; es el mismo guardado, nunca un segundo registro.',
   locale: 'es',
 };

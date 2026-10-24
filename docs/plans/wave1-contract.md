@@ -1864,3 +1864,40 @@ In plain words:
   record open — each form that opens it with a `user`, and whoever `arrive` brings (`leave` takes them away). Without
   `live` it has none of `subscribe`, `presence`, `arrive` and `leave`, as a source without a socket. Tests:
   `libs/core/src/lib/record/live.spec.ts`, `libs/viewer/src/lib/live.spec.ts`.
+
+## 36. One send discipline: a send's own key, kept sends first (0.34, lane harden-data)
+
+One more optional field in the requests a source already takes, read by a source that dedupes; nothing to add.
+
+```ts
+// SaveRequest and SubmitRequest gain key?: string — the send's idempotency key, made at its first try.
+// FormState.outbox gains lasting?: boolean — false where the browser keeps nothing past the page (no IndexedDB).
+```
+
+In plain words:
+
+- **One key from the first try**: every save and send carries `key`, the same for every try of it — a Retry after an
+  answer lost on the way, an outbox's copy sent later (whose `queued.key` is that key too) — until it went: a record's
+  until a save of it went (a new record's every save until it has its id), a response's every send until the form
+  starts another (`reset`). **A server that kept a send with that key keeps no second**: it stores these values over
+  that one's (a later try of the same, the person's latest) and answers as it did — its id — never a second record or
+  response, nor a conflict with its own first try. The memory source does so (`createMemoryDataSource`).
+- **Asked again with nothing changed, the same save**: `form.save()` called while one is on its way, the values as they
+  were when it was asked (a double press, an app's own Submit pressed twice), waits for it and — it went — is it: one
+  send, both answered true. Stopped or refused (a question answered Cancel), it is asked anew. Changed since, it waits for
+  the first and saves what is left, with the version it got back, as before.
+- **A response's same answers never go twice**: once sent, `form.save()` with the answers as they went sends nothing
+  (false); changed since — an answer edited while it was on its way — they go again with the same key, the same
+  response; `form.reset()` starts another, with a key of its own.
+- **A new record answered with no id** (`undefined`, `{ id: undefined }`) is not taken as saved: said ("The record went,
+  but its data source gave back no id: save again — it is the same save, never a second record."), its key kept.
+- **Kept sends first**: a save of a record the outbox holds kept saves of (a new record's own, a stored one's by its
+  model and id) sends them first, in order; still without signal, it is kept behind them. Once they went it goes, a new
+  record's as a save of the record they made, each at the version the one before left — the person's own saves are
+  never refused as someone else's.
+- **A claim held while its send goes**: renewed each third of its two minutes, so a send that takes longer (a film on a
+  slow signal) is never taken by a second tab.
+- **Where the browser keeps nothing past the page** (no IndexedDB), the outbox holds sends in memory and says so
+  (`state.outbox.lasting: false`): "Not sent yet" and "1 send waits in this page: keep it open…", never "Kept on this
+  device".
+- Tests: `libs/core/src/lib/record/send-discipline.spec.ts`, `e2e/send-discipline.spec.ts`.

@@ -95,7 +95,7 @@ export const PART_WORDS = {
   },
   languages: { messages: ['languagesNeeded', 'languagesNeededQuestion'], widgets: ['languageSwitch', 'languageEmpty', 'languageNeeded', 'inLanguage'] },
   element: { viewer: ['formNotLoaded'] },
-  outbox: { viewer: ['outboxWaiting', 'outboxWaitingOne', 'outboxOffline', 'outboxSending', 'outboxSent', 'outboxSendNow', 'outboxRefused', 'outboxRetry', 'outboxDiscard', 'outboxDiscardAsk', 'outboxKeptTitle', 'outboxKeptWords'] },
+  outbox: { viewer: ['outboxWaiting', 'outboxWaitingOne', 'outboxOffline', 'outboxSending', 'outboxSent', 'outboxSendNow', 'outboxRefused', 'outboxRetry', 'outboxDiscard', 'outboxDiscardAsk', 'outboxKeptTitle', 'outboxKeptWords', 'outboxPageTitle', 'outboxPageWords', 'outboxWaitingPage', 'outboxWaitingPageOne'] },
   pay: { viewer: ['payAmount', 'payBack', 'payCancel', 'payCancelling', 'payNothingSent', 'payWaiting', 'payPaid', 'payPaidReference', 'payAgain', 'payCancelled', 'payFailed', 'payFailedWhy', 'payNotStarted'] },
   verify: {
     messages: ['notVerified'],

@@ -602,4 +602,8 @@ export const fr: ViewerLabels = {
   outboxDiscardAsk: 'Abandonner cet envoi ? Ses réponses seront perdues.',
   outboxKeptTitle: 'Gardé sur cet appareil',
   outboxKeptWords: 'Pas de réseau : vos réponses sont gardées ici et envoyées dès son retour, même si vous fermez cette page.',
+  outboxPageTitle: 'Pas encore envoyé',
+  outboxPageWords: 'Pas de réseau, et ce navigateur ne peut pas garder vos réponses une fois cette page fermée : laissez-la ouverte, elles seront envoyées dès son retour.',
+  outboxWaitingPage: '{count} envois attendent dans cette page : laissez-la ouverte, ce navigateur ne peut pas les garder une fois fermée.',
+  outboxWaitingPageOne: '1 envoi attend dans cette page : laissez-la ouverte, ce navigateur ne peut pas le garder une fois fermée.',
 };

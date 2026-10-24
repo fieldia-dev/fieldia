@@ -224,7 +224,15 @@ export interface FormState {
    * is not trusted), whether the last send of this form was kept (`kept`: its ending says so), and those the server
    * refused once they went — kept to try again or discard. Left out on a page without one, and until it is read.
    */
-  readonly outbox?: { readonly waiting: number; readonly sending: boolean; readonly offline: boolean; readonly kept: boolean; readonly refused: readonly { readonly key: string; readonly message: string; readonly at: string }[] };
+  readonly outbox?: {
+    readonly waiting: number;
+    readonly sending: boolean;
+    readonly offline: boolean;
+    readonly kept: boolean;
+    readonly refused: readonly { readonly key: string; readonly message: string; readonly at: string }[];
+    /** Whether what waits outlives the page: false where the browser keeps nothing past it (no IndexedDB) — held in memory, and said so. */
+    readonly lasting?: boolean;
+  };
   /** Who else has the record open, as the data source's `presence` pushed: never this person. Empty while none does, or without it. */
   readonly present?: readonly PresentPerson[];
   /**
@@ -2977,6 +2985,17 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    */
   /** The save running now: the next one waits for it. */
   let saveRunning: Promise<unknown> | null = null;
+  /** The save asked for last, and the values it was asked for with: asked again with nothing changed, once it went, it is that one. */
+  let running: { values: Readonly<Values>; mine: Promise<Stopped | null> } | null = null;
+  /**
+   * The idempotency key the send asked for now carries (`SaveRequest.key`, `SubmitRequest.key`): made at its first try,
+   * the same for each try after — a Retry, an outbox's copy — until it went: a record's until a save of it went (a new
+   * one's until it has its id), a response's until the form starts another (`reset`).
+   */
+  let sendKey: string | null = null;
+  /** A response's answers as they last went, until the form starts another: the same answers are never sent twice. */
+  let lastSent: string | null = null;
+  const newSendKey = () => `send-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
   /**
    * One save at a time: a second — Ctrl+Enter pressed twice, or while the
@@ -2987,10 +3006,19 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   function saving(chain: readonly string[], yes?: string): Promise<Stopped | null> {
     if (chain.includes('on.beforeSave')) return savingNow(chain, yes).catch(broken);
     const before = saveRunning;
+    const ahead = running;
+    const values = state.values;
     const mine = (async () => {
       if (before) await before;
+      // Asked again while one was on its way, nothing changed between — a double press, an app's own Submit pressed
+      // twice — and that one went: the same save, never a second send. Stopped or refused, this one is asked anew.
+      if (ahead && ahead.values === values && (await ahead.mine) === null) return null;
       return savingNow(chain, yes).catch(broken);
     })();
+    const asked = (running = { values, mine });
+    void mine.then(() => {
+      if (running === asked) running = null;
+    });
     const done = mine.then(
       () => undefined,
       () => undefined
@@ -3157,13 +3185,19 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (page.data.kind === 'responses') {
         if (!source?.submit) throw new Error('This page has no data source to send its answers to');
         const sent = answersSent();
+        // Sent already, and nothing changed since: never sent twice. Changed since, they go again as the same response.
+        const asWritten = JSON.stringify(sent);
+        if (lastSent === asWritten) {
+          set({ status: 'saved' });
+          return { reason: 'save' };
+        }
         const before = state.values as Values;
         at = generation;
         const resetAt = resets;
         const seen = botReport();
         // A quiz's marking, in before the answers go: what the person sees of their results.
         // What the source answered: the id it gave the response, and the values it added — what an ending reads.
-        const request: SubmitRequest = { pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}), ...draft };
+        const request: SubmitRequest = { pageId: page.id, key: (sendKey ??= newSendKey()), values: sent, ...(seen ? { bot: seen } : {}), ...draft };
         // Through the parts that join the form: kept on the device where an outbox finds no signal (null), the form going
         // on as though it went.
         const got = await through('submit', request, (one: SubmitRequest) => (source.submit as NonNullable<DataSource['submit']>)(one));
@@ -3172,6 +3206,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         if (seen?.captcha) bot.captcha = null;
         // Answered for answers no longer shown — the form was started again meanwhile: the source has them, the form lays nothing.
         if (at !== generation) return null;
+        lastSent = asWritten;
         forgetDraft();
         // What it sent is what an answer changed since is told against: still to send.
         sentAs = before;
@@ -3201,9 +3236,16 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         values: sentValues(),
         // The version it was opened at, for a source that refuses a save over someone else's.
         ...(state.recordId != null && state.version ? { version: state.version } : {}),
+        key: (sendKey ??= newSendKey()),
         ...draft,
       };
       const got = await through('save', request, (one: SaveRequest) => (source.save as NonNullable<DataSource['save']>)(one));
+      // Answered (anything but null, which is kept on the device): a new record its source gave no id is unsaved as far as
+      // the form knows — the same save tried again by its key, never a second record.
+      const went = got !== null;
+      if (went && request.id == null && (got?.id === undefined || got.id === null)) throw new Error(messages.saveNoId);
+      // Went: the next save is another. Kept on the device, a new record's next saves are the same until it has its id.
+      if (went || request.id != null) sendKey = null;
       // Kept on the device (null): the record as it was, its version too.
       const result = got ?? { id: state.recordId as RecordId, version: state.version ?? undefined };
       // Answered for a record no longer shown — another opened, or this one loaded again: the source has it, and the
@@ -3219,7 +3261,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // A save starts the person's changes afresh, as one saved is no change to take back (the viewer's Ctrl+Z says
       // nothing changed since). Not on a page that saves itself as it is changed (`autosave`), whose changes are taken
       // back across its saves; nor where a change made while it saved goes on past it.
-      if (!options.autosave && !dirty.length && got) noted = [];
+      if (!options.autosave && !dirty.length && went) noted = [];
       set({ status: 'saved', recordId: result.id, values, dirty, warnings: withValues(values, () => collectWarnings(dirty)), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
       // Changed while it saved: kept in a draft, and saved as any change is.
       if (dirty.length) {
@@ -3230,7 +3272,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       joinsLoaded();
       // The record as this save left it: a change made while it was on its way is no value of it.
       emit('save', { recordId: state.recordId, values: baseline });
-      if (got) void track(moment('on.afterSave', page.on?.afterSave, chain, false));
+      if (went) void track(moment('on.afterSave', page.on?.afterSave, chain, false));
       return null;
     } catch (error) {
       const problem = saveProblemOf(error);
@@ -3547,9 +3589,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Another record in this form's place, or a new one: what was there let go, the new one loaded and opened. */
   async function showNow(id: RecordId | null): Promise<true> {
     newGeneration();
-    // The warnings of the record shown before are that one's.
+    // The warnings of the record shown before are that one's, and so is the key its sends carried.
     storedWarnings = {};
     shownLoaded = false;
+    sendKey = null;
+    lastSent = null;
     if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
     if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
     draftTimer = autosaveTimer = null;
@@ -4200,8 +4244,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       personalLines.clear();
       filed.clear();
       sentAs = null;
-      // Started again: a new response, timed from now.
+      // Started again: a new response, timed from now, sent with a key of its own.
       bot = { ...bot, honeypot: false, since: clock() };
+      sendKey = null;
+      lastSent = null;
       const values = syncParts(structuredCopy(baseline), 'start');
       set({ values, dirty: [], errors: {}, warnings: withValues(values, () => collectWarnings([])), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null });
       // Started again: a new response proves and pays its own; a new respondent is drawn anew (unless the app or the

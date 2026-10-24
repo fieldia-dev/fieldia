@@ -1055,6 +1055,14 @@ export interface SaveRequest {
   /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
   payment?: PaidPayment;
   /**
+   * This send's idempotency key: made at its first try and the same for every try of it — a retry after an answer lost
+   * on the way, an outbox's copy sent later (`queued.key` too) — until it went; a new record's every save until it has its
+   * id; a response's every send until the form starts another (`reset`). A server that kept a send with this key keeps no
+   * second: it stores these values over that one's (a later try of the same) and answers as it did — never a second
+   * record or response.
+   */
+  key?: string;
+  /**
    * A send kept on the device without signal and sent later (a page's `outbox`): its key — the same for every try, so a
    * server that kept the first can tell a second — and when it was made.
    */
@@ -1367,6 +1375,14 @@ export interface SubmitRequest {
   verified?: Record<string, VerifiedValue>;
   /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
   payment?: PaidPayment;
+  /**
+   * This send's idempotency key: made at its first try and the same for every try of it — a retry after an answer lost
+   * on the way, an outbox's copy sent later (`queued.key` too) — until it went; a new record's every save until it has its
+   * id; a response's every send until the form starts another (`reset`). A server that kept a send with this key keeps no
+   * second: it stores these values over that one's (a later try of the same) and answers as it did — never a second
+   * record or response.
+   */
+  key?: string;
   /**
    * A send kept on the device without signal and sent later (a page's `outbox`): its key — the same for every try, so a
    * server that kept the first can tell a second — and when it was made.

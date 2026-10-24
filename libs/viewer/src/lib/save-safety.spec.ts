@@ -264,14 +264,15 @@ describe('what the source says the person may do with the record', () => {
 });
 
 describe('saving twice in a row', () => {
-  it('Ctrl+Enter pressed twice quickly saves twice, as the same person: no conflict, and Saved', async () => {
+  it('Ctrl+Enter pressed twice quickly saves once, as the same save: no conflict, and Saved', async () => {
     const ds = source({ delayMs: 20 });
     const { host, handle } = await mount({ dataSource: ds });
     type(host, 'phone', '+201009998887');
     const input = host.querySelector('[data-field="phone"] input') as HTMLInputElement;
     for (let i = 0; i < 2; i++) input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }));
-    await until(() => ds.calls.filter((call) => call.method === 'save').length === 2 && handle.form.getState().status === 'saved');
+    await until(() => handle.form.getState().status === 'saved');
     await handle.form.settled();
+    expect(ds.calls.filter((call) => call.method === 'save')).toHaveLength(1);
     expect(handle.form.getState()).toMatchObject({ status: 'saved', conflict: null });
     expect(shown(conflict(host))).toBe(false);
     expect(host.querySelector('.fd-status')?.textContent).toBe('Saved');

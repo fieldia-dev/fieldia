@@ -961,12 +961,28 @@ IndexedDB (`indexedOutbox()`: never lost on a reload, shared by a site's tabs),
 or the store given as `outbox` (`memoryOutbox()` for tests). A photo the network
 could not take stays in its field as its bytes and is stored through `upload`
 just before its send goes. `form.joined('outbox')` sends what waits in order —
-each item claimed by one sender, sent with `queued: { key, at }` so a server
-can refuse a second try — and keeps a refusal to `retry` or `discard`. Kept sends
-go in the order they were kept; a send made once the signal is back goes first,
-and what waited goes right after it. A new record
-saved twice without signal is saved once, and the form takes its id when it
-went. The memory source's `offline` option fails as a network does.
+each item claimed by one sender (the claim renewed while its send goes, so a
+long upload is never taken by a second tab), sent with the key of its first try
+(`key`, and `queued: { key, at }`) so a server keeps it once — and keeps a refusal
+to `retry` or `discard`. Kept sends go in the order they were kept; a save of a
+record with kept saves sends them first and goes after them (still without
+signal, it is kept behind them), each at the version the one before left. A new
+record saved twice without signal is saved once, and the form takes its id when
+it went. Where the browser keeps nothing past the page (no IndexedDB), sends wait
+in memory and `state.outbox.lasting` is false: the viewer says to keep the page
+open, never "Kept on this device". The memory source's `offline` option fails as
+a network does.
+
+Every save and send carries one idempotency key from its first try (`key`):
+a Retry after an answer lost on the way, and an outbox's copy, carry the same,
+until it went — a new record's until it has its id, a response's until the form
+starts another. A server that kept a send with that key keeps no second: it
+stores the values over that one's and answers as it did (the memory source
+does). `form.save()` asked again while a save is on its way, nothing changed
+since, is that save once it went (stopped or refused, it is asked anew); a
+response's answers once sent are never sent again as
+they were (`form.reset()` starts another); a new record whose source answers
+with no id is not taken as saved.
 
 ## Parts that join a form
 
@@ -1195,7 +1211,8 @@ and sets this person's changes aside in `setAside`, each put back with
 now, their values kept wherever this person changed nothing (read again first
 when the conflict did not carry the record, so `values` never wipes theirs; when
 it cannot be read, nothing is saved and `conflict.unread` says so). A second save
-while one is on its way waits for it and carries the version it got back.
+while one is on its way — something changed since — waits for it and carries the
+version it got back; nothing changed, it is the first.
 Every way a form's values go — `openRecord` (the pager, an action's answer
 naming a record, Duplicate's copy), a reload (the step, an answer's
 `reload: true`, `form.load()` again), a `reset` step, the host's `close` (yours

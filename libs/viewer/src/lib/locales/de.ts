@@ -613,4 +613,8 @@ export const de: ViewerLabels = {
   outboxDiscardAsk: 'Diese Sendung verwerfen? Ihre Antworten gehen verloren.',
   outboxKeptTitle: 'Auf diesem Gerät gespeichert',
   outboxKeptWords: 'Es gibt keinen Empfang: Ihre Antworten sind hier gespeichert und werden gesendet, sobald er zurück ist, auch wenn Sie diese Seite schließen.',
+  outboxPageTitle: 'Noch nicht gesendet',
+  outboxPageWords: 'Es gibt keinen Empfang, und dieser Browser kann Ihre Antworten nicht behalten, wenn diese Seite geschlossen wird: Lassen Sie sie offen, dann werden sie gesendet, sobald der Empfang zurück ist.',
+  outboxWaitingPage: '{count} Sendungen warten auf dieser Seite: Lassen Sie sie offen, denn dieser Browser kann sie nicht behalten, wenn sie geschlossen wird.',
+  outboxWaitingPageOne: '1 Sendung wartet auf dieser Seite: Lassen Sie sie offen, denn dieser Browser kann sie nicht behalten, wenn sie geschlossen wird.',
 };

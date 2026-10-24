@@ -117,5 +117,6 @@ export const fr: Messages = {
   unreadableValue: '{label} est enregistré sous une forme que cette page ne sait pas afficher : il est conservé tel quel',
   saveBroken: 'Un problème est survenu, rien n’a été enregistré : {problem}',
   sendBroken: 'Un problème est survenu, rien n’a été envoyé : {problem}',
+  saveNoId: 'L’enregistrement est parti, mais sa source de données n’a renvoyé aucun identifiant : enregistrez de nouveau — c’est le même enregistrement, jamais un second.',
   locale: 'fr',
 };

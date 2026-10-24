@@ -129,5 +129,6 @@ export const tr: Messages = {
   unreadableValue: '{label} bu sayfanın gösteremeyeceği bir biçimde saklanıyor: olduğu gibi korunuyor',
   saveBroken: 'Bir şeyler ters gitti, bu yüzden hiçbir şey kaydedilmedi: {problem}',
   sendBroken: 'Bir şeyler ters gitti, bu yüzden hiçbir şey gönderilmedi: {problem}',
+  saveNoId: 'Kayıt gönderildi, ancak veri kaynağı bir kimlik döndürmedi: yeniden kaydedin — bu aynı kayıttır, asla ikinci bir kayıt değildir.',
   locale: 'tr',
 };

@@ -588,6 +588,8 @@ describe('createForm — a survey', () => {
     expect(ds.responses).toEqual([
       {
         pageId: 'product-feedback',
+        // The send's own key, the same for every try of it (its idempotency key).
+        key: expect.stringMatching(/^send-/),
         values: { name: 'Sara', email: null, uses_product: 'no', reason_not: 'Too expensive', contact_ok: false },
       },
     ]);

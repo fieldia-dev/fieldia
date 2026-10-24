@@ -119,5 +119,6 @@ export const de: Messages = {
   unreadableValue: '{label} ist so gespeichert, dass diese Seite es nicht anzeigen kann: Es bleibt, wie es ist',
   saveBroken: 'Etwas ist schiefgegangen, daher wurde nichts gespeichert: {problem}',
   sendBroken: 'Etwas ist schiefgegangen, daher wurde nichts gesendet: {problem}',
+  saveNoId: 'Der Datensatz wurde gesendet, aber seine Datenquelle hat keine ID zurückgegeben: Speichern Sie erneut – es ist dieselbe Speicherung, nie ein zweiter Datensatz.',
   locale: 'de',
 };
