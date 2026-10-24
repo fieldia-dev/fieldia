@@ -5,7 +5,10 @@ on:
     branches: [main]
   pull_request:
 
-# Read access alone, unless a job says more (the scope job reads the runs of earlier pushes).
+# Read access alone, unless a job says more (the scope job reads the runs of earlier pushes). Each action is named by
+# the commit it runs, its tag in a comment beside it — a tag can be moved to other code, a commit cannot — and no
+# checkout leaves its token in .git for the steps after it, `npm ci`'s install scripts among them; Dependabot moves the
+# pins (.github/dependabot.yml), and tools/workflows.test.mjs holds every workflow to these rules.
 permissions:
   contents: read
 
@@ -27,8 +30,9 @@ jobs:
       tested: ${{ steps.scope.outputs.tested }}
       site: ${{ steps.scope.outputs.site }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
+          persist-credentials: false
           fetch-depth: 0
       - id: scope
         run: node tools/ci-scope.mjs
@@ -45,11 +49,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
+          persist-credentials: false
           # The whole history: the release notes' test finds every release commit in it.
           fetch-depth: 0
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -58,7 +63,11 @@ jobs:
       # words the script bundle's parts carry for themselves, read by their parts alone (tools/part-words.mjs).
       # And a strict Content-Security-Policy in the packages' source: no code made from text, no style attribute
       # written, every <style> made with the page's nonce (tools/csp-source.test.mjs).
-      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs
+      # And the release's own guard rails: its checks run with no npm token, a release must be tagged, on main and clean,
+      # a patch holds fixes alone, the packs published are the ones checked, what an app installs has no high or critical
+      # advisory unreviewed, every script tag the docs print names a version and its hash, and the workflows keep their
+      # rules.
+      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/script-tags.test.mjs tools/workflows.test.mjs
       # The tools themselves, linted as the packages are (`nx lint` reads the packages alone): four errors hid there in 0.31.
       - run: npx eslint tools eslint.config.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's
@@ -93,14 +102,16 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       # The browser kept between runs, by Playwright's version: most runs download nothing.
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -134,7 +145,7 @@ jobs:
       # fieldia.dev, gated like the demos: every page, link and the live form.
       - run: node tools/build-site.mjs
       - run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/4
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: screens-${{ matrix.shard }}
@@ -159,13 +170,15 @@ jobs:
         engine: [firefox, webkit]
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ matrix.engine }}-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -190,7 +203,7 @@ jobs:
       - run: node tools/build-demos.mjs
       - run: node tools/build-site.mjs
       - run: npx playwright test --project=${{ matrix.engine }} --shard=${{ matrix.shard }}/2
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: screens-${{ matrix.engine }}-${{ matrix.shard }}
@@ -206,13 +219,15 @@ jobs:
     # A change to the site's own files: the site built from the demos and packages as they are, and its own specs —
     # every page, link and the live forms (site.spec.ts) and axe on every page, light and dark (a11y.spec.ts).
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -237,7 +252,7 @@ jobs:
       - run: node tools/build-site.mjs
       - run: npx playwright test e2e/site.spec.ts --project=chromium
       - run: npx playwright test e2e/a11y.spec.ts --project=chromium -g "axe on fieldia.dev"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: screens-site

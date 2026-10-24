@@ -17,6 +17,15 @@
  * its own. A part of another version is refused with a warning, and the page
  * draws plainly what it would have drawn from it.
  *
+ * And the main script checks each part it adds before it runs: it carries the
+ * sha256 of every part's file as it was built with it (`partIntegrity`), which
+ * the part's tag carries as `integrity`, asked for with `crossorigin="anonymous"`
+ * — so the browser runs a part only if it is the very file released with this
+ * fieldia.js, and refuses one changed since (on a CDN, in a cache, by anyone
+ * between): what needed it says it could not be loaded, as it says when the part
+ * cannot come at all. A part served from another origin than the page's needs
+ * CORS (`Access-Control-Allow-Origin`), as a CDN sends it.
+ *
  * A part's tag may also be written into the page, after fieldia.js or before
  * it (an `async` script may run first): it waits in `FieldiaParts` for the
  * main script, which takes it as it starts.
@@ -31,6 +40,19 @@ import type { LanguageWords } from '@fieldia/viewer';
 import { styleNonce, useStyleNonce } from '@fieldia/widgets';
 
 declare const __FIELDIA_VERSION__: string;
+/** Each part's file's sha256, in base64, as this script was built with it (tools/script-bundle.mjs), by its name. */
+declare const __FIELDIA_PART_HASHES__: Record<string, string>;
+
+/**
+ * A part's `integrity`, as the tag this script adds for it carries it: the hash of its file as this script was built
+ * with it — `sha256-…` — or '' for a name that is no part of this script. A `<link rel="preload" as="script">` or a
+ * part's tag written into a page carries the same, with `crossorigin="anonymous"`, or the browser fetches it twice.
+ */
+export function partIntegrity(name: string): string {
+  return Object.prototype.hasOwnProperty.call(PART_HASHES, name) ? `sha256-${PART_HASHES[name]}` : '';
+}
+/** Read once: the build writes the table where it is named, and names it here alone. */
+const PART_HASHES = __FIELDIA_PART_HASHES__;
 
 /**
  * A part's script, as it runs: its name, the version it was built as, what makes its exports from the main script's
@@ -92,9 +114,18 @@ export function loadPart(name: string): Promise<unknown> {
       settle(name, { error: new Error(`fieldia.${name}.js cannot be loaded: fieldia.js came from no address of its own. Add its tag after fieldia.js.`) });
       return;
     }
+    // Only a file this script was built with: refused, never run unchecked, where it knows no hash for it.
+    const integrity = partIntegrity(name);
+    if (!integrity) {
+      settle(name, { error: new Error(`fieldia.${name}.js is no part of fieldia.js ${__FIELDIA_VERSION__}: it has no hash to check it against`) });
+      return;
+    }
     const tag = doc.createElement('script');
     tag.src = `${base}fieldia.${name}.js`;
     tag.async = true;
+    // Checked by the browser before it runs: the file released with this script, asked for without credentials.
+    tag.crossOrigin = 'anonymous';
+    tag.integrity = integrity;
     if (nonce) tag.nonce = nonce;
     tag.onload = () => {
       tag.remove();
@@ -102,8 +133,8 @@ export function loadPart(name: string): Promise<unknown> {
     };
     tag.onerror = () => {
       tag.remove();
-      // Forgotten, so the next use asks again (a page that was offline).
-      settle(name, { error: new Error(`${tag.src} could not be loaded`) });
+      // Forgotten, so the next use asks again (a page that was offline). The browser says which it was, in its console.
+      settle(name, { error: new Error(`${tag.src} could not be loaded, or is not the file fieldia.js ${__FIELDIA_VERSION__} was built with (its hash differs): serve this release's parts beside it`) });
     };
     (doc.head ?? doc.documentElement).append(tag);
   });

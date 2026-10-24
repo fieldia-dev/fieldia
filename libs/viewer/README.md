@@ -1342,7 +1342,9 @@ work… — comes in 52 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
 folder the first time a page uses it:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.js"
+  integrity="sha384-jzw09Z/rn6PUCLeuOTuGQetonzulZqM5JB9E3KHGtnmYZVV8+7QFSIa3WZLk6K1s"
+  crossorigin="anonymous"></script>
 <script>
   Fieldia.mountViewer(document.getElementById('app'), {
     page,
@@ -1356,15 +1358,43 @@ or Spanish, add that language's script after it (about 17–22 KB gzipped each),
 then pass `locale`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
-<!-- or fieldia.de.js, fieldia.fr.js, fieldia.tr.js, fieldia.fa.js, fieldia.ur.js, fieldia.es.js; one per language the page is shown in -->
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.js"
+  integrity="sha384-jzw09Z/rn6PUCLeuOTuGQetonzulZqM5JB9E3KHGtnmYZVV8+7QFSIa3WZLk6K1s"
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.ar.js"
+  integrity="sha384-dtiztmoDrX6+/cxOrJ+7cbQfG6NvaxNB41yn0PCweiurj+VeYWPDNoFnwIoXmssZ"
+  crossorigin="anonymous"></script>
 <script>
   Fieldia.mountViewer(element, { page, dataSource, locale: 'ar' });
 </script>
 ```
 
-Load both from the same version. A page set to a language whose script is
+Load both from the same version, each with its own integrity — one language's
+script per language the page is shown in:
+
+```html
+<!-- German, French, Turkish, Persian, Urdu, Spanish -->
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.de.js"
+  integrity="sha384-jTb3IDYeZje3kwituJdajWHmZ8t4nrkSJ97ZbHGQtBM5ysXFhNP7NKQz2LkLx3a+"
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.fr.js"
+  integrity="sha384-+zTHYGw0iFIk934vzlhHZ+Faod57WpsAE3pEQYx6RRlvhQ4OoCJG2tQPcySxSpZ8"
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.tr.js"
+  integrity="sha384-LAkN/Lq4w/4z7KcvVeaGK9gmW9Y8Xz7B5jhDPFI5nB8FVat00E2/jPNRZm8jIilA"
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.fa.js"
+  integrity="sha384-Xo6eHprLLWNU/RLSNPItVbUiTLnmAdXXHDZYl+w+GjPON4cfYjy0fo+F13qS+Tfz"
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.ur.js"
+  integrity="sha384-DY6W/o7PL/CWu0hSyrkrB0fxOwvel9PZySAueX9z4MBUTQ2hd18RduHGTmCv5k61"
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.es.js"
+  integrity="sha384-7vgsP6j12Hldo8HLQsl3LT0KIurBQ98wi97kArABnWGoeXJkJ5ZKxhX/1bdX3NWx"
+  crossorigin="anonymous"></script>
+```
+
+ A page set to a language whose script is
 missing shows Fieldia's words in English, and the console names the script to
 add. Installed from npm, `@fieldia/viewer` (and `@fieldia/core`,
 `@fieldia/widgets` and the React, Vue and Angular bindings) has English,
@@ -1413,20 +1443,36 @@ record's page saves through its `source`. An app built with a bundler calls
 `defineFieldiaForm()` once.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.js"
+  integrity="sha384-jzw09Z/rn6PUCLeuOTuGQetonzulZqM5JB9E3KHGtnmYZVV8+7QFSIa3WZLk6K1s"
+  crossorigin="anonymous"></script>
 <fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" locale="ar"></fieldia-form>
 ```
 
 On a site that is not yours, `fieldia-embed.js` (under 1 KB gzipped, nothing else
-of Fieldia's in it) places an iframe of your form's page where its tag stands —
-`<script src=".../bundle/fieldia-embed.js" data-src="https://forms.example.com/enquiry"
-data-locale="ar" async></script>` — and your page's `<fieldia-form frame>` tells
-it its height as it changes, so the frame grows and shrinks with the form, and
-`fieldia-ready`, `fieldia-step` and `fieldia-send` (the reference, never the
-answers) as events on the iframe, from your page's origin only. The tag passes on
-`data-locale`, `data-theme`, `data-skin` and the page's campaign parameters
-(`utm_*`, or those `data-params` names), for a page that fills hidden fields
-from its link.
+of Fieldia's in it) places an iframe of your form's page where its tag stands,
+and your page's `<fieldia-form frame>` tells it its height as it changes, so the
+frame grows and shrinks with the form, and `fieldia-ready`, `fieldia-step` and
+`fieldia-send` (the reference, never the answers) as events on the iframe, from
+your page's origin only. The tag passes on `data-locale`, `data-theme`,
+`data-skin` and the page's campaign parameters (`utm_*`, or those `data-params`
+names), for a page that fills hidden fields from its link.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia-embed.js"
+  integrity="sha384-VMhuaLF9xoPk8APcrP3uxMIo3ghSOLAkVvEE7kPPXYBbudYRiO2fy/unwnHPT7sm"
+  crossorigin="anonymous"
+  data-src="https://forms.example.com/enquiry" data-locale="ar" async></script>
+```
+
+Every tag here names a version and carries the hash of its file (`integrity`,
+with `crossorigin="anonymous"`): the browser runs that file and no other, so a
+page takes no release until you move it to one — take every tag from that
+release's README, `fieldia.js` and the scripts beside it alike. `fieldia.js`
+checks each part it fetches the same way: it carries the hash of every part it
+was built with, and refuses one that is not that file. Served from your own
+site, keep the bundle's folder together; from another origin than the page's,
+that origin sends `Access-Control-Allow-Origin`, as a CDN does.
 
 For React, Vue and Angular, use `@fieldia/react`, `@fieldia/vue` or
 `@fieldia/angular` — thin shells over this viewer. MIT licensed.

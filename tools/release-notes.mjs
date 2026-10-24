@@ -1,6 +1,7 @@
 /**
  * A release's notes, read from CHANGELOG.md, and the commands that tag it and make its GitHub release.
- * Nothing here runs those commands: a person runs them, once the packages are on npm.
+ * Nothing here runs those commands: a person runs them — the tag before the packages are published (release-guards.mjs),
+ * the GitHub release once they are on npm.
  *
  *   node tools/release-notes.mjs [version]   the notes and the commands for a version (the packages' own by default)
  *   node tools/release-notes.mjs --history   the commands for every release before, each tagged at the commit that made it
@@ -23,11 +24,14 @@ export function notesFor(changelog, version) {
   return { version, date: head.exec(lines[at])?.[1] ?? null, body };
 }
 
-/** The commands, exactly as a person types them: the annotated tag at the release's commit, its push, the GitHub release. */
-export function releaseCommands({ version, commit, notesFile }) {
+/**
+ * The commands, exactly as a person types them: the annotated tag at the release's commit, its push, the GitHub release.
+ * A release published by `release.mjs publish` is tagged before it is (release-guards.mjs): its tag is there to push.
+ */
+export function releaseCommands({ version, commit, notesFile, tagged = false }) {
   const tag = `v${version}`;
   return [
-    `git tag -a ${tag} ${commit} -m "Fieldia ${version}"`,
+    ...(tagged ? [] : [`git tag -a ${tag} ${commit} -m "Fieldia ${version}"`]),
     `git push origin ${tag}`,
     `gh release create ${tag} --verify-tag --title "Fieldia ${version}" --notes-file ${notesFile}`,
   ];
@@ -62,14 +66,14 @@ export function writeNotes(workspace, notes) {
   return relative(workspace, file);
 }
 
-/** What `publish` prints at its end: the notes, then the commands to run. */
-export function printRelease(workspace, version, commit) {
+/** What `publish` prints at its end, once every package is on npm: the notes, then the commands to run. */
+export function printRelease(workspace, version, commit, { tagged = false } = {}) {
   const notes = notesFor(readFileSync(join(workspace, 'CHANGELOG.md'), 'utf8'), version);
   if (!notes) throw new Error(`CHANGELOG.md has no section for ${version}`);
   const notesFile = writeNotes(workspace, notes);
   console.log(`\nFieldia ${version}${notes.date ? ` (${notes.date})` : ''}\n${'-'.repeat(40)}\n${notes.body}\n${'-'.repeat(40)}`);
-  console.log(`\nTag this release and publish its notes on GitHub (nothing has been run):\n`);
-  for (const command of releaseCommands({ version, commit, notesFile })) console.log(`  ${command}`);
+  console.log(`\n${tagged ? 'Push its tag' : 'Tag this release'} and publish its notes on GitHub (nothing has been run):\n`);
+  for (const command of releaseCommands({ version, commit, notesFile, tagged })) console.log(`  ${command}`);
   console.log('');
 }
 
@@ -91,6 +95,8 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.
     const version = asked ?? JSON.parse(readFileSync(join(WORKSPACE, 'libs/core/package.json'), 'utf8')).version;
     const commit = execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], { cwd: WORKSPACE, encoding: 'utf8' }).trim();
     const released = releasedVersions(WORKSPACE).find((one) => one.version === version);
-    printRelease(WORKSPACE, version, released ? released.commit.slice(0, 12) : commit);
+    // Tagged already (as a release is before it is published: release-guards.mjs), its tag is there to push.
+    const tagged = execFileSync('git', ['tag', '--list', `v${version}`], { cwd: WORKSPACE, encoding: 'utf8' }).trim() !== '';
+    printRelease(WORKSPACE, version, released ? released.commit.slice(0, 12) : commit, { tagged });
   }
 }

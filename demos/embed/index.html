@@ -57,7 +57,7 @@
       if (params.get('as') === 'frame') {
         // In an iframe of the developer's own form page: the one tag a partner pastes, as written below — the frame
         // grows and shrinks with the form, and the link's campaign parameters reach its hidden fields.
-        code.textContent = '<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia-embed.js"\n  data-src="https://forms.palmvalley.example/enquiry" data-title="Ask about this unit" async><\/script>';
+        code.textContent = '__FIELDIA_TAG:fieldia-embed.js__\n  data-src="https://forms.palmvalley.example/enquiry" data-title="Ask about this unit" async><\/script>';
         const tag = document.createElement('script');
         tag.src = 'fieldia-embed.js';
         tag.dataset.src = 'form.html';
@@ -68,7 +68,7 @@
         place.append(tag);
       } else {
         // On the page itself: one script tag, and the form as an element.
-        code.textContent = '<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"><\/script>\n<fieldia-form src="enquiry.page.json" action="/api/enquiries" skin="outlined"></fieldia-form>';
+        code.textContent = '__FIELDIA_TAG:fieldia.js__><\/script>\n<fieldia-form src="enquiry.page.json" action="/api/enquiries" skin="outlined"></fieldia-form>';
         const form = document.createElement('fieldia-form');
         form.setAttribute('src', 'unit-enquiry.page.json');
         form.setAttribute('skin', 'outlined');

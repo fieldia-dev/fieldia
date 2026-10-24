@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { code } from '../layout.mjs';
 import { COUNTS, SIZES, TESTS, Words, figure, words } from '../facts.mjs';
+import { tag } from '../script-tags.mjs';
 import { AREAS, DEMOS, areaOf } from '../../demos/catalog.mjs';
 import { HERO_JSON, TABS } from '../hero.mjs';
 
@@ -289,7 +290,7 @@ export default {
     <div role="tabpanel" id="code-plain" aria-labelledby="tab-plain">${code(
       'html',
       `
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+${tag('fieldia.js')}
 <script>
   Fieldia.mountViewer(document.getElementById('app'), {
     page, dataSource: Fieldia.createMemoryDataSource(),

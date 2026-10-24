@@ -2,8 +2,11 @@
  * Build the `<script>` bundle: core, widgets and viewer in one file that sets
  * the global `Fieldia`, for pages with no build step —
  *
- *   <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+ *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia.js" integrity="sha384-…" crossorigin="anonymous"></script>
  *   <script>Fieldia.mountViewer(element, { page, dataSource })</script>
+ *
+ * (the tags fieldia.dev and the READMEs print, each naming a version and its file's hash: tools/script-tags.mjs; the
+ * README inside @fieldia/viewer is written here as it is built, with its own version's hashes).
  *
  * Its own words are English. Arabic, German and French ship as add-on
  * scripts beside it — `fieldia.ar.js`, `fieldia.de.js`, `fieldia.fr.js` — and
@@ -12,7 +15,7 @@
  * native speaker), each carrying that language's words alone, which a page
  * loads after the main one:
  *
- *   <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
+ *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia.ar.js" integrity="sha384-…" crossorigin="anonymous"></script>
  *
  * They ship inside @fieldia/viewer (the `bundle/` folder), so their version is
  * always the viewer's. Then it checks the files: the main one must run on its
@@ -21,14 +24,27 @@
  */
 import { build, transform } from 'esbuild';
 import { Buffer } from 'node:buffer';
-import { copyFileSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { gzipSync } from 'node:zlib';
 import { englishKeys, PART_WORDS, partWordsProblems, readerSource, withoutWords, WORD_TABLES } from './part-words.mjs';
+import { machinePathIn } from './release-guards.mjs';
+import { hashesOf, tagProblems, writeTags } from './script-tags.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
+/**
+ * A workspace file as a module this build makes imports it — `"./libs/core/…"`, from the folder the module is read in
+ * (the workspace, unless it stands in for a file of its own) — never the file's path on this machine: the modules
+ * made here ship in the source maps (`sourcesContent`), and a published file names no path of the machine it was built
+ * on (the audit's S-L10; release.mjs refuses one).
+ */
+const from = (file, dir = WORKSPACE) => {
+  const path = relative(dir, file);
+  return JSON.stringify(path.startsWith('.') ? path : `./${path}`);
+};
 const BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle');
 const OUT = join(BUNDLE, 'fieldia.js');
 /** The languages besides English, each an add-on script of its own. */
@@ -166,12 +182,12 @@ const asksForParts = (table, parts) => ({
         return `__fieldiaPart(${JSON.stringify(part)})`;
       });
       if (callsImport(asking)) throw new Error(`${path} loads a module with import(): the script bundle loads only parts (a ./x-part module) on demand`);
-      return { contents: `import { loadPart as __fieldiaPart } from ${JSON.stringify(join(WORKSPACE, 'tools/script-parts.ts'))};\n${asking}`, loader: 'ts' };
+      return { contents: `import { loadPart as __fieldiaPart } from ${from(join(WORKSPACE, 'tools/script-parts.ts'), dirname(path))};\n${asking}`, loader: 'ts' };
     });
     builder.onResolve({ filter: /^fieldia:shared$/ }, () => ({ path: 'shared', namespace: 'fieldia-shared-table' }));
     builder.onLoad({ filter: /.*/, namespace: 'fieldia-shared-table' }, () => ({
       contents: [
-        ...table.map(([file, names], i) => `import { ${names.map((name) => `${name} as m${i}_${name}`).join(', ')} } from ${JSON.stringify(file)};`),
+        ...table.map(([file, names], i) => `import { ${names.map((name) => `${name} as m${i}_${name}`).join(', ')} } from ${from(file)};`),
         // Made the first time a part is taken, once every module of the main script has run: a module that asks for a
         // part may be one the table's modules import (the form's, in @fieldia/core), whose consts are not set yet as it
         // is first read.
@@ -231,7 +247,7 @@ const checksLater = {
     for (const [part, { file, names }] of Object.entries(CHECKS_IN_PARTS)) {
       builder.onLoad({ filter: new RegExp(`${file.replace(/[./]/g, (c) => `\\${c}`)}$`) }, () => ({
         contents: [
-          `import { LATER_CHECKS } from ${JSON.stringify(LATER_CHECKS_FILE)};`,
+          `import { LATER_CHECKS } from ${from(LATER_CHECKS_FILE)};`,
           // The tools a check is handed come last: they are told it is owed.
           ...names.map((name) => `export const ${name} = (...args) => { const real = LATER_CHECKS[${JSON.stringify(part)}]?.${name}; return real ? real(...args) : args[args.length - 1].owe(${JSON.stringify(part)}); };`),
         ].join('\n'),
@@ -259,7 +275,7 @@ const weekInParts = {
   setup(builder) {
     builder.onLoad({ filter: /libs\/core\/src\/lib\/format\/week\.ts$/ }, () => ({
       // Asked before a part that draws a week has come: never — no module of the main script draws one (checked below).
-      contents: `import { WEEK } from ${JSON.stringify(WEEK_HOLDER)};\nexport const firstWeekday = (...args) => (WEEK.firstWeekday ? WEEK.firstWeekday(...args) : 1);`,
+      contents: `import { WEEK } from ${from(WEEK_HOLDER)};\nexport const firstWeekday = (...args) => (WEEK.firstWeekday ? WEEK.firstWeekday(...args) : 1);`,
       resolveDir: WORKSPACE,
       loader: 'js',
     }));
@@ -311,10 +327,13 @@ const namesUsed = (code) => {
   return used;
 };
 
-const mainScript = async (table) => {
+const mainScript = async (table, hashes = {}) => {
   const parts = new Map();
   const { metafile } = await build({
     ...common,
+    // Each part's hash, which the tag the main script adds for it carries (tools/script-parts.ts): none until the parts
+    // are built, then the main script built once more with them.
+    define: { ...common.define, __FIELDIA_PART_HASHES__: JSON.stringify(hashes) },
     entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
     plugins: [minifiedStyles, englishOnly, noFirstPaint, partWordsOut, checksLater, weekInParts, asksForParts(table, parts)],
     globalName: 'Fieldia',
@@ -388,11 +407,11 @@ const wordsLiteral = (tables) => {
 /** A part's script's own module: each of its modules' exports (a part may have one in each package). */
 const partEntry = (part) =>
   [
-    ...PART_SOURCES[part].map((file) => `export * from ${JSON.stringify(file)};`),
+    ...PART_SOURCES[part].map((file) => `export * from ${from(file)};`),
     // The checks it carries, put where the main script's reference check finds them as it comes.
-    ...(CHECKS_IN_PARTS[part] ? [`import * as checks from ${JSON.stringify(join(WORKSPACE, CHECKS_IN_PARTS[part].file))};`, `import { LATER_CHECKS } from ${JSON.stringify(LATER_CHECKS_FILE)};`, `LATER_CHECKS[${JSON.stringify(part)}] = checks;`] : []),
+    ...(CHECKS_IN_PARTS[part] ? [`import * as checks from ${from(join(WORKSPACE, CHECKS_IN_PARTS[part].file))};`, `import { LATER_CHECKS } from ${from(LATER_CHECKS_FILE)};`, `LATER_CHECKS[${JSON.stringify(part)}] = checks;`] : []),
     // The week's first day, where the part draws a week: put where the main script's stands in for it.
-    ...(WEEK_CARRIERS.includes(part) ? [`import { firstWeekday as week } from ${JSON.stringify(WEEK_FILE)};`, `import { WEEK } from ${JSON.stringify(WEEK_HOLDER)};`, `WEEK.firstWeekday = week;`] : []),
+    ...(WEEK_CARRIERS.includes(part) ? [`import { firstWeekday as week } from ${from(WEEK_FILE)};`, `import { WEEK } from ${from(WEEK_HOLDER)};`, `WEEK.firstWeekday = week;`] : []),
   ].join('\n');
 const partScript = (part, inMain, table, needs) =>
   build({
@@ -471,6 +490,19 @@ for (const part of PARTS) {
     if (twice.length) throw new Error(`fieldia.${part}.js and fieldia.${other}.js both carry ${twice.join(', ')}: a part's code belongs to one part`);
   }
 }
+// Each part checked before it runs (tools/script-parts.ts): the main script built once more, now carrying every part's
+// file's sha256 — the modules it carries and the parts it asks for as before, and no part built against it again (a
+// part takes nothing of the main script's own bytes, only its table of names). A part's tag carries its hash as
+// `integrity`, and the browser runs no other file in its place. 52 hashes of 44 characters, 2.4 KB gzipped (a hash is
+// not shortened by any compression); sha384's 64 would add 0.9 KB more, for no check a browser does better.
+const PART_HASHES = Object.fromEntries(PARTS.map((part) => [part, createHash('sha256').update(readFileSync(partFiles[part])).digest('base64')]));
+{
+  const before = main;
+  main = await mainScript(table, PART_HASHES);
+  if (main.parts.join() !== before.parts.join() || [...main.inMain].sort().join() !== [...before.inMain].sort().join()) throw new Error("the main script built with its parts' hashes carries other modules, or asks for other parts");
+  const carried = readFileSync(OUT, 'utf8');
+  for (const part of PARTS) if (!carried.includes(JSON.stringify(PART_HASHES[part]))) throw new Error(`fieldia.js does not carry fieldia.${part}.js's hash`);
+}
 // The words the main script leaves out (tools/part-words.mjs) are read by none of its modules, and each one by the
 // modules of the parts that bring it alone: read here from the modules this build put in each script.
 {
@@ -508,6 +540,23 @@ for (const [locale, name] of Object.entries(LANGUAGES)) {
 // alone, nothing of Fieldia's in it but the frame's few lines (tools/embed-entry.ts); the form's page loads fieldia.js.
 const EMBED = join(BUNDLE, 'fieldia-embed.js');
 await build({ ...common, entryPoints: [join(WORKSPACE, 'tools/embed-entry.ts')], banner: { js: `/*! Fieldia ${version} · embed · MIT · https://fieldia.dev */` }, outfile: EMBED });
+
+// What ships names no path of this machine: a source map's sources and the modules made here are relative (`from`).
+for (const file of readdirSync(BUNDLE)) {
+  const path = machinePathIn(readFileSync(join(BUNDLE, file), 'utf8'));
+  if (path) throw new Error(`bundle/${file} names ${path}, a path on the machine it was built on: import a workspace file by a relative path (from())`);
+}
+
+// The README @fieldia/viewer ships (copied beside it by its build, before this): its script tags name this version,
+// each with the hash of the file beside it in the same package — what jsDelivr serves for this version once it is on
+// npm (tools/script-tags.mjs; the repository's README names the release on npm, from tools/script-tags.json).
+const README = join(WORKSPACE, 'dist/libs/viewer/README.md');
+if (existsSync(README)) {
+  const built = { version, integrity: hashesOf(BUNDLE) };
+  const written = writeTags(readFileSync(README, 'utf8'), built);
+  if (tagProblems(written, built).length || !written.includes(`@fieldia/viewer@${version}/bundle/fieldia.js`)) throw new Error(`dist/libs/viewer/README.md's script tags are not ${version}'s`);
+  writeFileSync(README, written);
+}
 
 // It must stand on its own: run it with nothing but a window and look for the viewer.
 const sandbox = { window: {}, self: {}, globalThis: {} };
@@ -1383,7 +1432,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // measured before, 534.73 after, to 534.8. What a person has open stays theirs: a popup open in a part asked again
 // keeps what is shown, and the part holding one is never hidden, dimmed or shaped under a wait (loading.ts,
 // styles-loading.ts): 534.75 measured before, 535.08 after, to 535.1.
-const BUDGET_KB = 535.1;
+// Each part checked before it runs (harden-release; the audits' S-M8 and R-H9), for every page that loads one: the
+// sha256 of each of the 52 parts' files, which the tag the main script adds for a part carries as `integrity` — 2.75 KB,
+// 44 characters of base64 and a name each — and the tag asked for without credentials, a part this script has no hash
+// for refused, and the words for a part that could not come or is not the file it was built with (script-parts.ts,
+// 0.46 KB). 525.24 measured before, 528.46 after. The console's line for a language's script missing names this
+// script's own version, never the newest (labels.ts, 130 bytes): 528.59, to 528.6.
+const BUDGET_KB = 538.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1690,7 +1745,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // stays here: an app that draws its own waits draws them on every page, never after a part's fetch.
 // 0.33's merge: the waits over 0.32's tick boxes, undo keys and popups' room (listed with the raw budget above): 172.08
 // measured before, 175.84 after, to 175.9; a popup kept clear of a wait, 175.83 measured before, 175.94 after, to 176.0.
-const GZIP_BUDGET_KB = 176.0;
+// Each part checked before it runs (harden-release; listed with the raw budget above): 172.08 measured before, 174.61
+// after — 2.37 of it the parts' hashes, which no compression shortens (sha384's would be 0.9 more), 0.16 the code and
+// its words; the console's line for a language's script naming this script's version, 174.71, to 174.8.
+const GZIP_BUDGET_KB = 178.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
