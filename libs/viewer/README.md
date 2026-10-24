@@ -1354,5 +1354,30 @@ answers) as events on the iframe, from your page's origin only. The tag passes o
 (`utm_*`, or those `data-params` names), for a page that fills hidden fields
 from its link.
 
+### Sooner on a phone: a page's parts in its HTML
+
+The one-tag script asks for the parts a page draws from as it starts, once it
+has come and run: on a phone, a round trip after it. A server that knows the
+page writes their tags into the HTML before `fieldia.js`, from the same folder,
+so they come beside it — measured on a mid-range phone, a list of customers
+usable 23% sooner on 4G and 27% on Fast 3G, a record with tabs 16% on both.
+`partFiles(page)` from `@fieldia/viewer/server` names them; a page given
+`Fieldia.createMemoryDataSource` adds `fieldia.memory.js`:
+
+```ts
+import { partFiles } from '@fieldia/viewer/server';
+const base = 'https://cdn.jsdelivr.net/npm/@fieldia/viewer@<version>/bundle/';
+const parts = partFiles(page).map((file) => `<script async src="${base}${file}"></script>`).join('');
+// …then fieldia.js's own tag, from the same folder.
+```
+
+`fieldia.js` takes a part whose tag it finds still on its way, and never asks
+for it a second time. A `<link rel="preload" as="script">` is used only by a
+request made the same way: write it with what the part's own tag carries —
+`Fieldia.partTags(page)` gives each, its address and attributes. A list's first
+page of records is asked for as its part is, not once it has come (where the
+page alone says what the list asks first); the designer asks for every part the
+page it opens draws from at once.
+
 For React, Vue and Angular, use `@fieldia/react`, `@fieldia/vue` or
 `@fieldia/angular` — thin shells over this viewer. MIT licensed.

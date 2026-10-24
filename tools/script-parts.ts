@@ -77,6 +77,26 @@ function take([name, version, make, words]: PartEntry) {
   settle(name, { exports });
 }
 
+/**
+ * The tag a part is asked for with, as the main script adds it: its address, beside the main script's own, and its
+ * nonce. The one place it is made — the page's own tags for its parts (`partTags`, a server's preload links) carry what
+ * it carries, or the browser fetches the part twice (a preload is used only by a request made the same way).
+ */
+export function partTag(name: string): { src: string; nonce?: string } {
+  return { src: `${base}fieldia.${name}.js`, ...(nonce ? { nonce } : {}) };
+}
+
+/**
+ * The page's own tag for a part still on its way — a server wrote it before fieldia.js (`partFiles`): waited for, never
+ * asked for a second time. One that came already (the browser's resource timing has it) and gave no part is not.
+ */
+function onItsWay(doc: Document, src: string): HTMLScriptElement | undefined {
+  const timing = globalThis.performance;
+  // A full buffer of timings can no longer say whether it came: asked for again then, as before.
+  if (!timing?.getEntriesByName || timing.getEntriesByType('resource').length > 249 || timing.getEntriesByName(src).length) return undefined;
+  return [...doc.scripts].find((one) => one.src === src);
+}
+
 /** A part's code: at once once it has come, else its script added to the page, beside the main one. */
 export function loadPart(name: string): Promise<unknown> {
   if (made.has(name)) return Promise.resolve(made.get(name));
@@ -92,19 +112,24 @@ export function loadPart(name: string): Promise<unknown> {
       settle(name, { error: new Error(`fieldia.${name}.js cannot be loaded: fieldia.js came from no address of its own. Add its tag after fieldia.js.`) });
       return;
     }
-    const tag = doc.createElement('script');
-    tag.src = `${base}fieldia.${name}.js`;
-    tag.async = true;
-    if (nonce) tag.nonce = nonce;
-    tag.onload = () => {
+    const { src, nonce: own } = partTag(name);
+    // The page's own tag for it, still coming — its script hands the part over as it runs (`FieldiaParts`) — else one
+    // of the main script's own.
+    const written = onItsWay(doc, src);
+    const tag = written ?? doc.createElement('script');
+    tag.addEventListener('load', () => {
       tag.remove();
-      if (!made.has(name)) settle(name, { error: new Error(`${tag.src} gave no part`) });
-    };
-    tag.onerror = () => {
+      if (!made.has(name)) settle(name, { error: new Error(`${src} gave no part`) });
+    });
+    tag.addEventListener('error', () => {
       tag.remove();
       // Forgotten, so the next use asks again (a page that was offline).
-      settle(name, { error: new Error(`${tag.src} could not be loaded`) });
-    };
+      settle(name, { error: new Error(`${src} could not be loaded`) });
+    });
+    if (written) return;
+    tag.src = src;
+    tag.async = true;
+    if (own) tag.nonce = own;
     (doc.head ?? doc.documentElement).append(tag);
   });
 }

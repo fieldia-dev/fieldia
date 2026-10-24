@@ -28,6 +28,7 @@ import {
   type Tone,
   type Values,
   type ViewState, intlFormat } from '@fieldia/core';
+import type { EarlyList } from './list-early';
 import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type Widget, type WidgetContext, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import { defaultFacets, laterFavourites, startingFacets } from './favourites';
@@ -75,6 +76,8 @@ export interface ListContext {
   onOpenRecord?: (id: RecordId, name?: string) => unknown;
   /** Conditions every search keeps: the records this list may show at all. */
   fixedFilter?: ResolvedFilter[];
+  /** Its first page, asked for as its part came (list-early.ts): its first request takes it where it is the same. */
+  early?: EarlyList;
   /** The search it opens with, chips a person may take away, in place of its default filters and favourite (View all's). */
   search?: Facet[];
   /** Other ways of showing the records, by name: `map` for a list with `map`, `calendar` for one with `calendar`. */
@@ -1065,7 +1068,11 @@ export function listView(context: ListContext): ListView {
       } else {
         // Loaded as it is scrolled: every row it held, asked again from the first.
         // A tree loaded as it opens: its records with no parent, while no search is on.
-        const answer = source?.list ? await source.list({ model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize }) : { records: [], total: 0 };
+        const request = { model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize };
+        // The first page asked for already, as the list's part came, where it is this very request: taken once.
+        const early = context.early && JSON.stringify(context.early.request) === JSON.stringify(request) ? context.early.answer : undefined;
+        context.early = undefined;
+        const answer = source?.list ? await (early ?? source.list(request)) : { records: [], total: 0 };
         if (stale()) return;
         // Past the end, as when the last record of the last page went: back to the page that is left.
         if (!answer.records.length && answer.total > 0 && offset > 0) {

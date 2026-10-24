@@ -73,6 +73,7 @@ import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
 import { openPage } from './open';
 import { sayer } from './say';
+import { earlyList, type EarlyList } from './list-early';
 import { tabStrip } from './tab-strip';
 import { valueWords, type ValueWriter } from './value-words';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
@@ -627,6 +628,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** Set once the viewer is on the page; set again when it is taken away. */
   let mounted = false;
   let gone = false;
+  /** A list page's first page of records, asked for beside its part (list-early.ts). */
+  let earlyRows: EarlyList | undefined;
   /** Whether the form has opened a record yet (its `open` event). */
   let opened = false;
 
@@ -2552,6 +2555,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
         ...(options.listSearch ? { search: options.listSearch } : {}),
         ...(options.listViews ? { views: options.listViews } : {}),
+        // Its first page, asked for beside its part (list-early.ts): taken where it asks the same first.
+        ...(earlyRows ? { early: earlyRows } : {}),
         ...newListRecord(),
         // An export's end said, Edit's question asked and its value asked in a dialog, as the page's own steps are.
         say: (message, tone) => actionHost.say(message, tone),
@@ -2633,6 +2638,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // The app's own functions are called through the functions part: a page whose formulas call one waits for it.
   const appCalls = options.functions && callsPartFunctions(page, Object.keys(options.functions)) ? [functionsPart] : [];
   const awaited = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded);
+  // A list page's records asked for now, as its part comes, not once it has.
+  if (awaited.includes(listPart)) earlyRows = earlyList(page, options);
   let drawn: Promise<void> = Promise.resolve();
   if (!awaited.length && !words) drawPage();
   else {

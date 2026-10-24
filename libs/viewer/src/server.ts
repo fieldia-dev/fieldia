@@ -1,6 +1,8 @@
 import { createForm, localizePage, isRightToLeft, type Field, type FieldNode, type LayoutNode, type Page, type Skin, type Value, type Values } from '@fieldia/core';
 import { displayValue, FIELDIA_STYLE_SHEETS } from '@fieldia/widgets';
 import { ownLocale } from './lib/labels';
+// The one-tag script's files a page draws from, for a server to write their tags before fieldia.js.
+export { partFiles } from './lib/viewer-parts';
 
 /**
  * A form's first paint on a server: `@fieldia/viewer/server`. A Next, Nuxt or any server-rendered page sends the form
