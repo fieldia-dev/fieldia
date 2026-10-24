@@ -11,7 +11,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
  */
 
 const homesPage: Page = {
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'homes',
   title: 'Homes',
   records: { one: 'home', other: 'homes', a: 'a home' },
@@ -351,7 +351,7 @@ describe('the sheet on a phone', () => {
 
 describe('the search bar’s named filters and favourites', () => {
   const leads: Page = {
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'leads',
     title: 'Leads',
     records: { one: 'lead', other: 'leads', a: 'a lead' },
@@ -444,7 +444,7 @@ describe('the search bar’s named filters and favourites', () => {
 describe('filters beside choices that change: carried, from the app’s list, a table’s lines', () => {
   /** Leads, each with the treatments it asked about, the one it came back for carried from them, and its branch from the app's list. */
   const leadsPage: Page = {
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'leads',
     title: 'Leads',
     records: { one: 'lead', other: 'leads' },

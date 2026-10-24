@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.11",
+  "fieldia": "0.12",
   "id": "wi-text",
   "title": "Bug 4127",
   "description": "A work item's body as its editor draws it: three columns of groups that fold and grow from their heading's end, Repro Steps in Markdown and System Info in rich text, a discussion, help, and links to other work.",

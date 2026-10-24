@@ -6,7 +6,7 @@ import { AUTOFILL, autofillProblem, autofillPurpose } from './autofill';
 
 /** A page of one field, placed as the test says. */
 const pageWith = (node: Partial<FieldNode>, type: 'char' | 'json' = 'char'): Page => ({
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'p',
   data: { kind: 'responses' },
   fields: { f: { type, label: 'F' } },

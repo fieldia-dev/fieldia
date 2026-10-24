@@ -12,7 +12,7 @@ import type { PaidPayment, PaymentDue, PayRequest } from './data-source';
  */
 
 const enquiry = (payment: Page['payment'] = { label: 'Reservation fee', amount: 10000, currency: 'EGP', when: "visit == 'reserve'" }): Page => ({
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'enquiry',
   data: { kind: 'responses' },
   fields: {

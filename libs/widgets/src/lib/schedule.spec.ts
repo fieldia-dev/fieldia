@@ -9,7 +9,7 @@ import { createWidget } from './widgets';
  */
 
 const page = {
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'course',
   data: { kind: 'record', model: 'course' },
   fields: {

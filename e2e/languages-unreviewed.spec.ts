@@ -290,7 +290,7 @@ test.describe('the week’s first day where the page is read', () => {
           const host = document.getElementById('app') as HTMLElement;
           (window as any).fieldiaDemo.handle.destroy();
           host.replaceChildren();
-          const day = { fieldia: '0.11', id: 'week', data: { kind: 'responses' }, fields: { day: { type: 'date', label: 'Day' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-day', field: 'day' }] } };
+          const day = { fieldia: '0.12', id: 'week', data: { kind: 'responses' }, fields: { day: { type: 'date', label: 'Day' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-day', field: 'day' }] } };
           fieldia.mountViewer(host, { page: day, dataSource: fieldia.createMemoryDataSource(), skin: 'outlined', locale: 'en' });
         });
         expect(await monthsFirstDay(page, 'f-day')).toBe(first);

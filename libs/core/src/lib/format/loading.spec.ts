@@ -15,14 +15,14 @@ const FIELDS = {
   lng: { type: 'float', label: 'Longitude' },
 };
 const record = (extra: Record<string, unknown> = {}, node: Record<string, unknown> = { type: 'field', id: 'n', field: 'name' }) => ({
-  fieldia: '0.10',
+  fieldia: '0.12',
   id: 'loading',
   data: { kind: 'record', model: 'customer' },
   fields: FIELDS,
   layout: { type: 'sections', id: 's', children: [node] },
   ...extra,
 });
-const list = (loading: unknown) => ({ fieldia: '0.10', id: 'customers', data: { kind: 'record', model: 'customer' }, fields: FIELDS, layout: { type: 'list', id: 'l', columns: ['name'], loading } });
+const list = (loading: unknown) => ({ fieldia: '0.12', id: 'customers', data: { kind: 'record', model: 'customer' }, fields: FIELDS, layout: { type: 'list', id: 'l', columns: ['name'], loading } });
 const problems = (input: unknown) => {
   const r = validatePage(input);
   return r.ok ? [] : r.issues.map((i) => `${i.path}: ${i.message}`);

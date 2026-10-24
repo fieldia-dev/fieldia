@@ -15,7 +15,7 @@ describe('the page as JSON', () => {
     const { designer } = setup();
     const text = designer.pageJson();
     expect(text).toBe(JSON.stringify(designer.getPage(), null, 2));
-    expect(text.split('\n')[1]).toBe('  "fieldia": "0.11",');
+    expect(text.split('\n')[1]).toBe('  "fieldia": "0.12",');
     expect(Object.keys(JSON.parse(text))).toEqual(Object.keys(designer.getPage()));
   });
 

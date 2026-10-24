@@ -48,7 +48,7 @@ afterEach(async () => {
 /** A page of `fields`, the one named `name` drawn by its node as the viewer draws it, kept up to date with its form. */
 function mount(fields: Record<string, Field>, name: string, node: Partial<FieldNode>, options: { values?: Values; dataSource?: DataSource; readonly?: boolean } = {}) {
   const page = {
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'scan',
     data: { kind: 'record', model: 'clinic.treatment' },
     fields,
@@ -364,7 +364,7 @@ describe("a GS1 code's parts", () => {
 
   it("fills a line's columns from its lot's cell, as a table of lines draws the cell", async () => {
     const page = {
-      fieldia: '0.11',
+      fieldia: '0.12',
       id: 'treatment',
       data: { kind: 'record', model: 'clinic.treatment' },
       fields: { line_ids: { type: 'one2many', label: 'Injectables used', relation: 'clinic.treatment.line', fields } },

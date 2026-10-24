@@ -10,7 +10,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 const signup = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'event-signup',
     title: 'Workshop sign-up',
     timeZone: 'UTC',
@@ -26,7 +26,7 @@ const signup = (more: Partial<Page> = {}): Page =>
 
 const intake = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'patient-intake',
     data: { kind: 'responses' },
     continueLater: true,

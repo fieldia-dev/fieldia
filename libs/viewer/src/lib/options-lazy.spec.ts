@@ -10,7 +10,7 @@ import { partsFor } from './viewer-parts';
 
 const listing = (garden: Record<string, unknown> = { invisible: "kind != 'villa'" }): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'listing',
     data: { kind: 'responses' },
     fields: {

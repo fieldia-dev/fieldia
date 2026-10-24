@@ -16,7 +16,7 @@ import { mountSurveyEditor } from './survey-editor';
 
 /** A clinic's feedback: a branch, a yes or no, a rating. */
 const feedback = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'feedback',
   title: 'Feedback',
   data: { kind: 'responses' },

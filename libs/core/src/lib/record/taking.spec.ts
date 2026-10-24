@@ -18,7 +18,7 @@ import { limitInstant } from './taking';
 
 const signup = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'event-signup',
     timeZone: 'Africa/Cairo',
     data: { kind: 'responses' },

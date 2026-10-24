@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.11",
+  "fieldia": "0.12",
   "id": "enquiry-reply",
   "title": "Enquiry",
   "description": "A buyer’s enquiry answered with AI help: what they want read from their message — the kind of home, the district, the budget, the bedrooms — each shown on its field to accept, then a reply drafted from the enquiry, and words you wrote yourself polished. Nothing is kept until you accept it, and Undo puts it back. The AI here is a stand-in in the demo’s memory source: pattern matching and a template, no model and no keys. Your app answers with its own model.",

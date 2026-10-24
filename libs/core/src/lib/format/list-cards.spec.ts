@@ -22,7 +22,7 @@ const fields = {
 };
 
 const page = (list: Record<string, unknown>) => ({
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'homes',
   title: 'Homes',
   data: { kind: 'record', model: 'home' },
@@ -160,7 +160,7 @@ describe('a card’s words', () => {
 describe('a list’s record as its row’s conditions read it', () => {
   it('reads the person, the app’s context and the record’s own id beside its values, as the form’s own conditions do', () => {
     const page = {
-      fieldia: '0.11',
+      fieldia: '0.12',
       id: 'contacts',
       data: { kind: 'record', model: 'contact' },
       fields: { name: { type: 'char', label: 'Name' }, owner_id: { type: 'many2one', label: 'Owner', relation: 'res.users' } },

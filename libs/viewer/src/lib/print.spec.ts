@@ -13,7 +13,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
  */
 
 const invoice: Page = {
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'invoice',
   title: 'Invoice',
   timeZone: 'Africa/Cairo',
@@ -156,7 +156,7 @@ describe('the owner’s walk of 0.25 on paper', () => {
   it('titles a record by its own name on a page of sections too: its "name" field, before what its records are called', async () => {
     // The owner's walk of 0.27: a service agreement's printout headed "Agreement" where the record is SA-2026-014.
     const agreement: Page = {
-      fieldia: '0.11',
+      fieldia: '0.12',
       id: 'agreement',
       title: 'Service agreement',
       records: { one: 'agreement', other: 'agreements', a: 'an agreement' },

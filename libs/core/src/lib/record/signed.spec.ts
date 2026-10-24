@@ -12,7 +12,7 @@ const PICTURE = { name: 'signature.png', type: 'image/png', size: 4, data: 'QUJD
 
 const page = (signs: unknown = ['patient', 'treatment'], more: Record<string, unknown> = {}, given = true): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'consent',
     data: { kind: 'responses' },
     fields: {

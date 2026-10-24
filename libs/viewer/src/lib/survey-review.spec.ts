@@ -28,7 +28,7 @@ function type(input: HTMLInputElement, text: string) {
 }
 
 const intake = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'intake',
   data: { kind: 'responses' },
   review: true,

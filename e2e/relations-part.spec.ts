@@ -26,7 +26,7 @@ const FIELDS = {
   tag_ids: { type: 'many2many', label: 'Tags', relation: 'tag' },
 };
 const ORDER = {
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'order',
   title: 'Order',
   data: { kind: 'record', model: 'sale.order' },
@@ -114,7 +114,7 @@ test.describe('a link to other records in a part of its own', () => {
     await page.evaluate((records) => {
       const fieldia = (window as any).Fieldia;
       const fields = { partner: { type: 'many2one', label: 'Customer', relation: 'partner' }, payer: { type: 'many2one', label: 'Payer', relation: 'partner' } };
-      const shown = { fieldia: '0.11', id: 'own', data: { kind: 'record', model: 'sale.order' }, fields, layout: { type: 'sections', id: 's', children: [] } };
+      const shown = { fieldia: '0.12', id: 'own', data: { kind: 'record', model: 'sale.order' }, fields, layout: { type: 'sections', id: 's', children: [] } };
       const form = fieldia.createForm({ page: shown, values: { partner: { id: 1, label: 'Nile Traders' }, payer: null }, dataSource: fieldia.createMemoryDataSource({ records }) });
       const host = document.createElement('div');
       host.id = 'own';
@@ -167,7 +167,7 @@ test.describe('a link to other records in a part of its own', () => {
     await page.waitForLoadState('networkidle');
     const floors = Array.from({ length: 20 }, (_, i) => ({ value: String(i), label: `Floor ${i}` }));
     const shown = {
-      fieldia: '0.11',
+      fieldia: '0.12',
       id: 'moved',
       data: { kind: 'responses' },
       fields: {

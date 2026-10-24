@@ -8,7 +8,7 @@ import { formSurveyPart } from './survey';
 
 /** A clinic's injectables check: a choice with one right answer, one with several, a number typed, a word typed, and a choice of points alone. */
 const check = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'injectables-check',
   data: { kind: 'responses' },
   quiz: {},

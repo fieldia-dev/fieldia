@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.11",
+  "fieldia": "0.12",
   "id": "reading",
   "title": "Invoice",
   "data": { "kind": "record", "model": "reading.invoice" },

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.11",
+  "fieldia": "0.12",
   "id": "map-round",
   "title": "Today’s round",
   "description": "A delivery round: its stops in order, each numbered on the map and greyed once done, and the way from the van through them.",

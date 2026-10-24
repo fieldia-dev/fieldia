@@ -95,7 +95,7 @@ ${code(
   'json',
   `
 {
-  "fieldia": "0.11",
+  "fieldia": "0.12",
   "phone": { "country": "EG", "shown": "national" },
   "fields": { "mobile": { "type": "char", "label": "Mobile" }, "office": { "type": "char", "label": "Dubai office" } },
   "layout": { "type": "sections", "id": "s", "children": [

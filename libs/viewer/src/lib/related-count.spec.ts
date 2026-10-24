@@ -29,7 +29,7 @@ const invoices = {
 /** A customer with its notes in its first tab, and its invoices — counted — in its second. */
 const customer = (related: Record<string, unknown> = {}, tab: Record<string, unknown> = {}): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'customer',
     title: 'Customer',
     data: { kind: 'record', model: 'partner' },
@@ -53,7 +53,7 @@ const customer = (related: Record<string, unknown> = {}, tab: Record<string, unk
 
 /** The page the app gives for an invoice: what New makes. */
 const invoicePage = {
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'invoice',
   title: 'Invoice',
   data: { kind: 'record', model: 'invoice' },

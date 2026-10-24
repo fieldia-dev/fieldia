@@ -16,7 +16,7 @@ import { later } from './test-steps';
 /** An invoice: a customer it needs, a status its buttons move, the customer locked once it is posted. */
 function invoicePage(): Page {
   const page: Page = {
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'invoice',
     data: { kind: 'record', model: 'invoice' },
     fields: {

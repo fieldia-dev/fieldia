@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.11",
+  "fieldia": "0.12",
   "id": "real-employee-departure",
   "title": "Register Departure",
   "description": "Sherkety ERP, hr: hr.departure.wizard, hr_departure_wizard_view_form — what the employee form's Archive opens (js_class hr_employee_form).",

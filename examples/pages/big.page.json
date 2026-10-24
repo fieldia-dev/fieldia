@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.11",
+  "fieldia": "0.12",
   "id": "supplier-file",
   "title": "Supplier qualification file",
   "description": "Every section a buyer checks before a supplier is approved: 500 fields, for timing Fieldia at size.",

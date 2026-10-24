@@ -20,7 +20,7 @@ import { isEmpty } from './values';
 
 const listing = (more: Partial<Page> = {}, fields: Partial<Page['fields']> = {}): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'listing',
     data: { kind: 'record', model: 'listing' },
     fields: {

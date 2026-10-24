@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.11",
+  "fieldia": "0.12",
   "id": "customer-account",
   "title": "A customer’s account",
   "description": "A customer with the invoices and quotations that point at it, listed inside the record.",

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.11",
+  "fieldia": "0.12",
   "id": "orders-review",
   "title": "Orders to review",
   "description": "A sales manager's orders this month: each opens in place to its lines — five at a time, its sections across the rows — so an order is checked without leaving the list. Its row still opens the order itself.",

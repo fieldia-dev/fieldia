@@ -311,7 +311,7 @@ describe('messages arriving while the conversation is shown, pushed', () => {
     };
     const send = (change: unknown) => (listeners.get('enquiry:1') ?? []).forEach((push) => push(change));
     const host = await mount({ ...source(), subscribe }, { live: undefined });
-    const page: Page = { fieldia: '0.11', id: 'enquiry', data: { kind: 'record', model: 'enquiry' }, fields: { name: { type: 'char', label: 'Name' }, stage: { type: 'char', label: 'Stage' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-stage', field: 'stage' }] } };
+    const page: Page = { fieldia: '0.12', id: 'enquiry', data: { kind: 'record', model: 'enquiry' }, fields: { name: { type: 'char', label: 'Name' }, stage: { type: 'char', label: 'Stage' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-stage', field: 'stage' }] } };
     const records = createMemoryDataSource({ records: { enquiry: { 1: { name: 'Mona Adel', stage: 'new' } } } });
     const form = createForm({ page, dataSource: { ...records, subscribe }, recordId: 1 });
     const arrived: unknown[] = [];
@@ -502,7 +502,7 @@ describe('a follow-up due at an hour, on the page’s clock', () => {
 
 describe('in a sheet’s chatter slot', () => {
   const page = {
-    fieldia: '0.11',
+    fieldia: '0.12',
     id: 'enquiry',
     title: 'Enquiry',
     data: { kind: 'record', model: 'enquiry' },

@@ -4,7 +4,7 @@ import { validatePage } from './validate';
 
 /** A customer's card filled from an e-mail signature, its notes with Draft and Polish. */
 const customer = (more: Partial<Page> = {}, notes: Record<string, unknown> = { rewrite: ['draft', 'polish'] }): Page => ({
-  fieldia: '0.11',
+  fieldia: '0.12',
   id: 'customer',
   data: { kind: 'record', model: 'partner' },
   fields: {

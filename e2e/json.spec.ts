@@ -58,7 +58,7 @@ test.describe('the JSON view of the screen editor', () => {
   test('marks broken JSON on its line, and a click puts the cursor there', async ({ page }) => {
     await page.getByRole('button', { name: 'JSON', exact: true }).click();
     const text = await box(page).inputValue();
-    const broken = text.replace('"fieldia": "0.11",', '"fieldia": "0.11"');
+    const broken = text.replace('"fieldia": "0.12",', '"fieldia": "0.12"');
     await box(page).fill(broken);
     await expect(rows(page)).toHaveCount(1);
     await expect(rows(page).first()).toContainText('Line 3');
