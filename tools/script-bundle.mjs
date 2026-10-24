@@ -1380,8 +1380,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // skeletons, the page's own, the bars, the spinners and the overlay are the loading part's (fieldia.loading.js). 520.04
 // measured before, 529.53 after, to 529.6.
 // 0.33's merge: the waits (w7-loading) over 0.32's tick boxes, undo keys and popups' room, both whole: 525.24
-// measured before, 534.73 after, to 534.8.
-const BUDGET_KB = 534.8;
+// measured before, 534.73 after, to 534.8. What a person has open stays theirs: a popup open in a part asked again
+// keeps what is shown, and the part holding one is never hidden, dimmed or shaped under a wait (loading.ts,
+// styles-loading.ts): 534.75 measured before, 535.08 after, to 535.1.
+const BUDGET_KB = 535.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1687,8 +1689,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the machine 2.4 of it, the viewer's waiting 0.8, the words and looks drawn before the part 0.5. The custom hook (0.1)
 // stays here: an app that draws its own waits draws them on every page, never after a part's fetch.
 // 0.33's merge: the waits over 0.32's tick boxes, undo keys and popups' room (listed with the raw budget above): 172.08
-// measured before, 175.84 after, to 175.9.
-const GZIP_BUDGET_KB = 175.9;
+// measured before, 175.84 after, to 175.9; a popup kept clear of a wait, 175.83 measured before, 175.94 after, to 176.0.
+const GZIP_BUDGET_KB = 176.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2693,8 +2695,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // its failure with the source's words — rows 19.13 and 7.23 measured before, 19.25 and 7.30 after, to 19.3 and 7.4; a
 // menu's items from the app, "Loading…" after its own (menu-flyout.ts) — head 42.34 and 12.88, 42.33 and 12.90, to 13.0
 // gzipped; a form's counts asked in its closed screen's place (limits.ts) — limits 10.73 and 4.69, 10.83 and 4.76, to
-// 10.9 and 4.8.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [141.6, 45.7], cards: [12.7, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0], loading: [8.2, 2.8] };
+// 10.9 and 4.8. A popup open in a part that waits kept clear of its shapes, its ring and its dimming — loading 8.09 and
+// 2.70 measured before, 8.68 and 2.75 after, to 8.7, inside 2.8.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [141.6, 45.7], cards: [12.7, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0], loading: [8.7, 2.8] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
