@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { gitFacts, patchProblem, releaseProblems } from './release-guards.mjs';
+import { gitFacts, machinePathIn, patchProblem, releaseProblems } from './release-guards.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const changelog = readFileSync(join(WORKSPACE, 'CHANGELOG.md'), 'utf8');
@@ -107,4 +107,12 @@ test('the facts are read from git as they are', () => {
   } finally {
     rmSync(repo, { recursive: true, force: true });
   }
+});
+
+test('a file that names a path on the machine it was built on is found; a web address that holds /home/ is not', () => {
+  assert.equal(machinePathIn('{"sourcesContent":["export * from \\"/home/rthm/IWork/fieldia/libs/core/src/index.ts\\";"]}'), '/home/rthm/IWork/fieldia/libs/core/src/index.ts');
+  assert.equal(machinePathIn('import x from "/Users/sara/dev/fieldia/tools/script-parts.ts"'), '/Users/sara/dev/fieldia/tools/script-parts.ts');
+  assert.equal(machinePathIn('//# sourceMappingURL=file:///home/runner/work/fieldia/fieldia/dist/x.js.map'), '/home/runner/work/fieldia/fieldia/dist/x.js.map');
+  assert.equal(machinePathIn('"sources":["../../../../libs/core/src/index.ts"]'), null);
+  assert.equal(machinePathIn('<a href="https://example.com/home/">Home</a> and https://example.com/Users/list'), null);
 });

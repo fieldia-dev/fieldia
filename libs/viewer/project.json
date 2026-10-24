@@ -25,7 +25,8 @@
         "{workspaceRoot}/tools/script-language.ts",
         "{workspaceRoot}/tools/script-parts.ts",
         "{workspaceRoot}/tools/script-bundle.mjs",
-        "{workspaceRoot}/tools/part-words.mjs"
+        "{workspaceRoot}/tools/part-words.mjs",
+        "{workspaceRoot}/tools/release-guards.mjs"
       ],
       "options": {
         "commands": ["node tools/script-bundle.mjs", "node tools/dual-build.mjs viewer"],

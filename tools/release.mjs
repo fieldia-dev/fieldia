@@ -37,7 +37,7 @@ import { runInNewContext } from 'node:vm';
 import { notesFor, printRelease } from './release-notes.mjs';
 import { checkFormatShape } from './format-shape.mjs';
 import { withoutAuth } from './release-env.mjs';
-import { gitFacts, patchProblem, releaseProblems } from './release-guards.mjs';
+import { gitFacts, machinePathIn, patchProblem, releaseProblems } from './release-guards.mjs';
 import { publishPacks, readPacks, writePacks } from './release-publish.mjs';
 import { auditProblems } from './release-audit.mjs';
 
@@ -104,6 +104,11 @@ const tarballs = packages.map(({ dir, manifest }) => {
   const files = packed.files.map((f) => f.path);
   const stray = files.filter((f) => /\.spec\.|\.tsbuildinfo$|(^|\/)tmp\//.test(f));
   if (stray.length) fail(`${packed.name} would ship ${stray.join(', ')}`);
+  // Relative paths alone: no file names a path on the machine it was built on (a source map's sources, an import).
+  for (const file of files) {
+    const path = machinePathIn(readFileSync(join(WORKSPACE, 'dist/libs', dir, file), 'utf8'));
+    if (path) fail(`${packed.name} would ship ${file}, which names ${path}, a path on the machine it was built on: write it relative to the workspace`);
+  }
   console.log(`  packed ${packed.filename} (${files.length} files, ${Math.round(packed.size / 1024)} KB)`);
   packs.push({ name: packed.name, file: packed.filename, integrity: packed.integrity });
   return join(PACKS, packed.filename);

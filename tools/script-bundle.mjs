@@ -21,14 +21,25 @@
  */
 import { build, transform } from 'esbuild';
 import { Buffer } from 'node:buffer';
-import { copyFileSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { copyFileSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { gzipSync } from 'node:zlib';
 import { englishKeys, PART_WORDS, partWordsProblems, readerSource, withoutWords, WORD_TABLES } from './part-words.mjs';
+import { machinePathIn } from './release-guards.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
+/**
+ * A workspace file as a module this build makes imports it — `"./libs/core/…"`, from the folder the module is read in
+ * (the workspace, unless it stands in for a file of its own) — never the file's path on this machine: the modules
+ * made here ship in the source maps (`sourcesContent`), and a published file names no path of the machine it was built
+ * on (the audit's S-L10; release.mjs refuses one).
+ */
+const from = (file, dir = WORKSPACE) => {
+  const path = relative(dir, file);
+  return JSON.stringify(path.startsWith('.') ? path : `./${path}`);
+};
 const BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle');
 const OUT = join(BUNDLE, 'fieldia.js');
 /** The languages besides English, each an add-on script of its own. */
@@ -166,12 +177,12 @@ const asksForParts = (table, parts) => ({
         return `__fieldiaPart(${JSON.stringify(part)})`;
       });
       if (callsImport(asking)) throw new Error(`${path} loads a module with import(): the script bundle loads only parts (a ./x-part module) on demand`);
-      return { contents: `import { loadPart as __fieldiaPart } from ${JSON.stringify(join(WORKSPACE, 'tools/script-parts.ts'))};\n${asking}`, loader: 'ts' };
+      return { contents: `import { loadPart as __fieldiaPart } from ${from(join(WORKSPACE, 'tools/script-parts.ts'), dirname(path))};\n${asking}`, loader: 'ts' };
     });
     builder.onResolve({ filter: /^fieldia:shared$/ }, () => ({ path: 'shared', namespace: 'fieldia-shared-table' }));
     builder.onLoad({ filter: /.*/, namespace: 'fieldia-shared-table' }, () => ({
       contents: [
-        ...table.map(([file, names], i) => `import { ${names.map((name) => `${name} as m${i}_${name}`).join(', ')} } from ${JSON.stringify(file)};`),
+        ...table.map(([file, names], i) => `import { ${names.map((name) => `${name} as m${i}_${name}`).join(', ')} } from ${from(file)};`),
         // Made the first time a part is taken, once every module of the main script has run: a module that asks for a
         // part may be one the table's modules import (the form's, in @fieldia/core), whose consts are not set yet as it
         // is first read.
@@ -231,7 +242,7 @@ const checksLater = {
     for (const [part, { file, names }] of Object.entries(CHECKS_IN_PARTS)) {
       builder.onLoad({ filter: new RegExp(`${file.replace(/[./]/g, (c) => `\\${c}`)}$`) }, () => ({
         contents: [
-          `import { LATER_CHECKS } from ${JSON.stringify(LATER_CHECKS_FILE)};`,
+          `import { LATER_CHECKS } from ${from(LATER_CHECKS_FILE)};`,
           // The tools a check is handed come last: they are told it is owed.
           ...names.map((name) => `export const ${name} = (...args) => { const real = LATER_CHECKS[${JSON.stringify(part)}]?.${name}; return real ? real(...args) : args[args.length - 1].owe(${JSON.stringify(part)}); };`),
         ].join('\n'),
@@ -259,7 +270,7 @@ const weekInParts = {
   setup(builder) {
     builder.onLoad({ filter: /libs\/core\/src\/lib\/format\/week\.ts$/ }, () => ({
       // Asked before a part that draws a week has come: never — no module of the main script draws one (checked below).
-      contents: `import { WEEK } from ${JSON.stringify(WEEK_HOLDER)};\nexport const firstWeekday = (...args) => (WEEK.firstWeekday ? WEEK.firstWeekday(...args) : 1);`,
+      contents: `import { WEEK } from ${from(WEEK_HOLDER)};\nexport const firstWeekday = (...args) => (WEEK.firstWeekday ? WEEK.firstWeekday(...args) : 1);`,
       resolveDir: WORKSPACE,
       loader: 'js',
     }));
@@ -388,11 +399,11 @@ const wordsLiteral = (tables) => {
 /** A part's script's own module: each of its modules' exports (a part may have one in each package). */
 const partEntry = (part) =>
   [
-    ...PART_SOURCES[part].map((file) => `export * from ${JSON.stringify(file)};`),
+    ...PART_SOURCES[part].map((file) => `export * from ${from(file)};`),
     // The checks it carries, put where the main script's reference check finds them as it comes.
-    ...(CHECKS_IN_PARTS[part] ? [`import * as checks from ${JSON.stringify(join(WORKSPACE, CHECKS_IN_PARTS[part].file))};`, `import { LATER_CHECKS } from ${JSON.stringify(LATER_CHECKS_FILE)};`, `LATER_CHECKS[${JSON.stringify(part)}] = checks;`] : []),
+    ...(CHECKS_IN_PARTS[part] ? [`import * as checks from ${from(join(WORKSPACE, CHECKS_IN_PARTS[part].file))};`, `import { LATER_CHECKS } from ${from(LATER_CHECKS_FILE)};`, `LATER_CHECKS[${JSON.stringify(part)}] = checks;`] : []),
     // The week's first day, where the part draws a week: put where the main script's stands in for it.
-    ...(WEEK_CARRIERS.includes(part) ? [`import { firstWeekday as week } from ${JSON.stringify(WEEK_FILE)};`, `import { WEEK } from ${JSON.stringify(WEEK_HOLDER)};`, `WEEK.firstWeekday = week;`] : []),
+    ...(WEEK_CARRIERS.includes(part) ? [`import { firstWeekday as week } from ${from(WEEK_FILE)};`, `import { WEEK } from ${from(WEEK_HOLDER)};`, `WEEK.firstWeekday = week;`] : []),
   ].join('\n');
 const partScript = (part, inMain, table, needs) =>
   build({
@@ -508,6 +519,12 @@ for (const [locale, name] of Object.entries(LANGUAGES)) {
 // alone, nothing of Fieldia's in it but the frame's few lines (tools/embed-entry.ts); the form's page loads fieldia.js.
 const EMBED = join(BUNDLE, 'fieldia-embed.js');
 await build({ ...common, entryPoints: [join(WORKSPACE, 'tools/embed-entry.ts')], banner: { js: `/*! Fieldia ${version} · embed · MIT · https://fieldia.dev */` }, outfile: EMBED });
+
+// What ships names no path of this machine: a source map's sources and the modules made here are relative (`from`).
+for (const file of readdirSync(BUNDLE)) {
+  const path = machinePathIn(readFileSync(join(BUNDLE, file), 'utf8'));
+  if (path) throw new Error(`bundle/${file} names ${path}, a path on the machine it was built on: import a workspace file by a relative path (from())`);
+}
 
 // It must stand on its own: run it with nothing but a window and look for the viewer.
 const sandbox = { window: {}, self: {}, globalThis: {} };

@@ -70,3 +70,12 @@ export function releaseProblems({ version, changelog, facts, tag = null }) {
   if (patch) problems.push(patch);
   return problems;
 }
+
+/**
+ * A path on the machine a file was built on, if the file names one — `/home/…/` or `/Users/…/`, never inside a web
+ * address — or null. Published files carry relative paths alone (the audit's S-L10: 228 of the build machine's paths
+ * shipped in @fieldia/viewer 0.31.0's source maps): `release.mjs check` refuses a pack that names one.
+ */
+export function machinePathIn(text) {
+  return /(?<![\w.-])\/(?:home|Users)\/[^\s"'`\\)]+/.exec(text)?.[0] ?? null;
+}
