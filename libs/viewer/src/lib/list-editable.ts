@@ -434,18 +434,25 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const twisty = td.querySelector(':scope > :is(.fd-list-twisty, .fd-list-twisty-room)');
     const unread = state.unread[column];
     const waits = unread ? null : edit.form.waitsFor(column);
+    let drawn: Node[];
     if (unread) {
-      td.replaceChildren(el('span', { class: 'fd-list-unread' }, unread.text), el('span', { class: 'fd-sr-only' }, unread.message));
+      drawn = [el('span', { class: 'fd-list-unread' }, unread.text), el('span', { class: 'fd-sr-only' }, unread.message)];
       setAttr(td, 'title', unread.message);
     } else if (waits) {
       const words = waitWords(edit.form, column, waits);
-      td.replaceChildren(el('span', { 'aria-hidden': 'true' }, waits.asking ? '…' : '—'), el('span', { class: 'fd-sr-only' }, words));
+      drawn = [el('span', { 'aria-hidden': 'true' }, waits.asking ? '…' : '—'), el('span', { class: 'fd-sr-only' }, words)];
       setAttr(td, 'title', words);
     } else {
-      td.replaceChildren(...context.cells.draw(column, state.values as Values, nameOf(state.values, edit.key)));
+      drawn = context.cells.draw(column, state.values as Values, nameOf(state.values, edit.key));
       setAttr(td, 'title', null);
     }
-    if (twisty) td.prepend(twisty);
+    // A cell that shows this already is left as it is: each key typed in one cell drew every cell of its row again, and
+    // the browser laid the whole table out again for it (0.32: 1,000 rows, 45 ms a key on a desktop).
+    const shown = [...td.childNodes].filter((node) => node !== twisty);
+    if (shown.length !== drawn.length || shown.some((node, i) => !node.isEqualNode(drawn[i]))) {
+      td.replaceChildren(...drawn);
+      if (twisty) td.prepend(twisty);
+    }
     setAttr(td, 'data-waits', waits ? '' : null);
     setAttr(td, 'aria-invalid', unread || state.errors[column] ? 'true' : null);
     setAttr(td, 'data-changed', state.dirty.includes(column) ? '' : null);
