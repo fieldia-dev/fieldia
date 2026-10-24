@@ -1353,7 +1353,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // a row of badges with them; and a press is over as its click comes, so what the click itself changes (a switch's
 // question, a step's badge) is shown at once (viewer.ts, press.ts, 115 bytes, every page with a condition): 519.93
 // measured before, 520.04 after, to 520.1.
-const BUDGET_KB = 520.1;
+// The owner's observations of 23 Oct (obs-1023): radios and tick boxes drawn as Fieldia's own, never the browser's —
+// one set of rules for every one in a form or a theme's box (a field's, a group's options, a matrix's, a table's
+// cells, a list's rows, a dialog's, the designers' settings): its edge, the accent filled in when chosen with a tick,
+// a dot or a dash, its press target, its focus ring, its look when it cannot be changed, the system's own in forced
+// colours and ink on paper (styles.ts, 2.83 KB). In the main sheet, as the widgets that draw them are: a part's would
+// come after the first paint, showing the browser's small grey circles until it came. 520.04 measured before, 522.87
+// after, to 522.9.
+const BUDGET_KB = 522.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1650,7 +1657,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // its own direction, 170.91, to 171.0.
 // 0.31.1's merge: a part a condition shows waiting for a press to end (listed with the raw budget above): 170.94
 // measured before, 170.92 after, inside 171.0.
-const GZIP_BUDGET_KB = 171.0;
+// The owner's observations of 23 Oct: radios and tick boxes drawn as Fieldia's own (listed with the raw budget above):
+// 170.92 measured before, 171.33 after, to 171.4.
+const GZIP_BUDGET_KB = 171.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1955,7 +1964,13 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 58.5 and 17.8; Turkish's 65.19 and 18.03, 65.44 and 18.08, to 65.5; Persian's 159.00 and 22.24, 159.51 and 22.31, to
 // 159.6 and 22.4; Urdu's 161.66 and 22.29, 162.20 and 22.35, to 162.3 and 22.4; Spanish's 55.69 and 17.52, 55.90 and
 // 17.57, to 56.0.
-const ADD_ON_BUDGET_KB = { ar: [127.3, 20.7], de: [57.7, 17.8], fr: [58.5, 17.8], tr: [65.5, 18.1], fa: [159.6, 22.4], ur: [162.3, 22.4], es: [56.0, 17.6] };
+// The owner's observations of 23 Oct (obs-1023): a phone's country found by typing — its box, the list's name, and
+// "No country matches “{text}”" — Arabic's 127.29 and 20.62 measured before, 127.54 and 20.67 after, to 127.6, inside
+// 20.7; German's 57.62 and 17.76, 57.75 and 17.80, to 57.8 and 17.9; French's 58.49 and 17.76, 58.62 and 17.79, to
+// 58.7, inside 17.8; Turkish's 65.44 and 18.08, 65.57 and 18.13, to 65.6 and 18.2; Persian's 159.51 and 22.31, 159.79
+// and 22.33, to 159.8, inside 22.4; Urdu's 162.20 and 22.35, 162.49 and 22.40, to 162.5 and 22.5; Spanish's 55.90 and
+// 17.57, 56.03 and 17.61, to 56.1 and 17.7.
+const ADD_ON_BUDGET_KB = { ar: [127.6, 20.7], de: [57.8, 17.9], fr: [58.7, 17.8], tr: [65.6, 18.2], fa: [159.8, 22.4], ur: [162.5, 22.5], es: [56.1, 17.7] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2600,7 +2615,15 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // given templates or views kept on a visit before numbers its own after theirs, never replacing nor doubling one —
 // memory 23.87 and 8.68 measured before, 24.04 and 8.75 after, to 24.1 and 8.8.
 // The two lanes of 0.31.1 joined: memory 24.89 and 9.03 measured with both, to 24.9 and 9.1.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.2, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [37.2, 16.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// The owner's observations of 23 Oct (obs-1023): a tick box's words after it read in the body's colour in the quiet
+// look, as an option's do, and its box and a radio's drawn there with a light line — quiet 8.18 and 2.04 measured
+// before, 8.25 and 2.06 after, to 8.3, inside 2.1.
+// A phone's country found by typing (obs-1023), in place of the browser's list of every country: a box to type in
+// over the countries, each with its flag and dialling code, found by its name here and in English, its code and its
+// number, the page's and the reader's first, worked by the keys and a sheet on a phone (search-list.ts, its sheet in
+// styles-phone.ts) — phone 37.17 and 16.21 measured before, 44.70 and 19.13 after, to 44.8 and 19.2. A page with a
+// phone field alone loads it; its rows drawn the first time the list opens, the list out of the page while closed.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [44.8, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [7.6, 3.5], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2876,13 +2899,13 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   plain.destroy();
   gone('plain');
   // A form whose phones are read the world over (its page's phone): the phone part, the page drawn once it came,
-  // its phone's country before the number, its sheet in — and its customer's country, a link to another record: the
-  // relations part.
+  // its phone's country before the number (a button opening the countries found by typing), its sheet in — and its
+  // customer's country, a link to another record: the relations part.
   const contact = inPage.mountViewer(host, { page: { ...read('new-customer.page.json'), phone: { country: 'EG' } }, dataSource: inPage.createMemoryDataSource() });
   waits(contact, 'a page with a phone read the world over');
   await contact.drawn;
   hasIn('a phone read the world over', 'phone, relations');
-  if (!host.querySelector('.fd-phone .fd-phone-country select') || !doc.getElementById('fieldia-phone-styles')) throw new Error('in a page, a phone is not drawn from its part');
+  if (!host.querySelector('.fd-phone button.fd-phone-country[aria-haspopup="listbox"]') || !doc.getElementById('fieldia-phone-styles')) throw new Error('in a page, a phone is not drawn from its part');
   if (!host.querySelector('.fd-combo > .fd-combo-input[role="combobox"]') || host.querySelector('[data-fd-plain="link"]')) throw new Error("in a page, a link to another record is not drawn from its part");
   contact.destroy();
   gone('contact');

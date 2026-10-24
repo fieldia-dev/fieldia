@@ -235,7 +235,8 @@ span.fd-map-face-photo svg { width: 22px; height: 22px; }
 .fd-map-card-fields[data-lead][data-labels] > div + div dd { color: var(--fd-muted); }
 .fd-map-card-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .fd-map-card-choose { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; margin-inline-end: auto; }
-.fd-map-card-choose input { width: 16px; height: 16px; margin: 0; accent-color: var(--fd-accent); }
+/* Its tick box: in a form, drawn as the form's (Fieldia's own); on a page of its own, the browser's in the accent. */
+.fd-map-card-choose input { width: var(--fd-tick-size, 18px); height: var(--fd-tick-size, 18px); margin: 0; accent-color: var(--fd-accent); }
 .fd-map-card .fd-button { min-height: 30px; padding-inline: 14px; }
 .fd-map-card :focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 .fd-map-crowd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 220px; overflow: auto; }

@@ -4,14 +4,17 @@ import { boxPurpose, describeState, fillIn, maker, setAttr, setHidden, setText, 
 import { phoneSettings } from './phone-settings';
 import { flagOf, phoneCountries, phoneCountry, phoneLinks, phoneParts, readPhone, shownPhone, typedCode, writePhone, type PhoneReading } from './phone-numbers';
 import { afterPress } from './press';
+import { searchList } from './search-list';
 import { installPhoneStyles } from './styles-phone';
 import { textRules } from './text-box';
 import type { WidgetFactory } from './widgets';
 
 /**
  * A phone number read the world over (`"widget": "phone"` where its page's `phone` or its own options say so; the
- * phone part). Its country is picked before it — its flag and dialling code, the browser's own list of every country
- * by its name in the page's language — or typed with it: "+20 10 1234 5678" or "0020…" takes Egypt whatever was
+ * phone part). Its country is picked before it — its flag and dialling code, from a list of every country found by
+ * typing its name in the page's language or in English, its code or its dialling code, the page's country and the
+ * reader's first (search-list.ts; the browser's own list where the page or the field says `countries: "native"`) —
+ * or typed with it: "+20 10 1234 5678" or "0020…" takes Egypt whatever was
  * picked, and "010 1234 5678" is read in the country picked, which starts as the field's or the page's (never one
  * assumed). The keys are the phone box's own (text-box.ts): a letter is refused, and said why, and the keys after it
  * held with it. Left, or read by a save, the number is checked by its country — its length by how it starts, and
@@ -32,12 +35,17 @@ export const phoneWidget: WidgetFactory = (context) => {
   const home = phoneCountry(settings.country)?.code ?? null;
   const names = countryNames(locale);
 
-  const select = make('select', { class: 'fd-phone-select', 'aria-label': fillIn(words.phoneCountry, { label: labelAt(words.phoneCountry, 'label', form.page.lowerLabels, locale)(label) }) }, make('option', { value: '' }, words.phoneNoCountry));
-  for (const [code, country] of names.sorted) select.append(make('option', { value: code }, `${flagOf(code)} ${country} ⁦+${(phoneCountry(code) as { dial: string }).dial}⁩`));
+  const named = fillIn(words.phoneCountry, { label: labelAt(words.phoneCountry, 'label', form.page.lowerLabels, locale)(label) });
+  const dialOf = (code: string) => (phoneCountry(code) as { dial: string }).dial;
+  // The browser's own list, where the page or the field asks for it: its options laid over the flag and the code.
+  const native = (node.options?.['countries'] ?? form.page.phone?.countries) === 'native';
+  const select = native ? make('select', { class: 'fd-phone-select', 'aria-label': named }, make('option', { value: '' }, words.phoneNoCountry)) : null;
+  for (const [code, country] of select ? names.sorted : []) select?.append(make('option', { value: code }, `${flagOf(code)} ${country} ⁦+${dialOf(code)}⁩`));
   const flag = make('span', { class: 'fd-phone-flag', 'aria-hidden': 'true' });
   // Its code reads left to right on a right-to-left page too: +20, never 20+.
   const dial = make('span', { class: 'fd-phone-dial', 'aria-hidden': 'true', dir: 'ltr' });
-  const picker = make('span', { class: 'fd-input fd-phone-country' }, flag, dial, select);
+  // Else a button opening Fieldia's own list, named by what it picks for, the country picked said after its name.
+  const picker = select ? make('span', { class: 'fd-input fd-phone-country' }, flag, dial, select) : make('button', { type: 'button', class: 'fd-input fd-phone-country', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-label': named }, flag, dial);
   // What the browser fills it in with: the page's own purpose ("mobile tel"), else a phone, as any phone box.
   const input = make('input', { id, type: 'tel', class: 'fd-input fd-phone-input', dir: 'ltr', ...boxPurpose(node, { autocomplete: 'tel' }) });
   if (node.placeholder) input.placeholder = node.placeholder;
@@ -48,6 +56,24 @@ export const phoneWidget: WidgetFactory = (context) => {
   const element = make('span', { class: 'fd-phone', 'data-fd-phone': '' }, box, links);
   const hint = refusalHint(input, box);
   const checks = guard(input, textRules('phone', context), hint);
+  /** Every country, found by its name here and in English, its code and its dialling code; the field's or the page's and the reader's first. */
+  const english = locale === 'en' ? names : countryNames('en');
+  const list = select
+    ? null
+    : searchList({
+        make,
+        id: `${id}-countries`,
+        home: element,
+        button: picker,
+        rows: names.sorted.map(([code, country]) => ({ value: code, words: country, also: [english.byCode.get(code) ?? code, code], number: dialOf(code), lead: flagOf(code), trail: `+${dialOf(code)}` })),
+        first: () => [home, ...readersRegions(doc)].filter((code): code is string => !!code && !!phoneCountry(code)),
+        picked: () => picked,
+        pick: (code) => {
+          choose(code);
+          input.focus();
+        },
+        words: { find: words.phoneFindCountry, list: words.phoneCountries, none: words.phoneNoCountryFound, title: named, close: words.close },
+      });
 
   const unreadNow = () => form.getState().unread?.[name];
   /** The country picked, or shown for the number: what a number typed at home's way is read in. */
@@ -57,7 +83,7 @@ export const phoneWidget: WidgetFactory = (context) => {
 
   function show(code: string | null) {
     picked = code;
-    if (select.value !== (code ?? '')) select.value = code ?? '';
+    if (select && select.value !== (code ?? '')) select.value = code ?? '';
     setText(flag, code ? flagOf(code) : '');
     setText(dial, code ? `+${(phoneCountry(code) as { dial: string }).dial}` : words.phoneNoCountry);
     setAttr(picker, 'data-empty', code ? null : '');
@@ -158,8 +184,8 @@ export const phoneWidget: WidgetFactory = (context) => {
   input.addEventListener('change', read);
   input.addEventListener('blur', read);
   // A country picked: a number typed with its + takes that country's code in place of its own; any number is read again in it.
-  select.addEventListener('change', () => {
-    show(select.value || null);
+  function choose(country: string | null) {
+    show(country);
     const code = typedCode(input.value);
     const now = picked ? phoneCountry(picked) : undefined;
     if (code && now && code.dial !== now.dial) {
@@ -168,7 +194,8 @@ export const phoneWidget: WidgetFactory = (context) => {
     }
     typing = true;
     read();
-  });
+  }
+  select?.addEventListener('change', () => choose(select.value || null));
   // Another record: its own number's country, or the field's to start with.
   const offOpen = form.on?.('open', () => {
     picked = home;
@@ -178,6 +205,7 @@ export const phoneWidget: WidgetFactory = (context) => {
     element,
     focus: () => input.focus(),
     destroy() {
+      list?.close(false);
       checks.destroy();
       offOpen?.();
     },
@@ -196,6 +224,8 @@ export const phoneWidget: WidgetFactory = (context) => {
       drawDial();
       setAttr(element, 'data-readonly', state.readonly ? '' : null);
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
+      if (!select && (picker as HTMLButtonElement).disabled !== state.readonly) (picker as HTMLButtonElement).disabled = state.readonly;
+      if (state.readonly) list?.close(false);
       // At rest, a number that reads has its links; one typed, or that does not read, none.
       linksTo(!kept && !typing ? (number?.number ?? null) : null);
       setAttr(input, 'aria-required', String(state.required));
@@ -206,6 +236,26 @@ export const phoneWidget: WidgetFactory = (context) => {
 
 /** The country a dialling code is first: Egypt for 20, the United States for 1. */
 const byDial = (dial: string): string | undefined => phoneCountries().find((country) => country.dial === dial)?.code;
+
+/**
+ * The countries of the reader's languages, as their browser lists them ("en-GB", "ar-EG"): each one's region, else the
+ * region its language is most spoken in. Put first in a list of countries, never picked for them.
+ */
+function readersRegions(doc: Document): string[] {
+  const nav = doc.defaultView?.navigator;
+  const tags = nav?.languages?.length ? nav.languages : nav?.language ? [nav.language] : [];
+  const regions: string[] = [];
+  for (const tag of tags) {
+    try {
+      const at = new Intl.Locale(tag);
+      const region = at.region ?? (regions.length ? undefined : at.maximize().region);
+      if (region && !regions.includes(region)) regions.push(region);
+    } catch {
+      // A tag the engine does not read puts nothing first.
+    }
+  }
+  return regions;
+}
 
 const named = new Map<string, { sorted: [string, string][]; byCode: Map<string, string> }>();
 /** Every country the table knows, by its name in the page's language, in that language's order. */

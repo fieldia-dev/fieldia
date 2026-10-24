@@ -63,6 +63,7 @@ const NAMES: Record<string, string> = {
   'Phone numbers': 'Telefon numaraları',
   'Phone country to start on': 'Başlangıçtaki telefon ülkesi',
   'Phone numbers shown': 'Telefon numaralarının gösterimi',
+  'Phone countries picked from': 'Telefon ülkesi seçimi',
   'Printout’s header': 'Çıktının üst bilgisi',
   'Printout’s footer': 'Çıktının alt bilgisi',
   'Logo’s address': 'Logonun adresi',
@@ -374,6 +375,8 @@ export const panel: DesignerWords['panel'] = {
   noPhoneCountry: 'Hiçbiri: + ve ülke koduyla yazılır',
   phoneShown: 'Telefon numaralarının gösterimi',
   phoneShownAs: { international: 'Uluslararası biçim: +20 10 1234 5678', national: 'Ulusal biçim: 010 1234 5678' },
+  phoneCountries: 'Telefon ülkesi seçimi',
+  phoneCountriesAs: { list: 'Fieldia listesi, yazarak aranır', native: 'Tarayıcının kendi listesi' },
   // ---- columns, rows, width, labels
   screens: { wide: 'Masaüstü', medium: 'Tablet', narrow: 'Telefon' },
   columnsOn: { wide: 'Masaüstünde sütunlar', medium: 'Tablette sütunlar', narrow: 'Telefonda sütunlar' },

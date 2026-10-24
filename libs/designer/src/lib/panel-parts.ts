@@ -10,6 +10,7 @@ import { aroundWords, widthSetting } from './panel-layout';
 import { severalRequired } from './panel-several-required';
 import { buttonPartsSettings } from './head-properties';
 import type { PropertiesView } from './screen-properties';
+import { removeWithUndo } from './deleted-toast';
 
 /**
  * The views of a block between fields — words, a heading, a button, an
@@ -23,7 +24,7 @@ export function blockProperties(el: ElementFactory, designer: Designer, id: stri
   const duplicate = el('button', { type: 'button', class: 'fd-button' }, w.duplicate);
   duplicate.addEventListener('click', () => designer.duplicate([id]));
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.delete);
-  remove.addEventListener('click', () => designer.remove([id]));
+  remove.addEventListener('click', () => removeWithUndo(designer, id, () => designer.remove([id])));
   // A divider runs across the whole row: it has no width to set.
   const width = locate(designer.getPage(), id)?.node.type === 'divider' ? null : widthSetting(el, designer, id);
   // Its own settings: a picture's address and description, how words read, a button's words.
@@ -116,7 +117,7 @@ export function severalProperties(el: ElementFactory, designer: Designer, ids: r
     widthRow,
     labelsRow,
     onTab(el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.together), together, apart), 'layout', 'Group these'),
-    onTab(el('div', { class: 'fd-props-actions' }, act(w.duplicate, () => designer.duplicate([...ids])), act(w.delete, () => designer.remove([...ids]), true)), 'layout', 'Duplicate or delete'),
+    onTab(el('div', { class: 'fd-props-actions' }, act(w.duplicate, () => designer.duplicate([...ids])), act(w.delete, () => removeWithUndo(designer, ids[0], () => designer.remove([...ids]), 'part'), true)), 'layout', 'Duplicate or delete'),
     ...required.rows
   );
   return {

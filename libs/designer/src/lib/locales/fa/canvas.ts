@@ -57,6 +57,7 @@ export const canvas: DesignerWords['canvas'] = {
   moveLeft: 'جابه‌جایی به قبل',
   moveRight: 'جابه‌جایی به بعد',
   delete: 'حذف',
+  deleted: { question: 'پرسش حذف شد', field: 'فیلد حذف شد', page: 'صفحه حذف شد', section: 'بخش حذف شد', tabs: 'زبانه‌ها حذف شدند', tab: 'زبانه حذف شد', part: 'حذف شد', undo: 'واگرد' },
   statusSteps: 'مراحل وضعیت',
   dragToMove: 'برای جابه‌جایی بکشید',
   required: 'الزامی',

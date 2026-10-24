@@ -5,6 +5,7 @@ import { designerIcon } from './icons';
 import { locate } from './layout-tree';
 import { setHidden, setText } from './writes';
 import { chromeLanguage } from './chrome-language';
+import { removeWithUndo } from './deleted-toast';
 
 /**
  * The bar for several picked, on the Advanced canvas: how many, and what can
@@ -34,7 +35,7 @@ export function multiBar(options: { el: ElementFactory; doc: Document; designer:
   const side = button(w.sideBySide, blockIcon(doc, 'side'), () => designer.wrap(picks(), 'side'));
   const tabs = button(w.tabs, blockIcon(doc, 'tabs'), () => designer.wrap(picks(), 'tabs'));
   const copy = button('', designerIcon(doc, 'duplicate'), () => designer.duplicate(picks()), w.duplicate);
-  const remove = button('', designerIcon(doc, 'delete'), () => designer.remove(picks()), w.remove);
+  const remove = button('', designerIcon(doc, 'delete'), () => removeWithUndo(designer, picks()[0], () => designer.remove(picks()), 'part'), w.remove);
   const down = button('', designerIcon(doc, 'plus'), () => designer.select(null), w.putDown);
   down.classList.add('fd-multi-down');
   const ungroup = button(w.ungroup, blockIcon(doc, 'group'), () => {

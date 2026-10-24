@@ -66,6 +66,22 @@ const pick = (select: HTMLSelectElement, code: string) => {
   select.value = code;
   select.dispatchEvent(new Event('change', { bubbles: true }));
 };
+/** The country's button, and its list as a person works it: opened, typed in, a key pressed in its box. */
+const countryButton = (el: HTMLElement) => el.querySelector('button.fd-phone-country') as HTMLButtonElement;
+const findBox = () => document.querySelector('.fd-search-find') as HTMLInputElement;
+const rowsShown = () => [...document.querySelectorAll<HTMLElement>('.fd-search-list:not([hidden]) [role="option"]')];
+const rowWords = (row: HTMLElement) => [...row.children].map((part) => part.textContent);
+const press = (target: HTMLElement, key: string) => target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+function search(el: HTMLElement, typed: string) {
+  if (countryButton(el).getAttribute('aria-expanded') !== 'true') countryButton(el).click();
+  const box = findBox();
+  box.value = typed;
+  box.dispatchEvent(new InputEvent('input', { bubbles: true }));
+  return box;
+}
+function pickFromList(el: HTMLElement, typed: string) {
+  press(search(el, typed), 'Enter');
+}
 const shownCountry = (el: HTMLElement) => [el.querySelector('.fd-phone-flag')?.textContent, el.querySelector('.fd-phone-dial')?.textContent];
 const links = (el: HTMLElement) => [...el.querySelectorAll<HTMLAnchorElement>('.fd-phone-link')].filter((a) => !a.hidden).map((a) => [a.textContent, a.getAttribute('href')]);
 
@@ -95,11 +111,85 @@ describe('a phone read the world over', () => {
     expect(shownCountry(mount({ options: { country: 'AE' } }, { phone: { country: 'EG' } }).el)).toEqual(['🇦🇪', '+971']);
     const none = mount({}, { phone: {} });
     expect(shownCountry(none.el)).toEqual(['', 'Country']);
-    expect(none.select.value).toBe('');
-    // Every country, by its name in the page's language, with its dialling code.
-    expect(none.select.getAttribute('aria-label')).toBe('Country of Mobile');
-    expect([...none.select.options].find((o) => o.value === 'EG')?.textContent).toBe('🇪🇬 Egypt ⁦+20⁩');
-    expect(none.select.options.length).toBeGreaterThan(240);
+    // Every country, by its name in the page's language, with its flag and dialling code.
+    const button = countryButton(none.el);
+    expect(button.getAttribute('aria-label')).toBe('Country of Mobile');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    button.click();
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(rowsShown().length).toBeGreaterThan(240);
+    expect(rowWords(rowsShown().find((row) => row.dataset['value'] === 'EG') as HTMLElement)).toEqual(['🇪🇬', 'Egypt', '+20']);
+    expect(document.activeElement).toBe(findBox());
+  });
+
+  it('finds a country as it is typed: by its name, its code, its dialling code, the best first', () => {
+    const { el } = mount({}, { phone: {} });
+    const found = (typed: string) => {
+      search(el, typed);
+      return rowsShown().map((row) => row.dataset['value']);
+    };
+    expect(found('egy')).toEqual(['EG']);
+    expect(found('Egypt')).toEqual(['EG']);
+    expect(found('ae')[0]).toBe('AE');
+    expect(found('+20')).toEqual(['EG']);
+    expect(found('20')).toEqual(['EG']);
+    expect(found('0020')).toEqual(['EG']);
+    expect(found('+971')).toEqual(['AE']);
+    // A word inside a name: the Emirates.
+    expect(found('emirates')).toEqual(['AE']);
+    // +1 is the United States and every country sharing it.
+    expect(found('+1')).toContain('US');
+    expect(found('+1')).toContain('CA');
+    // Nothing found says so.
+    search(el, 'xyzzy');
+    expect(rowsShown()).toEqual([]);
+    expect(document.querySelector('.fd-search-none')?.textContent).toBe('No country matches “xyzzy”');
+  });
+
+  it('puts the page’s country and the reader’s first, a line under them, the one picked ticked', () => {
+    const { el } = mount({}, { phone: { country: 'EG' } });
+    countryButton(el).click();
+    const rows = rowsShown();
+    // jsdom's reader speaks en-US: the United States after the page's Egypt, then every country.
+    expect(rows.slice(0, 2).map((row) => row.dataset['value'])).toEqual(['EG', 'US']);
+    expect(rows[1].getAttribute('data-first')).toBe('last');
+    expect(rows.filter((row) => row.getAttribute('aria-selected') === 'true').map((row) => row.dataset['value'])).toEqual(['EG', 'EG']);
+    // Opened on the one picked: among the first rows, the list at its top.
+    const active = document.getElementById(findBox().getAttribute('aria-activedescendant') as string) as HTMLElement;
+    expect([active.dataset['value'], active.hasAttribute('data-first')]).toEqual(['EG', true]);
+  });
+
+  it('is worked by the keys: typing on the button opens it, the arrows move, Enter picks, Escape puts it away', () => {
+    const { el, input } = mount({}, { phone: {} });
+    const button = countryButton(el);
+    button.focus();
+    press(button, 'g');
+    expect(findBox().value).toBe('g');
+    expect(document.activeElement).toBe(findBox());
+    search(el, 'germ');
+    press(findBox(), 'ArrowDown');
+    press(findBox(), 'ArrowUp');
+    press(findBox(), 'Enter');
+    expect(shownCountry(el)).toEqual(['🇩🇪', '+49']);
+    expect(rowsShown()).toEqual([]);
+    // Picked, the number is typed next.
+    expect(document.activeElement).toBe(input);
+    search(el, 'fra');
+    press(findBox(), 'Escape');
+    expect(shownCountry(el)).toEqual(['🇩🇪', '+49']);
+    expect(document.activeElement).toBe(button);
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('is the browser’s own list where the page or the field says countries: "native"', () => {
+    for (const native of [mount({ options: { countries: 'native' } }, { phone: { country: 'EG' } }), mount({}, { phone: { country: 'EG', countries: 'native' } })]) {
+      expect(countryButton(native.el)).toBeNull();
+      expect(native.select.getAttribute('aria-label')).toBe('Country of Mobile');
+      expect([...native.select.options].find((o) => o.value === 'EG')?.textContent).toBe('🇪🇬 Egypt ⁦+20⁩');
+      expect(native.select.options.length).toBeGreaterThan(240);
+      pick(native.select, 'AE');
+      expect(shownCountry(native.el)).toEqual(['🇦🇪', '+971']);
+    }
   });
 
   it('keeps a number typed at home as E.164, and shows it as the page says, with its links', () => {
@@ -205,15 +295,15 @@ describe('a phone read the world over', () => {
   });
 
   it('reads a number typed before its country once the country is picked; a number with its + takes the code picked', () => {
-    const { input, select, value, unread, el } = mount({}, { phone: {} });
+    const { input, value, unread, el } = mount({}, { phone: {} });
     type(input, '050 123 4567');
     leave(input);
     expect(unread()?.message).toBe('Mobile: choose its country, or write it with + and the country code');
-    pick(select, 'SA');
+    pickFromList(el, 'saudi');
     expect([value(), unread()]).toEqual(['+966501234567', undefined]);
     expect(input.value).toBe('+966 50 123 4567');
     expect(shownCountry(el)).toEqual(['🇸🇦', '+966']);
-    pick(select, 'AE');
+    pickFromList(el, '+971');
     expect([value(), input.value]).toEqual(['+971501234567', '+971 50 123 4567']);
   });
 
@@ -241,14 +331,21 @@ describe('a phone read the world over', () => {
     const { input, el, setReadonly } = mount({}, { phone: { country: 'EG' }, value: '+201012345678' });
     setReadonly(true);
     expect(input.readOnly).toBe(true);
+    expect(countryButton(el).disabled).toBe(true);
     expect(el.hasAttribute('data-readonly')).toBe(true);
     expect(links(el)).toHaveLength(2);
   });
 
   it('speaks the page’s language: the countries’ names, its words and why', () => {
-    const { input, select, unread, el } = mount({ label: 'الجوال' }, { phone: { country: 'EG' }, locale: 'ar' });
-    expect(select.getAttribute('aria-label')).toBe('بلد الجوال');
-    expect([...select.options].find((o) => o.value === 'EG')?.textContent).toBe('🇪🇬 مصر ⁦+20⁩');
+    const { input, unread, el } = mount({ label: 'الجوال' }, { phone: { country: 'EG' }, locale: 'ar' });
+    expect(countryButton(el).getAttribute('aria-label')).toBe('بلد الجوال');
+    // Found by its name in the page's language or in English.
+    for (const typed of ['مصر', 'egypt']) {
+      search(el, typed);
+      expect(rowsShown().map(rowWords)).toEqual([['🇪🇬', 'مصر', '+20']]);
+    }
+    expect(findBox().getAttribute('aria-label')).toBe('ابحث عن بلد');
+    press(findBox(), 'Escape');
     type(input, '٠١٠١٢٣٤٥٦٧');
     leave(input);
     expect(unread()?.message).toBe('الجوال: أقصر من أرقام ⁦+20⁩ (مصر)');

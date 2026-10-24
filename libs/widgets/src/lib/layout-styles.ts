@@ -86,8 +86,8 @@ fieldset.fd-section > :where(:not(legend, [hidden]) ~ :not([hidden])) { margin-b
   --fd-tick-drop: max(0px, calc((var(--fd-control-height, 30px) - 1.45em) / 2));
 }
 /* The box, or what holds it (a designer's canvas wraps each answer box). */
-.fd-form .fd-field[data-labels="after"] > :is(.fd-tick, :has(> .fd-tick)) { grid-column: 1; grid-row: 1; display: flex; margin-block-start: calc(var(--fd-tick-drop) + (1.45em - 17px) / 2); }
-.fd-form .fd-field[data-labels="after"] .fd-tick { width: 17px; height: 17px; }
+.fd-form .fd-field[data-labels="after"] > :is(.fd-tick, :has(> .fd-tick)) { grid-column: 1; grid-row: 1; margin-block-start: calc(var(--fd-tick-drop) + (1.45em - var(--fd-tick-size, 18px)) / 2); }
+.fd-form .fd-field[data-labels="after"] > :has(> .fd-tick) { display: flex; }
 .fd-form .fd-field[data-labels="after"] > :not(.fd-tick, :has(> .fd-tick)) { grid-column: 2; }
 .fd-form .fd-field[data-labels="after"] > .fd-label { grid-row: 1; margin-block-start: var(--fd-tick-drop); font-weight: inherit; line-height: 1.45; cursor: pointer; }
 /* A field or a cell that measures itself is drawn over its neighbours while it is worked in: its lists and calendars open over them. */

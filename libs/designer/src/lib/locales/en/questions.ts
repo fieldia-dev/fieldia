@@ -54,6 +54,8 @@ export const questions = {
   pageTitle: 'Page title',
   untitledPage: 'Untitled page',
   deletePage: 'Delete page',
+  deleteQuestion: 'Delete question',
+  questionTools: 'Question tools',
   pageOf: (n: number, total: number) => `Page ${n} of ${total}`,
   // ---- each kind's settings
   from: 'From',
@@ -283,6 +285,8 @@ export const questions = {
   phoneShown: 'Shown',
   thePages: 'The page’s',
   phoneShownAs: { international: 'Abroad’s way: +20 10 1234 5678', national: 'At home’s way: 010 1234 5678' },
+  phoneCountries: 'Countries picked from',
+  phoneCountriesAs: { list: 'Fieldia’s list, found by typing', native: 'The browser’s own list' },
   addALine: 'Add a line',
   whenEmpty: 'When empty',
   noLines: 'No lines yet',

@@ -1,6 +1,8 @@
 import { recordSentence, type ButtonNode, type LineField, type ListNode, type Page } from '@fieldia/core';
 import { installListStyles, VIEWER_LABELS, type ViewerLabels } from '@fieldia/viewer';
 import { displayValue } from '@fieldia/widgets';
+import { barsPlaced, stopWatchingBars } from './bar-place';
+import { removeWithUndo } from './deleted-toast';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { pageLocale } from './chrome-language';
 import type { ElementFactory } from './chrome';
@@ -125,7 +127,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       }
     });
     const remove = el('button', { type: 'button', class: 'fd-bar-button', 'aria-label': w.delete, title: w.delete }, designerIcon(doc, 'delete'));
-    remove.addEventListener('click', () => designer.removeListAction(action.id));
+    remove.addEventListener('click', () => removeWithUndo(designer, action.id, () => designer.removeListAction(action.id), 'part'));
     const tools = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': action.label }, remove);
     const element = el('span', { class: `fd-button fd-button-${action.style ?? 'secondary'} fd-canvas-part fd-editing`, 'data-part': action.id }, tools, input);
     return { element, key: '', input };
@@ -199,7 +201,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       { class: 'fd-field-bar fd-column-bar', role: 'toolbar', 'aria-label': w.column },
       ...(index > 0 ? [tool(w.moveLeft, 'left', () => designer.moveColumn(name, index - 1))] : []),
       ...(index < count - 1 ? [tool(w.moveRight, 'right', () => designer.moveColumn(name, index + 1))] : []),
-      tool(w.removeColumn, 'delete', () => designer.removeColumn(name))
+      tool(w.removeColumn, 'delete', () => removeWithUndo(designer, name, () => designer.removeColumn(name), 'part'))
     );
   }
 
@@ -267,6 +269,19 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
     },
   });
 
+  // Its bars — a column's, an action's — placed by the canvas's one rule, in the frame after a change is drawn.
+  const view = element.ownerDocument.defaultView;
+  let asked = false;
+  const placeBars = () => {
+    if (asked || !view?.requestAnimationFrame) return;
+    asked = true;
+    view.requestAnimationFrame(() => {
+      asked = false;
+      if (element.isConnected) barsPlaced(element)();
+    });
+  };
+  const unwatch = () => stopWatchingBars(element);
+
   return {
     element,
     drag,
@@ -291,8 +306,10 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       // steps lane: a button that does something wears a mark.
       pressMarks(actions, page, designer);
       drawTable(page, list, selected);
+      placeBars();
     },
     destroy() {
+      unwatch();
       drag.destroy();
       views.clear();
     },

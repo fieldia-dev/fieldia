@@ -12,6 +12,7 @@ import { hotkeyShown } from './hotkey-setting';
 import { shownWhileSetting } from './shown-while';
 import { buttonPartsSettings, menuList } from './head-properties';
 import { isDivider, opensMenu } from './menu-items';
+import { removeWithUndo } from './deleted-toast';
 
 /**
  * The panel for a part of a record's header: a button, a counter, a badge or
@@ -133,7 +134,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.delete);
   left.addEventListener('click', () => designer.moveHeaderPart(id, -1));
   right.addEventListener('click', () => designer.moveHeaderPart(id, 1));
-  remove.addEventListener('click', () => designer.removeHeaderPart(id));
+  remove.addEventListener('click', () => removeWithUndo(designer, id, () => designer.removeHeaderPart(id), 'part'));
   const element = el(
     'div',
     { class: 'fd-props' },

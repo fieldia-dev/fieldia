@@ -159,9 +159,71 @@ describe('survey editor — questions as people see them, the one picked open', 
     expect(labels()).toEqual(['Second', 'Second', 'First']);
     // The copy is picked, right after what it copies.
     expect(cards(host)[1].classList.contains('fd-q-selected')).toBe(true);
-    button(open(host), 'Delete').click();
+    button(open(host), 'Delete question').click();
     expect(labels()).toEqual(['Second', 'First']);
     expect(Object.keys(designer.getPage().fields)).toHaveLength(2);
+  });
+
+  it('says what Delete took away, nothing asked, and Undo brings it back picked, the focus on it', () => {
+    const { host, designer } = mount();
+    button(host, 'Add question').click();
+    const [first] = nodes(designer.getPage());
+    type(label(open(host)), 'Your name');
+    // The bin says what it does, its words beside it.
+    const bin = button(open(host), 'Delete question');
+    expect(bin.textContent).toBe('Delete question');
+    bin.click();
+    expect(nodes(designer.getPage())).toHaveLength(0);
+    const toast = document.querySelector('.fd-deleted-says') as HTMLElement;
+    expect([toast.getAttribute('role'), toast.textContent]).toEqual(['status', 'Question deletedUndo']);
+    button(toast, 'Undo').click();
+    expect(nodes(designer.getPage()).map((n) => fieldOf(designer.getPage(), n).label)).toEqual(['Your name']);
+    expect(designer.getState().selected).toBe(first.id);
+    expect(document.activeElement).toBe(label(open(host)));
+    expect(toast.textContent).toBe('');
+    // The Delete key too; another change puts the toast away, as Undo would take back something else.
+    designer.select(first.id);
+    (document.activeElement as HTMLElement | null)?.blur();
+    key('Delete', {}, document.body);
+    expect(toast.textContent).toBe('Question deletedUndo');
+    button(host, 'Add question').click();
+    expect(toast.textContent).toBe('');
+  });
+
+  it('gives a question not picked its tools under a ⋮: Duplicate, Delete, Move up and down, without opening it', () => {
+    const { host, designer } = mount();
+    button(host, 'Add question').click();
+    type(label(open(host)), 'First');
+    button(host, 'Add question').click();
+    type(label(open(host)), 'Second');
+    designer.select(null);
+    const labels = () => nodes(designer.getPage()).map((n) => fieldOf(designer.getPage(), n).label);
+    const tools = (at: number) => {
+      (cards(host)[at].querySelector('.fd-q-more') as HTMLButtonElement).click();
+      return [...document.querySelectorAll<HTMLElement>('.fd-menu [role^="menuitem"]')];
+    };
+    expect(tools(0).map((i) => i.textContent?.trim())).toEqual(['Duplicate', 'Delete question', 'Move down']);
+    expect(designer.getState().selected).toBeNull();
+    tools(0).find((i) => i.textContent?.trim() === 'Move down')?.click();
+    expect(labels()).toEqual(['Second', 'First']);
+    tools(1).find((i) => i.textContent?.trim() === 'Delete question')?.click();
+    expect(labels()).toEqual(['Second']);
+    expect(document.querySelector('.fd-deleted-says')?.textContent).toBe('Question deletedUndo');
+  });
+
+  it('says a page deleted, with Undo, its bin naming it once it is picked', () => {
+    const { host, designer } = mount();
+    button(host, 'Add question').click();
+    const pageId = designer.addContainer('Second page') as string;
+    expect((designer.getPage().layout as WizardNode).children).toHaveLength(2);
+    designer.select(pageId);
+    const bin = [...host.querySelectorAll<HTMLButtonElement>('.fd-step-delete')].find((b) => !b.hidden && b.closest('.fd-step-selected')) as HTMLButtonElement;
+    expect([bin.getAttribute('aria-label'), bin.textContent]).toEqual(['Delete page', 'Delete page']);
+    bin.click();
+    expect((designer.getPage().layout as WizardNode).children).toHaveLength(1);
+    expect(document.querySelector('.fd-deleted-says')?.textContent).toBe('Page deletedUndo');
+    button(document.querySelector('.fd-deleted-says') as HTMLElement, 'Undo').click();
+    expect((designer.getPage().layout as WizardNode).children).toHaveLength(2);
   });
 
   it('adds from the toolbox after the question picked, or at the end of the page picked', () => {

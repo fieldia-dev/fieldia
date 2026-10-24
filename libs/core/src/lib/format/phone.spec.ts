@@ -26,6 +26,9 @@ describe('a page’s phone numbers in the format', () => {
     expect(problems(page({ phone: {} }))).toEqual([]);
     expect(problems(page({ phone: { country: 'EG', shown: 'national' } }))).toEqual([]);
     expect(problems(page({}, { country: 'AE', shown: 'international' }))).toEqual([]);
+    // Its country picked from Fieldia's list, found by typing, or from the browser's own: on the page, or the field.
+    expect(problems(page({ phone: { countries: 'native' } }))).toEqual([]);
+    expect(problems(page({ phone: { countries: 'list' } }, { countries: 'native' }))).toEqual([]);
     // A phone field's other options stay as they are.
     expect(problems(page({}, { clear: false }))).toEqual([]);
   });
@@ -33,7 +36,9 @@ describe('a page’s phone numbers in the format', () => {
   it('refuses a country not written as its ISO code, a way of showing it does not know, and a word it does not know', () => {
     expect(problems(page({ phone: { country: 'eg' } }))).toEqual(['phone.country: a country is its ISO code in capitals, such as "EG"']);
     expect(problems(page({ phone: { shown: 'local' } }))).toEqual(['phone.shown: shown is "international" (+20 10 1234 5678) or "national" (010 1234 5678)']);
-    expect(problems(page({ phone: { countries: ['EG'] } }))).toEqual(['phone: Unrecognized key: "countries"']);
+    expect(problems(page({ phone: { countries: ['EG'] } }))).toEqual(['phone.countries: countries is "list" (Fieldia’s own, found by typing) or "native" (the browser’s own list)']);
+    expect(problems(page({}, { countries: 'select' }))).toEqual(['layout.children[0].options.countries: countries is "list" (Fieldia’s own, found by typing) or "native" (the browser’s own list)']);
+    expect(problems(page({ phone: { prefix: '+20' } }))).toEqual(['phone: Unrecognized key: "prefix"']);
     expect(problems(page({}, { country: 'Egypt' }))).toEqual(['layout.children[0].options.country: a country is its ISO code in capitals, such as "EG"']);
     // Another widget's options are not a phone's.
     const text = page({}, { country: 'Egypt' });

@@ -50,6 +50,8 @@ export const canvas = {
   moveLeft: 'Move left',
   moveRight: 'Move right',
   delete: 'Delete',
+  // ---- what a Delete took away, said in a toast with its Undo: a question, a field, a page, a section, tabs, a tab, else a part
+  deleted: { question: 'Question deleted', field: 'Field deleted', page: 'Page deleted', section: 'Section deleted', tabs: 'Tabs deleted', tab: 'Tab deleted', part: 'Deleted', undo: 'Undo' },
   statusSteps: 'Status steps',
   // ---- the field picked, and its bar
   dragToMove: 'Drag to move',

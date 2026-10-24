@@ -6,6 +6,7 @@ import { findNode, findTab } from './page-tree';
 import { onTab, setting } from './panel-controls';
 import { widthSetting } from './panel-layout';
 import { tabPartsSettings, tabsInHeadSetting } from './head-properties';
+import { removeWithUndo } from './deleted-toast';
 
 /**
  * The screen editor's properties: what a view of a part is, and the views of
@@ -52,7 +53,7 @@ export function tabsProperties(el: ElementFactory, designer: Designer, id: strin
   const w = designer.words.panel;
   const moves = movers(el, designer, id, [w.moveUp, w.moveDown]);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteTabs);
-  remove.addEventListener('click', () => designer.removeNode(id));
+  remove.addEventListener('click', () => removeWithUndo(designer, id));
   const width = widthSetting(el, designer, id);
   // In a record's head, as a work item's Details, History, Links and Attachments (head-properties.ts).
   const head = tabsInHeadSetting(el, designer, id);
@@ -82,7 +83,7 @@ export function tabProperties(el: ElementFactory, designer: Designer, id: string
   label.addEventListener('input', () => designer.renameContainer(id, label.value));
   const moves = movers(el, designer, id, [w.moveLeft, w.moveRight]);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteTab);
-  remove.addEventListener('click', () => designer.removeNode(id));
+  remove.addEventListener('click', () => removeWithUndo(designer, id));
   // Its icon, shown alone or not, and a count after it (head-properties.ts).
   const parts = tabPartsSettings(el, designer, id);
   // On paper or not: an invoice's journal items are its screen's alone.

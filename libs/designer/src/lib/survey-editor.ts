@@ -5,7 +5,7 @@ import { createWidget, installStyles, useStyleNonce, type Widget, type WidgetFac
 import { barRoom, clearOfBar, keepClearOfBar } from './bottom-bar';
 import { branchMap, drawBranchMap } from './branch-map';
 import { canvasDrag } from './canvas-drag';
-import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, putDownOnClickOutside, type ElementFactory, type OptionsEditor } from './chrome';
+import { designerBar, elementFactory, optionsEditor, putDownOnClickOutside, type ElementFactory, type OptionsEditor } from './chrome';
 import { speakIn, widgetWords } from './chrome-language';
 import { conditionEditor } from './condition-editor';
 import { kindOfField, QUESTION_KINDS, type Designer, type DesignerState, type Where } from './designer';
@@ -35,6 +35,7 @@ import { startHere } from './templates-start';
 import { answerButton } from './answer-picker';
 import { endingsEditor } from './endings-editor';
 import { growingBox } from './growing-box';
+import { deletedToast, removeWithUndo } from './deleted-toast';
 
 /**
  * The survey editor, the Google Forms way: on a tinted page, a card heading
@@ -102,7 +103,12 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const el = elementFactory(doc);
   const own = designer.words;
   const w = own.questions;
-  const iconButton = (label: string, text: string, onClick: () => void, extra = '') => makeIconButton(el, label, text, onClick, extra);
+  /** A bin with its words after it ("Delete question"), the words hidden where there is no room for them. */
+  const deleteButton = (label: string, onClick: () => void, extra: string) => {
+    const button = el('button', { type: 'button', class: extra, 'aria-label': label, title: label }, designerIcon(doc, 'delete'), el('span', { class: 'fd-q-tool-words', 'aria-hidden': 'true' }, label));
+    button.addEventListener('click', onClick);
+    return button;
+  };
   const focused = (node: Element) => doc.activeElement === node;
 
   const skin = options.skin ?? 'outlined';
@@ -364,9 +370,13 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     };
   }
 
-  /** A question not picked: as people will see it. */
+  /**
+   * A question not picked: as people will see it. Its words are a button — reached by Tab, opened by Enter or Space, as
+   * a click anywhere on the card opens it (WCAG 2.1.1) — and its tools are a ⋮ at its top corner, shown where it is
+   * pointed at or the keys reach it: Duplicate, Delete, Move up and down, without opening it.
+   */
   function closedCard(id: string): CardView {
-    const text = el('span', { class: 'fd-q-text', ...dataDirection });
+    const text = el('button', { type: 'button', class: 'fd-q-text fd-q-open', id: `fd-q-words-${id}`, ...dataDirection });
     const title = el('div', { class: 'fd-q-title' }, text);
     const help = el('div', { class: 'fd-help' });
     const answer = el('div', { class: 'fd-q-answer', inert: '' });
@@ -374,11 +384,37 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     // Forms' six dots, across the top when pointed at: what it is carried by.
     // For the pointer only — the keys move it too — so no control of its own.
     const grip = el('span', { class: 'fd-q-grip', 'data-grip': '', 'aria-hidden': 'true', title: w.dragTitle }, designerIcon(doc, 'grip'));
-    // Reached by Tab and opened by Enter or Space, as a click opens it (WCAG 2.1.1).
-    const element = el('div', { class: 'fd-q fd-q-closed', 'data-node': id, role: 'button', tabindex: '0' }, grip, title, help, answer);
+    const more = el('button', { type: 'button', class: 'fd-q-tool fd-q-more', 'aria-label': w.questionTools, title: w.questionTools, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-describedby': text.id }, designerIcon(doc, 'kebab'));
+    const element = el('div', { class: 'fd-q fd-q-closed', 'data-node': id }, grip, title, help, answer, more);
     const painter = answerBox(answer, id);
+    more.addEventListener('click', (event) => {
+      // Its tools, not the card opening under them.
+      event.stopPropagation();
+      const step = stepsOf(designer.getPage()).find((s) => s.children.some((n) => n.id === id));
+      const at = step ? step.children.findIndex((n) => n.id === id) : -1;
+      const items: MenuItem[] = [
+        { id: 'duplicate', label: w.duplicate, icon: 'duplicate' },
+        { id: 'delete', label: w.deleteQuestion, icon: 'delete' },
+        ...(at > 0 ? [{ id: 'up', label: w.moveUp, divider: true }] : []),
+        ...(step && at !== -1 && at < step.children.length - 1 ? [{ id: 'down', label: w.moveDown, ...(at > 0 ? {} : { divider: true }) }] : []),
+      ];
+      openMenu({
+        el,
+        anchor: more,
+        title: w.questionTools,
+        items,
+        actions: true,
+        onPick(item) {
+          if (item === 'duplicate') {
+            const copy = designer.duplicateNode(id);
+            if (copy) designer.select(copy);
+          } else if (item === 'delete') removeWithUndo(designer, id);
+          else designer.moveNode(id, item === 'up' ? -1 : 1);
+        },
+      });
+    });
     element.addEventListener('click', (event) => {
-      if (designer.getState().selected === id) return;
+      if (designer.getState().selected === id || more.contains(event.target as Node)) return;
       const onWords = (event.target as Element).closest('.fd-q-text');
       designer.select(id);
       // Clicking its words opens it with the cursor in them.
@@ -390,11 +426,6 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     });
     /** What the card was drawn from: a question an edit left alone is the same objects, and its card stays as it is. */
     let drawn: { node: FieldNode; def: Field } | null = null;
-    element.addEventListener('keydown', (event) => {
-      if (event.target !== element || (event.key !== 'Enter' && event.key !== ' ')) return;
-      event.preventDefault();
-      text.click();
-    });
     return {
       element,
       open: false,
@@ -403,6 +434,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         if (drawn?.node === node && drawn.def === def) return;
         drawn = { node, def };
         text.textContent = def.label;
+        // A question with no words yet is still named, as what it is.
+        if (def.label.trim()) text.removeAttribute('aria-label');
+        else text.setAttribute('aria-label', w.question);
         element.classList.toggle('fd-required', def.required === true);
         help.textContent = def.help ?? '';
         help.hidden = !def.help;
@@ -512,7 +546,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         const copy = designer.duplicateNode(id);
         if (copy) designer.select(copy);
       }),
-      tool(w.delete, 'delete', () => designer.removeNode(id), 'fd-q-tool-danger'),
+      // Its bin says what it does where there is room for its words; on a phone, its icon, named for a screen reader.
+      deleteButton(w.deleteQuestion, () => removeWithUndo(designer, id), 'fd-q-tool fd-q-tool-danger fd-q-delete'),
       el('span', { class: 'fd-q-sep', 'aria-hidden': 'true' }),
       el('span', { class: 'fd-q-required-words', 'aria-hidden': 'true' }, w.required),
       required,
@@ -577,7 +612,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const name = growingBox(el, { class: 'fd-step-title', 'aria-label': w.pageTitle, placeholder: w.untitledPage, autocomplete: 'off', ...dataDirection });
     name.addEventListener('input', () => designer.renameContainer(id, name.value));
     name.addEventListener('focus', () => designer.getState().selected !== id && designer.select(id));
-    const removeStep = iconButton(w.deletePage, '✕', () => designer.removeNode(id), 'fd-icon-danger');
+    const removeStep = deleteButton(w.deletePage, () => removeWithUndo(designer, id), 'fd-q-tool fd-q-tool-danger fd-step-delete');
     const when = conditionEditor(el, designer, id, 'page');
     const condition = el('div', { class: 'fd-step-when' }, when.element);
     const cards = el('div', { class: 'fd-step-cards', 'data-drop-section': id, 'data-drop-flow': 'column' });
@@ -650,10 +685,12 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       designer.moveNode(selected, event.key === 'ArrowUp' ? -1 : 1);
     } else if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
-      designer.removeNode(selected);
+      removeWithUndo(designer, selected);
     }
   };
   doc.addEventListener('keydown', onKey);
+  // What a Delete took away, said with Undo at the foot of the screen.
+  const deletions = deletedToast(root, designer, el, true);
   // A click on the page around the cards closes the open one; one on a card, a page's card, the map or the bar beside it does not.
   const stopPuttingDown = putDownOnClickOutside(root, designer, '.fd-q, .fd-step-head, .fd-survey-head, .fd-branch-map, .fd-q-rail', () => !trial.trying);
 
@@ -751,6 +788,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       words.destroy();
       json.destroy();
       ruleList.destroy();
+      deletions.destroy();
       root.remove();
     },
   };

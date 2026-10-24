@@ -132,7 +132,7 @@ export const LIST_STYLES = `
 .fd-list-table tbody tr:last-child td { border-block-end: none; }
 .fd-list-table .fd-num { text-align: end; font-variant-numeric: tabular-nums; }
 .fd-list-table th.fd-list-check, .fd-list-table td.fd-list-check { width: 36px; padding-inline: 10px 0; }
-.fd-list-checkbox { width: 16px; height: 16px; margin: 0; vertical-align: middle; accent-color: var(--fd-accent); cursor: pointer; }
+.fd-list-checkbox { vertical-align: middle; }
 .fd-list-sort { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: flex; align-items: center; gap: 4px; font: inherit; color: inherit; }
 .fd-list-sort::after { content: ''; width: 0; height: 0; border-inline: 4px solid transparent; opacity: 0; }
 .fd-list-sort:hover::after { opacity: 0.35; border-block-start: 5px solid currentColor; }

@@ -35,8 +35,7 @@ const DUPLICATES_CSS = /* css */ `
 .fd-merge-table tbody th { width: 26%; font-weight: 500; color: var(--fd-muted); overflow-wrap: anywhere; }
 .fd-merge-table td:has(input:checked), .fd-merge-table thead th:has(input:checked) { background: var(--fd-accent-soft); }
 .fd-merge-pick { display: flex; gap: 8px; align-items: flex-start; min-width: 0; cursor: pointer; overflow-wrap: anywhere; }
-.fd-merge-pick input { flex: none; margin: 3px 0 0; accent-color: var(--fd-accent); }
-.fd-merge-pick input:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-merge-pick input { margin: 1px 0 0; }
 .fd-merge-shown { display: block; font-weight: 400; font-size: 12px; color: var(--fd-muted); }
 .fd-merge-empty { color: var(--fd-muted); font-style: italic; }
 .fd-merge-what { padding: 8px 10px; border-radius: var(--fd-control-radius); background: var(--fd-info-soft); color: var(--fd-text); }

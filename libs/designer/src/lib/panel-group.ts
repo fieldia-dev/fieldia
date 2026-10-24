@@ -14,6 +14,7 @@ import { rolesSetting } from './roles-setting';
 import { shownWhileSetting } from './shown-while';
 import { workGroupSetting } from './work-text';
 import { drawSettings } from './draw-settings';
+import { removeWithUndo } from './deleted-toast';
 
 /**
  * A group's settings, on the panel's tabs: its title, whether it folds by
@@ -36,7 +37,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
   const work = workGroupSetting(el, designer, id, true);
   const moves = movers(el, designer, id, [w.moveUp, w.moveDown]);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteSection);
-  remove.addEventListener('click', () => designer.removeNode(id));
+  remove.addEventListener('click', () => removeWithUndo(designer, id));
   // When it shows: rules on the fields outside it that hold one of a list, or yes or no.
   const when = conditionEditor(el, designer, id, 'group');
   const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);

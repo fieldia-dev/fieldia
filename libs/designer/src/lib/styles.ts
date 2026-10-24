@@ -41,8 +41,8 @@ export const DESIGNER_CSS = /* css */ `
   background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: 10px; box-shadow: 0 18px 44px rgba(15, 20, 25, 0.18);
   padding: 6px; display: grid; gap: 4px; animation: fd-menu-in 120ms cubic-bezier(0, 0, 0.2, 1);
 }
-.fd-check { display: grid; gap: 6px; justify-items: start; padding: 10px; border-radius: 8px; }
-.fd-check + .fd-check { border-block-start: 1px solid var(--fd-border); border-radius: 0; }
+.fd-checks > .fd-check { display: grid; gap: 6px; justify-items: start; padding: 10px; border-radius: 8px; }
+.fd-checks > .fd-check + .fd-check { border-block-start: 1px solid var(--fd-border); border-radius: 0; }
 .fd-check-severity { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; }
 .fd-check[data-severity="must"] .fd-check-severity { color: var(--fd-error); background: var(--fd-error-soft); }
 .fd-check[data-severity="should"] .fd-check-severity { color: var(--fd-warning); background: var(--fd-warning-soft); }
@@ -461,16 +461,14 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-add-part:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-canvas-add-part .fd-dicon { width: 13px; height: 13px; }
 
-/* The bar on the field being edited: just above it; over its group's name in a first row; below it right under the tabs. */
+/* The bar on the part being edited: just above it at its end edge until the canvas places it (bar-place.ts) — above,
+   or below where above has no room, never over a group's name or another part's words; a field makes room under
+   itself for it there (--fd-bar-room). */
 .fd-field-bar {
-  position: absolute; bottom: calc(100% + 8px); inset-inline-end: 0; z-index: 5; display: flex; align-items: center; gap: 1px; padding: 3px;
+  position: absolute; bottom: calc(100% + 8px); inset-inline-end: 0; z-index: 5; display: flex; align-items: center; gap: 1px; padding: 3px; width: max-content;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px; box-shadow: 0 6px 16px rgba(15, 20, 25, 0.14); cursor: default;
 }
-.fd-bar-below > .fd-field-bar { bottom: auto; top: calc(100% + 8px); }
-/* Nudged back inside the canvas when the field's far edge would put it past the near one: the canvas measures it. */
-.fd-canvas-field > .fd-field-bar { translate: var(--fd-bar-nudge, 0px) 0; }
-/* In a group's first row, over the group's name, which the canvas measures as --fd-name-room. */
-.fd-bar-over-name > .fd-field-bar { bottom: calc(100% + var(--fd-name-room, 0px) + 8px); }
+.fd-canvas-field[data-bar-room] { margin-block-end: calc(-6px + var(--fd-bar-room, 0px)); }
 .fd-bar-button {
   all: unset; box-sizing: border-box; height: 26px; min-width: 26px; padding: 0 5px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   color: var(--fd-text); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
@@ -665,6 +663,27 @@ export const DESIGNER_CSS = /* css */ `
 .fd-q-tool:focus-visible { outline: 2px solid var(--fd-focus); }
 .fd-q-tool > .fd-dicon { width: 21px; height: 21px; }
 .fd-q-tool-danger:hover { color: var(--fd-error); }
+/* Delete says so: a bin and its words ("Delete question", a page's "Delete page" once it is picked), the bin alone where
+   there is no room (a phone), still named for a screen reader. */
+.fd-q-tool:has(> .fd-q-tool-words) { width: auto; grid-auto-flow: column; gap: 6px; padding-inline: 10px 14px; border-radius: 20px; }
+.fd-q-tool-words { font-size: 14px; font-weight: 500; white-space: nowrap; }
+.fd-design-step:not(.fd-step-selected) .fd-step-delete > .fd-q-tool-words { display: none; }
+.fd-design-step:not(.fd-step-selected) .fd-step-delete { width: 40px; padding: 0; }
+@container (max-width: 560px) {
+  .fd-q-tool > .fd-q-tool-words { display: none; }
+  .fd-q-tool:has(> .fd-q-tool-words) { width: 40px; padding: 0; }
+}
+/* A question not picked: its words open it (a button drawn as words), its tools a ⋮ at its top corner, shown where it
+   is pointed at or the keys reach it — always on a screen with no pointer to hover with. */
+.fd-q-open { all: unset; cursor: pointer; overflow-wrap: anywhere; }
+.fd-q-open:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 3px; border-radius: 2px; }
+.fd-q-closed > .fd-q-title { padding-inline-end: 36px; }
+.fd-q-more { position: absolute; inset-block-start: 8px; inset-inline-end: 8px; opacity: 0; transition: opacity 150ms; }
+.fd-q-closed:is(:hover, :focus-within) > .fd-q-more, .fd-q-more[aria-expanded="true"] { opacity: 1; }
+@media (hover: none) { .fd-q-more { opacity: 1; } }
+/* What a Delete took away, at the foot of the screen with Undo (deleted-toast.ts): a toast as the viewer's words are. */
+.fd-deleted > .fd-say-undo { flex: none; font-weight: 600; padding-inline: 8px; }
+@media (prefers-reduced-motion: reduce) { .fd-q-more { transition: none; } }
 .fd-survey-canvas .fd-q-sep { height: 32px; margin-inline: 10px; }
 .fd-survey-canvas .fd-q-required-words { font-size: 14px; font-weight: 500; margin-inline-end: 8px; }
 .fd-survey-canvas .fd-q-foot .fd-switch { margin-inline-end: 6px; }
@@ -760,7 +779,9 @@ export const DESIGNER_CSS = /* css */ `
 .fd-list-canvas .fd-list-table .fd-list-checkbox { cursor: default; }
 .fd-list-canvas .fd-list-row:hover td { background: none; }
 .fd-list-canvas .fd-list-row:hover td.fd-picked { background: var(--fd-accent-soft); }
-.fd-column-bar { bottom: auto; top: calc(100% + 6px); inset-inline-end: auto; inset-inline-start: 0; }
+/* A column picked shows its bar, which its header's own clip hid: its words cut in their own box instead. */
+.fd-list-canvas .fd-list-table th.fd-canvas-column.fd-picked { overflow: visible; }
+.fd-list-canvas .fd-list-table th.fd-canvas-column.fd-picked > .fd-list-sort { overflow: hidden; }
 /* "+ Column" stays at the row's end however far the table scrolls. */
 .fd-list-canvas .fd-list-table .fd-canvas-add-column { position: sticky; inset-inline-end: 0; z-index: 1; width: 1%; padding-inline: 8px; background: var(--fd-surface); border-inline-start: 1px solid var(--fd-border); box-shadow: -6px 0 8px -6px rgba(15, 23, 42, 0.18); }
 .fd-canvas-add-column .fd-canvas-add-part { padding: 2px 6px; font-weight: 400; border: 0; color: var(--fd-accent); }

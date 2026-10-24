@@ -58,6 +58,7 @@ export const canvas: DesignerWords['canvas'] = {
   moveLeft: 'پہلے کی جانب منتقل کریں',
   moveRight: 'بعد کی جانب منتقل کریں',
   delete: 'حذف کریں',
+  deleted: { question: 'سوال حذف ہو گیا', field: 'خانہ حذف ہو گیا', page: 'صفحہ حذف ہو گیا', section: 'حصہ حذف ہو گیا', tabs: 'ٹیبز حذف ہو گئے', tab: 'ٹیب حذف ہو گیا', part: 'حذف ہو گیا', undo: 'واپس کریں' },
   statusSteps: 'حالت کے مراحل',
   dragToMove: 'منتقل کرنے کے لیے گھسیٹیں',
   required: 'لازمی',

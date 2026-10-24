@@ -682,10 +682,14 @@ export interface WidgetLabels {
    * A phone number read the world over (the phone part): its country's list, named by the field's `{label}`, and its
    * choice of none; a call and a WhatsApp link to the `{number}` shown; and why a number typed does not read — no
    * country to read it in, a `{code}` that is no country's, too short or too long for a number of its dialling code
-   * (`{dial}`, "+20") in its `{country}`, or a `{start}` no number there has.
+   * (`{dial}`, "+20") in its `{country}`, or a `{start}` no number there has. Its list searched by typing: its box,
+   * the list's name, and what it says when no country is found by the `{text}` typed.
    */
   phoneCountry: string;
   phoneNoCountry: string;
+  phoneFindCountry: string;
+  phoneCountries: string;
+  phoneNoCountryFound: string;
   phoneCall: string;
   phoneCallNamed: string;
   phoneWhatsApp: string;
@@ -1242,6 +1246,9 @@ const en: WidgetLabels = {
   enterValue: 'Enter a value to filter by',
   phoneCountry: 'Country of {label}',
   phoneNoCountry: 'Country',
+  phoneFindCountry: 'Search countries',
+  phoneCountries: 'Countries',
+  phoneNoCountryFound: 'No country matches “{text}”',
   phoneCall: 'Call',
   phoneCallNamed: 'Call {number}',
   phoneWhatsApp: 'WhatsApp',

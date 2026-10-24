@@ -87,7 +87,7 @@ export const PATH_CSS = /* css */ `
 .fd-tree-twist .fd-icon[data-icon="chevron-right"]:dir(rtl) { transform: scaleX(-1); }
 /* Its box: empty, ticked, or a dash when some under it are ticked. */
 .fd-tree-check {
-  display: grid; place-items: center; width: 16px; height: 16px; border: 1.5px solid var(--fd-border-strong, var(--fd-muted)); border-radius: 3px;
+  display: grid; place-items: center; width: 18px; height: 18px; border: 1.5px solid var(--fd-muted); border-radius: clamp(2px, var(--fd-control-radius), 4px);
   background: var(--fd-surface); color: var(--fd-accent-text);
 }
 .fd-tree-row:is([aria-checked="true"], [aria-checked="mixed"]) > .fd-tree-check { border-color: var(--fd-accent); background: var(--fd-accent); }

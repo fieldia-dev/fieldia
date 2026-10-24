@@ -44,7 +44,6 @@ export const SURVEY_CSS = /* css */ `
 .fd-matrix-table th, .fd-matrix-table td { padding: 6px 10px; text-align: center; border-bottom: 1px solid var(--fd-border); }
 .fd-matrix-table thead th { font-weight: 500; font-size: 13px; color: var(--fd-muted); }
 .fd-matrix-table tbody th { text-align: start; font-weight: 500; }
-.fd-matrix-table input { accent-color: var(--fd-accent); width: 16px; height: 16px; margin: 0; }
 /* Words under a slider's ends, each under its own end. */
 .fd-slider-word { display: block; max-width: 12em; }
 .fd-slider-last { text-align: end; }

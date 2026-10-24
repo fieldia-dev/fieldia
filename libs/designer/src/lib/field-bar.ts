@@ -11,6 +11,7 @@ import { toolboxGroups } from './toolbox';
 import { chromeLanguage } from './chrome-language';
 import type { DesignerWords } from './designer-words';
 import { groupName } from './toolbox';
+import { removeWithUndo } from './deleted-toast';
 
 /**
  * The bar on the field being edited: what changes most, one press away — how
@@ -109,7 +110,7 @@ export function fieldBar(options: FieldBarOptions): FieldBar {
     const copy = designer.duplicateNode(id);
     if (copy) designer.select(copy);
   });
-  remove.addEventListener('click', () => designer.removeNode(id));
+  remove.addEventListener('click', () => removeWithUndo(designer, id));
 
   return {
     element,

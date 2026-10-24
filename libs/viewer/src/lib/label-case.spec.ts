@@ -109,7 +109,7 @@ async function sentences(host: HTMLElement) {
     waits: at(host, 'f-total').querySelector('.fd-value-waits')?.getAttribute('title'),
     clear: at(host, 'f-country').querySelector('.fd-combo-clear')?.getAttribute('aria-label'),
     adder: at(host, 'f-tags').querySelector('button')?.textContent,
-    country: at(host, 'f-mobile').querySelector('.fd-phone-select')?.getAttribute('aria-label'),
+    country: at(host, 'f-mobile').querySelector('.fd-phone-country')?.getAttribute('aria-label'),
     cell: (at(host, 'f-lines').querySelector('.fd-cell-waits') as HTMLElement | null)?.title,
     broken: (at(host, 'f-price').matches('.fd-broken') ? at(host, 'f-price') : at(host, 'f-price').querySelector('.fd-broken'))?.textContent,
   };

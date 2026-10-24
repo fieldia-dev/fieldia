@@ -56,6 +56,8 @@ export const questions: DesignerWords['questions'] = {
   pageTitle: 'عنوان صفحه',
   untitledPage: 'صفحهٔ بی‌عنوان',
   deletePage: 'حذف صفحه',
+  deleteQuestion: 'حذف پرسش',
+  questionTools: 'ابزارهای پرسش',
   pageOf: (n, total) => `صفحهٔ ${n} از ${total}`,
   // ---- each kind's settings
   from: 'از',
@@ -284,6 +286,8 @@ export const questions: DesignerWords['questions'] = {
   phoneShown: 'شیوهٔ نمایش',
   thePages: 'همانند صفحه',
   phoneShownAs: { international: 'بین‌المللی: ⁦+20 10 1234 5678⁩', national: 'داخلی: ⁦010 1234 5678⁩' },
+  phoneCountries: 'انتخاب کشور از',
+  phoneCountriesAs: { list: 'فهرست Fieldia، با تایپ جستجو می‌شود', native: 'فهرست خود مرورگر' },
   addALine: 'افزودن سطر',
   whenEmpty: 'وقتی خالی است',
   noLines: 'هنوز سطری نیست',

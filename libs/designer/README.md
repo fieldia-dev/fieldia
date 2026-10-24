@@ -481,6 +481,31 @@ createDesigner({ page, looks }); // the same store for every designer, so they o
 
 `createMemoryLookStore()` keeps them for as long as the page is open, as for a test.
 
+## Deleting
+
+Delete asks nothing: what it takes away — a question, a page, a field, a group,
+tabs, a part of a record's head, a list's column — goes at once, and a toast at
+the foot of the screen says what went, with **Undo**: "Question deleted · Undo".
+Undo brings it back as it was, picked, the focus in its words; the toast stays
+ten seconds (longer while it is pointed at or holds the focus) and goes at the
+next change. In the survey editor a picked question's bin says **Delete
+question** (its icon alone on a phone, still named for a screen reader), a
+question not picked shows a **⋮** where it is pointed at or the keys reach it —
+Duplicate, Delete question, Move up and down — and a picked page's bin says
+**Delete page**. Every delete goes through `removeWithUndo(designer, id)`; an
+app's own chrome over the Designer can call it too.
+
+## The bar on the part picked
+
+On the screen editor's canvas, the bar of the part picked (a field's, a part of
+a record's head, a list's column or action) belongs to the part: just above it,
+at its end edge (its start edge right to left), inside the canvas; below it
+where above it there is a group's name, another part's words or the canvas's
+top — a field then makes room under itself, so the next row moves down and the
+part pressed never moves; never over anything else's words or boxes. It goes
+with its part as the page scrolls, and a window resized or zoomed, or a part
+that grows as it is typed in, places it again.
+
 ## On a phone
 
 Where the editor is a phone's width (620px or less), its bar is one row that

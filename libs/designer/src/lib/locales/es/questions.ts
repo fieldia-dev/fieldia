@@ -55,6 +55,8 @@ export const questions: DesignerWords['questions'] = {
   pageTitle: 'Título de la página',
   untitledPage: 'Página sin título',
   deletePage: 'Eliminar página',
+  deleteQuestion: 'Eliminar pregunta',
+  questionTools: 'Herramientas de la pregunta',
   pageOf: (n, total) => `Página ${n} de ${total}`,
   // ---- each kind's settings
   from: 'Desde',
@@ -285,6 +287,8 @@ export const questions: DesignerWords['questions'] = {
   phoneShown: 'Se muestra',
   thePages: 'Como en la página',
   phoneShownAs: { international: 'Internacional: +20 10 1234 5678', national: 'Nacional: 010 1234 5678' },
+  phoneCountries: 'País elegido de',
+  phoneCountriesAs: { list: 'La lista de Fieldia, buscando al escribir', native: 'La lista del propio navegador' },
   addALine: 'Añadir una línea',
   whenEmpty: 'Cuando está vacía',
   noLines: 'Aún no hay líneas',

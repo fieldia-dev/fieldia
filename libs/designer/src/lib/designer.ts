@@ -471,10 +471,11 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setOutbox(on: boolean): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
-   * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
-   * home's — `null` takes either away.
+   * setting away); the country a number typed without its + is read in, whether a number shows abroad's way or at
+   * home's, and whether its country is picked from the browser's own list (`countries: "native"`) rather than
+   * Fieldia's — `null` takes any of them away.
    */
-  setPhone(patch: { on?: boolean; country?: string | null; shown?: 'international' | 'national' | null }): boolean;
+  setPhone(patch: { on?: boolean; country?: string | null; shown?: 'international' | 'national' | null; countries?: 'native' | null }): boolean;
   /** The records a link, links or a table of lines point to, by their model's name. */
   setRelation(id: string, model: string): boolean;
   /** An amount's currency, such as USD. */
@@ -1548,6 +1549,10 @@ export function createDesigner(options: {
           if (patch.shown !== undefined) {
             if (patch.shown) phone.shown = patch.shown;
             else delete phone.shown;
+          }
+          if (patch.countries !== undefined) {
+            if (patch.countries) phone.countries = patch.countries;
+            else delete phone.countries;
           }
           draft.phone = phone;
         },

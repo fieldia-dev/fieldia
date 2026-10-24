@@ -17,6 +17,7 @@ import { widthMarks } from './canvas-width';
 import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { fieldBar, type FieldBar } from './field-bar';
+import { barsPlaced, stopWatchingBars } from './bar-place';
 import { designerIcon } from './icons';
 import { inlineSettings, type InlineSettings } from './inline-settings';
 import { locate } from './layout-tree';
@@ -180,11 +181,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null; language: string | undefined } | null;
   }
   const cards = new Map<string, Card>();
-  /** Where a part sits in its grid: its place in it, the grid's columns, and the names right above the grid's first row. */
+  /** Where a part sits in its grid: its place in it, and the grid's columns. */
   interface Where {
     index: number;
     columns: number;
-    under: 'tabs' | 'name' | null;
   }
 
   function dropCard(card: Card) {
@@ -290,10 +290,6 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
         sizeToWords(label);
       }
       if (doc.activeElement !== help) help.value = helpText;
-      // In a first row the bar leaves the names above readable: it goes below the field under tabs, over the name under a group's.
-      const firstRow = place.index < place.columns;
-      element.classList.toggle('fd-bar-below', place.under === 'tabs' && firstRow);
-      element.classList.toggle('fd-bar-over-name', place.under === 'name' && firstRow);
       card.bar?.update(page);
       card.options?.update(def, node);
       // A table's columns, typed in, stand in for the table itself.
@@ -350,17 +346,6 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     fold: FoldMark;
   }
   const sections = new Map<string, SectionView>();
-  // How far a group's name and words stand above its first row, measured as they change size: a bar lifted over the name clears it in any font.
-  const nameRoom = doc.defaultView?.ResizeObserver
-    ? new doc.defaultView.ResizeObserver((entries) => {
-        for (const section of new Set(entries.map((entry) => entry.target.parentElement))) {
-          const grid = section?.querySelector(':scope > .fd-grid');
-          const legend = section?.querySelector(':scope > legend');
-          if (!section || !grid || !legend) continue;
-          (section as HTMLElement).style.setProperty('--fd-name-room', `${Math.round(grid.getBoundingClientRect().top - legend.getBoundingClientRect().top)}px`);
-        }
-      })
-    : null;
 
   /** A group is a fieldset, named by its title; an arrangement is no group to name, and a fieldset cannot lay parts on the columns round it. */
   function makeSection(id: string, tag: 'fieldset' | 'div'): SectionView {
@@ -386,8 +371,6 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     advanced.addEventListener('click', () => options.openAdvanced?.());
     const lock = el('div', { class: 'fd-simple-lock', hidden: '', ...own }, el('span', { class: 'fd-simple-lock-how' }), el('span', {}, w.simpleKeeps), advanced);
     const element = el(tag, { class: 'fd-section fd-canvas-section', 'data-node': id, 'data-drop-section': id }, legend, description, grid, empty, lock);
-    nameRoom?.observe(legend);
-    nameRoom?.observe(description);
     return { element, legend, title, titleInput, description, grid, empty, lock, fold };
   }
 
@@ -397,7 +380,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     else element.style.removeProperty('--fd-span');
   }
 
-  function drawSection(section: SectionNode, place: Place, under: Where['under']): HTMLElement {
+  function drawSection(section: SectionNode, place: Place): HTMLElement {
     const plan = planSection(section, place);
     const tag = plan.arrangement ? 'div' : 'fieldset';
     let view = sections.get(section.id);
@@ -446,7 +429,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
         grid.style.setProperty(`--fd-columns-${width}`, String(count));
       }
     }
-    const inner = section.children.map((child, index) => drawItem(child, plan.inner, { index, under: under === 'tabs' || plan.arrangement ? under : 'name', columns: plan.inner.columns }));
+    const inner = section.children.map((child, index) => drawItem(child, plan.inner, { index, columns: plan.inner.columns }));
     arrange(grid, inner);
     setHidden(view.empty, section.children.length > 0);
     const locked = mode === 'simple' && plan.arrangement && isPicked;
@@ -459,7 +442,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   function drawItem(node: LayoutNode, place: Place, at: Where): HTMLElement {
     drawnIds.add(node.id);
     if (node.type === 'field') return drawCard(node, place.labels, at, place.quiet);
-    if (node.type === 'section') return drawSection(node, place, at.index < at.columns ? at.under : null);
+    if (node.type === 'section') return drawSection(node, place);
     if (node.type === 'tabs') return drawTabs(node, place);
     if (node.type === 'form') {
       const frame = savedForms.draw(node, selected === node.id);
@@ -528,7 +511,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       shown.grid.dataset['container'] = open.id;
     }
     const inner: Place = { columns: 1, onPage: place.onPage, labels: place.labels, quiet: place.quiet };
-    arrange(shown.grid, (open?.children ?? []).map((child, i) => drawItem(child, inner, { index: i, under: i === 0 ? 'tabs' : null, columns: 1 })));
+    arrange(shown.grid, (open?.children ?? []).map((child, i) => drawItem(child, inner, { index: i, columns: 1 })));
     return shown.element;
   }
 
@@ -629,16 +612,14 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
    * What is measured goes in the next frame, once the whole editor has written
    * this change, so the page is laid out once — measured now, it would be laid
    * out here and again after: the width handle goes where the part picked is,
-   * and the picked field's bar, lined up with the field's far edge, is nudged
-   * back inside the canvas where that edge would put it past the near one, as
-   * over a phone's first column. The bar is read before the handle is written,
-   * and moved only when it must. The handle on the canvas's own edge says the
-   * canvas's width as it now is, read with the rest and written last.
+   * and every floating bar on the canvas — the picked field's, a head part's —
+   * goes where it belongs to its part (bar-place.ts), read before the handle is
+   * written. The handle on the canvas's own edge says the canvas's width as it
+   * now is, read with the rest and written last.
    */
   let widthsFor: DesignerState | null = null;
   let frameAsked = false;
   let gone = false;
-  let nudged = { bar: null as HTMLElement | null, by: 0 };
   function nextFrame(state: DesignerState | null) {
     if (state) widthsFor = state;
     const view = win;
@@ -655,29 +636,16 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       if (gone) return;
       // Read, all of it, before anything is written.
       const sized = mode === 'advanced' ? resize.read() : null;
-      const nudge = barNudge();
+      const bars = barsPlaced(element);
       if (latest) widths.update(latest, mode === 'advanced');
-      nudge?.();
+      bars();
       sized?.();
     });
   }
-  /** Where the picked field's bar must move to stay inside the canvas, read now; the move, to write after. */
-  function barNudge(): (() => void) | null {
-    const bar = selected === null ? null : cards.get(selected)?.bar?.element;
-    if (!bar?.isConnected) return null;
-    const by = nudged.bar === bar ? nudged.by : 0;
-    const at = bar.getBoundingClientRect();
-    const room = element.getBoundingClientRect();
-    const natural = at.left - by;
-    const next = Math.round(Math.max(room.left + 4, Math.min(natural, room.right - 4 - at.width)) - natural);
-    if (nudged.bar === bar && next === by) return null;
-    return () => {
-      nudged = { bar, by: next };
-      bar.style.setProperty('--fd-bar-nudge', `${next}px`);
-    };
-  }
   const resized = doc.defaultView?.ResizeObserver ? new doc.defaultView.ResizeObserver(() => nextFrame(null)) : null;
   resized?.observe(element);
+  // The watch on the picked parts' sizes, ended with the canvas.
+  const unwatch = () => stopWatchingBars(element);
   const drag: CanvasDrag = {
     press: (source, event, tile) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile),
     destroy() {
@@ -720,7 +688,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       setData(body, 'container', root.id);
       body.classList.toggle('fd-sections', !sheet);
       const top: Place = { columns: 1, onPage: !sheet, labels: page.look?.labels };
-      arrange(body, topOf(page).map((node, index) => drawItem(node, top, { index, under: null, columns: 1 })));
+      arrange(body, topOf(page).map((node, index) => drawItem(node, top, { index, columns: 1 })));
       // Gone from the page, or in a tab not on show: their views go.
       for (const [id, card] of cards) {
         if (drawnIds.has(id)) continue;
@@ -768,8 +736,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       widths.destroy();
       resize.destroy();
       header.destroy();
-      nameRoom?.disconnect();
       resized?.disconnect();
+      unwatch();
       for (const card of cards.values()) dropCard(card);
       cards.clear();
       savedForms.destroy();
