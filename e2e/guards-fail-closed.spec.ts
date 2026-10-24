@@ -118,6 +118,22 @@ test.describe('a part that guards a send, from the one tag', () => {
     expect(await sent(page)).toBe(0);
   });
 
+  test('a part whose bytes are not those it was built with is refused by the browser: nothing is sent, said as never come', async ({ page }) => {
+    // The real payment part with one line more: its hash (the tag's integrity, from fieldia.js) no longer matches.
+    await page.route('**/fieldia.pay.js', async (route) => {
+      const real = await route.fetch();
+      return route.fulfill({ response: real, body: `${await real.text()}\n;window.payTampered = true;\n` });
+    });
+    await mount(page, CASES[0].page);
+    await page.locator('#app [data-node="f-name"] input').fill('Hana Fouad');
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
+    await expect(status(page)).toHaveText('The payment step could not load, so nothing was sent. Try again.');
+    await expect(page.locator('#app .fd-status-box .fd-retry')).toBeVisible();
+    expect(await sent(page)).toBe(0);
+    // None of the changed file ran.
+    expect(await page.evaluate(() => (window as any).payTampered)).toBeUndefined();
+  });
+
   test('Retry, the part come by then, sends through it: the fee taken and carried', async ({ page }) => {
     let failing = true;
     await page.route('**/fieldia.pay.js', (route) => (failing ? offline(route) : route.continue()));

@@ -1,6 +1,6 @@
 /**
  * The script tags Fieldia's docs print (the audits' S-M8, R-H9): each names an exact version of @fieldia/viewer and
- * carries the sha384 of the file npm serves for it, with crossorigin — written by tools/script-tags.mjs, never by hand.
+ * carries the sha256 of the file npm serves for it, with crossorigin — written by tools/script-tags.mjs, never by hand.
  *   node --test tools/script-tags.test.mjs
  */
 import { test } from 'node:test';
@@ -12,13 +12,13 @@ import { join, resolve } from 'node:path';
 import { CDN, hashesOf, readReleased, READMES, scriptTag, tagProblems, writeTags } from './script-tags.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
-const RELEASED = { version: '0.4.0', integrity: { 'fieldia.js': 'sha384-MAIN', 'fieldia.ar.js': 'sha384-ARABIC', 'fieldia-embed.js': 'sha384-EMBED' } };
+const RELEASED = { version: '0.4.0', integrity: { 'fieldia.js': 'sha256-MAIN', 'fieldia.ar.js': 'sha256-ARABIC', 'fieldia-embed.js': 'sha256-EMBED' } };
 
 test('a tag names the version, the file\'s integrity and crossorigin', () => {
-  assert.equal(scriptTag('fieldia.js', RELEASED), `<script src="${CDN}@0.4.0/bundle/fieldia.js"\n  integrity="sha384-MAIN"\n  crossorigin="anonymous"></script>`);
+  assert.equal(scriptTag('fieldia.js', RELEASED), `<script src="${CDN}@0.4.0/bundle/fieldia.js"\n  integrity="sha256-MAIN"\n  crossorigin="anonymous"></script>`);
   assert.equal(
     scriptTag('fieldia-embed.js', RELEASED, '\n  data-src="https://forms.example.com/enquiry" async'),
-    `<script src="${CDN}@0.4.0/bundle/fieldia-embed.js"\n  integrity="sha384-EMBED"\n  crossorigin="anonymous"\n  data-src="https://forms.example.com/enquiry" async></script>`
+    `<script src="${CDN}@0.4.0/bundle/fieldia-embed.js"\n  integrity="sha256-EMBED"\n  crossorigin="anonymous"\n  data-src="https://forms.example.com/enquiry" async></script>`
   );
   assert.throws(() => scriptTag('fieldia.xx.js', RELEASED), /fieldia\.xx\.js is not in @fieldia\/viewer 0\.4\.0/);
 });
@@ -37,9 +37,9 @@ test('a README\'s tags are written from the release: an unversioned one, an old 
     after,
     [
       '```html',
-      `<script src="${CDN}@0.4.0/bundle/fieldia.js"\n  integrity="sha384-MAIN"\n  crossorigin="anonymous"></script>`,
-      `<script src="${CDN}@0.4.0/bundle/fieldia.ar.js"\n  integrity="sha384-ARABIC"\n  crossorigin="anonymous"></script>`,
-      `  <script src="${CDN}@0.4.0/bundle/fieldia-embed.js"\n    integrity="sha384-EMBED"\n    crossorigin="anonymous"`,
+      `<script src="${CDN}@0.4.0/bundle/fieldia.js"\n  integrity="sha256-MAIN"\n  crossorigin="anonymous"></script>`,
+      `<script src="${CDN}@0.4.0/bundle/fieldia.ar.js"\n  integrity="sha256-ARABIC"\n  crossorigin="anonymous"></script>`,
+      `  <script src="${CDN}@0.4.0/bundle/fieldia-embed.js"\n    integrity="sha256-EMBED"\n    crossorigin="anonymous"`,
       '    data-src="https://forms.example.com/enquiry" async></script>',
       '```',
     ].join('\n')
@@ -51,14 +51,14 @@ test('a README\'s tags are written from the release: an unversioned one, an old 
   assert.match(tagProblems(before, RELEASED)[0], /line 2: .*fieldia\.js/);
 });
 
-test('each file\'s hash is the sha384 of its bytes, as a browser checks it', () => {
+test('each file\'s hash is the sha256 of its bytes, as a browser checks it — the one value a part has everywhere', () => {
   const dir = mkdtempSync(join(tmpdir(), 'fieldia-tags-'));
   try {
     writeFileSync(join(dir, 'fieldia.js'), 'alert(1)');
     writeFileSync(join(dir, 'fieldia.js.map'), '{}');
-    // openssl dgst -sha384 -binary | base64, for "alert(1)".
-    const expected = execFileSync('node', ['-e', "process.stdout.write(require('crypto').createHash('sha384').update('alert(1)').digest('base64'))"], { encoding: 'utf8' });
-    assert.deepEqual(hashesOf(dir), { 'fieldia.js': `sha384-${expected}` });
+    // openssl dgst -sha256 -binary | base64, for "alert(1)".
+    const expected = execFileSync('node', ['-e', "process.stdout.write(require('crypto').createHash('sha256').update('alert(1)').digest('base64'))"], { encoding: 'utf8' });
+    assert.deepEqual(hashesOf(dir), { 'fieldia.js': `sha256-${expected}` });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -67,7 +67,7 @@ test('each file\'s hash is the sha384 of its bytes, as a browser checks it', () 
 test('the release the docs name is recorded, with every script of the bundle', () => {
   const released = readReleased(WORKSPACE);
   assert.match(released.version, /^\d+\.\d+\.\d+$/);
-  for (const file of ['fieldia.js', 'fieldia.ar.js', 'fieldia-embed.js', 'fieldia.list.js']) assert.match(released.integrity[file] ?? '', /^sha384-[A-Za-z0-9+/]{64}$/, file);
+  for (const file of ['fieldia.js', 'fieldia.ar.js', 'fieldia-embed.js', 'fieldia.list.js']) assert.match(released.integrity[file] ?? '', /^sha256-[A-Za-z0-9+/]{43}=$/, file);
 });
 
 test('every README\'s script tags are the ones the release gives (`node tools/script-tags.mjs write` writes them)', () => {

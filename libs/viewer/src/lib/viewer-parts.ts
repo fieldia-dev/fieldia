@@ -1,5 +1,5 @@
 import { callsPartFunctions, formJoins, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
-import { asksLoadingPart, loadingPart, businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { asksLoadingPart, loadingPart, loadingSettings, businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as ElementModule from './element-part';
@@ -415,8 +415,23 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * tag it finds for a part still on its way, never asking for it twice. A page given `createMemoryDataSource` adds
  * `fieldia.memory.js`. In the browser, the one-tag script's `partTags(page)` gives each with what its own tag carries.
  */
-export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): string[] {
-  return partsFor(page, widgets, slots).map((part) => `fieldia.${part.name}.js`);
+export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>, loading?: PageLoading): string[] {
+  const parts = partsFor(page, widgets, slots);
+  // The loading part where the viewer asks for it with these (`loadingWithParts`): a record's page waits for its record.
+  if (!parts.includes(loadingPart) && loadingWithParts(page, parts, page.data.kind === 'record' && page.layout.type !== 'list', loading)) parts.push(loadingPart);
+  return parts.map((part) => `fieldia.${part.name}.js`);
+}
+
+/**
+ * Whether the loading part is asked for with a page's parts — the viewer's rule, and `partFiles`' — so the wait for
+ * what comes from them is drawn as it says, the part delaying none: where the page waits for any part and then for its
+ * data drawn from one (its record, a list's rows, a related list's, a map's, a saved form placed) and its waits draw
+ * from the loading part (a skeleton first, Fieldia's default); or where the app's own way of waiting (the viewer's
+ * `loading`) names a look of the part's.
+ */
+export function loadingWithParts(page: Page, parts: readonly Part[], waitsForRecord: boolean, appLoading?: PageLoading): boolean {
+  const waitsForData = waitsForRecord || /"type":"(list|related|form|map)"/.test(JSON.stringify(page.layout));
+  return (!!parts.length && waitsForData && asksLoadingPart(loadingSettings(appLoading, page.loading), ['first', 'refresh', 'more'])) || asksLoadingPart(appLoading);
 }
 
 export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {

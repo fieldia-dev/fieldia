@@ -63,7 +63,7 @@ import {
 } from '@fieldia/core';
 import { overFirstPaint } from './first-paint-over';
 import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, useStyleNonce, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses } from '@fieldia/widgets';
-import { asksLoadingPart, letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
+import { letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { relatedInTab, upgradePage, wordsComing, wordsReady, zonedPage } from '@fieldia/core';
@@ -88,7 +88,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, owedParts, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
 import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
 import type { LimitsKit } from './limits';
@@ -2745,8 +2745,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // then wait for its data drawn from it (its record, a list's rows, a related list's, a map's, a saved form's), so that
   // wait is drawn as it says: asked for alongside them, it delays none. And where the app's own way names a look of its.
   // Any other wait asks for it as it begins, past an answer in the same turn: a quick source never fetches it.
-  const waitsForData = form.getState().status === 'idle' || /"type":"(list|related|form|map)"/.test(JSON.stringify(page.layout));
-  const drawsFromPart = (!!owed.length && waitsForData && asksLoadingPart(loading.settings, ['first', 'refresh', 'more'])) || asksLoadingPart(options.loading);
+  // One rule with `partFiles`, so a page's part tags written into it name the loading part where this asks for it.
+  const drawsFromPart = loadingWithParts(page, owed, form.getState().status === 'idle', options.loading);
   const awaited = drawsFromPart && !loadingPart.loaded ? [...owed, loadingPart] : owed;
   // A list page's records asked for now, as its part comes, not once it has.
   if (awaited.includes(listPart)) earlyRows = earlyList(page, options);

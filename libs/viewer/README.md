@@ -1354,7 +1354,7 @@ folder the first time a page uses it:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.js"
-  integrity="sha384-jzw09Z/rn6PUCLeuOTuGQetonzulZqM5JB9E3KHGtnmYZVV8+7QFSIa3WZLk6K1s"
+  integrity="sha256-F4FP3QFPbp4kWsWhKlW9ynwNE3Qge26+3qlmhj9RtHE="
   crossorigin="anonymous"></script>
 <script>
   Fieldia.mountViewer(document.getElementById('app'), {
@@ -1370,10 +1370,10 @@ then pass `locale`:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.js"
-  integrity="sha384-jzw09Z/rn6PUCLeuOTuGQetonzulZqM5JB9E3KHGtnmYZVV8+7QFSIa3WZLk6K1s"
+  integrity="sha256-F4FP3QFPbp4kWsWhKlW9ynwNE3Qge26+3qlmhj9RtHE="
   crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.ar.js"
-  integrity="sha384-dtiztmoDrX6+/cxOrJ+7cbQfG6NvaxNB41yn0PCweiurj+VeYWPDNoFnwIoXmssZ"
+  integrity="sha256-nO8rHVBsTcLbnWSZvNz10+mf8Fs91RZT/B95epDKtAY="
   crossorigin="anonymous"></script>
 <script>
   Fieldia.mountViewer(element, { page, dataSource, locale: 'ar' });
@@ -1386,22 +1386,22 @@ script per language the page is shown in:
 ```html
 <!-- German, French, Turkish, Persian, Urdu, Spanish -->
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.de.js"
-  integrity="sha384-jTb3IDYeZje3kwituJdajWHmZ8t4nrkSJ97ZbHGQtBM5ysXFhNP7NKQz2LkLx3a+"
+  integrity="sha256-/vSWsg/UCwY1YlkXfzh8VGN0U9Mi5nGjL1sYAAscEaQ="
   crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.fr.js"
-  integrity="sha384-+zTHYGw0iFIk934vzlhHZ+Faod57WpsAE3pEQYx6RRlvhQ4OoCJG2tQPcySxSpZ8"
+  integrity="sha256-1WSyJpHkaZUzJmekKWtQaYp5Qhl6f0r7845ojToHnEk="
   crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.tr.js"
-  integrity="sha384-LAkN/Lq4w/4z7KcvVeaGK9gmW9Y8Xz7B5jhDPFI5nB8FVat00E2/jPNRZm8jIilA"
+  integrity="sha256-dVedRIRppw0xGPxDvt/zmVLGmxZQEMZY2cVDM1JoIU8="
   crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.fa.js"
-  integrity="sha384-Xo6eHprLLWNU/RLSNPItVbUiTLnmAdXXHDZYl+w+GjPON4cfYjy0fo+F13qS+Tfz"
+  integrity="sha256-ur4Ku1KVOPQCDeMQB8soNWobn5DKEC/aOu9uBdYz1+4="
   crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.ur.js"
-  integrity="sha384-DY6W/o7PL/CWu0hSyrkrB0fxOwvel9PZySAueX9z4MBUTQ2hd18RduHGTmCv5k61"
+  integrity="sha256-kt7uYasrsfrqBda2MG/asjFk673zyOYEmHQeUyai8fA="
   crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.es.js"
-  integrity="sha384-7vgsP6j12Hldo8HLQsl3LT0KIurBQ98wi97kArABnWGoeXJkJ5ZKxhX/1bdX3NWx"
+  integrity="sha256-JqSx3xKtokSGtqrI+IuFXlGgoj+9U1r6JU5AuqHB55Y="
   crossorigin="anonymous"></script>
 ```
 
@@ -1455,7 +1455,7 @@ record's page saves through its `source`. An app built with a bundler calls
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia.js"
-  integrity="sha384-jzw09Z/rn6PUCLeuOTuGQetonzulZqM5JB9E3KHGtnmYZVV8+7QFSIa3WZLk6K1s"
+  integrity="sha256-F4FP3QFPbp4kWsWhKlW9ynwNE3Qge26+3qlmhj9RtHE="
   crossorigin="anonymous"></script>
 <fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" locale="ar"></fieldia-form>
 ```
@@ -1476,7 +1476,7 @@ names), for a page that fills hidden fields from its link.
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.32.0/bundle/fieldia-embed.js"
-  integrity="sha384-VMhuaLF9xoPk8APcrP3uxMIo3ghSOLAkVvEE7kPPXYBbudYRiO2fy/unwnHPT7sm"
+  integrity="sha256-S2nKp0Ia2if4VgHUuWAwymWXG0wK40S61BfIOBvAtnU="
   crossorigin="anonymous"
   data-src="https://forms.example.com/enquiry" data-locale="ar" async></script>
 ```
@@ -1497,20 +1497,26 @@ has come and run: on a phone, a round trip after it. A server that knows the
 page writes their tags into the HTML before `fieldia.js`, from the same folder,
 so they come beside it — measured on a mid-range phone, a list of customers
 usable 23% sooner on 4G and 27% on Fast 3G, a record with tabs 16% on both.
-`partFiles(page)` from `@fieldia/viewer/server` names them; a page given
+`partFiles(page)` from `@fieldia/viewer/server` names them — the loading part
+too, where the page's first wait is drawn from it (pass the viewer's `loading`
+as its fourth argument where the app sets one); a page given
 `Fieldia.createMemoryDataSource` adds `fieldia.memory.js`:
 
 ```ts
 import { partFiles } from '@fieldia/viewer/server';
 const base = 'https://cdn.jsdelivr.net/npm/@fieldia/viewer@<version>/bundle/';
-const parts = partFiles(page).map((file) => `<script async src="${base}${file}"></script>`).join('');
+// `integrity`: each file's sha256, as Fieldia.partTags(page) gives it — the one value fieldia.js checks that part by.
+const parts = partFiles(page).map((file) => `<script async src="${base}${file}" integrity="${integrity[file]}" crossorigin="anonymous"></script>`).join('');
 // …then fieldia.js's own tag, from the same folder.
 ```
 
 `fieldia.js` takes a part whose tag it finds still on its way, and never asks
-for it a second time. A `<link rel="preload" as="script">` is used only by a
-request made the same way: write it with what the part's own tag carries —
-`Fieldia.partTags(page)` gives each, its address and attributes. A list's first
+for it a second time. A tag the page writes is the page's own script, checked by
+the integrity it carries: write exactly what `Fieldia.partTags(page)` gives —
+each part's address, `crossorigin="anonymous"` and `integrity`, the sha256 of
+its file, the same value `fieldia.js` carries for it and this README's tags
+carry for the files beside it. A `<link rel="preload" as="script">` is used only
+by a request made the same way, so it carries the same three. A list's first
 page of records is asked for as its part is, not once it has come (where the
 page alone says what the list asks first); the designer asks for every part the
 page it opens draws from at once.

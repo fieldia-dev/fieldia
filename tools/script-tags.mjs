@@ -1,6 +1,6 @@
 /**
  * The script tags Fieldia's docs print for a page with no build step — fieldia.dev's, the READMEs', the demos' — each
- * naming an exact version of @fieldia/viewer on jsDelivr and carrying the sha384 of the file npm serves for it as
+ * naming an exact version of @fieldia/viewer on jsDelivr and carrying the sha256 of the file npm serves for it as
  * `integrity`, with `crossorigin="anonymous"`, so a page runs the file that version released and no other: never the
  * newest at once (a release, a bad one too, would reach every page that has the tag on its day), never two versions
  * mixed while caches turn over, never a file changed on the way (the audits' S-M8, R-H9). Written here, never typed
@@ -26,18 +26,21 @@ import { withoutAuth } from './release-env.mjs';
 export const CDN = 'https://cdn.jsdelivr.net/npm/@fieldia/viewer';
 const RECORD = 'tools/script-tags.json';
 
-/** The release the docs' tags name: `{ version, integrity: { 'fieldia.js': 'sha384-…', … } }`. */
+/** The release the docs' tags name: `{ version, integrity: { 'fieldia.js': 'sha256-…', … } }`. */
 export function readReleased(workspace) {
   return JSON.parse(readFileSync(join(workspace, RECORD), 'utf8'));
 }
 
-/** Every script of a bundle folder, by its name, with the sha384 a browser checks it by. */
+/**
+ * Every script of a bundle folder, by its name, with the sha256 a browser checks it by: one value for a file everywhere —
+ * a part's is the one fieldia.js carries for it (`partIntegrity`, tools/script-parts.ts) and `Fieldia.partTags` gives.
+ */
 export function hashesOf(dir) {
   return Object.fromEntries(
     readdirSync(dir)
       .filter((name) => name.endsWith('.js'))
       .sort()
-      .map((name) => [name, `sha384-${createHash('sha384').update(readFileSync(join(dir, name))).digest('base64')}`])
+      .map((name) => [name, `sha256-${createHash('sha256').update(readFileSync(join(dir, name))).digest('base64')}`])
   );
 }
 

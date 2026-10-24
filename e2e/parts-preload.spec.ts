@@ -1,4 +1,7 @@
 import type { Page, Request } from '@playwright/test';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, test } from './fixtures';
 
 /**
@@ -33,7 +36,7 @@ async function served(page: Page, head: string) {
   </script></body></html>`;
   await page.route('**/script/preloaded.html', (route) => route.fulfill({ contentType: 'text/html; charset=utf-8', body }));
   // The parts held back: the page mounts, and asks for them, while they are still on their way.
-  await page.route(/\/script\/fieldia\.(list|cards|memory)\.js$/, async (route) => {
+  await page.route(/\/script\/fieldia\.(list|cards|loading|memory)\.js$/, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 700));
     await route.continue();
   });
@@ -49,19 +52,35 @@ async function served(page: Page, head: string) {
 
 const count = (asked: string[]) => asked.reduce<Record<string, number>>((by, file) => ((by[file] = (by[file] ?? 0) + 1), by), {});
 
-test('a part’s script tag written before fieldia.js is fetched once, still on its way as the page mounts', async ({ page }) => {
-  const files = (await partTags(page)).map((tag) => tag['src'].replace(/^.*\//, ''));
-  expect(files).toEqual(['fieldia.list.js', 'fieldia.cards.js']);
-  const head = [...files, 'fieldia.memory.js'].map((file) => `<script async src="${file}"></script>`).join('');
+/** The sha256 of a part's file as the build wrote it: the one value its tag, the docs' tags and fieldia.js carry. */
+const DEMO = join(__dirname, '..', 'dist', 'demos', 'script');
+const sha256 = (file: string) => `sha256-${createHash('sha256').update(readFileSync(join(DEMO, file))).digest('base64')}`;
+
+test('each tag partTags gives carries its file’s hash, asked for without credentials', async ({ page }) => {
+  for (const tag of await partTags(page)) {
+    const file = tag['src'].replace(/^.*\//, '');
+    expect(tag['integrity'], file).toBe(sha256(file));
+    expect(tag['crossOrigin'], file).toBe('anonymous');
+  }
+});
+
+test('a part’s script tag written before fieldia.js, as partTags gives it, is fetched once, still on its way as the page mounts', async ({ page }) => {
+  const tags = await partTags(page);
+  const files = tags.map((tag) => tag['src'].replace(/^.*\//, ''));
+  // The loading part too: the list's first wait, a skeleton of its rows, is drawn from it.
+  expect(files).toEqual(['fieldia.list.js', 'fieldia.cards.js', 'fieldia.loading.js']);
+  const written = (file: string) => `<script async src="${file}" integrity="${sha256(file)}" crossorigin="anonymous"></script>`;
+  const head = [...files, 'fieldia.memory.js'].map(written).join('');
   const asked = await served(page, head);
-  expect(count(asked)).toEqual({ 'fieldia.list.js': 1, 'fieldia.cards.js': 1, 'fieldia.memory.js': 1 });
+  expect(count(asked)).toEqual({ 'fieldia.list.js': 1, 'fieldia.cards.js': 1, 'fieldia.loading.js': 1, 'fieldia.memory.js': 1 });
 });
 
 test('a preload link written as partTags gives it is used by the part’s own tag: fetched once', async ({ page }) => {
   const tags = await partTags(page);
-  // Each attribute the main script's tag carries, the link carries too: its address, and how it is asked for.
+  // Each attribute the main script's tag carries, the link carries too: its address, how it is asked for and its hash.
+  expect(tags.every((tag) => tag['integrity']?.startsWith('sha256-') && tag['crossOrigin'] === 'anonymous')).toBe(true);
   const attribute = (name: string, value: string) => ` ${name === 'crossOrigin' ? 'crossorigin' : name}="${value}"`;
   const head = tags.map((tag) => `<link rel="preload" as="script" href="${tag['src']}"${Object.entries(tag).filter(([name]) => name !== 'src' && name !== 'nonce').map(([name, value]) => attribute(name, value)).join('')}>`).join('');
   const asked = await served(page, head);
-  expect(count(asked)).toEqual({ 'fieldia.list.js': 1, 'fieldia.cards.js': 1, 'fieldia.memory.js': 1 });
+  expect(count(asked)).toEqual({ 'fieldia.list.js': 1, 'fieldia.cards.js': 1, 'fieldia.loading.js': 1, 'fieldia.memory.js': 1 });
 });

@@ -87,7 +87,7 @@ design.
 ## After a release
 
 - `node tools/release.mjs verify` installs the version from npm and checks it as `check` checks the packs. It also
-  records, in `tools/script-tags.json`, the sha384 of every file of `@fieldia/viewer/bundle/` as npm serves it, and
+  records, in `tools/script-tags.json`, the sha256 of every file of `@fieldia/viewer/bundle/` as npm serves it, and
   writes the READMEs' script tags from it (`tools/script-tags.mjs`). Commit both: fieldia.dev's snippets and the
   READMEs name a version only once it is on npm, with the hash of the file npm serves. The publish workflow's verify
   job uploads both as its `script-tags` artifact. For a version published before this (0.32, 0.33), whose own README

@@ -2,7 +2,7 @@
  * Build the `<script>` bundle: core, widgets and viewer in one file that sets
  * the global `Fieldia`, for pages with no build step —
  *
- *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia.js" integrity="sha384-…" crossorigin="anonymous"></script>
+ *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia.js" integrity="sha256-…" crossorigin="anonymous"></script>
  *   <script>Fieldia.mountViewer(element, { page, dataSource })</script>
  *
  * (the tags fieldia.dev and the READMEs print, each naming a version and its file's hash: tools/script-tags.mjs; the
@@ -15,7 +15,7 @@
  * native speaker), each carrying that language's words alone, which a page
  * loads after the main one:
  *
- *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia.ar.js" integrity="sha384-…" crossorigin="anonymous"></script>
+ *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia.ar.js" integrity="sha256-…" crossorigin="anonymous"></script>
  *
  * They ship inside @fieldia/viewer (the `bundle/` folder), so their version is
  * always the viewer's. Then it checks the files: the main one must run on its
@@ -494,7 +494,9 @@ for (const part of PARTS) {
 // file's sha256 — the modules it carries and the parts it asks for as before, and no part built against it again (a
 // part takes nothing of the main script's own bytes, only its table of names). A part's tag carries its hash as
 // `integrity`, and the browser runs no other file in its place. 52 hashes of 44 characters, 2.4 KB gzipped (a hash is
-// not shortened by any compression); sha384's 64 would add 0.9 KB more, for no check a browser does better.
+// not shortened by any compression); sha384's 64 would add 0.9 KB more, for no check a browser does better. One value
+// for a part everywhere: the docs' tags carry the sha256 of each file too (tools/script-tags.mjs), so a part's hash in a
+// README, on fieldia.dev, in `Fieldia.partTags` and in this table is the same — checked below.
 const PART_HASHES = Object.fromEntries(PARTS.map((part) => [part, createHash('sha256').update(readFileSync(partFiles[part])).digest('base64')]));
 {
   const before = main;
@@ -556,6 +558,31 @@ if (existsSync(README)) {
   const written = writeTags(readFileSync(README, 'utf8'), built);
   if (tagProblems(written, built).length || !written.includes(`@fieldia/viewer@${version}/bundle/fieldia.js`)) throw new Error(`dist/libs/viewer/README.md's script tags are not ${version}'s`);
   writeFileSync(README, written);
+}
+
+// One hash for a part everywhere (0.34): the tag fieldia.js adds for it (`partIntegrity`), `Fieldia.partTags(page)` —
+// what a page or a server writes as its own tags and preload links, exactly — and the docs' tags for this version
+// (`hashesOf`: the README written above, fieldia.dev's once this version is recorded) name one value, the file's
+// sha256; and every part's tag is asked for without credentials. Every part of the bundle, and in a page, partTags for
+// every example page.
+{
+  const documented = hashesOf(BUNDLE);
+  for (const part of PARTS) if (documented[`fieldia.${part}.js`] !== `sha256-${PART_HASHES[part]}`) throw new Error(`fieldia.${part}.js: the hash fieldia.js carries for it is not the one the docs' tags carry`);
+  const { JSDOM } = await import('jsdom');
+  const dom = new JSDOM('<!doctype html><html><head><script src="fieldia.js"></script></head><body></body></html>', { url: pathToFileURL(join(BUNDLE, 'page.html')).href, runScripts: 'dangerously', resources: 'usable' });
+  await new Promise((done) => dom.window.addEventListener('load', done));
+  const seen = new Set();
+  for (const file of readdirSync(join(WORKSPACE, 'examples/pages')).filter((name) => name.endsWith('.json'))) {
+    const page = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages', file), 'utf8'));
+    for (const tag of dom.window.Fieldia.partTags(page)) {
+      const name = tag.src.replace(/^.*\//, '');
+      if (tag.integrity !== documented[name] || tag.crossOrigin !== 'anonymous') throw new Error(`Fieldia.partTags gives ${name} for ${file} as ${JSON.stringify(tag)}, not with the hash the docs' tags carry (${documented[name]})`);
+      seen.add(name);
+    }
+  }
+  dom.window.close();
+  if (seen.size < 10) throw new Error(`Fieldia.partTags named ${seen.size} parts for the example pages: too few to read`);
+  console.log(`one hash for each part: fieldia.js's, the docs' tags' and Fieldia.partTags' the same (${PARTS.length} parts; ${seen.size} of them in the example pages' tags)`);
 }
 
 // It must stand on its own: run it with nothing but a window and look for the viewer.
