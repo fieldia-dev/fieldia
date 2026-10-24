@@ -74,6 +74,7 @@ export const ar: Messages = {
   changedBy: 'غيّر {name}: {fields}.',
   discardChanges: 'هل تريد تجاهل تعديلاتك؟',
   recordReplaced: 'يُعرض الآن سجل آخر: لم تُنفَّذ بقية هذه الخطوات.',
+  addressRefused: 'لم يُفتح هذا العنوان: لا يُفتح إلا عنوان صفحة ويب أو بريد إلكتروني أو رقم هاتف.',
   pressDone: 'تم: {label}',
   pressArchived: 'تمت الأرشفة.',
   pressUnarchived: 'أُعيد من الأرشيف.',

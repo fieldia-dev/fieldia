@@ -79,6 +79,7 @@ export const es: Messages = {
   changedBy: '{name} cambió {fields}.',
   discardChanges: '¿Descartar sus cambios?',
   recordReplaced: 'Ahora se muestra otro registro: el resto de estos pasos no se ejecutó.',
+  addressRefused: 'Esta dirección no se abrió: solo se abren una página web, una dirección de correo electrónico o un número de teléfono.',
   pressDone: 'Hecho: {label}',
   pressArchived: 'Archivado.',
   pressUnarchived: 'Recuperado del archivo.',

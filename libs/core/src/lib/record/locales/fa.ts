@@ -77,6 +77,7 @@ export const fa: Messages = {
   changedBy: '{name} این موارد را تغییر داد: {fields}.',
   discardChanges: 'تغییرات شما کنار گذاشته شود؟',
   recordReplaced: 'اکنون رکورد دیگری نمایش داده می‌شود: بقیهٔ این مراحل اجرا نشد.',
+  addressRefused: 'این نشانی باز نشد: فقط صفحهٔ وب، نشانی ایمیل یا شمارهٔ تلفن باز می‌شود.',
   pressDone: 'انجام شد: {label}',
   pressArchived: 'بایگانی شد.',
   pressUnarchived: 'از بایگانی خارج شد.',

@@ -3609,6 +3609,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   const runner = createRunner({
     fields,
+    messages,
     values: () => state.values,
     recordId: () => state.recordId,
     reading,

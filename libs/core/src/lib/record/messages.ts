@@ -120,6 +120,8 @@ export interface Messages {
   discardChanges: string;
   /** Why a run of steps stopped: the record it ran on was replaced by another while it went on, and its steps are not for that one. */
   recordReplaced: string;
+  /** Why an `openUrl` step opened nothing: its address was none a page may open — a script, a page written as data. */
+  addressRefused: string;
   /** Said with Undo after a one-tap press that offers it and said nothing of its own: `{label}`, the button's. */
   pressDone: string;
   /** The same, for the menu's own Archive and Unarchive. */
@@ -280,6 +282,7 @@ const en: Messages = {
   changedBy: '{name} changed {fields}.',
   discardChanges: 'Discard your changes?',
   recordReplaced: 'Another record is shown now: the rest of these steps did not run.',
+  addressRefused: 'This address was not opened: a button opens only a web page, an email address or a phone number.',
   pressDone: 'Done: {label}',
   pressArchived: 'Archived.',
   pressUnarchived: 'Brought back from the archive.',

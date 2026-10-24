@@ -74,6 +74,7 @@ export const fr: Messages = {
   changedBy: '{name} a modifié {fields}.',
   discardChanges: 'Abandonner vos modifications ?',
   recordReplaced: 'Un autre enregistrement est affiché : le reste de ces étapes n’a pas été exécuté.',
+  addressRefused: 'Cette adresse n’a pas été ouverte : seules une page web, une adresse e-mail ou un numéro de téléphone s’ouvrent.',
   pressDone: 'Fait : {label}',
   pressArchived: 'Archivé.',
   pressUnarchived: 'Sorti des archives.',

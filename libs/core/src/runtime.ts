@@ -385,6 +385,8 @@ export { formLanguagesPart, hasLanguages, languagesOf, type FormLanguagesPart, t
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
 export { fieldPattern } from './lib/format/pattern';
+// Every address a link, a picture, a player, a frame or a page sent elsewhere is given: its scheme one the place allows.
+export { DOWNLOAD_URL, LINK_URL, MEDIA_URL, PICTURE_URL, safeUrl, type UrlKind } from './lib/safe-url';
 // Code a page loads the first time it uses it (a part): the loader the widgets' and the viewer's parts are made with.
 export { lazyPart, partWith, partsOf, partsComeByScriptTag, settleParts, type Part } from './lib/parts';
 // The bodies of Fieldia's functions beyond the plain ones, loaded before a page that calls one is drawn.
