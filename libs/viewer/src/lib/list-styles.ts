@@ -50,6 +50,9 @@ export const LIST_STYLES = `
 .fd-assist-words[hidden] { display: none; }
 .fd-assist-mark { color: var(--fd-accent); font-size: 15px; line-height: 1; }
 .fd-search-suggestions, .fd-search-panel { position: absolute; z-index: 30; inset-inline: 0; top: calc(100% + 4px); box-sizing: border-box; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14); }
+/* Opened over the box where there is not room under it and more over it (room.ts in @fieldia/widgets), scrolling within where it must. */
+:is(.fd-search-suggestions, .fd-search-panel)[data-up] { top: auto; bottom: calc(100% + 4px); }
+:is(.fd-search-suggestions, .fd-search-panel)[data-cut] { overflow-y: auto; }
 .fd-search-suggestions { list-style: none; margin: 0; padding: 4px 0; }
 .fd-search-suggestions [role="option"] { padding: 7px 12px; cursor: pointer; font-size: 14px; }
 .fd-search-suggestions [role="option"][aria-selected="true"] { background: var(--fd-accent-soft); }

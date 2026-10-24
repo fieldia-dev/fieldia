@@ -7,6 +7,7 @@ import { bounds } from './limits';
 import type { WidgetFactory } from './widgets';
 import { openOnClick } from './quiet';
 import { afterPress } from './press';
+import { openToRoom } from './room';
 
 /**
  * A range of dates in one box, from → to: Flectra's widget="daterange". The
@@ -256,7 +257,10 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
     focused = dayOf(form.getState().values[name]) ?? todayOf();
     calendar.hidden = false;
     button.setAttribute('aria-expanded', 'true');
-    draw(true);
+    draw(false);
+    // Over its boxes where there is not room under them and more over them (room.ts), before its day takes the focus.
+    if (calendar.offsetParent instanceof HTMLElement) openToRoom(calendar, calendar.offsetParent);
+    grid.querySelector<HTMLButtonElement>('button[tabindex="0"]')?.focus();
   }
   /** Closed where the focus already is: the person moved on. */
   function hide() {

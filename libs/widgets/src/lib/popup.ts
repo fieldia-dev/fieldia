@@ -1,3 +1,4 @@
+import { roomFor } from './room';
 /** Where a popup goes beside the control that opens it, when not just under it at its start. */
 export interface PopupPlace {
   /** The box the popup lines up with, its start edge at that box's: the control that opens it unless said. */
@@ -12,7 +13,9 @@ export interface PopupPlace {
  * A small menu or palette under the control that opens it: in a form it
  * floats over the page from there, so a table's cell or a folded part never
  * clips it, and goes back into its widget when it closes. A press outside it
- * closes it.
+ * closes it. Near the window's foot, with more room above, it opens over its
+ * control instead, and it is never taller than the room on its side
+ * (room.ts): it stays inside the window.
  */
 export function popup(home: HTMLElement, anchor: HTMLElement, box: HTMLElement, onClose: () => void, place: PopupPlace = {}) {
   const doc = home.ownerDocument;
@@ -34,7 +37,14 @@ export function popup(home: HTMLElement, anchor: HTMLElement, box: HTMLElement, 
       // Its edge at the anchor's, the start edge of the page's language; kept on the screen.
       const width = doc.documentElement.clientWidth || own;
       const at = Math.max(8, Math.min(rtl ? a.right - own : a.left, width - own - 8));
-      Object.assign(box.style, { top: `${a.bottom - origin.top + (place.gap ?? 4)}px`, left: `${at - origin.left}px` });
+      // Under the anchor, or over it where there is not room below and more above; no taller than the room there.
+      const gap = place.gap ?? 4;
+      const view = doc.documentElement.clientHeight || doc.defaultView?.innerHeight || 0;
+      const { up, most } = view ? roomFor(a, origin.height, gap, view) : { up: false, most: null };
+      if (most !== null) box.style.setProperty('max-height', `${most}px`);
+      const tall = most === null ? origin.height : box.offsetHeight;
+      box.toggleAttribute('data-up', up);
+      Object.assign(box.style, { top: `${up ? a.top - origin.top - gap - tall : a.bottom - origin.top + gap}px`, left: `${at - origin.left}px` });
     }
     doc.addEventListener('pointerdown', outside, true);
   }
@@ -44,7 +54,8 @@ export function popup(home: HTMLElement, anchor: HTMLElement, box: HTMLElement, 
     anchor.setAttribute('aria-expanded', 'false');
     if (box.parentElement !== home) {
       home.append(box);
-      for (const key of ['position', 'top', 'left', 'right'] as const) box.style.removeProperty(key);
+      for (const key of ['position', 'top', 'left', 'right', 'max-height'] as const) box.style.removeProperty(key);
+      box.removeAttribute('data-up');
     }
     if (place.matchWidth) box.style.removeProperty('min-width');
     doc.removeEventListener('pointerdown', outside, true);

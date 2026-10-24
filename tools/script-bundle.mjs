@@ -1365,7 +1365,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // are heard as the person first enters the form, each box known as it was entered and each key decided as it is
 // pressed (undo-keys.ts, out of the part, 1.37 KB): the record's step is the part's, at once when it has come, else as
 // it comes. Every page a person fills has the keys. 522.87 measured before, 524.24 after, to 524.3.
-const BUDGET_KB = 524.3;
+// 0.32's merge: a popup opened from a box opens over it where there is not room under it and more over it, kept inside
+// the window — one rule (room.ts, `openToRoom`, `roomFor`) for Fieldia's own list, the country list, the colour palette,
+// a state's menu, a payment's details (popup.ts), a date's calendar, a filter's menu and the search's suggestions; the
+// calendar's place over its box in the main sheet (styles.ts), as the calendar's own rules are. 524.24 measured before,
+// 525.24 after, to 525.3.
+const BUDGET_KB = 525.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1665,8 +1670,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The owner's observations of 23 Oct: radios and tick boxes drawn as Fieldia's own (listed with the raw budget above):
 // 170.92 measured before, 171.33 after, to 171.4.
 // 0.32's merge: the undo keys heard from the first entry, out of the undo part (listed with the raw budget above):
-// 171.33 measured before, 171.78 after, to 171.8.
-const GZIP_BUDGET_KB = 171.8;
+// 171.33 measured before, 171.78 after, to 171.8. A popup opened over its box where there is no room under it (listed
+// with the raw budget above): 171.78 measured before, 172.08 after, to 172.1.
+const GZIP_BUDGET_KB = 172.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2637,7 +2643,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 44.9, inside 19.2.
 // 0.32's merge: the undo keys in the main script, heard from the person's first entering a form, the part keeping the
 // record's step (undo-step.ts) and the toast — undo 7.52 and 3.49 measured before, 6.39 and 3.01 after, to 6.4 and 3.1.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.7, 7.8], date: [23.6, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.2, 45.1], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [44.9, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// 0.32's merge: a popup opened over its box where there is not room under it (room.ts, in the main script): a filter's
+// menu measured as it opens and again once its values have come, its place over its button — filters 22.58 and 7.71
+// measured before, 22.74 and 7.78 after, to 22.8; the search's suggestions and its menu, the same — list 140.07 and
+// 45.07, 140.38 and 45.15, to 140.4 and 45.2; a range's calendar placed before its day takes the focus — date 23.50 and
+// 9.13, 23.74 and 9.18, to 23.8; the country list's rows drawn before it is placed — phone 44.90 and 19.17, 44.93 and
+// 19.18, to 45.0.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.4, 45.2], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

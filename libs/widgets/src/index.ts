@@ -52,6 +52,7 @@ export * from './lib/focus-trap';
 // A list floating under its box, over everything else — the links', the choices' and the path picker's lists, each in a
 // part of its own, float with it — for an app's own widget too.
 export { floatUnder, type FloatPlace } from './lib/float';
+export { openToRoom, roomFor } from './lib/room';
 export { afterPress, watchPresses } from './lib/press';
 export { countriesIn } from './lib/countries';
 export * from './lib/read-text';

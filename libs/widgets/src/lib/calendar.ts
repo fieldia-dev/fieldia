@@ -5,6 +5,7 @@ import { rightToLeft, setHidden, setText } from './kind-parts';
 import type { Widget, WidgetContext } from './widgets';
 import { openOnClick } from './quiet';
 import { weekdayHead } from './weekday-head';
+import { openToRoom } from './room';
 
 export { weekdayHead };
 
@@ -342,8 +343,12 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
     setHidden(note, !unread);
     dialog.hidden = false;
     button.setAttribute('aria-expanded', 'true');
-    draw(true);
+    draw(false);
+    // Over its box where there is not room under it and more over it (room.ts); then on the screen sideways — placed
+    // before its day takes the focus, which would scroll the page to it where it stood.
+    if (dialog.offsetParent instanceof HTMLElement) openToRoom(dialog, dialog.offsetParent);
     keepOnScreen();
+    grid.querySelector<HTMLButtonElement>('button[tabindex="0"]')?.focus();
   }
 
   /** The month kept on the screen, 8px from its edges: beside a narrow box (a table's cell on a phone) it would run off. */

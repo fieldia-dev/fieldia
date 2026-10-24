@@ -199,10 +199,14 @@ export function searchList(options: SearchListOptions): SearchList {
       panel.hidden = false;
       button.setAttribute('aria-expanded', 'true');
     } else {
+      // Its rows in before it is placed: placed by its height, under the flag or over it (popup.ts, room.ts).
       home.append(panel);
+      draw();
       floating.open();
     }
-    draw();
+    if (narrow) draw();
+    // Moved to where it floats, the row reached is scrolled to again.
+    else if (active >= 0) scrollToRow(list, shown[active]);
     find.focus();
     if (typed) find.setSelectionRange(typed.length, typed.length);
   }

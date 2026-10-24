@@ -21,6 +21,8 @@ export const FILTER_CSS = /* css */ `
 .fd-filter-pick:hover, .fd-filter-tool:hover, .fd-filter-pick[aria-expanded="true"], .fd-filter-tool[aria-expanded="true"] { background: var(--fd-page); }
 .fd-filter-pick:focus-visible, .fd-filter-tool:focus-visible { outline: 1px solid var(--fd-focus); outline-offset: -1px; }
 .fd-filter-menu { position: absolute; z-index: 30; inset-inline-end: 0; top: calc(100% + 4px); box-sizing: border-box; min-width: 200px; max-width: min(320px, 90vw); max-height: 320px; overflow: auto; padding-block: 4px; background: var(--fd-surface); border-radius: 4px; box-shadow: 0 3.2px 7.2px rgba(0, 0, 0, 0.132), 0 0.6px 1.8px rgba(0, 0, 0, 0.108); }
+/* Opened over its button where there is not room under it and more over it (room.ts in @fieldia/widgets). */
+.fd-filter-menu[data-up] { top: auto; bottom: calc(100% + 4px); }
 .fd-filter-option { display: flex; align-items: center; gap: 10px; min-height: 32px; padding-inline: 12px; cursor: pointer; font-size: 14px; color: var(--fd-text); outline: none; }
 .fd-filter-option:hover { background: var(--fd-page); }
 .fd-filter-option:focus-visible, .fd-filter-option:focus { background: var(--fd-page); box-shadow: inset 0 0 0 1px var(--fd-focus); }

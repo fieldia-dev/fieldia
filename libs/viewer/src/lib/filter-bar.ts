@@ -1,5 +1,5 @@
 import { facetsToFilter, labelAt, optionsList, suggestions, type DataSource, type Facet, type Field, type Group, type ListNode, type Locale, type Page, type ResolvedFilter } from '@fieldia/core';
-import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import { drawIcon, openToRoom, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { FilterKit, RangeEnds } from './filter-range';
 import { rangeControl, type RangeControl } from './filter-range-control';
@@ -231,10 +231,15 @@ export function filterBar(context: FilterBarContext) {
       closeOthers(closer);
       menu.hidden = false;
       button.setAttribute('aria-expanded', 'true');
+      // Over its button where there is not room under it and more over it, no taller than the room (room.ts in
+      // @fieldia/widgets): measured as it opens, and again once its values have come.
+      const roomed = () => menu.offsetParent instanceof HTMLElement && openToRoom(menu, menu.offsetParent);
+      roomed();
       // A range has nothing to wait for: its press that is on, else From, takes the focus at once.
       if (range) return range.focus();
       await load();
       if (menu.hidden) return;
+      roomed();
       const all = items();
       const first = at === 'last' ? all[all.length - 1] : at === 'checked' ? (all.find((item) => item.getAttribute('aria-checked') === 'true') ?? all[0]) : all[0];
       first?.focus();

@@ -749,6 +749,9 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 6px);
   box-shadow: 0 8px 24px rgba(15, 20, 25, 0.14);
 }
+/* Opened over its box where there is not room under it and more over it (room.ts), scrolling within where it must. */
+.fd-calendar[data-up] { inset-block-start: auto; inset-block-end: calc(100% + 4px); }
+.fd-calendar[data-cut] { overflow-y: auto; }
 .fd-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 4px 6px; }
 .fd-calendar-head button { border: none; background: none; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 4px; color: var(--fd-text); }
 .fd-calendar-head button:hover { background: var(--fd-page); }

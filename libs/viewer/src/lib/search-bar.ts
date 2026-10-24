@@ -1,5 +1,5 @@
 import { suggestions, DATE_INTERVALS, type DateInterval, type Facet, type FilterPeriod, type ListNode, type Locale, type Page, type ResolvedFilter, type Suggestion } from '@fieldia/core';
-import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import { drawIcon, openToRoom, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import { customFilterPart } from './custom-filter';
 import type { El } from './dom';
 import { favouritesPart, type Favourites, type FavouritesContext } from './favourites';
@@ -128,6 +128,8 @@ export function searchBar(context: SearchContext) {
       })
     );
     offeredList.hidden = offered.length === 0;
+    // Over the box where there is not room under it and more over it (room.ts in @fieldia/widgets).
+    if (!offeredList.hidden && offeredList.offsetParent instanceof HTMLElement) openToRoom(offeredList, offeredList.offsetParent);
     input.setAttribute('aria-expanded', String(!offeredList.hidden));
     if (offeredList.hidden) input.removeAttribute('aria-activedescendant');
     else input.setAttribute('aria-activedescendant', `${listId}-${active}`);
@@ -286,6 +288,7 @@ export function searchBar(context: SearchContext) {
     if (open) {
       closeOffered();
       drawCounts();
+      if (panel.offsetParent instanceof HTMLElement) openToRoom(panel, panel.offsetParent);
     }
   }
   toggle.addEventListener('click', () => showPanel(panel.hidden));
