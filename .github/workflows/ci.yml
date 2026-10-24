@@ -65,8 +65,9 @@ jobs:
       # written, every <style> made with the page's nonce (tools/csp-source.test.mjs).
       # And the release's own guard rails: its checks run with no npm token, a release must be tagged, on main and clean,
       # a patch holds fixes alone, the packs published are the ones checked, what an app installs has no high or critical
-      # advisory unreviewed, and the workflows keep their rules.
-      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/workflows.test.mjs
+      # advisory unreviewed, every script tag the docs print names a version and its hash, and the workflows keep their
+      # rules.
+      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/script-tags.test.mjs tools/workflows.test.mjs
       # The tools themselves, linted as the packages are (`nx lint` reads the packages alone): four errors hid there in 0.31.
       - run: npx eslint tools eslint.config.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's

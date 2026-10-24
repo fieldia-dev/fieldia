@@ -2,8 +2,11 @@
  * Build the `<script>` bundle: core, widgets and viewer in one file that sets
  * the global `Fieldia`, for pages with no build step —
  *
- *   <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+ *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia.js" integrity="sha384-…" crossorigin="anonymous"></script>
  *   <script>Fieldia.mountViewer(element, { page, dataSource })</script>
+ *
+ * (the tags fieldia.dev and the READMEs print, each naming a version and its file's hash: tools/script-tags.mjs; the
+ * README inside @fieldia/viewer is written here as it is built, with its own version's hashes).
  *
  * Its own words are English. Arabic, German and French ship as add-on
  * scripts beside it — `fieldia.ar.js`, `fieldia.de.js`, `fieldia.fr.js` — and
@@ -12,7 +15,7 @@
  * native speaker), each carrying that language's words alone, which a page
  * loads after the main one:
  *
- *   <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
+ *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia.ar.js" integrity="sha384-…" crossorigin="anonymous"></script>
  *
  * They ship inside @fieldia/viewer (the `bundle/` folder), so their version is
  * always the viewer's. Then it checks the files: the main one must run on its
@@ -22,13 +25,14 @@
 import { build, transform } from 'esbuild';
 import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
-import { copyFileSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { gzipSync } from 'node:zlib';
 import { englishKeys, PART_WORDS, partWordsProblems, readerSource, withoutWords, WORD_TABLES } from './part-words.mjs';
 import { machinePathIn } from './release-guards.mjs';
+import { hashesOf, tagProblems, writeTags } from './script-tags.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 /**
@@ -541,6 +545,17 @@ await build({ ...common, entryPoints: [join(WORKSPACE, 'tools/embed-entry.ts')],
 for (const file of readdirSync(BUNDLE)) {
   const path = machinePathIn(readFileSync(join(BUNDLE, file), 'utf8'));
   if (path) throw new Error(`bundle/${file} names ${path}, a path on the machine it was built on: import a workspace file by a relative path (from())`);
+}
+
+// The README @fieldia/viewer ships (copied beside it by its build, before this): its script tags name this version,
+// each with the hash of the file beside it in the same package — what jsDelivr serves for this version once it is on
+// npm (tools/script-tags.mjs; the repository's README names the release on npm, from tools/script-tags.json).
+const README = join(WORKSPACE, 'dist/libs/viewer/README.md');
+if (existsSync(README)) {
+  const built = { version, integrity: hashesOf(BUNDLE) };
+  const written = writeTags(readFileSync(README, 'utf8'), built);
+  if (tagProblems(written, built).length || !written.includes(`@fieldia/viewer@${version}/bundle/fieldia.js`)) throw new Error(`dist/libs/viewer/README.md's script tags are not ${version}'s`);
+  writeFileSync(README, written);
 }
 
 // It must stand on its own: run it with nothing but a window and look for the viewer.
@@ -1408,8 +1423,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // sha256 of each of the 52 parts' files, which the tag the main script adds for a part carries as `integrity` — 2.75 KB,
 // 44 characters of base64 and a name each — and the tag asked for without credentials, a part this script has no hash
 // for refused, and the words for a part that could not come or is not the file it was built with (script-parts.ts,
-// 0.46 KB). 525.24 measured before, 528.46 after, to 528.5.
-const BUDGET_KB = 528.5;
+// 0.46 KB). 525.24 measured before, 528.46 after. The console's line for a language's script missing names this
+// script's own version, never the newest (labels.ts, 130 bytes): 528.59, to 528.6.
+const BUDGET_KB = 528.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1712,9 +1728,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 171.33 measured before, 171.78 after, to 171.8. A popup opened over its box where there is no room under it (listed
 // with the raw budget above): 171.78 measured before, 172.08 after, to 172.1.
 // Each part checked before it runs (harden-release; listed with the raw budget above): 172.08 measured before, 174.61
-// after, to 174.7 — 2.37 of it the parts' hashes, which no compression shortens (sha384's would be 0.9 more), 0.16 the
-// code and its words.
-const GZIP_BUDGET_KB = 174.7;
+// after — 2.37 of it the parts' hashes, which no compression shortens (sha384's would be 0.9 more), 0.16 the code and
+// its words; the console's line for a language's script naming this script's version, 174.71, to 174.8.
+const GZIP_BUDGET_KB = 174.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

@@ -13,7 +13,8 @@ name: Publish
 #          the OIDC token can be asked for — only node and npm, over the packs `build` proved, each checked against its
 #          hash (tools/publish-packs.mjs). It refuses a tag that is not the packages' version, a commit not on main, a
 #          patch with an Upgrading part (tools/release-guards.mjs), and stops where a package fails, saying what is out.
-# verify   once published: the same checks on what npm serves (`release.mjs verify`).
+# verify   once published: the same checks on what npm serves (`release.mjs verify`), and the script tags' hashes
+#          recorded from it, for a maintainer to commit.
 # dry-run  started by hand (Actions → Publish → Run workflow), on any branch: `build`, then everything `publish` does
 #          with `npm publish --dry-run` and no OIDC token — nothing is published; what a real run would refuse is said.
 on:
@@ -122,6 +123,17 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
       - run: node tools/release.mjs verify
+      # What verify records of the release as npm serves it — each script's hash (tools/script-tags.json) and the
+      # READMEs' tags written from it — for a maintainer to commit: fieldia.dev's and the READMEs' tags name this
+      # version once they are.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: script-tags
+          path: |
+            tools/script-tags.json
+            libs/viewer/README.md
+          if-no-files-found: error
+          retention-days: 30
 
   dry-run:
     name: Dry run of the publish (nothing is published)

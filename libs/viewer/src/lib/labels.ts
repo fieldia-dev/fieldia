@@ -1568,6 +1568,8 @@ const ADD_ONS = new Map([
   ['es', 'Spanish'],
 ]);
 const missing = new Set<string>();
+/** The version of the one-tag script this runs in, which its build writes here (tools/script-bundle.mjs); none in the packages. */
+declare const __FIELDIA_VERSION__: string | undefined;
 
 /**
  * The language of the viewer's own words for a language tag: its own, its
@@ -1585,9 +1587,11 @@ export function ownLocale(tag = 'en'): Locale {
   const name = ADD_ONS.get(base);
   if (name && !missing.has(base)) {
     missing.add(base);
+    // The running version, never the newest: a language's script from another version than fieldia.js is refused.
+    const running = typeof __FIELDIA_VERSION__ === 'string' ? __FIELDIA_VERSION__ : '<version>';
     console.warn(
       `Fieldia: this page is in ${name}, but only English words are loaded, so Fieldia's own words show in English. ` +
-        `Load the ${name} ones after fieldia.js: <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.${base}.js"></script>`
+        `Load the ${name} ones after fieldia.js, from its version (${running}): <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@${running}/bundle/fieldia.${base}.js" crossorigin="anonymous"></script>, with its integrity hash as that version's README gives it.`
     );
   }
   return 'en';

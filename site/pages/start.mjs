@@ -1,5 +1,6 @@
 import { c, code } from '../layout.mjs';
 import { COUNTS, SIZES } from '../facts.mjs';
+import { RELEASED_VERSION, tag } from '../script-tags.mjs';
 
 export default {
   path: '/start/',
@@ -120,11 +121,12 @@ export class SignupComponent {
 
 <h2 id="script">A script tag</h2>
 <p>For a page with no build step at all. The bundle holds what runs a form — the core, the fields and the viewer — in ${SIZES.script} KB gzipped, with its own words in English. Its larger parts — a list's screen, lines, files, a survey's steps, the themes and ${SIZES.parts - 5} more — are scripts of their own beside it, which it fetches the first time a page uses one. It checks a page with ${c('Fieldia.checkPage')} as it shows it; the full ${c('validatePage')} is in ${c('@fieldia/core')}, for where pages are made.</p>
+<p>Each tag names a version — ${RELEASED_VERSION}, the latest — and carries the hash of its file (${c('integrity')}, with ${c('crossorigin="anonymous"')}): the browser runs that file and no other, so a page takes no release until you move it to one, and never a copy changed on the way. Copy the tags as they are here. To move to a newer release, take every tag from that release's README (on npm, its version's page), fieldia.js and the scripts beside it alike. The parts fieldia.js fetches are checked the same way: it carries the hash of each one it was built with, and a part that is not that file is refused — what needed it says it could not be loaded. Served from your own site instead, the scripts keep their folder together; from another origin than the page's, that origin sends ${c('Access-Control-Allow-Origin')}, as a CDN does.</p>
 ${code(
   'html',
   `
 <div id="app"></div>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+${tag('fieldia.js')}
 <script>
   fetch('/signup.page.json')
     .then((response) => response.json())
@@ -134,24 +136,31 @@ ${code(
     }));
 </script>`
 )}
-<p>Arabic, German and French come as small scripts of their own, ${SIZES.languages[0]} to ${SIZES.languages[1]} KB gzipped each, and so do Turkish, Persian, Urdu and Spanish (${c('fieldia.tr.js')}, ${c('fieldia.fa.js')}, ${c('fieldia.ur.js')}, ${c('fieldia.es.js')}) — machine-assisted, not yet reviewed by a native speaker: add the language's script after the main one, from the same version, and pass ${c('locale')}. The words only a part shows come with that part, in English, and the language's script has them all, whichever comes first. A page whose language script is missing shows Fieldia's words in English and names the script to add in the console. Installed from npm, the packages have English, Arabic, German and French with no extra import, and fetch Turkish, Persian, Urdu and Spanish each in a chunk of its own where it is spoken: the viewer waits for them before it draws, so a page's first paint is in its language.</p>
+<p>Arabic, German and French come as small scripts of their own, ${SIZES.languages[0]} to ${SIZES.languages[1]} KB gzipped each, and so do Turkish, Persian, Urdu and Spanish (${c('fieldia.tr.js')}, ${c('fieldia.fa.js')}, ${c('fieldia.ur.js')}, ${c('fieldia.es.js')}) — machine-assisted, not yet reviewed by a native speaker: add the language's script after the main one, from the same version, with its own integrity (every language's tag is below), and pass ${c('locale')}. The words only a part shows come with that part, in English, and the language's script has them all, whichever comes first. A page whose language script is missing shows Fieldia's words in English and names the script to add in the console. Installed from npm, the packages have English, Arabic, German and French with no extra import, and fetch Turkish, Persian, Urdu and Spanish each in a chunk of its own where it is spoken: the viewer waits for them before it draws, so a page's first paint is in its language.</p>
 ${code(
   'html',
   `
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
-<!-- or fieldia.de.js, fieldia.fr.js -->
+${tag('fieldia.js')}
+${tag('fieldia.ar.js')}
 <script>
   Fieldia.mountViewer(document.getElementById('app'), { page, dataSource, locale: 'ar' });
 </script>`
 )}
+<details class="tags">
+<summary>Every language's tag</summary>
+${code(
+  'html',
+  `
+${[['ar', 'Arabic'], ['de', 'German'], ['fr', 'French'], ['tr', 'Turkish'], ['fa', 'Persian'], ['ur', 'Urdu'], ['es', 'Spanish']].map(([locale, name]) => `<!-- ${name} -->\n${tag(`fieldia.${locale}.js`)}`).join('\n')}`
+)}
+</details>
 
 <h2 id="element">One tag: &lt;fieldia-form&gt;</h2>
 <p>The script defines an element as it starts, so a page needs no code of its own: ${c('<fieldia-form>')} fetches its page (${c('src')}), draws its form in itself and sends the answers to its ${c('action')} as JSON — ${c('{ pageId, values, … }')}, answered with ${c('{ id }')}, or refused with ${c('{ message, fields }')}. ${c('locale')}, ${c('theme')}, ${c('skin')}, ${c('record')} and ${c('resume')} say the rest; changing one draws it again (a theme or a skin in place). What it does comes in a part of its own, fetched the first time one is on a page: until then the element is a stub, made what it is in place as it comes. ${c('action')} takes a page of responses' answers; a record's page saves through your own ${c('source')}.</p>
 ${code(
   'html',
   `
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+${tag('fieldia.js')}
 <fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" locale="ar" skin="outlined"></fieldia-form>`
 )}
 <p>It tells what happens as events that bubble: ${c('fieldia-ready')} once drawn, ${c('fieldia-send')} (the reference your server gave, and the answers), ${c('fieldia-save')}, ${c('fieldia-step')} and ${c('fieldia-error')} when its page, or its part, cannot be had. With a little code, its properties take the rest of the viewer: ${c('page')} (given whole), ${c('source')} (your own data source, for a record's page, codes, payments) and ${c('options')} — set before its part came, they are kept; ${c('handle')} is the viewer once drawn. An app built with a bundler calls ${c('defineFieldiaForm()')} from ${c('@fieldia/viewer')} once.</p>
@@ -169,11 +178,10 @@ ${code(
   'html',
   `
 <!-- On the partner's page -->
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia-embed.js"
-  data-src="https://forms.example.com/enquiry" data-locale="ar" data-theme="material" async></script>
+${tag('fieldia-embed.js', '\n  data-src="https://forms.example.com/enquiry" data-locale="ar" data-theme="material" async')}
 
 <!-- Your form's page, https://forms.example.com/enquiry -->
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+${tag('fieldia.js')}
 <fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" frame></fieldia-form>`
 )}
 <p>${c('data-locale')}, ${c('data-theme')} and ${c('data-skin')} reach the form through its frame's address; ${c('data-title')} names the frame for a screen reader; ${c('data-height')} is its height before the form tells its own (600). The partner page's campaign parameters — ${c('utm_source')}, ${c('utm_medium')}, ${c('utm_campaign')}, ${c('utm_term')}, ${c('utm_content')}, or those ${c('data-params')} names — are passed on, so a page that fills hidden fields from its link (<a href="/data/#prefill">${c('prefill')}</a>) knows which campaign brought the person to the partner. The <a href="/demos/embed/">embed demo</a> shows both.</p>

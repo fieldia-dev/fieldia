@@ -40,6 +40,7 @@ import { withoutAuth } from './release-env.mjs';
 import { gitFacts, machinePathIn, patchProblem, releaseProblems } from './release-guards.mjs';
 import { publishPacks, readPacks, writePacks } from './release-publish.mjs';
 import { auditProblems } from './release-audit.mjs';
+import { hashesOf, recordReleased, tagProblems, writeReadmes } from './script-tags.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const WORK = join(WORKSPACE, 'tmp/release');
@@ -444,7 +445,25 @@ for (const part of ['phone', 'decode']) {
   if (!readFileSync(join(SMOKE, `node_modules/@fieldia/viewer/bundle/fieldia.${part}.js`), 'utf8').split('\n')[0].includes('THIRD_PARTY_NOTICES.md')) fail(`the packed fieldia.${part}.js does not name its third-party notice`);
 }
 
+// The README @fieldia/viewer ships: its script tags name this version, each with the hash of the file beside it in the
+// package — what jsDelivr serves for it (tools/script-tags.mjs).
+{
+  const installed = join(SMOKE, 'node_modules/@fieldia/viewer');
+  const readme = readFileSync(join(installed, 'README.md'), 'utf8');
+  const shipped = { version, integrity: hashesOf(join(installed, 'bundle')) };
+  const problems = tagProblems(readme, shipped);
+  if (problems.length || !readme.includes(`@fieldia/viewer@${version}/bundle/fieldia.js`)) fail(`@fieldia/viewer's README does not give ${version}'s script tags, with the hashes of its files: ${problems.join('; ') || 'none names it'}`);
+}
+
 console.log(`  installed ${fromRegistry ? 'from npm' : 'the packs'} into an empty project: require, import, types (.mts and .cts), the script bundle, its language add-ons and its parts all check`);
+
+// What npm serves, recorded for the docs: fieldia.dev's script tags and the repository's READMEs name this version
+// from now, each with the hash of its file as npm serves it (tools/script-tags.mjs). Committed by a person.
+if (fromRegistry) {
+  recordReleased(WORKSPACE, version, join(SMOKE, 'node_modules/@fieldia/viewer/bundle'));
+  const changed = writeReadmes(WORKSPACE);
+  console.log(`  recorded ${version}'s scripts as npm serves them in tools/script-tags.json${changed.length ? `, and wrote the tags in ${changed.map((file) => file.replace(`${WORKSPACE}/`, '')).join(', ')}` : ''}: commit them, so fieldia.dev's and the READMEs' script tags name ${version}`);
+}
 
 // ---- publish ---------------------------------------------------------------------
 if (mode === 'publish') {

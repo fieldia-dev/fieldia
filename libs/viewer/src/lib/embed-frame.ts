@@ -5,8 +5,10 @@
  * happened, as events on the iframe: `fieldia-ready`, `fieldia-step`, `fieldia-send` (the response's reference, never
  * the answers), `fieldia-error`.
  *
- *   <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia-embed.js"
+ *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia-embed.js" integrity="sha384-…" crossorigin="anonymous"
  *     data-src="https://forms.example.com/enquiry" data-locale="ar" data-theme="material" async></script>
+ *
+ * (the tag fieldia.dev and the README print, each version's with its file's hash: tools/script-tags.mjs).
  *
  * `data-src` is the form's page; `data-locale`, `data-theme` and `data-skin` are passed on in its address
  * (`?locale=ar&theme=material`), as `<fieldia-form frame>` reads them; `data-title` names the frame for a screen reader
