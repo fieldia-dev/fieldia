@@ -15,6 +15,147 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.33.0 — 2026-10-24
+
+**Loading, as you choose it: every control waits for its answer the same way —
+a record, a list, a map, a related list, a link's search, a button — and how it
+looks while it waits is the app's, the page's or the part's to say.** Drawn the
+first time, a skeleton shaped like what comes; asked again, what is shown stays
+under a thin bar; the next rows, "Loading more…" where they come; a search,
+"Searching…" in its list; a save, the button busy. A quick answer shows nothing
+at all, a loader that shows never flickers off, and a failure says why in its
+place, with Retry. The page format is 0.12 — `loading` is a new setting — and a
+page of 0.1 to 0.11 is read as it is.
+
+**New:**
+
+- **One loading model for every control**, by moment, each with its default
+  and its other ways:
+  - `first` — a form's record, a list, its cards, a map, a related list, a saved
+    form placed, what a list's row opens to, a form's limits being counted:
+    `skeleton` (the list's rows in its own columns, cards on a phone, the form's
+    boxes under their labels, the page's layout while its parts come), or
+    `spinner`, `progress`, `text`, `none`, `custom`;
+  - `refresh` — a list searched, filtered, sorted or paged (a related list's
+    pager, a calendar's next week or month), a record reloaded: `keep` (what is
+    shown stays, a thin bar over it), or `dim`, `skeleton`, `spinner`, `none`,
+    `custom`;
+  - `more` — rows put under those shown (endless scroll, Show more, a tree's
+    children): `row` ("Loading more…"), or `spinner`, `skeleton`, `none`,
+    `custom`;
+  - `search` — a link's suggestions, choices from the app's lists, a filter's
+    values, a menu's items the app gives: `inline` ("Searching…"), or `spinner`,
+    `none`, `custom`;
+  - `action` — a save, a send, a button's steps: `button` (the pressed button
+    busy), or `bar`, `overlay`, `none`, `custom`.
+- **Set where it belongs**, the most specific winning setting by setting: the
+  viewer's `loading` option (the app's), the page's `loading`, a list's, a
+  related list's or a map's `loading`, a field's `options.loading` — in the
+  types, the checks, the JSON Schema and the designer.
+- **Looks:** a skeleton's `shimmer` (default), `pulse` or `static`; a spinner's
+  `ring` (default) or `dots`; a progress bar along the `top` (default) or
+  `inline`. **Timing:** `delay` (150 ms: a quick answer never flashes a loader),
+  `minShown` (300 ms), `slowAfter` (5 s, "Still loading…" said once),
+  `timeout` (none unless set: the wait ends as failed and the request is told
+  to stop).
+- **Failures:** `error: "inline"` (default) says it in place — "Could not load
+  the customers. The archive is offline. Retry", the source's own words after
+  Fieldia's — `toast` keeps what is shown and says it in a toast with Retry,
+  `custom` is the app's to draw. Retry asks the same thing again. Never an empty
+  place.
+- **`loading.custom(drawing)`** draws a moment set to `custom` the app's own
+  way: `{ moment, part, container, signal, slow, failed, error, retry }`, and it
+  may hand back its own clean-up; Fieldia keeps the time, `aria-busy`, what is
+  said and the clean-up.
+- **Events** `loadingstart` and `loadingend` (`{ moment, part, duration,
+  failed }`) on the viewer's handle, for an app's own indicator; React's
+  `onLoadingStart`/`onLoadingEnd`, Vue's `loading` prop and `loadingstart`/
+  `loadingend`, Angular's `loading` input and `loadingStart`/`loadingEnd`.
+- **Every theme's tokens**, light and dark: `--fd-skeleton`,
+  `--fd-skeleton-shine`, `--fd-shimmer`, `--fd-spinner`, `--fd-bar`.
+- **Always, whatever the way:** `aria-busy` on what waits and one polite
+  announcement (never one per row); reduced motion stills every shimmer, ring
+  and bar; forced colours draw them in the system's colours; right to left
+  mirrors them; nothing shows on paper.
+- **What a person has open stays theirs:** a part asked again with a popup open
+  in it (a date's calendar, a box's list, a menu) keeps what is shown under a
+  bar, whatever its way; a popup opened while a part waits is over the wait and
+  takes its presses.
+- **The designer's Look tab: "While it waits"**, each moment's way, the looks,
+  the times and a failure's way, with a live preview of each — no JSON needed.
+- **A new demo, "Loading, as you like it":** a wholesaler's customers beside a
+  customer, on a network as slow as you like, with "Fail the next answer" and a
+  panel that changes each moment's way live — and the same customer under two
+  themes.
+- From `@fieldia/widgets`: `startLoading`, `loadingSettings`, `loadingOver`,
+  `loadingWay`, `asksLoadingPart`, `letFailureGo` and `loadingPart`, with their
+  types; from `@fieldia/core`: `LOADING_MOMENTS`, `LOADING_TECHNIQUES`,
+  `LOADING_VARIANTS`, `LOADING_ERRORS`, `LOADING_DEFAULTS` and
+  `PageLoadingSchema`.
+
+**Fixes:**
+
+- **Every "Loading…" Fieldia drew its own way now waits the one way:** what a
+  list's row opens to (its failure now says the source's words, as a list's
+  does), a menu's items from the app (`menuFrom`: no flash on a quick answer), a
+  form's limits while they are counted, and a list whose part could not come at
+  first and is asked for again.
+- The designer's new settings are named in Turkish, Persian, Urdu and Spanish
+  too, as the panel's search finds them.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- A record, list, related list, map or saved form shows a skeleton the first
+  time it loads, where it said "Loading…": set `first: "text"` to keep the old
+  words. The status line no longer says "Loading…".
+- A list asked again keeps its rows under a thin bar, where it dimmed them
+  through `aria-busy`: set `refresh: "dim"` to keep the old look.
+- A list that fails to load, and what a list's row opens to, add the source's
+  own words before Retry.
+- A button's busy ring, and "Loading choices…", show only after 150 ms.
+- An endless list's failure is said in place, under its rows, not in a toast.
+- A menu's items from the app and a form's limits being counted wait after the
+  delay, as the page's `search` and `first` ways say: the `.fd-menu-waiting` and
+  `.fd-list-waiting` elements are gone, and what a list's row opens to is busy on
+  its box (`.fd-list-detail-box`), not on its table.
+- A calendar's next week or month and a related list's next page are a
+  `refresh` (what is shown kept), never `more`, which is only for rows put under
+  those shown.
+- Pages that wait for parts also fetch `fieldia.loading.js` (2.7 KB gzipped):
+  an app that serves `fieldia.js` itself serves it beside the other parts.
+- `ListRequest.signal` is given where a `timeout` is set; a source that honours
+  it stops sooner, one that ignores it loses nothing.
+- Pages are written in format 0.12 (`FORMAT_VERSION`). 0.12 only added, so a
+  0.11 page is read as it is; an older Fieldia refuses a 0.12 page, saying to
+  update.
+- An app that passes whole `labels` or designer words adds the new keys:
+  widgets `loadingMore`, `searching`, `stillLoading`, `cantLoad`, `cantSearch`,
+  `tookTooLong`, `loadRetry`; designer `loadingLook`. The new words in Arabic,
+  German, French, Turkish, Persian, Urdu and Spanish are unreviewed.
+
+**Size:** `fieldia.js` 535.1 KB, 175.9 gzipped (0.32.0: 525.2, 172.1): 3.86 KB
+gzipped for what every page that waits needs — its record, a list, a search, a
+button — before any part can come: the timing machine (about 2.4: the delay,
+the minimum, "Still loading…", the timeout, `aria-busy` and what is said, a
+failure and Retry, the events), the viewer's waiting (0.8), the words and looks
+drawn before the loading part comes (0.5), the app's own drawing kept here so it
+never waits for a part (0.1), and a popup kept clear of a wait (0.1). No part's
+code is in it. Of the parts, gzipped:
+
+- loading 2.75 KB (new): the skeletons, the bars, the spinners, the overlay and
+  their tokens, asked for alongside a page's parts where it waits for any, and
+  never by a page of plain parts whose source answers quickly;
+- list 45.61 (45.15), filters 7.86 (7.78), rows 7.30 (7.11), cards 3.79 (3.71):
+  a list's records, next rows, a filter's values and what a row opens to waiting
+  the one way, its skeleton rows in its own columns or as cards;
+- relations 7.95 (7.73): a link's "Searching…" and its failure with Retry;
+- themes 3.93 (3.64): every theme's skeleton, shimmer, spinner and bar, light
+  and dark;
+- limits 4.75 (4.69), head 12.90 (12.88): a form's limits counted and a menu's
+  items from the app waiting the one way;
+- the language add-ons by 0.06–0.09 each (the seven new words; Arabic 128.2,
+  20.76 from 127.5, 20.67).
+
 ## 0.32.0 — 2026-10-24
 
 **What the owner saw on the demos, mended: radios and tick boxes that looked like
