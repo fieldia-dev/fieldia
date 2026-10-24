@@ -135,8 +135,12 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * 18px), drawn as the form's own in a form and the browser's in the accent on a page of its own, said in its rule —
  * all 48,982 bytes measured before, 49,050 after, to 48.0; a list's map in a page of its own 33,289 to 33,360, inside
  * its 32.6; a place and an area as they were (27,314).
+ * While it waits (w7-loading, 0.33): a list's map and a form's waiting the one way (loading.ts in @fieldia/widgets) — a
+ * skeleton block as tall as the map until its map and its places are in, its places asked again under a bar, a failure
+ * in its place with Retry (list-view.ts, form-map.ts) — all 49,054 bytes measured before, 49,373 after, to 48.3; a list's
+ * map in a page of its own 33,359 to 33,663, to 32.9; a place and an area as they were (27,315).
  */
-const BUDGET = { fields: 26.7, all: 48.0, embed: 32.6, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 26.7, all: 48.3, embed: 32.9, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

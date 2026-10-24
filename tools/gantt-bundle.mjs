@@ -32,6 +32,9 @@
  * off it, and Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y taking a move back and making it again — 14,486 bytes measured before,
  * 15,525 after, to 15.2; Persian's words 878 before, 925 after, to 1.0 (Turkish's 751, Urdu's 908, Spanish's 701,
  * inside theirs).
+ * While it waits (w7-loading, 0.33): the timeline's records waiting the one way (loading.ts in @fieldia/widgets) — drawn
+ * the first time, asked again under a bar, a failure in its place with Retry (gantt-view.ts) — 15,525 bytes measured
+ * before, 15,611 after, to 15.3; with the page 817 before, 815 after, inside its 0.8.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -40,7 +43,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.8, gantt: 15.2 };
+const BUDGET = { page: 0.8, gantt: 15.3 };
 const LANGUAGE_BUDGET = { tr: 0.8, fa: 1.0, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });
