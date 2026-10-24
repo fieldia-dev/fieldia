@@ -5,11 +5,11 @@ import { expect, test } from './fixtures';
  * A long list keeps the browser's work to what changed (the performance audit's H1, its first step), held by what the
  * browser itself reports rather than by a timing: a key typed in a cell of an editable list of 1,000 rows lays out the
  * box typed in alone — a few objects, never the table's 27,000 (0.32 laid them all out on every key: 27 ms a key on a
- * desktop, 290 ms on a phone) — and a list drawn as cards skips the cards far out of sight until they come near, the
- * one the keys move to drawn as it takes the focus. A table's rows cannot be skipped so: no browser applies
- * content-visibility to a table row (CSS Containment: internal table boxes), so a long table repaints the rows round
- * the view each time the view moves far enough (every 800 px or so in Chromium) — kept small only by drawing fewer
- * rows (windowing, a later step).
+ * desktop, 290 ms on a phone). A table's rows cannot be skipped by content-visibility: no browser applies it to a table
+ * row (CSS Containment: internal table boxes), so a long table repaints the rows round the view each time the view
+ * moves far enough (every 800 px or so in Chromium) — kept small only by drawing fewer rows (windowing, a later step).
+ * Cards could be, but measured on a phone, wheeling through 3,000 of them drew each frame 3 to 6 times slower so: left
+ * as 0.32 has them.
  */
 
 test.skip(({ browserName }) => browserName !== 'chromium', 'the layouts are counted by Chromium’s trace');
@@ -60,19 +60,3 @@ test('a key typed in a cell of 1,000 rows lays out the box alone, never the tabl
   expect(boxBox?.width).toBeGreaterThan((cellBox?.width ?? 0) - 20);
 });
 
-test('cards far out of sight skip their drawing, and the one the keys reach is drawn as it takes the focus', async ({ page }) => {
-  await page.setViewportSize({ width: 412, height: 915 });
-  await mountList(page, { card: {} });
-  await expect(page.locator('#app .fd-list')).toHaveAttribute('data-as', 'cards');
-  // A card skipped keeps its own box (its remembered size); what is in it is skipped: its card's words.
-  const drawn = () => page.evaluate(() => [...document.querySelectorAll('#app .fd-list-row')].map((row) => !!(row.querySelector('.fd-list-card') as (Element & { checkVisibility(o: object): boolean }) | null)?.checkVisibility({ contentVisibilityAuto: true })));
-  await expect.poll(async () => (await drawn()).filter(Boolean).length).toBeLessThan(100);
-  expect((await drawn())[0]).toBe(true);
-  // The last card, taken by the keys: drawn, focused, in sight.
-  const last = page.locator('#app .fd-list-row').last();
-  await last.focus();
-  await expect(last).toBeFocused();
-  await expect(last).toBeInViewport();
-  expect((await drawn()).at(-1)).toBe(true);
-  await expect(last).toContainText('Customer 1000');
-});

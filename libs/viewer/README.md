@@ -776,11 +776,10 @@ filter bar's list as another of its parts takes the focus. See
 [lists and search](https://fieldia.dev/lists/).
 
 A long list keeps the browser's work to what changed: a key typed in a cell
-lays out that cell's box alone, and cards far out of sight (a phone's, a
-gallery's) skip their drawing until they come near. A table's rows cannot be
-skipped so (no browser applies `content-visibility` to a table row), so until
-rows are windowed keep an `endless` or `editable` list under about 1,000 loaded
-rows for smooth scrolling on phones, and page through more.
+lays out that cell's box alone. Rows out of sight are still drawn (no browser
+skips a table row with `content-visibility`), so until rows are windowed keep
+an `endless` or `editable` list under about 1,000 loaded rows for smooth
+scrolling on phones, and page through more.
 
 Other ways of showing a list's records come from `listViews`, by name: a
 list's `map` (`mapListViews` from `@fieldia/map`), its `calendar`

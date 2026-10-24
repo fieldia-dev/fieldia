@@ -1,5 +1,4 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { CARD_STYLES } from './cards-styles';
 import { EDITABLE_STYLES } from './editable-styles';
 import { until } from './test-list';
 import { mountViewer, type ViewerHandle } from './viewer';
@@ -9,8 +8,8 @@ import { partsFor } from './viewer-parts';
  * A long list keeps the browser's work to what changed (the performance audit's H1, its first step): a key typed in a
  * cell writes that cell's row only where a cell shows something new — 0.32 drew every cell of the row again on each
  * key, and the browser laid the whole table out again for it — and the box being typed in is contained, so what is
- * typed lays out that box alone; cards far out of sight skip their drawing. The browser's side (a key's layout of a
- * few objects, never the table's thousands) is held in e2e/list-contain.spec.ts.
+ * typed lays out that box alone. The browser's side (a key's layout of a few objects, never the table's thousands) is
+ * held in e2e/list-contain.spec.ts.
  */
 
 const prices: Page = {
@@ -71,9 +70,7 @@ describe('a key typed in a cell of an editable list', () => {
 });
 
 describe('the containment rules', () => {
-  it('contain the line typed in a cell, aligned as it sits without it, and every card list’s cards', () => {
+  it('contain the line typed in a cell, aligned as it sits without it', () => {
     expect(EDITABLE_STYLES).toMatch(/\.fd-list-editor :is\(input:not\(\[type\]\), input\[type="text"\][^)]*\) \{ contain: size layout; vertical-align: top; \}/);
-    // Every card list's where the browser anchors the scroll (cards above drawn at their height move nothing in sight).
-    expect(CARD_STYLES).toMatch(/@supports \(overflow-anchor: auto\) \{\s*\.fd-list\[data-as\] \.fd-list-row \{ content-visibility: auto; contain-intrinsic-size: auto 160px; \}/);
   });
 });
