@@ -42,7 +42,11 @@ each tarball against it (`tools/release-publish.mjs`): what is published is what
    it (below), uploaded as the run's `script-tags` artifact.
 
 There is no npm token anywhere: not in a secret, not in the workflow. Until the packages trust this workflow on
-npmjs.com, npm refuses the publish job — nothing can be published from CI before the switch.
+npmjs.com, npm refuses the publish job — nothing can be published from CI before the switch. And the publish job does
+not run at all until the repository variable `TRUSTED_PUBLISHING` is `on` (the checklist's last step, below): until
+then a pushed tag runs **build** and **verify** alone — what a maintainer published from their machine, checked as npm
+serves it — and never reaches the `npm` environment, which GitHub would otherwise make, unprotected, the first time a
+job names it.
 
 **To release:**
 
@@ -67,19 +71,25 @@ node tools/publish-packs.mjs tmp/release/packs --dry-run
 
 ## Publishing from a maintainer's machine (until the switch)
 
-While the packages still accept a token, a release can be published locally — guarded the same way:
+While the packages still accept a token, a release is published locally — guarded the same way. The tag comes first,
+on this machine alone: `release.mjs publish` refuses a tree with changes, a HEAD that is not on `origin/main` (the
+release commit merged and pushed, CI green), and a HEAD with no tag of its version, each in words that say what to do.
+The tag is pushed once every package is on npm:
 
 ```sh
-git tag -a v0.34.0 -m "Fieldia 0.34.0"
+git switch main && git pull                  # the release commit, merged, pushed, CI green; nothing changed here
+git tag -a v0.34.0 -m "Fieldia 0.34.0"       # local: not pushed yet
 npx nx run-many -t build
 NPM_TOKEN=… node tools/release.mjs publish   # the guards, the check, then npm publish of the checked packs
+git push origin v0.34.0                      # as it then prints, with the GitHub release's command
 ```
 
 The token is read from the environment, written only as a reference in a throwaway npmrc under `tmp/`, and handed
 to `npm publish` alone: no check, install, `node` or `tsc` run sees it. Use a granular token scoped to `@fieldia/*`,
 with a short expiry, kept in a keyring — never pasted into a chat or a file. Once every package is on npm it prints
 the version's notes and the commands that push its tag and make its GitHub release. Pushing the tag starts the
-publish workflow too: it finds every package on npm and publishes nothing.
+publish workflow too: with `TRUSTED_PUBLISHING` off it builds and checks, skips the publish job, and verifies what npm
+serves — its `script-tags` artifact is what to commit after (below).
 
 After "Require two-factor authentication and disallow tokens" (below), a token cannot publish: this path ends, by
 design.
@@ -135,7 +145,12 @@ Settings):
    repository — so a lost account or key never stops a security fix.
 9. Add them as a required reviewer of the `npm` environment (step 1).
 
-**The first release from CI**
+**Last: let the publish job run**
 
-10. Tag and push the next release (*To release*, above), approve the `npm` environment, and check on npm that each
-    package's new version shows *Provenance*. Commit what `verify` records. From then on, every release is a tag.
+10. **Settings → Secrets and variables → Actions → Variables → New repository variable** `TRUSTED_PUBLISHING`, value
+    `on`. Until it is, the publish job never runs and a pushed tag only builds, checks and verifies (above); set it
+    only once steps 1–9 are done, the `npm` environment protected first.
+
+**The first release from CI.** Tag and push the next release (*To release*, above), approve the `npm` environment, and
+check on npm that each package's new version shows *Provenance*. Commit what `verify` records. From then on, every
+release is a tag.

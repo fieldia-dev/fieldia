@@ -4,16 +4,20 @@ name: Publish
 # npm asks GitHub for a short-lived OIDC token for this run alone and trades it for the publish. There is no npm token
 # anywhere — not in a secret, not on a machine — and each version carries provenance: npm's page for it links this
 # commit and this run. Until the packages are switched to trusted publishing on npmjs.com, npm refuses the publish
-# job: nothing can be published from here (docs/maintainers/publishing.md, the owner's checklist).
+# job: nothing can be published from here (docs/maintainers/publishing.md, the owner's checklist). And until the owner
+# sets the repository variable TRUSTED_PUBLISHING to `on` — that checklist's last step — the publish job does not run
+# at all: a pushed tag builds and checks, and verifies what was published the old way (a maintainer's own, before the
+# tag was pushed), and never reaches the `npm` environment, so never makes it unprotected.
 #
 # build    a clean runner, the lockfile alone (`npm ci`, no cache), every package built, then `release.mjs check`:
 #          packed, installed into an empty project, imported, type-checked, the script bundle run, `npm audit` of what
 #          an app installs. Read access alone; it uploads the packs it proved, with their hashes (packs.json).
-# publish  on a pushed v* tag alone, in the `npm` environment: no `npm ci`, no build — no third-party code runs where
+# publish  on a pushed v* tag alone, once TRUSTED_PUBLISHING is `on`, in the `npm` environment: no `npm ci`, no build — no third-party code runs where
 #          the OIDC token can be asked for — only node and npm, over the packs `build` proved, each checked against its
 #          hash (tools/publish-packs.mjs). It refuses a tag that is not the packages' version, a commit not on main, a
 #          patch with an Upgrading part (tools/release-guards.mjs), and stops where a package fails, saying what is out.
-# verify   once published: the same checks on what npm serves (`release.mjs verify`), and the script tags' hashes
+# verify   on a pushed v* tag, once published — by the publish job, or before the tag by a maintainer while trusted
+#          publishing is off: the same checks on what npm serves (`release.mjs verify`), and the script tags' hashes
 #          recorded from it, for a maintainer to commit.
 # dry-run  started by hand (Actions → Publish → Run workflow), on any branch: `build`, then everything `publish` does
 #          with `npm publish --dry-run` and no OIDC token — nothing is published; what a real run would refuse is said.
@@ -65,7 +69,9 @@ jobs:
   publish:
     name: Publish to npm (trusted publishing, provenance)
     needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    # Off until the owner switches npm over and then sets the repository variable (Settings → Secrets and variables →
+    # Actions → Variables) TRUSTED_PUBLISHING to `on`: the last step of docs/maintainers/publishing.md's checklist.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && vars.TRUSTED_PUBLISHING == 'on'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # npm's trusted publisher for each package names this workflow and this environment; the environment's protection
@@ -96,7 +102,10 @@ jobs:
 
   verify:
     name: What npm serves, checked
-    needs: publish
+    needs: [build, publish]
+    # After the publish job; or, trusted publishing not on yet (the publish job skipped), after the maintainer's own
+    # publish of the tag's version: never after a publish that failed.
+    if: ${{ always() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && needs.build.result == 'success' && (needs.publish.result == 'success' || needs.publish.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

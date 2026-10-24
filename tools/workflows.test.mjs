@@ -107,7 +107,7 @@ test('publish.yml: only the publish job may ask for an OIDC token, on a pushed t
   const asking = Object.entries(jobs).filter(([, block]) => /id-token:\s*write/.test(block)).map(([id]) => id);
   assert.deepEqual(asking, ['publish']);
   const publish = jobs.publish;
-  assert.match(publish, /^ {4}if: github\.event_name == 'push' && startsWith\(github\.ref, 'refs\/tags\/v'\)$/m);
+  assert.match(publish, /^ {4}if: github\.event_name == 'push' && startsWith\(github\.ref, 'refs\/tags\/v'\) && vars\.TRUSTED_PUBLISHING == 'on'$/m);
   assert.match(publish, /^ {4}environment:\n {6}name: npm$/m, 'the publish job is in the npm environment, which npm\'s trusted publisher names');
   assert.match(publish, /^ {4}permissions:\n {6}contents: read\n {6}id-token: write\n/m);
   // No third-party code where the token can be had: node and npm over the packs, nothing installed, nothing built.
@@ -134,7 +134,30 @@ test('publish.yml: the dry run publishes nothing — no OIDC token, npm publish 
   assert.match(dry, /run: node tools\/publish-packs\.mjs tmp\/release\/packs --dry-run\n/);
   assert.match(dry, /if: \$\{\{ !inputs\.dry_run \}\}\n\s+run: \|\n\s+echo "::error::This run publishes nothing\./);
   // The others do not run by hand: build is the dry run's too.
-  assert.match(jobs.verify, /^ {4}needs: publish$/m);
+  assert.match(jobs.verify, /^ {4}needs: \[build, publish\]$/m);
+  assert.match(jobs.verify, /^ {4}if: \$\{\{ always\(\) && github\.event_name == 'push' && startsWith\(github\.ref, 'refs\/tags\/v'\)/m);
+});
+
+test('publish.yml: the publish job runs only once the owner turns trusted publishing on — a tag before that builds, checks and verifies', () => {
+  const text = readFileSync(join(WORKFLOWS, 'publish.yml'), 'utf8');
+  const jobs = jobsOf(text);
+  // The gate is the repository's variable, nothing a pushed tag or a run's input can set.
+  const gate = /^ {4}if: (.*)$/m.exec(jobs.publish)?.[1] ?? '';
+  assert.match(gate, /&& vars\.TRUSTED_PUBLISHING == 'on'$/, `the publish job's condition is "${gate}"`);
+  assert.doesNotMatch(gate, /inputs\.|github\.event\.inputs|\|\|/, 'the gate can be opened another way');
+  // The npm environment is named by the publish job alone: a tag pushed before the gate is on never reaches it (GitHub
+  // makes an environment, unprotected, the first time a job names it).
+  const naming = Object.entries(jobs).filter(([, block]) => /^ {4}environment:/m.test(block)).map(([id]) => id);
+  assert.deepEqual(naming, ['publish']);
+  // Verify runs after the publish job, or after a publish of the old way while it is off; never after one that failed.
+  assert.match(jobs.verify, /needs\.publish\.result == 'success' \|\| needs\.publish\.result == 'skipped'/);
+  assert.match(jobs.verify, /needs\.build\.result == 'success'/);
+  // Turning it on is the checklist's last step.
+  const checklist = readFileSync(join(WORKSPACE, 'docs/maintainers/publishing.md'), 'utf8');
+  const steps = [...checklist.matchAll(/^(\d+)\. (.*)$/gm)];
+  assert.ok(steps.length >= 5, 'the checklist has no numbered steps');
+  assert.match(steps[steps.length - 1][2], /TRUSTED_PUBLISHING/, `the checklist's last step is "${steps[steps.length - 1][2]}"`);
+  assert.equal(steps.filter(([, , words]) => /TRUSTED_PUBLISHING/.test(words)).length, 1);
 });
 
 test('Dependabot keeps npm and the actions up to date, weekly, grouped', () => {
