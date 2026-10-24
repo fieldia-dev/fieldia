@@ -57,7 +57,15 @@ could happen. The page format is 0.11 — a phone's country list is a new settin
   below it with room made where above would cover a group's name or another
   part's words — never over them. Placed again as the window is resized or zoomed
   and as the part changes size. One rule for a header part's bar and a list
-  column's, whose bar shows again (0.31.1 hid it under its header).
+  column's, whose bar shows again (0.31.1 hid it under its header). Placed only
+  when its part or the canvas moved, keeping clear of its neighbours' words alone:
+  picking, adding and undoing on a page of 500 fields is as quick as in 0.31.1.
+- **A popup opened from a box near the window's foot opens over it**, where there
+  is not room under it and more over it, and stays inside the window, scrolling
+  within where neither side holds it whole: Fieldia's own list, the country list,
+  a date's, a range's, a month's and a year's calendar, a filter's menu, the
+  search's suggestions, the colour palette, a state's menu, a payment's details —
+  as a link's list already did. On a phone, a sheet as before.
 - **The featured demos show the phone's country list where the owner looked**:
   the Customer record's Phone and Every field's Site phone are read the world over
   (their pages now say their phones' country), each with a how-to step to try it.
@@ -77,6 +85,8 @@ could happen. The page format is 0.11 — a phone's country list is a new settin
 - `removeWithUndo(designer, id)` from `@fieldia/designer`: the designers' delete
   with its toast and Undo, for an app's own tools.
 - The `--fd-tick-size` custom property: a tick box's and a radio's size.
+- `openToRoom(popup, box)` and `roomFor(box, height, gap, view)` from
+  `@fieldia/widgets`: the one rule for where a popup opened from a box goes.
 
 **Upgrading** — what an app that uses none of the new things sees change:
 
@@ -102,20 +112,38 @@ could happen. The page format is 0.11 — a phone's country list is a new settin
 - An app that serves `fieldia.js` itself serves the same parts as before; the
   undo part (`fieldia.undo.js`) now holds the record's step, its keys being in
   `fieldia.js`.
+- A popup opened over its box carries `data-up`, and one kept shorter than it
+  would be `data-cut` with an inline `max-height`: an app's own rules that place
+  these popups (`.fd-calendar`, `.fd-filter-menu`, `.fd-search-suggestions`, the
+  lists `popup` floats) meet them.
 
-**Size:** `fieldia.js` 524.2 KB, 171.8 gzipped (0.31.1: 520.0, 170.9): 0.41 KB
+**Release safety** — how this release is made, not what it ships:
+
+- The release's checks — the packs and their peers installed into an empty
+  project, node and tsc run over them — run without the npm token or any npm
+  setting that carries one, and the install runs no package's install scripts;
+  the token reaches `npm publish` alone (`tools/release.mjs`,
+  `tools/release-env.mjs`).
+- fieldia.dev deploys only a CI run of a push to this repository's main: a fork's
+  pull request from a branch it named main no longer passes the site workflow's
+  filter. Its build runs with read access alone, Pages and the OIDC token being
+  the deploy job's; CI as a whole runs with read access unless a job says more.
+
+**Size:** `fieldia.js` 525.2 KB, 172.1 gzipped (0.31.1: 520.0, 170.9): 0.41 KB
 gzipped for the radios and tick boxes, which every form draws — in the main
 sheet, as a part's would come after the first paint, showing the browser's grey
-circles until it came — and 0.45 for the undo keys, heard as a person first
-enters a form, so no key waits for a part. Of the parts, gzipped:
+circles until it came — 0.45 for the undo keys, heard as a person first enters a
+form, so no key waits for a part, and 0.30 for the one rule a popup opened from a
+box opens by. Of the parts, gzipped:
 
 - phone 19.2 KB (from 16.2): the country list, its rows drawn the first time it
   opens, and a number taken as it is typed;
 - undo 3.0 (3.5): its keys gone to `fieldia.js`;
 - quiet 2.06 (2.04): a tick box's words in the body's colour, its lines light;
-- survey 12.51 (12.52), list 45.07 (45.08), filters 7.71 (7.72), duplicates 6.36
-  (6.41), path 8.21 (8.20): their own tick styles given up for the one rule in the
-  main sheet;
+- survey 12.51 (12.52), duplicates 6.36 (6.41), path 8.21 (8.20): their own tick
+  styles given up for the one rule in the main sheet;
+- list 45.15 (45.08), filters 7.78 (7.72), date 9.18 (9.13): the same, and their
+  popups opened over their box where there is no room under it;
 - the language add-ons by 0.02–0.05 each (the phone list's words);
 - `@fieldia/map` with a list's map 47.9 (47.8): a card's tick box the size
   every tick box is.
