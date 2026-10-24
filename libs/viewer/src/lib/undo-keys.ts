@@ -1,7 +1,3 @@
-import { fill, type Form, type Page } from '@fieldia/core';
-import type { El } from './dom';
-import type { ViewerLabels } from './labels';
-
 /** The inputs nothing is typed in: a tick, a choice, a file or a colour picker has no typing of its own to take back. */
 const NOT_TYPED = new Set(['checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'image', 'color', 'range', 'hidden']);
 const editable = (target: EventTarget | null): target is HTMLElement =>
@@ -9,25 +5,22 @@ const editable = (target: EventTarget | null): target is HTMLElement =>
 const textOf = (box: HTMLElement) => (box.isContentEditable ? box.innerHTML : (box as HTMLInputElement).value);
 
 /**
- * Ctrl+Z (⌘Z) takes back the person's last change to the record — a field, a cell, a line added, taken away or moved
- * (`form.undo()`) — and Ctrl+Shift+Z or Ctrl+Y (⌘⇧Z) makes it again. In a box whose text was changed since it was
- * entered, the browser's own undo goes through it first; once the box shows what it showed as it was entered, the
- * record's. In a formatted text, always its own. The field taken back takes the focus, and what was done is said
- * politely. Right after a save, nothing is taken back — a change saved is none to take back — and
- * Ctrl+Z says so ("Nothing to undo since it was saved."). In the undo part: the viewer asks for it as the person first enters the form, so the box they are in is
- * known as it was entered before they type — and a key's answer, the browser's own undo or the record's, is given at
- * once, as it is pressed. Gives back what takes the keys away again.
+ * Ctrl+Z (⌘Z) and Ctrl+Shift+Z or Ctrl+Y (⌘⇧Z) while filling, heard from the person's first entering the form (in the
+ * main script, so no key waits for a part to decide whose it is). In a box whose
+ * text was changed since it was entered, the browser's own undo goes through it first, and its own redo through its
+ * undos since; in a formatted text, always its own. Every other is the record's, given to `take` — the undo part's
+ * step (undo-step.ts), which says whether it answered it: answered, the browser's own undo is kept out of it. A key
+ * pressed before that part has come is the record's all the same, its step taken as the part comes (`take` answers
+ * true): never meanwhile the browser's, which takes back the last typing anywhere on the page, in another box. Each
+ * box is known as it showed when it was entered, from the first: the decision is made at once, as the key is pressed.
+ * `written` is called once the record's step has written the field: what the box the person is in shows then is what
+ * it shows as entered, so the next Ctrl+Z is the record's too. Gives back what takes the keys away again.
  */
 export function undoKeys(
   root: HTMLElement,
-  form: Form,
-  page: Page,
-  el: El,
-  labels: ViewerLabels,
   /** Whether a key pressed on this target is this form's: not a dialog's over it, nor another form's. */
   hotkeysHere: (target: EventTarget | null) => boolean,
-  /** Words shown and said to the person, as a step's are. */
-  say: (words: string) => void
+  take: (redo: boolean, written: () => void) => boolean
 ): () => void {
   const doc = root.ownerDocument;
   /** What a box showed as it was entered, and the browser's own undos in it since its last typing: what its redo has. */
@@ -42,7 +35,7 @@ export function undoKeys(
     const how = (event as InputEvent).inputType ?? '';
     if (edits) edits.undone = how === 'historyUndo' ? edits.undone + 1 : how === 'historyRedo' ? Math.max(0, edits.undone - 1) : 0;
   };
-  let heard: HTMLElement | null = null;
+  const written = () => queueMicrotask(() => entered(doc.activeElement));
   const onUndoKey = (event: KeyboardEvent) => {
     if (event.defaultPrevented || event.isComposing || event.altKey || !(event.ctrlKey || event.metaKey)) return;
     const key = event.key.toLowerCase();
@@ -59,33 +52,10 @@ export function undoKeys(
     // its own redo, its undos since.
     const edits = editable(target) ? boxEdits.get(target) : undefined;
     if (edits && (redo ? edits.undone > 0 : textOf(target as HTMLElement) !== edits.text)) return;
-    const step = redo ? form.redo() : form.undo();
-    if (!step) {
-      // Saved, nothing changed since (a save starts the changes afresh): said, so a key pressed is never met with silence.
-      const state = form.getState();
-      if (!redo && state.status === 'saved' && !state.dirty.length) {
-        event.preventDefault();
-        say(labels.nothingSinceSave);
-      }
-      return;
-    }
-    event.preventDefault();
-    const name = page.fields[step.field]?.label ?? step.field;
-    if (!heard) root.append((heard = el('div', { class: 'fd-sr-only fd-undo-heard', role: 'status', 'aria-live': 'polite' })));
-    const words = fill(redo ? labels.redoneField : labels.undoneField, { field: name });
-    heard.textContent = '';
-    setTimeout(() => heard && (heard.textContent = words), 0);
-    // The field taken back takes the focus, where it is shown and is not the one the person is in.
-    const box = [...root.querySelectorAll<HTMLElement>(`.fd-field[data-field="${step.field}"]`)]
-      .filter((wrapper) => !wrapper.closest('[hidden]') && wrapper.closest('.fd-form') === root)
-      .flatMap((wrapper) => [...wrapper.querySelectorAll<HTMLElement>('input:not([type="hidden"]), select, textarea, [contenteditable="true"]')])
-      .find((one) => !one.closest('[hidden]'));
-    if (box && !box.contains(doc.activeElement)) box.focus();
-    // What the record's undo wrote in the box the person is in is what it shows as entered: the next Ctrl+Z is the record's too.
-    queueMicrotask(() => entered(doc.activeElement));
+    if (take(redo, written)) event.preventDefault();
   };
-  // The box the person entered as the part was asked for: as it shows now, before they type.
-  entered(doc.activeElement);
+  // The box the person is entering as the keys are first heard: as its own focus has written it, before they type.
+  queueMicrotask(() => entered(doc.activeElement));
   root.addEventListener('focusin', onEntered, true);
   root.addEventListener('input', onEdited, true);
   doc.addEventListener('keydown', onUndoKey);

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMemoryDataSource, type Page } from '@fieldia/core';
+import { undoKeys } from './undo-keys';
 import { mountViewer, type ViewerHandle } from './viewer';
 
 /**
@@ -108,6 +109,38 @@ describe('Ctrl+Z while filling', () => {
     const fresh = await mount();
     box(fresh.host, 'f-email').focus();
     await Promise.resolve();
+    expect(press('z')).toBe(false);
+  });
+});
+
+describe('the keys, decided as they are pressed, whether the undo part has come or not', () => {
+  it("takes a key from the browser for the record's step at once, the step's answer coming later; a box typed in keeps its own", async () => {
+    const root = document.createElement('div');
+    const [name, email] = [document.createElement('input'), document.createElement('input')];
+    root.append(name, email);
+    document.body.append(root);
+    // The undo part on its way: each key handed over, answered later.
+    const asked: { redo: boolean; written: () => void }[] = [];
+    const stop = undoKeys(root, () => true, (redo, written) => (asked.push({ redo, written }), true));
+    name.focus();
+    await Promise.resolve();
+    type(name, ' B');
+    // Typed in here: the browser's own undo, never handed over.
+    expect(press('z')).toBe(false);
+    expect(asked).toEqual([]);
+    email.focus();
+    await Promise.resolve();
+    // Not typed in: the record's, kept from the browser at once — its own would take back the name's typing.
+    expect(press('z')).toBe(true);
+    expect(press('z', true)).toBe(true);
+    expect(press('y')).toBe(true);
+    expect(asked.map((one) => one.redo)).toEqual([false, true, true]);
+    // The part's step writes the box the person is in: what it shows then is what it shows as entered.
+    email.value = 'written by the step';
+    asked[0].written();
+    await Promise.resolve();
+    expect(press('z')).toBe(true);
+    stop();
     expect(press('z')).toBe(false);
   });
 });

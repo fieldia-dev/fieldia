@@ -82,7 +82,8 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, owedParts, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, owedParts, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
+import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
 import type { LimitsKit } from './limits';
 import type { FlowKit } from './survey-flow';
@@ -2803,10 +2804,31 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // ---- Undo and Redo while filling ----------------------------------------------
 
   // Ctrl+Z (⌘Z) takes back the person's last change to the record, Ctrl+Shift+Z or Ctrl+Y makes it again — inside a box
-  // typed in, the browser's own undo first (undo-keys.ts). In the undo part, asked for as the person first enters the
-  // form: the box they are in known as it was entered before they type, and each key answered at once as it is pressed.
-  if (options.keys?.undo !== false && layout.type !== 'list')
-    root.addEventListener('focusin', () => void undoPart.load().then((part) => gone || cleanups.push(part.undoKeys(root, form, page, el, labels, hotkeysHere, (words) => actionHost.say(words, 'info'))), () => undefined), { once: true });
+  // typed in, the browser's own undo first. As the person first enters the form, its keys are heard — each box known as
+  // it was entered, each key decided as it is pressed (undo-keys.ts) — and the undo part is asked for, whose step takes
+  // the record's (undo-step.ts): at once when it has come, else as it comes. A key pressed while the part is on its way
+  // is still the record's, never the browser's, which would take back the last typing in another box.
+  if (options.keys?.undo !== false && layout.type !== 'list') {
+    const step = (part: UndoPart, redo: boolean, written: () => void) => {
+      const took = part.undoStep(root, form, page, el, labels, (words) => actionHost.say(words, 'info'), redo);
+      if (took) written();
+      return took;
+    };
+    const take = (redo: boolean, written: () => void) => {
+      if (undoPart.loaded) return step(undoPart.loaded, redo, written);
+      void undoPart.load().then((part) => gone || step(part, redo, written), () => undefined);
+      return true;
+    };
+    root.addEventListener(
+      'focusin',
+      () => {
+        if (gone) return;
+        cleanups.push(undoKeys(root, hotkeysHere, take));
+        void undoPart.load().catch(() => undefined);
+      },
+      { once: true }
+    );
+  }
 
   // ---- a button's key, with Alt -------------------------------------------------
 

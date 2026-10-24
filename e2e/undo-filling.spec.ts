@@ -25,6 +25,37 @@ test.describe('plain · undo while filling', () => {
     await screen(page, 'undo-redone', { viewport: true });
   });
 
+  test('a Ctrl+Z pressed while the undo part is on its way is the record’s, taken as the part comes', async ({ page }) => {
+    // Asked for as the person first enters the form, the part can still be on its way at the first Ctrl+Z (a slow
+    // network, a busy phone): the key is the record's all the same, never the browser's own, which takes back the last
+    // typing on the page — the B alone, in the box left — and moves there.
+    let arrive!: () => void;
+    const onItsWay = new Promise<void>((resolve) => (arrive = resolve));
+    await page.route(/\/chunks\/undo-part-[^/]+\.js$/, async (route) => {
+      await onItsWay;
+      await route.continue();
+    });
+    await open(page, 'plain', 'page=fields&skin=outlined');
+    const name = node(page, 'f-name').locator('input');
+    const email = node(page, 'f-email').locator('input');
+    const was = await name.inputValue();
+    await name.click();
+    await page.keyboard.press('End');
+    await page.keyboard.type(' B');
+    await page.keyboard.press('Tab');
+    await email.focus();
+    await page.keyboard.press('ControlOrMeta+z');
+    await page.waitForTimeout(300);
+    await expect(name).toHaveValue(`${was} B`);
+    await expect(email).toBeFocused();
+    arrive();
+    await expect(name).toHaveValue(was);
+    await expect(name).toBeFocused();
+    await expect(page.locator('.fd-undo-heard')).toHaveText('Undone: Project');
+    await page.keyboard.press('ControlOrMeta+Shift+z');
+    await expect(name).toHaveValue(`${was} B`);
+  });
+
   test("in a box typed in, the browser's own undo first, then the record's: a tick taken back", async ({ page }) => {
     await open(page, 'plain', 'page=fields&skin=outlined');
     const signed = node(page, 'f-signed').locator('input');

@@ -2665,7 +2665,7 @@ const PART_GIVES = {
   assist: ['watchAssist', 'searchWords', 'installAssistStyles'],
   templates: ['templatesMenu', 'templateValues', 'templateFields', 'startFrom'],
   live: ['join', 'liveRecord', 'presenceStrip', 'installLiveStyles'],
-  undo: ['offerUndo', 'takeBack', 'takeNoted', 'takeStep', 'nextSteps', 'undoKeys', 'undoToast'],
+  undo: ['offerUndo', 'takeBack', 'takeNoted', 'takeStep', 'nextSteps', 'undoStep', 'undoToast'],
   memory: ['createMemoryDataSource', 'memorySource'],
   functions: ['functionBody', 'appCall'],
   options: ['optionRules'],
