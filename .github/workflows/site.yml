@@ -4,6 +4,12 @@ name: Site
 # passed — the same browser gates cover every page, link and the live form —
 # or when started by hand. A commit its pull request already tested passes CI on
 # main at once (tools/ci-scope.mjs), so it deploys within minutes of the merge.
+#
+# Only a CI run of a push to this repository's main deploys: `branches: [main]`
+# matches the name of the branch a run was for, so a fork's pull request from a
+# branch it named main would pass it. The build runs with read access alone;
+# Pages and the OIDC token are the deploy job's, which runs no code of the
+# commit's.
 on:
   workflow_run:
     workflows: [CI]
@@ -13,8 +19,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -22,8 +26,15 @@ concurrency:
 
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository
+      )
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v5
         with:
@@ -46,6 +57,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

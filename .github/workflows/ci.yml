@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# Read access alone, unless a job says more (the scope job reads the runs of earlier pushes).
+permissions:
+  contents: read
+
 # This file is the gate list. A check that does not run here does not exist,
 # however often it passes on someone's machine.
 #
