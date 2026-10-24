@@ -1,5 +1,5 @@
 import type { Field, LineField, PropertyDefinition } from '../format/field';
-import { fieldPattern } from '../format/pattern';
+import { fieldPattern, PATTERN_MOST } from '../format/pattern';
 import { checkDay } from './limits';
 import { fill, fillMessage, MESSAGES, type MessageKey, type Messages } from './messages';
 import { charCount, foldDigits, MOST_DIGITS, placesOf, stripMarks } from './input-rules';
@@ -49,9 +49,10 @@ export function checkValue(
         return say(count - field.size === 1 ? 'overByOne' : 'overBy', { max: field.size, over: count - field.size });
       }
       // The whole answer, trimmed, its digits as 0-9 and no direction marks: "١١٥١١" is five digits. A pattern that
-      // does not read is the page's to fix (checkPage names it), never a reason to refuse a person.
+      // does not read, or could take seconds, is the page's to fix (checkPage names it), never a reason to refuse a
+      // person; an answer longer than a pattern is tried on is not of it.
       const pattern = field.type === 'char' && field.pattern !== undefined ? fieldPattern(field.pattern) : null;
-      if (field.type === 'char' && pattern instanceof RegExp && !pattern.test(foldDigits(stripMarks(value)).trim())) {
+      if (field.type === 'char' && pattern instanceof RegExp && (value.length > PATTERN_MOST || !pattern.test(foldDigits(stripMarks(value)).trim()))) {
         return field.patternHint ? fill(field.patternHint, { label }) : say('pattern');
       }
       return undefined;

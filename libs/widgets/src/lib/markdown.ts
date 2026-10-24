@@ -34,12 +34,13 @@ export function inlineMarkdown(text: string): string {
     .replace(/\uE000/g, '')
     .replace(/(`+)([\s\S]*?[^`])\1(?!`)/g, (_, _ticks: string, code: string) => hold(`<code>${escapeHtml(code.replace(/^ (.*) $/, '$1'))}</code>`))
     .replace(/\\([\\`*_{}[\]()#+\-.!~<>|])/g, (_, c: string) => hold(escapeHtml(c)));
-  // Pictures and links, their words read for marks of their own.
+  // Pictures and links, their words read for marks of their own. Neither their words nor their address hold a bracket:
+  // each "[" is tried once, never read on to the text's end again (a text of "[a](" over and over took seconds).
   // A picture from an address it may not come from is a link to it.
-  out = out.replace(/!\[([^\]]*)\]\(\s*<?([^\s)>]+)>?\s*\)/g, (whole, alt: string, src: string) =>
+  out = out.replace(/!\[([^[\]]*)\]\(\s*<?([^\s)>[\]]+)>?\s*\)/g, (whole, alt: string, src: string) =>
     SAFE_IMAGE.test(src) ? hold(`<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}">`) : SAFE_LINK.test(src) ? hold(`<a href="${escapeHtml(src)}">${escapeHtml(alt || src)}</a>`) : whole
   );
-  out = out.replace(/\[([^\]]+)\]\(\s*<?([^\s)>]+)>?\s*\)/g, (whole, words: string, href: string) =>
+  out = out.replace(/\[([^[\]]+)\]\(\s*<?([^\s)>[\]]+)>?\s*\)/g, (whole, words: string, href: string) =>
     SAFE_LINK.test(href) ? hold(`<a href="${escapeHtml(href)}">${inlineMarks(escapeHtml(words))}</a>`) : whole
   );
   out = out.replace(/<((?:https?:\/\/|mailto:)[^\s<>]+)>/gi, (_, href: string) => hold(`<a href="${escapeHtml(href)}">${escapeHtml(href)}</a>`));

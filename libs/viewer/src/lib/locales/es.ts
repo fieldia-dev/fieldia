@@ -168,6 +168,7 @@ export const es: ViewerLabels = {
   importDamaged: 'está dañado',
   importNoRows: 'no contiene filas',
   importNoUnzip: 'este navegador no puede abrir libros de Excel: guárdelo como CSV',
+  importTooLarge: 'contiene más de lo que admite una hoja de cálculo: una celda de más de 32.767 caracteres, o más de 100 MB una vez abierto',
   importTooMany: '{name} tiene {n} filas: aquí se pueden importar como máximo {most} a la vez. Divídalo en archivos de {most} filas o menos.',
   importColumnLetter: 'Columna {letter}',
   importFileRows: '{name}: {n} filas',

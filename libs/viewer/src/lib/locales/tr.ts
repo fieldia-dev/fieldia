@@ -170,6 +170,7 @@ export const tr: ViewerLabels = {
   importDamaged: 'dosya bozuk',
   importNoRows: 'hiç satır içermiyor',
   importNoUnzip: 'bu tarayıcı Excel çalışma kitaplarını açamıyor: CSV olarak kaydedin',
+  importTooLarge: 'bir elektronik tablonun tuttuğundan fazlasını içeriyor — 32.767 karakterden uzun bir hücre ya da açıldığında 100 MB’tan fazlası',
   importTooMany: '{name} dosyasında {n} satır var: burada tek seferde en fazla {most} satır içe aktarılabilir. Dosyayı en fazla {most} satırlık dosyalara bölün.',
   importColumnLetter: 'Sütun {letter}',
   importFileRows: '{name}: {n} satır',

@@ -4,9 +4,11 @@ import { drawIcon } from './icons';
 /**
  * Words with `[words](address)` in them, drawn with those as links: web and
  * mail addresses only, opened in a tab of their own, an icon after each that
- * leaves the page. Anything else in brackets stays as it is written.
+ * leaves the page. Anything else in brackets stays as it is written. Neither
+ * a link's words nor its address hold a bracket: each "[" is tried once, never
+ * read on to the end of the words again (a text of "[" over and over took seconds).
  */
-const LINK = /\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)[^\s)]+)\)/g;
+const LINK = /\[([^[\]\n]+)\]\(((?:https?:\/\/|mailto:)[^\s)[\]]+)\)/g;
 
 export function linkedWords(doc: Document, text: string, options: { external?: boolean } = {}): Node[] {
   const nodes: Node[] = [];

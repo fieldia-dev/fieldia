@@ -13,7 +13,7 @@ import { valuesIn } from './words';
 import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
 import { checkButtonParts, checkHead, checkMenuItem, type MenuTools } from './head-checks';
 import { checkSectionTracks } from './section-checks';
-import { fieldPattern } from './pattern';
+import { fieldPattern, rulePattern } from './pattern';
 import { DUPLICATE_KINDS } from './duplicate-kinds';
 import { isTimeZone } from '../record/zones';
 import { fill, MESSAGES } from '../record/messages';
@@ -880,11 +880,8 @@ export class ReferenceCheck {
         else if (!has(def.fields, rule.distinct)) this.report(`${at}.distinct`, `"${rule.distinct}" is not a field of the lines of "${node.field}"`);
       }
       if (rule.pattern === undefined) return;
-      try {
-        new RegExp(rule.pattern);
-      } catch {
-        this.report(`${at}.pattern`, `"${rule.pattern}" is not a regular expression`);
-      }
+      const pattern = rulePattern(rule.pattern);
+      if (pattern instanceof Error) this.report(`${at}.pattern`, `"${rule.pattern}" is not a pattern an answer is checked by: ${pattern.message}`);
     });
     // Its value's tones and bold, and the words its empty box shows: read on the record, as its other conditions are.
     node.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.tones[${i}]`, ['when']));

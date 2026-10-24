@@ -244,6 +244,8 @@ export interface ViewerLabels {
   importDamaged: string;
   importNoRows: string;
   importNoUnzip: string;
+  /** A file that holds more than a spreadsheet does: a cell past 32,767 characters, or opening to more than 100 MB. */
+  importTooLarge: string;
   importTooMany: string;
   importColumnLetter: string;
   importFileRows: string;
@@ -1077,6 +1079,7 @@ const en: ViewerLabels = {
   importDamaged: 'it is damaged',
   importNoRows: 'it holds no rows',
   importNoUnzip: 'this browser cannot open Excel workbooks: save it as CSV',
+  importTooLarge: 'it holds more than a spreadsheet does — a cell of more than 32,767 characters, or more than 100 MB once opened',
   importTooMany: '{name} has {n} rows: at most {most} can be imported here at once. Split it into files of {most} rows or fewer.',
   importColumnLetter: 'Column {letter}',
   importFileRows: '{name}: {n} rows',

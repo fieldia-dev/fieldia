@@ -86,7 +86,7 @@ export const PART_WORDS = {
   import: {
     widgets: ['phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart'],
     viewer: [
-      'importTitle', 'importDrop', 'importChoose', 'importHint', 'importReading', 'importCannotRead', 'importNotSheet', 'importOldExcel', 'importLocked', 'importDamaged', 'importNoRows', 'importNoUnzip', 'importTooMany', 'importColumnLetter',
+      'importTitle', 'importDrop', 'importChoose', 'importHint', 'importReading', 'importCannotRead', 'importNotSheet', 'importOldExcel', 'importLocked', 'importDamaged', 'importNoRows', 'importNoUnzip', 'importTooLarge', 'importTooMany', 'importColumnLetter',
       'importFileRows', 'importFileRowsOne', 'importNoRowsUnder', 'importMisread', 'importSheet', 'importEncoding', 'importUnicode', 'importSeparator', 'importComma', 'importSemicolon', 'importTab', 'importBar', 'importColumn', 'importExample', 'importField', 'importLeaveOut', 'importLeftOut',
       'importNeeded', 'importMoved', 'importCheck', 'importCheckOne', 'importChecking', 'importReady', 'importReadyOne', 'importRefused', 'importRefusedOne', 'importMore', 'importMoreOne', 'importPreview', 'importNone', 'importStart', 'importStartOne',
       'importWhy', 'importFixName', 'importing', 'importStop', 'importKeepEditing', 'importNotMade', 'importNoneCalled', 'importSeveralCalled', 'importNotYesNo', 'importRow', 'importDownload', 'importFailed',

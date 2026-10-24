@@ -256,7 +256,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
   /** Why a file cannot be read, in the person's words. */
   const whyNot = (error: unknown) => {
     const kind = error instanceof FileProblem ? error.problem : 'damaged';
-    return { notSheet: labels.importNotSheet, oldExcel: labels.importOldExcel, locked: labels.importLocked, damaged: labels.importDamaged, noRows: labels.importNoRows, cannotInflate: labels.importNoUnzip }[kind];
+    return { notSheet: labels.importNotSheet, oldExcel: labels.importOldExcel, locked: labels.importLocked, damaged: labels.importDamaged, noRows: labels.importNoRows, cannotInflate: labels.importNoUnzip, tooLarge: labels.importTooLarge }[kind];
   };
 
   /** A file read, as the person last said to read it; then its columns to match, or why it cannot be. */

@@ -166,6 +166,7 @@ export const de: ViewerLabels = {
   importDamaged: 'sie ist beschädigt',
   importNoRows: 'sie enthält keine Zeilen',
   importNoUnzip: 'dieser Browser kann keine Excel-Arbeitsmappen öffnen: Speichern Sie sie als CSV',
+  importTooLarge: 'sie enthält mehr als eine Tabelle fasst — eine Zelle mit mehr als 32.767 Zeichen oder geöffnet mehr als 100 MB',
   importTooMany: '{name} hat {n} Zeilen: Hier können höchstens {most} auf einmal importiert werden. Teilen Sie sie in Dateien mit höchstens {most} Zeilen auf.',
   importColumnLetter: 'Spalte {letter}',
   importFileRows: '{name}: {n} Zeilen',
