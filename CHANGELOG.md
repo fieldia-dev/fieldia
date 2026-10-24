@@ -15,6 +15,102 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.32.0 — 2026-10-24
+
+**What the owner saw on the demos, mended: radios and tick boxes that looked like
+the browser's, a phone's country found only by scrolling a list of some 240, a
+question the survey designer seemed unable to delete, and the screen designer's
+bar over a section's title.** Each is fixed where it began, for every place it
+could happen. The page format is 0.11 — a phone's country list is a new setting
+— and a page of 0.1 to 0.10 is read as it is.
+
+**Fixes:**
+
+- **Radios and tick boxes are Fieldia's own**, in every look and theme: a
+  field's tick box, a group's options and its "Other", a survey's matrix, a
+  table's tick cells, a list's rows, a dialog's, the designers' settings. Each is
+  18 px with a 24 px press target, the theme's accent when chosen (a dash for
+  "some"), a focus ring, and grey when it cannot be changed. Their words read in
+  the body's colour — the quiet look's tick box too, its lines light. On paper a
+  chosen one prints as chosen; in Windows High Contrast the system's own control
+  shows. The native input is kept underneath, for forms, keys and screen readers.
+- **A phone's country is found by typing** — its name in the page's language or
+  in English, its code ("ae") or its dialling code ("+971", "20", "0020"), the
+  best first — in place of the browser's list of every country. Each row has its
+  flag and code; the page's country and the reader's region come first. It works
+  by the keys (typing on the flag opens it, the arrows, Enter, Escape), opens as
+  a sheet from the foot of a phone's screen, and reads right to left. On by
+  default (`countries`, below).
+- **Delete in the designers is easy to find, and asks nothing.** A picked
+  question's bin says "Delete question" (the bin alone on a phone, still named for
+  screen readers); a question not picked shows a ⋮ on hover and focus with
+  Duplicate, Delete question, Move up and Move down; a picked page's bin says
+  "Delete page". Each delete — by a bin, a panel, the Delete key, a header part, a
+  list's column or action — says what went in a toast with Undo ("Question
+  deleted · Undo"), which brings it back, picked.
+- **The bar of the part picked sits beside it.** In the screen designer, just
+  above the part (lined up with its end edge, its start edge right to left), or
+  below it with room made where above would cover a group's name or another
+  part's words — never over them. Placed again as the window is resized or zoomed
+  and as the part changes size. One rule for a header part's bar and a list
+  column's, whose bar shows again (0.31.1 hid it under its header).
+- **The featured demos show the phone's country list where the owner looked**:
+  the Customer record's Phone and Every field's Site phone are read the world over
+  (their pages now say their phones' country), each with a how-to step to try it.
+- **Ctrl+Z is the record's from the first keystroke.** Pressed while the page was
+  still fetching its Undo (a slow network, a busy phone), the key went to the
+  browser, whose own undo took back the last typing on the page — part of it, in
+  the box just left. The keys are now heard as a person first enters the form,
+  each decided as it is pressed; the change is taken back as Undo arrives.
+
+**New:**
+
+- `countries: "list" | "native"` on a page's `phone` and on a phone field's
+  `options`: Fieldia's own list found by typing (the default), or the browser's
+  own list for an app that prefers the system's picker. In the types, the checks,
+  the JSON Schema and the designer's field and page panels. The page format grows
+  to 0.11.
+- `removeWithUndo(designer, id)` from `@fieldia/designer`: the designers' delete
+  with its toast and Undo, for an app's own tools.
+- The `--fd-tick-size` custom property: a tick box's and a radio's size.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- Every checkbox and radio inside a form or a Fieldia dialog is drawn by Fieldia,
+  an app's own widgets' included: set `appearance: auto` on one to keep the
+  browser's. They are 18 px, where they were 16 or 17.
+- A phone field's country is a button that opens a list, not a `<select>`: a
+  test that picked from the select picks from the list (or the page sets
+  `countries: "native"`).
+- An unpicked survey card is no longer a button itself; its words are
+  (`.fd-q-open`).
+- The screen designer bar's `fd-bar-below` and `fd-bar-over-name` classes and its
+  `--fd-name-room` and `--fd-bar-nudge` properties are gone: the bar takes an
+  inline top and left, and a field may take a bottom margin to make room for it.
+- Pages are written in format 0.11 (`FORMAT_VERSION`). 0.11 only added, so a 0.10
+  page is read as it is; an older Fieldia refuses a 0.11 page, saying to update.
+- An app that passes whole `labels` or designer words adds the new keys: widgets
+  `phoneFindCountry`, `phoneCountries`, `phoneNoCountryFound`; designer `deleted`,
+  `deleteQuestion`, `questionTools`, `phoneCountries`, `phoneCountriesAs`.
+- An app that serves `fieldia.js` itself serves the same parts as before; the
+  undo part (`fieldia.undo.js`) now holds the record's step, its keys being in
+  `fieldia.js`.
+
+**Size:** `fieldia.js` 524.2 KB, 171.8 gzipped (0.31.1: 520.0, 170.9): 0.41 KB
+gzipped for the radios and tick boxes, which every form draws — in the main
+sheet, as a part's would come after the first paint, showing the browser's grey
+circles until it came — and 0.45 for the undo keys, heard as a person first
+enters a form, so no key waits for a part. Of the parts, gzipped:
+
+- phone 19.1 KB (from 16.2): the country list, its rows drawn the first time it
+  opens;
+- undo 3.0 (3.5): its keys gone to `fieldia.js`;
+- quiet 2.06 (2.04): a tick box's words in the body's colour, its lines light;
+- survey 12.51 (12.52), list 45.07 (45.08), filters 7.71 (7.72), duplicates 6.36
+  (6.41), path 8.21 (8.20): their own tick styles given up for the one rule in the
+  main sheet;
+- the language add-ons by 0.02–0.05 each (the phone list's words).
+
 ## 0.31.1 — 2026-10-23
 
 **The owner's walk of 0.31, mended.** A business owner walked fieldia.dev's

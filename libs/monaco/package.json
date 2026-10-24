@@ -1,6 +1,6 @@
 {
   "name": "@fieldia/monaco",
-  "version": "0.31.1",
+  "version": "0.32.0",
   "description": "Fieldia text, one-line and JSON fields in VS Code’s editor (Monaco), coloured in the language a page names, following Fieldia’s themes.",
   "license": "MIT",
   "homepage": "https://fieldia.dev",
@@ -21,8 +21,8 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@fieldia/core": "0.31.1",
-    "@fieldia/widgets": "0.31.1",
+    "@fieldia/core": "0.32.0",
+    "@fieldia/widgets": "0.32.0",
     "monaco-editor": "^0.57.0",
     "tslib": "^2.8.1"
   },
