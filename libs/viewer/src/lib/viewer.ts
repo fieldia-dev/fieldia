@@ -60,7 +60,7 @@ import {
 } from '@fieldia/core';
 import { overFirstPaint } from './first-paint-over';
 import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, useStyleNonce, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses } from '@fieldia/widgets';
-import { asksLoadingPart, letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, wantLoadingPart, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
+import { asksLoadingPart, letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { relatedInTab, upgradePage, wordsComing, wordsReady, zonedPage } from '@fieldia/core';
@@ -2702,12 +2702,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // The app's own functions are called through the functions part: a page whose formulas call one waits for it.
   const appCalls = options.functions && callsPartFunctions(page, Object.keys(options.functions)) ? [functionsPart] : [];
   const owed = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded);
-  // The loading part — the page's skeleton while its parts come, a list's rows, the bars and spinners — with the page's
-  // own parts where it waits for any, so its first wait is drawn as it says (asked for alongside them, it delays none);
-  // and where the app's own way names one of its looks. A record to load with nothing else to wait for: asked for, not
-  // waited for — the page is drawn at once, its wait said in words until the part has come.
-  const awaited = owed.length || asksLoadingPart(options.loading) ? [...owed, ...(loadingPart.loaded || !asksLoadingPart(loading.settings) ? [] : [loadingPart])] : owed;
-  if (!awaited.length && form.getState().status === 'idle' && asksLoadingPart(loading.settings, ['first'])) wantLoadingPart();
+  // The loading part — a skeleton, the bars, the spinners — with the page's own parts where it waits for any and will
+  // then wait for its data drawn from it (its record, a list's rows, a related list's, a map's, a saved form's), so that
+  // wait is drawn as it says: asked for alongside them, it delays none. And where the app's own way names a look of its.
+  // Any other wait asks for it as it begins, past an answer in the same turn: a quick source never fetches it.
+  const waitsForData = form.getState().status === 'idle' || /"type":"(list|related|form|map)"/.test(JSON.stringify(page.layout));
+  const drawsFromPart = (!!owed.length && waitsForData && asksLoadingPart(loading.settings, ['first', 'refresh', 'more'])) || asksLoadingPart(options.loading);
+  const awaited = drawsFromPart && !loadingPart.loaded ? [...owed, loadingPart] : owed;
   let drawn: Promise<void> = Promise.resolve();
   if (!awaited.length && !words) drawPage();
   else {

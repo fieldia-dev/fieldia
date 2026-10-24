@@ -1361,8 +1361,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // can listen (viewer.ts, 2.0) — a toast's Retry (say.ts), a choice's choices said past the delay (choices-from.ts) and
 // a busy button's ring past the delay (styles.ts): every page with a record, a list, a search or a button waits. The
 // skeletons, the page's own, the bars, the spinners and the overlay are the loading part's (fieldia.loading.js). 520.04
-// measured before, 529.21 after, to 529.3.
-const BUDGET_KB = 529.3;
+// measured before, 529.53 after, to 529.6.
+const BUDGET_KB = 529.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1659,10 +1659,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // its own direction, 170.91, to 171.0.
 // 0.31.1's merge: a part a condition shows waiting for a press to end (listed with the raw budget above): 170.94
 // measured before, 170.92 after, inside 171.0.
-// While it waits (w7-loading, 0.33; listed with the raw budget above): 170.92 measured before, 174.54 after, to 174.6 —
+// While it waits (w7-loading, 0.33; listed with the raw budget above): 170.92 measured before, 174.60 after, to 174.7 —
 // the machine 2.4 of it, the viewer's waiting 0.8, the words and looks drawn before the part 0.5. The custom hook (0.1)
 // stays here: an app that draws its own waits draws them on every page, never after a part's fetch.
-const GZIP_BUDGET_KB = 174.6;
+const GZIP_BUDGET_KB = 174.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2909,7 +2909,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const contact = inPage.mountViewer(host, { page: { ...read('new-customer.page.json'), phone: { country: 'EG' } }, dataSource: inPage.createMemoryDataSource() });
   waits(contact, 'a page with a phone read the world over');
   await contact.drawn;
-  hasIn('a phone read the world over', 'loading, phone, relations');
+  hasIn('a phone read the world over', 'phone, relations');
   if (!host.querySelector('.fd-phone .fd-phone-country select') || !doc.getElementById('fieldia-phone-styles')) throw new Error('in a page, a phone is not drawn from its part');
   if (!host.querySelector('.fd-combo > .fd-combo-input[role="combobox"]') || host.querySelector('[data-fd-plain="link"]')) throw new Error("in a page, a link to another record is not drawn from its part");
   contact.destroy();
