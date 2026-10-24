@@ -64,7 +64,8 @@ test('cards far out of sight skip their drawing, and the one the keys reach is d
   await page.setViewportSize({ width: 412, height: 915 });
   await mountList(page, { card: {} });
   await expect(page.locator('#app .fd-list')).toHaveAttribute('data-as', 'cards');
-  const drawn = () => page.evaluate(() => [...document.querySelectorAll('#app .fd-list-row')].map((row) => (row as Element & { checkVisibility(o: object): boolean }).checkVisibility({ contentVisibilityAuto: true })));
+  // A card skipped keeps its own box (its remembered size); what is in it is skipped: its card's words.
+  const drawn = () => page.evaluate(() => [...document.querySelectorAll('#app .fd-list-row')].map((row) => !!(row.querySelector('.fd-list-card') as (Element & { checkVisibility(o: object): boolean }) | null)?.checkVisibility({ contentVisibilityAuto: true })));
   await expect.poll(async () => (await drawn()).filter(Boolean).length).toBeLessThan(100);
   expect((await drawn())[0]).toBe(true);
   // The last card, taken by the keys: drawn, focused, in sight.
