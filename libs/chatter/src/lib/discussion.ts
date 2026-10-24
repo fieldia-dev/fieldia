@@ -1,4 +1,4 @@
-import { fill, recordSentence, dayTag, wordsComing, wordsReady } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, fill, recordSentence, dayTag, wordsComing, wordsReady } from '@fieldia/core';
 import { installStyles, sanitizeHtml, showHtml, textPart, WIDGET_LABELS, type TextPart, type TextReference } from '@fieldia/widgets';
 import type { ChatterHandle, ChatterOptions } from './chatter';
 import { initials } from './chatter';
@@ -53,7 +53,7 @@ function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorat
     return node;
   }
   const avatar = (person: Person | null | undefined): HTMLElement =>
-    person?.avatar ? el('img', { class: 'fd-discussion-avatar', src: person.avatar, alt: '' }) : el('span', { class: 'fd-discussion-avatar fd-discussion-initials', 'aria-hidden': 'true' }, initials(person?.name ?? '?'));
+    person?.avatar ? el('img', { class: 'fd-discussion-avatar', src: safeUrl(person.avatar, PICTURE_URL), alt: '' }) : el('span', { class: 'fd-discussion-avatar fd-discussion-initials', 'aria-hidden': 'true' }, initials(person?.name ?? '?'));
 
   const root = el('section', { class: 'fd-theme fd-discussion', 'aria-label': labels.conversation, dir: options.dir, lang: locale });
 

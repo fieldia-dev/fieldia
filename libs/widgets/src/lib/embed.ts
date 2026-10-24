@@ -1,3 +1,4 @@
+import { safeUrl } from '@fieldia/core';
 import { boxPurpose, maker, wordsFor } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 
@@ -12,7 +13,6 @@ import type { WidgetFactory } from './widgets';
 
 /** A frame's height: the page's, in pixels, or 480. */
 export const heightOf = (value: unknown) => (typeof value === 'number' && value > 0 ? value : 480);
-const isWeb = (text: string) => /^https?:\/\//i.test(text);
 
 export const embedWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
   const make = maker(document);
@@ -34,14 +34,14 @@ export const embedWidget: WidgetFactory = ({ form, name, field, node, id, docume
       if (document.activeElement !== input && input.value !== (typeof state.value === 'string' ? state.value : '')) input.value = typeof state.value === 'string' ? state.value : '';
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
       input.hidden = state.readonly;
-      const web = isWeb(text) ? text : '';
+      const web = safeUrl(text, ['http', 'https']) ?? '';
       if (web !== shown) {
         shown = web;
-        if (web) frame.src = web;
+        if (web) frame.src = safeUrl(web, ['http', 'https']) ?? '';
         view.replaceChildren(...(web ? [frame] : []));
       }
       open.hidden = !web;
-      if (web) open.href = web;
+      if (web) open.href = safeUrl(web, ['http', 'https']) ?? '';
     },
   };
 };

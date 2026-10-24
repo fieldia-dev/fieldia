@@ -1,4 +1,4 @@
-import { cardLines, type CardLine, type CardLinePart, type Locale, type MapCard, type Page, type PluralWords, type Value, type Values } from '@fieldia/core';
+import { LINK_URL, PICTURE_URL, safeUrl, cardLines, type CardLine, type CardLinePart, type Locale, type MapCard, type Page, type PluralWords, type Value, type Values } from '@fieldia/core';
 import { fill, type ListMapLabels, type MapLabels } from './labels';
 import { imageSource, shown, type MapRecord } from './pins';
 
@@ -61,11 +61,12 @@ function closeButton(doc: Document, labels: ListMapLabels, close: () => void) {
   return button;
 }
 
-/** A record's address on the web, when a link may go there: a web, mail or phone address, or a path of this site; never a script. */
+/**
+ * A record's address on the web, when a link may go there: a web, mail or phone address, or a path of this site; never
+ * a script — read as the browser reads it (`safeUrl`), so "java\tscript:" is one.
+ */
 export function webAddress(value: Value | undefined): string {
-  const text = typeof value === 'string' ? value.trim() : '';
-  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(text)?.[1].toLowerCase();
-  return text && (!scheme || ['http', 'https', 'mailto', 'tel'].includes(scheme)) ? text : '';
+  return safeUrl(value, LINK_URL) ?? '';
 }
 
 const plurals = new Map<Locale, Intl.PluralRules>();
@@ -98,7 +99,7 @@ export function drawCard(options: CardOptions): Card {
   /** A link to the record's own address: one a person can open in a new tab, or copy. */
   const link = (className: string, ...children: Node[]) => {
     const a = make(doc, 'a', className, ...children);
-    a.href = href;
+    a.href = safeUrl(href, LINK_URL) ?? '';
     return a;
   };
 
@@ -107,7 +108,7 @@ export function drawCard(options: CardOptions): Card {
     const img = make(doc, 'img', 'fd-map-card-image');
     img.alt = '';
     img.decoding = 'async';
-    img.src = picture;
+    img.src = safeUrl(picture, PICTURE_URL) ?? '';
     // The picture goes where the title does; the title's link is the one the keys and a screen reader reach.
     if (href) {
       const to = link('fd-map-card-picture', img);

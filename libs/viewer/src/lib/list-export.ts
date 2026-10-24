@@ -1,4 +1,4 @@
-import { placesOf, placesOfCurrency, stripMarks, wallClock, wallDay, wallTime, type DataSource, type ExportedFile, type Field, type ListedRecord, type Locale, type RecordId, type ResolvedFilter, type SortOrder, type Value, type Values } from '@fieldia/core';
+import { DOWNLOAD_URL, safeUrl, placesOf, placesOfCurrency, stripMarks, wallClock, wallDay, wallTime, type DataSource, type ExportedFile, type Field, type ListedRecord, type Locale, type RecordId, type ResolvedFilter, type SortOrder, type Value, type Values } from '@fieldia/core';
 import { currencyOf, currencySymbol } from '@fieldia/widgets';
 import type { ViewerLabels } from './labels';
 import { xlsxOf, XLSX_TYPE, type SheetCell } from './xlsx';
@@ -224,7 +224,7 @@ export async function gather(list: Pick<ExportList, 'dataSource' | 'model' | 're
 export function saveFile(doc: Document, name: string, file: Blob | string): void {
   const url = typeof file === 'string' ? file : URL.createObjectURL(file);
   const link = doc.createElement('a');
-  link.href = url;
+  link.href = safeUrl(url, DOWNLOAD_URL) ?? '';
   link.download = name;
   link.hidden = true;
   (doc.body ?? doc.documentElement).append(link);

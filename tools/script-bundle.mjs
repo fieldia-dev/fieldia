@@ -1370,7 +1370,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // a state's menu, a payment's details (popup.ts), a date's calendar, a filter's menu and the search's suggestions; the
 // calendar's place over its box in the main sheet (styles.ts), as the calendar's own rules are. 524.24 measured before,
 // 525.24 after, to 525.3.
-const BUDGET_KB = 525.3;
+// The security audit of 24 Oct (harden-edges): every address a link, a picture, a player, a frame or a page sent elsewhere
+// is given goes through one `safeUrl` (core, safe-url.ts, 0.87 KB) — read with the URL parser, its scheme one the place
+// allows — and an `openUrl` step refuses any other, said (run.ts, messages.ts); the page checks refuse an `openUrl` that
+// writes one (references.ts). Every page has links and pictures. How a file is shown in place — the formats Fieldia
+// shows, their bytes checked — is the files part's, which a sheet's attachment preview now loads. 525.24 measured
+// before, 526.75 after, to 526.8.
+const BUDGET_KB = 526.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1672,7 +1678,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.32's merge: the undo keys heard from the first entry, out of the undo part (listed with the raw budget above):
 // 171.33 measured before, 171.78 after, to 171.8. A popup opened over its box where there is no room under it (listed
 // with the raw budget above): 171.78 measured before, 172.08 after, to 172.1.
-const GZIP_BUDGET_KB = 172.1;
+// The security audit of 24 Oct: one `safeUrl` for every address (listed with the raw budget above): 172.08 measured
+// before, 172.73 after, to 172.8.
+const GZIP_BUDGET_KB = 172.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1983,7 +1991,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 58.7, inside 17.8; Turkish's 65.44 and 18.08, 65.57 and 18.13, to 65.6 and 18.2; Persian's 159.51 and 22.31, 159.79
 // and 22.33, to 159.8, inside 22.4; Urdu's 162.20 and 22.35, 162.49 and 22.40, to 162.5 and 22.5; Spanish's 55.90 and
 // 17.57, 56.03 and 17.61, to 56.1 and 17.7.
-const ADD_ON_BUDGET_KB = { ar: [127.6, 20.7], de: [57.8, 17.9], fr: [58.7, 17.8], tr: [65.6, 18.2], fa: [159.8, 22.4], ur: [162.5, 22.5], es: [56.1, 17.7] };
+// The security audit of 24 Oct: why an `openUrl` step opened nothing ("This address was not opened: …") — Arabic's
+// 127.54 and 20.67 measured before, 127.94 and 20.72 after, to 128.0 and 20.8; German's 57.75 and 17.80, 57.88 and
+// 17.84, to 57.9; French's 58.62 and 17.79, 58.77 and 17.83, to 58.8 and 17.9; Turkish's 65.57 and 18.13, 65.72 and
+// 18.16, to 65.8; Persian's 159.79 and 22.33, 160.15 and 22.38, to 160.2; Urdu's 162.49 and 22.40, 162.86 and 22.45, to
+// 162.9; Spanish's 56.03 and 17.61, 56.18 and 17.64, to 56.2.
+const ADD_ON_BUDGET_KB = { ar: [128.0, 20.8], de: [57.9, 17.9], fr: [58.8, 17.9], tr: [65.8, 18.2], fa: [160.2, 22.4], ur: [162.9, 22.5], es: [56.2, 17.7] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2649,7 +2662,15 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 45.07, 140.38 and 45.15, to 140.4 and 45.2; a range's calendar placed before its day takes the focus — date 23.50 and
 // 9.13, 23.74 and 9.18, to 23.8; the country list's rows drawn before it is placed — phone 44.90 and 19.17, 44.93 and
 // 19.18, to 45.0.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.4, 45.2], cards: [12.2, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// The security audit of 24 Oct (harden-edges): how a file is shown in place — the formats Fieldia shows, each file's
+// bytes checked against its format's start and shown from a blob typed from it, never from the type it says; a PDF at
+// the app's own address read before it is framed; an SVG a picture alone (file-formats.ts, 1.5 KB gz) — in the files
+// part, which a sheet's attachment preview and a conversation's pictures load: files 46.46 and 17.33 measured before,
+// 50.49 and 18.81 after, to 50.5 and 18.9. Each address a part writes through `safeUrl`, a few bytes each: text 72.70
+// and 24.54, 72.82 and 24.58, to 72.9; list 140.38 and 45.15, 140.52 and 45.18, to 140.6; cards 12.15, 12.21, to 12.3;
+// photos 31.04 and 11.57, 31.14 and 11.60, to 31.2 and 11.7; record 10.78 and 4.38, 10.84 and 4.40, to 10.9 and 4.5;
+// pins 9.53, 9.61, to 9.7; phone 19.18, 19.21 gzipped, to 19.3; answers 4.26, 4.32, to 4.4.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.6, 45.2], cards: [12.3, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.4, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2671,7 +2692,7 @@ const PART_GIVES = {
   quiet: ['installQuietStyles'],
   lines: ['linesWidget', 'linksTableWidget', 'cardsWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget', 'copyWidget', 'timerWidget'],
-  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles', 'pumpUploads', 'fileFromBytes'],
+  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles', 'pumpUploads', 'fileFromBytes', 'fileShown', 'formatOf', 'shownFile', 'whenShown'],
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
   photos: ['photosWidget', 'editPhoto', 'drawEdited', 'fitted', 'moved', 'sized', 'turnedCrop', 'turnedSize', 'installPhotosStyles'],
   record: ['openRecorder', 'recordingType', 'clock', 'installRecordStyles'],
@@ -3550,7 +3571,9 @@ console.log("on paper: a page no one printed asks for no print part; the browser
  * parameters passed on (none it was not told to); grown as its form tells its height, from the frame's own origin only.
  */
 // 0.30 (w6-public-forms): 1.54 and 0.88 measured, to 1.6 and 0.9.
-const EMBED_BUDGET_KB = [1.6, 0.9];
+// The security audit of 24 Oct: its frame only at a web address (embed-frame.ts) — 1.54 and 0.88 measured before, 1.59
+// and 0.91 after, to 0.92.
+const EMBED_BUDGET_KB = [1.6, 0.92];
 {
   const embed = readFileSync(EMBED, 'utf8');
   const [raw, gzip] = EMBED_BUDGET_KB;

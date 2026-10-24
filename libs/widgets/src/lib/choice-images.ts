@@ -1,4 +1,4 @@
-import type { Option } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, type Option } from '@fieldia/core';
 import { layOut, limiter, withAlone } from './choice-rules';
 import { clearSelection, describeState, fillIn, maker, rightToLeft, wordsFor } from './kind-parts';
 import { seatMarks, seatWords } from './seats';
@@ -39,7 +39,7 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
   // Each card's places left under its words, where the page counts them (seats.ts).
   const seats = seatMarks(document, form, name, words, options.map((option) => option.value));
   const cards = options.map((option, i) => {
-    const picture = option.image ? make('img', { src: option.image, alt: option.alt ?? '', loading: 'lazy', draggable: 'false' }) : make('span', { class: 'fd-image-card-blank' });
+    const picture = option.image ? make('img', { src: safeUrl(option.image, PICTURE_URL), alt: option.alt ?? '', loading: 'lazy', draggable: 'false' }) : make('span', { class: 'fd-image-card-blank' });
     if (!option.image) picture.innerHTML = BLANK; // a constant drawing, never words from the page
     const card = make(
       'button',

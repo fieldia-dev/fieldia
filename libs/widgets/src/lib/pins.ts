@@ -1,4 +1,4 @@
-import type { FileValue, JsonValue, PinsOptions } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, type FileValue, type JsonValue, type PinsOptions } from '@fieldia/core';
 import { source } from './file-shown';
 import { announcer, fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
@@ -55,11 +55,11 @@ function pictureOf(options: PinsOptions, values: Readonly<Record<string, unknown
   if (options.imageField) {
     const held = values?.[options.imageField];
     const file = (Array.isArray(held) ? held[0] : held) as FileValue | string | null | undefined;
-    if (typeof file === 'string') return file;
-    if (file && typeof file === 'object') return source(file);
+    if (typeof file === 'string') return safeUrl(file, PICTURE_URL) ?? '';
+    if (file && typeof file === 'object') return safeUrl(source(file), PICTURE_URL) ?? '';
     return '';
   }
-  return options.image ?? '';
+  return safeUrl(options.image, PICTURE_URL) ?? '';
 }
 
 export const pinsWidget: WidgetFactory = ({ form, name, field, node, id, document: doc, labels, locale }) => {
@@ -258,7 +258,7 @@ export const pinsWidget: WidgetFactory = ({ form, name, field, node, id, documen
       readonly = state.readonly;
       const src = pictureOf(options, state.values);
       if (image.getAttribute('src') !== src) {
-        if (src) image.setAttribute('src', src);
+        if (src) image.setAttribute('src', safeUrl(src, PICTURE_URL) ?? '');
         else image.removeAttribute('src');
         showPicture(!!src);
       }

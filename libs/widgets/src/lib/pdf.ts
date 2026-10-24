@@ -1,5 +1,6 @@
-import type { FileValue } from '@fieldia/core';
+import { MEDIA_URL, safeUrl, type FileValue } from '@fieldia/core';
 import { heightOf } from './embed';
+import { shownFile, whenShown, type Shown } from './file-formats';
 import { binaryWidget } from './files';
 import { maker, wordsFor } from './kind-parts';
 import type { WidgetFactory } from './widgets';
@@ -12,15 +13,6 @@ import type { WidgetFactory } from './widgets';
  * page's (embed.ts).
  */
 
-/** A file's address for a frame: its data as a blob the browser shows (freed by `free`), or the address the app gave. */
-function addressOf(file: FileValue): string {
-  if (file.data) {
-    const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
-    return URL.createObjectURL(new Blob([bytes], { type: file.type || 'application/pdf' }));
-  }
-  return file.url ?? '';
-}
-
 export const pdfWidget: WidgetFactory = (context) => {
   const make = maker(context.document);
   const words = wordsFor(context.labels, context.locale);
@@ -30,29 +22,39 @@ export const pdfWidget: WidgetFactory = (context) => {
   const none = make('div', { class: 'fd-embed-none' }, words.noDocument);
   const view = make('div', { class: 'fd-embed-view' });
   let shown: unknown;
-  let address = '';
-  const free = () => address.startsWith('blob:') && URL.revokeObjectURL(address);
+  /** The PDF in the frame, as every file is shown (`shownFile`): its bytes checked, in a blob typed as a PDF's. */
+  let made: Shown | null = null;
+  let readonly = false;
+  const free = () => {
+    made?.free();
+    made = null;
+  };
+  // While there is none, the file box says what to do; read-only, these words say there is none.
+  const paint = () => view.replaceChildren(...(made ? [frame] : readonly ? [none] : []));
   return {
     element: make('div', { class: 'fd-embed fd-embed-pdf' }, files.element, view),
     focus: () => files.focus(),
     destroy() {
+      shown = undefined;
       free();
       files.destroy?.();
     },
     update(state) {
       files.update(state);
+      readonly = state.readonly;
       const file = (Array.isArray(state.value) ? state.value[0] : state.value) as FileValue | null | undefined;
       if (file !== shown) {
         shown = file;
         free();
-        address = file ? addressOf(file) : '';
-        if (address) {
+        whenShown(file ? shownFile(file) : null, (one) => {
+          if (shown !== file || one?.kind !== 'pdf') return void one?.free();
+          made = one;
           frame.title = file?.name ?? context.field.label;
-          frame.src = address;
-        }
+          frame.src = safeUrl(one.url, MEDIA_URL) ?? '';
+          paint();
+        });
       }
-      // While there is none, the file box says what to do; read-only, these words say there is none.
-      view.replaceChildren(...(address ? [frame] : state.readonly ? [none] : []));
+      paint();
     },
   };
 };

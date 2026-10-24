@@ -1,3 +1,4 @@
+import { PICTURE_URL, safeUrl } from '@fieldia/core';
 /**
  * A picture from the person's computer, made fit to keep in a page as a
  * data: address: one wider than 1200 px is drawn again 1200 px wide, in its
@@ -23,7 +24,7 @@ export async function pictureForPage(file: File, doc: Document): Promise<string>
   await new Promise((done, fail) => {
     image.onload = done;
     image.onerror = fail;
-    image.src = original;
+    image.src = safeUrl(original, PICTURE_URL) ?? '';
   });
   if (image.naturalWidth <= WIDEST_PICTURE) return original;
   const canvas = doc.createElement('canvas');

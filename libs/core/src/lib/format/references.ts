@@ -5,9 +5,7 @@ import type { ButtonNode, FieldNode, FormNode, LayoutNode, RootLayout, SheetNode
 import type { Page } from './page';
 import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
-import { compileExpression, parseExpression } from '../expression/expression';
-import type { ASTNode } from '../expression/parser';
-import { LINK_URL, safeUrl } from '../safe-url';
+import { compileExpression } from '../expression/expression';
 import { functionTable, type FunctionsKnown } from '../expression/app-functions';
 import type { FunctionTable } from '../expression/functions';
 import { dependencyOrder } from '../expression/order';
@@ -470,26 +468,15 @@ export class ReferenceCheck {
    * or null when it cannot be read.
    */
   /**
-   * An address a step opens, as far as the page writes it — its words, or the words it starts with before a value
+   * An address a step opens, as far as the page writes it — the words it starts with, before any value
    * (`'/orders/' + id`): a web, mail or phone address, or a path of this site, never a script (`javascript:`) nor a page
-   * written as data. A value's part is checked as the step runs (`safeUrl`).
+   * written as data. The whole address, a value's part with it, is checked as the step runs (`safeUrl`).
    */
   private checkAddress(source: string, path: string) {
-    /** The words an expression starts with, and whether they are all of it. */
-    const lead = (node: ASTNode): { text: string; whole: boolean } => {
-      if (node.type === 'Literal') return typeof node.value === 'string' ? { text: node.value, whole: true } : { text: '', whole: false };
-      if (node.type !== 'BinaryOp' || node.operator !== '+') return { text: '', whole: false };
-      const left = lead(node.left);
-      if (!left.whole) return left;
-      const right = lead(node.right);
-      return { text: left.text + right.text, whole: right.whole };
-    };
-    const { text, whole } = lead(parseExpression(source, this.table));
+    const words = /^\s*(['"])([\s\S]*?)\1/.exec(source)?.[2] ?? '';
     // Read as the browser reads it: line breaks and tabs dropped, nothing before the scheme.
-    const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(text.replace(/[\t\n\r]/g, '').replace(/^[\0-\x20]+/, ''))?.[1].toLowerCase();
-    if ((scheme && !['http', 'https', 'mailto', 'tel'].includes(scheme)) || (whole && text.trim() && !safeUrl(text, LINK_URL))) {
-      this.report(path, `an address a page opens is a web, mail or phone address, or a path of this site: "${text.slice(0, 40)}" is none`);
-    }
+    const scheme = /^([a-z][a-z\d+.-]*):/i.exec(words.replace(/[\t\n\r]/g, '').replace(/^[\0- ]+/, ''))?.[1].toLowerCase();
+    if (scheme && !['http', 'https', 'mailto', 'tel'].includes(scheme)) this.report(path, `an address a page opens is a web, mail or phone address, or a path of this site: "${words.slice(0, 40)}" is none`);
   }
 
   private checkExpression(source: string, path: string, scope: Scope): readonly string[] | null {

@@ -1,4 +1,4 @@
-import { fill, labelAt, recordSentence, dayTag, wordsComing, wordsReady, type Locale, type PageRecords } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, fill, labelAt, recordSentence, dayTag, wordsComing, wordsReady, type Locale, type PageRecords } from '@fieldia/core';
 import { drawIcon, installStyles, sanitizeHtml, showHtml, type IconSet } from '@fieldia/widgets';
 import { initials } from './chatter';
 import { installHistoryStyles } from './history-styles';
@@ -107,7 +107,7 @@ function drawHistory(host: HTMLElement, options: MountHistoryOptions): HistoryHa
   }
   const icon = (name: string) => drawIcon(doc, name, options.icons) ?? doc.createTextNode('');
   function avatar(person: Person | null, size: 16 | 32 | 40): HTMLElement {
-    if (person?.avatar) return el('img', { class: 'fd-history-avatar', 'data-size': String(size), src: person.avatar, alt: '' });
+    if (person?.avatar) return el('img', { class: 'fd-history-avatar', 'data-size': String(size), src: safeUrl(person.avatar, PICTURE_URL), alt: '' });
     return el('span', { class: 'fd-history-avatar', 'data-size': String(size), 'aria-hidden': 'true' }, initials(person?.name ?? '?'));
   }
   function dot(words: string): HTMLElement {

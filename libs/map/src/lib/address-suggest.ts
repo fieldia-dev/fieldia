@@ -1,4 +1,4 @@
-import type { Locale, Value } from '@fieldia/core';
+import { LINK_URL, PICTURE_URL, safeUrl, type Locale, type Value } from '@fieldia/core';
 import { stillShown, type WidgetContext, fieldiaStyle } from '@fieldia/widgets';
 import type { addressLine } from './address-line';
 import type { AddressParts } from './address-parts';
@@ -280,11 +280,11 @@ export function suggest({ settings, context, search, element, input, searchBox, 
   if (mark) {
     const credit = doc.createElement(mark.href ? 'a' : 'span');
     credit.className = 'fd-address-credit';
-    if (mark.href) Object.assign(credit, { href: mark.href, target: '_blank', rel: 'noopener', tabIndex: -1 });
+    if (safeUrl(mark.href, LINK_URL)) Object.assign(credit, { href: safeUrl(mark.href, LINK_URL), target: '_blank', rel: 'noopener', tabIndex: -1 });
     const image = 'image' in mark ? mark.image : undefined;
     if (image) {
       const img = doc.createElement('img');
-      Object.assign(img, { src: image, alt: mark.text });
+      Object.assign(img, { src: safeUrl(image, PICTURE_URL) ?? '', alt: mark.text });
       credit.append(img);
     } else {
       // Its own words in their own direction: "© OpenStreetMap contributors" in an Arabic page too.

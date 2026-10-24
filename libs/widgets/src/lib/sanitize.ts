@@ -2,6 +2,7 @@
  * Formatted text kept safe: every value — typed, pasted or loaded — passes
  * through `sanitizeHtml`, so stored markup can never run script in the page.
  */
+import { safeUrl } from '@fieldia/core';
 import { givenHtml, heldHtml, HELD_STYLE, styleOf } from './style-attributes';
 
 /** A table's own elements, kept as plain table markup: no widths, no columns' sizes (colgroup, col), no styles. */
@@ -83,8 +84,8 @@ export function sanitizeHtml(html: string, document: Document = globalThis.docum
         continue;
       }
       const kept: [string, string][] = [];
-      const href = tag === 'A' ? element.getAttribute('href')?.trim() : null;
-      if (href && /^(https?:|mailto:)/i.test(href)) kept.push(['href', href]);
+      const href = tag === 'A' ? safeUrl(element.getAttribute('href'), ['http', 'https', 'mailto']) : undefined;
+      if (href) kept.push(['href', href]);
       if (tag === 'IMG') {
         const src = element.getAttribute('src')?.trim() ?? '';
         if (!IMAGE_SOURCE.test(src)) {

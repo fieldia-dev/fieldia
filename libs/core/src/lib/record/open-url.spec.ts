@@ -31,6 +31,13 @@ describe('an openUrl step opens a web, mail or phone address, or a path of this 
     }
   });
 
+  it('refuses an address put together from words that read as a script only once joined: checked whole as it runs', async () => {
+    const host = recordingHost();
+    const form = createForm({ page: supplier("'java' + 'script:alert(1)'"), values: {}, host });
+    expect(await form.run([{ do: 'openUrl', url: "'java' + 'script:alert(1)'" }])).toMatchObject({ reason: 'cannot', message: MESSAGES.en.addressRefused });
+    expect(host.calls).toEqual([]);
+  });
+
   it('says why in the page’s language', async () => {
     const form = createForm({ page: supplier(), values: { website: 'javascript:alert(1)' }, host: recordingHost(), messages: MESSAGES.ar });
     expect(await form.run([{ do: 'openUrl', url: 'website' }])).toMatchObject({ reason: 'cannot', message: MESSAGES.ar.addressRefused });
@@ -46,7 +53,7 @@ describe('an openUrl step opens a web, mail or phone address, or a path of this 
   });
 
   it('checkPage and validatePage refuse an address the page writes that is none (an AI-written page), and keep the rest', () => {
-    for (const url of ["'javascript:alert(document.domain)'", "'JavaScript:' + name", "'java\tscript:alert(1)'", "'data:text/html,<b>x</b>'", "' vbscript:x'", "'javascript' + ':alert(1)'"]) {
+    for (const url of ["'javascript:alert(document.domain)'", "'JavaScript:' + name", "'java\tscript:alert(1)'", "'data:text/html,<b>x</b>'", "' vbscript:x'", '"\x01javascript:alert(1)"']) {
       for (const check of [checkPage, validatePage]) {
         const result = check(supplier(url));
         expect(result.ok).toBe(false);

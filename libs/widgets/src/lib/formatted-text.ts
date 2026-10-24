@@ -1,3 +1,4 @@
+import { LINK_URL, PICTURE_URL, safeUrl } from '@fieldia/core';
 import { drawIcon, type IconSet } from './icons';
 import { fillIn, maker } from './kind-parts';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
@@ -259,7 +260,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
       const src = String(reader.result);
       if (editor === 'rich') {
         restore();
-        const img = make('img', { src, alt: file.name });
+        const img = make('img', { src: safeUrl(src, PICTURE_URL), alt: file.name });
         doc.execCommand?.('insertHTML', false, img.outerHTML);
         emit();
       } else insertMarkdown(`![${file.name.replace(/[[\]]/g, '')}](${src})`);
@@ -796,14 +797,14 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
 
   // ---- the link row ----------------------------------------------------------------------------
   applyLink.addEventListener('click', () => {
-    const url = linkAddress(address.value);
+    const url = safeUrl(linkAddress(address.value), ['http', 'https', 'mailto']);
     if (!url) {
       address.setAttribute('aria-invalid', 'true');
       return;
     }
     address.setAttribute('aria-invalid', 'false');
     restore();
-    if (doc.getSelection()?.isCollapsed) doc.execCommand?.('insertHTML', false, make('a', { href: url }, url).outerHTML);
+    if (doc.getSelection()?.isCollapsed) doc.execCommand?.('insertHTML', false, make('a', { href: safeUrl(url, LINK_URL) }, url).outerHTML);
     else doc.execCommand?.('createLink', false, url);
     linkRow.hidden = true;
     emit();

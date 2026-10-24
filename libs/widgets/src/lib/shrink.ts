@@ -1,4 +1,4 @@
-import type { Field, LineField, Shrink } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, type Field, type LineField, type Shrink } from '@fieldia/core';
 
 /**
  * Photos made smaller before they are kept. A phone's photo is 3 to 12 MB:
@@ -55,7 +55,7 @@ export async function readPicture(file: Blob, doc: Document): Promise<Picture> {
   }
   const url = URL.createObjectURL(file);
   const image = doc.createElement('img');
-  image.src = url;
+  image.src = safeUrl(url, PICTURE_URL) ?? '';
   try {
     await image.decode();
   } catch (error) {

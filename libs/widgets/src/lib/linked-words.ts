@@ -1,3 +1,4 @@
+import { safeUrl } from '@fieldia/core';
 import { drawIcon } from './icons';
 
 /**
@@ -13,7 +14,7 @@ export function linkedWords(doc: Document, text: string, options: { external?: b
   for (const match of text.matchAll(LINK)) {
     if (match.index > at) nodes.push(doc.createTextNode(text.slice(at, match.index)));
     const link = doc.createElement('a');
-    link.href = match[2];
+    link.href = safeUrl(match[2], ['http', 'https', 'mailto']) ?? '';
     link.textContent = match[1];
     if (/^https?:/i.test(match[2])) {
       link.target = '_blank';

@@ -1,4 +1,4 @@
-import type { RelatedRecord } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, type RelatedRecord } from '@fieldia/core';
 
 /**
  * What a link to a record shows of it besides its name, wherever it is drawn: in its box (the relations part's,
@@ -21,7 +21,7 @@ export function linkAvatar(doc: Document, record: RelatedRecord | null | undefin
   box.hidden = false;
   if (record.avatar) {
     const img = doc.createElement('img');
-    img.src = record.avatar;
+    img.src = safeUrl(record.avatar, PICTURE_URL) ?? '';
     img.alt = '';
     box.replaceChildren(img);
   } else {

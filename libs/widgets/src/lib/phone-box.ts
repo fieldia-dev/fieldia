@@ -1,4 +1,4 @@
-import { labelAt, type Value } from '@fieldia/core';
+import { LINK_URL, safeUrl, labelAt, type Value } from '@fieldia/core';
 import { guard, refusalHint } from './input-rules';
 import { boxPurpose, describeState, fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { phoneSettings } from './phone-settings';
@@ -115,8 +115,8 @@ export const phoneWidget: WidgetFactory = (context) => {
     });
     if (!to || !number) return;
     const said = writePhone(number, 'international');
-    setAttr(call, 'href', to.call);
-    setAttr(chat, 'href', to.whatsapp ?? null);
+    setAttr(call, 'href', safeUrl(to.call, LINK_URL) ?? null);
+    setAttr(chat, 'href', safeUrl(to.whatsapp, LINK_URL) ?? null);
     setAttr(call, 'aria-label', fillIn(words.phoneCallNamed, { number: said }));
     setAttr(chat, 'aria-label', fillIn(words.phoneWhatsAppNamed, { number: said }));
   }

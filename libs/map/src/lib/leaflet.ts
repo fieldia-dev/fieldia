@@ -1,3 +1,4 @@
+import { PICTURE_URL, safeUrl } from '@fieldia/core';
 import type * as Leaflet from 'leaflet';
 import type { TileSpec } from './providers';
 
@@ -69,7 +70,7 @@ function makeLayer(L: LeafletModule, spec: TileSpec): Leaflet.TileLayer {
             URL.revokeObjectURL(src);
             done(new Error('map image'), img);
           };
-          img.src = src;
+          img.src = safeUrl(src, PICTURE_URL) ?? '';
         })
         .catch((error: Error) => done(error, img));
       return img;
