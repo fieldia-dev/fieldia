@@ -1347,7 +1347,12 @@ of Fieldia's in it) places an iframe of your form's page where its tag stands �
 data-locale="ar" async></script>` — and your page's `<fieldia-form frame>` tells
 it its height as it changes, so the frame grows and shrinks with the form, and
 `fieldia-ready`, `fieldia-step` and `fieldia-send` (the reference, never the
-answers) as events on the iframe, from your page's origin only. The tag passes on
+answers) as events on the iframe, from your page's origin only — and to the sites
+your `<fieldia-form frame allowed-origins="https://partner.example">` names
+alone (and your own): another site that frames it is told nothing, its height
+neither, and the console says so; `allowed-origins="*"` tells any, never by
+default. Send `Content-Security-Policy: frame-ancestors …` with your form's page
+to keep other sites from framing it at all. The tag passes on
 `data-locale`, `data-theme`, `data-skin` and the page's campaign parameters
 (`utm_*`, or those `data-params` names), for a page that fills hidden fields
 from its link.

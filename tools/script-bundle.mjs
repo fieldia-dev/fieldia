@@ -1386,7 +1386,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // longer than a pattern is tried on refused (check.ts, rules.ts), text longer than a date is written read as none
 // (input-rules.ts, date-text.ts), and a value the page works out held to its most (compute.ts). 527.06 measured before,
 // 529.47 after, to 529.5.
-const BUDGET_KB = 529.5;
+// The security audit of 24 Oct: an expression reads a value's own properties alone (evaluator.ts), a field is never
+// named as every object's own (names.ts, references.ts), a message fills its blanks from the values given alone
+// (messages.ts), and a page of the app's own site in an embed widget runs with no origin (embed.ts). 529.47 measured
+// before, 529.88 after, to 529.9.
+const BUDGET_KB = 529.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1691,8 +1695,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The security audit of 24 Oct: one `safeUrl` for every address (listed with the raw budget above): 172.08 measured
 // before, 172.73 after, to 172.8. One `csvCell` for every CSV file's cells (listed with the raw budget above): 172.73
 // measured before, 172.88 after, to 172.9. Patterns, dates and worked-out values kept from taking seconds (listed with
-// the raw budget above): 172.88 measured before, 174.06 after, to 174.1.
-const GZIP_BUDGET_KB = 174.1;
+// the raw budget above): 172.88 measured before, 174.06 after, to 174.1. Own properties, names, fills and the embed
+// widget's sandbox (listed with the raw budget above): 174.06 measured before, 174.24 after, to 174.3.
+const GZIP_BUDGET_KB = 174.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2694,7 +2699,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // after one left open — its archive's files opened to the size they say and no more than 100 MB each, 200 MB in all,
 // and a cell longer than a spreadsheet's own refused (import-file.ts, unzip.ts) — import 37.96 and 14.91 measured
 // before, 38.76 and 15.22 after, to 38.8 and 15.3.
-const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.6, 45.2], cards: [12.3, 3.8], columns: [18.7, 6.8], import: [38.8, 15.3], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.4, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0] };
+// The security audit of 24 Oct: an archive's file inflated a piece at a time — import 38.76 and 15.22 measured before,
+// 38.84 and 15.25 after, to 38.9; AI help proposing for the fields a page draws alone — assist 36.40 and 12.35, 36.44
+// and 12.36, to 36.5; a framed form telling only the sites its allowed-origins names — element 5.38 and 2.38, 5.83 and
+// 2.59, to 5.9 and 2.6.
+const PART_BUDGET_KB = { head: [42.4, 12.9], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [22.8, 7.8], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [140.6, 45.2], cards: [12.3, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [18.9, 7.2], themes: [11.9, 3.7], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [20.4, 7.8], duplicates: [15.7, 6.5], answers: [4.4, 2.2], limits: [10.8, 4.7], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.9, 2.6], outbox: [9.0, 4.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

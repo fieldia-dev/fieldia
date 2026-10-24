@@ -174,8 +174,10 @@ ${code(
 
 <!-- Your form's page, https://forms.example.com/enquiry -->
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
-<fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" frame></fieldia-form>`
+<fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" frame
+  allowed-origins="https://partner.example"></fieldia-form>`
 )}
+<p>Your form tells its height and what happened to the sites its ${c('allowed-origins')} names (spaces between them), and to your own: a page of another site that frames it is told nothing — not even its height — and the console says so. ${c('"*"')} tells any site that frames it, which you choose by writing it; it is never so by default. To keep other sites from framing it at all, send ${c("Content-Security-Policy: frame-ancestors https://partner.example")} with your form's page.</p>
 <p>${c('data-locale')}, ${c('data-theme')} and ${c('data-skin')} reach the form through its frame's address; ${c('data-title')} names the frame for a screen reader; ${c('data-height')} is its height before the form tells its own (600). The partner page's campaign parameters — ${c('utm_source')}, ${c('utm_medium')}, ${c('utm_campaign')}, ${c('utm_term')}, ${c('utm_content')}, or those ${c('data-params')} names — are passed on, so a page that fills hidden fields from its link (<a href="/data/#prefill">${c('prefill')}</a>) knows which campaign brought the person to the partner. The <a href="/demos/embed/">embed demo</a> shows both.</p>
 
 <h2 id="csp">Under a strict Content-Security-Policy</h2>

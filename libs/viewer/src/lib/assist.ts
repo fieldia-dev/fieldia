@@ -488,9 +488,12 @@ export function watchAssist(context: AssistContext): AssistKit {
     const leftTyped: string[] = [];
     const notUsed: string[] = [];
     const batch = ++batches;
+    // A field the page draws, and none other: pasted words may steer a model to a hidden one, which a person reviewing
+    // could never see — nor Accept all write.
+    const drawn = new Set(form.shownFields());
     for (const [name, given] of Object.entries(values ?? {})) {
       const def = page.fields[name];
-      if (!def || !allowed(name) || !settable(name)) {
+      if (!def || !allowed(name) || !settable(name) || !drawn.has(name)) {
         notUsed.push(def ? def.label : name);
         continue;
       }

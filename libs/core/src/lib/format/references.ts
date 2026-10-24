@@ -546,6 +546,8 @@ export class ReferenceCheck {
     this.checkWorkedOut(fields, base, scope);
     for (const [name, def] of Object.entries(fields as Record<string, Field | LineField>)) {
       const path = `${base}.${name}`;
+      // A name every object already has would read as a record's own value: never a field's.
+      if (/^(constructor|__proto__|prototype)$/.test(name)) this.report(path, `"${name}" is a name every object already has: name the field otherwise`);
       // A field's label, its help and its choices' words may show the answers given — the page's own fields', not a line's.
       if (lines === undefined) {
         this.checkWords(def, path, ['label', 'help']);

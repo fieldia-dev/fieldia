@@ -141,6 +141,8 @@ values by anyone; neither can make a form run script or take seconds:
 - **Sizes.** Text read as a date is at most `DATE_TEXT_MOST` (100) characters;
   a value the page works out (`compute`, `set`, `setWhen`) at most
   `COMPUTED_MOST` — 100,000 characters, 10,000 items — or none.
+- **Names.** A field is never named `constructor`, `__proto__` or `prototype`,
+  and an expression reads a value's own properties alone.
 
 ## A starting page from a schema
 

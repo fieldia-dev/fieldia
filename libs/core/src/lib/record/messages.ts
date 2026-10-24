@@ -346,5 +346,6 @@ export function fillMessage(messages: Messages, template: string, values: Record
 
 /** Fill `{name}` placeholders. */
 export function fill(template: string, values: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in values ? String(values[name]) : match));
+  // A value given, never one every object has: "{constructor}" stays as it is written.
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => (Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match));
 }
