@@ -11,7 +11,7 @@ import { sampleChatter } from '../shared/sample-chatter';
 import { buyerBar, enquiryChatterOptions } from '../shared/enquiry';
 import { historySlot } from '@fieldia/chatter';
 import { wiHistoryChatter } from '../shared/wi-history';
-import { appPages, openRecord, opensRows, optionsFromQuery, pageFromQuery, pages, recordFromQuery, sampleDataSource } from '../shared/sample-data';
+import { appPages, openRecord, opensRows, optionsFromQuery, pageFromQuery, pages, pagesHeld, recordFromQuery, releasePages, sampleDataSource } from '../shared/sample-data';
 import { openByRoute, valuesFromQuery } from '../shared/related-lists';
 import { panelBar } from '../shared/panel-demo';
 import { answerAction } from '../shared/order-desk';
@@ -239,5 +239,6 @@ if (name === 'unit-enquiry') document.getElementById('app')?.before(phoneBar(doc
 if (name === 'treatment-course') document.getElementById('app')?.before(frontDeskBar(dataSource));
 
 // `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `pages` themselves,
-// for the one that each draws the sample records' values as their kind is.
-Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults, pageNames: Object.keys(pages), pages } });
+// for the one that each draws the sample records' values as their kind is; `releasePages` and `pagesHeld`, the saved
+// forms held by `?pagesDelay=hold` let go, and how many wait.
+Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults, pageNames: Object.keys(pages), pages, releasePages, pagesHeld } });

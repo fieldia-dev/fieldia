@@ -517,15 +517,31 @@ export const openedPages: Record<string, Page> = { 'new-customer': newCustomer a
  * page at once, by its model; a saved form, or a page a step opens, by its id
  * a moment later, as an app fetching it from its server would — a saved
  * form's place shows a quiet placeholder first. `?pagesDelay=` sets the
- * moment, in ms.
+ * moment, in ms; `?pagesDelay=hold` holds them until `releasePages()` lets
+ * them go, so a test looks at the wait while it is certain to be one.
  */
 export function appPages(request: PageRequest): Page | null | Promise<Page | null> {
   if ('model' in request) return relatedPages[request.model] ?? null;
   const key = request.version === undefined ? request.id : `${request.id}@${request.version}`;
   const found = savedForms[key] ?? openedPages[key] ?? null;
-  const delay = Number(new URLSearchParams(location.search).get('pagesDelay') ?? 150);
-  return new Promise((resolve) => setTimeout(() => resolve(found), delay));
+  const given = new URLSearchParams(location.search).get('pagesDelay');
+  if (given === 'hold' && !pagesLetGo) return new Promise((resolve) => heldPages.push(() => resolve(found)));
+  if (given === 'hold') return found;
+  return new Promise((resolve) => setTimeout(() => resolve(found), Number(given ?? 150)));
 }
+
+/** The pages held (`?pagesDelay=hold`), each let go by `releasePages()` — and whether they were, so those asked after come at once. */
+const heldPages: (() => void)[] = [];
+let pagesLetGo = false;
+/** Every page held let go, and those asked after given at once; how many were held. */
+export function releasePages(): number {
+  pagesLetGo = true;
+  const now = heldPages.splice(0);
+  for (const go of now) go();
+  return now.length;
+}
+/** How many pages are held now. */
+export const pagesHeld = (): number => heldPages.length;
 
 const PRODUCT_PRICES: Record<number, number> = { 1: 1890, 2: 380, 3: 749, 4: 6425, 5: 215 };
 const round = (n: number) => Math.round(n * 100) / 100;
