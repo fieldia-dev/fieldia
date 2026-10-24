@@ -196,8 +196,11 @@ describe('a phone read the world over', () => {
     const { input, value, el } = mount({}, { phone: { country: 'EG' } });
     expect(links(el)).toEqual([]);
     type(input, '010 1234 5678');
-    // Typed: nothing taken, nothing offered, until it is read.
-    expect(value()).toBeNull();
+    // Typed, a number that reads is the field's at once — the record changed, its Save shown, as for a text — the box
+    // keeping what was typed, no links offered until it is left.
+    expect(value()).toBe('+201012345678');
+    expect(input.value).toBe('010 1234 5678');
+    expect(links(el)).toEqual([]);
     leave(input);
     expect(value()).toBe('+201012345678');
     expect(input.value).toBe('+20 10 1234 5678');
@@ -212,6 +215,19 @@ describe('a phone read the world over', () => {
     type(national.input, '+20 10 1234 5678');
     leave(national.input);
     expect([national.value(), national.input.value]).toEqual(['+201012345678', '010 1234 5678']);
+  });
+
+  it('takes a number as it is typed only once it reads: a part of one waits for the box to be left', () => {
+    const { input, value, form } = mount({}, { phone: { country: 'EG' }, value: '+201012345678' });
+    clear(input);
+    type(input, '010 1234 567');
+    // Not a number yet: the field holds what it held, nothing changed.
+    expect(value()).toBe('+201012345678');
+    expect(form.getState().dirty).toEqual([]);
+    type(input, '9');
+    expect(value()).toBe('+201012345679');
+    expect(form.getState().dirty).toEqual(['mobile']);
+    expect(input.value).toBe('010 1234 5679');
   });
 
   it('takes a number typed with its + and code in that code’s country, the country following the keys', () => {

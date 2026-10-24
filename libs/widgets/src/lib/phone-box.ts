@@ -174,12 +174,15 @@ export const phoneWidget: WidgetFactory = (context) => {
     typing = true;
     linksTo(null);
     drawDial();
+    const reading = input.value.trim() ? readPhone(input.value, picked) : null;
     // Typed with its + and code, the country follows the number as it comes: +1 876… is Jamaica.
     const code = typedCode(input.value);
-    if (!code) return;
-    const reading = readPhone(input.value, picked);
-    const country = reading.country ?? byDial(code.dial);
+    const country = code ? (reading?.country ?? byDial(code.dial)) : undefined;
     if (country && country !== picked) show(country);
+    // A number that reads is the field's as it is typed, as a text's and an amount's are: the record has changed — its
+    // Save shown — before the box is left, the box keeping what was typed. A part of one, or text held after a refused
+    // key, waits for the box to be left, which reads it and says why it does not read; the field holds what it held.
+    if (reading && 'number' in reading && !checks.held() && !unreadNow() && form.getState().values[name] !== reading.number) form.setValue(name, reading.number);
   });
   input.addEventListener('change', read);
   input.addEventListener('blur', read);

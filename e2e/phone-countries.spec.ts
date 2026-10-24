@@ -132,6 +132,27 @@ for (const [demo, query, id, stored, shown] of [
   });
 }
 
+test('the Customer record: a number typed shows Save as it is typed, as a text does, and Ctrl+Enter saves it', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  ({ problems } = await open(page, 'plain', 'page=customer&skin=underline'));
+  const save = page.getByRole('button', { name: 'Save', exact: true });
+  await expect(save).toBeHidden();
+  const phone = node(page, 'f-phone').locator('.fd-phone-input');
+  await phone.click();
+  await phone.press('ControlOrMeta+A');
+  await phone.pressSequentially('+20 2 1111 22');
+  // A part of a number: nothing changed yet.
+  await expect(save).toBeHidden();
+  await phone.pressSequentially('22');
+  // A number that reads: the record has changed, Save shown, the box still as typed and still the person's.
+  await expect(save).toBeVisible();
+  await expect(phone).toBeFocused();
+  await expect(phone).toHaveValue('+20 2 1111 2222');
+  await phone.press('ControlOrMeta+Enter');
+  await expect(save).toBeHidden();
+  expect(await page.evaluate(() => (window as any).fieldiaDemo.dataSource.records['partner'][1]['phone'])).toBe('+20211112222');
+});
+
 test('on a phone it opens as a sheet from the foot of the screen, and Close puts it away', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   ({ problems } = await open(page, 'plain', 'page=real-contact&record=7001&skin=quiet&scheme=dark'));
