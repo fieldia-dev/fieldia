@@ -40,7 +40,7 @@ test('from this process too: a token in the environment is not in what the check
   }
 });
 
-test('release.mjs runs every check in that environment, installs with no install scripts, and gives the token to npm publish alone', () => {
+test('release.mjs runs every check in that environment, installs with no install scripts, and gives the token to the publish alone', () => {
   const source = readFileSync(join(import.meta.dirname, 'release.mjs'), 'utf8');
   // run()'s environment unless one is given: the one without auth.
   assert.match(source, /const CHECKS_ENV = withoutAuth\(process\.env\);/);
@@ -49,10 +49,10 @@ test('release.mjs runs every check in that environment, installs with no install
   const installs = source.match(/run\('npm', \['install'[^\]]*\]/g) ?? [];
   assert.ok(installs.length > 0);
   for (const install of installs) assert.match(install, /'--ignore-scripts'/);
-  // An environment is handed to run() in one place only: npm publish's, the one with the token.
-  const given = [...source.matchAll(/run\(([^;]*?), (WORKSPACE|SMOKE), (\w+)\)/g)].map((m) => [m[1], m[3]]);
-  assert.deepEqual(given.map(([, env]) => env), ['publishEnv']);
-  assert.match(given[0][0], /'publish'/);
-  // The token is read from this process's environment only to be handed to it.
+  // No run() is handed an environment of its own: every one is the checks'.
+  assert.deepEqual([...source.matchAll(/run\(([^;]*?), (WORKSPACE|SMOKE), (\w+)\)/g)].map((m) => m[3]), []);
+  // The token is read from this process's environment to be said missing, and to be handed to the publish of the packs
+  // alone (release-publish.mjs: to `npm publish`, never to `npm view`; release-publish.test.mjs).
   assert.deepEqual([...source.matchAll(/process\.env\.NPM_TOKEN/g)].length, 2);
+  assert.match(source, /publishPacks\(\{ dir: PACKS, manifest: readPacks\(PACKS\), env: CHECKS_ENV, token: \{ NPM_TOKEN: process\.env\.NPM_TOKEN, npm_config_userconfig: npmrc \} \}\)/);
 });

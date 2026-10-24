@@ -7,9 +7,18 @@
  *   NPM_TOKEN=… node tools/release.mjs publish  the same check, then publish what is not on npm yet
  *   node tools/release.mjs verify             after publishing: the same checks on what npm serves
  *
- * Every mode refuses a version with no section in CHANGELOG.md. `publish` refuses a page format whose shape changed
- * under its old version (format-shape.mjs; `check` only says so), and ends by printing the version's section and the
- * exact commands that tag the release and make its GitHub release, for a person to run (see release-notes.mjs).
+ * Every mode refuses a version with no section in CHANGELOG.md. `publish` refuses, before anything is checked, a
+ * release that is not a commit tagged with its version, already on origin/main, from a tree with no changes, or a
+ * patch whose section has an Upgrading part (release-guards.mjs; `check` says the last); and a page format whose shape
+ * changed under its old version (format-shape.mjs; `check` only says so). It publishes the packs `check` proved
+ * (release-publish.mjs: each against the hash it was packed with, in order, stopping where one fails), and once every
+ * one is on npm it prints the version's section and the commands that push its tag and make its GitHub release, for a
+ * person to run (see release-notes.mjs).
+ *
+ * `check` leaves the packs in tmp/release/packs with packs.json, their order and hashes: what the publish workflow
+ * (.github/workflows/publish.yml) publishes from CI by npm's trusted publishing, with no token (tools/publish-packs.mjs).
+ * This mode's own `publish`, with a token, is for a maintainer's machine until npm is switched over
+ * (docs/maintainers/publishing.md).
  *
  * Build first: `npx nx run-many -t build`. A package marked `"private": true`
  * is never packed or published.
@@ -28,6 +37,8 @@ import { runInNewContext } from 'node:vm';
 import { notesFor, printRelease } from './release-notes.mjs';
 import { checkFormatShape } from './format-shape.mjs';
 import { withoutAuth } from './release-env.mjs';
+import { gitFacts, patchProblem, releaseProblems } from './release-guards.mjs';
+import { publishPacks, readPacks, writePacks } from './release-publish.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const WORK = join(WORKSPACE, 'tmp/release');
@@ -63,7 +74,18 @@ for (const { dir, manifest } of packages) {
   if (!existsSync(join(WORKSPACE, 'dist/libs', dir, 'README.md'))) fail(`dist/libs/${dir} has no README.md — its npm page would be empty`);
 }
 // What changed, in plain words, before anything is packed: CHANGELOG.md's section for this version.
-if (!notesFor(readFileSync(join(WORKSPACE, 'CHANGELOG.md'), 'utf8'), version)) fail(`CHANGELOG.md has no section for ${version}: write what changed, in plain words, before releasing it`);
+const changelog = readFileSync(join(WORKSPACE, 'CHANGELOG.md'), 'utf8');
+if (!notesFor(changelog, version)) fail(`CHANGELOG.md has no section for ${version}: write what changed, in plain words, before releasing it`);
+// What a release must be before it is published (release-guards.mjs), refused before minutes of checks; a patch's
+// Upgrading part said on every check, while the release's commit is written.
+if (mode === 'publish') {
+  if (!process.env.NPM_TOKEN) fail('publishing needs NPM_TOKEN in the environment');
+  const problems = releaseProblems({ version, changelog, facts: gitFacts(WORKSPACE) });
+  if (problems.length) fail(`nothing was published:\n  ${problems.join('\n  ')}`);
+} else if (mode === 'check') {
+  const patch = patchProblem(version, changelog);
+  if (patch) console.warn(`release: before publishing, ${patch}`);
+}
 // A page this release writes says a format version: one whose shape older readers know (format-shape.mjs). Said on
 // every check, while lanes add to the format; refused at publish, where the version has to be right.
 const format = checkFormatShape(WORKSPACE);
@@ -74,6 +96,7 @@ console.log(`release ${version}: ${packages.map((p) => p.manifest.name).join(', 
 // ---- pack ----------------------------------------------------------------------
 rmSync(WORK, { recursive: true, force: true });
 mkdirSync(PACKS, { recursive: true });
+const packs = [];
 const tarballs = packages.map(({ dir, manifest }) => {
   if (fromRegistry) return `${manifest.name}@${version}`;
   const [packed] = JSON.parse(run('npm', ['pack', join(WORKSPACE, 'dist/libs', dir), '--pack-destination', PACKS, '--json']));
@@ -81,8 +104,12 @@ const tarballs = packages.map(({ dir, manifest }) => {
   const stray = files.filter((f) => /\.spec\.|\.tsbuildinfo$|(^|\/)tmp\//.test(f));
   if (stray.length) fail(`${packed.name} would ship ${stray.join(', ')}`);
   console.log(`  packed ${packed.filename} (${files.length} files, ${Math.round(packed.size / 1024)} KB)`);
+  packs.push({ name: packed.name, file: packed.filename, integrity: packed.integrity });
   return join(PACKS, packed.filename);
 });
+// The packs in their publishing order, with the hash each was packed with and the commit they were made from: what a
+// publish takes, here or in the publish workflow (release-publish.mjs), and checks each tarball against.
+if (!fromRegistry) writePacks(PACKS, { version, commit: run('git', ['rev-parse', 'HEAD']).trim(), packs });
 
 // ---- install into an empty project -------------------------------------------------
 const root = read(join(WORKSPACE, 'package.json'));
@@ -376,28 +403,17 @@ console.log(`  installed ${fromRegistry ? 'from npm' : 'the packs'} into an empt
 
 // ---- publish ---------------------------------------------------------------------
 if (mode === 'publish') {
-  if (!process.env.NPM_TOKEN) fail('publishing needs NPM_TOKEN in the environment');
   const npmrc = join(WORK, '.npmrc');
   // A reference, expanded by npm from the environment; the token itself is never written.
   writeFileSync(npmrc, '//registry.npmjs.org/:_authToken=${NPM_TOKEN}\n');
-  // The token for `npm publish` alone; asking npm what it has needs none.
-  const publishEnv = { ...CHECKS_ENV, NPM_TOKEN: process.env.NPM_TOKEN, npm_config_userconfig: npmrc };
-  const onNpm = (name) => {
-    try {
-      return run('npm', ['view', `${name}@${version}`, 'version']).trim() === version;
-    } catch {
-      return false; // npm answers 404 for a version it does not have
-    }
-  };
-  for (const [i, { manifest }] of packages.entries()) {
-    if (onNpm(manifest.name)) {
-      console.log(`  ${manifest.name}@${version} is already on npm`);
-      continue;
-    }
-    run('npm', ['publish', tarballs[i], '--access', 'public'], WORKSPACE, publishEnv);
-    console.log(`  published ${manifest.name}@${version}`);
+  // The packs the check above installed and ran, each against its hash; the token for `npm publish` alone.
+  try {
+    publishPacks({ dir: PACKS, manifest: readPacks(PACKS), env: CHECKS_ENV, token: { NPM_TOKEN: process.env.NPM_TOKEN, npm_config_userconfig: npmrc } });
+  } catch (error) {
+    rmSync(npmrc, { force: true });
+    fail(error.message);
   }
   rmSync(npmrc, { force: true });
-  // The notes, and the tag and GitHub release to make from them: printed, never run.
-  printRelease(WORKSPACE, version, run('git', ['rev-parse', '--short=12', 'HEAD']).trim());
+  // Every package on npm: the notes, and the tag's push and the GitHub release to make from them — printed, never run.
+  printRelease(WORKSPACE, version, run('git', ['rev-parse', '--short=12', 'HEAD']).trim(), { tagged: true });
 }
