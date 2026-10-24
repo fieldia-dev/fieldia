@@ -109,8 +109,8 @@ sheet, as a part's would come after the first paint, showing the browser's grey
 circles until it came — and 0.45 for the undo keys, heard as a person first
 enters a form, so no key waits for a part. Of the parts, gzipped:
 
-- phone 19.1 KB (from 16.2): the country list, its rows drawn the first time it
-  opens;
+- phone 19.2 KB (from 16.2): the country list, its rows drawn the first time it
+  opens, and a number taken as it is typed;
 - undo 3.0 (3.5): its keys gone to `fieldia.js`;
 - quiet 2.06 (2.04): a tick box's words in the body's colour, its lines light;
 - survey 12.51 (12.52), list 45.07 (45.08), filters 7.71 (7.72), duplicates 6.36
