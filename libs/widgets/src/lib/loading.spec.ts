@@ -156,6 +156,40 @@ describe('a wait, on its clock', () => {
     expect(region.hasAttribute('aria-busy')).toBe(false);
   });
 
+  it.each(['skeleton', 'spinner'] as const)('asked again as a %s with a popup open in its place, keeps what is shown: a bar over it, the answer at once', async (refresh) => {
+    const { region } = form();
+    const shape = { show: jest.fn(), hide: jest.fn() };
+    // A date's calendar open in the place that waits: its opener expanded.
+    const opener = Object.assign(document.createElement('button'), { type: 'button' });
+    opener.setAttribute('aria-haspopup', 'dialog');
+    opener.setAttribute('aria-expanded', 'true');
+    region.append(opener);
+    const wait = startLoading(region, 'refresh', loading({ set: { refresh } }), { shape });
+    jest.advanceTimersByTime(160);
+    expect(shape.show).not.toHaveBeenCalled();
+    expect(region.getAttribute('data-fd-way')).toBe('keep');
+    expect(loader(region)?.querySelector('.fd-bar')).not.toBeNull();
+    expect(loader(region)?.querySelector('.fd-spin')).toBeNull();
+    const apply = jest.fn();
+    await wait.done(apply);
+    expect(apply).toHaveBeenCalledTimes(1);
+    // Closed: the next ask is drawn as it says again.
+    opener.setAttribute('aria-expanded', 'false');
+    const next = startLoading(region, 'refresh', loading({ set: { refresh } }), { shape });
+    jest.advanceTimersByTime(160);
+    expect(region.getAttribute('data-fd-way')).toBe(refresh);
+    next.stop();
+  });
+
+  it('keeps a part holding an open popup out of what it hides, dims or shapes, and a ring over what is shown never in the way', () => {
+    const open = ':has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])';
+    expect(LOADING_CSS).toContain(`[data-fd-way="skeleton"]):not([data-fd-shaped]) > :not(.fd-loader, ${open}) { visibility: hidden; }`);
+    expect(LOADING_CSS).toContain(`[data-fd-way="dim"] > :not(.fd-loader, ${open}) { opacity`);
+    expect(LOADING_PART_CSS).toContain(`[data-fd-way="spinner"] > :not(.fd-loader, ${open}) { opacity`);
+    expect(LOADING_PART_CSS).toContain(`[data-fd-shaped] .fd-field:not(${open}) > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size`);
+    expect(LOADING_PART_CSS).toContain('.fd-loader[data-moment="refresh"][data-way="spinner"] { pointer-events: none; }');
+  });
+
   it('says "Still loading…" past slowAfter, once, and ends as failed past its timeout — the request’s signal aborted, Retry asking again', () => {
     const { region, root } = form();
     const retry = jest.fn();

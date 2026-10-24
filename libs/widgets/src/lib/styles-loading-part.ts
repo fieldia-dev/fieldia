@@ -33,7 +33,9 @@ export const LOADING_PART_CSS = /* css */ `
 .fd-loader[data-way="skeleton"] { align-content: start; justify-items: stretch; }
 .fd-loader[data-moment="more"][data-way="skeleton"] { display: grid; justify-content: stretch; inline-size: 100%; }
 .fd-loader:is([data-way="spinner"], [data-way="overlay"], [data-way="progress"]) > .fd-loader-words { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.fd-form [data-fd-wait="refresh"][data-fd-way="spinner"] > :not(.fd-loader) { opacity: 0.55; transition: opacity 0.2s; }
+.fd-form [data-fd-wait="refresh"][data-fd-way="spinner"] > :not(.fd-loader, :has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) { opacity: 0.55; transition: opacity 0.2s; }
+/* Asked again, a ring over what is shown: what is shown still pressed and typed in, as when it is kept (a popup opened meanwhile works). */
+.fd-loader[data-moment="refresh"][data-way="spinner"] { pointer-events: none; }
 /* A bar along the top: what is shown kept as it is asked again, an action's, a first's progress. */
 .fd-loader:is([data-way="keep"], [data-way="bar"], [data-way="progress"][data-look="top"]) { position: absolute; inset: 0 0 auto; height: var(--fd-bar); padding: 0; overflow: hidden; z-index: 3; pointer-events: none; }
 .fd-bar { position: absolute; inset-block: 0; inset-inline-start: -40%; inline-size: 40%; background: var(--fd-spinner); border-radius: var(--fd-bar); animation: fd-bar 1.2s ease-in-out infinite; }
@@ -49,17 +51,18 @@ export const LOADING_PART_CSS = /* css */ `
 .fd-loader[data-moment="search"][data-way="spinner"] { position: absolute; inset-block: 0; inset-inline-end: 8px; padding: 0; pointer-events: none; }
 /* Over a form while it saves: a veil, a ring, nothing pressed or typed under it. */
 .fd-loader[data-way="overlay"] { background: color-mix(in srgb, var(--fd-surface) 72%, transparent); border-radius: inherit; pointer-events: auto; cursor: progress; }
-/* Shapes where the content will be: a few bars in its place, a list's rows, a form's boxes under their labels. */
+/* Shapes where the content will be: a few bars in its place, a list's rows, a form's boxes under their labels — a box
+   whose popup is open (its opener expanded) kept as it is, its popup over everything (styles-loading.ts). */
 .fd-sk { display: block; block-size: 0.9em; margin-block: 7px; border-radius: 4px; background-color: var(--fd-skeleton); }
 .fd-loader[data-way="skeleton"] > .fd-sk:nth-child(2) { inline-size: 82%; }
 .fd-loader[data-way="skeleton"] > .fd-sk:nth-child(3) { inline-size: 64%; }
-.fd-form [data-fd-shaped] .fd-field > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size: 1.6em; border-color: transparent !important; box-shadow: none !important; color: transparent !important; background-color: var(--fd-skeleton) !important; border-radius: max(var(--fd-control-radius), 4px); }
-.fd-form [data-fd-shaped] .fd-field > :is(.fd-label + *, :first-child:not(.fd-label)) * { visibility: hidden; }
-.fd-form [data-fd-look="shimmer"] :is(.fd-sk, .fd-field > .fd-label + *, .fd-field > :first-child:not(.fd-label)), .fd-loader[data-look="shimmer"] .fd-sk {
+.fd-form [data-fd-shaped] .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size: 1.6em; border-color: transparent !important; box-shadow: none !important; color: transparent !important; background-color: var(--fd-skeleton) !important; border-radius: max(var(--fd-control-radius), 4px); }
+.fd-form [data-fd-shaped] .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :is(.fd-label + *, :first-child:not(.fd-label)) * { visibility: hidden; }
+.fd-form [data-fd-look="shimmer"] :is(.fd-sk, .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > .fd-label + *, .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :first-child:not(.fd-label)), .fd-loader[data-look="shimmer"] .fd-sk {
   background-image: linear-gradient(90deg, transparent 30%, var(--fd-skeleton-shine) 50%, transparent 70%) !important; background-size: 300% 100% !important; background-position: 100% 0; animation: fd-shimmer var(--fd-shimmer) linear infinite;
 }
 .fd-form [data-fd-look="shimmer"] :dir(rtl) { animation-direction: reverse; }
-.fd-form [data-fd-look="pulse"] :is(.fd-sk, .fd-field > .fd-label + *, .fd-field > :first-child:not(.fd-label)), .fd-loader[data-look="pulse"] .fd-sk { animation: fd-pulse 1.4s ease-in-out infinite alternate; }
+.fd-form [data-fd-look="pulse"] :is(.fd-sk, .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > .fd-label + *, .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :first-child:not(.fd-label)), .fd-loader[data-look="pulse"] .fd-sk { animation: fd-pulse 1.4s ease-in-out infinite alternate; }
 @keyframes fd-shimmer { to { background-position: 0 0; } }
 @keyframes fd-pulse { to { opacity: 0.45; } }
 /* A page's skeleton from its layout, while its parts come (page-skeleton.ts): its groups as cards, each field a label's bar over its box. */
@@ -80,7 +83,7 @@ export const LOADING_PART_CSS = /* css */ `
   .fd-bar, .fd-bar::before { inset-inline-start: 0 !important; inline-size: 100% !important; opacity: 0.7; }
 }
 @media (forced-colors: active) {
-  .fd-sk, .fd-form [data-fd-shaped] .fd-field > :is(.fd-label + *, :first-child:not(.fd-label)) { forced-color-adjust: none; background: GrayText !important; }
+  .fd-sk, .fd-form [data-fd-shaped] .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :is(.fd-label + *, :first-child:not(.fd-label)) { forced-color-adjust: none; background: GrayText !important; }
   .fd-bar, .fd-bar::before { forced-color-adjust: none; background: Highlight !important; }
   .fd-spin { forced-color-adjust: none; border-color: GrayText; border-block-start-color: Highlight; }
   .fd-loader[data-look="dots"] .fd-spin { background: Highlight; box-shadow: -14px 0 Highlight, 14px 0 Highlight; }

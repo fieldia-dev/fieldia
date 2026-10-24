@@ -7,14 +7,18 @@
  * A region that waits is marked as its loader shows: data-fd-wait (the moment), data-fd-way (the technique), and
  * data-fd-shaped where its own shapes stand in the place of its content (a list's rows, a form's boxes, a page's
  * layout). On paper there is no loader.
+ *
+ * What a person has open stays theirs: a part of the place holding an open popup (a box's list, a date's calendar, a
+ * menu — its opener expanded) is never hidden, dimmed or shaped under a wait, so the popup stays over everything,
+ * whole and pressed as ever, while the rest waits.
  */
 export const LOADING_CSS = /* css */ `
 @media not print {
 /* Its loader over it: a list's records, a form's place (a search's list and a row's end float or flow as they are). */
 .fd-form [data-fd-wait]:not([data-fd-wait="search"], [data-fd-wait="more"]) { position: relative; }
 .fd-form [data-fd-wait="first"]:not([data-fd-shaped]) { min-height: 96px; }
-.fd-form [data-fd-wait]:is([data-fd-wait="first"], [data-fd-way="skeleton"]):not([data-fd-shaped]) > :not(.fd-loader) { visibility: hidden; }
-.fd-form [data-fd-way="dim"] > :not(.fd-loader) { opacity: 0.55; transition: opacity 0.2s; }
+.fd-form [data-fd-wait]:is([data-fd-wait="first"], [data-fd-way="skeleton"]):not([data-fd-shaped]) > :not(.fd-loader, :has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) { visibility: hidden; }
+.fd-form [data-fd-way="dim"] > :not(.fd-loader, :has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) { opacity: 0.55; transition: opacity 0.2s; }
 .fd-loader { box-sizing: border-box; color: var(--fd-muted); font-size: 13px; line-height: 1.4; }
 .fd-loader[data-moment="first"] { position: absolute; inset: 0; z-index: 3; display: grid; align-content: center; justify-items: center; gap: 10px; padding: 16px; text-align: center; }
 .fd-loader:is([data-moment="more"], [data-moment="search"]) { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 12px; }

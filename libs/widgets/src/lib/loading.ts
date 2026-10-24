@@ -162,6 +162,7 @@ export interface Wait {
 /** A wait going on in a region, which a newer one there takes over: its loader handed on where it was drawn the same way. */
 interface Going {
   moment: LoadingMoment;
+  /** How it is drawn: its way, or `keep` where it was asked again with a popup open. */
   way: string;
   /** Let go for a newer wait: what it drew handed on (`handOn`), else taken away. */
   end(handOn: boolean): { loader: HTMLElement | null; shownAt: number } | null;
@@ -184,6 +185,11 @@ export function letFailureGo(region: Element): void {
 
 /** Ways whose answer is drawn at once: what is shown stays, or nothing was drawn over it. */
 const AT_ONCE = new Set(['keep', 'none', 'button', 'bar']);
+
+/** A popup open (a box's list, a date's calendar, a menu: its opener expanded), which a wait never covers. */
+const OPEN_POPUP = ':is([aria-haspopup], [role="combobox"])[aria-expanded="true"]';
+/** The ways of asking again that stand over what is shown: drawn as `keep` where a popup is open in it. */
+const OVER_SHOWN = new Set(['skeleton', 'spinner']);
 
 /** The source's own words for why, where it gave any: not a network's, nor an abort. */
 const why = (error: unknown) => (error instanceof Error && error.name !== 'TypeError' && error.name !== 'AbortError' ? error.message.trim() : '');
@@ -217,6 +223,8 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
   let slow = false;
   let undo: void | (() => void);
   let lingering: ReturnType<typeof setTimeout> | undefined;
+  /** How it was drawn: its way — or what is shown kept, a popup open in it as it was asked again. */
+  let drawnAs = way;
   const said = how.words ?? (moment === 'more' ? words.loadingMore : moment === 'search' ? words.searching : words.loading);
   /**
    * Said once, politely, in the form's own live region (a dialog's, the page's) — there from the start where the region
@@ -280,7 +288,11 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
   /** Its loader, drawn as it says — or, its part not come yet, in words where it is drawn the first time, else unseen. */
   const draw = () => {
     const kit = loadingPart.loaded;
-    const as = IN_PART.has(way) && !kit ? (moment === 'first' ? 'text' : 'none') : way;
+    // Asked again with a popup open in its place (a box's list, a date's calendar): what is shown stays, a bar over it —
+    // never shapes or a ring over what a person has open; its answer drawn at once.
+    if (moment === 'refresh' && OVER_SHOWN.has(way) && region.querySelector(OPEN_POPUP)) drawnAs = mine.way = 'keep';
+    const kept = drawnAs !== way;
+    const as = kept ? (kit ? 'keep' : 'none') : IN_PART.has(way) && !kit ? (moment === 'first' ? 'text' : 'none') : way;
     region.setAttribute('data-fd-way', as);
     kit?.installLoadingStyles(doc);
     if (as === 'skeleton') region.setAttribute('data-fd-look', settings.skeleton);
@@ -396,7 +408,7 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
       }
       // Drawn over what stays: the answer at once, the region free at once (a button pressed again), the loader going by
       // itself once seen its minimum.
-      if (AT_ONCE.has(way)) {
+      if (AT_ONCE.has(drawnAs)) {
         apply?.();
         region.removeAttribute('aria-busy');
         lingering = setTimeout(clear, left);

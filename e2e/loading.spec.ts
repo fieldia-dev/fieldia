@@ -157,6 +157,64 @@ test.describe('Loading, as you like it', () => {
     }
   });
 
+  test('asked again with a popup open, the popup stays over everything and works; one opened while it waits works too', async ({ page }) => {
+    const problems = await go(page, 'slow=0&refresh=skeleton');
+    await expect(nameBox(page)).toHaveValue('Nile Traders');
+    const since = pane(page, 'Customer').locator('[data-node="f-since"]');
+    const calendar = since.getByRole('dialog');
+    /** The popup is the thing drawn at its own middle: nothing of a wait over it. */
+    const onTop = (popup: typeof calendar) =>
+      popup.evaluate((element) => {
+        const { left, top, width, height } = element.getBoundingClientRect();
+        return element.contains(element.ownerDocument.elementFromPoint(left + width / 2, top + height / 2));
+      });
+    // A date's calendar open, then the customer asked again as a skeleton: what is shown kept, a bar over it — never the
+    // shapes over the calendar or its box.
+    await since.locator('.fd-calendar-button').click();
+    await expect(calendar).toBeVisible();
+    await demo(page, '(d.net.slow = 1500, d.record.reload(), 0)');
+    await expect(customer(page)).toHaveAttribute('data-fd-wait', 'refresh');
+    await expect(customer(page)).toHaveAttribute('data-fd-way', 'keep');
+    await expect(customer(page)).not.toHaveAttribute('data-fd-shaped', /.*/);
+    await expect(calendar).toBeVisible();
+    expect(await onTop(calendar)).toBe(true);
+    await screen(page, 'loading-refresh-popup-kept');
+    // It works while the customer is on its way: a day pressed is the box's.
+    await calendar.locator('tbody button:not(.fd-outside)').filter({ hasText: /^10$/ }).click();
+    await expect(calendar).toBeHidden();
+    await expect(since.locator('input')).toHaveValue(/^10 /);
+    await expect(customer(page)).not.toHaveAttribute('data-fd-wait', /.*/);
+    await settled(page);
+
+    // Asked again with a ring over what is shown: a calendar opened while it waits is over the ring, and works.
+    await page.locator('select[data-setting="refresh"]').selectOption('spinner');
+    await expect(nameBox(page)).toHaveValue('Nile Traders');
+    await demo(page, '(d.net.slow = 1500, d.record.reload(), 0)');
+    await expect(customer(page).locator('.fd-loader[data-way="spinner"] .fd-spin')).toBeVisible();
+    await since.locator('.fd-calendar-button').click();
+    await expect(calendar).toBeVisible();
+    expect(await onTop(calendar)).toBe(true);
+    await calendar.locator('tbody button:not(.fd-outside)').filter({ hasText: /^12$/ }).click();
+    await expect(since.locator('input')).toHaveValue(/^12 /);
+    await settled(page);
+
+    // The list asked again, its records under a ring and dimmed: its search's panel opened meanwhile, over the rows,
+    // is the thing drawn there, and a filter pressed in it is taken.
+    await listed(page);
+    await demo(page, '(d.net.slow = 1500, d.list.reload(), 0)');
+    await expect(records(page)).toHaveAttribute('data-fd-way', 'spinner');
+    await pane(page, 'Customers').locator('.fd-search-toggle').click();
+    const panel = pane(page, 'Customers').locator('.fd-search-panel');
+    await expect(panel).toBeVisible();
+    expect(await onTop(panel)).toBe(true);
+    await panel.locator('.fd-search-option[data-filter="active"]').click();
+    await expect(panel.locator('.fd-search-option[data-filter="active"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(rows(page).first()).toBeVisible();
+    await settled(page);
+    expect(await axeFindings(page, 'a popup open as it is asked again')).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
   test('the next rows: “Loading more…” where they will come, then twelve more', async ({ page }) => {
     await go(page, 'slow=1500');
     await expect(rows(page).first()).toContainText('Delta Foods');

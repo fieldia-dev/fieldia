@@ -86,7 +86,11 @@ on a viewer given none draws the moment's default. The viewer's handle tells `lo
 moment, part, duration, failed }`), for an app's own indicator — at the true start and end, whether a loader was drawn
 or not. Always, whatever the style: `aria-busy` on the busy region; one polite announcement per wait (never one per
 row); `prefers-reduced-motion` stills every shimmer, pulse, ring and bar; `forced-colors` draws the shapes with the
-system's own colours; right to left mirrors them; on paper no loader shows.
+system's own colours; right to left mirrors them; on paper no loader shows. What a person has open stays theirs: a
+part asked again with a popup open in it (a date's calendar, a box's list, a menu: its opener expanded) is drawn as
+`keep` whatever its way — never shapes or a ring over what is open — and a popup opened while a part waits stays over
+the wait and takes its presses (the part holding it is never hidden, dimmed or shaped; a ring over what is shown lets
+presses through).
 
 ## Where the code lives
 

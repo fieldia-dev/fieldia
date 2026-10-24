@@ -99,7 +99,10 @@ set) the wait ends as failed, with Retry, and a list's request is told to stop
 The archive is offline. Retry", "Couldn't load." with the source's own words —
 or in a toast (`error: "toast"`), or as the app draws it (`custom`); never an
 empty place. A record's Save steps aside while it saves, as before: its status
-says "Saving…".
+says "Saving…". What a person has open stays theirs: a popup open as a part is
+asked again (a date's calendar, a box's list, a filter's menu) keeps what is
+shown under a thin bar, whatever the way set, and a popup opened while a part
+waits is over the wait and takes its presses.
 
 Set it for every page in the app, for a page, or for one part — the most
 specific wins, setting by setting:
