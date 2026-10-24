@@ -131,8 +131,12 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * tag on the Gregorian calendar from @fieldia/core. A place and an area 27,088 bytes measured before, 27,315 after, to
  * 26.7; all 48,566 to 48,980, to 47.9; a list's map in a page of its own 32,907 to 33,289, to 32.6. (Carried inline, as
  * Arabic, German and French are, they took them to 31,514, 54,854 and 38,586.)
+ * The owner's observations of 23 Oct (obs-1023, 0.32): a card's tick box the size every tick box is (`--fd-tick-size`,
+ * 18px), drawn as the form's own in a form and the browser's in the accent on a page of its own, said in its rule —
+ * all 48,982 bytes measured before, 49,050 after, to 48.0; a list's map in a page of its own 33,289 to 33,360, inside
+ * its 32.6; a place and an area as they were (27,314).
  */
-const BUDGET = { fields: 26.7, all: 47.9, embed: 32.6, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 26.7, all: 48.0, embed: 32.6, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
