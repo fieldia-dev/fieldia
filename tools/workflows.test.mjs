@@ -92,6 +92,51 @@ test('the same action is pinned to the same commit in every workflow', () => {
   }
 });
 
+test('publish.yml: started by a v* tag or by hand, never by a branch or a pull request', () => {
+  const text = readFileSync(join(WORKFLOWS, 'publish.yml'), 'utf8');
+  const on = topLevel(text, 'on');
+  assert.match(on, /^ {2}push:\n {4}tags: \['v\*'\]\n/m);
+  assert.match(on, /^ {2}workflow_dispatch:\n/m);
+  assert.doesNotMatch(on, /branches|pull_request|schedule|workflow_run/);
+  assert.match(on, /dry_run:\n(?: {8}.*\n)*? {8}default: true/, 'started by hand, it is a dry run unless said otherwise');
+});
+
+test('publish.yml: only the publish job may ask for an OIDC token, on a pushed tag alone, running no npm ci and no build', () => {
+  const jobs = jobsOf(readFileSync(join(WORKFLOWS, 'publish.yml'), 'utf8'));
+  assert.deepEqual(Object.keys(jobs).sort(), ['build', 'dry-run', 'publish', 'verify']);
+  const asking = Object.entries(jobs).filter(([, block]) => /id-token:\s*write/.test(block)).map(([id]) => id);
+  assert.deepEqual(asking, ['publish']);
+  const publish = jobs.publish;
+  assert.match(publish, /^ {4}if: github\.event_name == 'push' && startsWith\(github\.ref, 'refs\/tags\/v'\)$/m);
+  assert.match(publish, /^ {4}environment:\n {6}name: npm$/m, 'the publish job is in the npm environment, which npm\'s trusted publisher names');
+  assert.match(publish, /^ {4}permissions:\n {6}contents: read\n {6}id-token: write\n/m);
+  // No third-party code where the token can be had: node and npm over the packs, nothing installed, nothing built.
+  assert.doesNotMatch(publish, /npm ci|npm install|npx|nx run|release\.mjs/);
+  assert.match(publish, /run: node tools\/publish-packs\.mjs tmp\/release\/packs --tag "\$TAG"\n/);
+  assert.match(publish, /TAG: \$\{\{ github\.ref_name \}\}/);
+  for (const [id, block] of Object.entries(jobs)) assert.match(block, /^ {4}permissions:\n {6}contents: read\n/m, `${id} says its own permissions`);
+});
+
+test('publish.yml: the build is clean — the lockfile alone, no cache, every package built, then the release check', () => {
+  const text = readFileSync(join(WORKFLOWS, 'publish.yml'), 'utf8');
+  const { build } = jobsOf(text);
+  const code = text.replace(/^\s*#.*$/gm, '');
+  assert.doesNotMatch(code, /cache:|registry-url/, 'a cache, or an .npmrc that expects a token');
+  const order = ['run: npm ci', 'run: npx nx run-many -t build --skip-nx-cache', 'run: node tools/release.mjs check', 'actions/upload-artifact@'].map((step) => build.indexOf(step));
+  assert.ok(order.every((at, i) => at > 0 && (i === 0 || at > order[i - 1])), `the build's steps, in order: ${order.join(', ')}`);
+});
+
+test('publish.yml: the dry run publishes nothing — no OIDC token, npm publish --dry-run — and refuses to be told otherwise', () => {
+  const jobs = jobsOf(readFileSync(join(WORKFLOWS, 'publish.yml'), 'utf8'));
+  const dry = jobs['dry-run'];
+  assert.match(dry, /^ {4}if: github\.event_name == 'workflow_dispatch'$/m);
+  assert.doesNotMatch(dry, /id-token/);
+  assert.match(dry, /run: node tools\/publish-packs\.mjs tmp\/release\/packs --dry-run\n/);
+  assert.match(dry, /if: \$\{\{ !inputs\.dry_run \}\}\n\s+run: \|\n\s+echo "::error::This run publishes nothing\./);
+  // The others do not run by hand: build is the dry run's too.
+  assert.match(jobs.verify, /^ {4}needs: publish$/m);
+});
+
 test('Dependabot keeps npm and the actions up to date, weekly, grouped', () => {
   const file = join(WORKSPACE, '.github/dependabot.yml');
   assert.ok(existsSync(file), '.github/dependabot.yml is missing');

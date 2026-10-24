@@ -1,0 +1,152 @@
+name: Publish
+
+# Every @fieldia package to npm, from a version tag pushed to this repository (v0.34.0), by npm's trusted publishing:
+# npm asks GitHub for a short-lived OIDC token for this run alone and trades it for the publish. There is no npm token
+# anywhere — not in a secret, not on a machine — and each version carries provenance: npm's page for it links this
+# commit and this run. Until the packages are switched to trusted publishing on npmjs.com, npm refuses the publish
+# job: nothing can be published from here (docs/maintainers/publishing.md, the owner's checklist).
+#
+# build    a clean runner, the lockfile alone (`npm ci`, no cache), every package built, then `release.mjs check`:
+#          packed, installed into an empty project, imported, type-checked, the script bundle run, `npm audit` of what
+#          an app installs. Read access alone; it uploads the packs it proved, with their hashes (packs.json).
+# publish  on a pushed v* tag alone, in the `npm` environment: no `npm ci`, no build — no third-party code runs where
+#          the OIDC token can be asked for — only node and npm, over the packs `build` proved, each checked against its
+#          hash (tools/publish-packs.mjs). It refuses a tag that is not the packages' version, a commit not on main, a
+#          patch with an Upgrading part (tools/release-guards.mjs), and stops where a package fails, saying what is out.
+# verify   once published: the same checks on what npm serves (`release.mjs verify`).
+# dry-run  started by hand (Actions → Publish → Run workflow), on any branch: `build`, then everything `publish` does
+#          with `npm publish --dry-run` and no OIDC token — nothing is published; what a real run would refuse is said.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'A dry run: build, check, and npm publish --dry-run every package. Nothing is published — a real publish runs only from a pushed v* tag.'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# One publish at a time, never cut off part way.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build, check and pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      # No npm cache: a release is built from the lockfile alone, on a runner that has built nothing before.
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci
+      - run: npx nx run-many -t build --skip-nx-cache
+        env:
+          NX_DAEMON: 'false'
+      - run: node tools/release.mjs check
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: packs
+          path: tmp/release/packs/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish to npm (trusted publishing, provenance)
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # npm's trusted publisher for each package names this workflow and this environment; the environment's protection
+    # rules (a reviewer, v* tags alone) are the owner's, on GitHub.
+    environment:
+      name: npm
+      url: https://www.npmjs.com/org/fieldia
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      # The whole history, for the guards: the tag at HEAD, HEAD on origin/main.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # No registry-url: it writes an .npmrc that expects a token, and there is none.
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: packs
+          path: tmp/release/packs
+      - run: node tools/publish-packs.mjs tmp/release/packs --tag "$TAG"
+        env:
+          TAG: ${{ github.ref_name }}
+
+  verify:
+    name: What npm serves, checked
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci
+      # A version just published can take a minute to be served everywhere: the last package published, asked for
+      # until npm has it (ten minutes at most).
+      - name: Wait for npm to serve the release
+        run: |
+          version="${TAG#v}"
+          for try in $(seq 1 60); do
+            if [ "$(npm view "@fieldia/testing@$version" version 2>/dev/null)" = "$version" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "npm does not serve @fieldia/testing@$version after ten minutes."
+          exit 1
+        env:
+          TAG: ${{ github.ref_name }}
+      - run: node tools/release.mjs verify
+
+  dry-run:
+    name: Dry run of the publish (nothing is published)
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Read access alone, and no OIDC token: this job cannot publish, whatever it runs.
+    permissions:
+      contents: read
+    steps:
+      - name: A real publish runs only from a pushed v* tag
+        if: ${{ !inputs.dry_run }}
+        run: |
+          echo "::error::This run publishes nothing. A real publish runs only from a v* tag pushed to this repository; started by hand, the workflow is a dry run."
+          exit 1
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: packs
+          path: tmp/release/packs
+      - run: node tools/publish-packs.mjs tmp/release/packs --dry-run
