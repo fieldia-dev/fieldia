@@ -95,7 +95,12 @@ A quick answer shows nothing at all: a loader is drawn only after `delay`
 (150 ms); once drawn it stays `minShown` (300 ms), so it never flickers off;
 past `slowAfter` (5 s) "Still loading…" is said; past `timeout` (none unless
 set) the wait ends as failed, with Retry, and a list's request is told to stop
-(`signal`). A failure says why in its place — "Could not load the customers.
+(`signal`). Every request has a deadline of its own besides, the viewer's
+`timeout` (30 s unless you say, 0 for none): the deadline ends the request, a
+wait's `loading.timeout` ends the loader, and where both are set the sooner
+ends the wait — said once, with one Retry. A record that could not be loaded is
+said at the top of the form, in its own words ("This customer could not be
+loaded: …"), with Retry, which loads it. A failure says why in its place — "Could not load the customers.
 The archive is offline. Retry", "Couldn't load." with the source's own words —
 or in a toast (`error: "toast"`), or as the app draws it (`custom`); never an
 empty place. A record's Save steps aside while it saves, as before: its status

@@ -4,7 +4,7 @@ import { screen } from './support';
 
 /**
  * A record's load as a person meets it (audit R-H3, R-H4, R-M4): while its first load is on its way or failed, its
- * fields take no typing — nothing lands on a record nobody saw — and a failure is said over the page in words with a
+ * fields take no typing — nothing lands on a record nobody saw — and a failure is said in its place in words with a
  * Retry of its own, which loads it; a value its source holds that the page cannot show is said under its field alone,
  * and the rest is typed in and saved.
  */
@@ -51,11 +51,14 @@ const name = (page: Page) => page.locator('#app [data-node="name"] input');
 const inert = (page: Page) => name(page).evaluate((box) => !!box.closest('[inert]'));
 
 test.describe("a record's load", () => {
-  test('failed: said over the page with its own Retry, nothing to type in; Retry loads it', async ({ page }) => {
+  test('failed: said in its place, once, with its own Retry, nothing to type in; Retry loads it', async ({ page }) => {
     await mount(page, 'fail-once');
-    const banner = page.locator('#app .fd-load-problem');
+    // The record's wait's failure at the top of the form, in core's words for it: one alert, one Retry.
+    const banner = page.locator('#app .fd-loader[data-way="failed"]');
     await expect(banner).toBeVisible();
-    await expect(banner.locator('.fd-banner-text')).toHaveText('This record could not be loaded: Gateway Timeout');
+    await expect(banner.locator('.fd-loader-words')).toHaveText('This record could not be loaded: Gateway Timeout');
+    await expect(page.locator('#app').getByRole('button', { name: 'Retry' })).toHaveCount(1);
+    await expect(page.locator('#app .fd-load-problem')).toHaveCount(0);
     expect(await inert(page)).toBe(true);
     // Pressed and typed in anyway: nothing lands in it.
     await name(page).click({ force: true });
@@ -64,7 +67,7 @@ test.describe("a record's load", () => {
     await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeHidden();
     await screen(page, 'load-failed-retry');
     await banner.getByRole('button', { name: 'Retry' }).click();
-    await expect(banner).toBeHidden();
+    await expect(banner).toHaveCount(0);
     await expect(name(page)).toHaveValue('Nile Traders');
     expect(await inert(page)).toBe(false);
     await name(page).fill('Nile Traders Co');

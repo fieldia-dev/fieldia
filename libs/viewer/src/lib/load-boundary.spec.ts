@@ -4,7 +4,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
 /**
  * A record's load as a person meets it (audit R-H3, R-H4, R-M4; proofs B/ds3, view1, view5): while a record's first
  * load is on its way, or failed, its fields are inert — nothing typed lands on a record nobody saw — and a failure is
- * said over the page in words with a Retry of its own, never an editable form whose Save empties the record. A value
+ * said in its place in words with a Retry of its own (its wait's failure, one alert and one Retry), never an editable form whose Save empties the record. A value
  * the source holds that the page cannot show is said under its field alone; the rest is drawn and saves.
  */
 
@@ -38,30 +38,36 @@ function mount(dataSource: DataSource) {
 }
 
 describe('a record whose load fails (B/ds3)', () => {
-  it('says why over the page with a Retry of its own; its fields inert, no Save; Retry loads it', async () => {
+  it('says why in its place, one alert with one Retry of its own; its fields inert, no Save; Retry loads it', async () => {
     let fail = true;
+    let loads = 0;
     const saves: SaveRequest[] = [];
     const host = mount({
       load: async () => {
+        loads++;
         if (fail) throw new Error('Gateway Timeout');
         return { name: 'Nile Traders', amount: 52000, notes: 'Pays in 30 days' };
       },
       save: async (request) => (saves.push(request), { id: 7 }),
     });
     await flush(20);
-    const banner = host.querySelector('.fd-load-problem') as HTMLElement;
-    expect(visible(banner)).toBe(true);
-    expect(banner.querySelector('.fd-banner-text')?.textContent).toBe('This record could not be loaded: Gateway Timeout');
-    expect(banner.getAttribute('role')).toBe('alert');
+    // The record's wait's failure, at the top of the form, in core's words for it (`loadProblem`): the one place it is said.
+    const failed = () => host.querySelector('.fd-loader[data-way="failed"]') as HTMLElement | null;
+    expect(handle?.form.getState().loadProblem?.message).toBe('This record could not be loaded: Gateway Timeout');
+    expect(failed()?.querySelector('.fd-loader-words')?.textContent).toBe('This record could not be loaded: Gateway Timeout');
+    expect(failed()?.getAttribute('role')).toBe('alert');
+    expect(host.querySelectorAll('.fd-load-problem')).toHaveLength(0);
+    expect(buttons(host).filter((words) => words === 'Retry')).toHaveLength(1);
     expect(inert(box(host, 'name'))).toBe(true);
-    expect(inert(banner)).toBe(false);
+    expect(inert(failed() as HTMLElement)).toBe(false);
     expect(buttons(host)).not.toContain('Save');
     // The status says nothing twice.
     expect(host.querySelector('.fd-status')?.textContent).toBe('');
     fail = false;
-    (banner.querySelector('.fd-retry') as HTMLButtonElement).click();
+    (failed()?.querySelector('button') as HTMLButtonElement).click();
     await flush(20);
-    expect(visible(banner)).toBe(false);
+    expect(loads).toBe(2);
+    expect(failed()).toBeNull();
     expect(inert(box(host, 'name'))).toBe(false);
     expect(box(host, 'name').value).toBe('Nile Traders');
     expect(saves).toEqual([]);

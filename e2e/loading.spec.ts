@@ -384,10 +384,12 @@ test.describe('Loading, as you like it', () => {
     await failed.getByRole('button', { name: 'Retry' }).click();
     await listed(page);
     await settled(page);
-    // The customer asked again, failing: said at the top of its place, with Retry.
+    // The customer asked again, failing: said at the top of its place, with Retry — in the record's own words for it
+    // (core's `loadProblem`, naming it), the one place a record's load failure is said.
     await demo(page, '(d.net.failNext = true, d.record.reload(), 0)');
     const box = customer(page).locator('.fd-loader[data-way="failed"]');
-    await expect(box).toHaveText('Couldn’t load. The server did not answer this once. Retry');
+    await expect(box).toHaveText('This customer could not be loaded: The server did not answer this once. Retry');
+    await expect(customer(page).getByRole('alert').filter({ hasText: 'could not be loaded' })).toHaveCount(1);
     await box.getByRole('button', { name: 'Retry' }).click();
     await expect(box).toHaveCount(0);
     await expect(nameBox(page)).toHaveValue('Nile Traders');

@@ -53,6 +53,7 @@ import {
   type WaitsFor,
   type PageLoading,
   MESSAGES,
+  withDeadlines,
   hotkeyWords,
   labelAt,
   recordSentence,
@@ -539,8 +540,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** So, once the answers part has come (a page that says the answers loads it first); else as each field shows its value. */
   const asSaid: ValueWriter = (def, value, values) => answersPart.loaded?.sentenceValue(def, value, values, locale, sentenceWords) ?? displayValue(def, value, values, locale);
   /** What the page's form is made with; and each row's of a list whose cells change in place, but its drafts, autosave and record. */
+  // Every request this viewer makes of its source — its record's load, its lists' rows, a map's places, its sends —
+  // under one deadline (`timeout`, 30 s unless the app says, 0 for none: deadline.ts in @fieldia/core), its form's and
+  // its lists' the same source: a request past it ends its wait as failed, with Retry.
+  const dataSource = withDeadlines(options.dataSource, options.timeout, (options.messages ?? MESSAGES[locale]).noAnswer, options.scheduler);
   const formOptions: FormOptions = {
     ...options,
+    ...(dataSource ? { dataSource } : {}),
     page,
     host: actionHost,
     messages: options.messages ?? MESSAGES[locale],
@@ -1620,7 +1626,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     function countRelated(node: RelatedNode, tab: TabNode, button: HTMLElement, pill: HTMLElement) {
       let counter: RelatedCount | null = null;
       const take = (module: NonNullable<typeof listPart.loaded>) => {
-        counter = module.relatedCount({ node, form, dataSource: options.dataSource, tab, button, pill, labels, locale, fill });
+        counter = module.relatedCount({ node, form, dataSource, tab, button, pill, labels, locale, fill });
         relatedCounts.set(node.id, counter);
         counter.update(form.getState());
       };
@@ -1637,7 +1643,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     function relatedItem(node: RelatedNode): HTMLElement {
       const box = el('div', { 'data-node': node.id });
       spans(box, node.colspan ?? 12);
-      if (!options.dataSource?.list) {
+      if (!dataSource?.list) {
         box.hidden = true;
         return box;
       }
@@ -1645,7 +1651,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const take = (module: NonNullable<typeof listPart.loaded>) => {
         part = module.relatedList({
           page, node, form, box, doc, el, labels, locale, fill, press, withIcon, uid, preferences, dialogs,
-          dataSource: options.dataSource,
+          dataSource,
           icons: options.icons,
           now: options.now,
           open: (request) => actionHost.open(request),
@@ -1936,24 +1942,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const bannerRetry = el('button', { type: 'button', class: 'fd-button fd-retry' }, labels.retry);
   bannerRetry.addEventListener('click', () => void submitOrSave());
   const banner = el('div', { class: 'fd-banner fd-tone-warning', role: 'alert', hidden: '' }, el('span', { class: 'fd-banner-text' }, labels.offline), bannerRetry);
-  // A record that could not be loaded: said over the page with a Retry of its own — the record asked for again, never a
-  // save — while nothing of it can be changed. Until a record's first load ends well its parts are inert (its record bar,
-  // with the pager, stays live): nothing typed or pressed lands on a record nobody saw.
-  // Made the first time a load fails, before the save's banner: a page whose record loads has none.
-  let loadBanner: HTMLElement | null = null;
+  // A record that could not be loaded is said in its place, at the top of the form, with a Retry of its own — the record
+  // asked for again, never a save: the record's wait's failure (below), in the words of `state.loadProblem`. Until a
+  // record's first load ends well its parts are inert (its record bar, with the pager, stays live): nothing typed or
+  // pressed lands on a record nobody saw.
   updaters.push((state) => {
-    const problem = state.loadProblem ?? null;
-    if (problem && !loadBanner) {
-      const retry = el('button', { type: 'button', class: 'fd-button fd-retry' }, labels.retry);
-      retry.addEventListener('click', () => void (form.getState().loaded === false ? form.load() : form.run([{ do: 'reload' }])));
-      loadBanner = el('div', { class: 'fd-banner fd-load-problem', role: 'alert' }, el('span', { class: 'fd-banner-text' }), retry);
-      if (banner.parentElement) banner.before(loadBanner);
-      else content.prepend(loadBanner);
-    }
-    if (loadBanner) {
-      setHidden(loadBanner, !problem);
-      setText(loadBanner.firstChild as HTMLElement, problem?.message ?? '');
-    }
     const waiting = state.loaded === false;
     for (const part of questions?.children ?? []) if (!part.classList.contains('fd-record-bar')) setAttr(part as HTMLElement, 'inert', waiting ? '' : null);
   });
@@ -2059,7 +2052,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   let assistKit: ReturnType<AssistPart['watchAssist']> | null = null;
   const makeAssist = (part: AssistPart) => {
     if (assistKit || gone || page.layout.type === 'list') return assistKit;
-    const kit = part.watchAssist({ form, page, doc, el, labels, locale, tag: page.language ?? locale, icons: options.icons, fill, dataSource: options.dataSource, root, editable: () => !locked });
+    const kit = part.watchAssist({ form, page, doc, el, labels, locale, tag: page.language ?? locale, icons: options.icons, fill, dataSource, root, editable: () => !locked });
     updaters.push(kit.update);
     cleanups.push(kit.destroy);
     // Made once the page was drawn: its bar over the questions.
@@ -2135,7 +2128,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function topBar(toolbar: SheetNode['toolbar']): HTMLElement | null {
     if (page.data.kind !== 'record') return null;
     // Record templates people save and name (`templates`): their menu, from the part the page waited for.
-    const extra = templatesPart.loaded?.templatesMenu({ doc, el, form, page, labels, locale, preferences, dataSource: options.dataSource, say: actionHost.say, ask: dialogs.editValues, confirm: (message, how) => actionHost.ask(message, how) });
+    const extra = templatesPart.loaded?.templatesMenu({ doc, el, form, page, labels, locale, preferences, dataSource, say: actionHost.say, ask: dialogs.editValues, confirm: (message, how) => actionHost.ask(message, how) });
     const bar = recordBar({
       doc,
       el,
@@ -2470,7 +2463,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const layout = el('div', { class: 'fd-sheet-layout' }, card);
     if (node.attachmentPreview) {
       // Beside the sheet on a wide form, the side panel then under the sheet; under the sheet on a narrow one.
-      const preview = attachmentPreview({ doc, el, form, page, node: node.attachmentPreview, dataSource: options.dataSource, labels, fill });
+      const preview = attachmentPreview({ doc, el, form, page, node: node.attachmentPreview, dataSource, labels, fill });
       layout.classList.add('fd-has-preview');
       layout.append(preview.element);
       updaters.push(preview.update);
@@ -2610,7 +2603,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // What the page's parts draw with it are handed the same: the form, the page, its words, its questions once drawn.
     const drawing = { form, page, doc, el, labels, fill, announce, content: () => questions };
     for (const part of formJoins(page)) {
-      const join = joinDrawings[part.name]?.loaded?.draw({ ...drawing, dataSource: options.dataSource, tag: page.language ?? locale, icons: options.icons, editable: () => !locked, ask: (message) => actionHost.ask(message) });
+      const join = joinDrawings[part.name]?.loaded?.draw({ ...drawing, dataSource, tag: page.language ?? locale, icons: options.icons, editable: () => !locked, ask: (message) => actionHost.ask(message) });
       if (!join) continue;
       joins.push(join);
       if (join.update) updaters.push(join.update);
@@ -2639,7 +2632,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         page,
         node: layout,
         form,
-        dataSource: options.dataSource,
+        dataSource,
         doc,
         el,
         labels,
@@ -2693,7 +2686,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     questions = body;
     // Over the record's sections where no sheet placed it under its alerts.
     const band = approvalBand && !approvalBand.parentElement ? [approvalBand] : [];
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), ...(loadBanner ? [loadBanner] : []), banner, ...(limitsKit?.before ?? []), ...joins.flatMap((join) => join.before ?? []), ...safety.elements, draft, ...band, ...(assistKit && !assistKit.bar.parentElement ? [assistKit.bar] : []), body, ...joins.flatMap((join) => join.after ?? []), ...(limitsKit?.after ?? [])];
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...joins.flatMap((join) => join.before ?? []), ...safety.elements, draft, ...band, ...(assistKit && !assistKit.bar.parentElement ? [assistKit.bar] : []), body, ...joins.flatMap((join) => join.after ?? []), ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);
@@ -2749,7 +2742,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const drawsFromPart = loadingWithParts(page, owed, form.getState().status === 'idle', options.loading);
   const awaited = drawsFromPart && !loadingPart.loaded ? [...owed, loadingPart] : owed;
   // A list page's records asked for now, as its part comes, not once it has.
-  if (awaited.includes(listPart)) earlyRows = earlyList(page, options);
+  if (awaited.includes(listPart)) earlyRows = earlyList(page, dataSource ? { ...options, dataSource } : options);
   let drawn: Promise<void> = Promise.resolve();
   if (!awaited.length && !words) drawPage();
   else {
@@ -2757,7 +2750,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const drawWaited = () => {
       if (gone) return;
       // The viewer's own parts made before the page's language's words came: in them now, as the page is drawn.
-      if (words) inOwnWords([status, banner, ...(loadBanner ? [loadBanner] : []), draft, done, ...safety.elements], locale);
+      if (words) inOwnWords([status, banner, draft, done, ...safety.elements], locale);
       drawPage();
       // Drawn after the status took its place in a corner or across the top: the page's Save took it back beside itself.
       placeStatus();
@@ -3116,7 +3109,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** Retry, after a failure or a timeout: its record asked for again, a wait of its own drawn for it. */
   const askAgain = () => {
     recordWait = null;
-    void (loadedOnce ? form.run([{ do: 'reload' }]) : form.load());
+    // The record never loaded (core's `loaded`): loaded; else asked again, as a reload.
+    void (form.getState().loaded === false ? form.load() : form.run([{ do: 'reload' }]));
   };
   const recordWaitAt = (moment: 'first' | 'refresh') => startLoading(content, moment, loading, { part: page.id, shape: shapes, place: atTop, retry: askAgain });
   if (awaited.length || words || form.getState().status === 'idle') recordWait = recordWaitAt('first');
@@ -3128,22 +3122,22 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (recordWait && pageDrawn && !asking) {
       const wait = recordWait;
       recordWait = null;
-      // A record that could not be loaded says so in its place, with Retry; a save's failure is said its own way.
-      if (state.status === 'error' && !state.saveProblem) wait.fail(new Error(state.error ?? ''), askAgain);
+      // A record that could not be loaded says so in its place, with Retry, in core's words for it (`loadProblem`: "This
+      // customer could not be loaded: …") — the one place a record's load failure is said; a save's is said its own way.
+      if (state.status === 'error' && state.loadProblem) wait.fail(new Error(state.loadProblem.message), askAgain, '');
+      else if (state.status === 'error' && !state.saveProblem) wait.fail(new Error(state.error ?? ''), askAgain);
       else {
-        loadedOnce = true;
         // Answered past its timeout: drawn as it comes, what was said of it taken away.
         letFailureGo(content);
         void wait.done();
       }
-    } else if (!recordWait && state.status === 'loading') recordWait = recordWaitAt(loadedOnce ? 'refresh' : 'first');
+    } else if (!recordWait && state.status === 'loading') recordWait = recordWaitAt(state.loaded === false ? 'first' : 'refresh');
     if (state.status === 'saving' && !saveWait) saveWait = startAction(root.querySelector<HTMLElement>('button[type="submit"]:not([hidden])'));
     else if (state.status !== 'saving' && saveWait) {
       endAction(saveWait);
       saveWait = null;
     }
   };
-  let loadedOnce = false;
   updaters.push(waits);
   cleanups.push(() => {
     recordWait?.stop();

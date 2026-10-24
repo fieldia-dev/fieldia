@@ -1040,10 +1040,11 @@ live guard nothing: without them a send goes as it would have.
 
 ## Nothing waits for ever
 
-Each request a person waits on — a save, a send, an onchange, a search, a list's
-options — answers within the form's `timeout` (milliseconds, 30 000 unless
-said; 0 for none) or ends as the network's problem ("The server did not answer
-in time"), the viewer's banner with Retry; its `signal` (an AbortSignal, on the
+Each request a person waits on — a record's load, a list's rows, a save, a
+send, an onchange, a search, a list's options — answers within the form's (or
+the viewer's) `timeout` (milliseconds, 30 000 unless said; 0 for none) or ends
+as the network's problem ("The server did not answer in time"), said where it
+was asked, with Retry; its `signal` (an AbortSignal, on the
 request) aborts then, and a late answer is dropped. A Retry carries the first
 try's key, so a server keeps it once. A Discard waits for a save on its way at
 most 5 s, then ends it — the person's choice never waits behind a stuck save. A part or a

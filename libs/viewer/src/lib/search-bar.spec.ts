@@ -50,6 +50,8 @@ describe('the search bar', () => {
     expect(input(host).value).toBe('');
     expect((host.querySelector('.fd-search-suggestions') as HTMLElement).hidden).toBe(true);
     await shows(host, ['Amira Clinics', 'Nile Traders']);
+    // The same two rows were first before the search too: its answer's count waited for.
+    await until(() => total(host) === '1–2 / 2');
     expect(total(host)).toBe('1–2 / 2');
     // Escape, or leaving the box, puts the suggestions away.
     type(host, 'egy');

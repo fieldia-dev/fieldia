@@ -297,6 +297,8 @@ export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf
 export { drafts, outbox, ownerOf } from './lib/record/browser-kept';
 // A record's values as its source sent them, read as its fields hold theirs: what every load goes through.
 export { valuesFromSource, type FromSource } from './lib/record/from-source';
+// One deadline for every request a person waits on: the viewer's lists and its form's, one source (deadline.ts).
+export { SEND_TIMEOUT_MS, withDeadlines } from './lib/record/deadline';
 export { matchesFilter } from './lib/record/filter';
 export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';

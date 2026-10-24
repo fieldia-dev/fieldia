@@ -1874,7 +1874,8 @@ flash; kept its minimum; "Still loading…" when slow; a failure in its place, w
 what failed.
 
 ```ts
-// ListRequest gains signal?: UploadSignal — given only where the list's waits have a `timeout`.
+// ListRequest gains signal?: UploadSignal — the request's (§39: every request carries one, aborted at its deadline or
+// as its wait ends past its `timeout`).
 ```
 
 In plain words:
@@ -1884,11 +1885,13 @@ In plain words:
   customers." A network's own failure (`TypeError`) and an abort are said without words of theirs: they say nothing a
   person can act on.
 - **`signal` is honoured where it is given.** A page with a `timeout` ends a wait as failed once it passes; a list's
-  request — its records, its next rows, a map's places — carries an AbortSignal that aborts then. A source that stops
+  request — its records, its next rows, a map's places — is told to stop then, its signal aborting. A source that stops
   and rejects with an error named `AbortError` frees its server sooner; one that ignores it loses nothing: its answer,
-  coming late, is dropped, as any answer a newer ask took the place of. Without a `timeout`, no request carries one.
-- **A record that answers past its timeout** is drawn as it comes, the failure's words taken away: a record's `load`
-  carries no signal.
+  coming late, is dropped, as any answer a newer ask took the place of. Since 0.34 every request carries a signal, the
+  deadline's (§39), which the wait's own timeout aborts too.
+- **A record that answers past its timeout** (the wait's, shorter than the request's deadline) is drawn as it comes,
+  the failure's words taken away: the loader ended, the request did not. A record's load is said failed in its place,
+  in core's words for it (`state.loadProblem`: "This customer could not be loaded: …"), with Retry.
 - **What Retry asks** is what failed, again: the same list with the same search and page, the same record, the same
   search for the same words.
 - The memory source answers after `delayMs` (`createMemoryDataSource({ delayMs: 1500 })`), so a demo shows each wait;
@@ -1974,9 +1977,11 @@ One optional field more in the requests a person waits on; nothing to add.
 
 In plain words:
 
-- **One deadline** where a form's requests meet its source (deadline.ts, `withDeadlines`): `save`, `submit`, `onchange`,
-  `search` and `options` each answer within `timeout` — 30 000 ms unless the app says, 0 for none — or end as the
-  network's problem ("The server did not answer in time"), said with the form's Retry; their `signal` aborts then. A
+- **One deadline** where Fieldia's requests meet its source (deadline.ts, `withDeadlines`, made once per viewer: its
+  form's, its lists' and its maps' the same): `load`, `list`, `groups`, `save`, `submit`, `onchange`, `search` and
+  `options` each answer within `timeout` — 30 000 ms unless the app says, 0 for none — or end as the network's problem
+  ("The server did not answer in time"), said where it was asked with its Retry — a list's in its place, a record's at
+  the top of the form, a save's in the form's status; their `signal` aborts then. A
   source that honours it (rejecting with an error named `AbortError`) frees its server sooner; one that ignores it loses
   nothing: a late answer is dropped, and a save tried again carries its first try's key (§37), so it is kept once. A
   send kept on the device is sent under the same deadline.
@@ -1985,5 +1990,10 @@ In plain words:
   that fails after the person's Discard (`reset`) says nothing.
 - **A part or a language's chunk that stalls** settles as failed after `PART_WAIT_MS` (30 s): the page draws without it
   (a part that guards a send then refuses it, §R-H1), a language in English with its words put in should they come.
-- Same shape as 0.33's loading `timeout` for a record's load and a list's requests: a time, and a `signal`.
+- **The deadline ends the request, the loading timeout ends the loader** (§36, 0.33's `loading.timeout`, none unless
+  set): where both are set the sooner ends the wait, said once, with one Retry. A loading timeout shorter than the
+  deadline ends the loader as failed ("Couldn't load. It took too long.") and tells a list's request to stop (its
+  signal); a record's request goes on to its deadline and, answered before it, is drawn. A loading timeout longer than
+  the deadline never fires: the deadline ends the request first, and its wait with it. Never a loader left running,
+  never two messages for one wait (`libs/viewer/src/lib/deadline-waits-lazy.spec.ts`).
 - Tests: `libs/core/src/lib/record/deadline.spec.ts`, `e2e/deadlines.spec.ts`.
