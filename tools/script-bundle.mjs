@@ -2979,7 +2979,11 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const contact = inPage.mountViewer(host, { page: { ...read('new-customer.page.json'), phone: { country: 'EG' } }, dataSource: inPage.createMemoryDataSource() });
   waits(contact, 'a page with a phone read the world over');
   await contact.drawn;
-  hasIn('a phone read the world over', 'phone, relations');
+  // Its first wait, while those parts came, asked for the loading part beside them — never waited for, so in by now or
+  // not as the machine's load had it: let come, so the parts in are read the same on every run (0.33's merge: a gate
+  // at a load of 26 found it in, a quiet run not).
+  if (!handleIn(inPage, 'loading').loaded) await handleIn(inPage, 'loading').load();
+  hasIn('a phone read the world over', 'loading, phone, relations');
   if (!host.querySelector('.fd-phone button.fd-phone-country[aria-haspopup="listbox"]') || !doc.getElementById('fieldia-phone-styles')) throw new Error('in a page, a phone is not drawn from its part');
   if (!host.querySelector('.fd-combo > .fd-combo-input[role="combobox"]') || host.querySelector('[data-fd-plain="link"]')) throw new Error("in a page, a link to another record is not drawn from its part");
   contact.destroy();
