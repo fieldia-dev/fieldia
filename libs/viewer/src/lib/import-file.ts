@@ -1,3 +1,4 @@
+import { csvWords } from '@fieldia/core';
 import { unzip, ZipProblem } from './unzip';
 
 /**
@@ -103,7 +104,8 @@ export async function readFile(file: PickedFile, how: ReadHow = {}, most = Infin
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u0008\u000e-\u001a]/.test(text.slice(0, 4096))) throw new FileProblem('notSheet');
   const separator = how.separator ?? guessSeparator(text);
-  return tableOf('csv', csvRows(text.replace(/^sep=.\r?\n/i, ''), separator).map((cells, i) => ({ number: i + 1 + (/^sep=./i.test(text) ? 1 : 0), cells })), most, unnamed, { encoding, separator, ...misread });
+  // Each cell as it was written: a formula's start a file kept as words (Fieldia's export does, `csvCell`) read without its '.
+  return tableOf('csv', csvRows(text.replace(/^sep=.\r?\n/i, ''), separator).map((cells, i) => ({ number: i + 1 + (/^sep=./i.test(text) ? 1 : 0), cells: cells.map(csvWords) })), most, unnamed, { encoding, separator, ...misread });
 }
 
 /**

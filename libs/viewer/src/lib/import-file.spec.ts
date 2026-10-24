@@ -65,6 +65,14 @@ describe('a CSV file', () => {
     expect(sheet).toMatchObject({ encoding: 'utf-16le', separator: '\t', headers: ['Name', 'City'], rows: [['سلمى', 'Amman']] });
   });
 
+  it('reads a cell a spreadsheet would run as a formula, kept as words by a ' + "'" + ', as it was written (S-M1)', async () => {
+    const sheet = await readFile(picked(`Name,Phone,Note\r\nMona,'+20 100 123 4567,'=SUM(A1)\r\nOmar,'-5,it's fine\r\n`));
+    expect(sheet.rows).toEqual([
+      ['Mona', '+20 100 123 4567', '=SUM(A1)'],
+      ['Omar', '-5', "it's fine"],
+    ]);
+  });
+
   it('takes Excel’s own sep= line, and numbers its rows after it', async () => {
     const sheet = await readFile(picked('sep=|\r\nName|City\r\nOmar|Giza\r\n'));
     expect(sheet).toMatchObject({ separator: '|', headers: ['Name', 'City'], rows: [['Omar', 'Giza']], numbers: [3] });

@@ -1,5 +1,5 @@
 import type { SheetCell } from './xlsx';
-import { MESSAGES, optionsList, recordSentence, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value } from '@fieldia/core';
+import { MESSAGES, optionsList, recordSentence, type CsvValue, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value } from '@fieldia/core';
 import { askFirst, dateOrderOf, displayValue, drawIcon, keepTabIn, loadLinesPart, loadPhonePart, phoneSettings, WIDGET_LABELS, type IconSet, type LinesPart, type PhonePart } from '@fieldia/widgets';
 import { checkRows, type CheckedRow, type RowsCheck } from './import-check';
 import { ENCODING_SCRIPT, ENCODINGS, FileProblem, readFile, SEPARATORS, type FileCell, type FileSheet, type PickedFile, type ReadHow } from './import-file';
@@ -30,7 +30,7 @@ const NAMED = 50;
 /** What the list part hands over of its own, so the import part carries no copy of it: the workbook and CSV writers and the browser's save. */
 export interface ImportFiles {
   xlsxOf: (sheet: { name: string; columns: string[]; rows: SheetCell[][]; rtl?: boolean }) => Promise<Uint8Array>;
-  csvOf: (rows: readonly (readonly string[])[], separator?: string) => string;
+  csvOf: (rows: readonly (readonly CsvValue[])[], separator?: string) => string;
   csvSeparator: (locale: Locale) => string;
   saveFile: (doc: Document, name: string, file: Blob | string) => void;
   xlsxType: string;
