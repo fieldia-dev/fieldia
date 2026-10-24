@@ -160,8 +160,8 @@ interface Going {
   end(handOn: boolean): { loader: HTMLElement | null; shownAt: number } | null;
 }
 const going = new WeakMap<Element, Going>();
-/** A failure said in a region's place, until it is asked again. */
-const failures = new WeakMap<Element, HTMLElement>();
+/** A failure said in a region's place, until it is asked again — and what lets go of the app's drawing of it. */
+const failures = new WeakMap<Element, { box: HTMLElement; letGo?: () => void }>();
 /** Where a loader went in, taken away with it — a row of a table, an item of a list — whichever wait it was handed on to. */
 const holders = new WeakMap<HTMLElement, HTMLElement>();
 /** Which wait said what a live region says now: only it takes its words away, never another's said since. */
@@ -169,8 +169,10 @@ const speakers = new WeakMap<HTMLElement, object>();
 
 /** A failure said in a region's place taken away: what failed came after all (a record answered past its timeout). */
 export function letFailureGo(region: Element): void {
-  failures.get(region)?.remove();
+  const said = failures.get(region);
   failures.delete(region);
+  said?.box.remove();
+  said?.letGo?.();
 }
 
 /** Ways whose answer is drawn at once: what is shown stays, or nothing was drawn over it. */
@@ -244,11 +246,11 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
   region.setAttribute('aria-busy', 'true');
   given.told?.(true, { moment, part, duration: 0, failed: false });
 
-  const drawCustom = (container: HTMLElement, failed?: { error: string; retry?: () => void }) => {
+  const drawCustom = (container: HTMLElement) => {
     if (typeof undo === 'function') undo();
     container.replaceChildren();
     try {
-      undo = given.custom?.({ moment, part, container, signal: stopper.signal, slow, failed: !!failed, ...failed });
+      undo = given.custom?.({ moment, part, container, signal: stopper.signal, slow, failed: false });
     } catch (error) {
       console.warn('Fieldia: the app’s loading drawing threw', error);
     }
@@ -410,8 +412,22 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
       const box = make('failed');
       if (settings.error === 'custom' && given.custom) {
         put(box);
-        failures.set(region, holders.get(box) ?? box);
-        return drawCustom(box, { error: message, ...(again ? { retry: again } : {}) });
+        // The app's drawing of the failure: its own signal and clean-up, let go as the place is asked again.
+        const stop = new AbortController();
+        let gone: void | (() => void);
+        try {
+          gone = given.custom({ moment, part, container: box, signal: stop.signal, slow, failed: true, error: message, ...(again ? { retry: again } : {}) });
+        } catch (error) {
+          console.warn('Fieldia: the app’s loading drawing threw', error);
+        }
+        failures.set(region, {
+          box: holders.get(box) ?? box,
+          letGo: () => {
+            stop.abort();
+            if (typeof gone === 'function') gone();
+          },
+        });
+        return;
       }
       if (settings.error === 'toast' && given.toast && again) {
         given.toast(message, again);
@@ -430,7 +446,7 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
         box.append(' ', button);
       }
       put(box);
-      failures.set(region, holders.get(box) ?? box);
+      failures.set(region, { box: holders.get(box) ?? box });
     },
     stop() {
       if (over) return;

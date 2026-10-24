@@ -220,10 +220,18 @@ describe('a wait, on its clock', () => {
     expect(loader(region)?.textContent).toBe('Our own loader');
     jest.advanceTimersByTime(350);
     expect(undone).toHaveBeenCalledTimes(1);
+    const loaderSignal = signal;
     wait.fail(new Error('down'), () => undefined);
-    expect(signal?.aborted).toBe(true);
+    expect(loaderSignal?.aborted).toBe(true);
     expect(calls).toEqual([{ slow: false, failed: false }, { slow: true, failed: false }, { slow: true, failed: true, error: 'Couldn’t load. down', retry: true }]);
     expect(region.querySelector('.fd-loader[data-way="failed"]')?.textContent).toBe('Our own failure');
+    // The failure's drawing lives until its place is asked again: then its signal aborts, its clean-up runs.
+    expect(signal?.aborted).toBe(false);
+    const cleaned = undone.mock.calls.length;
+    startLoading(region, 'first', loading({ set: { first: 'custom', error: 'custom' }, custom })).stop();
+    expect(signal?.aborted).toBe(true);
+    expect(undone.mock.calls.length).toBe(cleaned + 1);
+    expect(region.querySelector('.fd-loader[data-way="failed"]')).toBeNull();
   });
 
   it('takes over a wait drawn the same way in its place: the loader kept, never gone and back between two asks', async () => {
