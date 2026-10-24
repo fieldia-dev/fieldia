@@ -1,6 +1,7 @@
 import { createForm, type DataSource, type Field, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
 import { uncalled } from './uncalled';
-import { loadParts, type Skin } from '@fieldia/viewer';
+import type { Skin } from '@fieldia/viewer';
+import { askCanvasParts } from './canvas-parts';
 import { createWidget, installStyles, useStyleNonce, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { barRoom, clearOfBar, keepClearOfBar } from './bottom-bar';
 import { branchMap, drawBranchMap } from './branch-map';
@@ -96,8 +97,8 @@ const lined = (el: ElementFactory, input: HTMLElement, extra = '') => el('span',
 export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOptions): SurveyEditorHandle {
   const { designer } = options;
   const doc = host.ownerDocument;
-  // Every part the page draws from asked for at once, as the editor opens, never kind by kind as each is reached.
-  loadParts(designer.getPage(), options.widgets).catch(() => undefined);
+  // Every part the canvas draws the page from asked for at once, as the editor opens (canvas-parts.ts).
+  askCanvasParts(designer.getPage(), options.widgets);
   useStyleNonce(doc, options.nonce);
   installStyles(doc);
   installDesignerStyles(doc);

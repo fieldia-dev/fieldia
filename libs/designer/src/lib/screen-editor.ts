@@ -1,5 +1,6 @@
 import type { DataSource, FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
-import { loadParts, type ListViewFactory, type MapPartFactory, type Skin } from '@fieldia/viewer';
+import type { ListViewFactory, MapPartFactory, Skin } from '@fieldia/viewer';
+import { askCanvasParts } from './canvas-parts';
 import { installStyles, useStyleNonce, type WidgetFactory } from '@fieldia/widgets';
 import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mode';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
@@ -77,9 +78,8 @@ const topOf = (page: Page) => (page.layout as { children: LayoutNode[] }).childr
 export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOptions): ScreenEditorHandle {
   const { designer } = options;
   const doc = host.ownerDocument;
-  // Every part the page draws from asked for at once, as the editor opens — never kind by kind as the canvas reaches
-  // each (0.32: three waves, 0.4 s on 4G before the canvas was whole). One that cannot come is drawn plainly.
-  loadParts(designer.getPage(), options.widgets).catch(() => undefined);
+  // Every part the canvas draws the page from asked for at once, as the editor opens (canvas-parts.ts).
+  askCanvasParts(designer.getPage(), options.widgets);
   useStyleNonce(doc, options.nonce);
   installStyles(doc);
   installDesignerStyles(doc);
