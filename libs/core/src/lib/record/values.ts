@@ -185,10 +185,11 @@ function forExpressions(field: AnyField, value: Value): unknown {
   switch (field.type) {
     case 'many2one':
       return (value as RelatedRecord).id;
+    // A value of another shape — one an app wrote, say — reads as none, never as a failure of every condition.
     case 'many2many':
-      return (value as RelatedRecord[]).map((record) => record.id);
+      return Array.isArray(value) ? (value as RelatedRecord[]).map((record) => record?.id) : null;
     case 'one2many':
-      return (value as Line[]).map((line) => line.key);
+      return Array.isArray(value) ? (value as Line[]).map((line) => line?.key) : null;
     case 'reference': {
       const ref = value as ReferenceValue;
       return `${ref.model},${ref.id}`;

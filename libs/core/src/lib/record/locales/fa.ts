@@ -123,5 +123,10 @@ export const fa: Messages = {
   guardOptions: 'بررسی گزینه\u200cها',
   guardLanguages: 'بررسی هر زبان',
   guardLimits: 'بررسی اینکه این فرم پاسخ می\u200cپذیرد یا نه',
+  loadFailed: 'این رکورد بارگیری نشد: {problem}',
+  notLoaded: 'این رکورد هنوز بارگیری نشده است، بنابراین چیزی ذخیره نشد.',
+  unreadableValue: '{label} به شکلی ذخیره شده که این صفحه نمی\u200cتواند نشان دهد: همان\u200cطور که هست نگه داشته می\u200cشود',
+  saveBroken: 'مشکلی پیش آمد، بنابراین چیزی ذخیره نشد: {problem}',
+  sendBroken: 'مشکلی پیش آمد، بنابراین چیزی ارسال نشد: {problem}',
   locale: 'fa',
 };

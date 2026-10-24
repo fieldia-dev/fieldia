@@ -1,4 +1,5 @@
 import { loadedRecordOf, type DataSource, type RecordChange, type RecordVersion } from './data-source';
+import { valuesFromSource } from './from-source';
 import type { FormInner } from './joins';
 import type { LiveRecord } from './live-later';
 import { fill, fillMessage } from './messages';
@@ -60,7 +61,8 @@ export function liveRecord(context: FormInner): LiveRecord {
     }
     if (!theirs || ours(version)) return;
     const told: Values = {};
-    for (const [name, value] of Object.entries(theirs)) if (fields[name]) told[name] = structuredCopy(value) as Value;
+    // Read as their fields hold values, as a load reads them (`valuesFromSource`): one that cannot be read is not laid.
+    for (const [name, value] of Object.entries(valuesFromSource(fields, theirs).values)) if (fields[name]) told[name] = structuredCopy(value) as Value;
     const baseline = context.baseline();
     const changed = Object.keys(fields).filter((name) => name in told && !context.same(name, baseline[name], told[name]));
     const by = version?.by ?? change.by;

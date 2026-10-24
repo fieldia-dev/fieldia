@@ -1835,6 +1835,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       : state.status === 'saved' ? savedWords()
       : state.status === 'loading' ? labels.loading
       : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? problem.message : notDone())
+      // A record that could not be loaded is said over the page, with its own Retry.
+      : state.status === 'error' && state.loadProblem ? ''
       : state.status === 'error' ? state.error ?? ''
       : '');
     // A problem is said once, at once, by the announcer (or the banner, or a dialog): the status shows it and keeps quiet.
@@ -1856,6 +1858,27 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const bannerRetry = el('button', { type: 'button', class: 'fd-button fd-retry' }, labels.retry);
   bannerRetry.addEventListener('click', () => void submitOrSave());
   const banner = el('div', { class: 'fd-banner fd-tone-warning', role: 'alert', hidden: '' }, el('span', { class: 'fd-banner-text' }, labels.offline), bannerRetry);
+  // A record that could not be loaded: said over the page with a Retry of its own — the record asked for again, never a
+  // save — while nothing of it can be changed. Until a record's first load ends well its parts are inert (its record bar,
+  // with the pager, stays live): nothing typed or pressed lands on a record nobody saw.
+  // Made the first time a load fails, before the save's banner: a page whose record loads has none.
+  let loadBanner: HTMLElement | null = null;
+  updaters.push((state) => {
+    const problem = state.loadProblem ?? null;
+    if (problem && !loadBanner) {
+      const retry = el('button', { type: 'button', class: 'fd-button fd-retry' }, labels.retry);
+      retry.addEventListener('click', () => void (form.getState().loaded === false ? form.load() : form.run([{ do: 'reload' }])));
+      loadBanner = el('div', { class: 'fd-banner fd-load-problem', role: 'alert' }, el('span', { class: 'fd-banner-text' }), retry);
+      if (banner.parentElement) banner.before(loadBanner);
+      else content.prepend(loadBanner);
+    }
+    if (loadBanner) {
+      setHidden(loadBanner, !problem);
+      setText(loadBanner.firstChild as HTMLElement, problem?.message ?? '');
+    }
+    const waiting = state.loaded === false;
+    for (const part of questions?.children ?? []) if (!part.classList.contains('fd-record-bar')) setAttr(part as HTMLElement, 'inert', waiting ? '' : null);
+  });
   /** Said at once to a screen reader: why a save or send did not go through. */
   const announcer = el('div', { class: 'fd-announce', role: 'alert', 'aria-live': 'assertive' });
   function announce(text: string) {
@@ -2585,7 +2608,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     questions = body;
     // Over the record's sections where no sheet placed it under its alerts.
     const band = approvalBand && !approvalBand.parentElement ? [approvalBand] : [];
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...joins.flatMap((join) => join.before ?? []), ...safety.elements, draft, ...band, ...(assistKit && !assistKit.bar.parentElement ? [assistKit.bar] : []), body, ...joins.flatMap((join) => join.after ?? []), ...(limitsKit?.after ?? [])];
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), ...(loadBanner ? [loadBanner] : []), banner, ...(limitsKit?.before ?? []), ...joins.flatMap((join) => join.before ?? []), ...safety.elements, draft, ...band, ...(assistKit && !assistKit.bar.parentElement ? [assistKit.bar] : []), body, ...joins.flatMap((join) => join.after ?? []), ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);
@@ -2640,7 +2663,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const drawWaited = () => {
       if (gone) return;
       // The viewer's own parts made before the page's language's words came: in them now, as the page is drawn.
-      if (words) inOwnWords([status, banner, draft, done, ...safety.elements], locale);
+      if (words) inOwnWords([status, banner, ...(loadBanner ? [loadBanner] : []), draft, done, ...safety.elements], locale);
       drawPage();
       // Drawn after the status took its place in a corner or across the top: the page's Save took it back beside itself.
       placeStatus();

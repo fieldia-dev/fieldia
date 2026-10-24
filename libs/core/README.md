@@ -1129,6 +1129,40 @@ by a name, to start new records from. The data source's `templates`,
 `preferences` without them. The memory source has them where its `templates`
 option is given (`{}` for none yet), kept by page id.
 
+## A record as it loads
+
+`form.load()` is the one way a record's values come in. Its source's `load`
+answers one record's values (or `loadedRecord(values, { version, can })`):
+anything else — nothing, a list (Odoo's `read()` answers one: give its first),
+a REST envelope round the record (`{ data: { … } }`) — is refused as a failed
+load, never read as a record whose every field is empty. Each value is read as
+its field holds one (`valuesFromSource`): a number sent as text ("1200.50", as
+Django REST and Postgres send decimals) as a number, Odoo's `false` as empty, a
+link as `{ id, label }` from Odoo's `[7, "Nile Traders"]` or a REST `{ id, name
+}`, a table's records as its lines. One that cannot be read is named in
+`state.unreadable` (by field, with why), shown empty, said under its field
+("Tags is stored in a way this page cannot show: it is kept as it is"), and left
+out of the `values` a save sends — the source keeps what it holds — unless the
+person writes the field.
+
+A load that fails is said in words in `state.loadProblem` ("This record could
+not be loaded: Gateway Timeout"), with a Retry of its own (`form.load()` again;
+the viewer draws it over the page), never as a save's problem. Until a record's
+first load ends well, `state.loaded` is false: the viewer draws its fields
+inert, and a save is refused ("This record has not loaded yet, so nothing was
+saved") — a whole-record save would empty it. What is typed while it loads is
+the person's: laid over the record as it lands, as changes to save. A record an
+app hands the form with its `values` and never asks to load is the app's to
+vouch for, and saves as ever.
+
+A value the source holds that its field's own checks would not take — 1.005 in
+a field of 2 places, an option since retired, an email of another shape — is
+said under the field as a warning while the person leaves it, never refusing a
+save that does not touch it; changed, it is checked as any change is. Required
+still asks, and a table's cells, a matrix's rows and a text's languages are
+checked as ever. `form.save()` never throws: a save that breaks on its way is
+a save problem in words ("Something went wrong, so nothing was saved: …").
+
 ## Two people, one record
 
 A source that keeps versions returns each record with its version, and what this

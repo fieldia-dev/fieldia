@@ -124,5 +124,10 @@ export const ur: Messages = {
   guardOptions: 'انتخابات کی جانچ',
   guardLanguages: 'ہر زبان کی جانچ',
   guardLimits: 'اس فارم کے جوابات قبول کرنے کی جانچ',
+  loadFailed: 'یہ ریکارڈ لوڈ نہیں ہو سکا: {problem}',
+  notLoaded: 'یہ ریکارڈ ابھی لوڈ نہیں ہوا، اس لیے کچھ محفوظ نہیں ہوا۔',
+  unreadableValue: '{label} ایسی شکل میں محفوظ ہے جسے یہ صفحہ نہیں دکھا سکتا: اسے جوں کا توں رکھا گیا ہے',
+  saveBroken: 'کچھ غلط ہو گیا، اس لیے کچھ محفوظ نہیں ہوا: {problem}',
+  sendBroken: 'کچھ غلط ہو گیا، اس لیے کچھ نہیں بھیجا گیا: {problem}',
   locale: 'ur',
 };

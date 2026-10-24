@@ -53,12 +53,13 @@ import {
   type PresentPerson,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
-import { formLanguagesPart, hasLanguages } from './languages';
+import { formLanguagesPart, hasLanguages, languagesOf } from './languages';
 import type { QuizResults } from './quiz';
 import type { Countdown } from './timing';
 import type { Limits } from './form-limits';
 import type { FormApproval } from './approving';
 import { draftRead, resumeStep, timedStore } from './drafts';
+import { envelopeOf, valuesFromSource } from './from-source';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -226,6 +227,20 @@ export interface FormState {
   readonly outbox?: { readonly waiting: number; readonly sending: boolean; readonly offline: boolean; readonly kept: boolean; readonly refused: readonly { readonly key: string; readonly message: string; readonly at: string }[] };
   /** Who else has the record open, as the data source's `presence` pushed: never this person. Empty while none does, or without it. */
   readonly present?: readonly PresentPerson[];
+  /**
+   * Whether the record shown has its values from its source: false while its first load is on its way, or failed —
+   * nothing of it to change or save (the viewer draws its fields inert, and a save is refused) — true once it loaded,
+   * and for a new record or a page of responses. A load again that fails keeps what loaded before.
+   */
+  readonly loaded?: boolean;
+  /** Why the record could not be loaded, in words, until a load ends well: said with a Retry of its own (`form.load()`). */
+  readonly loadProblem?: SaveProblem | null;
+  /**
+   * Values the record's source holds that could not be read as their fields hold them — `"vip,new"` for a list of
+   * records — by field, with why: shown empty, said under the field, and never sent back over what the source holds,
+   * unless the person writes the field.
+   */
+  readonly unreadable?: Readonly<Record<string, string>>;
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -1363,6 +1378,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     order: null,
     timers: {},
     timeUp: [],
+    loaded: true,
+    loadProblem: null,
+    unreadable: {},
   };
   started = true;
   /**
@@ -2273,7 +2291,39 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   function nodeError(node: IndexedNode): string | undefined {
     const name = node.field as string;
-    return unticked(node) ?? checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages, today(), (node.source as FieldNode).widget) ?? ruleCheck(node).error;
+    const value = state.values[name];
+    const own = checkInput(page.fields[name], node.source as FieldNode, value, messages) ?? checkValue(checked(name), value, nodeState(node.id).required, messages, today(), (node.source as FieldNode).widget);
+    // A value as its source holds it, the person never having touched it: its own checks warn (`storedWarnings`), never refuse.
+    const kept = own !== undefined && asStored(name) && !isEmpty(page.fields[name], value);
+    return unticked(node) ?? (kept ? undefined : own) ?? ruleCheck(node).error;
+  }
+
+  /**
+   * Whether a field holds what its record's source gave it: on a record loaded from its source, a field the person has
+   * not changed since. Its value's own checks — its kind, places, digits, options, a pattern — are the source's to keep:
+   * said as a warning, never a refusal of a save that does not touch it (a rename never stopped by a rate of 1.005 in a
+   * field of 2 places, nor by an option since retired). Required still asks: an empty field is no value kept, nor is a
+   * text missing a language it is required in; a table's cells, a matrix's rows and a properties field's own are
+   * checked as ever.
+   */
+  const asStored = (name: string) => page.data.kind === 'record' && state.recordId != null && shownLoaded && KEPT_AS_STORED.has(page.fields[name]?.type) && !languagesOf(page.fields[name]) && !state.dirty.includes(name);
+
+  /** The warnings of the record as loaded: each field's value its own checks would not take, and each its source holds that could not be read. */
+  let storedWarnings: Record<string, string> = {};
+  function storedProblems(values: Values, unreadable: Readonly<Record<string, string>>): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const name of Object.keys(unreadable)) if (page.fields[name]) out[name] = fillMessage(messages, messages.unreadableValue, { label: wordsNow(page.fields[name].label) });
+    for (const node of index.values()) {
+      const name = node.field;
+      if (node.kind !== 'field' || !name || out[name] || !page.fields[name]) continue;
+      const def = page.fields[name];
+      const value = values[name];
+      const widget = (node.source as FieldNode).widget;
+      // Only what a save leaving it would not be refused for: a table's cells, a matrix's rows, a text's languages are checked as ever.
+      const problem = isEmpty(def, value) || !KEPT_AS_STORED.has(def.type) || languagesOf(def) ? undefined : (checkInput(def, node.source as FieldNode, value, messages) ?? checkValue(checked(name), value, false, messages, today(), widget));
+      if (problem) out[name] = problem;
+    }
+    return out;
   }
 
   /** What a check would refuse now (`collectErrors`), for the state it was found for. */
@@ -2293,13 +2343,16 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   }
 
   /** Warnings for the visible fields of the page, without publishing them. */
-  function collectWarnings(): Record<string, string> {
+  function collectWarnings(dirty: readonly string[] = state.dirty): Record<string, string> {
     const warnings: Record<string, string> = {};
-    if (!warns) return warnings;
-    for (const node of visibleFieldNodes()) {
-      const warning = nodeRules.has(node.id) ? ruleCheck(node).warning : undefined;
-      if (warning) warnings[node.field as string] ??= warning;
+    if (warns) {
+      for (const node of visibleFieldNodes()) {
+        const warning = nodeRules.has(node.id) ? ruleCheck(node).warning : undefined;
+        if (warning) warnings[node.field as string] ??= warning;
+      }
     }
+    // A value as its source holds it that its checks would not take, or could not read: until the person writes it.
+    for (const [name, warning] of Object.entries(storedWarnings)) if (!dirty.includes(name)) warnings[name] ??= warning;
     return warnings;
   }
 
@@ -2569,7 +2622,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (Object.keys(words).length) errors = { ...errors, ...words };
     // A change someone made: a line's choice its columns no longer offer is cleared (followLines); a draft restored is none.
     edit = !fresh;
-    set({ values, dirty: dirtyFields(values), errors, warnings: withValues(values, collectWarnings), unread, ...extra });
+    const dirty = dirtyFields(values);
+    set({ values, dirty, errors, warnings: withValues(values, () => collectWarnings(dirty)), unread, ...extra });
   }
 
   /** Once errors are on screen, keep them current as the person fixes things. */
@@ -2903,6 +2957,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   function sentValues(): Values {
     const values = structuredCopy(state.values as Values);
     for (const name of state.can?.hiddenFields ?? []) delete values[name];
+    // A value its source holds that the form could not read stays as the source holds it, unless the person wrote it.
+    for (const name of Object.keys(state.unreadable ?? {})) if (!state.dirty.includes(name)) delete values[name];
     return values;
   }
 
@@ -2929,11 +2985,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    * the page's own beforeSave steps ask for runs inside the one that set them off.
    */
   function saving(chain: readonly string[], yes?: string): Promise<Stopped | null> {
-    if (chain.includes('on.beforeSave')) return savingNow(chain, yes);
+    if (chain.includes('on.beforeSave')) return savingNow(chain, yes).catch(broken);
     const before = saveRunning;
     const mine = (async () => {
       if (before) await before;
-      return savingNow(chain, yes);
+      return savingNow(chain, yes).catch(broken);
     })();
     const done = mine.then(
       () => undefined,
@@ -2989,10 +3045,27 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return { kind: 'other', message: fillMessage(messages, page.data.kind === 'responses' ? messages.guardNotSent : messages.guardNotSaved, { part: messages[words], again }) };
   }
 
+  /**
+   * A save that broke on its way — a box's reading, a part's hook, anything but the source's own answer (which is a
+   * save problem of its own kind): never thrown at whoever saved, but said, nothing sent. `save()` never rejects.
+   */
+  function broken(error: unknown): Stopped {
+    const message = fillMessage(messages, page.data.kind === 'responses' ? messages.sendBroken : messages.saveBroken, { problem: error instanceof Error ? error.message : String(error) });
+    const problem: SaveProblem = { kind: 'other', message };
+    set({ status: 'error', error: message, saveProblem: problem, conflict: null });
+    return { reason: 'save', message };
+  }
+
   async function savingNow(chain: readonly string[], yes?: string): Promise<Stopped | null> {
     // A record its source does not let this person change is refused here, in its words or the form's: no source is asked.
     if (page.data.kind === 'record' && state.can?.edit === false) {
       const problem: SaveProblem = { kind: 'rule', message: state.can.reason ?? named(messages.mayNotEditNoun, messages.mayNotEdit) };
+      set({ status: 'error', error: problem.message, saveProblem: problem, conflict: null });
+      return { reason: 'save', message: problem.message };
+    }
+    // A record that never loaded holds none of its values: nothing of it is saved — whole, it would empty the record.
+    if (page.data.kind === 'record' && state.recordId != null && state.loaded === false) {
+      const problem: SaveProblem = (notLoadedProblem = { kind: 'other', message: named(messages.notLoadedNoun, messages.notLoaded) });
       set({ status: 'error', error: problem.message, saveProblem: problem, conflict: null });
       return { reason: 'save', message: problem.message };
     }
@@ -3147,7 +3220,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // nothing changed since). Not on a page that saves itself as it is changed (`autosave`), whose changes are taken
       // back across its saves; nor where a change made while it saved goes on past it.
       if (!options.autosave && !dirty.length && got) noted = [];
-      set({ status: 'saved', recordId: result.id, values, dirty, warnings: withValues(values, collectWarnings), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
+      set({ status: 'saved', recordId: result.id, values, dirty, warnings: withValues(values, () => collectWarnings(dirty)), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
       // Changed while it saved: kept in a draft, and saved as any change is.
       if (dirty.length) {
         scheduleDraft();
@@ -3178,7 +3251,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    * on its way (a file stored meanwhile) was not sent: it is laid over that,
    * still a change to save, never taken as saved.
    */
-  function afterSave(sent: Values, back: Values | undefined, whole = false): { values: Values; dirty: string[] } {
+  function afterSave(sent: Values, given: Values | undefined, whole = false): { values: Values; dirty: string[] } {
+    // What the source sent back, read as its fields hold values (`valuesFromSource`): one it could not read, left as sent.
+    const back = given && typeof given === 'object' && !Array.isArray(given) ? valuesFromSource(fields, given).values : undefined;
     const stored = (from: Values) => (back ? ordered({ ...from, ...back }, Object.keys(back)) : from);
     const since = whole ? [] : Object.keys(fields).filter((name) => state.values[name] !== sent[name] && !sameValue(fields[name], state.values[name], sent[name]));
     if (!since.length) {
@@ -3394,26 +3469,45 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return (index.get(id)?.source as { optional?: boolean } | undefined)?.optional === true;
   }
 
-  /** Load the record; `again`, as a step's reload: no draft offered, no `open` steps run a second time. */
+  /**
+   * Load the record; `again`, as a step's reload: no draft offered, no `open` steps run a second time. THE way a
+   * record's values come in: read as its fields hold them (`valuesFromSource`), anything but one record refused, a
+   * failure said in words with a Retry of its own (`loadProblem`). What the person types while it loads is theirs: laid
+   * over the record as it lands, changes to save — never lost under it.
+   */
   async function load(again = false): Promise<void> {
     const source = options.dataSource;
     if (state.recordId == null || page.data.kind !== 'record') return;
-    if (!source?.load) {
-      set({ status: 'error', error: 'This page has no data source to load from' });
-      return;
-    }
+    if (!source?.load) return loadFailed(new Error('this page has no data source to load from'));
     // Only the latest load is taken: a pager pressed twice shows the record it ended on.
     const seq = ++loads;
+    // Typed while it was not loaded — its load on its way, or failed and asked again (Retry) — is the person's still.
+    const typedBefore = shownLoaded ? [] : [...personal];
     // The record loaded again is shown anew: an answer started for it before is not laid over it.
     newGeneration();
-    set({ status: 'loading', error: null, unsent: [] });
+    for (const name of typedBefore) personal.add(name);
+    // A record not loaded yet holds none of its values: nothing of it to change or save until it is.
+    set({ status: 'loading', error: null, unsent: [], loadProblem: null, ...(shownLoaded ? {} : { loaded: false }) });
     try {
       // A source may give the record's version and what the person may do with it beside its values.
-      const { values: loaded, version, can } = loadedRecordOf(await source.load({ model: page.data.model, id: state.recordId, fields }));
+      const { values: given, version, can } = loadedRecordOf(await source.load({ model: page.data.model, id: state.recordId, fields }));
       if (seq !== loads) return;
+      const wrapped = envelopeOf(fields, given);
+      if (wrapped) throw new Error(`the data source's load answered { ${wrapped}: … } round the record: answer its values themselves`);
+      const { values: loaded, unreadable } = valuesFromSource(fields, given);
       // Lines load in their tables' orders; where a person moves them after, they stay.
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
-      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {}, takenOut: {} });
+      // Typed while it loaded — the fields the person wrote, the tables they changed — laid over it as their changes.
+      const typed = [...new Set([...personal, ...personalLines.keys()])].filter((name) => name in fields);
+      const values = typed.length ? syncParts(startFrom({ ...structuredCopy(baseline), ...structuredCopy(Object.fromEntries(typed.map((name) => [name, state.values[name]]))) }), 'start') : structuredCopy(baseline);
+      const unread = Object.fromEntries(Object.entries(state.unread).filter(([path]) => typed.includes(path.split('.')[0])));
+      const refusedUnloaded = state.saveProblem !== null && state.saveProblem === notLoadedProblem ? { saveProblem: null } : {};
+      const dirty = dirtyFields(values);
+      // What the source holds that the page's own checks would not take — 1.005 in a field of 2 places, an option since
+      // retired — and what it could not read: said under each field as a warning while it stays as stored.
+      shownLoaded = true;
+      storedWarnings = storedProblems(values, unreadable);
+      set({ status: 'ready', values, dirty, errors: {}, warnings: withValues(values, () => collectWarnings(dirty)), version: version ?? null, can: can ?? null, unread, takenOut: {}, loaded: true, loadProblem: null, unreadable, ...refusedUnloaded });
       // Each choice's places, for this record: its own choices are its own.
       loadedOnce = true;
       if (asksLimits()) void track(askLimits());
@@ -3423,9 +3517,24 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       offerDraft();
       void track(opening());
     } catch (error) {
-      if (seq === loads) set({ status: 'error', error: (error as Error).message });
+      if (seq === loads) loadFailed(error);
     }
   }
+
+  /** A load that failed: said in words — the source's own after them — with a Retry of its own; what loaded before stays. */
+  function loadFailed(error: unknown) {
+    const problem = saveProblemOf(error);
+    const message = fillMessage(messages, named(messages.loadFailedNoun, messages.loadFailed), { problem: problem.message });
+    set({ status: 'error', error: message, loadProblem: { kind: problem.kind === 'network' ? 'network' : 'other', message } });
+  }
+
+  /** The save refused for a record that never loaded, until it does. */
+  let notLoadedProblem: SaveProblem | null = null;
+  /**
+   * Whether the record shown loaded once from its source. A record an app hands the form with its values and never asks
+   * to load (`recordId` with `values`) is the app's to vouch for: it saves as ever.
+   */
+  let shownLoaded = false;
 
   let loads = 0;
 
@@ -3438,6 +3547,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Another record in this form's place, or a new one: what was there let go, the new one loaded and opened. */
   async function showNow(id: RecordId | null): Promise<true> {
     newGeneration();
+    // The warnings of the record shown before are that one's.
+    storedWarnings = {};
+    shownLoaded = false;
     if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
     if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
     draftTimer = autosaveTimer = null;
@@ -3451,7 +3563,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     draftEpoch++;
     const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {}, resume: null, approval: null };
     if (id != null) {
-      set({ ...fresh, recordId: id, status: 'idle' });
+      set({ ...fresh, recordId: id, status: 'idle', loaded: false, loadProblem: null, unreadable: {} });
       joinsReset();
       await load();
       return true;
@@ -3459,7 +3571,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     loads++;
     baseline = startFrom(startingValues(true, false));
     const values = syncParts(structuredCopy(baseline), 'start');
-    set({ ...fresh, recordId: null, status: 'ready', values, warnings: withValues(values, collectWarnings) });
+    set({ ...fresh, recordId: null, status: 'ready', values, warnings: withValues(values, collectWarnings), loaded: true, loadProblem: null, unreadable: {} });
     joinsReset();
     if (asksLimits()) void track(askLimits());
     offerDraft();
@@ -4091,7 +4203,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Started again: a new response, timed from now.
       bot = { ...bot, honeypot: false, since: clock() };
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null });
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, () => collectWarnings([])), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {}, takenOut: {}, sent: null });
       // Started again: a new response proves and pays its own; a new respondent is drawn anew (unless the app or the
       // person's id is the seed), on the first step drawn, no clock running.
       joinsReset();
@@ -4441,7 +4553,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           const shown = shownNow();
           try {
             const now = loadedRecordOf(await track(source.load({ model: page.data.model, id: state.recordId, fields })));
-            told = now.values;
+            told = valuesFromSource(fields, now.values).values;
             version = now.version ?? version;
           } catch {
             // Unread: said below.
@@ -4589,7 +4701,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       filed.clear();
       baseline = startFrom({ ...initialValues(page.fields, today()), ...structuredCopy(values) });
       const start = syncParts(structuredCopy(baseline), 'start');
-      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null, unread: {}, takenOut: {} });
+      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, () => collectWarnings([])), warning: null, warningField: null, unread: {}, takenOut: {} });
     },
     errorsNow: () => collectErrors(),
     typing: typingNow,
@@ -4608,6 +4720,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
   };
 }
+
+/** The kinds of field whose value as its source holds it warns of its own checks, never refuses a save that leaves it (`asStored`). */
+const KEPT_AS_STORED = new Set<string | undefined>(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference', 'binary', 'image']);
 
 /** Two ways out taken the same way: the one joined answers for the other. */
 const sameHow = (a: LeaveHow, b: LeaveHow) => !!a.changes === !!b.changes && !!a.discard === !!b.discard;
@@ -4691,7 +4806,9 @@ function keepIds(def: Field, mine: Value | undefined, stored: Value | undefined)
 function sameValue(def: Field | undefined, a: unknown, b: unknown): boolean {
   const id = (value: unknown) => (value !== null && typeof value === 'object' && !Array.isArray(value) && 'id' in value ? (value as RelatedRecord).id : value);
   if (def?.type === 'many2one') return JSON.stringify(id(a) ?? null) === JSON.stringify(id(b) ?? null);
-  if (def?.type === 'many2many') return JSON.stringify(((a as unknown[] | null) ?? []).map(id)) === JSON.stringify(((b as unknown[] | null) ?? []).map(id));
+  // Of another shape (an app's write): compared as it is, never a failure.
+  const ids = (value: unknown) => (Array.isArray(value) ? value.map(id) : (value ?? []));
+  if (def?.type === 'many2many') return JSON.stringify(ids(a)) === JSON.stringify(ids(b));
   return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 }
 

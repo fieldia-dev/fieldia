@@ -968,10 +968,16 @@ export function loadedRecord(values: Values, more: { version?: RecordVersion; ca
   return { $loaded: true, values, ...(more.version ? { version: more.version } : {}), ...(more.can ? { can: more.can } : {}) };
 }
 
-/** What a load gave, in one shape: bare values, as every source gave them before, are a record with nothing more to tell. */
+/**
+ * What a load gave, in one shape: bare values, as every source gave them before, are a record with nothing more to tell.
+ * Anything but one record's values is refused (thrown, as a failed load is): nothing at all, a list — Odoo's `read()`
+ * answers one, `[{ … }]` — or a value that is no object; each would read as a record whose every field is empty.
+ */
 export function loadedRecordOf(loaded: Values | LoadedRecord): LoadedRecord {
-  const marked = loaded as Partial<LoadedRecord>;
-  return marked.$loaded === true && marked.values !== null && typeof marked.values === 'object' ? (loaded as LoadedRecord) : { $loaded: true, values: loaded as Values };
+  const marked = loaded as Partial<LoadedRecord> | null | undefined;
+  const record = marked?.$loaded === true ? marked.values : loaded;
+  if (!record || typeof record !== 'object' || Array.isArray(record)) throw new Error(`the data source's load answered ${Array.isArray(record) ? 'a list' : String(record)}, not one record's values`);
+  return marked?.$loaded === true ? (loaded as LoadedRecord) : { $loaded: true, values: loaded as Values };
 }
 
 /** One stored record, by its model and id. */

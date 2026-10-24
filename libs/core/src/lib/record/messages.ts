@@ -137,6 +137,8 @@ export interface Messages {
   mayNotDeleteNoun?: string;
   discardChangesNoun?: string;
   recordReplacedNoun?: string;
+  loadFailedNoun?: string;
+  notLoadedNoun?: string;
   /** A text longer than its most, pasted whole: `{over}` characters too long for its `{max}`; one over (`overByOne`). The one message: its count stays a count. */
   overBy: string;
   overByOne: string;
@@ -200,6 +202,16 @@ export interface Messages {
   guardOptions: string;
   guardLanguages: string;
   guardLimits: string;
+  /**
+   * A record that could not be loaded (`{problem}`, the source's words), said with its own Retry; a save of a record
+   * that never loaded, refused; a value the source holds that the page cannot show, kept as it is stored.
+   */
+  loadFailed: string;
+  notLoaded: string;
+  unreadableValue: string;
+  /** A save or a send that broke on the way (`{problem}`, what broke): nothing went. */
+  saveBroken: string;
+  sendBroken: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -308,6 +320,8 @@ const en: Messages = {
   mayNotDeleteNoun: 'You cannot delete this {record}.',
   discardChangesNoun: 'Discard your changes to this {record}?',
   recordReplacedNoun: 'Another {record} is shown now: the rest of these steps did not run.',
+  loadFailedNoun: 'This {record} could not be loaded: {problem}',
+  notLoadedNoun: 'This {record} has not loaded yet, so nothing was saved.',
   overBy: '{label} is {over} characters too long: shorten it to {max}',
   overByOne: '{label} is 1 character too long: shorten it to {max}',
   postcode: '{label}: a postcode in {country} has {n} digits, like {example}',
@@ -343,6 +357,11 @@ const en: Messages = {
   guardOptions: 'The check of the choices',
   guardLanguages: 'The check of each language',
   guardLimits: 'The check of whether this form takes answers',
+  loadFailed: 'This record could not be loaded: {problem}',
+  notLoaded: 'This record has not loaded yet, so nothing was saved.',
+  unreadableValue: '{label} is stored in a way this page cannot show: it is kept as it is',
+  saveBroken: 'Something went wrong, so nothing was saved: {problem}',
+  sendBroken: 'Something went wrong, so nothing was sent: {problem}',
   locale: 'en',
 };
 

@@ -112,5 +112,10 @@ export const ar: Messages = {
   guardOptions: 'التحقق من الخيارات',
   guardLanguages: 'التحقق من كل لغة',
   guardLimits: 'التحقق مما إذا كان هذا النموذج يقبل الإجابات',
+  loadFailed: 'تعذّر تحميل هذا السجل: {problem}',
+  notLoaded: 'لم يُحمَّل هذا السجل بعد، لذا لم يُحفَظ شيء.',
+  unreadableValue: '{label} محفوظ بصيغة لا تستطيع هذه الصفحة عرضها: سيبقى كما هو',
+  saveBroken: 'حدث خطأ، لذا لم يُحفَظ شيء: {problem}',
+  sendBroken: 'حدث خطأ، لذا لم يُرسَل شيء: {problem}',
   locale: 'ar',
 };
