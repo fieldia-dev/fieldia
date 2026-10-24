@@ -10,7 +10,7 @@ import { createForm, pageJsonSchema, validatePage, type Line, type Page, type Va
  */
 
 const unit = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'unit',
   data: { kind: 'record', model: 'unit' },
   fields: {
@@ -47,7 +47,7 @@ const unit = {
 } as Page;
 
 const visit = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'visit',
   data: { kind: 'responses' },
   fields: {

@@ -36,7 +36,7 @@ describe('the format schemas under a strict policy', () => {
       core = await import('../../../src/index');
     });
     for (const file of readdirSync(EXAMPLES).filter((name) => name.endsWith('.json'))) core.validatePage(JSON.parse(readFileSync(join(EXAMPLES, file), 'utf8')));
-    core.validatePage({ fieldia: '0.10', id: 'x', title: 'X', fields: { a: { type: 'char', label: 'A' } }, layout: { type: 'sections', id: 'r', children: [{ type: 'field', id: 'a', field: 'a' }] } });
+    core.validatePage({ fieldia: '0.11', id: 'x', title: 'X', fields: { a: { type: 'char', label: 'A' } }, layout: { type: 'sections', id: 'r', children: [{ type: 'field', id: 'a', field: 'a' }] } });
     expect(core.pageJsonSchema()['$schema']).toBeTruthy();
     expect(made).toEqual([]);
     // zod's own setting given back once Fieldia's schemas are made: an app's schemas are as the app set them.

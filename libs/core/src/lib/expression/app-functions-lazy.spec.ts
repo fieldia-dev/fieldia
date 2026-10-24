@@ -10,7 +10,7 @@ import { functionsPart } from './functions';
  */
 
 const page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'order',
   title: 'Order',
   data: { kind: 'responses' },

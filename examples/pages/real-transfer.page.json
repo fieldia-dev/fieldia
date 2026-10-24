@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.10",
+  "fieldia": "0.11",
   "id": "real-transfer",
   "title": "Transfer",
   "description": "Sherkety ERP's transfer form (stock.picking, view_picking_form), with what stock_account, stock_picking_batch, mrp, sherkety_stock and sherkety_stock_transfer add to it.",

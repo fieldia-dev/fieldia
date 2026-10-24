@@ -26,7 +26,7 @@ const lines = (extra: Record<string, unknown> = {}) => ({
 
 function page(fields: Record<string, unknown>): Page {
   return {
-    fieldia: '0.10',
+    fieldia: '0.11',
     id: 'order',
     data: { kind: 'record', model: 'sale.order' },
     fields,

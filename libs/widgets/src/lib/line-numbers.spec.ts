@@ -30,7 +30,7 @@ describe('a line’s number', () => {
 
 describe('a table of lines with a heading and a worked-out subtotal', () => {
   const page = {
-    fieldia: '0.10',
+    fieldia: '0.11',
     id: 'order',
     data: { kind: 'record', model: 'order' },
     fields: {

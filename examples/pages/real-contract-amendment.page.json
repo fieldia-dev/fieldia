@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.10",
+  "fieldia": "0.11",
   "id": "real-contract-amendment",
   "title": "Contract Amendment",
   "data": { "kind": "record", "model": "contract.amendment" },

@@ -8,7 +8,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
  */
 
 const reserve: Page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'reserve',
   data: { kind: 'responses' },
   fields: { name: { type: 'char', label: 'Your name', required: true } },

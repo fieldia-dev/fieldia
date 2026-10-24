@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.10",
+  "fieldia": "0.11",
   "id": "fitout-plan",
   "title": "Café fit-out: the plan",
   "description": "A shop's fit-out on a timeline: each task a bar from its start for its days, in its phase, coloured by its trade, joined to the tasks it waits for; dragged or moved by the keys a day at a time.",

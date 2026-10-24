@@ -5,7 +5,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 /** A clinic's waiting room, its patients in the order they are seen: ranked by hand. */
 const queue: Page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'queue',
   title: 'Waiting room',
   data: { kind: 'record', model: 'visit' },

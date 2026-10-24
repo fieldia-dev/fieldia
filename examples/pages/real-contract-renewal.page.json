@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.10",
+  "fieldia": "0.11",
   "id": "real-contract-renewal",
   "title": "Renew Contract",
   "data": { "kind": "record", "model": "contract.renewal.wizard" },

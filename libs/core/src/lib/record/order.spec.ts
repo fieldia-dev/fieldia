@@ -12,7 +12,7 @@ import { formSurveyPart } from './survey';
  */
 
 const bank = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'bank',
   data: { kind: 'responses' },
   fields: Object.fromEntries(['name', 'q1', 'q2', 'q3', 'q4', 'q5', 'last'].map((name) => [name, { type: 'char', label: name, ...(name.startsWith('q') ? { required: true } : {}) }])) as Page['fields'],

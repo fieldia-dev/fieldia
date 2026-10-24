@@ -8,7 +8,7 @@ import { fieldia } from './dom';
  */
 
 const page: Page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'enquiry',
   title: 'Enquiry',
   data: { kind: 'record', model: 'crm.enquiry' },

@@ -9,7 +9,7 @@ import { partsFor, undoPart } from './viewer-parts';
  */
 
 const visit: Page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'site-visit',
   data: { kind: 'responses' },
   outbox: true,

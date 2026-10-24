@@ -11,7 +11,7 @@ import { limitsPart, partsFor } from './viewer-parts';
 
 const signup = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.10',
+    fieldia: '0.11',
     id: 'event-signup',
     data: { kind: 'responses' },
     fields: {

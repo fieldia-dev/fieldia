@@ -11,7 +11,7 @@ import { answersPart, partsFor } from './viewer-parts';
 
 const page = (more: Partial<Page> = {}, label = 'Rating'): Page =>
   ({
-    fieldia: '0.10',
+    fieldia: '0.11',
     id: 'feedback',
     data: { kind: 'responses' },
     fields: {

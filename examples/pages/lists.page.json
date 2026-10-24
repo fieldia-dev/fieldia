@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.10",
+  "fieldia": "0.11",
   "id": "delivery-address",
   "title": "Delivery address",
   "description": "The countries and their cities come from the app’s own lists: pick a country, and its cities load.",

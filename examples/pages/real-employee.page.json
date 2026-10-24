@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.10",
+  "fieldia": "0.11",
   "id": "real-employee",
   "title": "Employee",
   "description": "Sherkety ERP, hr: hr.employee, view_employee_form, with what hr_holidays, hr_skills, hr_org_chart and hr_maintenance add to it.",

@@ -38,7 +38,9 @@ export interface PageUpgrade {
  * `loadChildren` and `gantt`, a date's `precision` and `hijri`, an option's `caption`, `icon` and `color`, a page's
  * `quiz`, `review`, `flow`, `timeLimit`, `prefill`, `payment`, `outbox` and `templates`, a question's own `quiz`, a
  * step's and a group's `order`, `draw` and `fixed`, a button's `undo` — so a 0.9 page is a 0.10 page as it
- * is (and 0.10 is after 0.9: versions compare as numbers, `compareFormats`). A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
+ * is (and 0.10 is after 0.9: versions compare as numbers, `compareFormats`); and 0.11 (Fieldia 0.32) only added — how a
+ * phone's country is picked, a page's `phone.countries` and a phone field's `options.countries` ("list" or "native") —
+ * so a 0.10 page is a 0.11 page as it is. A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
  * none: the page is the same, and upgradePage writes the new version in it.
  */
 export const PAGE_UPGRADES: readonly PageUpgrade[] = [];

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.10",
+  "fieldia": "0.11",
   "id": "clinic-treatment",
   "title": "Treatment record",
   "description": "What was injected, for the patient’s file and the medicines authority: each injectable’s product, lot and expiry, read from the DataMatrix code on its box.",

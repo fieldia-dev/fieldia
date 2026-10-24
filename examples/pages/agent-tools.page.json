@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.10",
+  "fieldia": "0.11",
   "id": "agent-tools",
   "title": "AI agent",
   "description": "An assistant's tools, each from one of the company's connections: a line's tools are its connection's, asked for again when the connection changes, and one the new connection does not have is cleared and said.",

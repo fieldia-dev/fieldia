@@ -14,7 +14,7 @@ import { editablePart, partsFor } from './viewer-parts';
  */
 
 const prices: Page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'prices',
   title: 'Prices',
   records: { one: 'service', other: 'services', a: 'a service' },

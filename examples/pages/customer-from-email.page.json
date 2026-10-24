@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.10",
+  "fieldia": "0.11",
   "id": "customer-from-email",
   "title": "New customer",
   "description": "A customer filled from an e-mail: paste its signature, and each value read from it — the company, its phone, website, address and tax ID, the person who wrote as a contact — is shown on its field, the old value and the new, to accept or reject. Nothing is kept until you accept it. The AI here is a stand-in in the demo’s memory source: pattern matching, no model and no keys. Your app answers with its own model.",

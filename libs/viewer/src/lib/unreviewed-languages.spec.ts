@@ -43,7 +43,7 @@ describe.each(NEW)('the viewer’s words in %s', (locale) => {
 });
 
 const page: Page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'order',
   data: { kind: 'responses' },
   fields: { name: { type: 'char', label: 'Name', required: true }, quantity: { type: 'integer', label: 'Quantity' }, price: { type: 'float', label: 'Price', digits: [10, 2] } },

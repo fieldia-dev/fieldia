@@ -11,7 +11,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
  */
 
 const listing: Page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'listing',
   title: 'Listing',
   data: { kind: 'record', model: 'listing' },

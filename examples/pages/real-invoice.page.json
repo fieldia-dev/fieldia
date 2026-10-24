@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.10",
+  "fieldia": "0.11",
   "id": "real-invoice",
   "title": "Account Entry",
   "records": { "one": "invoice", "other": "invoices", "a": "an invoice" },

@@ -6,7 +6,7 @@ import { createMemoryDataSource } from './memory-data-source';
 /** The live part, asked for only by a form whose source tells changes or presence, as it is made. */
 
 const page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'course',
   data: { kind: 'record', model: 'course' },
   fields: { price: { type: 'float', label: 'Price' } },

@@ -13,7 +13,7 @@ const SIGNATURE = ['Kind regards,', 'Mona Adel', 'Sales Director | Nile Traders'
 
 const page = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.10',
+    fieldia: '0.11',
     id: 'company',
     title: 'Company',
     data: { kind: 'record', model: 'partner' },

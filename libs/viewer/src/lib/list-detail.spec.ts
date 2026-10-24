@@ -4,7 +4,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 /** Orders whose rows open to their lines, a section among them; and customers whose rows open to their invoices. */
 const orders: Page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'orders',
   title: 'Orders',
   data: { kind: 'record', model: 'sale.order' },
@@ -39,7 +39,7 @@ const ordersSource = () =>
   });
 
 const customers: Page = {
-  fieldia: '0.10',
+  fieldia: '0.11',
   id: 'customers',
   title: 'Customers',
   data: { kind: 'record', model: 'partner' },
