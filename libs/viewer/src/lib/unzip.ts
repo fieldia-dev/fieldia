@@ -66,9 +66,15 @@ async function inflated(bytes: Uint8Array, size: number): Promise<Uint8Array> {
   if (!Open) throw new ZipProblem('cannotInflate');
   const stream = new Open('deflate-raw');
   const writer = stream.writable.getWriter();
-  // Written and read at once: the stream holds back what it writes until it is read.
-  writer.write(bytes).catch(() => undefined);
-  writer.close().catch(() => undefined);
+  // Written a piece at a time as it is read — the stream holds back what it writes until it is read — so a file that
+  // opens to far more than it says is stopped after a piece, never opened whole first.
+  void (async () => {
+    for (let at = 0; at < bytes.length; at += 16384) {
+      await writer.ready;
+      await writer.write(bytes.subarray(at, at + 16384));
+    }
+    await writer.close();
+  })().catch(() => undefined);
   const reader = stream.readable.getReader();
   const parts: Uint8Array[] = [];
   let read = 0;
