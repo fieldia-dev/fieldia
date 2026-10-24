@@ -16,7 +16,10 @@
  *
  * The token is read from the environment and written only into a throwaway
  * npmrc under tmp/, as a reference npm expands itself — never into a command
- * line, where any process listing would show it.
+ * line, where any process listing would show it. And it is given to `npm
+ * publish` alone: every check — the install of the packs and their peers,
+ * node and tsc run over them — runs without it (release-env.mjs), and the
+ * install runs no package's install scripts (`--ignore-scripts`).
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -24,6 +27,7 @@ import { join, resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { notesFor, printRelease } from './release-notes.mjs';
 import { checkFormatShape } from './format-shape.mjs';
+import { withoutAuth } from './release-env.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const WORK = join(WORKSPACE, 'tmp/release');
@@ -35,7 +39,9 @@ if (!['check', 'publish', 'verify'].includes(mode)) throw new Error(`usage: node
 const fromRegistry = mode === 'verify';
 
 const read = (file) => JSON.parse(readFileSync(file, 'utf8'));
-const run = (cmd, args, cwd = WORKSPACE, env = process.env) => execFileSync(cmd, args, { cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+/** The environment every check runs in: no npm token, nor any npm setting that carries one (release-env.mjs). */
+const CHECKS_ENV = withoutAuth(process.env);
+const run = (cmd, args, cwd = WORKSPACE, env = CHECKS_ENV) => execFileSync(cmd, args, { cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 const fail = (message) => {
   console.error(`release: ${message}`);
   process.exit(1);
@@ -84,7 +90,8 @@ const pin = (name) => `${name}@${(root.dependencies ?? {})[name] ?? root.devDepe
 mkdirSync(SMOKE, { recursive: true });
 writeFileSync(join(SMOKE, 'package.json'), JSON.stringify({ name: 'fieldia-smoke', private: true, version: '0.0.0' }, null, 2));
 const peers = ['react', 'react-dom', '@types/react', 'vue', '@angular/core', '@angular/compiler', 'rxjs', 'ag-grid-community', '@playwright/test', '@types/node'].map(pin);
-run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', ...tarballs, ...peers], SMOKE);
+// No package's install scripts run: what is installed is only read, imported and type-checked.
+run('npm', ['install', '--no-audit', '--no-fund', '--ignore-scripts', '--loglevel=error', ...tarballs, ...peers], SMOKE);
 for (const { manifest } of packages) {
   const installed = read(join(SMOKE, 'node_modules', manifest.name, 'package.json')).version;
   if (installed !== version) fail(`${manifest.name} installed as ${installed}, not ${version}`);
@@ -373,10 +380,11 @@ if (mode === 'publish') {
   const npmrc = join(WORK, '.npmrc');
   // A reference, expanded by npm from the environment; the token itself is never written.
   writeFileSync(npmrc, '//registry.npmjs.org/:_authToken=${NPM_TOKEN}\n');
-  const env = { ...process.env, npm_config_userconfig: npmrc };
+  // The token for `npm publish` alone; asking npm what it has needs none.
+  const publishEnv = { ...CHECKS_ENV, NPM_TOKEN: process.env.NPM_TOKEN, npm_config_userconfig: npmrc };
   const onNpm = (name) => {
     try {
-      return run('npm', ['view', `${name}@${version}`, 'version'], WORKSPACE, env).trim() === version;
+      return run('npm', ['view', `${name}@${version}`, 'version']).trim() === version;
     } catch {
       return false; // npm answers 404 for a version it does not have
     }
@@ -386,7 +394,7 @@ if (mode === 'publish') {
       console.log(`  ${manifest.name}@${version} is already on npm`);
       continue;
     }
-    run('npm', ['publish', tarballs[i], '--access', 'public'], WORKSPACE, env);
+    run('npm', ['publish', tarballs[i], '--access', 'public'], WORKSPACE, publishEnv);
     console.log(`  published ${manifest.name}@${version}`);
   }
   rmSync(npmrc, { force: true });
