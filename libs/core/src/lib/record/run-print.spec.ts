@@ -123,7 +123,7 @@ describe('a page’s print setting', () => {
 
   it('a list’s Print is off unless true', () => {
     const list: Page = {
-      fieldia: '0.12',
+      fieldia: '0.13',
       id: 'orders',
       data: { kind: 'record', model: 'sale.order' },
       fields: { name: { type: 'char', label: 'Name' } },

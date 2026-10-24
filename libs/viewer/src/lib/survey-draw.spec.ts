@@ -18,7 +18,7 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const visible = (el: Element | null) => !!el && !el.closest('[hidden]');
 
 const bank = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'bank',
   data: { kind: 'responses' },
   fields: Object.fromEntries(['q1', 'q2', 'q3', 'q4', 'q5'].map((name) => [name, { type: 'char', label: `Question ${name.slice(1)}`, required: true }])) as Page['fields'],

@@ -8,7 +8,7 @@ import { createMemoryDataSource } from './memory-data-source';
 function doubling(n: number): Page {
   const fields: Page['fields'] = { f0: { type: 'char', label: 'F0' } };
   for (let i = 1; i <= n; i++) fields[`f${i}`] = { type: 'char', label: `F${i}`, compute: `f${i - 1} + f${i - 1}` };
-  return { fieldia: '0.11', id: 'p', data: { kind: 'responses' }, fields, layout: { type: 'sheet', id: 'root', children: Object.keys(fields).map((name, i) => ({ type: 'field', id: `n${i}`, field: name })) } } as Page;
+  return { fieldia: '0.13', id: 'p', data: { kind: 'responses' }, fields, layout: { type: 'sheet', id: 'root', children: Object.keys(fields).map((name, i) => ({ type: 'field', id: `n${i}`, field: name })) } } as Page;
 }
 
 describe('a value the page works out stops at the most it may hold (S-L7)', () => {

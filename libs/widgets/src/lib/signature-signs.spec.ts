@@ -27,7 +27,7 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function consent(options: { signs?: unknown; signerField?: string; user?: FormUser; values?: Values; record?: boolean } = {}) {
   const page = {
-    fieldia: '0.12',
+    fieldia: '0.13',
     id: 'consent',
     timeZone: 'Africa/Cairo',
     data: options.record ? { kind: 'record', model: 'clinic.consent' } : { kind: 'responses' },

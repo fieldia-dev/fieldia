@@ -151,11 +151,11 @@
   var NAMED = { one: 'invoice', other: 'invoices', a: 'an invoice' };
   var PAGES = {
     invoice: {
-      fieldia: '0.12', id: 'invoice', title: 'Invoice', data: { kind: 'record', model: 'invoice' }, records: NAMED, fields: INVOICE_FIELDS,
+      fieldia: '0.13', id: 'invoice', title: 'Invoice', data: { kind: 'record', model: 'invoice' }, records: NAMED, fields: INVOICE_FIELDS,
       layout: { type: 'sheet', id: 'sheet', title: { field: 'number', placeholder: 'INV-0001' }, children: [{ type: 'section', id: 'main', columns: 2, children: ['customer', 'state', 'due', 'amount'].map(function (f) { return { type: 'field', id: f, field: f }; }) }] },
     },
     invoices: {
-      fieldia: '0.12', id: 'invoices', title: 'Invoices', data: { kind: 'record', model: 'invoice' }, records: NAMED, fields: INVOICE_FIELDS,
+      fieldia: '0.13', id: 'invoices', title: 'Invoices', data: { kind: 'record', model: 'invoice' }, records: NAMED, fields: INVOICE_FIELDS,
       layout: { type: 'list', id: 'list', columns: ['number', 'customer', 'due', 'amount', 'state'], cells: { state: { widget: 'dot', options: { tones: { sent: 'info', paid: 'success' } } } } },
     },
   };
@@ -752,7 +752,7 @@
   var sheet = document.getElementById('sheet-form');
   var caption = document.getElementById('sheet-caption');
   var ORDER = {
-    fieldia: '0.12', id: 'order', title: 'Sales order', data: { kind: 'record', model: 'sale.order' },
+    fieldia: '0.13', id: 'order', title: 'Sales order', data: { kind: 'record', model: 'sale.order' },
     fields: {
       name: { type: 'char', label: 'Order', readonly: true },
       partner: { type: 'char', label: 'Customer' },

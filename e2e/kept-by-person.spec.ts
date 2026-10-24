@@ -9,7 +9,7 @@ import { screen } from './support';
  */
 
 const CONSENT = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'clinic-consent',
   title: 'Consent',
   data: { kind: 'responses' },

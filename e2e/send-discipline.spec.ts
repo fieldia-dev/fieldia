@@ -49,7 +49,7 @@ test('a record saved without signal, then changed and saved once back, is saved 
     let off = false;
     demo.goOffline = (now: boolean) => (off = now);
     const shown = {
-      fieldia: '0.11',
+      fieldia: '0.13',
       id: 'visit-record',
       title: 'Visit',
       data: { kind: 'record', model: 'visit' },

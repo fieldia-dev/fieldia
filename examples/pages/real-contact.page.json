@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.12",
+  "fieldia": "0.13",
   "id": "real-contact",
   "title": "Contact",
   "description": "Sherkety ERP's contact form (res.partner, base.view_partner_form) as a user with Sales, Purchase, Invoicing, CRM and the Egyptian e-invoicing module sees it.",

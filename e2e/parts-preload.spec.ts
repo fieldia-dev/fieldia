@@ -13,7 +13,7 @@ import { expect, test } from './fixtures';
  */
 
 const CUSTOMERS = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'customers',
   title: 'Customers',
   data: { kind: 'record', model: 'partner' },

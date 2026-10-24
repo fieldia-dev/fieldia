@@ -13,7 +13,7 @@ import { partsFor } from './viewer-parts';
  */
 
 const prices: Page = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'prices',
   title: 'Prices',
   data: { kind: 'record', model: 'service' },

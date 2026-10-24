@@ -32,7 +32,7 @@ function storage() {
 
 const lead = (): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.13',
     id: 'lead',
     data: { kind: 'record', model: 'lead' },
     fields: { notes: { type: 'text', label: 'Notes' }, price: { type: 'float', label: 'Price' } },
@@ -108,7 +108,7 @@ describe('a record’s draft (A/draft-proof)', () => {
 describe('kept by whose it is (S-M4, S-M5)', () => {
   const consent = (): Page =>
     ({
-      fieldia: '0.11',
+      fieldia: '0.13',
       id: 'clinic-consent',
       data: { kind: 'responses' },
       fields: { patient: { type: 'char', label: 'Patient' }, pin: { type: 'char', label: 'PIN' }, national_id: { type: 'char', label: 'National ID', secret: true } },
@@ -166,7 +166,7 @@ describe('kept by whose it is (S-M4, S-M5)', () => {
 describe('the outbox belongs to a person (trust/outbox-proof)', () => {
   const visit = (): Page =>
     ({
-      fieldia: '0.11',
+      fieldia: '0.13',
       id: 'site-visit',
       data: { kind: 'responses' },
       outbox: true,

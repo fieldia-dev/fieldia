@@ -28,7 +28,7 @@ const invoices = {
 };
 
 const customer = (related: Record<string, unknown> = {}, more: Record<string, unknown> = {}) => ({
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'customer',
   title: 'Customer',
   data: { kind: 'record', model: 'partner' },
@@ -77,7 +77,7 @@ describe('a related list', () => {
     expect(problems(customer(full))).toEqual([]);
     expect(quick(customer(full))).toEqual([]);
     // Placed straight in the sheet, or in a page of sections.
-    const sections = { fieldia: '0.12', id: 'p', data: { kind: 'record', model: 'partner' }, fields: { name: { type: 'char', label: 'Name' } }, layout: { type: 'sections', id: 's', children: [invoices] } };
+    const sections = { fieldia: '0.13', id: 'p', data: { kind: 'record', model: 'partner' }, fields: { name: { type: 'char', label: 'Name' } }, layout: { type: 'sections', id: 's', children: [invoices] } };
     expect(problems(sections)).toEqual([]);
     for (const as of ['dialog', 'panel', 'page']) expect(RelatedNodeSchema.safeParse({ ...invoices, viewAll: { page: 'x', as } }).success).toBe(true);
   });

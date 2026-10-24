@@ -16,7 +16,7 @@ import { memoryOutbox } from './outbox-form';
 const tick = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const record: Page = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'p',
   title: 'P',
   data: { kind: 'record', model: 'm' },
@@ -28,7 +28,7 @@ const responses: Page = { ...record, id: 'fb', data: { kind: 'responses' } } as 
 
 const visit = (kind: 'record' | 'responses' = 'record'): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.13',
     id: 'site-visit',
     data: kind === 'record' ? { kind: 'record', model: 'visit' } : { kind: 'responses' },
     outbox: true,

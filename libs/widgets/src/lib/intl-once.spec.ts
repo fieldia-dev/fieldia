@@ -24,7 +24,7 @@ afterAll(() => {
 const count = () => KINDS.reduce((sum, kind) => sum + made[kind], 0);
 
 function page(fields: Record<string, Field>): Page {
-  return { fieldia: '0.11', id: 'p', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'root', children: Object.keys(fields).map((name) => ({ type: 'field', id: `n-${name}`, field: name })) } } as unknown as Page;
+  return { fieldia: '0.13', id: 'p', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'root', children: Object.keys(fields).map((name) => ({ type: 'field', id: `n-${name}`, field: name })) } } as unknown as Page;
 }
 
 function mount(type: 'date' | 'monetary', n: number) {

@@ -7,7 +7,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
  */
 
 const enquiry: Page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'enquiry',
   data: { kind: 'responses' },
   fields: { name: { type: 'char', label: 'Your name' }, unit: { type: 'char', label: 'Unit' }, utm_source: { type: 'char', label: 'Source' } },

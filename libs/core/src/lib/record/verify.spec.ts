@@ -11,7 +11,7 @@ import { createMemoryDataSource } from './memory-data-source';
  */
 
 const enquiry = (verify: unknown = { by: ['whatsapp', 'sms'] }): Page => ({
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'enquiry',
   data: { kind: 'responses' },
   fields: { name: { type: 'char', label: 'Your name' }, phone: { type: 'char', label: 'Mobile', required: true }, email: { type: 'char', label: 'Email' }, kind: { type: 'selection', label: 'Kind', options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] } },

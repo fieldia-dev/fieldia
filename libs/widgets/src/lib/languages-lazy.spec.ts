@@ -9,7 +9,7 @@ import { languagesPart } from './widget-parts';
  */
 
 const page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'service',
   data: { kind: 'record', model: 'service' },
   fields: { name: { type: 'char', label: 'Service', translate: ['en', 'ar'] } },

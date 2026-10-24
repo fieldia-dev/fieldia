@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.12",
+  "fieldia": "0.13",
   "id": "stock-count",
   "title": "Stock count",
   "description": "Count a shelf by scanning: each barcode read adds one to its product’s line, or starts a line for it.",

@@ -12,7 +12,7 @@ import { mountSurveyEditor } from './survey-editor';
  */
 
 const page = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'visit',
   title: 'Visit',
   data: { kind: 'record', model: 'visit' },

@@ -10,7 +10,7 @@ import { createWidget } from './widgets';
  */
 
 const page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'unit',
   data: { kind: 'responses' },
   fields: {

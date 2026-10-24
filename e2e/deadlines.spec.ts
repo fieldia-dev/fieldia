@@ -25,7 +25,7 @@ test('a save the server never answers ends at its deadline with Retry, and Retry
         return demo.hang ? new Promise(() => undefined) : memory.save(request);
       },
     };
-    const shown = { fieldia: '0.11', id: 'customer', title: 'Customer', data: { kind: 'record', model: 'partner' }, fields: { name: { type: 'char', label: 'Name' } }, layout: { type: 'sheet', id: 'main', children: [{ type: 'field', id: 'name', field: 'name' }] } };
+    const shown = { fieldia: '0.13', id: 'customer', title: 'Customer', data: { kind: 'record', model: 'partner' }, fields: { name: { type: 'char', label: 'Name' } }, layout: { type: 'sheet', id: 'main', children: [{ type: 'field', id: 'name', field: 'name' }] } };
     demo.handle = fieldia.mountViewer(document.getElementById('app'), { page: shown, dataSource, recordId: 1, timeout: 1500, skin: 'outlined' });
   });
   const name = page.locator('#app [data-node="name"] input');

@@ -88,7 +88,7 @@ test.describe('Chrome’s own autofill', () => {
         const months = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1).padStart(2, '0'), label: String(i + 1).padStart(2, '0') }));
         const own = (id: string, field: string, autocomplete: string) => ({ type: 'field', id, field, autocomplete });
         const page = {
-          fieldia: '0.12',
+          fieldia: '0.13',
           id: 'pay',
           title: 'Pay for the workshop',
           data: { kind: 'responses' },

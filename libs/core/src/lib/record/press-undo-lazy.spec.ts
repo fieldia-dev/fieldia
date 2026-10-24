@@ -6,7 +6,7 @@ import { pressUndoPart } from './undo-later';
 
 /** The undo part, before it came: a press that offers Undo asks for it as it ends, and its words wait for it. */
 const page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'task',
   data: { kind: 'record', model: 'task' },
   fields: { state: { type: 'char', label: 'State' } },

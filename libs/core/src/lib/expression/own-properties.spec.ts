@@ -24,7 +24,7 @@ describe('an expression reads a record’s own values, never what every object i
   });
 
   it('a compute that reads one keeps nothing of it', () => {
-    const page = { fieldia: '0.11', id: 'p', data: { kind: 'responses' }, fields: { name: { type: 'char', label: 'Name' }, out: { type: 'char', label: 'Out', compute: 'name.constructor.constructor' } }, layout: { type: 'sheet', id: 'root', children: [{ type: 'field', id: 'n', field: 'name' }, { type: 'field', id: 'o', field: 'out' }] } };
+    const page = { fieldia: '0.13', id: 'p', data: { kind: 'responses' }, fields: { name: { type: 'char', label: 'Name' }, out: { type: 'char', label: 'Out', compute: 'name.constructor.constructor' } }, layout: { type: 'sheet', id: 'root', children: [{ type: 'field', id: 'n', field: 'name' }, { type: 'field', id: 'o', field: 'out' }] } };
     const checked = checkPage(page);
     expect(checked.ok).toBe(true);
     const form = createForm({ page: checked.ok ? checked.page : (page as never), dataSource: createMemoryDataSource() });
@@ -39,11 +39,11 @@ describe('an expression reads a record’s own values, never what every object i
 
   it('refuses a field named as every object’s own — constructor, __proto__, prototype — in checkPage and validatePage', () => {
     for (const name of ['constructor', '__proto__', 'prototype']) {
-      const page = JSON.parse(`{"fieldia":"0.11","id":"p","data":{"kind":"responses"},"fields":{"${name}":{"type":"char","label":"L"}},"layout":{"type":"sheet","id":"root","children":[{"type":"field","id":"a","field":"${name}"}]}}`);
+      const page = JSON.parse(`{"fieldia":"0.13","id":"p","data":{"kind":"responses"},"fields":{"${name}":{"type":"char","label":"L"}},"layout":{"type":"sheet","id":"root","children":[{"type":"field","id":"a","field":"${name}"}]}}`);
       expect([name, checkPage(page).ok, validatePage(page).ok]).toEqual([name, false, false]);
     }
     // A word that is no object's own is a name as any other.
-    const page = { fieldia: '0.11', id: 'p', data: { kind: 'responses' }, fields: { toString_x: { type: 'char', label: 'L' } }, layout: { type: 'sheet', id: 'root', children: [{ type: 'field', id: 'a', field: 'toString_x' }] } };
+    const page = { fieldia: '0.13', id: 'p', data: { kind: 'responses' }, fields: { toString_x: { type: 'char', label: 'L' } }, layout: { type: 'sheet', id: 'root', children: [{ type: 'field', id: 'a', field: 'toString_x' }] } };
     expect(checkPage(page).ok).toBe(true);
   });
 });

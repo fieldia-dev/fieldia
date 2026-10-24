@@ -6,7 +6,7 @@ import { createMemoryDataSource } from './memory-data-source';
 
 /** A public sign-up: a name and an email, with a bot check as the test gives it. */
 const signup = (botCheck?: Page['botCheck'], more: Partial<Page> = {}): Page => ({
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'signup',
   data: { kind: 'responses' },
   fields: { name: { type: 'char', label: 'Name' }, email: { type: 'char', label: 'Email' } },

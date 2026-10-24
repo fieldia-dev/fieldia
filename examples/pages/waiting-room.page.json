@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.12",
+  "fieldia": "0.13",
   "id": "waiting-room",
   "title": "Waiting room",
   "description": "A clinic's patients waiting to be seen, in the order they go in: the front desk carries a patient to another place by the dots at the row's start, or with Alt and an arrow, and the new order is kept for every screen.",

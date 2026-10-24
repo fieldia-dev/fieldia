@@ -1942,7 +1942,7 @@ Nothing a source must add; the draft a source keeps (`saveDraft`) and the store 
 // StoredDraft gains version?: RecordVersion; from?: Values — a record's draft: the version its changes were typed
 // against, and each changed field's value then.
 // OutboxItem gains owner?: string ('u:<id>' | 't:<tab>'); OutboxStore gains clear?(owner?: string): Promise<void>.
-// Field gains secret?: boolean (the page format 0.11 grows: a field never kept in a draft).
+// Field gains secret?: boolean (page format 0.13: a field never kept in a draft).
 // @fieldia/core exports drafts.clear({ user?, store? }) and outbox.clear({ user?, store? }), and ownerOf(user).
 // browserPreferences(storage?, user?) keeps a signed-in person's under fieldia:u:<id>:.
 ```

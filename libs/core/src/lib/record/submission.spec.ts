@@ -11,7 +11,7 @@ import { checkSubmission } from './submission';
 
 const enquiry = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.13',
     id: 'enquiry',
     data: { kind: 'responses' },
     fields: {

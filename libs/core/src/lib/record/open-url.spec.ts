@@ -9,7 +9,7 @@ import { orderPage, recordingHost } from './test-steps';
 
 /** The audit's supplier page: a website field, and a button that opens it in this tab (S-H2, R-H2). */
 const supplier = (url = 'website'): Page => ({
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'supplier',
   title: 'Supplier',
   data: { kind: 'record', model: 'res.partner' },

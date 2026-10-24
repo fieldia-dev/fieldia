@@ -198,7 +198,7 @@ test.describe('mounted and taken away twenty times, nothing is left behind', () 
   test('a list of 200 records, and an editable one with a cell open', async ({ page }) => {
     const cdp = await scriptPage(page);
     const list = (editable: boolean) => ({
-      fieldia: '0.11',
+      fieldia: '0.13',
       id: editable ? 'people-edit' : 'people',
       title: 'Customers',
       data: { kind: 'record', model: 'partner' },
@@ -243,7 +243,7 @@ test.describe('mounted and taken away twenty times, nothing is left behind', () 
   test('a page taken away with the dialog it opened', async ({ page }) => {
     const cdp = await scriptPage(page);
     const order = {
-      fieldia: '0.11',
+      fieldia: '0.13',
       id: 'order',
       title: 'Order',
       data: { kind: 'record', model: 'shop.order' },

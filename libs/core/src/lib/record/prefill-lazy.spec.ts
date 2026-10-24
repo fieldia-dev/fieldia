@@ -10,7 +10,7 @@ import { formJoins } from './joins';
  */
 
 const enquiry: Page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'enquiry',
   data: { kind: 'responses' },
   fields: { name: { type: 'char', label: 'Your name' }, unit: { type: 'char', label: 'Unit' }, agent_code: { type: 'char', label: 'Agent' }, utm_source: { type: 'char', label: 'Source' } },

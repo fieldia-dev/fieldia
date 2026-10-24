@@ -46,7 +46,7 @@ type Fresh = Awaited<ReturnType<typeof fresh>>;
 
 const responses = (more: Partial<Page>, fields: Page['fields'] = {}, nodes: object[] = []): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.13',
     id: 'enquiry',
     data: { kind: 'responses' },
     fields: { name: { type: 'char', label: 'Name', required: true }, ...fields },

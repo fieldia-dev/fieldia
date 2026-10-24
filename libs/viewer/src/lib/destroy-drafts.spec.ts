@@ -20,7 +20,7 @@ const MONA = { id: 'mona', name: 'Mona Adel', roles: [] };
 
 const consent = (): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.13',
     id: 'clinic-consent',
     title: 'Consent',
     data: { kind: 'responses' },
@@ -29,7 +29,7 @@ const consent = (): Page =>
   }) as Page;
 const lead = (): Page =>
   ({
-    fieldia: '0.11',
+    fieldia: '0.13',
     id: 'lead',
     title: 'Lead',
     data: { kind: 'record', model: 'lead' },

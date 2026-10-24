@@ -13,7 +13,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
  */
 
 const customers: Page = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'customers',
   title: 'Customers',
   records: { one: 'customer', other: 'customers' },
@@ -22,7 +22,7 @@ const customers: Page = {
   layout: { type: 'list', id: 'people', columns: ['name'], sort: [{ field: 'name' }], pageSize: 20 },
 } as unknown as Page;
 const customer: Page = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'customer',
   title: 'Customer',
   records: { one: 'customer', other: 'customers' },

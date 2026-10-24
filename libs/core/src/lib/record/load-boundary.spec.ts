@@ -15,7 +15,7 @@ import { valuesFromSource } from './from-source';
 const tick = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const page: Page = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'c',
   title: 'C',
   data: { kind: 'record', model: 'm' },

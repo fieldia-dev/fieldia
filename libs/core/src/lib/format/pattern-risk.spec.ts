@@ -15,7 +15,7 @@ const timed = (run: () => unknown) => {
 };
 
 /** The audit's page: a company's name, as an author writes a pattern for it without thinking of backtracking (S-M2). */
-const page = (pattern: string): Page => ({ fieldia: '0.11', id: 'p', data: { kind: 'responses' }, fields: { company: { type: 'char', label: 'Company', pattern } }, layout: { type: 'sheet', id: 'root', children: [{ type: 'field', id: 'n0', field: 'company' }] } });
+const page = (pattern: string): Page => ({ fieldia: '0.13', id: 'p', data: { kind: 'responses' }, fields: { company: { type: 'char', label: 'Company', pattern } }, layout: { type: 'sheet', id: 'root', children: [{ type: 'field', id: 'n0', field: 'company' }] } });
 
 /** Every pattern Fieldia's own pages, demos and schemas write: each one taken. */
 const WRITTEN = [

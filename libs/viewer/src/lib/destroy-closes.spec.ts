@@ -15,7 +15,7 @@ const until = async (check: () => unknown) => {
 const field = (id: string, name: string): LayoutNode => ({ type: 'field', id, field: name });
 
 const order: Page = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'order',
   title: 'Quick order',
   data: { kind: 'record', model: 'shop.order' },
@@ -23,7 +23,7 @@ const order: Page = {
   layout: { type: 'sections', id: 'root', children: [{ type: 'section', id: 's', children: [field('f-caller', 'caller')] }] },
 } as Page;
 const customer: Page = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'new-customer',
   title: 'New customer',
   data: { kind: 'record', model: 'partner' },

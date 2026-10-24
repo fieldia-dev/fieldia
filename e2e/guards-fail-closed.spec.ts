@@ -13,7 +13,7 @@ import { screen } from './support';
 
 const name = { type: 'char', label: 'Your name', required: true };
 const responses = (more: Record<string, unknown>, fields: Record<string, unknown> = {}, nodes: object[] = []) => ({
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'enquiry',
   title: 'Enquiry',
   data: { kind: 'responses' },
@@ -96,7 +96,7 @@ test.describe('a part that guards a send, from the one tag', () => {
         records: { 'purchase.order': { 1: { name: 'Nile Office Supply' } } },
         approvals: { 'purchase.order': () => ({ levels: [{ id: 'finance', name: 'Finance', approvers: [{ id: 21, name: 'Mona Adel' }] }], asked: false }) },
       });
-      const shown = { fieldia: '0.11', id: 'po', title: 'Purchase order', data: { kind: 'record', model: 'purchase.order' }, approval: {}, fields: { name: { type: 'char', label: 'Vendor' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }] } };
+      const shown = { fieldia: '0.13', id: 'po', title: 'Purchase order', data: { kind: 'record', model: 'purchase.order' }, approval: {}, fields: { name: { type: 'char', label: 'Vendor' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }] } };
       demo.handle = fieldia.mountViewer(document.getElementById('app'), { page: shown, dataSource: demo.dataSource, recordId: 1, skin: 'outlined' });
     });
     const box = page.locator('#app [data-node="f-name"] input');

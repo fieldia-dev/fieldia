@@ -9,7 +9,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
  */
 
 const page: Page = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'c',
   title: 'C',
   data: { kind: 'record', model: 'm' },

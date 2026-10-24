@@ -44,7 +44,7 @@ function testClock() {
 }
 
 const page: Page = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'p',
   title: 'P',
   data: { kind: 'record', model: 'm' },

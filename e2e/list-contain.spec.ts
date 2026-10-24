@@ -25,7 +25,7 @@ async function mountList(page: Page, layout: Record<string, unknown>) {
     async ([fields, people, layout]) => {
       const w = window as unknown as { fieldiaDemo: { handle: { destroy(): void } }; Fieldia: { mountViewer(h: Element, o: unknown): unknown; createMemoryDataSource(o: unknown): unknown } };
       w.fieldiaDemo.handle.destroy();
-      const page = { fieldia: '0.11', id: 'people', title: 'Customers', data: { kind: 'record', model: 'person' }, fields, layout: { type: 'list', id: 'people-list', columns: ['name', 'email', 'city', 'credit', 'visits'], pageSize: 1000, ...layout } };
+      const page = { fieldia: '0.13', id: 'people', title: 'Customers', data: { kind: 'record', model: 'person' }, fields, layout: { type: 'list', id: 'people-list', columns: ['name', 'email', 'city', 'credit', 'visits'], pageSize: 1000, ...layout } };
       w.Fieldia.mountViewer(document.getElementById('app') as Element, { page, dataSource: w.Fieldia.createMemoryDataSource({ records: { person: people } }) });
     },
     [FIELDS, PEOPLE, layout] as const

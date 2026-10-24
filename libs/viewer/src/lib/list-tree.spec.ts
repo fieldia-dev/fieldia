@@ -4,7 +4,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 /** A chart of accounts too big for a page: its classes at the top, their accounts loaded as each opens. */
 const chart: Page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'chart',
   title: 'Chart of accounts',
   records: { one: 'account', other: 'accounts' },

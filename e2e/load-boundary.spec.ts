@@ -10,7 +10,7 @@ import { screen } from './support';
  */
 
 const PAGE = {
-  fieldia: '0.11',
+  fieldia: '0.13',
   id: 'customer',
   title: 'Customer',
   data: { kind: 'record', model: 'partner' },
