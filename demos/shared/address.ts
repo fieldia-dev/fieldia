@@ -1,4 +1,5 @@
 import type { Form, Page } from '@fieldia/core';
+import { recordFromQuery } from './sample-data';
 
 /**
  * The address follows the record shown — a new one once it is saved, another opened by "Open it", the pager, a copy —
@@ -11,8 +12,8 @@ export function addressFollowsRecord(form: Form, page: Page): () => void {
   return form.subscribe((state) => {
     const params = new URLSearchParams(location.search);
     const now = state.recordId == null ? 'new' : String(state.recordId);
-    // No record in the address opens the first one (shared/sample-data.ts: recordFromQuery).
-    if ((params.get('record') ?? '1') === now) return;
+    // No record in the address opens its model's first (shared/sample-data.ts: recordFromQuery), the one shown.
+    if (String(recordFromQuery(params, page) ?? 'new') === now) return;
     params.set('record', now);
     if (now !== 'new') params.delete('values');
     history.replaceState(history.state, '', `${location.pathname}?${params}${location.hash}`);

@@ -334,12 +334,24 @@ export function pageFromQuery(params: URLSearchParams): Page {
   };
 }
 
-/** The record a record's page opens: `record=…`, or the first one. A list shows many, and opens none. */
+/**
+ * The record a record's page opens: `record=…`, or its model's first sample record — one rule for every demo, so a
+ * page opened without `record=` shows a record (0.33 says a load that fails: "No … record with id 1" where a model's
+ * records start elsewhere). A model with no sample records opens 1, as before. A list shows many, and opens none.
+ */
 export function recordFromQuery(params: URLSearchParams, page: Page): number | null {
   if (page.data.kind !== 'record' || page.layout.type === 'list') return null;
   // `record=new`: a new record, as a template opens.
-  if (params.get('record') === 'new') return null;
-  return Number(params.get('record') ?? 1);
+  const given = params.get('record');
+  if (given === 'new') return null;
+  return Number(given ?? firstSampleRecord(page.data.model) ?? 1);
+}
+
+/** The records of the sample source made last (`sampleDataSource`), by model, as they are now. */
+let sampleRecords: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {};
+/** A model's first sample record's id, or null where it has none. */
+export function firstSampleRecord(model: string): string | null {
+  return Object.keys(sampleRecords[model] ?? {})[0] ?? null;
 }
 
 /** Each list's record page: a home's for the homes on a map, a courier's for the couriers, an order's for the week's orders; the customer's for the rest. */
@@ -980,6 +992,8 @@ export function sampleDataSource() {
   const views = params.get('page') === 'leads-queue' ? { views: TEAM_VIEWS } : {};
   // Over what this tab kept, and keeping what is saved — records, templates, views, properties, responses (shared/kept.ts).
   const source = keptSource({ ...options, ...views }, { extra });
+  // Where a page opened without `record=` starts (`recordFromQuery`): its model's first record here.
+  sampleRecords = source.records;
   // `?store=http`: the listing's photos to a real endpoint, through uploadTo, for the browser tests.
   const upload = listingUpload(params);
   if (upload) source.upload = upload;
