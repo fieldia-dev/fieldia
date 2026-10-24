@@ -154,7 +154,10 @@ code is in it. Of the parts, gzipped:
 - limits 4.75 (4.69), head 12.90 (12.88): a form's limits counted and a menu's
   items from the app waiting the one way;
 - the language add-ons by 0.06–0.09 each (the seven new words; Arabic 128.2,
-  20.76 from 127.5, 20.67).
+  20.76 from 127.5, 20.67);
+- `@fieldia/map` with a list's map 48.2 (47.9), in a page of its own 32.9
+  (32.6): a map's skeleton block, its places asked again under a bar, a failure
+  with Retry; `@fieldia/gantt`'s timeline 15.24 (15.16), the same for its bars.
 
 ## 0.32.0 — 2026-10-24
 
