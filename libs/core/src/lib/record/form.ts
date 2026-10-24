@@ -4767,6 +4767,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     embedded: (id) => attached.get(id)?.inner.form ?? null,
 
     dispose() {
+      // Typed a moment ago, its draft not kept yet: kept now, as the person's own (the draft's rules: changes alone,
+      // never a secret) — a form taken away, its dialog closed with its viewer (`destroy()`), is closed, not discarded.
+      if (draftTimer !== null) {
+        scheduler.clearTimeout(draftTimer);
+        draftTimer = null;
+        void keepDraft(false).catch(() => keepHere(draftNow()));
+      }
       // An answer that lands after is for no record shown.
       disposed = true;
       for (const join of joins) join?.dispose?.();
