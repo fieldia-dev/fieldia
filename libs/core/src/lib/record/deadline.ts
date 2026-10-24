@@ -90,15 +90,14 @@ export function withDeadlines(source: DataSource | undefined, ms: number | undef
   if (!source || going.has(source)) return source;
   const time = ms ?? SEND_TIMEOUT_MS;
   const stops = new Set<(reason?: string) => void>();
-  const timed = new Map<PropertyKey, unknown>();
-  for (const member of TIMED) {
-    const call = (source as Record<string, unknown>)[member];
-    if (typeof call !== 'function') continue;
-    timed.set(member, (request: object) => withDeadline((signal) => (call as (one: object) => Promise<unknown>).call(source, signalled(request, signal)), time, words, scheduler, stops));
-  }
+  // Each member read as it is called, never kept from when the form was made: an app (or a test's spy) may change it.
+  const timed = new Map<PropertyKey, unknown>(
+    TIMED.map((member) => [member, (request: object) => withDeadline((signal) => (Reflect.get(source, member) as (one: object) => Promise<unknown>).call(source, signalled(request, signal)), time, words, scheduler, stops)])
+  );
   const wrapped = new Proxy(source, {
     get(target, member) {
-      if (timed.has(member)) return timed.get(member);
+      // A member the source has not is none here either (hide, never disable).
+      if (timed.has(member) && typeof Reflect.get(target, member) === 'function') return timed.get(member);
       const value = Reflect.get(target, member, target);
       return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(target) : value;
     },

@@ -161,6 +161,22 @@ describe('a request that never answers (A/form-proof P2)', () => {
   });
 });
 
+describe('the source as the form reads it', () => {
+  it('reads each member as it is called: one the app replaces after the form was made is the one asked; one it has not is none', async () => {
+    const ds: DataSource = { load: async () => ({ name: 'x' }), save: async () => ({ id: 1 }) };
+    const form = createForm({ page, dataSource: ds, recordId: 1 });
+    await form.load();
+    const replaced = jest.fn(async () => ({ id: 1 }));
+    ds.save = replaced;
+    form.setValue('name', 'y');
+    expect(await form.save()).toBe(true);
+    expect(replaced).toHaveBeenCalledTimes(1);
+    // No onchange on the source: none asked, nothing broken.
+    form.setValue('price', 3);
+    expect(form.getState().warning).toBeNull();
+  });
+});
+
 describe('a part or a language’s chunk that stalls', () => {
   afterEach(() => jest.useRealTimers());
 
