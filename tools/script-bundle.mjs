@@ -2683,10 +2683,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and the line typed in is contained, so a key lays out that box alone, never the table (list-editable.ts,
 // editable-styles.ts) — editable 34.39 and 12.32 measured before, 34.67 and 12.45 after, to 34.7 and 12.5. A list takes
 // its first page where it was asked for beside its part, as the same request (list-early.ts) — list 140.40 and 45.18,
-// 140.51 and 45.23, to 140.6 and 45.3. Taken where those fields are among the ones it asked for (a list of
-// cards too) — list 140.51 and 45.23, 140.61 and 45.28, to 140.7. A cell opened by Tab read where it is before anything is written, and focused
-// with no scroll where it is in sight — one layout of the table a Tab, not five (list-editable.ts) — editable 34.67 and
-// 12.45, 35.13 and 12.63, to 35.2 and 12.7.
+// 140.51 and 45.23, to 140.6 and 45.3. Taken where its fields are among the ones asked for, a list of cards' too —
+// list 140.51 and 45.23, 140.61 and 45.28, to 140.7. A cell opened by Tab read where it is before anything is written,
+// and focused with no scroll where it is in sight — one layout of the table a Tab, not five (list-editable.ts) —
+// editable 34.67 and 12.45, 35.13 and 12.63, to 35.2 and 12.7.
 // 0.34's speed (harden-perf): the outbox in IndexedDB opens one connection a database, shared by every form that keeps
 // its sends there, and lets it go when another tab opens a newer version (0.32 opened one a mount and closed none) —
 // outbox 8.96 and 3.98 measured before, 9.16 and 4.06 after, to 9.2 and 4.1.
