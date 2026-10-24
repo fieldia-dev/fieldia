@@ -1007,6 +1007,19 @@ try again." where the part comes by `import()`, which a page keeps failed), the
 viewer shows it with Retry, and what was typed stays. An outbox and a record made
 live guard nothing: without them a send goes as it would have.
 
+## Nothing waits for ever
+
+Each request a person waits on — a save, a send, an onchange, a search, a list's
+options — answers within the form's `timeout` (milliseconds, 30 000 unless
+said; 0 for none) or ends as the network's problem ("The server did not answer
+in time"), the viewer's banner with Retry; its `signal` (an AbortSignal, on the
+request) aborts then, and a late answer is dropped. A Retry carries the first
+try's key, so a server keeps it once. A Discard waits for a save on its way at
+most 5 s, then ends it — the person's choice never waits behind a stuck save. A part or a
+language's chunk that does not come within 30 s settles as failed: the page is
+drawn without it (one that guards a send then refuses it), the language in
+English until its words come.
+
 ## What Fieldia keeps in the browser
 
 Everything Fieldia keeps on a device is a person's, kept by whose it is — the

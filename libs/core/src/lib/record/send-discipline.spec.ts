@@ -247,13 +247,14 @@ describe('a claim held while its send goes', () => {
     first.setValues({ unit: 'B-12' });
     await first.save();
     expect(store.items).toHaveLength(1);
-    const tabOne = createForm({ page: visit('responses'), dataSource: slow, outbox: store });
+    // No deadline here (`timeout: 0`): a send as long as a film's upload on a slow signal.
+    const tabOne = createForm({ page: visit('responses'), dataSource: slow, outbox: store, timeout: 0 });
     const going = tabOne.joined('outbox')?.send();
     await jest.advanceTimersByTimeAsync(0);
     expect(sent).toBe(1);
     // Past the claim's first two minutes, still sending (a film on a slow signal): another tab finds it held.
     await jest.advanceTimersByTimeAsync(150_000);
-    const tabTwo = createForm({ page: visit('responses'), dataSource: slow, outbox: store });
+    const tabTwo = createForm({ page: visit('responses'), dataSource: slow, outbox: store, timeout: 0 });
     await tabTwo.joined('outbox')?.send();
     expect(sent).toBe(1);
     release();

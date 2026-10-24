@@ -116,6 +116,17 @@ interface DataSource {
 <p id="keys">Every ${c('save')} and ${c('submit')} carries ${c('key')}: its idempotency key, made at its first try and the same for every try after — Retry after an answer lost on the way, a copy kept without signal and sent later — until it went (a new record's until it has its id, a response's until the form starts another). A request with a key you kept is the same send tried again: store its values over that one's and answer as you did, never a second record or response. ${c('form.save()')} asked twice with nothing changed is one save, and a response's answers are never sent twice as they were.</p>
 <p>A slow answer is handled for you: if someone keeps typing, an ${c('onchange')} or ${c('search')} answer that arrives after a newer question is ignored.</p>
 
+<h2 id="deadlines">Nothing waits for ever</h2>
+<p>Each request a person waits on — ${c('save')}, ${c('submit')}, ${c('onchange')}, ${c('search')}, ${c('options')} — answers within the viewer's ${c('timeout')} (milliseconds, 30 000 unless you say, 0 for none), or ends as the network's problem: the banner over the form, with Retry. Its ${c('signal')} aborts then: pass it to ${c('fetch')} to free your server sooner. A late answer is dropped, and Retry carries the first try's ${c('key')}, so you keep it once. A Discard waits for a save on its way at most 5 seconds, then ends it. A part or a language's words that do not come within 30 s settle as failed: the page draws without them.</p>
+${code(
+  'ts',
+  `
+async save({ model, id, changes, key, signal }) {
+  const response = await fetch(\`/api/\${model}/\${id ?? ''}\`, { method: 'POST', body: JSON.stringify({ changes, key }), signal });
+  return response.json();
+}`
+)}
+
 <h2 id="kept">What Fieldia keeps in the browser</h2>
 <p>Everything Fieldia keeps on a device is a person's, by whose it is: the signed-in person's (the viewer's ${c('user')}), else the tab's it was typed in — so the next person on a shared tablet is never offered the last one's typing, nor sends it under their own session.</p>
 <ul>

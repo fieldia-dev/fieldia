@@ -60,6 +60,7 @@ import type { Limits } from './form-limits';
 import type { FormApproval } from './approving';
 import { draftRead, resumeStep, timedStore } from './drafts';
 import { envelopeOf, valuesFromSource } from './from-source';
+import { DISCARD_GRACE_MS, stopSends, withDeadlines } from './deadline';
 import { ownerOf } from './browser-kept';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
@@ -478,6 +479,13 @@ export interface FormOptions {
    */
   outbox?: OutboxStore;
   autosave?: { delayMs: number };
+  /**
+   * The most a request to the data source a person waits on may take, in milliseconds — a save, a send, an onchange, a
+   * search, a list's options — past which its `signal` aborts and it ends as the network's problem, with Retry: 30 000
+   * unless said, 0 for none. A Discard ends the ones on their way at once. A record's load waits as the loading
+   * settings say (`loading.timeout`).
+   */
+  timeout?: number;
   scheduler?: Scheduler;
   /** Validation messages in the page's language. English by default. */
   messages?: Messages;
@@ -1009,7 +1017,10 @@ interface IndexedNode {
 export function createForm(options: FormOptions): Form {
   // A page in an older format is read in the current one (upgradePage): the same object when it already is.
   const page = upgradePage(options.page);
-  return innerForm(page === options.page ? options : { ...options, page }, []).form;
+  // Every request a person waits on answers within its deadline (deadline.ts): the one place a form's requests meet it.
+  const words = (options.messages ?? MESSAGES.en).noAnswer;
+  const dataSource = withDeadlines(options.dataSource, options.timeout, words, options.scheduler);
+  return innerForm({ ...options, page, ...(dataSource ? { dataSource } : {}) }, []).form;
 }
 
 /** A form, and what the form round it — when it is a saved form placed in another — reaches it by. */
@@ -3205,6 +3216,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const draft = serverKey ? { draft: serverKey } : {};
     /** The generation the record was in when this save went to the source. */
     let at = generation;
+    /** The person's Discards so far: one made while this save is on its way wins over it. */
+    const discardsAt = resets;
     try {
       // Bytes still in the record — a signature drawn, a value the app set, in a saved form placed here too — go to the store first, where it keeps files.
       await storeBytes(page.data.kind === 'responses' || state.recordId == null ? Object.keys(fields) : state.dirty);
@@ -3307,6 +3320,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (went) void track(moment('on.afterSave', page.on?.afterSave, chain, false));
       return null;
     } catch (error) {
+      // Ended by the person's own Discard, or failed after it (a save stuck till its deadline): theirs won, nothing to say.
+      if ((error as { discarded?: boolean } | null)?.discarded || resets !== discardsAt) {
+        set({ status: 'ready' });
+        return { reason: 'save' };
+      }
       const problem = saveProblemOf(error);
       // Refused for a record no longer shown: nothing of it is laid over the one shown now.
       if (at !== generation) return { reason: 'save', message: problem.message };
@@ -3706,8 +3724,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       forget();
       return true;
     }
-    // The person's own Discard stops the files on their way, never waits for them.
-    if (how.discard) clearFiles();
+    // The person's own Discard stops the files on their way, never waits for them — and a save on its way it waits for
+    // as saves answer (a dialog's new record is its caller's), ending one stuck past `DISCARD_GRACE_MS` (deadline.ts):
+    // their choice never waits behind a stuck save.
+    if (how.discard) {
+      clearFiles();
+      stopSends(options.dataSource, DISCARD_GRACE_MS, scheduler);
+    }
     const own = chain.includes('on.beforeSave');
     if (atOnce(how, own)) {
       if (how.discard) forget();

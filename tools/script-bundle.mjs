@@ -1386,7 +1386,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // a record's draft its changes alone with their version (a moved record said as a conflict), a secret field never kept,
 // `drafts.clear()` and `outbox.clear()` for sign-out — what every page that keeps drafts needs. 533.94 measured before,
 // 536.04 after, to 536.1.
-const BUDGET_KB = 536.1;
+// harden-data: nothing waits for ever — one deadline where a form's requests meet its source (deadline.ts: save, send,
+// onchange, search, options; a signal; a Discard ends a save stuck past 5 s), a part or a language's chunk that stalls
+// settled as failed (parts.ts, `inTime`) — what every page that asks its source needs. 536.04 measured before, 537.78
+// after, to 537.8.
+const BUDGET_KB = 537.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1692,7 +1696,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 172.77 after, to 172.8. One load boundary (listed with the raw budget above): 172.78 measured before, 174.60 after,
 // to 174.7. One send discipline (listed with the raw budget above): 174.60 measured before, 174.84 after, to 174.9.
 // Drafts and sends kept a person's (listed with the raw budget above): 174.84 measured before, 175.71 after, to 175.8.
-const GZIP_BUDGET_KB = 175.8;
+// Nothing waits for ever (listed with the raw budget above): 175.71 measured before, 176.44 after, to 176.5.
+const GZIP_BUDGET_KB = 176.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2019,7 +2024,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 59.48 and 18.22, to 59.5 and 18.3; French's 59.67 and 18.04, 60.35 and 18.20, to 60.4 and 18.3; Turkish's 66.65 and
 // 18.39, 67.42 and 18.54, to 67.5 and 18.6; Persian's 162.63 and 22.66, 165.01 and 22.87, to 165.1 and 22.9; Urdu's
 // 165.30 and 22.73, 167.83 and 22.96, to 167.9 and 23.0; Spanish's 57.04 and 17.87, 57.67 and 18.03, to 57.7 and 18.1.
-const ADD_ON_BUDGET_KB = { ar: [132.3, 21.3], de: [59.5, 18.3], fr: [60.4, 18.3], tr: [67.5, 18.6], fa: [165.1, 22.9], ur: [167.9, 23.0], es: [57.7, 18.1] };
+// harden-data: nothing waits for ever — "The server did not answer in time" — Arabic's 132.22 measured before, 132.39
+// after, to 132.4; German's 59.48, 59.53, to 59.6; French's 60.35, 60.40, to 60.5; Turkish's 67.42, 67.47, inside 67.5;
+// Persian's 165.01, 165.13, to 165.2; Urdu's 167.83, 167.98, to 168.0; Spanish's 57.67, 57.72, to 57.8 (each gzipped
+// inside its budget).
+const ADD_ON_BUDGET_KB = { ar: [132.4, 21.3], de: [59.6, 18.3], fr: [60.5, 18.3], tr: [67.5, 18.6], fa: [165.2, 22.9], ur: [168.0, 23.0], es: [57.8, 18.1] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

@@ -214,6 +214,8 @@ export interface Messages {
   sendBroken: string;
   /** A new record its source answered without an id: Save again sends the same save (its key), never a second record. */
   saveNoId: string;
+  /** A request past its deadline (`timeout`): the network's problem, said as the banner says it, with Retry. */
+  noAnswer: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -365,6 +367,7 @@ const en: Messages = {
   saveBroken: 'Something went wrong, so nothing was saved: {problem}',
   sendBroken: 'Something went wrong, so nothing was sent: {problem}',
   saveNoId: 'The record went, but its data source gave back no id: save again — it is the same save, never a second record.',
+  noAnswer: 'The server did not answer in time',
   locale: 'en',
 };
 

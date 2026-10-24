@@ -118,5 +118,6 @@ export const fr: Messages = {
   saveBroken: 'Un problème est survenu, rien n’a été enregistré : {problem}',
   sendBroken: 'Un problème est survenu, rien n’a été envoyé : {problem}',
   saveNoId: 'L’enregistrement est parti, mais sa source de données n’a renvoyé aucun identifiant : enregistrez de nouveau — c’est le même enregistrement, jamais un second.',
+  noAnswer: 'Le serveur n’a pas répondu à temps',
   locale: 'fr',
 };

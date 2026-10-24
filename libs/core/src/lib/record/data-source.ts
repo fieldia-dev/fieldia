@@ -1012,6 +1012,8 @@ export interface OptionsRequest {
    * may change with (`parent.` in its `dependsOn`). Left out for a page's own field.
    */
   parent?: Values;
+  /** Aborts at the form's deadline (`timeout`): see `SaveRequest.signal`. */
+  signal?: UploadSignal;
 }
 
 export interface CreateRequest {
@@ -1061,6 +1063,12 @@ export interface SaveRequest {
   /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
   payment?: PaidPayment;
   /**
+   * Aborts as its deadline passes (the form's `timeout`, 30 s unless said) or a Discard ends it: stop, and reject with an
+   * error named `AbortError`. One that ignores it loses nothing — the form has moved on, and drops a late answer. Never
+   * copied with the request (not enumerable).
+   */
+  signal?: UploadSignal;
+  /**
    * This send's idempotency key: made at its first try and the same for every try of it — a retry after an answer lost
    * on the way, an outbox's copy sent later (`queued.key` too) — until it went; a new record's every save until it has its
    * id; a response's every send until the form starts another (`reset`). A server that kept a send with this key keeps no
@@ -1091,6 +1099,8 @@ export interface OnchangeRequest {
   /** The field that changed. */
   changed: string;
   values: Values;
+  /** Aborts at the form's deadline (`timeout`): see `SaveRequest.signal`. */
+  signal?: UploadSignal;
 }
 
 export interface OnchangeResult {
@@ -1116,6 +1126,8 @@ export interface SearchRequest {
    * what comes.
    */
   exact?: boolean;
+  /** Aborts at the form's deadline (`timeout`): see `SaveRequest.signal`. */
+  signal?: UploadSignal;
 }
 
 export type ResolvedFilterCondition = Omit<FilterCondition, 'valueFrom' | 'value'> & { value: JsonValue };
@@ -1381,6 +1393,12 @@ export interface SubmitRequest {
   verified?: Record<string, VerifiedValue>;
   /** The payment the answers waited for (a page's `payment`), taken: its amount, currency, key and the provider's reference. */
   payment?: PaidPayment;
+  /**
+   * Aborts as its deadline passes (the form's `timeout`, 30 s unless said) or a Discard ends it: stop, and reject with an
+   * error named `AbortError`. One that ignores it loses nothing — the form has moved on, and drops a late answer. Never
+   * copied with the request (not enumerable).
+   */
+  signal?: UploadSignal;
   /**
    * This send's idempotency key: made at its first try and the same for every try of it — a retry after an answer lost
    * on the way, an outbox's copy sent later (`queued.key` too) — until it went; a new record's every save until it has its

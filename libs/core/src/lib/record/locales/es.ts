@@ -123,5 +123,6 @@ export const es: Messages = {
   saveBroken: 'Algo salió mal, así que no se guardó nada: {problem}',
   sendBroken: 'Algo salió mal, así que no se envió nada: {problem}',
   saveNoId: 'El registro se envió, pero su fuente de datos no devolvió ningún id: guarde de nuevo; es el mismo guardado, nunca un segundo registro.',
+  noAnswer: 'El servidor no respondió a tiempo',
   locale: 'es',
 };

@@ -130,5 +130,6 @@ export const tr: Messages = {
   saveBroken: 'Bir şeyler ters gitti, bu yüzden hiçbir şey kaydedilmedi: {problem}',
   sendBroken: 'Bir şeyler ters gitti, bu yüzden hiçbir şey gönderilmedi: {problem}',
   saveNoId: 'Kayıt gönderildi, ancak veri kaynağı bir kimlik döndürmedi: yeniden kaydedin — bu aynı kayıttır, asla ikinci bir kayıt değildir.',
+  noAnswer: 'Sunucu zamanında yanıt vermedi',
   locale: 'tr',
 };

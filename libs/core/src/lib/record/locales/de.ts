@@ -120,5 +120,6 @@ export const de: Messages = {
   saveBroken: 'Etwas ist schiefgegangen, daher wurde nichts gespeichert: {problem}',
   sendBroken: 'Etwas ist schiefgegangen, daher wurde nichts gesendet: {problem}',
   saveNoId: 'Der Datensatz wurde gesendet, aber seine Datenquelle hat keine ID zurückgegeben: Speichern Sie erneut – es ist dieselbe Speicherung, nie ein zweiter Datensatz.',
+  noAnswer: 'Der Server hat nicht rechtzeitig geantwortet',
   locale: 'de',
 };

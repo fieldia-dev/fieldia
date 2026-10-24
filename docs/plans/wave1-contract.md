@@ -1933,3 +1933,28 @@ In plain words:
 - **Preferences** — a list's columns, templates, the records picked last — are a signed-in person's own.
 - Tests: `libs/core/src/lib/record/kept-by-person.spec.ts`, `libs/widgets/src/lib/preferences.spec.ts`,
   `e2e/kept-by-person.spec.ts`.
+
+## 38. Nothing waits for ever (0.34, lane harden-data)
+
+One optional field more in the requests a person waits on; nothing to add.
+
+```ts
+// SaveRequest, SubmitRequest, OnchangeRequest, SearchRequest and OptionsRequest gain signal?: AbortSignal (not enumerable:
+// never copied, compared or kept with the request). FormOptions (and the viewer's options) gain timeout?: number (ms).
+```
+
+In plain words:
+
+- **One deadline** where a form's requests meet its source (deadline.ts, `withDeadlines`): `save`, `submit`, `onchange`,
+  `search` and `options` each answer within `timeout` — 30 000 ms unless the app says, 0 for none — or end as the
+  network's problem ("The server did not answer in time"), said with the form's Retry; their `signal` aborts then. A
+  source that honours it (rejecting with an error named `AbortError`) frees its server sooner; one that ignores it loses
+  nothing: a late answer is dropped, and a save tried again carries its first try's key (§36), so it is kept once. A
+  send kept on the device is sent under the same deadline.
+- **A Discard wins**: `leave({ discard: true })` waits for a save on its way as saves answer (a dialog's new record is
+  its caller's), and ends one still unanswered after 5 s (`DISCARD_GRACE_MS`) — never longer behind a stuck save; a save
+  that fails after the person's Discard (`reset`) says nothing.
+- **A part or a language's chunk that stalls** settles as failed after `PART_WAIT_MS` (30 s): the page draws without it
+  (a part that guards a send then refuses it, §R-H1), a language in English with its words put in should they come.
+- Same shape as 0.33's loading `timeout` for a record's load and a list's requests: a time, and a `signal`.
+- Tests: `libs/core/src/lib/record/deadline.spec.ts`, `e2e/deadlines.spec.ts`.
