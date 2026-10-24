@@ -13,7 +13,7 @@ const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/site');
 const DEMOS = join(WORKSPACE, 'dist/demos');
 const BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle/fieldia.js');
-const PUBLIC_DEMOS = ['plain', 'react', 'vue', 'angular', 'script', 'embed', 'designer', 'screen', 'map-embed', 'backlog', 'save-safety'];
+const PUBLIC_DEMOS = ['plain', 'react', 'vue', 'angular', 'script', 'embed', 'designer', 'screen', 'map-embed', 'backlog', 'save-safety', 'loading'];
 /**
  * The pages under a strict Content-Security-Policy (demos/csp), as a static site can serve them: with no server to make
  * a nonce for every response and send the policy as a header, each page carries the policy as a meta tag, its nonce

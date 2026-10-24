@@ -77,6 +77,83 @@ mountViewer(host, {
 A slot's renderer is given `fail(error)` too, for content that fails after it was
 drawn: the slot then shows its box.
 
+## While it waits: skeletons, spinners, bars — as you like
+
+Everything that waits for an answer waits the same way: a record and a list
+drawn the first time, a list asked again, the next rows, a link's
+suggestions, a save. Fieldia's defaults need nothing set:
+
+| Moment | What waits | Default | Its other ways |
+|---|---|---|---|
+| `first` | a form's record, a list, its cards, a map, a related list, a saved form placed — drawn the first time | `skeleton`: grey shapes where it will be — the list's rows in its own columns (cards on a phone), the form's boxes under their labels, the page's layout while its parts come | `spinner`, `progress`, `text` ("Loading…", what 0.31 said), `none`, `custom` |
+| `refresh` | a list searched, filtered, sorted or paged; a record reloaded or moved to with the pager | `keep`: what is shown stays where it is, a thin bar along its top | `dim`, `skeleton`, `spinner`, `none`, `custom` |
+| `more` | endless scroll, a tree's children | `row`: "Loading more…" where the rows will come | `spinner`, `skeleton`, `none`, `custom` |
+| `search` | a link's suggestions, choices from the app's lists, a filter's values | `inline`: "Searching…" in the list | `spinner` (a ring at the box's end), `none`, `custom` |
+| `action` | a button's steps, a page of responses sent | `button`: the pressed button busy, a ring beside its words past the delay (every busy button's ring waits so: a list's Export, Print, Edit) | `bar` (a bar along the form's top), `overlay` (the form covered, nothing pressed under it), `none`, `custom` |
+
+A quick answer shows nothing at all: a loader is drawn only after `delay`
+(150 ms); once drawn it stays `minShown` (300 ms), so it never flickers off;
+past `slowAfter` (5 s) "Still loading…" is said; past `timeout` (none unless
+set) the wait ends as failed, with Retry, and a list's request is told to stop
+(`signal`). A failure says why in its place — "Could not load the customers.
+The archive is offline. Retry", "Couldn't load." with the source's own words —
+or in a toast (`error: "toast"`), or as the app draws it (`custom`); never an
+empty place. A record's Save steps aside while it saves, as before: its status
+says "Saving…".
+
+Set it for every page in the app, for a page, or for one part — the most
+specific wins, setting by setting:
+
+```ts
+mountViewer(host, {
+  page,
+  dataSource,
+  loading: {
+    first: 'spinner',            // the app's own default…
+    skeleton: 'pulse',           // shimmer (default) | pulse | static; spinner: ring | dots; progress: top | inline
+    delay: 200,                  // ms before anything shows; minShown, slowAfter, timeout
+    error: 'toast',              // inline (default) | toast | custom
+    // A moment set to "custom" is the app's to draw: Fieldia still keeps the time, aria-busy, what is said and the clean-up.
+    custom: ({ moment, part, container, signal, slow, failed, error, retry }) => {
+      container.append(myLoader({ moment, slow, failed, error, retry }));
+      return () => myLoaderGone();  // called as the wait ends
+    },
+  },
+});
+```
+
+```json
+{ "loading": { "refresh": "dim", "timeout": 20000 } }
+{ "type": "list", "id": "orders", "columns": ["name"], "loading": { "first": "spinner" } }
+{ "type": "field", "id": "f-customer", "field": "partner_id", "options": { "loading": { "search": "spinner" } } }
+```
+
+The page says it in `loading`; a list, a related list or a map in its own
+`loading`; a field with a search in `options.loading`. The designer sets the
+page's on its Look tab, under While it waits, with a preview of each moment.
+Every theme brings its own shapes' tint, shimmer, ring and bar, light and dark,
+as tokens a host may set too: `--fd-skeleton`, `--fd-skeleton-shine`,
+`--fd-shimmer`, `--fd-spinner`, `--fd-bar`.
+
+For an app's own indicator — a bar along its page's top — the handle tells each
+wait's true start and end, drawn or not:
+
+```ts
+const viewer = mountViewer(host, { page, dataSource });
+viewer.on('loadingstart', ({ moment, part }) => busy.add(part));
+viewer.on('loadingend', ({ moment, part, duration, failed }) => busy.delete(part));
+```
+
+The React, Vue and Angular components take `loading` and tell
+`onLoadingStart`/`onLoadingEnd` (React), `@loadingstart`/`@loadingend` (Vue),
+`(loadingStart)`/`(loadingEnd)` (Angular). Whatever the way: the waiting part
+is `aria-busy`; a screen reader hears the wait once, politely (never once per
+row); a reader who asks for less motion sees nothing move; forced colours draw
+the shapes in the system's; right to left, the shimmer runs the page's way; on
+paper, no loader. In the one-tag script, the skeletons, bars, spinners and the
+overlay come in `fieldia.loading.js`, fetched with a page's other parts (until
+it comes, a wait drawn the first time says "Loading…" in words).
+
 ## A public form: autofill and a bot check
 
 Every box tells the browser what it may fill it in with and a phone which
@@ -182,9 +259,10 @@ mountViewer(element, {
 asked for by `{ id, version }` (a record of pages is read by `id`, or
 `id@version` for a version kept to), and a link's record in a dialog by
 `{ model }` (the older `relatedPages`, by model only, is still read after it).
-While a saved form comes, its place shows a quiet "Loading…"; one that cannot
-be found, would be placed inside itself, or is not a page of sections or tabs
-says so in its place, in the page's language. The React, Vue and Angular
+While a saved form comes, its place waits as the page says (a skeleton unless
+it says otherwise: see "While it waits"); one that cannot be found, would be
+placed inside itself, or is not a page of sections or tabs says so in its place,
+in the page's language. The React, Vue and Angular
 bindings take `pages` too.
 
 ## Pages in dialogs and side panels

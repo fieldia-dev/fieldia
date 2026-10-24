@@ -140,6 +140,7 @@ export type {
 export { FORMAT_VERSION, FORMAT_VERSIONS, compareFormats, formatProblem, type FormatVersion } from './lib/format/version';
 export { upgradePage, PAGE_UPGRADES, type FormatHistory, type PageJson, type PageUpgrade } from './lib/format/upgrade';
 export type { Page, PageData, PageLook, BotCheck, PagePrint } from './lib/format/page';
+export { LOADING_DEFAULTS, type LoadingMoment, type LoadingTechnique, type PageLoading } from './lib/format/loading';
 export { INPUT_MODES, type InputMode } from './lib/format/autofill-group';
 export { THEMES, type Theme } from './lib/format/themes';
 export { SKINS, type Skin } from './lib/format/themes';

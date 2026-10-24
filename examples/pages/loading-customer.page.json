@@ -1,0 +1,72 @@
+{
+  "fieldia": "0.10",
+  "id": "loading-customer",
+  "title": "Customer",
+  "data": { "kind": "record", "model": "customer" },
+  "records": { "one": "customer", "other": "customers", "a": "a customer" },
+  "fields": {
+    "name": { "type": "char", "label": "Customer", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "city": {
+      "type": "selection",
+      "label": "City",
+      "options": [
+        { "value": "cairo", "label": "Cairo" },
+        { "value": "giza", "label": "Giza" },
+        { "value": "alexandria", "label": "Alexandria" },
+        { "value": "mansoura", "label": "Mansoura" },
+        { "value": "aswan", "label": "Aswan" }
+      ]
+    },
+    "status": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "active", "label": "Active" },
+        { "value": "prospect", "label": "Prospect" },
+        { "value": "paused", "label": "Paused" }
+      ]
+    },
+    "manager_id": { "type": "many2one", "label": "Account manager", "relation": "user", "help": "Type a few letters: the people are searched as you type." },
+    "since": { "type": "date", "label": "Customer since" },
+    "notes": { "type": "text", "label": "Notes" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "customer",
+    "children": [
+      {
+        "type": "section",
+        "id": "who",
+        "title": "Customer",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-name", "field": "name" },
+          { "type": "field", "id": "f-phone", "field": "phone" },
+          { "type": "field", "id": "f-city", "field": "city" },
+          { "type": "field", "id": "f-status", "field": "status", "widget": "radio" },
+          { "type": "field", "id": "f-manager", "field": "manager_id" },
+          { "type": "field", "id": "f-since", "field": "since" },
+          { "type": "field", "id": "f-notes", "field": "notes", "colspan": 2 },
+          { "type": "button", "id": "b-activate", "label": "Mark as active", "steps": [{ "do": "set", "field": "status", "value": "'active'" }, { "do": "save" }] }
+        ]
+      },
+      {
+        "type": "related",
+        "id": "invoices",
+        "title": "Invoices",
+        "model": "invoice",
+        "field": "partner_id",
+        "fields": {
+          "number": { "type": "char", "label": "Invoice" },
+          "date": { "type": "date", "label": "Date" },
+          "amount": { "type": "float", "label": "Amount", "digits": [12, 2] },
+          "state": { "type": "selection", "label": "State", "options": [{ "value": "draft", "label": "Draft" }, { "value": "paid", "label": "Paid" }, { "value": "due", "label": "Due" }] }
+        },
+        "columns": ["number", "date", "amount", "state"],
+        "sort": [{ "field": "date", "desc": true }],
+        "limit": 4
+      }
+    ]
+  }
+}

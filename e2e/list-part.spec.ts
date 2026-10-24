@@ -67,7 +67,8 @@ test.describe('the list screen in a part of its own', () => {
     await expect(rows(page)).toHaveCount(3);
     // The customers' list writes its phone column as people read them: the phone part beside it; and as it asks for
     // cards on a phone, the cards part.
-    expect(scripts()).toEqual(['/script/fieldia.cards.js', '/script/fieldia.js', '/script/fieldia.list.js', '/script/fieldia.phone.js']);
+    // The loading part beside the page's own: its skeleton while they come — asked for, never waited for.
+    expect(scripts()).toEqual(['/script/fieldia.cards.js', '/script/fieldia.js', '/script/fieldia.list.js', '/script/fieldia.loading.js', '/script/fieldia.phone.js']);
     expect(await page.evaluate(() => !!document.getElementById('fd-list-styles'))).toBe(true);
     await expect(page.locator('#app .fd-pager-text')).toHaveText('1–3 of 3 customers');
 
@@ -84,7 +85,7 @@ test.describe('the list screen in a part of its own', () => {
     await page.locator('#app .fd-search-toggle').click();
     await expect(page.locator('#app .fd-search-panel')).toBeVisible();
     // Asked for once.
-    expect(scripts()).toEqual(['/script/fieldia.cards.js', '/script/fieldia.js', '/script/fieldia.list.js', '/script/fieldia.phone.js']);
+    expect(scripts()).toEqual(['/script/fieldia.cards.js', '/script/fieldia.js', '/script/fieldia.list.js', '/script/fieldia.loading.js', '/script/fieldia.phone.js']);
     expect(problems).toEqual([]);
   });
 

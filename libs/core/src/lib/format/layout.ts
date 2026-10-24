@@ -15,6 +15,8 @@ import { photosOptionIssues } from './photos-options';
 import { scanOptionIssues } from './scan-options';
 import { typedOptionIssues } from './typed-options';
 import { codeOptionIssues, pinsOptionIssues, recordOptionIssues } from './media-options';
+import { loadingOptionIssues, PageLoadingSchema } from './loading-schema';
+import type { PageLoading } from './loading';
 import { SECTION_TRACK } from './section-checks';
 import { DATE_PERIODS, type DatePeriod } from '../record/periods';
 import type { TotalKind } from '../record/data-source';
@@ -583,6 +585,8 @@ export interface RelatedNode {
   hideOn?: ScreenWidth[];
   /** `false`: left out on paper (Ctrl+P, Print), as an invoice leaves out its journal items: shown on screen as ever. */
   print?: boolean;
+  /** How it looks while its records come, are asked again and its next page comes, over the page's (`Page.loading`). */
+  loading?: PageLoading;
 }
 
 /** A line along the roads between a map's layers: from one place to another, or through a layer's lines in their order. */
@@ -697,6 +701,8 @@ export interface MapNode {
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
+  /** How it looks while its map and its places come (`first`), over the page's (`Page.loading`). */
+  loading?: PageLoading;
 }
 
 /** A named place the app fills with its own content, such as an activity feed. */
@@ -1443,6 +1449,11 @@ export interface ListNode {
    * is. Off unless given.
    */
   editable?: boolean | ListEditable;
+  /**
+   * How it looks while its records come (`first`), are asked again (`refresh`) and its next ones come (`more`) — its
+   * map's too — over the page's (`Page.loading`): `{ "first": "spinner", "refresh": "dim" }`.
+   */
+  loading?: PageLoading;
 }
 
 /** What a list changes in place (`ListNode.editable`). */
@@ -1856,7 +1867,7 @@ export const FieldNodeSchema = z.strictObject({
   hotkey: z.string().regex(/^[a-z0-9]$/, 'an access key is one letter or digit of the label, in small letters: "e"').optional(),
 }).superRefine((node, context) => {
   // A widget's own options, where the format knows them: an address with suggestions.
-  for (const issue of [...pickerOptionIssues(node), ...phoneOptionIssues(node), ...slotsOptionIssues(node), ...signatureOptionIssues(node), ...photosOptionIssues(node), ...scanOptionIssues(node), ...typedOptionIssues(node), ...recordOptionIssues(node), ...codeOptionIssues(node), ...pinsOptionIssues(node)]) context.addIssue({ code: 'custom', ...issue });
+  for (const issue of [...pickerOptionIssues(node), ...phoneOptionIssues(node), ...slotsOptionIssues(node), ...signatureOptionIssues(node), ...photosOptionIssues(node), ...scanOptionIssues(node), ...typedOptionIssues(node), ...recordOptionIssues(node), ...codeOptionIssues(node), ...pinsOptionIssues(node), ...loadingOptionIssues(node)]) context.addIssue({ code: 'custom', ...issue });
   if (node.widget !== 'address-search') return;
   const checked = AddressSearchOptionsSchema.safeParse(node.options ?? {});
   for (const issue of checked.error?.issues ?? []) context.addIssue({ code: 'custom', message: issue.message, path: ['options', ...issue.path] });
@@ -2034,6 +2045,7 @@ export const MapNodeSchema = z
     fences: z.array(MapFenceSchema).min(1).optional(),
     colspan: span,
     invisible, roles, hideOn,
+    loading: PageLoadingSchema.optional(),
   })
   .meta({ id: 'MapNode' });
 
@@ -2155,6 +2167,7 @@ export const RelatedNodeSchema = z
     open: z.enum(['dialog', 'app']).optional(),
     colspan: span,
     invisible, roles, hideOn, print,
+    loading: PageLoadingSchema.optional(),
   })
   .meta({ id: 'RelatedNode' });
 
@@ -2545,6 +2558,7 @@ export const ListNodeSchema = z.strictObject({
   rowBoldLabel: z.string().min(1).optional(),
   rowButtons: z.array(ButtonNodeSchema).min(1).optional(),
   editable: z.union([z.boolean(), ListEditableSchema]).optional(),
+  loading: PageLoadingSchema.optional(),
 }).meta({ id: 'ListNode' });
 
 export const RootLayoutSchema = z

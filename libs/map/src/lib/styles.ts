@@ -279,6 +279,9 @@ span.fd-map-crowd-item { display: block; cursor: default; }
 .fd-list-map .fd-map-list[data-height="fill"] .fd-map-box { height: clamp(320px, 64vh, 640px); }
 /* A map that takes every gesture: one finger pans it, the page does not scroll under it. */
 .fd-map-box.leaflet-container[data-gestures="all"] { touch-action: none; }
+/* Waiting (loading.ts in @fieldia/widgets): over the map's panes and controls, a skeleton as big as the map until its places are drawn. */
+.fd-map-box > .fd-loader { z-index: 1001; }
+.fd-map-box > .fd-sk.fd-sk-block { position: absolute; inset: 0; z-index: 1001; margin: 0; block-size: auto; border-radius: inherit; }
 `;
 
 /** The list map's stylesheet, once per document, after the maps' own. */

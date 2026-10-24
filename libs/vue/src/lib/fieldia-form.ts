@@ -1,5 +1,5 @@
 import type { DataSource, DraftStore, Field, FieldNode, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, PageLink, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
-import { mountViewer, newestFunctions, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, newestFunctions, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerEvents, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import { firstPaint as drawFirstPaint, type FirstPaintOptions } from '@fieldia/viewer/server';
 import type { PreferenceStore, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
@@ -103,7 +103,7 @@ const Contained = defineComponent({
 });
 
 /** The form's events, each emitted under its own name. */
-const EVENTS = ['change', 'save', 'send', 'step', 'run', 'archive', 'duplicate', 'delete', 'draft'] as const;
+const EVENTS = ['change', 'save', 'send', 'step', 'run', 'archive', 'duplicate', 'delete', 'draft', 'loadingstart', 'loadingend'] as const;
 
 const EMPTY_STATE: WidgetState = { value: undefined, values: {}, readonly: false, required: false, invalid: false };
 
@@ -166,6 +166,11 @@ export const FieldiaForm = defineComponent({
     keys: { type: Object as PropType<ViewerOptions['keys']>, default: undefined },
     showValid: { type: Boolean, default: false },
     saveStatus: { type: String as PropType<ViewerOptions['saveStatus']>, default: undefined },
+    /**
+     * How every wait looks — drawn the first time, asked again, the next rows, a search, a save — its looks, timing and a
+     * failure's way, with the app's own drawing in `custom` (`loading`): Fieldia's defaults when left out.
+     */
+    loading: { type: Object as PropType<ViewerOptions['loading']>, default: undefined },
     readonly: { type: Boolean, default: false },
     editSwitch: { type: Boolean, default: false },
     /** The browser's Back, Reload or a closed tab ask first while the person's work is at risk (`warnOnLeave`). */
@@ -213,6 +218,9 @@ export const FieldiaForm = defineComponent({
     delete: (_event: FormEvents['delete']) => true,
     /** A draft was kept on the app's server (`saveDraft`): its key, and whether Continue later was pressed. */
     draft: (_event: FormEvents['draft']) => true,
+    /** A wait began and ended (`loading`): its moment, its part, how long and whether it failed, for the app's own indicator. */
+    loadingstart: (_event: ViewerEvents['loadingstart']) => true,
+    loadingend: (_event: ViewerEvents['loadingend']) => true,
   },
   setup(props, { slots, emit, expose }) {
     const host = ref<HTMLElement>();
@@ -312,6 +320,8 @@ export const FieldiaForm = defineComponent({
         keys: props.keys ? toRaw(props.keys) : undefined,
         showValid: props.showValid,
         saveStatus: props.saveStatus,
+        // The app's own settings and drawing, not Vue's reactive copy of them.
+        loading: props.loading ? toRaw(props.loading) : undefined,
         readonly: props.readonly,
         editSwitch: props.editSwitch,
         warnOnLeave: props.warnOnLeave,

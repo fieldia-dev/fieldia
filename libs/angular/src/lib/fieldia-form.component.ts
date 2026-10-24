@@ -25,7 +25,7 @@ import {
   type Type,
 } from '@angular/core';
 import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, PageLink, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
-import { mountViewer, newestFunctions, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, newestFunctions, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerEvents, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PartFailure, PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
 /**
@@ -129,6 +129,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly showValid = input<boolean>(false);
   /** Where a save's progress shows: beside Save, as a toast, or as a bar. */
   readonly saveStatus = input<ViewerOptions['saveStatus']>(undefined);
+  /** How every wait looks — each moment's way, its looks, timing and a failure's — with the app's own drawing in `custom`. */
+  readonly loading = input<ViewerOptions['loading']>(undefined);
   /** The whole form locked; a change is forwarded without mounting again. */
   readonly readonly = input<boolean>(false);
   /** An Edit button that unlocks the form, and a Done that saves and locks it. */
@@ -188,6 +190,9 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly delete = output<FormEvents['delete']>();
   /** A draft was kept on the app's server (`saveDraft`): its key, and whether Continue later was pressed. */
   readonly draft = output<FormEvents['draft']>();
+  /** A wait began and ended (`loading`): its moment, its part, how long and whether it failed, for the app's own indicator. */
+  readonly loadingStart = output<ViewerEvents['loadingstart']>();
+  readonly loadingEnd = output<ViewerEvents['loadingend']>();
 
   private readonly slotTemplates = contentChildren(FieldiaSlotDirective);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -324,6 +329,7 @@ export class FieldiaFormComponent implements OnDestroy {
       keys: this.keys(),
       showValid: this.showValid(),
       saveStatus: this.saveStatus(),
+      loading: this.loading(),
       readonly: this.readonly(),
       editSwitch: this.editSwitch(),
       warnOnLeave: this.warnOnLeave(),
@@ -350,6 +356,8 @@ export class FieldiaFormComponent implements OnDestroy {
     handle.on('duplicate', (event) => this.duplicate.emit(event));
     handle.on('delete', (event) => this.delete.emit(event));
     handle.on('draft', (event) => this.draft.emit(event));
+    handle.on('loadingstart', (event) => this.loadingStart.emit(event));
+    handle.on('loadingend', (event) => this.loadingEnd.emit(event));
     this.ready.emit(handle);
   }
 

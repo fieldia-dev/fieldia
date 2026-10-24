@@ -10,6 +10,7 @@ import { HEAD_CSS } from './styles-head';
 import { TEXT_CSS } from './styles-text';
 import { BROKEN_CSS } from './broken-styles';
 import { PRINT_CSS } from './styles-print';
+import { LOADING_CSS } from './styles-loading';
 
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
@@ -876,11 +877,16 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-say > span { flex: 1 1 auto; min-width: 0; }
 /* A button whose steps are running: busy, a turning ring beside its words, not pressed again. */
 .fd-button[aria-busy="true"], .fd-stat[aria-busy="true"] { cursor: progress; }
-.fd-button[aria-busy="true"]::after {
+.fd-button:is([aria-busy="true"], [data-fd-wait])::after {
   content: ""; width: 0.85em; height: 0.85em; border: 2px solid currentColor; border-inline-end-color: transparent; border-radius: 50%;
-  animation: fd-spin 0.8s linear infinite;
+  animation: fd-spin 0.8s linear infinite, fd-unseen var(--fd-loading-delay, 150ms) step-end;
 }
 @keyframes fd-spin { to { rotate: 1turn; } }
+/* Its ring drawn after the wait's delay (loading.ts): a quick press never flashes one; once drawn, kept its minimum
+   (data-fd-wait), the button free again as its steps end. Where the page draws a save's or a button's wait over the
+   form, or not at all (its action), no ring. */
+@keyframes fd-unseen { from { visibility: hidden; } }
+.fd-form[data-fd-action] .fd-button:is([aria-busy="true"], [data-fd-wait])::after { display: none; }
 /* A page opened in a form's place: Back over it, the way the page reads. */
 .fd-back { margin: 8px 12px; }
 .fd-back::before { content: "←"; }
@@ -946,7 +952,7 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 @media (max-width: 600px) { .fd-form-dialog.fd-form-panel[data-side] { max-width: none; height: 100%; margin: 0; --fd-from: 0 100%; } .fd-form-dialog.fd-form-panel[data-side="top"] { --fd-from: 0 -100%; } }
 @media (prefers-reduced-motion: no-preference) { .fd-form-panel { animation: fd-slide 0.25s ease-out; transition: margin 0.2s; } }
 @keyframes fd-slide { from { translate: var(--fd-from, 100% 0); } }
-@media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } .fd-button[aria-busy="true"]::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } .fd-button:is([aria-busy="true"], [data-fd-wait])::after { animation: none; } }
 `;
 
 /** Fieldia's whole stylesheet: the skins, then the layout over them, the inputs' details, the question kinds and the choices' details. */
@@ -957,11 +963,12 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 // too — a state's words, a field's lock (styles-lock) — stays here, where it stood. The pickers' (a work tracker's
 // lists, styles-picker); a record's head after them, which draws its boxes (and a dot in its lead slot) its own way;
 // a work item's text, groups and links (styles-text) after those.
+// A wait's skeleton, its bar along the top and its words (LOADING, loading.ts) before paper, which shows none of them.
 // A form on paper (PRINT) closes them: the printout's parts kept off the screen and a plain look for paper — the whole
 // look is the print part's, whose sheet goes right after this one (PART_RANK.print), where its rules stood here: what
 // it hides or shows for paper insists, as the other parts' sheets come after it.
 // The page's own looks for each kind of part (KINDS, CHOICES, PARTS) come last, so they win over everything before them.
-const BASE_CSS = SKINS_CSS + LOOK_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + LOCK_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + BROKEN_CSS + PRINT_CSS;
+const BASE_CSS = SKINS_CSS + LOOK_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + LOCK_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + BROKEN_CSS + LOADING_CSS + PRINT_CSS;
 const LOOKS_CSS = KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 /**
  * Fieldia's stylesheet as every page has it. The parts loaded on first use (parts.ts) bring their own sheets, each
@@ -1137,8 +1144,13 @@ export function installStyles(document: Document): void {
  * slots 7, import 8, duplicates 9, limits 10, approvals 11, assist 12, photos 13, languages 14, months 15, typed 16,
  * record 17, codes 18, pins 19, verify 20, pay 21, outbox 22, schedule 23, themes 24, quiet 25, picker 26, head 27,
  * groups 28, text 29, surveyLooks 30, cards 31, scan 32.
+ *
+ * A wait's spinners, its inline bar and the overlay over a form (0.33, the loading part): cut from no rule, and styling
+ * only its own elements — a ring, three dots, a bar's track, a veil — which no theme, no quiet look and no other part
+ * reshapes (a theme speaks to them through the tokens, `--fd-spinner` and `--fd-bar`, alone). So it takes the last rank,
+ * after the scan's, moving none: rank 33.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, record: 17, codes: 18, pins: 19, verify: 20, pay: 21, outbox: 22, schedule: 23, themes: 24, quiet: 25, picker: 26, head: 27, groups: 28, text: 29, surveyLooks: 30, cards: 31, scan: 32 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, record: 17, codes: 18, pins: 19, verify: 20, pay: 21, outbox: 22, schedule: 23, themes: 24, quiet: 25, picker: 26, head: 27, groups: 28, text: 29, surveyLooks: 30, cards: 31, scan: 32, loading: 33 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

@@ -90,7 +90,8 @@ test.describe('a table of lines in a part of its own', () => {
     expect(drawnAtOnce).toBe(false);
     const table = page.locator('[data-node="f-lines"] .fd-lines-table');
     await expect(table).toBeVisible();
-    expect(asked()).toEqual(['/script/fieldia.js', '/script/fieldia.lines.js']);
+    // The loading part beside the page's own: its skeleton while they come — asked for, never waited for.
+    expect(asked()).toEqual(['/script/fieldia.js', '/script/fieldia.lines.js', '/script/fieldia.loading.js']);
     await expect(page.locator('#app .fd-lines-plain')).toHaveCount(0);
     await expect(table.locator('tbody tr')).toHaveCount(2);
     await expect(table.locator('tfoot td[data-column="quantity"]')).toHaveText('6');
@@ -115,7 +116,7 @@ test.describe('a table of lines in a part of its own', () => {
     ]);
     await screen(page, 'lines-part-script');
     // Asked for once.
-    expect(asked()).toEqual(['/script/fieldia.js', '/script/fieldia.lines.js']);
+    expect(asked()).toEqual(['/script/fieldia.js', '/script/fieldia.lines.js', '/script/fieldia.loading.js']);
     expect(problems).toEqual([]);
   });
 

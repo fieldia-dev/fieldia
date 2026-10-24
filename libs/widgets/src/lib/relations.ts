@@ -7,6 +7,7 @@ import { drawIcon } from './icons';
 import { detailLines, linkAvatar } from './link-avatar';
 import { stillShown, whileShown } from './shown';
 import { scanPart, scans } from './widget-parts';
+import { loadingWay, startLoading, type Loading } from './loading';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -123,6 +124,8 @@ function combobox(options: {
   more?: (typed: string, overflow: boolean) => { label: string; act: (typed: string) => Promise<RelatedRecord | null> }[];
   /** What Enter and leaving make of typed words: a record's box's rules. Left out, Enter acts only on a match reached. */
   typed?: TypedRules;
+  /** How its search waits (`search`, loading.ts): "Searching…" in its list unless the page says otherwise. */
+  loading?: Loading | undefined;
 }): Combobox {
   const { document: doc, id, labels } = options;
   const listId = `${id}-list`;
@@ -253,12 +256,51 @@ function combobox(options: {
     options.pick(record);
   }
 
+  /**
+   * Its search's wait (`search`): "Searching…" in its list where the suggestions come — a ring at its box's end, as the
+   * page says — taken over by the next search typed, never drawn twice; a search that fails says so there, with Retry.
+   */
+  const searching = (query: string) => {
+    const inline = loadingWay(options.loading, 'search') !== 'spinner';
+    return startLoading(inline ? list : element, 'search', options.loading, {
+      part: id,
+      failWords: labels.cantSearch,
+      retry: () => {
+        input.focus();
+        lookUp(query);
+      },
+      place: (loader) => {
+        if (!inline) return void element.append(loader);
+        // In the list, never one of its options: a screen reader hears the wait said once, in the form's live region.
+        const row = doc.createElement('li');
+        row.className = 'fd-empty';
+        row.setAttribute('role', 'none');
+        // Its Retry pressed keeps the focus in the box, as a suggestion does.
+        row.addEventListener('mousedown', (event) => event.preventDefault());
+        row.append(loader);
+        list.replaceChildren(row);
+        open();
+        floating.place();
+        return row;
+      },
+    });
+  };
+
   function lookUp(query: string) {
     clearTimeout(timer);
     const mine = ++seq;
     timer = setTimeout(async () => {
-      const found = await options.search(asQuery(query)).catch(() => [] as RelatedRecord[]);
-      if (mine !== seq || doc.activeElement !== input) return; // a newer search, or the person left
+      const wait = searching(query);
+      let found: RelatedRecord[];
+      try {
+        found = await options.search(asQuery(query));
+      } catch (error) {
+        if (mine !== seq || doc.activeElement !== input) return wait.stop();
+        return wait.fail(error);
+      }
+      if (mine !== seq || doc.activeElement !== input) return wait.stop(); // a newer search, or the person left
+      await wait.done();
+      if (mine !== seq || doc.activeElement !== input) return;
       // A record the arrow keys reached stays reached if the answer still lists it.
       const reached = results[active];
       const held = reached && reached !== creating && !extras.has(reached) ? reached.id : undefined;
@@ -663,7 +705,7 @@ function creator(form: Form, name: string, node: FieldNode): ((text: string) => 
   return node.options?.['create'] !== false && form.canCreate(name) ? (text) => form.quickCreate(name, text) : undefined;
 }
 
-export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs, locale }) => {
+export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs, locale, loading }) => {
   const relation = field.type === 'many2one' ? field.relation : '';
   const own = shows(node);
   // No button to open it where the page says so, as Flectra's no_open.
@@ -672,6 +714,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   const box = combobox({
     document,
     id,
+    loading,
     labels,
     // One past what the list shows, to know whether Search more… has more to find.
     search: (query) => form.search(name, query, SHOWN + 1),
@@ -784,7 +827,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   } satisfies Widget;
 };
 
-export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs, locale }) => {
+export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs, locale, loading }) => {
   const relation = field.type === 'many2many' ? field.relation : '';
   const own = shows(node);
   const current = () => (form.getState().values[name] as RelatedRecord[] | null) ?? [];
@@ -797,6 +840,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const box = combobox({
     document,
     id,
+    loading,
     labels,
     // One past what the list shows, besides those chosen, to know whether Search more… has more to find.
     search: (query) => form.search(name, query, SHOWN + 1 + current().length),
@@ -927,7 +971,7 @@ function drawChips(chips: HTMLElement, records: RelatedRecord[], readonly: boole
  * added; they stay in the box, and the form keeps them as text it could not
  * take, so Save says so too. Typing never moves the focus to a chip.
  */
-export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
+export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale, loading }) => {
   const words = labels ?? WIDGET_LABELS[locale ?? 'en'] ?? WIDGET_LABELS.en;
   const options = node.options ?? {};
   const separator = typeof options['separator'] === 'string' && options['separator'] ? options['separator'] : ',';
@@ -979,6 +1023,7 @@ export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, doc
   const box = combobox({
     document,
     id,
+    loading,
     labels: words,
     placeholder: node.placeholder || words.addTag,
     search: async (query) => {
@@ -1153,7 +1198,7 @@ export const linkCheckboxesWidget: WidgetFactory = ({ form, name, id, document }
 };
 
 export const referenceWidget: WidgetFactory = (context: WidgetContext) => {
-  const { form, name, field, id, document, labels = WIDGET_LABELS.en } = context;
+  const { form, name, field, id, document, labels = WIDGET_LABELS.en, loading } = context;
   const models = field.type === 'reference' ? field.models : [];
   const element = document.createElement('div');
   element.className = 'fd-reference';
@@ -1179,6 +1224,7 @@ export const referenceWidget: WidgetFactory = (context: WidgetContext) => {
   const box = combobox({
     document,
     id,
+    loading,
     labels,
     placeholder: context.node.placeholder,
     search: (query) => {

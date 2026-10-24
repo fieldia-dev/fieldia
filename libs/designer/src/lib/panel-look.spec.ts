@@ -31,7 +31,7 @@ describe('the Look tab — the page', () => {
     const { host, panel } = screenEditor();
     expect([...panel.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Content', 'Layout', 'Look', 'Rules']);
     openTab(host, 'Look');
-    expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Theme', 'Look presets', 'Skin', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Read-only fields', 'Empty quiet fields', 'Colours', 'Each kind of part']);
+    expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Theme', 'Look presets', 'Skin', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Read-only fields', 'Empty quiet fields', 'Colours', 'Each kind of part', 'While it waits', 'Loading: drawn the first time', 'Loading: asked again', 'Loading: the next rows', 'Loading: a search', 'Loading: a save or a button', 'Loading looks', 'Loading times', 'When loading fails']);
   });
 
   it('picks the quiet skin, the canvas wearing it and its fields reading as words, and gives it back to the theme', () => {

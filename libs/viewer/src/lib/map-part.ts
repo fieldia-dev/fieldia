@@ -1,5 +1,5 @@
 import type { Form, FormState, Locale, MapNode, Page } from '@fieldia/core';
-import type { IconSet } from '@fieldia/widgets';
+import type { IconSet, Loading } from '@fieldia/widgets';
 
 /**
  * A map on a form (`type: "map"`), as the app's maps draw it: @fieldia/map's
@@ -14,6 +14,8 @@ export interface MapPartContext {
   document: Document;
   locale: Locale;
   icons?: IconSet;
+  /** How it waits for its map to come (loading.ts in @fieldia/widgets): its own `loading` over the page's. */
+  loading?: Loading;
 }
 
 export interface MapPart {

@@ -22,7 +22,12 @@ import { installPartStyles, PART_RANK } from './styles';
  */
 
 /** The tokens a theme sets, by their names without `--fd-`. */
-export type ThemeTokens = Partial<Record<'font' | 'text' | 'muted' | 'page' | 'surface' | 'border' | 'border-strong' | 'accent' | 'accent-text' | 'accent-soft' | 'focus' | 'focus-ring' | 'error' | 'error-soft' | 'success' | 'warning' | 'info' | 'radius' | 'control-radius' | 'control-height' | 'pad-y' | 'pad-x' | 'input-border' | 'label-weight' | 'gap-x' | 'gap-y' | 'fill' | 'edge', string>>;
+export type ThemeTokens = Partial<Record<'font' | 'text' | 'muted' | 'page' | 'surface' | 'border' | 'border-strong' | 'accent' | 'accent-text' | 'accent-soft' | 'focus' | 'focus-ring' | 'error' | 'error-soft' | 'success' | 'warning' | 'info' | 'radius' | 'control-radius' | 'control-height' | 'pad-y' | 'pad-x' | 'input-border' | 'label-weight' | 'gap-x' | 'gap-y' | 'fill' | 'edge' | LoadingToken, string>>;
+/**
+ * A wait's looks (loading.ts), each theme's own, light and dark: the skeleton's tint and its shimmer's band, how long a
+ * pass takes, the spinner's and the bar's colour, the bar's height — as each system draws its own skeletons and bars.
+ */
+type LoadingToken = 'skeleton' | 'skeleton-shine' | 'shimmer' | 'spinner' | 'bar';
 
 const SYSTEM = 'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif';
 
@@ -33,10 +38,12 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       font: `Roboto, ${SYSTEM}`, text: '#1d1b20', muted: '#49454f', page: '#fef7ff', surface: '#ffffff', border: '#79747e', 'border-strong': '#49454f',
       accent: '#6750a4', 'accent-text': '#ffffff', 'accent-soft': '#eaddff', focus: '#6750a4', 'focus-ring': 'none', error: '#b3261e', 'error-soft': '#f9dedc',
       radius: '12px', 'control-radius': '4px', 'control-height': '48px', 'pad-y': '10px', 'pad-x': '16px', 'input-border': '0 0 1px 0', 'label-weight': '500', 'gap-x': '24px', 'gap-y': '20px', fill: '#ece6f0',
+      skeleton: '#e7e0ec', 'skeleton-shine': '#f7f2fa', shimmer: '1.5s', spinner: '#6750a4', bar: '4px',
     },
     dark: {
       text: '#e6e0e9', muted: '#cac4d0', page: '#141218', surface: '#1d1b20', border: '#938f99', 'border-strong': '#cac4d0',
       accent: '#d0bcff', 'accent-text': '#381e72', 'accent-soft': '#4f378b', focus: '#d0bcff', error: '#f2b8b5', 'error-soft': '#601410', fill: '#36343b', edge: '#938f99',
+      skeleton: '#36343b', 'skeleton-shine': '#49454f', spinner: '#d0bcff',
     },
   },
   // Fluent 2 for the web: Segoe, a darker bottom edge on boxes, a semibold primary button.
@@ -45,10 +52,12 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       font: `"Segoe UI Variable Text", "Segoe UI", ${SYSTEM}`, text: '#242424', muted: '#616161', page: '#f5f5f5', surface: '#ffffff', border: '#d1d1d1', 'border-strong': '#616161',
       accent: '#0f6cbd', 'accent-text': '#ffffff', 'accent-soft': '#ebf3fc', focus: '#0f6cbd', 'focus-ring': 'none', error: '#c50f1f', 'error-soft': '#fdf3f4',
       radius: '8px', 'control-radius': '4px', 'control-height': '32px', 'pad-y': '5px', 'pad-x': '10px', 'input-border': '1px', 'label-weight': '400', 'gap-x': '24px', 'gap-y': '16px',
+      skeleton: '#e6e6e6', 'skeleton-shine': '#fafafa', shimmer: '2s', spinner: '#0f6cbd', bar: '2px',
     },
     dark: {
       text: '#ffffff', muted: '#d6d6d6', page: '#1f1f1f', surface: '#292929', border: '#666666', 'border-strong': '#adadad',
       accent: '#479ef5', 'accent-text': '#0a0a0a', 'accent-soft': '#0e4775', focus: '#479ef5', error: '#e37d80', 'error-soft': '#3b1012', edge: '#adadad',
+      skeleton: '#3d3d3d', 'skeleton-shine': '#575757', spinner: '#479ef5',
     },
   },
   // Apple's: grouped white cards on a pale grey, filled boxes without a frame, pill buttons, its blue.
@@ -57,11 +66,13 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       font: `-apple-system, BlinkMacSystemFont, "SF Pro Text", ${SYSTEM}`, text: '#1d1d1f', muted: '#6e6e73', page: '#f2f2f7', surface: '#ffffff', border: '#d1d1d6', 'border-strong': '#8e8e93',
       accent: '#0066cc', 'accent-text': '#ffffff', 'accent-soft': '#e5f0fb', focus: '#0066cc', 'focus-ring': '0 0 0 4px rgba(0, 113, 227, 0.25)', error: '#d70015', 'error-soft': '#ffebec',
       radius: '12px', 'control-radius': '10px', 'control-height': '40px', 'pad-y': '8px', 'pad-x': '12px', 'input-border': '1px', 'label-weight': '500', 'gap-x': '20px', 'gap-y': '16px', fill: '#f2f2f7',
+      skeleton: '#e5e5ea', 'skeleton-shine': '#f2f2f7', shimmer: '1.4s', spinner: '#8e8e93', bar: '4px',
     },
     dark: {
       // Apple's elevated dark greys (a sheet over a page), not its black base: a form sits on an app's dark page, never as a black slab in it.
       text: '#f5f5f7', muted: '#a1a1a6', page: '#1c1c1e', surface: '#2c2c2e', border: '#48484a', 'border-strong': '#636366',
       accent: '#409cff', 'accent-text': '#000000', 'accent-soft': '#0f2b4d', focus: '#409cff', 'focus-ring': '0 0 0 4px rgba(64, 156, 255, 0.3)', error: '#ff6961', 'error-soft': '#3a1412', fill: '#3a3a3c', edge: '#636366',
+      skeleton: '#3a3a3c', 'skeleton-shine': '#48484a', spinner: '#98989d',
     },
   },
   // Bootstrap 5: its blue, a soft blue ring on focus, six-pixel corners.
@@ -70,10 +81,12 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       font: SYSTEM, text: '#212529', muted: '#5c636a', page: '#f8f9fa', surface: '#ffffff', border: '#dee2e6', 'border-strong': '#adb5bd',
       accent: '#0a58ca', 'accent-text': '#ffffff', 'accent-soft': '#cfe2ff', focus: '#86b7fe', 'focus-ring': '0 0 0 0.25rem rgba(13, 110, 253, 0.25)', error: '#b02a37', 'error-soft': '#f8d7da',
       radius: '6px', 'control-radius': '6px', 'control-height': '38px', 'pad-y': '6px', 'pad-x': '12px', 'input-border': '1px', 'label-weight': '400', 'gap-x': '24px', 'gap-y': '16px',
+      skeleton: '#dee2e6', 'skeleton-shine': '#f1f3f5', shimmer: '2s', spinner: '#0a58ca', bar: '4px',
     },
     dark: {
       text: '#dee2e6', muted: '#adb5bd', page: '#212529', surface: '#2b3035', border: '#495057', 'border-strong': '#6c757d',
       accent: '#6ea8fe', 'accent-text': '#000000', 'accent-soft': '#031633', focus: '#6ea8fe', 'focus-ring': '0 0 0 0.25rem rgba(110, 168, 254, 0.25)', error: '#ea868f', 'error-soft': '#2c0b0e', edge: '#6c757d',
+      skeleton: '#343a40', 'skeleton-shine': '#495057', spinner: '#6ea8fe',
     },
   },
   // shadcn/ui on zinc: near-black primary, quiet borders, a grey ring, segmented tabs.
@@ -82,10 +95,12 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       font: `Geist, Inter, ${SYSTEM}`, text: '#09090b', muted: '#64646c', page: '#fafafa', surface: '#ffffff', border: '#e4e4e7', 'border-strong': '#a1a1aa',
       accent: '#18181b', 'accent-text': '#fafafa', 'accent-soft': '#f4f4f5', focus: '#a1a1aa', 'focus-ring': '0 0 0 3px rgba(161, 161, 170, 0.5)', error: '#dc2626', 'error-soft': '#fef2f2',
       radius: '10px', 'control-radius': '8px', 'control-height': '36px', 'pad-y': '6px', 'pad-x': '12px', 'input-border': '1px', 'label-weight': '500', 'gap-x': '24px', 'gap-y': '16px',
+      skeleton: '#f4f4f5', 'skeleton-shine': '#fafafa', shimmer: '2s', spinner: '#18181b', bar: '2px',
     },
     dark: {
       text: '#fafafa', muted: '#a1a1aa', page: '#121214', surface: '#18181b', border: '#3f3f46', 'border-strong': '#71717a',
       accent: '#e4e4e7', 'accent-text': '#18181b', 'accent-soft': '#27272a', focus: '#71717a', 'focus-ring': '0 0 0 3px rgba(113, 113, 122, 0.5)', error: '#f87171', 'error-soft': '#450a0a', edge: '#71717a',
+      skeleton: '#27272a', 'skeleton-shine': '#3f3f46', spinner: '#e4e4e7',
     },
   },
   // Ant Design 5: the outlined skin's own tokens, and its dark algorithm.
@@ -94,11 +109,13 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       font: SYSTEM, text: 'rgba(0, 0, 0, 0.88)', muted: 'rgba(0, 0, 0, 0.55)', page: '#f5f5f5', surface: '#ffffff', border: '#d9d9d9', 'border-strong': '#bfbfbf',
       accent: '#1365d9', 'accent-text': '#ffffff', 'accent-soft': '#e6f4ff', focus: '#1365d9', 'focus-ring': '0 0 0 2px rgba(5, 145, 255, 0.12)', error: '#c63c3d', 'error-soft': '#fff2f0',
       radius: '8px', 'control-radius': '6px', 'pad-y': '4px', 'pad-x': '11px', 'input-border': '1px', 'label-weight': '400', 'gap-x': '24px', 'gap-y': '18px',
+      skeleton: 'rgba(0, 0, 0, 0.06)', 'skeleton-shine': 'rgba(0, 0, 0, 0.15)', shimmer: '1.4s', spinner: '#1365d9', bar: '3px',
     },
     dark: {
       // Ant's container and elevated greys, not its black layout: on an app's dark page, never a black slab in it.
       text: 'rgba(255, 255, 255, 0.85)', muted: 'rgba(255, 255, 255, 0.6)', page: '#141414', surface: '#1f1f1f', border: '#424242', 'border-strong': '#595959',
       accent: '#3c89e8', 'accent-text': '#000000', 'accent-soft': '#111a2c', focus: '#3c89e8', 'focus-ring': '0 0 0 2px rgba(60, 137, 232, 0.2)', error: '#e86e6b', 'error-soft': '#2c1618', edge: '#595959',
+      skeleton: 'rgba(255, 255, 255, 0.08)', 'skeleton-shine': 'rgba(255, 255, 255, 0.16)', spinner: '#3c89e8',
     },
   },
   // Odoo 17: labels beside underlined boxes, its plum for buttons and the picked tab.
@@ -107,10 +124,12 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       font: SYSTEM, text: '#1f2937', muted: '#4b5563', page: '#f9fafb', surface: '#ffffff', border: '#d1d5db', 'border-strong': '#9ca3af',
       accent: '#714b67', 'accent-text': '#ffffff', 'accent-soft': '#f3edf2', focus: '#714b67', 'focus-ring': 'none', error: '#c4161c', 'error-soft': '#fdecec',
       radius: '4px', 'control-radius': '0px', 'pad-y': '3px', 'pad-x': '4px', 'input-border': '0 0 1px 0', 'label-weight': '600', 'gap-x': '32px', 'gap-y': '14px',
+      skeleton: '#e9ecef', 'skeleton-shine': '#f8f9fa', shimmer: '1.6s', spinner: '#714b67', bar: '3px',
     },
     dark: {
       text: '#e5e7eb', muted: '#9ca3af', page: '#111827', surface: '#1f2937', border: '#4b5563', 'border-strong': '#6b7280',
       accent: '#c79fbc', 'accent-text': '#1f1020', 'accent-soft': '#3b2836', focus: '#c79fbc', error: '#f6878b', 'error-soft': '#3a1214', edge: '#6b7280',
+      skeleton: '#374151', 'skeleton-shine': '#4b5563', spinner: '#c79fbc',
     },
   },
   // Google Forms: each question a white card on a tinted page, a purple band over the title, underlined answers.
@@ -119,10 +138,12 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       font: `Roboto, Arial, ${SYSTEM}`, text: '#202124', muted: '#5f6368', page: '#f0ebf8', surface: '#ffffff', border: '#dadce0', 'border-strong': '#80868b',
       accent: '#673ab7', 'accent-text': '#ffffff', 'accent-soft': '#ede7f6', focus: '#673ab7', 'focus-ring': 'none', error: '#d93025', 'error-soft': '#fce8e6',
       radius: '8px', 'control-radius': '0px', 'control-height': '36px', 'pad-y': '6px', 'pad-x': '0px', 'input-border': '0 0 1px 0', 'label-weight': '400', 'gap-x': '24px', 'gap-y': '12px',
+      skeleton: '#e8eaed', 'skeleton-shine': '#f1f3f4', shimmer: '1.5s', spinner: '#673ab7', bar: '4px',
     },
     dark: {
       text: '#e8e3ee', muted: '#b8b0c4', page: '#1c1822', surface: '#2a2431', border: '#4a4255', 'border-strong': '#7b7088',
       accent: '#c4abf2', 'accent-text': '#1d1528', 'accent-soft': '#3b2f52', focus: '#c4abf2', error: '#f28b82', 'error-soft': '#3c1714', edge: '#7b7088',
+      skeleton: '#3c3540', 'skeleton-shine': '#4a4255', spinner: '#c4abf2',
     },
   },
 };

@@ -23,12 +23,11 @@ export function endlessRows(doc: Document, el: El, more: () => Promise<void>): E
   const ask = async () => {
     if (asking || element.hidden) return;
     asking = true;
-    button.setAttribute('aria-busy', 'true');
+    // Its wait is the list's, drawn here (`more`, loading.ts): the end busy, "Loading more…" in the button's place.
     try {
       await more();
     } finally {
       asking = false;
-      button.removeAttribute('aria-busy');
     }
     // Still in sight once they came (a page shorter than the window): asked again.
     if (!element.hidden && seen) {

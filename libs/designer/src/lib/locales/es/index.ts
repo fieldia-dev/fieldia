@@ -25,6 +25,7 @@ import { translations } from './translations';
 import { shortcuts } from './shortcuts';
 import { templates, assistant } from './templates';
 import { partLooks } from './part-looks';
+import { loadingLook } from './loading-look';
 import { savedForms } from './saved-forms';
 import { steps } from './steps';
 import { tables } from './tables';
@@ -59,4 +60,4 @@ import { endings } from './endings';
  *   Keys as a Spanish keyboard names them: Enter, Esc, Tab, Mayús, Supr, Retroceso, Inicio / Fin, teclas de flecha;
  *   a key typed as text ("Shift+G") stays as written.
  */
-export const es: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms, steps, tables, mapPart, relatedPart, head, workText, inputs, endings };
+export const es: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms, steps, tables, mapPart, relatedPart, head, workText, inputs, endings, loadingLook };

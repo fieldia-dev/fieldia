@@ -1,12 +1,14 @@
 import { fill, optionsList, type Field, type Option } from '@fieldia/core';
 import { wordsFor } from './kind-parts';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
+import { startLoading, type Wait } from './loading';
 
 /**
  * A choice whose options change: one of the app's lists, options shown by a
  * condition on the other answers, or those carried from an earlier question —
  * the widget the field would have anyway, drawn afresh as the options it
- * offers change (`form.offered`). While a list's choices load it says so; when
+ * offers change (`form.offered`). While a list's choices load it says so, as its wait says (`search`, loading.ts:
+ * "Loading choices…" past the delay, never a flash); when
  * they fail it offers to load them again; and a value no longer offered that
  * the record held as it was opened is kept — the person decides — and said.
  * One a change no longer offers is taken out by the form, which says so
@@ -36,6 +38,8 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
   let shown: readonly Option[] | null = null;
   /** The options drawn, by their values and words: drawn again only when they change. */
   let drawnKey = '';
+  /** Its choices' wait, while they load. */
+  let wait: Wait | null = null;
   const draw = (options: readonly Option[]) => {
     inner?.destroy?.();
     inner = factory({ ...context, field: { ...context.field, options } as Field });
@@ -63,13 +67,33 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
   return {
     element: box,
     focus: () => inner.focus(),
-    destroy: () => inner.destroy?.(),
+    destroy: () => {
+      wait?.stop();
+      inner.destroy?.();
+    },
     update(state) {
       let choices = listed ? form.getState().choices[name] : undefined;
       // A line's, let go by the form (another record's line of the same key), asked again.
       if (listed && !choices) {
         form.loadChoices(name);
         choices = form.getState().choices[name];
+      }
+      // Its choices asked for: their wait, said under it past the delay; failed, its button to load them again.
+      if (choices?.loading && !wait) {
+        wait = startLoading(box, 'search', context.loading, {
+          part: context.node.id,
+          words: words.loadingChoices,
+          place: (loader) => {
+            loader.classList.add('fd-help');
+            note.before(loader);
+          },
+          failed: () => !(retry.hidden = false),
+        });
+      } else if (!choices?.loading && wait) {
+        const asked = wait;
+        wait = null;
+        if (choices?.error) asked.fail(new Error(choices.error), () => form.loadChoices(name));
+        else void asked.done();
       }
       const options = offeredNow();
       if (options && keyOf(options) !== drawnKey) {
@@ -81,16 +105,14 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
       inner.update(state);
       // With "Other", a value not among them is an answer of the person's own.
       const lost = shown && !(context.field as { other?: boolean }).other ? [state.value].flat().filter((v) => v != null && !shown?.some((o) => o.value === v)) : [];
-      note.className = choices?.loading ? 'fd-help' : 'fd-warning';
-      note.textContent = choices?.loading
-        ? words.loadingChoices
-        : lost.length
-          ? fill(words.notOffered, { name: lost.map((v) => named.get(v) ?? labelIn(context.field, v)).join(', ') })
-          : // A line's, taken out as its line changed: the page says a field's under it.
-            ((form.line ? form.getState().takenOut?.[name] : undefined) ?? '');
+      note.className = 'fd-warning';
+      note.textContent = lost.length
+        ? fill(words.notOffered, { name: lost.map((v) => named.get(v) ?? labelIn(context.field, v)).join(', ') })
+        : // A line's, taken out as its line changed: the page says a field's under it.
+          ((form.line ? form.getState().takenOut?.[name] : undefined) ?? '');
       note.hidden = !note.textContent;
       // Loading again sets the failure aside, and the button with it.
-      retry.hidden = !choices?.error;
+      if (!choices?.error) retry.hidden = true;
     },
   };
 }

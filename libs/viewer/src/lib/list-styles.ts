@@ -151,7 +151,10 @@ export const LIST_STYLES = `
 .fd-list-openable { cursor: pointer; }
 .fd-list-row[aria-selected="true"] td { background: var(--fd-accent-soft); }
 .fd-list-row:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; }
-.fd-list-table[aria-busy="true"] tbody { opacity: 0.6; transition: opacity 0.2s 0.15s; }
+/* Waiting (loading.ts): its rows' skeleton in its own columns, a bar each where its cells will be; Loading more… in the place of Show more. */
+.fd-list-table .fd-sk-row > td { padding-block: 12px; }
+.fd-list-table .fd-sk-row .fd-sk { margin: 0; max-inline-size: 220px; }
+.fd-list-more-rows[data-fd-wait] > .fd-button, .fd-list-tree-more[data-fd-wait] .fd-button { display: none; }
 .fd-list-group td { padding: 0; background: var(--fd-page); }
 .fd-group-toggle { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; padding-inline-start: calc(12px + var(--fd-level, 0) * 22px); font-weight: 600; font-size: 13.5px; color: var(--fd-text); }
 .fd-group-toggle::before { content: ''; flex: none; width: 6px; height: 6px; border-top: 1.5px solid currentColor; border-right: 1.5px solid currentColor; transform: rotate(45deg); transition: transform 0.12s; }

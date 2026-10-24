@@ -38,19 +38,38 @@ function mount(widget?: string, extra: Record<string, unknown> = {}, values: Val
   form.subscribe(refresh);
   refresh();
   const el = shown.element;
-  const note = () => [...el.querySelectorAll('[role=status], button.fd-button-link')].filter((n) => !(n as HTMLElement).hidden).map((n) => n.textContent);
+  const note = () => [...el.querySelectorAll('[role=status], .fd-loader, button.fd-button-link')].filter((n) => !(n as HTMLElement).hidden && n.textContent).map((n) => n.textContent);
   return { form, widget: shown, el, asked, note, settle: () => form.settled() };
 }
 
 describe('choices from the app’s list', () => {
-  it('load when the widget is drawn, saying so, then show as the field’s own widget would', async () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('load when the widget is drawn, saying so past the wait’s delay — never a flash — then show as the field’s own widget would', async () => {
+    jest.useFakeTimers();
     const { el, asked, note, settle } = mount('radio', {}, { country: 'eg' });
     expect(asked.map((a) => a.values['country'])).toEqual(['eg']);
+    expect(el.getAttribute('aria-busy')).toBe('true');
+    expect(note()).toEqual([]);
+    jest.advanceTimersByTime(150);
     expect(note()).toEqual(['Loading choices…']);
     expect(el.querySelectorAll('input[type=radio]')).toHaveLength(0);
     asked[0].answer(CITIES['eg']);
     await settle();
     expect([...el.querySelectorAll('label.fd-choice')].map((l) => l.textContent)).toEqual(['Cairo', 'Alexandria']);
+    // Shown, it stays its minimum: never off a moment after it came.
+    jest.advanceTimersByTime(300);
+    expect(note()).toEqual([]);
+    expect(el.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  it('say nothing of choices that come quickly', async () => {
+    jest.useFakeTimers();
+    const { asked, note, settle } = mount('radio', {}, { country: 'eg' });
+    jest.advanceTimersByTime(100);
+    asked[0].answer(CITIES['eg']);
+    await settle();
+    jest.advanceTimersByTime(1000);
     expect(note()).toEqual([]);
   });
 
@@ -78,10 +97,13 @@ describe('choices from the app’s list', () => {
     asked[0].answer(CITIES['eg']);
     await settle();
     expect((el.querySelector('input:checked') as HTMLInputElement | null)?.closest('label')?.textContent).toBe('Cairo');
+    jest.useFakeTimers();
     form.setValue('country', 'jo');
+    jest.advanceTimersByTime(150);
     expect(note()).toEqual(['Loading choices…']);
     asked[1].answer(CITIES['jo']);
     await settle();
+    jest.advanceTimersByTime(300);
     expect([...el.querySelectorAll('label.fd-choice')].map((l) => l.textContent)).toEqual(['Amman']);
     expect(form.getState().values['city']).toBeNull();
     // Taken out as every choice is: the page says it under the field, where it says a condition's, so never twice here.
@@ -96,11 +118,14 @@ describe('choices from the app’s list', () => {
     asked[0].fail('away');
     await settle();
     expect(note()).toEqual(['Load the choices again']);
+    jest.useFakeTimers();
     (el.querySelector('button.fd-button-link') as HTMLButtonElement).click();
     expect(asked).toHaveLength(2);
+    jest.advanceTimersByTime(150);
     expect(note()).toEqual(['Loading choices…']);
     asked[1].answer(CITIES['jo']);
     await settle();
+    jest.advanceTimersByTime(300);
     expect(note()).toEqual([]);
     expect(el.textContent).toContain('Amman');
   });
@@ -121,14 +146,19 @@ describe('choices from the app’s list', () => {
   });
 
   it('say loading in the help’s quiet words, and a value no longer offered as a warning', async () => {
+    jest.useFakeTimers();
     const { form, el, asked, settle } = mount('radio', {}, { country: 'eg', city: 'cai' });
     const note = () => el.querySelector('[role=status]') as HTMLElement;
-    expect(note().className).toBe('fd-help');
+    const loader = () => el.querySelector('.fd-loader');
+    jest.advanceTimersByTime(150);
+    expect(loader()?.className).toBe('fd-loader fd-help');
     asked[0].answer(CITIES['jo']);
     await settle();
+    jest.advanceTimersByTime(300);
     expect([note().className, note().textContent]).toEqual(['fd-warning', 'cai: no longer offered']);
     form.setValue('country', 'jo');
-    expect(note().className).toBe('fd-help');
+    jest.advanceTimersByTime(150);
+    expect(loader()?.textContent).toBe('Loading choices…');
   });
 
   it('take a value of the person’s own for an answer, where the choice has "Other"', async () => {

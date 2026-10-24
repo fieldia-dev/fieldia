@@ -29,7 +29,7 @@ import {
   type Values,
   type ViewState,
 } from '@fieldia/core';
-import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type Widget, type WidgetContext, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
+import { drawIcon, formatNumber, keepsWhole, loadingOver, moneyReads, startLoading, type IconSet, type Loading, type PreferenceStore, type Widget, type WidgetContext, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import { defaultFacets, laterFavourites, startingFacets } from './favourites';
 import { filterKit } from './filter-range';
@@ -121,6 +121,10 @@ export interface ListContext {
   dialogs?: WidgetDialogs;
   /** "Discard your changes?", worded Discard, the focus on Cancel. */
   letGo?: (message: string) => Promise<boolean>;
+  /** How it waits for its records (loading.ts in @fieldia/widgets): the page's way, under its own `loading`. Fieldia's without it. */
+  loading?: Loading;
+  /** Its first wait goes on from one in sight — its page's, while its part came: drawn at once, never after the delay. */
+  loadingNow?: boolean;
 }
 
 /**
@@ -160,6 +164,8 @@ export interface ListViewContext {
    * then offers no way to.
    */
   create?: (values: Values) => Promise<void>;
+  /** How the list waits (loading.ts in @fieldia/widgets), its own `loading` over the page's: a map's waits as the list's. */
+  loading?: Loading;
 }
 
 /** Another way of showing the list's records, made by a ListViewFactory. */
@@ -272,6 +278,10 @@ export function listView(context: ListContext): ListView {
   const number = (n: number) => formatNumber(n, 0, locale);
   let asking = 0;
   let destroyed = false;
+  /** How it waits (loading.ts): the page's way, its own `loading` over it. */
+  const waiting = loadingOver(context.loading, node.loading);
+  /** Whether its records were drawn once: a wait after that asks again (`refresh`), else it is the first. */
+  let loadedOnce = false;
 
   /** A box to choose each row, unless the list says none; rows under their parent, when it names the field. */
   const choose = node.choose !== false;
@@ -475,7 +485,9 @@ export function listView(context: ListContext): ListView {
   arrangeRow(headRow);
   const empty = el('p', { class: 'fd-list-empty', hidden: '' }, sentence(labels.noRecordsNoun, labels.noRecords));
   const retry = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry);
-  const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, sentence(labels.loadFailedNoun, labels.loadFailed), ' ', retry);
+  /** Why, where the source said: "Could not load the customers. The archive is offline." */
+  const failedWhy = el('span', {});
+  const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, sentence(labels.loadFailedNoun, labels.loadFailed), failedWhy, ' ', retry);
   // In a record, on paper (its pager left off): how many of how many it shows, where they run past a page — "5 of 23".
   const shownOf = inRecord ? el('p', { class: 'fd-list-shown', hidden: '' }) : null;
   retry.addEventListener('click', () => void load());
@@ -640,6 +652,7 @@ export function listView(context: ListContext): ListView {
           span,
           searching: () => facets.some((facet) => facet.kind !== 'groupBy'),
           changed: () => changed(),
+          loading: waiting,
         }) ?? null)
       : null;
   // Every parent opened at once would load the whole tree: Expand all is for a tree on its page.
@@ -1046,7 +1059,9 @@ export function listView(context: ListContext): ListView {
     const shown = context.shown?.();
     const stale = () => mine !== asking || destroyed || (shown !== undefined && !shown());
     drawSort();
-    table.setAttribute('aria-busy', 'true');
+    // Its wait: drawn the first time (a skeleton of its rows unless the page says otherwise), asked again after that (what
+    // is shown kept, a bar over it); a wait going on taken over, never drawn twice.
+    const wait = startLoading(records, loadedOnce ? 'refresh' : 'first', waiting, { part: node.id, shape: skeletonRows, failed: saidFailed, retry: () => void load(), now: !loadedOnce && context.loadingNow === true });
     let drawn: HTMLTableRowElement[] = [];
     try {
       const filter = currentFilter();
@@ -1057,7 +1072,7 @@ export function listView(context: ListContext): ListView {
       if (grouping.length && source?.groups && source.list) {
         // Grouped: a row for each value of the first field (or span of a date), each opening into the rest.
         const groups = await headings(source, grouping[0], filter);
-        if (stale()) return;
+        if (stale()) return wait.stop();
         rows = [];
         total = 0;
         groupedNow = true;
@@ -1066,12 +1081,12 @@ export function listView(context: ListContext): ListView {
       } else {
         // Loaded as it is scrolled: every row it held, asked again from the first.
         // A tree loaded as it opens: its records with no parent, while no search is on.
-        const answer = source?.list ? await source.list({ model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize }) : { records: [], total: 0 };
-        if (stale()) return;
+        const answer = source?.list ? await source.list({ model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize, ...(waiting.settings.timeout ? { signal: wait.signal } : {}) }) : { records: [], total: 0 };
+        if (stale()) return wait.stop();
         // Past the end, as when the last record of the last page went: back to the page that is left.
         if (!answer.records.length && answer.total > 0 && offset > 0) {
           offset = Math.floor((answer.total - 1) / pageSize) * pageSize;
-          return load();
+          return void (await load());
         }
         rows = answer.records;
         total = answer.total;
@@ -1080,14 +1095,18 @@ export function listView(context: ListContext): ListView {
         reach = Math.max(pageSize, rows.length);
         drawn = nest(rows);
       }
-      failed.hidden = true;
-    } catch {
-      if (stale()) return;
-      rows = [];
-      total = 0;
-      matching = 0;
-      failed.hidden = false;
+    } catch (error) {
+      if (stale()) return wait.stop();
+      // Said in its place, its own sentence and Retry (`saidFailed`) — or in a toast, what was shown kept — as the page says.
+      return wait.fail(error);
     }
+    await wait.done(() => drawRows(drawn));
+  }
+
+  /** Its rows drawn as its answer came: the person's work kept on them, then whether it holds none, its pager, its count. */
+  function drawRows(drawn: HTMLTableRowElement[]) {
+    loadedOnce = true;
+    failed.hidden = true;
     body.replaceChildren(...drawn);
     // The person's work kept on rows, drawn on them or kept in sight; then whether it holds none.
     rowEdits?.drawn();
@@ -1097,12 +1116,51 @@ export function listView(context: ListContext): ListView {
     void tree?.drawn(body);
     empty.hidden = drawn.length > 0 || !failed.hidden || !!body.querySelector(':scope > .fd-list-row');
     empty.textContent = context.none && !facets.length ? context.none : sentence(labels.noRecordsNoun, labels.noRecords);
-    table.removeAttribute('aria-busy');
     drawShape();
     drawPager();
     changed();
-    if (failed.hidden) context.onCount?.(matching, facets.length > 0);
+    context.onCount?.(matching, facets.length > 0);
   }
+
+  /** Its records could not be loaded: none shown, its own sentence and why where the source said, with Retry. */
+  function saidFailed(_message: string, _retry: unknown, why: string) {
+    rows = [];
+    total = 0;
+    matching = 0;
+    body.replaceChildren();
+    failedWhy.textContent = why ? ` ${why}` : '';
+    failed.hidden = false;
+    empty.hidden = true;
+    drawShape();
+    drawPager();
+    changed();
+    return true;
+  }
+
+  /**
+   * Its rows' skeleton (loading.ts's `shape`): as many rows as a page holds, up to eight, in its own columns — each
+   * column a bar where its cells will be, a column hidden by the person hidden here too; a card's shape where its rows
+   * are cards (the cards part's sheet). Never read out: the wait is said once.
+   */
+  const skeletonRows = {
+    show: () => {
+      const widths = ['72%', '54%', '86%', '40%', '64%', '78%', '48%', '58%'];
+      const row = (at: number) =>
+        el('tr', { class: 'fd-sk-row', 'aria-hidden': 'true' }, ...[...headRow.children].map((th, column) => {
+          const bar = el('span', { class: 'fd-sk' });
+          bar.style.inlineSize = widths[(at + column) % widths.length];
+          const cell = el('td', {}, bar);
+          if ((th as HTMLElement).hidden) cell.hidden = true;
+          return cell;
+        }));
+      body.replaceChildren(...Array.from({ length: Math.min(pageSize, 8) }, (_, at) => row(at)));
+      empty.hidden = true;
+      failed.hidden = true;
+    },
+    hide: () => {
+      for (const tr of body.querySelectorAll(':scope > .fd-sk-row')) tr.remove();
+    },
+  };
 
   /**
    * The next page of rows, where they load as the list is scrolled: put after those it holds — any already there (moved
@@ -1111,11 +1169,19 @@ export function listView(context: ListContext): ListView {
    */
   async function more(): Promise<void> {
     const source = context.dataSource;
-    if (!endless || groupedNow || rows.length >= total || !source?.list) return;
+    if (!endless || groupedNow || rows.length >= total || !source?.list || !endlessEnd) return;
     const mine = asking;
+    // Its wait where the rows will come (`more`): "Loading more…" unless the page says otherwise; a failure said there, with Retry.
+    const wait = startLoading(endlessEnd.element, 'more', waiting, { part: node.id, retry: () => void more() });
+    let answer: Awaited<ReturnType<NonNullable<DataSource['list']>>>;
     try {
-      const answer = await source.list({ model, fields, filter: currentFilter(), sort, offset: rows.length, limit: pageSize });
-      if (mine !== asking || destroyed) return;
+      answer = await source.list({ model, fields, filter: currentFilter(), sort, offset: rows.length, limit: pageSize, ...(waiting.settings.timeout ? { signal: wait.signal } : {}) });
+    } catch (error) {
+      if (mine !== asking || destroyed) return wait.stop();
+      return wait.fail(error);
+    }
+    if (mine !== asking || destroyed) return wait.stop();
+    await wait.done(() => {
       const held = new Set(rows.map((record) => String(record.id)));
       const fresh = answer.records.filter((record) => !held.has(String(record.id)));
       rows = [...rows, ...fresh];
@@ -1124,11 +1190,9 @@ export function listView(context: ListContext): ListView {
       reach = rows.length;
       body.append(...nest(fresh));
       ranks?.drawn();
-    } catch {
-      if (!destroyed) context.say?.(sentence(labels.loadFailedNoun, labels.loadFailed), 'danger');
-    }
-    drawPager();
-    changed();
+      drawPager();
+      changed();
+    });
   }
   /** Its rows' end, where they load as it is scrolled: Show more, pressed by itself in sight (list-endless.ts). */
   const endlessEnd = endless ? endlessRows(doc, el, more) : null;
@@ -1170,7 +1234,7 @@ export function listView(context: ListContext): ListView {
   const filters = node.search === 'fields' ? filtersPart.loaded : undefined;
   const search =
     filters
-      ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], searchFilter, count: countOf, facets, onChange: searched, kit: filterKit })
+      ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], searchFilter, count: countOf, facets, onChange: searched, kit: filterKit, loading: waiting })
       : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}), ...(node.filterCounts ? { count: countOf, searchFilter } : {}), ...(kept ? { favourites: laterFavourites(kept.then((made) => made?.part ?? null), el) } : {}) });
   // A search in plain words read as filters (`searchToFilter`): a ✦ beside the box while it holds two words or more;
   // pressed, the assist part reads them — loaded then, so a list no one asks never downloads it — and says under the bar
@@ -1267,6 +1331,7 @@ export function listView(context: ListContext): ListView {
       document: doc,
       locale,
       icons: context.icons,
+      loading: waiting,
       filter: currentFilter,
       isChosen: (id) => chosen.has(id),
       choose(id, on) {
@@ -1765,6 +1830,8 @@ export function listView(context: ListContext): ListView {
   if (found && fieldsBox) fieldsBox.before(found);
   else if (found) bar.append(found);
   const key = rowsKey();
+  /** Its records: the table, the end of rows loaded as it is scrolled, what it holds none or could not load, its pager. Where it waits. */
+  const records = el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(endlessEnd ? [endlessEnd.element] : []), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : []));
   const element = el(
     'div',
     {
@@ -1787,7 +1854,7 @@ export function listView(context: ListContext): ListView {
     ...(choose ? [selection] : []),
     report,
     ...(key ? [key] : []),
-    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(endlessEnd ? [endlessEnd.element] : []), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
+    el('div', { class: 'fd-list-body' }, records, ...holders.values())
   );
   // Its cells changed in place: Add a line and what a paste did under the table.
   if (editPart) {
@@ -1837,14 +1904,16 @@ export function listView(context: ListContext): ListView {
   // columns), unless it was opened with a search of its own (View all's).
   const opening = kept?.then((made) => made?.start() ?? null);
   if (opening && !context.search) {
-    table.setAttribute('aria-busy', 'true');
+    // Waiting for its views first, as for its records: the records' wait takes it over, never drawn twice.
+    const asked = startLoading(records, 'first', waiting, { part: node.id, shape: skeletonRows, now: context.loadingNow === true });
     void opening.then((chosen) => {
-      if (destroyed) return;
+      if (destroyed) return asked.stop();
       // Views are kept only where the search bar has its menu: never with a filter bar.
       if (chosen && !filters) {
         putView(chosen.state);
         (search as ReturnType<typeof searchBar>).put(chosen.state.facets);
       } else void load();
+      asked.stop();
     });
   } else void load();
 

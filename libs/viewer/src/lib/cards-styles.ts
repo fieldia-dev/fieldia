@@ -31,6 +31,11 @@ export const CARD_STYLES = `
 .fd-list[data-as] .fd-list-table th.fd-num .fd-list-sort { justify-content: flex-start; }
 .fd-list[data-as] .fd-list-table th.fd-num .fd-list-sort::after { order: 0; }
 .fd-list[data-as] .fd-list-sort .fd-list-head { font-size: 13.5px; font-weight: 500; color: inherit; }
+/* Waiting (loading.ts): its rows' skeleton as cards — a picture's place in a gallery, a title's bar and two lines. */
+.fd-list[data-as] .fd-sk-row { display: grid; gap: 8px; box-sizing: border-box; min-width: 0; padding: 14px; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); }
+.fd-list[data-as] .fd-sk-row > td { display: block; padding: 0; border: 0; }
+.fd-list[data-as] .fd-sk-row > td:nth-child(n+4) { display: none; }
+.fd-list[data-as="gallery"] .fd-sk-row::before { content: ""; aspect-ratio: 4 / 3; border-radius: max(var(--fd-control-radius), 4px); background: var(--fd-skeleton); }
 /* Each row a card: its box at its start, its card, its own buttons under it; a tone on its edge. */
 .fd-list[data-as] .fd-list-table tbody { display: grid; gap: 10px; }
 .fd-list[data-as] .fd-list-row { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; column-gap: 10px; box-sizing: border-box; min-width: 0; padding: 12px; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); }

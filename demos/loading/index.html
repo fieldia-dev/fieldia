@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fieldia — loading, as you like it</title>
+    <link rel="stylesheet" href="../demo.css" />
+    <link rel="stylesheet" href="../shell.css" />
+    <!-- The page's own panel round the forms. Fieldia styles each form and each wait in it. -->
+    <style>
+      #app.ld, #app.ld:has(.fd-sheet-page) { max-width: 1320px; margin: 0 auto; padding: 16px 16px 48px; }
+      .ld {
+        --ld-ink: light-dark(#1b1f24, #e8eaed);
+        --ld-muted: light-dark(#5b6470, #a3a9b2);
+        --ld-line: light-dark(#dde1e6, #343a44);
+        --ld-surface: light-dark(#ffffff, #1b1f25);
+        --ld-wash: light-dark(#f4f6f9, #20252d);
+        --ld-accent: light-dark(#1365d9, #5aa2ff);
+        --ld-on-accent: light-dark(#ffffff, #0b1220);
+        --ld-danger: light-dark(#b42318, #ff8a7a);
+        color: var(--ld-ink);
+      }
+      /* The app's own indicator, driven by loadingstart and loadingend: a bar along the page's top while anything waits. */
+      .ld-indicator { position: fixed; inset: 0 0 auto; height: 3px; z-index: 2000; background: var(--ld-accent); transform-origin: left; transform: scaleX(0); transition: transform 0.25s, opacity 0.4s; opacity: 0; pointer-events: none; }
+      .ld-indicator[data-on] { transform: scaleX(0.7); opacity: 1; transition: transform 2s ease-out, opacity 0.1s; }
+      .ld-panel { display: grid; gap: 12px; margin-block-end: 16px; padding: 14px 16px; border: 1px solid var(--ld-line); border-radius: 10px; background: var(--ld-surface); }
+      /* Its rows as wide as the panel, never as wide as a choice's longest words. */
+      .ld-panel > * { min-width: 0; }
+      .ld-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+      .ld-row h2 { margin: 0; font-size: 14px; font-weight: 700; }
+      .ld-net { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+      .ld-net input { width: 18px; height: 18px; accent-color: var(--ld-accent); }
+      .ld-button { font: inherit; font-weight: 600; min-height: 36px; padding: 6px 14px; border: 1px solid var(--ld-accent); border-radius: 6px; background: var(--ld-surface); color: var(--ld-accent); cursor: pointer; }
+      .ld-button[aria-pressed="true"] { background: var(--ld-accent); color: var(--ld-on-accent); }
+      .ld-button:focus-visible, .ld-pick select:focus-visible, .ld-net input:focus-visible { outline: 2px solid var(--ld-accent); outline-offset: 2px; }
+      .ld-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr)); gap: 10px 14px; padding: 4px; margin: -4px; overflow: hidden; }
+      .ld-pick { display: grid; gap: 4px; min-width: 0; font-size: 13px; font-weight: 600; }
+      .ld-pick select { width: 100%; min-width: 0; font: inherit; font-weight: 400; min-height: 34px; padding: 4px 8px; border: 1px solid var(--ld-line); border-radius: 6px; background: var(--ld-surface); color: var(--ld-ink); }
+      .ld-heard { margin: 0; color: var(--ld-muted); font-size: 13px; min-height: 1.4em; }
+      .ld-heard strong { color: var(--ld-ink); font-weight: 600; }
+      /* The list beside the record; one over the other on a phone. */
+      .ld-work { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+      .ld-pane { min-width: 0; border: 1px solid var(--ld-line); border-radius: 10px; background: var(--ld-surface); overflow: hidden; }
+      .ld-pane-name { margin: 0; padding: 10px 14px; border-block-end: 1px solid var(--ld-line); font-size: 14px; font-weight: 700; }
+      .ld-pane-name span { color: var(--ld-muted); font-weight: 500; }
+      .ld-twins { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; margin-block-start: 16px; }
+      @media (max-width: 860px) { .ld-work { grid-template-columns: minmax(0, 1fr); } }
+      /* The app's own drawing for a moment set to Custom: its words and its own little bar. */
+      .ld-custom { display: grid; justify-items: center; gap: 8px; padding: 12px; color: var(--ld-ink); font-size: 13px; text-align: center; }
+      .ld-custom-bar { width: 120px; height: 6px; border-radius: 3px; background: repeating-linear-gradient(90deg, var(--ld-accent) 0 10px, transparent 10px 16px); background-size: 32px 6px; animation: ld-march 0.8s linear infinite; }
+      .ld-custom[data-failed] { color: var(--ld-danger); }
+      @keyframes ld-march { to { background-position: 32px 0; } }
+      @media (prefers-reduced-motion: reduce) { .ld-custom-bar { animation: none; } .ld-indicator { transition: none; } }
+    </style>
+  </head>
+  <body>
+    <header id="demo-head" data-app="loading"></header>
+    <div class="ld-indicator" aria-hidden="true"></div>
+    <main id="app" class="ld"></main>
+    <script type="module" src="../shell.mjs"></script>
+    <!-- The page's script: a slow data source, the panel, a customer list beside a customer, the customer in two themes. -->
+    <script src="main.js" defer></script>
+  </body>
+</html>

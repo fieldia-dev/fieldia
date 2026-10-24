@@ -57,7 +57,7 @@ describe('the panel, in Arabic', () => {
   it('lists the page’s look in Arabic, from its theme and presets to its colours', () => {
     const { panel, names } = visit();
     openTab(panel, 'المظهر');
-    expect(names()).toEqual(['السمة', 'ابدأ من', 'المظهر الأساسي', 'لون التمييز', 'الخط', 'التباعد', 'الزوايا', 'التسميات', 'المساعدة', 'الحقول للقراءة فقط', 'الحقول الهادئة الفارغة', 'الألوان', 'كل نوع من الأجزاء']);
+    expect(names()).toEqual(['السمة', 'ابدأ من', 'المظهر الأساسي', 'لون التمييز', 'الخط', 'التباعد', 'الزوايا', 'التسميات', 'المساعدة', 'الحقول للقراءة فقط', 'الحقول الهادئة الفارغة', 'الألوان', 'كل نوع من الأجزاء', 'أثناء الانتظار', 'عند الرسم أول مرة', 'عند الطلب مرة أخرى', 'الصفوف التالية', 'عند البحث', 'عند الحفظ أو زر', 'الأشكال', 'التوقيت', 'عند الفشل']);
     expect([...panel.querySelectorAll('.fd-look-preset-name')].map((n) => n.textContent)).toEqual(['Fieldia', 'هادئ', 'متقارب', 'مستدير', 'ليلي']);
     expect([...panel.querySelectorAll('[data-setting="Spacing"] .fd-seg-words')].map((n) => n.textContent)).toEqual(['متقارب', 'مريح', 'واسع']);
   });

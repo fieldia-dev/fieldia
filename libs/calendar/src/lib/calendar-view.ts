@@ -1,6 +1,6 @@
 import { isOwnZone, recordSentence, saveProblemOf, type CalendarView, type Fields, type ListCalendar, type ListedRecord, type RecordId, type RecordVersion, type ResolvedFilter, type SaveRequest, type Value, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
-import { moneyReads, zoneName } from '@fieldia/widgets';
+import { moneyReads, startLoading, zoneName } from '@fieldia/widgets';
 import { linesIn, maker, type CalendarCore, type CalendarState, type Column } from './calendar-core';
 import { addDays, addMinutes, atMinutes, dayKey, dayOn, firstDayOf, format, minutesOf, rangeOf, sameDay, startOfDay, stepFrom, fromWall, toWall, writeWhen, zoneOfCalendar, type Range } from './dates';
 import { colourOf, comma, eventsOf, keyOf, kindOf, sideBySide, type CalendarEvent, type Resource } from './events';
@@ -156,24 +156,37 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     return [starts, { any: [{ field: spec.end, op: kind === 'date' ? '>=' : '>', value: first }, { field: spec.start, op: '>=', value: first }] }];
   }
 
+  /** Whether its records were drawn once: a wait after that asks again (`refresh`). */
+  let drew = false;
   async function reload(): Promise<void> {
     const mine = ++asking;
-    body.setAttribute('aria-busy', 'true');
+    // Its wait, as the list's (loading.ts in @fieldia/widgets): drawn the first time, then asked again — what it shows
+    // kept, a bar over it, unless the page says otherwise; a failure said its own way, with Retry.
+    const wait = startLoading(body, drew ? 'refresh' : 'first', context.loading, {
+      part: `${context.node.id}-calendar`,
+      failed: () => {
+        failed = true;
+        draw();
+        return true;
+      },
+    });
     try {
       const answer = source?.list ? await source.list({ model, fields, filter: [...context.filter(), ...spanFilter(range())], sort: [{ field: spec.start }], offset: 0, limit }) : { records: [], total: 0 };
       const people = await resourcesFor(answer.records);
-      if (mine !== asking || destroyed) return;
-      records = answer.records;
-      total = answer.total;
-      state.resources = people;
-      failed = false;
-    } catch {
-      if (mine !== asking || destroyed) return;
-      failed = true;
+      if (mine !== asking || destroyed) return wait.stop();
+      await wait.done(() => {
+        records = answer.records;
+        total = answer.total;
+        state.resources = people;
+        failed = false;
+        drew = true;
+        events = eventsOf(records, spec, page, locale);
+        draw();
+      });
+    } catch (error) {
+      if (mine !== asking || destroyed) return wait.stop();
+      wait.fail(error);
     }
-    body.removeAttribute('aria-busy');
-    events = eventsOf(records, spec, page, locale);
-    draw();
   }
 
   /**

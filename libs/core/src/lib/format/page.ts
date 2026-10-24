@@ -14,6 +14,8 @@ import { PageQuizSchema, type PageQuiz } from './quiz';
 import { PageReviewSchema, TimeLimitSchema, type PageReview, type TimeLimit } from './flow';
 import { PagePrefillSchema, type PagePrefill } from './prefill';
 import { PagePaymentSchema, type PagePayment } from './payment';
+import { PageLoadingSchema } from './loading-schema';
+import type { PageLoading } from './loading';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -293,6 +295,16 @@ export interface Page {
    * `preferences`, this person's. A page of a record's.
    */
   templates?: true | { fields: string[] };
+  /**
+   * How the page looks while it waits for an answer, moment by moment: a record or a list drawn for the first time
+   * (`first`), asked again (`refresh`), its next rows (`more`), a link's suggestions (`search`), a save or a button's
+   * steps (`action`); the skeleton's, the spinner's and the bar's looks; how long before a loader shows, how long it
+   * stays, when "Still loading…" is said and when the wait ends as failed; what a failure shows. Over the app's own
+   * (the viewer's `loading`); a list, a related list, a map or a field with a search may say its own. Left out,
+   * Fieldia's defaults (`LOADING_DEFAULTS`): a skeleton first, what is shown kept with a bar over it as it is asked
+   * again. See `PageLoading`.
+   */
+  loading?: PageLoading;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -390,6 +402,7 @@ export const PageSchema = z
     payment: PagePaymentSchema.optional(),
     outbox: z.boolean().optional(),
     templates: z.union([z.literal(true), z.strictObject({ fields: z.array(z.string().min(1)).min(1) })]).optional(),
+    loading: PageLoadingSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

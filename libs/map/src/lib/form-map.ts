@@ -1,7 +1,7 @@
 import type * as Leaflet from 'leaflet';
 import { ANY_FUNCTION, compileModifier, expressionContext, type FormState, type Line, type MapLayer, type Page, type Value, type Values } from '@fieldia/core';
 import type { MapPart, MapPartContext, MapPartFactory } from '@fieldia/viewer';
-import { stillShown } from '@fieldia/widgets';
+import { startLoading, stillShown } from '@fieldia/widgets';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
 import { metresBetween, readPoint, type LatLng } from './geo';
@@ -111,6 +111,15 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     tools: node.tools,
   });
   element.append(box.element);
+  // Its wait (loading.ts in @fieldia/widgets, `first`): a skeleton as big as the map until its map is there.
+  const coming = startLoading(box.element, 'first', context.loading, {
+    part: node.id,
+    shape: {
+      show: () => box.element.append(Object.assign(doc.createElement('span'), { className: 'fd-sk fd-sk-block' })),
+      hide: () => box.element.querySelector(':scope > .fd-sk-block')?.remove(),
+    },
+  });
+  box.ready(() => void coming.done());
   const note = doc.createElement('p');
   note.className = 'fd-map-list-note';
   note.setAttribute('role', 'status');
@@ -758,6 +767,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     },
     destroy() {
       destroyed = true;
+      coming.stop();
       clearInterval(staleTimer);
       if (watching !== null) doc.defaultView?.navigator.geolocation.clearWatch(watching);
       for (const mark of marks.values()) if (mark.glide) cancelAnimationFrame(mark.glide);

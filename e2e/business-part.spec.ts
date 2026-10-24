@@ -85,7 +85,8 @@ test.describe('the business widgets in a part of their own', () => {
     await expect(page.locator('#app .fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Quotation Sent');
     await expect(page.locator('[data-node="f-priority"] .fd-priority-star.fd-on')).toHaveCount(1);
     await expect(page.locator('[data-node="f-hours"] input')).toHaveValue('02:30');
-    expect(asked()).toEqual(['/script/fieldia.business.js', '/script/fieldia.js']);
+    // The loading part beside the page's own: its skeleton while they come — asked for, never waited for.
+    expect(asked()).toEqual(['/script/fieldia.business.js', '/script/fieldia.js', '/script/fieldia.loading.js']);
     // Its stylesheet first of the parts', where its rules stood in Fieldia's: the statusbar's steps drawn as arrows.
     expect(await page.evaluate(() => [...document.head.querySelectorAll('style[id^="fieldia"]')].map((style) => style.id))).toEqual([
       'fieldia-styles',
@@ -96,7 +97,7 @@ test.describe('the business widgets in a part of their own', () => {
     // A step clicked moves the record, as before.
     await page.locator('.fd-statusbar button', { hasText: 'Sales Order' }).click();
     await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Sales Order');
-    expect(asked()).toEqual(['/script/fieldia.business.js', '/script/fieldia.js']);
+    expect(asked()).toEqual(['/script/fieldia.business.js', '/script/fieldia.js', '/script/fieldia.loading.js']);
     expect(problems).toEqual([]);
   });
 

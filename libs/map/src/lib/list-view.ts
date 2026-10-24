@@ -1,6 +1,7 @@
 import type * as Leaflet from 'leaflet';
 import { cardLineFields, recordSentence, type DataSource, type JsonValue, type ListMap, type ListRequest, type ListResult, type MapCluster, type RecordId, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
+import { startLoading, type Wait } from '@fieldia/widgets';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
 import { SHAPE_ICONS, shapeDrawing } from './drawing';
@@ -746,6 +747,8 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
     const asked = ++asking;
     const filter = context.filter();
     const key = JSON.stringify(filter);
+    // Its wait, as the list's: a skeleton as big as the map the first time, what it shows kept with a bar over it after.
+    const wait = waitFor();
     if (gathers && gatheredHere !== key) {
       // Gathered by the source: its bubbles for the view, the map first fitted to a new search's records.
       const before = { lastFilter, ownSearch };
@@ -756,25 +759,25 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
       nearest?.setAttribute('aria-pressed', String(isNearest()));
       void shadeRegions(filter, asked);
       made?.forget();
-      if ((await askView(0, true, refit)) || asked !== asking || destroyed) return;
+      if (await askView(0, true, refit)) return void wait.done(() => (drew = true));
+      if (asked !== asking || destroyed) return wait.stop();
       // It gathers none for this search: its records loaded and gathered here, as without `clusters`.
       gatheredHere = key;
       ({ lastFilter, ownSearch } = before);
     }
-    if (!source?.list) return;
+    if (!source?.list) return wait.stop();
     // The records on hand from here on: no bubble of the source's drawn with them, none asked for.
     served = null;
     made?.stop();
     let result: ListResult;
     try {
       // The list's order, so the map shows the same first records: nearest first, when asked.
-      result = await source.list({ model, fields, filter, sort: context.sort(), offset: 0, limit: spec.limit ?? 500 });
-    } catch {
-      if (asked !== asking || destroyed) return;
-      mapFailed();
-      return;
+      result = await source.list({ model, fields, filter, sort: context.sort(), offset: 0, limit: spec.limit ?? 500, ...(context.loading?.settings.timeout ? { signal: wait.signal } : {}) });
+    } catch (error) {
+      if (asked !== asking || destroyed) return wait.stop();
+      return wait.fail(error);
     }
-    if (asked !== asking || destroyed) return;
+    if (asked !== asking || destroyed) return wait.stop();
     records = result.records;
     places = records.map((record) => placeOf(record.values));
     shownFilter = filter;
@@ -801,8 +804,29 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
       else open?.card.setChosen(open.id !== null && context.isChosen(open.id));
       // Records changed under the button: its count again.
       if (!here.hidden) countHere(map);
+      // Its map and its places drawn: its wait goes, once seen its minimum.
+      void wait.done(() => (drew = true));
     });
   }
+  /** Whether its records were drawn once: a wait after that asks again (`refresh`). */
+  let drew = false;
+  /**
+   * Its wait (loading.ts): the first a skeleton as big as the map, over its panes, until its map and its places are in;
+   * after, what it shows kept, a bar over it; a failure said where its note is, as before.
+   */
+  const waitFor = (): Wait =>
+    startLoading(box.element, drew ? 'refresh' : 'first', context.loading, {
+      part: `${node.id}-map`,
+      shape: {
+        show: () => box.element.append(Object.assign(doc.createElement('span'), { className: 'fd-sk fd-sk-block' })),
+        hide: () => box.element.querySelector(':scope > .fd-sk-block')?.remove(),
+      },
+      failed: () => {
+        mapFailed();
+        return true;
+      },
+      retry: () => void reload(),
+    });
 
   return {
     element,

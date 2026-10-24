@@ -20,12 +20,13 @@ async function waitForAddress(page: Page, partId = 'delivery-address') {
 }
 
 test.describe('a saved form placed twice', () => {
-  test('shows a quiet placeholder while the Address form comes, then the form', async ({ page }) => {
+  test('waits as a skeleton while the Address form comes, then the form', async ({ page }) => {
     // The demo's app takes two seconds to fetch a saved form here.
     const { problems } = await open(page, 'plain', 'page=delivery&skin=outlined&pagesDelay=2000');
     const delivery = part(page, 'delivery-address');
-    await expect(delivery.locator('.fd-form-part-note')).toHaveText('Loading…');
+    // Busy at once; past the wait's delay, a few skeleton bars in its place (loading.ts).
     await expect(delivery).toHaveAttribute('aria-busy', 'true');
+    await expect(delivery.locator('.fd-loader[data-way="skeleton"] .fd-sk')).toHaveCount(3);
     await screen(page, 'embedded-loading', { viewport: true });
     await waitForAddress(page);
     await expect(delivery).not.toHaveAttribute('aria-busy');

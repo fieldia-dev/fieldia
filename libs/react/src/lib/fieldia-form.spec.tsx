@@ -342,6 +342,19 @@ describe('<FieldiaForm>', () => {
     expect(shown).toEqual([1, 2]);
   });
 
+  it('waits as its `loading` prop says, telling each wait’s start and end to onLoadingStart and onLoadingEnd', async () => {
+    const heard: string[] = [];
+    const source = createMemoryDataSource({ records: { 'hr.employee': { 1: { name: 'Mona Adel' } } }, delayMs: 300 });
+    const { container } = render(
+      <FieldiaForm page={staffPage} dataSource={source} recordId={1} loading={{ first: 'text', delay: 0 }} onLoadingStart={(event) => heard.push(`start ${event.moment}`)} onLoadingEnd={(event) => heard.push(`end ${event.moment}${event.failed ? ' failed' : ''}`)} />
+    );
+    await waitFor(() => container.querySelector('.fd-loader[data-way="text"]'));
+    expect(container.querySelector('.fd-loader[data-way="text"]')?.textContent).toBe('Loading…');
+    await waitFor(() => heard.includes('end first'));
+    expect(heard).toEqual(['start first', 'end first']);
+    await waitFor(() => !container.querySelector('.fd-loader'));
+  });
+
   it('cleans up when it unmounts', () => {
     const { container, unmount } = render(<FieldiaForm page={page('survey')} />);
     const host = container.firstElementChild as HTMLElement;

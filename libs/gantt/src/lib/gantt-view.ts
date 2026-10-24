@@ -1,6 +1,6 @@
 import { isOwnZone, recordSentence, saveProblemOf, type Fields, type GanttZoom, type ListGantt, type ListedRecord, type RecordId, type RecordVersion, type SaveRequest, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
-import { moneyReads, zoneName } from '@fieldia/widgets';
+import { moneyReads, startLoading, zoneName } from '@fieldia/widgets';
 import { addDays, comma, daysFrom, firstDayOf, format, toWall, zoneOfGantt } from './dates';
 import { fill, ganttLabels, type GanttLabels } from './labels';
 import { DAY_WIDTH, spanOf, ticksOf, type Span } from './scale';
@@ -183,22 +183,35 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
 
   // ---- asking for the records ------------------------------------------------------------------------------
 
+  /** Whether its records were drawn once: a wait after that asks again (`refresh`). */
+  let drew = false;
   async function reload(): Promise<void> {
     const mine = ++asking;
-    body.setAttribute('aria-busy', 'true');
+    // Its wait, as the list's (loading.ts in @fieldia/widgets): drawn the first time, then asked again — what it shows
+    // kept, a bar over it, unless the page says otherwise; a failure said its own way, with Retry.
+    const wait = startLoading(body, drew ? 'refresh' : 'first', context.loading, {
+      part: `${context.node.id}-gantt`,
+      failed: () => {
+        failed = true;
+        draw();
+        return true;
+      },
+    });
     try {
       const answer = source?.list ? await source.list({ model, fields, filter: context.filter(), sort: [{ field: spec.start }], offset: 0, limit }) : { records: [], total: 0 };
-      if (mine !== asking || destroyed) return;
-      records = answer.records;
-      total = answer.total;
-      failed = false;
-    } catch {
-      if (mine !== asking || destroyed) return;
-      failed = true;
+      if (mine !== asking || destroyed) return wait.stop();
+      await wait.done(() => {
+        records = answer.records;
+        total = answer.total;
+        failed = false;
+        drew = true;
+        setTasks();
+        draw();
+      });
+    } catch (error) {
+      if (mine !== asking || destroyed) return wait.stop();
+      wait.fail(error);
     }
-    body.removeAttribute('aria-busy');
-    setTasks();
-    draw();
   }
 
   // ---- words ----------------------------------------------------------------------------------------------

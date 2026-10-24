@@ -193,12 +193,13 @@ test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
     await expect(page.locator('#app .fd-links-box').first()).toBeVisible();
     expect(await page.locator('#app .fd-md-field').count()).toBeGreaterThan(0);
     // Its tags', a link to other records: the relations part. And its look's: the Fluent theme and the quiet skin its page
-    // names.
+    // names. Beside them the loading part, for the page's skeleton while they come.
     expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path)).sort()).toEqual([
       '/script/fieldia.choice.js',
       '/script/fieldia.files.js',
       '/script/fieldia.head.js',
       '/script/fieldia.js',
+      '/script/fieldia.loading.js',
       '/script/fieldia.path.js',
       '/script/fieldia.quiet.js',
       '/script/fieldia.relations.js',
