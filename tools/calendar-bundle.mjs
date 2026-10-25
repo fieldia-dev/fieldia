@@ -59,7 +59,9 @@
  * page 793 bytes measured before, 849 after, to 0.9; the calendar 19,554, 19,569, to 19.2.
  * 0.35 (perf-bytes): a record's Move to… "⋯" beside its block, never inside the block's own button (axe's
  * nested-interactive): placed over its end corner in a day's column, and in a box of its own with it in a day's cell —
- * the calendar 19,569 bytes measured before, 19,752 after, to 19.3.
+ * the calendar 19,569 bytes measured before, 19,752 after, to 19.3. Then its Arabic, German and French words in chunks
+ * of their own, as every package's other languages are (`LANGUAGE_BUDGET`: Arabic 943 bytes, German 831, French 818
+ * measured): with the page 848 bytes measured before, 764 after, to 0.8; the calendar 19,752, 17,830, to 17.5.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -68,8 +70,8 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/calendar-bundle');
-const BUDGET = { page: 0.9, calendar: 19.3 };
-const LANGUAGE_BUDGET = { tr: 0.9, fa: 1.1, ur: 1.1, es: 0.8 };
+const BUDGET = { page: 0.8, calendar: 17.5 };
+const LANGUAGE_BUDGET = { ar: 1.0, de: 0.9, fr: 0.9, tr: 0.9, fa: 1.1, ur: 1.1, es: 0.8 };
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });

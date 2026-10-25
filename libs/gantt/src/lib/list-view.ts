@@ -6,18 +6,18 @@ import type { GanttSettings } from './settings';
 
 /**
  * Its name on the list's switcher, and what it says should its code not come: words that show before the timeline's own
- * code has come. Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted, not yet reviewed by a native speaker —
- * come in chunks of their own (the timeline's words' own, locales/), fetched where they are spoken, before a page in one
+ * code has come. Every language but English — Arabic, German and French (0.35), and Turkish, Persian, Urdu and Spanish,
+ * UNREVIEWED: machine-assisted, not yet reviewed by a native speaker — comes in chunks of its own (the timeline's words' own, locales/), fetched where they are spoken, before a page in one
  * is drawn (`wordsReady` in @fieldia/core): a page in any other language never carries them.
  */
 const WORDS = {
   en: { timeline: 'Timeline', loadFailed: 'The timeline could not be loaded.' },
-  ar: { timeline: 'المخطط الزمني', loadFailed: 'تعذّر تحميل المخطط الزمني.' },
-  fr: { timeline: 'Planning', loadFailed: 'Le planning n’a pas pu être chargé.' },
-  de: { timeline: 'Zeitplan', loadFailed: 'Der Zeitplan konnte nicht geladen werden.' },
 } as Record<Locale, Pick<GanttLabels, 'timeline' | 'loadFailed'>>;
 wordsInChunks(
   tableInChunks(WORDS, {
+    ar: () => import('./locales/ar').then((words) => words.ar),
+    de: () => import('./locales/de').then((words) => words.de),
+    fr: () => import('./locales/fr').then((words) => words.fr),
     tr: () => import('./locales/tr').then((words) => words.tr),
     fa: () => import('./locales/fa').then((words) => words.fa),
     ur: () => import('./locales/ur').then((words) => words.ur),

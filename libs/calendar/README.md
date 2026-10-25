@@ -7,8 +7,8 @@ slot to make one, and move one from the keyboard with **Move to…**. A move is
 written through the data source's `save`, with **Undo**. It shares the list's
 search, filters and favourites, reads right to left, speaks English, Arabic,
 French and German — and Turkish, Persian, Urdu and Spanish, machine-assisted,
-not yet reviewed by a native speaker — and its code loads only when a calendar
-is first shown.
+not yet reviewed by a native speaker — and its code, and its words in each
+language but English, load only when a calendar is first shown.
 
 ```sh
 npm install @fieldia/calendar

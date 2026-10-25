@@ -30,9 +30,9 @@ demos and tests.
 
 Its words (`CHATTER_LABELS`, the app's own over them with `labels`) come in the
 page's language: English, Arabic, German and French, and Turkish, Persian, Urdu
-and Spanish — machine-assisted, not yet reviewed by a native speaker, each in a
-chunk of its own fetched where it is spoken; a chatter, a Discussion and a
-History in one are drawn once its words have come. Its dates are written in
+and Spanish — the last four machine-assisted, not yet reviewed by a native
+speaker — each but English in a chunk of its own fetched where it is spoken; a
+chatter, a Discussion and a History in one are drawn once its words have come. Its dates are written in
 Latin digits on the Gregorian calendar, in Persian too.
 
 ## A conversation that knows its channels
