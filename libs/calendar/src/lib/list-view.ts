@@ -1,5 +1,6 @@
 import { tableInChunks, wordsInChunks, type ListNode, type Locale } from '@fieldia/core';
 import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
+import { startLoading } from '@fieldia/widgets';
 import type { CalendarLabels } from './labels';
 import type { CalendarSettings } from './settings';
 
@@ -41,24 +42,29 @@ export function calendarListViews(settings: CalendarSettings = {}): Record<strin
   return { calendar };
 }
 
-/** The calendar's place at once, busy; the calendar in it once its code has come. */
+/**
+ * The calendar's place at once, waiting as the list says it waits the first time (its skeleton, unless the page says
+ * otherwise) — never an empty space under the list's search while its code comes; the calendar in it once it has, its own
+ * first wait going on from this one, drawn at once where this one was in sight.
+ */
 function lazyCalendar(context: ListViewContext, settings: CalendarSettings): ListViewPart {
   const element = context.document.createElement('div');
   element.className = 'fd-cal-holder';
-  element.setAttribute('aria-busy', 'true');
+  const coming = startLoading(element, 'first', context.loading, { part: `${context.node.id}-calendar` });
   let part: ListViewPart | null = null;
   let gone = false;
   const ready: Promise<ListViewPart | null> = import('./calendar-view').then(
     async ({ calendarPart, calendarWordsReady }) => {
       await calendarWordsReady(context.locale);
       if (gone) return null;
-      part = calendarPart(context, settings);
+      const now = coming.shown;
+      coming.stop();
+      part = calendarPart(context, settings, now);
       element.replaceChildren(part.element);
-      element.removeAttribute('aria-busy');
       return part;
     },
     () => {
-      element.removeAttribute('aria-busy');
+      coming.stop();
       element.setAttribute('role', 'alert');
       element.textContent = settings.labels?.[context.locale]?.loadFailed ?? wordsOf(context.locale).loadFailed;
       return null;
@@ -72,6 +78,7 @@ function lazyCalendar(context: ListViewContext, settings: CalendarSettings): Lis
     shown: () => void ready.then((loaded) => loaded?.shown()),
     destroy() {
       gone = true;
+      coming.stop();
       part?.destroy();
     },
   };

@@ -38,7 +38,7 @@ let made = 0;
  * to…" (move-to.ts), written through the data source's save with Undo; an
  * empty slot pressed for a new record.
  */
-export function calendarPart(context: ListViewContext, settings: CalendarSettings = {}): ListViewPart {
+export function calendarPart(context: ListViewContext, settings: CalendarSettings = {}, firstNow = false): ListViewPart {
   const { page, node, document: doc, locale } = context;
   const spec = node.calendar as ListCalendar;
   const source = context.dataSource;
@@ -164,6 +164,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     // kept, a bar over it, unless the page says otherwise; a failure said its own way, with Retry.
     const wait = startLoading(body, drew ? 'refresh' : 'first', context.loading, {
       part: `${context.node.id}-calendar`,
+      // Its first, going on from its place's wait while its code came (list-view.ts): drawn at once where that one was in sight.
+      now: !drew && firstNow,
       failed: () => {
         failed = true;
         draw();

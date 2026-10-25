@@ -48,7 +48,7 @@ let made = 0;
  * Ctrl+Shift+Z or Ctrl+Y to make it again; on paper, the whole plan on the page's width. It opens on the plan, from its
  * first task (today in view where it fits), and says at either edge how many bars run off the days shown.
  */
-export function ganttPart(context: ListViewContext, settings: GanttSettings = {}): ListViewPart {
+export function ganttPart(context: ListViewContext, settings: GanttSettings = {}, firstNow = false): ListViewPart {
   const { page, node, document: doc, locale } = context;
   const spec = node.gantt as ListGantt;
   const source = context.dataSource;
@@ -202,6 +202,8 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     // kept, a bar over it, unless the page says otherwise; a failure said its own way, with Retry.
     const wait = startLoading(body, drew ? 'refresh' : 'first', context.loading, {
       part: `${context.node.id}-gantt`,
+      // Its first, going on from its place's wait while its code came (list-view.ts): drawn at once where that one was in sight.
+      now: !drew && firstNow,
       failed: () => {
         failed = true;
         draw();
