@@ -1524,8 +1524,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // draft kept as it is taken away): 535.08 measured before; 538.48, 543.12, 555.65 and 557.48 after each lane; 557.82 at
 // the tip, to 557.9. The owner's walk of 0.33.0 mended in the merge — a record opened in another's place holds none of
 // its values, and is named by its id where it cannot be opened (form.ts, messages.ts); next rows that failed stay said
-// (list-endless.ts): 557.82 measured before, 558.08 after, to 558.1.
-const BUDGET_KB = 558.1;
+// (list-endless.ts): 557.82 measured before, 558.08 after, to 558.1. An embed field's frame asking only for the sandbox
+// tokens the browser knows (embed.ts, `supports`): 558.08 measured before, 558.27 after, to 558.3 (gzipped 186.06,
+// inside its 186.1).
+const BUDGET_KB = 558.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
