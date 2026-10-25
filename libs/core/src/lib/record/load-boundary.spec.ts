@@ -39,6 +39,45 @@ function source(load: () => Promise<unknown>) {
   return { ds, saves };
 }
 
+describe('a record opened in the place of another (the owner’s walk of 0.33.0, finding 3)', () => {
+  it('holds none of the other’s values while it loads; one that cannot be is named by its id, and Retry opens it', async () => {
+    const customers = { ...page, records: { one: 'customer', other: 'customers' } } as Page;
+    let answer: (values: never) => void = () => undefined;
+    let fail: (error: Error) => void = () => undefined;
+    let first = true;
+    const ds: DataSource = {
+      load: (() => (first ? ((first = false), Promise.resolve({ name: 'Nile Traders', amount: 52000 })) : new Promise((resolve, reject) => ((answer = resolve), (fail = reject))))) as DataSource['load'],
+    };
+    const form = createForm({ page: customers, dataSource: ds, recordId: 1 });
+    await form.load();
+    expect(form.getState().values['name']).toBe('Nile Traders');
+    const opening = form.openRecord(32);
+    await tick();
+    // On its way: none of Nile Traders' values in its place, nothing of it to save.
+    expect(form.getState()).toMatchObject({ recordId: 32, loaded: false, status: 'loading' });
+    expect(form.getState().values['name']).toBeNull();
+    expect(form.getState().values['amount']).toBeNull();
+    fail(new Error('The server did not answer this once.'));
+    await opening;
+    expect(form.getState().values['name']).toBeNull();
+    expect(form.getState().loadProblem).toEqual({ kind: 'other', message: 'Couldn’t open customer 32: The server did not answer this once.' });
+    // Retry: its own load, asked again.
+    const retried = form.load();
+    await tick();
+    answer({ name: 'Horus Foods' } as never);
+    await retried;
+    expect(form.getState()).toMatchObject({ recordId: 32, loaded: true, loadProblem: null });
+    expect(form.getState().values['name']).toBe('Horus Foods');
+    // Loaded, a reload's failure is said of the record shown, as ever.
+    const again = form.load();
+    await tick();
+    fail(new Error('Gateway Timeout'));
+    await again;
+    expect(form.getState().loadProblem?.message).toBe('This customer could not be loaded: Gateway Timeout');
+    expect(form.getState().values['name']).toBe('Horus Foods');
+  });
+});
+
 describe('a load that fails, or answers no record', () => {
   it('B/ds3, ds4: a failed load says why, in words, with a Retry of its own; a save of the record never loaded sends nothing', async () => {
     let fail = true;

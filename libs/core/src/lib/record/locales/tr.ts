@@ -126,6 +126,7 @@ export const tr: Messages = {
   guardLanguages: 'Her dilin denetimi',
   guardLimits: 'Bu formun yanıt kabul edip etmediğinin denetimi',
   loadFailed: 'Bu kayıt yüklenemedi: {problem}',
+  openFailed: '{id} kaydı açılamadı: {problem}',
   notLoaded: 'Bu kayıt henüz yüklenmedi, bu yüzden hiçbir şey kaydedilmedi.',
   unreadableValue: '{label} bu sayfanın gösteremeyeceği bir biçimde saklanıyor: olduğu gibi korunuyor',
   saveBroken: 'Bir şeyler ters gitti, bu yüzden hiçbir şey kaydedilmedi: {problem}',

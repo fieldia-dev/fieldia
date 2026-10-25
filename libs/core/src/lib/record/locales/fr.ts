@@ -114,6 +114,7 @@ export const fr: Messages = {
   guardLanguages: 'la vérification de chaque langue',
   guardLimits: 'la vérification de l’ouverture de ce formulaire',
   loadFailed: 'Impossible de charger cet enregistrement : {problem}',
+  openFailed: 'Impossible d’ouvrir l’enregistrement {id} : {problem}',
   notLoaded: 'Cet enregistrement n’est pas encore chargé : rien n’a été enregistré.',
   unreadableValue: '{label} est enregistré sous une forme que cette page ne sait pas afficher : il est conservé tel quel',
   saveBroken: 'Un problème est survenu, rien n’a été enregistré : {problem}',

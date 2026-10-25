@@ -114,6 +114,7 @@ export const ar: Messages = {
   guardLanguages: 'التحقق من كل لغة',
   guardLimits: 'التحقق مما إذا كان هذا النموذج يقبل الإجابات',
   loadFailed: 'تعذّر تحميل هذا السجل: {problem}',
+  openFailed: 'تعذّر فتح السجل {id}: {problem}',
   notLoaded: 'لم يُحمَّل هذا السجل بعد، لذا لم يُحفَظ شيء.',
   unreadableValue: '{label} محفوظ بصيغة لا تستطيع هذه الصفحة عرضها: سيبقى كما هو',
   saveBroken: 'حدث خطأ، لذا لم يُحفَظ شيء: {problem}',

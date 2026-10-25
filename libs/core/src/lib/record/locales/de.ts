@@ -116,6 +116,7 @@ export const de: Messages = {
   guardLanguages: 'Die Prüfung jeder Sprache',
   guardLimits: 'Die Prüfung, ob dieses Formular Antworten annimmt',
   loadFailed: 'Dieser Datensatz konnte nicht geladen werden: {problem}',
+  openFailed: 'Datensatz {id} konnte nicht geöffnet werden: {problem}',
   notLoaded: 'Dieser Datensatz ist noch nicht geladen, daher wurde nichts gespeichert.',
   unreadableValue: '{label} ist so gespeichert, dass diese Seite es nicht anzeigen kann: Es bleibt, wie es ist',
   saveBroken: 'Etwas ist schiefgegangen, daher wurde nichts gespeichert: {problem}',

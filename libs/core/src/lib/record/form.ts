@@ -3614,15 +3614,24 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     }
   }
 
-  /** A load that failed: said in words — the source's own after them — with a Retry of its own; what loaded before stays. */
+  /**
+   * A load that failed: said in words — the source's own after them — with a Retry of its own; what loaded before stays.
+   * A record opened in the place of another (`openRecord`), none of it shown yet, is named by its id: "Couldn't open
+   * customer 7: …" — the form never says "this record" of one it does not show.
+   */
   function loadFailed(error: unknown) {
     const problem = saveProblemOf(error);
-    const message = fillMessage(messages, named(messages.loadFailedNoun, messages.loadFailed), { problem: problem.message });
+    const opening = !shownLoaded && opened !== null && opened === state.recordId;
+    const message = opening
+      ? fillMessage(messages, named(messages.openFailedNoun, messages.openFailed), { id: String(state.recordId), problem: problem.message })
+      : fillMessage(messages, named(messages.loadFailedNoun, messages.loadFailed), { problem: problem.message });
     set({ status: 'error', error: message, loadProblem: { kind: problem.kind === 'network' ? 'network' : 'other', message } });
   }
 
   /** The save refused for a record that never loaded, until it does. */
   let notLoadedProblem: SaveProblem | null = null;
+  /** The record opened last in the place of another (`openRecord`): named by its id while none of it is shown. */
+  let opened: RecordId | null = null;
   /**
    * Whether the record shown loaded once from its source. A record an app hands the form with its values and never asks
    * to load (`recordId` with `values`) is the app's to vouch for: it saves as ever.
@@ -3657,8 +3666,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     serverKey = null;
     draftEpoch++;
     const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {}, resume: null, approval: null };
+    opened = id;
     if (id != null) {
-      set({ ...fresh, recordId: id, status: 'idle', loaded: false, loadProblem: null, unreadable: {} });
+      // Another record's values are never shown in its place: the form holds none of it until it has loaded.
+      baseline = startingValues(false, false);
+      set({ ...fresh, recordId: id, status: 'idle', values: structuredCopy(baseline), loaded: false, loadProblem: null, unreadable: {} });
       joinsReset();
       await load();
       return true;

@@ -140,6 +140,7 @@ export interface Messages {
   discardChangesNoun?: string;
   recordReplacedNoun?: string;
   loadFailedNoun?: string;
+  openFailedNoun?: string;
   notLoadedNoun?: string;
   /** A text longer than its most, pasted whole: `{over}` characters too long for its `{max}`; one over (`overByOne`). The one message: its count stays a count. */
   overBy: string;
@@ -209,6 +210,11 @@ export interface Messages {
    * that never loaded, refused; a value the source holds that the page cannot show, kept as it is stored.
    */
   loadFailed: string;
+  /**
+   * A record opened that could not be loaded — none of it shown yet, another's values never in its place — named by its
+   * id (`{id}`), the source's words after (`{problem}`), with its own Retry.
+   */
+  openFailed: string;
   notLoaded: string;
   unreadableValue: string;
   /** A save or a send that broke on the way (`{problem}`, what broke): nothing went. */
@@ -328,6 +334,7 @@ const en: Messages = {
   discardChangesNoun: 'Discard your changes to this {record}?',
   recordReplacedNoun: 'Another {record} is shown now: the rest of these steps did not run.',
   loadFailedNoun: 'This {record} could not be loaded: {problem}',
+  openFailedNoun: 'Couldn’t open {record} {id}: {problem}',
   notLoadedNoun: 'This {record} has not loaded yet, so nothing was saved.',
   overBy: '{label} is {over} characters too long: shorten it to {max}',
   overByOne: '{label} is 1 character too long: shorten it to {max}',
@@ -365,6 +372,7 @@ const en: Messages = {
   guardLanguages: 'The check of each language',
   guardLimits: 'The check of whether this form takes answers',
   loadFailed: 'This record could not be loaded: {problem}',
+  openFailed: 'Couldn’t open record {id}: {problem}',
   notLoaded: 'This record has not loaded yet, so nothing was saved.',
   unreadableValue: '{label} is stored in a way this page cannot show: it is kept as it is',
   saveBroken: 'Something went wrong, so nothing was saved: {problem}',

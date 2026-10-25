@@ -119,6 +119,7 @@ export const es: Messages = {
   guardLanguages: 'la comprobación de cada idioma',
   guardLimits: 'la comprobación de si este formulario acepta respuestas',
   loadFailed: 'No se pudo cargar este registro: {problem}',
+  openFailed: 'No se pudo abrir el registro {id}: {problem}',
   notLoaded: 'Este registro aún no se ha cargado, así que no se guardó nada.',
   unreadableValue: '{label} está guardado de una forma que esta página no puede mostrar: se conserva tal cual',
   saveBroken: 'Algo salió mal, así que no se guardó nada: {problem}',
