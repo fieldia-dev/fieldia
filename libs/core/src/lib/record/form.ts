@@ -2528,15 +2528,21 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    */
   function refusedAt(path: string): boolean {
     const parts = path.split('.');
-    // Only the field's own problems are found: those of the nodes showing it, or a range it ends — once for the state.
+    const def = page.fields[parts[0]];
+    const empty = () => {
+      const held = valueAt(state.values, path);
+      return held === gone || isEmpty((parts.length > 2 && def?.type === 'one2many' ? def.fields[parts[parts.length - 1]] : def) as Field, held);
+    };
+    // Only the field's own problems are found: those of the nodes showing it, or a range it ends — once for the state,
+    // and not at all for a field's own answer that is empty, which is never one refused.
     const only = full ? undefined : parts[0];
     if (refusals?.state !== state) refusals = { state, found: new Map() };
     let found = refusals.found.get(only ?? '');
-    if (!found) refusals.found.set(only ?? '', (found = collectErrors(undefined, only)));
-    if (!found[path]) return false;
-    const def = page.fields[parts[0]];
-    const held = valueAt(state.values, path);
-    return held !== gone && !isEmpty((parts.length > 2 && def?.type === 'one2many' ? def.fields[parts[parts.length - 1]] : def) as Field, held);
+    if (!found) {
+      if (parts.length === 1 && empty()) return false;
+      refusals.found.set(only ?? '', (found = collectErrors(undefined, only)));
+    }
+    return !!found[path] && !empty();
   }
 
   /** Warnings for the visible fields of the page, without publishing them. */
