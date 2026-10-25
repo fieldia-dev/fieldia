@@ -31,6 +31,8 @@ export function counted(widget: Widget, { form, name, field, node, document, lab
   });
   return {
     ...widget,
+    // Its count said a moment after each drawing, as it is typed in: drawn every time.
+    reads: undefined,
     element: make('div', { class: 'fd-counted' }, widget.element, shown, said),
     destroy() {
       clearTimeout(pause);

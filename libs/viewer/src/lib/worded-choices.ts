@@ -19,6 +19,8 @@ export function wordedWidget(context: WidgetContext, draw: (context: WidgetConte
   const inner = draw({ ...context, field: { ...field, options } as Field });
   return {
     ...inner,
+    // Its options' words follow other answers: drawn every time.
+    reads: undefined,
     update(state) {
       options.forEach((option, i) => {
         if (!written[i].includes('{')) return;

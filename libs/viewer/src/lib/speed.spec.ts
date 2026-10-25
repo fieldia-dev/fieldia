@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Page } from '@fieldia/core';
+import { recomputeInFull, workCounts, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from './viewer';
 
 /**
@@ -18,6 +18,7 @@ afterEach(() => {
   handle?.destroy();
   handle = null;
   document.body.replaceChildren();
+  recomputeInFull(false);
 });
 
 function mount() {
@@ -84,5 +85,70 @@ describe('a page of 500 fields, filled in', () => {
     type(at(host, 'f-s07-name').querySelector('input') as HTMLInputElement, 'Seven');
     expect(shown()).toHaveLength(24);
     expect(shown()).not.toContain('f-s07-name');
+  });
+});
+
+/** The work done while `act` ran, counted (`workCounts`): conditions read, values worked out, fields checked, parts brought up to date. */
+function work(act: () => void): typeof workCounts {
+  const before = { ...workCounts };
+  act();
+  return { conditions: workCounts.conditions - before.conditions, computes: workCounts.computes - before.computes, checks: workCounts.checks - before.checks, updaters: workCounts.updaters - before.updaters };
+}
+
+/**
+ * What a key costs on a page of 500 fields, counted — the same on any machine. Since 0.35 a change works out only what
+ * reads it: the conditions, the values worked out and the checks that read the field typed in, and the parts that show
+ * what changed. Working every change out in full, as before 0.35 (`recomputeInFull`), brings all 550 parts up to date.
+ */
+describe('a key on a page of 500 fields, counted', () => {
+  const box = (host: Element, node: string) => at(host, node).querySelector('input') as HTMLInputElement;
+
+  it('brings up to date the field typed in and the page round it, not the 500 others', () => {
+    const { host } = mount();
+    type(box(host, 'f-s13-reference'), 'N');
+    const done = work(() => type(box(host, 'f-s13-reference'), 'Ni'));
+    // The field typed in, and the parts that follow every change: the page's own, and those whose widgets do not say what
+    // they draw from (its 5 links, its 2 tables of lines): 16 of 533.
+    expect(done.updaters).toBeLessThanOrEqual(18);
+    // Nothing reads it: no condition is read again, no value worked out, no other field checked.
+    expect(done).toMatchObject({ conditions: 0, computes: 0 });
+    expect(done.checks).toBeLessThanOrEqual(1);
+  });
+
+  it('works out again only the total a number is worked into, and draws only the two', () => {
+    const { host } = mount();
+    type(box(host, 'f-s01-headcount'), '3');
+    const done = work(() => type(box(host, 'f-s01-budget'), '100'));
+    expect((at(host, 'f-s01-total').querySelector('input') as HTMLInputElement).value).toBe('300.00');
+    expect(done.computes).toBe(1);
+    expect(done.updaters).toBeLessThanOrEqual(20);
+  });
+
+  it('reads again only the conditions on the choice changed, and draws only the parts they show or hide', () => {
+    const { host } = mount();
+    const foreign = at(host, 'f-supplier-type').querySelector('input[type="radio"]:not(:checked)') as HTMLInputElement;
+    const done = work(() => foreign.click());
+    // The ten addresses that choice shows, and the other parts reading it.
+    expect(done.conditions).toBeLessThanOrEqual(12);
+    expect(done.updaters).toBeLessThanOrEqual(28);
+  });
+
+  it('checks again only the field typed in while the problems found by a send are shown', async () => {
+    const { host } = mount();
+    (host.querySelector('button[type="submit"]') as HTMLButtonElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    type(box(host, 'f-s13-reference'), 'N');
+    const done = work(() => type(box(host, 'f-s13-reference'), 'Ni'));
+    expect(done.checks).toBeLessThanOrEqual(1);
+    expect(done.updaters).toBeLessThanOrEqual(19);
+  });
+
+  it('brings all of them up to date, working everything out in full: as before 0.35', () => {
+    recomputeInFull(true);
+    const { host } = mount();
+    type(box(host, 'f-s13-reference'), 'N');
+    const done = work(() => type(box(host, 'f-s13-reference'), 'Ni'));
+    expect(done.updaters).toBeGreaterThan(500);
+    expect(done.conditions).toBeGreaterThan(80);
   });
 });

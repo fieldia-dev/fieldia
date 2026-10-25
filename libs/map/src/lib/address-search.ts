@@ -47,6 +47,8 @@ export function addressSearchWidget(settings: MapSettings): WidgetFactory {
     });
     return {
       ...plain,
+      // What describes its box follows its suggestions too: drawn every time.
+      reads: undefined,
       element,
       update(state) {
         plain.update(state);

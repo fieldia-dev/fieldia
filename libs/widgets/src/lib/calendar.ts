@@ -414,6 +414,8 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
     element,
     focus: (options?: FocusOptions) => inner.focus(options),
     ...(inner.takeTyped ? { takeTyped: inner.takeTyped } : {}),
+    // What its box reads: the calendar draws from its state alone.
+    reads: inner.reads,
     update(state) {
       readonly = state.readonly;
       button.hidden = state.readonly;

@@ -194,6 +194,14 @@ export interface Widget {
    */
   typedText?(): string;
   /**
+   * What it draws from, where that is its own state — its value, whether it is read-only, required or invalid, what
+   * describes it — and, of the form, only its field's text left unread, its choices loaded and their places left, and
+   * the values of these fields (`values[name]`: a money box's currency): never `values` whole, `parent`, or anything else
+   * it could ask the form. Given (an empty list too), the viewer leaves it alone while none of that changed — a key typed
+   * elsewhere on a long page costs it nothing. Left out, it is brought up to date at every change, as before.
+   */
+  readonly reads?: readonly string[];
+  /**
    * Buttons that act on the whole field, such as a Markdown text's Edit and
    * Done. The widget draws them in its own element; where a group holds this
    * field alone, its label out of sight, the viewer moves them to the group's
@@ -310,6 +318,8 @@ function textWidget(inputType: string): WidgetFactory {
     input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
     return counted({
       element: input,
+      // Its own state alone: left alone while it is unchanged.
+      reads: [],
       focus: (options?: FocusOptions) => input.focus(options),
       destroy: () => box?.destroy(),
       update(state) {
@@ -374,6 +384,7 @@ function wrappingLine(context: WidgetContext): Widget {
   return counted(
     {
       element: area,
+      reads: [],
       focus: (options?: FocusOptions) => area.focus(options),
       destroy: () => {
         sized?.disconnect();
@@ -410,6 +421,7 @@ const textareaWidget: WidgetFactory = (context) => {
   });
   return counted({
     element: area,
+    reads: [],
     focus: (options?: FocusOptions) => area.focus(options),
     destroy: () => box.destroy(),
     update(state) {
@@ -600,6 +612,8 @@ function numberBox(context: WidgetContext, shorthand?: (locale: Locale, labels?:
 
   return {
     element,
+    // Its own state, and its currency's field: a box that picks the currency draws that field's widget too, every time.
+    ...(picker || currencyField?.startsWith('parent.') ? {} : { reads: currencyField ? [currencyField] : [] }),
     focus: (options?: FocusOptions) => input.focus(options),
     // As typed, keys held after a refused one with it: what a slider taking this box's place is handed.
     typedText: () => checks.held()?.text ?? input.value,
@@ -658,6 +672,7 @@ function checkboxWidget(look: 'box' | 'switch' | 'tick' = 'box'): WidgetFactory 
     box.addEventListener('change', () => form.setValue(name, box.checked));
     return {
       element: box,
+      reads: [],
       focus: (options?: FocusOptions) => box.focus(options),
       update(state) {
         box.checked = state.value === true;
@@ -692,6 +707,8 @@ const selectWidget: WidgetFactory = (context) => {
   select.addEventListener('change', () => form.setValue(name, select.value === '' ? null : choices[Number(select.value)].value));
   return {
     element: select,
+    // Its own state, and its options' places left.
+    reads: [],
     focus: (options?: FocusOptions) => select.focus(options),
     update(state) {
       // An option's words as they read now — one that shows an answer given follows it (the viewer's answers part) — and
@@ -816,6 +833,8 @@ function choiceGroup(kind: 'radio' | 'checkbox', looks?: OptionLooks): WidgetFac
         : null;
     return {
       element: clear ? make(document, 'div', { class: 'fd-choices-box' }, group, clear.button) : group,
+      // Its own state and its places left — not with "Other", whose box's words it reads as they are typed.
+      ...(other ? {} : { reads: [] }),
       focus: (options?: FocusOptions) => (inputs.find((input) => input.checked) ?? (otherChoice?.checked ? otherBox : null) ?? inputs[0])?.focus(options),
       update(state) {
         const chosen = Array.isArray(state.value) ? state.value : [state.value];
@@ -900,6 +919,7 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
     if (ends.some(Boolean)) group.setAttribute('aria-description', ends.filter(Boolean).join(' … '));
     return {
       element: make(document, 'div', { class: 'fd-choices-box' }, shown, clear.button),
+      reads: [],
       focus: (options?: FocusOptions) => (points.find((p) => p.getAttribute('aria-checked') === 'true') ?? points[0])?.focus(options),
       update(state) {
         const value = typeof state.value === 'number' ? state.value : null;
