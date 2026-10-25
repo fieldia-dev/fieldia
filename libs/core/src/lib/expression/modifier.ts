@@ -2,7 +2,7 @@ import type { Modifier } from '../format/layout';
 import { evaluate, truthy } from './evaluator';
 import type { ExpressionEnv, FunctionTable } from './functions';
 import { ExpressionParser } from './parser';
-import { fieldsRead, pathsRead, wheresRead } from './reads';
+import { callsRead, fieldsRead, pathsRead, wheresRead } from './reads';
 import { tokenize } from './tokenizer';
 
 /** A modifier read once, ready to evaluate against a record's values. */
@@ -14,6 +14,8 @@ export interface CompiledModifier {
   readonly paths: readonly string[];
   /** The conditions on lines it counts or adds up by. */
   readonly wheres: readonly { lines: string; condition: string }[];
+  /** The functions it calls, by name: what says whether it holds by the fields it reads alone (`steadyCalls`). */
+  readonly calls?: readonly string[];
   /** Whether it holds for these values; `env` gives `sum` and `count` the lines, and `today()` its day. */
   evaluate(values: Readonly<Record<string, unknown>>, env?: ExpressionEnv): boolean;
 }
@@ -27,7 +29,7 @@ export interface CompiledModifier {
 export function compileModifier(modifier: Modifier | undefined, functions?: FunctionTable): CompiledModifier {
   if (typeof modifier !== 'string') {
     const value = modifier === true;
-    return { source: modifier, fields: [], paths: [], wheres: [], evaluate: () => value };
+    return { source: modifier, fields: [], paths: [], wheres: [], calls: [], evaluate: () => value };
   }
   const ast = new ExpressionParser(tokenize(modifier), functions).parse();
   return {
@@ -35,6 +37,7 @@ export function compileModifier(modifier: Modifier | undefined, functions?: Func
     fields: fieldsRead(ast),
     paths: pathsRead(ast),
     wheres: wheresRead(ast),
+    calls: callsRead(ast),
     evaluate(values, env) {
       try {
         return truthy(evaluate(ast, values, env));

@@ -428,6 +428,8 @@ export function dateBoxWidget(kind: DateKind): WidgetFactory {
     const box = dateBox({ form, name, field, kind, label: node.label ?? field.label, document, locale, labels, id, limits: bounds(null, field, node), placeholder: node.placeholder, anchor: into, within: into, purpose: boxPurpose(node), ...(pair ? { unreadOwner: pair.owner } : {}) });
     const inner: Widget = {
       element: box.input,
+      // Its own state and its text left unread — not beside a Hijri box, which owns that text with it.
+      ...(pair ? {} : { reads: [] }),
       focus: (options?: FocusOptions) => box.input.focus(options),
       update: (state) => box.update(state),
       destroy: () => box.destroy(),

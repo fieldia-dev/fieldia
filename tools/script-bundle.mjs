@@ -1532,7 +1532,16 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // fetched as their part comes) waited for before a page is drawn in their language (viewer.ts), 19 more, 573,843; and a
 // dialog opened in a language whose words come in a chunk of their own waiting for them as its viewer does, its ⤢, grip
 // and foot named in them (dialog.ts), 54 more, 573,897 — to 560.5 (gzipped 186.68, inside its 186.7).
-const BUDGET_KB = 560.5;
+// 0.35's speed (perf-form): a change worked out only where it is read — every page's form and viewer, at each key typed
+// (the performance audit's H2). A condition read again only once a value it reads changed, a part's state the same
+// object while it is unchanged, the fields each part's state reads told (form.ts: `holds`, `nodeReads`); a value worked
+// out, a value set as a condition starts to hold, a table's line, only once what they read changed (compute.ts,
+// set-when.ts, env.ts); a field checked by its own nodes alone, its answer rules and its own problem found again only once
+// what they read changed (form.ts); a part brought up to date only once what it shows changed, the widgets that draw
+// from their own state saying so (viewer.ts, `changedBetween`; widgets.ts, `reads`); what a change costs counted, and
+// the plain way the quick one is held to (work.ts: `workCounts`, `recomputeInFull`). At 500 fields a key brings 9 parts
+// up to date of 560, reads no condition again of 2,000: 560.05 measured before, 567.71 after, to 567.8.
+const BUDGET_KB = 568.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1871,7 +1880,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // before, 186.02 after, to 186.1.
 // 0.34.1, the walk's waits (listed with the raw budget above): 186.06 measured before, 186.54 after, to 186.6.
 // 0.35, a host's tick boxes (listed with the raw budget above): 186.54 measured before, 186.64 after, to 186.7.
-const GZIP_BUDGET_KB = 186.7;
+// 0.35's speed (perf-form): a change worked out only where it is read (listed with the raw budget above) — every page
+// types: 186.54 measured before, 189.48 after, to 189.5.
+const GZIP_BUDGET_KB = 189.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

@@ -21,7 +21,7 @@ import { barsPlaced, stopWatchingBars } from './bar-place';
 import { designerIcon } from './icons';
 import { inlineSettings, type InlineSettings } from './inline-settings';
 import { locate, rowsOf } from './layout-tree';
-import { ruleMarks } from './rules-marks';
+import { ruleMarks, sameMarks } from './rules-marks';
 import { pressMarks } from './steps-marks';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
@@ -180,7 +180,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     options: OptionsEditor | null;
     settings: InlineSettings | null;
     /** What a card not being edited was drawn from: while all of it is the same, the card stays as it is. */
-    drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null; language: string | undefined } | null;
+    drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null; language: string | undefined; quiet: boolean } | null;
   }
   const cards = new Map<string, Card>();
   /** Where a part sits in its grid: its place in it, and the grid's columns. */
@@ -189,7 +189,15 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     columns: number;
   }
 
+  /**
+   * Counted as a part's view is made or taken away — a card, a group, tabs: the marks drawn on the parts are drawn
+   * again only once this or what they say changed (`marked`), never for a key typed in a label that changes neither.
+   */
+  let built = 0;
+  let marked: { built: number; page: Page } | null = null;
+
   function dropCard(card: Card) {
+    built++;
     card.widget?.destroy?.();
     card.element.remove();
   }
@@ -198,6 +206,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   const gripOf = () => el('span', { class: 'fd-card-grip', 'data-grip': '', 'aria-hidden': 'true', title: words.options.grip }, designerIcon(doc, 'grip'));
 
   function buildCard(id: string, editing: boolean, ownChoice: boolean): Card {
+    built++;
     const widgetBox = el('div', { class: 'fd-canvas-widget', inert: '' });
     if (!editing) {
       const label = el('label', { class: 'fd-label' });
@@ -263,16 +272,17 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     // The quiet look as the form will wear it: the field's own word, else its group's, else the page's skin.
     const skin = page.look?.skin ?? (page.look?.theme ? THEME_SKINS[page.look.theme] : (options.skin ?? 'outlined'));
     const quietPlace = node.quiet ?? quietAround ?? skin === 'quiet';
+    // A card not being edited, drawn from the same field, picked or not as before, for the same record, in the same
+    // look: as it is — nothing of it read or written, so a key typed in another card costs it nothing.
+    const isPicked = picked.includes(node.id) && picked.length > 1;
+    const was = card.drawn;
+    if (!editing && was?.node === node && was.def === def && was.labels === labels && was.picked === isPicked && was.sample === sample && was.language === page.language && was.quiet === quietPlace) return element;
     // Its sheet comes in a part of its own: the card is boxed until it has (look-parts.ts in @fieldia/widgets).
     if (quietPlace) wearQuiet(element.ownerDocument);
     element.toggleAttribute('data-in-quiet', quietPlace);
     element.toggleAttribute('data-quiet', !!def && wearsQuiet(def, node) && quietPlace);
     hint(card, node);
-    // A card not being edited, drawn from the same field, picked or not as before, for the same record: as it is.
-    const isPicked = picked.includes(node.id) && picked.length > 1;
-    const was = card.drawn;
-    if (!editing && was?.node === node && was.def === def && was.labels === labels && was.picked === isPicked && was.sample === sample && was.language === page.language) return element;
-    card.drawn = editing ? null : { node, def, labels, picked: isPicked, sample, language: page.language };
+    card.drawn = editing ? null : { node, def, labels, picked: isPicked, sample, language: page.language, quiet: quietPlace };
     element.dataset['type'] = def.type;
     const labelsAt = labelPlace(node, def.type, labels);
     if (labelsAt) element.dataset['labels'] = labelsAt;
@@ -324,7 +334,11 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const def = page.fields[node.field];
     // Its own words in the page's language, as the form will have them.
     const said = widgetWords(designer.getPage());
-    const key = JSON.stringify([node, def, sample, said.locale]);
+    // Drawn again as what it draws changes: never for its label or help, which the card draws round it — a key typed in
+    // a label makes no form of the whole page to draw the widget it leaves as it was.
+    const { label: _label, help: _help, ...drawn } = node;
+    const { label: _name, help: _words, ...kind } = def as Field & { help?: string };
+    const key = JSON.stringify([drawn, kind, sample, said.locale]);
     if (card.painted === key && card.widget) return;
     card.painted = key;
     card.widget?.destroy?.();
@@ -390,7 +404,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       view.element.remove();
       view = undefined;
     }
-    if (!view) sections.set(section.id, (view = makeSection(section.id, tag)));
+    if (!view) {
+      built++;
+      sections.set(section.id, (view = makeSection(section.id, tag)));
+    }
     visible.push(section.id);
     const element = view.element;
     setData(element, 'style', plan.style);
@@ -532,7 +549,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
 
   function drawTabs(node: TabsNode, place: Place): HTMLElement {
     let view = tabsViews.get(node.id);
-    if (!view) tabsViews.set(node.id, (view = makeTabs(node.id)));
+    if (!view) {
+      built++;
+      tabsViews.set(node.id, (view = makeTabs(node.id)));
+    }
     const holding = node.children.find((tab) => tabHolds(tab, selected));
     if (holding) view.active = holding.id;
     if (!node.children.some((tab) => tab.id === view?.active)) view.active = node.children[0]?.id ?? null;
@@ -753,11 +773,14 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
         cards.delete(id);
       }
       for (const [id, view] of tabsViews) if (!drawnIds.has(id)) {
+        built++;
         view.element.remove();
         tabsViews.delete(id);
       }
+      const shownNow = new Set(visible);
       for (const [id, view] of sections) {
-        if (visible.includes(id)) continue;
+        if (shownNow.has(id)) continue;
+        built++;
         view.element.remove();
         sections.delete(id);
       }
@@ -775,7 +798,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       guides.update(state, mode === 'advanced');
       nextFrame(state);
       multi.update(state, mode === 'advanced');
-      ruleMarks(element, page, designer);
+      // The parts' marks: drawn again where a part's view was made or taken away, or what they say changed.
+      if (marked?.built !== built || !sameMarks(marked.page, page, designer)) ruleMarks(element, page, designer);
+      marked = { built, page };
       // steps lane: a button that does something wears a mark.
       pressMarks(element, page, designer);
     },

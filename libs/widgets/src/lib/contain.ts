@@ -244,6 +244,10 @@ export function containWidget(make: (own: Pick<WidgetContext, 'form' | 'fail' | 
     get tools() {
       return box ? undefined : made.tools;
     },
+    // A box in its place draws nothing from the state.
+    get reads() {
+      return box ? [] : made.reads;
+    },
     update(state: WidgetState) {
       if (box) return;
       parent = state.parent;

@@ -30,6 +30,15 @@ export function fieldsRead(ast: ASTNode): string[] {
   return names;
 }
 
+/** The functions an expression calls, by name, once each, in order of appearance. */
+export function callsRead(ast: ASTNode): string[] {
+  const names: string[] = [];
+  walk(ast, (node) => {
+    if (node.type === 'Call' && !names.includes(node.name)) names.push(node.name);
+  });
+  return names;
+}
+
 /** The names an expression reads, whole — `partner_id.country_id`, `user.roles` — once each, in order of appearance. */
 export function pathsRead(ast: ASTNode): string[] {
   const paths: string[] = [];

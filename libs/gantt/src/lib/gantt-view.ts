@@ -40,6 +40,23 @@ export function colourOf(key: string | null): string | null {
 
 let made = 0;
 
+/** What the rows drawn are kept by, to be written in place: each group's section, each record's row and bar, each group's span, every track. */
+interface Parts {
+  sections: Map<string, HTMLElement>;
+  rows: Map<string, HTMLElement>;
+  blocks: Map<string, HTMLElement>;
+  sums: Map<string, HTMLElement>;
+  tracks: HTMLElement[];
+}
+/** A chart drawn whole, as its rows are kept: its width then, its axis, its layer under the rows, each group's records in order. */
+interface Drawn extends Parts {
+  room: number;
+  head: HTMLElement;
+  holder: HTMLElement;
+  layer: HTMLElement;
+  order: string[][];
+}
+
 /**
  * A list's records on a Gantt timeline, for the list's switcher: the list's own search, its records as bars on a time
  * axis by days, weeks or months, in groups under their headings, each joined by an arrow to the records it waits for
@@ -78,9 +95,12 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
   let tasks: GanttTask[] = [];
   /** Each record's waits among those shown, as arrows: worked out as the records come. */
   let links: GanttLink[] = [];
+  /** Each record's task, by its id: what a row written in place reads as it is moved, pressed or opened. */
+  let byKey = new Map<string, GanttTask>();
   const setTasks = () => {
     tasks = tasksOf(records, spec, page, locale);
     links = linksOf(tasks);
+    byKey = new Map(tasks.map((task) => [String(task.id), task]));
   };
   let total = 0;
   let asking = 0;
@@ -174,12 +194,18 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     : null;
   /** The names' column's width: what the days shown start after. */
   const namesWidth = () => body.querySelector<HTMLElement>('.fd-gantt-corner')?.offsetWidth ?? 0;
-  /** How many bars of the rows shown run off the days shown at each edge, said by its sign; none, no sign. */
-  function markEdges() {
+  /** Where the days in view are, read as the chart is laid out: before anything is written, so none is laid out again for it. */
+  function edgesNow(): { from: number; to: number } | null {
     const scroller = body.querySelector<HTMLElement>('.fd-gantt-scroll');
-    if (!scroller || printing) return edges.forEach((sign) => (sign.hidden = true));
+    if (!scroller || printing) return null;
     const from = Math.abs(scroller.scrollLeft);
-    const to = from + Math.max(0, scroller.clientWidth - namesWidth());
+    return { from, to: from + Math.max(0, scroller.clientWidth - namesWidth()) };
+  }
+  /** How many bars of the rows shown run off the days shown at each edge, said by its sign; none, no sign. `at`, read already. */
+  function markEdges(at: { from: number; to: number } | null | Event = edgesNow()) {
+    const seen = at instanceof Event ? edgesNow() : at;
+    if (!seen) return edges.forEach((sign) => (sign.hidden = true));
+    const { from, to } = seen;
     const shown = tasks.filter((t) => t.start && t.end && !closed.has(t.group ?? ''));
     const counts = { start: shown.filter((t) => x(t.start as Date) < from - 1).length, end: shown.filter((t) => x(t.milestone ? (t.start as Date) : (t.end as Date)) > to + 1).length };
     for (const sign of edges) {
@@ -229,8 +255,12 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     }
   }
 
-  /** What a drawing shows of the records: each one's values and what may be done with it; the count, a failure. */
-  const drawnAs = (list: readonly ListedRecord[], count: number, failure: boolean) => JSON.stringify([failure, count, list.map((r) => [r.id, r.values, r.can ?? null])]);
+  /**
+   * What a drawing shows of the records: each one's values and what may be done with it, by its id — a move that changes
+   * the order they come back in shows the same — the count, a failure.
+   */
+  const drawnAs = (list: readonly ListedRecord[], count: number, failure: boolean) =>
+    JSON.stringify([failure, count, [...list].sort((a, b) => (String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0)).map((r) => [r.id, r.values, r.can ?? null])]);
   /** What the drawing on the page shows: compared with what a reload brings. */
   let drawnKey = '';
 
@@ -278,7 +308,14 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     title.textContent = end <= first ? days.format(first) : typeof days.formatRange === 'function' ? days.formatRange(first, end) : `${days.format(first)} – ${days.format(end)}`;
   }
 
+  /**
+   * What the chart drawn holds, by the record or the group it shows: what a move or a change of scale writes in place,
+   * the rows and their bars kept (`patch`, `rescale`). None until it is drawn whole, nor while it says it failed.
+   */
+  let drawn: Drawn | null = null;
+
   function draw() {
+    drawn = null;
     // Everything read of the page first, as it was laid out — never between writes, which would lay the chart out
     // again for each read (0.32: three layouts of 15,000 elements a drop).
     const active = doc.activeElement as HTMLElement | null;
@@ -302,9 +339,13 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     span = spanOf(planned, now(), zoom, firstDay, Math.max(0, room - names - 2));
     const width = span.days * dayWidth;
     const groups = groupsOf(tasks, spec, page, labels.noGroup);
+    const parts = { room, sections: new Map<string, HTMLElement>(), rows: new Map<string, HTMLElement>(), blocks: new Map<string, HTMLElement>(), sums: new Map<string, HTMLElement>(), tracks: [] as HTMLElement[], order: groups.map((group) => (closed.has(group.key) ? [] : group.tasks.map((task) => String(task.id)))) };
+    const axisHead = axis(width);
+    const holder = rows(groups, width, parts);
     // No stop of its own for the keys (Firefox gives a box that scrolls one): its bars are, each brought into view.
-    const scroll = make('div', { class: 'fd-gantt-scroll', tabindex: '-1' }, make('div', { class: 'fd-gantt-sheet' }, axis(width), rows(groups, width)));
+    const scroll = make('div', { class: 'fd-gantt-scroll', tabindex: '-1' }, make('div', { class: 'fd-gantt-sheet' }, axisHead, holder));
     body.replaceChildren(scroll, ...edges);
+    drawn = { ...parts, head: axisHead, holder, layer: holder.firstElementChild as HTMLElement };
     // Its signs under the axis, past the names: where the days shown start and end — the axis's height told once it is
     // laid out (`axisSized`), as it was the last time meanwhile.
     const head = body.querySelector<HTMLElement>('.fd-gantt-head');
@@ -347,12 +388,8 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
   }
 
   /** The rows: each group's heading (where the timeline has groups), then a row for each of its records. */
-  function rows(groups: GanttGroup[], width: number): HTMLElement {
+  function rows(groups: GanttGroup[], width: number, parts: Parts): HTMLElement {
     const holder = make('div', { class: 'fd-gantt-rows' });
-    /** Each record's row's top, for the arrows: those of a closed group have none. */
-    const tops = new Map<string, number>();
-    let y = 0;
-    const lines: HTMLElement[] = [];
     for (const group of groups) {
       const open = !closed.has(group.key);
       const section = make('div', spec.group ? { class: 'fd-gantt-group', role: 'group', 'aria-label': `${group.label}${joined}${holds(group.tasks.length)}` } : { class: 'fd-gantt-group' });
@@ -375,26 +412,55 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
         toggle.dataset['group'] = group.key;
         const track = make('div', { class: 'fd-gantt-track', 'aria-hidden': 'true' });
         track.style.width = `${width}px`;
+        parts.tracks.push(track);
         // The span its records take together.
         if (group.start && group.end) {
           const sum = make('div', { class: 'fd-gantt-sum' });
-          sum.style.insetInlineStart = `${x(group.start)}px`;
-          sum.style.width = `${Math.max(2, x(group.end) - x(group.start))}px`;
+          placeSum(sum, group);
           track.append(sum);
+          parts.sums.set(group.key, sum);
         }
         section.append(make('div', { class: 'fd-gantt-row', 'data-head': '' }, make('div', { class: 'fd-gantt-name' }, toggle), track));
-        y += HEAD;
       }
       if (open) {
         for (const task of group.tasks) {
-          tops.set(String(task.id), y);
-          section.append(taskRow(task, width));
-          y += ROW;
+          const row = taskRow(task, width, parts);
+          parts.rows.set(String(task.id), row);
+          section.append(row);
         }
       }
+      parts.sections.set(group.key, section);
       holder.append(section);
     }
-    // Under the rows: a line at each day, week or month; today's; the arrows.
+    holder.prepend(layerOf(groups, width));
+    return holder;
+  }
+
+  /** The span a group's records take together, on its heading's track. */
+  function placeSum(sum: HTMLElement, group: GanttGroup) {
+    sum.style.insetInlineStart = `${x(group.start as Date)}px`;
+    sum.style.width = `${Math.max(2, x(group.end as Date) - x(group.start as Date))}px`;
+  }
+
+  /** Each record's row's top, for the arrows — those of a closed group have none — and how tall the rows are. */
+  function topsOf(groups: GanttGroup[]): { tops: Map<string, number>; height: number } {
+    const tops = new Map<string, number>();
+    let y = 0;
+    for (const group of groups) {
+      if (spec.group) y += HEAD;
+      if (closed.has(group.key)) continue;
+      for (const task of group.tasks) {
+        tops.set(String(task.id), y);
+        y += ROW;
+      }
+    }
+    return { tops, height: y };
+  }
+
+  /** Under the rows: a line at each day, week or month; today's; the arrows from each record's row's top. */
+  function layerOf(groups: GanttGroup[], width: number): HTMLElement {
+    const { tops, height: y } = topsOf(groups);
+    const lines: HTMLElement[] = [];
     const layer = make('div', { class: 'fd-gantt-layer', 'aria-hidden': 'true' });
     layer.style.width = `${width}px`;
     layer.style.height = `${y}px`;
@@ -411,18 +477,20 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       layer.append(line);
     }
     layer.append(arrows(tops, width, y));
-    holder.prepend(layer);
-    return holder;
+    return layer;
   }
 
   /** A record's row: its name, kept in sight, and its bar on its days — or, with no start yet, its words saying so. */
-  function taskRow(task: GanttTask, width: number): HTMLElement {
+  function taskRow(task: GanttTask, width: number, parts: Parts): HTMLElement {
     const key = String(task.id);
     const { moves, why } = movable(task);
+    /** Its record's task as it is now: a row a move wrote in place is the same row, its record moved. */
+    const now = () => byKey.get(key) ?? task;
     const name = make('div', { class: 'fd-gantt-name', 'data-opens': canOpen ? '' : undefined }, make('bdi', { dir: 'auto' }, task.title));
-    name.addEventListener('click', () => open(task));
+    name.addEventListener('click', () => open(now()));
     const track = make('div', { class: 'fd-gantt-track' });
     track.style.width = `${width}px`;
+    parts.tracks.push(track);
     const row = make('div', { class: 'fd-gantt-row', 'data-id': key }, name, track);
     if (!task.start || !task.end) {
       track.append(make('span', { class: 'fd-gantt-unplanned' }, labels.notPlanned));
@@ -432,7 +500,7 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       name.setAttribute('role', 'button');
       name.setAttribute('aria-label', spoken(task));
       if (canOpen) name.setAttribute('aria-describedby', keysStill.id);
-      name.addEventListener('keydown', (e) => onKey(e, task, name));
+      name.addEventListener('keydown', (e) => onKey(e, now(), name));
       name.addEventListener('focus', () => standOn(name, key));
       return row;
     }
@@ -456,18 +524,97 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     if (moves && stretches(task, spec)) {
       for (const edge of ['start', 'end'] as const) {
         const grip = make('span', { class: 'fd-gantt-grip', 'data-edge': edge, 'aria-hidden': 'true' });
-        grip.addEventListener('pointerdown', (e) => press(e, task, block, edge, moves));
+        grip.addEventListener('pointerdown', (e) => press(e, now(), block, edge, moves));
         block.append(grip);
       }
     }
-    block.addEventListener('pointerdown', (e) => press(e, task, block, 'both', moves));
+    block.addEventListener('pointerdown', (e) => press(e, now(), block, 'both', moves));
     // A screen reader's press is a click with no pointer behind it: it opens the record as Enter does.
-    block.addEventListener('click', (e) => e.detail === 0 && open(task));
-    block.addEventListener('keydown', (e) => onKey(e, task, block));
+    block.addEventListener('click', (e) => e.detail === 0 && open(now()));
+    block.addEventListener('keydown', (e) => onKey(e, now(), block));
     block.addEventListener('focus', () => standOn(block, key));
-    block.addEventListener('blur', () => pending?.task === task && flush());
+    block.addEventListener('blur', () => pending !== null && String(pending.task.id) === key && flush());
     track.append(block);
+    parts.blocks.set(key, block);
     return row;
+  }
+
+  /** An attribute written only where it is not what it is already: null takes it away. */
+  const write = (target: Element, name: string, value: string | null) => {
+    if (value === null) {
+      if (target.hasAttribute(name)) target.removeAttribute(name);
+    } else if (target.getAttribute(name) !== value) target.setAttribute(name, value);
+  };
+
+  /**
+   * The chart written in place, as `draw` would draw it, its rows, their names and every bar kept — nothing laid out
+   * until the browser draws it. A record moved (by the pointer, the keys, Undo): its bar where it now is, with its words;
+   * its row among its group's, in their order; its group's span; the arrows moved, and every bar a change of them makes
+   * late or on time; the plan's span in words. False, nothing written, where the days shown or the groups would change:
+   * drawn whole then. Another scale (`scale`): each bar and each group's span where it now is, the axis, its lines and
+   * the arrows drawn anew.
+   */
+  function inPlace(scale = false): boolean {
+    if (!drawn || failed || printing || !tasks.length) return false;
+    const planned = tasks.filter((t) => t.start && t.end);
+    const next = spanOf(planned, now(), zoom, firstDay, Math.max(0, drawn.room - (drawn.room > 0 && drawn.room <= 640 ? 140 : 240) - 2));
+    if (!scale && (next.from.getTime() !== span.from.getTime() || next.days !== span.days)) return false;
+    const groups = groupsOf(tasks, spec, page, labels.noGroup);
+    const order = groups.map((group) => (closed.has(group.key) ? [] : group.tasks.map((task) => String(task.id))));
+    const sorted = (ids: readonly string[]) => [...ids].sort().join('\n');
+    // The same groups, each with the same records — each bar movable as it was drawn, its grips with it: only where they stand moved.
+    if (groups.length !== drawn.order.length || groups.some((group, i) => !drawn?.sections.has(group.key) || sorted(order[i]) !== sorted(drawn?.order[i] ?? []))) return false;
+    if (tasks.some((task) => drawn?.blocks.get(String(task.id))?.hasAttribute('data-moves') === !movable(task).moves)) return false;
+    // Read before anything is written: the edges' counts are of the days in view.
+    const edgesAt = scale ? null : edgesNow();
+    span = next;
+    const width = span.days * dayWidth;
+    if (scale) {
+      const head = axis(width);
+      drawn.head.replaceWith(head);
+      drawn.head = head;
+      axisSized?.disconnect();
+      axisSized?.observe(head);
+      for (const track of drawn.tracks) track.style.width = `${width}px`;
+    }
+    drawnKey = drawnAs(records, total, failed);
+    drawTitle(planned);
+    note.hidden = total <= records.length;
+    note.textContent = fill(labels.tooMany, { shown: records.length, total });
+    groups.forEach((group, i) => {
+      const section = drawn?.sections.get(group.key) as HTMLElement;
+      // Rows in their group's new order: only those out of place moved, the focus kept on a bar that is not.
+      let row: Element | null = drawn?.rows.get(drawn.order[i][0] ?? '') ?? null;
+      for (const id of order[i]) {
+        const own = drawn?.rows.get(id) as HTMLElement;
+        if (own === row) row = own.nextElementSibling;
+        else section.insertBefore(own, row);
+      }
+      const sum = drawn?.sums.get(group.key);
+      if (sum && group.start && group.end) placeSum(sum, group);
+    });
+    drawn.order = order;
+    for (const task of tasks) {
+      const block = drawn.blocks.get(String(task.id));
+      if (!block) continue;
+      if (!scale) {
+        const { moves, why } = movable(task);
+        write(block, 'data-moves', moves ? '' : null);
+        write(block, 'data-late', links.some((link) => link.to === task && link.late) ? '' : null);
+        write(block, 'aria-describedby', moves ? keysMoves.id : keysStill.id);
+        write(block, 'title', why || spoken(task));
+        write(block, 'aria-label', spoken(task, undefined, why));
+      }
+      place(block, task);
+    }
+    // Each arrow moved where it now runs; drawn anew, with the lines, at another scale or where one comes or goes.
+    if (scale || !rearrow(groups)) {
+      const layer = layerOf(groups, width);
+      drawn.layer.replaceWith(layer);
+      drawn.layer = layer;
+    }
+    if (edgesAt) markEdges(edgesAt);
+    return true;
   }
 
   /** The keys' one stop moved to a record's bar (or its name, with no bar): Tab comes back to it. */
@@ -503,19 +650,45 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     }
     drawing.append(defs);
     for (const link of links) {
-      const [a, b] = [tops.get(String(link.from.id)), tops.get(String(link.to.id))];
-      if (a === undefined || b === undefined || !link.from.end || !link.to.start) continue;
-      const x1 = link.from.milestone ? x(link.from.end) + 7 : x(link.from.end);
-      const x2 = link.to.milestone ? x(link.to.start) - 9 : x(link.to.start);
-      const [y1, y2] = [a + ROW / 2, b + ROW / 2];
-      // Out of the one, then down (or up) and into the other; where there is no room ahead, back round along the row's edge.
-      const d =
-        x2 - OUT >= x1 + OUT
-          ? `M${x1} ${y1}H${x1 + OUT}V${y2}H${x2}`
-          : `M${x1} ${y1}H${x1 + OUT}V${b > a ? b : b + ROW}H${x2 - OUT}V${y2}H${x2}`;
-      drawing.append(svg('path', { d, class: 'fd-gantt-link', 'data-from': String(link.from.id), 'data-to': String(link.to.id), 'data-late': link.late ? '' : undefined, 'marker-end': `url(#${id}-head${link.late ? '-late' : ''})` }));
+      const d = pathOf(link, tops);
+      if (d) drawing.append(svg('path', { d, class: 'fd-gantt-link', 'data-from': String(link.from.id), 'data-to': String(link.to.id), 'data-late': link.late ? '' : undefined, 'marker-end': `url(#${id}-head${link.late ? '-late' : ''})` }));
     }
     return drawing;
+  }
+
+  /** An arrow's path, from its rows' tops; none where either row is not shown, or either bar has no days. */
+  function pathOf(link: GanttLink, tops: Map<string, number>): string | null {
+    const [a, b] = [tops.get(String(link.from.id)), tops.get(String(link.to.id))];
+    if (a === undefined || b === undefined || !link.from.end || !link.to.start) return null;
+    const x1 = link.from.milestone ? x(link.from.end) + 7 : x(link.from.end);
+    const x2 = link.to.milestone ? x(link.to.start) - 9 : x(link.to.start);
+    const [y1, y2] = [a + ROW / 2, b + ROW / 2];
+    // Out of the one, then down (or up) and into the other; where there is no room ahead, back round along the row's edge.
+    return x2 - OUT >= x1 + OUT ? `M${x1} ${y1}H${x1 + OUT}V${y2}H${x2}` : `M${x1} ${y1}H${x1 + OUT}V${b > a ? b : b + ROW}H${x2 - OUT}V${y2}H${x2}`;
+  }
+
+  /**
+   * The arrows drawn, written as the bars now stand: each path moved, red or not, in the arrows' order — false where an
+   * arrow is to come or go (drawn anew then).
+   */
+  function rearrow(groups: GanttGroup[]): boolean {
+    const drawing = drawn?.layer.querySelector<SVGElement>(':scope > .fd-gantt-links');
+    if (!drawing) return false;
+    const { tops } = topsOf(groups);
+    const paths = new Map([...drawing.querySelectorAll<SVGElement>(':scope > .fd-gantt-link')].map((path) => [`${path.getAttribute('data-from')}>${path.getAttribute('data-to')}`, path]));
+    const now = links.map((link) => ({ link, d: pathOf(link, tops) })).filter((one): one is { link: GanttLink; d: string } => one.d !== null);
+    if (now.length !== paths.size || now.some(({ link }) => !paths.has(`${link.from.id}>${link.to.id}`))) return false;
+    // In the arrows' order, as they would be drawn: only one out of place is moved to its place.
+    let next = drawing.querySelector(':scope > .fd-gantt-link');
+    for (const { link, d } of now) {
+      const path = paths.get(`${link.from.id}>${link.to.id}`) as SVGElement;
+      write(path, 'd', d);
+      write(path, 'data-late', link.late ? '' : null);
+      write(path, 'marker-end', `url(#${id}-head${link.late ? '-late' : ''})`);
+      if (path === next) next = path.nextElementSibling;
+      else drawing.insertBefore(path, next);
+    }
+    return true;
   }
 
   // ---- scale, today and paper ----------------------------------------------------------------------------------
@@ -527,9 +700,10 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     const shownDay = scroller ? addDays(span.from, Math.floor(Math.abs(scroller.scrollLeft) / dayWidth)) : null;
     zoom = next;
     dayWidth = DAY_WIDTH[zoom];
-    draw();
+    if (!inPlace(true)) draw();
     const again = body.querySelector<HTMLElement>('.fd-gantt-scroll');
     if (again && shownDay) again.scrollLeft = Math.round(x(shownDay)) * (rtl() ? -1 : 1);
+    markEdges();
   }
 
   /**
@@ -754,7 +928,7 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     const before: Values = Object.fromEntries(Object.keys(values).map((name) => [name, task.record.values[name] ?? null]));
     records = records.map((r) => (String(r.id) === key ? { ...r, values: { ...r.values, ...values } } : r));
     setTasks();
-    draw();
+    if (!inPlace()) draw();
     for (const block of body.querySelectorAll<HTMLElement>(`.fd-gantt-task[data-id="${quoted(key)}"]`)) block.setAttribute('aria-busy', 'true');
     say('');
     alert.replaceChildren();
@@ -771,6 +945,8 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
         const problem = saveProblemOf(error);
         alert.textContent = fill(labels.notMoved, { why: problem.message || Object.values(problem.fields ?? {}).join(' ') });
       }
+      // Its save answered: its bar is no longer busy, whether or not the chart is drawn again for what came back.
+      for (const block of body.querySelectorAll<HTMLElement>(`.fd-gantt-task[data-id="${quoted(key)}"][aria-busy]`)) block.removeAttribute('aria-busy');
       if (!destroyed) await reload();
     });
     saving = run.catch(() => undefined);

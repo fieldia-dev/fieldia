@@ -1,7 +1,7 @@
 import { evaluate } from './evaluator';
 import type { ExpressionEnv, FunctionTable } from './functions';
 import { ExpressionParser, type ASTNode } from './parser';
-import { fieldsRead, pathsRead, sumsRead, wheresRead } from './reads';
+import { callsRead, fieldsRead, pathsRead, sumsRead, wheresRead } from './reads';
 import { tokenize } from './tokenizer';
 
 export type { ExpressionEnv, FunctionTable } from './functions';
@@ -22,6 +22,8 @@ export interface CompiledExpression {
   readonly wheres: readonly { lines: string; condition: string }[];
   /** The line fields it adds up, as `sum(lines, 'subtotal')` names them. */
   readonly sums: readonly { lines: string; field: string }[];
+  /** The functions it calls, by name: what says whether its value follows from the fields it reads alone (`steadyCalls`). */
+  readonly calls: readonly string[];
   /** The value, or null when it cannot be worked out. Never throws. */
   evaluate(values: Readonly<Record<string, unknown>>, env?: ExpressionEnv): unknown;
 }
@@ -40,6 +42,7 @@ export function compileExpression(source: string, functions?: FunctionTable): Co
     paths: pathsRead(ast),
     wheres: wheresRead(ast),
     sums: sumsRead(ast),
+    calls: callsRead(ast),
     evaluate(values, env = {}) {
       try {
         return evaluate(ast, values as Record<string, unknown>, env) ?? null;

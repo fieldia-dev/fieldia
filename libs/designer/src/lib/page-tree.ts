@@ -2,6 +2,7 @@ import { ANY_FUNCTION, cardLineFields, compileModifier, valuesIn, type Field, ty
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { headFields, headParts, tabCountFields } from './head-parts';
+import { original } from './draft';
 
 /**
  * Finding one's way around a page's layout, for the designer's edits: the
@@ -44,7 +45,40 @@ export function containers(page: Page): Container[] {
   return found;
 }
 
+/** Where each container of a page sits in it, by the keys from its layout, and each node's container and place: once a page. */
+const placesOf = new WeakMap<Page, { at: Map<string, { parent: Container; index: number }>; paths: Map<Container, (string | number)[]> }>();
+function places(page: Page) {
+  let found = placesOf.get(page);
+  if (found) return found;
+  const at = new Map<string, { parent: Container; index: number }>();
+  for (const parent of containers(page)) parent.children.forEach((child, index) => at.has(child.id) || at.set(child.id, { parent, index }));
+  const paths = new Map<Container, (string | number)[]>();
+  const walk = (value: unknown, path: (string | number)[]) => {
+    if (!value || typeof value !== 'object') return;
+    if (Array.isArray(value)) return value.forEach((one, i) => walk(one, [...path, i]));
+    const part = value as Record<string, unknown>;
+    if (Array.isArray(part['children'])) paths.set(part as unknown as Container, path);
+    for (const [key, one] of Object.entries(part)) if (one && typeof one === 'object') walk(one, [...path, key]);
+  };
+  walk(page.layout, ['layout']);
+  placesOf.set(page, (found = { at, paths }));
+  return found;
+}
+
 export function findNode(page: Page, id: string): { node: LayoutNode; parent: Container; index: number } | null {
+  // A draft (draft.ts): found where it sat in the page the draft was made from, and read there in the draft alone —
+  // never the whole layout read through the draft. Moved since, it is looked for as on any page.
+  const base = original(page);
+  if (base) {
+    const { at, paths } = places(base);
+    const was = at.get(id);
+    const path = was && paths.get(was.parent);
+    if (was && path) {
+      const parent = path.reduce<unknown>((part, key) => (part && typeof part === 'object' ? (part as Record<string | number, unknown>)[key] : undefined), page) as Container | undefined;
+      const node = parent?.children?.[was.index];
+      if (node?.id === id) return { node, parent: parent as Container, index: was.index };
+    }
+  }
   for (const parent of containers(page)) {
     const index = parent.children.findIndex((child) => child.id === id);
     if (index !== -1) return { node: parent.children[index], parent, index };

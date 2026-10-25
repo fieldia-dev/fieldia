@@ -10,7 +10,7 @@ import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
 import { zonedPage } from '../format/zoned';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
-import { callsPartFunctions, functionsPart, type Answered, type ExpressionEnv, type FunctionTable } from '../expression/functions';
+import { callsPartFunctions, functionsPart, steadyCalls, type Answered, type ExpressionEnv, type FunctionTable } from '../expression/functions';
 import { functionTable, type AppFunctions } from '../expression/app-functions';
 import { dayIn, ownZone } from './zones';
 import { checkProperties, checkValue } from './check';
@@ -18,7 +18,7 @@ import { checkInput } from './inputs';
 import { compileComputed, type AskedFor } from './compute';
 import { compileSetWhen } from './set-when';
 import { checkRules, compileRules, type CompiledRule } from './rules';
-import { expressionEnv, lineContext, recordContext, type AppReads } from './env';
+import { expressionEnv, lineContext, recordContext, sameReads, type AppReads } from './env';
 import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-map';
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
@@ -65,7 +65,7 @@ import { ownerOf } from './browser-kept';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
-import { signedBy, type SignedBy } from './signed';
+import { signedBy, signingFields, type SignedBy } from './signed';
 import type { PageLink } from './link-values';
 import type { OutboxStore } from './outbox-form';
 import { formJoins, joinGate, type FormInner, type FormJoin, type FormJoins, type GuardWords, type JoinPart, type SendKind } from './joins';
@@ -86,6 +86,7 @@ import {
   type Values,
 } from './values';
 import { intlFormat } from '../intl-format';
+import { recomputeInFull, workCounts } from './work';
 
 export type FormStatus = 'idle' | 'loading' | 'ready' | 'saving' | 'saved' | 'error';
 
@@ -562,7 +563,16 @@ export interface Form {
    * count as a change to save.
    */
   setValues(values: Values, how?: { stored?: boolean }): void;
+  /** A part's state now: the same object, given again, while nothing of it changed. */
   node(id: string): NodeState;
+  /**
+   * The fields a part's state is worked out from: its conditions' and those of the parts round it — for a field's node,
+   * its tones', its empty box's words' and the signatures that lock answers too. While none of them changed, nor the
+   * record's id, whether it is edited, or what its source lets the person do, the part's state is what it was. Null
+   * where that cannot be said: a condition calling today() or the app's own function, a value worked out from others
+   * (it waits for them), a page whose parts a survey's draw, its time limits or its approvals may hide or lock.
+   */
+  nodeReads(id: string): readonly string[] | null;
   /** Whether the record is being edited, as conditions read `editing`: a view that locks it to be read says false, and parts follow. */
   setEditing(editing: boolean): void;
   /**
@@ -1199,6 +1209,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   if (page.layout.type === 'sheet' && page.layout.title) placeholderOf('#title', page.layout.title);
   /** Whether any rule only warns: without one, there are never warnings to look for. */
   const warns = [...nodeRules.values()].some((rules) => rules.some((compiled) => compiled.rule.level === 'warning'));
+  /** The field nodes with a rule that warns, in the page's order: the only ones a warning can come from. */
+  const warningNodes = [...index.values()].filter((node) => node.kind === 'field' && nodeRules.get(node.id)?.some((compiled) => compiled.rule.level === 'warning'));
   const layoutSteps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
   /** The wizard's steps in the order shown: the page's, or the order drawn for this respondent (`state.order`). */
   let steps = layoutSteps;
@@ -2214,29 +2226,133 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   const context = () => reading().context;
 
+  /**
+   * Whether this form works each change out in full (`recomputeInFull`, as it was made): every condition read again,
+   * every field's problem found again — the oracle the quick way below is held to.
+   */
+  const full = recomputeInFull();
+  /** What a condition reads of the built-ins that stay the same for the form's life: the person, the app's context, a line's record. */
+  const STILL: unique symbol = Symbol('still');
+  /**
+   * What a condition reads by a name it reads, as the record holds it now: a field's value — the same object while it
+   * is unchanged, as every write keeps the values it does not touch — the record's id, whether it is edited; the person,
+   * the app's context and a line's record are the form's for its life.
+   */
+  function inputOf(name: string): unknown {
+    if (name in fields) return (state.values as Values)[name];
+    if (name === 'id') return state.recordId;
+    if (name === 'editing') return editingNow();
+    return STILL;
+  }
+  /** What each of the record's conditions read when it was last read, and what it said. */
+  const heldBy = new Map<CompiledModifier, { inputs: unknown[]; holds: boolean }>();
+  /**
+   * Whether a condition of the record holds now: read again only once a value it reads changed (`inputOf`). One that
+   * calls today(), `age`, an app's function — or the functions part's before it has come — is read every time.
+   */
+  function holds(condition: CompiledModifier, read: () => { context: Record<string, unknown>; env: ExpressionEnv }): boolean {
+    // `true`, `false` or none: it says the same whatever it is handed.
+    if (typeof condition.source !== 'string' && !condition.fields.length) return condition.evaluate({}, {});
+    if (full || !steadyCalls(condition.calls)) {
+      workCounts.conditions++;
+      const { context: ctx, env } = read();
+      return condition.evaluate(ctx, env);
+    }
+    const kept = heldBy.get(condition);
+    const names = condition.fields;
+    if (kept) {
+      let same = true;
+      for (let i = 0; i < names.length; i++) if (kept.inputs[i] !== inputOf(names[i])) {
+        same = false;
+        break;
+      }
+      if (same) return kept.holds;
+    }
+    workCounts.conditions++;
+    const { context: ctx, env } = read();
+    const now = condition.evaluate(ctx, env);
+    heldBy.set(condition, { inputs: names.map(inputOf), holds: now });
+    return now;
+  }
+
   function fieldDef(name: string): Field {
     const def = fields[name];
     if (!def) throw new Error(`The page has no field "${name}"`);
     return def;
   }
 
+  /** Each field's last comparison with the record as loaded: the same value and the same baseline are not compared again. */
+  const dirtyKept = new Map<string, { value: unknown; base: unknown; dirty: boolean }>();
   function dirtyFields(values: Values): string[] {
-    return Object.keys(fields).filter((name) => JSON.stringify(values[name] ?? null) !== JSON.stringify(baseline[name] ?? null));
+    return Object.keys(fields).filter((name) => {
+      const value = values[name];
+      const base = baseline[name];
+      const kept = full ? undefined : dirtyKept.get(name);
+      if (kept && kept.value === value && kept.base === base) return kept.dirty;
+      const dirty = JSON.stringify(value ?? null) !== JSON.stringify(base ?? null);
+      dirtyKept.set(name, { value, base, dirty });
+      return dirty;
+    });
   }
 
+  /**
+   * What `work` finds, kept by `key` in `store` with what it was found from (`inputs`, compared one by one): found again
+   * only once one of them changed. Null inputs: found every time.
+   */
+  function remembered<T>(store: Map<string, { inputs: unknown[]; found: T }>, key: string, inputs: unknown[] | null, work: () => T): T {
+    const kept = inputs && store.get(key);
+    if (kept && inputs && sameReads(kept.inputs, inputs)) return kept.found;
+    workCounts.checks++;
+    const found = work();
+    if (inputs) store.set(key, { inputs, found });
+    return found;
+  }
+
+  /** Each part's state as last found: given again, the same object, while nothing of it changed. */
+  const nodeStates = new Map<string, NodeState>();
+  /** What each part's state was found to read (`nodeReads`), once asked. */
+  const readsOf = new Map<string, readonly string[] | null>();
+  function nodeReadsOf(id: string): readonly string[] | null {
+    const node = index.get(id);
+    if (!node) throw new Error(`The page has no element "${id}"`);
+    // A part that joins the form may hide or lock any part: a survey's draw, its time limits, a record's approvals.
+    if (joinParts.some((part) => part.name === 'surveyflow' || part.name === 'approvals')) return null;
+    const names = new Set<string>();
+    const add = (condition: CompiledModifier | undefined): boolean => {
+      if (!condition || typeof condition.source !== 'string') return true;
+      if (!steadyCalls(condition.calls)) return false;
+      for (const name of condition.fields) names.add(name);
+      return true;
+    };
+    for (let at: IndexedNode | undefined = node; at; at = at.parent ? index.get(at.parent) : undefined) {
+      if (!add(at.invisible) || !add(at.readonly)) return null;
+    }
+    if (!add(node.required) || !add(node.pressed)) return null;
+    if (node.kind === 'field') {
+      const source = node.source as Partial<FieldNode>;
+      if (node.field !== undefined && workedOut.has(node.field)) return null;
+      const read = (condition: Modifier | undefined) => add(compileModifier(condition, table));
+      if (![...(source.tones ?? []).map((tone) => tone.when), source.bold].every(read)) return null;
+      if (!(placeholders.get(id)?.when ?? []).every((item) => add(item.holds))) return null;
+      for (const name of signingFields(page)) names.add(name);
+    }
+    return [...names];
+  }
   function nodeState(id: string): NodeState {
     const node = index.get(id);
     if (!node) throw new Error(`The page has no element "${id}"`);
-    const { context: ctx, env } = reading();
-    const hidden = (at: IndexedNode | undefined) => (at ? anyJoin((join) => join.hides?.(at.id)) || !rolesAllow(at.roles, userRoles) || at.invisible.evaluate(ctx, env) : false);
+    // The record as conditions read it, made only once one is read: a part whose conditions read nothing changed reads none.
+    const read = reading;
+    const hidden = (at: IndexedNode | undefined) => (at ? anyJoin((join) => join.hides?.(at.id)) || !rolesAllow(at.roles, userRoles) || holds(at.invisible, read) : false);
     let invisible = hidden(node);
     for (let parent = node.parent; !invisible && parent; parent = index.get(parent)?.parent ?? null) {
       invisible = hidden(index.get(parent));
     }
     // A section read-only right now makes everything inside it read-only too; a page's, or a step's, time run out too.
-    let readonly = node.readonly.evaluate(ctx, env) || anyJoin((join) => join.locks?.(id));
+    let readonly = holds(node.readonly, read) || anyJoin((join) => join.locks?.(id));
     for (let parent = node.parent; !readonly && parent; parent = index.get(parent)?.parent ?? null) {
-      readonly = index.get(parent)?.readonly.evaluate(ctx, env) ?? false;
+      const above = index.get(parent);
+      readonly = above ? holds(above.readonly, read) : false;
     }
     const def = node.field ? page.fields[node.field] : undefined;
     // What the record's source lets this person do: a field hidden from them or locked, a button that would do what they may not.
@@ -2250,12 +2366,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (answer !== undefined && signedNow().has(answer)) readonly = true;
     // A record waiting for approval: locked but for the fields the page leaves open (the approvals part).
     if (answer !== undefined && anyJoin((join) => join.locksField?.(answer))) readonly = true;
-    return {
-      invisible,
-      readonly: readonly || (def !== undefined && lockedField(def)),
-      required: node.required.evaluate(ctx, env) || def?.required === true,
-      ...(node.pressed ? { pressed: node.pressed.evaluate(ctx, env) } : {}),
-    };
+    readonly ||= def !== undefined && lockedField(def);
+    const required = holds(node.required, read) || def?.required === true;
+    const pressed = node.pressed ? holds(node.pressed, read) : undefined;
+    const kept = full ? undefined : nodeStates.get(id);
+    if (kept && kept.invisible === invisible && kept.readonly === readonly && kept.required === required && kept.pressed === pressed) return kept;
+    const now: NodeState = { invisible, readonly, required, ...(node.pressed ? { pressed } : {}) };
+    if (!full) nodeStates.set(id, now);
+    return now;
   }
 
   /** The answer a field node shows, by its field — or a saved form placed on the page, by the name its answers are kept under. */
@@ -2270,8 +2388,25 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return signedCache.answers;
   }
 
+  /**
+   * The field nodes a field's problems are found by, in the page's order: those showing it, and the ranges whose end it
+   * is (`rangeEnd`); and the saved forms placed on the page. Read once.
+   */
+  const checkedBy = new Map<string, IndexedNode[]>();
+  const formNodes: IndexedNode[] = [];
+  for (const node of index.values()) {
+    if (node.kind === 'form') formNodes.push(node);
+    if (node.kind !== 'field' || node.field === undefined) continue;
+    for (const name of new Set([node.field, rangeEnd(node)])) if (name !== null) (checkedBy.get(name) ?? checkedBy.set(name, []).get(name)!).push(node);
+  }
+
   /** Field nodes — or saved forms placed on the page — inside `root` (or the whole page), visible right now; `field`'s alone, when named. */
   function visibleFieldNodes(root?: string, kind: IndexedNode['kind'] = 'field', field?: string): IndexedNode[] {
+    return visibleAmong(field !== undefined && kind === 'field' ? (checkedBy.get(field) ?? []) : kind === 'form' ? formNodes : [...index.values()], root, kind, field);
+  }
+
+  /** Those of `nodes` of the kind — `field`'s alone, when named — inside `root` (or the whole page), visible right now. */
+  function visibleAmong(nodes: readonly IndexedNode[], root?: string, kind: IndexedNode['kind'] = 'field', field?: string): IndexedNode[] {
     const inside = (node: IndexedNode) => {
       if (!root) return true;
       for (let at: string | null = node.id; at; at = index.get(at)?.parent ?? null) if (at === root) return true;
@@ -2283,9 +2418,21 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       for (let at: string | null = node.id; at; at = index.get(at)?.parent ?? null) if (state.skipped.includes(at)) return true;
       return false;
     };
-    return [...index.values()].filter((node) => node.kind === kind && (field === undefined || node.field === field) && inside(node) && !skipped(node) && !nodeState(node.id).invisible);
+    return nodes.filter((node) => node.kind === kind && (field === undefined || node.field === field) && inside(node) && !skipped(node) && !nodeState(node.id).invisible);
   }
 
+  /**
+   * What each field node's answer rules read by name — their conditions' fields and those of the answers they hold
+   * together — where they find the same for the same answer, words and reads: none about a date, none calling today()
+   * or the app's own function. Null where they do not.
+   */
+  const ruleReads = new Map<string, readonly string[] | null>();
+  for (const [id, rules] of nodeRules) {
+    const steady = rules.every((one) => one.rule.date === undefined && steadyCalls(one.when.calls) && (!one.holds || steadyCalls(one.holds.calls)));
+    ruleReads.set(id, steady ? [...new Set(rules.flatMap((one) => [...one.when.fields, ...(one.holds?.fields ?? [])]))] : null);
+  }
+  /** What each node's rules found last, and what they read then. */
+  const rulesFound = new Map<string, { inputs: unknown[]; found: { error?: string; warning?: string } }>();
   /** What a field node's answer rules say of its value now: the first error and the first warning. */
   function ruleCheck(node: IndexedNode): { error?: string; warning?: string } {
     const rules = nodeRules.get(node.id);
@@ -2293,8 +2440,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const name = node.field as string;
     const def = page.fields[name];
     const label = wordsNow((node.source as FieldNode).label ?? def.label);
-    const { context: ctx, env } = reading();
-    return checkRules(def, label, state.values[name], rules, { context: ctx, env, now: options.now?.() ?? new Date(), messages });
+    // Found again only once the answer, its words or what the rules read changed — their conditions read again with them.
+    const reads = full ? null : ruleReads.get(node.id);
+    return remembered(rulesFound, node.id, reads ? [state.values[name], label, ...reads.map(inputOf)] : null, () => {
+      const { context: ctx, env } = reading();
+      return checkRules(def, label, state.values[name], rules, { context: ctx, env, now: options.now?.() ?? new Date(), messages });
+    });
   }
 
   /** A tick box required and not ticked, as an "I agree" box: "no" answers a yes or no, never a box to tick. */
@@ -2316,10 +2467,25 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return def?.label ?? path;
   }
 
+  /** Each field node's own problem as last found, and what it was found from. */
+  const ownFound = new Map<string, { inputs: unknown[]; found: string | undefined }>();
+  /**
+   * A field node's own problem — its kind's, its places', its least and most, required — found again only once its
+   * answer, whether it is required, the choices or definitions it is checked against, today, or its words changed.
+   */
+  function ownProblem(node: IndexedNode): string | undefined {
+    const name = node.field as string;
+    const value = state.values[name];
+    const required = nodeState(node.id).required;
+    return remembered(ownFound, node.id, full ? null : [value, required, state.choices, state.definitions[name], worded ? state.values : null, today()], () =>
+      checkInput(page.fields[name], node.source as FieldNode, value, messages) ?? checkValue(checked(name), value, required, messages, today(), (node.source as FieldNode).widget)
+    );
+  }
+
   function nodeError(node: IndexedNode): string | undefined {
     const name = node.field as string;
     const value = state.values[name];
-    const own = checkInput(page.fields[name], node.source as FieldNode, value, messages) ?? checkValue(checked(name), value, nodeState(node.id).required, messages, today(), (node.source as FieldNode).widget);
+    const own = ownProblem(node);
     // A value as its source holds it, the person never having touched it: its own checks warn (`storedWarnings`), never refuse.
     const kept = own !== undefined && asStored(name) && !isEmpty(page.fields[name], value);
     return unticked(node) ?? (kept ? undefined : own) ?? ruleCheck(node).error;
@@ -2353,27 +2519,38 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return out;
   }
 
-  /** What a check would refuse now (`collectErrors`), for the state it was found for. */
-  let refusals: { state: FormState; errors: Record<string, string> } | null = null;
+  /** What a check would refuse now (`collectErrors`), for the state it was found for: each field's asked — every field's, in full. */
+  let refusals: { state: FormState; found: Map<string, Record<string, string>> } | null = null;
   /**
    * Whether the form refuses the answer at a path — a field's, or a table line's cell (`field.lineKey.subfield`) — as a
    * check would now: one it shows that holds a value its rules do not take (under its least, past today, a pattern not
    * met, an answer rule's error). An empty answer is none, required or not: there is nothing worked out from it to wait.
    */
   function refusedAt(path: string): boolean {
-    if (refusals?.state !== state) refusals = { state, errors: collectErrors() };
-    if (!refusals.errors[path]) return false;
     const parts = path.split('.');
     const def = page.fields[parts[0]];
-    const held = valueAt(state.values, path);
-    return held !== gone && !isEmpty((parts.length > 2 && def?.type === 'one2many' ? def.fields[parts[parts.length - 1]] : def) as Field, held);
+    const empty = () => {
+      const held = valueAt(state.values, path);
+      return held === gone || isEmpty((parts.length > 2 && def?.type === 'one2many' ? def.fields[parts[parts.length - 1]] : def) as Field, held);
+    };
+    // Only the field's own problems are found: those of the nodes showing it, or a range it ends — once for the state,
+    // and not at all for a field's own answer that is empty, which is never one refused.
+    const only = full ? undefined : parts[0];
+    if (refusals?.state !== state) refusals = { state, found: new Map() };
+    let found = refusals.found.get(only ?? '');
+    if (!found) {
+      if (parts.length === 1 && empty()) return false;
+      refusals.found.set(only ?? '', (found = collectErrors(undefined, only)));
+    }
+    return !!found[path] && !empty();
   }
 
   /** Warnings for the visible fields of the page, without publishing them. */
   function collectWarnings(dirty: readonly string[] = state.dirty): Record<string, string> {
     const warnings: Record<string, string> = {};
     if (warns) {
-      for (const node of visibleFieldNodes()) {
+      // Only a node with a rule that warns can warn: those alone are looked at, in the page's order.
+      for (const node of full ? visibleFieldNodes() : visibleAmong(warningNodes)) {
         const warning = nodeRules.has(node.id) ? ruleCheck(node).warning : undefined;
         if (warning) warnings[node.field as string] ??= warning;
       }
@@ -2417,11 +2594,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return undefined;
   }
 
-  /** Errors for the visible fields under `root`, without publishing them. */
-  function collectErrors(root?: string): Record<string, string> {
+  /**
+   * Errors for the visible fields under `root`, without publishing them. `only`, a field's alone — those found by the
+   * nodes showing it and the ranges it ends, in the page's order, as the whole check finds them for it.
+   */
+  function collectErrors(root?: string, only?: string): Record<string, string> {
     const errors: Record<string, string> = {};
     const seen = new Set<string>();
-    for (const node of visibleFieldNodes(root)) {
+    for (const node of only === undefined ? visibleFieldNodes(root) : visibleAmong(checkedBy.get(only) ?? [], root)) {
       // The answers of a time run out go as they stood: their checks refuse nothing.
       if (anyJoin((join) => join.locks?.(node.id))) continue;
       const name = node.field as string;
@@ -2465,7 +2645,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // A choice held whose places filled up since it was picked: never sent, said under it.
     if (limitsKit) Object.assign(errors, limitsKit.fullErrors(seen, errors));
     // A saved form placed here answers for its fields by its own page's rules.
-    for (const node of visibleFieldNodes(root, 'form')) {
+    for (const node of only === undefined ? visibleFieldNodes(root, 'form') : visibleAmong(formNodes.filter((one) => (one.source as FormNode).name === only), root, 'form')) {
       const part = attached.get(node.id);
       if (part) for (const [key, message] of Object.entries(part.inner.errorsNow())) errors[`${part.name}.${key}`] = message;
     }
@@ -2512,7 +2692,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const field = parts[0];
     const shown = visibleFieldNodes(undefined, 'field', field);
     // A range's end is left from its own box in the range: its problems, that it is before its start too.
-    const range = shown.length ? undefined : visibleFieldNodes().find((node) => rangeEnd(node) === field);
+    const range = shown.length ? undefined : visibleAmong(checkedBy.get(field) ?? []).find((node) => rangeEnd(node) === field);
     if (!shown.length && !range) return undefined;
     if (state.unread[path]) return state.unread[path].message;
     if (range) return isEmpty(fieldDef(field), state.values[field]) ? undefined : rangeEndError(range, field, false);
@@ -4091,6 +4271,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     node: nodeState,
 
+    nodeReads(id) {
+      if (readsOf.has(id)) return readsOf.get(id) ?? null;
+      const found = nodeReadsOf(id);
+      readsOf.set(id, found);
+      return found;
+    },
+
     openRecord: (id) => track(openRecord(id)),
 
     leave: (how) => Promise.resolve(letGo(how)),
@@ -4153,7 +4340,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     problem(name) {
       fieldDef(name);
       // Only a field someone can see is asked anything, and required wherever it is shown so.
-      const shown = visibleFieldNodes().filter((node) => node.field === name);
+      const shown = visibleFieldNodes(undefined, 'field', name);
       if (!shown.length) return null;
       if (state.unread[name]) return state.unread[name].message;
       // A property's text left unread answers for its field, and so does a box of a value drawn in parts (a repeat
@@ -4541,8 +4728,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const source = node.source as Partial<FieldNode>;
         return nodeId === '#title' && page.layout.type === 'sheet' ? page.layout.title?.placeholder : source.placeholder;
       }
-      const { context: ctx, env } = reading();
-      return own.when.find((item) => item.holds.evaluate(ctx, env))?.text ?? own.fixed;
+      return own.when.find((item) => holds(item.holds, reading))?.text ?? own.fixed;
     },
     lineState: (nodeId, key) => lineStateOf(nodeId, key),
     columnHidden(nodeId, column) {
@@ -4992,7 +5178,8 @@ function indexLayout(root: RootLayout, functions?: FunctionTable): Map<string, I
     if (builtin === 'archive' || builtin === 'unarchive') {
       const own = index.get(source.id) as IndexedNode;
       const mine = own.invisible;
-      own.invisible = { ...mine, evaluate: (context, env) => (context['active'] === false) !== (builtin === 'unarchive') || mine.evaluate(context, env) };
+      // It reads `active` too: a form keeping what its conditions said reads it again as that changes.
+      own.invisible = { ...mine, fields: [...new Set(['active', ...mine.fields])], evaluate: (context, env) => (context['active'] === false) !== (builtin === 'unarchive') || mine.evaluate(context, env) };
     }
     // A button's menu, and a menu inside a menu: each item a button of the record, hidden with it.
     if (kind === 'button') for (const item of (source as ButtonNode).menu ?? []) add(item, source.id, 'button', { invisible: item.invisible });

@@ -105,6 +105,15 @@ const listed = (names: string[]) => {
 };
 
 /** The second pass of every check: ids unique, every name defined, every condition readable. */
+/** Whether a field asks as a quiz's question: read once for each field's definition, so an edit of one reads that one. */
+const quizzes = new WeakMap<object, boolean>();
+function asksQuiz(def: unknown): boolean {
+  if (!def || typeof def !== 'object') return false;
+  let found = quizzes.get(def);
+  if (found === undefined) quizzes.set(def, (found = JSON.stringify(def).includes('"quiz":')));
+  return found;
+}
+
 export class ReferenceCheck {
   private readonly issues: PageIssue[] = [];
   /** What does not stop the page, said beside it: the kinds an expression hands its functions (`CheckOptions.kinds`). */
@@ -177,7 +186,7 @@ export class ReferenceCheck {
     if (!this.line && (this.page.limits !== undefined || this.page.continueLater !== undefined)) checkLimits(this.page, owing);
     // A survey's flow — a quiz and each question's own, a review, one at a time, a draw, a time limit — checked where the
     // page has any (in the one-tag script, by the survey flow's part it asks for).
-    if (!this.line && (surveyFlow(this.page) || JSON.stringify(this.page.fields).includes('"quiz":'))) checkSurveyFlow(this.page, owing);
+    if (!this.line && (surveyFlow(this.page) || Object.values(this.page.fields).some(asksQuiz))) checkSurveyFlow(this.page, owing);
     // A record's approvals: checked where it has them (in the one-tag script, by the approvals part it asks for).
     if (!this.line && this.page.approval !== undefined) checkApproval(this.page, this.fieldTools());
     // Texts kept in several languages: placed as words people type (in the one-tag script, by the languages part it asks for).

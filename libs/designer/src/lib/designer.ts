@@ -40,6 +40,8 @@ import {
   type PageLoading,
 } from '@fieldia/core';
 import { comparable, FIELD_NAME, FORMAT_VERSION, upgradePage } from '@fieldia/core';
+import { produce, sameJson } from './draft';
+import { keepUnchanged } from './keep-unchanged';
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, setRowRules, type ListCommands, type RowRulesPatch } from './list-commands';
@@ -741,6 +743,29 @@ export interface AppList {
 
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+/** The same keys, in the same order. */
+const sameKeys = (a: object, b: object) => {
+  const [one, other] = [Object.keys(a), Object.keys(b)];
+  return one.length === other.length && one.every((key, i) => key === other[i]);
+};
+/**
+ * Whether an edit changed the fields' words alone — a label, a help — the rest of the page as it was: its layout, its
+ * steps, its fields and their kinds, their rules. Then nothing that follows an edit through the page has anything to do.
+ */
+function wordsOnly(before: Page, next: Page): boolean {
+  if (next === before) return true;
+  if (!sameKeys(before, next) || !sameKeys(before.fields, next.fields)) return false;
+  for (const key of Object.keys(next) as (keyof Page)[]) if (key !== 'fields' && next[key] !== before[key]) return false;
+  for (const name of Object.keys(next.fields)) {
+    const [was, now] = [before.fields[name] as Field & { help?: string }, next.fields[name] as Field & { help?: string }];
+    if (was === now) continue;
+    const { label: _label, help: _help, ...rest } = was;
+    const { label: _now, help: _words, ...restNow } = now;
+    if (!sameJson(rest, restNow)) return false;
+  }
+  return true;
+}
 /** How many edits Undo takes back: the last 200 (each a whole page kept). */
 export const UNDO_STEPS = 200;
 
@@ -828,6 +853,9 @@ export function createDesigner(options: {
   let saveRunning = false;
 
   const published = () => versions[versions.length - 1]?.page ?? null;
+  // The draft shares what it has of the version published last, as the pages an edit makes share what it left alone:
+  // whether it differs from it is found at the cost of what changed since.
+  if (published()) page = keepUnchanged(published(), page);
   /** The picks: an editor that sets only `selected` picks that one alone. */
   const pickedNow = () => (selected === null ? [] : picked.includes(selected) ? picked : [selected]);
   /** What was picked as each page was left, to pick again when undo or redo comes back to it. */
@@ -845,7 +873,8 @@ export function createDesigner(options: {
   let compared: { page: Page; published: Page | null; differs: boolean } | null = null;
   function unpublished(): boolean {
     const last = published();
-    if (compared?.page !== page || compared.published !== last) compared = { page, published: last, differs: JSON.stringify(page) !== JSON.stringify(last) };
+    // Compared as their JSON would be, by the parts they share: a page an edit made shares all it left alone.
+    if (compared?.page !== page || compared.published !== last) compared = { page, published: last, differs: !sameJson(page, last) };
     return compared.differs;
   }
   /** The checks of the page, worked out once for each page, and again as saved forms placed in it load. */
@@ -910,27 +939,39 @@ export function createDesigner(options: {
    * picks is told with it, as one change, so a view draws it once.
    */
   function apply(edit: (draft: Page) => void, merge: string | null = null, after?: () => void): boolean {
-    const draft = clone(page);
-    try {
-      edit(draft);
-    } catch (error) {
-      if (!(error instanceof Refusal)) throw error;
-      issues = [error.in(words)];
+    // On a draft that copies only what the edit writes (draft.ts): a key typed on a page of 500 fields copies its field
+    // and what holds it, never the page whole; the page made shares the rest with this one.
+    let refused: string | null = null;
+    let draft = produce(page, (draft) => {
+      try {
+        edit(draft);
+      } catch (error) {
+        if (!(error instanceof Refusal)) throw error;
+        // Said while the draft is at hand: a refusal's words may name what it read of it.
+        refused = error.in(words);
+      }
+    });
+    if (refused !== null) {
+      issues = [refused];
       notify();
       return false;
     }
-    // rules lane: a field a rule still reads keeps its definition, so the rule can be seen and put right.
-    keepWhatRulesRead(page, draft);
-    // steps lane: a tab or step taken away takes the steps that go to it, and its own, with it.
-    forgetGoneTargets(draft);
-    // A field taken away, or made a kind records are not compared by, is no longer one possible duplicates are found by.
-    forgetGoneDuplicates(draft);
-    // A field taken away is no longer one left open while a record waits for approval.
-    forgetGoneOpenFields(draft);
-    // Nor one AI help fills or reads, and a field no longer of text has no text tools.
-    forgetGoneAssist(draft);
-    // A related list taken out of a tab takes the tab's count of it with it.
-    forgetGoneCounts(draft);
+    // What follows an edit through the page — a field a rule reads, steps to a part gone… — has nothing to do after
+    // one that changed the fields' words alone (a label typed): it reads the page whole, so it is left out then.
+    if (!wordsOnly(page, draft)) draft = produce(draft, (draft) => {
+      // rules lane: a field a rule still reads keeps its definition, so the rule can be seen and put right.
+      keepWhatRulesRead(page, draft);
+      // steps lane: a tab or step taken away takes the steps that go to it, and its own, with it.
+      forgetGoneTargets(draft);
+      // A field taken away, or made a kind records are not compared by, is no longer one possible duplicates are found by.
+      forgetGoneDuplicates(draft);
+      // A field taken away is no longer one left open while a record waits for approval.
+      forgetGoneOpenFields(draft);
+      // Nor one AI help fills or reads, and a field no longer of text has no text tools.
+      forgetGoneAssist(draft);
+      // A related list taken out of a tab takes the tab's count of it with it.
+      forgetGoneCounts(draft);
+    });
     const checked = checkEdit(page, draft);
     if (!checked.ok) {
       // A number setting the format refuses is said in its own words, in the designer's language: never a raw path.
@@ -2147,7 +2188,8 @@ export function createDesigner(options: {
       const checked = schema.validatePage(page, { functions });
       if (!checked.ok) throw new Error(words.refusals.cannotPublish);
       const version = store ? await store.publish(clone(page)) : versions.length + 1;
-      versions = [...versions, { version, publishedAt: new Date().toISOString(), page: clone(page) }];
+      // The page itself, as it is never written: the draft shares it until it is edited.
+      versions = [...versions, { version, publishedAt: new Date().toISOString(), page }];
       notify();
       return version;
     },

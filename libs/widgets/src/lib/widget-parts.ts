@@ -368,6 +368,10 @@ export function partWidget<M>(part: Part<M>, context: WidgetContext, real: (modu
     get tools() {
       return current.tools;
     },
+    // What the widget shown now draws from; while the plain one lingers beside it, everything.
+    get reads() {
+      return lingering ? undefined : current.reads;
+    },
     update(state) {
       last = state;
       current.update(state);

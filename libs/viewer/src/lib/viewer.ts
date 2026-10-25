@@ -67,7 +67,7 @@ import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue
 import { letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
-import { relatedInTab, upgradePage, wordsComing, wordsReady, zonedPage } from '@fieldia/core';
+import { recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, workCounts, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { nameFieldOf } from './name-field';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
@@ -359,7 +359,60 @@ export interface ViewerHandle {
   destroy(): void;
 }
 
-type Updater = (state: FormState) => void;
+/**
+ * A part's updater: what it draws from the state, with what changed since the state drawn last (`changes`: left out, or
+ * null, where anything may have). One left alone, as what it shows did not change, says so (`SKIPPED`).
+ */
+type Updater = (state: FormState, changes?: Changes) => void | typeof SKIPPED;
+/** The fields whose values, or whose words — problems, warnings, text left unread, choices — changed; `id`, the record's. */
+type Changes = ReadonlySet<string> | null;
+/**
+ * What of the state that changes as answers are given the parts that say what they draw never read: a change of these
+ * alone touches none of them. A change of anything else not kept by field (below) may touch any.
+ */
+const UNREAD_BY_PARTS = new Set(['dirty', 'unsent', 'status', 'saveProblem', 'error', 'leaving', 'draft', 'step', 'timers']);
+/** What of the state is kept by field, each field's read by its own parts alone: `lines.l1.qty` is the field `lines`'. */
+const BY_FIELD = new Set(['errors', 'warnings', 'takenOut', 'unread', 'choices', 'asked']);
+
+/**
+ * What changed from one state to the next, by field: the values that are other objects, the words kept by field that
+ * differ, the field whose change brought an onchange's warning, `id` for another record. Null where anything may have:
+ * no state drawn yet, the same state drawn again (the form locked, its skin changed), a state changed in nothing it holds
+ * (the record edited or not: `setEditing`), or a change of what it holds besides these — what the person may do, the
+ * places left, the approvals, a survey's draw.
+ */
+function changedBetween(was: FormState | null, now: FormState): Changes {
+  if (!was || was === now) return null;
+  const out = new Set<string>();
+  let any = false;
+  const before = was as unknown as Record<string, unknown>;
+  const after = now as unknown as Record<string, unknown>;
+  for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    const one = before[key];
+    const other = after[key];
+    if (one === other) continue;
+    any = true;
+    if (key === 'values' || BY_FIELD.has(key)) {
+      const a = (one ?? {}) as Record<string, unknown>;
+      const b = (other ?? {}) as Record<string, unknown>;
+      for (const name in a) if (a[name] !== b[name]) out.add(key === 'values' ? name : name.split('.')[0]);
+      for (const name in b) if (!(name in a)) out.add(key === 'values' ? name : name.split('.')[0]);
+    } else if (key === 'warning' || key === 'warningField') {
+      if (was.warningField) out.add(was.warningField);
+      if (now.warningField) out.add(now.warningField);
+    } else if (key === 'recordId') out.add('id');
+    else if (!UNREAD_BY_PARTS.has(key)) return null;
+  }
+  return any ? out : null;
+}
+/** What an updater left alone gives: counted as no work. */
+const SKIPPED: unique symbol = Symbol('skipped');
+/** Whether two lists of what a part shows are the same, one by one. */
+function sameInputs(a: readonly unknown[], b: readonly unknown[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
 
 /** A part of the page as it is drawn, for its errors to be kept to it: its node, its element, its box once it failed. */
 interface KeptPart {
@@ -701,6 +754,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const fieldKeys: { key: string; wrapper: HTMLElement; focus(): void }[] = [];
   /** Each field's face, put on again when the form changes skin: quiet, or in its box. */
   const faces: (() => void)[] = [];
+  /** Counted each time the faces are put on again: what each field shows has changed with it. */
+  let faceEpoch = 0;
+  /** Whether this viewer draws every part again at each change (`recomputeInFull`, as it was mounted): the oracle. */
+  const full = recomputeInFull();
   /** Folded sections, and how to open each: a problem inside one has to be seen. */
   const folds = new Map<HTMLElement, () => void>();
   /** What draws the parts not shown yet for paper: each tabs' own, drawing every tab shown. */
@@ -744,8 +801,31 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     /** The answers signatures kept signed, as the values hold them now: worked out once for each change of the values. */
     let signed: { values: Readonly<Values>; by: SignedBy } | null = null;
     const signedNow = (values: Readonly<Values>) => (signed?.values === values ? signed : (signed = { values, by: signedBy(page, values) })).by;
-    /** A part's updater, handed the state of the part's own form; one that throws puts the part's box in its place. */
-    const watch = (update: Updater) => sink.push(keptTo(drawing, scope.root ? update : () => update(form.getState())));
+    /**
+     * A part's updater, handed the state of the part's own form; one that throws puts the part's box in its place.
+     * `inputs`, what it shows, as values to compare one by one: while they are those it last drew, it is left alone — it
+     * would draw the same — so a key typed elsewhere costs it nothing (not when the viewer works out every change in full).
+     */
+    const watch = (update: Updater, inputs?: (state: FormState) => readonly unknown[], reads?: () => readonly string[] | null, version?: () => number) => {
+      const kept = keptTo(drawing, scope.root ? update : () => update(form.getState()));
+      if (!inputs || full) return sink.push(kept);
+      let last: readonly unknown[] | null = null;
+      let seen = 0;
+      return sink.push((state, changes) => {
+        // `reads`, the fields what it shows is worked out from: where none of them changed, nor its own flags (`version`),
+        // what it shows is what it showed — not even worked out. A key typed elsewhere touches a few parts, not every one.
+        const flags = version?.() ?? 0;
+        if (last && changes && reads && scope.root && flags === seen) {
+          const names = reads();
+          if (names && !names.some((name) => changes.has(name))) return SKIPPED;
+        }
+        seen = flags;
+        const now = inputs(scope.root ? state : form.getState());
+        if (last && sameInputs(last, now)) return SKIPPED;
+        last = now;
+        return kept(state);
+      });
+    };
     /**
      * The page's own words — a label, a help, a button's — with the value of each field they name (`{field}`) as a
      * sentence says it, kept to the answers as they change; words that name none, as they are.
@@ -1008,12 +1088,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       let advice = '';
       /** Leaving the field now: a problem it raises is said by its error, politely. */
       let leaving = false;
+      /** Counted as `typing`, `leaving` or `justLeft` change: what the field draws follows them too. */
+      let flags = 0;
       /** The problem last said politely as the box was left: one shown while typing (a paste past the most) is said as it is left. */
       let saidLeaving = '';
       /** The box was just left: the next drawing of it says its problem, though leaving it raised none new. */
       let justLeft = false;
       wrapper.addEventListener('focusin', () => {
         typing = true;
+        flags++;
         setAttr(error, 'aria-live', null);
       });
       wrapper.addEventListener('focusout', (event) => {
@@ -1026,12 +1109,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           typing = false;
           // The field's own problem is said now, as its box is left; that it is required waits for Save.
           leaving = true;
+          flags++;
           try {
             form.boxLeft(node.field);
           } finally {
             leaving = false;
           }
           justLeft = true;
+          flags++;
           // Not at once: focus also leaves when a redraw removes the focused part
           // (a deleted line's button), and that redraw must finish first.
           queueMicrotask(() => update(form.getState()));
@@ -1103,6 +1188,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         // Raised by leaving the box, it is said once, politely; a refused Save's announcer says the rest, once. Shown
         // already while it was typed in (a paste past its most), it is said now, as the box is left.
         const left = leaving || justLeft;
+        if (justLeft) flags++;
         justLeft = false;
         if (left && message && message !== saidLeaving) {
           setAttr(error, 'aria-live', 'polite');
@@ -1161,7 +1247,61 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           describedBy: [help?.id ?? tip?.bubble.id, lock && lockedNow ? lock.bubble.id : undefined, message ? error.id : undefined, warned ? warning.id : undefined].filter(Boolean).join(' ') || undefined,
         });
       };
-      watch(update);
+      /**
+       * What the field shows, for a widget that says what it draws from (`reads`): its part's state, its value, the text
+       * left unread in it, its choices and their places, its words — problem, warning, choices taken out — its tone, the
+       * words of its empty box, its lock and why, what it waits for, and whether its box is being typed in or was just
+       * left. Any other widget, a ✓ shown when filled in right, words in place of the box, or a label that shows answers:
+       * drawn again at every change, as before.
+       */
+      const inputs = (state: FormState): readonly unknown[] => {
+        const reads = widget.reads;
+        if (!reads || mark || asText || worded) return [state, faceEpoch];
+        const name = node.field;
+        const waits = form.waitsFor(name);
+        const look = toned ? form.fieldTone(node.id) : null;
+        return [
+          ...reads.map((other) => state.values[other]),
+          form.node(node.id),
+          state.values[name],
+          state.unread[name],
+          state.choices[name],
+          state.limits?.seats?.[name],
+          state.errors[name],
+          state.warnings[name],
+          state.warningField === name ? state.warning : null,
+          state.takenOut?.[name],
+          state.can,
+          look?.tone,
+          look?.bold,
+          chosenPlaceholder ? form.placeholder(node.id) : null,
+          form.approvalLock(name),
+          signedNow(state.values).has(name),
+          waits?.field,
+          waits?.line,
+          waits?.column,
+          waits?.asking,
+          waits?.failed,
+          locked,
+          scope.locked(),
+          typing,
+          leaving,
+          justLeft,
+          faceEpoch,
+        ];
+      };
+      /** The fields what it shows is worked out from, for a widget that says what it draws: its own, its widget's, its state's. */
+      let reads: { widget: readonly string[]; all: readonly string[] | null } | null = null;
+      const readsNow = (): readonly string[] | null => {
+        const own = widget.reads;
+        if (!own || mark || asText || worded) return null;
+        if (reads?.widget !== own) {
+          const state = form.nodeReads(node.id);
+          reads = { widget: own, all: state ? [node.field, ...own, ...state] : null };
+        }
+        return reads.all;
+      };
+      watch(update, inputs, readsNow, () => flags);
       return wrapper;
     }
 
@@ -1215,7 +1355,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
 
     function hideWhen(element: HTMLElement, id: string) {
-      watch(() => shownAsItsCondition(element, id));
+      watch(() => shownAsItsCondition(element, id), () => [form.node(id).invisible], () => form.nodeReads(id));
     }
     /**
      * A part shown or hidden as its condition says: at once — but while a press goes on, once it has ended (press.ts).
@@ -1554,7 +1694,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           // The tab shown: drawn if it is new, and brought up to date — it was left alone while out of sight.
           if (selected && !tabsHidden) {
             p.build();
-            for (const update of p.own) update(state);
+            for (const update of p.own) if (update(state) !== SKIPPED) workCounts.updaters++;
           }
         }
         // Measured only when it can have changed — the strip's tabs, or the one chosen — once the page is laid out.
@@ -3078,10 +3218,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   /** The page's own updaters that threw, each said once: a part's are kept to it (keptTo), these to themselves. */
   const failedUpdaters = new WeakSet<Updater>();
+  /** The state drawn last: what changed since is what a part that says what it shows is asked about. */
+  let rendered: FormState | null = null;
   function render(state: FormState) {
+    const changes = full ? null : changedBetween(rendered, state);
+    rendered = state;
     for (const update of updaters) {
       try {
-        update(state);
+        if (update(state, changes) !== SKIPPED) workCounts.updaters++;
       } catch (error) {
         if (failedUpdaters.has(update)) continue;
         failedUpdaters.add(update);
@@ -3168,6 +3312,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** The form in another skin: each field's face put on again, and drawn again from the state. */
   function refaced() {
     for (const face of faces) face();
+    // Every field drawn again: its face is what it shows too.
+    faceEpoch++;
     if (mounted) renderNow();
   }
 

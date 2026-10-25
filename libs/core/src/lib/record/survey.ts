@@ -16,4 +16,12 @@ export const formSurveyPart: Part<FormSurveyPart> = lazyPart('surveyflow', () =>
  * Whether a page goes through a survey's flow: a quiz, a review before sending, one question at a time, a time limit, or
  * a part that draws its order or some of its questions. What each of them asks is the part's to tell.
  */
-export const surveyFlow = (page: Page): boolean => !!(page.quiz || page.review || page.flow || page.timeLimit) || /"order":"random"|"(draw|timeLimit)":/.test(JSON.stringify(page.layout));
+export const surveyFlow = (page: Page): boolean => !!(page.quiz || page.review || page.flow || page.timeLimit) || drawsOrTimes(page.layout);
+
+/** Whether a layout draws an order or some of its questions, or times a step: read once for each layout. */
+const drawn = new WeakMap<object, boolean>();
+function drawsOrTimes(layout: Page['layout']): boolean {
+  let found = drawn.get(layout);
+  if (found === undefined) drawn.set(layout, (found = /"order":"random"|"(draw|timeLimit)":/.test(JSON.stringify(layout))));
+  return found;
+}
