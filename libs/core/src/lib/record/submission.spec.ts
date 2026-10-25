@@ -2,6 +2,7 @@ import type { Page } from '../format/page';
 import { checkPage } from '../format/check-page';
 import { PATTERN_MOST } from '../format/pattern';
 import { checkSubmission } from './submission';
+import { PROOF_MS, timedAsync } from '../../../../../testing/proof-time';
 
 /**
  * The server is the final gate (audit M10, S-M7): `checkSubmission` runs a page's checks where its answers arrive — a
@@ -99,12 +100,19 @@ describe('checkSubmission: the browser’s checks, again where the answers arriv
     const rule = enquiry({ layout: { ...plain.layout, children } } as Partial<Page>);
     expect(checkPage(rule).ok).toBe(false);
     expect((await checkSubmission(rule, { name: 'xxxy' })).ok).toBe(false);
-    // An answer longer than a pattern is tried on is not of it, here as in the browser: never tried, at once.
+    // An answer longer than a pattern is tried on is not of it, here as in the browser: never tried — counted — at once.
     const long = `${'a'.repeat(PATTERN_MOST)}@nile.example`;
-    const started = Date.now();
-    const checked = await checkSubmission(enquiry(), { name: 'Hana', email: long });
-    expect(Date.now() - started).toBeLessThan(500);
-    expect(checked.errors['email']).toBeTruthy();
+    let tries = 0;
+    const real = RegExp.prototype.test;
+    const spy = jest.spyOn(RegExp.prototype, 'test').mockImplementation(function (this: RegExp, text: string) {
+      if (this.source.includes('[^@\\s]+@[^@\\s]+')) tries++;
+      return real.call(this, text);
+    });
+    const { result: checked, ms } = await timedAsync(() => checkSubmission(enquiry(), { name: 'Hana', email: long }));
+    spy.mockRestore();
+    expect(tries).toBe(0);
+    expect(ms).toBeLessThan(PROOF_MS);
+    expect((checked as Awaited<ReturnType<typeof checkSubmission>>).errors['email']).toBeTruthy();
   });
 
   it('refuses answers larger than they may be, before reading them', async () => {

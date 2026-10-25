@@ -6,12 +6,22 @@ import { checkValue } from '../record/check';
 import { createForm } from '../record/form';
 import { createMemoryDataSource } from '../record/memory-data-source';
 import { compileRules } from '../record/rules';
+import { PROOF_MS, timed } from '../../../../../testing/proof-time';
 
-/** How long a call takes, in milliseconds. */
-const timed = (run: () => unknown) => {
-  const start = performance.now();
-  run();
-  return performance.now() - start;
+/** How many times `run` tries the page's pattern (`^(?:…)$`, its source) on an answer: the work it would backtrack in. */
+const tries = (pattern: string, run: () => unknown) => {
+  let n = 0;
+  const real = RegExp.prototype.test;
+  const spy = jest.spyOn(RegExp.prototype, 'test').mockImplementation(function (this: RegExp, text: string) {
+    if (this.source === `^(?:${pattern})$`) n++;
+    return real.call(this, text);
+  });
+  try {
+    run();
+  } finally {
+    spy.mockRestore();
+  }
+  return n;
 };
 
 /** The audit's page: a company's name, as an author writes a pattern for it without thinking of backtracking (S-M2). */
@@ -36,10 +46,17 @@ describe('a page’s pattern can never take seconds on an answer (S-M2)', () => 
       expect(!result.ok && result.issues[0]).toEqual({ path: 'fields.company.pattern', message: expect.stringMatching(/can take seconds on a short answer/) });
     }
     const field = page('([A-Za-z0-9]+\\s?)*').fields['company'];
-    for (const n of [20, 24, 28, 40]) expect(timed(() => checkValue(field, 'a'.repeat(n) + '!', false))).toBeLessThan(50);
+    // The work it bounds, counted: the refused pattern is never tried on an answer — and the clock never runs away.
+    for (const n of [20, 24, 28, 40]) {
+      expect(tries('([A-Za-z0-9]+\\s?)*', () => checkValue(field, 'a'.repeat(n) + '!', false))).toBe(0);
+      expect(timed(() => checkValue(field, 'a'.repeat(n) + '!', false))).toBeLessThan(PROOF_MS);
+    }
     const form = createForm({ page: page('([A-Za-z0-9]+\\s?)*'), dataSource: createMemoryDataSource() });
-    expect(timed(() => form.setValue('company', 'a'.repeat(27) + '!'))).toBeLessThan(50);
+    expect(tries('([A-Za-z0-9]+\\s?)*', () => form.setValue('company', 'a'.repeat(27) + '!'))).toBe(0);
+    expect(timed(() => form.setValue('company', 'a'.repeat(28) + '!'))).toBeLessThan(PROOF_MS);
     form.dispose();
+    // A pattern it takes is tried once, as ever: the count counts.
+    expect(tries('[A-Z]{2}-\\d{4}', () => checkValue(page('[A-Z]{2}-\\d{4}').fields['company'], 'EG-1234', false))).toBe(1);
   });
 
   it('takes every pattern Fieldia’s pages, demos and schemas write', () => {
@@ -64,7 +81,10 @@ describe('a page’s pattern can never take seconds on an answer (S-M2)', () => 
     // The most a pattern of its kind can take: quadratic, kept to PATTERN_MOST characters.
     const longest = 'a@' + 'a.'.repeat((PATTERN_MOST - 2) / 2);
     expect(longest.length).toBe(PATTERN_MOST);
-    expect(timed(() => checkValue(field, longest + 'x', false))).toBeLessThan(50);
+    // Never tried on an answer one character over its most — only on one within it — and never slow.
+    expect(tries('[^@\\s]+@[^@\\s]+\\.[^@\\s]+', () => checkValue(field, longest + 'x', false))).toBe(0);
+    expect(tries('[^@\\s]+@[^@\\s]+\\.[^@\\s]+', () => checkValue(field, longest, false))).toBe(1);
+    expect(timed(() => checkValue(field, longest + 'x', false))).toBeLessThan(PROOF_MS);
     expect(checkValue(field, 'a@b.c' + ' '.repeat(PATTERN_MOST), false)).toBe('Company is not in the expected format');
     expect(checkValue(field, 'mona@example.com', false)).toBeUndefined();
   });

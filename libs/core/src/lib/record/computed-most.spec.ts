@@ -3,6 +3,7 @@ import type { Page } from '../format/page';
 import { COMPUTED_MOST, fitTo } from './compute';
 import { createForm } from './form';
 import { createMemoryDataSource } from './memory-data-source';
+import { PROOF_MS, timed } from '../../../../../testing/proof-time';
 
 /** A page whose values each double the one before: one letter typed, 2^24 of them worked out (S-L7, the audit's proof). */
 function doubling(n: number): Page {
@@ -16,13 +17,15 @@ describe('a value the page works out stops at the most it may hold (S-L7)', () =
     const checked = checkPage(doubling(24));
     expect(checked.ok).toBe(true);
     const form = createForm({ page: checked.ok ? checked.page : doubling(24), dataSource: createMemoryDataSource() });
-    const start = performance.now();
-    form.setValue('f0', 'ab');
-    expect(performance.now() - start).toBeLessThan(50);
+    const ms = timed(() => form.setValue('f0', 'ab'));
+    // The work it bounds, counted: no value past the most (the 17th doubling, 2^17 characters, held as none, so every
+    // one after it too) — and the clock never runs away.
     const values = form.getState().values;
     expect((values['f15'] as string).length).toBe(2 ** 16);
     expect(values['f16']).toBeNull();
     expect(Object.values(values).every((value) => typeof value !== 'string' || value.length <= COMPUTED_MOST.text)).toBe(true);
+    expect(Object.values(values).reduce((sum: number, value) => sum + (typeof value === 'string' ? value.length : 0), 0)).toBeLessThan(2 ** 17);
+    expect(ms).toBeLessThan(PROOF_MS);
     form.dispose();
   });
 

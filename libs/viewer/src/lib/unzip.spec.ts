@@ -1,6 +1,7 @@
 import { DecompressionStream } from 'node:stream/web';
 import { TextDecoder, TextEncoder } from 'node:util';
 import { deflateRawSync } from 'node:zlib';
+import { PROOF_MS, timedAsync } from '../../../../testing/proof-time';
 import { unzip, UNZIPPED_MOST, ZipProblem } from './unzip';
 
 /**
@@ -8,6 +9,45 @@ import { unzip, UNZIPPED_MOST, ZipProblem } from './unzip';
  * another is damaged, stopped where it went past it — and none, nor all of them read, past `UNZIPPED_MOST` (S-M3).
  */
 beforeAll(() => Object.assign(globalThis, { DecompressionStream, TextDecoder, TextEncoder }));
+
+/** What the import's inflating did: the bytes it read out and its largest piece, the squeezed bytes it wrote in. */
+const inflating = { read: 0, largest: 0, written: 0 };
+/** Node's DecompressionStream, as the browser's: what goes in and comes out counted, as the import reads and writes it. */
+class CountedInflate {
+  readonly writable: { getWriter(): unknown };
+  readonly readable: { getReader(): unknown };
+  constructor(format: 'deflate-raw') {
+    const inner = new DecompressionStream(format);
+    this.writable = {
+      getWriter: () => {
+        const writer = inner.writable.getWriter();
+        return {
+          get ready() {
+            return writer.ready;
+          },
+          write: (chunk: Uint8Array) => ((inflating.written += chunk.length), writer.write(chunk)),
+          close: () => writer.close(),
+        };
+      },
+    };
+    this.readable = {
+      getReader: () => {
+        const reader = inner.readable.getReader();
+        return {
+          read: async () => {
+            const got = await reader.read();
+            if (got.value) {
+              inflating.read += got.value.length;
+              inflating.largest = Math.max(inflating.largest, got.value.length);
+            }
+            return got;
+          },
+          cancel: (why?: unknown) => reader.cancel(why),
+        };
+      },
+    };
+  }
+}
 
 /** An archive of one file, `plain` deflated, its directory saying it opens to `said` bytes. */
 function archive(plain: Uint8Array, said: number, path = 'xl/sharedStrings.xml', stored = false): Uint8Array {
@@ -41,9 +81,21 @@ describe('a workbook’s archive opened, never past what it says nor past the mo
   it('stops a file that says it opens to nothing at once: 100 KB squeezed from 100 MB of one letter (the audit’s proof)', async () => {
     const bomb = archive(new Uint8Array(100 * 1024 * 1024).fill(0x61), 0);
     expect(bomb.length).toBeLessThan(200 * 1024);
-    const start = performance.now();
-    expect(await refusal(unzip(bomb).read('xl/sharedStrings.xml'))).toBe('damaged');
-    expect(performance.now() - start).toBeLessThan(50);
+    Object.assign(inflating, { read: 0, largest: 0, written: 0 });
+    Object.assign(globalThis, { DecompressionStream: CountedInflate });
+    try {
+      const { result, ms } = await timedAsync(() => refusal(unzip(bomb).read('xl/sharedStrings.xml')));
+      expect(result).toBe('damaged');
+      // The work it bounds, counted: opened never past what it says (nothing) and one piece — never the 100 MB — and
+      // what it squeezed written in a piece at a time, stopped there, never all of it first.
+      expect(inflating.read).toBeGreaterThan(0);
+      expect(inflating.read).toBeLessThanOrEqual(0 + inflating.largest);
+      expect(inflating.largest).toBeLessThan(1024 * 1024);
+      expect(inflating.written).toBeLessThan(bomb.length);
+      expect(ms).toBeLessThan(PROOF_MS);
+    } finally {
+      Object.assign(globalThis, { DecompressionStream });
+    }
   });
 
   it('refuses a file saying it opens to more than the most, before opening it, and one that opens to another size', async () => {
