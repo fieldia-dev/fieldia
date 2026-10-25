@@ -153,6 +153,11 @@ export interface ViewerLabels {
    */
   selectAllMatching: string;
   selectAllMatchingNoun?: string;
+  /**
+   * Said under a list's search as Ctrl or ⌘ and F take the person there from a list long enough that only the rows near
+   * the view are in the page (list-window.ts): the browser's own find sees those alone, and the list's search finds any.
+   */
+  findInList: string;
   selectingAll: string;
   selectedOf: string;
   selectAllFailed: string;
@@ -1013,6 +1018,7 @@ const en: ViewerLabels = {
   loadFailed: 'Could not load the records.',
   loadFailedNoun: 'Could not load the {records}.',
   selectAllMatching: 'Select all {n} that match',
+  findInList: 'Find in page sees only the rows on screen: search here to find any record.',
   selectAllMatchingNoun: 'Select all {n} {records} that match',
   selectingAll: 'Selecting all that match…',
   selectedOf: '{n} of {total} could be selected',

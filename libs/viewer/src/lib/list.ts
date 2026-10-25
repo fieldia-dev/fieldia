@@ -51,9 +51,10 @@ import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
 import { markSort, pressedSort, sortWith } from './list-sort';
 import { endlessRows } from './list-endless';
+import { rowWindow, type RowWindow, type WindowRow } from './list-window';
 import type { SavedViews, ViewsSource } from './saved-views';
 import { assistPart, cardsPart, columnsPart, editablePart, filtersPart, importPart, rowsPart, viewsPart, type AssistPart, type ColumnsPart } from './viewer-parts';
-import type { EditableRows, NewForm } from './list-editable';
+import type { EditableRows, ListRows, NewForm } from './list-editable';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
 
 export interface ListContext {
@@ -270,7 +271,17 @@ export function listView(context: ListContext): ListView {
   let rows: Row[] = [];
   /** Each record's row, for the records on show however they are grouped. */
   const recordOf = new WeakMap<Element, Row>();
-  const visible = () => [...body.querySelectorAll('.fd-list-row:not([data-new])')].map((tr) => recordOf.get(tr) as Row);
+  /**
+   * Its rows windowed (list-window.ts): past a hundred shown, only those near the view are in the page, the rest kept
+   * as data. Made below, for a list whose rows are its records' own; none for a tree loaded as it opens, or rows re-ranked
+   * by hand, which draw their rows themselves.
+   */
+  let win: RowWindow | null = null;
+  /** Whether the window keeps its rows now: not while they are under groups, which draw their own. */
+  const windowing = (): boolean => !!win && !groupedNow;
+  /** The records on show: every row the window keeps, drawn or not; else the rows in the page. */
+  const visible = (): Row[] =>
+    win && windowing() ? win.rows().flatMap((one) => (one.added ? [] : [one.record])) : [...body.querySelectorAll('.fd-list-row:not([data-new])')].map((tr) => recordOf.get(tr) as Row);
   // Only a page of records gets this far: the page check refuses a list of anything else.
   const model = page.data.kind === 'record' ? page.data.model : '';
   /**
@@ -377,6 +388,8 @@ export function listView(context: ListContext): ListView {
   const sortable = node.sortable !== false;
   /** The record open from its row (or by open()), its row marked while it is. */
   let openId: RecordId | null = null;
+  /** The record whose row is lit, its pin on the map pointed at. */
+  let litId: RecordId | null = null;
   /** The columns before the fields': the box to choose a row, and the parents' toggles. */
   const leading = (choose ? 1 : 0) + (parentField ? 1 : 0);
 
@@ -541,14 +554,15 @@ export function listView(context: ListContext): ListView {
     markOpen();
     if (destroyed) return;
     await load();
-    // Back on its row, unless the person went somewhere else meanwhile.
+    // Back on its row, unless the person went somewhere else meanwhile — drawn where the window had left it out.
     const active = doc.activeElement;
     if (destroyed || (active && active !== doc.body && !element.contains(active))) return;
-    [...body.querySelectorAll<HTMLElement>('.fd-list-row')].find((tr) => tr.dataset['id'] === String(id) && !tr.hidden)?.focus();
+    (win && windowing() ? win.reveal(String(id)) : [...body.querySelectorAll<HTMLElement>('.fd-list-row')].find((tr) => tr.dataset['id'] === String(id) && !tr.hidden))?.focus();
   }
 
-  /** The row shown next to this one, down or up, past those folded under a parent. */
+  /** The row shown next to this one, down or up, past those folded under a parent: drawn where the window left it out. */
   const shownBeside = (tr: Element, down: boolean) => {
+    if (win && windowing() && tr.classList.contains('fd-list-row')) return win.beside(tr as HTMLTableRowElement, down);
     let next = down ? tr.nextElementSibling : tr.previousElementSibling;
     while (next && ((next as HTMLElement).hidden || next.classList.contains('fd-list-note') || next.hasAttribute('data-aside'))) next = down ? next.nextElementSibling : next.previousElementSibling;
     return next as HTMLElement | null;
@@ -680,6 +694,24 @@ export function listView(context: ListContext): ListView {
       : null;
   // Every parent opened at once would load the whole tree: Expand all is for a tree on its page.
   if (tree) expandAll.hidden = true;
+  // Its rows windowed (list-window.ts) — unless they come as a parent opens (a tree loaded as it opens) or are moved by
+  // hand (ranked), which keep their rows in the page themselves: what opened under a row put back with it, the rows the
+  // person has work on kept in the page.
+  win =
+    !tree && !ranks
+      ? rowWindow({
+          doc,
+          table,
+          body,
+          draw: drawRow,
+          pins: () => rowEdits?.working() ?? [],
+          placed: (tr) => {
+            details?.placed(tr);
+            rowEdits?.placed(tr);
+          },
+          span,
+        })
+      : null;
   /** The columns as last drawn, to know when the totals must follow. */
   let drawnColumns = shownColumns().join();
 
@@ -691,6 +723,7 @@ export function listView(context: ListContext): ListView {
     if (!kept || drawnColumns === shownColumns().join()) return;
     drawnColumns = shownColumns().join();
     for (const cell of body.querySelectorAll<HTMLTableCellElement>(':scope > :is(.fd-list-group, .fd-list-more, .fd-list-note) > td')) cell.colSpan = span();
+    win?.spread();
     details?.spread(body);
     if (!totals) return;
     const next = makeTotals();
@@ -711,8 +744,11 @@ export function listView(context: ListContext): ListView {
     table.style.setProperty('--fd-pin-first', `${checkWidth + (tree?.getBoundingClientRect().width ?? 0)}px`);
   }
 
+  /** What the list knows of a record it holds: the version it was listed at and what the person may do with it, drawn or not. */
+  const know = (record: Row) => known.set(String(record.id), { ...(record.version ? { version: record.version } : {}), ...(record.can ? { can: record.can } : {}) });
+
   function row(record: Row, level = 0): HTMLTableRowElement {
-    known.set(String(record.id), { ...(record.version ? { version: record.version } : {}), ...(record.can ? { can: record.can } : {}) });
+    know(record);
     const name = show(nameColumn, record.values) || String(record.id);
     const box = choose ? el('input', { type: 'checkbox', class: 'fd-list-checkbox', 'aria-label': fill(labels.selectRecord, { name }) }) : null;
     if (box) {
@@ -731,13 +767,16 @@ export function listView(context: ListContext): ListView {
     const tr = el(
       'tr',
       {
-        class: context.onOpenRecord ? 'fd-list-row fd-list-openable' : 'fd-list-row',
+        // Lit, where the map's pin of its record is pointed at: a row drawn as it comes into view lit as the others.
+        class: `${context.onOpenRecord ? 'fd-list-row fd-list-openable' : 'fd-list-row'}${litId !== null && String(litId) === String(record.id) ? ' fd-list-hot' : ''}`,
         tabindex: '0',
         'data-id': String(record.id),
         'data-level': level ? String(level) : undefined,
         'data-tone': tone ?? undefined,
         'data-bold': bold ? '' : undefined,
         'aria-current': openId !== null && String(openId) === String(record.id) ? 'true' : undefined,
+        // Chosen or not as it is drawn: a row the window draws as the view comes to it says so at once.
+        'aria-selected': choose ? String(chosen.has(record.id)) : undefined,
       },
       ...(box ? [el('td', { class: 'fd-list-check' }, box)] : []),
       ...(parentField ? [el('td', { class: 'fd-list-tree' })] : []),
@@ -808,10 +847,13 @@ export function listView(context: ListContext): ListView {
   /** The parents closed, by id: kept while the list asks again. */
   const closed = new Set<string>();
 
-  /** A page of records with each under its parent, depth first, where the parent is on the page too; the rest at the top. */
-  function nest(records: Row[]): HTMLTableRowElement[] {
+  /**
+   * A page of records in the order they are shown: each under its parent, depth first, where the parent is on the page
+   * too; the rest at the top — each with its depth, how many it holds, and hidden where a parent above it is closed.
+   */
+  function ordered(records: Row[]): WindowRow[] {
     // A tree loaded as it opens draws its rows as they come: the rows part puts each under its parent.
-    if (!parentField || tree) return records.map((record) => row(record));
+    if (!parentField || tree) return records.map((record) => ({ record }));
     const ids = new Set(records.map((record) => String(record.id)));
     const parentOf = (record: Row) => {
       const parent = plain(record.values[parentField]);
@@ -822,36 +864,59 @@ export function listView(context: ListContext): ListView {
       const parent = parentOf(record);
       if (parent) children.set(parent, [...(children.get(parent) ?? []), record]);
     }
-    const drawn: HTMLTableRowElement[] = [];
+    const out: WindowRow[] = [];
     const placed = new Set<string>();
-    const place = (record: Row, depth: number, hiddenUnder: boolean) => {
+    const place = (record: Row, depth: number) => {
       const id = String(record.id);
       // A loop of parents is drawn once, where it is first met.
       if (placed.has(id)) return;
       placed.add(id);
-      const tr = row(record);
-      tr.style.setProperty('--fd-depth', String(depth));
-      tr.setAttribute('data-depth', String(depth));
-      tr.hidden = hiddenUnder;
       const under = children.get(id) ?? [];
-      // Before its name: the parent's toggle, or room the size of one, so names line up at each depth — room whether or not
-      // this page shows a parent at all, so names keep their place as a filter lets parents in or out.
-      const cell = tr.querySelector<HTMLElement>(':scope > td[data-name]');
-      if (under.length) {
-        // Open or closed said by its toggle: a table's row claims no tree (aria-expanded belongs to a treegrid's rows).
-        tr.setAttribute('data-parent-of', String(under.length));
-        const twisty = el('button', { type: 'button', class: 'fd-list-twisty', tabindex: '-1', 'aria-expanded': String(!closed.has(id)), 'aria-label': show(nameColumn, record.values) || id });
-        twisty.addEventListener('click', () => fold(id, twisty.getAttribute('aria-expanded') === 'true'));
-        cell?.prepend(twisty);
-      } else cell?.prepend(el('span', { class: 'fd-list-twisty-room', 'aria-hidden': 'true' }));
-      drawn.push(tr);
-      for (const child of under) place(child, depth + 1, hiddenUnder || closed.has(id));
+      out.push({ record, depth, children: under.length });
+      for (const child of under) place(child, depth + 1);
     };
-    for (const record of records) if (!parentOf(record)) place(record, 0, false);
+    for (const record of records) if (!parentOf(record)) place(record, 0);
     // Whatever a loop of parents left out, at the top.
-    for (const record of records) place(record, 0, false);
-    return drawn;
+    for (const record of records) place(record, 0);
+    folded(out);
+    return out;
   }
+
+  /** Each row hidden under a closed parent, shown under an open one: by the depths of the parents above it, in order. */
+  function folded(rows: readonly WindowRow[]) {
+    const stack: { depth: number; closed: boolean }[] = [];
+    for (const one of rows) {
+      if (one.depth === undefined) continue;
+      while (stack.length && stack[stack.length - 1].depth >= one.depth) stack.pop();
+      one.hidden = stack.some((parent) => parent.closed);
+      if (one.children) stack.push({ depth: one.depth, closed: closed.has(String(one.record.id)) });
+    }
+  }
+
+  /** A row drawn as the list shows it: a record's, under its parent at its depth with its toggle; the work kept on one. */
+  function drawRow(one: WindowRow): HTMLTableRowElement {
+    const tr = row(one.record);
+    if (one.kept) tr.setAttribute('data-kept', '');
+    if (one.depth === undefined) return tr;
+    const id = String(one.record.id);
+    tr.style.setProperty('--fd-depth', String(one.depth));
+    tr.setAttribute('data-depth', String(one.depth));
+    tr.hidden = !!one.hidden;
+    // Before its name: the parent's toggle, or room the size of one, so names line up at each depth — room whether or not
+    // this page shows a parent at all, so names keep their place as a filter lets parents in or out.
+    const cell = tr.querySelector<HTMLElement>(':scope > td[data-name]');
+    if (one.children) {
+      // Open or closed said by its toggle: a table's row claims no tree (aria-expanded belongs to a treegrid's rows).
+      tr.setAttribute('data-parent-of', String(one.children));
+      const twisty = el('button', { type: 'button', class: 'fd-list-twisty', tabindex: '-1', 'aria-expanded': String(!closed.has(id)), 'aria-label': show(nameColumn, one.record.values) || id });
+      twisty.addEventListener('click', () => fold(id, twisty.getAttribute('aria-expanded') === 'true'));
+      cell?.prepend(twisty);
+    } else cell?.prepend(el('span', { class: 'fd-list-twisty-room', 'aria-hidden': 'true' }));
+    return tr;
+  }
+
+  /** A page of records drawn, each under its parent: where the list draws its rows itself (no window). */
+  const nest = (records: Row[]): HTMLTableRowElement[] => ordered(records).map(drawRow);
 
   /** Close a parent, or open it: the rows under it hide, or show as their own parents left them. */
   function fold(id: string, close: boolean) {
@@ -861,6 +926,13 @@ export function listView(context: ListContext): ListView {
   }
 
   function drawFolds() {
+    // Kept by the window: the rows shown worked out again, and the toggles drawn said open or closed.
+    if (win && windowing()) {
+      folded(win.rows());
+      win.refold();
+      for (const twisty of body.querySelectorAll<HTMLElement>(':scope > .fd-list-row > td > .fd-list-twisty')) twisty.setAttribute('aria-expanded', String(!closed.has(twisty.closest('tr')?.dataset['id'] ?? '')));
+      return;
+    }
     /** The depths of the parents above the row being looked at, and whether any of them is closed. */
     const stack: { depth: number; closed: boolean }[] = [];
     for (const tr of body.querySelectorAll<HTMLElement>(':scope > .fd-list-row[data-depth]')) {
@@ -880,7 +952,10 @@ export function listView(context: ListContext): ListView {
   });
   collapseAll.addEventListener('click', () => {
     if (tree) return tree.closeAll(body);
-    for (const tr of body.querySelectorAll<HTMLElement>(':scope > .fd-list-row[data-parent-of]')) closed.add(tr.dataset['id'] ?? '');
+    if (win && windowing()) {
+      for (const one of win.rows()) if (one.children) closed.add(String(one.record.id));
+    }
+    else for (const tr of body.querySelectorAll<HTMLElement>(':scope > .fd-list-row[data-parent-of]')) closed.add(tr.dataset['id'] ?? '');
     drawFolds();
   });
 
@@ -967,8 +1042,10 @@ export function listView(context: ListContext): ListView {
     }
     edit.hidden = !bulk || !editable;
     if (!choose) return;
+    // Written where it changed: a tick writes its own row, never every row drawn.
     for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
-      tr.setAttribute('aria-selected', String(chosen.has((recordOf.get(tr) as Row).id)));
+      const now = String(chosen.has((recordOf.get(tr) as Row).id));
+      if (tr.getAttribute('aria-selected') !== now) tr.setAttribute('aria-selected', now);
     }
   }
 
@@ -1085,7 +1162,7 @@ export function listView(context: ListContext): ListView {
     // Its wait: drawn the first time (a skeleton of its rows unless the page says otherwise), asked again after that (what
     // is shown kept, a bar over it); a wait going on taken over, never drawn twice.
     const wait = startLoading(records, loadedOnce ? 'refresh' : 'first', waiting, { part: node.id, shape: skeletonRows, failed: saidFailed, failWords: failedWords, retry: () => void load(), now: !loadedOnce && context.loadingNow === true });
-    let drawn: HTMLTableRowElement[] = [];
+    let drawn: HTMLTableRowElement[] | WindowRow[] = [];
     try {
       const filter = currentFilter();
       const grouping = groupByFields(facets).map((text) => groupKey(page, text));
@@ -1121,7 +1198,9 @@ export function listView(context: ListContext): ListView {
         matching = total;
         groupedNow = false;
         reach = Math.max(pageSize, rows.length);
-        drawn = nest(rows);
+        rows.forEach(know);
+        // Kept by the window, which draws those near the view; else drawn here, every one.
+        drawn = win ? ordered(rows) : nest(rows);
       }
     } catch (error) {
       if (stale()) return wait.stop();
@@ -1132,14 +1211,19 @@ export function listView(context: ListContext): ListView {
   }
 
   /** Its rows drawn as its answer came: the person's work kept on them, then whether it holds none, its pager, its count. */
-  function drawRows(drawn: HTMLTableRowElement[]) {
+  function drawRows(drawn: HTMLTableRowElement[] | WindowRow[]) {
     loadedOnce = true;
     failed.hidden = true;
-    body.replaceChildren(...drawn);
+    // Its records' rows, to the window; its groups' rows, drawn here, the window letting the rows be meanwhile.
+    if (win && windowing()) win.set(drawn as WindowRow[]);
+    else {
+      win?.clear();
+      body.replaceChildren(...(drawn as HTMLTableRowElement[]));
+    }
     // The person's work kept on rows, drawn on them or kept in sight; then whether it holds none.
     rowEdits?.drawn();
     // What the rows open was open before stays so, under them; their grips while the list is in their order.
-    details?.drawn(body);
+    details?.drawn(body, (id) => !!win && windowing() && win.holds(id));
     ranks?.drawn();
     void tree?.drawn(body);
     empty.hidden = drawn.length > 0 || !failed.hidden || !!body.querySelector(':scope > .fd-list-row');
@@ -1155,6 +1239,7 @@ export function listView(context: ListContext): ListView {
     rows = [];
     total = 0;
     matching = 0;
+    win?.clear();
     body.replaceChildren();
     failedWhy.textContent = why ? ` ${why}` : '';
     failed.hidden = false;
@@ -1222,7 +1307,9 @@ export function listView(context: ListContext): ListView {
       total = answer.total;
       matching = total;
       reach = rows.length;
-      body.append(...nest(fresh));
+      fresh.forEach(know);
+      if (win && windowing()) win.append(ordered(fresh));
+      else body.append(...nest(fresh));
       ranks?.drawn();
       drawPager();
       changed();
@@ -1381,10 +1468,13 @@ export function listView(context: ListContext): ListView {
       },
       ...(context.onOpenRecord ? { open: (id: RecordId) => openRow(id) } : {}),
       highlight(id) {
+        litId = id;
+        // Beside the map, its row brought into view: drawn first where the window had left it out.
+        const own = id !== null && view === 'both' && win && windowing() ? win.reveal(String(id)) : null;
         for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
           const hot = id !== null && tr.dataset['id'] === String(id);
-          tr.classList.toggle('fd-list-hot', hot);
-          if (hot && view === 'both') tr.scrollIntoView({ block: 'nearest' });
+          if (tr.classList.contains('fd-list-hot') !== hot) tr.classList.toggle('fd-list-hot', hot);
+          if (hot && view === 'both' && (!own || tr === own)) tr.scrollIntoView({ block: 'nearest' });
         }
       },
       addSearch: ({ label, filter }) => search.add({ kind: 'custom', label, filter }),
@@ -1458,6 +1548,8 @@ export function listView(context: ListContext): ListView {
     const as = view === 'gallery' ? 'gallery' : node.card && spec && narrow ? 'cards' : null;
     if (as) element.setAttribute('data-as', as);
     else element.removeAttribute('data-as');
+    // Cards are drawn every one, as 0.34 drew them: the window is for a table's rows.
+    win?.whole('cards', !!as);
   }
   /** As wide as it was last measured: drawn so at the next frame, never while the browser tells of sizes (its loop said). */
   let measured = narrow;
@@ -1864,6 +1956,28 @@ export function listView(context: ListContext): ListView {
   if (found && fieldsBox) fieldsBox.before(found);
   else if (found) bar.append(found);
   const key = rowsKey();
+  /**
+   * The browser's find sees only the rows in the page, where the window keeps the rest out of it: Ctrl or ⌘ and F in
+   * such a list takes the person to its own search, which finds any of its records, and says so under it; the same keys
+   * again there are the browser's own find.
+   */
+  let findNote: HTMLElement | null = null;
+  const finding = (event: KeyboardEvent) => {
+    if (event.key.toLowerCase() !== 'f' || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || !win?.windowed() || !windowing()) return;
+    const box = search.input;
+    if (doc.activeElement === box || box.closest('[hidden]') || !box.isConnected) return;
+    event.preventDefault();
+    // Made the first time it is said, under the list's bar.
+    if (!findNote) {
+      const note = (findNote = el('p', { class: 'fd-list-find', role: 'status' }));
+      bar.after(note);
+      box.addEventListener('blur', () => (note.hidden = true));
+    }
+    box.focus();
+    box.select();
+    findNote.textContent = labels.findInList;
+    findNote.hidden = false;
+  };
   /** Its records: the table, the end of rows loaded as it is scrolled, what it holds none or could not load, its pager. Where it waits. */
   const records = el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(endlessEnd ? [endlessEnd.element] : []), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : []));
   const element = el(
@@ -1890,9 +2004,37 @@ export function listView(context: ListContext): ListView {
     ...(key ? [key] : []),
     el('div', { class: 'fd-list-body' }, records, ...holders.values())
   );
+  /** The rows shown in the page, in order, past those folded under a parent: where the list draws every row itself. */
+  const pageRows = () => [...body.querySelectorAll<HTMLTableRowElement>(':scope > tr.fd-list-row:not([hidden])')];
+  const rowKey = (tr: Element) => tr.getAttribute('data-new') ?? tr.getAttribute('data-id') ?? '';
+  /** The rows as a person's keys, a paste and an Undo go through them: the window's while it keeps them, drawn as they are reached; else the page's. */
+  const listRows: ListRows = {
+    beside: (tr, down) => (win && windowing() ? win.beside(tr, down) : (pageRows()[pageRows().indexOf(tr) + (down ? 1 : -1)] ?? null)),
+    from(tr, n) {
+      if (win && windowing()) return win.from(tr, n);
+      const all = pageRows();
+      const at = all.indexOf(tr);
+      return at < 0 ? { at, rows: [], left: 0 } : { at, rows: all.slice(at, at + n), left: all.length - at };
+    },
+    lines: () =>
+      win && windowing()
+        ? win.rows().flatMap((one) => (one.hidden ? [] : [{ key: one.added ?? String(one.record.id), record: one.record }]))
+        : pageRows().map((tr) => ({ key: rowKey(tr), record: recordOf.get(tr) as Row })),
+    of: (key) => (win && windowing() ? win.reveal(key) : (pageRows().find((tr) => rowKey(tr) === key) ?? null)),
+    append(tr, record, how) {
+      if (win && windowing()) win.append([{ record, tr, ...(how.added ? { added: how.added } : {}), ...(how.kept ? { kept: true } : {}) }]);
+      else body.append(tr);
+    },
+    remove: (tr) => (win && windowing() ? win.remove(tr) : tr.remove()),
+    replace(old, fresh, record, added) {
+      if (old !== fresh) old.replaceWith(fresh);
+      if (win && windowing()) win.replaced(old, fresh, record, added);
+    },
+  };
   // Its cells changed in place: Add a line and what a paste did under the table.
   if (editPart) {
     rowEdits = editPart.editableRows({
+      rows: listRows,
       list: context,
       page,
       model,
@@ -1929,6 +2071,7 @@ export function listView(context: ListContext): ListView {
   }
   // Where a row moved by hand is said aloud: in the list, there before anything is said in it.
   if (ranks) element.append(ranks.voice);
+  element.addEventListener('keydown', finding);
   // Scrolled sideways, the first column and the Columns menu's cell, held at its ends, are parted from those going under them.
   choices?.scrolls(element.querySelector('.fd-list-scroll') as HTMLElement);
   showAs(view);
@@ -1959,6 +2102,7 @@ export function listView(context: ListContext): ListView {
     open: (id, options) => openRow(id, options?.lit !== false),
     destroy() {
       destroyed = true;
+      win?.destroy();
       rowEdits?.destroy();
       endlessEnd?.destroy();
       undone();

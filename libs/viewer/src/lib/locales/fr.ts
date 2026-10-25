@@ -96,6 +96,7 @@ export const fr: ViewerLabels = {
   loadFailed: 'Impossible de charger les enregistrements.',
   loadFailedNoun: 'Impossible de charger les {records}.',
   selectAllMatching: 'Sélectionner les {n} résultats',
+  findInList: 'La recherche de la page ne voit que les lignes à l’écran : cherchez ici n’importe quel enregistrement.',
   selectAllMatchingNoun: 'Sélectionner les {n} {records}',
   selectingAll: 'Sélection de tous les résultats…',
   selectedOf: '{n} sur {total} ont pu être sélectionnés',

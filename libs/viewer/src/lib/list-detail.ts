@@ -33,8 +33,13 @@ export interface DetailContext {
 export interface DetailRows {
   /** A row drawn: its toggle before its name, and in its card for a phone; open where it was before the list asked again. */
   wire(tr: HTMLTableRowElement, record: Row, name: string): void;
-  /** The rows drawn again (the list asked again): those open stay open under their rows, asked again. */
-  drawn(body: HTMLElement): void;
+  /**
+   * The rows drawn again (the list asked again): those open stay open under their rows, asked again — and a row the list
+   * still holds though it is not in the page (`holds`: past the view, list-window.ts) stays open, asked again as it is drawn.
+   */
+  drawn(body: HTMLElement, holds?: (id: string) => boolean): void;
+  /** A row put back in the page as the view came to it: what it opened to under it again. */
+  placed(tr: HTMLTableRowElement): void;
   /** Right or Left on a row: opened or closed; false where the row opens to nothing. */
   key(tr: HTMLElement, open: boolean): boolean;
   /** The columns changed: each open one spans them. */
@@ -49,6 +54,8 @@ interface Opened {
   lines?: Line[];
   /** Each ask counts on: an older answer is not drawn over a newer one's. */
   asking: number;
+  /** The list asked again while its row was out of the page: asked again as the row comes back. */
+  stale?: boolean;
   draw(): Promise<void>;
 }
 
@@ -92,8 +99,8 @@ export function detailRows(context: DetailContext): DetailRows | null {
   const kindOf = (values: Values) => (!kinds ? null : values[kinds.field] === (kinds.section ?? 'section') ? 'section' : values[kinds.field] === (kinds.note ?? 'note') ? 'note' : null);
   /** The rows open, by their record's id: kept while the list asks again. */
   const open = new Map<string, Opened>();
-  /** Each row's toggles: before its name, and in its card. */
-  const toggles = new Map<string, HTMLButtonElement[]>();
+  /** A row's toggles: before its name, and in its card — found in it, so a row the window lets go is never held here. */
+  const togglesOf = (tr: HTMLElement) => tr.querySelectorAll<HTMLButtonElement>('.fd-list-detail-toggle');
 
   /** A page of what a row opens to: its lines, sorted and cut here; its records, asked. */
   async function pageOf(id: RecordId, opened: Opened): Promise<{ rows: Values[]; total: number }> {
@@ -219,7 +226,7 @@ export function detailRows(context: DetailContext): DetailRows | null {
       open.delete(id);
       was.row.remove();
     }
-    for (const button of toggles.get(id) ?? []) button.setAttribute('aria-expanded', String(open.has(id)));
+    for (const button of togglesOf(tr)) button.setAttribute('aria-expanded', String(open.has(id)));
   }
 
   return {
@@ -249,19 +256,30 @@ export function detailRows(context: DetailContext): DetailRows | null {
       const card = tr.querySelector<HTMLElement>(':scope > td.fd-list-card .fd-list-card-body') ?? tr.querySelector<HTMLElement>(':scope > td.fd-list-card');
       const second = card ? make(true) : null;
       if (second) card?.append(second);
-      toggles.set(id, [first, ...(second ? [second] : [])]);
     },
-    drawn(body) {
+    drawn(body, holds) {
       for (const [id, opened] of [...open]) {
         const tr = [...body.querySelectorAll<HTMLElement>(':scope > .fd-list-row')].find((one) => one.dataset['id'] === id && !one.closest('[hidden]'));
         if (!tr) {
-          open.delete(id);
+          // Out of the page, its record still held: asked again once its row is drawn.
+          if (holds?.(id)) opened.stale = true;
+          else open.delete(id);
           continue;
         }
         tr.after(opened.row);
         (opened.row.firstElementChild as HTMLTableCellElement).colSpan = context.span();
+        opened.stale = false;
         void opened.draw();
       }
+    },
+    placed(tr) {
+      const opened = open.get(tr.dataset['id'] ?? '');
+      if (!opened) return;
+      tr.after(opened.row);
+      (opened.row.firstElementChild as HTMLTableCellElement).colSpan = context.span();
+      if (!opened.stale) return;
+      opened.stale = false;
+      void opened.draw();
     },
     key(tr, show) {
       if (!tr.hasAttribute('data-opens')) return false;

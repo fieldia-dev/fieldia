@@ -101,6 +101,7 @@ export const fa: ViewerLabels = {
   loadFailed: 'بارگیری رکوردها ممکن نشد.',
   loadFailedNoun: 'بارگیری {records} ممکن نشد.',
   selectAllMatching: 'انتخاب همهٔ {n} مورد منطبق',
+  findInList: 'جست‌وجوی صفحه فقط ردیف‌های روی صفحه را می‌بیند: هر رکوردی را اینجا جست‌وجو کنید.',
   selectAllMatchingNoun: 'انتخاب همهٔ موارد منطبق ({n} {record})',
   selectingAll: 'در حال انتخاب همهٔ موارد منطبق…',
   selectedOf: '{n} از {total} قابل انتخاب بود',

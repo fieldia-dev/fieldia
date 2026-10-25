@@ -97,6 +97,7 @@ export const de: ViewerLabels = {
   loadFailed: 'Die Einträge konnten nicht geladen werden.',
   loadFailedNoun: 'Die {records} konnten nicht geladen werden.',
   selectAllMatching: 'Alle {n} Treffer auswählen',
+  findInList: 'Die Suche der Seite sieht nur die Zeilen auf dem Bildschirm: Suchen Sie hier jeden Datensatz.',
   selectAllMatchingNoun: 'Alle {n} passenden {records} auswählen',
   selectingAll: 'Alle Treffer werden ausgewählt…',
   selectedOf: '{n} von {total} konnten ausgewählt werden',

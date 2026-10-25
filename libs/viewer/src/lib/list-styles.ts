@@ -135,6 +135,10 @@ export const LIST_STYLES = `
 .fd-list-head { font-size: 13px; }
 .fd-list-table td { padding: 7px 10px; border-block-end: 1px solid var(--fd-border); max-width: 28em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fd-list-table tbody tr:last-child td { border-block-end: none; }
+/* Where rows past the view are left out of the page (list-window.ts), a gap as tall as they are: no line, no padding. */
+.fd-list-table .fd-list-gap > td { padding: 0; border: 0; background: none; }
+/* Said under the search as Ctrl or ⌘ and F take the person there from a long list. */
+.fd-list-find { margin: 4px 0 0; font-size: 13px; color: var(--fd-muted); }
 .fd-list-table .fd-num { text-align: end; font-variant-numeric: tabular-nums; }
 .fd-list-table th.fd-list-check, .fd-list-table td.fd-list-check { width: 36px; padding-inline: 10px 0; }
 .fd-list-checkbox { vertical-align: middle; }

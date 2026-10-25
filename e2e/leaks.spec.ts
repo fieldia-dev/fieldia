@@ -211,7 +211,8 @@ test.describe('mounted and taken away twenty times, nothing is left behind', () 
           async ([page, people, editable]) => {
             const w = window as unknown as { Fieldia: { mountViewer(h: Element, o: unknown): { destroy(): void } }; source(r: unknown): unknown };
             const handle = w.Fieldia.mountViewer(document.getElementById('app') as Element, { page, dataSource: w.source({ partner: people }) });
-            for (let waited = 0; document.querySelectorAll('#app tbody tr').length < 200 && waited < 5000; waited += 20) await new Promise((resolve) => setTimeout(resolve, 20));
+            // Its 200 rows counted (those near the view in the page: list-window.ts).
+            for (let waited = 0; document.querySelector('#app .fd-list-table')?.getAttribute('aria-rowcount') !== '201' && waited < 5000; waited += 20) await new Promise((resolve) => setTimeout(resolve, 20));
             if (editable) {
               (document.querySelector('#app tbody tr td[data-edit]') as HTMLElement | null)?.click();
               await new Promise((resolve) => setTimeout(resolve, 80));
