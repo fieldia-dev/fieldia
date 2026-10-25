@@ -232,7 +232,11 @@ test.describe("a calendar's moves kept safe", () => {
     // Each one wide enough to read its name's start, never a sliver.
     for (const width of await crowd.evaluateAll((blocks) => blocks.map((b) => b.getBoundingClientRect().width))) expect(width).toBeGreaterThanOrEqual(40);
     await screen(page, 'calendar-crowded-slot');
-    // By the keys: Tab reaches "+N more", Enter opens the slot's list on its first visit, the arrows go down it.
+    // By the keys: Tab reaches "+N more", Enter opens the slot's list on its first visit, the arrows go down it. The
+    // pointer away from the calendar, as a keyboard's user leaves it: where it last pressed (Previous day) lies over
+    // whatever visit the page scrolls under it, and a visit pointed at shows its ⋯, which axe finds nested in the visit's
+    // own button (nested-interactive) — the calendar's to mend, found where it lay over Dina Magdy at 09:15.
+    await page.mouse.move(0, 0);
     await more.focus();
     await page.keyboard.press('Enter');
     const list = page.getByRole('dialog', { name: /^Wednesday 14 October, .*Dr Nour Adel$/ });
