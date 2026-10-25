@@ -142,9 +142,11 @@ export function produce<T extends object>(base: T, edit: (draft: T) => void): T 
 /**
  * Whether two pages are the same, as their JSON would be — keys in the same order, a key holding nothing left out —
  * comparing the parts they share by their identity: a page made by `produce` against the one before is compared at the
- * cost of what changed, never stringified whole.
+ * cost of what changed, never stringified whole. `anyOrder`: an object's keys in any order, as what a page says does
+ * not hang on the order its keys were written in (a list's items still in theirs) — the page's whole check writes a
+ * field's keys in its own order, and a label typed back is the page published again.
  */
-export function sameJson(a: unknown, b: unknown): boolean {
+export function sameJson(a: unknown, b: unknown, anyOrder = false): boolean {
   if (a === b) return true;
   if (!isPart(a) && !isPart(b)) return JSON.stringify(a) === JSON.stringify(b);
   // A part is never the same as a plain value (a page, never the version none was published as).
@@ -153,12 +155,13 @@ export function sameJson(a: unknown, b: unknown): boolean {
   if (Array.isArray(a)) {
     const other = b as unknown as unknown[];
     if (a.length !== other.length) return false;
-    for (let i = 0; i < a.length; i++) if (!sameJson(a[i] ?? null, other[i] ?? null)) return false;
+    for (let i = 0; i < a.length; i++) if (!sameJson(a[i] ?? null, other[i] ?? null, anyOrder)) return false;
     return true;
   }
   const keys = Object.keys(a).filter((key) => a[key] !== undefined && typeof a[key] !== 'function');
   const others = Object.keys(b).filter((key) => b[key] !== undefined && typeof b[key] !== 'function');
   if (keys.length !== others.length) return false;
+  if (anyOrder) return keys.every((key) => Object.prototype.hasOwnProperty.call(b, key) && b[key] !== undefined && typeof b[key] !== 'function' && sameJson(a[key], b[key], true));
   for (let i = 0; i < keys.length; i++) if (keys[i] !== others[i] || !sameJson(a[keys[i]], b[keys[i]])) return false;
   return true;
 }

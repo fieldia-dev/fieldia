@@ -67,6 +67,19 @@ describe('an edit on a big page', () => {
     expect(designer.getState().unpublished).toBe(false);
   });
 
+  it('says the draft is the version published once a label is typed back, whatever order a check wrote its keys in', async () => {
+    const page = screen(3);
+    for (const name of Object.keys(page.fields)) Object.assign(page.fields[name], { required: name === 'f2', help: 'Say it' });
+    const designer = createDesigner({ page });
+    await designer.publish();
+    expect(designer.getState().unpublished).toBe(false);
+    designer.updateQuestion('n1', { label: 'First' });
+    expect(designer.getState().unpublished).toBe(true);
+    // The page's whole check wrote the fields' keys in its own order (help before required): the same page all the same.
+    designer.updateQuestion('n1', { label: 'Field 1' });
+    expect(designer.getState().unpublished).toBe(false);
+  });
+
   it('works out the checks once for each page', () => {
     const designer = createDesigner({ page: screen(3) });
     designer.addQuestion('short-answer');

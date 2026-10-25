@@ -873,8 +873,9 @@ export function createDesigner(options: {
   let compared: { page: Page; published: Page | null; differs: boolean } | null = null;
   function unpublished(): boolean {
     const last = published();
-    // Compared as their JSON would be, by the parts they share: a page an edit made shares all it left alone.
-    if (compared?.page !== page || compared.published !== last) compared = { page, published: last, differs: !sameJson(page, last) };
+    // Compared as their JSON would be, by the parts they share: a page an edit made shares all it left alone. Its keys in
+    // any order: the page's whole check writes a field's in its own, and a label typed back is the version published.
+    if (compared?.page !== page || compared.published !== last) compared = { page, published: last, differs: !sameJson(page, last, true) };
     return compared.differs;
   }
   /** The checks of the page, worked out once for each page, and again as saved forms placed in it load. */

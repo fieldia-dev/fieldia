@@ -159,4 +159,25 @@ describe('two pages compared as their JSON would be', () => {
     expect(sameJson({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(false);
     expect(sameJson({ a: 1, b: undefined }, { a: 1 })).toBe(true);
   });
+
+  it('in any order of their keys, where asked, a list’s items still in theirs', () => {
+    const r = seeded(11);
+    /** The same tree, each object's keys written in another order. */
+    const shuffled = (value: Json): Json => {
+      if (Array.isArray(value)) return value.map(shuffled);
+      if (value === null || typeof value !== 'object') return value;
+      const keys = Object.keys(value).sort(() => r() - 0.5);
+      return Object.fromEntries(keys.map((key) => [key, shuffled((value as Record<string, Json>)[key])]));
+    };
+    for (let i = 0; i < 200; i++) {
+      const a = tree(r, 4);
+      const b = r() < 0.5 ? shuffled(JSON.parse(JSON.stringify(a)) as Json) : tree(r, 4);
+      const canonical = (value: Json): string => JSON.stringify(value, (_key, v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, (v as Record<string, unknown>)[k]])) : v));
+      expect(sameJson(a, b, true)).toBe(canonical(a) === canonical(b));
+    }
+    expect(sameJson({ a: 1, b: { c: [1, 2], d: 2 } }, { b: { d: 2, c: [1, 2] }, a: 1 }, true)).toBe(true);
+    expect(sameJson({ a: [1, 2] }, { a: [2, 1] }, true)).toBe(false);
+    expect(sameJson({ a: 1, b: undefined }, { a: 1 }, true)).toBe(true);
+    expect(sameJson({ a: 1 }, { a: 1, b: 2 }, true)).toBe(false);
+  });
 });
