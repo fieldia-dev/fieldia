@@ -178,10 +178,13 @@ test.describe('a wait seen where a person looks', () => {
       await expect(save).toBeVisible();
       await hold(page);
       await save.click();
-      /** Where a box is on the page, whatever the window's scroll. */
+      /**
+       * Where a box is in the customer's form, whatever the window's scroll and whatever comes in above the form (on a
+       * phone the list stands over it, and its next rows push it down as they come).
+       */
       const onPage = async (locator: typeof save) => {
-        const [at, scrolled] = [(await locator.boundingBox())!, await page.evaluate(() => [scrollX, scrollY])];
-        return { ...at, x: at.x + scrolled[0], y: at.y + scrolled[1] };
+        const [at, form] = [(await locator.boundingBox())!, (await customer(page).boundingBox())!];
+        return { ...at, x: at.x - form.x, y: at.y - form.y };
       };
       const pressedAt = await onPage(save);
       // Busy in its place, its ring past the delay — never gone into "Saving…".
@@ -192,8 +195,8 @@ test.describe('a wait seen where a person looks', () => {
       await expect(discard).toBeHidden();
       await expect(pane(page, 'Customer').locator('.fd-status')).toHaveText('Saving…');
       if (size.width === 1440) await screen(page, 'waits-seen-save-busy', { viewport: true });
-      // Its answer fails: Save and Discard back, side by side; what failed said beside them.
-      await demo(page, "(d.net.failNext = true, d.release((ask) => ask.member === 'save'), d.hold(false), 0)");
+      // Its answer fails — that answer alone let go, every other still held: Save and Discard back, side by side.
+      await demo(page, "(d.net.failNext = true, d.release((ask) => ask.member === 'save'), 0)");
       await expect(pane(page, 'Customer').locator('.fd-status')).toHaveText('The server did not answer this once.');
       await expect(discard).toBeVisible();
       await expect(save).not.toHaveAttribute('aria-busy', /.*/);
@@ -208,6 +211,7 @@ test.describe('a wait seen where a person looks', () => {
       await expectNoSidewaysScroll(page);
       await save.scrollIntoViewIfNeeded();
       await screen(page, `waits-seen-save-failed-${size.width}`, { viewport: true });
+      await letGo(page);
       expect(problems).toEqual([]);
     }
   });
