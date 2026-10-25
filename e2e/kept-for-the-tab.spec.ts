@@ -3,7 +3,7 @@ import { expect, test } from './fixtures';
 import { node, screen } from './support';
 
 /**
- * What a demo saved stays while its tab is open — "What you saved stays while this tab is open", its frame says — in
+ * What a demo saved stays while its tab is open — "What you save here stays while this tab is open", its frame says — in
  * every store a demo saves to, as an app's server keeps it: records, record templates, a list's saved views, properties
  * added in place, responses sent, a conversation. A link the demo's how-to gives, Back and Reload show it, never the
  * samples again; the frame's Start over takes it all away. The how-to's links are a visitor's: the frame hides its menu
@@ -22,6 +22,8 @@ async function howTo(page: Page) {
 }
 
 const kept = (page: Page) => page.locator('#demo-head .dh-kept');
+/** Start over, in the kept line's place from the start: seen once something is saved. */
+const startOver = (page: Page) => page.locator('#demo-head .dh-start-over');
 const templates = (page: Page) => page.getByRole('button', { name: 'Templates', exact: true });
 
 test.describe('plain · kept while the tab is open', () => {
@@ -33,7 +35,7 @@ test.describe('plain · kept while the tab is open', () => {
     await asVisitor(page);
     await page.goto('/plain/?page=treatment-course&record=1&skin=outlined');
     await expect(page.locator('.fd-form')).toBeVisible();
-    await expect(kept(page)).toBeHidden();
+    await expect(startOver(page)).toBeHidden();
     // The walk: change the price, then Templates ▸ Save as template… "Morning package".
     const price = node(page, 'f-price').locator('input');
     await price.fill('9800');
@@ -45,7 +47,8 @@ test.describe('plain · kept while the tab is open', () => {
     await dialog.getByRole('button', { name: 'Save template' }).click();
     await expect(page.locator('.fd-say').filter({ hasText: 'Template “Morning package” saved.' })).toBeVisible();
     // Kept as the clinic's server keeps it: the frame says so at once.
-    await expect(kept(page)).toHaveText('What you saved stays while this tab is open. Start over');
+    await expect(kept(page)).toHaveText('What you save here stays while this tab is open. Start over');
+    await expect(startOver(page)).toBeVisible();
     // The how-to's own "Start a new course": a new page, the template among those to start from.
     await (await howTo(page)).getByRole('link', { name: 'Start a new course' }).click();
     await expect(page).toHaveURL(/[?&]record=new(&|$)/);
@@ -77,7 +80,7 @@ test.describe('plain · kept while the tab is open', () => {
     await page.locator('#demo-head').getByRole('button', { name: 'Start over' }).click();
     await expect(page).toHaveURL(/[?&]page=treatment-course&record=1&skin=outlined$/);
     await expect(page.locator('.fd-form')).toBeVisible();
-    await expect(kept(page)).toBeHidden();
+    await expect(startOver(page)).toBeHidden();
     expect(problems).toEqual([]);
   });
 

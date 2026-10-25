@@ -130,11 +130,13 @@ html, body { background: var(--dh-page); color: var(--dh-ink); }
 .dh-help { order: 1; flex: none; width: 32px; height: 32px; border: 1px solid var(--dh-line); border-radius: 50%; background: var(--dh-surface); color: var(--dh-link); font: 700 16px system-ui, sans-serif; cursor: pointer; }
 .dh-help[aria-expanded="true"] { background: var(--dh-wash); border-color: var(--dh-wash-line); }
 .dh-help:focus-visible { outline: 2px solid var(--dh-link); outline-offset: 2px; }
-/* Under the demo's name once something is saved: it stays while the tab is open, and Start over puts the samples back. */
-.dh-kept { margin: 0; font-size: 13px; color: var(--dh-muted); }
+/* At the try line's end: what is saved stays while the tab is open, and Start over puts the samples back — said from the
+   start, so a save moves nothing; Start over keeps its place, unseen, until something is saved. */
+.dh-kept { margin-inline-start: 10px; color: var(--dh-muted); }
 .dh-start-over { font: inherit; font-weight: 600; color: var(--dh-link); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .dh-start-over:focus-visible { outline: 2px solid var(--dh-link); outline-offset: 2px; border-radius: 2px; }
-.dh-kept[hidden] { display: none; }
+.dh-start-over[data-none] { visibility: hidden; }
+.dh-try > .dh-kept:first-child { margin-inline-start: 0; }
 .dh-options { display: none; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid var(--dh-line); border-radius: 6px; background: var(--dh-surface); color: var(--dh-ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .dh-options[aria-expanded="true"] { background: var(--dh-wash); border-color: var(--dh-wash-line); color: var(--dh-link); }
 /*
@@ -154,7 +156,6 @@ html, body { background: var(--dh-page); color: var(--dh-ink); }
   /* About this demo beside Options, in the one row: never a button floating over the demo's cards and totals. */
   .dh-help { grid-area: 1 / 4; }
   .dh-options { display: inline-flex; grid-area: 1 / 5; }
-  .dh-kept { grid-column: 1 / -1; }
   #demo-head:not(.dh-open) :is(.dh-row > .dh-pills, .dh-links, .dh-looks) { display: none; }
   #demo-head.dh-open :is(.dh-row > .dh-pills, .dh-links, .dh-looks) { grid-column: 1 / -1; justify-self: start; margin: 0; }
   .dh-row > .dh-pills { order: 1; }

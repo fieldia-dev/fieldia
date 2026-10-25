@@ -237,7 +237,7 @@ for (const variant of ['plain', 'react']) {
       const name = page.locator('.fd-title textarea, .fd-title input').first();
       const why = page.getByText('Only Omar Said, whose claim it is, can change it.');
       // Read, nothing saved: nothing said to be kept.
-      await expect(page.locator('#demo-head .dh-kept')).toBeHidden();
+      await expect(page.locator('#demo-head .dh-start-over')).toBeHidden();
       // The walk's steps: signed in as Karim Fathy (Manager), 9999 typed in Amount, then Save.
       await signIn(page, /Karim Fathy/);
       await expect(title(page)).toHaveText('Rejected by Mona Adel (Finance)');

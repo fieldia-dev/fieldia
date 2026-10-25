@@ -133,7 +133,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     const invoices = part(page, 'invoices');
     const everyone = (await records<Invoice>(page, 'invoice')).length;
     const before = (await records<Invoice>(page, 'invoice')).filter((invoice) => invoice.partner_id.id === 1).length;
-    await expect(page.locator('#demo-head .dh-kept')).toBeHidden();
+    await expect(page.locator('#demo-head .dh-start-over')).toBeHidden();
     await button(invoices, 'New').click();
     await dialog(page).locator('[data-node="#title"] textarea').fill('INV/2026/9998');
     await dialog(page).locator('[data-node="f-amount"] input').fill('4200');
@@ -141,7 +141,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await expect(dialog(page)).toBeHidden();
     await expect(count(invoices)).toHaveText(String(before + 1));
     // Kept while the tab is open, as an app's server keeps it: the header says so, with Start over.
-    await expect(page.locator('#demo-head .dh-kept')).toHaveText('What you saved stays while this tab is open. Start over');
+    await expect(page.locator('#demo-head .dh-start-over')).toBeVisible();
     // View all, by the app's own route to another page: the new invoice is there, and the list says whose they are.
     await button(invoices, 'View all').click();
     await expect(page).toHaveURL(/page=invoices&search=/);
@@ -162,7 +162,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await page.locator('#demo-head').getByRole('button', { name: 'Start over' }).click();
     await expect(page).toHaveURL(/[?&]page=customer-account&record=1&skin=underline&now=2026-10-14T09%3A40$/);
     await expect(count(part(page, 'invoices'))).toHaveText(String(before));
-    await expect(page.locator('#demo-head .dh-kept')).toBeHidden();
+    await expect(page.locator('#demo-head .dh-start-over')).toBeHidden();
     expect(problems).toEqual([]);
   });
 

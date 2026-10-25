@@ -392,6 +392,33 @@ test.describe('the demo frame', () => {
     await page.waitForTimeout(300);
     expect((await form.boundingBox())?.y).toBe(top);
   });
+
+  test('a save moves nothing: that what is saved stays has its place under the demo’s name from the start, Start over once saved', async ({ page }) => {
+    await asVisitor(page);
+    const problems = watch(page);
+    // The walk's customer: its Email typed in, then Save.
+    await page.goto('/plain/?page=customer&skin=underline');
+    const form = page.locator('#app .fd-form').first();
+    await expect(form).toBeVisible();
+    const startOver = page.locator('#demo-head .dh-start-over');
+    await expect(startOver).toBeHidden();
+    const before = { head: await page.locator('#demo-head').boundingBox(), form: await form.boundingBox() };
+    const email = page.locator('.fd-field', { hasText: 'Email' }).locator('input').first();
+    await email.click();
+    await email.press('End');
+    await email.pressSequentially('m');
+    await page.getByRole('button', { name: 'Save', exact: true }).first().click();
+    await expect(startOver).toBeVisible();
+    await screen(page, 'demo-frame-kept', { viewport: true });
+    expect({ head: await page.locator('#demo-head').boundingBox(), form: await form.boundingBox() }).toEqual(before);
+    await expect(page.locator('#demo-head .dh-kept')).toHaveText('What you save here stays while this tab is open. Start over');
+    // Start over: the samples back, nothing to start over from.
+    await startOver.click();
+    await expect(form).toBeVisible();
+    await expect(startOver).toBeHidden();
+    expect(problems).toEqual([]);
+  });
+
   test('a demo page asks for what it draws as it is read, and never for what it does not draw', async ({ page }) => {
     /** The scripts the page fetched, and whether any holds ag-Grid, which only a page with a grid draws. */
     const scripts: Promise<string>[] = [];

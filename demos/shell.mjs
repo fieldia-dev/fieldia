@@ -102,7 +102,6 @@ function drawHeader() {
     </div>
     <div class="dh-title-row">
       <h1 class="dh-title">${esc(demo?.name ?? opened?.name ?? '')}</h1>
-      <p class="dh-kept" hidden>What you saved stays while this tab is open. <button type="button" class="dh-start-over">Start over</button></p>
       ${skins}
     </div>
     ${tryThis()}`;
@@ -122,11 +121,21 @@ function startingPoints() {
  * person visiting), and the file it is written in on GitHub — its page's JSON, or its app's code.
  */
 function tryThis() {
-  if (!demo) return '';
+  if (!demo) return KEEPS.has(app) ? `<p class="dh-try">${keptLine()}</p>` : '';
   const steps = demo.howTo ?? [];
   const all = visitor && steps.length > 1 ? ` <button type="button" class="dh-try-all" aria-controls="demo-howto">All ${steps.length} steps</button>` : '';
   const source = `<a class="dh-source" href="${GITHUB}/blob/main/${esc(sourceOf(demo))}" target="_blank" rel="noopener">Its source on GitHub<span aria-hidden="true"> ↗</span></a>`;
-  return `<p class="dh-try">${steps.length ? `<span class="dh-try-word">Try this:</span> <span class="dh-try-step">${stepHtml(steps[0])}</span>${all}` : ''} ${source}</p>`;
+  return `<p class="dh-try">${steps.length ? `<span class="dh-try-word">Try this:</span> <span class="dh-try-step">${stepHtml(steps[0])}</span>${all}` : ''} ${source}${KEEPS.has(app) ? ` ${keptLine()}` : ''}</p>`;
+}
+
+/** The apps whose demos keep what is saved while the tab is open (demos/shared/kept.ts): the demos' shared source's. */
+const KEEPS = new Set(['plain', 'react', 'vue', 'angular', 'backlog', 'save-safety', 'csp']);
+/**
+ * That what is saved stays while the tab is open, and Start over once something is: said from the start, at the end of
+ * the try line, so saving moves nothing (Start over holds its place until there is something to start over from).
+ */
+function keptLine() {
+  return `<span class="dh-kept">What you save here stays while this tab is open. <button type="button" class="dh-start-over" data-none>Start over</button></span>`;
 }
 
 /**
@@ -417,11 +426,8 @@ const keptKeys = () => {
     return [];
   }
 };
-/** Under the demo's name, once something is saved: that it stays while the tab is open, and Start over. */
-const showKept = () => {
-  const line = head?.querySelector('.dh-kept');
-  if (line) line.hidden = keptKeys().length === 0;
-};
+/** Start over, once something is saved: in its place in the try line, which the line held for it from the start. */
+const showKept = () => head?.querySelector('.dh-start-over')?.toggleAttribute('data-none', keptKeys().length === 0);
 showKept();
 addEventListener('fieldia-demo-kept', showKept);
 // The samples back, and the demo's own first page in the look it is worn in, on its clock: a record saved since is gone.

@@ -250,7 +250,7 @@ for (const variant of VARIANTS) {
       await page.locator('#demo-head').getByRole('button', { name: 'Start over' }).click();
       await page.waitForURL(`**/${variant}/?${TRANSFER}`);
       await expect(page.locator('.fd-form')).toBeVisible();
-      await expect(page.locator('#demo-head .dh-kept')).toBeHidden();
+      await expect(page.locator('#demo-head .dh-start-over')).toBeHidden();
       // Without the stock user's group: no Validate, and no Mark as ready without the internal user's.
       ({ problems } = await open(page, variant, `${TRANSFER}&roles=base.group_user`));
       await expect.poll(() => value(page, 'name')).toBe('WH/IN/00042');
