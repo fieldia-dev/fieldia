@@ -131,6 +131,13 @@ await wordsReady('tr');
 const form = createForm({ page, messages: MESSAGES.tr });
 ```
 
+Words that come after something was worked out or drawn in their place — a
+chunk that came past its 30 s wait, say — are an input of it: `wordsVersion()`
+grows each time a table is filled, and `onWordsCame(listener)` is told (it gives
+back a function that stops it). A form says its problems and warnings again in
+them as they come, and the viewer draws its parts again, however quick the way
+a change is worked out.
+
 ## What a page and its values cannot make Fieldia do
 
 A page may be written by an admin, an AI agent or an imported schema, and its
