@@ -1,5 +1,5 @@
 import { recordSentence, type DataSource, type Facet, type Form, type FormState, type ListNode, type Locale, type OpenRequest, type OpenResult, type Page, type PageRecords, type RecordId, type RelatedNode, type ResolvedFilter, type RunResult, type TabNode, type Tone, type Values } from '@fieldia/core';
-import { formatNumber, whileShown, type IconSet, type Loading, type PreferenceStore, type WidgetDialogs } from '@fieldia/widgets';
+import { formatNumber, loadingOver, startLoading, whileShown, type IconSet, type Loading, type PreferenceStore, type Wait, type WidgetDialogs } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 import { listView, type ListContext, type ListView } from './list';
@@ -241,14 +241,46 @@ export function relatedList(context: RelatedContext): RelatedPart {
     list?.destroy();
     count.hidden = true;
     nameAs(null);
+    // Its own first wait going on from its place's while the record came: drawn at once where that one was in sight.
+    listContext.loadingNow = !!opening?.shown;
+    opening?.stop();
+    opening = null;
     list = listView(listContext);
     listsFor = id;
     holder.replaceChildren(list.element);
   }
 
+  /** Its place's wait while another record opens in this one's place: none of the last one's records under it. */
+  let opening: Wait | null = null;
+  /**
+   * Another record opened in this one's place (`openRecord`), none of it shown yet: the last record's rows and count go
+   * at once — never another customer's invoices under this one's skeleton — their room kept, its place waiting as the
+   * list's first does (a skeleton unless the page says otherwise) until the record has come and its own are asked for; a
+   * record that could not be opened shows none at all.
+   */
+  function another(state: FormState) {
+    if (list && listsFor !== state.recordId) {
+      holder.style.minHeight = `${holder.offsetHeight}px`;
+      list.destroy();
+      list = null;
+      listsFor = null;
+      asked = null;
+      count.hidden = true;
+      nameAs(null);
+      holder.replaceChildren();
+      opening = startLoading(holder, 'first', loadingOver(context.loading, node.loading), { part: node.id });
+    }
+    if (state.status === 'error' && opening) {
+      opening.stop();
+      opening = null;
+      holder.style.minHeight = '';
+    }
+  }
+
   function update(state: FormState) {
     if (gone) return;
-    // The record's values are on their way: its records are asked for once they have come.
+    // The record's values are on their way, or it could not be loaded: its records are asked for once they have come.
+    if (state.loaded === false) return another(state);
     if (state.status === 'idle' || state.status === 'loading') return;
     const filter = form.relatedFilter(node.id);
     const saved = filter !== null && state.recordId != null;
@@ -315,6 +347,7 @@ export function relatedList(context: RelatedContext): RelatedPart {
     },
     destroy() {
       gone = true;
+      opening?.stop();
       list?.destroy();
     },
   };
@@ -373,7 +406,8 @@ export function relatedCount(context: RelatedCountContext): RelatedCount {
     update(state) {
       // Another record shown, the same loaded again, the person's Discard: what was counted was another's.
       if (asked && !asked.shown()) unknown();
-      if (state.status === 'idle' || state.status === 'loading') return;
+      // Counted once the record has loaded: never for one that could not be opened.
+      if (state.status === 'idle' || state.status === 'loading' || state.loaded === false) return;
       const filter = form.relatedFilter(node.id);
       if (!filter || state.recordId == null || !dataSource?.list || form.node(node.id).invisible) {
         if (asked) unknown();

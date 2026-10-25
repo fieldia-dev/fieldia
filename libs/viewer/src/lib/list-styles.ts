@@ -124,7 +124,9 @@ export const LIST_STYLES = `
 /* An import's end: the file to fix its rows in, Undo, and Dismiss. */
 .fd-list-report-tools { display: flex; flex-wrap: wrap; gap: 2px 14px; }
 .fd-pager { display: flex; align-items: center; gap: 4px; margin-inline-start: auto; }
-.fd-pager-text { color: var(--fd-muted); font-size: 13.5px; font-variant-numeric: tabular-nums; margin-inline-end: 6px; white-space: nowrap; }
+/* "1–24 of 60 customers" reads the way its words are written: left in English on a page right to left, never "of 60
+   customers 24–1" (styles.ts: a page's words, one rule). */
+.fd-pager-text { color: var(--fd-muted); font-size: 13.5px; font-variant-numeric: tabular-nums; margin-inline-end: 6px; white-space: nowrap; unicode-bidi: plaintext; }
 .fd-pager-button { min-width: 32px; padding-inline: 0; font-size: 18px; line-height: 1; }
 .fd-list-scroll { overflow-x: auto; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); }
 .fd-list-table { width: 100%; border-collapse: collapse; font-size: 14px; }
