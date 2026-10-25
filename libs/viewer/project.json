@@ -27,7 +27,9 @@
         "{workspaceRoot}/tools/script-bundle.mjs",
         "{workspaceRoot}/tools/part-words.mjs",
         "{workspaceRoot}/tools/release-guards.mjs",
-        "{workspaceRoot}/tools/script-tags.mjs"
+        "{workspaceRoot}/tools/script-tags.mjs",
+        "{workspaceRoot}/tools/dual-build.mjs",
+        "{workspaceRoot}/tools/minified-styles.mjs"
       ],
       "options": {
         "commands": ["node tools/script-bundle.mjs", "node tools/dual-build.mjs viewer"],

@@ -20,7 +20,9 @@
       "cache": true,
       "inputs": [
         "production",
-        "^production"
+        "^production",
+        "{workspaceRoot}/tools/dual-build.mjs",
+        "{workspaceRoot}/tools/minified-styles.mjs"
       ],
       "options": {
         "command": "node tools/dual-build.mjs widgets"

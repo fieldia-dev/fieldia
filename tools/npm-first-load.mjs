@@ -38,15 +38,16 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  *
  * 0.34.1, before 0.35's perf-bytes (this gate run on that build): a record form 298.2 KB gzipped with the page (57
  * files), 374.0 to usable (64); in Arabic 298.2 / 374.1; a list 297.5 / 367.6 (61); the screen designer 832.2 (64) /
- * 942.5 (72). 0.35 (every language but the page's, the designer's Arabic and zod each in chunks of their own): a record
- * form 247.1 / 323.0 (64); in Arabic 247.1 / 345.2 (67: its three words' chunks); a list 246.4 / 316.5 (61); the
- * designer 601.7 (74) / 816.0 (83: the format's schemas, asked for as it opens, beside its canvas's parts).
+ * 942.5 (72). 0.35 — every language but the page's, the designer's Arabic and zod each in chunks of their own, and
+ * the stylesheets minified as the one-tag script's are (tools/minified-styles.mjs): a record form 233.8 / 305.7 (64); in
+ * Arabic 233.8 / 327.9 (67: its three words' chunks); a list 233.0 / 297.6 (61); the designer 577.8 (74) / 785.7 (83:
+ * the format's schemas, asked for as it opens, beside its canvas's parts).
  */
 const BUDGET = {
-  record: { page: 252.0, usable: 329.5, files: 70 },
-  'record-ar': { page: 252.0, usable: 352.1, files: 73 },
-  list: { page: 251.3, usable: 322.8, files: 67 },
-  designer: { page: 613.7, usable: 832.3, files: 90 },
+  record: { page: 238.5, usable: 311.8, files: 70 },
+  'record-ar': { page: 238.5, usable: 334.5, files: 73 },
+  list: { page: 237.7, usable: 303.6, files: 67 },
+  designer: { page: 589.4, usable: 801.4, files: 90 },
 };
 
 /** A record of the customer page's, with the fields it shows. */

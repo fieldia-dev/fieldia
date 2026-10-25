@@ -35,6 +35,7 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { minifyStylesheet, STYLE_MODULE, STYLED_PACKAGES } from './minified-styles.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const SCOPE = '@fieldia';
@@ -293,6 +294,30 @@ async function entriesInFilesOfTheirOwn(distRoot, pkgDir) {
   return problems;
 }
 
+/**
+ * The stylesheets the widgets, the viewer and the designer ship as text inside their code, minified as CSS in the built
+ * package as the one-tag script and the demos minify them (tools/minified-styles.mjs: the same modules, the same literal,
+ * the same minifier), so an app's bundle carries them small: its minifier leaves a string alone (0.35: about 13 KB
+ * gzipped of every app's first load). Each line the stylesheet took is kept as a line break at its end, so the source
+ * maps of the code after it still point where they did.
+ */
+async function minifyStyles(distRoot, pkgDir) {
+  if (!STYLED_PACKAGES.includes(pkgDir)) return { problems: [], minified: 0 };
+  const problems = [];
+  let minified = 0;
+  const lib = join(distRoot, 'src/lib');
+  for (const name of readdirSync(lib).filter((file) => STYLE_MODULE.test(file) && !file.endsWith('.ts'))) {
+    const path = join(lib, name);
+    try {
+      writeFileSync(path, await minifyStylesheet(readFileSync(path, 'utf8'), relative(distRoot, path), { lines: true }));
+      minified++;
+    } catch (error) {
+      problems.push(`${(error instanceof Error ? error.message : String(error))} (tools/minified-styles.mjs)`);
+    }
+  }
+  return { problems, minified };
+}
+
 const pkgDir = process.argv[2];
 if (!pkgDir) {
   console.error('usage: node tools/dual-build.mjs <package-directory-name>');
@@ -311,11 +336,13 @@ for (const [label, dir] of [['CommonJS', distRoot], ['ESM', esmRoot]]) {
 
 const written = foldEsmIntoDist(esmRoot, distRoot);
 const ownFiles = await entriesInFilesOfTheirOwn(distRoot, pkgDir);
+const styles = await minifyStyles(distRoot, pkgDir);
 const repaired = repairWorkspaceSpecifiers(distRoot);
 const pkg = JSON.parse(readFileSync(join(distRoot, 'package.json'), 'utf8'));
 const { problems: exportProblems, seen } = checkExports(pkg, distRoot);
 const problems = [
   ...ownFiles,
+  ...styles.problems,
   ...exportProblems,
   ...checkSideEffects(pkg, distRoot),
   ...checkNoBareSpecifiers(distRoot),
@@ -334,5 +361,6 @@ console.log(
   `${pkg.name}: ${written} ESM files folded in, ${entries.length} export ` +
     `${entries.length === 1 ? 'entry' : 'entries'} (${entries.join(', ')}), ` +
     `${seen.length} resolved paths checked` +
-    (repaired ? `, ${repaired} workspace path${repaired === 1 ? '' : 's'} repaired` : '')
+    (repaired ? `, ${repaired} workspace path${repaired === 1 ? '' : 's'} repaired` : '') +
+    (styles.minified ? `, ${styles.minified} stylesheets minified` : '')
 );

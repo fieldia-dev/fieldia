@@ -16,6 +16,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { checkDemos } from './demo-sizes.mjs';
 import { pageParts, partFiles, partModules, partScriptTags, preloadScript } from './demo-preloads.mjs';
 import { openTag, readReleased } from './script-tags.mjs';
+import { minifiedStyles, STYLED_PACKAGES } from './minified-styles.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
@@ -161,7 +162,8 @@ for (const variant of variants) {
     logLevel: 'warning',
     // The decode part's readers of codes alone, as the one-tag script carries them (tools/zxing-readers.mjs): the
     // library's index would bring every reader it has, about three times the code, to a phone that presses Scan.
-    plugins: [{ name: 'zxing-readers', setup: (builder) => builder.onResolve({ filter: /^@zxing\/library$/ }, () => ({ path: join(WORKSPACE, 'tools/zxing-readers.mjs') })) }],
+    // And the stylesheets minified as the packages ship them (tools/minified-styles.mjs): the gates test what npm serves.
+    plugins: [{ name: 'zxing-readers', setup: (builder) => builder.onResolve({ filter: /^@zxing\/library$/ }, () => ({ path: join(WORKSPACE, 'tools/zxing-readers.mjs') })) }, minifiedStyles(STYLED_PACKAGES)],
     define: {
       'process.env.NODE_ENV': '"production"',
       // Vue's bundler build reads these compile-time flags.

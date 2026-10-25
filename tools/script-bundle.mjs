@@ -22,7 +22,7 @@
  * own and define the global with the viewer in it, and each add-on must give
  * it that language's words.
  */
-import { build, transform } from 'esbuild';
+import { build } from 'esbuild';
 import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -31,6 +31,7 @@ import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { gzipSync } from 'node:zlib';
 import { englishKeys, PART_WORDS, partWordsProblems, readerSource, withoutWords, WORD_TABLES } from './part-words.mjs';
+import { minifiedStyles as minifiedStylesPlugin } from './minified-styles.mjs';
 import { machinePathIn } from './release-guards.mjs';
 import { hashesOf, tagProblems, writeTags } from './script-tags.mjs';
 
@@ -55,23 +56,10 @@ const { version } = JSON.parse(readFileSync(join(WORKSPACE, 'libs/viewer/package
 
 /**
  * The stylesheets ship as text inside the code, which the code's minifier
- * leaves alone: minify that text as CSS, with esbuild's own CSS minifier.
+ * leaves alone: minify that text as CSS, with esbuild's own CSS minifier
+ * (tools/minified-styles.mjs, as the packages and the demos are built).
  */
-const minifiedStyles = {
-  name: 'minified-styles',
-  setup(builder) {
-    builder.onLoad({ filter: /libs\/(widgets|viewer)\/src\/lib\/(([a-z-]+-)?styles|styles-[a-z-]+)\.ts$/ }, async ({ path }) => {
-      const source = readFileSync(path, 'utf8');
-      const literal = /(= (?:\/\* css \*\/ )?`)([^`]*)(`;)/;
-      const found = literal.exec(source);
-      if (!found) throw new Error(`no stylesheet found in ${path}`);
-      const { code: css } = await transform(found[2], { loader: 'css', minify: true, charset: 'utf8', logLevel: 'error' });
-      // Text that could end the literal, or be read as part of it, would break the code.
-      if (/[`\\]|\$\{/.test(css)) throw new Error(`the minified stylesheet of ${path} cannot sit in a template literal`);
-      return { contents: source.replace(literal, (_, open, _css, close) => open + css.trim() + close), loader: 'ts' };
-    });
-  },
-};
+const minifiedStyles = minifiedStylesPlugin(['widgets', 'viewer']);
 
 /**
  * A server's first paint (@fieldia/viewer/server) is the packages': an app that draws one mounts the packages' viewer
