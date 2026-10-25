@@ -339,6 +339,49 @@ test.describe('the demo frame', () => {
     // No look to switch: it has an app of its own.
     await expect(page.getByRole('navigation', { name: 'Scheme' })).toHaveCount(0);
   });
+  test('the script tag demo’s frame is drawn before its form, so the form never moves down under it', async ({ page }) => {
+    await asVisitor(page);
+    // Fieldia's script held, as a phone's network holds it: the frame's own script, smaller, comes first.
+    let letGo = () => {};
+    const held = new Promise<void>((resolve) => (letGo = resolve));
+    await page.route('**/script/fieldia.js', async (route) => {
+      await held;
+      await route.continue();
+    });
+    await page.goto(`/${demoHref(DEMOS.find((d) => d.app === 'script')!)}`, { waitUntil: 'commit' });
+    await expect(page.locator('#demo-head .dh-title')).toHaveText('One script tag');
+    await expect(page.locator('#app .fd-form')).toHaveCount(0);
+    const head = await page.locator('#demo-head').boundingBox();
+    letGo();
+    const form = page.locator('#app .fd-form');
+    await expect(form).toBeVisible();
+    const top = (await form.boundingBox())?.y;
+    // The frame as it was when the form came, the form where it first drew.
+    expect(await page.locator('#demo-head').boundingBox()).toEqual(head);
+    await page.waitForTimeout(300);
+    expect((await form.boundingBox())?.y).toBe(top);
+  });
+  test('a demo page asks for what it draws as it is read, and never for what it does not draw', async ({ page }) => {
+    /** The scripts the page fetched, and whether any holds ag-Grid, which only a page with a grid draws. */
+    const scripts: Promise<string>[] = [];
+    page.on('response', (response) => {
+      if (/\.m?js(\?|$)/.test(response.url())) scripts.push(response.text().catch(() => ''));
+    });
+    // ag-Grid's own code says its name in its messages ("AG Grid: …"); Fieldia's names only its class.
+    const grid = async () => (await Promise.all(scripts)).some((code) => code.includes('AG Grid'));
+    await page.goto('/plain/?page=customers&skin=underline');
+    await expect(page.locator('.fd-list-row').first()).toBeVisible();
+    // Its own page's file and the list's parts named in the page as it is read, beside main.js and what it imports.
+    const named = await page.evaluate(() => [...document.querySelectorAll('link[rel="modulepreload"]')].map((link) => link.getAttribute('href') ?? ''));
+    expect(named.filter((href) => /\/(customers\.page|list-part|cards-part)-[A-Z0-9]+\.js$/.test(href))).toHaveLength(3);
+    expect(named.length).toBeGreaterThan(10);
+    expect(await grid()).toBe(false);
+    // A sales order draws its lines in ag-Grid: there it comes.
+    scripts.length = 0;
+    await page.goto('/plain/?page=order&skin=underline');
+    await expect(page.locator('.ag-root-wrapper').first()).toBeVisible();
+    expect(await grid()).toBe(true);
+  });
 
   test('fits a phone: the menu waits behind its button, and the page does not scroll sideways', async ({ page }) => {
     await asVisitor(page);

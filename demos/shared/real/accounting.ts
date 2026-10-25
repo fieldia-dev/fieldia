@@ -1,10 +1,13 @@
+import { pageFile } from '../lazy-page';
 import type { ActionRequest, ActionResult, Line, Page, RelatedRecord, Values } from '@fieldia/core';
-import expense from '../../../examples/pages/real-expense.page.json';
-import invoice from '../../../examples/pages/real-invoice.page.json';
-import registerPayment from '../../../examples/pages/real-register-payment.page.json';
 import type { RealLane } from './lane';
 import { onePagePdf, type PdfLine } from '../invoice-pdf';
 import { dayWords } from '../day-words';
+
+// Its pages, each a file of its own fetched by the demo that opens it (../lazy-page.ts).
+const expense = pageFile(() => import('../../../examples/pages/real-expense.page.json'));
+const invoice = pageFile(() => import('../../../examples/pages/real-invoice.page.json'));
+const registerPayment = pageFile(() => import('../../../examples/pages/real-register-payment.page.json'));
 
 /**
  * Accounting: Sherkety ERP's invoice (account.move), its Register Payment
@@ -1229,12 +1232,12 @@ export const lane: RealLane = {
     'real-expense': { user: ACCOUNTANT, records: [4101, 4102], breadcrumbs: [{ label: 'Expenses', href: '#expenses' }] },
   },
   pages: {
-    'real-invoice': invoice as Page,
-    'real-register-payment': registerPayment as Page,
-    'real-expense': expense as Page,
+    'real-invoice': invoice,
+    'real-register-payment': registerPayment,
+    'real-expense': expense,
   },
-  opened: { 'real-register-payment': registerPayment as Page },
-  related: { 'account.move': invoice as Page, 'sherkety.expense': expense as Page },
+  opened: { 'real-register-payment': registerPayment },
+  related: { 'account.move': invoice, 'sherkety.expense': expense },
   records: {
     'account.move': MOVES,
     'account.payment.register': { 4101: WIZARD },

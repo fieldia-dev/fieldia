@@ -1,4 +1,5 @@
-import type { ActionRequest, ActionResult, FormUser, JsonValue, MemoryDataSourceOptions, Page, RecordId } from '@fieldia/core';
+import type { ActionRequest, ActionResult, FormUser, JsonValue, MemoryDataSourceOptions, RecordId } from '@fieldia/core';
+import type { PageSource } from '../lazy-page';
 
 /**
  * One lane of the real pages: Sherkety ERP's own screens, rebuilt in Fieldia
@@ -8,11 +9,11 @@ import type { ActionRequest, ActionResult, FormUser, JsonValue, MemoryDataSource
  */
 export interface RealLane {
   /** The pages the gallery shows, by the `?page=` name. */
-  pages: Record<string, Page>;
+  pages: Record<string, PageSource>;
   /** Pages a step opens, by their id. */
-  opened?: Record<string, Page>;
+  opened?: Record<string, PageSource>;
   /** A link's record page, by its model: Create and edit…, and the ↗. */
-  related?: Record<string, Page>;
+  related?: Record<string, PageSource>;
   /** Sample records by model, then by id. */
   records?: MemoryDataSourceOptions['records'];
   /** What the server works out as fields change, by model then field. */

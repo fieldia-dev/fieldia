@@ -17,8 +17,9 @@ test('no demo’s list scrolls sideways on a phone, unless it says why', async (
   await page.goto('/plain/?page=signup');
   await expect(page.locator('.fd-form').first()).toBeVisible();
   // The pages with a list, or a list inside a record: read from the demos' own pages, so a new one is held to it too.
-  const listing: string[] = await page.evaluate(() =>
-    Object.entries((window as any).fieldiaDemo.pages as Record<string, { layout: { type: string } }>)
+  // Each page fetched: a demo fetches its own page's file as it opens.
+  const listing: string[] = await page.evaluate(async () =>
+    Object.entries((await (window as any).fieldiaDemo.allPages()) as Record<string, { layout: { type: string } }>)
       .filter(([, shown]) => shown.layout.type === 'list' || JSON.stringify(shown.layout).includes('"type":"related"'))
       .map(([name]) => name)
   );

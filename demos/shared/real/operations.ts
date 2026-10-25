@@ -1,11 +1,14 @@
+import { pageFile } from '../lazy-page';
 import type { ActionRequest, ActionResult, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
-import task from '../../../examples/pages/real-task.page.json';
-import transfer from '../../../examples/pages/real-transfer.page.json';
-import manufacturingOrder from '../../../examples/pages/real-manufacturing-order.page.json';
-import backorderConfirmation from '../../../examples/pages/real-backorder-confirmation.page.json';
-import pickingSign from '../../../examples/pages/real-picking-sign.page.json';
-import taskList from '../../../examples/pages/real-task-list.page.json';
 import type { RealLane } from './lane';
+
+// Its pages, each a file of its own fetched by the demo that opens it (../lazy-page.ts).
+const task = pageFile(() => import('../../../examples/pages/real-task.page.json'));
+const transfer = pageFile(() => import('../../../examples/pages/real-transfer.page.json'));
+const manufacturingOrder = pageFile(() => import('../../../examples/pages/real-manufacturing-order.page.json'));
+const backorderConfirmation = pageFile(() => import('../../../examples/pages/real-backorder-confirmation.page.json'));
+const pickingSign = pageFile(() => import('../../../examples/pages/real-picking-sign.page.json'));
+const taskList = pageFile(() => import('../../../examples/pages/real-task-list.page.json'));
 
 /**
  * The operations lane: Sherkety ERP's project task, warehouse transfer and
@@ -1038,16 +1041,16 @@ const ANSWER_MS = 250;
 
 export const lane: RealLane = {
   pages: {
-    'real-task': task as Page,
-    'real-transfer': transfer as Page,
-    'real-manufacturing-order': manufacturingOrder as Page,
+    'real-task': task,
+    'real-transfer': transfer,
+    'real-manufacturing-order': manufacturingOrder,
   },
   opened: {
-    'real-task': task as Page,
-    'real-backorder-confirmation': backorderConfirmation as Page,
-    'real-picking-sign': pickingSign as Page,
+    'real-task': task,
+    'real-backorder-confirmation': backorderConfirmation,
+    'real-picking-sign': pickingSign,
     // The task's Sub-tasks button lists them.
-    'real-task-list': taskList as Page,
+    'real-task-list': taskList,
   },
   users: {
     'real-task': OPERATIONS_USER,
@@ -1070,7 +1073,7 @@ export const lane: RealLane = {
     task_properties: (values) => TASK_PROPERTIES[idOf(values['project_id']) ?? 0] ?? [],
     picking_properties: (values) => PICKING_PROPERTIES[idOf(values['picking_type_id']) ?? 0] ?? [],
   },
-  related: { 'project.task': task as Page, 'stock.picking': transfer as Page },
+  related: { 'project.task': task, 'stock.picking': transfer },
   records: {
     'project.task': { [TASK_ID]: taskRecord, ...otherTasks },
     'project.project': {

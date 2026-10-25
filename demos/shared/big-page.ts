@@ -1,4 +1,5 @@
 import type { Page, SectionNode, StepNode } from '@fieldia/core';
+import { pageOf } from './lazy-page';
 import { pages } from './sample-data';
 
 /**
@@ -6,8 +7,8 @@ import { pages } from './sample-data';
  * each section a page of the survey, its questions one under another. The
  * same fields, rules and words; only the layout is a survey's.
  */
-export function bigSurvey(): Page {
-  const page = pages['big'];
+export async function bigSurvey(): Promise<Page> {
+  const page = await pageOf(pages['big']);
   const sections = (page.layout as { children: SectionNode[] }).children;
   const steps: StepNode[] = sections.map((section) => ({
     type: 'step',

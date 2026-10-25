@@ -1,9 +1,12 @@
+import { pageFile } from '../lazy-page';
 import type { ActionRequest, ActionResult, JsonValue, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
-import casePage from '../../../examples/pages/real-legal-case.page.json';
-import closePage from '../../../examples/pages/real-legal-case-close.page.json';
-import depositPage from '../../../examples/pages/real-legal-trust-deposit.page.json';
-import surveyPage from '../../../examples/pages/real-survey.page.json';
 import type { RealLane } from './lane';
+
+// Its pages, each a file of its own fetched by the demo that opens it (../lazy-page.ts).
+const casePage = pageFile(() => import('../../../examples/pages/real-legal-case.page.json'));
+const closePage = pageFile(() => import('../../../examples/pages/real-legal-case-close.page.json'));
+const depositPage = pageFile(() => import('../../../examples/pages/real-legal-trust-deposit.page.json'));
+const surveyPage = pageFile(() => import('../../../examples/pages/real-survey.page.json'));
 
 /**
  * The legal lane: Sherkety ERP's largest record, the legal case (legal.case,
@@ -759,12 +762,12 @@ const labels = (list: Record<string, RelatedRecord>) => Object.fromEntries(Objec
 
 export const lane: RealLane = {
   pages: {
-    'real-legal-case': casePage as Page,
-    'real-survey': surveyPage as Page,
+    'real-legal-case': casePage,
+    'real-survey': surveyPage,
   },
   opened: {
-    'real-legal-case-close': closePage as Page,
-    'real-legal-trust-deposit': depositPage as Page,
+    'real-legal-case-close': closePage,
+    'real-legal-trust-deposit': depositPage,
   },
   records: {
     'legal.case': { 42: nileCase(), 43: draftCase() },

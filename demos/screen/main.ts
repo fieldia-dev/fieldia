@@ -3,7 +3,9 @@ import { blankPage, createDesigner, createMemoryPageStore, designerWordsReady, m
 import { demoFunctions } from '../shared/functions';
 import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
-import { codeWidgets } from '@fieldia/code';
+import { pageOf } from '../shared/lazy-page';
+// CodeMirror's widgets, fetched by a page that draws one (shared/lazy-widgets.ts).
+import { codeWidgets } from '../shared/lazy-widgets';
 import { APP_WIDGETS, appKinds } from '../shared/app-kinds';
 import { DEMO_REGION_SETS, demoListViews, demoMaps } from '../shared/maps';
 import { demoAssistant } from '../shared/assistant';
@@ -144,17 +146,20 @@ store.pages.set('customer-card', { draft: null, versions: [published(customerPag
 const start = params.get('start');
 // `?start=clinic`: a clinic's appointments, a list on a calendar (its Calendar in the list's panel, and Try it with it);
 // `?start=fitout`: a café's fit-out, a list on a timeline (its Timeline there, and Try it with it).
-const onCalendar = start === 'clinic' ? (structuredClone(pages['clinic-calendar']) as Page) : start === 'fitout' ? (structuredClone(pages['fitout-plan']) as Page) : null;
-const model = onCalendar ? onCalendar.fields : start === 'sheet' || start === 'list' ? customer : start === 'homes' ? pages['map-homes'].fields : start === 'order' ? pages['map-order'].fields : start === 'kitchen' ? pages['map-kitchen'].fields : undefined;
+// The demos' page a start opens, fetched: each one's JSON is a file of its own (shared/lazy-page.ts).
+const STARTS: Record<string, string> = { clinic: 'clinic-calendar', fitout: 'fitout-plan', homes: 'map-homes', order: 'map-order', kitchen: 'map-kitchen', big: 'big' };
+const startPage = start && (start in STARTS || start.startsWith('template-')) ? await pageOf(pages[STARTS[start] ?? start]) : undefined;
+const onCalendar = (start === 'clinic' || start === 'fitout') && startPage ? (structuredClone(startPage) as Page) : null;
+const model = onCalendar ? onCalendar.fields : start === 'sheet' || start === 'list' ? customer : start === 'homes' || start === 'order' || start === 'kitchen' ? startPage?.fields : undefined;
 // `?start=template-<id>`: a page of the template library, to change. A survey's steps are the survey editor's (designer/).
 // The designer's words in Turkish, Persian, Urdu or Spanish come in a chunk of their own: fetched before it is made.
 void designerWordsReady(locale).then(() => {
-  const template = start?.startsWith('template-') && pages[start]?.layout.type !== 'wizard' ? pages[start] : undefined;
+  const template = start?.startsWith('template-') && startPage && startPage.layout.type !== 'wizard' ? startPage : undefined;
   const first = onCalendar
     ? onCalendar
     : template
     ? (structuredClone(template) as Page)
-    : start === 'blank' ? blankPage('screen', say('New screen', 'شاشة جديدة'), { locale }) : start === 'sheet' ? blankPage('sheet', say('Customer', 'عميل'), { locale }) : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : start === 'homes' ? (structuredClone(pages['map-homes']) as Page) : start === 'order' ? (structuredClone(pages['map-order']) as Page) : start === 'kitchen' ? (structuredClone(pages['map-kitchen']) as Page) : siteVisit();
+    : start === 'blank' ? blankPage('screen', say('New screen', 'شاشة جديدة'), { locale }) : start === 'sheet' ? blankPage('sheet', say('Customer', 'عميل'), { locale }) : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' && startPage ? startPage : (start === 'homes' || start === 'order' || start === 'kitchen') && startPage ? (structuredClone(startPage) as Page) : siteVisit();
   // The app's own kind, an IBAN, and the widget that draws it.
   const opened = timeFirstPaint('screen');
   // No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.

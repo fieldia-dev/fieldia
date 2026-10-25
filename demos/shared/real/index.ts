@@ -1,4 +1,5 @@
-import type { ActionRequest, ActionResult, MemoryDataSourceOptions, Page } from '@fieldia/core';
+import type { ActionRequest, ActionResult, MemoryDataSourceOptions } from '@fieldia/core';
+import type { PageSource } from '../lazy-page';
 import { lane as accounting } from './accounting';
 import { lane as crm } from './crm';
 import type { RealAround, RealLane } from './lane';
@@ -28,9 +29,9 @@ function byModel<T>(pick: (lane: RealLane) => Record<string, Record<string, T>> 
 
 /** Every lane's real pages, records and answers, as the demos take them. */
 export const real = {
-  pages: Object.assign({}, ...LANES.map((lane) => lane.pages)) as Record<string, Page>,
-  opened: Object.assign({}, ...LANES.map((lane) => lane.opened ?? {})) as Record<string, Page>,
-  related: Object.assign({}, ...LANES.map((lane) => lane.related ?? {})) as Record<string, Page>,
+  pages: Object.assign({}, ...LANES.map((lane) => lane.pages)) as Record<string, PageSource>,
+  opened: Object.assign({}, ...LANES.map((lane) => lane.opened ?? {})) as Record<string, PageSource>,
+  related: Object.assign({}, ...LANES.map((lane) => lane.related ?? {})) as Record<string, PageSource>,
   records: byModel((lane) => lane.records) as NonNullable<MemoryDataSourceOptions['records']>,
   onchange: byModel((lane) => lane.onchange) as NonNullable<MemoryDataSourceOptions['onchange']>,
   warnings: byModel((lane) => lane.warnings) as NonNullable<MemoryDataSourceOptions['warnings']>,

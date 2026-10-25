@@ -1,8 +1,8 @@
 import type { ActionRequest, Locale, Theme } from '@fieldia/core';
 import { loadParts, mountViewer, openFormDialog, type FormDialogResult, type Skin, type ViewerOptions } from '@fieldia/viewer';
 import { quietPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
-import { gridWidgets } from '@fieldia/grid';
-import { codeWidgets } from '@fieldia/code';
+// ag-Grid's and CodeMirror's widgets, fetched by the pages that draw one (shared/lazy-widgets.ts).
+import { codeWidgets, gridWidgets } from '../shared/lazy-widgets';
 import { createMonacoWidgets, monacoWidgets } from '@fieldia/monaco';
 import { demoListViews, demoMaps, demoMapWidgets } from '../shared/maps';
 import { clicked, greeting, shout } from '../shared/custom-page';
@@ -11,7 +11,7 @@ import { sampleChatter } from '../shared/sample-chatter';
 import { buyerBar, enquiryChatterOptions } from '../shared/enquiry';
 import { historySlot } from '@fieldia/chatter';
 import { wiHistoryChatter } from '../shared/wi-history';
-import { appPages, openRecord, opensRows, optionsFromQuery, pageFromQuery, pages, pagesHeld, recordFromQuery, releasePages, sampleDataSource } from '../shared/sample-data';
+import { allPages, appPages, openRecord, opensRows, optionsFromQuery, pageFromQuery, pages, pagesHeld, recordFromQuery, releasePages, sampleDataSource } from '../shared/sample-data';
 import { openByRoute, valuesFromQuery } from '../shared/related-lists';
 import { panelBar } from '../shared/panel-demo';
 import { answerAction } from '../shared/order-desk';
@@ -37,7 +37,11 @@ import { priceListBar } from '../shared/editable-lists';
  */
 const params = new URLSearchParams(location.search);
 const name = params.get('page') ?? 'signup';
-const page = pageFromQuery(params);
+// The page the address names, fetched first: each demo page's JSON is a file of its own (shared/lazy-page.ts).
+const page = await pageFromQuery(params);
+// VS Code's editor's own styles (main.css, written by the build beside this script), linked by the page that draws it:
+// no other page waits for them.
+if (JSON.stringify(page.layout).includes('"widget":"monaco"')) document.head.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: new URL('main.css', import.meta.url).href }));
 const dataSource = sampleDataSource();
 const chatter = sampleChatter();
 const actions: string[] = [];
@@ -238,7 +242,7 @@ if (name === 'unit-enquiry') document.getElementById('app')?.before(phoneBar(doc
 // The course has a bar over it: Mona at the front desk opens it and changes its price (shared/treatment-course.ts).
 if (name === 'treatment-course') document.getElementById('app')?.before(frontDeskBar(dataSource));
 
-// `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `pages` themselves,
-// for the one that each draws the sample records' values as their kind is; `releasePages` and `pagesHeld`, the saved
-// forms held by `?pagesDelay=hold` let go, and how many wait.
-Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults, pageNames: Object.keys(pages), pages, releasePages, pagesHeld } });
+// `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `allPages()`, the
+// pages themselves, each fetched, for the one that each draws the sample records' values as their kind is;
+// `releasePages` and `pagesHeld`, the saved forms held by `?pagesDelay=hold` let go, and how many wait.
+Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults, pageNames: Object.keys(pages), allPages, releasePages, pagesHeld } });

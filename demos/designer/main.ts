@@ -2,6 +2,7 @@ import type { Locale, Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, designerWordsReady, mountSurveyEditor } from '@fieldia/designer';
 import { demoFunctions } from '../shared/functions';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
+import { pageOf } from '../shared/lazy-page';
 import type { Skin } from '@fieldia/viewer';
 import { APP_WIDGETS, appKinds } from '../shared/app-kinds';
 import { demoAssistant } from '../shared/assistant';
@@ -25,11 +26,13 @@ if (params.get('dir') === 'rtl') Object.assign(document.documentElement, { dir: 
 const store = createMemoryPageStore();
 // `?start=template-<id>`: a survey of the template library, in steps, to change. Screens are the screen editor's (screen/).
 const asked = params.get('start') ?? '';
-const template = asked.startsWith('template-') && pages[asked]?.layout.type === 'wizard' ? pages[asked] : undefined;
+// The page it starts on, fetched: each demo page's JSON is a file of its own (shared/lazy-page.ts).
+const askedPage = asked.startsWith('template-') || asked === 'survey' ? await pageOf(pages[asked]) : asked === 'big' ? await bigSurvey() : undefined;
+const template = asked.startsWith('template-') && askedPage?.layout.type === 'wizard' ? askedPage : undefined;
 // The designer's words in Turkish, Persian, Urdu or Spanish come in a chunk of their own: fetched before it is made.
 void designerWordsReady(locale).then(() => {
   // With nothing asked for, a survey from nothing: no title yet (its box says "Untitled form"), no question.
-  const start = template ? (structuredClone(template) as Page) : params.get('start') === 'survey' ? pages['survey'] : params.get('start') === 'big' ? bigSurvey() : blankPage('survey', '', { locale });
+  const start = template ? (structuredClone(template) as Page) : asked === 'survey' || asked === 'big' ? (askedPage as Page) : blankPage('survey', '', { locale });
   // The app's own kind, an IBAN, and the widget that draws it; and a stand-in for the app's own assistant.
   const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200), locale });
   const opened = timeFirstPaint('designer');

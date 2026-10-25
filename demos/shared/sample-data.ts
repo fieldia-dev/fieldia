@@ -1,53 +1,9 @@
 import { alikeRecords, createMemoryDataSource, gridClusters, scheduleSlots, type AppFunctions, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
-import address from '../../examples/pages/address.page.json';
-import listing from '../../examples/pages/listing.page.json';
-import lease from '../../examples/pages/lease.page.json';
+import { pageFile, pageFrom, pageOf, type PageSource } from './lazy-page';
 import { LEASE, LEASE_AGENTS, LEASE_SHOWS } from './lease';
 import { AREAS, AREA_SHOWS } from './areas';
-import visitFeedback from '../../examples/pages/visit-feedback.page.json';
-import trainingCheck from '../../examples/pages/training-check.page.json';
-import findAHome from '../../examples/pages/find-a-home.page.json';
 import { demoFunctions } from './functions';
-import delivery from '../../examples/pages/delivery.page.json';
-import mapDelivery from '../../examples/pages/map-delivery.page.json';
-import mapAddress from '../../examples/pages/map-address.page.json';
-import mapZone from '../../examples/pages/map-zone.page.json';
-import mapHomes from '../../examples/pages/map-homes.page.json';
-import homesGallery from '../../examples/pages/homes-gallery.page.json';
-import homesSearch from '../../examples/pages/homes-search.page.json';
-import leadsQueue from '../../examples/pages/leads-queue.page.json';
-import lead from '../../examples/pages/lead.page.json';
-import mapHome from '../../examples/pages/map-home.page.json';
-import mapCouriers from '../../examples/pages/map-couriers.page.json';
-import mapCourier from '../../examples/pages/map-courier.page.json';
-import mapOrder from '../../examples/pages/map-order.page.json';
-import mapRound from '../../examples/pages/map-round.page.json';
-import mapZones from '../../examples/pages/map-zones.page.json';
-import mapHeat from '../../examples/pages/map-heat.page.json';
-import mapKitchen from '../../examples/pages/map-kitchen.page.json';
-import mapWeekOrder from '../../examples/pages/map-week-order.page.json';
-import customer from '../../examples/pages/customer.page.json';
-import fields from '../../examples/pages/fields.page.json';
-import kinds from '../../examples/pages/kinds.page.json';
-import layout from '../../examples/pages/layout.page.json';
-import lists from '../../examples/pages/lists.page.json';
-import agentTools from '../../examples/pages/agent-tools.page.json';
-import customers from '../../examples/pages/customers.page.json';
-import invoices from '../../examples/pages/invoices.page.json';
-import contacts from '../../examples/pages/contacts.page.json';
-import customerAccount from '../../examples/pages/customer-account.page.json';
-import property from '../../examples/pages/property.page.json';
-import order from '../../examples/pages/order.page.json';
-import quickOrder from '../../examples/pages/quick-order.page.json';
-import newCustomer from '../../examples/pages/new-customer.page.json';
-import rules from '../../examples/pages/rules.page.json';
-import signup from '../../examples/pages/signup.page.json';
-import survey from '../../examples/pages/survey.page.json';
-import big from '../../examples/pages/big.page.json';
-import reading from '../../examples/pages/reading.page.json';
-import workItem from '../../examples/pages/work-item.page.json';
-import contractFees from '../../examples/pages/contract-fees.page.json';
 import { customPage } from './custom-page';
 import { wiHeadPage, WI_HEAD_RECORDS } from './wi-header';
 import { wiMorePage, wiMoreRecords } from './wi-more';
@@ -57,7 +13,6 @@ import { wiPicker } from './wi-picker';
 import { businessData, businessPage } from './business';
 import { codeData, codePage, codePageFor } from './code-page';
 import { templatePages } from './templates';
-import wiText from '../../examples/pages/wi-text.page.json';
 import { wiTextRecords } from './wi-text';
 import { AMENITIES, sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
 import { manyHomes, manyHomesPages } from './many-homes';
@@ -65,7 +20,6 @@ import { sampleLeads } from './leads';
 import { sampleKitchen, sampleWeekOrders } from './districts';
 import { wiHistoryPage, wiHistoryRecord } from './wi-history';
 import { CONTAINED_RECORDS, containedPage } from './contained';
-import listingPhotos from '../../examples/pages/listing-photos.page.json';
 import { LISTING, LISTING_STORAGE, listingUpload } from './listing-photos';
 import { calendarDemo, demoNow } from './calendar';
 import { ganttDemo } from './gantt';
@@ -80,11 +34,8 @@ import { customerCardPage, duplicateCustomers } from './duplicates';
 import { keptSource } from './kept';
 import { consentPage, sampleConsents } from './consents';
 import { photoSetPages, photoSetRecords } from './photo-sets';
-import siteVisit from '../../examples/pages/site-visit.page.json';
 import { siteVisits } from './site-visit';
-import eventTicket from '../../examples/pages/event-ticket.page.json';
 import { eventTickets } from './event-ticket';
-import faceChart from '../../examples/pages/face-chart.page.json';
 import { treatments } from './face-chart';
 import { branchSlots, clinicBranchPage, COURSE_TEMPLATES, sampleBranches, sampleCourses, treatmentCoursePage } from './treatment-course';
 import { CONTRACT_FEES_RECORDS } from './contract-fees';
@@ -92,70 +43,122 @@ import { agentLists, agentRecords } from './agent-tools';
 import { EVENT_COUNTS, eventSignupPage } from './event-signup';
 import { standInCheckout, unitEnquiryPage } from './unit-enquiry';
 import { demoOffline, viewingReportPage } from './viewing-report';
-import clinicIntake from '../../examples/pages/clinic-intake.page.json';
-import enquiry from '../../examples/pages/enquiry.page.json';
 import { ENQUIRY_RECORDS } from './enquiry';
-import customerFromEmail from '../../examples/pages/customer-from-email.page.json';
-import enquiryReply from '../../examples/pages/enquiry-reply.page.json';
 import { demoAssist, sampleEnquiries } from './enquiries';
 import { draftLink, keepDrafts, keptDrafts } from './clinic-intake';
-import purchaseApproval from '../../examples/pages/purchase-approval.page.json';
-import expenseApproval from '../../examples/pages/expense-approval.page.json';
 import { APPROVAL_ROUTES, approvalHistory, approvalRecords, approvalUser, claimPermissions } from './approvals';
-import servicePrices from '../../examples/pages/service-prices.page.json';
-import staffHours from '../../examples/pages/staff-hours.page.json';
-import dealStages from '../../examples/pages/deal-stages.page.json';
 import { CLINIC_ROLES, sampleServices, sampleStaffWeeks, sampleStages, servicePerHour, stagePermissions, staffWeekRule, stageOrder } from './editable-lists';
-import listingLanguages from '../../examples/pages/listing-languages.page.json';
-import servicesLanguages from '../../examples/pages/services-languages.page.json';
-import serviceLanguages from '../../examples/pages/service-languages.page.json';
 import { bilingualListings, bilingualServices } from './languages';
 import { scanRecords, stockCountPage, treatmentPage } from './scan';
 import { TEAM_VIEWS } from './saved-views';
-import ordersReview from '../../examples/pages/orders-review.page.json';
 import { reviewOrders } from './orders-review';
-import waitingRoom from '../../examples/pages/waiting-room.page.json';
 import { waitingPatientPage, waitingPatients } from './waiting-room';
-import activityLog from '../../examples/pages/activity-log.page.json';
 import { activityEntries, activityEntryPage } from './activity-log';
-import chartOfAccounts from '../../examples/pages/chart-of-accounts.page.json';
 import { accountPage, chartAccounts } from './chart-of-accounts';
 
-/** The example pages every demo can show, by name. */
-export const pages: Record<string, Page> = {
-  signup: signup as Page,
-  survey: survey as Page,
-  customer: customer as Page,
-  customers: customers as Page,
+// The example pages kept as JSON: each a file of its own, fetched by the demo that opens it (shared/lazy-page.ts).
+const address = pageFile(() => import('../../examples/pages/address.page.json'));
+const listing = pageFile(() => import('../../examples/pages/listing.page.json'));
+const lease = pageFile(() => import('../../examples/pages/lease.page.json'));
+const visitFeedback = pageFile(() => import('../../examples/pages/visit-feedback.page.json'));
+const trainingCheck = pageFile(() => import('../../examples/pages/training-check.page.json'));
+const findAHome = pageFile(() => import('../../examples/pages/find-a-home.page.json'));
+const delivery = pageFile(() => import('../../examples/pages/delivery.page.json'));
+const mapDelivery = pageFile(() => import('../../examples/pages/map-delivery.page.json'));
+const mapAddress = pageFile(() => import('../../examples/pages/map-address.page.json'));
+const mapZone = pageFile(() => import('../../examples/pages/map-zone.page.json'));
+const mapHomes = pageFile(() => import('../../examples/pages/map-homes.page.json'));
+const homesGallery = pageFile(() => import('../../examples/pages/homes-gallery.page.json'));
+const homesSearch = pageFile(() => import('../../examples/pages/homes-search.page.json'));
+const leadsQueue = pageFile(() => import('../../examples/pages/leads-queue.page.json'));
+const lead = pageFile(() => import('../../examples/pages/lead.page.json'));
+const mapHome = pageFile(() => import('../../examples/pages/map-home.page.json'));
+const mapCouriers = pageFile(() => import('../../examples/pages/map-couriers.page.json'));
+const mapCourier = pageFile(() => import('../../examples/pages/map-courier.page.json'));
+const mapOrder = pageFile(() => import('../../examples/pages/map-order.page.json'));
+const mapRound = pageFile(() => import('../../examples/pages/map-round.page.json'));
+const mapZones = pageFile(() => import('../../examples/pages/map-zones.page.json'));
+const mapHeat = pageFile(() => import('../../examples/pages/map-heat.page.json'));
+const mapKitchen = pageFile(() => import('../../examples/pages/map-kitchen.page.json'));
+const mapWeekOrder = pageFile(() => import('../../examples/pages/map-week-order.page.json'));
+const customer = pageFile(() => import('../../examples/pages/customer.page.json'));
+const fields = pageFile(() => import('../../examples/pages/fields.page.json'));
+const kinds = pageFile(() => import('../../examples/pages/kinds.page.json'));
+const layout = pageFile(() => import('../../examples/pages/layout.page.json'));
+const lists = pageFile(() => import('../../examples/pages/lists.page.json'));
+const agentTools = pageFile(() => import('../../examples/pages/agent-tools.page.json'));
+const customers = pageFile(() => import('../../examples/pages/customers.page.json'));
+const invoices = pageFile(() => import('../../examples/pages/invoices.page.json'));
+const contacts = pageFile(() => import('../../examples/pages/contacts.page.json'));
+const customerAccount = pageFile(() => import('../../examples/pages/customer-account.page.json'));
+const property = pageFile(() => import('../../examples/pages/property.page.json'));
+const order = pageFile(() => import('../../examples/pages/order.page.json'));
+const quickOrder = pageFile(() => import('../../examples/pages/quick-order.page.json'));
+const newCustomer = pageFile(() => import('../../examples/pages/new-customer.page.json'));
+const rules = pageFile(() => import('../../examples/pages/rules.page.json'));
+const signup = pageFile(() => import('../../examples/pages/signup.page.json'));
+const survey = pageFile(() => import('../../examples/pages/survey.page.json'));
+const big = pageFile(() => import('../../examples/pages/big.page.json'));
+const reading = pageFile(() => import('../../examples/pages/reading.page.json'));
+const workItem = pageFile(() => import('../../examples/pages/work-item.page.json'));
+const contractFees = pageFile(() => import('../../examples/pages/contract-fees.page.json'));
+const wiText = pageFile(() => import('../../examples/pages/wi-text.page.json'));
+const listingPhotos = pageFile(() => import('../../examples/pages/listing-photos.page.json'));
+const siteVisit = pageFile(() => import('../../examples/pages/site-visit.page.json'));
+const eventTicket = pageFile(() => import('../../examples/pages/event-ticket.page.json'));
+const faceChart = pageFile(() => import('../../examples/pages/face-chart.page.json'));
+const clinicIntake = pageFile(() => import('../../examples/pages/clinic-intake.page.json'));
+const enquiry = pageFile(() => import('../../examples/pages/enquiry.page.json'));
+const customerFromEmail = pageFile(() => import('../../examples/pages/customer-from-email.page.json'));
+const enquiryReply = pageFile(() => import('../../examples/pages/enquiry-reply.page.json'));
+const purchaseApproval = pageFile(() => import('../../examples/pages/purchase-approval.page.json'));
+const expenseApproval = pageFile(() => import('../../examples/pages/expense-approval.page.json'));
+const servicePrices = pageFile(() => import('../../examples/pages/service-prices.page.json'));
+const staffHours = pageFile(() => import('../../examples/pages/staff-hours.page.json'));
+const dealStages = pageFile(() => import('../../examples/pages/deal-stages.page.json'));
+const listingLanguages = pageFile(() => import('../../examples/pages/listing-languages.page.json'));
+const servicesLanguages = pageFile(() => import('../../examples/pages/services-languages.page.json'));
+const serviceLanguages = pageFile(() => import('../../examples/pages/service-languages.page.json'));
+const ordersReview = pageFile(() => import('../../examples/pages/orders-review.page.json'));
+const waitingRoom = pageFile(() => import('../../examples/pages/waiting-room.page.json'));
+const activityLog = pageFile(() => import('../../examples/pages/activity-log.page.json'));
+const chartOfAccounts = pageFile(() => import('../../examples/pages/chart-of-accounts.page.json'));
+
+/** The example pages every demo can show, by name: a page kept as JSON fetched as a demo opens it. */
+export const pages: Record<string, PageSource> = {
+  signup: signup,
+  survey: survey,
+  customer: customer,
+  customers: customers,
   // Invoices that add up and filter by time: a total under the list and on each heading, periods, Group By month (shared/invoices.ts).
-  invoices: invoices as Page,
+  invoices: invoices,
   // 1,284 contacts to select all of, export and change in bulk, and the page each opens: shared/contacts.ts.
-  contacts: contacts as Page,
+  contacts: contacts,
   // Orders whose rows open in place to their lines, and the order each opens: shared/orders-review.ts.
-  'orders-review': ordersReview as Page,
+  'orders-review': ordersReview,
   // A clinic's waiting room, its patients carried to another place by hand: shared/waiting-room.ts.
-  'waiting-room': waitingRoom as Page,
+  'waiting-room': waitingRoom,
   'waiting-patient': waitingPatientPage,
   // A team's log of 1,284 entries, loaded as it is scrolled, and the entry each opens: shared/activity-log.ts.
-  'activity-log': activityLog as Page,
+  'activity-log': activityLog,
   'activity-entry': activityEntryPage,
   // A chart of 240 accounts, its groups' accounts loaded as each opens, and the account each opens: shared/chart-of-accounts.ts.
-  'chart-of-accounts': chartOfAccounts as Page,
+  'chart-of-accounts': chartOfAccounts,
   account: accountPage,
   contact: contactPage,
   // A customer with its invoices and quotations listed inside it, and a home with its viewings: shared/related-lists.ts.
-  'customer-account': customerAccount as Page,
-  property: property as Page,
+  'customer-account': customerAccount,
+  property: property,
   // A listing's features by its type, its sums and dates worked out, the district's average asked of the app (shared/functions.ts).
-  listing: listing as Page,
+  listing: listing,
   // A flat let in Riyadh: its days in the Hijri calendar beside the Gregorian, a month alone, a year alone (shared/lease.ts).
-  lease: lease as Page,
+  lease: lease,
   // A clinic's feedback: the questions after the first offer the treatments ticked in it.
-  'visit-feedback': visitFeedback as Page,
+  'visit-feedback': visitFeedback,
   // A clinic's staff check: a quiz whose results the person sees once they send.
-  'training-check': trainingCheck as Page,
+  'training-check': trainingCheck,
   // A buyer's home search, one question at a time.
-  'find-a-home': findAHome as Page,
+  'find-a-home': findAHome,
   // A record each of their rows opens: an invoice, a quotation, a viewing.
   invoice: relatedLists.pages.invoice,
   quotation: relatedLists.pages.quotation,
@@ -174,90 +177,90 @@ export const pages: Record<string, Page> = {
   'clinic-treatment': treatmentPage,
   'stock-count': stockCountPage,
   // An agent's visit to a flat: its video tour and voice notes played in place (shared/site-visit.ts).
-  'site-visit': siteVisit as Page,
+  'site-visit': siteVisit,
   // A ticket's link as a QR code and its number as a barcode, to scan from the screen (shared/event-ticket.ts).
-  'event-ticket': eventTicket as Page,
+  'event-ticket': eventTicket,
   // A treatment's injection points as pins on a face chart (shared/face-chart.ts).
-  'face-chart': faceChart as Page,
+  'face-chart': faceChart,
   // A clinic's treatment course — its sessions' repeat rule, templates, Undo after Mark done, Mona at the front desk
   // live — and a branch's opening hours, which booking follows (shared/treatment-course.ts).
   'treatment-course': treatmentCoursePage,
   'clinic-branch': clinicBranchPage,
-  fields: fields as Page,
-  kinds: kinds as Page,
+  fields: fields,
+  kinds: kinds,
   // The business widgets on one task: shared/business.ts.
   business: businessPage,
   // Code in its own language, in CodeMirror and in VS Code's editor: shared/code-page.ts.
   code: codePage,
-  order: order as Page,
+  order: order,
   // A service agreement's clauses, its fees a price table pasted from an office app: shared/contract-fees.ts.
-  'contract-fees': contractFees as Page,
-  rules: rules as Page,
-  layout: layout as Page,
-  lists: lists as Page,
+  'contract-fees': contractFees,
+  rules: rules,
+  layout: layout,
+  lists: lists,
   // An AI agent's tools, each line's from its connection: the app's lists asked by a line's values (shared/agent-tools.ts).
-  'agent-tools': agentTools as Page,
+  'agent-tools': agentTools,
   custom: customPage,
   // A part that fails — the app's price tag, its delivery planner — kept to its place: shared/contained.ts.
   contained: containedPage,
   // Places the saved Address form twice: see `savedForms`.
-  delivery: delivery as Page,
+  delivery: delivery,
   // Its buttons and moments run steps: a page opened by its id (see `openedPages`), the app's answers (shared/order-desk.ts).
-  'quick-order': quickOrder as Page,
+  'quick-order': quickOrder,
   // A work item's head: kind, title line, row, buttons, band and tabs (shared/wi-header.ts); `&open=dialog` opens it in a large popup.
   'wi-head': wiHeadPage,
   // The same bug's tags inline in its row, its ⋮ with dividers and Templates › (the app's), its Description read first
   // (shared/wi-more.ts); `&open=dialog` opens it in a large popup.
   'wi-more': wiMorePage,
   // A place and an area on a map: @fieldia/map, on OpenStreetMap (shared/maps.ts).
-  'map-delivery': mapDelivery as Page,
-  'map-zone': mapZone as Page,
+  'map-delivery': mapDelivery,
+  'map-zone': mapZone,
   // An address on one line with the map service's suggestions, filling a place and an address's parts.
-  'map-address': mapAddress as Page,
+  'map-address': mapAddress,
   // The work item's pickers, for their browser test: shared/wi-picker.ts.
   ...wiPicker.pages,
   // A list's records on a map, and the record each opens: shared/homes.ts.
-  'map-homes': mapHomes as Page,
+  'map-homes': mapHomes,
   // The same homes as a gallery: a card each, its photo large, a viewing booked from it (shared/homes.ts).
-  'homes-gallery': homesGallery as Page,
+  'homes-gallery': homesGallery,
   // Those for sale in pounds, filtered as a buyer filters them: counts, ranges, bedrooms 2+, a phone's sheet (shared/homes.ts).
-  'homes-search': homesSearch as Page,
+  'homes-search': homesSearch,
   // A sales team's buyer leads, its filters counted ("Late 5"), and each lead's own page (shared/leads.ts).
-  'leads-queue': leadsQueue as Page,
+  'leads-queue': leadsQueue,
   // Lists whose cells are changed in place, each row saved as it is left: a clinic's prices, a week's hours, a
   // pipeline's stages (shared/editable-lists.ts).
-  'service-prices': servicePrices as Page,
-  'staff-hours': staffHours as Page,
-  'deal-stages': dealStages as Page,
-  lead: lead as Page,
+  'service-prices': servicePrices,
+  'staff-hours': staffHours,
+  'deal-stages': dealStages,
+  lead: lead,
   // A work item's body: groups with tools at their heading's end, Markdown and rich text, a discussion, links (shared/wi-text.ts).
-  'wi-text': wiText as Page,
-  'map-home': mapHome as Page,
-  'map-couriers': mapCouriers as Page,
-  'map-courier': mapCourier as Page,
+  'wi-text': wiText,
+  'map-home': mapHome,
+  'map-couriers': mapCouriers,
+  'map-courier': mapCourier,
   // A form's map: an order coming to its door, the courier on the way (shared/courier-ride.ts).
-  'map-order': mapOrder as Page,
+  'map-order': mapOrder,
   // A place for each line: a van's round through its stops, in order.
-  'map-round': mapRound as Page,
+  'map-round': mapRound,
   // A bug's History tab on its own: how its State moved, then each change with its before and after (shared/wi-history.ts).
   'wi-history': wiHistoryPage,
-  'map-zones': mapZones as Page,
-  'map-heat': mapHeat as Page,
+  'map-zones': mapZones,
+  'map-heat': mapHeat,
   // Twenty thousand homes across Egypt, gathered on the data source where they crowd, and the home each opens (shared/many-homes.ts).
   ...manyHomesPages,
-  'map-kitchen': mapKitchen as Page,
-  'map-week-order': mapWeekOrder as Page,
+  'map-kitchen': mapKitchen,
+  'map-week-order': mapWeekOrder,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
-  big: big as Page,
+  big: big,
   // Tables of lines with none yet, a totals row under one: e2e/grid-empty.spec.ts opens it; no card in the gallery.
   'empty-grids': emptyGridsPage,
   // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.
-  reading: reading as Page,
+  reading: reading,
   // A bug as a work item, in the look the demo's switch picks: quiet, values plain words until pointed at or clicked.
-  'work-item': workItem as Page,
+  'work-item': workItem,
   // The same bug with its header quiet in any look, the rest as the switch says: a section choosing its own look.
   // No card in the gallery: e2e/quiet-look.spec.ts opens it.
-  'work-item-mixed': quietHeader(workItem as Page),
+  'work-item-mixed': pageFrom(workItem, quietHeader),
   // What sits around a record: the gear menu, the pager and breadcrumbs, the PDF beside it (shared/vendor-bill.ts).
   'vendor-bill': vendorBill,
   // Sherkety ERP's own screens, rebuilt: one file per lane in shared/real/.
@@ -265,7 +268,7 @@ export const pages: Record<string, Page> = {
   // The template library, ready pages to start from: shared/templates.ts.
   ...templatePages,
   // A listing whose photos go to the store as each is picked: shared/listing-photos.ts.
-  'listing-photos': listingPhotos as Page,
+  'listing-photos': listingPhotos,
   // A list's records on a calendar, and the record each opens: a clinic's day by doctor, the booking desk's week (shared/calendar.ts).
   ...calendarDemo.pages,
   // A café's fit-out on a timeline, its tasks by phase and what each waits for, and the task each opens (shared/gantt.ts).
@@ -279,26 +282,26 @@ export const pages: Record<string, Page> = {
   // A broker's viewing report kept on the phone without signal and sent when it comes back (shared/viewing-report.ts).
   'viewing-report': viewingReportPage(),
   // A clinic's long intake, Continue later on any device: shared/clinic-intake.ts.
-  'clinic-intake': clinicIntake as Page,
+  'clinic-intake': clinicIntake,
   // A buyer's property enquiry beside its conversation — WhatsApp, e-mail and notes, ticks, a follow-up at 15:30 on
   // Cairo's clock — and the buyer's phone over it (shared/enquiry.ts).
-  enquiry: enquiry as Page,
+  enquiry: enquiry,
   // AI help, answered by the memory source's stand-in (no model, no keys): a customer filled from an e-mail's signature,
   // a buyer's enquiry read and answered with a drafted and polished reply (shared/enquiries.ts).
-  'customer-from-email': customerFromEmail as Page,
-  'enquiry-reply': enquiryReply as Page,
+  'customer-from-email': customerFromEmail,
+  'enquiry-reply': enquiryReply,
   // A test drive booked at a showroom in Berlin, on Berlin's clock, from the times its schedule has free: shared/test-drive.ts.
   'test-drive': testDriveDemo.page,
   // The showroom's week of test drives on a calendar, on Berlin's clock wherever it is looked at from.
   'test-drives': testDriveDemo.list,
   // A purchase order over its limit waiting for Finance, then the CFO; an expense rejected with why (shared/approvals.ts).
-  'purchase-approval': purchaseApproval as Page,
-  'expense-approval': expenseApproval as Page,
+  'purchase-approval': purchaseApproval,
+  'expense-approval': expenseApproval,
   // A listing's title and description typed in Arabic and English; a clinic's services named in both, and each one's
   // page: shared/languages.ts.
-  'listing-languages': listingLanguages as Page,
-  'services-languages': servicesLanguages as Page,
-  'service-languages': serviceLanguages as Page,
+  'listing-languages': listingLanguages,
+  'services-languages': servicesLanguages,
+  'service-languages': serviceLanguages,
 };
 
 /**
@@ -309,9 +312,9 @@ export const pages: Record<string, Page> = {
  * reader whose system is dark gets the reader's own (auto), as the frame round it does (demos/shell.mjs); a
  * light system leaves the page exactly as it is drawn.
  */
-export function pageFromQuery(params: URLSearchParams): Page {
+export async function pageFromQuery(params: URLSearchParams): Promise<Page> {
   // The code page in the editor the demo's switch picked.
-  const named = params.get('page') === 'code' ? codePageFor(params.get('editor')) : (pages[params.get('page') ?? 'signup'] ?? pages['signup']);
+  const named = params.get('page') === 'code' ? codePageFor(params.get('editor')) : await pageOf(pages[params.get('page') ?? 'signup'] ?? pages['signup']);
   // A list opened for one record's records (`filter=` or `search=`, a related list's View all by the app's route) shows them all, its own default filters off.
   const page = (params.get('filter') || params.get('search')) && named.layout.type === 'list' ? { ...named, layout: { ...named.layout, defaultFilters: [] } } : named;
   const maxWidth = params.get('maxWidth');
@@ -504,13 +507,13 @@ const APP_CATALOG_FR: Record<string, string> = {
 };
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
-export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related, ...ganttDemo.related, 'drive.booking': testDriveDemo.page, ...relatedLists.related };
+export const relatedPages: Record<string, PageSource> = { partner: customer, ...real.related, 'wi.text': wiText, ...calendarDemo.related, ...ganttDemo.related, 'drive.booking': testDriveDemo.page, ...relatedLists.related };
 
 /** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
-export const savedForms: Record<string, Page> = { address: address as Page, ...listingHandover.savedForms };
+export const savedForms: Record<string, PageSource> = { address: address, ...listingHandover.savedForms };
 
 /** The pages a step opens by their id: a new customer in a side panel, and a customer's record in the order's place. */
-export const openedPages: Record<string, Page> = { 'new-customer': newCustomer as Page, customer: customer as Page, ...real.opened, invoices: invoices as Page, ...relatedLists.opened };
+export const openedPages: Record<string, PageSource> = { 'new-customer': newCustomer, customer: customer, ...real.opened, invoices: invoices, ...relatedLists.opened };
 
 /**
  * The app's pages, as the viewer's `pages` asks for them: a linked record's
@@ -521,14 +524,20 @@ export const openedPages: Record<string, Page> = { 'new-customer': newCustomer a
  * them go, so a test looks at the wait while it is certain to be one.
  */
 export function appPages(request: PageRequest): Page | null | Promise<Page | null> {
-  if ('model' in request) return relatedPages[request.model] ?? null;
+  if ('model' in request) return pageAnswer(relatedPages[request.model]);
   const key = request.version === undefined ? request.id : `${request.id}@${request.version}`;
-  const found = savedForms[key] ?? openedPages[key] ?? null;
+  const found = pageAnswer(savedForms[key] ?? openedPages[key]);
   const given = new URLSearchParams(location.search).get('pagesDelay');
   if (given === 'hold' && !pagesLetGo) return new Promise((resolve) => heldPages.push(() => resolve(found)));
   if (given === 'hold') return found;
   return new Promise((resolve) => setTimeout(() => resolve(found), Number(given ?? 150)));
 }
+
+/** A page as `pages` answers: at once where it is one, once fetched where it is a file of its own; null for none. */
+const pageAnswer = (source: PageSource | undefined): Page | null | Promise<Page | null> => (typeof source === 'function' ? source() : (source ?? null));
+
+/** Every page the demos serve, each fetched: for a browser test that reads them all. */
+export const allPages = async (): Promise<Record<string, Page>> => Object.fromEntries(await Promise.all(Object.entries(pages).map(async ([name, source]) => [name, await pageOf(source)] as const)));
 
 /** The pages held (`?pagesDelay=hold`), each let go by `releasePages()` — and whether they were, so those asked after come at once. */
 const heldPages: (() => void)[] = [];

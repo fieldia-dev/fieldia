@@ -1,12 +1,15 @@
+import { pageFile } from '../lazy-page';
 import type { ActionRequest, ActionResult, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
-import contractRenewal from '../../../examples/pages/real-contract-renewal.page.json';
-import contractTermination from '../../../examples/pages/real-contract-termination.page.json';
-import product from '../../../examples/pages/real-product.page.json';
-import saleContract from '../../../examples/pages/real-sale-contract.page.json';
-import invoiceWizard from '../../../examples/pages/real-sale-invoice-wizard.page.json';
-import contractAmendment from '../../../examples/pages/real-contract-amendment.page.json';
-import saleOrder from '../../../examples/pages/real-sale-order.page.json';
 import type { RealLane } from './lane';
+
+// Its pages, each a file of its own fetched by the demo that opens it (../lazy-page.ts).
+const contractRenewal = pageFile(() => import('../../../examples/pages/real-contract-renewal.page.json'));
+const contractTermination = pageFile(() => import('../../../examples/pages/real-contract-termination.page.json'));
+const product = pageFile(() => import('../../../examples/pages/real-product.page.json'));
+const saleContract = pageFile(() => import('../../../examples/pages/real-sale-contract.page.json'));
+const invoiceWizard = pageFile(() => import('../../../examples/pages/real-sale-invoice-wizard.page.json'));
+const contractAmendment = pageFile(() => import('../../../examples/pages/real-contract-amendment.page.json'));
+const saleOrder = pageFile(() => import('../../../examples/pages/real-sale-order.page.json'));
 
 /**
  * The sales lane: Sherkety ERP's Create invoices dialog, Sales order, Product
@@ -1112,20 +1115,20 @@ export const lane: RealLane = {
     'real-sale-contract': { user: SALES_MANAGER, records: [7601, 7602], breadcrumbs: [{ label: 'Contracts', href: '#contracts' }] },
   },
   pages: {
-    'real-sale-invoice-wizard': invoiceWizard as Page,
-    'real-sale-order': saleOrder as Page,
-    'real-product': product as Page,
-    'real-sale-contract': saleContract as Page,
+    'real-sale-invoice-wizard': invoiceWizard,
+    'real-sale-order': saleOrder,
+    'real-product': product,
+    'real-sale-contract': saleContract,
   },
   opened: {
-    'real-sale-invoice-wizard': invoiceWizard as Page,
-    'real-contract-termination': contractTermination as Page,
-    'real-contract-renewal': contractRenewal as Page,
+    'real-sale-invoice-wizard': invoiceWizard,
+    'real-contract-termination': contractTermination,
+    'real-contract-renewal': contractRenewal,
   },
   related: {
-    'sale.contract': saleContract as Page,
+    'sale.contract': saleContract,
     // An amendment's own page, which a line of the contract's Amendments opens.
-    'contract.amendment': contractAmendment as Page,
+    'contract.amendment': contractAmendment,
   },
   // A customer's address and tax number under its link (show_address, show_vat), a tag's colour.
   shows: { 'res.partner': { details: ['street', 'city', 'vat'] }, 'crm.tag': { color: 'color' }, 'product.attribute.value': { color: 'color' } },

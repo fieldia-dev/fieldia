@@ -1,6 +1,6 @@
 import { FieldiaForm, useFormState } from '@fieldia/vue';
-import { gridWidgets } from '@fieldia/grid';
-import { codeWidgets } from '@fieldia/code';
+// ag-Grid's and CodeMirror's widgets, fetched by the pages that draw one (shared/lazy-widgets.ts).
+import { codeWidgets, gridWidgets } from '../shared/lazy-widgets';
 import { demoListViews, demoMaps, demoMapWidgets } from '../shared/maps';
 import type { ActionRequest, Form, Locale, Theme, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
@@ -20,7 +20,8 @@ import { frontDeskBar } from '../shared/treatment-course';
 
 /** The same demo again, mounted by Vue with render functions. */
 const params = new URLSearchParams(location.search);
-const page = pageFromQuery(params);
+// The page the address names, fetched first: each demo page's JSON is a file of its own (shared/lazy-page.ts).
+const page = await pageFromQuery(params);
 const dataSource = sampleDataSource();
 const actions: string[] = [];
 /** Every button press in full, with the records chosen in a list. */

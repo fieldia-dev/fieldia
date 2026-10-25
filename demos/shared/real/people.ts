@@ -1,14 +1,17 @@
+import { pageFile } from '../lazy-page';
 import type { ActionRequest, ActionResult, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
-import clinicAppointment from '../../../examples/pages/real-clinic-appointment.page.json';
-import timeOff from '../../../examples/pages/real-time-off.page.json';
-import timeOffCancel from '../../../examples/pages/real-time-off-cancel.page.json';
-import employeePage from '../../../examples/pages/real-employee.page.json';
-import employeePlan from '../../../examples/pages/real-employee-plan.page.json';
-import maintenanceRequest from '../../../examples/pages/real-maintenance-request.page.json';
-import employeeDeparture from '../../../examples/pages/real-employee-departure.page.json';
-import employeeEquipment from '../../../examples/pages/real-employee-equipment.page.json';
 import type { RealLane } from './lane';
 import { dayWords } from '../day-words';
+
+// Its pages, each a file of its own fetched by the demo that opens it (../lazy-page.ts).
+const clinicAppointment = pageFile(() => import('../../../examples/pages/real-clinic-appointment.page.json'));
+const timeOff = pageFile(() => import('../../../examples/pages/real-time-off.page.json'));
+const timeOffCancel = pageFile(() => import('../../../examples/pages/real-time-off-cancel.page.json'));
+const employeePage = pageFile(() => import('../../../examples/pages/real-employee.page.json'));
+const employeePlan = pageFile(() => import('../../../examples/pages/real-employee-plan.page.json'));
+const maintenanceRequest = pageFile(() => import('../../../examples/pages/real-maintenance-request.page.json'));
+const employeeDeparture = pageFile(() => import('../../../examples/pages/real-employee-departure.page.json'));
+const employeeEquipment = pageFile(() => import('../../../examples/pages/real-employee-equipment.page.json'));
 
 /**
  * The people lane: Sherkety ERP's clinic, HR and maintenance screens, rebuilt
@@ -975,19 +978,19 @@ const STAFF_EQUIPMENT: Record<number, { name: string; employee: number; serial: 
 
 export const lane: RealLane = {
   pages: {
-    'real-clinic-appointment': clinicAppointment as Page,
-    'real-time-off': timeOff as Page,
-    'real-employee': employeePage as Page,
-    'real-maintenance-request': maintenanceRequest as Page,
+    'real-clinic-appointment': clinicAppointment,
+    'real-time-off': timeOff,
+    'real-employee': employeePage,
+    'real-maintenance-request': maintenanceRequest,
   },
   opened: {
-    'real-time-off-cancel': timeOffCancel as Page,
-    'real-employee-plan': employeePlan as Page,
+    'real-time-off-cancel': timeOffCancel,
+    'real-employee-plan': employeePlan,
     // The employee's Archive asks why they leave first, as hr_employee_form's does.
-    'real-employee-departure': employeeDeparture as Page,
-    'real-employee-equipment': employeeEquipment as Page,
+    'real-employee-departure': employeeDeparture,
+    'real-employee-equipment': employeeEquipment,
     // A stat button opens a request in the employee's place.
-    'real-time-off': timeOff as Page,
+    'real-time-off': timeOff,
   },
   labelField: { 'hr.leave.type': 'display_name' },
   users: {

@@ -1,11 +1,14 @@
+import { pageFile } from '../lazy-page';
 import type { ActionRequest, ActionResult, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
-import contact from '../../../examples/pages/real-contact.page.json';
-import opportunity from '../../../examples/pages/real-opportunity.page.json';
-import leadLost from '../../../examples/pages/real-crm-lead-lost.page.json';
-import leadToOpportunity from '../../../examples/pages/real-crm-lead2opportunity.page.json';
-import tender from '../../../examples/pages/real-tender.page.json';
-import tenderLoss from '../../../examples/pages/real-tender-loss.page.json';
 import type { RealLane } from './lane';
+
+// Its pages, each a file of its own fetched by the demo that opens it (../lazy-page.ts).
+const contact = pageFile(() => import('../../../examples/pages/real-contact.page.json'));
+const opportunity = pageFile(() => import('../../../examples/pages/real-opportunity.page.json'));
+const leadLost = pageFile(() => import('../../../examples/pages/real-crm-lead-lost.page.json'));
+const leadToOpportunity = pageFile(() => import('../../../examples/pages/real-crm-lead2opportunity.page.json'));
+const tender = pageFile(() => import('../../../examples/pages/real-tender.page.json'));
+const tenderLoss = pageFile(() => import('../../../examples/pages/real-tender-loss.page.json'));
 
 /**
  * The CRM lane: a contact (res.partner), a lead or opportunity (crm.lead) and
@@ -602,20 +605,20 @@ export const lane: RealLane = {
   // A lead's properties are its sales team's.
   definitions: { lead_properties: (values) => TEAM_PROPERTIES[idOf(values['team_id']) ?? -1] ?? [] },
   pages: {
-    'real-contact': contact as Page,
-    'real-opportunity': opportunity as Page,
-    'real-tender': tender as Page,
+    'real-contact': contact,
+    'real-opportunity': opportunity,
+    'real-tender': tender,
   },
   opened: {
-    'real-contact': contact as Page,
-    'real-crm-lead-lost': leadLost as Page,
-    'real-crm-lead2opportunity': leadToOpportunity as Page,
-    'real-tender-loss': tenderLoss as Page,
+    'real-contact': contact,
+    'real-crm-lead-lost': leadLost,
+    'real-crm-lead2opportunity': leadToOpportunity,
+    'real-tender-loss': tenderLoss,
   },
   related: {
-    'res.partner': contact as Page,
-    'crm.lead': opportunity as Page,
-    'tender.opportunity': tender as Page,
+    'res.partner': contact,
+    'crm.lead': opportunity,
+    'tender.opportunity': tender,
   },
   records: {
     'res.partner': partners,

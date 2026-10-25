@@ -1,8 +1,7 @@
 import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
-import { gridWidgets } from '@fieldia/grid';
-import { codeWidgets } from '@fieldia/code';
+// ag-Grid's and CodeMirror's widgets, fetched by the pages that draw one (shared/lazy-widgets.ts).
+import { codeWidgets, gridWidgets } from '../shared/lazy-widgets';
 import { chatterSlot } from '@fieldia/chatter';
-import { createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import { appPages, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { sampleChatter } from '../shared/sample-chatter';
 import { demoGanttViews } from '../shared/gantt';
@@ -17,10 +16,13 @@ const params = new URLSearchParams(location.search);
 // The app knows its nonce: its server wrote it into the page — here, on the tag that loaded this script.
 const nonce = document.querySelector<HTMLScriptElement>('script[data-app]')?.nonce ?? '';
 const host = document.getElementById('app') as HTMLElement;
-const page = pageFromQuery(params);
+// The page the address names, fetched first: each demo page's JSON is a file of its own (shared/lazy-page.ts).
+const page = await pageFromQuery(params);
 
 let handle: ViewerHandle | null = null;
 if (params.get('designer') === '1') {
+  // The designer, fetched only where it is opened: an app's own route to it.
+  const { createDesigner, createMemoryPageStore, mountScreenEditor } = await import('@fieldia/designer');
   const designer = createDesigner({ page, store: createMemoryPageStore() });
   mountScreenEditor(host, { designer, nonce });
 } else {
