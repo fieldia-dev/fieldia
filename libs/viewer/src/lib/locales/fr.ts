@@ -161,6 +161,7 @@ export const fr: ViewerLabels = {
   importDamaged: 'il est endommagé',
   importNoRows: 'il ne contient aucune ligne',
   importNoUnzip: 'ce navigateur ne peut pas ouvrir les classeurs Excel : enregistrez-le en CSV',
+  importTooLarge: 'il contient plus qu’un tableur n’en tient — une cellule de plus de 32 767 caractères, ou plus de 100 Mo une fois ouvert',
   importTooMany: '{name} compte {n} lignes : au plus {most} peuvent être importées ici à la fois. Découpez-le en fichiers de {most} lignes au plus.',
   importColumnLetter: 'Colonne {letter}',
   importFileRows: '{name} : {n} lignes',
@@ -602,4 +603,8 @@ export const fr: ViewerLabels = {
   outboxDiscardAsk: 'Abandonner cet envoi ? Ses réponses seront perdues.',
   outboxKeptTitle: 'Gardé sur cet appareil',
   outboxKeptWords: 'Pas de réseau : vos réponses sont gardées ici et envoyées dès son retour, même si vous fermez cette page.',
+  outboxPageTitle: 'Pas encore envoyé',
+  outboxPageWords: 'Pas de réseau, et ce navigateur ne peut pas garder vos réponses une fois cette page fermée : laissez-la ouverte, elles seront envoyées dès son retour.',
+  outboxWaitingPage: '{count} envois attendent dans cette page : laissez-la ouverte, ce navigateur ne peut pas les garder une fois fermée.',
+  outboxWaitingPageOne: '1 envoi attend dans cette page : laissez-la ouverte, ce navigateur ne peut pas le garder une fois fermée.',
 };

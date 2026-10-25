@@ -1,4 +1,4 @@
-import { recordSentence, type Field, type FilterRange, type JsonValue, type Locale, type Page } from '@fieldia/core';
+import { recordSentence, type Field, type FilterRange, type JsonValue, type Locale, type Page, intlFormat } from '@fieldia/core';
 import { formatNumber, keepTabIn } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { FilterKit, RangeEnds } from './filter-range';
@@ -177,7 +177,7 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
   /** "Show 37 homes", "Show 1 home"; "Show results" where nothing could count them. */
   function showWords(n: number | null): string {
     if (n === null) return labels.showResultsSome;
-    const one = new Intl.PluralRules(locale).select(n) === 'one';
+    const one = intlFormat('PluralRules', locale).select(n) === 'one';
     return fill(one ? recordSentence(page.records, labels.showResultsNounOne, labels.showResultsOne, locale) : recordSentence(page.records, labels.showResultsNoun, labels.showResults, locale), { n: formatNumber(n, 0, locale) });
   }
   function changed(field?: string) {

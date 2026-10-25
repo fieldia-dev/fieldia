@@ -244,6 +244,8 @@ export interface ViewerLabels {
   importDamaged: string;
   importNoRows: string;
   importNoUnzip: string;
+  /** A file that holds more than a spreadsheet does: a cell past 32,767 characters, or opening to more than 100 MB. */
+  importTooLarge: string;
   importTooMany: string;
   importColumnLetter: string;
   importFileRows: string;
@@ -889,7 +891,8 @@ export interface ViewerLabels {
   /**
    * An offline outbox (`outbox`, the outbox part): how many sends wait on this device (`{count}`), no signal, while they
    * are sent, all sent, Send now, a send refused once it went (`{why}`) with Try again and Discard (asked first), and a
-   * response kept without signal's ending.
+   * response kept without signal's ending — and where the browser keeps nothing past the page (no IndexedDB), the
+   * ending and the bar saying so (`outboxPage…`).
    */
   outboxWaiting: string;
   outboxWaitingOne: string;
@@ -903,6 +906,10 @@ export interface ViewerLabels {
   outboxDiscardAsk: string;
   outboxKeptTitle: string;
   outboxKeptWords: string;
+  outboxPageTitle: string;
+  outboxPageWords: string;
+  outboxWaitingPage: string;
+  outboxWaitingPageOne: string;
 }
 
 /** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
@@ -1077,6 +1084,7 @@ const en: ViewerLabels = {
   importDamaged: 'it is damaged',
   importNoRows: 'it holds no rows',
   importNoUnzip: 'this browser cannot open Excel workbooks: save it as CSV',
+  importTooLarge: 'it holds more than a spreadsheet does — a cell of more than 32,767 characters, or more than 100 MB once opened',
   importTooMany: '{name} has {n} rows: at most {most} can be imported here at once. Split it into files of {most} rows or fewer.',
   importColumnLetter: 'Column {letter}',
   importFileRows: '{name}: {n} rows',
@@ -1541,6 +1549,10 @@ const en: ViewerLabels = {
   outboxDiscardAsk: 'Discard this send? Its answers will be lost.',
   outboxKeptTitle: 'Kept on this device',
   outboxKeptWords: 'There is no signal: your answers are kept here and sent as soon as it comes back, even if you close this page.',
+  outboxPageTitle: 'Not sent yet',
+  outboxPageWords: 'There is no signal, and this browser cannot keep your answers once this page is closed: keep it open, and they are sent as soon as the signal comes back.',
+  outboxWaitingPage: '{count} sends wait in this page: keep it open, as this browser cannot keep them once it is closed.',
+  outboxWaitingPageOne: '1 send waits in this page: keep it open, as this browser cannot keep it once it is closed.',
 };
 
 /**
@@ -1568,6 +1580,8 @@ const ADD_ONS = new Map([
   ['es', 'Spanish'],
 ]);
 const missing = new Set<string>();
+/** The version of the one-tag script this runs in, which its build writes here (tools/script-bundle.mjs); none in the packages. */
+declare const __FIELDIA_VERSION__: string | undefined;
 
 /**
  * The language of the viewer's own words for a language tag: its own, its
@@ -1585,9 +1599,11 @@ export function ownLocale(tag = 'en'): Locale {
   const name = ADD_ONS.get(base);
   if (name && !missing.has(base)) {
     missing.add(base);
+    // The running version, never the newest: a language's script from another version than fieldia.js is refused.
+    const running = typeof __FIELDIA_VERSION__ === 'string' ? __FIELDIA_VERSION__ : '<version>';
     console.warn(
       `Fieldia: this page is in ${name}, but only English words are loaded, so Fieldia's own words show in English. ` +
-        `Load the ${name} ones after fieldia.js: <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.${base}.js"></script>`
+        `Load the ${name} ones after fieldia.js, from its version (${running}): <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@${running}/bundle/fieldia.${base}.js" crossorigin="anonymous"></script>, with its integrity hash as that version's README gives it.`
     );
   }
   return 'en';

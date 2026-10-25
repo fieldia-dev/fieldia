@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import { DecompressionStream } from 'node:stream/web';
 import { TextDecoder, TextEncoder } from 'node:util';
 import { deflateRawSync } from 'node:zlib';
-import { csvRows, decodeText, FileProblem, formatWrites, guessSeparator, ownEncoding, readFile, serialAt, type PickedFile } from './import-file';
+import { CELL_MOST, csvRows, decodeText, FileProblem, formatWrites, guessSeparator, ownEncoding, readFile, serialAt, type PickedFile } from './import-file';
 import { xlsxOf } from './xlsx';
+import { PROOF_MS } from '../../../../testing/proof-time';
 
 /**
  * A file a list's Import reads in the browser: a CSV file whose encoding and
@@ -63,6 +64,14 @@ describe('a CSV file', () => {
   it('reads UTF-16 with its mark and tabs, as Excel saves Unicode text', async () => {
     const sheet = await readFile(picked(encoded('\ufeffName\tCity\r\nسلمى\tAmman\r\n', 'utf16le'), 'contacts.txt'));
     expect(sheet).toMatchObject({ encoding: 'utf-16le', separator: '\t', headers: ['Name', 'City'], rows: [['سلمى', 'Amman']] });
+  });
+
+  it('reads a cell a spreadsheet would run as a formula, kept as words by a ' + "'" + ', as it was written (S-M1)', async () => {
+    const sheet = await readFile(picked(`Name,Phone,Note\r\nMona,'+20 100 123 4567,'=SUM(A1)\r\nOmar,'-5,it's fine\r\n`));
+    expect(sheet.rows).toEqual([
+      ['Mona', '+20 100 123 4567', '=SUM(A1)'],
+      ['Omar', '-5', "it's fine"],
+    ]);
   });
 
   it('takes Excel’s own sep= line, and numbers its rows after it', async () => {
@@ -211,6 +220,62 @@ describe('a workbook’s numbers', () => {
     expect(serialAt(46311.604166666664, 'both')).toEqual({ at: '2026-10-16T14:30:00' });
     expect(serialAt(0.75, 'time')).toBe('18:00');
     expect(serialAt(0, 'day', true)).toEqual({ at: '1904-01-01' });
+  });
+});
+
+describe('a file that could freeze the page, read once through or refused at once (S-M3)', () => {
+  /** A workbook of one sheet, its shared strings as given. */
+  const workbook = (strings: string, cells = '<c r="A1" t="s"><v>0</v></c><c r="B1" t="inlineStr"><is><t>Mona</t></is></c>') =>
+    zipOf([
+      ['xl/workbook.xml', '<workbook><sheets><sheet name="One" r:id="rId1"/></sheets></workbook>'],
+      ['xl/_rels/workbook.xml.rels', '<Relationships><Relationship Id="rId1" Type="x/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="x/sharedStrings" Target="sharedStrings.xml"/></Relationships>'],
+      ['xl/worksheets/sheet1.xml', `<worksheet><sheetData><row r="1">${cells}</row><row r="2"><c r="A2" t="inlineStr"><is><t>Omar</t></is></c></row></sheetData></worksheet>`],
+      ['xl/sharedStrings.xml', strings],
+    ]);
+  /**
+   * What reading `run` took — its answer (a refusal's problem), its milliseconds, and the characters of the workbook's
+   * long documents (over 50,000 characters) its ends were looked for across (`indexOf`, from where it looked to where
+   * it found one or the end): read once through is a few times their length, never their square.
+   */
+  const timed = async (run: () => Promise<unknown>) => {
+    let scanned = 0;
+    const real = String.prototype.indexOf;
+    const spy = jest.spyOn(String.prototype, 'indexOf').mockImplementation(function (this: string, search: string, from?: number) {
+      const at = real.call(this, search, from);
+      if (this.length > 50_000) scanned += (at < 0 ? this.length : at) - Math.max(0, from ?? 0);
+      return at;
+    });
+    const start = performance.now();
+    try {
+      const result = await run().catch((error: unknown) => (error instanceof FileProblem ? error.problem : error));
+      return { result, ms: performance.now() - start, scanned };
+    } finally {
+      spy.mockRestore();
+    }
+  };
+
+  it('reads a workbook’s strings once through: 40,000 "<si>" never closed take no time (the audit’s proof: 1.8 s, growing as its square)', async () => {
+    const strings = `<sst>${'<si>'.repeat(40000)}</sst>`;
+    const { ms, scanned } = await timed(() => readFile(picked(workbook(strings), 'strings.xlsx')));
+    // The work it bounds, counted: each "<si>"'s end looked for once, across what is left — once through, not 40,000 times.
+    expect(scanned).toBeGreaterThan(strings.length / 2);
+    expect(scanned).toBeLessThanOrEqual(2 * strings.length);
+    expect(ms).toBeLessThan(PROOF_MS);
+    const cells = `<c r="A1" t="inlineStr"><is>${'<rPh>'.repeat(20000)}<t>x</t></is></c><c r="B1"><v>${'<v>'.repeat(20000)}</c>`;
+    const { ms: inCell, scanned: acrossCells } = await timed(() => readFile(picked(workbook('<sst/>', cells), 'cells.xlsx')));
+    expect(acrossCells).toBeGreaterThan(cells.length / 2);
+    expect(acrossCells).toBeLessThanOrEqual(4 * cells.length);
+    expect(inCell).toBeLessThan(PROOF_MS);
+    // Its words, as ever: a shared string, its phonetic guide left out, an inline one.
+    const sheet = await readFile(picked(workbook('<sst><si><r><t>Del</t></r><r><t>ta</t></r><rPh><t>デルタ</t></rPh></si></sst>'), 'read.xlsx'));
+    expect([sheet.headers, sheet.rows]).toEqual([['Delta', 'Mona'], [['Omar', null]]]);
+  });
+
+  it('refuses a cell longer than a spreadsheet’s own, said why — never read on by every reader after it', async () => {
+    expect((await timed(() => readFile(picked(`Name,Note\r\nMona,${'x'.repeat(CELL_MOST + 1)}\r\n`)))).result).toBe('tooLarge');
+    expect((await timed(() => readFile(picked(workbook(`<sst><si><t>${'x'.repeat(CELL_MOST + 1)}</t></si></sst>`), 'long.xlsx')))).result).toBe('tooLarge');
+    const sheet = await readFile(picked(`Name,Note\r\nMona,${'x'.repeat(CELL_MOST)}\r\n`));
+    expect((sheet.rows[0][1] as string).length).toBe(CELL_MOST);
   });
 });
 

@@ -194,7 +194,7 @@ export function containWidget(make: (own: Pick<WidgetContext, 'form' | 'fail' | 
   if (early || !inner) {
     reportFailure(early?.error, where('draw'), context.onError);
     const broken = brokenFieldBox(context);
-    return { element: broken, update: () => undefined, focus: () => broken.focus() };
+    return { element: broken, update: () => undefined, focus: (options?: FocusOptions) => broken.focus(options) };
   }
   const made: Widget = inner;
   /** The value to go back to: the person changed it in this widget, which failed on it, never having shown it. */
@@ -254,10 +254,10 @@ export function containWidget(make: (own: Pick<WidgetContext, 'form' | 'fail' | 
         fail(error, 'update');
       }
     },
-    focus() {
-      if (box) return box.focus();
+    focus(options?: FocusOptions) {
+      if (box) return box.focus(options);
       try {
-        made.focus();
+        made.focus(options);
       } catch (error) {
         fail(error, 'focus');
       }

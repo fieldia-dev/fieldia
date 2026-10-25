@@ -1,6 +1,7 @@
 import type { Fields } from '../format/field';
-import { saveProblemOf, type DataSource, type SaveProblem, type SaveRequest, type SubmitRequest, type UploadedFile, type UploadFile } from './data-source';
+import { saveProblemOf, type DataSource, type RecordVersion, type SaveProblem, type SaveRequest, type SubmitRequest, type UploadedFile, type UploadFile } from './data-source';
 import type { FormInner, FormJoin } from './joins';
+import { lastsPastThePage, ownerOf } from './browser-kept';
 import { fileBytesIn, formUploadsPart } from './uploads';
 import { structuredCopy, type FileValue } from './values';
 
@@ -23,6 +24,11 @@ export interface OutboxItem {
   at: string;
   /** A new record's own key on the form that kept it: a later save of the same record while this waits takes its place. */
   record?: string;
+  /**
+   * Whose it is: the signed-in person's (`u:<id>`), else the tab's it was kept in (`t:<id>`). Only their own forms send
+   * it, so it never goes under the next person's session. None on an item kept before 0.34: any form of its page sends it.
+   */
+  owner?: string;
   /** How many times it was tried. */
   tries: number;
   /** Refused when it was sent (not the network's doing): why, kept for the person to see, and nothing sent after it waits on it. */
@@ -42,6 +48,8 @@ export interface OutboxStore {
   delete(key: string): Promise<void>;
   /** Take an item to send it, unless another sender holds it still: whether it was taken. */
   claim(key: string, by: string, until: number): Promise<boolean>;
+  /** Let go every item — or an owner's alone — unsent: sign-out (`outbox.clear()`). */
+  clear?(owner?: string): Promise<void>;
 }
 
 /** A form's outbox, made for it (`join`; `form.joined('outbox')`). */
@@ -67,7 +75,11 @@ interface OutboxHost {
   readonly dataSource: DataSource | undefined;
 }
 
-/** How long a sender holds an item it took: past this, another may take it (a tab closed while it sent). */
+/**
+ * How long a sender holds an item it took: past this, another may take it (a tab closed while it sent). A sender still
+ * sending renews its claim each third of it (a heartbeat), so a send that takes longer — a film uploaded on a slow
+ * signal — is never taken by a second tab meanwhile.
+ */
 const CLAIM_MS = 120_000;
 let sender = 0;
 
@@ -91,6 +103,9 @@ export function memoryOutbox(): OutboxStore & { readonly items: OutboxItem[] } {
       if (!item || (item.claim && item.claim.by !== by && item.claim.until > Date.now())) return false;
       item.claim = { by, until };
       return true;
+    },
+    async clear(owner) {
+      for (let at = items.length - 1; at >= 0; at--) if (owner === undefined || items[at].owner === owner) items.splice(at, 1);
     },
   };
 }
@@ -119,6 +134,9 @@ interface IdbDatabase {
   transaction(name: string, mode: 'readonly' | 'readwrite'): IdbTransaction;
   createObjectStore(name: string, options: { keyPath: string }): unknown;
   objectStoreNames: { contains(name: string): boolean };
+  close(): void;
+  onversionchange: (() => void) | null;
+  onclose: (() => void) | null;
 }
 interface IdbFactory {
   open(name: string, version: number): IdbRequest<IdbDatabase> & { onupgradeneeded: (() => void) | null };
@@ -138,17 +156,32 @@ const asked = <T>(request: IdbRequest<T>) =>
 export function indexedOutbox(name = 'fieldia-outbox'): OutboxStore | null {
   const factory = (globalThis as unknown as { indexedDB?: IdbFactory }).indexedDB;
   if (!factory) return null;
-  let opened: Promise<IdbDatabase> | null = null;
+  // One connection a database, shared by every form that keeps sends in it: a page mounting forms one after another
+  // opened one each and closed none (0.32: 30 mounts, 30 connections open).
+  let open = connections.get(factory);
+  if (!open) connections.set(factory, (open = new Map()));
+  const shared = open;
   const db = () => {
+    const opened = shared.get(name);
     if (opened) return opened;
     const request = factory.open(name, 1);
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains('items')) request.result.createObjectStore('items', { keyPath: 'key' });
     };
-    opened = asked(request);
+    const made = asked(request).then((database) => {
+      // Another tab opening a newer version: this one lets it go at once, and opens it again when next asked.
+      const forget = () => shared.get(name) === made && shared.delete(name);
+      database.onversionchange = () => {
+        database.close();
+        forget();
+      };
+      database.onclose = forget;
+      return database;
+    });
+    shared.set(name, made);
     // A database that could not open is asked again next time.
-    opened.catch(() => (opened = null));
-    return opened;
+    made.catch(() => shared.get(name) === made && shared.delete(name));
+    return made;
   };
   const write = async (work: (store: IdbStore) => void | Promise<boolean>): Promise<boolean> => {
     const transaction = (await db()).transaction('items', 'readwrite');
@@ -176,8 +209,16 @@ export function indexedOutbox(name = 'fieldia-outbox'): OutboxStore | null {
         return true;
       });
     },
+    clear: (owner) =>
+      write(async (store) => {
+        for (const item of await asked(store.getAll())) if (owner === undefined || item.owner === owner) store.delete(item.key);
+        return true;
+      }).then(() => undefined),
   };
 }
+
+/** The connections open, by the browser's IndexedDB they are of, by name. */
+const connections = new WeakMap<IdbFactory, Map<string, Promise<IdbDatabase>>>();
 
 /** A key no other kept send has. */
 const newKey = (now: number) => `outbox-${now.toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -229,9 +270,20 @@ const recordKey = () => `record-${Date.now().toString(36)}-${Math.random().toStr
  * told in the form's state (`outbox`).
  */
 export function join(joined: FormInner): FormOutbox {
-  const { form, page, options, set } = joined;
+  const { form, page, options, set, scheduler } = joined;
   const host: OutboxHost = { pageId: page.id, fields: page.fields, dataSource: options.dataSource };
-  const store = options.outbox ?? indexedOutbox() ?? memoryOutbox();
+  // Where a browser keeps nothing past the page (no IndexedDB): held in memory, and said so — never "kept on this device".
+  const lasting = options.outbox ?? indexedOutbox();
+  const shared = lasting ?? memoryOutbox();
+  // This person's sends alone: the signed-in person's, else this tab's — never another's, sent under their session.
+  const owner = ownerOf(form.user());
+  const mine = (item: OutboxItem) => item.owner === undefined || item.owner === owner;
+  const store: OutboxStore = {
+    list: async (pageId) => (await shared.list(pageId)).filter(mine),
+    put: (item) => shared.put(item),
+    delete: (key) => shared.delete(key),
+    claim: (key, by, until) => shared.claim(key, by, until),
+  };
   const me = `sender-${++sender}-${Math.random().toString(36).slice(2, 8)}`;
   let sending: Promise<void> | null = null;
   /** Whether the last try found no network: a send kept, or one of those kept tried and not taken. */
@@ -255,26 +307,47 @@ export function join(joined: FormInner): FormOutbox {
         offline,
         kept,
         refused: items.filter((item) => item.refused).map((item) => ({ key: item.key, message: item.refused?.message ?? '', at: item.at })),
+        // Kept past the page: in a store that lasts, for a signed-in person (a tab's own go with the tab).
+        lasting: lasting !== null && lastsPastThePage(owner),
       },
     });
   };
+  /** A kept send of the same record as this save: a new one's own, or a stored one's by its model and id. */
+  const sameRecord = (item: OutboxItem, request: SaveRequest) =>
+    item.kind === 'save' && !item.refused && (request.id == null ? item.record === record : (item.request as SaveRequest).id === request.id && (item.request as SaveRequest).model === request.model);
   const sendAll = async () => {
     const source = host.dataSource;
     if (!source) return;
     await refresh();
+    /** Each record's version as a send of it in this run left it: the person's own saves go one after another, never refused by their own. */
+    const versions = new Map<string, RecordVersion>();
     for (const item of await store.list(host.pageId)) {
       if (item.refused || !(await store.claim(item.key, me, Date.now() + CLAIM_MS))) continue;
       const tries = item.tries + 1;
+      // Held while it goes, however long it takes: the claim renewed each third of it.
+      let beat: unknown = null;
+      const renew = () => {
+        beat = scheduler.setTimeout(() => {
+          void store.claim(item.key, me, Date.now() + CLAIM_MS);
+          renew();
+        }, CLAIM_MS / 3);
+      };
+      renew();
       try {
-        const request = { ...(await withFilesStored(item, host)), queued: { key: item.key, at: item.at } };
+        const stored = await withFilesStored(item, host);
+        const saving = item.kind === 'save' ? (stored as SaveRequest) : null;
+        const known = saving && saving.id != null ? versions.get(`${saving.model}\u0000${saving.id}`) : undefined;
+        const request = { ...stored, ...(known ? { version: known } : {}), key: stored.key ?? item.key, queued: { key: item.key, at: item.at } };
         if (item.kind === 'submit') {
           if (!source.submit) throw new Error('This page has no data source to send its answers to');
           await source.submit(request as SubmitRequest);
         } else {
           if (!source.save) throw new Error('This page has no data source to save to');
           const result = await source.save(request as SaveRequest);
-          // The new record this form still shows went: it has its id now.
+          if (result.version) versions.set(`${(request as SaveRequest).model}\u0000${result.id}`, result.version);
+          // The new record this form still shows went: it has its id now. The record it shows: its version now.
           if (item.record === record && form.getState().recordId == null) set({ recordId: result.id, version: result.version ?? null });
+          else if (result.version && form.getState().recordId === result.id && (request as SaveRequest).id === result.id) set({ version: result.version });
         }
         offline = false;
         await store.delete(item.key);
@@ -288,6 +361,8 @@ export function join(joined: FormInner): FormOutbox {
           break;
         }
         await store.put({ ...again, tries, refused: { message: problem.message, problem } });
+      } finally {
+        scheduler.clearTimeout(beat);
       }
       await refresh();
     }
@@ -295,11 +370,12 @@ export function join(joined: FormInner): FormOutbox {
   const outbox: FormOutbox = {
     async keep(kind, request, own) {
       const items = await store.list(host.pageId);
-      // A new record saved again while its first save waits: one save, of the record as it is now.
+      // A new record saved again while its first save waits: one save, of the record as it is now — by its key, the same.
       const same = own ? items.find((item) => item.record === own && item.kind === kind && !item.refused && !(item.claim && item.claim.until > Date.now())) : undefined;
+      // Kept by the send's own key, the one its first try carried: a server that had that try keeps no second.
       const item: OutboxItem = same
-        ? { ...same, request: structuredCopy(request) }
-        : { key: newKey(Date.now()), pageId: host.pageId, kind, request: structuredCopy(request), at: new Date().toISOString(), ...(own ? { record: own } : {}), tries: 0 };
+        ? { ...same, request: structuredCopy({ ...request, key: same.key }) }
+        : { key: request.key ?? newKey(Date.now()), pageId: host.pageId, kind, request: structuredCopy(request), at: new Date().toISOString(), ...(own ? { record: own } : {}), owner, tries: 0 };
       await store.put(item);
       offline = true;
       await refresh();
@@ -333,6 +409,20 @@ export function join(joined: FormInner): FormOutbox {
       await outbox.send();
     },
     async around(kind, sent, go) {
+      // A save of a record with sends of it kept: they go first, in order; still kept, this one waits behind them — a newer
+      // save never lands before an older one, nor a new record twice. Gone, it goes after them: a new record's as a save of
+      // the record they made, each at its version now.
+      if (kind === 'save' && (await store.list(host.pageId)).some((item) => sameRecord(item, sent as SaveRequest))) {
+        await outbox.send();
+        const request = sent as SaveRequest;
+        if ((await store.list(host.pageId)).some((item) => sameRecord(item, request))) {
+          kept = true;
+          await outbox.keep('save', request, request.id == null ? record : undefined);
+          return null;
+        }
+        const now = form.getState();
+        if (now.recordId != null) sent = { ...request, id: request.id ?? now.recordId, ...(now.version ? { version: now.version } : {}) };
+      }
       try {
         const answer = await go(sent);
         // It went: there is signal, and what waited goes after it.

@@ -62,7 +62,8 @@ describe('a list of records', () => {
     header().querySelector('button')!.click();
     await until(() => header().getAttribute('aria-sort') === 'ascending');
     expect(header().getAttribute('aria-sort')).toBe('ascending');
-    await until(() => cells(rows(host)[0])[0] === 'Amira Clinics');
+    // The rows the sorted answer brings, waited for: Amira Clinics was first before the sort too.
+    await until(() => cells(rows(host)[1])[0] === 'Petra Tours');
     expect(rows(host).map((r) => cells(r)[0])).toEqual(['Amira Clinics', 'Petra Tours']);
     header().querySelector('button')!.click();
     await until(() => header().getAttribute('aria-sort') === 'descending');

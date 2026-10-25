@@ -95,7 +95,12 @@ A quick answer shows nothing at all: a loader is drawn only after `delay`
 (150 ms); once drawn it stays `minShown` (300 ms), so it never flickers off;
 past `slowAfter` (5 s) "Still loading…" is said; past `timeout` (none unless
 set) the wait ends as failed, with Retry, and a list's request is told to stop
-(`signal`). A failure says why in its place — "Could not load the customers.
+(`signal`). Every request has a deadline of its own besides, the viewer's
+`timeout` (30 s unless you say, 0 for none): the deadline ends the request, a
+wait's `loading.timeout` ends the loader, and where both are set the sooner
+ends the wait — said once, with one Retry. A record that could not be loaded is
+said at the top of the form, in its own words ("This customer could not be
+loaded: …"), with Retry, which loads it. A failure says why in its place — "Could not load the customers.
 The archive is offline. Retry", "Couldn't load." with the source's own words —
 or in a toast (`error: "toast"`), or as the app draws it (`custom`); never an
 empty place. A record's Save steps aside while it saves, as before: its status
@@ -856,6 +861,12 @@ its box is pressed or typed in — its suggestions in the menu's place — and a
 filter bar's list as another of its parts takes the focus. See
 [lists and search](https://fieldia.dev/lists/).
 
+A long list keeps the browser's work to what changed: a key typed in a cell
+lays out that cell's box alone. Rows out of sight are still drawn (no browser
+skips a table row with `content-visibility`), so until rows are windowed keep
+an `endless` or `editable` list under about 1,000 loaded rows for smooth
+scrolling on phones, and page through more.
+
 Other ways of showing a list's records come from `listViews`, by name: a
 list's `map` (`mapListViews` from `@fieldia/map`), its `calendar`
 (`calendarListViews` from `@fieldia/calendar`), its `gantt` timeline
@@ -927,7 +938,12 @@ a decimal comma where the file is parted by semicolons, as a German or French
 spreadsheet reads it) — each amount's currency in a column of its own beside
 it (`Lifetime value currency`), or in the header where the field has one
 (`Amount (EGP)`), and its days and times as ISO 8601 writes them
-(`2026-10-15`, `2026-10-15 14:30`, on the clock the list shows). With `"bulkEdit": true` (or the fields) **Edit** sets one field
+(`2026-10-15`, `2026-10-15 14:30`, on the clock the list shows). Words a
+spreadsheet would run as a formula — a value starting `=`, `+`, `-`, `@`, a tab
+or a line return, or their fullwidth forms — are kept as words with a `'` before
+them (`'=HYPERLINK(…)`), so a colleague opening the file runs nothing another
+person typed; numbers stay numbers. Import, and `csvWords` from `@fieldia/core`,
+read such a cell back without its `'` (`csvCell` writes one). With `"bulkEdit": true` (or the fields) **Edit** sets one field
 to one value on the records chosen, after a question, by `writeMany` or a save
 per record, each record's `can` kept, and names what it could not change and
 why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
@@ -1342,7 +1358,9 @@ work… — comes in 52 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
 folder the first time a page uses it:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.js"
+  integrity="sha256-VT8bNgbZIc1Z9PYq51txqMKXzGueIjLuyYMIgg/d0NQ="
+  crossorigin="anonymous"></script>
 <script>
   Fieldia.mountViewer(document.getElementById('app'), {
     page,
@@ -1356,15 +1374,43 @@ or Spanish, add that language's script after it (about 17–22 KB gzipped each),
 then pass `locale`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
-<!-- or fieldia.de.js, fieldia.fr.js, fieldia.tr.js, fieldia.fa.js, fieldia.ur.js, fieldia.es.js; one per language the page is shown in -->
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.js"
+  integrity="sha256-VT8bNgbZIc1Z9PYq51txqMKXzGueIjLuyYMIgg/d0NQ="
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.ar.js"
+  integrity="sha256-CI+47/ebYS9D3EKVKZYgEdRdzcuQezY9aIi+hJQf6AI="
+  crossorigin="anonymous"></script>
 <script>
   Fieldia.mountViewer(element, { page, dataSource, locale: 'ar' });
 </script>
 ```
 
-Load both from the same version. A page set to a language whose script is
+Load both from the same version, each with its own integrity — one language's
+script per language the page is shown in:
+
+```html
+<!-- German, French, Turkish, Persian, Urdu, Spanish -->
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.de.js"
+  integrity="sha256-JTCAptRFa3evATpAgF6cf4ThAdLKsJZWxZxqKpPtEMM="
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.fr.js"
+  integrity="sha256-55OhaPOtKWTjuABdXaYbs2Vm+zptuFxgg9FJhQavYO4="
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.tr.js"
+  integrity="sha256-fnYTvpnutuGzU048VLDYt07dZHpHX3p+cHKNULFkEFU="
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.fa.js"
+  integrity="sha256-Jt2YntNUjAEZhPspKDOthmspdzfFclMNPcFOft3D8gw="
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.ur.js"
+  integrity="sha256-OCYa7dkf2GKZlhnZUf32UFMkoH4hHmyeZViVJTyHe88="
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.es.js"
+  integrity="sha256-ozIpVWWsYZFDa6NUtNoVC4ohoQsJ7TEuvADOfJYv49k="
+  crossorigin="anonymous"></script>
+```
+
+ A page set to a language whose script is
 missing shows Fieldia's words in English, and the console names the script to
 add. Installed from npm, `@fieldia/viewer` (and `@fieldia/core`,
 `@fieldia/widgets` and the React, Vue and Angular bindings) has English,
@@ -1413,20 +1459,72 @@ record's page saves through its `source`. An app built with a bundler calls
 `defineFieldiaForm()` once.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.js"
+  integrity="sha256-VT8bNgbZIc1Z9PYq51txqMKXzGueIjLuyYMIgg/d0NQ="
+  crossorigin="anonymous"></script>
 <fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" locale="ar"></fieldia-form>
 ```
 
 On a site that is not yours, `fieldia-embed.js` (under 1 KB gzipped, nothing else
-of Fieldia's in it) places an iframe of your form's page where its tag stands —
-`<script src=".../bundle/fieldia-embed.js" data-src="https://forms.example.com/enquiry"
-data-locale="ar" async></script>` — and your page's `<fieldia-form frame>` tells
-it its height as it changes, so the frame grows and shrinks with the form, and
-`fieldia-ready`, `fieldia-step` and `fieldia-send` (the reference, never the
-answers) as events on the iframe, from your page's origin only. The tag passes on
-`data-locale`, `data-theme`, `data-skin` and the page's campaign parameters
-(`utm_*`, or those `data-params` names), for a page that fills hidden fields
-from its link.
+of Fieldia's in it) places an iframe of your form's page where its tag stands,
+and your page's `<fieldia-form frame>` tells it its height as it changes, so the
+frame grows and shrinks with the form, and `fieldia-ready`, `fieldia-step` and
+`fieldia-send` (the reference, never the answers) as events on the iframe, from
+your page's origin only — and to the sites your
+`<fieldia-form frame allowed-origins="https://partner.example">` names alone (and
+your own): another site that frames it is told nothing, its height neither, and
+the console says so; `allowed-origins="*"` tells any, never by default. Send
+`Content-Security-Policy: frame-ancestors …` with your form's page to keep other
+sites from framing it at all. The tag passes on `data-locale`, `data-theme`,
+`data-skin` and the page's campaign parameters (`utm_*`, or those `data-params`
+names), for a page that fills hidden fields from its link.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia-embed.js"
+  integrity="sha256-mDsSiA8jfupX1ZoAHmvc2ab2hMW6L79ZGCxAFP674JY="
+  crossorigin="anonymous"
+  data-src="https://forms.example.com/enquiry" data-locale="ar" async></script>
+```
+
+Every tag here names a version and carries the hash of its file (`integrity`,
+with `crossorigin="anonymous"`): the browser runs that file and no other, so a
+page takes no release until you move it to one — take every tag from that
+release's README, `fieldia.js` and the scripts beside it alike. `fieldia.js`
+checks each part it fetches the same way: it carries the hash of every part it
+was built with, and refuses one that is not that file. Served from your own
+site, keep the bundle's folder together; from another origin than the page's,
+that origin sends `Access-Control-Allow-Origin`, as a CDN does.
+
+### Sooner on a phone: a page's parts in its HTML
+
+The one-tag script asks for the parts a page draws from as it starts, once it
+has come and run: on a phone, a round trip after it. A server that knows the
+page writes their tags into the HTML before `fieldia.js`, from the same folder,
+so they come beside it — measured on a mid-range phone, a list of customers
+usable 23% sooner on 4G and 27% on Fast 3G, a record with tabs 16% on both.
+`partFiles(page)` from `@fieldia/viewer/server` names them — the loading part
+too, where the page's first wait is drawn from it (pass the viewer's `loading`
+as its fourth argument where the app sets one); a page given
+`Fieldia.createMemoryDataSource` adds `fieldia.memory.js`:
+
+```ts
+import { partFiles } from '@fieldia/viewer/server';
+const base = 'https://cdn.jsdelivr.net/npm/@fieldia/viewer@<version>/bundle/';
+// `integrity`: each file's sha256, as Fieldia.partTags(page) gives it — the one value fieldia.js checks that part by.
+const parts = partFiles(page).map((file) => `<script async src="${base}${file}" integrity="${integrity[file]}" crossorigin="anonymous"></script>`).join('');
+// …then fieldia.js's own tag, from the same folder.
+```
+
+`fieldia.js` takes a part whose tag it finds still on its way, and never asks
+for it a second time. A tag the page writes is the page's own script, checked by
+the integrity it carries: write exactly what `Fieldia.partTags(page)` gives —
+each part's address, `crossorigin="anonymous"` and `integrity`, the sha256 of
+its file, the same value `fieldia.js` carries for it and this README's tags
+carry for the files beside it. A `<link rel="preload" as="script">` is used only
+by a request made the same way, so it carries the same three. A list's first
+page of records is asked for as its part is, not once it has come (where the
+page alone says what the list asks first); the designer asks for every part the
+page it opens draws from at once.
 
 For React, Vue and Angular, use `@fieldia/react`, `@fieldia/vue` or
 `@fieldia/angular` — thin shells over this viewer. MIT licensed.

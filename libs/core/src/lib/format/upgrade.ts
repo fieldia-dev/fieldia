@@ -42,7 +42,10 @@ export interface PageUpgrade {
  * phone's country is picked, a page's `phone.countries` and a phone field's `options.countries` ("list" or "native") —
  * so a 0.10 page is a 0.11 page as it is; and 0.12 (Fieldia 0.33) only added — how a page waits, its `loading` (each
  * moment's way, its looks, its timing, a failure's way), on the page, a list, a related list and a map, and a field's
- * `options.loading` — so a 0.11 page is a 0.12 page as it is. A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
+ * `options.loading` — so a 0.11 page is a 0.12 page as it is; and 0.13 (Fieldia 0.34) only added — a field's `secret`,
+ * never kept in a draft — so a 0.12 page is a 0.13 page as it is (0.34's other checks — a field named `constructor`,
+ * `__proto__` or `prototype`, a pattern that could take seconds — are refusals of what a page says, not its shape).
+ * A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
  * none: the page is the same, and upgradePage writes the new version in it.
  */
 export const PAGE_UPGRADES: readonly PageUpgrade[] = [];

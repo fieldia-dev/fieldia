@@ -1,4 +1,4 @@
-import { foldDigits, languagesOf, stripMarks, webAddress, type Field, type FieldNode, type LineField, type Locale, type Page, type RelatedRecord, type Value, type Values } from '@fieldia/core';
+import { LINK_URL, safeUrl, foldDigits, languagesOf, stripMarks, webAddress, type Field, type FieldNode, type LineField, type Locale, type Page, type RelatedRecord, type Value, type Values } from '@fieldia/core';
 import { phoneSettings } from './phone-settings';
 import { cellText } from './display';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
@@ -94,7 +94,7 @@ export function readText(context: { document: Document; field: Field; node: Fiel
       let main: Node;
       if (href) {
         const link = doc.createElement('a');
-        link.href = href;
+        link.href = safeUrl(href, LINK_URL) ?? '';
         if (node.widget === 'url') Object.assign(link, { target: '_blank', rel: 'noopener noreferrer' });
         link.textContent = words;
         main = link;

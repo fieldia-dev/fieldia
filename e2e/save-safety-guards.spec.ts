@@ -37,7 +37,7 @@ async function conflictInYourTab(page: Page) {
   return form;
 }
 
-test('Ctrl+Enter pressed twice while the first save is on its way saves twice as Sara: no conflict with herself', async ({ page }) => {
+test('Ctrl+Enter pressed twice while the first save is on its way saves once — the same save: no conflict with herself', async ({ page }) => {
   const problems = await openDemo(page);
   const form = yours(page);
   const phone = field(form, 'phone').locator('input');
@@ -46,9 +46,9 @@ test('Ctrl+Enter pressed twice while the first save is on its way saves twice as
   // The source takes a fifth of a second: the second press comes while the first is on its way.
   await expect.poll(async () => (await state(page)).status).toBe('saving');
   await phone.press('Control+Enter');
-  await expect.poll(async () => (await page.evaluate(() => (window as any).fieldiaDemo.dataSource.calls.filter((c: any) => c.method === 'save').length))).toBe(2);
-  // Both answered.
+  // Both answered, by the one save: nothing changed between the presses.
   await page.evaluate(() => (window as any).fieldiaDemo.handle.form.settled());
+  expect(await page.evaluate(() => (window as any).fieldiaDemo.dataSource.calls.filter((c: any) => c.method === 'save').length)).toBe(1);
   await expect(form.locator('.fd-status')).toHaveText('Saved');
   await expect(banner(form)).toBeHidden();
   expect(await state(page)).toMatchObject({ status: 'saved', conflict: null, saveProblem: null, dirty: [] });

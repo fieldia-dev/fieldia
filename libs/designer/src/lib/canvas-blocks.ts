@@ -1,4 +1,4 @@
-import type { ButtonNode, DividerNode, ImageNode, MapNode, RelatedNode, SlotNode, SpacerNode, TextNode } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, type ButtonNode, type DividerNode, type ImageNode, type MapNode, type RelatedNode, type SlotNode, type SpacerNode, type TextNode } from '@fieldia/core';
 import { installListStyles, VIEWER_LABELS } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -100,7 +100,7 @@ export function blockViews(options: { el: ElementFactory; doc: Document; designe
       if (node.type === 'text') words(element, node.text, picked);
       else if (node.type === 'button') words(element, node.label, picked);
       else if (node.type === 'image') {
-        if (element.getAttribute('src') !== node.src) element.setAttribute('src', node.src);
+        if (element.getAttribute('src') !== node.src) element.setAttribute('src', safeUrl(node.src, PICTURE_URL) ?? '');
         element.setAttribute('alt', node.alt);
         // As wide, and where in its row, as the form draws it.
         const width = typeof node.width === 'number' ? `${node.width}px` : node.width ? { small: '160px', medium: '320px', large: '480px', full: '100%' }[node.width] : '';

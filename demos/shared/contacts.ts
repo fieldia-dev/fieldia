@@ -97,7 +97,7 @@ export function contactPermissions(values: Values): RecordPermissions | undefine
 
 /** One contact, on a page of its own: what a row of the list opens. */
 export const contactPage: Page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'contact',
   title: 'Contact',
   data: { kind: 'record', model: 'crm.contact' },

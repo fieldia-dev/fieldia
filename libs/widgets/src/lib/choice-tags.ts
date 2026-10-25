@@ -286,7 +286,7 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   let drawn = '';
   return {
     element,
-    focus: () => input.focus(),
+    focus: (options?: FocusOptions) => input.focus(options),
     destroy: () => {
       // Taken away with words typed in it — a cell's editor closed, which a browser may do without a blur: read as
       // leaving reads them, never dropped.

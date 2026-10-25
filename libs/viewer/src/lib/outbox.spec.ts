@@ -1,5 +1,8 @@
 import { createMemoryDataSource, memoryOutbox, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from './viewer';
+
+/** The broker signed in: what she sends without signal is kept as hers, past a closed tab. */
+const BROKER = { id: 'mona', name: 'Mona Adel' };
 import { partsFor, undoPart } from './viewer-parts';
 
 /**
@@ -9,7 +12,7 @@ import { partsFor, undoPart } from './viewer-parts';
  */
 
 const visit: Page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'site-visit',
   data: { kind: 'responses' },
   outbox: true,
@@ -38,7 +41,7 @@ describe('an offline outbox on screen', () => {
     let off = true;
     const dataSource = createMemoryDataSource({ offline: () => off });
     const host = document.body.appendChild(document.createElement('div'));
-    handle = mountViewer(host, { page: visit, dataSource, outbox: memoryOutbox(), values: { unit: 'B-12' } });
+    handle = mountViewer(host, { page: visit, user: BROKER, dataSource, outbox: memoryOutbox(), values: { unit: 'B-12' } });
     await settled();
     const bar = host.querySelector('.fd-outbox') as HTMLElement;
     expect(bar.hidden).toBe(true);
@@ -71,7 +74,7 @@ describe('an offline outbox on screen', () => {
     const dataSource = createMemoryDataSource({ offline: () => off });
     const store = memoryOutbox();
     const host = document.body.appendChild(document.createElement('div'));
-    handle = mountViewer(host, { page: visit, dataSource, outbox: store, values: { unit: 'A-1' } });
+    handle = mountViewer(host, { page: visit, user: BROKER, dataSource, outbox: store, values: { unit: 'A-1' } });
     await settled();
     await handle.save();
     expect(store.items).toHaveLength(1);
@@ -94,7 +97,7 @@ describe('an offline outbox on screen', () => {
       submit: () => (online ? Promise.reject(Object.assign(new Error('Unit not listed'), { problem: { kind: 'rule', message: 'Unit not listed' } })) : Promise.reject(new TypeError('Failed to fetch'))),
     };
     const host = document.body.appendChild(document.createElement('div'));
-    handle = mountViewer(host, { page: visit, dataSource, outbox: store, values: { unit: 'Z-9' }, confirm: async () => true });
+    handle = mountViewer(host, { page: visit, user: BROKER, dataSource, outbox: store, values: { unit: 'Z-9' }, confirm: async () => true });
     await settled();
     await handle.save();
     online = true;

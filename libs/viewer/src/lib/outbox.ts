@@ -67,7 +67,9 @@ export function watchOutbox(ctx: JoinContext): PageJoin & { bar: HTMLElement } {
         saidSent = false;
       }
       const allSent = waited && !waiting && !box?.sending && !kept.length;
-      const words = box?.sending && waiting ? labels.outboxSending : waiting ? [box?.offline ? labels.outboxOffline : '', waiting === 1 ? labels.outboxWaitingOne : fill(labels.outboxWaiting, { count: waiting })].filter(Boolean).join(' ') : allSent ? labels.outboxSent : '';
+      // Held by this page alone (no IndexedDB): said so, never "on this device".
+      const [one, many] = box?.lasting === false ? [labels.outboxWaitingPageOne, labels.outboxWaitingPage] : [labels.outboxWaitingOne, labels.outboxWaiting];
+      const words = box?.sending && waiting ? labels.outboxSending : waiting ? [box?.offline ? labels.outboxOffline : '', waiting === 1 ? one : fill(many, { count: waiting })].filter(Boolean).join(' ') : allSent ? labels.outboxSent : '';
       if (allSent && !saidSent) {
         saidSent = true;
         ctx.announce(labels.outboxSent);
@@ -119,9 +121,11 @@ export function watchOutbox(ctx: JoinContext): PageJoin & { bar: HTMLElement } {
         home = doc.createComment('');
         bar.before(home);
       }
-      setText(title, labels.outboxKeptTitle);
+      // Held by this page alone where the browser keeps nothing past it: said so, never "Kept on this device".
+      const lasting = form.getState().outbox?.lasting !== false;
+      setText(title, lasting ? labels.outboxKeptTitle : labels.outboxPageTitle);
       if (words) words.hidden = true;
-      mine.replaceChildren(el('p', {}, labels.outboxKeptWords), bar);
+      mine.replaceChildren(el('p', {}, lasting ? labels.outboxKeptWords : labels.outboxPageWords), bar);
       return true;
     },
     destroy() {

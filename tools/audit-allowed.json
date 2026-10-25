@@ -1,0 +1,16 @@
+[
+  {
+    "advisory": "https://github.com/advisories/GHSA-cg2g-xh64-v4q7",
+    "package": "dompurify",
+    "why": "Pinned at 3.4.15 by monaco-editor 0.57.0 (@fieldia/monaco's editor), which calls DOMPurify with ALLOWED_TAGS, ALLOWED_ATTR, RETURN_DOM_FRAGMENT and RETURN_TRUSTED_TYPE alone (esm/vs/base/browser/domSanitize.js): never SAFE_FOR_TEMPLATES, the mode this bypass needs. Fieldia's own sanitizer is its own code, not DOMPurify. Fixed by a monaco-editor that moves to dompurify 3.4.17 or later.",
+    "reviewed": "2026-10-24",
+    "until": "2026-12-31"
+  },
+  {
+    "advisory": "https://github.com/advisories/GHSA-mrv2-3pqr-j5jr",
+    "package": "dompurify",
+    "why": "Pinned at 3.4.15 by monaco-editor 0.57.0 (@fieldia/monaco's editor), which never sets IN_PLACE, the mode this needs: it sanitizes a string into a new fragment or a TrustedHTML (esm/vs/base/browser/domSanitize.js), never a node in place. Fixed by a monaco-editor that moves to dompurify 3.4.17 or later.",
+    "reviewed": "2026-10-24",
+    "until": "2026-12-31"
+  }
+]

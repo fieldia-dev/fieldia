@@ -1,5 +1,5 @@
 import { callsPartFunctions, formJoins, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
-import { asksLoadingPart, loadingPart, businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { asksLoadingPart, loadingPart, loadingSettings, businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as ElementModule from './element-part';
@@ -407,6 +407,33 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * quiet skin the app itself gives the viewer is not the page's: its part is
  * `themesPart` or `quietPart` (@fieldia/widgets), `.load()`ed the same way.
  */
+/**
+ * The one-tag script's files a page draws from — `fieldia.list.js`, `fieldia.cards.js`, … — each part `partsFor` names:
+ * what a server writes into the page as `<script async src="…">` tags before fieldia.js, from the folder fieldia.js
+ * comes from, so they come beside it rather than once it has run and looked at the page (measured on a mid-range phone:
+ * a list of customers usable 23% sooner on 4G and 27% on Fast 3G, a record with tabs 16% on both). fieldia.js takes a
+ * tag it finds for a part still on its way, never asking for it twice. A page given `createMemoryDataSource` adds
+ * `fieldia.memory.js`. In the browser, the one-tag script's `partTags(page)` gives each with what its own tag carries.
+ */
+export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>, loading?: PageLoading): string[] {
+  const parts = partsFor(page, widgets, slots);
+  // The loading part where the viewer asks for it with these (`loadingWithParts`): a record's page waits for its record.
+  if (!parts.includes(loadingPart) && loadingWithParts(page, parts, page.data.kind === 'record' && page.layout.type !== 'list', loading)) parts.push(loadingPart);
+  return parts.map((part) => `fieldia.${part.name}.js`);
+}
+
+/**
+ * Whether the loading part is asked for with a page's parts — the viewer's rule, and `partFiles`' — so the wait for
+ * what comes from them is drawn as it says, the part delaying none: where the page waits for any part and then for its
+ * data drawn from one (its record, a list's rows, a related list's, a map's, a saved form placed) and its waits draw
+ * from the loading part (a skeleton first, Fieldia's default); or where the app's own way of waiting (the viewer's
+ * `loading`) names a look of the part's.
+ */
+export function loadingWithParts(page: Page, parts: readonly Part[], waitsForRecord: boolean, appLoading?: PageLoading): boolean {
+  const waitsForData = waitsForRecord || /"type":"(list|related|form|map)"/.test(JSON.stringify(page.layout));
+  return (!!parts.length && waitsForData && asksLoadingPart(loadingSettings(appLoading, page.loading), ['first', 'refresh', 'more'])) || asksLoadingPart(appLoading);
+}
+
 export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {
   // With the parts that join a form, asked for as they are loaded: their module may come after this one's.
   await Promise.all((page ? partsFor(page, widgets, slots) : [...EVERY_PART, ...formJoins()]).map((part) => part.load()));

@@ -15,6 +15,7 @@ import { pathToFileURL } from 'node:url';
 import { dirname, join, relative, resolve } from 'node:path';
 import { checkDemos } from './demo-sizes.mjs';
 import { pageParts, partFiles, partModules, preloadScript } from './demo-preloads.mjs';
+import { openTag, readReleased } from './script-tags.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
@@ -93,6 +94,13 @@ for (const variant of variants) {
     cpSync(join(WORKSPACE, 'demos/embed'), join(OUT, 'embed'), { recursive: true });
     for (const file of readdirSync(dirname(SCRIPT_BUNDLE)).filter((name) => /^fieldia(\.[a-z]+|-embed)?\.js$/.test(name))) cpSync(join(dirname(SCRIPT_BUNDLE), file), join(OUT, 'embed', file));
     cpSync(join(WORKSPACE, 'examples/pages/unit-enquiry.page.json'), join(OUT, 'embed/unit-enquiry.page.json'));
+    // The tags it shows a partner to paste, as fieldia.dev prints them: the release on npm, each with its integrity
+    // (tools/script-tags.mjs), written into the page's script strings — never typed in the demo.
+    const index = join(OUT, 'embed/index.html');
+    const released = readReleased(WORKSPACE);
+    const shown = readFileSync(index, 'utf8').replace(/__FIELDIA_TAG:([\w.-]+)__/g, (_, file) => JSON.stringify(openTag(file, released)).slice(1, -1));
+    if (!/integrity=/.test(shown) || /__FIELDIA_TAG/.test(shown)) throw new Error('demos/embed shows a script tag not written from the release (tools/script-tags.mjs)');
+    writeFileSync(index, shown);
     console.log(`demo embed: ${join('dist/demos', 'embed')}`);
     continue;
   }

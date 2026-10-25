@@ -14,6 +14,280 @@ it (see `upgradePage` in the docs' page format page).
 Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
+A patch (0.34.**1**) holds fixes alone, with no Upgrading part: `release.mjs`
+refuses one that has.
+
+## 0.34.0 — 2026-10-25
+
+**Forms you can trust: safe links and files, data never lost or sent twice,
+faster lists and Gantt, verifiable releases.** Every address Fieldia puts on a
+link, a picture, a player or a frame goes through one check, and a file is shown
+in place only in a format Fieldia lists, from bytes that match it. What a person
+types is never lost — not while a record loads, not as a form is taken away —
+and never sent twice: each send carries one key from its first try, a part that
+guards a send and cannot come refuses it in words, every request has a
+deadline, and drafts and kept sends are the person's own. Lists, cells, the
+Gantt and the designer do less work for the same result, and a page's parts
+come beside `fieldia.js`. Each part is checked against the hash it was built
+with, and every script tag in the docs names a version and its hash. The page
+format is 0.13 — a field's `secret` is new — and a page of 0.1 to 0.12 is read
+as it is.
+
+**Security:**
+
+- **One check for every address (`safeUrl`)**: a link, a picture, a player, a
+  frame, a page opened — read with the URL parser as the browser reads it, its
+  scheme one the place allows. `openUrl` and a map card can no longer run
+  `javascript:`, however it is written; an `openUrl` that gives another address
+  opens nothing and says why, and the page checks refuse one written in the
+  page.
+- **Files shown in place by their format**: pdf, pictures, films and sounds
+  Fieldia lists, their bytes checked against the format and shown from a blob
+  typed from it, never from the type a file says. An uploader's HTML never runs
+  in the app's site; an SVG is drawn as a picture alone, never framed or opened
+  in a tab; a download is plain bytes.
+- **CSV exports keep a formula's start as words** (`'` before `=`, `+`, `-`,
+  `@`, a tab or a return), and import reads them back.
+- **Nothing takes seconds on an answer**: a page's pattern that could is
+  refused by `checkPage` and `validatePage`, an answer over 1,000 characters
+  fails its pattern untried, long typed text is never read as a date at length,
+  worked-out values are held to their most, and imports open at most 100 MB a
+  file, 200 MB in all, a cell of 32,767 characters.
+- A framed form tells only the sites its `allowed-origins` names (and its own);
+  AI help never writes a field the page does not draw; the embed widget runs a
+  page of the app's own site with no origin; expressions read own properties
+  alone, and `constructor`, `__proto__` and `prototype` are refused as field
+  names.
+- **Each part is checked before it runs**: `fieldia.js` carries the sha256 of
+  every part it was built with and asks for a part with `integrity` and
+  `crossorigin="anonymous"`. A part that is not that file never runs: what
+  needed it says it could not be loaded, and where it guards a send, the send is
+  refused. One value per part everywhere — the built-in hash,
+  `Fieldia.partTags(page)` and the docs' tags all name the file's sha256.
+- **Script tags in the docs name a version and carry its hash**, written by
+  `tools/script-tags.mjs`, never by hand; source maps carry relative paths only;
+  the release check audits what an app installs (`npm audit --omit=dev`, high
+  and critical refused); the workflows' actions are pinned by commit, with
+  Dependabot and a `SECURITY.md`; publishing from CI by npm's trusted
+  publishing, with provenance, is prepared — off until the owner switches it on
+  (`TRUSTED_PUBLISHING`, the last step of docs/maintainers/publishing.md).
+- **Drafts, kept sends and preferences are a person's own**: keyed by the
+  signed-in person (or the tab), a record's draft holding only the changes; a
+  password box's value and a field marked `secret` are never kept;
+  `drafts.clear()` and `outbox.clear()` let a person's go at sign-out.
+- **`checkSubmission(page, values, context)`** runs a page's checks again where
+  its answers arrive — required, patterns, sizes, options, a code proved, a
+  payment worked out on the server and paid in full. A page its own checks
+  refuse takes no answers there either, its patterns checked by the browser's
+  own function. The payment docs work the amount out on the server, and page
+  checks warn where a field filled from the link is the amount.
+
+**Fixes:**
+
+- **A part that guards a send fails closed** — a payment, a code check, a time
+  limit's clock, a link's fields, approvals, options by condition, languages,
+  limits: the send waits, asks for it once more, then says "The payment step
+  could not load, so nothing was sent. Try again." with Retry, the typing kept.
+- **One load boundary**: a record's values are read as their fields hold them
+  (decimals as text, Odoo's `false`, link tuples); one that cannot be read is
+  said under its field and never sent back over the source's. Until a record's
+  first load ends well its fields are inert, what is typed meanwhile is kept
+  over it, and a save of it is refused; `save()` never throws.
+- **A record that could not be loaded is said once, in its place**: at the top
+  of the form, in its own words ("This customer could not be loaded: …"), with
+  one Retry, which loads it. It is the record's wait's failure (0.33's), reading
+  core's `state.loadProblem`; no banner over the page besides.
+- **A record opened in another's place never shows the other's values** (the
+  owner's walk of 0.33.0): while it loads, its own boxes stand as its skeleton,
+  holding none of the last record's values and taking no typing; one that could
+  not be opened is named — "Couldn't open customer 32: …" — with Retry, which
+  opens it. 0.33 left the previous customer on screen, editable, under a line
+  that named none.
+- **Next rows that could not come stay said** (the same walk): "Couldn't load.
+  … Retry" where they would have come, and the list's end in sight asks nothing
+  by itself until the person presses Retry or Show more; 0.33 said it for one
+  frame, then asked again. A tree's next children and a group's Show more ask
+  only when pressed, as before.
+- **One send discipline**: one key from a send's first try, reused by Retry and
+  by a kept copy; a second save with nothing changed is the first; a response's
+  same answers never go twice; a new record answered with no id is refused in
+  words; kept saves go before a live one; claims are renewed while a send goes;
+  without IndexedDB the outbox says so.
+- **Nothing waits for ever**: every request Fieldia makes of its source — a
+  record's load, a list's rows and groups, a save, a send, an onchange, a
+  search, a list's options — ends at its deadline (`timeout`, 30 s unless the
+  app says) as the network's problem, with Retry. The deadline ends the request;
+  a wait's `loading.timeout` ends its loader; where both are set the sooner ends
+  the wait, said once, never a loader left running. A Discard wins over a stuck
+  save; a part or a language's words that stall settle after 30 s.
+- **A form taken away keeps its draft**: typed a moment before the viewer is
+  destroyed, or before a dialog closes with it, what was not kept yet is kept,
+  as the draft's rules say.
+- **Faster:** every `Intl` formatter is made once (`intlFormat`), and a date's
+  calendar builds its names when it first opens (an editable list of 1,000 rows
+  first drawn 3.2 → 2.3 s on a phone, a Gantt of 500 tasks 2.5 → 1.1 s); a key
+  in a list's cell lays out its box alone (341 → 191 ms on a phone); a list
+  asks for its first page beside its part (usable 21% sooner on a phone over
+  4G); part tags written into a page are never fetched twice; the designer asks
+  for its canvas's parts at once; the tab strip, Tab between cells, a Gantt drop
+  and a designer pick force no extra layouts, and a Gantt drop is drawn once.
+- **Endless card lists skip no card unseen**: `content-visibility` made them
+  scroll far worse on a phone (the median frame 17 → 167 ms at 3,000 cards, 17
+  → 33 as they grow), as plain card lists did; they now scroll as those do.
+- **`destroy()` takes away what the viewer opened** — its dialogs, panels,
+  pages in its place, Search more… lists, as not saved — and the outbox shares
+  one IndexedDB connection; the designer's guides, Undo (the last 200 edits),
+  menus and its "While it waits" previews let go with it (a designer opened
+  again kept every preview before it).
+- `partFiles(page)` names `fieldia.loading.js` too where the viewer asks for it
+  with the page's parts, so a page's written tags cover them all.
+- `release.mjs publish` refuses a tree with changes, a HEAD not on
+  `origin/main`, a HEAD with no tag of its version, and a patch whose section has
+  an Upgrading part, each in words; it prints the tag's push and the GitHub
+  release's command only once every package is on npm. The console's hint for a
+  missing language names the running version.
+- A date and time box on another zone's clock names the zone as it is now by
+  the form's clock (`now`), as its today is — not the computer's (a test pinned
+  to 16 October said CET on the day the clocks went back).
+- An embed field asks its frame only for the sandbox tokens the browser knows
+  (WebKit has no `allow-presentation`, and said so in the console for every
+  frame).
+- The demos: a record page opened without `record=` opens its model's first
+  sample record, never "Couldn't load"; a demo page shown in an embed field
+  draws in its opaque origin.
+
+**New:**
+
+- `@fieldia/core`: `safeUrl` with `LINK_URL`, `PICTURE_URL`, `MEDIA_URL` and
+  `DOWNLOAD_URL`; `csvCell` and `csvWords`; `patternRisk`, `rulePattern`,
+  `PATTERN_MOST`, `DATE_TEXT_MOST` and `COMPUTED_MOST`; `checkSubmission`;
+  `valuesFromSource`; `drafts`, `outbox` and `ownerOf`; `withDeadlines` and
+  `SEND_TIMEOUT_MS`; `intlFormat`; a field's `secret`; `FormOptions.timeout`;
+  `state.loadProblem`, `state.loaded`, `state.unreadable` and
+  `state.outbox.lasting`; requests' `key` and `signal`.
+- `@fieldia/viewer`: the viewer's `timeout`; `partFiles(page)` (also from
+  `@fieldia/viewer/server`); in the one-tag script `Fieldia.partTags(page)`;
+  `<fieldia-form allowed-origins>`; the files part's `fileShown`, `formatOf` and
+  `shownFile`, with `FileFormat`, `Shown` and `ShownKind`.
+- `@fieldia/widgets`: `Widget.focus(options)` takes FocusOptions.
+- The designer: "Never kept in a draft" on a field's Rules tab.
+- `docs/maintainers/publishing.md`, `.github/workflows/publish.yml`,
+  `SECURITY.md`, `.github/dependabot.yml`.
+
+**Upgrading** — grouped by who it touches:
+
+- *Page authors:*
+  - Pages are written in format 0.13 (`FORMAT_VERSION`): 0.13 only added a
+    field's `secret`, so a 0.12 page is read as it is; an older Fieldia refuses
+    a 0.13 page, saying to update.
+  - `openUrl` opens only http, https, mailto, tel or a path of the site.
+  - A pattern that could take seconds, and a field named `constructor`,
+    `__proto__` or `prototype`, are refused by `checkPage` and `validatePage`;
+    an answer over 1,000 characters fails its pattern; worked-out values over
+    their most become empty; `name.constructor` reads as nothing.
+  - Page checks warn where the payment's amount is a field filled from the link.
+- *App code:*
+  - A send whose guarding part cannot load is refused, in words.
+  - Every request carries a non-enumerable `signal`, and a save or send its
+    `key`: dedupe by `key` on the server. Every request — a record's load and a
+    list's rows too — ends after 30 s unless `timeout` says otherwise (0 for
+    none); 0.33 gave a list's request a signal only where a `timeout` was set.
+  - A record that could not be loaded is said at the top of the form in
+    `state.loadProblem`'s words ("This … could not be loaded: …", or "Couldn't
+    open … 32: …" for one `openRecord` opened in another's place), where 0.33
+    said "Couldn't load." before the source's words. `openRecord(id)` empties the
+    form's values until the record has loaded, and its first wait is a `first`
+    (a skeleton of the form's boxes), no longer a `refresh` over the last
+    record. `state.loaded` is false
+    until a record's first load ends well, its fields inert; a save of it is
+    refused; `loadedRecordOf` throws on a list or `null`; a value that cannot be
+    read is left out of a whole-record save.
+  - A second `save()` with nothing changed is the first; a response's same
+    answers return false — call `form.reset()` for another response; a new
+    record answered with no id is refused.
+  - Drafts are re-keyed by person: 0.33's drafts are not offered. An anonymous
+    person's drafts and kept sends are the tab's; a signed-in person's
+    preferences start afresh once.
+  - `destroy()` closes the viewer's dialogs, panels and pages in its place as
+    not saved, and keeps the draft their typing had not kept yet.
+  - A list page whose part has not come asks `source.list` early; where the
+    list's own first request differs, a second follows.
+  - `fileShown` is the files part's: `(await filesPart.load()).fileShown(doc,
+    file)`. Previews show only listed formats whose bytes match; a PDF at the
+    app's own address is fetched (a GET with cookies) and checked first.
+    Chatter's pictures open the file dialog.
+  - A framed form needs `allowed-origins` for another site to hear its events;
+    AI proposals for fields not drawn are left out; CSV export adds `'` to
+    formula-like words; imports refuse oversized archives and cells; the embed
+    widget sandboxes a same-site page fully.
+  - `Widget.focus(options?)` takes FocusOptions; the designer's Undo keeps 200
+    edits.
+  - An app's whole `messages` add `openFailed` (and its English `openFailedNoun`);
+    the new words in the seven other languages are unreviewed.
+- *Tests and CSS:*
+  - The `.fd-load-problem` banner is not drawn: a record's load failure is
+    `.fd-loader[data-way="failed"]` at the top of `.fd-content`. Fields are
+    inert while a record first loads.
+  - Requests compared with `toEqual` include `key`; a double Ctrl+Enter saves
+    once.
+  - Preview fixtures need real file headers; `.fd-attachment-image` is a
+    button.
+  - The tab strip's `data-more` and its reveal land a frame later; a text input
+    in an open list cell gets `contain: size layout; vertical-align: top`; the
+    Gantt's `--fd-gantt-axis` is set on its edge signs; endless card rows have
+    no `content-visibility`.
+  - The console's hint for a missing language names the running version.
+- *Self-hosters:*
+  - Parts are fetched with `crossorigin="anonymous"` and their `integrity`:
+    served from another origin than the page's, they need
+    `Access-Control-Allow-Origin`; a part changed after it was built (by a
+    proxy, a minifier, a patch) is refused; only parts of the same build as
+    `fieldia.js` load.
+  - Part tags written into a page — `<script async>` or `<link rel="preload"
+    as="script">` — carry exactly what `Fieldia.partTags(page)` gives, and come
+    from the folder `fieldia.js` comes from; `partFiles(page)` may now name
+    `fieldia.loading.js`.
+  - The docs' script tags carry sha256 hashes (0.32's carried sha384): take
+    every tag from this release's README.
+  - A PDF preview at your own address needs `connect-src 'self'`; the embed
+    script frames only http(s) addresses.
+  - A page of your own site shown in an embed field runs in an opaque origin
+    (framed without `allow-same-origin`), so its scripts are fetched from origin
+    `null` and need `Access-Control-Allow-Origin` from your server — as GitHub
+    Pages and most CDNs send. Its own code must not assume it can read
+    `localStorage` or `sessionStorage` there.
+  - Maintainers: a release is tagged locally first, published, then its tag is
+    pushed (docs/maintainers/publishing.md). A patch holds fixes alone, with no
+    Upgrading part; `release.mjs` refuses one.
+
+**Size:** `fieldia.js` 558.1 KB, 186.0 gzipped (0.33.0: 535.1, 175.9): 10.1
+KB gzipped, every part of it what every page needs before any part can come.
+In merge order: harden-release 2.8 (the 53 parts' hashes 2.1 of it — a hash
+does not compress — the check and its words 0.2), harden-edges 2.1 (patterns
+bounded 1.0, `safeUrl` 0.4, CSV cells 0.2), harden-data 4.1 (the record reader
+`valuesFromSource` 1.0, the deadline 0.8, drafts kept by person 0.5, the load
+boundary and the send discipline in the form, the guards' words), harden-perf
+0.9 (the early list request 0.5, closing what a viewer opened, adopting a part's
+written tag), the merge's own jobs 0.2 (one deadline for every request, a
+record's failure said once and named, next rows' failure left said, a draft
+kept as a form is taken away). Over 180 KB, as the owner accepts up to about
+200. Of the parts, gzipped:
+
+- files 18.82 (17.33): the formats shown in place and their bytes checked;
+- outbox 4.67 (3.98): kept saves first, claims renewed, the person's own, one
+  connection;
+- import 15.25 (14.89): archives and cells held to their most, the workbook
+  read once through;
+- editable 12.63 (12.32), date 9.27 (9.18): one cell laid out alone, a
+  calendar's names when it opens, a zone named by the form's clock;
+- list 45.82 (45.61), memory 9.11 (9.03), pay 3.45 (3.29), element 2.59
+  (2.38): addresses through `safeUrl`, the memory source's keys, the payment's
+  warning, a framed form's origins;
+- cards 3.77 (3.79): no card skipped unseen; every other part within 0.05;
+- the language add-ons by 0.5–0.7 each (the lanes' words; Arabic 21.49 from
+  20.76); `fieldia-embed.js` 0.91 (0.88);
+- `@fieldia/map` with a list's map 49,478 bytes (49,375), in a page of its own
+  33,763 (33,663); `@fieldia/gantt`'s timeline 15,799 (15,611).
 
 ## 0.33.0 — 2026-10-24
 

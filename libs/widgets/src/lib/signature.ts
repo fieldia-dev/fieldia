@@ -1,4 +1,4 @@
-import { evidenceOf, fileProblem, MESSAGES, signsAnswers, type FileValue } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, evidenceOf, fileProblem, MESSAGES, signsAnswers, type FileValue } from '@fieldia/core';
 import { readFile } from './files';
 import { stillShown, whileShown } from './shown';
 import { goingList } from './files-going';
@@ -411,7 +411,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
       if (value && keyOf(value) !== mine) {
         // Kept before, uploaded, or set from outside: its picture, until Clear.
         const src = value.data ? `data:${value.type};base64,${value.data}` : (value.url ?? '');
-        if (image.getAttribute('src') !== src) image.src = src;
+        if (image.getAttribute('src') !== src) image.src = safeUrl(src, PICTURE_URL) ?? '';
         image.hidden = false;
         canvas.hidden = true;
         mine = null;

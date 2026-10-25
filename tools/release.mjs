@@ -7,9 +7,18 @@
  *   NPM_TOKEN=… node tools/release.mjs publish  the same check, then publish what is not on npm yet
  *   node tools/release.mjs verify             after publishing: the same checks on what npm serves
  *
- * Every mode refuses a version with no section in CHANGELOG.md. `publish` refuses a page format whose shape changed
- * under its old version (format-shape.mjs; `check` only says so), and ends by printing the version's section and the
- * exact commands that tag the release and make its GitHub release, for a person to run (see release-notes.mjs).
+ * Every mode refuses a version with no section in CHANGELOG.md. `publish` refuses, before anything is checked, a
+ * release that is not a commit tagged with its version, already on origin/main, from a tree with no changes, or a
+ * patch whose section has an Upgrading part (release-guards.mjs; `check` says the last); and a page format whose shape
+ * changed under its old version (format-shape.mjs; `check` only says so). It publishes the packs `check` proved
+ * (release-publish.mjs: each against the hash it was packed with, in order, stopping where one fails), and once every
+ * one is on npm it prints the version's section and the commands that push its tag and make its GitHub release, for a
+ * person to run (see release-notes.mjs).
+ *
+ * `check` leaves the packs in tmp/release/packs with packs.json, their order and hashes: what the publish workflow
+ * (.github/workflows/publish.yml) publishes from CI by npm's trusted publishing, with no token (tools/publish-packs.mjs).
+ * This mode's own `publish`, with a token, is for a maintainer's machine until npm is switched over
+ * (docs/maintainers/publishing.md).
  *
  * Build first: `npx nx run-many -t build`. A package marked `"private": true`
  * is never packed or published.
@@ -28,6 +37,10 @@ import { runInNewContext } from 'node:vm';
 import { notesFor, printRelease } from './release-notes.mjs';
 import { checkFormatShape } from './format-shape.mjs';
 import { withoutAuth } from './release-env.mjs';
+import { gitFacts, machinePathIn, patchProblem, releaseProblems } from './release-guards.mjs';
+import { publishPacks, readPacks, writePacks } from './release-publish.mjs';
+import { auditProblems } from './release-audit.mjs';
+import { hashesOf, recordReleased, tagProblems, writeReadmes } from './script-tags.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const WORK = join(WORKSPACE, 'tmp/release');
@@ -63,7 +76,18 @@ for (const { dir, manifest } of packages) {
   if (!existsSync(join(WORKSPACE, 'dist/libs', dir, 'README.md'))) fail(`dist/libs/${dir} has no README.md — its npm page would be empty`);
 }
 // What changed, in plain words, before anything is packed: CHANGELOG.md's section for this version.
-if (!notesFor(readFileSync(join(WORKSPACE, 'CHANGELOG.md'), 'utf8'), version)) fail(`CHANGELOG.md has no section for ${version}: write what changed, in plain words, before releasing it`);
+const changelog = readFileSync(join(WORKSPACE, 'CHANGELOG.md'), 'utf8');
+if (!notesFor(changelog, version)) fail(`CHANGELOG.md has no section for ${version}: write what changed, in plain words, before releasing it`);
+// What a release must be before it is published (release-guards.mjs), refused before minutes of checks; a patch's
+// Upgrading part said on every check, while the release's commit is written.
+if (mode === 'publish') {
+  if (!process.env.NPM_TOKEN) fail('publishing needs NPM_TOKEN in the environment');
+  const problems = releaseProblems({ version, changelog, facts: gitFacts(WORKSPACE) });
+  if (problems.length) fail(`nothing was published:\n  ${problems.join('\n  ')}`);
+} else if (mode === 'check') {
+  const patch = patchProblem(version, changelog);
+  if (patch) console.warn(`release: before publishing, ${patch}`);
+}
 // A page this release writes says a format version: one whose shape older readers know (format-shape.mjs). Said on
 // every check, while lanes add to the format; refused at publish, where the version has to be right.
 const format = checkFormatShape(WORKSPACE);
@@ -74,27 +98,76 @@ console.log(`release ${version}: ${packages.map((p) => p.manifest.name).join(', 
 // ---- pack ----------------------------------------------------------------------
 rmSync(WORK, { recursive: true, force: true });
 mkdirSync(PACKS, { recursive: true });
+const packs = [];
 const tarballs = packages.map(({ dir, manifest }) => {
   if (fromRegistry) return `${manifest.name}@${version}`;
   const [packed] = JSON.parse(run('npm', ['pack', join(WORKSPACE, 'dist/libs', dir), '--pack-destination', PACKS, '--json']));
   const files = packed.files.map((f) => f.path);
   const stray = files.filter((f) => /\.spec\.|\.tsbuildinfo$|(^|\/)tmp\//.test(f));
   if (stray.length) fail(`${packed.name} would ship ${stray.join(', ')}`);
+  // Relative paths alone: no file names a path on the machine it was built on (a source map's sources, an import).
+  for (const file of files) {
+    const path = machinePathIn(readFileSync(join(WORKSPACE, 'dist/libs', dir, file), 'utf8'));
+    if (path) fail(`${packed.name} would ship ${file}, which names ${path}, a path on the machine it was built on: write it relative to the workspace`);
+  }
   console.log(`  packed ${packed.filename} (${files.length} files, ${Math.round(packed.size / 1024)} KB)`);
+  packs.push({ name: packed.name, file: packed.filename, integrity: packed.integrity });
   return join(PACKS, packed.filename);
 });
+// The packs in their publishing order, with the hash each was packed with and the commit they were made from: what a
+// publish takes, here or in the publish workflow (release-publish.mjs), and checks each tarball against.
+if (!fromRegistry) writePacks(PACKS, { version, commit: run('git', ['rev-parse', 'HEAD']).trim(), packs });
 
 // ---- install into an empty project -------------------------------------------------
 const root = read(join(WORKSPACE, 'package.json'));
 const pin = (name) => `${name}@${(root.dependencies ?? {})[name] ?? root.devDependencies[name]}`.replace(/@[~^]/, '@');
 mkdirSync(SMOKE, { recursive: true });
-writeFileSync(join(SMOKE, 'package.json'), JSON.stringify({ name: 'fieldia-smoke', private: true, version: '0.0.0' }, null, 2));
 const peers = ['react', 'react-dom', '@types/react', 'vue', '@angular/core', '@angular/compiler', 'rxjs', 'ag-grid-community', '@playwright/test', '@types/node'].map(pin);
+/** `name@version` as a package.json has it: [name, version]. */
+const nameAndVersion = (pinned) => [pinned.slice(0, pinned.lastIndexOf('@')), pinned.slice(pinned.lastIndexOf('@') + 1)];
+writeFileSync(
+  join(SMOKE, 'package.json'),
+  JSON.stringify(
+    {
+      name: 'fieldia-smoke',
+      private: true,
+      version: '0.0.0',
+      // What an app installs: the packs (or, verifying, the version on npm), with their dependencies — audited below.
+      dependencies: Object.fromEntries(packages.map(({ manifest }, i) => [manifest.name, fromRegistry ? version : `file:${tarballs[i]}`])),
+      // What an app brings itself, the packages' peers: installed to check them against, not audited as Fieldia's.
+      devDependencies: Object.fromEntries(peers.map(nameAndVersion)),
+    },
+    null,
+    2
+  )
+);
 // No package's install scripts run: what is installed is only read, imported and type-checked.
-run('npm', ['install', '--no-audit', '--no-fund', '--ignore-scripts', '--loglevel=error', ...tarballs, ...peers], SMOKE);
+run('npm', ['install', '--no-audit', '--no-fund', '--ignore-scripts', '--loglevel=error'], SMOKE);
 for (const { manifest } of packages) {
   const installed = read(join(SMOKE, 'node_modules', manifest.name, 'package.json')).version;
   if (installed !== version) fail(`${manifest.name} installed as ${installed}, not ${version}`);
+}
+// npm's advisories for what an app installs with Fieldia, as each range resolves today (release-audit.mjs): high and
+// critical refuse the release, unless reviewed and allowed for a time in tools/audit-allowed.json.
+{
+  let report;
+  try {
+    report = run('npm', ['audit', '--omit=dev', '--json'], SMOKE);
+  } catch (error) {
+    report = error.stdout; // npm audit fails when it finds any advisory: its report is still written
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(report);
+  } catch {
+    fail(`npm audit gave no report for what an app installs: ${String(report).slice(0, 400)}`);
+  }
+  if (parsed.error) fail(`npm audit could not be run for what an app installs: ${parsed.error.summary ?? JSON.stringify(parsed.error)}`);
+  const allowed = read(join(WORKSPACE, 'tools/audit-allowed.json'));
+  const problems = auditProblems(parsed, allowed, new Date().toISOString().slice(0, 10));
+  if (problems.length) fail(`npm audit finds what an app installs with Fieldia vulnerable:\n  ${problems.join('\n  ')}\nUpgrade the dependency, or review the advisory and allow it until a date in tools/audit-allowed.json, saying why it cannot reach an app.`);
+  const counts = parsed.metadata?.vulnerabilities ?? {};
+  console.log(`  npm audit of what an app installs (${parsed.metadata?.dependencies?.prod ?? '?'} packages): no high or critical advisory${allowed.length ? ` beyond the ${allowed.length} reviewed in tools/audit-allowed.json` : ''} (${['critical', 'high', 'moderate', 'low'].map((level) => `${counts[level] ?? 0} ${level}`).join(', ')})`);
 }
 
 // What each package must export, by name.
@@ -372,32 +445,39 @@ for (const part of ['phone', 'decode']) {
   if (!readFileSync(join(SMOKE, `node_modules/@fieldia/viewer/bundle/fieldia.${part}.js`), 'utf8').split('\n')[0].includes('THIRD_PARTY_NOTICES.md')) fail(`the packed fieldia.${part}.js does not name its third-party notice`);
 }
 
+// The README @fieldia/viewer ships: its script tags name this version, each with the hash of the file beside it in the
+// package — what jsDelivr serves for it (tools/script-tags.mjs).
+{
+  const installed = join(SMOKE, 'node_modules/@fieldia/viewer');
+  const readme = readFileSync(join(installed, 'README.md'), 'utf8');
+  const shipped = { version, integrity: hashesOf(join(installed, 'bundle')) };
+  const problems = tagProblems(readme, shipped);
+  if (problems.length || !readme.includes(`@fieldia/viewer@${version}/bundle/fieldia.js`)) fail(`@fieldia/viewer's README does not give ${version}'s script tags, with the hashes of its files: ${problems.join('; ') || 'none names it'}`);
+}
+
 console.log(`  installed ${fromRegistry ? 'from npm' : 'the packs'} into an empty project: require, import, types (.mts and .cts), the script bundle, its language add-ons and its parts all check`);
+
+// What npm serves, recorded for the docs: fieldia.dev's script tags and the repository's READMEs name this version
+// from now, each with the hash of its file as npm serves it (tools/script-tags.mjs). Committed by a person.
+if (fromRegistry) {
+  recordReleased(WORKSPACE, version, join(SMOKE, 'node_modules/@fieldia/viewer/bundle'));
+  const changed = writeReadmes(WORKSPACE);
+  console.log(`  recorded ${version}'s scripts as npm serves them in tools/script-tags.json${changed.length ? `, and wrote the tags in ${changed.map((file) => file.replace(`${WORKSPACE}/`, '')).join(', ')}` : ''}: commit them, so fieldia.dev's and the READMEs' script tags name ${version}`);
+}
 
 // ---- publish ---------------------------------------------------------------------
 if (mode === 'publish') {
-  if (!process.env.NPM_TOKEN) fail('publishing needs NPM_TOKEN in the environment');
   const npmrc = join(WORK, '.npmrc');
   // A reference, expanded by npm from the environment; the token itself is never written.
   writeFileSync(npmrc, '//registry.npmjs.org/:_authToken=${NPM_TOKEN}\n');
-  // The token for `npm publish` alone; asking npm what it has needs none.
-  const publishEnv = { ...CHECKS_ENV, NPM_TOKEN: process.env.NPM_TOKEN, npm_config_userconfig: npmrc };
-  const onNpm = (name) => {
-    try {
-      return run('npm', ['view', `${name}@${version}`, 'version']).trim() === version;
-    } catch {
-      return false; // npm answers 404 for a version it does not have
-    }
-  };
-  for (const [i, { manifest }] of packages.entries()) {
-    if (onNpm(manifest.name)) {
-      console.log(`  ${manifest.name}@${version} is already on npm`);
-      continue;
-    }
-    run('npm', ['publish', tarballs[i], '--access', 'public'], WORKSPACE, publishEnv);
-    console.log(`  published ${manifest.name}@${version}`);
+  // The packs the check above installed and ran, each against its hash; the token for `npm publish` alone.
+  try {
+    publishPacks({ dir: PACKS, manifest: readPacks(PACKS), env: CHECKS_ENV, token: { NPM_TOKEN: process.env.NPM_TOKEN, npm_config_userconfig: npmrc } });
+  } catch (error) {
+    rmSync(npmrc, { force: true });
+    fail(error.message);
   }
   rmSync(npmrc, { force: true });
-  // The notes, and the tag and GitHub release to make from them: printed, never run.
-  printRelease(WORKSPACE, version, run('git', ['rev-parse', '--short=12', 'HEAD']).trim());
+  // Every package on npm: the notes, and the tag's push and the GitHub release to make from them — printed, never run.
+  printRelease(WORKSPACE, version, run('git', ['rev-parse', '--short=12', 'HEAD']).trim(), { tagged: true });
 }

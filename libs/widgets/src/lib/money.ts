@@ -1,4 +1,4 @@
-import { ANY_FUNCTION, compileModifier, isRightToLeft, stripMarks, type Field, type LineField, type Locale, type MoneyLook, type Period, type Value } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, isRightToLeft, stripMarks, type Field, type LineField, type Locale, type MoneyLook, type Period, type Value, intlFormat } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { formatNumber } from './numbers';
 import { currencySymbol } from './units';
@@ -18,13 +18,10 @@ import { currencySymbol } from './units';
  */
 const isolate = (text: string) => `\u2068${text}\u2069`;
 
-const shortFormats = new Map<Locale, Intl.NumberFormat>();
 /** A number short, in the page's language and Latin digits: "13.9M", "450K", "13.9 مليون", "13,9 Mio.". */
 export function shortNumber(value: number, locale: Locale = 'en'): string {
-  let found = shortFormats.get(locale);
-  if (!found) shortFormats.set(locale, (found = new Intl.NumberFormat(locale, { notation: 'compact', numberingSystem: 'latn', maximumFractionDigits: 1 })));
   // Without the marks Intl puts round Arabic numbers to say their direction: the text says its own.
-  return stripMarks(found.format(value));
+  return stripMarks(intlFormat('NumberFormat', locale, { notation: 'compact', numberingSystem: 'latn', maximumFractionDigits: 1 }).format(value));
 }
 
 const PER_KEYS: Record<Period, keyof WidgetLabels> = { day: 'perDay', night: 'perNight', week: 'perWeek', month: 'perMonth', year: 'perYear' };

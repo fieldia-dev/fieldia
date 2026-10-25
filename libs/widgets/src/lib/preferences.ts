@@ -1,17 +1,24 @@
 import type { JsonValue } from '@fieldia/core';
 
 /**
- * Where a person's choices about how a page looks are kept between visits:
- * a table's column widths, their order, which columns show. Never data, and
- * never anything a page needs to work: a store that forgets is fine.
+ * Where a person's choices are kept between visits: a table's column widths,
+ * their order, which columns show — and the templates they save and the
+ * records they opened last, which are theirs (kept by their id where the app
+ * says who they are). Never anything a page needs to work: a store that
+ * forgets is fine.
  */
 export interface PreferenceStore {
   get(key: string): JsonValue | null;
   set(key: string, value: JsonValue): void;
 }
 
-/** Preferences in the browser's local storage, under `fieldia:`. A browser that refuses storage just forgets. */
-export function browserPreferences(storage?: Storage): PreferenceStore {
+/**
+ * Preferences in the browser's local storage, under `fieldia:` — a signed-in person's under their own id
+ * (`fieldia:u:<id>:`), so the next person on the device never meets their templates or the records they opened last.
+ * A browser that refuses storage just forgets.
+ */
+export function browserPreferences(storage?: Storage, user?: string | number | null): PreferenceStore {
+  const prefix = user != null ? `fieldia:u:${String(user)}:` : 'fieldia:';
   const area = () => {
     try {
       return storage ?? globalThis.localStorage ?? null;
@@ -22,7 +29,7 @@ export function browserPreferences(storage?: Storage): PreferenceStore {
   return {
     get(key) {
       try {
-        const text = area()?.getItem(`fieldia:${key}`);
+        const text = area()?.getItem(`${prefix}${key}`);
         return text == null ? null : (JSON.parse(text) as JsonValue);
       } catch {
         return null;
@@ -30,7 +37,7 @@ export function browserPreferences(storage?: Storage): PreferenceStore {
     },
     set(key, value) {
       try {
-        area()?.setItem(`fieldia:${key}`, JSON.stringify(value));
+        area()?.setItem(`${prefix}${key}`, JSON.stringify(value));
       } catch {
         // Full, private or blocked: the choice lasts until the page closes.
       }

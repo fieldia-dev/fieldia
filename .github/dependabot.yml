@@ -1,0 +1,49 @@
+# Dependabot: a pull request a week for npm and one for the workflows' actions, each update grouped, so the gates run
+# once over them (CI's pull_request gates, as any change). It never merges: a person reads and merges, after CI.
+#
+# An update waits a week after its release before it is offered (cooldown): a malicious version is most often caught
+# and pulled within days. Security updates come at once, outside the schedule. The actions' updates move the commit
+# each workflow names and the tag in the comment beside it (tools/workflows.test.mjs).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      # Nx's own packages move together: @nx/* must be nx's version. (A group takes an update first among those it fits.)
+      nx:
+        patterns:
+          - nx
+          - '@nx/*'
+      # What the packages carry to adopters (libs/*/package.json; most are the workspace's devDependencies, so they are
+      # named here, not by dependency type): a change here is a change to what an app installs with Fieldia.
+      runtime:
+        patterns:
+          - zod
+          - tslib
+          - '@zxing/*'
+          - '@codemirror/*'
+          - '@lezer/*'
+          - leaflet
+          - monaco-editor
+          - ag-grid-community
+      # The tools: TypeScript, esbuild, Jest, Playwright, ESLint, the frameworks the demos and bindings build with.
+      tools:
+        patterns:
+          - '*'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns:
+          - '*'

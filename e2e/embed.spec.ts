@@ -84,3 +84,40 @@ test('the embed script’s frame grows and shrinks with the form, and the link�
   const sent = await page.frames().find((one) => one.url().includes('form.html'))?.evaluate(() => (window as any).fieldiaDemo.dataSource.responses[0].values);
   expect(sent).toMatchObject({ utm_source: 'newsletter', agent_code: 'mona', unit: 'B-12' });
 });
+
+test('a framed form tells only the sites its allowed-origins names: another site that frames it hears nothing (S-L1)', async ({ page, baseURL }) => {
+  // The app's form page at its own site, and a partner's page at another: both served as the demos are.
+  const app = new URL(baseURL as string);
+  const forms = 'http://forms.test';
+  const partner = 'http://partner.test/partner.html';
+  let allowed: string | null = null;
+  await page.route(`${forms}/**`, async (route) => {
+    const answer = await route.fetch({ url: route.request().url().replace(forms, app.origin) });
+    const body = await answer.body();
+    // The app's page names the sites it tells, where the test says.
+    const named = new URL(route.request().url()).pathname === '/embed/form.html' && allowed !== null ? body.toString().replace('<fieldia-form ', `<fieldia-form allowed-origins="${allowed}" `) : body;
+    await route.fulfill({ response: answer, body: named });
+  });
+  await page.route(partner, (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: `<!doctype html><title>Partner</title><script>window.heard = []; addEventListener('message', (event) => event.data && event.data.fieldia && heard.push(event.data.fieldia));</script>
+<body><script src="${forms}/embed/fieldia-embed.js" data-src="${forms}/embed/form.html" data-title="Ask about this unit"></script></body>`,
+    })
+  );
+  const warned: string[] = [];
+  page.on('console', (message) => message.type() === 'warning' && warned.push(message.text()));
+  const heard = () => page.evaluate(() => (window as unknown as { heard: string[] }).heard);
+  await page.goto(partner);
+  const inside = page.frameLocator('iframe[data-fieldia-frame]');
+  await expect(inside.locator('.fd-form')).toBeVisible();
+  // Told nothing — not even its height — and the console says why.
+  await expect.poll(() => warned.join('\n')).toContain('which its allowed-origins does not name');
+  expect(await heard()).toEqual([]);
+
+  // The app names the partner: told its height and what happens, as before.
+  allowed = 'http://partner.test';
+  await page.goto(partner);
+  await expect.poll(heard).toContain('ready');
+  expect(await heard()).toContain('height');
+});

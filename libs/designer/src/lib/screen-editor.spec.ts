@@ -93,6 +93,12 @@ describe('screen editor — the panel', () => {
     openTab(host, 'Rules');
     field(host, 'Required')?.click();
     expect(defOf(designer.getPage(), fieldsOf(designer.getPage(), 1)[0])).toMatchObject({ required: true, help: 'What happens next' });
+    // Never kept in a draft: a PIN, an ID number (`secret`), and off again.
+    field(host, 'Never kept in a draft')?.click();
+    expect(defOf(designer.getPage(), fieldsOf(designer.getPage(), 1)[0])).toMatchObject({ secret: true });
+    expect(field(host, 'Never kept in a draft')?.checked).toBe(true);
+    field(host, 'Never kept in a draft')?.click();
+    expect(defOf(designer.getPage(), fieldsOf(designer.getPage(), 1)[0])).not.toHaveProperty('secret');
   });
 
   it('offers a model field only the kinds that fit it, and says why', () => {

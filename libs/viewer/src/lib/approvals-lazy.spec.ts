@@ -11,7 +11,7 @@ import { approvalsPart, partsFor } from './viewer-parts';
 
 const order = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.12',
+    fieldia: '0.13',
     id: 'purchase-order',
     data: { kind: 'record', model: 'purchase.order' },
     fields: { vendor: { type: 'char', label: 'Vendor' }, notes: { type: 'text', label: 'Notes' } },

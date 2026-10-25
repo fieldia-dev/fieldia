@@ -12,7 +12,7 @@ import { runCheck } from './cli-run';
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
 
 const good = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'visit',
   title: 'Visit',
   data: { kind: 'responses' },

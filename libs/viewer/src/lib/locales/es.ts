@@ -168,6 +168,7 @@ export const es: ViewerLabels = {
   importDamaged: 'está dañado',
   importNoRows: 'no contiene filas',
   importNoUnzip: 'este navegador no puede abrir libros de Excel: guárdelo como CSV',
+  importTooLarge: 'contiene más de lo que admite una hoja de cálculo: una celda de más de 32.767 caracteres, o más de 100 MB una vez abierto',
   importTooMany: '{name} tiene {n} filas: aquí se pueden importar como máximo {most} a la vez. Divídalo en archivos de {most} filas o menos.',
   importColumnLetter: 'Columna {letter}',
   importFileRows: '{name}: {n} filas',
@@ -613,4 +614,8 @@ export const es: ViewerLabels = {
   outboxDiscardAsk: '¿Descartar este envío? Sus respuestas se perderán.',
   outboxKeptTitle: 'Guardado en este dispositivo',
   outboxKeptWords: 'No hay conexión: sus respuestas se guardan aquí y se enviarán en cuanto vuelva, aunque cierre esta página.',
+  outboxPageTitle: 'Aún no enviado',
+  outboxPageWords: 'No hay conexión, y este navegador no puede guardar sus respuestas una vez cerrada esta página: déjela abierta y se enviarán en cuanto vuelva la conexión.',
+  outboxWaitingPage: '{count} envíos esperan en esta página: déjela abierta, este navegador no puede guardarlos una vez cerrada.',
+  outboxWaitingPageOne: '1 envío espera en esta página: déjela abierta, este navegador no puede guardarlo una vez cerrada.',
 };

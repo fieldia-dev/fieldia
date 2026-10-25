@@ -1,4 +1,4 @@
-import { recordSentence, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult } from '@fieldia/core';
+import { LINK_URL, safeUrl, recordSentence, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult } from '@fieldia/core';
 import { drawIcon, type IconSet, type Loading } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
@@ -90,7 +90,7 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
       'ol',
       {},
       ...trail.map((crumb) => {
-        const link = crumb.href !== undefined ? el('a', { class: 'fd-crumb', href: crumb.href }, crumb.label) : el('button', { type: 'button', class: 'fd-crumb' }, crumb.label);
+        const link = crumb.href !== undefined ? el('a', { class: 'fd-crumb', href: safeUrl(crumb.href, LINK_URL) }, crumb.label) : el('button', { type: 'button', class: 'fd-crumb' }, crumb.label);
         // The app's way back, through the form's one check — which waits for a save on its way, and asks only about
         // work at risk — then the app's own way, or the address in this tab. A link opened in another tab, or with a
         // key held, leaves the form as it is: the browser's.
@@ -110,7 +110,7 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
           void context.form.leave().then((yes) => {
             if (!yes) return;
             if (crumb.open) crumb.open();
-            else if (crumb.href !== undefined) context.doc.defaultView?.location.assign(crumb.href);
+            else if (safeUrl(crumb.href, LINK_URL)) context.doc.defaultView?.location.assign(safeUrl(crumb.href, LINK_URL) as string);
           });
         });
         return el('li', {}, link);

@@ -1,11 +1,14 @@
+import { safeUrl } from '@fieldia/core';
 import { drawIcon } from './icons';
 
 /**
  * Words with `[words](address)` in them, drawn with those as links: web and
  * mail addresses only, opened in a tab of their own, an icon after each that
- * leaves the page. Anything else in brackets stays as it is written.
+ * leaves the page. Anything else in brackets stays as it is written. Neither
+ * a link's words nor its address hold a bracket: each "[" is tried once, never
+ * read on to the end of the words again (a text of "[" over and over took seconds).
  */
-const LINK = /\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)[^\s)]+)\)/g;
+const LINK = /\[([^[\]\n]+)\]\(((?:https?:\/\/|mailto:)[^\s)[\]]+)\)/g;
 
 export function linkedWords(doc: Document, text: string, options: { external?: boolean } = {}): Node[] {
   const nodes: Node[] = [];
@@ -13,7 +16,7 @@ export function linkedWords(doc: Document, text: string, options: { external?: b
   for (const match of text.matchAll(LINK)) {
     if (match.index > at) nodes.push(doc.createTextNode(text.slice(at, match.index)));
     const link = doc.createElement('a');
-    link.href = match[2];
+    link.href = safeUrl(match[2], ['http', 'https', 'mailto']) ?? '';
     link.textContent = match[1];
     if (/^https?:/i.test(match[2])) {
       link.target = '_blank';

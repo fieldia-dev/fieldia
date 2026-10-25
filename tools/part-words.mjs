@@ -86,7 +86,7 @@ export const PART_WORDS = {
   import: {
     widgets: ['phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart'],
     viewer: [
-      'importTitle', 'importDrop', 'importChoose', 'importHint', 'importReading', 'importCannotRead', 'importNotSheet', 'importOldExcel', 'importLocked', 'importDamaged', 'importNoRows', 'importNoUnzip', 'importTooMany', 'importColumnLetter',
+      'importTitle', 'importDrop', 'importChoose', 'importHint', 'importReading', 'importCannotRead', 'importNotSheet', 'importOldExcel', 'importLocked', 'importDamaged', 'importNoRows', 'importNoUnzip', 'importTooLarge', 'importTooMany', 'importColumnLetter',
       'importFileRows', 'importFileRowsOne', 'importNoRowsUnder', 'importMisread', 'importSheet', 'importEncoding', 'importUnicode', 'importSeparator', 'importComma', 'importSemicolon', 'importTab', 'importBar', 'importColumn', 'importExample', 'importField', 'importLeaveOut', 'importLeftOut',
       'importNeeded', 'importMoved', 'importCheck', 'importCheckOne', 'importChecking', 'importReady', 'importReadyOne', 'importRefused', 'importRefusedOne', 'importMore', 'importMoreOne', 'importPreview', 'importNone', 'importStart', 'importStartOne',
       'importWhy', 'importFixName', 'importing', 'importStop', 'importKeepEditing', 'importNotMade', 'importNoneCalled', 'importSeveralCalled', 'importNotYesNo', 'importRow', 'importDownload', 'importFailed',
@@ -95,7 +95,7 @@ export const PART_WORDS = {
   },
   languages: { messages: ['languagesNeeded', 'languagesNeededQuestion'], widgets: ['languageSwitch', 'languageEmpty', 'languageNeeded', 'inLanguage'] },
   element: { viewer: ['formNotLoaded'] },
-  outbox: { viewer: ['outboxWaiting', 'outboxWaitingOne', 'outboxOffline', 'outboxSending', 'outboxSent', 'outboxSendNow', 'outboxRefused', 'outboxRetry', 'outboxDiscard', 'outboxDiscardAsk', 'outboxKeptTitle', 'outboxKeptWords'] },
+  outbox: { viewer: ['outboxWaiting', 'outboxWaitingOne', 'outboxOffline', 'outboxSending', 'outboxSent', 'outboxSendNow', 'outboxRefused', 'outboxRetry', 'outboxDiscard', 'outboxDiscardAsk', 'outboxKeptTitle', 'outboxKeptWords', 'outboxPageTitle', 'outboxPageWords', 'outboxWaitingPage', 'outboxWaitingPageOne'] },
   pay: { viewer: ['payAmount', 'payBack', 'payCancel', 'payCancelling', 'payNothingSent', 'payWaiting', 'payPaid', 'payPaidReference', 'payAgain', 'payCancelled', 'payFailed', 'payFailedWhy', 'payNotStarted'] },
   verify: {
     messages: ['notVerified'],

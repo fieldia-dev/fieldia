@@ -45,6 +45,13 @@ test('the commands tag the commit and make the GitHub release from the notes fil
   ]);
 });
 
+test('a release tagged before it was published is told to push its tag, not to make it', () => {
+  assert.deepEqual(releaseCommands({ version: '0.34.0', commit: 'abc1234', notesFile: 'tmp/release/notes-0.34.0.md', tagged: true }), [
+    'git push origin v0.34.0',
+    'gh release create v0.34.0 --verify-tag --title "Fieldia 0.34.0" --notes-file tmp/release/notes-0.34.0.md',
+  ]);
+});
+
 test('the packages\' version has its notes', () => {
   const { version } = JSON.parse(readFileSync(join(WORKSPACE, 'libs/core/package.json'), 'utf8'));
   const notes = notesFor(changelog, version);

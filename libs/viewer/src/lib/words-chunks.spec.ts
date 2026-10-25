@@ -8,7 +8,7 @@ import type { Page } from '@fieldia/core';
  */
 
 const page: Page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'call',
   data: { kind: 'responses' },
   fields: { name: { type: 'char', label: 'Your name', required: true }, seats: { type: 'integer', label: 'Seats' }, agree: { type: 'boolean', label: 'Agree' } },

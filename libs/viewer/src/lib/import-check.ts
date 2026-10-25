@@ -1,4 +1,4 @@
-import { checkValue, choiceOptions, fill, foldForSearch, initialValues, oneLine, optionsList, stripMarks, zonedPage, type DateOrder, type Field, type Form, type LineField, type ListNode, type Locale, type Messages, type Option, type Page, type RelatedRecord, type Value, type Values } from '@fieldia/core';
+import { checkValue, choiceOptions, fill, foldForSearch, initialValues, oneLine, optionsList, stripMarks, zonedPage, type DateOrder, type Field, type Form, type LineField, type ListNode, type Locale, type Messages, type Option, type Page, type RelatedRecord, type Value, type Values, intlFormat } from '@fieldia/core';
 import { currencyOf, phoneSettings, type LinesPart, type PhonePart, type WidgetLabels } from '@fieldia/widgets';
 import { serialAt, type FileCell, type FileSheet } from './import-file';
 import { inEveryLanguage } from './import-match';
@@ -279,7 +279,7 @@ export async function checkRows(check: RowsCheck, sheet: FileSheet, columns: rea
 /** A country's name in the page's language: "Egypt", "مصر". */
 function regionName(code: string, locale: Locale): string {
   try {
-    return new Intl.DisplayNames([locale], { type: 'region' }).of(code) ?? code;
+    return intlFormat('DisplayNames', [locale], { type: 'region' }).of(code) ?? code;
   } catch {
     return code;
   }

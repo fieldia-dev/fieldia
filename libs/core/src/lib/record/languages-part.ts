@@ -9,6 +9,7 @@ import { languagesOf } from './languages';
 import { fillMessage, MESSAGES, type Messages } from './messages';
 import { isQuestion } from './record-words';
 import type { Value } from './values';
+import { intlFormat } from '../intl-format';
 
 /** The text a value holds in one language, as typed — or empty. */
 export const textOf = (value: unknown, language: string): string => {
@@ -35,7 +36,7 @@ export function textIn(value: unknown, reader: string, languages: readonly strin
 /** A language's name, as the page's language says it ("Arabic", "العربية"): the browser's, else its tag. */
 export function languageName(tag: string, locale: string): string {
   try {
-    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(tag);
+    const name = intlFormat('DisplayNames', [locale], { type: 'language' }).of(tag);
     if (name && name !== tag) return name;
   } catch {
     // A browser with no names of languages, or a tag it cannot read.
@@ -46,7 +47,7 @@ export function languageName(tag: string, locale: string): string {
 /** Names joined as a sentence joins them, in the page's language: "Arabic and French". */
 function joined(names: string[], locale: string): string {
   try {
-    return new Intl.ListFormat(locale, { type: 'conjunction' }).format(names);
+    return intlFormat('ListFormat', locale, { type: 'conjunction' }).format(names);
   } catch {
     return names.join(', ');
   }

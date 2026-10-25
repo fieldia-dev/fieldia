@@ -1,6 +1,7 @@
 import type { Locale } from '@fieldia/core';
 import { restingText } from './date-text';
 import type { WidgetLabels } from './labels';
+import { intlFormat } from '@fieldia/core';
 
 /**
  * A repeat rule as iCalendar writes it (RFC 5545's RRULE, the value a repeat field keeps): how often — every day, every
@@ -77,7 +78,7 @@ export function writeRule(rule: RepeatRule): string {
 /** A weekday as the person's language names it: long ("Monday"), or short ("Mon") for a day's button. */
 export function weekdayName(day: Weekday, locale: Locale, width: 'long' | 'short' = 'long'): string {
   // 1 January 2024 was a Monday.
-  return new Intl.DateTimeFormat(locale, { weekday: width, timeZone: 'UTC' }).format(Date.UTC(2024, 0, 1 + WEEKDAYS.indexOf(day)));
+  return intlFormat('DateTimeFormat', locale, { weekday: width, timeZone: 'UTC' }).format(Date.UTC(2024, 0, 1 + WEEKDAYS.indexOf(day)));
 }
 
 /** The weekday of a day, as 2026-11-03. */
@@ -90,16 +91,16 @@ const fill = (template: string, values: Record<string, string | number>) => temp
 /** A month's day as its language writes it in a sentence: "15th" (its ordinal ending, by the language's own rules), "15.", "1er". */
 function monthDayWord(n: number, locale: Locale, labels: WidgetLabels): string {
   const endings = labels.repeatOrdinals.split(' ').map((ending) => (ending === '-' ? '' : ending));
-  const kind = new Intl.PluralRules(locale, { type: 'ordinal' }).select(n);
+  const kind = intlFormat('PluralRules', locale, { type: 'ordinal' }).select(n);
   const ending = { one: endings[0], two: endings[1], few: endings[2] }[kind as 'one' | 'two' | 'few'] ?? endings[3] ?? '';
-  return `${new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(n)}${ending}`;
+  return `${intlFormat('NumberFormat', locale, { numberingSystem: 'latn' }).format(n)}${ending}`;
 }
 
 /** Every how often, in words: "Every week", "Every 2 weeks". */
 function everyWords(rule: RepeatRule, locale: Locale, labels: WidgetLabels): string {
   const at = FREQUENCIES.indexOf(rule.freq);
   if (rule.interval === 1) return labels.repeatKinds.split('|')[at] ?? '';
-  return fill(labels.repeatSaidEveryN, { n: new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(rule.interval), units: labels.repeatUnitsMany.split('|')[at] ?? '' });
+  return fill(labels.repeatSaidEveryN, { n: intlFormat('NumberFormat', locale, { numberingSystem: 'latn' }).format(rule.interval), units: labels.repeatUnitsMany.split('|')[at] ?? '' });
 }
 
 /**
@@ -108,14 +109,14 @@ function everyWords(rule: RepeatRule, locale: Locale, labels: WidgetLabels): str
  */
 export function ruleWords(rule: RepeatRule, locale: Locale, labels: WidgetLabels): string {
   const every = everyWords(rule, locale, labels);
-  const list = (items: string[]) => new Intl.ListFormat(locale, { type: 'conjunction' }).format(items);
+  const list = (items: string[]) => intlFormat('ListFormat', locale, { type: 'conjunction' }).format(items);
   let said = every;
   if (rule.freq === 'WEEKLY' && rule.days?.length) said = fill(labels.repeatSaidDays, { every, days: list(rule.days.map((day) => weekdayName(day, locale))) });
   else if (rule.freq === 'MONTHLY' && rule.nth) said = fill(labels.repeatSaidNth, { every, nth: labels.repeatNth.split('|')[rule.nth.n === -1 ? 4 : rule.nth.n - 1] ?? '', day: weekdayName(rule.nth.day, locale) });
   else if (rule.freq === 'MONTHLY' && rule.monthDay === -1) said = fill(labels.repeatSaidLastDay, { every });
   else if (rule.freq === 'MONTHLY' && rule.monthDay !== undefined) said = fill(labels.repeatSaidMonthDay, { every, day: monthDayWord(rule.monthDay, locale, labels) });
   if (rule.count === 1) return fill(labels.repeatSaidOnce, { rule: said });
-  if (rule.count !== undefined) return fill(labels.repeatSaidTimes, { rule: said, n: new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(rule.count) });
+  if (rule.count !== undefined) return fill(labels.repeatSaidTimes, { rule: said, n: intlFormat('NumberFormat', locale, { numberingSystem: 'latn' }).format(rule.count) });
   if (rule.until) return fill(labels.repeatSaidUntil, { rule: said, date: restingText(rule.until, 'date', locale) });
   return said;
 }

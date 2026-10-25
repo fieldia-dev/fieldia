@@ -1,4 +1,4 @@
-import { compileModifier, languagesOf, type ButtonNode, type CompiledModifier, type FunctionTable, type FileValue, type LineField, type ListCell, type ListNode, type Locale, type Page, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
+import { LINK_URL, PICTURE_URL, safeUrl, compileModifier, languagesOf, type ButtonNode, type CompiledModifier, type FunctionTable, type FileValue, type LineField, type ListCell, type ListNode, type Locale, type Page, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
 import { cellText, drawIcon, formatNumber, languagesPart, phoneLinksOf, phoneSettings, phoneWritten, type IconSet, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 
@@ -21,8 +21,9 @@ export const plain = (value: Value | undefined): unknown => (value !== null && t
 export function pictureOf(value: Value | undefined): string {
   const file = (Array.isArray(value) ? value[0] : value) as FileValue | string | null | undefined;
   if (!file) return '';
-  if (typeof file === 'string') return /^(https?:|data:image\/|blob:|\/|\.\.?\/)/i.test(file.trim()) ? file.trim() : '';
-  return file.data ? `data:${file.type};base64,${file.data}` : (file.url ?? '');
+  // A name is no address: only words that read as one — a scheme, a path — are a picture's.
+  if (typeof file === 'string') return /^(https?:|data:image\/|blob:|\/|\.\.?\/)/i.test(file.trim()) ? (safeUrl(file, PICTURE_URL) ?? '') : '';
+  return safeUrl(file.data ? `data:${file.type};base64,${file.data}` : file.url, PICTURE_URL) ?? '';
 }
 
 /** A person's initials, from their name's first two words: "Mona Adel" is MA. */
@@ -112,7 +113,7 @@ export function listCells(context: CellsContext): Cells {
     const together = (picture: Element) => (said ? [el('span', { class: 'fd-list-person' }, picture, el('bdi', {}, said))] : [picture]);
     if (source) {
       const img = el('img', { class: round ? 'fd-list-avatar' : 'fd-list-thumb', alt: '', loading: 'lazy', decoding: 'async' });
-      img.src = source;
+      img.src = safeUrl(source, PICTURE_URL) ?? '';
       return together(img);
     }
     const whose = said || named;
@@ -149,7 +150,7 @@ export function listCells(context: CellsContext): Cells {
     if (!to || !words) return [];
     const said = to.number;
     const link = (href: string, icon: string, label: string, away: boolean) => {
-      const a = el('a', { class: 'fd-list-link', href, 'aria-label': label, title: label, ...(away ? { target: '_blank', rel: 'noopener noreferrer' } : {}) });
+      const a = el('a', { class: 'fd-list-link', href: safeUrl(href, LINK_URL), 'aria-label': label, title: label, ...(away ? { target: '_blank', rel: 'noopener noreferrer' } : {}) });
       const drawn = drawIcon(doc, icon, { ...LINK_ICONS, ...context.icons });
       if (drawn) a.append(drawn);
       // The link is the person's, never the row's press.

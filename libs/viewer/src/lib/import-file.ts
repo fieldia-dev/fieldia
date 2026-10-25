@@ -1,3 +1,4 @@
+import { csvWords } from '@fieldia/core';
 import { unzip, ZipProblem } from './unzip';
 
 /**
@@ -56,11 +57,14 @@ export interface FileSheet {
 
 /** Why a file could not be read. */
 export class FileProblem extends Error {
-  constructor(readonly problem: 'notSheet' | 'oldExcel' | 'locked' | 'damaged' | 'noRows' | 'cannotInflate') {
+  constructor(readonly problem: 'notSheet' | 'oldExcel' | 'locked' | 'damaged' | 'noRows' | 'cannotInflate' | 'tooLarge') {
     super(problem);
     this.name = 'FileProblem';
   }
 }
+
+/** The most characters of a cell: a spreadsheet's own (Excel's 32,767). */
+export const CELL_MOST = 32767;
 
 /** The encodings a CSV file may be read in, the person's choice: UTF-8 and UTF-16, and each language's Windows code page and its kin. */
 export const ENCODINGS = ['utf-8', 'utf-16le', 'utf-16be', 'windows-1252', 'windows-1250', 'windows-1251', 'windows-1253', 'windows-1254', 'windows-1255', 'windows-1256', 'windows-1257', 'windows-1258', 'windows-874', 'shift_jis', 'gbk', 'big5', 'euc-kr'] as const;
@@ -103,7 +107,8 @@ export async function readFile(file: PickedFile, how: ReadHow = {}, most = Infin
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u0008\u000e-\u001a]/.test(text.slice(0, 4096))) throw new FileProblem('notSheet');
   const separator = how.separator ?? guessSeparator(text);
-  return tableOf('csv', csvRows(text.replace(/^sep=.\r?\n/i, ''), separator).map((cells, i) => ({ number: i + 1 + (/^sep=./i.test(text) ? 1 : 0), cells })), most, unnamed, { encoding, separator, ...misread });
+  // Each cell as it was written: a formula's start a file kept as words (Fieldia's export does, `csvCell`) read without its '.
+  return tableOf('csv', csvRows(text.replace(/^sep=.\r?\n/i, ''), separator).map((cells, i) => ({ number: i + 1 + (/^sep=./i.test(text) ? 1 : 0), cells: cells.map(csvWords) })), most, unnamed, { encoding, separator, ...misread });
 }
 
 /**
@@ -277,6 +282,8 @@ const blank = (cell: FileCell | undefined) => cell === null || cell === undefine
 const wordsOf = (cell: FileCell): string => (cell === null ? '' : typeof cell === 'object' ? cell.at : String(cell)).replace(/\s+/g, ' ').trim();
 
 function tableOf(kind: 'xlsx' | 'csv', all: { number: number; cells: FileCell[] }[], most: number, unnamed: (column: string) => string, more: Partial<FileSheet>): FileSheet {
+  // A cell longer than a spreadsheet's own (32,767 characters) came from no spreadsheet: the file is refused, said why.
+  if (all.some((row) => row.cells.some((cell) => typeof cell === 'string' && cell.length > CELL_MOST))) throw new FileProblem('tooLarge');
   const filled = all.filter((row) => row.cells.some((cell) => !blank(cell)));
   if (!filled.length) throw new FileProblem('noRows');
   const [head, ...under] = filled;
@@ -323,10 +330,42 @@ const attribute = (tag: string, name: string) => {
   const found = pattern(`@${name}`, () => `\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`).exec(tag);
   return found ? unescaped(found[1] ?? found[2]) : undefined;
 };
+/**
+ * An element's tags, its namespace's prefix (`x:`) or none: each one's whole, its attributes and what it holds (none
+ * where it closes itself), and where it starts and ends. Read once through, start to end: each tag's end looked for
+ * from where it opens, and none after one left open — a workbook of 40,000 "<si>" never closed took seconds read with
+ * a pattern that looked for each one's end to the file's.
+ */
+function* elements(xml: string, name: string): Generator<[string, string, string | undefined] & { start: number; end: number }> {
+  const open = new RegExp(`<((?:\\w+:)?)${name}\\b([^>]*?)(/?)>`, 'g');
+  for (;;) {
+    const found = open.exec(xml);
+    if (!found) return;
+    const [tag, prefix, attributes, closed] = found;
+    if (closed) {
+      yield Object.assign([tag, attributes, undefined] as [string, string, string | undefined], { start: found.index, end: open.lastIndex });
+      continue;
+    }
+    const close = `</${prefix}${name}>`;
+    const end = xml.indexOf(close, open.lastIndex);
+    if (end < 0) return;
+    yield Object.assign([xml.slice(found.index, end + close.length), attributes, xml.slice(open.lastIndex, end)] as [string, string, string | undefined], { start: found.index, end: end + close.length });
+    open.lastIndex = end + close.length;
+  }
+}
 /** The words of a string item or an inline string: its runs' texts, its phonetic guides (Japanese furigana) left out. */
-const textOf = (xml: string) => unescaped([...xml.replace(/<(?:\w+:)?rPh\b[\s\S]*?<\/(?:\w+:)?rPh>/g, '').matchAll(/<(?:\w+:)?t\b[^>]*>([\s\S]*?)<\/(?:\w+:)?t>/g)].map((found) => found[1]).join('').replace(/_x([0-9A-F]{4})_/g, (_, hex: string) => String.fromCharCode(Number.parseInt(hex, 16))));
-/** An element's tags, its namespace's prefix (`x:`) or none: each one's attributes and what it holds. */
-const elements = (xml: string, name: string) => xml.matchAll(pattern(`<${name}`, () => `<(?:\\w+:)?${name}\\b([^>]*?)(?:/>|>([\\s\\S]*?)</(?:\\w+:)?${name}>)`, 'g'));
+function textOf(xml: string): string {
+  let kept = '';
+  let at = 0;
+  for (const guide of elements(xml, 'rPh')) {
+    kept += xml.slice(at, guide.start);
+    at = guide.end;
+  }
+  kept += xml.slice(at);
+  return unescaped([...elements(kept, 't')].map(([, , inner]) => inner ?? '').join('')).replace(/_x([0-9A-F]{4})_/g, (_, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)));
+}
+/** What an element of a cell holds — its value `<v>` — or nothing. */
+const inside = (xml: string, name: string) => elements(xml, name).next().value?.[2];
 
 /** Excel's formats by number that write a day, a time or both. */
 const DATE_FORMATS = new Set([14, 15, 16, 17, 22, 27, 28, 29, 30, 31, 34, 35, 36, 50, 51, 52, 53, 54, 57, 58]);
@@ -389,6 +428,7 @@ async function readWorkbook(bytes: Uint8Array, how: ReadHow, most: number, unnam
     } catch (error) {
       if (error instanceof ZipProblem && error.problem === 'locked') throw new FileProblem('locked');
       if (error instanceof ZipProblem && error.problem === 'cannotInflate') throw new FileProblem('cannotInflate');
+      if (error instanceof ZipProblem && error.problem === 'tooLarge') throw new FileProblem('tooLarge');
       throw new FileProblem('damaged');
     }
   };
@@ -417,7 +457,7 @@ async function readWorkbook(bytes: Uint8Array, how: ReadHow, most: number, unnam
   const writes: ('day' | 'time' | 'both' | 'number')[] = [];
   if (styles !== null) {
     for (const [, tag] of elements(styles, 'numFmt')) codes.set(Number(attribute(tag, 'numFmtId')), attribute(tag, 'formatCode') ?? '');
-    const cellXfs = /<(?:\w+:)?cellXfs\b[^>]*>([\s\S]*?)<\/(?:\w+:)?cellXfs>/.exec(styles)?.[1] ?? '';
+    const cellXfs = inside(styles, 'cellXfs') ?? '';
     for (const [, tag] of elements(cellXfs, 'xf')) {
       const id = Number(attribute(tag, 'numFmtId') ?? 0);
       writes.push(formatWrites(codes.get(id), id));
@@ -435,7 +475,7 @@ async function readWorkbook(bytes: Uint8Array, how: ReadHow, most: number, unnam
       const letters = ref ? /^[A-Z]+/i.exec(ref)?.[0].toUpperCase() : undefined;
       if (letters) column = [...letters].reduce((sum, letter) => sum * 26 + letter.charCodeAt(0) - 64, 0) - 1;
       const type = attribute(tag, 't') ?? 'n';
-      const value = /<(?:\w+:)?v\b[^>]*>([\s\S]*?)<\/(?:\w+:)?v>/.exec(body)?.[1];
+      const value = inside(body, 'v');
       let cell: FileCell = null;
       if (type === 's') cell = value === undefined ? null : (shared[Number(value)] ?? null);
       else if (type === 'inlineStr') cell = textOf(body);

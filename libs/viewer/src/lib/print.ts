@@ -1,4 +1,4 @@
-import type { Locale, Page, Values } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, type Locale, type Page, type Values } from '@fieldia/core';
 import { lazyPart, type Part } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -203,7 +203,7 @@ export function paperFor(context: PrintContext): Paper {
   const head = el(
     'div',
     { class: 'fd-print-head', 'aria-hidden': 'true' },
-    ...(own.logo ? [el('img', { class: 'fd-print-logo', src: own.logo, alt: '' })] : []),
+    ...(own.logo ? [el('img', { class: 'fd-print-logo', src: safeUrl(own.logo, PICTURE_URL), alt: '' })] : []),
     ...(header ? [el('div', { class: 'fd-print-words', dir: 'auto' }, ...header.nodes)] : []),
     el('div', { class: 'fd-print-what' }, title, when)
   );

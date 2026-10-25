@@ -6,6 +6,10 @@
  * which a policy lets be; and every `<style>` element made by `fieldiaStyle`, which gives it the page's nonce.
  * The browser gate (e2e/csp.spec.ts) serves pages under such a policy in every engine; this finds the line.
  *
+ * And every address an element or the browser is given — a link's, a picture's, a player's, a frame's, a page sent
+ * elsewhere — goes through `safeUrl` (@fieldia/core), which keeps only the schemes the place allows: no
+ * `javascript:` where a strict policy is not served.
+ *
  *   node --test tools/csp-source.test.mjs
  */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -71,4 +75,76 @@ test('the rules find what they are for', () => {
   assert.deepEqual(found("box.style.width = '1px'; box.style.setProperty('--a', b); // never setAttribute('style', …)"), []);
   assert.deepEqual(found("const words = 'a style: plain';"), []);
   assert.deepEqual(found("new Intl.NumberFormat('en', { style: 'currency', currency });"), []);
+});
+
+/** A value that is no address from outside: words written in the code (no `${…}` in them), or a link within the page. */
+const LITERAL = /^\s*(?:'[^']*'|"[^"]*"|`[^`$]*`|`#)/;
+const ADDRESS = '(?:href|src|poster|srcdoc)';
+/** What sends the browser elsewhere, or puts an address on an element, unless `safeUrl` gave the address on its line. */
+const URL_RULES = [
+  {
+    what: 'a page sent elsewhere',
+    find: (line) => /\blocation\??\.(assign|replace)\(|(?<!(?:const|let|var)\s+)\blocation(\??\.href)?\s*=(?!=)|\b(window|defaultView|win|globalThis|self|top|parent|opener)\??\.open\(/.test(line),
+  },
+  { what: 'an address written to an element', find: (line) => [...line.matchAll(new RegExp(`(?<!location\\??)\\.${ADDRESS}\\s*=(?!=)(.*)`, 'g'))].some((m) => !LITERAL.test(m[1])) },
+  {
+    what: 'an address attribute written',
+    find: (line) => [...line.matchAll(new RegExp(`\\b(?:setAttribute(?:NS)?\\(\\s*(?:null\\s*,\\s*)?|setAttr\\(\\s*[^,()]+,\\s*)['"\`](?:${ADDRESS.slice(3, -1)}|xlink:href)['"\`]\\s*,(.*)`, 'g'))].some((m) => !LITERAL.test(m[1])),
+  },
+  // An element factory's attributes (`el('a', { href })`, `make(kind, { src })`) and Object.assign's, which write them.
+  {
+    what: 'an address in an element factory',
+    find: (line) =>
+      /(?:\b[\w$]+|\))\(\s*[^(),{}]+,\s*\{|\bObject\.assign\(/.test(line) &&
+      [...line.matchAll(new RegExp(`[{,]\\s*${ADDRESS}\\s*(?::(.*)|(?=\\s*[,}]))`, 'g'))].some((m) => m[1] === undefined || !LITERAL.test(m[1])),
+  },
+];
+/** Lines a rule reads as a sink that are not one, each with why. */
+const NOT_SINKS = [
+  // The page's JSON the designers write, not an element.
+  { file: 'libs/designer/src/lib/layout-settings.ts', has: 'node.src = patch.src.trim()' },
+  { file: 'libs/designer/src/lib/list-properties.ts', has: '(map.card ??= {}).href = cardLink.value' },
+  // A part's script, by its name at build time, beside the main script's own address (`partTag`, the one place its
+  // address is made; a strict policy's gate: csp.spec).
+  { file: 'tools/script-parts.ts', has: 'script.src = src' },
+  { file: 'libs/designer/src/lib/panel-block.ts', has: 'designer.updateBlock(id, { src: src.value })' },
+  { file: 'libs/designer/src/lib/panel-block.ts', has: 'designer.updateBlock(id, { href: href.value })' },
+  // The embed script's frame, at the host page's own data-src, its protocol checked on the line before: it carries no core.
+  { file: 'libs/viewer/src/lib/embed-frame.ts', has: 'frame.src = at.href' },
+];
+const urlProblems = (name, text) => {
+  const problems = [];
+  code(text)
+    .split('\n')
+    .forEach((line, i) => {
+      if (line.includes('safeUrl(') || NOT_SINKS.some((one) => one.file === name && line.includes(one.has))) return;
+      for (const rule of URL_RULES) if (rule.find(line)) problems.push(`${name}:${i + 1}: ${rule.what} not through safeUrl: ${line.trim().slice(0, 140)}`);
+    });
+  return problems;
+};
+
+test('every address an element or the browser is given goes through safeUrl', () => {
+  const problems = sources().flatMap((file) => urlProblems(relative(WORKSPACE, file), readFileSync(file, 'utf8')));
+  assert.deepEqual(problems, []);
+});
+
+test('the address rules find what they are for', () => {
+  const found = (text) => urlProblems('x.ts', text).map((problem) => problem.replace(/^x\.ts:\d+: | not through.*$/g, ''));
+  assert.deepEqual(found('win.location.assign(url);'), ['a page sent elsewhere']);
+  assert.deepEqual(found("doc.defaultView?.open(url, '_blank');"), ['a page sent elsewhere']);
+  assert.deepEqual(found('location.href = next;'), ['a page sent elsewhere']);
+  assert.deepEqual(found('link.href = value;'), ['an address written to an element']);
+  assert.deepEqual(found('frame.src = `${url}#page=2`;'), ['an address written to an element']);
+  assert.deepEqual(found("img.setAttribute('src', picture);"), ['an address attribute written']);
+  assert.deepEqual(found("setAttr(open, 'href', made?.url ?? null);"), ['an address attribute written']);
+  assert.deepEqual(found("el('a', { class: 'x', href: attachment.url });"), ['an address in an element factory']);
+  assert.deepEqual(found("make('img', { ...attrs, src });"), ['an address in an element factory']);
+  assert.deepEqual(found("Object.assign(credit, { href: mark.href, target: '_blank' });"), ['an address in an element factory']);
+  // Through safeUrl, words in the code, or no sink at all.
+  assert.deepEqual(found('link.href = safeUrl(value, LINK_URL) ?? "";'), []);
+  assert.deepEqual(found("el('a', { href: safeUrl(attachment.url, MEDIA_URL), download: name });"), []);
+  assert.deepEqual(found("make(film ? 'video' : 'audio', { src: url, controls: '' });"), ['an address in an element factory']);
+  assert.deepEqual(found("const link = maker(doc)('a', { href: url, download: name });"), ['an address in an element factory']);
+  assert.deepEqual(found("link.href = '#top'; el('a', { href: `#comment-${id}` }); img.setAttribute('src', 'data:image/gif;base64,R0lGOD');"), []);
+  assert.deepEqual(found("if (a.href === b.href) view.open(choices); const at = location.href; const location = answer.header('location');"), []);
 });

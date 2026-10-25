@@ -387,7 +387,7 @@ describe('what the person may do with a record, as its source says', () => {
 });
 
 describe('saving twice in a row is never a conflict with yourself', () => {
-  it('a second save waits for the first and carries the version it got back: both go through, and no conflict is said', async () => {
+  it('a second save asked for with nothing changed since the first is the first: joined, one save goes, no conflict said', async () => {
     const ds = source({ delayMs: 20 });
     const form = await opened(ds);
     form.setValue('phone', '+201009998887');
@@ -397,22 +397,35 @@ describe('saving twice in a row is never a conflict with yourself', () => {
     expect(await first).toBe(true);
     expect(await second).toBe(true);
     expect(form.getState()).toMatchObject({ status: 'saved', conflict: null, saveProblem: null, dirty: [] });
-    const [a, b] = saves(ds);
-    expect(b.version?.token).not.toBe(a.version?.token);
-    expect(b.version).toEqual(expect.objectContaining({ by: 'Sara' }));
+    expect(saves(ds)).toHaveLength(1);
     expect(ds.records['lead'][1]['phone']).toBe('+201009998887');
   });
 
-  it('a new record saved twice at once is made once: the second save is of the record the first made', async () => {
+  it('a second save asked for after a change waits for the first and carries the version it got back: both go through', async () => {
+    const ds = source({ delayMs: 20 });
+    const form = await opened(ds);
+    form.setValue('phone', '+201009998887');
+    const first = form.save();
+    form.setValue('stage', 'visit');
+    const second = form.save();
+    expect([await first, await second]).toEqual([true, true]);
+    expect(form.getState()).toMatchObject({ status: 'saved', conflict: null, saveProblem: null, dirty: [] });
+    const [a, b] = saves(ds);
+    expect(b.version?.token).not.toBe(a.version?.token);
+    expect(b.version).toEqual(expect.objectContaining({ by: 'Sara' }));
+    expect(ds.records['lead'][1]).toMatchObject({ phone: '+201009998887', stage: 'visit' });
+  });
+
+  it('a new record saved twice at once is made once: the second save is the first', async () => {
     const ds = source({ delayMs: 20 });
     const form = createForm({ page: lead, dataSource: ds, values: { name: 'Chalet in Sahel', commission: 0.01 } });
     const first = form.save();
     const second = form.save();
     expect([await first, await second]).toEqual([true, true]);
     expect(Object.keys(ds.records['lead'])).toHaveLength(3);
-    const [a, b] = saves(ds);
+    const [a] = saves(ds);
+    expect(saves(ds)).toHaveLength(1);
     expect(a.id).toBeNull();
-    expect(b.id).toBe(form.getState().recordId);
   });
 
   it('a save asked for while the first waits for its beforeSave steps runs after it, and a save those steps ask for runs inside it', async () => {

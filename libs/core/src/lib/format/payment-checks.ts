@@ -10,7 +10,8 @@ export interface PaymentTools extends FieldTools {
  * A page's payment (`payment`): a form people send — never a list of records — its amount a number or a number or money
  * field of the page, its currency a code or a text or choice field, or else its money field's own, and its condition one
  * the page can read. In the one-tag script these checks come with the pay part, which a page asking for a payment asks
- * for (later-checks.ts).
+ * for (later-checks.ts). An amount a link fills (`prefill`) is said as a warning: the browser's amount is the person's
+ * to change — the app's server works out what is due from the answers (`checkSubmission`), never charges what it is sent.
  */
 export function checkPayment(page: Page, tools: PaymentTools): void {
   const payment = page.payment;
@@ -18,6 +19,10 @@ export function checkPayment(page: Page, tools: PaymentTools): void {
   if (page.layout.type === 'list') return tools.report('payment', 'a payment is taken as a form’s answers are sent: a list of records sends none');
   const amount = typeof payment.amount === 'string' ? tools.need(payment.amount, 'payment.amount') : undefined;
   if (amount && amount.type !== 'integer' && amount.type !== 'float' && amount.type !== 'monetary') tools.report('payment.amount', `"${payment.amount}" is a ${amount.type}: the amount is a number, or a number or money field`);
+  const filled = (page.prefill?.fromUrl ?? []).map((param) => (typeof param === 'string' ? param : param.field));
+  if (typeof payment.amount === 'string' && filled.includes(payment.amount)) {
+    tools.warn?.('payment.amount', `"${payment.amount}" is filled from the page's link (prefill): anyone can change the amount in the address. Work out what is due on your server (checkSubmission's due), never charge the amount the browser sends`);
+  }
   const currency = payment.currency;
   if (currency !== undefined && !/^[A-Z]{3}$/.test(currency)) {
     const def = tools.need(currency, 'payment.currency');

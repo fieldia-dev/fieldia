@@ -1,5 +1,5 @@
 import type { SheetCell } from './xlsx';
-import { MESSAGES, optionsList, recordSentence, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value } from '@fieldia/core';
+import { MESSAGES, optionsList, recordSentence, type CsvValue, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value, intlFormat } from '@fieldia/core';
 import { askFirst, dateOrderOf, displayValue, drawIcon, keepTabIn, loadLinesPart, loadPhonePart, phoneSettings, WIDGET_LABELS, type IconSet, type LinesPart, type PhonePart } from '@fieldia/widgets';
 import { checkRows, type CheckedRow, type RowsCheck } from './import-check';
 import { ENCODING_SCRIPT, ENCODINGS, FileProblem, readFile, SEPARATORS, type FileCell, type FileSheet, type PickedFile, type ReadHow } from './import-file';
@@ -30,7 +30,7 @@ const NAMED = 50;
 /** What the list part hands over of its own, so the import part carries no copy of it: the workbook and CSV writers and the browser's save. */
 export interface ImportFiles {
   xlsxOf: (sheet: { name: string; columns: string[]; rows: SheetCell[][]; rtl?: boolean }) => Promise<Uint8Array>;
-  csvOf: (rows: readonly (readonly string[])[], separator?: string) => string;
+  csvOf: (rows: readonly (readonly CsvValue[])[], separator?: string) => string;
   csvSeparator: (locale: Locale) => string;
   saveFile: (doc: Document, name: string, file: Blob | string) => void;
   xlsxType: string;
@@ -128,7 +128,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     element.append(...children);
     return element;
   };
-  const plural = (n: number, other: string, one: string) => fill(new Intl.PluralRules(locale).select(n) === 'one' ? one : other, { n: number(n) });
+  const plural = (n: number, other: string, one: string) => fill(intlFormat('PluralRules', locale).select(n) === 'one' ? one : other, { n: number(n) });
   const opener = doc.activeElement instanceof HTMLElement ? doc.activeElement : null;
 
   // ---- the box: a dialog of the page's look --------------------------------------------------------------------
@@ -256,7 +256,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
   /** Why a file cannot be read, in the person's words. */
   const whyNot = (error: unknown) => {
     const kind = error instanceof FileProblem ? error.problem : 'damaged';
-    return { notSheet: labels.importNotSheet, oldExcel: labels.importOldExcel, locked: labels.importLocked, damaged: labels.importDamaged, noRows: labels.importNoRows, cannotInflate: labels.importNoUnzip }[kind];
+    return { notSheet: labels.importNotSheet, oldExcel: labels.importOldExcel, locked: labels.importLocked, damaged: labels.importDamaged, noRows: labels.importNoRows, cannotInflate: labels.importNoUnzip, tooLarge: labels.importTooLarge }[kind];
   };
 
   /** A file read, as the person last said to read it; then its columns to match, or why it cannot be. */
@@ -304,7 +304,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     const picked = file as PickedFile;
     // The file's name in bold, where the words put it: "contacts.xlsx: 1,284 rows".
     // A header and nothing under it: said so, and nothing offered to check.
-    const counted = !now.total ? labels.importNoRowsUnder : new Intl.PluralRules(locale).select(now.total) === 'one' ? labels.importFileRowsOne : labels.importFileRows;
+    const counted = !now.total ? labels.importNoRowsUnder : intlFormat('PluralRules', locale).select(now.total) === 'one' ? labels.importFileRowsOne : labels.importFileRows;
     const [before, after = ''] = fill(counted, { name: '\u0000', n: number(now.total) }).split('\u0000');
     const rows = make('p', { class: 'fd-import-file' }, before, make('strong', {}, make('bdi', {}, picked.name)), after);
     const pickers: HTMLElement[] = [];
@@ -319,7 +319,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     if (now.kind === 'csv') {
       let scripts: Intl.DisplayNames | null = null;
       try {
-        scripts = new Intl.DisplayNames([locale], { type: 'script' });
+        scripts = intlFormat('DisplayNames', [locale], { type: 'script' });
       } catch {
         scripts = null;
       }

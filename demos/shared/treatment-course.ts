@@ -56,7 +56,8 @@ export function frontDeskBar(dataSource: MemoryDataSource): HTMLElement {
   said.className = 'demo-meanwhile-said';
   said.setAttribute('role', 'status');
   said.textContent = 'Someone else at the front desk, on another screen.';
-  const id = new URLSearchParams(location.search).get('record') ?? '1';
+  // The course shown: the address's, or the model's first (shared/sample-data.ts: recordFromQuery).
+  const id = new URLSearchParams(location.search).get('record') ?? Object.keys(dataSource.records['clinic.course'] ?? {})[0] ?? '1';
   const button = (words: string, act: () => string) => {
     const one = document.createElement('button');
     one.type = 'button';

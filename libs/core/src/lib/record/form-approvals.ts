@@ -9,6 +9,7 @@ import { dayWords } from './day-words';
 import type { DateOrder } from './input-rules';
 import { isOwnZone, wallClock, wallDay, wallTime } from './zones';
 import { uploadGoing } from './uploads';
+import { intlFormat } from '../intl-format';
 
 /**
  * A record's approvals (the approvals part): asked of the data source's `approvals` as a saved record is shown — again
@@ -93,7 +94,7 @@ export function approvalWhen(at: string, messages: Messages, page: Page): string
   const wall = wallTime(ms, zone);
   const words = `${dayWords(wallDay(wall), messages, order)}${order === 'ymd' ? ' ' : ', '}${wallClock(wall)}`;
   if (!zone || isOwnZone(zone)) return words;
-  const name = new Intl.DateTimeFormat(messages.locale === 'en' ? 'en-GB' : messages.locale, { timeZone: zone, timeZoneName: 'short' }).formatToParts(ms).find((part) => part.type === 'timeZoneName')?.value;
+  const name = intlFormat('DateTimeFormat', messages.locale === 'en' ? 'en-GB' : messages.locale, { timeZone: zone, timeZoneName: 'short' }).formatToParts(ms).find((part) => part.type === 'timeZoneName')?.value;
   return name ? `${words} ${name}` : words;
 }
 

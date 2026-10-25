@@ -151,6 +151,8 @@ export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';
 export { translatePage, localizePage, pageWords, isRightToLeft, listComma } from './lib/format/translate';
 export { firstWeekday } from './lib/format/week';
+// Every Intl formatter, made once for a language and its options (0.34): the one place Fieldia makes them.
+export { intlFormat, type IntlKind } from './lib/intl-format';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
 export { ANY_FUNCTION, functionInfo, functionTable, functionNameProblem, type AppFunction, type AppFunctions, type FunctionInfo, type FunctionsKnown, type ValueKind } from './lib/expression/app-functions';
 export type { FunctionTable, ExpressionEnv } from './lib/expression/functions';
@@ -291,6 +293,12 @@ export type {
   SaveTemplateRequest,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
+// What Fieldia keeps in the browser, a person's: let go at sign-out (`drafts.clear()`, `outbox.clear()`).
+export { drafts, outbox, ownerOf } from './lib/record/browser-kept';
+// A record's values as its source sent them, read as its fields hold theirs: what every load goes through.
+export { valuesFromSource, type FromSource } from './lib/record/from-source';
+// One deadline for every request a person waits on: the viewer's lists and its form's, one source (deadline.ts).
+export { SEND_TIMEOUT_MS, withDeadlines } from './lib/record/deadline';
 export { matchesFilter } from './lib/record/filter';
 export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';
@@ -344,6 +352,7 @@ export {
   cleanPastedNumber,
   readDuration,
   readDate,
+  DATE_TEXT_MOST,
   foldTyped,
   couldBeMonth,
   monthNamed,
@@ -385,7 +394,13 @@ export { formApprovalsPart, type ApprovalStatus, type FormApproval, type FormApp
 export { formLanguagesPart, hasLanguages, languagesOf, type FormLanguagesPart, type Translated } from './lib/record/languages';
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
-export { fieldPattern } from './lib/format/pattern';
+export { fieldPattern, patternRisk, PATTERN_MOST, rulePattern } from './lib/format/pattern';
+// The most a value the page works out may hold: text's characters, a list's items.
+export { COMPUTED_MOST } from './lib/record/compute';
+// Every address a link, a picture, a player, a frame or a page sent elsewhere is given: its scheme one the place allows.
+export { DOWNLOAD_URL, LINK_URL, MEDIA_URL, PICTURE_URL, safeUrl, type UrlKind } from './lib/safe-url';
+// Every cell of a CSV file written, words a spreadsheet would run as a formula kept as words; read back as they were.
+export { csvCell, csvWords, type CsvValue } from './lib/csv';
 // Code a page loads the first time it uses it (a part): the loader the widgets' and the viewer's parts are made with.
 export { lazyPart, partWith, partsOf, partsComeByScriptTag, settleParts, type Part } from './lib/parts';
 // The bodies of Fieldia's functions beyond the plain ones, loaded before a page that calls one is drawn.

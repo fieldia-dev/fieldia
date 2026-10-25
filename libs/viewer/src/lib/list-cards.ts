@@ -1,4 +1,4 @@
-import { cardLines, type CardLinePart, type ListNode, type Locale, type Page, type PluralWords, type Value, type Values } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, cardLines, type CardLinePart, type ListNode, type Locale, type Page, type PluralWords, type Value, type Values, intlFormat } from '@fieldia/core';
 import { keepsWhole } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { Cells } from './list-cells';
@@ -61,7 +61,7 @@ const plurals = new Map<Locale, Intl.PluralRules>();
 function unitWords(unit: string | PluralWords, value: Value | undefined, locale: Locale): string {
   if (typeof unit === 'string') return unit;
   let rules = plurals.get(locale);
-  if (!rules) plurals.set(locale, (rules = new Intl.PluralRules(locale)));
+  if (!rules) plurals.set(locale, (rules = intlFormat('PluralRules', locale)));
   const form = typeof value === 'number' ? (rules.select(value) as keyof PluralWords) : 'other';
   return unit[form] ?? unit.other;
 }
@@ -87,7 +87,7 @@ export function drawCard(context: CardContext, spec: CardSpec, values: Values, f
     const photo = el('div', { class: 'fd-list-card-photo', 'data-empty': source ? undefined : '' });
     if (source) {
       const img = el('img', { alt: '', loading: 'lazy', decoding: 'async' });
-      img.src = source;
+      img.src = safeUrl(source, PICTURE_URL) ?? '';
       photo.append(img);
     } else photo.append(el('span', { class: 'fd-list-card-initials', 'aria-hidden': 'true', 'data-initials': cells.initials(title) }));
     parts.push(photo);

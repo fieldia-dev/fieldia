@@ -6,6 +6,11 @@ import { fieldiaStyle } from '@fieldia/widgets';
  * list's own sheet (fd-list-styles, itself after them all), as its rules reshape the list's table, a theme's table
  * (Fluent's, in the list's sheet) among it. On screen alone: a list printed from its cards, on a phone or in its
  * gallery, prints as its table, its columns as shown — as its Print does.
+ *
+ * No card is skipped unseen (`content-visibility`): measured on a phone (4× CPU, 412 px), it made card lists scroll far
+ * worse — a plain list of 3,000 cards from a median frame of 17 ms to 150 (0.34, harden-perf), an endless one of 3,000
+ * from 17 to 167 and one growing as it is scrolled from 17 to 33 (0.34's merge, which took 0.32's rule for endless
+ * lists out the same way). Only windowing makes a long list cheaper to scroll.
  */
 export const CARD_STYLES = `
 /* A card's cell, the table's hidden; its words for the box in the header, a card's alone. */
@@ -45,8 +50,6 @@ export const CARD_STYLES = `
 .fd-list[data-as] .fd-list-row[data-tone]:hover { border-inline-start-color: var(--fd-row-tone); }
 .fd-list[data-as] .fd-list-row:is([aria-selected="true"], [aria-current="true"], .fd-list-hot) { background: var(--fd-accent-soft); border-color: var(--fd-accent); }
 .fd-list[data-as] .fd-list-row:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
-/* A long feed of cards: those far out of sight skip their drawing until they come near (a list loaded as it is scrolled). */
-.fd-list[data-endless][data-as="cards"] .fd-list-row { content-visibility: auto; contain-intrinsic-size: auto 160px; }
 .fd-list[data-as] .fd-list-row > td { display: none; height: auto; max-width: none; padding: 0; border: 0; background: none; color: inherit; white-space: normal; overflow: visible; }
 .fd-list[data-as] .fd-list-row > .fd-list-check { display: block; width: auto; padding-block-start: 2px; }
 .fd-list[data-as] .fd-list-row > .fd-list-card { display: flex; gap: 12px; grid-column: -2; min-width: 0; }

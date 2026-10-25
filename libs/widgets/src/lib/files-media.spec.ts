@@ -102,7 +102,7 @@ describe('films and sounds among the files', () => {
   });
 
   it('plays a film or a sound held in the value from an address of its own, let go once drawn again and once the field goes', () => {
-    const held: FileValue = { name: 'note.webm', type: 'audio/webm', size: 4, data: 'QUJDRA==' };
+    const held: FileValue = { name: 'note.webm', type: 'audio/webm', size: 4, data: 'GkXfow==' };
     const { form, el, widget } = setup([held, { ...held, name: 'clip.webm', type: 'video/webm' }]);
     expect(el.querySelector('audio')?.getAttribute('src')).toBe('blob:1');
     expect(el.querySelector('.fd-file-film video')?.getAttribute('src')).toBe('blob:2#t=0.5');

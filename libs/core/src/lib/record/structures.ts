@@ -3,6 +3,7 @@ import type { FieldNode } from '../format/layout';
 import { foldDigits, stripMarks } from './input-rules';
 import { fill, fillMessage, type Messages } from './messages';
 import type { Value } from './values';
+import { intlFormat } from '../intl-format';
 
 /**
  * What a structure's widget asks of its answer beyond Required: an address
@@ -45,7 +46,7 @@ export function postcodeFits(country: unknown, postcode: unknown): boolean | nul
 /** A country's name in a language, by its code: Egypt, مصر, Égypte, Ägypten. */
 function countryName(code: string, locale: string): string {
   try {
-    return new Intl.DisplayNames([locale], { type: 'region' }).of(code) ?? code;
+    return intlFormat('DisplayNames', [locale], { type: 'region' }).of(code) ?? code;
   } catch {
     return code;
   }

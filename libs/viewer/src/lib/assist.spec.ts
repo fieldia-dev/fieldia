@@ -13,7 +13,7 @@ const SIGNATURE = ['Kind regards,', 'Mona Adel', 'Sales Director | Nile Traders'
 
 const page = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.12',
+    fieldia: '0.13',
     id: 'company',
     title: 'Company',
     data: { kind: 'record', model: 'partner' },
@@ -200,6 +200,18 @@ describe('Fill from text', () => {
     expect(values()).toMatchObject({ name: 'Delta Foods', email: 'orders@deltafoods.example', phone: null, country_id: null });
     expect(values()['contacts']).toEqual([]);
     expect(handle?.form.getState().dirty).toEqual([]);
+  });
+
+  it('never proposes — nor keeps on Accept all — a value for a field the page does not draw (S-L2: pasted words steering a model)', async () => {
+    const hidden = page({ suggest: { fields: ['name', 'email', 'phone', 'city'] } });
+    const sections = hidden.layout as unknown as { children: { children: { field?: string; invisible?: unknown }[] }[] };
+    sections.children[0].children.find((node) => node.field === 'email')!.invisible = true;
+    await mount({ dataSource: source(), recordId: 1 }, hidden);
+    await fillFrom(SIGNATURE);
+    expect(proposal('email')).toBeNull();
+    expect(review()?.textContent).toContain('Email');
+    button('Accept all')?.click();
+    expect(values()).toMatchObject({ name: 'Nile Traders', city: 'Cairo', email: 'orders@deltafoods.example' });
   });
 
   it('lets the rest go on Reject all, what was kept keeping its Undo', async () => {

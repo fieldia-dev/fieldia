@@ -120,6 +120,8 @@ export interface Messages {
   discardChanges: string;
   /** Why a run of steps stopped: the record it ran on was replaced by another while it went on, and its steps are not for that one. */
   recordReplaced: string;
+  /** Why an `openUrl` step opened nothing: its address was none a page may open — a script, a page written as data. */
+  addressRefused: string;
   /** Said with Undo after a one-tap press that offers it and said nothing of its own: `{label}`, the button's. */
   pressDone: string;
   /** The same, for the menu's own Archive and Unarchive. */
@@ -137,6 +139,9 @@ export interface Messages {
   mayNotDeleteNoun?: string;
   discardChangesNoun?: string;
   recordReplacedNoun?: string;
+  loadFailedNoun?: string;
+  openFailedNoun?: string;
+  notLoadedNoun?: string;
   /** A text longer than its most, pasted whole: `{over}` characters too long for its `{max}`; one over (`overByOne`). The one message: its count stays a count. */
   overBy: string;
   overByOne: string;
@@ -183,6 +188,42 @@ export interface Messages {
   languagesNeededQuestion: string;
   /** An email or a phone that asks for a code (`options.verify`) sent before the person confirmed it with one. */
   notVerified: string;
+  /**
+   * A send stopped because a part that guards it could not load (fail closed): `{part}`, the part's name below, and
+   * `{again}`, what to do — try again where the part can be asked for anew, else reload the page. Nothing went.
+   */
+  guardNotSent: string;
+  guardNotSaved: string;
+  guardTryAgain: string;
+  guardReload: string;
+  /** The parts that guard a send, as those sentences name them. */
+  guardPay: string;
+  guardVerify: string;
+  guardTimeLimit: string;
+  guardPrefill: string;
+  guardApprovals: string;
+  guardOptions: string;
+  guardLanguages: string;
+  guardLimits: string;
+  /**
+   * A record that could not be loaded (`{problem}`, the source's words), said with its own Retry; a save of a record
+   * that never loaded, refused; a value the source holds that the page cannot show, kept as it is stored.
+   */
+  loadFailed: string;
+  /**
+   * A record opened that could not be loaded — none of it shown yet, another's values never in its place — named by its
+   * id (`{id}`), the source's words after (`{problem}`), with its own Retry.
+   */
+  openFailed: string;
+  notLoaded: string;
+  unreadableValue: string;
+  /** A save or a send that broke on the way (`{problem}`, what broke): nothing went. */
+  saveBroken: string;
+  sendBroken: string;
+  /** A new record its source answered without an id: Save again sends the same save (its key), never a second record. */
+  saveNoId: string;
+  /** A request past its deadline (`timeout`): the network's problem, said as the banner says it, with Retry. */
+  noAnswer: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -280,6 +321,7 @@ const en: Messages = {
   changedBy: '{name} changed {fields}.',
   discardChanges: 'Discard your changes?',
   recordReplaced: 'Another record is shown now: the rest of these steps did not run.',
+  addressRefused: 'This address was not opened: a button opens only a web page, an email address or a phone number.',
   pressDone: 'Done: {label}',
   pressArchived: 'Archived.',
   pressUnarchived: 'Brought back from the archive.',
@@ -291,6 +333,9 @@ const en: Messages = {
   mayNotDeleteNoun: 'You cannot delete this {record}.',
   discardChangesNoun: 'Discard your changes to this {record}?',
   recordReplacedNoun: 'Another {record} is shown now: the rest of these steps did not run.',
+  loadFailedNoun: 'This {record} could not be loaded: {problem}',
+  openFailedNoun: 'Couldn’t open {record} {id}: {problem}',
+  notLoadedNoun: 'This {record} has not loaded yet, so nothing was saved.',
   overBy: '{label} is {over} characters too long: shorten it to {max}',
   overByOne: '{label} is 1 character too long: shorten it to {max}',
   postcode: '{label}: a postcode in {country} has {n} digits, like {example}',
@@ -314,6 +359,26 @@ const en: Messages = {
   languagesNeeded: '{label} is required in {languages}',
   languagesNeededQuestion: 'Please answer {label} in {languages}',
   notVerified: '{label} is not confirmed: send a code and type it in',
+  guardNotSent: '{part} could not load, so nothing was sent. {again}',
+  guardNotSaved: '{part} could not load, so nothing was saved. {again}',
+  guardTryAgain: 'Try again.',
+  guardReload: 'Reload the page and try again.',
+  guardPay: 'The payment step',
+  guardVerify: 'The code check',
+  guardTimeLimit: 'The time limit',
+  guardPrefill: 'The answers from the link',
+  guardApprovals: 'The approvals',
+  guardOptions: 'The check of the choices',
+  guardLanguages: 'The check of each language',
+  guardLimits: 'The check of whether this form takes answers',
+  loadFailed: 'This record could not be loaded: {problem}',
+  openFailed: 'Couldn’t open record {id}: {problem}',
+  notLoaded: 'This record has not loaded yet, so nothing was saved.',
+  unreadableValue: '{label} is stored in a way this page cannot show: it is kept as it is',
+  saveBroken: 'Something went wrong, so nothing was saved: {problem}',
+  sendBroken: 'Something went wrong, so nothing was sent: {problem}',
+  saveNoId: 'The record went, but its data source gave back no id: save again — it is the same save, never a second record.',
+  noAnswer: 'The server did not answer in time',
   locale: 'en',
 };
 
@@ -343,5 +408,6 @@ export function fillMessage(messages: Messages, template: string, values: Record
 
 /** Fill `{name}` placeholders. */
 export function fill(template: string, values: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in values ? String(values[name]) : match));
+  // A value given, never one every object has: "{constructor}" stays as it is written.
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => (Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match));
 }

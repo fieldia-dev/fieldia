@@ -1,8 +1,9 @@
-import type { RecordedKind } from '@fieldia/core';
+import { MEDIA_URL, safeUrl, type RecordedKind } from '@fieldia/core';
 import { keepTabIn } from './focus-trap';
 import { fillIn, maker, setHidden, setText } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import { installRecordStyles } from './styles-record';
+import { intlFormat } from '@fieldia/core';
 
 /**
  * A voice note or a short film recorded on the page (a file field's `options.record`), in a dialog of its own over the
@@ -77,9 +78,9 @@ export const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(
 function madeAt(now: Date, timeZone?: string): string {
   let parts: Intl.DateTimeFormatPart[];
   try {
-    parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(now);
+    parts = intlFormat('DateTimeFormat', 'en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(now);
   } catch {
-    parts = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(now);
+    parts = intlFormat('DateTimeFormat', 'en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(now);
   }
   const of = (type: string) => parts.find((part) => part.type === type)?.value ?? '00';
   return `${of('year')}-${of('month')}-${of('day')} ${of('hour')}.${of('minute')}.${of('second')}`;
@@ -296,7 +297,7 @@ export function openRecorder(context: RecorderContext): Recorder {
     const url = URL.createObjectURL(blob);
     made = { file, url };
     // Played back in the browser's own player, named by what it is.
-    const player = make(film ? 'video' : 'audio', { src: url, controls: '', preload: 'metadata', 'aria-label': name, ...(film ? { playsinline: '' } : {}) });
+    const player = make(film ? 'video' : 'audio', { src: safeUrl(url, MEDIA_URL), controls: '', preload: 'metadata', 'aria-label': name, ...(film ? { playsinline: '' } : {}) });
     review.replaceChildren(player);
     setHidden(review, false);
     setHidden(stage, true);

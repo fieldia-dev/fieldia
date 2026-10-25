@@ -2,8 +2,11 @@
  * Build the `<script>` bundle: core, widgets and viewer in one file that sets
  * the global `Fieldia`, for pages with no build step —
  *
- *   <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+ *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia.js" integrity="sha256-…" crossorigin="anonymous"></script>
  *   <script>Fieldia.mountViewer(element, { page, dataSource })</script>
+ *
+ * (the tags fieldia.dev and the READMEs print, each naming a version and its file's hash: tools/script-tags.mjs; the
+ * README inside @fieldia/viewer is written here as it is built, with its own version's hashes).
  *
  * Its own words are English. Arabic, German and French ship as add-on
  * scripts beside it — `fieldia.ar.js`, `fieldia.de.js`, `fieldia.fr.js` — and
@@ -12,7 +15,7 @@
  * native speaker), each carrying that language's words alone, which a page
  * loads after the main one:
  *
- *   <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
+ *   <script src="…/@fieldia/viewer@<version>/bundle/fieldia.ar.js" integrity="sha256-…" crossorigin="anonymous"></script>
  *
  * They ship inside @fieldia/viewer (the `bundle/` folder), so their version is
  * always the viewer's. Then it checks the files: the main one must run on its
@@ -21,14 +24,27 @@
  */
 import { build, transform } from 'esbuild';
 import { Buffer } from 'node:buffer';
-import { copyFileSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { gzipSync } from 'node:zlib';
 import { englishKeys, PART_WORDS, partWordsProblems, readerSource, withoutWords, WORD_TABLES } from './part-words.mjs';
+import { machinePathIn } from './release-guards.mjs';
+import { hashesOf, tagProblems, writeTags } from './script-tags.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
+/**
+ * A workspace file as a module this build makes imports it — `"./libs/core/…"`, from the folder the module is read in
+ * (the workspace, unless it stands in for a file of its own) — never the file's path on this machine: the modules
+ * made here ship in the source maps (`sourcesContent`), and a published file names no path of the machine it was built
+ * on (the audit's S-L10; release.mjs refuses one).
+ */
+const from = (file, dir = WORKSPACE) => {
+  const path = relative(dir, file);
+  return JSON.stringify(path.startsWith('.') ? path : `./${path}`);
+};
 const BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle');
 const OUT = join(BUNDLE, 'fieldia.js');
 /** The languages besides English, each an add-on script of its own. */
@@ -166,12 +182,12 @@ const asksForParts = (table, parts) => ({
         return `__fieldiaPart(${JSON.stringify(part)})`;
       });
       if (callsImport(asking)) throw new Error(`${path} loads a module with import(): the script bundle loads only parts (a ./x-part module) on demand`);
-      return { contents: `import { loadPart as __fieldiaPart } from ${JSON.stringify(join(WORKSPACE, 'tools/script-parts.ts'))};\n${asking}`, loader: 'ts' };
+      return { contents: `import { loadPart as __fieldiaPart } from ${from(join(WORKSPACE, 'tools/script-parts.ts'), dirname(path))};\n${asking}`, loader: 'ts' };
     });
     builder.onResolve({ filter: /^fieldia:shared$/ }, () => ({ path: 'shared', namespace: 'fieldia-shared-table' }));
     builder.onLoad({ filter: /.*/, namespace: 'fieldia-shared-table' }, () => ({
       contents: [
-        ...table.map(([file, names], i) => `import { ${names.map((name) => `${name} as m${i}_${name}`).join(', ')} } from ${JSON.stringify(file)};`),
+        ...table.map(([file, names], i) => `import { ${names.map((name) => `${name} as m${i}_${name}`).join(', ')} } from ${from(file)};`),
         // Made the first time a part is taken, once every module of the main script has run: a module that asks for a
         // part may be one the table's modules import (the form's, in @fieldia/core), whose consts are not set yet as it
         // is first read.
@@ -231,7 +247,7 @@ const checksLater = {
     for (const [part, { file, names }] of Object.entries(CHECKS_IN_PARTS)) {
       builder.onLoad({ filter: new RegExp(`${file.replace(/[./]/g, (c) => `\\${c}`)}$`) }, () => ({
         contents: [
-          `import { LATER_CHECKS } from ${JSON.stringify(LATER_CHECKS_FILE)};`,
+          `import { LATER_CHECKS } from ${from(LATER_CHECKS_FILE)};`,
           // The tools a check is handed come last: they are told it is owed.
           ...names.map((name) => `export const ${name} = (...args) => { const real = LATER_CHECKS[${JSON.stringify(part)}]?.${name}; return real ? real(...args) : args[args.length - 1].owe(${JSON.stringify(part)}); };`),
         ].join('\n'),
@@ -259,7 +275,7 @@ const weekInParts = {
   setup(builder) {
     builder.onLoad({ filter: /libs\/core\/src\/lib\/format\/week\.ts$/ }, () => ({
       // Asked before a part that draws a week has come: never — no module of the main script draws one (checked below).
-      contents: `import { WEEK } from ${JSON.stringify(WEEK_HOLDER)};\nexport const firstWeekday = (...args) => (WEEK.firstWeekday ? WEEK.firstWeekday(...args) : 1);`,
+      contents: `import { WEEK } from ${from(WEEK_HOLDER)};\nexport const firstWeekday = (...args) => (WEEK.firstWeekday ? WEEK.firstWeekday(...args) : 1);`,
       resolveDir: WORKSPACE,
       loader: 'js',
     }));
@@ -311,10 +327,13 @@ const namesUsed = (code) => {
   return used;
 };
 
-const mainScript = async (table) => {
+const mainScript = async (table, hashes = {}) => {
   const parts = new Map();
   const { metafile } = await build({
     ...common,
+    // Each part's hash, which the tag the main script adds for it carries (tools/script-parts.ts): none until the parts
+    // are built, then the main script built once more with them.
+    define: { ...common.define, __FIELDIA_PART_HASHES__: JSON.stringify(hashes) },
     entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
     plugins: [minifiedStyles, englishOnly, noFirstPaint, partWordsOut, checksLater, weekInParts, asksForParts(table, parts)],
     globalName: 'Fieldia',
@@ -388,11 +407,11 @@ const wordsLiteral = (tables) => {
 /** A part's script's own module: each of its modules' exports (a part may have one in each package). */
 const partEntry = (part) =>
   [
-    ...PART_SOURCES[part].map((file) => `export * from ${JSON.stringify(file)};`),
+    ...PART_SOURCES[part].map((file) => `export * from ${from(file)};`),
     // The checks it carries, put where the main script's reference check finds them as it comes.
-    ...(CHECKS_IN_PARTS[part] ? [`import * as checks from ${JSON.stringify(join(WORKSPACE, CHECKS_IN_PARTS[part].file))};`, `import { LATER_CHECKS } from ${JSON.stringify(LATER_CHECKS_FILE)};`, `LATER_CHECKS[${JSON.stringify(part)}] = checks;`] : []),
+    ...(CHECKS_IN_PARTS[part] ? [`import * as checks from ${from(join(WORKSPACE, CHECKS_IN_PARTS[part].file))};`, `import { LATER_CHECKS } from ${from(LATER_CHECKS_FILE)};`, `LATER_CHECKS[${JSON.stringify(part)}] = checks;`] : []),
     // The week's first day, where the part draws a week: put where the main script's stands in for it.
-    ...(WEEK_CARRIERS.includes(part) ? [`import { firstWeekday as week } from ${JSON.stringify(WEEK_FILE)};`, `import { WEEK } from ${JSON.stringify(WEEK_HOLDER)};`, `WEEK.firstWeekday = week;`] : []),
+    ...(WEEK_CARRIERS.includes(part) ? [`import { firstWeekday as week } from ${from(WEEK_FILE)};`, `import { WEEK } from ${from(WEEK_HOLDER)};`, `WEEK.firstWeekday = week;`] : []),
   ].join('\n');
 const partScript = (part, inMain, table, needs) =>
   build({
@@ -471,6 +490,21 @@ for (const part of PARTS) {
     if (twice.length) throw new Error(`fieldia.${part}.js and fieldia.${other}.js both carry ${twice.join(', ')}: a part's code belongs to one part`);
   }
 }
+// Each part checked before it runs (tools/script-parts.ts): the main script built once more, now carrying every part's
+// file's sha256 — the modules it carries and the parts it asks for as before, and no part built against it again (a
+// part takes nothing of the main script's own bytes, only its table of names). A part's tag carries its hash as
+// `integrity`, and the browser runs no other file in its place. 52 hashes of 44 characters, 2.4 KB gzipped (a hash is
+// not shortened by any compression); sha384's 64 would add 0.9 KB more, for no check a browser does better. One value
+// for a part everywhere: the docs' tags carry the sha256 of each file too (tools/script-tags.mjs), so a part's hash in a
+// README, on fieldia.dev, in `Fieldia.partTags` and in this table is the same — checked below.
+const PART_HASHES = Object.fromEntries(PARTS.map((part) => [part, createHash('sha256').update(readFileSync(partFiles[part])).digest('base64')]));
+{
+  const before = main;
+  main = await mainScript(table, PART_HASHES);
+  if (main.parts.join() !== before.parts.join() || [...main.inMain].sort().join() !== [...before.inMain].sort().join()) throw new Error("the main script built with its parts' hashes carries other modules, or asks for other parts");
+  const carried = readFileSync(OUT, 'utf8');
+  for (const part of PARTS) if (!carried.includes(JSON.stringify(PART_HASHES[part]))) throw new Error(`fieldia.js does not carry fieldia.${part}.js's hash`);
+}
 // The words the main script leaves out (tools/part-words.mjs) are read by none of its modules, and each one by the
 // modules of the parts that bring it alone: read here from the modules this build put in each script.
 {
@@ -508,6 +542,48 @@ for (const [locale, name] of Object.entries(LANGUAGES)) {
 // alone, nothing of Fieldia's in it but the frame's few lines (tools/embed-entry.ts); the form's page loads fieldia.js.
 const EMBED = join(BUNDLE, 'fieldia-embed.js');
 await build({ ...common, entryPoints: [join(WORKSPACE, 'tools/embed-entry.ts')], banner: { js: `/*! Fieldia ${version} · embed · MIT · https://fieldia.dev */` }, outfile: EMBED });
+
+// What ships names no path of this machine: a source map's sources and the modules made here are relative (`from`).
+for (const file of readdirSync(BUNDLE)) {
+  const path = machinePathIn(readFileSync(join(BUNDLE, file), 'utf8'));
+  if (path) throw new Error(`bundle/${file} names ${path}, a path on the machine it was built on: import a workspace file by a relative path (from())`);
+}
+
+// The README @fieldia/viewer ships (copied beside it by its build, before this): its script tags name this version,
+// each with the hash of the file beside it in the same package — what jsDelivr serves for this version once it is on
+// npm (tools/script-tags.mjs; the repository's README names the release on npm, from tools/script-tags.json).
+const README = join(WORKSPACE, 'dist/libs/viewer/README.md');
+if (existsSync(README)) {
+  const built = { version, integrity: hashesOf(BUNDLE) };
+  const written = writeTags(readFileSync(README, 'utf8'), built);
+  if (tagProblems(written, built).length || !written.includes(`@fieldia/viewer@${version}/bundle/fieldia.js`)) throw new Error(`dist/libs/viewer/README.md's script tags are not ${version}'s`);
+  writeFileSync(README, written);
+}
+
+// One hash for a part everywhere (0.34): the tag fieldia.js adds for it (`partIntegrity`), `Fieldia.partTags(page)` —
+// what a page or a server writes as its own tags and preload links, exactly — and the docs' tags for this version
+// (`hashesOf`: the README written above, fieldia.dev's once this version is recorded) name one value, the file's
+// sha256; and every part's tag is asked for without credentials. Every part of the bundle, and in a page, partTags for
+// every example page.
+{
+  const documented = hashesOf(BUNDLE);
+  for (const part of PARTS) if (documented[`fieldia.${part}.js`] !== `sha256-${PART_HASHES[part]}`) throw new Error(`fieldia.${part}.js: the hash fieldia.js carries for it is not the one the docs' tags carry`);
+  const { JSDOM } = await import('jsdom');
+  const dom = new JSDOM('<!doctype html><html><head><script src="fieldia.js"></script></head><body></body></html>', { url: pathToFileURL(join(BUNDLE, 'page.html')).href, runScripts: 'dangerously', resources: 'usable' });
+  await new Promise((done) => dom.window.addEventListener('load', done));
+  const seen = new Set();
+  for (const file of readdirSync(join(WORKSPACE, 'examples/pages')).filter((name) => name.endsWith('.json'))) {
+    const page = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages', file), 'utf8'));
+    for (const tag of dom.window.Fieldia.partTags(page)) {
+      const name = tag.src.replace(/^.*\//, '');
+      if (tag.integrity !== documented[name] || tag.crossOrigin !== 'anonymous') throw new Error(`Fieldia.partTags gives ${name} for ${file} as ${JSON.stringify(tag)}, not with the hash the docs' tags carry (${documented[name]})`);
+      seen.add(name);
+    }
+  }
+  dom.window.close();
+  if (seen.size < 10) throw new Error(`Fieldia.partTags named ${seen.size} parts for the example pages: too few to read`);
+  console.log(`one hash for each part: fieldia.js's, the docs' tags' and Fieldia.partTags' the same (${PARTS.length} parts; ${seen.size} of them in the example pages' tags)`);
+}
 
 // It must stand on its own: run it with nothing but a window and look for the viewer.
 const sandbox = { window: {}, self: {}, globalThis: {} };
@@ -1383,7 +1459,75 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // measured before, 534.73 after, to 534.8. What a person has open stays theirs: a popup open in a part asked again
 // keeps what is shown, and the part holding one is never hidden, dimmed or shaped under a wait (loading.ts,
 // styles-loading.ts): 534.75 measured before, 535.08 after, to 535.1.
-const BUDGET_KB = 535.1;
+// Each part checked before it runs (harden-release; the audits' S-M8 and R-H9), for every page that loads one: the
+// sha256 of each of the 52 parts' files, which the tag the main script adds for a part carries as `integrity` — 2.75 KB,
+// 44 characters of base64 and a name each — and the tag asked for without credentials, a part this script has no hash
+// for refused, and the words for a part that could not come or is not the file it was built with (script-parts.ts,
+// 0.46 KB). 525.24 measured before, 528.46 after. The console's line for a language's script missing names this
+// script's own version, never the newest (labels.ts, 130 bytes): 528.59, to 528.6.
+// The security audit of 24 Oct (harden-edges): every address a link, a picture, a player, a frame or a page sent elsewhere
+// is given goes through one `safeUrl` (core, safe-url.ts, 0.87 KB) — read with the URL parser, its scheme one the place
+// allows — and an `openUrl` step refuses any other, said (run.ts, messages.ts); the page checks refuse an `openUrl` that
+// writes one (references.ts). Every page has links and pictures. How a file is shown in place — the formats Fieldia
+// shows, their bytes checked — is the files part's, which a sheet's attachment preview now loads. 525.24 measured
+// before, 526.75 after, to 526.8.
+// The security audit of 24 Oct: every cell of a CSV file written through one `csvCell` (core, csv.ts) — words a
+// spreadsheet would run as a formula ("=…", "+…", "-…", "@…") kept as words with a ' before them — and read back by
+// `csvWords`: a list's export and its import (their parts) and the designer's translations, from the main script's
+// table, as every part takes core. 526.75 measured before, 527.06 after, to 527.1.
+// The security audit of 24 Oct: a page's patterns that could backtrack for seconds refused before any answer is tried
+// on them (pattern.ts, `patternRisk`, 2.16 KB with what was there) — in the main script, where the patterns are checked:
+// a form's email, phone or code most often has one, and a part would hold such a page back a request — an answer
+// longer than a pattern is tried on refused (check.ts, rules.ts), text longer than a date is written read as none
+// (input-rules.ts, date-text.ts), and a value the page works out held to its most (compute.ts). 527.06 measured before,
+// 529.47 after, to 529.5.
+// The security audit of 24 Oct: an expression reads a value's own properties alone (evaluator.ts), a field is never
+// named as every object's own (names.ts, references.ts), a message fills its blanks from the values given alone
+// (messages.ts), and a page of the app's own site in an embed widget runs with no origin (embed.ts). 529.47 measured
+// before, 529.88 after, to 529.9.
+// harden-data: a part that guards a send fails closed — one place every send passes (form.ts, `guardsIn`) waits for
+// each, asks once more for one that did not come, and refuses in words naming it ("The payment step could not load, so
+// nothing was sent. Try again."); the words are what every page that sends needs, the part being the one thing missing
+// then. 525.24 measured before, 527.04 after, to 527.1.
+// harden-data: one load boundary — a record's values read as their fields hold them (from-source.ts: a decimal sent as
+// text, Odoo's false and its [id, name], a REST { id, name }, a table's records as lines; one that cannot be read named,
+// never sent back over the source's), anything but one record refused, a failed load said with its own Retry and its
+// fields inert until it loads, a value as stored warned of and never refusing a save that leaves it, a save that never
+// throws — what every record's load and save goes through. 527.10 measured before, 533.33 after, to 533.4.
+// harden-data: one send discipline — every save and send carries one key from its first try, a second asked with nothing
+// changed is the first, a response's same answers never go twice, a new record answered with no id said — what every
+// send goes through. 533.33 measured before, 533.94 after, to 534.0.
+// harden-data: drafts and sends kept are a person's — kept by the signed-in person's id or the tab's (browser-kept.ts),
+// a record's draft its changes alone with their version (a moved record said as a conflict), a secret field never kept,
+// `drafts.clear()` and `outbox.clear()` for sign-out — what every page that keeps drafts needs. 533.94 measured before,
+// 536.04 after, to 536.1.
+// harden-data: nothing waits for ever — one deadline where a form's requests meet its source (deadline.ts: save, send,
+// onchange, search, options; a signal; a Discard ends a save stuck past 5 s), a part or a language's chunk that stalls
+// settled as failed (parts.ts, `inTime`) — what every page that asks its source needs. 536.04 measured before, 537.78
+// after, to 537.8.
+// 0.34's speed (harden-perf): a page's parts written into it before fieldia.js are taken as they come, never asked for
+// twice (script-parts.ts: one place a part's tag is made, `partTag`, and a part's tag on its way waited for) and named
+// for a server (`partFiles`) and a page (`partTags`); a list page's first page of records asked for beside its part, not
+// once it has come (list-early.ts) — every page starts all it loads at once: 525.16 measured before, 526.15 after, to
+// 526.2.
+// 0.34's speed (harden-perf): a tab strip measured once the page is laid out, never while it is being built
+// (tab-strip.ts, `later`); a widget's focus given the browser's options, so a cell opened in a long list is focused
+// without the scroll it is already in sight for: 526.15 measured before, 526.25 after, to 526.3.
+// 0.34's speed (harden-perf): a viewer taken away takes what it opened with it — a dialog, a side panel, a page in its
+// place, a related record's dialog, a Search more… list (dialog.ts, open.ts, related.ts: each closed as its viewer's
+// `signal` aborts) — every page may open one: 526.25 measured before, 526.72 after, to 526.8. A list of cards asks for
+// its first page beside its part too, every field its cards name with its columns (list-early.ts): 526.72 measured
+// before, 526.82 after (172.83 and 172.87 gzipped, inside its budget), to 526.9.
+// 0.34's merge: the four hardening lanes over 0.33.0, in merge order — harden-release (each part's hash, 53 parts now,
+// the loading part's among them), harden-edges, harden-data, harden-perf — and the merge's own jobs (every request
+// under one deadline, a record's load failure said once in its place, each part's tag carrying its integrity, a form's
+// draft kept as it is taken away): 535.08 measured before; 538.48, 543.12, 555.65 and 557.48 after each lane; 557.82 at
+// the tip, to 557.9. The owner's walk of 0.33.0 mended in the merge — a record opened in another's place holds none of
+// its values, and is named by its id where it cannot be opened (form.ts, messages.ts); next rows that failed stay said
+// (list-endless.ts): 557.82 measured before, 558.08 after, to 558.1. An embed field's frame asking only for the sandbox
+// tokens the browser knows (embed.ts, `supports`): 558.08 measured before, 558.27 after, to 558.3 (gzipped 186.06,
+// inside its 186.1).
+const BUDGET_KB = 558.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1690,7 +1834,37 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // stays here: an app that draws its own waits draws them on every page, never after a part's fetch.
 // 0.33's merge: the waits over 0.32's tick boxes, undo keys and popups' room (listed with the raw budget above): 172.08
 // measured before, 175.84 after, to 175.9; a popup kept clear of a wait, 175.83 measured before, 175.94 after, to 176.0.
-const GZIP_BUDGET_KB = 176.0;
+// Each part checked before it runs (harden-release; listed with the raw budget above): 172.08 measured before, 174.61
+// after — 2.37 of it the parts' hashes, which no compression shortens (sha384's would be 0.9 more), 0.16 the code and
+// its words; the console's line for a language's script naming this script's version, 174.71, to 174.8.
+// The security audit of 24 Oct: one `safeUrl` for every address (listed with the raw budget above): 172.08 measured
+// before, 172.73 after, to 172.8. One `csvCell` for every CSV file's cells (listed with the raw budget above): 172.73
+// measured before, 172.88 after, to 172.9. Patterns, dates and worked-out values kept from taking seconds (listed with
+// the raw budget above): 172.88 measured before, 174.06 after, to 174.1. Own properties, names, fills and the embed
+// widget's sandbox (listed with the raw budget above): 174.06 measured before, 174.24 after, to 174.3.
+// harden-data: a part that guards a send fails closed (listed with the raw budget above): 172.08 measured before,
+// 172.77 after, to 172.8. One load boundary (listed with the raw budget above): 172.78 measured before, 174.60 after,
+// to 174.7. One send discipline (listed with the raw budget above): 174.60 measured before, 174.84 after, to 174.9.
+// Drafts and sends kept a person's (listed with the raw budget above): 174.84 measured before, 175.71 after, to 175.8.
+// Nothing waits for ever (listed with the raw budget above): 175.71 measured before, 176.44 after, to 176.5.
+// 0.34's speed (harden-perf): every Intl formatter made once for a language and its options (intl-format.ts,
+// `intlFormat`, the one place they are made) and a currency's symbol worked out once — every page writes numbers and
+// days; the caches of their own five modules kept took out (money's short numbers, a box's per cents, a progress
+// bar's, a decimals message's plurals, a count's words, the minutes' choice): 172.08 measured before, 172.14 after
+// (525.24 and 525.16 raw, inside its budget), to 172.2.
+// 0.34's speed (harden-perf): a page's parts taken as they come where the page wrote their tags, its list's first page
+// asked for beside its part (listed with the raw budget above): 172.14 measured before, 172.62 after, to 172.7. A tab
+// strip measured once the page is laid out, a focus with no scroll where none is needed (listed with the raw budget
+// above): 172.62 measured before, 172.75 after, to 172.8. What a viewer opened taken away with it (listed with the raw
+// budget above): 172.75 measured before, 172.83 after, to 172.9.
+// 0.34's merge (listed with the raw budget above): 175.94 measured before; harden-release +2.82 (the parts' hashes
+// 2.11 of it), harden-edges +2.12, harden-data +4.06, harden-perf +0.85, the merge's own jobs +0.14: 185.93 after, to
+// 186.0 — over 180, which the owner accepts up to about 200: every page carries what grew (a part checked before it
+// runs, every address through safeUrl, patterns bounded, one load boundary and one send discipline, drafts a person's
+// own, every request's deadline). Nothing two lanes added twice is left twice: one request wrapper, one Retry for a
+// record's failed load, one pattern checker. The walk's two mended (listed with the raw budget above): 185.93 measured
+// before, 186.02 after, to 186.1.
+const GZIP_BUDGET_KB = 186.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2012,7 +2186,46 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // and 17.79, 58.87 and 17.87, to 58.9 and 17.9; Turkish's 65.57 and 18.13, 65.81 and 18.19, to 65.9, inside 18.2;
 // Persian's 159.79 and 22.33, 160.48 and 22.40, to 160.5 and 22.5; Urdu's 162.49 and 22.40, 163.19 and 22.48, to 163.2,
 // inside 22.5; Spanish's 56.03 and 17.61, 56.25 and 17.67, to 56.3, inside 17.7.
-const ADD_ON_BUDGET_KB = { ar: [128.3, 20.8], de: [58.1, 17.9], fr: [58.9, 17.9], tr: [65.9, 18.2], fa: [160.5, 22.5], ur: [163.2, 22.5], es: [56.3, 17.7] };
+// The security audit of 24 Oct: why an `openUrl` step opened nothing ("This address was not opened: …") — Arabic's
+// 127.54 and 20.67 measured before, 127.94 and 20.72 after, to 128.0 and 20.8; German's 57.75 and 17.80, 57.88 and
+// 17.84, to 57.9; French's 58.62 and 17.79, 58.77 and 17.83, to 58.8 and 17.9; Turkish's 65.57 and 18.13, 65.72 and
+// 18.16, to 65.8; Persian's 159.79 and 22.33, 160.15 and 22.38, to 160.2; Urdu's 162.49 and 22.40, 162.86 and 22.45, to
+// 162.9; Spanish's 56.03 and 17.61, 56.18 and 17.64, to 56.2.
+// The security audit of 24 Oct: a file holding more than a spreadsheet does, said why ("…a cell of more than 32,767
+// characters…") — Arabic's 127.94 and 20.72 measured before, 128.40 and 20.81 after, to 128.4 and 20.9; German's 57.88
+// and 17.84, 58.02 and 17.89, to 58.1, inside 17.9; French's 58.77 and 17.83, 58.92 and 17.90, to 59.0 and 18.0;
+// Turkish's 65.72 and 18.16, 65.92 and 18.25, to 66.0 and 18.3; Persian's 160.15 and 22.38, 160.72 and 22.48, to
+// 160.8 and 22.5; Urdu's 162.86 and 22.45, 163.29 and 22.52, to 163.3 and 22.6; Spanish's 56.18 and 17.64, 56.33 and
+// 17.70, to 56.4 and 17.8.
+// harden-data: a part that guards a send fails closed — its sentence and the names of the parts — Arabic's 127.54 and
+// 20.67 measured before, 129.08 and 20.89 after, to 129.1 and 20.9; German's 57.75 and 17.80, 58.34 and 17.97, to 58.4
+// and 18.0; French's 58.62 and 17.79, 59.21 and 17.95, to 59.3 and 18.0; Turkish's 65.57 and 18.13, 66.18 and 18.30, to
+// 66.2 and 18.4; Persian's 159.79 and 22.33, 161.34 and 22.54, to 161.4 and 22.6; Urdu's 162.49 and 22.40, 164.05 and
+// 22.61, to 164.1 and 22.7; Spanish's 56.03 and 17.61, 56.65 and 17.79, to 56.7 and 17.8.
+// harden-data: one load boundary — a load that failed, a save of a record never loaded, a value as stored, a save that
+// broke — Arabic's 129.08 and 20.89 measured before, 130.03 and 21.00 after, to 130.1 and 21.1; German's 58.34 and
+// 17.97, 58.75 and 18.06, to 58.8 and 18.1; French's 59.21 and 17.95, 59.67 and 18.04, to 59.7 and 18.1; Turkish's
+// 66.18 and 18.30, 66.65 and 18.39, to 66.7, inside 18.4; Persian's 161.34 and 22.54, 162.63 and 22.66, to 162.7 and
+// 22.7; Urdu's 164.05 and 22.61, 165.30 and 22.73, to 165.4 and 22.8; Spanish's 56.65 and 17.79, 57.04 and 17.87, to
+// 57.1 and 17.9.
+// harden-data: one send discipline — a new record answered with no id, and an outbox the browser cannot keep past the
+// page — Arabic's 130.03 and 21.00 measured before, 132.22 and 21.23 after, to 132.3 and 21.3; German's 58.75 and 18.06,
+// 59.48 and 18.22, to 59.5 and 18.3; French's 59.67 and 18.04, 60.35 and 18.20, to 60.4 and 18.3; Turkish's 66.65 and
+// 18.39, 67.42 and 18.54, to 67.5 and 18.6; Persian's 162.63 and 22.66, 165.01 and 22.87, to 165.1 and 22.9; Urdu's
+// 165.30 and 22.73, 167.83 and 22.96, to 167.9 and 23.0; Spanish's 57.04 and 17.87, 57.67 and 18.03, to 57.7 and 18.1.
+// harden-data: nothing waits for ever — "The server did not answer in time" — Arabic's 132.22 measured before, 132.39
+// after, to 132.4; German's 59.48, 59.53, to 59.6; French's 60.35, 60.40, to 60.5; Turkish's 67.42, 67.47, inside 67.5;
+// Persian's 165.01, 165.13, to 165.2; Urdu's 167.83, 167.98, to 168.0; Spanish's 57.67, 57.72, to 57.8 (each gzipped
+// inside its budget).
+// 0.34's merge: every lane's words in every add-on, measured once — Arabic's 128.24 and 20.76 measured before, 133.94
+// and 21.47 after, to 134.0 and 21.5; German's 58.00 and 17.87, 60.06 and 18.40, to 60.1 and 18.4; French's 58.87 and
+// 17.87, 60.96 and 18.40, to 61.0 and 18.4; Turkish's 65.81 and 18.19, 68.07 and 18.74, to 68.1 and 18.8; Persian's
+// 160.48 and 22.40, 166.75 and 23.10, to 166.8 and 23.1; Urdu's 163.19 and 22.48, 169.47 and 23.18, to 169.5 and 23.2;
+// Spanish's 56.25 and 17.67, 58.23 and 18.20, to 58.3 and 18.2.
+// The walk's "Couldn't open … {id}" in every add-on, measured once more — to 134.1 and 21.5 Arabic, 60.2 and 18.5
+// German, 61.1 and 18.5 French, 68.2 and 18.8 Turkish, 166.9 and 23.2 Persian, 169.6 and 23.2 Urdu, 58.3 and 18.3
+// Spanish.
+const ADD_ON_BUDGET_KB = { ar: [134.1, 21.5], de: [60.2, 18.5], fr: [61.1, 18.5], tr: [68.2, 18.8], fa: [166.9, 23.2], ur: [169.6, 23.2], es: [58.3, 18.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2697,7 +2910,57 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // gzipped; a form's counts asked in its closed screen's place (limits.ts) — limits 10.73 and 4.69, 10.83 and 4.76, to
 // 10.9 and 4.8. A popup open in a part that waits kept clear of its shapes, its ring and its dimming — loading 8.09 and
 // 2.70 measured before, 8.68 and 2.75 after, to 8.7, inside 2.8.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.8, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.8, 9.2], months: [13.8, 5.6], typed: [14.2, 6.0], list: [141.6, 45.7], cards: [12.7, 3.8], columns: [18.7, 6.8], import: [38.0, 14.9], editable: [34.4, 12.4], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 11.9], files: [46.5, 17.4], evidence: [9.2, 4.2], photos: [31.1, 11.6], record: [10.8, 4.4], codes: [11.4, 5.6], pins: [9.6, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.2], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.7, 6.5], answers: [4.3, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.6, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [24.9, 9.1], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.2, 4.4], assist: [36.4, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.5, 3.3], element: [5.4, 2.4], outbox: [9.0, 4.0], loading: [8.7, 2.8] };
+// The security audit of 24 Oct (harden-edges): how a file is shown in place — the formats Fieldia shows, each file's
+// bytes checked against its format's start and shown from a blob typed from it, never from the type it says; a PDF at
+// the app's own address read before it is framed; an SVG a picture alone (file-formats.ts, 1.5 KB gz) — in the files
+// part, which a sheet's attachment preview and a conversation's pictures load: files 46.46 and 17.33 measured before,
+// 50.49 and 18.81 after, to 50.5 and 18.9. Each address a part writes through `safeUrl`, a few bytes each: text 72.70
+// and 24.54, 72.82 and 24.58, to 72.9; list 140.38 and 45.15, 140.52 and 45.18, to 140.6; cards 12.15, 12.21, to 12.3;
+// photos 31.04 and 11.57, 31.14 and 11.60, to 31.2 and 11.7; record 10.78 and 4.38, 10.84 and 4.40, to 10.9 and 4.5;
+// pins 9.53, 9.61, to 9.7; phone 19.18, 19.21 gzipped, to 19.3; answers 4.26, 4.32, to 4.4.
+// The security audit of 24 Oct: a CSV file's cells read back as they were written, a formula's start kept as words
+// without its ' (`csvWords`) — import 37.93 and 14.89 measured before, 37.96 and 14.91 after, inside 38.0, to 15.0.
+// The security audit of 24 Oct: a workbook read once through — each element's end looked for from where it opens, none
+// after one left open — its archive's files opened to the size they say and no more than 100 MB each, 200 MB in all,
+// and a cell longer than a spreadsheet's own refused (import-file.ts, unzip.ts) — import 37.96 and 14.91 measured
+// before, 38.76 and 15.22 after, to 38.8 and 15.3.
+// The security audit of 24 Oct: an archive's file inflated a piece at a time — import 38.76 and 15.22 measured before,
+// 38.84 and 15.25 after, to 38.9; AI help proposing for the fields a page draws alone — assist 36.40 and 12.35, 36.44
+// and 12.36, to 36.5; a framed form telling only the sites its allowed-origins names — element 5.38 and 2.38, 5.83 and
+// 2.59, to 5.9 and 2.6.
+// harden-data: the pay part's page checks warn where a link fills the amount (payment-checks.ts), 7.50 and 3.30 measured
+// before, 7.78 and 3.44 after, to 7.8 and 3.5; the live part reads a change pushed as a load reads it, 4.60 and 2.23, 4.61
+// and 2.23, to 4.7. The outbox part drains kept saves before a live one, renews its claims and says where the browser
+// keeps nothing past the page, 9.00 and 4.00 measured before, 10.34 and 4.44 after, to 10.4 and 4.5; the memory source
+// keeps a send once by its key, 24.90 and 9.10, 25.19 and 9.11, to 25.2 and 9.2. The outbox's sends a person's own, and
+// let go at sign-out: 10.34 and 4.44 measured before, 10.77 and 4.59 after, to 10.8 and 4.6.
+// 0.34's speed (harden-perf): a date's calendar names its month, its days and its weekday heads as it first opens, not
+// as each date box is drawn, the heads worked out once a language — date 23.74 and 9.18 measured before, 23.89 and
+// 9.25 after, to 23.9 and 9.3. The parts that write numbers, days, plurals and lists in words take `intlFormat` from
+// the main script (its place in the shared table, and its name at each call for Intl's own): business 32.67 and 11.90
+// measured before, 32.69 and 11.91 after, to 12.0; phone 44.93 and 19.19, 44.96 and 19.20, to 19.3; import 37.93 and
+// 14.89, 37.94 and 14.90, to 15.0; typed 14.19 and 5.97, 14.20 and 5.98, to 14.3; languages 10.19 and 4.31, 10.23 and
+// 4.32, to 10.3.
+// 0.34's speed (harden-perf): a key typed in a cell writes its row's other cells only where they show something new,
+// and the line typed in is contained, so a key lays out that box alone, never the table (list-editable.ts,
+// editable-styles.ts) — editable 34.39 and 12.32 measured before, 34.67 and 12.45 after, to 34.7 and 12.5. A list takes
+// its first page where it was asked for beside its part, as the same request (list-early.ts) — list 140.40 and 45.18,
+// 140.51 and 45.23, to 140.6 and 45.3. Taken where its fields are among the ones asked for, a list of cards' too —
+// list 140.51 and 45.23, 140.61 and 45.28, to 140.7. A cell opened by Tab read where it is before anything is written,
+// and focused with no scroll where it is in sight — one layout of the table a Tab, not five (list-editable.ts) —
+// editable 34.67 and 12.45, 35.13 and 12.63, to 35.2 and 12.7.
+// 0.34's speed (harden-perf): the outbox in IndexedDB opens one connection a database, shared by every form that keeps
+// its sends there, and lets it go when another tab opens a newer version (0.32 opened one a mount and closed none) —
+// outbox 8.96 and 3.98 measured before, 9.16 and 4.06 after, to 9.2 and 4.1.
+// 0.34's merge: each part measured once over 0.33.0 — files 46.46 and 17.33 measured before, 50.49 and 18.82 after
+// (edges' formats checked), to 50.5 and 18.9; outbox 8.96 and 3.98, 10.97 and 4.67 (data's discipline, perf's one
+// connection), to 11.0 and 4.7; import 37.93 and 14.89, 38.85 and 15.25, to 38.9 and 15.3; editable 34.39 and 12.32,
+// 35.13 and 12.63, to 35.2 and 12.7; list 141.56 and 45.61, 142.04 and 45.82, to 142.1 and 45.9; memory 24.89 and
+// 9.03, 25.19 and 9.11, to 25.2 and 9.2; pay 7.44 and 3.29, 7.80 and 3.45, to 7.8 and 3.5; element 5.38 and 2.38, 5.83
+// and 2.59, to 5.9 and 2.6; date 23.74 and 9.18, 23.89 and 9.26, to 23.9 and 9.3; cards 12.61 and 3.79, 12.58 and 3.77
+// (no endless card skipped unseen), to 12.6 and 3.8; the rest within a few bytes, each to its own measure.
+// A date and time box naming its zone by the form's clock — date to 24.0.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [142.1, 45.9], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.1, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [8.7, 2.8] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -2720,7 +2983,7 @@ const PART_GIVES = {
   loading: ['installLoadingStyles', 'pageSkeleton', 'drawLoader'],
   lines: ['linesWidget', 'linksTableWidget', 'cardsWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget', 'copyWidget', 'timerWidget'],
-  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles', 'pumpUploads', 'fileFromBytes'],
+  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles', 'pumpUploads', 'fileFromBytes', 'fileShown', 'formatOf', 'shownFile', 'whenShown'],
   evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
   photos: ['photosWidget', 'editPhoto', 'drawEdited', 'fitted', 'moved', 'sized', 'turnedCrop', 'turnedSize', 'installPhotosStyles'],
   record: ['openRecorder', 'recordingType', 'clock', 'installRecordStyles'],
@@ -3603,7 +3866,9 @@ console.log("on paper: a page no one printed asks for no print part; the browser
  * parameters passed on (none it was not told to); grown as its form tells its height, from the frame's own origin only.
  */
 // 0.30 (w6-public-forms): 1.54 and 0.88 measured, to 1.6 and 0.9.
-const EMBED_BUDGET_KB = [1.6, 0.9];
+// The security audit of 24 Oct: its frame only at a web address (embed-frame.ts) — 1.54 and 0.88 measured before, 1.59
+// and 0.91 after, to 0.92.
+const EMBED_BUDGET_KB = [1.6, 0.92];
 {
   const embed = readFileSync(EMBED, 'utf8');
   const [raw, gzip] = EMBED_BUDGET_KB;

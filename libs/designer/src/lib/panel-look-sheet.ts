@@ -69,6 +69,7 @@ export function lookSheet(options: { el: ElementFactory; designer: Designer; roo
     sheet,
     destroy() {
       leave();
+      look.destroy?.();
       button.remove();
       sheet.remove();
     },

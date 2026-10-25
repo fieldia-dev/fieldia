@@ -10,6 +10,7 @@ import { dayWords } from './day-words';
 import { isOwnZone, wallClock, wallDay, wallTime } from './zones';
 import type { DateOrder } from './input-rules';
 import type { Value } from './values';
+import { intlFormat } from '../intl-format';
 
 /**
  * A form's limits (the limits part): when the page takes answers and each choice's places, worked out from the page,
@@ -224,7 +225,7 @@ export function whenWords(written: string, at: number, messages: Messages, zone?
   const wall = wallTime(at, zone);
   const words = `${dayWords(wallDay(wall), messages, order)}${order === 'ymd' ? ' ' : ', '}${wallClock(wall)}`;
   if (!zone || isOwnZone(zone)) return words;
-  const name = new Intl.DateTimeFormat(messages.locale === 'en' ? 'en-GB' : messages.locale, { timeZone: zone, timeZoneName: 'short' }).formatToParts(at).find((part) => part.type === 'timeZoneName')?.value;
+  const name = intlFormat('DateTimeFormat', messages.locale === 'en' ? 'en-GB' : messages.locale, { timeZone: zone, timeZoneName: 'short' }).formatToParts(at).find((part) => part.type === 'timeZoneName')?.value;
   return name ? `${words} ${name}` : words;
 }
 

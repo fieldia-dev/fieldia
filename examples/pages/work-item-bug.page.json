@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.12",
+  "fieldia": "0.13",
   "id": "work-item-bug",
   "title": "Bug",
   "data": { "kind": "record", "model": "work.item" },

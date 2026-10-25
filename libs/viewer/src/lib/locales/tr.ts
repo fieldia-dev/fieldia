@@ -170,6 +170,7 @@ export const tr: ViewerLabels = {
   importDamaged: 'dosya bozuk',
   importNoRows: 'hiç satır içermiyor',
   importNoUnzip: 'bu tarayıcı Excel çalışma kitaplarını açamıyor: CSV olarak kaydedin',
+  importTooLarge: 'bir elektronik tablonun tuttuğundan fazlasını içeriyor — 32.767 karakterden uzun bir hücre ya da açıldığında 100 MB’tan fazlası',
   importTooMany: '{name} dosyasında {n} satır var: burada tek seferde en fazla {most} satır içe aktarılabilir. Dosyayı en fazla {most} satırlık dosyalara bölün.',
   importColumnLetter: 'Sütun {letter}',
   importFileRows: '{name}: {n} satır',
@@ -627,4 +628,8 @@ export const tr: ViewerLabels = {
   outboxDiscardAsk: 'Bu gönderim silinsin mi? Yanıtları kaybolacak.',
   outboxKeptTitle: 'Bu cihazda saklandı',
   outboxKeptWords: 'Bağlantı yok: yanıtlarınız burada saklanıyor ve bu sayfayı kapatsanız bile bağlantı gelir gelmez gönderilecek.',
+  outboxPageTitle: 'Henüz gönderilmedi',
+  outboxPageWords: 'Bağlantı yok ve bu tarayıcı yanıtlarınızı bu sayfa kapandıktan sonra saklayamaz: sayfayı açık tutun, bağlantı gelir gelmez gönderilecekler.',
+  outboxWaitingPage: '{count} gönderim bu sayfada bekliyor: sayfayı açık tutun, bu tarayıcı sayfa kapandıktan sonra onları saklayamaz.',
+  outboxWaitingPageOne: '1 gönderim bu sayfada bekliyor: sayfayı açık tutun, bu tarayıcı sayfa kapandıktan sonra onu saklayamaz.',
 };

@@ -88,6 +88,7 @@ describe('a pin’s card', () => {
     // No address, or one a link must not go to: no link.
     expect(draw(BARE, { record: { id: 7, values: { ...home.values, link: null } } }).querySelector('a')).toBeNull();
     expect(draw(BARE, { record: { id: 7, values: { ...home.values, link: 'javascript:alert(1)' } } }).querySelector('a')).toBeNull();
+    expect(draw(BARE, { record: { id: 7, values: { ...home.values, link: 'java\tscript:alert(1)' } } }).querySelector('a')).toBeNull();
   });
 
   it('reads a web, mail or phone address, or a path of the site; never a script', () => {
@@ -98,6 +99,9 @@ describe('a pin’s card', () => {
     expect(webAddress('JavaScript:alert(1)')).toBe('');
     expect(webAddress('data:text/html,hi')).toBe('');
     expect(webAddress(42)).toBe('');
+    // As the browser reads an address: a control character before it, a tab or a line break in its scheme (the audit's bypass).
+    for (const script of ['\x01javascript:alert(document.domain)', 'java\tscript:alert(document.domain)', 'java\nscript:alert(1)', 'JaVa\rScRiPt:alert(1)'])
+      expect(webAddress(script)).toBe('');
   });
 
   it('offers a box to choose the record only where the map chooses, and Open where the app opens records', () => {

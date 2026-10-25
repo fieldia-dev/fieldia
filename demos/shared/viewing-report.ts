@@ -16,7 +16,9 @@ const kept = () => {
     return false;
   }
 };
-let working = typeof sessionStorage === 'undefined' ? false : kept();
+// Read in its try alone: where the browser refuses its storage (a page framed in an opaque origin, blocked site data),
+// even `typeof sessionStorage` throws.
+let working = kept();
 
 /**
  * The browser's connection, as it says it goes and comes back (`offline`, `online`) — the demo's source is in memory,

@@ -1,9 +1,10 @@
-import { describeTypes, fileProblem, fill, formatBytes, MESSAGES, saveRefused, uploadGoing, type Field, type FileUpload, type FileValue, type Form, type Messages, type RecordedKind } from '@fieldia/core';
+import { describeTypes, DOWNLOAD_URL, fileProblem, fill, formatBytes, MEDIA_URL, MESSAGES, PICTURE_URL, safeUrl, saveRefused, uploadGoing, type Field, type FileUpload, type FileValue, type Form, type Messages, type RecordedKind } from '@fieldia/core';
 import { keepTabIn } from './focus-trap';
 import { goingItem, type GoingItem } from './files-going';
 import { shrinkable, shrinkFor, shrinkPhoto } from './shrink';
 import { drawIcon } from './icons';
 import { bytesOf, extension, INLINE_FILE_WARNING, readFile, source } from './file-shown';
+import { shownFile, whenShown, type Shown } from './file-formats';
 import { kindOfFile as kindOf, recordedKinds, recordSeconds } from './media';
 export { INLINE_FILE_WARNING, readFile };
 import { askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor, type Make } from './kind-parts';
@@ -70,7 +71,9 @@ const icon = (make: Make, file: FileValue) => make('span', { class: 'fd-file-ico
  * browser's broken-picture mark.
  */
 function picture(make: Make, src: string, instead: () => HTMLElement, attrs: Record<string, string> = { class: 'fd-file-thumb', alt: '' }): HTMLElement {
-  const image = make('img', { ...attrs, src }) as HTMLImageElement;
+  const image = make('img', { ...attrs, src: safeUrl(src, PICTURE_URL) }) as HTMLImageElement;
+  // No picture at all where its address is none a picture may have.
+  if (!image.hasAttribute('src')) return instead();
   image.addEventListener('error', () => image.parentNode?.replaceChild(instead(), image), { once: true });
   return image;
 }
@@ -80,7 +83,7 @@ function picture(make: Make, src: string, instead: () => HTMLElement, attrs: Rec
  * over it. Where the browser cannot read the film, `instead`.
  */
 function filmFrame(make: Make, file: FileValue, src: string, instead: () => HTMLElement): HTMLElement {
-  const film = file.poster ? make('img', { src: file.poster, alt: '' }) : make('video', { src: `${src}#t=0.5`, preload: 'metadata', muted: '', playsinline: '', tabindex: '-1' });
+  const film = file.poster ? make('img', { src: safeUrl(file.poster, PICTURE_URL), alt: '' }) : make('video', { src: safeUrl(`${src}#t=0.5`, MEDIA_URL), preload: 'metadata', muted: '', playsinline: '', tabindex: '-1' });
   if (!file.poster) {
     const video = film as HTMLVideoElement;
     // Muted as a property too: the attribute alone sets only where it starts.
@@ -93,14 +96,15 @@ function filmFrame(make: Make, file: FileValue, src: string, instead: () => HTML
   film.addEventListener('error', () => frame.replaceWith(instead()), { once: true });
   return frame;
 }
-/** Where a film or a sound plays from: where it is stored, or its bytes held in the value, as an address `made` keeps to let go. */
+/**
+ * Where a film or a sound plays from, as every file shown (`shownFile`): where it is stored, or its bytes held in the
+ * value — checked, in a blob typed from its format — as an address `made` keeps to let go. '' where it is not one.
+ */
 function playedFrom(file: FileValue, made: Set<string>): string {
-  const data = bytesOf(file);
-  if (!data) return file.url ?? '';
-  if (typeof URL.createObjectURL !== 'function') return source(file);
-  const url = URL.createObjectURL(new Blob([data], { type: file.type }));
-  made.add(url);
-  return url;
+  const shown = shownFile(file);
+  if (!shown || shown instanceof Promise || (shown.kind !== 'video' && shown.kind !== 'audio')) return '';
+  if (shown.url.startsWith('blob:')) made.add(shown.url);
+  return shown.url;
 }
 /**
  * The browser's own player for a film or a sound, named by the file: a film starts on its poster frame (the app's, else
@@ -108,7 +112,7 @@ function playedFrom(file: FileValue, made: Set<string>): string {
  */
 function player(make: Make, kind: 'video' | 'audio', file: FileValue, url: string, instead: () => HTMLElement, attrs: Record<string, string> = {}): HTMLElement {
   const film = kind === 'video';
-  const media = make(kind, { ...attrs, src: film && !file.poster ? `${url}#t=0.1` : url, controls: '', preload: 'metadata', 'aria-label': file.name, ...(film ? { playsinline: '' } : {}), ...(film && file.poster ? { poster: file.poster } : {}) });
+  const media = make(kind, { ...attrs, src: safeUrl(film && !file.poster ? `${url}#t=0.1` : url, MEDIA_URL), controls: '', preload: 'metadata', 'aria-label': file.name, ...(film ? { playsinline: '' } : {}), ...(film && file.poster ? { poster: safeUrl(file.poster, PICTURE_URL) } : {}) });
   media.addEventListener('error', () => media.replaceWith(instead()), { once: true });
   return media;
 }
@@ -199,7 +203,15 @@ export function viewFiles(context: ViewFiles): void {
     body
   );
   const backdrop = make('div', { class: 'fd-dialog-backdrop' }, box);
-  const free = () => url.startsWith('blob:') && URL.revokeObjectURL(url);
+  /** What is shown now, and which showing: one shown from a PDF of this site's own, read late, is shown only while it is still the one. */
+  let shown: Shown | null = null;
+  let showing = 0;
+  let closed = false;
+  const free = () => {
+    if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+    shown?.free();
+    shown = null;
+  };
   /** Its size in words, where it is known: an app's file at its own address may not say. */
   const sized = (file: FileValue) => (Number.isFinite(file.size) ? formatBytes(file.size) : '');
   const none = (file: FileValue) => make('div', { class: 'fd-file-none' }, icon(make, file), make('strong', {}, file.name), sized(file), make('p', {}, words.noPreview));
@@ -208,29 +220,41 @@ export function viewFiles(context: ViewFiles): void {
     const file = all[at];
     free();
     const data = bytesOf(file);
-    url = data ? URL.createObjectURL(new Blob([data], { type: file.type })) : (file.url ?? '');
+    // Downloaded as the bytes they are, never read by the browser as a page: a blob of no type of its own.
+    url = data && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(new Blob([data as BlobPart], { type: 'application/octet-stream' })) : '';
     // A photo of a set by its caption, where it has one, its file's name beside it.
     title.textContent = file.caption || file.name;
     meta.replaceChildren(...(file.caption ? [`${file.name} · `] : []), ...(sized(file) ? [make('span', { class: 'fd-file-size' }, sized(file))] : []), all.length > 1 ? ` · ${fill(words.fileAt, { n: at + 1, total: all.length })}` : '');
-    download.href = url;
+    setAttr(download, 'href', safeUrl(url || file.url, DOWNLOAD_URL) ?? null);
     download.download = file.name;
-    const kind = kindOf(file);
-    if (kind === 'image') return body.replaceChildren(picture(make, url, () => none(file), { alt: file.name }));
+    const mine = ++showing;
+    body.replaceChildren();
+    whenShown(shownFile(file), (made) => {
+      if (mine !== showing || closed) return void made?.free();
+      shown = made;
+      draw(file, made, data);
+    });
+  }
+  /** A file as it is shown (`shownFile`): a picture, a film or a sound in its player, a PDF in a frame; text as it is; else its name. */
+  function draw(file: FileValue, made: Shown | null, data: Uint8Array | null) {
+    if (made?.kind === 'image') return body.replaceChildren(picture(make, made.url, () => none(file), { alt: file.name }));
     // A film in the browser's player; a sound under its name, the player beneath; either one the browser cannot play, said.
     const unplayable = () => make('div', { class: 'fd-file-none' }, icon(make, file), make('strong', {}, file.name), sized(file), make('p', {}, words.cannotPlay));
-    if (kind === 'video') return body.replaceChildren(player(make, kind, file, url, unplayable));
-    if (kind === 'audio') return body.replaceChildren(make('div', { class: 'fd-file-none fd-file-sound' }, icon(make, file), make('strong', {}, file.name), sized(file), player(make, kind, file, url, () => make('p', {}, words.cannotPlay))));
-    if (kind === 'pdf') return body.replaceChildren(make('iframe', { src: url, title: file.name }));
-    if (!asText(file)) return body.replaceChildren(none(file));
+    if (made?.kind === 'video') return body.replaceChildren(player(make, made.kind, file, made.url, unplayable));
+    if (made?.kind === 'audio') return body.replaceChildren(make('div', { class: 'fd-file-none fd-file-sound' }, icon(make, file), make('strong', {}, file.name), sized(file), player(make, made.kind, file, made.url, () => make('p', {}, words.cannotPlay))));
+    if (made?.kind === 'pdf') return body.replaceChildren(make('iframe', { src: safeUrl(made.url, MEDIA_URL), title: file.name }));
+    const from = safeUrl(file.url, MEDIA_URL);
+    if (!asText(file) || (!data && !from)) return body.replaceChildren(none(file));
     const pre = make('pre', { tabindex: '0' });
     body.replaceChildren(pre);
-    // The first 200 KB: enough to see what it is.
-    (data ? Promise.resolve(new TextDecoder().decode(data.subarray(0, 2e5))) : fetch(url).then((r) => r.text())).then(
+    // The first 200 KB as words, never as a page: enough to see what it is.
+    (data ? Promise.resolve(new TextDecoder().decode(data.subarray(0, 2e5))) : fetch(from as string).then((r) => r.text())).then(
       (text) => (pre.textContent = text.slice(0, 2e5)),
       () => pre.replaceWith(none(file))
     );
   }
   const done = () => {
+    closed = true;
     free();
     backdrop.remove();
     context.back?.(at)?.focus();
@@ -582,7 +606,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
             ),
             ...(readonly ? [] : [make('button', { type: 'button', class: 'fd-file-remove', 'data-at': String(at), 'aria-label': fill(words.remove, { name: file.name }) }, '×')]),
             // A voice note listened to where it is, in the browser's own player.
-            ...(display === 'list' && kindOf(file) === 'audio' && (file.url || file.data) ? [player(make, 'audio', file, playedFrom(file, played), () => make('span'), { class: 'fd-file-player' })] : [])
+            ...(display === 'list' && kindOf(file) === 'audio' ? [playedFrom(file, played)].filter(Boolean).map((url) => player(make, 'audio', file, url, () => make('span'), { class: 'fd-file-player' })) : [])
           )
         ),
         // Those on their way stay after them, as they were.

@@ -101,6 +101,8 @@ test('in Arabic without its script: English words, right to left still, and one 
   await expect(page.getByText('اسمك is required')).toBeVisible();
   await screen(page, 'script-arabic-without-its-script');
   expect(warnings).toHaveLength(1);
-  expect(warnings[0]).toContain('<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>');
+  // The script of the running version, never the newest.
+  const version = await page.evaluate(() => (window as any).Fieldia.VERSION);
+  expect(warnings[0]).toContain(`from its version (${version}): <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@${version}/bundle/fieldia.ar.js" crossorigin="anonymous"></script>`);
   expect(problems).toEqual([]);
 });

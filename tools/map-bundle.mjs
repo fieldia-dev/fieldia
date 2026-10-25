@@ -140,7 +140,10 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * in its place with Retry (list-view.ts, form-map.ts) — all 49,054 bytes measured before, 49,373 after, to 48.3; a list's
  * map in a page of its own 33,359 to 33,663, to 32.9; a place and an area as they were (27,315).
  */
-const BUDGET = { fields: 26.7, all: 48.3, embed: 32.9, leaflet: 47, routes: 2 };
+// 0.34's merge: a card's and a pin's addresses through safeUrl (harden-edges), their words' formatters made once
+// (harden-perf) — for a place and an area 27,317 bytes measured before, 27,389 after, to 26.8; with a list's map
+// 49,375, 49,478, to 48.4; a list's map in a page of its own 33,663, 33,763, to 33.0.
+const BUDGET = { fields: 26.8, all: 48.4, embed: 33.0, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

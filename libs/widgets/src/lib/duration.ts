@@ -1,4 +1,4 @@
-import { foldTyped, readDuration, readNumber, type Field, type Locale, type Value } from '@fieldia/core';
+import { foldTyped, readDuration, readNumber, type Field, type Locale, type Value, intlFormat } from '@fieldia/core';
 
 /**
  * Two numbers written as people read them rather than as they are kept: hours
@@ -50,16 +50,9 @@ export function decimalHours(text: string): boolean {
   return !!m && m[1] !== '00' && Number(m[1]) <= 59;
 }
 
-const percents = new Map<string, Intl.NumberFormat>();
 /** A per cent, or its number alone, as the page's language writes it: at most `decimals` places. */
 export function percentFormat(locale: Locale, decimals: number, style: 'percent' | 'decimal'): Intl.NumberFormat {
-  const key = `${locale}:${decimals}:${style}`;
-  let found = percents.get(key);
-  if (!found) {
-    found = new Intl.NumberFormat(locale, { style, numberingSystem: 'latn', minimumFractionDigits: 0, maximumFractionDigits: decimals });
-    percents.set(key, found);
-  }
-  return found;
+  return intlFormat('NumberFormat', locale, { style, numberingSystem: 'latn', minimumFractionDigits: 0, maximumFractionDigits: decimals });
 }
 
 /** A fraction as a per cent, as the page's language writes one: 0.25 → "25%" ("25 %" in French); at most `decimals` places, none written that are zero. */

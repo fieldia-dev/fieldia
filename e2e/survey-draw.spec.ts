@@ -33,7 +33,7 @@ test.describe('a question bank', () => {
     await screen(page, 'survey-bank-drawn');
     // The draw is kept in the browser's draft with the answers.
     await expect
-      .poll(() => page.evaluate(() => Object.entries(localStorage).find(([key]) => key.startsWith('fieldia:draft:training-check'))?.[1] ?? ''))
+      .poll(() => page.evaluate(() => Object.entries(localStorage).find(([key]) => key.startsWith('fieldia:draft:') && key.includes(':training-check:'))?.[1] ?? ''))
       .toContain('"step-bank"');
     // The same device, the page opened again: its draft restored, the same two, in the same order (kept in the draft) —
     // at once, never offered to be let go, as its clock started: a draft let go would start it again.

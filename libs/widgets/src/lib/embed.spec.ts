@@ -43,6 +43,20 @@ describe('a PDF shown inline', () => {
 });
 
 describe('a page shown inline', () => {
+  it('runs a page of this site’s own with no origin — never as the form’s page — another site’s with its own (S-L9)', () => {
+    const { el } = mountKind({ type: 'char', label: 'Slides' }, { widget: 'embed' });
+    const input = el.querySelector('input') as HTMLInputElement;
+    typeInto(input, `${location.origin}/uploads/7.html`);
+    const frame = el.querySelector('iframe') as HTMLIFrameElement;
+    expect(frame.getAttribute('sandbox')).toBe('allow-scripts allow-popups allow-presentation');
+    typeInto(input, 'https://docs.google.com/presentation/d/abc/embed');
+    expect(frame.getAttribute('sandbox')).toBe('allow-scripts allow-same-origin allow-popups allow-presentation');
+    // Nor a script for an address.
+    typeInto(input, 'java\tscript:alert(1)');
+    expect(el.querySelector('iframe')).toBeNull();
+  });
+
+
   it('shows the address typed in a frame, with a link to open it in a tab of its own', () => {
     const { el, value } = mountKind({ type: 'char', label: 'Slides' }, { widget: 'embed' });
     const input = el.querySelector('input') as HTMLInputElement;

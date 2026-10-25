@@ -119,6 +119,15 @@ test.describe('the business widgets', () => {
     await node(page, 'f-slides').getByRole('textbox').fill(address);
     await expect(node(page, 'f-slides').locator('iframe')).toHaveAttribute('src', address);
     await expect(node(page, 'f-slides').getByRole('link', { name: 'Open in a new tab' })).toHaveAttribute('href', address);
+    // The page itself, drawn in the frame — a page of the app's own site runs there in an opaque origin (no
+    // allow-same-origin), its scripts fetched with CORS, as fieldia.dev's host sends it: its form, its first field. Looked
+    // at, as a person does: the frame loads as it comes in sight (`loading="lazy"`; WebKit waits for it).
+    await node(page, 'f-slides').locator('iframe').scrollIntoViewIfNeeded();
+    const framed = node(page, 'f-slides').frameLocator('iframe');
+    await expect(framed.locator('.fd-form').first()).toBeVisible();
+    await expect(framed.locator('.fd-form [data-node]').first()).toBeVisible();
+    await expect(framed.locator('.fd-form')).toContainText('Workshop sign-up');
+    // The afterEach then holds: nothing said in the console, the frame's own scripts' included.
   });
 
   test('a grid’s cells are stars, dots, hours and bars, its hours added up', async ({ page }) => {

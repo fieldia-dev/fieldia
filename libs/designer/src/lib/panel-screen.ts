@@ -206,6 +206,8 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
       look.update(page);
       const names = new Set(own.map((row) => row.name));
       const rows = settingRows(el('div', {}, ...look.rows), 'look');
+      // Read for their names alone: what its previews keep going, let go at once.
+      look.destroy?.();
       return [
         ...items,
         ...settingItems(

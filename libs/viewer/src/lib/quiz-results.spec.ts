@@ -21,7 +21,7 @@ async function until(ready: () => unknown) {
 }
 
 const quiz = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'check',
   data: { kind: 'responses' },
   quiz: {},

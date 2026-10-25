@@ -12,7 +12,7 @@ import type { RecordChange } from './data-source';
  */
 
 const checked = validatePage({
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'course',
   title: 'Course',
   data: { kind: 'record', model: 'course' },

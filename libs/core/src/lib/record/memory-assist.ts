@@ -5,6 +5,7 @@ import { foldForSearch } from './input-rules';
 import { languagesOf } from './languages';
 import type { MemoryAssist } from './memory-data-source';
 import type { Values } from './values';
+import { intlFormat } from '../intl-format';
 
 /**
  * A stand-in for an app's AI, for demos and tests: no model, no keys, nothing sent anywhere — words read by their
@@ -262,7 +263,7 @@ const listed = (items: string[]) => (items.length < 2 ? (items[0] ?? '') : `${it
 /** A language by its English name, as the stand-in says it: "English", "Arabic". */
 function english(tag: string): string {
   try {
-    return new Intl.DisplayNames(['en'], { type: 'language' }).of(tag) ?? tag;
+    return intlFormat('DisplayNames', ['en'], { type: 'language' }).of(tag) ?? tag;
   } catch {
     return tag;
   }

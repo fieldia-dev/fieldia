@@ -16,7 +16,7 @@ import { VIEWER_LABELS } from './labels';
  */
 
 const page: Page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'contacts',
   title: 'Contacts',
   data: { kind: 'record', model: 'crm.contact' },
@@ -165,7 +165,7 @@ describe('a file’s rows read and checked', () => {
 
 describe('a day and its time read from a file', () => {
   const visits: Page = {
-    fieldia: '0.12',
+    fieldia: '0.13',
     id: 'visits',
     title: 'Visits',
     data: { kind: 'record', model: 'visit' },
@@ -209,7 +209,7 @@ describe('a day and its time read from a file', () => {
 
 describe('a file’s choices that follow another column of the row', () => {
   const sites: Page = {
-    fieldia: '0.12',
+    fieldia: '0.13',
     id: 'sites',
     data: { kind: 'record', model: 'site' },
     fields: {

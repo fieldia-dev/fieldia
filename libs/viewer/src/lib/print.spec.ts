@@ -13,7 +13,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
  */
 
 const invoice: Page = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'invoice',
   title: 'Invoice',
   timeZone: 'Africa/Cairo',
@@ -156,7 +156,7 @@ describe('the owner’s walk of 0.25 on paper', () => {
   it('titles a record by its own name on a page of sections too: its "name" field, before what its records are called', async () => {
     // The owner's walk of 0.27: a service agreement's printout headed "Agreement" where the record is SA-2026-014.
     const agreement: Page = {
-      fieldia: '0.12',
+      fieldia: '0.13',
       id: 'agreement',
       title: 'Service agreement',
       records: { one: 'agreement', other: 'agreements', a: 'an agreement' },
@@ -394,7 +394,7 @@ describe('the app’s own file', () => {
   });
 
   it('a PDF is shown over the record in the browser’s viewer, with Download; closed, its bytes are let go of', async () => {
-    const host = await mount({ onAction: () => ({ file: { name: 'INV_2026_0042.pdf', type: 'application/pdf', bytes: new Uint8Array([37, 80, 68, 70]) } }) });
+    const host = await mount({ onAction: () => ({ file: { name: 'INV_2026_0042.pdf', type: 'application/pdf', bytes: new Uint8Array([37, 80, 68, 70, 45, 49, 46, 52]) } }) });
     (host.querySelector('.fd-record-gear') as HTMLButtonElement).click();
     (host.querySelector('[data-node="m-pdf"]') as HTMLButtonElement).click();
     await until(() => host.querySelector('.fd-file-viewer'));

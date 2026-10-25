@@ -1,30 +1,38 @@
-import { fill, formatBytes } from '@fieldia/core';
+import { DOWNLOAD_URL, fill, formatBytes, PICTURE_URL, safeUrl, type FileValue } from '@fieldia/core';
 import { drawIcon, filesPart, WIDGET_LABELS, type Going, type GoingItem, type ShrinkOptions } from '@fieldia/widgets';
 import type { ChatterContext } from './chatter';
 import type { Attachment } from './source';
 
-const isImage = (attachment: Attachment) => attachment.type.startsWith('image/') && !!attachment.url;
+const isImage = (attachment: Attachment) => attachment.type.startsWith('image/') && !!safeUrl(attachment.url, PICTURE_URL);
+let viewed = 0;
 
-/** A message's files: an image as a preview that opens it, any other file as a link with its size. */
+/**
+ * A message's files: an image as a preview that opens it — in Fieldia's own dialog of files, as a file field's do, which
+ * shows a picture only from bytes that are one (the files part's `shownFile`), never in a tab of its own — any other file
+ * as a link that downloads it, with its size.
+ */
 export function attachmentList(context: ChatterContext, attachments: readonly Attachment[], remove?: (attachment: Attachment) => void): HTMLElement {
   const { el, doc, labels, icons } = context;
+  const pictures = attachments.filter(isImage).map(({ name, type, size, url }): FileValue => ({ name, type, size, url: url ?? undefined }));
   return el(
     'ul',
     { class: 'fd-attachments' },
     ...attachments.map((attachment) => {
       const item = el('li', { class: 'fd-attachment' });
       if (isImage(attachment)) {
-        const preview = el('img', { src: attachment.url as string, alt: attachment.name });
-        item.append(el('a', { class: 'fd-attachment-image', href: attachment.url as string, target: '_blank', rel: 'noopener' }, preview));
+        const preview = el('img', { src: safeUrl(attachment.url, PICTURE_URL), alt: attachment.name });
+        const open = el('button', { type: 'button', class: 'fd-attachment-image', 'aria-haspopup': 'dialog' }, preview);
+        const at = pictures.findIndex((picture) => picture.url === (attachment.url ?? undefined) && picture.name === attachment.name);
+        const words = WIDGET_LABELS[context.locale] ?? WIDGET_LABELS.en;
+        open.addEventListener('click', () => void filesPart.load().then((part) => part.viewFiles({ doc, words, id: `fd-attachments-${++viewed}`, files: pictures, at, home: open, back: () => open })));
+        item.append(open);
       } else {
         const icon = drawIcon(doc, 'file', icons);
         const words = el('span', { class: 'fd-attachment-words' }, el('span', { class: 'fd-attachment-name' }, attachment.name), el('span', { class: 'fd-attachment-size' }, formatBytes(attachment.size)));
         const parts = [...(icon ? [icon] : []), words];
-        item.append(
-          attachment.url
-            ? el('a', { class: 'fd-attachment-file', href: attachment.url, target: '_blank', rel: 'noopener', download: attachment.name }, ...parts)
-            : el('span', { class: 'fd-attachment-file' }, ...parts)
-        );
+        // Downloaded, as its link says: from a web address, this site's, a blob this page made, or its data.
+        const href = safeUrl(attachment.url, DOWNLOAD_URL);
+        item.append(href ? el('a', { class: 'fd-attachment-file', href: safeUrl(href, DOWNLOAD_URL), target: '_blank', rel: 'noopener', download: attachment.name }, ...parts) : el('span', { class: 'fd-attachment-file' }, ...parts));
       }
       if (remove) {
         const drop = el('button', { type: 'button', class: 'fd-attachment-remove', 'aria-label': fill(labels.removeAttachment, { name: attachment.name }) }, '×');

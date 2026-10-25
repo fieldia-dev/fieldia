@@ -13,7 +13,7 @@ import type { RecordId, Values } from './values';
  */
 
 const booking = {
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'booking',
   data: { kind: 'record', model: 'stay' },
   fields: {

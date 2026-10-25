@@ -13,7 +13,7 @@ import { valuesIn } from './words';
 import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
 import { checkButtonParts, checkHead, checkMenuItem, type MenuTools } from './head-checks';
 import { checkSectionTracks } from './section-checks';
-import { fieldPattern } from './pattern';
+import { fieldPattern, rulePattern } from './pattern';
 import { DUPLICATE_KINDS } from './duplicate-kinds';
 import { isTimeZone } from '../record/zones';
 import { fill, MESSAGES } from '../record/messages';
@@ -336,7 +336,7 @@ export class ReferenceCheck {
           if (step.then) this.checkSteps(step.then, `${at}.then`);
           return;
         case 'openUrl':
-          this.checkExpression(step.url, `${at}.url`, scope);
+          if (this.checkExpression(step.url, `${at}.url`, scope)) this.checkAddress(step.url, `${at}.url`);
           return;
         default:
           return;
@@ -467,6 +467,18 @@ export class ReferenceCheck {
    * out, and add up only line fields that exist. Returns the fields it reads,
    * or null when it cannot be read.
    */
+  /**
+   * An address a step opens, as far as the page writes it — the words it starts with, before any value
+   * (`'/orders/' + id`): a web, mail or phone address, or a path of this site, never a script (`javascript:`) nor a page
+   * written as data. The whole address, a value's part with it, is checked as the step runs (`safeUrl`).
+   */
+  private checkAddress(source: string, path: string) {
+    const words = /^\s*(['"])([\s\S]*?)\1/.exec(source)?.[2] ?? '';
+    // Read as the browser reads it: line breaks and tabs dropped, nothing before the scheme.
+    const scheme = /^([a-z][a-z\d+.-]*):/i.exec(words.replace(/[\t\n\r]/g, '').replace(/^[\0- ]+/, ''))?.[1].toLowerCase();
+    if (scheme && !['http', 'https', 'mailto', 'tel'].includes(scheme)) this.report(path, `an address a page opens is a web, mail or phone address, or a path of this site: "${words.slice(0, 40)}" is none`);
+  }
+
   private checkExpression(source: string, path: string, scope: Scope): readonly string[] | null {
     let compiled: ReturnType<typeof compileExpression>;
     try {
@@ -534,6 +546,8 @@ export class ReferenceCheck {
     this.checkWorkedOut(fields, base, scope);
     for (const [name, def] of Object.entries(fields as Record<string, Field | LineField>)) {
       const path = `${base}.${name}`;
+      // A name every object already has would read as a record's own value: never a field's.
+      if (/^(constructor|__proto__|prototype)$/.test(name)) this.report(path, `"${name}" is a name every object already has: name the field otherwise`);
       // A field's label, its help and its choices' words may show the answers given — the page's own fields', not a line's.
       if (lines === undefined) {
         this.checkWords(def, path, ['label', 'help']);
@@ -636,6 +650,7 @@ export class ReferenceCheck {
       page: this.page,
       need: (name, path, scope) => this.need(name, path, scope),
       report: (path, message) => this.report(path, message),
+      warn: (path, message) => void this.warnings.push({ path, message }),
       owe: (part) => this.later.add(part),
       checkModifiers: (owner, path, keys, scope) => this.checkModifiers(owner, path, keys, scope),
     };
@@ -868,11 +883,8 @@ export class ReferenceCheck {
         else if (!has(def.fields, rule.distinct)) this.report(`${at}.distinct`, `"${rule.distinct}" is not a field of the lines of "${node.field}"`);
       }
       if (rule.pattern === undefined) return;
-      try {
-        new RegExp(rule.pattern);
-      } catch {
-        this.report(`${at}.pattern`, `"${rule.pattern}" is not a regular expression`);
-      }
+      const pattern = rulePattern(rule.pattern);
+      if (pattern instanceof Error) this.report(`${at}.pattern`, `"${rule.pattern}" is not a pattern an answer is checked by: ${pattern.message}`);
     });
     // Its value's tones and bold, and the words its empty box shows: read on the record, as its other conditions are.
     node.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.tones[${i}]`, ['when']));

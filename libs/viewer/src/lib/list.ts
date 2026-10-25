@@ -17,6 +17,8 @@ import {
   type Facet,
   type Form,
   type ListNode,
+  type ListRequest,
+  type ListResult,
   type Locale,
   type RangeDays,
   type ResolvedFilter as Resolved,
@@ -28,7 +30,9 @@ import {
   type Tone,
   type Values,
   type ViewState,
+  intlFormat,
 } from '@fieldia/core';
+import type { EarlyList } from './list-early';
 import { drawIcon, formatNumber, keepsWhole, loadingOver, moneyReads, startLoading, type IconSet, type Loading, type PreferenceStore, type Widget, type WidgetContext, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import { defaultFacets, laterFavourites, startingFacets } from './favourites';
@@ -76,6 +80,8 @@ export interface ListContext {
   onOpenRecord?: (id: RecordId, name?: string) => unknown;
   /** Conditions every search keeps: the records this list may show at all. */
   fixedFilter?: ResolvedFilter[];
+  /** Its first page, asked for as its part came (list-early.ts): its first request takes it where it is the same. */
+  early?: EarlyList;
   /** The search it opens with, chips a person may take away, in place of its default filters and favourite (View all's). */
   search?: Facet[];
   /** Other ways of showing the records, by name: `map` for a list with `map`, `calendar` for one with `calendar`. */
@@ -219,6 +225,21 @@ export interface ListView {
 const NUMBERS = new Set(['integer', 'float', 'monetary']);
 /** Fields no list can put in order. */
 const UNSORTABLE = new Set(['one2many', 'many2many', 'binary', 'image', 'html', 'json', 'properties']);
+/**
+ * The early answer, where it answers this request: the same but for its fields, among which are all this one asks for —
+ * told to stop when `signal` aborts (its wait's timeout), as the list's own request would be. Undefined else, the early
+ * one told to stop: the list asks itself.
+ */
+function earlyFor(early: EarlyList | undefined, request: ListRequest, signal?: AbortSignal): Promise<ListResult> | undefined {
+  if (!early) return undefined;
+  const { fields, ...rest } = early.request;
+  const { fields: asked, ...same } = request;
+  if (JSON.stringify(rest) !== JSON.stringify(same) || !asked.every((name) => fields.includes(name))) return void early.stop();
+  if (signal?.aborted) early.stop();
+  else signal?.addEventListener('abort', () => early.stop(), { once: true });
+  return early.answer;
+}
+
 /** As wide as a list is when it turns into cards: a phone's, as a table of lines does (520px). */
 const NARROW = 520;
 const isPromise = (value: unknown): value is Promise<unknown> => !!value && typeof (value as Promise<unknown>).then === 'function';
@@ -1081,7 +1102,12 @@ export function listView(context: ListContext): ListView {
       } else {
         // Loaded as it is scrolled: every row it held, asked again from the first.
         // A tree loaded as it opens: its records with no parent, while no search is on.
-        const answer = source?.list ? await source.list({ model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize, ...(waiting.settings.timeout ? { signal: wait.signal } : {}) }) : { records: [], total: 0 };
+        const request = { model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize };
+        // The first page asked for already, as the list's part came, where it answers this request: taken once. Its wait's
+        // timeout tells it to stop as it tells the list's own request.
+        const early = earlyFor(context.early, request, waiting.settings.timeout ? wait.signal : undefined);
+        context.early = undefined;
+        const answer = source?.list ? await (early ?? source.list({ ...request, ...(waiting.settings.timeout ? { signal: wait.signal } : {}) })) : { records: [], total: 0 };
         if (stale()) return wait.stop();
         // Past the end, as when the last record of the last page went: back to the page that is left.
         if (!answer.records.length && answer.total > 0 && offset > 0) {
@@ -1167,18 +1193,22 @@ export function listView(context: ListContext): ListView {
    * meanwhile) never twice — its count, its grips and what is chosen with them. A list that asked again meanwhile draws
    * them itself; one that cannot be asked says so.
    */
-  async function more(): Promise<void> {
+  async function more(): Promise<boolean | void> {
     const source = context.dataSource;
     if (!endless || groupedNow || rows.length >= total || !source?.list || !endlessEnd) return;
     const mine = asking;
-    // Its wait where the rows will come (`more`): "Loading more…" unless the page says otherwise; a failure said there, with Retry.
-    const wait = startLoading(endlessEnd.element, 'more', waiting, { part: node.id, retry: () => void more() });
+    // Its wait where the rows will come (`more`): "Loading more…" unless the page says otherwise; a failure said there,
+    // with Retry — the person's ask, after which its end in sight asks by itself again (list-endless.ts).
+    const end = endlessEnd;
+    const wait = startLoading(end.element, 'more', waiting, { part: node.id, retry: () => end.retry() });
     let answer: Awaited<ReturnType<NonNullable<DataSource['list']>>>;
     try {
       answer = await source.list({ model, fields, filter: currentFilter(), sort, offset: rows.length, limit: pageSize, ...(waiting.settings.timeout ? { signal: wait.signal } : {}) });
     } catch (error) {
       if (mine !== asking || destroyed) return wait.stop();
-      return wait.fail(error);
+      wait.fail(error);
+      // Said, and left said: never asked again by itself.
+      return false;
     }
     if (mine !== asking || destroyed) return wait.stop();
     await wait.done(() => {
@@ -1518,7 +1548,7 @@ export function listView(context: ListContext): ListView {
     const ids = chosen.size;
     exportWhat.textContent = ids
       ? fill(labels.selected, { n: number(ids) })
-      : fill(new Intl.PluralRules(locale).select(matching) === 'one' ? sentence(labels.exportAllNounOne, labels.exportAllOne) : sentence(labels.exportAllNoun, labels.exportAll), { n: number(matching) });
+      : fill(intlFormat('PluralRules', locale).select(matching) === 'one' ? sentence(labels.exportAllNounOne, labels.exportAllOne) : sentence(labels.exportAllNoun, labels.exportAll), { n: number(matching) });
     exportMenu.hidden = false;
     // From the button's start, unless that runs past the screen's edge: then from its end.
     exportMenu.removeAttribute('data-end');
@@ -1586,7 +1616,7 @@ export function listView(context: ListContext): ListView {
         if (destroyed) return;
         if ('message' in end) context.say?.(end.message, 'info');
         else if (end.done < end.total) context.say?.(fill(sentence(labels.exportCutNoun, labels.exportCut), { n: number(end.done), total: number(end.total) }), 'warning');
-        else context.say?.(fill(new Intl.PluralRules(locale).select(end.done) === 'one' ? sentence(labels.exportedNounOne, labels.exportedOne) : sentence(labels.exportedNoun, labels.exported), { n: number(end.done) }), 'success');
+        else context.say?.(fill(intlFormat('PluralRules', locale).select(end.done) === 'one' ? sentence(labels.exportedNounOne, labels.exportedOne) : sentence(labels.exportedNoun, labels.exported), { n: number(end.done) }), 'success');
       } catch {
         if (!destroyed) context.say?.(sentence(labels.exportFailedNoun, labels.exportFailed), 'danger');
       }
@@ -1681,7 +1711,7 @@ export function listView(context: ListContext): ListView {
     try {
       const ids = chosenInOrder();
       const n = ids.length;
-      const one = new Intl.PluralRules(locale).select(n) === 'one';
+      const one = intlFormat('PluralRules', locale).select(n) === 'one';
       const how: BulkList = { page, node, model, dataSource: context.dataSource, labels, fill, locale, known: (id) => known.get(String(id)) };
       const asked = await askBulkValue(how, bulk.editValues, fill(one ? sentence(labels.bulkTitleNounOne, labels.bulkTitleOne) : sentence(labels.bulkTitleNoun, labels.bulkTitle), { n: number(n) }));
       if (!asked || destroyed) return;
@@ -1706,7 +1736,7 @@ export function listView(context: ListContext): ListView {
           reportFix.hidden = reportUndo.hidden = true;
           reported = edit;
           report.hidden = false;
-        } else context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? sentence(labels.bulkDoneNounOne, labels.bulkDoneOne) : sentence(labels.bulkDoneNoun, labels.bulkDone), { n: number(done) }), 'success');
+        } else context.say?.(fill(intlFormat('PluralRules', locale).select(done) === 'one' ? sentence(labels.bulkDoneNounOne, labels.bulkDoneOne) : sentence(labels.bulkDoneNoun, labels.bulkDone), { n: number(done) }), 'success');
         await Promise.all([load(), viewParts.reload()]);
       });
     } finally {
@@ -1766,7 +1796,7 @@ export function listView(context: ListContext): ListView {
         return;
       }
       const made = end.made.length;
-      const one = new Intl.PluralRules(locale).select(made) === 'one';
+      const one = intlFormat('PluralRules', locale).select(made) === 'one';
       reportWords.textContent = end.stopped
         ? fill(sentence(labels.importStoppedNoun, labels.importStopped), { n: number(made), total: number(end.total) })
         : end.notImported.length
@@ -1786,7 +1816,7 @@ export function listView(context: ListContext): ListView {
 
   /** The records an import made, deleted again once the person says so; those that could not be, named with why. */
   async function undoImport(ids: RecordId[], undo: (ids: readonly RecordId[], progress: (done: number, total: number) => void) => Promise<{ done: number; failed: { id: RecordId; why: string }[] }>): Promise<void> {
-    const one = new Intl.PluralRules(locale).select(ids.length) === 'one';
+    const one = intlFormat('PluralRules', locale).select(ids.length) === 'one';
     if (!context.ask || !(await context.ask(fill(one ? sentence(labels.importUndoAskNounOne, labels.importUndoAskOne) : sentence(labels.importUndoAskNoun, labels.importUndoAsk), { n: number(ids.length) }), { yes: labels.delete })) || destroyed) return;
     await busy(reportUndo, async () => {
       const { done, failed } = await undo(ids, (at, of) => {
@@ -1801,7 +1831,7 @@ export function listView(context: ListContext): ListView {
         reportList.replaceChildren(...failed.map(({ id, why }) => el('li', {}, fill(labels.bulkWhy, { name: names.get(String(id)) ?? String(id), why }))));
       } else {
         report.hidden = true;
-        context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? sentence(labels.importUndoneNounOne, labels.importUndoneOne) : sentence(labels.importUndoneNoun, labels.importUndone), { n: number(done) }), 'success');
+        context.say?.(fill(intlFormat('PluralRules', locale).select(done) === 'one' ? sentence(labels.importUndoneNounOne, labels.importUndoneOne) : sentence(labels.importUndoneNoun, labels.importUndone), { n: number(done) }), 'success');
         importButton.focus();
       }
       await Promise.all([load(), viewParts.reload()]);

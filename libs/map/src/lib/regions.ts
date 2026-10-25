@@ -4,6 +4,7 @@ import type { Locale, MapLayer, MapRegions, ResolvedFilter } from '@fieldia/core
 import { fill, type MapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import { warnOnce, type MapBox } from './map-core';
+import { intlFormat } from '@fieldia/core';
 
 /**
  * Areas shaded by colour on a map: districts, zones, municipalities. Their
@@ -170,7 +171,7 @@ export function drawRegions(options: {
 }): RegionsLayer {
   const { box, map, L, document: doc, locale, labels, borders } = options;
   installRegionStyles(doc);
-  const number = (n: number) => new Intl.NumberFormat(locale, { numberingSystem: 'latn', maximumFractionDigits: 2 }).format(n);
+  const number = (n: number) => intlFormat('NumberFormat', locale, { numberingSystem: 'latn', maximumFractionDigits: 2 }).format(n);
   // Their own pane: under a reachable area, routes and pins, over a heat map.
   const pane = map.getPane('fd-regions') ?? map.createPane('fd-regions');
   pane.style.zIndex = '370';

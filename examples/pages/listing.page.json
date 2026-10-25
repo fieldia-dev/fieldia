@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.12",
+  "fieldia": "0.13",
   "id": "listing",
   "title": "A listing by its type",
   "description": "A home put up for sale: its features follow its type, its price per square metre and its handover work themselves out, and the district's average comes from the app's server.",

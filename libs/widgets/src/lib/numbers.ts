@@ -1,4 +1,4 @@
-import { stripMarks, type Locale } from '@fieldia/core';
+import { stripMarks, type Locale, intlFormat } from '@fieldia/core';
 
 /**
  * Numbers as a reader of the page's language writes them: grouped, with a
@@ -12,7 +12,7 @@ function format(locale: Locale, decimals: number): Intl.NumberFormat {
   const key = `${locale}:${decimals}`;
   let found = formats.get(key);
   if (!found) {
-    found = new Intl.NumberFormat(locale, { numberingSystem: 'latn', minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    found = intlFormat('NumberFormat', locale, { numberingSystem: 'latn', minimumFractionDigits: decimals, maximumFractionDigits: decimals });
     formats.set(key, found);
   }
   return found;
@@ -26,7 +26,7 @@ function format(locale: Locale, decimals: number): Intl.NumberFormat {
  */
 export function formatMoney(value: number, currency: string, decimals: number, locale: Locale = 'en'): string {
   try {
-    const parts = new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', numberingSystem: 'latn', minimumFractionDigits: decimals, maximumFractionDigits: decimals }).formatToParts(value);
+    const parts = intlFormat('NumberFormat', locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', numberingSystem: 'latn', minimumFractionDigits: decimals, maximumFractionDigits: decimals }).formatToParts(value);
     // A symbol written right against the amount is parted from it by a space that never breaks ("E£ 425,000.00"), as Flectra writes money and a box shows it.
     return parts.map((part, i) => (part.type === 'currency' && /^(integer|minusSign)$/.test(parts[i + 1]?.type ?? '') ? `${part.value}\u00a0` : part.value)).join('');
   } catch {

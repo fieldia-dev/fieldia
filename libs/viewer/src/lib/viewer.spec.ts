@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createMemoryDataSource, saveRefused, type DraftStore, type Page } from '@fieldia/core';
+import { createMemoryDataSource, ownerOf, saveRefused, type DraftStore, type Page } from '@fieldia/core';
 import { openFormDialog, openSearchDialog } from './dialog';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
@@ -827,13 +827,18 @@ describe('a record sheet', () => {
     const tabs = [...list.querySelectorAll<HTMLElement>('[role=tab]')].filter((t) => !t.hidden);
     tabs.forEach((t, i) => (t.getBoundingClientRect = () => ({ left: i * 150 - left, right: i * 150 + 150 - left, width: 150 }) as DOMRect));
     const last = tabs[tabs.length - 1];
+    // Brought into sight before the next frame is drawn, once the page is laid out — never in the middle of drawing it.
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
     last.click();
+    await frame();
     expect(last.getBoundingClientRect().right).toBeLessThanOrEqual(200);
     // Back to the first by the keyboard: in sight again.
     tabs[tabs.length - 1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    await frame();
     expect(tabs[0].getBoundingClientRect().left).toBeGreaterThanOrEqual(0);
     // And a step that shows the last one.
     await viewer.run([{ do: 'goTo', target: last.dataset['node'] as string }]);
+    await frame();
     expect(last.getBoundingClientRect().right).toBeLessThanOrEqual(200);
     expect(last.getAttribute('aria-selected')).toBe('true');
   });
@@ -1193,7 +1198,7 @@ describe('the viewer itself', () => {
 
   it('offers a saved draft back', () => {
     const items = new Map<string, string>([
-      ['fieldia:draft:product-feedback:new', JSON.stringify({ savedAt: '2026-10-02T09:00:00.000Z', values: { name: 'Sara' } })],
+      [`fieldia:draft:${ownerOf(null)}:product-feedback:new`, JSON.stringify({ savedAt: '2026-10-02T09:00:00.000Z', values: { name: 'Sara' } })],
     ]);
     const store: DraftStore = { getItem: (k) => items.get(k) ?? null, setItem: (k, v) => void items.set(k, v), removeItem: (k) => void items.delete(k) };
     const { host } = mount('survey', { drafts: { store } });

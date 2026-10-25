@@ -10,6 +10,7 @@
  * skip) or exist twice (the hour they repeat): `instantsAt` gives none, or
  * both, and what reads a typed time says so — it is never moved in silence.
  */
+import { intlFormat } from '../intl-format';
 
 /** A day and a time on the clock in some zone, to the minute. */
 export interface WallTime {
@@ -27,7 +28,7 @@ const clocks = new Map<string, Intl.DateTimeFormat>();
 function clockOf(zone: string): Intl.DateTimeFormat {
   let clock = clocks.get(zone);
   if (!clock) {
-    clock = new Intl.DateTimeFormat('en-US', { timeZone: zone, calendar: 'gregory', numberingSystem: 'latn', hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+    clock = intlFormat('DateTimeFormat', 'en-US', { timeZone: zone, calendar: 'gregory', numberingSystem: 'latn', hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
     clocks.set(zone, clock);
   }
   return clock;
@@ -46,7 +47,7 @@ export function isTimeZone(name: unknown): name is string {
 
 /** The browser's own time zone, by its IANA name. */
 export function ownZone(): string {
-  return new Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return intlFormat('DateTimeFormat').resolvedOptions().timeZone;
 }
 
 const own = new Map<string, boolean>();

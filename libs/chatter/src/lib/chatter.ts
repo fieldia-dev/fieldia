@@ -1,4 +1,4 @@
-import { fill, recordSentence, wordsComing, wordsReady, type DateOrder, type Locale, type PageRecords } from '@fieldia/core';
+import { PICTURE_URL, safeUrl, fill, recordSentence, wordsComing, wordsReady, type DateOrder, type Locale, type PageRecords } from '@fieldia/core';
 import { installStyles, sanitizeHtml, showHtml, type IconSet, type ShrinkOptions } from '@fieldia/widgets';
 import { activitiesPart, momentWords } from './activities';
 import { attachmentList, composerFiles } from './attachments';
@@ -372,7 +372,7 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
   const when = (date: string) => (Number.isFinite(Date.parse(date)) ? momentWords(context, Date.parse(date)) : date);
 
   function avatar(person: Person | null): HTMLElement {
-    if (person?.avatar) return el('img', { class: 'fd-avatar-image', src: person.avatar, alt: '' });
+    if (person?.avatar) return el('img', { class: 'fd-avatar-image', src: safeUrl(person.avatar, PICTURE_URL), alt: '' });
     return el('span', { class: 'fd-avatar-initials', 'aria-hidden': 'true' }, initials(person?.name ?? '?'));
   }
 

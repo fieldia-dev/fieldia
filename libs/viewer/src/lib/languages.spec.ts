@@ -61,6 +61,7 @@ beforeEach(() => {
 afterEach(() => {
   warn.mockRestore();
   document.body.replaceChildren();
+  delete (globalThis as { __FIELDIA_VERSION__?: string }).__FIELDIA_VERSION__;
 });
 
 describe('the packages', () => {
@@ -96,6 +97,8 @@ describe('the one-tag script, English alone', () => {
 
   it('shows English words for a language not added, right to left still, and says once which script to add', async () => {
     const fieldia = await englishOnly();
+    // As the one-tag script runs, its build having written its version in.
+    (globalThis as { __FIELDIA_VERSION__?: string }).__FIELDIA_VERSION__ = '0.34.0';
     const first = show(fieldia, 'ar');
     expect(first.submit).toBe('Submit');
     expect(first.host.querySelector('.fd-form')?.getAttribute('dir')).toBe('rtl');
@@ -103,11 +106,13 @@ describe('the one-tag script, English alone', () => {
     expect(first.host.querySelector('.fd-error')?.textContent).toBe('Your name is required');
     show(fieldia, 'ar-EG');
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toContain('<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>');
+    // The script of its own version, never the newest.
+    expect(warn.mock.calls[0][0]).toContain('from its version (0.34.0): <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.ar.js" crossorigin="anonymous"></script>');
+    expect(warn.mock.calls[0][0]).not.toMatch(/@fieldia\/viewer\/bundle/);
     // Each language missing is said once.
     show(fieldia, 'de');
     expect(warn).toHaveBeenCalledTimes(2);
-    expect(warn.mock.calls[1][0]).toContain('fieldia.de.js');
+    expect(warn.mock.calls[1][0]).toContain('@fieldia/viewer@0.34.0/bundle/fieldia.de.js');
   });
 
   it('says nothing for a language Fieldia has no words for in any form', async () => {

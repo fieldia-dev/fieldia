@@ -1,4 +1,4 @@
-import { hijriWords, dayTag, type Locale } from '@fieldia/core';
+import { hijriWords, dayTag, type Locale, intlFormat } from '@fieldia/core';
 import type { CalendarHost, CalendarKind } from './calendar';
 import { hijriOf } from './hijri';
 import { wordsFor } from './kind-parts';
@@ -21,8 +21,8 @@ export function periodCalendar(grain: 'month' | 'year', doc: Document, labels: W
   installMonthsStyles(doc);
   const words = wordsFor(labels, locale);
   const years = grain === 'year';
-  const short = new Intl.DateTimeFormat(dayTag(locale), { month: 'short', numberingSystem: 'latn' });
-  const long = new Intl.DateTimeFormat(dayTag(locale), { month: 'long', year: 'numeric', numberingSystem: 'latn' });
+  const short = intlFormat('DateTimeFormat', dayTag(locale), { month: 'short', numberingSystem: 'latn' });
+  const long = intlFormat('DateTimeFormat', dayTag(locale), { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   /** A month or a year moved by `n`. */
   const shift = (at: Date, n: number) => (years ? new Date(at.getFullYear() + n, 0, 1) : new Date(at.getFullYear(), at.getMonth() + n, 1));
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -81,7 +81,7 @@ export function periodCalendar(grain: 'month' | 'year', doc: Document, labels: W
 export function hijriCalendar(doc: Document, labels: WidgetLabels | undefined, locale: Locale): CalendarKind {
   installMonthsStyles(doc);
   const words = wordsFor(labels, locale);
-  const months = new Intl.DateTimeFormat(`${lang(locale)}-u-ca-islamic-umalqura`, { month: 'long', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' });
+  const months = intlFormat('DateTimeFormat', `${lang(locale)}-u-ca-islamic-umalqura`, { month: 'long', year: 'numeric', numberingSystem: 'latn', timeZone: 'UTC' });
   const utc = (day: Date) => Date.UTC(day.getFullYear(), day.getMonth(), day.getDate());
   const iso = (day: Date) => new Date(utc(day)).toISOString().slice(0, 10);
   return {

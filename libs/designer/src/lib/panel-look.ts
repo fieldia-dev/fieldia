@@ -22,6 +22,8 @@ export interface LookSetting {
   /** Its rows, on the Look tab. */
   rows: HTMLElement[];
   update(page: Page): void;
+  /** Let go of what it keeps going while it is shown — the waits its previews draw, each with its timers. */
+  destroy?(): void;
 }
 
 /** A few accents to start from; any colour can be picked besides. */
@@ -159,6 +161,7 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
   const note = onTab(el('p', { class: 'fd-properties-hint' }, w.tokensNote), 'look');
   return {
     rows: [themeRow, ...presets.rows, skinRow, accent, ...rows, parts.row, ...waiting.rows, note],
+    destroy: () => waiting.destroy?.(),
     update(page) {
       presets.update(page);
       parts.update(page);

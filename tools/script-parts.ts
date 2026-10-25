@@ -17,6 +17,15 @@
  * its own. A part of another version is refused with a warning, and the page
  * draws plainly what it would have drawn from it.
  *
+ * And the main script checks each part it adds before it runs: it carries the
+ * sha256 of every part's file as it was built with it (`partIntegrity`), which
+ * the part's tag carries as `integrity`, asked for with `crossorigin="anonymous"`
+ * — so the browser runs a part only if it is the very file released with this
+ * fieldia.js, and refuses one changed since (on a CDN, in a cache, by anyone
+ * between): what needed it says it could not be loaded, as it says when the part
+ * cannot come at all. A part served from another origin than the page's needs
+ * CORS (`Access-Control-Allow-Origin`), as a CDN sends it.
+ *
  * A part's tag may also be written into the page, after fieldia.js or before
  * it (an `async` script may run first): it waits in `FieldiaParts` for the
  * main script, which takes it as it starts.
@@ -31,6 +40,19 @@ import type { LanguageWords } from '@fieldia/viewer';
 import { styleNonce, useStyleNonce } from '@fieldia/widgets';
 
 declare const __FIELDIA_VERSION__: string;
+/** Each part's file's sha256, in base64, as this script was built with it (tools/script-bundle.mjs), by its name. */
+declare const __FIELDIA_PART_HASHES__: Record<string, string>;
+
+/**
+ * A part's `integrity`, as the tag this script adds for it carries it: the hash of its file as this script was built
+ * with it — `sha256-…` — or '' for a name that is no part of this script. A `<link rel="preload" as="script">` or a
+ * part's tag written into a page carries the same, with `crossorigin="anonymous"`, or the browser fetches it twice.
+ */
+export function partIntegrity(name: string): string {
+  return Object.prototype.hasOwnProperty.call(PART_HASHES, name) ? `sha256-${PART_HASHES[name]}` : '';
+}
+/** Read once: the build writes the table where it is named, and names it here alone. */
+const PART_HASHES = __FIELDIA_PART_HASHES__;
 
 /**
  * A part's script, as it runs: its name, the version it was built as, what makes its exports from the main script's
@@ -77,6 +99,35 @@ function take([name, version, make, words]: PartEntry) {
   settle(name, { exports });
 }
 
+/** A part's tag's attributes: its address, how it is asked for, the hash the browser checks it by, and its nonce. */
+export interface PartTag {
+  src: string;
+  crossOrigin: 'anonymous';
+  integrity: string;
+  nonce?: string;
+}
+
+/**
+ * The tag a part is asked for with, as the main script adds it: its address, beside the main script's own, asked for
+ * without credentials, the hash of its file as this script was built with it (`partIntegrity`), and its nonce. The one
+ * place it is made — the page's own tags for its parts (`partTags`, a server's preload links) carry what it carries,
+ * or the browser fetches the part twice (a preload is used only by a request made the same way, its integrity too).
+ */
+export function partTag(name: string): PartTag {
+  return { src: `${base}fieldia.${name}.js`, crossOrigin: 'anonymous', integrity: partIntegrity(name), ...(nonce ? { nonce } : {}) };
+}
+
+/**
+ * The page's own tag for a part still on its way — a server wrote it before fieldia.js (`partFiles`): waited for, never
+ * asked for a second time. One that came already (the browser's resource timing has it) and gave no part is not.
+ */
+function onItsWay(doc: Document, src: string): HTMLScriptElement | undefined {
+  const timing = globalThis.performance;
+  // A full buffer of timings can no longer say whether it came: asked for again then, as before.
+  if (!timing?.getEntriesByName || timing.getEntriesByType('resource').length > 249 || timing.getEntriesByName(src).length) return undefined;
+  return [...doc.scripts].find((one) => one.src === src);
+}
+
 /** A part's code: at once once it has come, else its script added to the page, beside the main one. */
 export function loadPart(name: string): Promise<unknown> {
   if (made.has(name)) return Promise.resolve(made.get(name));
@@ -92,20 +143,35 @@ export function loadPart(name: string): Promise<unknown> {
       settle(name, { error: new Error(`fieldia.${name}.js cannot be loaded: fieldia.js came from no address of its own. Add its tag after fieldia.js.`) });
       return;
     }
-    const tag = doc.createElement('script');
-    tag.src = `${base}fieldia.${name}.js`;
-    tag.async = true;
-    if (nonce) tag.nonce = nonce;
-    tag.onload = () => {
-      tag.remove();
+    const tag = partTag(name);
+    // Only a file this script was built with: refused, never run unchecked, where it knows no hash for it.
+    if (!tag.integrity) {
+      settle(name, { error: new Error(`fieldia.${name}.js is no part of fieldia.js ${__FIELDIA_VERSION__}: it has no hash to check it against`) });
+      return;
+    }
+    const { src } = tag;
+    // The page's own tag for it, still coming — its script hands the part over as it runs (`FieldiaParts`) — else one
+    // of the main script's own.
+    const written = onItsWay(doc, src);
+    const script = written ?? doc.createElement('script');
+    script.addEventListener('load', () => {
+      script.remove();
       if (!made.has(name)) settle(name, { error: new Error(`${tag.src} gave no part`) });
-    };
-    tag.onerror = () => {
-      tag.remove();
-      // Forgotten, so the next use asks again (a page that was offline).
-      settle(name, { error: new Error(`${tag.src} could not be loaded`) });
-    };
-    (doc.head ?? doc.documentElement).append(tag);
+    });
+    script.addEventListener('error', () => {
+      script.remove();
+      // Forgotten, so the next use asks again (a page that was offline). The browser says which it was, in its console.
+      settle(name, { error: new Error(`${tag.src} could not be loaded, or is not the file fieldia.js ${__FIELDIA_VERSION__} was built with (its hash differs): serve this release's parts beside it`) });
+    });
+    if (written) return;
+    // Checked by the browser before it runs: the file released with this script, asked for without credentials — every
+    // attribute `partTag` gives, so a page's preload link written from `partTags` is the very request made here.
+    script.src = src;
+    script.async = true;
+    script.crossOrigin = tag.crossOrigin;
+    script.integrity = tag.integrity;
+    if (tag.nonce) script.nonce = tag.nonce;
+    (doc.head ?? doc.documentElement).append(script);
   });
 }
 

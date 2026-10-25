@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.12",
+  "fieldia": "0.13",
   "id": "clinic-calendar",
   "title": "Appointments",
   "description": "A clinic's appointments on a calendar: a column for each doctor in the day, each visit coloured by its service, moved by dragging or from the keyboard, and a new one from an empty slot.",

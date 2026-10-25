@@ -35,6 +35,7 @@ export const CHATTER_STYLES = `
 .fd-attach .fd-icon { width: 1.1em; height: 1.1em; margin-inline-end: 0.35em; vertical-align: -0.2em; }
 .fd-attachments { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .fd-attachment { position: relative; display: flex; align-items: center; gap: 4px; }
+.fd-attachment-image { padding: 0; border: 0; border-radius: var(--fd-radius); background: none; cursor: zoom-in; }
 .fd-attachment-image img { display: block; width: 120px; height: 90px; object-fit: cover; border-radius: var(--fd-radius); border: 1px solid var(--fd-border); }
 .fd-attachment-file {
   display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius);

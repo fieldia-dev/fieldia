@@ -49,13 +49,22 @@ function steps(fields: Record<string, Field | LineField>, functions?: FunctionTa
 }
 
 /**
+ * The most a value worked out by the page (`compute`, a step's `set`, `setWhen`) may hold: characters of text, items of
+ * a list. Past them, none — a page whose values each double the one before (24 of them made 33.5 million characters of
+ * one letter typed) stops there, and the next worked out from it holds none too.
+ */
+export const COMPUTED_MOST = { text: 100_000, items: 10_000 };
+
+/**
  * A worked-out value as its field holds it: a whole number rounded, a number
  * to the field's decimals, a number as text in a text field, yes or no by
- * Python's idea of true, and null for what the field cannot hold.
+ * Python's idea of true, and null for what the field cannot hold — or for more
+ * than a page may work out (`COMPUTED_MOST`).
  */
 export function fitTo(def: Field | LineField, value: unknown): Value {
   if (def.type === 'boolean') return truthy(value);
   if (value === null || value === undefined) return null;
+  if ((typeof value === 'string' && value.length > COMPUTED_MOST.text) || (Array.isArray(value) && value.length > COMPUTED_MOST.items)) return null;
   switch (def.type) {
     case 'integer':
       return isNumber(value) ? roundTo(value, 0) : null;

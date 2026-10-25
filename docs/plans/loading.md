@@ -109,8 +109,18 @@ the cards' parts'; a map's block is @fieldia/map's.
 ## The data source
 
 Nothing new. Where a page sets a `timeout`, a list's request its wait waits for (`list`: its records, its next rows, a
-map's places) carries a `signal` (an AbortSignal), as uploads and a map's clusters already do: it aborts as the timeout
-passes. A source that honours it (rejecting with an error named `AbortError`) frees the server sooner; one that ignores
-it loses nothing: the wait has ended as failed, and an answer that comes after is dropped, as a late answer always
-was. A record whose `load` answers after its timeout is drawn as it comes, the failure's words taken away. Without a
-`timeout`, requests are as they were.
+map's places) is told to stop as the timeout passes, its `signal` (an AbortSignal) aborting, as uploads and a map's
+clusters already do. A source that honours it (rejecting with an error named `AbortError`) frees the server sooner; one
+that ignores it loses nothing: the wait has ended as failed, and an answer that comes after is dropped, as a late
+answer always was. A record whose `load` answers after its timeout is drawn as it comes, the failure's words taken
+away.
+
+Since 0.34 every request also has a deadline of its own, the viewer's `timeout` (30 s unless the app says, 0 for none:
+docs/plans/wave1-contract.md §39), and carries that deadline's `signal`. The deadline ends the request; a wait's
+`timeout` here ends the loader. Both set, the sooner ends the wait — said once, with one Retry: a loading timeout
+shorter than the deadline says "It took too long." and tells a list's request to stop; one longer never fires, the
+deadline ending the request, and its wait with it, first. A record's load that fails is said in its place in core's
+words for it (`state.loadProblem`: "This customer could not be loaded: …") with Retry, which loads it; a record
+opened in another's place (`openRecord`) holds none of the other's values while it loads, and one that cannot be is
+named by its id ("Couldn't open customer 32: …"). Next rows that could not come stay said, with Retry: the list's end
+in sight asks nothing by itself until the person presses it.

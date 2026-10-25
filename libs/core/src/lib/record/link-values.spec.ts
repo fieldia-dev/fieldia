@@ -1,3 +1,4 @@
+import { ownerOf } from './browser-kept';
 import type { Page } from '../format/page';
 import { checkPage } from '../format/check-page';
 import { validatePage } from '../format/validate';
@@ -10,7 +11,7 @@ import { linkParams, linkValue, linkValues } from './link-values';
  * (`agent` into `agent_code`) — hidden fields, placed nowhere — and the unit asked about, shown for the person to keep.
  */
 const enquiry = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.12',
+  fieldia: '0.13',
   id: 'enquiry',
   data: { kind: 'responses' },
   fields: {
@@ -113,7 +114,7 @@ describe('a page filled from the link it is opened with (prefill)', () => {
     expect(form.getState().values).toMatchObject({ name: null, unit: 'B-12', utm_source: 'whatsapp' });
 
     const records = createMemoryDataSource({ records: { lead: { 7: { name: 'Karim', source: 'walk-in' } } } });
-    const lead: Page = { fieldia: '0.12', id: 'lead', data: { kind: 'record', model: 'lead' }, fields: { name: { type: 'char', label: 'Name' }, source: { type: 'char', label: 'Source' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }] }, prefill: { fromUrl: [{ param: 'utm_source', field: 'source' }] } };
+    const lead: Page = { fieldia: '0.13', id: 'lead', data: { kind: 'record', model: 'lead' }, fields: { name: { type: 'char', label: 'Name' }, source: { type: 'char', label: 'Source' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }] }, prefill: { fromUrl: [{ param: 'utm_source', field: 'source' }] } };
     const opened = createForm({ page: lead, dataSource: records, recordId: 7, url: '?utm_source=whatsapp' });
     await opened.load();
     expect(opened.getState().values['source']).toBe('walk-in');
@@ -127,7 +128,7 @@ describe('a page filled from the link it is opened with (prefill)', () => {
   it('keeps what the person typed: a draft laid over the link’s values wins', () => {
     const store = new Map<string, string>();
     const drafts = { store: { getItem: (key: string) => store.get(key) ?? null, setItem: (key: string, value: string) => void store.set(key, value), removeItem: (key: string) => void store.delete(key) }, restore: 'auto' as const };
-    store.set('fieldia:draft:enquiry:new', JSON.stringify({ values: { unit: 'D-1', name: 'Mona' }, savedAt: '2026-10-20T10:00:00Z' }));
+    store.set(`fieldia:draft:${ownerOf(null)}:enquiry:new`, JSON.stringify({ values: { unit: 'D-1', name: 'Mona' }, savedAt: '2026-10-20T10:00:00Z' }));
     const form = createForm({ page: enquiry(), drafts, url: '?unit=B-12&utm_source=whatsapp' });
     expect(form.getState().values).toMatchObject({ unit: 'D-1', name: 'Mona', utm_source: 'whatsapp' });
   });

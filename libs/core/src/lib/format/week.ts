@@ -13,13 +13,19 @@ type WeekLocale = Intl.Locale & { getWeekInfo?: () => { firstDay: number }; week
 /** The languages the reader's browser asks for, its first first (`navigator.languages`); none outside a browser. */
 const readerLanguages = (): readonly string[] => (globalThis as { navigator?: { languages?: readonly string[] } }).navigator?.languages ?? [];
 
-/** A tag read, or none where it is not one. */
+/** A tag read, or none where it is not one: read once a tag (each date box asks for its week's first day). */
+const read = new Map<string, Intl.Locale | null>();
 const localeOf = (tag: string): Intl.Locale | null => {
-  try {
-    return new Intl.Locale(tag);
-  } catch {
-    return null;
+  let found = read.get(tag);
+  if (found === undefined) {
+    try {
+      found = new Intl.Locale(tag);
+    } catch {
+      found = null;
+    }
+    read.set(tag, found);
   }
+  return found;
 };
 
 /**

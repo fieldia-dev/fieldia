@@ -1,7 +1,8 @@
 import type { DesignerWords } from '../../designer-words';
+import { intlFormat } from '@fieldia/core';
 
 const q = (name: string) => `“${name}”`;
-const DATE = new Intl.DateTimeFormat('es-u-nu-latn', { dateStyle: 'medium' });
+const DATE = intlFormat('DateTimeFormat', 'es-u-nu-latn', { dateStyle: 'medium' });
 
 /**
  * The designer's words in Spanish: a saved form placed in another — the toolbox's tile and its menu, the frame on the

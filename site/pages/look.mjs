@@ -25,7 +25,7 @@ ${code('ts', `mountViewer(host, { page, dataSource, theme: 'google-forms' });   
   var dark = document.getElementById('theme-dark');
   function page(theme, i) {
     return {
-      fieldia: '0.12', id: 'theme-' + theme, title: NAMES[theme], data: { kind: 'responses' },
+      fieldia: '0.13', id: 'theme-' + theme, title: NAMES[theme], data: { kind: 'responses' },
       look: { theme: theme, scheme: dark.checked ? 'dark' : 'light' },
       fields: {
         name: { type: 'char', label: 'Your name', required: true },

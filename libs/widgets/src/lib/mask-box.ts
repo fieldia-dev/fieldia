@@ -167,7 +167,7 @@ export const maskWidget: WidgetFactory = (context: WidgetContext): Widget => {
 
   return {
     element: input,
-    focus: () => input.focus(),
+    focus: (options?: FocusOptions) => input.focus(options),
     takeTyped(typed) {
       typeInto(input, typed, () => {
         entered = typed.entered;

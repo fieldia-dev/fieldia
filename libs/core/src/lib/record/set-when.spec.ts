@@ -1,3 +1,4 @@
+import { ownerOf } from './browser-kept';
 import type { Page } from '../format/page';
 import { createForm, type DraftStore } from './form';
 import { createMemoryDataSource } from './memory-data-source';
@@ -170,7 +171,7 @@ describe('setWhen — a value set as a condition starts to hold', () => {
   it('takes a restored draft as it was left, without setting anything over it', () => {
     const items = new Map<string, string>();
     const store: DraftStore = { getItem: (k) => items.get(k) ?? null, setItem: (k, v) => void items.set(k, v), removeItem: (k) => void items.delete(k) };
-    items.set('fieldia:draft:set-when:new', JSON.stringify({ savedAt: '2026-10-04T10:00:00Z', values: { total: 1500, discount: 0 } }));
+    items.set(`fieldia:draft:${ownerOf(null)}:set-when:new`, JSON.stringify({ savedAt: '2026-10-04T10:00:00Z', values: { total: 1500, discount: 0 } }));
     const form = createForm({ page: page(discountFields), drafts: { store } });
     form.restoreDraft();
     expect(values(form)).toMatchObject({ total: 1500, discount: 0 });

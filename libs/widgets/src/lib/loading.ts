@@ -153,8 +153,12 @@ export interface Wait {
    * loader goes, once it has been seen its minimum. Settled once it is drawn. Nothing is drawn of a wait already ended.
    */
   done(apply?: () => void): Promise<void>;
-  /** It failed: said in its place with Retry, in a toast, or by the app's drawing, as its settings say. */
-  fail(error: unknown, retry?: () => void): void;
+  /**
+   * It failed: said in its place with Retry, in a toast, or by the app's drawing, as its settings say — its failure's
+   * words ("Couldn't load.") then the source's own, or `words` in their place ('' for the error's own sentence alone: a
+   * record's, which names it).
+   */
+  fail(error: unknown, retry?: () => void, words?: string): void;
   /** Let go with no answer — a newer wait in its place, the part gone: its loader goes at once. */
   stop(): void;
 }
@@ -422,11 +426,11 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
         }, left)
       );
     },
-    fail(error, retry = how.retry) {
+    fail(error, retry = how.retry, own) {
       if (over) return;
       end(true);
       clear();
-      const message = [how.failWords ?? words.cantLoad, why(error)].filter(Boolean).join(' ');
+      const message = [own ?? how.failWords ?? words.cantLoad, why(error)].filter(Boolean).join(' ');
       const again = retry && (() => retry());
       const box = make('failed');
       if (settings.error === 'custom' && given.custom) {

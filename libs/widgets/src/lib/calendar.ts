@@ -1,4 +1,4 @@
-import { clocksSkip, dayIn, fill, firstWeekday, instantsAt, wallClock, wallOf, wallTime, dayTag, type Locale, type Value } from '@fieldia/core';
+import { clocksSkip, dayIn, fill, firstWeekday, instantsAt, wallClock, wallOf, wallTime, dayTag, type Locale, type Value, intlFormat } from '@fieldia/core';
 import { isoWeek, restingText, zoneName, zoneOf } from './date-text';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { rightToLeft, setHidden, setText } from './kind-parts';
@@ -113,10 +113,10 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   const { form, name, id, document: doc, locale = 'en' as Locale } = context;
   const labels: WidgetLabels = context.labels ?? WIDGET_LABELS.en;
   const lang = dayTag(locale);
-  const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
-  const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
-  const weekdayShort = weekdayHead(lang);
-  const weekdayLong = new Intl.DateTimeFormat(lang, { weekday: 'long' });
+  // A month's names and its weekday heads, worked out as it first opens: a form of many dates draws none of them.
+  const monthName = () => intlFormat('DateTimeFormat', lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
+  const dayName = () => intlFormat('DateTimeFormat', lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
+  const weekdayLong = () => intlFormat('DateTimeFormat', lang, { weekday: 'long' });
   const other = kind === 'date' ? options.kind : undefined;
 
   const button = doc.createElement('button');
@@ -171,9 +171,9 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   dialog.append(head, grid, note);
   const weeks = options.weekNumbers !== false;
   // The week's first day where the page is read; Monday where each row is an ISO week, its number before it.
-  const firstDay = weeks ? 1 : firstWeekday(locale, form.page);
+  let firstDay: number | undefined;
   /** How many days a day is past its row's first. */
-  const intoWeek = (day: Date) => (day.getDay() - firstDay + 7) % 7;
+  const intoWeek = (day: Date) => (day.getDay() - (firstDay ??= weeks ? 1 : firstWeekday(locale, form.page)) + 7) % 7;
 
   const element = options.into ?? doc.createElement('span');
   element.classList.add('fd-date-pick');
@@ -246,7 +246,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
     const chosen = dayOf(kind, form.getState().values[name], zone)?.day;
     const today = todayOf();
     // A Hijri date's month says the Hijri months it spans beside its name.
-    const label = other?.heading ? `${monthName.format(focused)} · ${other.heading(new Date(focused.getFullYear(), focused.getMonth(), 1), new Date(focused.getFullYear(), focused.getMonth() + 1, 0))}` : monthName.format(focused);
+    const label = other?.heading ? `${monthName().format(focused)} · ${other.heading(new Date(focused.getFullYear(), focused.getMonth(), 1), new Date(focused.getFullYear(), focused.getMonth() + 1, 0))}` : monthName().format(focused);
     title.textContent = label;
     dialog.setAttribute('aria-label', label);
     const first = new Date(focused.getFullYear(), focused.getMonth(), 1);
@@ -259,12 +259,13 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
       weekHead.setAttribute('abbr', labels.week);
       headRow.append(weekHead);
     }
+    const [head, weekday, days] = [weekdayHead(lang), weekdayLong(), dayName()];
     for (let i = 0; i < 7; i++) {
       const d = addDays(start, i);
       const th = doc.createElement('th');
       th.scope = 'col';
-      th.textContent = weekdayShort(d);
-      th.setAttribute('abbr', weekdayLong.format(d));
+      th.textContent = head(d);
+      th.setAttribute('abbr', weekday.format(d));
       headRow.append(th);
     }
     const thead = doc.createElement('thead');
@@ -285,9 +286,9 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
         const day = doc.createElement('button');
         day.type = 'button';
         day.textContent = String(d.getDate());
-        day.setAttribute('aria-label', dayName.format(d));
+        day.setAttribute('aria-label', days.format(d));
         // What the other kind says of each day beside its own: its Hijri day.
-        other?.mark?.(day, d, dayName.format(d));
+        other?.mark?.(day, d, days.format(d));
         day.tabIndex = sameDay(d, focused) ? 0 : -1;
         if (d.getMonth() !== focused.getMonth()) day.classList.add('fd-outside');
         if (chosen && sameDay(d, chosen)) day.setAttribute('aria-selected', 'true');
@@ -411,7 +412,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
 
   return {
     element,
-    focus: () => inner.focus(),
+    focus: (options?: FocusOptions) => inner.focus(options),
     ...(inner.takeTyped ? { takeTyped: inner.takeTyped } : {}),
     update(state) {
       readonly = state.readonly;

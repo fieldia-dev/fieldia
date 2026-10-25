@@ -33,6 +33,14 @@ const types = {
  * none of this: the demos' own store is the memory source.
  */
 const kept = new Map();
+
+/**
+ * What every file is answered with as fieldia.dev's host answers it (GitHub Pages: `access-control-allow-origin: *` on
+ * every file; most CDNs send the same): a page of this site shown in an embed field runs in an opaque origin — framed
+ * without allow-same-origin — so its module scripts are fetched from origin "null" and need it, as a person's browser
+ * fetches them from fieldia.dev. Nothing here relies on its absence: parts are asked for from the page's own origin.
+ */
+const AS_THE_HOST = { 'access-control-allow-origin': '*' };
 let keptIds = 0;
 function store(request, response, url) {
   if (request.method === 'GET') {
@@ -81,7 +89,7 @@ createServer((request, response) => {
   }
   if (existsSync(path) && statSync(path).isDirectory()) path = join(path, 'index.html');
   if (!existsSync(path)) {
-    response.writeHead(404, { 'content-type': 'text/plain' }).end(`Not found: ${url.pathname}`);
+    response.writeHead(404, { 'content-type': 'text/plain', ...AS_THE_HOST }).end(`Not found: ${url.pathname}`);
     return;
   }
   // The pages under /csp/ are served as a bank's or a government's site serves its own: under a strict
@@ -91,7 +99,7 @@ createServer((request, response) => {
   if (url.pathname.startsWith('/csp/') && extname(path) === '.html') {
     const nonce = randomBytes(18).toString('base64');
     const html = readFileSync(path, 'utf8').replaceAll('__CSP_NONCE__', nonce);
-    response.writeHead(200, { 'content-type': types['.html'], 'cache-control': 'no-store', 'content-security-policy': strictPolicy(nonce) });
+    response.writeHead(200, { 'content-type': types['.html'], 'cache-control': 'no-store', 'content-security-policy': strictPolicy(nonce), ...AS_THE_HOST });
     return response.end(html);
   }
   const type = types[extname(path)] ?? 'application/octet-stream';
@@ -102,10 +110,10 @@ createServer((request, response) => {
   if (range && (range[1] || range[2])) {
     const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
     const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
-    if (start >= size || start > end) return response.writeHead(416, { 'content-range': `bytes */${size}` }).end();
-    response.writeHead(206, { 'content-type': type, 'cache-control': 'no-store', 'accept-ranges': 'bytes', 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': end - start + 1 });
+    if (start >= size || start > end) return response.writeHead(416, { 'content-range': `bytes */${size}`, ...AS_THE_HOST }).end();
+    response.writeHead(206, { 'content-type': type, 'cache-control': 'no-store', 'accept-ranges': 'bytes', 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': end - start + 1, ...AS_THE_HOST });
     return createReadStream(path, { start, end }).pipe(response);
   }
-  response.writeHead(200, { 'content-type': type, 'cache-control': 'no-store', 'accept-ranges': 'bytes', 'content-length': size });
+  response.writeHead(200, { 'content-type': type, 'cache-control': 'no-store', 'accept-ranges': 'bytes', 'content-length': size, ...AS_THE_HOST });
   createReadStream(path).pipe(response);
 }).listen(port, '127.0.0.1', () => console.log(`serving ${root} on http://127.0.0.1:${port}`));

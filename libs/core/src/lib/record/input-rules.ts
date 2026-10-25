@@ -12,6 +12,7 @@
  */
 
 import { clocksSkip, instantsAt, wallClock, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './zones';
+import { intlFormat } from '../intl-format';
 
 /** Invisible direction marks: LRM, RLM, ALM, the embeddings and overrides, the isolates, and a byte-order mark. */
 const MARKS = /[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g;
@@ -100,7 +101,7 @@ export function numberMarks(locale: string): NumberMarks {
   if (!found) {
     let parts: Intl.NumberFormatPart[];
     try {
-      parts = new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).formatToParts(12345.6);
+      parts = intlFormat('NumberFormat', locale, { numberingSystem: 'latn' }).formatToParts(12345.6);
     } catch {
       parts = [];
     }
@@ -484,7 +485,7 @@ function formsOf(currency: string, locale: string): string[] {
     for (const language of new Set([locale, 'en', 'ar'])) {
       for (const currencyDisplay of ['symbol', 'narrowSymbol', 'code'] as const) {
         try {
-          const part = new Intl.NumberFormat(language, { style: 'currency', currency, currencyDisplay }).formatToParts(1).find((p) => p.type === 'currency');
+          const part = intlFormat('NumberFormat', language, { style: 'currency', currency, currencyDisplay }).formatToParts(1).find((p) => p.type === 'currency');
           if (part) forms.add(stripMarks(part.value).trim());
         } catch {
           // A name that is no currency code: only its own words.
@@ -689,8 +690,8 @@ function monthNames(locale?: string): Map<string, number> {
       let alone: Intl.DateTimeFormat;
       let inDate: Intl.DateTimeFormat;
       try {
-        alone = new Intl.DateTimeFormat(language, { month, calendar: 'gregory' });
-        inDate = new Intl.DateTimeFormat(language, { day: 'numeric', month, year: 'numeric', calendar: 'gregory' });
+        alone = intlFormat('DateTimeFormat', language, { month, calendar: 'gregory' });
+        inDate = intlFormat('DateTimeFormat', language, { day: 'numeric', month, year: 'numeric', calendar: 'gregory' });
       } catch {
         continue; // a language Intl does not know: its names are not read
       }
@@ -741,6 +742,7 @@ export function couldBeMonth(word: string, locale?: string): boolean {
 export function readDate(text: string, options: { order?: DateOrder; time?: boolean; locale?: string; zone?: string } = {}): DateRead {
   const t = folded(text).trim();
   if (!t) return { ok: true, value: null };
+  if (t.length > DATE_TEXT_MOST) return { ok: false, problem: 'unfinished' };
   const instant = INSTANT.exec(t);
   if (instant) {
     const [, y, mo, d, h, mi, seconds = '0', fraction = '0', zone] = instant;
@@ -776,6 +778,13 @@ export function readDate(text: string, options: { order?: DateOrder; time?: bool
   // A wall clock's time is one moment where it is read: one the clocks skip or pass twice is said, never moved.
   return read.ok && read.value !== null && options.time ? (clocksMove(read.value, options.zone) ?? read) : read;
 }
+
+/**
+ * The most characters a date takes as people write one, its time and its zone's mark with it — "Wednesday, 30 September
+ * 2026, 14:30 Central European Summer Time" is 66: longer text is no date, said at once, never read by every pattern in
+ * turn (40,000 characters took seconds).
+ */
+export const DATE_TEXT_MOST = 100;
 
 /** A time after a date, and an offset from UTC after it: "… 02:30 +01:00", "… 2:30 pm UTC-5". */
 const OFFSET_AFTER_TIME = new RegExp(`^(.*\\d{1,2}\\s*[:hH.]\\s*\\d{2}(?:\\s*(?:${HALF}))?)\\s*(?:UTC|GMT)?\\s*([+\\-\\u2212])(\\d{1,2})(?::?(\\d{2}))?$`, 'i');
@@ -874,7 +883,7 @@ export function placesOfCurrency(currency: string | null | undefined): number {
   let found = currencyPlaces.get(currency);
   if (found === undefined) {
     try {
-      found = new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2;
+      found = intlFormat('NumberFormat', 'en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2;
     } catch {
       found = 2;
     }
