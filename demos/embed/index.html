@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="../shell.css" />
     <style>
       .partner { max-width: 760px; margin: 0 auto; padding: 16px; }
-      .partner-listing { margin: 0 0 16px; padding: 16px; border-radius: 10px; background: #fff7ed; color: #431407; }
+      /* In the frame's scheme, light or dark (shell.css sets the page's color-scheme). */
+      .partner-listing { margin: 0 0 16px; padding: 16px; border-radius: 10px; background: light-dark(#fff7ed, #431407); color: light-dark(#431407, #ffedd5); }
       .partner-listing h1 { margin: 0 0 4px; font-size: 22px; }
       .partner-listing p { margin: 0; }
       .partner-code { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: #1f2937; color: #f9fafb; font: 12.5px/1.5 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
       .partner-note { margin: 0 0 8px; font-size: 13px; color: var(--dh-muted, #5b6470); }
       .partner-told { max-width: 760px; margin: 0 auto 24px; padding: 0 16px; }
       .partner-told h2 { font-size: 16px; }
-      @media (prefers-color-scheme: dark) { .partner-listing { background: #431407; color: #ffedd5; } }
     </style>
   </head>
   <body>

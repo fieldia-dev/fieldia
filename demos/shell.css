@@ -39,6 +39,36 @@
 :root[data-scheme="dark"] { color-scheme: dark; }
 /* The page round the demo, in the frame's scheme. */
 html, body { background: var(--dh-page); color: var(--dh-ink); }
+/*
+ * The demo in the frame's scheme: a form, a dialog or a designer whose page names no scheme of its own — the script
+ * tag's form, the embed's, the designers' — wears Fieldia's own dark tokens (libs/widgets/src/lib/look-styles.ts) while
+ * the frame is dark (shell.mjs sets data-dark). Outside Fieldia's tokens' layer, so it is worn over them; never on a page
+ * that names its scheme, or wears a theme (its own dark), nor inside one; a page's own accent stays its own.
+ */
+:root[data-dark] :is(.fd-form, .fd-form-dialog, .fd-theme):not([data-scheme], [data-fd-theme], :is(.fd-form, .fd-form-dialog)[data-scheme] *, [data-fd-theme] *) {
+  --fd-text: #e8eaed;
+  --fd-muted: #a3a9b2;
+  --fd-page: #16191e;
+  --fd-surface: #1f2329;
+  --fd-border: #3a4048;
+  --fd-border-strong: #59616c;
+  --fd-error: #ff8a7a;
+  --fd-error-soft: rgba(255, 138, 122, 0.13);
+  --fd-success: #6fd08e;
+  --fd-success-soft: rgba(111, 208, 142, 0.14);
+  --fd-warning: #f2b55c;
+  --fd-warning-soft: rgba(242, 181, 92, 0.13);
+  --fd-info: #7db7ff;
+  --fd-info-soft: rgba(90, 162, 255, 0.14);
+  --fd-edge: #59616c;
+  --fd-skeleton-shine: color-mix(in srgb, var(--fd-text) 16%, var(--fd-surface));
+}
+:root[data-dark] :is(.fd-form, .fd-form-dialog, .fd-theme):not([data-scheme], [data-fd-theme], [data-accent], :is(.fd-form, .fd-form-dialog)[data-scheme] *, [data-fd-theme] *, [data-accent] *) {
+  --fd-accent: #5aa2ff;
+  --fd-accent-text: #0b1220;
+  --fd-accent-soft: rgba(90, 162, 255, 0.16);
+  --fd-focus: #5aa2ff;
+}
 /* The "Every field" demo's bar over its form (demos/shared/panel-demo.ts) is outside the form, where Fieldia's
    tokens are light: it wears the frame's instead, so it turns dark with it. */
 .demo-panel-bar {

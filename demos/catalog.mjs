@@ -727,9 +727,8 @@ export const DEMOS = [
     // A tracker's page of its own round Fieldia's list, a bug opened over it in Fieldia's popup: no framework, no look to switch.
     app: 'backlog',
     query: '',
-    // Its code is the app's own: the list mounted in its page, a row's bug opened in the popup. It follows the reader's scheme.
+    // Its code is the app's own: the list mounted in its page, a row's bug opened in the popup.
     code: 'backlog',
-    schemes: true,
     blurb: 'A team’s list of bugs, and one opened in a large window over it, as a work tracker shows it: its type’s colour, a quiet top with its state, reason, area and sprint, three columns of details, a discussion, links, and its history.',
     howTo: [
       'Click a bug in the backlog: it opens in a large popup over the list.',
@@ -1116,9 +1115,8 @@ export const DEMOS = [
     // A page that is not Fieldia's, with its own list beside the map: no framework, no look of Fieldia's to switch.
     app: 'map-embed',
     query: '',
-    // Its code is the page's own script, mountListMap and the page round it; it follows the reader's scheme.
+    // Its code is the page's own script, mountListMap and the page round it.
     code: 'list-map',
-    schemes: true,
     blurb: 'Homes for sale on a page that is not Fieldia’s: its own list, its own filter and its own address, with Fieldia’s map filling the column beside them. The map takes every gesture, opens where the address says, writes where it stands back into it, and says how many homes are in view before you search there.',
     howTo: [
       'Drag the map, and turn the wheel over it: it moves and zooms with no key held. On a phone, one finger moves it.',
@@ -1353,7 +1351,6 @@ export const DEMOS = [
     query: '',
     // Its code is the page's own script, and a data source of your own that tells versions and rights.
     code: 'save-safety',
-    schemes: true,
     blurb: 'A lead open in two tabs at once. Mona saves first; when you save, the form says who changed it and when, what each of you changed, and lets you Reload — your changes listed to put back — or Keep mine. Nothing is lost without a word.',
     howTo: [
       'Change the phone in your tab, then press Someone else edits this: Mona moves the lead on a stage and raises its budget in her tab, and saves.',
@@ -1370,7 +1367,6 @@ export const DEMOS = [
     // A list beside a record on a slow source, in a page of its own, with a panel that sets how each moment waits.
     app: 'loading',
     query: '',
-    schemes: true,
     blurb: 'Customers beside a customer, on a network as slow as you like. Choose how each moment waits — drawn the first time, asked again, the next rows, a search, a save — a skeleton, a spinner, a bar, words, nothing or your own; nothing shows for a quick answer, and a failure says why, with Retry.',
     howTo: [
       'Watch the page open on a slow network: skeletons shaped like the list’s rows and the customer’s boxes, then the records.',
@@ -1388,7 +1384,6 @@ export const DEMOS = [
     app: 'save-safety',
     query: 'role=viewer',
     code: 'save-safety',
-    schemes: true,
     blurb: 'The same lead opened by Omar, a viewer: the app says he may only read it, so there is no Save and no Archive, Duplicate or Delete — hidden, not greyed out — the commission is not shown at all, and the record says why.',
     howTo: [
       'Read the line over the lead: why Omar may only read it, from the data source.',

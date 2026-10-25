@@ -21,14 +21,16 @@ const opened = demo ? null : openedAt(app, params);
 const embedded = params.get('embed') === '1';
 const visitor = !navigator.webdriver && !embedded;
 const framework = FRAMEWORKS.some((f) => f.id === app) ? app : 'plain';
-// The frame wears its form's scheme (shell.css): the one the address names, else the reader's own as the
-// page opens, which the form follows too (demos/shared/sample-data.ts). The script tag demo's form takes
-// nothing from the address and is drawn light, so its frame is too. A demo of its own that follows the
-// scheme (`schemes`, the map in a page of its own) wears it as the frameworks do.
-const scheme = !FRAMEWORKS.some((f) => f.id === app) && !demo?.schemes
-  ? 'light'
-  : (params.get('scheme') ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'auto' : 'light'));
+// Every demo wears one scheme, the frame and the demo in it together: the one the address names, else the reader's own
+// as the page opens. A form whose page names its own follows it (demos/shared/sample-data.ts); one whose page names
+// none — the script tag's, the embed's, a designer's — wears the frame's (shell.css, `data-dark`): one rule here, so
+// no demo stays light in a dark frame.
+const scheme = params.get('scheme') ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'auto' : 'light');
 document.documentElement.dataset.scheme = scheme;
+const systemDark = matchMedia('(prefers-color-scheme: dark)');
+const wearDark = () => document.documentElement.toggleAttribute('data-dark', scheme === 'dark' || (scheme === 'auto' && systemDark.matches));
+wearDark();
+systemDark.addEventListener('change', wearDark);
 const esc = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const remember = (key, value) => {
   try {
@@ -74,12 +76,9 @@ function drawHeader() {
   const schemes = `<nav class="dh-pills dh-schemes" aria-label="Scheme">${[['', 'System'], ['light', 'Light'], ['dark', 'Dark']]
     .map(([id, name]) => `<a href="${esc(withParam('scheme', id))}"${id === (params.get('scheme') ?? '') ? ' aria-current="page"' : ''}>${name}</a>`)
     .join('')}</nav>`;
-  // A demo the plain page runs alone still changes its look; one with an app of its own (the script tag) does not,
-  // unless it follows the reader's scheme: then the scheme alone.
+  // A demo the plain page runs alone still changes its look; one with an app of its own (the script tag) its scheme alone.
   const skins = demo?.app && demo.app !== 'plain'
-    ? demo.schemes
-      ? `<div class="dh-looks">${schemes}</div>`
-      : ''
+    ? `<div class="dh-looks">${schemes}</div>`
     : `<div class="dh-looks">${editors}<nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined', 'quiet']
         .map((s) => `<a href="${esc(withParam('skin', s))}"${s === skin ? ' aria-current="page"' : ''}>${s[0].toUpperCase()}${s.slice(1)}</a>`)
         .join('')}</nav>${schemes}<label class="dh-theme">Theme <select id="dh-theme">${[['', 'None'], ...THEMES]

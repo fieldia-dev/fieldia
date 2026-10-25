@@ -20,10 +20,11 @@
       });
     </script>
     <style nonce="__CSP_NONCE__">
-      body { margin: 0; font-family: system-ui, sans-serif; background: #f6f7f9; color: #1b1f24; }
+      body { margin: 0; font-family: system-ui, sans-serif; }
       #app { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
-      .csp-note { max-width: 1100px; box-sizing: border-box; margin: 0 auto; padding: 14px 16px 0; font-size: 14px; line-height: 1.5; color: #4b5563; }
-      .csp-note b { color: #1b1f24; }
+      /* In the frame's colours (shell.css), light or dark. */
+      .csp-note { max-width: 1100px; box-sizing: border-box; margin: 0 auto; padding: 14px 16px 0; font-size: 14px; line-height: 1.5; color: var(--dh-muted); }
+      .csp-note b { color: var(--dh-ink); }
     </style>
     <!-- The demos' frame round it, under the policy too: its sheet and its script carry the nonce. -->
     <link rel="stylesheet" href="../shell.css" nonce="__CSP_NONCE__" />

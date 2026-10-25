@@ -330,15 +330,46 @@ test.describe('the demo frame', () => {
     await expect(html).toHaveAttribute('data-scheme', 'light');
   });
 
-  test('the script tag demo draws its form light, so its frame stays light with it on a dark system', async ({ page }) => {
+  test('every demo wears the reader’s scheme, the demo in it too: the script tag’s form, the strict policy’s, the embed’s, the designers’', async ({ page }) => {
     await asVisitor(page);
     await page.emulateMedia({ colorScheme: 'dark' });
-    await page.goto(`/${demoHref(DEMOS.find((d) => d.app === 'script')!)}`);
-    await expect(page.locator('.fd-form').first()).toBeVisible();
+    // The colours a form wears when its page names the dark scheme: what one naming none wears in a dark frame too.
+    const TOKENS = ['--fd-text', '--fd-muted', '--fd-page', '--fd-surface', '--fd-border', '--fd-border-strong', '--fd-accent', '--fd-accent-text', '--fd-accent-soft', '--fd-focus', '--fd-error', '--fd-error-soft', '--fd-success', '--fd-success-soft', '--fd-warning', '--fd-warning-soft', '--fd-info', '--fd-info-soft', '--fd-edge'];
+    for (const app of ['script', 'csp', 'embed', 'designer', 'screen']) {
+      const demo = DEMOS.find((d) => d.app === app)!;
+      await page.goto(`/${demoHref(demo)}`);
+      const form = page.locator('#app .fd-form').first();
+      await expect(form).toBeVisible();
+      // The frame in the reader's scheme, its Scheme switch there, as every demo's.
+      await expect(page.locator('html'), app).toHaveAttribute('data-scheme', 'auto');
+      await expect(page.getByRole('navigation', { name: 'Scheme' }), app).toBeVisible();
+      const unlike = await form.evaluate((shown, names) => {
+        const dark = document.createElement('div');
+        dark.className = 'fd-form';
+        dark.setAttribute('data-scheme', 'dark');
+        document.body.append(dark);
+        // Each token as the colour it gives, in the demo and in the dark form.
+        const colour = (within: Element, name: string) => {
+          const probe = document.createElement('i');
+          probe.style.color = `var(${name})`;
+          within.append(probe);
+          const given = getComputedStyle(probe).color;
+          probe.remove();
+          return given;
+        };
+        const found = names.filter((name) => colour(shown, name) !== colour(dark, name)).map((name) => `${name}: ${colour(shown, name)}, not ${colour(dark, name)}`);
+        dark.remove();
+        return found;
+      }, TOKENS);
+      expect(unlike, `${app}: the demo in the frame’s dark`).toEqual([]);
+      await screen(page, `demo-dark-${app}`, { viewport: true });
+    }
+    // Light, by the switch: the frame and the demo light again.
+    await page.getByRole('navigation', { name: 'Scheme' }).getByRole('link', { name: 'Light' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-scheme', 'light');
-    // No look to switch: it has an app of its own.
-    await expect(page.getByRole('navigation', { name: 'Scheme' })).toHaveCount(0);
+    await expect.poll(() => page.locator('#app .fd-form').first().evaluate((form) => getComputedStyle(form).getPropertyValue('--fd-surface').trim())).toBe('#ffffff');
   });
+
   test('the script tag demo’s frame is drawn before its form, so the form never moves down under it', async ({ page }) => {
     await asVisitor(page);
     // Fieldia's script held, as a phone's network holds it: the frame's own script, smaller, comes first.
