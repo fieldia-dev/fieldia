@@ -17,6 +17,95 @@ Each release's section is written in the commit that sets its version.
 A patch (0.34.**1**) holds fixes alone, with no Upgrading part: `release.mjs`
 refuses one that has.
 
+## 0.34.1 — 2026-10-25
+
+**The owner's walk of 0.33.0: every wait seen where a person looks.** A
+business owner walked fieldia.dev's 0.33 demos on a slow network, as a
+customer would. What waited out of sight, waited twice or said a failure as
+plain words is mended here, each where it began, for every place it could
+happen. The page format stays 0.13: nothing a page says changes.
+
+**Fixes:**
+
+- **A wait drawn the first time shows no empty boxes and no words before its
+  shapes.** Until its loader is drawn, a form's boxes are out of sight under
+  their labels (else all the place holds), and a quick answer is drawn whole. A
+  wait drawn from the loading part waits for the part rather than saying
+  "Loading…" and then swapping to its skeleton — 0.33's map went grey box,
+  "Loading…", skeleton, pins — and says it in words only where the part
+  cannot come or the wait turns slow. `loadParts(page)` loads the loading part
+  where the viewer would wait for it with the page's parts, and a viewer whose
+  parts are in already asks for it as it mounts.
+- **A record opened in another's place shows none of the other's related
+  rows**: they and their count go at once, a skeleton in their place, until
+  the record has come and its own are asked for; a record that could not be
+  opened lists none.
+- **A list's timeline or calendar whose code is still coming shows its
+  skeleton**, never an empty space under the list's search; the timeline's own
+  first wait goes on from it.
+- **Save stays where it was pressed while it saves, busy** — its ring past the
+  wait's delay — Discard stepping aside; 0.33 hid both behind "Saving…". A save
+  that failed says so under the buttons, Save and Discard kept together (0.33
+  put Save on a line of its own under Discard).
+- **A failure said in its place reads as a failure**: the error's colour and a
+  mark at its start, light and dark, in every theme; forced colours keep the
+  mark. The app's own drawing of it (`error: "custom"`) keeps its own look.
+- **A failure said in a toast names what failed**, one of a page's forms among
+  others: a list's own sentence ("Could not load the customers. …"), a field's
+  label before its search's failure ("Account manager: Couldn't search. …").
+- A record that could not be loaded again (a reload, Retry) is said once, in
+  its place with its Retry — no toast besides.
+- A ring or words over a place taller than the window stand in the middle of
+  what of it is in view, never at its foot below the fold.
+- A select under a record's skeleton is a shape like the other boxes (WebKit
+  drew its own dropdown through it).
+- A place's few skeleton bars run from its top, the first as wide as the place
+  (0.33 drew two short bars in its middle, the first unseen).
+- A link's search that fails says so in its list, as wide as its box, never
+  wider.
+- "Nothing is called …" said under a link's, a tags' or a path's box goes as
+  another record is shown, the record is loaded again or Discarded: it is that
+  record's.
+- On a page right to left whose words are left in English, a list's "1–24 of 60
+  customers" and a box's placeholder read as written — never "of 60 customers
+  24–1" or "…Search".
+- A phone's country sheet is headed "Country"; it is still named for its field
+  ("Country of Phone").
+- The designer's While it waits: the looks' and a failure's buttons show
+  Fieldia's default as chosen where the page says none, and its times are
+  asked in seconds.
+
+Behaviour you may notice in an app's own tests:
+
+- Save stays visible, and busy, while a record saves, rather than hiding as the
+  save starts; it hides once the record is saved, as before.
+- A list's failure said in a toast (and an app's own drawing of it) names the
+  list — "Could not load the customers. …" in place of "Couldn't load. …" — and
+  a field's search failure in a toast starts with its label.
+- `loadParts(page)` also fetches the loading part (`fieldia.loading.js`, the
+  loading chunk) where the page waits for its data.
+- A reload that fails raises no toast: its failure is said in its place.
+- The designer asks a wait's times in seconds (0.15, not 150); the page still
+  keeps them in milliseconds.
+
+**Size:** `fieldia.js` 560.1 KB, 186.5 gzipped (0.34.0: 558.3, 186.1): 0.5 KB
+gzipped for what every page that waits needs before any part can come — a
+first wait's boxes out of sight and its drawing waiting for the loading part,
+a failure's colour and mark, a toast naming what failed, Save busy in place
+and its failure under it, placeholders in their own direction, the loading
+part asked for as a page mounts, a reload's failure said once. Of the parts,
+gzipped:
+
+- loading 2.98 (2.75): a ring centred in what is in view, a place's bars from
+  its top;
+- list 45.99 (45.83): no other record's related rows while one opens, a list
+  named in its toast, its range read in its own direction;
+- choice 4.75 (4.71), path 8.23 (8.20), relations 7.99 (7.96): what is said
+  under a box goes with its record; phone 19.25 (19.22): the sheet's heading;
+- `@fieldia/gantt` with the page 865 bytes (816), its timeline 15,834
+  (15,799); `@fieldia/calendar` with the page 849 (793), the calendar 19,569
+  (19,554): their place's skeleton while their code comes.
+
 ## 0.34.0 — 2026-10-25
 
 **Forms you can trust: safe links and files, data never lost or sent twice,
