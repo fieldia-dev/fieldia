@@ -270,6 +270,10 @@ async function entriesInFilesOfTheirOwn(distRoot, pkgDir) {
       nodePaths: [join(WORKSPACE, 'node_modules')],
       mainFields: ['module', 'main'],
       legalComments: 'inline',
+      // Whitespace and syntax made small, names kept, so a stack trace through it still reads (an app's own bundler
+      // minifies it the rest of the way): about half its size in the package.
+      minifyWhitespace: true,
+      minifySyntax: true,
       banner: { js: `// @fieldia/${pkgName}: ${entry} with zod (MIT, Colin McDonnell: THIRD_PARTY_NOTICES.md) and the schemas inside — tools/dual-build.mjs, OWN_FILE.` },
       plugins: [
         {
