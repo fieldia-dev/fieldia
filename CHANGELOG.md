@@ -17,6 +17,205 @@ Each release's section is written in the commit that sets its version.
 A patch (0.34.**1**) holds fixes alone, with no Upgrading part: `release.mjs`
 refuses one that has.
 
+## 0.35.0 — 2026-10-25
+
+**Fast at scale: long lists, big forms, tables of lines, the Gantt, smaller
+npm apps — and the tick-box tokens hosts asked for.** A key typed works out
+only what reads the field: on a page of 500 fields it brings 16 of its parts up
+to date, not every one, in 3.9–6.9 ms on a desktop. Past 100 rows a list keeps
+only the rows near the view in the page, so 5,000 rows hold some 1,600 DOM
+nodes and a tick, a Tab or a fold costs what it did at 100. A table of 200
+lines draws again only the lines a change touches; a Gantt of 500 tasks moves a
+bar and changes its scale in place; the designer copies only what an edit
+writes. An app built from the npm packages fetches a fifth less before its
+first paint — every language but the page's, zod and the map's code come as
+they are needed. Each of these is held to the plain way it replaces by a test
+that compares the two on generated pages, and CI's new perf job counts the work
+(parts brought up to date, rows and elements in the page, cells written,
+bytes) against budgets that fail the build. The page format stays 0.13: no
+merge changed its shape.
+
+**New:**
+
+- **Tick-box tokens for a design system's box:** the tick, the dot and the dash
+  scale with `--fd-tick-size` (the same as before at the default 18 px), a new
+  `--fd-tick-radius` sets the box's corner, and the press target stays 24 px at
+  the least at any size. The viewer's `tokens` takes `tick-size`, `tick-line`,
+  `tick-edge` and `tick-radius`; the site documents all four with a "match your
+  design system's box" example (14 px, a 1.5 px line, an ink edge, 3 px corners).
+- `@fieldia/core/schema` — `validatePage`, `PageSchema`, `FieldSchema` — in a
+  file of its own with zod inside, for where pages are made.
+- `workCounts`, which counts the conditions read, values worked out, fields
+  checked and parts brought up to date (also on the one-tag `Fieldia` global);
+  `recomputeInFull(true)`, which makes the forms and viewers made after it work
+  every change out in full, as before 0.35 — for tests to compare against;
+  `form.nodeReads(id)`, the fields a part's state reads; `Widget.reads`, the
+  values a widget draws from besides its own (text, number and money, date,
+  tick box, select, radios and checkboxes without Other, rating and scale
+  declare it).
+- `wordsVersion()` and `onWordsCame(listener)` in `@fieldia/core`: words that
+  come in a chunk of their own are an input of what was worked out or drawn in
+  them.
+- In a list long enough to keep only the rows near the view, Ctrl/⌘+F goes to
+  the list's own search and says why — the browser's find sees only the rows in
+  the page; pressed again, it opens the browser's find.
+- CI's perf job — an app's first load from the npm packages
+  (`tools/npm-first-load.mjs`), then the counts at scale, the leak gate, a long
+  list's layouts and the timings, on a desktop (`perf`) and a mid-range phone
+  (`perf-phone`: 412 px, CPU 4× slower), one worker.
+
+**Fixes:**
+
+- **A key works out only what reads it.** Conditions are read again only once a
+  value they read changed, values are worked out again and fields checked only
+  where what they read changed, and a part is brought up to date only once what
+  it shows changed. On the 500-field example page a key brings 16 parts up to
+  date and reads no condition again (0.34: 533 parts, every condition): on a
+  desktop 11.5 → 6.9 ms, on a mid-range phone 49 → 36 ms; on a 500-field form
+  7.6 → 3.9 ms and 34 → 17 ms.
+- **Long lists keep only the rows near the view in the page** — endless and
+  editable lists, rows' details, related lists, trees drawn in one page — once
+  more than 100 rows are shown, the rest a gap as tall as them. Screen readers
+  hear every row counted (`aria-rowcount`, `aria-rowindex`); ↓ past the last
+  drawn row draws the next; the focus and a row being edited stay; "Select all",
+  a paste and Undo reach rows not drawn; an open row's details come back under
+  it; reading stays in place as rows come and go above (WebKit has no scroll
+  anchoring: the list keeps it); paper prints every loaded row. At 5,000 rows an
+  endless list holds 2,349 nodes, not 130,343; a phone's worst frame scrolling
+  1.28 → 0.11 s; a tick at 5,000 rows 117 → 4.5 ms on a desktop, a fold of a
+  10,000-row tree 1,260 → 16 ms. Cards and the gallery draw every card, as
+  before.
+- **A table of lines draws again only the lines whose inputs changed**,
+  numbered once a change: at 200 lines a key in the header draws no cell (1,000
+  before), a key in a line its own (31.9 → 8.1 ms and 37 → 15 ms on a desktop).
+  A line whose money takes its currency from the record (`parent.`), whose rules
+  read the record, or whose column is one of the app's own widgets is drawn
+  again as the record changes.
+- **Smaller npm apps.** In the packages, every language but the page's — Arabic,
+  German and French too now —, the designer's words, zod and `@fieldia/map`'s
+  own code each come in chunks of their own, and the stylesheets are minified as
+  the one-tag script's are. With the page, a record form's app is 298.2 → 237.5
+  KB gzipped (−20%), a list's 297.5 → 236.7, the screen designer's 832.2 →
+  583.2 (−30%); to usable, 374.0 → 310.3, 367.6 → 305.2 and 942.5 → 796.0. A
+  page's first paint is in its own language, never English and then swapped.
+- **The designer at 500 fields** copies only what an edit writes, never the page
+  whole, and makes no whole-page form per key: a label key 32.7 → 15.7 ms on a
+  desktop, about 149 → 82 ms on a phone. It opens on the 500-field page sooner
+  too — from the navigation to its first paint 967 → 821 ms on a desktop and
+  3.5 → 2.7 s on a phone, the format's schemas fetched beside it as it opens.
+- **The Gantt moves a bar and changes its scale in place**, keeping every row,
+  name and bar: at 500 tasks a drop puts 31 elements in the page (8,799 before)
+  and lays out once (17 before), 198 → 30 ms on a desktop; a change of scale 91
+  elements (4,101), 89 → 53 ms.
+- **Pointing at a row lights its pin on the map** moving only the pins whose
+  light changes: 2 a hover, whatever the pins (458 at 500 pins before).
+- **Words that come late are said in their language everywhere.** A language's
+  words that came after a page drew without them (their chunk past its 30 s
+  wait) are an input of every problem kept and every part left alone: the
+  form's problems and warnings are said again in them, every part is drawn
+  again, and what a wait said to a screen reader meanwhile is said in them too.
+- The designer: a label typed back to what was published makes the draft the
+  version published again (the page's whole check wrote a field's keys in its
+  own order, and "unpublished" stayed).
+- A calendar visit's "⋯" is a button beside the visit's own, not inside it
+  (axe: nested interactive), by pointer and by its M key alike.
+- A dialog in a language fetched later is named in that language from the
+  start; a file being imported reads yes and no in all 8 languages.
+- A Gantt bar's busy mark goes once its save answers (0.34 left it).
+- Page checks read each layout and each field once.
+- The site said Fieldia speaks 4 languages; it speaks 8.
+
+**Upgrading** — grouped by who it touches:
+
+- *Page authors:* nothing changes. No setting was added, and pages stay in
+  format 0.13.
+- *App code:*
+  - In the npm packages Arabic, German and French come in chunks of their own,
+    as Turkish, Persian, Urdu and Spanish did: `VIEWER_LABELS`, `WIDGET_LABELS`,
+    `MESSAGES` and the other tables hold English until a language is asked for.
+    `mountViewer`, a dialog, `mountChatter`, a map's parts and the address
+    suggestions wait for their words; anything drawn without waiting shows
+    English until `await wordsReady('ar')` — `createWidget`, a headless
+    `createForm` or `checkSubmission` on a server, and `createDesigner({ locale:
+    'ar' })` (use `designerWordsReady`, or `createDesigner.open`). What a form
+    shows — its problems and warnings — is said again in a language's words as
+    they come.
+  - The designer holds edits to `checkPage` until its schema chunk arrives, and
+    `publish()` waits for it. Importing `validatePage` from `@fieldia/core`
+    beside the designer carries the schemas twice: take it from
+    `@fieldia/core/schema`.
+  - A map's field is drawn once its part has come; a list's or a form's map
+    holds its place while its code comes; `mountListMap` returns at once and
+    draws when its code arrives.
+  - `form.node(id)` returns the same object while the part is unchanged: don't
+    mutate it. The `Form` interface gains `nodeReads`: a fake adds it. A custom
+    widget that spreads a built-in copies its `reads`: set `reads: undefined`
+    where it draws from more.
+  - Designer edits run on a draft: what an edit reads are drafts until it ends,
+    and one kept past it throws when read. After Publish, `versions[].page` is
+    the page object itself.
+  - In a list past 100 rows shown, rows out of view are not in the DOM: code
+    reading `.fd-list-row` sees those near the view. Ctrl/⌘+F there is the
+    list's (its default prevented); Tab moves through the rows in the page, the
+    arrows through every row; a tree drawn in one page has its folded rows
+    absent rather than hidden.
+  - A table of lines' cell drawn by one of the app's own widgets is still
+    updated at every change of the record; a built-in widget in a cell has
+    `update` called only when its inputs change.
+- *Tests and CSS:*
+  - Parts are drawn again only when what they show changed: DOM written behind
+    the viewer's back is no longer reset by an unrelated change.
+  - Wait for a long list by its `aria-rowcount` (rows + 1 + totals rows), then
+    scroll to a row or search for it. Windowed tables carry `aria-rowcount` and
+    `aria-rowindex`, gap rows `tr.fd-list-gap` (`aria-hidden`, `data-aside`;
+    `tbody tr:last-child` may be one), and `p.fd-list-find[role=status]` after
+    Ctrl/⌘+F; a row's `aria-selected` is set as it is drawn; `beforeprint` draws
+    every loaded row and `afterprint` goes back to the window.
+  - Gantt rows, bars and names are the same elements across moves and changes
+    of scale; arrows follow the bars' order, and bars tied on start, end and
+    title are ordered by id. The map sets a marker's z-index offset only when
+    its light changes. A designer canvas card's widget is not drawn again for a
+    label or help.
+  - A movable calendar visit's "⋯" is the block's next sibling, or sits with it
+    inside `.fd-cal-visit` in day and all-day cells: `.fd-cal-day >
+    .fd-cal-event` selectors need changing. A list's or a form's map is wrapped
+    in `.fd-map-holder`.
+  - The packages ship minified CSS text. `--project=chromium` no longer runs
+    the perf, leak or list-contain specs: they run in the `perf` projects.
+  - `recomputeInFull(true)` makes a table of lines draw every line at every
+    change too.
+- *Self-hosters:* the one-tag script's parts and language add-ons are where they
+  were; `fieldia.js` is 3.3 KB gzipped larger, the list part 3.9, the lines part
+  1.0 (below).
+
+**Size:** `fieldia.js` 568.4 KB, 189.8 gzipped (0.34.1: 560.1, 186.5): 3.3 KB
+gzipped, all of it what every page runs. In merge order: perf-bytes 0.14 (the
+tick, dot and dash drawn to any size on every page with a radio or a tick box;
+a part's own words and a dialog's waited for), perf-lists 0 (its window and its
+lines are in their parts), perf-form 2.95 (the quick way every form and viewer
+works a key out: the form 2.8 KB minified, the viewer 2.0, values set as
+conditions start to hold 1.0, worked-out values 0.7), the merge 0.16 (words
+that come late an input of what is kept; the packages' redraw as they come is
+left out of this script, whose languages are its add-ons). Over 180 KB, as the
+owner accepts up to about 200. Of the parts, gzipped:
+
+- list 49.88 (45.99): the window — a view's height of rows round the view, the
+  rest as data — and Ctrl/⌘+F's note; rows 7.35 (7.30);
+- lines 16.04 (15.08): a line drawn again only as its inputs change;
+- every other part within 0.03; the language add-ons by 0.04–0.06 each (the
+  list's note; Arabic 21.54 from 21.49).
+
+From the npm packages, an app's first load (KB gzipped, with the page / to
+usable, bundled by esbuild): a record form 298.2 → 237.5 / 374.0 → 310.3; in
+Arabic 298.2 → 237.5 / 374.1 → 332.5 (its words' three chunks); a list 297.5 →
+236.7 / 367.6 → 305.2; the screen designer 832.2 → 583.2 / 942.5 → 796.0.
+`@fieldia/map` with the page: a place and an area 27,389 → 11,931 bytes, every
+kind 49,478 → 13,583, a list's map in a page of its own 33,763 → 10,860; its
+parts come later (a list's map 22,079 bytes, a form's 19,826, its fields
+18,416; Leaflet 46.0 KB as before). `@fieldia/calendar` with the page 849 → 764
+bytes, its calendar 19,569 → 17,830; `@fieldia/gantt` with the page 865 → 765,
+its timeline 15,834 → 15,320. A server's first paint's styles 29.8 → 16.7 KB.
+
 ## 0.34.1 — 2026-10-25
 
 **The owner's walk of 0.33.0: every wait seen where a person looks.** A
