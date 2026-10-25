@@ -30,18 +30,31 @@ export function drawLoader(loader: HTMLElement, words: string): void {
 /** Loaders over the middle of the place they wait over — a ring, words, a bar across, the app's own drawing, the cover. */
 const CENTRED = new Set(['spinner', 'text', 'custom', 'overlay', 'progress']);
 /**
- * A loader over the middle of a place taller than the window shows it, centred in what of the place is in view when it
- * is drawn — never at the foot of a tall pane, below the fold (a record's ring at 878 of a 900 px window).
+ * A loader over the middle of a place taller than the window shows it, centred in what of the place is in view — never
+ * at the foot of a tall pane, below the fold (a record's ring at 878 of a 900 px window). Placed as it is drawn, and
+ * again as the place takes its size while it shows: a form whose parts come after its wait began grows under its ring
+ * (0.35's lazy chunks made that the common case in WebKit, the ring left in the middle of the whole pane).
  */
 export function centreInView(loader: HTMLElement, region: HTMLElement): void {
   const view = region.ownerDocument.defaultView;
   const way = loader.getAttribute('data-way') ?? '';
   if (!view || !CENTRED.has(way) || (way === 'progress' && loader.getAttribute('data-look') !== 'inline')) return;
-  const box = region.getBoundingClientRect();
-  const from = Math.max(0, -box.top);
-  const to = Math.min(box.height, view.innerHeight - box.top);
-  if (!box.height || to <= from || (from === 0 && to === box.height)) return;
-  // Its middle where the part in view has its own: the grid centres it in what is left once one end is padded.
-  const pad = from + to - box.height;
-  loader.style.setProperty(pad > 0 ? 'padding-block-start' : 'padding-block-end', `${Math.round(Math.abs(pad))}px`);
+  const place = () => {
+    loader.style.removeProperty('padding-block-start');
+    loader.style.removeProperty('padding-block-end');
+    const box = region.getBoundingClientRect();
+    const from = Math.max(0, -box.top);
+    const to = Math.min(box.height, view.innerHeight - box.top);
+    if (!box.height || to <= from || (from === 0 && to === box.height)) return;
+    // Its middle where the part in view has its own: the grid centres it in what is left once one end is padded.
+    const pad = from + to - box.height;
+    loader.style.setProperty(pad > 0 ? 'padding-block-start' : 'padding-block-end', `${Math.round(Math.abs(pad))}px`);
+  };
+  place();
+  // Watched while it shows, let go once it is taken away (its own size goes as it leaves the page).
+  const Watch = (view as Window & { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
+  if (!Watch) return;
+  const watch = new Watch(() => (loader.isConnected ? place() : watch.disconnect()));
+  watch.observe(region);
+  watch.observe(loader);
 }
