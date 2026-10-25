@@ -34,6 +34,8 @@
         <ol id="told"></ol>
       </section>
     </main>
+    <!-- The frame as soon as it comes (async): not after fieldia.js below, which blocks the page as it loads, has drawn
+         the form, which the frame would then push down. -->
     <script type="module" async src="../shell.mjs"></script>
     <!-- The whole of Fieldia in one file, which defines <fieldia-form>. -->
     <script src="fieldia.js"></script>

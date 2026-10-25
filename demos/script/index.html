@@ -10,6 +10,8 @@
   <body>
     <header id="demo-head" data-app="script"></header>
     <main id="app"></main>
+    <!-- The frame as soon as it comes (async): not after fieldia.js below, which blocks the page as it loads, has drawn
+         the form, which the frame would then push down. -->
     <script type="module" async src="../shell.mjs"></script>
     <!-- The whole of Fieldia's viewer in one file: core, widgets and viewer, as the global `Fieldia`. Its own words are English. -->
     <script src="fieldia.js"></script>

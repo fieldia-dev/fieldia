@@ -184,6 +184,10 @@ for (const variant of variants) {
       logLevel: 'warning',
     });
   }
+  // The frame's script deferred, in its place before the demo's: an async one may run after the demo has drawn and
+  // measured itself, and move it (a map's homes in view counted, then the map pushed down: 25 Oct). Only a page whose
+  // Fieldia comes by a classic, blocking tag (script/, embed/) has it async.
+  if (/<script\b[^>]*\basync\b[^>]*shell\.mjs/.test(readFileSync(join(WORKSPACE, 'demos', variant, 'index.html'), 'utf8'))) throw new Error(`demos/${variant}/index.html: the frame's script deferred (no async), before the demo's own`);
   const preloads = importsOf(metafile, outdir);
   const nonce = variant === 'csp' ? '__CSP_NONCE__' : undefined;
   let html = withPreloads(readFileSync(join(WORKSPACE, 'demos', variant, 'index.html'), 'utf8'), preloads, nonce);
