@@ -528,5 +528,52 @@ test.describe('Loading, as you like it', () => {
       await page.emulateMedia({ forcedColors: 'none' });
     }
   });
+
+  test('the panel’s choices show their whole words, on a wide screen and a phone', async ({ page }) => {
+    for (const [size, name] of [[{ width: 1440, height: 900 }, 'desktop'], [{ width: 390, height: 844 }, 'phone']] as const) {
+      await page.setViewportSize(size);
+      await go(page, 'slow=0');
+      await listed(page);
+      // Each choice's every option measured in its box's own font: none wider than the room the box gives its words.
+      const cut = await page.evaluate(() => {
+        const ruler = document.createElement('span');
+        Object.assign(ruler.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'nowrap' });
+        document.body.append(ruler);
+        const found: string[] = [];
+        for (const select of document.querySelectorAll<HTMLSelectElement>('.ld-picks select')) {
+          const style = getComputedStyle(select);
+          ruler.style.font = style.font;
+          // Its words' room: inside its padding, past its arrow.
+          const room = select.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - 16;
+          for (const option of select.options) {
+            ruler.textContent = option.text;
+            if (ruler.offsetWidth > room) found.push(`${option.text}: ${ruler.offsetWidth} px in ${Math.round(room)}`);
+          }
+        }
+        ruler.remove();
+        return found;
+      });
+      expect(cut, name).toEqual([]);
+      await expectNoSidewaysScroll(page);
+      await screen(page, `loading-panel-${name}`, { viewport: true });
+    }
+  });
+
+  test('what the app heard, said as a person sees it: the waits going on while a skeleton shows, then that every one ended', async ({ page }) => {
+    await go(page, 'slow=0&hold=1');
+    const heard = page.locator('.ld-heard');
+    // The pages drawn, their records held: the list's skeleton shows, and so the line says its wait goes on — never
+    // that something "ended" as if the page were done (the list's page was drawn; its rows are still to come).
+    await expect(records(page).locator('.fd-sk').first()).toBeVisible();
+    await expect(heard).toContainText('waits going on');
+    await expect(heard).toContainText('first of customers');
+    await expect(heard).toContainText('first of loading-customer (3)');
+    await expect(heard).not.toContainText('ended');
+    await screen(page, 'loading-heard-waiting', { viewport: true });
+    await letGo(page);
+    await listed(page);
+    await settled(page);
+    await expect(heard).toContainText('every wait ended — the last,');
+  });
 });
 

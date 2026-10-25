@@ -283,17 +283,35 @@ const indicator = document.querySelector('.ld-indicator') as HTMLElement;
 /** Every loadingstart and loadingend heard (and when, by the page's clock), newest last, and the waits going on: the app's own indicator. */
 const heard: { start: boolean; event: LoadingEvent; at: number }[] = [];
 let going = 0;
+/** The waits going on now, by moment and part, and how many of each (the customer is drawn three times). */
+const waiting = new Map<string, number>();
+const waitName = (event: LoadingEvent) => `${event.moment} of ${event.part}`;
+/**
+ * What the app heard, in the order a person sees it: while anything waits, the waits going on — a wait that ended
+ * meanwhile (the list's page drawn, its rows still to come) is never said as if the page were done — then, once none
+ * is left, that every one ended, and the last of them.
+ */
+function sayHeard(last: LoadingEvent) {
+  const now = [...waiting].map(([name, count]) => (count > 1 ? `${name} (${count})` : name));
+  if (now.length) heardLine.replaceChildren('The app heard: ', el('strong', {}, `${now.length === 1 && !now[0].includes('(') ? 'a wait' : 'waits'} going on`), ` — ${now.join(', ')}.`);
+  else heardLine.replaceChildren('The app heard: ', el('strong', {}, 'every wait ended'), ` — the last, ${waitName(last)}, after ${Math.round(last.duration)} ms${last.failed ? ', failed' : ''}.`);
+}
 function hear(handle: ViewerHandle) {
   handle.on('loadingstart', (event) => {
     heard.push({ start: true, event, at: Date.now() });
     going++;
+    waiting.set(waitName(event), (waiting.get(waitName(event)) ?? 0) + 1);
     indicator.toggleAttribute('data-on', going > 0);
+    sayHeard(event);
   });
   handle.on('loadingend', (event) => {
     heard.push({ start: false, event, at: Date.now() });
     going = Math.max(0, going - 1);
+    const left = (waiting.get(waitName(event)) ?? 1) - 1;
+    if (left > 0) waiting.set(waitName(event), left);
+    else waiting.delete(waitName(event));
     indicator.toggleAttribute('data-on', going > 0);
-    heardLine.replaceChildren('The app heard: ', el('strong', {}, `${event.moment} of ${event.part}`), ` ended after ${Math.round(event.duration)} ms${event.failed ? ', failed' : ''}.`);
+    sayHeard(event);
   });
 }
 
@@ -306,6 +324,7 @@ function mountAll() {
   handles.record?.destroy();
   for (const twin of handles.twins) twin.destroy();
   going = 0;
+  waiting.clear();
   indicator.removeAttribute('data-on');
   const loading: LoadingOptions = { ...settings, custom };
   handles.list = mountViewer(listHost, { page: listPage, dataSource, loading, dir, listViews: demoListViews, onOpenRecord: (id) => void openCustomer(id) });
