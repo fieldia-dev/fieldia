@@ -5,6 +5,7 @@ import { quoted, refusalHint } from './input-rules';
 import { fillIn, maker, setAttr, wordsFor } from './kind-parts';
 import { optionCaption, optionMark } from './option-look';
 import { seatWords } from './seats';
+import { stillShown } from './shown';
 import type { WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -145,7 +146,10 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     const said = fillIn(words.noMatch, { label, text: quoted(text) });
     const held = left && single ? labelOf(current()) : '';
     hint.show(held ? `${said}. ${fillIn(words.stillHolds, { label, value: held })}` : said);
+    saidFor = stillShown(form);
   };
+  /** The record what was said under the box is about: taken away as another is shown, it is loaded again or Discarded. */
+  let saidFor: (() => boolean) | null = null;
   /** Words that name nothing, left or read for a save: they stay as typed, kept unread with why, and it is said. */
   const keepUnread = (typed: string, left = false) => {
     const text = typed.trim();
@@ -297,6 +301,10 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     update(state) {
       readonly = state.readonly;
       if (readonly) close();
+      if (saidFor && !saidFor()) {
+        saidFor = null;
+        hint.hide();
+      }
       const kept = unreadNow();
       setAttr(input, 'aria-invalid', String(state.invalid || (!!kept && document.activeElement !== input)));
       setAttr(input, 'aria-describedby', hint.describedBy(state.describedBy) ?? null);

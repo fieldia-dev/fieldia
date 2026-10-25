@@ -111,6 +111,8 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
   const floating = floatUnder(input, callout, { sameWidth: true, maxHeight: 278, gap: 0 });
   // Words left that name no record: put back, and said under the box.
   const hint = refusalHint(input, element);
+  /** The record what was said under the box is about. */
+  let saidFor: (() => boolean) | null = null;
 
   let current: RelatedRecord | null = null;
   let readonly = false;
@@ -464,6 +466,7 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
         hint.show(current && !reading.awaited ? `${said}. ${fillIn(words.stillHolds, { label, value: textOf(current) })}` : said);
         form.setUnread(name, { text, message: said });
       } else hint.show(said);
+      saidFor = stillShown(form);
     }
   }
 
@@ -655,6 +658,11 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       else stopReading?.();
     },
     update(state) {
+      // What was said under the box is its record's: taken away as another is shown, it is loaded again or Discarded.
+      if (saidFor && !saidFor()) {
+        saidFor = null;
+        hint.hide();
+      }
       const value = (state.value as RelatedRecord | null | undefined) ?? null;
       const changed = value?.id !== current?.id;
       current = value;
