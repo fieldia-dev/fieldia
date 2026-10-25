@@ -182,6 +182,10 @@ const SKINS_CSS = /* css */ `
 .fd-field:is([data-type="char"], [data-type="text"]) :is(input, textarea).fd-input {
   unicode-bidi: plaintext; text-align: match-parent; text-align: -webkit-match-parent;
 }
+/* A box's placeholder too ("Search…" left in English on a page right to left reads "Search…", never "…Search"), while
+   it shows: Firefox reads it from the box (:placeholder-shown), the others from the placeholder itself. */
+/* Its side the box's own wherever a sheet sets one (an amount's end): this rule weighs nothing. */
+:where(.fd-form) :where(input, textarea):placeholder-shown, :where(.fd-form) :where(input, textarea)::placeholder { unicode-bidi: plaintext; text-align: match-parent; text-align: -webkit-match-parent; }
 .fd-error { color: var(--fd-error); font-size: 12.5px; }
 .fd-warning {
   color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px;
@@ -438,6 +442,9 @@ const SKINS_CSS = /* css */ `
 .fd-option:hover, .fd-option.fd-active { background: var(--fd-accent-soft); }
 .fd-option-create { color: var(--fd-accent); border-block-start: 1px solid var(--fd-border); }
 .fd-empty { padding: 6px 12px; color: var(--fd-muted); font-style: italic; }
+/* A list's line that is no option — its wait, its failure and Retry, nothing found — wraps in the list's width (its box's,
+   or its options'), never widening it past its box. */
+.fd-listbox > .fd-empty { contain: inline-size; }
 .fd-tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
 .fd-chips { display: contents; list-style: none; margin: 0; padding: 0; }
 .fd-chip {
@@ -822,6 +829,12 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-text-note { margin: 0; color: var(--fd-muted); font-size: 13px; }
 .fd-status { min-height: 1.4em; color: var(--fd-muted); font-size: 13px; }
 .fd-status-box { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+/* Beside the buttons, what the status says takes the room left and wraps its own words — never pushing Save onto a line
+   of its own under Discard; a failure, said with its Retry, on a line of its own under them: the buttons kept together,
+   Save where it was pressed. */
+.fd-actions-end > .fd-status-box { flex: 1 1 12em; justify-content: flex-end; flex-wrap: wrap; text-align: end; }
+.fd-actions-end > .fd-status-box:has(> .fd-status:empty):has(> .fd-retry[hidden]) { flex: 0 1 auto; }
+.fd-actions-end > .fd-status-box:has(> .fd-status-error) { flex-basis: 100%; order: 1; }
 .fd-status-box .fd-retry { font-size: 13px; }
 /* Said to screen readers only. */
 .fd-announce { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

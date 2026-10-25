@@ -161,6 +161,9 @@ test('on a phone it opens as a sheet from the foot of the screen, and Close puts
   await button.click();
   const sheet = page.getByRole('dialog', { name: 'Country of Phone' });
   await expect(sheet).toBeVisible();
+  // Headed with what it lists, the field it opened from the one just pressed — never "Country of Phone" (the owner's
+  // walk of 0.33.0); named for that field.
+  await expect(sheet.locator('.fd-lookup-title')).toHaveText('Country');
   await expect(finder(page)).toBeFocused();
   const box = (await sheet.boundingBox())!;
   expect(Math.round(box.x)).toBe(0);

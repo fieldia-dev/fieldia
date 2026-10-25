@@ -40,6 +40,9 @@
  * read in the middle of drawing: 15,541 bytes measured before, 15,723 after, to 15.4.
  * 0.34's merge: the timeline's wait (0.33) over its draw once — a reload that brings back what is drawn draws nothing
  * again — 15,611 bytes measured before (0.33.0), 15,799 after, to 15.5; with the page 815, 816, inside its 0.8.
+ * 0.34.1 (the owner's walk of 0.33.0): the timeline's place waits as the list says while its code comes — its skeleton,
+ * never an empty space under the list's search — the timeline's first wait going on from it (list-view.ts): with the
+ * page 816 bytes measured before, 865 after, to 0.9; the timeline 15,799, 15,834, inside its 15.5.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -48,7 +51,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.8, gantt: 15.5 };
+const BUDGET = { page: 0.9, gantt: 15.5 };
 const LANGUAGE_BUDGET = { tr: 0.8, fa: 1.0, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });

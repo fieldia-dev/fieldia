@@ -54,6 +54,9 @@
  * Spanish 773 measured) — a calendar in any other language never carries them (inline, they took the calendar's chunk
  * to 22,191). The week's first day where CLDR starts it for the page's own tag where it is shown in its own language
  * (en-GB's, not en's): 19,448 bytes measured before, 19,486 after, to 19.1.
+ * 0.34.1 (the owner's walk of 0.33.0): the calendar's place waits as the list says while its code comes — its skeleton,
+ * never an empty space under the list's search — the calendar's first wait going on from it (list-view.ts): with the
+ * page 793 bytes measured before, 849 after, to 0.9; the calendar 19,554, 19,569, to 19.2.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -62,7 +65,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/calendar-bundle');
-const BUDGET = { page: 0.8, calendar: 19.1 };
+const BUDGET = { page: 0.9, calendar: 19.2 };
 const LANGUAGE_BUDGET = { tr: 0.9, fa: 1.1, ur: 1.1, es: 0.8 };
 
 rmSync(OUT, { recursive: true, force: true });
@@ -114,4 +117,4 @@ if (sizes.some((s) => !s.later && s.drawing)) throw new Error('The calendar is n
 if (!sizes.some((s) => s.later && s.drawing)) throw new Error('No chunk draws the calendar: the lazy import is gone');
 if (page > BUDGET.page * 1024) throw new Error(`@fieldia/calendar with the page is ${kb(page)} KB gzipped, over its ${BUDGET.page} KB budget`);
 if (calendar > BUDGET.calendar * 1024) throw new Error(`The calendar's chunk is ${kb(calendar)} KB gzipped, over its ${BUDGET.calendar} KB budget`);
-console.log(`@fieldia/calendar: ${kb(page)} KB gzipped with the page (budget ${BUDGET.page}); the calendar ${kb(calendar)} KB with the first one shown (budget ${BUDGET.calendar})`);
+console.log(`@fieldia/calendar: ${kb(page)} KB gzipped with the page (budget ${BUDGET.page}); the calendar ${kb(calendar)} KB with the first one shown (budget ${BUDGET.calendar}) — ${page} and ${calendar} bytes`);

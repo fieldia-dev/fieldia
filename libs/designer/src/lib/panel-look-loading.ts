@@ -14,6 +14,7 @@ import { settingNumber, type SettingNumber } from './number-box';
  *
  * Each preview is a small form of its own (`fd-form`, the page's skin), hidden from a screen reader — it is a picture —
  * where the one timing machine draws the moment's way at once, with the page's settings; drawn again as they change.
+ * What is chosen shows chosen, Fieldia's default where the page says none; times are asked in seconds.
  */
 export function loadingLookSettings(el: ElementFactory, designer: Designer): LookSetting {
   const w = designer.words.loadingLook;
@@ -54,24 +55,27 @@ export function loadingLookSettings(el: ElementFactory, designer: Designer): Loo
     { words: w.looks }
   );
 
-  // ---- the timing, in milliseconds ----
+  // ---- the timing, asked in seconds as a person counts them (0.15), kept in milliseconds as the page says them ----
   const numbers: SettingNumber[] = [];
-  const time = (key: 'delay' | 'minShown' | 'slowAfter' | 'timeout', max: number) => {
+  const time = (key: 'delay' | 'minShown' | 'slowAfter' | 'timeout', most: number) => {
+    const ms = (seconds: number) => Math.max(key === 'timeout' ? 1 : 0, Math.round(seconds * 1000));
     const box = settingNumber(el, designer, {
       label: w[key],
       attrs: { class: 'fd-input fd-insp-number' },
-      integer: true,
-      min: key === 'timeout' ? 1 : 0,
-      max,
-      step: 50,
+      ...(key === 'timeout' ? { above: 0 } : { min: 0 }),
+      max: most,
+      step: 0.05,
       optional: true,
-      saved: () => loading[key] ?? (key === 'timeout' ? null : LOADING_DEFAULTS[key]),
-      commit: (n) => set({ [key]: n === null || n === (LOADING_DEFAULTS as PageLoading)[key] ? null : n }),
+      saved: () => {
+        const kept = loading[key] ?? (key === 'timeout' ? null : LOADING_DEFAULTS[key]);
+        return typeof kept === 'number' ? kept / 1000 : kept;
+      },
+      commit: (n) => set({ [key]: n === null || ms(n) === (LOADING_DEFAULTS as PageLoading)[key] ? null : ms(n) }),
     });
     numbers.push(box);
-    return el('label', { class: 'fd-insp-loading-time' }, el('span', {}, w[key]), box.input, el('span', { class: 'fd-insp-unit' }, w.ms));
+    return el('label', { class: 'fd-insp-loading-time' }, el('span', {}, w[key]), box.input, el('span', { class: 'fd-insp-unit' }, w.seconds));
   };
-  const timingRow = setting(el, 'look', 'Loading times', [time('delay', 10000), time('minShown', 10000), time('slowAfter', 600000), time('timeout', 600000)], { words: w.timing, hint: w.timingHint });
+  const timingRow = setting(el, 'look', 'Loading times', [time('delay', 10), time('minShown', 10), time('slowAfter', 600), time('timeout', 600)], { words: w.timing, hint: w.timingHint });
 
   // ---- a failure ----
   const errors = segmented<string>(el, w.error, LOADING_ERRORS.map((value) => ({ value, words: w.errors[value] })), (value) => set({ error: value === LOADING_DEFAULTS.error ? null : (value as PageLoading['error']) }), { toggle: true });
@@ -124,10 +128,11 @@ export function loadingLookSettings(el: ElementFactory, designer: Designer): Loo
       loading = page.loading ?? {};
       skin = page.look?.skin ?? (page.look?.theme ? 'outlined' : 'underline');
       for (const [moment, select] of selects) if (select.ownerDocument.activeElement !== select) select.value = loading[moment] ?? LOADING_DEFAULTS[moment];
-      looks.skeleton.set(loading.skeleton);
-      looks.spinner.set(loading.spinner);
-      looks.progress.set(loading.progress);
-      errors.set(loading.error);
+      // What is chosen shows chosen — Fieldia's default where the page says none, as the moments' lists mark it.
+      looks.skeleton.set(loading.skeleton ?? LOADING_DEFAULTS.skeleton);
+      looks.spinner.set(loading.spinner ?? LOADING_DEFAULTS.spinner);
+      looks.progress.set(loading.progress ?? LOADING_DEFAULTS.progress);
+      errors.set(loading.error ?? LOADING_DEFAULTS.error);
       for (const number of numbers) number.refresh();
       if (JSON.stringify([loading, skin]) !== before || previews.some((preview) => !preview.wait)) drawPreviews();
     },

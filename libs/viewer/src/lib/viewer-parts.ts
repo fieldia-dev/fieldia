@@ -402,8 +402,11 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * the decode part (`decodePart`, a reader of codes for browsers with none). The
  * viewer and its dialogs wait for a page's parts themselves before they draw
  * it; this is for an app that wants them in before it mounts, so the page is
- * drawn whole the moment it is mounted. Rejects when one could not come (the
- * viewer then draws plainly what it would have drawn from it). A theme or the
+ * drawn whole the moment it is mounted — with the loading part where the
+ * viewer would wait for it with them (`partFiles`' rule), so the page's first
+ * wait for its data is drawn as it says the moment it shows. Rejects when one
+ * could not come (the viewer then draws plainly what it would have drawn from
+ * it). A theme or the
  * quiet skin the app itself gives the viewer is not the page's: its part is
  * `themesPart` or `quietPart` (@fieldia/widgets), `.load()`ed the same way.
  */
@@ -416,10 +419,13 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * `fieldia.memory.js`. In the browser, the one-tag script's `partTags(page)` gives each with what its own tag carries.
  */
 export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>, loading?: PageLoading): string[] {
-  const parts = partsFor(page, widgets, slots);
-  // The loading part where the viewer asks for it with these (`loadingWithParts`): a record's page waits for its record.
+  return withLoadingPart(page, partsFor(page, widgets, slots), loading).map((part) => `fieldia.${part.name}.js`);
+}
+
+/** A page's parts, the loading part among them where the viewer asks for it with them (`loadingWithParts`): a record's page waits for its record. */
+function withLoadingPart(page: Page, parts: Part[], loading?: PageLoading): Part[] {
   if (!parts.includes(loadingPart) && loadingWithParts(page, parts, page.data.kind === 'record' && page.layout.type !== 'list', loading)) parts.push(loadingPart);
-  return parts.map((part) => `fieldia.${part.name}.js`);
+  return parts;
 }
 
 /**
@@ -430,11 +436,23 @@ export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, s
  * `loading`) names a look of the part's.
  */
 export function loadingWithParts(page: Page, parts: readonly Part[], waitsForRecord: boolean, appLoading?: PageLoading): boolean {
-  const waitsForData = waitsForRecord || /"type":"(list|related|form|map)"/.test(JSON.stringify(page.layout));
-  return (!!parts.length && waitsForData && asksLoadingPart(loadingSettings(appLoading, page.loading), ['first', 'refresh', 'more'])) || asksLoadingPart(appLoading);
+  return (!!parts.length && waitsDrawnFromLoading(page, waitsForRecord, appLoading)) || asksLoadingPart(appLoading);
+}
+
+/**
+ * Whether a page waits for its data drawn from the loading part — its record, a list's rows, a related list's, a map's, a
+ * saved form placed — a skeleton first (Fieldia's default), or another way the part draws. `fromSource` alone: what its
+ * data source answers (a saved form placed is the app's page, often at once) — what a viewer whose page's parts are in
+ * already (an app loaded them first) asks for the part as it mounts for, not waiting for it, so that first wait is drawn
+ * as it says when it shows, never in words first.
+ */
+export function waitsDrawnFromLoading(page: Page, waitsForRecord: boolean, appLoading?: PageLoading, fromSource = false): boolean {
+  const waitsForData = waitsForRecord || (fromSource ? /"type":"(list|related|map)"/ : /"type":"(list|related|form|map)"/).test(JSON.stringify(page.layout));
+  return waitsForData && asksLoadingPart(loadingSettings(appLoading, page.loading), ['first', 'refresh', 'more']);
 }
 
 export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {
   // With the parts that join a form, asked for as they are loaded: their module may come after this one's.
-  await Promise.all((page ? partsFor(page, widgets, slots) : [...EVERY_PART, ...formJoins()]).map((part) => part.load()));
+  // A page's own with the loading part where the viewer would wait for it with them: its first wait drawn as it says.
+  await Promise.all((page ? withLoadingPart(page, partsFor(page, widgets, slots)) : [...EVERY_PART, ...formJoins()]).map((part) => part.load()));
 }

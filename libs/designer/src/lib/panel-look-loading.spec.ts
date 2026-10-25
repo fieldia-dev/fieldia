@@ -60,11 +60,18 @@ describe('the Look tab’s section on waiting', () => {
 
   it('sets the looks, the timing and a failure’s way, each given back as it is pressed again or emptied', () => {
     const { row, loading, designer } = lookTab();
-    const press = (name: string, words: string) => [...row(name).querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === words)?.click();
+    const button = (name: string, words: string) => [...row(name).querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === words);
+    const press = (name: string, words: string) => button(name, words)?.click();
+    const chosen = (name: string) => [...row(name).querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent);
+    // What is chosen shows chosen: Fieldia's defaults, where the page says none, as the moments' lists mark theirs.
+    expect(chosen('Loading looks')).toEqual(['Shimmer', 'Ring', 'At the top']);
+    expect(chosen('When loading fails')).toEqual(['In place']);
     press('Loading looks', 'Pulse');
     press('Loading looks', 'Dots');
     press('When loading fails', 'Toast');
     expect(loading()).toEqual({ skeleton: 'pulse', spinner: 'dots', error: 'toast' });
+    expect(chosen('Loading looks')).toEqual(['Pulse', 'Dots', 'At the top']);
+    expect(chosen('When loading fails')).toEqual(['Toast']);
     const box = (label: string) => row('Loading times').querySelector(`input[aria-label="${label}"]`) as HTMLInputElement;
     const typeIn = (input: HTMLInputElement, text: string) => {
       input.focus();
@@ -73,9 +80,12 @@ describe('the Look tab’s section on waiting', () => {
       input.dispatchEvent(new Event('change', { bubbles: true }));
       input.blur();
     };
-    expect(box('Wait before showing').value).toBe('150');
-    typeIn(box('Wait before showing'), '300');
-    typeIn(box('Give up after'), '20000');
+    // In seconds, as a person counts them; kept in milliseconds, as the page says them.
+    expect(box('Wait before showing').value).toBe('0.15');
+    expect(box('Say “Still loading…” after').value).toBe('5');
+    expect(row('Loading times').querySelector('.fd-insp-unit')?.textContent).toBe('s');
+    typeIn(box('Wait before showing'), '0.3');
+    typeIn(box('Give up after'), '20');
     expect(loading()).toEqual({ skeleton: 'pulse', spinner: 'dots', error: 'toast', delay: 300, timeout: 20000 });
     // Said among the changes before publishing.
     expect(pageChanges({ ...designer.getPage(), loading: undefined }, designer.getPage())).toContain('How the page waits changed');
@@ -85,5 +95,7 @@ describe('the Look tab’s section on waiting', () => {
     typeIn(box('Wait before showing'), '');
     typeIn(box('Give up after'), '');
     expect(loading()).toBeUndefined();
+    expect(chosen('Loading looks')).toEqual(['Shimmer', 'Ring', 'At the top']);
+    expect(box('Wait before showing').value).toBe('0.15');
   });
 });

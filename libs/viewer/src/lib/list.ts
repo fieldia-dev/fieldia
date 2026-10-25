@@ -508,7 +508,9 @@ export function listView(context: ListContext): ListView {
   const retry = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry);
   /** Why, where the source said: "Could not load the customers. The archive is offline." */
   const failedWhy = el('span', {});
-  const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, sentence(labels.loadFailedNoun, labels.loadFailed), failedWhy, ' ', retry);
+  /** Its failure's words, which name it: what a toast or the app's own drawing of it says before the source's own. */
+  const failedWords = sentence(labels.loadFailedNoun, labels.loadFailed);
+  const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, failedWords, failedWhy, ' ', retry);
   // In a record, on paper (its pager left off): how many of how many it shows, where they run past a page — "5 of 23".
   const shownOf = inRecord ? el('p', { class: 'fd-list-shown', hidden: '' }) : null;
   retry.addEventListener('click', () => void load());
@@ -1082,7 +1084,7 @@ export function listView(context: ListContext): ListView {
     drawSort();
     // Its wait: drawn the first time (a skeleton of its rows unless the page says otherwise), asked again after that (what
     // is shown kept, a bar over it); a wait going on taken over, never drawn twice.
-    const wait = startLoading(records, loadedOnce ? 'refresh' : 'first', waiting, { part: node.id, shape: skeletonRows, failed: saidFailed, retry: () => void load(), now: !loadedOnce && context.loadingNow === true });
+    const wait = startLoading(records, loadedOnce ? 'refresh' : 'first', waiting, { part: node.id, shape: skeletonRows, failed: saidFailed, failWords: failedWords, retry: () => void load(), now: !loadedOnce && context.loadingNow === true });
     let drawn: HTMLTableRowElement[] = [];
     try {
       const filter = currentFilter();
@@ -1200,7 +1202,9 @@ export function listView(context: ListContext): ListView {
     // Its wait where the rows will come (`more`): "Loading more…" unless the page says otherwise; a failure said there,
     // with Retry — the person's ask, after which its end in sight asks by itself again (list-endless.ts).
     const end = endlessEnd;
-    const wait = startLoading(end.element, 'more', waiting, { part: node.id, retry: () => end.retry() });
+    // Said in a toast, away from its place, it names the list ("Could not load the customers."); in its place under the
+    // rows, "Couldn't load." says enough.
+    const wait = startLoading(end.element, 'more', waiting, { part: node.id, retry: () => end.retry(), ...(waiting.settings.error === 'toast' ? { failWords: failedWords } : {}) });
     let answer: Awaited<ReturnType<NonNullable<DataSource['list']>>>;
     try {
       answer = await source.list({ model, fields, filter: currentFilter(), sort, offset: rows.length, limit: pageSize, ...(waiting.settings.timeout ? { signal: wait.signal } : {}) });

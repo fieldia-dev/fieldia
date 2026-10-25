@@ -89,7 +89,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
 import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
 import type { LimitsKit } from './limits';
@@ -2208,8 +2208,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       actions.insertBefore(discard, action);
       updaters.push((state) => {
         // A file on its way is a change coming: Save shows for it, and waits.
-        const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && state.status !== 'saving' && !locked && state.can?.edit !== false;
-        setHidden(action, !dirty);
+        const saving = state.status === 'saving';
+        const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && !saving && !locked && state.can?.edit !== false;
+        // While it saves, Save stays where it was pressed, busy — its ring past the wait's delay (`action`) — never gone
+        // into "Saving…"; Discard steps aside. A save it was not shown for (a button's steps) never brings it.
+        setHidden(action, saving ? action.hidden : !dirty);
         setHidden(discard, !dirty);
       });
     } else updaters.push(() => setHidden(action, locked));
@@ -2337,8 +2340,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (editSwitch && options.showActions !== false) actions.prepend(editSwitch);
     updaters.push((state) => {
       // A file on its way is a change coming: Save shows for it, and waits.
-      const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && state.status !== 'saving' && !locked && state.can?.edit !== false;
-      save.hidden = !dirty;
+      const saving = state.status === 'saving';
+      const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && !saving && !locked && state.can?.edit !== false;
+      // While it saves, Save stays where it was pressed, busy (`action`); Discard steps aside.
+      save.hidden = saving ? save.hidden : !dirty;
       discard.hidden = !dirty;
     });
     const header = el('div', { class: 'fd-header' }, actions);
@@ -2741,6 +2746,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // One rule with `partFiles`, so a page's part tags written into it name the loading part where this asks for it.
   const drawsFromPart = loadingWithParts(page, owed, form.getState().status === 'idle', options.loading);
   const awaited = drawsFromPart && !loadingPart.loaded ? [...owed, loadingPart] : owed;
+  // Its parts in already (the app loaded them first), its data still to come drawn from the loading part: asked for now,
+  // not waited for, so its first wait is drawn as it says as it shows — never "Loading…" in words, then its shapes.
+  if (!awaited.includes(loadingPart) && !loadingPart.loaded && waitsDrawnFromLoading(page, form.getState().status === 'idle', options.loading, true)) void loadingPart.load().catch(() => undefined);
   // A list page's records asked for now, as its part comes, not once it has.
   if (awaited.includes(listPart)) earlyRows = earlyList(page, dataSource ? { ...options, dataSource } : options);
   let drawn: Promise<void> = Promise.resolve();
@@ -3144,9 +3152,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     actionWait?.stop();
   });
   const unsubscribe = form.subscribe(render);
-  // A run that could not go on says why: a step that cannot run here, or what the app threw. A stop with words the form says itself.
+  // A run that could not go on says why: a step that cannot run here, or what the app threw. A stop with words the form says itself
+  // — and a record that could not be loaded again (a reload step, `reload()`), said once, in its place, with its Retry.
   cleanups.push(
     form.on('run', ({ result }) => {
+      if (result.reason === 'cannot' && result.message !== undefined && result.message === form.getState().loadProblem?.message) return;
       if (result.reason === 'cannot' || (result.reason === 'app' && result.error !== undefined)) actionHost.say(result.message ?? '', result.reason === 'app' ? 'danger' : 'warning');
     })
   );

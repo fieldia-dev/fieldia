@@ -263,6 +263,10 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
     }, 50);
   };
   region.setAttribute('aria-busy', 'true');
+  // Drawn the first time, what is not there yet is out of sight until the loader is drawn — never empty boxes before a
+  // skeleton: a form's boxes alone, under their labels, where its own shapes will stand in them; else all it holds, as
+  // its loader will hide it. A quick answer is drawn whole in their place.
+  if (moment === 'first') region.setAttribute('data-fd-coming', way === 'skeleton' && how.shape ? 'boxes' : 'all');
   given.told?.(true, { moment, part, duration: 0, failed: false });
 
   const drawCustom = (container: HTMLElement) => {
@@ -297,6 +301,7 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
     if (moment === 'refresh' && OVER_SHOWN.has(way) && region.querySelector(OPEN_POPUP)) drawnAs = mine.way = 'keep';
     const kept = drawnAs !== way;
     const as = kept ? (kit ? 'keep' : 'none') : IN_PART.has(way) && !kit ? (moment === 'first' ? 'text' : 'none') : way;
+    region.removeAttribute('data-fd-coming');
     region.setAttribute('data-fd-way', as);
     kit?.installLoadingStyles(doc);
     if (as === 'skeleton') region.setAttribute('data-fd-look', settings.skeleton);
@@ -312,13 +317,36 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
     else if (as !== 'custom' && as !== 'dim') loader.append(span(doc, 'fd-loader-words', said));
     if (slow) loader.append(span(doc, 'fd-loader-slow', words.stillLoading));
     put(loader);
+    // Over the middle of a place taller than the window shows it: in the middle of what of it is in view.
+    if (moment === 'first' || as === 'overlay' || (moment === 'refresh' && as === 'spinner')) kit?.centreInView(loader, region);
   };
+  /** Said already, while its drawing waited for its part. */
+  let spoken = false;
+  /** Its part asked for, its drawing waiting for it (drawn the first time). */
+  let deferred = false;
+  /** The loading part could not come: drawn in words. */
+  let partFailed = false;
   const show = () => {
     if (over || shownAt) return;
+    // Drawn the first time from the loading part, which has not come yet: drawn as it says once it has — never in words
+    // first, then as shapes, two loaders one after the other (a map's "Loading…", then its skeleton). Its place stays
+    // as it is meanwhile, what is not there yet out of sight; a screen reader hears it at once. In words where the part
+    // could not come, or the wait turns slow before it has.
+    if (moment === 'first' && IN_PART.has(way) && !loadingPart.loaded && !partFailed && !slow && !taken && !how.now) {
+      if (!spoken) say(said);
+      spoken = true;
+      if (deferred) return;
+      deferred = true;
+      void loadingPart.load().then(show, () => {
+        partFailed = true;
+        show();
+      });
+      return;
+    }
     shownAt = Date.now();
     region.setAttribute('data-fd-wait', moment);
     draw();
-    say(said);
+    if (!spoken) say(said);
     // Drawn in words while its part came: drawn as it says once it has, while it is still waited for.
     if (IN_PART.has(way) && !loadingPart.loaded) {
       void loadingPart.load().then(
@@ -335,7 +363,10 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
   const turnSlow = () => {
     if (over) return;
     slow = true;
+    // Its part still on its way as it turns slow: drawn in words now, "Still loading…" with them.
+    if (deferred && !shownAt) show();
     say(words.stillLoading);
+    if (loader?.querySelector(':scope > .fd-loader-slow')) return;
     if (way === 'custom' && loader) drawCustom(loader);
     else loader?.append(span(doc, 'fd-loader-slow', words.stillLoading));
   };
@@ -356,7 +387,7 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
     if (going.get(region) !== mine) return;
     going.delete(region);
     if (region.hasAttribute('data-fd-shaped')) how.shape?.hide();
-    for (const name of ['aria-busy', 'inert', 'data-fd-wait', 'data-fd-way', 'data-fd-look', 'data-fd-shaped']) region.removeAttribute(name);
+    for (const name of ['aria-busy', 'inert', 'data-fd-wait', 'data-fd-way', 'data-fd-look', 'data-fd-shaped', 'data-fd-coming']) region.removeAttribute(name);
     say('');
   };
   /** Ended: the signal aborts, the app is told. */
@@ -434,6 +465,8 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
       const again = retry && (() => retry());
       const box = make('failed');
       if (settings.error === 'custom' && given.custom) {
+        // The app's own look, none of Fieldia's failure's over it.
+        box.setAttribute('data-fd-own', '');
         put(box);
         // The app's drawing of the failure: its own signal and clean-up, let go as the place is asked again.
         const stop = new AbortController();
@@ -453,7 +486,11 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
         return;
       }
       if (settings.error === 'toast' && given.toast && again) {
-        given.toast(message, again);
+        // Said away from its place, it says what failed: a part's own words for it (a list's "Could not load the
+        // customers.", a record's), the field it is in by its label first ("Account manager: Couldn't search.") — never a
+        // bare "Couldn't load." among a page's forms.
+        const field = own === undefined ? region.closest('.fd-field')?.querySelector(':scope > .fd-label')?.firstChild?.textContent?.trim() : '';
+        given.toast(field ? `${field}: ${message}` : message, again);
         // Never an empty place: what was there stays; drawn for the first time, there was nothing — said there too.
         if (moment !== 'first') return;
       }

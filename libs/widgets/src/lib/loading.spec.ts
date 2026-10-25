@@ -62,26 +62,62 @@ describe('a wait’s settings', () => {
     expect(asksLoadingPart(LOADING_DEFAULTS, ['more', 'search', 'action'])).toBe(false);
   });
 
-  it('draws in words what is drawn the first time while the loading part comes, then as it says once it has', async () => {
+  it('draws a first wait as it says once the loading part has come — never in words first — its place as it is meanwhile', async () => {
+    jest.useFakeTimers();
+    try {
+      await jest.isolateModulesAsync(async () => {
+        const fresh = await import('./loading');
+        const { region, root } = form();
+        const shape = { show: jest.fn(), hide: jest.fn() };
+        const wait = fresh.startLoading(region, 'first', loading(), { shape });
+        // What is not there yet out of sight from the start: a form's boxes, where its own shapes will stand in them.
+        expect(region.getAttribute('data-fd-coming')).toBe('boxes');
+        jest.advanceTimersByTime(200);
+        // Past its delay, its part still on its way: nothing drawn yet — no "Loading…" words to be swapped for shapes —
+        // and a screen reader hears it.
+        expect(loader(region)).toBeNull();
+        expect(shape.show).not.toHaveBeenCalled();
+        expect(region.hasAttribute('data-fd-wait')).toBe(false);
+        expect(said(root)).toBe('Loading…');
+        expect(wait.shown).toBe(false);
+        await fresh.loadingPart.load();
+        await Promise.resolve();
+        expect(shape.show).toHaveBeenCalledTimes(1);
+        expect(region.getAttribute('data-fd-way')).toBe('skeleton');
+        expect(region.hasAttribute('data-fd-shaped')).toBe(true);
+        expect(region.hasAttribute('data-fd-coming')).toBe(false);
+        expect(wait.shown).toBe(true);
+        wait.stop();
+        expect(shape.hide).toHaveBeenCalledTimes(1);
+        expect(said(root)).toBe('');
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('draws a first wait in words where its part is still on its way as it turns slow; an answer before then draws no loader', async () => {
     jest.useFakeTimers();
     try {
       await jest.isolateModulesAsync(async () => {
         const fresh = await import('./loading');
         const { region } = form();
-        const shape = { show: jest.fn(), hide: jest.fn() };
-        const wait = fresh.startLoading(region, 'first', loading(), { shape });
-        jest.advanceTimersByTime(150);
+        const wait = fresh.startLoading(region, 'first', loading({ set: { slowAfter: 1000 } }));
+        expect(region.getAttribute('data-fd-coming')).toBe('all');
+        jest.advanceTimersByTime(1000);
         expect(loader(region)?.getAttribute('data-way')).toBe('text');
-        expect(loader(region)?.textContent).toBe('Loading…');
-        expect(shape.show).not.toHaveBeenCalled();
-        await fresh.loadingPart.load();
-        await Promise.resolve();
-        expect(loader(region)).toBeNull();
-        expect(shape.show).toHaveBeenCalledTimes(1);
-        expect(region.getAttribute('data-fd-way')).toBe('skeleton');
-        expect(region.hasAttribute('data-fd-shaped')).toBe(true);
+        expect(loader(region)?.textContent).toBe('Loading…Still loading…');
         wait.stop();
-        expect(shape.hide).toHaveBeenCalledTimes(1);
+
+        // Answered while its part comes: drawn at once, nothing in its place before.
+        const again = form();
+        const quick = fresh.startLoading(again.region, 'first', loading());
+        jest.advanceTimersByTime(400);
+        const apply = jest.fn();
+        await quick.done(apply);
+        expect(apply).toHaveBeenCalledTimes(1);
+        expect(loader(again.region)).toBeNull();
+        expect(again.region.hasAttribute('data-fd-coming')).toBe(false);
       });
     } finally {
       jest.useRealTimers();
@@ -235,6 +271,53 @@ describe('a wait, on its clock', () => {
     // A search's words.
     startLoading(region, 'search', loading(), { failWords: words.cantSearch }).fail(new Error(''), () => undefined);
     expect(region.querySelector('.fd-loader-words')?.textContent).toBe('Couldn’t search.');
+  });
+
+  it('says in a toast what failed, away from its place: a part by its own words for it, a field by its label', () => {
+    const { root, region } = form();
+    const toast = jest.fn();
+    const by = loading({ set: { error: 'toast' }, toast });
+    // A list names itself.
+    startLoading(region, 'refresh', by, { failWords: 'Could not load the customers.', failed: () => true }).fail(new Error('down'), () => undefined);
+    expect(toast).toHaveBeenLastCalledWith('Could not load the customers. down', expect.any(Function));
+    // A record's own sentence names it already.
+    startLoading(region, 'refresh', by).fail(new Error('This customer could not be loaded: down'), () => undefined, '');
+    expect(toast).toHaveBeenLastCalledWith('This customer could not be loaded: down', expect.any(Function));
+    // A box's search, by its field's label: one of a page's many.
+    const field = Object.assign(document.createElement('div'), { className: 'fd-field' });
+    const label = Object.assign(document.createElement('label'), { className: 'fd-label', textContent: 'Account manager' });
+    const list = document.createElement('ul');
+    field.append(label, list);
+    root.append(field);
+    startLoading(list, 'search', by, { failWords: words.cantSearch }).fail(new Error('down'), () => undefined);
+    expect(toast).toHaveBeenLastCalledWith('Account manager: Couldn’t search. down', expect.any(Function));
+  });
+
+  it('marks a failure drawn by the app its own, none of Fieldia’s look over it; Fieldia’s reads as a failure', () => {
+    const { region } = form();
+    startLoading(region, 'first', loading({ set: { error: 'custom' }, custom: ({ container }) => void container.append('Ours') })).fail(new Error('down'), () => undefined);
+    expect(region.querySelector('.fd-loader[data-way="failed"]')?.hasAttribute('data-fd-own')).toBe(true);
+    expect(LOADING_CSS).toMatch(/\.fd-loader\[data-way="failed"\]:not\(\[data-fd-own\]\) \{ color: var\(--fd-error\); border-inline-start: 3px solid currentColor; \}/);
+  });
+
+  it('centres a loader over a place taller than the window in what of it is in view', () => {
+    const { region } = form();
+    // A pane from 460 px down a 900 px window, 1600 px tall: in view from its top to 440 px into it.
+    region.getBoundingClientRect = () => ({ top: 460, bottom: 2060, height: 1600, left: 0, right: 400, width: 400, x: 0, y: 460, toJSON: () => ({}) });
+    Object.defineProperty(window, 'innerHeight', { value: 900, configurable: true });
+    const wait = startLoading(region, 'first', loading({ set: { first: 'spinner' } }));
+    jest.advanceTimersByTime(150);
+    const ring = loader(region) as HTMLElement;
+    // The grid's middle where the part in view has its own: 220 px in, so the far end padded 1600 − 440.
+    expect(ring.style.paddingBlockEnd).toBe('1160px');
+    expect(ring.style.paddingBlockStart).toBe('');
+    wait.stop();
+    // Whole in view: centred in it, nothing padded.
+    region.getBoundingClientRect = () => ({ top: 100, bottom: 500, height: 400, left: 0, right: 400, width: 400, x: 0, y: 100, toJSON: () => ({}) });
+    const whole = startLoading(region, 'first', loading({ set: { first: 'spinner' } }));
+    jest.advanceTimersByTime(150);
+    expect((loader(region) as HTMLElement).getAttribute('style')).toBeNull();
+    whole.stop();
   });
 
   it('hands the app’s own drawing its container and signal, again as it turns slow and as it fails; Fieldia cleans up', () => {

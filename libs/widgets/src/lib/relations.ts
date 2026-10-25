@@ -367,7 +367,13 @@ function combobox(options: {
     if (!hint || !options.typed) return;
     const words = noMatchWords(text, several);
     hint.show(shown ? `${words}. ${fill(labels.stillHolds, { label: options.typed.label, value: shown })}` : words);
+    saidFor = stillShown(options.typed.form);
   }
+  /**
+   * The record what was said under the box is about: it is that record's, taken away as another is shown in its place,
+   * it is loaded again or Discarded — never "nothing is called…" left under another customer's account manager.
+   */
+  let saidFor: (() => boolean) | null = null;
 
   // ---- words typed, read --------------------------------------------------------------------------------------
   // Enter reads them (the only match, else the exact name), and so does leaving the box (the exact name); a save,
@@ -602,6 +608,10 @@ function combobox(options: {
     input,
     setText(text) {
       shown = text;
+      if (saidFor && !saidFor()) {
+        saidFor = null;
+        hint?.hide();
+      }
       // Words the form keeps unread stay as typed, marked; anything else shows what the field holds.
       const kept = unreadNow();
       const want = kept && !pending ? kept.text : text;

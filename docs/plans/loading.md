@@ -24,10 +24,13 @@ the most specific winning setting by setting — with the viewer's hooks: its ev
 where the content will be, shaped like it. A record's form is drawn whole while its record comes, its boxes shown as
 skeleton bars under their labels (the labels are the page's, known before the record is); while the page's own parts
 are still coming, a skeleton made from the page's layout stands in its place — its groups, its fields' labels and
-boxes, as wide as they will be. A list draws skeleton rows in its own columns (as many as fit a page, up to eight), or
+boxes, as wide as they will be. Until its loader is drawn — its delay, its part on its way — what is not there yet is
+out of sight: a form's boxes under their labels where its shapes will stand in them, else all the place holds; never
+empty boxes before a skeleton. A list draws skeleton rows in its own columns (as many as fit a page, up to eight), or
 skeleton cards where its rows are cards (a phone, a gallery); a map is one skeleton block as tall as the map, until
-its map and its places are in; a saved form placed in a page, three skeleton bars in its place. `spinner` turns a ring (or three
-dots) in the middle of the place, `progress` runs a bar along its top (or across its middle: `inline`), `text` says
+its map and its places are in; a saved form placed in a page, and a list's timeline or calendar while its code comes,
+three skeleton bars from the top of its place, the first as wide as it. `spinner` turns a ring (or three
+dots) in the middle of the place — of what of it is in view, where it is taller than the window — `progress` runs a bar along its top (or across its middle: `inline`), `text` says
 "Loading…" there (what 0.31 did), `none` draws nothing (the region is still busy for a screen reader), `custom` lets
 the app draw.
 
@@ -55,8 +58,8 @@ shown.
 (0.31's), drawn after the delay and kept its minimum, the button free again as its steps end. `bar` runs a bar along
 the top of the form instead, `overlay` covers the form with a veil and a ring (nothing pressed or typed until it ends),
 `none` keeps only `aria-busy`, `custom`. A button stays busy — not pressed twice — in every case. A record's own Save
-steps aside while it saves, as it always has, its status saying "Saving…": under `bar` and `overlay` the form shows
-the save too.
+stays where it was pressed while it saves, busy, Discard stepping aside, its status saying "Saving…" (0.33 hid it): under
+`bar` and `overlay` the form shows the save too. A save that failed says so under the buttons, Save still in its place.
 
 ## Looks and timing
 
@@ -70,10 +73,14 @@ bar's height) — light and dark, and a host's own tokens set them as they set a
 ## When it fails
 
 `error: "inline"` (default): "Couldn't load." in the loader's place, with the source's own words when it gave any and
-a Retry that asks the same thing again — never an empty place. A list keeps its own sentence ("Could not load the
+a Retry that asks the same thing again — never an empty place — in the error's colour, a mark at its start that forced
+colours keep (the app's own drawing of it in its own look). A list keeps its own sentence ("Could not load the
 customers.") and Retry. `toast`: the place shows what it showed before (or stays empty, its Retry in the toast), and a
-toast says it with Retry. `custom`: the app's function is called again with `failed: true` and `retry`. A link's search
-that fails says "Couldn't search." in its list, with Retry.
+toast says it with Retry, naming what failed, away from its place among a page's forms: a part's own words for it (a
+list's "Could not load the customers.", a record's), the field it is in by its label ("Account manager: Couldn't
+search."). `custom`: the app's function is called again with `failed: true` and `retry`. A link's search that fails
+says "Couldn't search." in its list, with Retry, as wide as its box. A record that could not be loaded again (a
+reload, Retry) is said once, in its place — never a toast besides.
 
 ## Custom, events, always
 
@@ -101,8 +108,12 @@ loading part (`fieldia.loading.js`): the skeletons — a few bars, a form's boxe
 while its parts come (page-skeleton.ts) — the bars along the top and across the middle, the spinners, the overlay,
 and their tokens. A page that waits for its own parts asks for the loading part with them (it delays nothing: it comes
 alongside); a page whose record loads with nothing else to wait for asks for it as it mounts, not waiting for it; any
-other wait asks for it as it begins. Until it has come, a wait drawn the first time says "Loading…" in words, any
-other is a screen reader's alone, and each is drawn as it says once it has. A page, a part of it or an app that names
+other wait asks for it as it begins; `loadParts(page)` loads it where the viewer would wait for it with the page's
+parts, and a viewer whose page's parts are in already asks for it as it mounts where its data waits draw from it. Until
+it has come, a wait drawn the first time draws nothing more — its place as it is, what is not there yet out of sight, a
+screen reader told — and is drawn as it says once it has: never "Loading…" in words, then its shapes, two loaders one
+after the other (0.33's map did); in words only where the part could not come, or is still on its way as the wait turns
+slow. Any other is a screen reader's alone until it has. A page, a part of it or an app that names
 a spinner or the overlay has it waited for with the page's parts. A list's skeleton rows and cards are the list's and
 the cards' parts'; a map's block is @fieldia/map's.
 
@@ -121,6 +132,7 @@ docs/plans/wave1-contract.md §39), and carries that deadline's `signal`. The de
 shorter than the deadline says "It took too long." and tells a list's request to stop; one longer never fires, the
 deadline ending the request, and its wait with it, first. A record's load that fails is said in its place in core's
 words for it (`state.loadProblem`: "This customer could not be loaded: …") with Retry, which loads it; a record
-opened in another's place (`openRecord`) holds none of the other's values while it loads, and one that cannot be is
-named by its id ("Couldn't open customer 32: …"). Next rows that could not come stay said, with Retry: the list's end
+opened in another's place (`openRecord`) holds none of the other's values while it loads — nor its related lists' rows,
+a skeleton standing in their place — and one that cannot be is named by its id ("Couldn't open customer 32: …"), no
+related records listed under it. Next rows that could not come stay said, with Retry: the list's end
 in sight asks nothing by itself until the person presses it.

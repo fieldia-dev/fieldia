@@ -100,11 +100,18 @@ set) the wait ends as failed, with Retry, and a list's request is told to stop
 wait's `loading.timeout` ends the loader, and where both are set the sooner
 ends the wait — said once, with one Retry. A record that could not be loaded is
 said at the top of the form, in its own words ("This customer could not be
-loaded: …"), with Retry, which loads it. A failure says why in its place — "Could not load the customers.
-The archive is offline. Retry", "Couldn't load." with the source's own words —
-or in a toast (`error: "toast"`), or as the app draws it (`custom`); never an
-empty place. A record's Save steps aside while it saves, as before: its status
-says "Saving…". What a person has open stays theirs: a popup open as a part is
+loaded: …"), with Retry, which loads it; one opened in another's place shows
+none of the other's values, nor its related lists' rows, while it comes. A
+failure says why in its place, in the error's colour with a mark at its start —
+"Could not load the customers. The archive is offline. Retry", "Couldn't load."
+with the source's own words — or in a toast (`error: "toast"`), naming what
+failed ("Could not load the customers.", "Account manager: Couldn't search."),
+or as the app draws it (`custom`); never an empty place. A record's Save stays
+where it was pressed while it saves, busy, its status saying "Saving…"; one
+that failed says so under the buttons, Save still in its place. Drawn the first
+time, a part shows nothing of what is not there yet — never empty boxes before
+its skeleton — and a ring or words over a place taller than the window stand in
+the middle of what of it is in view. What a person has open stays theirs: a popup open as a part is
 asked again (a date's calendar, a box's list, a filter's menu) keeps what is
 shown under a thin bar, whatever the way set, and a popup opened while a part
 waits is over the wait and takes its presses.
@@ -159,8 +166,10 @@ is `aria-busy`; a screen reader hears the wait once, politely (never once per
 row); a reader who asks for less motion sees nothing move; forced colours draw
 the shapes in the system's; right to left, the shimmer runs the page's way; on
 paper, no loader. In the one-tag script, the skeletons, bars, spinners and the
-overlay come in `fieldia.loading.js`, fetched with a page's other parts (until
-it comes, a wait drawn the first time says "Loading…" in words).
+overlay come in `fieldia.loading.js`, fetched with a page's other parts (and by
+`loadParts(page)`); a wait drawn the first time is drawn as it says once it has
+come — never "Loading…" in words first, then its shapes — and in words only
+where it could not come, or is still on its way as the wait turns slow.
 
 ## A public form: autofill and a bot check
 
@@ -1358,8 +1367,8 @@ work… — comes in 52 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
 folder the first time a page uses it:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.js"
-  integrity="sha256-VT8bNgbZIc1Z9PYq51txqMKXzGueIjLuyYMIgg/d0NQ="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia.js"
+  integrity="sha256-l3CAy5xYXyq3QM+g0FnTYFGU9mkbIC1PaOD91a0BJb8="
   crossorigin="anonymous"></script>
 <script>
   Fieldia.mountViewer(document.getElementById('app'), {
@@ -1374,11 +1383,11 @@ or Spanish, add that language's script after it (about 17–22 KB gzipped each),
 then pass `locale`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.js"
-  integrity="sha256-VT8bNgbZIc1Z9PYq51txqMKXzGueIjLuyYMIgg/d0NQ="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia.js"
+  integrity="sha256-l3CAy5xYXyq3QM+g0FnTYFGU9mkbIC1PaOD91a0BJb8="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.ar.js"
-  integrity="sha256-CI+47/ebYS9D3EKVKZYgEdRdzcuQezY9aIi+hJQf6AI="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia.ar.js"
+  integrity="sha256-Ln/Qn9GnMi+NIXrum509DHGnVIgaXjahnqg1+QguqOg="
   crossorigin="anonymous"></script>
 <script>
   Fieldia.mountViewer(element, { page, dataSource, locale: 'ar' });
@@ -1390,23 +1399,23 @@ script per language the page is shown in:
 
 ```html
 <!-- German, French, Turkish, Persian, Urdu, Spanish -->
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.de.js"
-  integrity="sha256-JTCAptRFa3evATpAgF6cf4ThAdLKsJZWxZxqKpPtEMM="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia.de.js"
+  integrity="sha256-OMGJiF8Xvq/mt7NT9xhM4LwNBvieKwtzYutLprqW4aw="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.fr.js"
-  integrity="sha256-55OhaPOtKWTjuABdXaYbs2Vm+zptuFxgg9FJhQavYO4="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia.fr.js"
+  integrity="sha256-z85KTA22i81oleSCkOlMrUEjIczkd0TtlFah5r0N+/8="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.tr.js"
-  integrity="sha256-fnYTvpnutuGzU048VLDYt07dZHpHX3p+cHKNULFkEFU="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia.tr.js"
+  integrity="sha256-14zS0UYi9SJk8zSMNuFMbo5IAOUvh/yl+c3i4vf02Ak="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.fa.js"
-  integrity="sha256-Jt2YntNUjAEZhPspKDOthmspdzfFclMNPcFOft3D8gw="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia.fa.js"
+  integrity="sha256-DNpl92aXoq/AO/zXwqnBDEr5gIMdhPoZ8eIyCHqCyec="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.ur.js"
-  integrity="sha256-OCYa7dkf2GKZlhnZUf32UFMkoH4hHmyeZViVJTyHe88="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia.ur.js"
+  integrity="sha256-lednZn93mrQkqpcETD6g1oYdGRzua/8WfmbkINOvvCU="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.es.js"
-  integrity="sha256-ozIpVWWsYZFDa6NUtNoVC4ohoQsJ7TEuvADOfJYv49k="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia.es.js"
+  integrity="sha256-aoJ4WB1NTQ7CG5CXyaS5lOxLCPZGfD7Wd4fY3CyXqGw="
   crossorigin="anonymous"></script>
 ```
 
@@ -1459,8 +1468,8 @@ record's page saves through its `source`. An app built with a bundler calls
 `defineFieldiaForm()` once.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia.js"
-  integrity="sha256-VT8bNgbZIc1Z9PYq51txqMKXzGueIjLuyYMIgg/d0NQ="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia.js"
+  integrity="sha256-l3CAy5xYXyq3QM+g0FnTYFGU9mkbIC1PaOD91a0BJb8="
   crossorigin="anonymous"></script>
 <fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" locale="ar"></fieldia-form>
 ```
@@ -1480,8 +1489,8 @@ sites from framing it at all. The tag passes on `data-locale`, `data-theme`,
 names), for a page that fills hidden fields from its link.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.0/bundle/fieldia-embed.js"
-  integrity="sha256-mDsSiA8jfupX1ZoAHmvc2ab2hMW6L79ZGCxAFP674JY="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.34.1/bundle/fieldia-embed.js"
+  integrity="sha256-M4ybN0XwEkO7sSQ4AvTQJ9EgLscQpW7mzm43iW1rnZU="
   crossorigin="anonymous"
   data-src="https://forms.example.com/enquiry" data-locale="ar" async></script>
 ```
