@@ -65,7 +65,10 @@ describe('a save that waits for files on their way', () => {
     button('Save').click();
     await tick();
     expect(status()).toBe('2 files still uploading. Saving when they are done.');
-    expect(button('Save').hidden).toBe(true);
+    // Save stays where it was pressed, busy, while the save waits (the owner's walk of 0.33.0: it never looked busy).
+    expect(button('Save').hidden).toBe(false);
+    expect(button('Save').getAttribute('aria-busy')).toBe('true');
+    expect(button('Discard').hidden).toBe(true);
     store.sent[0].end();
     await until(() => status().startsWith('1 file'));
     expect(status()).toBe('1 file still uploading. Saving when it is done.');
