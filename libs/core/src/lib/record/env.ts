@@ -66,6 +66,43 @@ export function lineContext(values: Values, fields: Record<string, LineField>, p
   return { ...names, ...expressionContext(values, fields) };
 }
 
+/** What stays the same for a form's life among what an expression reads: the person, the app's context, a line's record. */
+export const STILL: unique symbol = Symbol('still');
+
+/**
+ * What an expression on a record reads by a name it reads (its `fields`), as these values hold it: a field's value —
+ * the same object while it is unchanged, as every write keeps the values it does not touch — or the built-in's (`id`,
+ * `editing`); the rest is the same for the form's life (`STILL`). Two reads alike, the expression gives the same.
+ */
+export function readOf(values: Values, fields: Record<string, unknown>, name: string, about: () => About): unknown {
+  if (name in fields || Object.prototype.hasOwnProperty.call(values, name)) return values[name];
+  if (name === 'id') return about().recordId ?? null;
+  if (name === 'editing') return about().editing ?? true;
+  return STILL;
+}
+
+/**
+ * What a line's expressions read of the record the line is on, by the paths they read (`parent.state`): its names'
+ * values, as `readOf` gives them; null where one reads the record whole (`parent` alone), which nothing then keeps.
+ */
+export function parentReads(paths: readonly string[]): string[] | null {
+  const names: string[] = [];
+  for (const path of paths) {
+    if (path === 'parent') return null;
+    if (!path.startsWith('parent.')) continue;
+    const name = path.split('.')[1];
+    if (!names.includes(name)) names.push(name);
+  }
+  return names;
+}
+
+/** Whether two lists of what was read are the same, one by one. */
+export function sameReads(a: readonly unknown[], b: readonly unknown[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
 /** What a form hands every expression of the app's own: its functions, and the answers of those that ask (`ExpressionEnv`). */
 export type AppReads = Pick<ExpressionEnv, 'functions' | 'answer'>;
 

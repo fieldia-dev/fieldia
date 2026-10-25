@@ -298,6 +298,22 @@ export const FUNCTIONS: ReadonlyMap<string, ExpressionFunction> = new Map<string
   ...IN_PART.map(([name, least, most]): [string, ExpressionFunction] => [name, inPart(name, [least, most], name === 'average' ? averageCheck : undefined)]),
 ]);
 
+/** Fieldia's plain functions whose value follows from the values they are given alone: no clock, no answer awaited. */
+const STEADY = new Set(['round', 'abs', 'min', 'max', 'len', 'sum', 'count', 'days', 'if']);
+/** Those of the functions part that are so too, once the part has come: every one but `age`, which reads today. */
+const STEADY_IN_PART = new Set(IN_PART.map(([name]) => name).filter((name) => name !== 'age'));
+
+/**
+ * Whether an expression calling these functions gives the same value for the same values it reads, whenever it is
+ * worked out — what lets a form keep what it worked out until what it reads changes. Not one calling today(), `age`,
+ * an app's own function, or one of the functions part's before that part has come (it waits for it meanwhile).
+ */
+export function steadyCalls(calls: readonly string[] | undefined): boolean {
+  if (!calls) return false;
+  for (const name of calls) if (!STEADY.has(name) && !(STEADY_IN_PART.has(name) && functionsPart.loaded)) return false;
+  return true;
+}
+
 /** How many values a function takes, in words: "round takes 1 or 2 values". */
 export function takesInWords(name: string, [least, most]: readonly [number, number]): string {
   if (most === 0) return `${name} takes no values`;

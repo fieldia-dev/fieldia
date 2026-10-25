@@ -314,6 +314,8 @@ export { formUploadsPart, uploadGoing, UPLOADS_AT_ONCE, type FileUpload, type Fo
 export { uploadTo } from './lib/record/upload-to-later';
 export type { UploadAnswer, UploadTarget, UploadToOptions } from './lib/record/upload-to';
 export { hostScheduler, wait, type Scheduler } from './lib/record/scheduler';
+// What a change costs, counted, and the plain way to work it out that the quick way is held to (0.35).
+export { recomputeInFull, workCounts } from './lib/record/work';
 export {
   createForm,
   unsavedWork,

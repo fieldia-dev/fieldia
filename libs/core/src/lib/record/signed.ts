@@ -31,7 +31,7 @@ export function signsAnswers(node: Pick<FieldNode, 'options'>): boolean {
 
 /** The fields a page draws as a signature that signs answers, wherever they stand: worked out once for each page. */
 const signing = new WeakMap<object, ReadonlySet<string>>();
-function signingFields(page: Pick<Page, 'layout'>): ReadonlySet<string> {
+export function signingFields(page: Pick<Page, 'layout'>): ReadonlySet<string> {
   let found = signing.get(page.layout);
   if (found) return found;
   const fields = new Set<string>();
