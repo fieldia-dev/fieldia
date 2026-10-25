@@ -1542,8 +1542,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // what they read changed (form.ts); a part brought up to date only once what it shows changed, the widgets that draw
 // from their own state saying so (viewer.ts, `changedBetween`; widgets.ts, `reads`); what a change costs counted, and
 // the plain way the quick one is held to (work.ts: `workCounts`, `recomputeInFull`). At 500 fields a key brings 9 parts
-// up to date of 560, reads no condition again of 2,000: 560.05 measured before, 567.44 after, to 567.5.
-const BUDGET_KB = 567.5;
+// up to date of 560, reads no condition again of 2,000: 560.05 measured before, 567.71 after, to 567.8.
+const BUDGET_KB = 567.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1882,8 +1882,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // before, 186.02 after, to 186.1.
 // 0.34.1, the walk's waits (listed with the raw budget above): 186.06 measured before, 186.54 after, to 186.6.
 // 0.35's speed (perf-form): a change worked out only where it is read (listed with the raw budget above) — every page
-// types: 186.54 measured before, 189.40 after, to 189.4.
-const GZIP_BUDGET_KB = 189.4;
+// types: 186.54 measured before, 189.48 after, to 189.5.
+const GZIP_BUDGET_KB = 189.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
