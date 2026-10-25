@@ -487,10 +487,21 @@ test.describe('the code page, checked by axe', () => {
 
 test.describe('each language loaded only where a page shows it', () => {
   /** The demo's scripts the page has loaded, each with the packages it carries (the build names them in comments). */
+  /**
+   * The scripts the page loaded, each with the modules it holds by their paths: the demos' bundles are minified, so the
+   * paths are read from each one's source map, a file beside it.
+   */
   async function loaded(page: Page): Promise<string> {
     return page.evaluate(async () => {
       const scripts = performance.getEntriesByType('resource').map((entry) => entry.name).filter((url) => url.endsWith('.js'));
-      const texts = await Promise.all(scripts.map((url) => fetch(url).then((response) => response.text())));
+      const texts = await Promise.all(
+        scripts.map(async (url) => {
+          const code = await fetch(url).then((response) => response.text());
+          const map = /\/\/# sourceMappingURL=(\S+)\s*$/.exec(code)?.[1];
+          const sources: string[] = map ? ((await fetch(new URL(map, url)).then((response) => response.json()).catch(() => ({}))).sources ?? []) : [];
+          return `${code}\n${sources.join('\n')}`;
+        })
+      );
       return texts.join('\n');
     });
   }

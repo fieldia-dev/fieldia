@@ -12,10 +12,12 @@ const MARKUP = String.raw`<\/?[a-z][a-z0-9]*(\s[^<>]*)?\/?>`;
 test('no demo page draws a sample record’s markup as words', async ({ page }) => {
   await page.goto('/plain/?page=customer&skin=underline');
   await expect(page.locator('.fd-form').first()).toBeVisible();
-  await expect.poll(() => page.evaluate(() => Object.keys((window as any).fieldiaDemo?.pages ?? {}).length)).toBeGreaterThan(40);
-  const found = await page.evaluate((markup) => {
+  await expect.poll(() => page.evaluate(() => ((window as any).fieldiaDemo?.pageNames ?? []).length)).toBeGreaterThan(40);
+  const found = await page.evaluate(async (markup) => {
     const tag = new RegExp(markup, 'i');
-    const { pages, dataSource } = (window as any).fieldiaDemo as { pages: Record<string, any>; dataSource: { records: Record<string, Record<string, Record<string, unknown>>> } };
+    // Every page fetched: each demo page's JSON is a file of its own, which the demo fetches as it opens it.
+    const { allPages, dataSource } = (window as any).fieldiaDemo as { allPages(): Promise<Record<string, any>>; dataSource: { records: Record<string, Record<string, Record<string, unknown>>> } };
+    const pages = await allPages();
     const wrong: string[] = [];
     let checked = 0;
     /** The fields a page draws in a code editor, wherever its nodes are. */
@@ -55,9 +57,11 @@ test('no demo page draws a sample record’s markup as words', async ({ page }) 
 test('every demo page’s field holds its kind in its model’s sample records: a date a day, a date and time a time, a number a number, a link its id and name', async ({ page }) => {
   await page.goto('/plain/?page=customer&skin=underline');
   await expect(page.locator('.fd-form').first()).toBeVisible();
-  await expect.poll(() => page.evaluate(() => Object.keys((window as any).fieldiaDemo?.pages ?? {}).length)).toBeGreaterThan(40);
-  const found = await page.evaluate(() => {
-    const { pages, dataSource } = (window as any).fieldiaDemo as { pages: Record<string, any>; dataSource: { records: Record<string, Record<string, Record<string, unknown>>> } };
+  await expect.poll(() => page.evaluate(() => ((window as any).fieldiaDemo?.pageNames ?? []).length)).toBeGreaterThan(40);
+  const found = await page.evaluate(async () => {
+    // Every page fetched: each demo page's JSON is a file of its own, which the demo fetches as it opens it.
+    const { allPages, dataSource } = (window as any).fieldiaDemo as { allPages(): Promise<Record<string, any>>; dataSource: { records: Record<string, Record<string, Record<string, unknown>>> } };
+    const pages = await allPages();
     const DAY = /^\d{4}-\d{2}-\d{2}$/;
     const INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
     /** Why a value is not of its kind, or null where it is. */
