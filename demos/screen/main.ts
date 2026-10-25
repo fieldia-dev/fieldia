@@ -12,6 +12,9 @@ import { demoAssistant } from '../shared/assistant';
 import { timeFirstPaint } from '../shared/timing';
 import layoutPage from '../../examples/pages/layout.page.json';
 import addressPage from '../../examples/pages/address.page.json';
+import homesPage from '../../examples/pages/map-homes.page.json';
+import orderPage from '../../examples/pages/map-order.page.json';
+import kitchenPage from '../../examples/pages/map-kitchen.page.json';
 
 /**
  * The screen editor on its own page, opened on a small site-visit screen,
@@ -146,9 +149,13 @@ store.pages.set('customer-card', { draft: null, versions: [published(customerPag
 const start = params.get('start');
 // `?start=clinic`: a clinic's appointments, a list on a calendar (its Calendar in the list's panel, and Try it with it);
 // `?start=fitout`: a café's fit-out, a list on a timeline (its Timeline there, and Try it with it).
-// The demos' page a start opens, fetched: each one's JSON is a file of its own (shared/lazy-page.ts).
-const STARTS: Record<string, string> = { clinic: 'clinic-calendar', fitout: 'fitout-plan', homes: 'map-homes', order: 'map-order', kitchen: 'map-kitchen', big: 'big' };
-const startPage = start && (start in STARTS || start.startsWith('template-')) ? await pageOf(pages[STARTS[start] ?? start]) : undefined;
+// The demos' page a start opens, there as it opens: the map's homes, an order and a kitchen their own files here, the
+// clinic's calendar, the fit-out's timeline and a template's page the demos' own; the 500 fields' alone fetched first
+// (shared/lazy-page.ts).
+const OWN: Record<string, Page> = { homes: homesPage as unknown as Page, order: orderPage as unknown as Page, kitchen: kitchenPage as unknown as Page };
+const SHARED: Record<string, string> = { clinic: 'clinic-calendar', fitout: 'fitout-plan' };
+const shared = start && (start in SHARED || start.startsWith('template-')) ? pages[SHARED[start] ?? start] : undefined;
+const startPage = start === 'big' ? await pageOf(pages['big']) : start && OWN[start] ? OWN[start] : typeof shared === 'function' ? await shared() : shared;
 const onCalendar = (start === 'clinic' || start === 'fitout') && startPage ? (structuredClone(startPage) as Page) : null;
 const model = onCalendar ? onCalendar.fields : start === 'sheet' || start === 'list' ? customer : start === 'homes' || start === 'order' || start === 'kitchen' ? startPage?.fields : undefined;
 // `?start=template-<id>`: a page of the template library, to change. A survey's steps are the survey editor's (designer/).

@@ -2,11 +2,11 @@ import type { Locale, Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, designerWordsReady, mountSurveyEditor } from '@fieldia/designer';
 import { demoFunctions } from '../shared/functions';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
-import { pageOf } from '../shared/lazy-page';
 import type { Skin } from '@fieldia/viewer';
 import { APP_WIDGETS, appKinds } from '../shared/app-kinds';
 import { demoAssistant } from '../shared/assistant';
 import { bigSurvey } from '../shared/big-page';
+import surveyPage from '../../examples/pages/survey.page.json';
 import { timeFirstPaint } from '../shared/timing';
 
 /**
@@ -26,8 +26,10 @@ if (params.get('dir') === 'rtl') Object.assign(document.documentElement, { dir: 
 const store = createMemoryPageStore();
 // `?start=template-<id>`: a survey of the template library, in steps, to change. Screens are the screen editor's (screen/).
 const asked = params.get('start') ?? '';
-// The page it starts on, fetched: each demo page's JSON is a file of its own (shared/lazy-page.ts).
-const askedPage = asked.startsWith('template-') || asked === 'survey' ? await pageOf(pages[asked]) : asked === 'big' ? await bigSurvey() : undefined;
+// The page it starts on, there as it opens: the example survey its own file here, a template's page; the 500 fields'
+// alone fetched first (shared/lazy-page.ts).
+const source = asked === 'survey' ? (surveyPage as unknown as Page) : asked.startsWith('template-') ? pages[asked] : undefined;
+const askedPage = asked === 'big' ? await bigSurvey() : typeof source === 'function' ? await source() : source;
 const template = asked.startsWith('template-') && askedPage?.layout.type === 'wizard' ? askedPage : undefined;
 // The designer's words in Turkish, Persian, Urdu or Spanish come in a chunk of their own: fetched before it is made.
 void designerWordsReady(locale).then(() => {
