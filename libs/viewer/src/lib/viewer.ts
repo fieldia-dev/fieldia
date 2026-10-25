@@ -359,6 +359,9 @@ export interface ViewerHandle {
   destroy(): void;
 }
 
+/** The one-tag script's version, which its build writes in (tools/script-bundle.mjs); none in the packages. */
+declare const __FIELDIA_VERSION__: string | undefined;
+
 /**
  * A part's updater: what it draws from the state, with what changed since the state drawn last (`changes`: left out, or
  * null, where anything may have). One left alone, as what it shows did not change, says so (`SKIPPED`).
@@ -3319,22 +3322,24 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const unsubscribe = form.subscribe(render);
   // Words that come after the page was drawn — its language's chunk late, past the wait for it (words-chunks.ts) — and
   // every part is drawn again in them: they are an input of each (`wordsVersion`, in `watch`), however quick the way a
-  // change is worked out; the form says its problems again in them as they come. Drawn once, a moment after.
+  // change is worked out; the form says its problems again in them as they come. Drawn once, a moment after. The
+  // packages' alone: the one-tag script's languages are its add-ons, in before a page is drawn in one.
   let wordsDue = false;
-  cleanups.push(
-    onWordsCame(() => {
-      if (wordsDue) return;
-      wordsDue = true;
-      queueMicrotask(() => {
-        wordsDue = false;
-        if (gone) return;
-        // What the viewer said of its own meanwhile — a wait's "Loading…" to a screen reader, its banner, its status —
-        // in them too, as the page drawn once they came has it (`inOwnWords`).
-        inOwnWords(ownParts(), locale);
-        if (pageDrawn) renderNow();
-      });
-    })
-  );
+  if (typeof __FIELDIA_VERSION__ === 'undefined')
+    cleanups.push(
+      onWordsCame(() => {
+        if (wordsDue) return;
+        wordsDue = true;
+        queueMicrotask(() => {
+          wordsDue = false;
+          if (gone) return;
+          // What the viewer said of its own meanwhile — a wait's "Loading…" to a screen reader, its banner, its status —
+          // in them too, as the page drawn once they came has it (`inOwnWords`).
+          inOwnWords(ownParts(), locale);
+          if (pageDrawn) renderNow();
+        });
+      })
+    );
   // A run that could not go on says why: a step that cannot run here, or what the app threw. A stop with words the form says itself
   // — and a record that could not be loaded again (a reload step, `reload()`), said once, in its place, with its Retry.
   cleanups.push(

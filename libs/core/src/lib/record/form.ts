@@ -89,6 +89,9 @@ import { intlFormat } from '../intl-format';
 import { recomputeInFull, workCounts } from './work';
 import { sayAgainAsWordsCome, sayNoMore, wordsVersion } from './words-chunks';
 
+/** The one-tag script's version, which its build writes in (tools/script-bundle.mjs); none in the packages. */
+declare const __FIELDIA_VERSION__: string | undefined;
+
 export type FormStatus = 'idle' | 'loading' | 'ready' | 'saving' | 'saved' | 'error';
 
 export interface FormState {
@@ -5005,20 +5008,23 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const continued = offerDraft();
     void track(Promise.resolve(continued).then(opening));
   }
-  // Words that come after it said its problems and warnings — a language's chunk that came late, a language given — and
-  // it says them again in those words: each kept problem has the words' version among its inputs, so each is found
-  // again. Only what is shown is said again, never taken away or added: a problem said stays said, in its new words.
-  sayAgainAsWordsCome(form, () => {
-    if (disposed) return;
-    const reworded = <T extends Record<string, string>>(shown: T, fresh: Record<string, string>): T => {
-      let out: Record<string, string> | null = null;
-      for (const key of Object.keys(shown)) if (fresh[key] && fresh[key] !== shown[key]) (out ??= { ...shown })[key] = fresh[key];
-      return (out ?? shown) as T;
-    };
-    const errors = Object.keys(state.errors).length ? reworded(state.errors, revalidateShown(state.values)) : state.errors;
-    const warnings = Object.keys(state.warnings).length ? reworded(state.warnings, collectWarnings()) : state.warnings;
-    if (errors !== state.errors || warnings !== state.warnings) set({ errors, warnings });
-  });
+  // Words that come after it said its problems and warnings — a language's chunk that came late — and it says them again
+  // in those words: each kept problem has the words' version among its inputs, so each is found again. Only what is
+  // shown is said again, never taken away or added: a problem said stays said, in its new words. The packages' alone:
+  // the one-tag script's languages are its add-ons, in before a page is drawn in one (it has no `__FIELDIA_VERSION__`
+  // but there, where this is left out of it).
+  if (typeof __FIELDIA_VERSION__ === 'undefined')
+    sayAgainAsWordsCome(form, () => {
+      if (disposed) return;
+      const reworded = <T extends Record<string, string>>(shown: T, fresh: Record<string, string>): T => {
+        let out: Record<string, string> | null = null;
+        for (const key of Object.keys(shown)) if (fresh[key] && fresh[key] !== shown[key]) (out ??= { ...shown })[key] = fresh[key];
+        return (out ?? shown) as T;
+      };
+      const errors = Object.keys(state.errors).length ? reworded(state.errors, revalidateShown(state.values)) : state.errors;
+      const warnings = Object.keys(state.warnings).length ? reworded(state.warnings, collectWarnings()) : state.warnings;
+      if (errors !== state.errors || warnings !== state.warnings) set({ errors, warnings });
+    });
   return {
     form,
     take(values, how) {
