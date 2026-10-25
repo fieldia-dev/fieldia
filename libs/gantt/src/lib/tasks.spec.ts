@@ -63,7 +63,9 @@ describe('a record as a bar', () => {
     const records = fitoutRecords();
     records[1] = { ...records[1], after: [{ id: 1, label: 'Strip the old shop' }, { id: 99, label: 'Gone' }] };
     const links = linksOf(tasksOf(listed(records), spec(), page, 'en'));
-    expect(links.map((l) => `${l.from.title} → ${l.to.title}${l.late ? ' (late)' : ''}`)).toEqual(['Strip the old shop → Wiring', 'Wiring → Plastering', 'Wiring → Painting (late)']);
+    // In the bars' order, whatever order the records came in.
+    expect(links.map((l) => `${l.from.title} → ${l.to.title}${l.late ? ' (late)' : ''}`)).toEqual(['Strip the old shop → Wiring', 'Wiring → Painting (late)', 'Wiring → Plastering']);
+    expect(linksOf(tasksOf(listed(records).reverse(), spec(), page, 'en')).map((l) => `${l.from.title} → ${l.to.title}`)).toEqual(links.map((l) => `${l.from.title} → ${l.to.title}`));
     // Plain ids are read too.
     records[3] = { ...records[3], after: [2] };
     expect(linksOf(tasksOf(listed(records), spec(), page, 'en')).some((l) => l.to.title === 'Plastering' && l.from.title === 'Wiring')).toBe(true);

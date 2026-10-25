@@ -83,9 +83,12 @@ export function tasksOf(records: readonly ListedRecord[], spec: ListGantt, page:
   });
 }
 
-/** Bars in their order: by start (those with none last), then by end, then by their words. */
+/** Bars in their order: by start (those with none last), then by end, then by their words, then by their records' ids. */
 export const inOrder = (a: GanttTask, b: GanttTask) =>
-  (a.start?.getTime() ?? Infinity) - (b.start?.getTime() ?? Infinity) || (a.end?.getTime() ?? Infinity) - (b.end?.getTime() ?? Infinity) || a.title.localeCompare(b.title);
+  (a.start?.getTime() ?? Infinity) - (b.start?.getTime() ?? Infinity) || (a.end?.getTime() ?? Infinity) - (b.end?.getTime() ?? Infinity) || a.title.localeCompare(b.title) || idOrder(a, b);
+
+/** Records by their ids, as their source keeps them: an order that is the same whatever order they came in. */
+const idOrder = (a: GanttTask, b: GanttTask) => (String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0);
 
 /** A group of bars under its heading, with the span they take together. */
 export interface GanttGroup {
@@ -133,7 +136,8 @@ export interface GanttLink {
 export function linksOf(tasks: readonly GanttTask[]): GanttLink[] {
   const byId = new Map(tasks.map((task) => [String(task.id), task]));
   const links: GanttLink[] = [];
-  for (const to of tasks) {
+  // In the bars' order: the same arrows in the same order, whatever order the records came in.
+  for (const to of [...tasks].sort(inOrder)) {
     for (const key of new Set(to.waitsFor)) {
       const from = byId.get(key);
       if (!from || from === to) continue;

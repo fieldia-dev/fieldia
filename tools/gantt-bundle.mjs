@@ -43,6 +43,13 @@
  * 0.34.1 (the owner's walk of 0.33.0): the timeline's place waits as the list says while its code comes — its skeleton,
  * never an empty space under the list's search — the timeline's first wait going on from it (list-view.ts): with the
  * page 816 bytes measured before, 865 after, to 0.9; the timeline 15,799, 15,834, inside its 15.5.
+ * 0.35's speed (perf-form): a bar moved, and a change of scale, written in place — the bar, its row among its group's,
+ * its group's span, the arrows and what they make late; at another scale each bar moved, the axis, its lines and the
+ * arrows drawn anew — every row, name and bar kept, nothing laid out until the browser draws it (gantt-view.ts,
+ * `inPlace`; the arrows and the rows in an order that is the same whatever order the records come in, tasks.ts). At 500
+ * tasks a drop went from 10,031 elements drawn and 17 forced layouts to 7 and 1 (198 → 30 ms on a desktop, 1,057 → 186
+ * at 4× CPU), a zoom from 4,749 to 543 (89 → 53 ms, 491 → 268): 15,834 bytes measured before, 16,887 after, to 16.5;
+ * with the page 865, inside its 0.9.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -51,7 +58,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.9, gantt: 15.5 };
+const BUDGET = { page: 0.9, gantt: 16.5 };
 const LANGUAGE_BUDGET = { tr: 0.8, fa: 1.0, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });
