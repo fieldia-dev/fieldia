@@ -42,12 +42,15 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * the stylesheets minified as the one-tag script's are (tools/minified-styles.mjs): a record form 233.8 / 305.7 (64); in
  * Arabic 233.8 / 327.9 (67: its three words' chunks); a list 233.0 / 297.6 (61); the designer 577.8 (74) / 785.7 (83:
  * the format's schemas, asked for as it opens, beside its canvas's parts).
+ * 0.35's merge, set once from the merged build: perf-lists' window in the list's part and its lines' in theirs, and
+ * perf-form's quick way in every form and viewer (and the designer's drafts): a record form 237.5 / 310.3 (57 / 64); in
+ * Arabic 237.5 / 332.5 (57 / 67); a list 236.7 / 305.2 (57 / 61); the designer 583.2 / 796.0 (74 / 83).
  */
 const BUDGET = {
-  record: { page: 238.5, usable: 311.8, files: 70 },
-  'record-ar': { page: 238.5, usable: 334.5, files: 73 },
-  list: { page: 237.7, usable: 303.6, files: 67 },
-  designer: { page: 589.4, usable: 801.4, files: 90 },
+  record: { page: 242.3, usable: 316.6, files: 70 },
+  'record-ar': { page: 242.3, usable: 339.2, files: 73 },
+  list: { page: 241.5, usable: 311.3, files: 67 },
+  designer: { page: 594.9, usable: 811.9, files: 90 },
 };
 
 /** A record of the customer page's, with the fields it shows. */

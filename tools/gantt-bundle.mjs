@@ -53,6 +53,8 @@
  * tasks a drop went from 10,031 elements drawn and 17 forced layouts to 7 and 1 (198 → 30 ms on a desktop, 1,057 → 186
  * at 4× CPU), a zoom from 4,749 to 543 (89 → 53 ms, 491 → 268), each row it keeps reading its record as it now stands:
  * 15,834 bytes measured before, 16,960 after, to 16.6; with the page 865, 866, inside its 0.9.
+ * 0.35's merge, set once from the merged build: perf-bytes' words out of the timeline and perf-form's bars written in
+ * place, together — the timeline 15,320 bytes, to 15.0; with the page 765, to 0.8.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -61,7 +63,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.8, gantt: 15.5 };
+const BUDGET = { page: 0.8, gantt: 15.0 };
 const LANGUAGE_BUDGET = { ar: 0.9, de: 0.7, fr: 0.7, tr: 0.8, fa: 1.0, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });
