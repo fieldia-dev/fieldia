@@ -30,7 +30,9 @@ export const LOADING_PART_CSS = /* css */ `
 .fd-loader:is([data-way="skeleton"]:not([data-moment="more"]), [data-moment="refresh"][data-way="spinner"], [data-way="overlay"]) {
   position: absolute; inset: 0; z-index: 3; display: grid; align-content: center; justify-items: center; gap: 10px; padding: 16px;
 }
-.fd-loader[data-way="skeleton"] { align-content: start; justify-items: stretch; }
+/* A few bars from the top of its place, each as wide as it says — never two short ones in its middle, the first unseen:
+   as heavy as the rule over it, which it follows. */
+.fd-loader[data-way="skeleton"][data-moment] { align-content: start; justify-items: stretch; }
 .fd-loader[data-moment="more"][data-way="skeleton"] { display: grid; justify-content: stretch; inline-size: 100%; }
 .fd-loader:is([data-way="spinner"], [data-way="overlay"], [data-way="progress"]) > .fd-loader-words { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .fd-form [data-fd-wait="refresh"][data-fd-way="spinner"] > :not(.fd-loader, :has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) { opacity: 0.55; transition: opacity 0.2s; }
@@ -52,11 +54,12 @@ export const LOADING_PART_CSS = /* css */ `
 /* Over a form while it saves: a veil, a ring, nothing pressed or typed under it. */
 .fd-loader[data-way="overlay"] { background: color-mix(in srgb, var(--fd-surface) 72%, transparent); border-radius: inherit; pointer-events: auto; cursor: progress; }
 /* Shapes where the content will be: a few bars in its place, a list's rows, a form's boxes under their labels — a box
-   whose popup is open (its opener expanded) kept as it is, its popup over everything (styles-loading.ts). */
+   whose popup is open (its opener expanded) kept as it is, its popup over everything (styles-loading.ts); a box the
+   browser draws itself (WebKit's select) drawn as a shape too, none of it showing through. */
 .fd-sk { display: block; block-size: 0.9em; margin-block: 7px; border-radius: 4px; background-color: var(--fd-skeleton); }
 .fd-loader[data-way="skeleton"] > .fd-sk:nth-child(2) { inline-size: 82%; }
 .fd-loader[data-way="skeleton"] > .fd-sk:nth-child(3) { inline-size: 64%; }
-.fd-form [data-fd-shaped] .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size: 1.6em; border-color: transparent !important; box-shadow: none !important; color: transparent !important; background-color: var(--fd-skeleton) !important; border-radius: max(var(--fd-control-radius), 4px); }
+.fd-form [data-fd-shaped] .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size: 1.6em; border-color: transparent !important; box-shadow: none !important; color: transparent !important; background-color: var(--fd-skeleton) !important; border-radius: max(var(--fd-control-radius), 4px); appearance: none !important; }
 .fd-form [data-fd-shaped] .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :is(.fd-label + *, :first-child:not(.fd-label)) * { visibility: hidden; }
 .fd-form [data-fd-look="shimmer"] :is(.fd-sk, .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > .fd-label + *, .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :first-child:not(.fd-label)), .fd-loader[data-look="shimmer"] .fd-sk {
   background-image: linear-gradient(90deg, transparent 30%, var(--fd-skeleton-shine) 50%, transparent 70%) !important; background-size: 300% 100% !important; background-position: 100% 0; animation: fd-shimmer var(--fd-shimmer) linear infinite;
