@@ -1537,7 +1537,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.35 (perf-bytes), a host's tick boxes (NexiBI's request), on every page that draws a radio or a tick box: the tick,
 // the dot and the dash in proportion to the box at any --fd-tick-size, its press target 24px at the least, a corner of
 // its own (--fd-tick-radius), and the four tick tokens taken by the viewer's `tokens` (styles.ts, look.ts) — 573,495
-// bytes measured before, 573,824 after (+329: 560.05 to 560.38), to 560.4.
+// bytes measured before, 573,824 after (+329: 560.05 to 560.38); and a part's own word tables' words (a map's fields',
+// fetched as their part comes) waited for before a page is drawn in their language (viewer.ts), 19 more, 573,843 — to
+// 560.4.
 const BUDGET_KB = 560.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add

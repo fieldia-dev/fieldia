@@ -30,12 +30,9 @@ export interface AddressLabels {
 /** The words said under the box, which come with the suggestions' code (address-suggest.ts). */
 type SaidAfterAPick = 'notPlaced' | 'placedNear' | 'locateFailed';
 
-/** Turkish, Persian, Urdu and Spanish — UNREVIEWED: machine-assisted — in chunks of their own (locales/, `inChunks`). */
+/** Every language but English in chunks of their own (locales/, `inChunks`): Turkish, Persian, Urdu and Spanish UNREVIEWED, machine-assisted. */
 export const ADDRESS_LABELS = /* @__PURE__ */ inChunks<Omit<AddressLabels, SaidAfterAPick>>({
   en: { suggested: 'Suggestions: {n}', addressKind: 'Address search', settingPlace: 'Place goes into', settingParts: 'Parts go into', settingCountry: 'Addresses in', anywhere: 'Any country' },
-  ar: { suggested: 'الاقتراحات: {n}', addressKind: 'بحث عن عنوان', settingPlace: 'يُكتب المكان في', settingParts: 'تُكتب أجزاؤه في', settingCountry: 'العناوين في', anywhere: 'أي بلد' },
-  fr: { suggested: 'Suggestions : {n}', addressKind: 'Recherche d’adresse', settingPlace: 'Le lieu va dans', settingParts: 'Ses parties vont dans', settingCountry: 'Pays des adresses', anywhere: 'Tous les pays' },
-  de: { suggested: 'Vorschläge: {n}', addressKind: 'Adresssuche', settingPlace: 'Ort kommt in', settingParts: 'Teile kommen in', settingCountry: 'Land der Adressen', anywhere: 'Alle Länder' },
 }, 'address');
 
 /** An address field's words for a page's language, the maps' own with them, and the app's own over both. */

@@ -2,7 +2,7 @@ import { createMemoryDataSource, type ListRequest, type Page, type ResolvedFilte
 import type { ListViewContext } from '@fieldia/viewer';
 import { mountListMap } from './embed';
 import { fill, LIST_MAP_LABELS, MAP_LABELS } from './labels';
-import { mapListViews } from './list-view';
+import { mapListViews } from './map-parts';
 import { tiles } from './providers';
 import { EMBED_CSS } from './styles';
 

@@ -2767,7 +2767,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // A record that opened meanwhile: its focused field takes the focus now, as it would have then.
       if (opened) focusAsOpened(true);
     };
-    drawn = Promise.all([settleParts(awaited), words]).then(() => (checked.later?.length ? checkedWhole().then(drawWaited) : drawWaited()));
+    // A part may bring word tables of its own (a map's fields'): their words in the page's language, asked for as it came,
+    // waited for too.
+    drawn = Promise.all([settleParts(awaited), words])
+      .then(() => words && wordsReady(tag))
+      .then(() => (checked.later?.length ? checkedWhole().then(drawWaited) : drawWaited()));
   }
   // A theme or the quiet skin the app gives, not the page, is worn as its part comes, the page drawn meanwhile
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.

@@ -143,7 +143,16 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
 // 0.34's merge: a card's and a pin's addresses through safeUrl (harden-edges), their words' formatters made once
 // (harden-perf) — for a place and an area 27,317 bytes measured before, 27,389 after, to 26.8; with a list's map
 // 49,375, 49,478, to 48.4; a list's map in a page of its own 33,663, 33,763, to 33.0.
-const BUDGET = { fields: 26.8, all: 48.4, embed: 33.0, leaflet: 47, routes: 2 };
+// 0.35 (perf-bytes): the map's own code in parts of their own (map-parts.ts), as the calendar's view is — a list's map
+// (`mapview`), a form's map (`formmap`) and the place, area and address fields (`mapwidgets`), each fetched the first
+// time a page shows what it draws, Leaflet asked for beside them — and the maps' words in Arabic, German and French in
+// chunks of their own, as every package's are: with the page, a place and an area 27,389 bytes measured before, 11,930
+// after (−56%), to 11.7; with a list's map and a form's 49,478, 13,584 (−73%), to 13.3; a list's map in a page of its
+// own 33,763, 10,860 (−68%), to 10.7. Each part against its own budget, with the chunks it shares with the others,
+// loaded with the first map that draws it (`PART_BUDGET`): a list's map 22,037 bytes, a form's 19,826, the fields'
+// 18,379 measured, to 21.6, 19.5 and 18.0.
+const BUDGET = { fields: 11.7, all: 13.3, embed: 10.7, leaflet: 47, routes: 2 };
+const PART_BUDGET = { 'view-part': 21.6, 'form-part': 19.5, 'widgets-part': 18.0 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
@@ -178,13 +187,33 @@ async function measure(name, exports) {
   const sizes = Object.keys(outputs).filter((path) => path.endsWith('.js')).map((path) => {
     const text = readFileSync(path);
     const file = path.split('/').pop();
-    const leaflet = !withPage.has(path) && /Leaflet|leaflet-container/.test(String(text));
+    // Leaflet's chunk by what it is made of — Leaflet and its stylesheet — never by its words: the maps' own styles name
+    // .leaflet-container too, in a chunk of their own since 0.35 (map-parts.ts).
+    const inputs = Object.keys(outputs[path].inputs);
+    const leaflet = !withPage.has(path) && inputs.some((input) => /node_modules\/leaflet\/|lib\/leaflet-css\.ts$/.test(input));
     const routes = !withPage.has(path) && !leaflet && /route\/v1|computeRoutes|route\/directions/.test(String(text));
     return { file, raw: text.length, gzip: gzipSync(text).length, leaflet, routes, later: !withPage.has(path) };
   });
   for (const s of sizes) console.log(`${name} · ${s.file}: ${(s.raw / 1024).toFixed(1)} KB, ${(s.gzip / 1024).toFixed(1)} KB gzipped${s.leaflet ? ' (Leaflet, loaded with the first map)' : s.routes ? ' (routes, loaded with the first route)' : s.later ? ' (loaded when first needed)' : ''}`);
   if (!sizes.some((s) => s.leaflet)) throw new Error('Leaflet is not in a chunk of its own: a page without a map would load it');
+  // Each of the map's parts, loaded the first time what it draws is shown: its chunk and those it imports outright, less
+  // what came with the page — never with the page.
+  const parts = {};
+  for (const part of Object.keys(PART_BUDGET)) {
+    const chunk = Object.keys(outputs).find((path) => outputs[path].entryPoint?.endsWith(`lib/${part}.ts`));
+    if (!chunk) continue;
+    if (withPage.has(chunk)) throw new Error(`${part} comes with the page: the map's code would be on every page that imports @fieldia/map`);
+    const closure = new Set();
+    const into = (path) => {
+      if (closure.has(path) || withPage.has(path) || !outputs[path]) return;
+      closure.add(path);
+      for (const used of outputs[path].imports) if (used.kind === 'import-statement') into(used.path);
+    };
+    into(chunk);
+    parts[part] = [...closure].reduce((sum, path) => sum + gzipSync(readFileSync(path)).length, 0);
+  }
   return {
+    parts,
     own: sizes.filter((s) => !s.later).reduce((sum, s) => sum + s.gzip, 0),
     leaflet: sizes.filter((s) => s.leaflet).reduce((sum, s) => sum + s.gzip, 0),
     routes: sizes.filter((s) => s.routes).reduce((sum, s) => sum + s.gzip, 0),
@@ -201,4 +230,10 @@ if (embed.own > BUDGET.embed * 1024) throw new Error(`@fieldia/map for a list's 
 if (all.leaflet > BUDGET.leaflet * 1024) throw new Error(`Leaflet's chunk is ${kb(all.leaflet)} KB gzipped, over its ${BUDGET.leaflet} KB budget`);
 if (!all.routes) throw new Error('The routes are not in a chunk of their own: every map would carry them');
 if (all.routes > BUDGET.routes * 1024) throw new Error(`The routes' chunk is ${kb(all.routes)} KB gzipped, over its ${BUDGET.routes} KB budget`);
+for (const [part, budget] of Object.entries(PART_BUDGET)) {
+  const size = all.parts[part];
+  if (!size) throw new Error(`The map's ${part} is not a chunk of its own`);
+  console.log(`@fieldia/map's ${part}: ${kb(size)} KB gzipped with the first map that draws it (budget ${budget}) — ${size} bytes`);
+  if (budget && size > budget * 1024) throw new Error(`The map's ${part} is ${kb(size)} KB gzipped, over its ${budget} KB budget`);
+}
 console.log(`@fieldia/map: ${kb(fields.own)} KB gzipped for a place and an area (budget ${BUDGET.fields}), ${kb(all.own)} KB with a list's map and a form's (budget ${BUDGET.all}), ${kb(embed.own)} KB for a list's map in a page of its own (budget ${BUDGET.embed}); Leaflet ${kb(all.leaflet)} KB with the first map (budget ${BUDGET.leaflet}); routes ${kb(all.routes)} KB with the first route (budget ${BUDGET.routes}) — ${fields.own}, ${all.own} and ${embed.own} bytes`);
