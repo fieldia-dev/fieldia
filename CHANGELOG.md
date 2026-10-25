@@ -121,6 +121,10 @@ merge changed its shape.
   (axe: nested interactive), by pointer and by its M key alike.
 - A dialog in a language fetched later is named in that language from the
   start; a file being imported reads yes and no in all 8 languages.
+- A ring or words over a place taller than the window stay in the middle of
+  what of it is in view as the place takes its size under them: a form whose
+  parts came after its wait began left its ring in the middle of the whole pane
+  (WebKit, one load in two once the npm chunks split further).
 - A Gantt bar's busy mark goes once its save answers (0.34 left it).
 - Page checks read each layout and each field once.
 - The site said Fieldia speaks 4 languages; it speaks 8.
@@ -202,6 +206,7 @@ owner accepts up to about 200. Of the parts, gzipped:
 - list 49.88 (45.99): the window — a view's height of rows round the view, the
   rest as data — and Ctrl/⌘+F's note; rows 7.35 (7.30);
 - lines 16.04 (15.08): a line drawn again only as its inputs change;
+- loading 3.06 (2.98): a ring kept centred as its place grows;
 - every other part within 0.03; the language add-ons by 0.04–0.06 each (the
   list's note; Arabic 21.54 from 21.49).
 
