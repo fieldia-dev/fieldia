@@ -50,7 +50,11 @@ export interface SearchListOptions {
   /** The value picked now: its row ticked, and where the list opens. */
   picked: () => string | null;
   pick: (value: string) => void;
-  words: { find: string; list: string; none: string; title: string; close: string };
+  /**
+   * Its words: `title` names it (the sheet's name: "Country of Phone"), `heading` heads it where it shows as a sheet —
+   * what it lists ("Country"), the field it opened from being the one just pressed; the title unless given.
+   */
+  words: { find: string; list: string; none: string; title: string; heading?: string; close: string };
 }
 
 export interface SearchList {
@@ -99,7 +103,7 @@ export function searchList(options: SearchListOptions): SearchList {
   const list = make('div', { id: listId, role: 'listbox', class: 'fd-lookup-rows', 'aria-label': words.list });
   const none = make('p', { class: 'fd-lookup-none', role: 'status', 'aria-live': 'polite' });
   const close = make('button', { type: 'button', class: 'fd-dialog-close fd-lookup-close', 'aria-label': words.close, title: words.close }, '×');
-  const head = make('div', { class: 'fd-lookup-head' }, make('h2', { id: `${id}-title`, class: 'fd-lookup-title' }, words.title), close);
+  const head = make('div', { class: 'fd-lookup-head' }, make('h2', { id: `${id}-title`, class: 'fd-lookup-title' }, words.heading ?? words.title), close);
   const panel = make('div', { class: 'fd-lookup-list', hidden: '' }, head, find, list, none);
 
   // Each row drawn once, the first time the list opens (a page of many phones draws none until then), its words folded
@@ -192,7 +196,9 @@ export function searchList(options: SearchListOptions): SearchList {
       panel.classList.add('fd-theme', 'fd-form-dialog', 'fd-lookup-sheet');
       setAttr(panel, 'role', 'dialog');
       setAttr(panel, 'aria-modal', 'true');
-      setAttr(panel, 'aria-labelledby', `${id}-title`);
+      // Named by its title, whose words its heading begins with ("Country of Phone", "Country").
+      if (words.heading && words.heading !== words.title) setAttr(panel, 'aria-label', words.title);
+      else setAttr(panel, 'aria-labelledby', `${id}-title`);
       sheet = make('div', { class: 'fd-dialog-backdrop fd-lookup-back' }, panel);
       sheet.addEventListener('pointerdown', (event) => event.target === sheet && shut(true));
       (doc.body ?? doc.documentElement).append(sheet);

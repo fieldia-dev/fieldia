@@ -72,7 +72,8 @@ export const phoneWidget: WidgetFactory = (context) => {
           choose(code);
           input.focus();
         },
-        words: { find: words.phoneFindCountry, list: words.phoneCountries, none: words.phoneNoCountryFound, title: named, close: words.close },
+        // Headed "Country" on a phone's sheet — never "Country of Phone" — and named for the field it picks for.
+        words: { find: words.phoneFindCountry, list: words.phoneCountries, none: words.phoneNoCountryFound, title: named, heading: words.phoneNoCountry, close: words.close },
       });
 
   const unreadNow = () => form.getState().unread?.[name];
