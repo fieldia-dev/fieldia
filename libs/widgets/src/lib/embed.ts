@@ -14,6 +14,23 @@ import type { WidgetFactory } from './widgets';
 /** A frame's height: the page's, in pixels, or 480. */
 export const heightOf = (value: unknown) => (typeof value === 'number' && value > 0 ? value : 480);
 
+/**
+ * A frame's sandbox, of these tokens those this browser knows (`DOMTokenList.supports`): WebKit has no
+ * `allow-presentation`, and says so in the console for every frame that asks for it.
+ */
+function sandbox(frame: HTMLIFrameElement, tokens: readonly string[]): string {
+  const list = frame.sandbox as DOMTokenList | undefined;
+  const known = (token: string) => {
+    try {
+      return typeof list?.supports !== 'function' || list.supports(token);
+    } catch {
+      // A DOM that lists no tokens it supports (jsdom): every one asked for, as before.
+      return true;
+    }
+  };
+  return tokens.filter(known).join(' ');
+}
+
 export const embedWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
   const make = maker(document);
   const words = wordsFor(labels, locale);
@@ -21,7 +38,8 @@ export const embedWidget: WidgetFactory = ({ form, name, field, node, id, docume
   if (node.placeholder) input.placeholder = node.placeholder;
   input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
   // Its own scripts run, as an embedded deck's must; it cannot reach the form, nor leave the frame but for a new tab.
-  const frame = make('iframe', { class: 'fd-embed-frame', title: field.label, sandbox: 'allow-scripts allow-popups allow-presentation', referrerpolicy: 'no-referrer', loading: 'lazy' });
+  const frame = make('iframe', { class: 'fd-embed-frame', title: field.label, referrerpolicy: 'no-referrer', loading: 'lazy' }) as HTMLIFrameElement;
+  frame.setAttribute('sandbox', sandbox(frame, ['allow-scripts', 'allow-popups', 'allow-presentation']));
   frame.style.height = `${heightOf(node.options?.['height'])}px`;
   const open = make('a', { class: 'fd-button fd-button-link fd-embed-open', target: '_blank', rel: 'noopener noreferrer', hidden: '' }, words.openInNewTab);
   const view = make('div', { class: 'fd-embed-view' });
@@ -41,7 +59,7 @@ export const embedWidget: WidgetFactory = ({ form, name, field, node, id, docume
         // the form's; a page of this site's own runs with none — never as the form's page, which it could reach.
         const here = document.defaultView?.location.href;
         const own = !!here && new URL(web || here, here).origin === new URL(here).origin;
-        frame.setAttribute('sandbox', `allow-scripts${own ? '' : ' allow-same-origin'} allow-popups allow-presentation`);
+        frame.setAttribute('sandbox', sandbox(frame, ['allow-scripts', ...(own ? [] : ['allow-same-origin']), 'allow-popups', 'allow-presentation']));
         if (web) frame.src = safeUrl(web, ['http', 'https']) ?? '';
         view.replaceChildren(...(web ? [frame] : []));
       }
