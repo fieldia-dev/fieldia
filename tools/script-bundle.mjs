@@ -1527,7 +1527,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (list-endless.ts): 557.82 measured before, 558.08 after, to 558.1. An embed field's frame asking only for the sandbox
 // tokens the browser knows (embed.ts, `supports`): 558.08 measured before, 558.27 after, to 558.3 (gzipped 186.06,
 // inside its 186.1).
-const BUDGET_KB = 558.3;
+// 0.34.1, the waits the owner's walk of 0.33.0 saw (loading-polish), each on every page that waits: drawn the first
+// time, what is not there yet out of sight until its loader is — never empty boxes before a skeleton — and the loader
+// drawn as it says once the loading part has come, never "Loading…" in words first (loading.ts, styles-loading.ts); a
+// failure in its place in the error's colour with its mark, and in a toast naming what failed; Save busy where it was
+// pressed, a failed save said under the buttons; a placeholder read in its own direction (styles.ts); the loading part
+// asked for as a page whose parts are in already mounts, and loaded by `loadParts` (viewer-parts.ts); a reload's
+// failure said once (viewer.ts): 558.27 measured before, 560.05 after, to 560.1.
+const BUDGET_KB = 560.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1864,7 +1871,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // own, every request's deadline). Nothing two lanes added twice is left twice: one request wrapper, one Retry for a
 // record's failed load, one pattern checker. The walk's two mended (listed with the raw budget above): 185.93 measured
 // before, 186.02 after, to 186.1.
-const GZIP_BUDGET_KB = 186.1;
+// 0.34.1, the walk's waits (listed with the raw budget above): 186.06 measured before, 186.54 after, to 186.6.
+const GZIP_BUDGET_KB = 186.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2960,7 +2968,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 2.59, to 5.9 and 2.6; date 23.74 and 9.18, 23.89 and 9.26, to 23.9 and 9.3; cards 12.61 and 3.79, 12.58 and 3.77
 // (no endless card skipped unseen), to 12.6 and 3.8; the rest within a few bytes, each to its own measure.
 // A date and time box naming its zone by the form's clock — date to 24.0.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [142.1, 45.9], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.1, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [8.7, 2.8] };
+// 0.34.1, the walk's waits: the loading part centres a ring or words over a place taller than the window in what of it
+// is in view, and draws a place's few bars from its top, the first as wide as it — loading 8.68 and 2.75 measured
+// before, 9.21 and 2.98 after, to 9.3 and 3.0; a related list holds no other record's rows while another opens, its
+// failure in a toast names the list, "1–24 of 60" read in its own direction — list 142.09 and 45.83, 142.54 and 45.99,
+// to 142.6 and 46.0; a box's "nothing is called…" goes with its record — choice 11.89 and 4.71, 11.96 and 4.75, to 12.0;
+// a phone's country sheet headed "Country" — phone 45.03 and 19.22, 45.12 and 19.25, to 45.2 (path and relations
+// inside theirs).
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [142.6, 46.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.3, 3.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
