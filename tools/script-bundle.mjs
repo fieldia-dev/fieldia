@@ -1534,7 +1534,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // pressed, a failed save said under the buttons; a placeholder read in its own direction (styles.ts); the loading part
 // asked for as a page whose parts are in already mounts, and loaded by `loadParts` (viewer-parts.ts); a reload's
 // failure said once (viewer.ts): 558.27 measured before, 560.05 after, to 560.1.
-const BUDGET_KB = 560.1;
+// 0.35 (perf-bytes), a host's tick boxes (NexiBI's request), on every page that draws a radio or a tick box: the tick,
+// the dot and the dash in proportion to the box at any --fd-tick-size, its press target 24px at the least, a corner of
+// its own (--fd-tick-radius), and the four tick tokens taken by the viewer's `tokens` (styles.ts, look.ts) — 573,495
+// bytes measured before, 573,824 after (+329: 560.05 to 560.38), to 560.4.
+const BUDGET_KB = 560.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1872,7 +1876,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // record's failed load, one pattern checker. The walk's two mended (listed with the raw budget above): 185.93 measured
 // before, 186.02 after, to 186.1.
 // 0.34.1, the walk's waits (listed with the raw budget above): 186.06 measured before, 186.54 after, to 186.6.
-const GZIP_BUDGET_KB = 186.6;
+// 0.35, a host's tick boxes (listed with the raw budget above): 186.54 measured before, 186.64 after, to 186.7.
+const GZIP_BUDGET_KB = 186.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

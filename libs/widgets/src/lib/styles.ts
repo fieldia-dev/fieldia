@@ -321,25 +321,29 @@ const SKINS_CSS = /* css */ `
    and theme over the browser's own input, which stays (a form posts it, the keys and a screen reader work it): 18px,
    its edge in the muted colour; chosen, filled in the accent with a tick or a dot in the accent's own words' colour, a
    dash for some; pressed anywhere in 24px round it (WCAG 2.5.8); ringed in the accent when the keys reach it; filled
-   grey when it cannot be changed. A switch draws its own (below); a theme reshapes them by its tokens. With no colours
-   of its own (Windows High Contrast) it is the browser's again, which the system draws in its colours; on paper, ink:
-   a page printed without its backgrounds still shows the one chosen. */
+   grey when it cannot be changed. A switch draws its own (below); a theme reshapes them by its tokens, and a host by
+   the same: --fd-tick-size (the box; its tick, dot and dash keep their shape at any size, its press target 24px at
+   least), --fd-tick-line (its edge's width), --fd-tick-edge (its edge's colour) and --fd-tick-radius (a tick box's
+   corners; a radio stays round). With no colours of its own (Windows High Contrast) it is the browser's again, which the
+   system draws in its colours; on paper, ink: a page printed without its backgrounds still shows the one chosen. */
+/* Its tick, its dot and its dash drawn with lines alone (ink on paper), in proportion to its box (--fd-t: at 18px a tick
+   6 by 11 and 2 wide, a dot 8, a dash 10), whole inside a box of any size; its press target round it, 24px at least. */
 :where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch)) {
+  --fd-t: var(--fd-tick-size, 18px); --fd-tw: max(1.5px, var(--fd-t) / 9);
   appearance: none; position: relative; display: inline-grid; place-content: center; flex: none;
-  width: var(--fd-tick-size, 18px); height: var(--fd-tick-size, 18px); margin: 0; padding: 0; vertical-align: -4px;
-  border: var(--fd-tick-line, 1.5px) solid var(--fd-tick-edge, var(--fd-muted)); border-radius: clamp(2px, var(--fd-control-radius), 4px);
+  width: var(--fd-t); height: var(--fd-t); margin: 0; padding: 0; vertical-align: calc(5px - var(--fd-t) / 2);
+  border: var(--fd-tick-line, 1.5px) solid var(--fd-tick-edge, var(--fd-muted)); border-radius: var(--fd-tick-radius, clamp(2px, var(--fd-control-radius), 4px));
   background: var(--fd-surface); color: var(--fd-accent-text); cursor: pointer; transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 :where(.fd-form, .fd-theme) input:where([type="radio"]):not(:where(.fd-switch)) { border-radius: 50%; }
-/* Its tick, its dot or its dash, drawn with lines alone (ink on paper); its press target round it. */
 :where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch))::before {
-  content: ""; box-sizing: border-box; width: 6px; height: 11px; margin-block-start: -2px; border: solid currentColor; border-width: 0 2px 2px 0;
-  transform: rotate(45deg); visibility: hidden;
+  content: ""; box-sizing: border-box; width: calc(var(--fd-t) / 3); height: calc(var(--fd-t) * 11 / 18); margin-block-start: calc(var(--fd-t) / -9);
+  border: solid currentColor; border-width: 0 var(--fd-tw) var(--fd-tw) 0; transform: rotate(45deg); visibility: hidden;
 }
-:where(.fd-form, .fd-theme) input:where([type="radio"]):not(:where(.fd-switch))::before { width: 8px; height: 8px; margin: 0; border-width: 4px; border-radius: 50%; transform: none; }
-:where(.fd-form, .fd-theme) input:where([type="checkbox"]:indeterminate):not(:where(.fd-switch))::before { width: 10px; height: 0; margin: 0; border-width: 0 0 2px; transform: none; }
+:where(.fd-form, .fd-theme) input:where([type="radio"]):not(:where(.fd-switch))::before { width: calc(var(--fd-t) * 4 / 9); height: calc(var(--fd-t) * 4 / 9); margin: 0; border-width: calc(var(--fd-t) * 2 / 9); border-radius: 50%; transform: none; }
+:where(.fd-form, .fd-theme) input:where([type="checkbox"]:indeterminate):not(:where(.fd-switch))::before { width: calc(var(--fd-t) * 5 / 9); height: 0; margin: 0; border-width: 0 0 var(--fd-tw); transform: none; }
 :where(.fd-form, .fd-theme) input:where([type="checkbox"], [type="radio"]):not(:where(.fd-switch))::after {
-  content: ""; position: absolute; inset: -5px;
+  content: ""; position: absolute; inset: min(-5px, (var(--fd-t) - 2 * var(--fd-tick-line, 1.5px) - 24px) / 2);
 }
 :where(.fd-form, .fd-theme) input:where([type="checkbox"]:indeterminate, :checked):not(:where(.fd-switch)) { border-color: var(--fd-accent); background: var(--fd-accent); }
 :where(.fd-form, .fd-theme) input:where([type="checkbox"]:indeterminate, :checked):not(:where(.fd-switch))::before { visibility: visible; }

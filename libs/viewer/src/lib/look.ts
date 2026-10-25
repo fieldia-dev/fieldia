@@ -152,6 +152,8 @@ export const TOKEN_NAMES = [
   // var(--fd-link, var(--fd-accent)), var(--fd-band, var(--fd-page)) and var(--fd-help, var(--fd-fill)).
   'link', 'band', 'help',
   'radius', 'control-radius', 'font', 'label-weight',
+  // A radio's and a tick box's size, its edge's width and colour, and a tick box's corners (0.35).
+  'tick-size', 'tick-line', 'tick-edge', 'tick-radius',
 ] as const;
 export type TokenName = (typeof TOKEN_NAMES)[number];
 /** A host's own values for Fieldia's tokens, by name: `{ accent: '#0f766e', surface: '#1b2320' }`. */
