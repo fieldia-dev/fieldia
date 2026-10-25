@@ -16,19 +16,22 @@ import { expect, test } from './fixtures';
 const PEOPLE = (n: number) => Object.fromEntries(Array.from({ length: n }, (_, i) => [i + 1, { name: `Customer ${String(i + 1).padStart(4, '0')}`, email: `c${i + 1}@example.com`, city: ['Cairo', 'Giza', 'Luxor'][i % 3], credit: (i * 37) % 100000, visits: i % 50 }]));
 const FIELDS = { name: { type: 'char', label: 'Name' }, email: { type: 'char', label: 'Email' }, city: { type: 'char', label: 'City' }, credit: { type: 'monetary', label: 'Credit', currency: 'EGP' }, visits: { type: 'integer', label: 'Visits' } };
 
+/** Each person's visits, three of them, for a list whose rows open to them (`detail`). */
+const VISITS = (n: number) => Object.fromEntries(Array.from({ length: n * 3 }, (_, i) => [i + 1, { person_id: { id: 1 + (i % n), label: `Customer ${String(1 + (i % n)).padStart(4, '0')}` }, when: '2026-10-1' + (i % 9), note: `Visit ${i + 1}` }]));
+
 /** The one-tag script's page with a list of `n` people mounted in place of its form, `dir` its direction. */
 async function mountList(page: Page, n: number, layout: Record<string, unknown> = {}, dir: 'ltr' | 'rtl' = 'ltr') {
   await page.goto('/script/');
   await page.waitForFunction(() => (window as unknown as { fieldiaDemo?: unknown }).fieldiaDemo);
   await page.evaluate(
-    async ([fields, people, layout, dir, n]) => {
+    async ([fields, people, layout, dir, n, visits]) => {
       const w = window as unknown as { fieldiaDemo: { handle: { destroy(): void } }; Fieldia: { mountViewer(h: Element, o: unknown): unknown; createMemoryDataSource(o: unknown): unknown } };
       w.fieldiaDemo.handle.destroy();
       document.documentElement.dir = dir as string;
       const page = { fieldia: '0.13', id: 'people', title: 'Customers', data: { kind: 'record', model: 'person' }, fields, layout: { type: 'list', id: 'people-list', columns: ['name', 'email', 'city', 'credit', 'visits'], sort: [{ field: 'name' }], pageSize: n, searchFields: ['name', 'email'], ...layout } };
-      (window as unknown as { list: unknown }).list = w.Fieldia.mountViewer(document.getElementById('app') as Element, { page, dataSource: w.Fieldia.createMemoryDataSource({ records: { person: people } }) });
+      (window as unknown as { list: unknown }).list = w.Fieldia.mountViewer(document.getElementById('app') as Element, { page, dataSource: w.Fieldia.createMemoryDataSource({ records: { person: people, visit: visits } }) });
     },
-    [FIELDS, PEOPLE(n), layout, dir, n] as const
+    [FIELDS, PEOPLE(n), layout, dir, n, layout['detail'] ? VISITS(n) : {}] as const
   );
   // A long list counts its rows, those in the page fewer; a page of a list holds every row, as it always did.
   if (n > 100) await expect(page.locator('#app .fd-list-table')).toHaveAttribute('aria-rowcount', String(n + 1), { timeout: 30000 });
@@ -143,6 +146,39 @@ test('keeps what the person reads in place as rows of differing heights come and
     const after = await page.evaluate((id) => document.querySelector<HTMLElement>(`#app tbody tr.fd-list-row[data-id="${id}"]`)?.getBoundingClientRect().top ?? null, before.id);
     // Within a pixel: rows lay out at fractions of one.
     expect({ step, moved: after === null ? null : Math.abs(after - before.at - 150) <= 1 }).toEqual({ step, moved: true });
+  }
+});
+
+test('a row opened to its details stays open as the view goes away and comes back, what is read kept in place', async ({ page }) => {
+  await mountList(page, 2000, { detail: { model: 'visit', field: 'person_id', title: 'Visits', fields: { when: { type: 'date', label: 'When' }, note: { type: 'char', label: 'Note' } }, columns: ['when', 'note'] } });
+  const row = page.locator('#app tbody tr.fd-list-row[data-id="3"]');
+  await row.locator('.fd-list-detail-toggle').first().click();
+  const opened = page.locator('#app tbody tr.fd-list-detail[data-detail-of="3"]');
+  await expect(opened.getByRole('row')).toHaveCount(4);
+  // Far away, then back — the focus elsewhere, which would keep its row in the page: the row and what it opened to are
+  // drawn again, open, under it.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await scrollTo(page, 50000);
+  await expect(opened).toHaveCount(0);
+  await scrollTo(page, 0);
+  await expect(opened.getByRole('row')).toHaveCount(4);
+  await expect(row.locator('.fd-list-detail-toggle').first()).toHaveAttribute('aria-expanded', 'true');
+  expect(await opened.evaluate((tr) => (tr.previousElementSibling as HTMLElement).dataset['id'])).toBe('3');
+  // Rows opened in the middle, then the view moved up past them: the row read stays where it was.
+  await scrollTo(page, 30000);
+  const middle = page.locator('#app tbody tr.fd-list-row:not([data-id="3"])');
+  for (let i = 0; i < 6; i++) await middle.nth(4 + i * 2).locator('.fd-list-detail-toggle').first().click();
+  await frames(page);
+  for (let step = 0; step < 8; step++) {
+    const before = await page.evaluate(() => {
+      const one = [...document.querySelectorAll<HTMLElement>('#app tbody tr.fd-list-row')].find((tr) => tr.getBoundingClientRect().top > innerHeight / 3);
+      return { at: one?.getBoundingClientRect().top ?? 0, id: one?.dataset['id'] };
+    });
+    await page.evaluate(() => window.scrollBy(0, -250));
+    await frames(page);
+    await frames(page);
+    const after = await page.evaluate((id) => document.querySelector<HTMLElement>(`#app tbody tr.fd-list-row[data-id="${id}"]`)?.getBoundingClientRect().top ?? null, before.id);
+    expect({ step, moved: after === null ? null : Math.abs(after - before.at - 250) <= 1 }).toEqual({ step, moved: true });
   }
 });
 
