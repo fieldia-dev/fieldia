@@ -95,9 +95,12 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
   let tasks: GanttTask[] = [];
   /** Each record's waits among those shown, as arrows: worked out as the records come. */
   let links: GanttLink[] = [];
+  /** Each record's task, by its id: what a row written in place reads as it is moved, pressed or opened. */
+  let byKey = new Map<string, GanttTask>();
   const setTasks = () => {
     tasks = tasksOf(records, spec, page, locale);
     links = linksOf(tasks);
+    byKey = new Map(tasks.map((task) => [String(task.id), task]));
   };
   let total = 0;
   let asking = 0;
@@ -481,8 +484,10 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
   function taskRow(task: GanttTask, width: number, parts: Parts): HTMLElement {
     const key = String(task.id);
     const { moves, why } = movable(task);
+    /** Its record's task as it is now: a row a move wrote in place is the same row, its record moved. */
+    const now = () => byKey.get(key) ?? task;
     const name = make('div', { class: 'fd-gantt-name', 'data-opens': canOpen ? '' : undefined }, make('bdi', { dir: 'auto' }, task.title));
-    name.addEventListener('click', () => open(task));
+    name.addEventListener('click', () => open(now()));
     const track = make('div', { class: 'fd-gantt-track' });
     track.style.width = `${width}px`;
     parts.tracks.push(track);
@@ -495,7 +500,7 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       name.setAttribute('role', 'button');
       name.setAttribute('aria-label', spoken(task));
       if (canOpen) name.setAttribute('aria-describedby', keysStill.id);
-      name.addEventListener('keydown', (e) => onKey(e, task, name));
+      name.addEventListener('keydown', (e) => onKey(e, now(), name));
       name.addEventListener('focus', () => standOn(name, key));
       return row;
     }
@@ -519,16 +524,16 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     if (moves && stretches(task, spec)) {
       for (const edge of ['start', 'end'] as const) {
         const grip = make('span', { class: 'fd-gantt-grip', 'data-edge': edge, 'aria-hidden': 'true' });
-        grip.addEventListener('pointerdown', (e) => press(e, task, block, edge, moves));
+        grip.addEventListener('pointerdown', (e) => press(e, now(), block, edge, moves));
         block.append(grip);
       }
     }
-    block.addEventListener('pointerdown', (e) => press(e, task, block, 'both', moves));
+    block.addEventListener('pointerdown', (e) => press(e, now(), block, 'both', moves));
     // A screen reader's press is a click with no pointer behind it: it opens the record as Enter does.
-    block.addEventListener('click', (e) => e.detail === 0 && open(task));
-    block.addEventListener('keydown', (e) => onKey(e, task, block));
+    block.addEventListener('click', (e) => e.detail === 0 && open(now()));
+    block.addEventListener('keydown', (e) => onKey(e, now(), block));
     block.addEventListener('focus', () => standOn(block, key));
-    block.addEventListener('blur', () => pending?.task === task && flush());
+    block.addEventListener('blur', () => pending !== null && String(pending.task.id) === key && flush());
     track.append(block);
     parts.blocks.set(key, block);
     return row;
@@ -557,8 +562,9 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
     const groups = groupsOf(tasks, spec, page, labels.noGroup);
     const order = groups.map((group) => (closed.has(group.key) ? [] : group.tasks.map((task) => String(task.id))));
     const sorted = (ids: readonly string[]) => [...ids].sort().join('\n');
-    // The same groups, each with the same records: only where they stand moved.
+    // The same groups, each with the same records — each bar movable as it was drawn, its grips with it: only where they stand moved.
     if (groups.length !== drawn.order.length || groups.some((group, i) => !drawn?.sections.has(group.key) || sorted(order[i]) !== sorted(drawn?.order[i] ?? []))) return false;
+    if (tasks.some((task) => drawn?.blocks.get(String(task.id))?.hasAttribute('data-moves') === !movable(task).moves)) return false;
     // Read before anything is written: the edges' counts are of the days in view.
     const edgesAt = scale ? null : edgesNow();
     span = next;

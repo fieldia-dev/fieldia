@@ -128,12 +128,20 @@ describe('a bar moved on the timeline', () => {
       const days = 1 + Math.floor(next() * 4);
       const way = next() < 0.5 ? 'ArrowRight' : 'ArrowLeft';
       const end = next() < 0.3;
+      const id = target.dataset['id'] as string;
+      const before = { ...saved(memory)[id] };
       target.focus();
       for (let i = 0; i < days; i++) key(target, way, end ? { shiftKey: true } : {});
       // Left, the move is written.
       target.blur();
       await until(() => saves(memory).length === move + 1);
       await settle();
+      // From where its bar stands now — the row written in place reads its record as moved — by the days the keys moved it.
+      if (!end) {
+        const by = (way === 'ArrowRight' ? 1 : -1) * days;
+        const moved = (day: unknown) => new Date(Date.parse(String(day)) + by * 86_400_000).toISOString().slice(0, 10);
+        expect({ name, start: saved(memory)[id]['start'], finish: saved(memory)[id]['finish'] }).toEqual({ name, start: moved(before['start']), finish: moved(before['finish']) });
+      }
       expect({ move: `${name} ${way} ${days}${end ? ' (end)' : ''}`, same: same(chart(host), await drawnWhole(saved(memory), page)) }).toEqual({ move: `${name} ${way} ${days}${end ? ' (end)' : ''}`, same: true });
       handles.splice(1).forEach((handle) => handle.destroy());
     }
