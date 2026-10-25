@@ -67,7 +67,7 @@ import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue
 import { letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
-import { recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, workCounts, zonedPage } from '@fieldia/core';
+import { onWordsCame, recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, wordsVersion, workCounts, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { nameFieldOf } from './name-field';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
@@ -811,18 +811,23 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if (!inputs || full) return sink.push(kept);
       let last: readonly unknown[] | null = null;
       let seen = 0;
+      // The words it was drawn in: words that came since (a language's chunk late, a part's own) are an input that
+      // changed, whatever else did not — it is drawn again in them.
+      let saidIn = wordsVersion();
       return sink.push((state, changes) => {
         // `reads`, the fields what it shows is worked out from: where none of them changed, nor its own flags (`version`),
         // what it shows is what it showed — not even worked out. A key typed elsewhere touches a few parts, not every one.
         const flags = version?.() ?? 0;
-        if (last && changes && reads && scope.root && flags === seen) {
+        const words = wordsVersion();
+        if (last && changes && reads && scope.root && flags === seen && words === saidIn) {
           const names = reads();
           if (names && !names.some((name) => changes.has(name))) return SKIPPED;
         }
         seen = flags;
         const now = inputs(scope.root ? state : form.getState());
-        if (last && sameInputs(last, now)) return SKIPPED;
+        if (last && words === saidIn && sameInputs(last, now)) return SKIPPED;
         last = now;
+        saidIn = words;
         return kept(state);
       });
     };
@@ -2892,13 +2897,25 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // A list page's records asked for now, as its part comes, not once it has.
   if (awaited.includes(listPart)) earlyRows = earlyList(page, dataSource ? { ...options, dataSource } : options);
   let drawn: Promise<void> = Promise.resolve();
+  /**
+   * The viewer's own parts, never the page's: its status, banner, draft, ending and save safety's, and what its waits
+   * say to a screen reader (loading.ts in @fieldia/widgets: in the form, or in the dialog it is in).
+   */
+  const ownParts = (): Element[] => [
+    status,
+    banner,
+    draft,
+    done,
+    ...safety.elements,
+    ...[root, root.closest('[aria-modal="true"]')].flatMap((home) => [...(home?.querySelectorAll(':scope > .fd-loading-said') ?? [])]),
+  ];
   if (!awaited.length && !words) drawPage();
   else {
     root.setAttribute('aria-busy', 'true');
     const drawWaited = () => {
       if (gone) return;
       // The viewer's own parts made before the page's language's words came: in them now, as the page is drawn.
-      if (words) inOwnWords([status, banner, draft, done, ...safety.elements], locale);
+      if (words) inOwnWords(ownParts(), locale);
       drawPage();
       // Drawn after the status took its place in a corner or across the top: the page's Save took it back beside itself.
       placeStatus();
@@ -3300,6 +3317,24 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     actionWait?.stop();
   });
   const unsubscribe = form.subscribe(render);
+  // Words that come after the page was drawn — its language's chunk late, past the wait for it (words-chunks.ts) — and
+  // every part is drawn again in them: they are an input of each (`wordsVersion`, in `watch`), however quick the way a
+  // change is worked out; the form says its problems again in them as they come. Drawn once, a moment after.
+  let wordsDue = false;
+  cleanups.push(
+    onWordsCame(() => {
+      if (wordsDue) return;
+      wordsDue = true;
+      queueMicrotask(() => {
+        wordsDue = false;
+        if (gone) return;
+        // What the viewer said of its own meanwhile — a wait's "Loading…" to a screen reader, its banner, its status —
+        // in them too, as the page drawn once they came has it (`inOwnWords`).
+        inOwnWords(ownParts(), locale);
+        if (pageDrawn) renderNow();
+      });
+    })
+  );
   // A run that could not go on says why: a step that cannot run here, or what the app threw. A stop with words the form says itself
   // — and a record that could not be loaded again (a reload step, `reload()`), said once, in its place, with its Retry.
   cleanups.push(

@@ -92,7 +92,7 @@ const englishOnly = {
     // With no language in a chunk, the packages' way of fetching them and of putting a mount's early words in theirs has
     // nothing to do here: what every caller reads of it, and no more.
     builder.onLoad({ filter: /libs\/core\/src\/lib\/record\/words-chunks\.ts$/ }, () => ({
-      contents: 'export const wordsInChunks = () => undefined; export const wordsComing = () => false; export const wordsNotYet = () => false; export const wordsReady = () => Promise.resolve(); export const tableInChunks = () => ({ coming: () => false, fetch: () => Promise.resolve() });',
+      contents: 'export const wordsInChunks = () => undefined; export const wordsComing = () => false; export const wordsNotYet = () => false; export const wordsReady = () => Promise.resolve(); export const tableInChunks = () => ({ coming: () => false, fetch: () => Promise.resolve() }); export const wordsVersion = () => 0; export const onWordsCame = () => () => undefined; export const wordsCame = () => undefined; export const sayAgainAsWordsCome = () => undefined; export const sayNoMore = () => undefined;',
       loader: 'ts',
     }));
     builder.onLoad({ filter: /libs\/viewer\/src\/lib\/in-own-words\.ts$/ }, () => ({ contents: 'export const inOwnWords = () => undefined;', loader: 'ts' }));

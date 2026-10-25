@@ -340,7 +340,7 @@ export type { HistoryStep } from './lib/record/history';
 export type { WaitsFor } from './lib/record/waits';
 export type { ActionFile, ActionHost, ActionResult, AppUndo, AskHow, ChosenLines, OnAction, OpenRequest, OpenResult, PostedMessage, RunContext, RunResult, RunStop, SayUndo } from './lib/record/run';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';
-export { tableInChunks, wordsComing, wordsInChunks, wordsNotYet, wordsReady, type WordsChunks } from './lib/record/words-chunks';
+export { onWordsCame, tableInChunks, wordsCame, wordsComing, wordsInChunks, wordsNotYet, wordsReady, wordsVersion, type WordsChunks } from './lib/record/words-chunks';
 export {
   stripMarks,
   foldDigits,

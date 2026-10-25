@@ -1,4 +1,4 @@
-import { isEmpty, labelAt, lineKind, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
+import { isEmpty, labelAt, lineKind, wordsVersion, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
 import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
@@ -733,9 +733,10 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
       const numbers = new Map<string, number>();
       let items = 0;
       for (const line of current) numbers.set(line.key, isItem(line) ? ++items : 0);
-      // What every line is drawn with: the table's state, and the record's fields its money reads its currency from.
+      // What every line is drawn with: the table's state, the record's fields its money reads its currency from, and the
+      // words it is drawn in (a language's that came late: every line drawn again in them).
       const fullState = form.getState();
-      const table: string = JSON.stringify([readonly, current.length <= min, current.length >= max, [...gone], parentReads.map((field) => state.values[field] ?? null)]);
+      const table: string = JSON.stringify([readonly, current.length <= min, current.length >= max, [...gone], parentReads.map((field) => state.values[field] ?? null), wordsVersion()]);
       const redrawAll = table !== drawnFor || (appDrawn && state.values !== drawnRecord);
       drawnFor = table;
       drawnRecord = state.values;

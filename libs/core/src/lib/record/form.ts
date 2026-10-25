@@ -87,6 +87,7 @@ import {
 } from './values';
 import { intlFormat } from '../intl-format';
 import { recomputeInFull, workCounts } from './work';
+import { sayAgainAsWordsCome, sayNoMore, wordsVersion } from './words-chunks';
 
 export type FormStatus = 'idle' | 'loading' | 'ready' | 'saving' | 'saved' | 'error';
 
@@ -2442,7 +2443,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const label = wordsNow((node.source as FieldNode).label ?? def.label);
     // Found again only once the answer, its words or what the rules read changed — their conditions read again with them.
     const reads = full ? null : ruleReads.get(node.id);
-    return remembered(rulesFound, node.id, reads ? [state.values[name], label, ...reads.map(inputOf)] : null, () => {
+    // And once words came since (a language's late chunk): its messages are said in them.
+    return remembered(rulesFound, node.id, reads ? [state.values[name], label, wordsVersion(), ...reads.map(inputOf)] : null, () => {
       const { context: ctx, env } = reading();
       return checkRules(def, label, state.values[name], rules, { context: ctx, env, now: options.now?.() ?? new Date(), messages });
     });
@@ -2471,13 +2473,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const ownFound = new Map<string, { inputs: unknown[]; found: string | undefined }>();
   /**
    * A field node's own problem — its kind's, its places', its least and most, required — found again only once its
-   * answer, whether it is required, the choices or definitions it is checked against, today, or its words changed.
+   * answer, whether it is required, the choices or definitions it is checked against, today, or its words changed — the
+   * page's, and the language's own once they came (`wordsVersion`).
    */
   function ownProblem(node: IndexedNode): string | undefined {
     const name = node.field as string;
     const value = state.values[name];
     const required = nodeState(node.id).required;
-    return remembered(ownFound, node.id, full ? null : [value, required, state.choices, state.definitions[name], worded ? state.values : null, today()], () =>
+    return remembered(ownFound, node.id, full ? null : [value, required, state.choices, state.definitions[name], worded ? state.values : null, today(), wordsVersion()], () =>
       checkInput(page.fields[name], node.source as FieldNode, value, messages) ?? checkValue(checked(name), value, required, messages, today(), (node.source as FieldNode).widget)
     );
   }
@@ -4974,6 +4977,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       }
       // An answer that lands after is for no record shown.
       disposed = true;
+      sayNoMore(form);
       for (const join of joins) join?.dispose?.();
       newGeneration();
       clearFiles();
@@ -5001,6 +5005,20 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const continued = offerDraft();
     void track(Promise.resolve(continued).then(opening));
   }
+  // Words that come after it said its problems and warnings — a language's chunk that came late, a language given — and
+  // it says them again in those words: each kept problem has the words' version among its inputs, so each is found
+  // again. Only what is shown is said again, never taken away or added: a problem said stays said, in its new words.
+  sayAgainAsWordsCome(form, () => {
+    if (disposed) return;
+    const reworded = <T extends Record<string, string>>(shown: T, fresh: Record<string, string>): T => {
+      let out: Record<string, string> | null = null;
+      for (const key of Object.keys(shown)) if (fresh[key] && fresh[key] !== shown[key]) (out ??= { ...shown })[key] = fresh[key];
+      return (out ?? shown) as T;
+    };
+    const errors = Object.keys(state.errors).length ? reworded(state.errors, revalidateShown(state.values)) : state.errors;
+    const warnings = Object.keys(state.warnings).length ? reworded(state.warnings, collectWarnings()) : state.warnings;
+    if (errors !== state.errors || warnings !== state.warnings) set({ errors, warnings });
+  });
   return {
     form,
     take(values, how) {

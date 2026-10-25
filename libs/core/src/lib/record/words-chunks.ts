@@ -65,6 +65,56 @@ export function wordsReady(tag: string | null | undefined): Promise<void> {
 }
 
 /**
+ * How many times words have come since the page opened — a language's chunk, its words filled in its table in place:
+ * what was worked out or drawn in a language's words before they came is not what it says once they have.
+ * What keeps a result for as long as its inputs are the same (a form's problems, a viewer's parts) keeps this with them,
+ * so words that come late are an input that changed (0.35).
+ */
+let wordsCount = 0;
+const listeners = new Set<(locale: string) => void>();
+/** The words' version: a number that grows each time words come (`wordsCame`). */
+export const wordsVersion = (): number => wordsCount;
+/** Told each time words come, with their language; the function it gives stops it being told. */
+export function onWordsCame(listener: (locale: string) => void): () => void {
+  listeners.add(listener);
+  return () => void listeners.delete(listener);
+}
+/** Words have come in `locale` — in a table filled in place, or given whole: the version grows, and each listener is told. */
+export function wordsCame(locale: string): void {
+  wordsCount++;
+  for (const listener of [...listeners]) listener(locale);
+}
+
+/** What says again what an owner (a form) said, by owner: kept as long as the owner is, and no longer. */
+const sayers = new WeakMap<object, () => void>();
+/** The owners told as words come, each held weakly: one let go is forgotten as any other, never kept for this. */
+const owners = new Set<WeakRef<object>>();
+let listening = false;
+/**
+ * `say` run each time words come, for as long as `owner` is kept by what made it — a form saying again its problems in
+ * the words now come, say — and never after `sayNoMore(owner)`. Nothing here keeps `owner`: a form no one holds any more is
+ * collected as before.
+ */
+export function sayAgainAsWordsCome(owner: object, say: () => void): void {
+  if (typeof WeakRef !== 'function') return;
+  if (!listening) {
+    listening = true;
+    onWordsCame(() => {
+      for (const held of [...owners]) {
+        const one = held.deref();
+        const again = one && sayers.get(one);
+        if (again) again();
+        else owners.delete(held);
+      }
+    });
+  }
+  sayers.set(owner, say);
+  owners.add(new WeakRef(owner));
+}
+/** An owner told as words come no more (a form disposed). */
+export const sayNoMore = (owner: object): void => void sayers.delete(owner);
+
+/**
  * A package's table of words by language, some of them in chunks of their own (`later`, each fetching its table): what
  * `wordsInChunks` takes. Asked for, a language's table is there at once — a copy of English's — and filled in place once
  * its chunk has come, keeping only the words it has (a sentence it leaves out says its plain one), so whatever took it
@@ -87,6 +137,8 @@ export function tableInChunks<T extends object>(table: Record<string, T>, later:
           for (const key of Object.keys(own)) if (!(key in words)) delete own[key];
           Object.assign(own, words);
           done.add(locale);
+          // What was worked out or drawn from the table before is worked out again: the words it says changed.
+          wordsCame(locale);
         },
         (error: unknown) => {
           done.add(locale);
