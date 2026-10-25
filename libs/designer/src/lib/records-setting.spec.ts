@@ -1,7 +1,7 @@
 import { validatePage, type Field } from '@fieldia/core';
 import { elementFactory } from './chrome';
 import { blankPage, createDesigner } from './designer';
-import { DESIGNER_WORDS } from './designer-words';
+import { wordsIn } from './designer-words';
 import { pageChanges } from './page-checks';
 import { listProperties } from './list-properties';
 import { pageProperties } from './panel-page';
@@ -119,7 +119,7 @@ describe('what the screen’s records are called', () => {
   });
 
   it('speaks Arabic in the designer’s Arabic', () => {
-    expect(DESIGNER_WORDS.ar.panel.settingName('Records are called')).toBe('اسم السجلات');
-    expect(DESIGNER_WORDS.ar.changes.records('عملاء')).toBe('تُسمّى سجلاتها «عملاء» في جمل Fieldia');
+    expect(wordsIn('ar').panel.settingName('Records are called')).toBe('اسم السجلات');
+    expect(wordsIn('ar').changes.records('عملاء')).toBe('تُسمّى سجلاتها «عملاء» في جمل Fieldia');
   });
 });

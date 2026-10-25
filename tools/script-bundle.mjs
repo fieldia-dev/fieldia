@@ -88,15 +88,15 @@ const noFirstPaint = {
 };
 
 /**
- * English alone in the main script: each package's module of the other
- * languages (`locales/all.ts`) is built as an empty one, so their words stay
- * out; the add-ons bring them.
+ * English alone in the main script: each package's module that fetches the
+ * other languages (`locales/later.ts`) is built as an empty one, so their
+ * words stay out; the add-ons bring them.
  */
 const englishOnly = {
   name: 'english-only',
   setup(builder) {
-    builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/all\.ts$/ }, () => ({ contents: 'export const LANGUAGES = {};', loader: 'ts' }));
-    // Turkish, Persian, Urdu and Spanish, which the packages fetch in chunks of their own: the add-on scripts here.
+    // Every language but English, which the packages fetch in chunks of their own (Arabic, German and French too since
+    // 0.35; carried at once in the packages before, and built here from an empty `locales/all.ts`): the add-on scripts here.
     builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/later\.ts$/ }, () => ({ contents: 'export const LATER = {};', loader: 'ts' }));
     // With no language in a chunk, the packages' way of fetching them and of putting a mount's early words in theirs has
     // nothing to do here: what every caller reads of it, and no more.

@@ -1,10 +1,9 @@
 import type * as z from 'zod';
 import { PageSchema, type Page } from './page';
 import { upgradePage } from './upgrade';
-import { ReferenceCheck, type PageIssue, type PageValidation } from './references';
-import { functionTable, type FunctionsKnown } from '../expression/app-functions';
-import { parseExpression } from '../expression/expression';
-import { kindProblems, kindProblemWords } from '../expression/kinds';
+import type { PageValidation } from './references';
+import type { FunctionsKnown } from '../expression/app-functions';
+import { kindCheck } from './page-warnings';
 import { makeSchemasJitless } from './jitless';
 
 // zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
@@ -39,28 +38,8 @@ export function validatePage(input: unknown, options: { functions?: FunctionsKno
   return issues.length ? { ok: false, issues, ...warned } : { ok: true, page, ...warned };
 }
 
-/** The reference check of a page, reading the kinds of value its expressions hand their functions as warnings. */
-function kindCheck(page: Page, functions: FunctionsKnown | undefined): ReferenceCheck {
-  const kinds = (source: string, scope: Parameters<typeof kindProblems>[1]) => {
-    try {
-      return kindProblems(parseExpression(source, functionTable(functions)), scope, functions).map(kindProblemWords);
-    } catch {
-      // What does not read is said by the check that reads it.
-      return [];
-    }
-  };
-  return new ReferenceCheck(page, undefined, { functions, kinds });
-}
-
-/**
- * A page's warnings alone, as `validatePage` gives them beside a page — a value of a kind a function does not take —
- * for a page already known to pass the format (the designer's, as each edit is made).
- */
-export function pageWarnings(page: Page, options: { functions?: FunctionsKnown } = {}): PageIssue[] {
-  const check = kindCheck(page, options.functions);
-  check.run();
-  return check.warnings;
-}
+// A page's warnings alone: no schema needed (page-warnings.ts), kept here under its old name too.
+export { pageWarnings } from './page-warnings';
 
 function formatPath(path: readonly PropertyKey[]): string {
   if (path.length === 0) return '(page)';

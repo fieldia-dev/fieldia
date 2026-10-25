@@ -1,4 +1,5 @@
-import { validatePage, type FunctionsKnown, type Page } from '@fieldia/core';
+import type { FunctionsKnown, Page } from '@fieldia/core';
+import { checkWhole } from './whole-check';
 import type { DesignerWords } from './designer-words';
 import { placeOf, readJson, type Place, type Spot } from './json-text';
 import { en } from './locales/en';
@@ -37,7 +38,7 @@ export function pageToJson(page: Page): string {
 export function readPage(text: string, words: DesignerWords = en, functions?: FunctionsKnown): ReadPage {
   const read = readJson(text, words);
   if (!read.ok) return { value: undefined, tree: null, page: null, problems: [read.problem] };
-  const checked = validatePage(read.value, { functions });
+  const checked = checkWhole(read.value, functions);
   if (checked.ok) return { value: read.value, tree: read.tree, page: checked.page, problems: [] };
   // A number setting's problem in its own words: "Minutes is a whole number from 1 to 120", not the format's English.
   const problems = checked.issues.map((issue) => ({ ...placeOf(text, read.tree, issue.path), path: issue.path, message: settingRefusal(issue.path, words) ?? issue.message }));

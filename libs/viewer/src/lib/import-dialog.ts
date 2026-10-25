@@ -79,7 +79,11 @@ export type ImportEnd =
       undo?: (ids: readonly RecordId[], progress: (done: number, total: number) => void) => Promise<{ done: number; failed: { id: RecordId; why: string }[] }>;
     };
 
-/** Every word for yes and no a page may hold, in every language the viewer has, and as spreadsheets write them. */
+/**
+ * Every word for yes and no a page may hold, in every language the viewer has — English, and each whose words have come
+ * (the page's own; 0.35: Arabic, German and French come in chunks of their own too, as in the one-tag script) — and as
+ * spreadsheets write them.
+ */
 function yesAndNo(): { yes: string[]; no: string[] } {
   const yes = new Set(['yes', 'y', 'true', '1', 'x', '✓', '✔', 'on']);
   const no = new Set(['no', 'n', 'false', '0', 'off', '✗', '✘', '-']);

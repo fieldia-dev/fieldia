@@ -85,7 +85,7 @@ const OWN: readonly Locale[] = ['en', 'ar', 'fr', 'de', 'tr', 'fa', 'ur', 'es'];
 export function mountListMap(host: HTMLElement, options: ListMapOptions): ListMapHandle {
   const tag = options.locale ?? (host.ownerDocument.documentElement.lang || options.page.language || 'en');
   if (!wordsComing(tag)) return drawListMap(host, options);
-  // Its language's words come in a chunk of their own (Turkish, Persian, Urdu, Spanish): drawn once they have, so its
+  // Its language's words come in a chunk of their own (every language but English): drawn once they have, so its
   // first paint is in them. A page that cannot be shown says so at once, as ever.
   const checked = checkPage(options.page);
   if (!checked.ok) throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);

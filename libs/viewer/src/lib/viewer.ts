@@ -440,7 +440,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const own = tag ? localizePage(other, tag) : other;
     return zonedPage(options.translate ? translatePage(own, options.translate) : own);
   };
-  // The page's language's words where they come in a chunk of their own (Turkish, Persian, Urdu, Spanish): asked for
+  // The page's language's words where they come in a chunk of their own (every language but English): asked for
   // first — each table there at once, English's words till they come — and the page drawn once they have, as it waits for
   // its parts, so its first paint is in its language.
   const words = wordsComing(tag) ? wordsReady(tag) : null;

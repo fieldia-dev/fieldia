@@ -1,6 +1,6 @@
 import { validatePage, type Field, type FieldNode } from '@fieldia/core';
 import { blankPage, createDesigner, kindOfField } from './designer';
-import { DESIGNER_WORDS } from './designer-words';
+import { wordsIn } from './designer-words';
 import { inputChanges } from './input-changes';
 import { findNode } from './page-tree';
 import { choose, field, mount } from './test-editor';
@@ -117,7 +117,7 @@ describe('booking slots in the designer', () => {
       '“Test drive”: its end goes in “stop”',
       '“Test drive”: asked again when “car” changes',
     ]);
-    const ar = inputChanges('Test drive', was, now, DESIGNER_WORDS.ar);
+    const ar = inputChanges('Test drive', was, now, wordsIn('ar'));
     expect(ar.unsaid).toEqual([]);
     expect(ar.lines[2]).toContain('يدوم الحجز 45 دقيقة');
   });

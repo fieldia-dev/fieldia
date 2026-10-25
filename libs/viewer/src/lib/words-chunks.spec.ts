@@ -1,7 +1,8 @@
 import type { Page } from '@fieldia/core';
 
 /**
- * The packages' Turkish, Persian, Urdu and Spanish: each in a chunk of its own, fetched where it is spoken
+ * The packages' every language but English — Arabic, German and French (0.35), Turkish, Persian, Urdu and Spanish: each
+ * in a chunk of its own, fetched where it is spoken
  * (@fieldia/core's `wordsReady`). `mountViewer` asks for the page's language's first and draws once they have come, so
  * its first paint is in its language — never an English word drawn and then swapped — and every word it made before
  * they came (a hidden banner's, the thanks after a send) reads in it too. What does not wait gets English, said once.
@@ -49,11 +50,11 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-describe.each(['tr', 'fa', 'ur', 'es'])('a page in %s', (locale) => {
+describe.each(['ar', 'de', 'fr', 'tr', 'fa', 'ur', 'es'])('a page in %s', (locale) => {
   it('is drawn once its words have come, in them from its first paint, every word made before them in them too', async () => {
     const fieldia = await fresh();
     expect(fieldia.wordsComing(locale)).toBe(true);
-    expect(Object.keys(fieldia.VIEWER_LABELS).sort()).toEqual(['ar', 'de', 'en', 'fr']);
+    expect(Object.keys(fieldia.VIEWER_LABELS)).toEqual(['en']);
     const host = document.createElement('div');
     document.body.append(host);
     const handle = fieldia.mountViewer(host, { page, locale });
@@ -89,7 +90,9 @@ describe('what does not wait for a language’s words', () => {
     expect(warn.mock.calls[0][0]).toContain("wordsReady('tr')");
     await fieldia.wordsReady('tr');
     expect(fieldia.VIEWER_LABELS.tr.submit).not.toBe(fieldia.VIEWER_LABELS.en.submit);
-    // Arabic, German and French are there at once, as before.
+    // Arabic, German and French the same way (0.35: carried at once before).
+    expect(fieldia.wordsComing('ar')).toBe(true);
+    await fieldia.wordsReady('ar');
     expect(fieldia.wordsComing('ar')).toBe(false);
     expect(fieldia.VIEWER_LABELS.ar.submit).toBe('إرسال');
   });

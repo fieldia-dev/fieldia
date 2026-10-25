@@ -1,6 +1,6 @@
-import { createForm, localizePage, isRightToLeft, type Field, type FieldNode, type LayoutNode, type Page, type Skin, type Value, type Values } from '@fieldia/core';
+import { createForm, localizePage, isRightToLeft, wordsComing, type Field, type FieldNode, type LayoutNode, type Locale, type Page, type Skin, type Value, type Values } from '@fieldia/core';
 import { displayValue, FIELDIA_STYLE_SHEETS } from '@fieldia/widgets';
-import { ownLocale } from './lib/labels';
+import { VIEWER_LABELS } from './lib/labels';
 // The one-tag script's files a page draws from, for a server to write their tags before fieldia.js.
 export { partFiles } from './lib/viewer-parts';
 
@@ -75,7 +75,10 @@ export function firstPaint(page: Page, options: FirstPaintOptions = {}): string 
   const state = form.getState();
   const values = state.values as Values;
   const tag = options.locale ?? shown.language ?? 'en';
-  const locale = ownLocale(tag);
+  // The language its values are written in (numbers, days, amounts: Intl's). No word of Fieldia's own is in a first paint,
+  // so none is fetched or waited for here — each language but English comes in a chunk of its own (0.35).
+  const base = tag.split('-')[0].toLowerCase();
+  const locale = (Object.prototype.hasOwnProperty.call(VIEWER_LABELS, base) || wordsComing(base) ? base : 'en') as Locale;
   const dir = options.dir ?? (isRightToLeft(tag) ? 'rtl' : undefined);
   const skin = options.skin ?? shown.look?.skin ?? 'underline';
   let made = 0;

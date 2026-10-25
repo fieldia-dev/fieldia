@@ -1,6 +1,6 @@
 import type { FieldNode, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner, type Designer } from './designer';
-import { DESIGNER_WORDS } from './designer-words';
+import { DESIGNER_WORDS, wordsIn } from './designer-words';
 import { mount, openTab } from './test-editor';
 import { employeeDesigner, expectValid, nodeOf } from './test-layout';
 
@@ -190,7 +190,7 @@ describe('a links box’s settings', () => {
 describe('the designer’s words for a work item', () => {
   it('are said in Arabic too, every one', () => {
     const en = DESIGNER_WORDS.en.workText as Record<string, unknown>;
-    const ar = DESIGNER_WORDS.ar.workText as Record<string, unknown>;
+    const ar = wordsIn('ar').workText as Record<string, unknown>;
     expect(Object.keys(ar).sort()).toEqual(Object.keys(en).sort());
     expect((ar['tracksCount'] as (c: number, w: number) => string)(3, 2)).toContain('3');
   });

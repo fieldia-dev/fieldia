@@ -1,4 +1,5 @@
-import { checkPage, FieldSchema, PageSchema, validatePage, type FunctionsKnown, type Page, type PageValidation } from '@fieldia/core';
+import { checkPage, type FunctionsKnown, type Page, type PageValidation } from '@fieldia/core';
+import { pageSchemaPart, type PageSchemaPart } from './schema-part';
 import { keepUnchanged } from './keep-unchanged';
 
 /**
@@ -12,6 +13,10 @@ import { keepUnchanged } from './keep-unchanged';
  * so its problems read as they always have.
  *
  * The page handed back keeps every part the edit left alone (`keepUnchanged`).
+ *
+ * The format's schemas come in a part of their own, with zod (`pageSchemaPart`, 0.35): an edit made before they came is
+ * held to the quick check alone, the one every viewer draws a page with, and its page is not known to pass — so the
+ * first edit after they came checks the page whole, and so does publishing.
  */
 export interface EditChecker {
   (before: Page, draft: Page): PageValidation;
@@ -25,17 +30,22 @@ export function editChecker(functions?: FunctionsKnown): EditChecker {
   const passed = new WeakSet<Page>();
   const check = (before: Page, draft: Page): PageValidation => {
     const next = keepUnchanged(before, draft);
+    const schema = pageSchemaPart.loaded;
+    if (!schema) {
+      const quick = checkPage(next, { functions });
+      return quick.ok ? { ok: true, page: next } : quick;
+    }
     const changed = passed.has(before) ? changedParts(before, next) : null;
     if (
       changed &&
-      changed.fields.every((name) => FieldSchema.safeParse(next.fields[name]).success) &&
-      changed.parts.every((key) => PARTS[key]?.safeParse(next[key as keyof Page]).success === true) &&
+      changed.fields.every((name) => schema.FieldSchema.safeParse(next.fields[name]).success) &&
+      changed.parts.every((key) => partsOf(schema)[key]?.safeParse(next[key as keyof Page]).success === true) &&
       checkPage(next, { functions }).ok
     ) {
       passed.add(next);
       return { ok: true, page: next };
     }
-    const whole = validatePage(draft, { functions });
+    const whole = schema.validatePage(draft, { functions });
     if (!whole.ok) return whole;
     const page = keepUnchanged(before, whole.page);
     passed.add(page);
@@ -45,7 +55,7 @@ export function editChecker(functions?: FunctionsKnown): EditChecker {
 }
 
 /** The format of each part of a page, by its key: a part changed is checked against its own. */
-const PARTS = (PageSchema as unknown as { shape: Record<string, { safeParse(value: unknown): { success: boolean } }> }).shape;
+const partsOf = (schema: PageSchemaPart) => (schema.PageSchema as unknown as { shape: Record<string, { safeParse(value: unknown): { success: boolean } }> }).shape;
 
 /**
  * What an edit changed, when it left the layout, and which parts and fields

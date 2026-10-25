@@ -36,7 +36,9 @@ export {
 export { ModifierSchema, RolesSchema, CellRulesSchema, ToneWhenSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema, ListCellSchema, ListCalendarSchema, ListGanttSchema, ListCardSchema, ListGallerySchema, ListEditableSchema, ListDetailSchema, FilterRangeSchema, FilterPeriodSchema, RelatedNodeSchema } from './lib/format/layout';
 export { PageSchema } from './lib/format/page';
 export { ActionStepSchema, PageEventsSchema } from './lib/format/actions';
-export { pageWarnings, validatePage } from './lib/format/validate';
+export { validatePage } from './lib/format/validate';
+// A page's warnings alone, needing no schema (the schemas and `validatePage` on their own: `@fieldia/core/schema`).
+export { pageWarnings } from './lib/format/page-warnings';
 export { kindProblems, kindProblemWords, kindWords, fieldKind, writtenAs, type KindProblem, type KindScope } from './lib/expression/kinds';
 export { parseExpression } from './lib/expression/expression';
 export { AddressSearchOptionsSchema } from './lib/format/address-search';

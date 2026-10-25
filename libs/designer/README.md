@@ -539,8 +539,9 @@ writes them. A language it has no words for is English.
 It speaks Turkish (`tr`), Persian (`fa`), Urdu (`ur`) and Spanish (`es`) too —
 **machine-assisted, not yet reviewed by a native speaker**: every word English
 has, checked against it, but not yet read by a native speaker; corrections are
-welcome. Persian and Urdu run right to left, as Arabic does. Their words come in
-a chunk each of their own, so a designer in another language never carries
+welcome. Persian and Urdu run right to left, as Arabic does. Every language's
+words but English's — Arabic's too, since 0.35 — come in a chunk each of their
+own (60 to 90 KB gzipped), so a designer in another language never carries
 them: fetch them before making the designer (`createDesigner.open` does) —
 `designerWordsReady` fetches the page's widgets' and viewer's words in that
 language too (`wordsReady` in @fieldia/core).
@@ -554,11 +555,21 @@ Made before its words came, a designer in one of them speaks English, and the
 console says once what to await.
 
 ```ts
+await designerWordsReady('ar');
 const designer = createDesigner({ page: blankPage('survey', 'رأي الحضور', { locale: 'ar' }), store, locale: 'ar' });
 mountSurveyEditor(host, { designer });
-// Opened again from the store, the same way:
+// Opened again from the store, its words fetched first:
 await createDesigner.open(id, store, { locale: 'ar' });
 ```
+
+A page in another language than the designer's has its widgets' words drawn on
+the canvas in it once they have come (the editor asks for them as it opens, and
+draws the canvas again then). The format's schemas and their whole check
+(`@fieldia/core/schema`, with zod, about 105 KB gzipped) come the same way, in a
+chunk of their own asked for as the designer opens: it draws and takes edits
+meanwhile, each held to the quick check every viewer draws a page with
+(`checkPage`), checks the page whole once they have come, and never publishes a
+page it has not checked whole — `publish()` waits for them.
 
 Given a language, the editor runs that language's way — Arabic right to left on
 a page left to right, English left to right on a page right to left, so its

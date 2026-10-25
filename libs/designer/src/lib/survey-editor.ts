@@ -98,7 +98,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const { designer } = options;
   const doc = host.ownerDocument;
   // Every part the canvas draws the page from asked for at once, as the editor opens (canvas-parts.ts).
-  askCanvasParts(designer.getPage(), options.widgets);
+  const pageWords = askCanvasParts(designer.getPage(), options.widgets);
   useStyleNonce(doc, options.nonce);
   installStyles(doc);
   installDesignerStyles(doc);
@@ -770,10 +770,14 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   host.append(root);
   const leave = designer.subscribe(render);
   render(designer.getState());
+  // The page's language's words, once in: the cards drawn again in them.
+  let gone = false;
+  void pageWords?.then(() => gone || render(designer.getState()));
 
   return {
     element: root,
     destroy() {
+      gone = true;
       leave();
       sheet.destroy();
       look.destroy();

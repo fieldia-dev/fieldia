@@ -231,6 +231,68 @@ function checkNoBareSpecifiers(distRoot) {
   return problems;
 }
 
+/**
+ * Entries whose ESM build is one file of their own, carrying the modules that would otherwise drag a library into every
+ * page: `[package, the entry's module, what it carries]` — the package's exports map names the `.bundle.mjs` made of it.
+ *
+ * `@fieldia/core/schema` — zod and every schema of the format, with `validatePage` — is what the designer fetches as it
+ * opens (its `pageSchemaPart`). Fetched as the package's own ESM files, those are the very modules core's entry
+ * re-exports, and esbuild puts a module that any static import reaches — a re-export no one reads included — in a
+ * chunk the page loads at once: zod came with the designer's first paint anyway. So the entry is bundled here (esbuild,
+ * tree-shaken) with zod and every module that imports it inside — `carries` — and every other module of core imported
+ * from its own file as before: one chunk, reached by nothing static, loaded when asked for. An app that also imports
+ * `validatePage` from @fieldia/core itself carries the schemas twice: once at once, once in that chunk. zod's notice is
+ * in THIRD_PARTY_NOTICES.md beside the package.
+ */
+const OWN_FILE = [['core', 'src/lib/format/schema-part.mjs', /node_modules\/zod\/|\/src\/lib\/format\/(validate|jitless|schema-part)\.mjs$/]];
+
+/** Each entry of OWN_FILE bundled into a file of its own: a problem where it cannot be. */
+async function entriesInFilesOfTheirOwn(distRoot, pkgDir) {
+  const problems = [];
+  for (const [pkgName, entry, carries] of OWN_FILE.filter(([name]) => name === pkgDir)) {
+    const from = join(distRoot, entry);
+    const own = from.replace(/\.mjs$/, '.bundle.mjs');
+    if (!existsSync(from)) {
+      problems.push(`${pkgName}: ${entry} is not built: OWN_FILE (tools/dual-build.mjs)`);
+      continue;
+    }
+    const { build } = await import('esbuild');
+    const result = await build({
+      entryPoints: [from],
+      bundle: true,
+      format: 'esm',
+      platform: 'neutral',
+      target: 'es2022',
+      outfile: own,
+      write: false,
+      logLevel: 'warning',
+      nodePaths: [join(WORKSPACE, 'node_modules')],
+      mainFields: ['module', 'main'],
+      legalComments: 'inline',
+      banner: { js: `// @fieldia/${pkgName}: ${entry} with zod (MIT, Colin McDonnell: THIRD_PARTY_NOTICES.md) and the schemas inside — tools/dual-build.mjs, OWN_FILE.` },
+      plugins: [
+        {
+          name: 'own-file',
+          setup(builder) {
+            // zod, and a module that imports it (a schema), carried; any other module of the package imported from its file.
+            builder.onResolve({ filter: /.*/ }, async (args) => {
+              if (args.pluginData?.inner || args.kind === 'entry-point') return undefined;
+              const found = await builder.resolve(args.path, { kind: args.kind, importer: args.importer, resolveDir: args.resolveDir, pluginData: { inner: true } });
+              if (found.errors.length) return { errors: found.errors };
+              if (carries.test(found.path) || /\bfrom ["']zod/.test(existsSync(found.path) ? readFileSync(found.path, 'utf8') : '')) return { path: found.path };
+              if (!found.path.startsWith(distRoot)) return { errors: [{ text: `${args.path} (from ${args.importer}) is neither zod, a schema, nor a module of @fieldia/${pkgName}` }] };
+              const path = relative(dirname(own), found.path).split('\\').join('/');
+              return { path: path.startsWith('.') ? path : `./${path}`, external: true };
+            });
+          },
+        },
+      ],
+    });
+    writeFileSync(own, result.outputFiles[0].text);
+  }
+  return problems;
+}
+
 const pkgDir = process.argv[2];
 if (!pkgDir) {
   console.error('usage: node tools/dual-build.mjs <package-directory-name>');
@@ -248,10 +310,12 @@ for (const [label, dir] of [['CommonJS', distRoot], ['ESM', esmRoot]]) {
 }
 
 const written = foldEsmIntoDist(esmRoot, distRoot);
+const ownFiles = await entriesInFilesOfTheirOwn(distRoot, pkgDir);
 const repaired = repairWorkspaceSpecifiers(distRoot);
 const pkg = JSON.parse(readFileSync(join(distRoot, 'package.json'), 'utf8'));
 const { problems: exportProblems, seen } = checkExports(pkg, distRoot);
 const problems = [
+  ...ownFiles,
   ...exportProblems,
   ...checkSideEffects(pkg, distRoot),
   ...checkNoBareSpecifiers(distRoot),
