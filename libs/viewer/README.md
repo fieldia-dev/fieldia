@@ -100,11 +100,18 @@ set) the wait ends as failed, with Retry, and a list's request is told to stop
 wait's `loading.timeout` ends the loader, and where both are set the sooner
 ends the wait — said once, with one Retry. A record that could not be loaded is
 said at the top of the form, in its own words ("This customer could not be
-loaded: …"), with Retry, which loads it. A failure says why in its place — "Could not load the customers.
-The archive is offline. Retry", "Couldn't load." with the source's own words —
-or in a toast (`error: "toast"`), or as the app draws it (`custom`); never an
-empty place. A record's Save steps aside while it saves, as before: its status
-says "Saving…". What a person has open stays theirs: a popup open as a part is
+loaded: …"), with Retry, which loads it; one opened in another's place shows
+none of the other's values, nor its related lists' rows, while it comes. A
+failure says why in its place, in the error's colour with a mark at its start —
+"Could not load the customers. The archive is offline. Retry", "Couldn't load."
+with the source's own words — or in a toast (`error: "toast"`), naming what
+failed ("Could not load the customers.", "Account manager: Couldn't search."),
+or as the app draws it (`custom`); never an empty place. A record's Save stays
+where it was pressed while it saves, busy, its status saying "Saving…"; one
+that failed says so under the buttons, Save still in its place. Drawn the first
+time, a part shows nothing of what is not there yet — never empty boxes before
+its skeleton — and a ring or words over a place taller than the window stand in
+the middle of what of it is in view. What a person has open stays theirs: a popup open as a part is
 asked again (a date's calendar, a box's list, a filter's menu) keeps what is
 shown under a thin bar, whatever the way set, and a popup opened while a part
 waits is over the wait and takes its presses.
@@ -159,8 +166,10 @@ is `aria-busy`; a screen reader hears the wait once, politely (never once per
 row); a reader who asks for less motion sees nothing move; forced colours draw
 the shapes in the system's; right to left, the shimmer runs the page's way; on
 paper, no loader. In the one-tag script, the skeletons, bars, spinners and the
-overlay come in `fieldia.loading.js`, fetched with a page's other parts (until
-it comes, a wait drawn the first time says "Loading…" in words).
+overlay come in `fieldia.loading.js`, fetched with a page's other parts (and by
+`loadParts(page)`); a wait drawn the first time is drawn as it says once it has
+come — never "Loading…" in words first, then its shapes — and in words only
+where it could not come, or is still on its way as the wait turns slow.
 
 ## A public form: autofill and a bot check
 
