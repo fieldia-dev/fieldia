@@ -1518,7 +1518,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // `signal` aborts) — every page may open one: 526.25 measured before, 526.72 after, to 526.8. A list of cards asks for
 // its first page beside its part too, every field its cards name with its columns (list-early.ts): 526.72 measured
 // before, 526.82 after (172.83 and 172.87 gzipped, inside its budget), to 526.9.
-const BUDGET_KB = 557.2;
+// 0.34's merge: the four hardening lanes over 0.33.0, in merge order — harden-release (each part's hash, 53 parts now,
+// the loading part's among them), harden-edges, harden-data, harden-perf — and the merge's own jobs (every request
+// under one deadline, a record's load failure said once in its place, each part's tag carrying its integrity, a form's
+// draft kept as it is taken away): 535.08 measured before; 538.48, 543.12, 555.65 and 557.48 after each lane; 557.82 at
+// the tip, to 557.9.
+const BUDGET_KB = 557.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1848,7 +1853,13 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // strip measured once the page is laid out, a focus with no scroll where none is needed (listed with the raw budget
 // above): 172.62 measured before, 172.75 after, to 172.8. What a viewer opened taken away with it (listed with the raw
 // budget above): 172.75 measured before, 172.83 after, to 172.9.
-const GZIP_BUDGET_KB = 186.1;
+// 0.34's merge (listed with the raw budget above): 175.94 measured before; harden-release +2.82 (the parts' hashes
+// 2.11 of it), harden-edges +2.12, harden-data +4.06, harden-perf +0.85, the merge's own jobs +0.14: 185.93 after, to
+// 186.0 — over 180, which the owner accepts up to about 200: every page carries what grew (a part checked before it
+// runs, every address through safeUrl, patterns bounded, one load boundary and one send discipline, drafts a person's
+// own, every request's deadline). Nothing two lanes added twice is left twice: one request wrapper, one Retry for a
+// record's failed load, one pattern checker.
+const GZIP_BUDGET_KB = 186.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2201,7 +2212,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // after, to 132.4; German's 59.48, 59.53, to 59.6; French's 60.35, 60.40, to 60.5; Turkish's 67.42, 67.47, inside 67.5;
 // Persian's 165.01, 165.13, to 165.2; Urdu's 167.83, 167.98, to 168.0; Spanish's 57.67, 57.72, to 57.8 (each gzipped
 // inside its budget).
-const ADD_ON_BUDGET_KB = { ar: [133.9, 21.6], de: [60.2, 18.3], fr: [61.0, 18.6], tr: [68.2, 18.7], fa: [166.9, 23.1], ur: [169.5, 23.1], es: [58.3, 18.2] };
+// 0.34's merge: every lane's words in every add-on, measured once — Arabic's 128.24 and 20.76 measured before, 133.94
+// and 21.47 after, to 134.0 and 21.5; German's 58.00 and 17.87, 60.06 and 18.40, to 60.1 and 18.4; French's 58.87 and
+// 17.87, 60.96 and 18.40, to 61.0 and 18.4; Turkish's 65.81 and 18.19, 68.07 and 18.74, to 68.1 and 18.8; Persian's
+// 160.48 and 22.40, 166.75 and 23.10, to 166.8 and 23.1; Urdu's 163.19 and 22.48, 169.47 and 23.18, to 169.5 and 23.2;
+// Spanish's 56.25 and 17.67, 58.23 and 18.20, to 58.3 and 18.2.
+const ADD_ON_BUDGET_KB = { ar: [134.0, 21.5], de: [60.1, 18.4], fr: [61.0, 18.4], tr: [68.1, 18.8], fa: [166.8, 23.1], ur: [169.5, 23.2], es: [58.3, 18.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2928,7 +2944,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 0.34's speed (harden-perf): the outbox in IndexedDB opens one connection a database, shared by every form that keeps
 // its sends there, and lets it go when another tab opens a newer version (0.32 opened one a mount and closed none) —
 // outbox 8.96 and 3.98 measured before, 9.16 and 4.06 after, to 9.2 and 4.1.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.9, 9.3], months: [13.8, 5.6], typed: [14.3, 6.0], list: [142.1, 45.8], cards: [12.8, 3.8], columns: [18.7, 6.8], import: [38.9, 15.4], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.0, 19.4], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.7, 6.5], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [8.7, 2.8] };
+// 0.34's merge: each part measured once over 0.33.0 — files 46.46 and 17.33 measured before, 50.49 and 18.82 after
+// (edges' formats checked), to 50.5 and 18.9; outbox 8.96 and 3.98, 10.97 and 4.67 (data's discipline, perf's one
+// connection), to 11.0 and 4.7; import 37.93 and 14.89, 38.85 and 15.25, to 38.9 and 15.3; editable 34.39 and 12.32,
+// 35.13 and 12.63, to 35.2 and 12.7; list 141.56 and 45.61, 142.04 and 45.82, to 142.1 and 45.9; memory 24.89 and
+// 9.03, 25.19 and 9.11, to 25.2 and 9.2; pay 7.44 and 3.29, 7.80 and 3.45, to 7.8 and 3.5; element 5.38 and 2.38, 5.83
+// and 2.59, to 5.9 and 2.6; date 23.74 and 9.18, 23.89 and 9.26, to 23.9 and 9.3; cards 12.61 and 3.79, 12.58 and 3.77
+// (no endless card skipped unseen), to 12.6 and 3.8; the rest within a few bytes, each to its own measure.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [11.9, 4.8], filters: [23.0, 7.9], date: [23.9, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [142.1, 45.9], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.1, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [8.7, 2.8] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

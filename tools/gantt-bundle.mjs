@@ -38,6 +38,8 @@
  * 0.34's speed (harden-perf): a bar moved drawn once — not again when its save brings back what is shown — the chart
  * read before it is written, and its axis's height told by the browser once it is laid out (a ResizeObserver), never
  * read in the middle of drawing: 15,541 bytes measured before, 15,723 after, to 15.4.
+ * 0.34's merge: the timeline's wait (0.33) over its draw once — a reload that brings back what is drawn draws nothing
+ * again — 15,611 bytes measured before (0.33.0), 15,799 after, to 15.5; with the page 815, 816, inside its 0.8.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
