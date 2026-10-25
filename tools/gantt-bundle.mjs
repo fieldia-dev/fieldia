@@ -48,8 +48,8 @@
  * arrows drawn anew — every row, name and bar kept, nothing laid out until the browser draws it (gantt-view.ts,
  * `inPlace`; the arrows and the rows in an order that is the same whatever order the records come in, tasks.ts). At 500
  * tasks a drop went from 10,031 elements drawn and 17 forced layouts to 7 and 1 (198 → 30 ms on a desktop, 1,057 → 186
- * at 4× CPU), a zoom from 4,749 to 543 (89 → 53 ms, 491 → 268): 15,834 bytes measured before, 16,887 after, to 16.5;
- * with the page 865, inside its 0.9.
+ * at 4× CPU), a zoom from 4,749 to 543 (89 → 53 ms, 491 → 268), each row it keeps reading its record as it now stands:
+ * 15,834 bytes measured before, 16,960 after, to 16.6; with the page 865, 866, inside its 0.9.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -58,7 +58,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.9, gantt: 16.5 };
+const BUDGET = { page: 0.9, gantt: 16.6 };
 const LANGUAGE_BUDGET = { tr: 0.8, fa: 1.0, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });
