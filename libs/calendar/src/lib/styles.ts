@@ -85,19 +85,24 @@ export const CALENDAR_CSS = `
 .fd-cal-event-title { font-weight: 600; overflow-wrap: anywhere; text-align: match-parent; }
 .fd-cal-event-who { display: block; opacity: 0.85; }
 /* 24 pixels at least, so a finger or a pointer can hit each (WCAG 2.5.8). */
-.fd-cal-allday > .fd-cal-event, .fd-cal-day > .fd-cal-event { position: relative; min-height: 24px; box-sizing: border-box; line-height: 20px; white-space: nowrap; padding-inline-end: 24px; }
+:is(.fd-cal-allday, .fd-cal-day) > .fd-cal-event, :is(.fd-cal-allday, .fd-cal-day) > .fd-cal-visit > .fd-cal-event { position: relative; min-height: 24px; box-sizing: border-box; line-height: 20px; white-space: nowrap; padding-inline-end: 24px; }
 .fd-cal-col > .fd-cal-event[data-short] .fd-cal-event-who { display: none; }
 /* One line (a short record, a month's day, all day): the name cut with "…" at its own end, so a Latin one right to left
    keeps its start; whole when pointed at, and to a screen reader. */
 .fd-cal-col > .fd-cal-event[data-short] > .fd-cal-event-text, .fd-cal-allday .fd-cal-event-text, .fd-cal-day .fd-cal-event-text { display: flex; gap: 0.3em; white-space: nowrap; }
-:is(.fd-cal-col > .fd-cal-event[data-short], .fd-cal-allday > .fd-cal-event, .fd-cal-day > .fd-cal-event) .fd-cal-event-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+:is(.fd-cal-col > .fd-cal-event[data-short], .fd-cal-allday .fd-cal-event, .fd-cal-day .fd-cal-event) .fd-cal-event-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .fd-cal-resize { position: absolute; inset-inline: 0; bottom: 0; height: 8px; cursor: ns-resize; touch-action: none; }
 .fd-cal-event-menu {
   position: absolute; top: 0; inset-inline-end: 0; z-index: 2; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 4px;
   display: none; place-items: center; background: var(--fd-surface); color: var(--fd-text); font: 700 14px/1 system-ui, sans-serif; cursor: pointer;
 }
-.fd-cal-event:hover > .fd-cal-event-menu, .fd-cal-event:focus-within > .fd-cal-event-menu, .fd-cal-event:focus > .fd-cal-event-menu { display: grid; }
+/* Beside its block, over its end corner, never in it (a button in a button is no button). */
+.fd-cal-col > .fd-cal-event-menu { inset-inline-end: auto; }
+.fd-cal-visit { position: relative; display: grid; min-width: 0; }
+.fd-cal-event:is(:hover, :focus) + .fd-cal-event-menu, .fd-cal-event-menu:is(:hover, :focus-visible), .fd-cal-event:is(:hover, :focus-within) > .fd-cal-event-menu { display: grid; }
+.fd-cal-event-menu:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 @media (hover: none) { .fd-cal-event-menu { display: grid; } }
+.fd-cal-event[data-moving] + .fd-cal-event-menu { display: none; }
 
 /* The month: whole weeks, each day its records, and how many more. */
 .fd-cal-month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
@@ -115,7 +120,7 @@ export const CALENDAR_CSS = `
   border-radius: 4px; border: 1px dashed color-mix(in srgb, var(--fd-accent) 55%, transparent); background: var(--fd-accent-soft); font-weight: 600;
 }
 .fd-cal-col > .fd-cal-more:hover { background: color-mix(in srgb, var(--fd-accent) 22%, var(--fd-surface)); }
-.fd-cal-day > .fd-cal-event .fd-cal-event-who { display: none; }
+.fd-cal-day .fd-cal-event .fd-cal-event-who { display: none; }
 
 /* The agenda: each day that has something, its records in order. */
 .fd-cal-agenda-day { display: grid; grid-template-columns: minmax(8em, 11em) minmax(0, 1fr); border-bottom: 1px solid var(--fd-border); }

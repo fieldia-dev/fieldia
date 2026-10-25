@@ -41,7 +41,7 @@ async function mount(options: Partial<ViewerOptions> = {}, shown: Page = page())
   return host;
 }
 const title = (host: Element) => host.querySelector('.fd-cal-title')?.textContent?.replace(/\s*–\s*/g, '–');
-const block = (host: Element, name: string) => [...host.querySelectorAll<HTMLElement>('.fd-cal-col > .fd-cal-event, .fd-cal-day > .fd-cal-event')].find((b) => b.querySelector('.fd-cal-event-title')?.textContent === name) as HTMLElement;
+const block = (host: Element, name: string) => [...host.querySelectorAll<HTMLElement>('.fd-cal-col > .fd-cal-event, .fd-cal-day .fd-cal-event')].find((b) => b.querySelector('.fd-cal-event-title')?.textContent === name) as HTMLElement;
 const columnOf = (b: Element) => b.closest('.fd-cal-col') as HTMLElement | null;
 const said = (host: Element) => host.querySelector('.fd-cal-said')?.textContent ?? '';
 const saves = () => source.calls.filter((call) => call.method === 'save').map((call) => call.request as SaveRequest);

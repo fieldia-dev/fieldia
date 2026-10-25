@@ -119,7 +119,9 @@ test.describe("a calendar's moves kept safe", () => {
     const yasmine = visit(page, 'Yasmine Raafat');
     await yasmine.hover();
     await expect(yasmine).toHaveAttribute('title', 'Booked by the front desk.');
-    await expect(yasmine.locator('.fd-cal-resize, .fd-cal-event-menu')).toHaveCount(0);
+    await expect(yasmine.locator('.fd-cal-resize')).toHaveCount(0);
+    // No Move to… beside it: the button is beside its block, never in it.
+    await expect(page.locator('.fd-cal-event-menu[aria-label*="Yasmine Raafat"]')).toHaveCount(0);
     await yasmine.focus();
     await page.keyboard.press('m');
     await page.keyboard.press('Shift+F10');
@@ -192,6 +194,58 @@ test.describe("a calendar's moves kept safe", () => {
     expect(problems).toEqual([]);
   });
 
+  test('a visit pointed at shows its ⋯ beside its own button, never in it: axe finds nothing, and the ⋯ and M both open Move to…', async ({ page }) => {
+    const { problems } = await openClinic(page);
+    const dina = visit(page, 'Dina Magdy');
+    // Its own: the button right after it, beside it in its column.
+    const menu = dina.locator('xpath=following-sibling::*[1]');
+    await expect(menu).toHaveClass(/fd-cal-event-menu/);
+    await expect(menu).toHaveAttribute('aria-label', 'Move Dina Magdy');
+    await dina.hover();
+    await expect(menu).toBeVisible();
+    // Beside the visit's button, over its end corner: not inside it.
+    await expect(dina.locator('.fd-cal-event-menu')).toHaveCount(0);
+    const [block, button] = await Promise.all([dina.boundingBox(), menu.boundingBox()]);
+    expect(button!.x).toBeGreaterThanOrEqual(block!.x - 1);
+    expect(button!.x + button!.width).toBeLessThanOrEqual(block!.x + block!.width + 1);
+    expect(Math.abs(button!.y - block!.y)).toBeLessThanOrEqual(1);
+    expect(button!.width).toBeGreaterThanOrEqual(24);
+    expect(await axeFindings(page, 'a visit pointed at')).toEqual([]);
+    // The pointer's way: onto the ⋯ (it stays shown) and press it.
+    await menu.hover();
+    await expect(menu).toBeVisible();
+    await menu.click();
+    const dialog = page.getByRole('dialog', { name: 'Move Dina Magdy' });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    // The keys' way: the visit focused shows its ⋯ too, and M opens Move to….
+    await page.mouse.move(0, 0);
+    await dina.focus();
+    await expect(menu).toBeVisible();
+    expect(await axeFindings(page, 'a visit with the focus')).toEqual([]);
+    await page.keyboard.press('m');
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    // A day's cell in the month: the same, its ⋯ over the visit's end corner.
+    await page.locator('.fd-cal-ranges').getByRole('button', { name: 'Month' }).click();
+    await settled(page);
+    const inMonth = page.locator('.fd-cal-day .fd-cal-event').filter({ has: page.locator('.fd-cal-event-title', { hasText: 'Dina Magdy' }) }).first();
+    await inMonth.hover();
+    const monthMenu = inMonth.locator('xpath=following-sibling::*[1]');
+    await expect(monthMenu).toHaveAttribute('aria-label', 'Move Dina Magdy');
+    await expect(monthMenu).toBeVisible();
+    await expect(inMonth.locator('.fd-cal-event-menu')).toHaveCount(0);
+    const [day, dayButton] = await Promise.all([inMonth.boundingBox(), monthMenu.boundingBox()]);
+    expect(dayButton!.x + dayButton!.width).toBeLessThanOrEqual(day!.x + day!.width + 1);
+    expect(dayButton!.y).toBeGreaterThanOrEqual(day!.y - 1);
+    expect(dayButton!.y + dayButton!.height).toBeLessThanOrEqual(day!.y + day!.height + 1);
+    expect(await axeFindings(page, 'a visit pointed at in the month')).toEqual([]);
+    await monthMenu.click();
+    await expect(dialog).toBeVisible();
+    expect(problems).toEqual([]);
+  });
+
   test('Escape lets go of a stretch and of slots dragged across, saving and making nothing', async ({ page }) => {
     const { problems } = await openClinic(page);
     const id = await idOf(page, 'Yasmine Raafat');
@@ -233,9 +287,8 @@ test.describe("a calendar's moves kept safe", () => {
     for (const width of await crowd.evaluateAll((blocks) => blocks.map((b) => b.getBoundingClientRect().width))) expect(width).toBeGreaterThanOrEqual(40);
     await screen(page, 'calendar-crowded-slot');
     // By the keys: Tab reaches "+N more", Enter opens the slot's list on its first visit, the arrows go down it. The
-    // pointer away from the calendar, as a keyboard's user leaves it: where it last pressed (Previous day) lies over
-    // whatever visit the page scrolls under it, and a visit pointed at shows its ⋯, which axe finds nested in the visit's
-    // own button (nested-interactive) — the calendar's to mend, found where it lay over Dina Magdy at 09:15.
+    // pointer away from the calendar, as a keyboard's user leaves it (a visit pointed at shows its ⋯ — beside its button
+    // since 0.35, no longer nested in it: the test above).
     await page.mouse.move(0, 0);
     await more.focus();
     await page.keyboard.press('Enter');

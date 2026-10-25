@@ -26,7 +26,7 @@ async function mount(options: Partial<ViewerOptions> = {}, page: Page = clinicPa
   await until(() => host.querySelector('.fd-cal-body:not([aria-busy]) .fd-cal-grid, .fd-cal-body:not([aria-busy]) .fd-cal-month, .fd-cal-body:not([aria-busy]) .fd-cal-agenda'));
   return host;
 }
-const blocks = (host: Element) => [...host.querySelectorAll<HTMLElement>('.fd-cal-col > .fd-cal-event, .fd-cal-allday > .fd-cal-event')];
+const blocks = (host: Element) => [...host.querySelectorAll<HTMLElement>('.fd-cal-col > .fd-cal-event, .fd-cal-allday .fd-cal-event')];
 const block = (host: Element, name: string) => blocks(host).find((b) => b.querySelector('.fd-cal-event-title')?.textContent === name) as HTMLElement;
 const button = (root: Element, words: string) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent?.trim()) === words && !b.closest('[hidden]')) as HTMLButtonElement;
 const settle = () => until(() => !document.querySelector('.fd-cal-body[aria-busy]'));
@@ -143,7 +143,10 @@ describe('a record whose times or person are locked', () => {
     const host = await mount({ dataSource: told, onOpenRecord: (id) => void opened.push(id) });
     const mona = block(host, 'Mona Adel');
     expect(mona.hasAttribute('data-moves')).toBe(false);
-    expect(mona.querySelector('.fd-cal-resize, .fd-cal-event-menu')).toBeNull();
+    expect(mona.querySelector('.fd-cal-resize')).toBeNull();
+    // No Move to… beside it (beside its block, never in it), where Omar's has one.
+    expect(host.querySelector('.fd-cal-event-menu[aria-label*="Mona Adel"]')).toBeNull();
+    expect(host.querySelector('.fd-cal-event-menu[aria-label*="Omar Said"]')).not.toBeNull();
     expect(mona.getAttribute('title')).toBe('Booked by the front desk.');
     mona.focus();
     key(mona, 'm');
@@ -169,7 +172,8 @@ describe('a record whose times or person are locked', () => {
     const page = clinicPage();
     page.fields['start'] = { ...page.fields['start'], readonly: true } as Page['fields'][string];
     const host = await mount({ onOpenRecord: () => undefined }, page);
-    expect(blocks(host).some((b) => b.hasAttribute('data-moves') || b.querySelector('.fd-cal-resize, .fd-cal-event-menu'))).toBe(false);
+    expect(blocks(host).some((b) => b.hasAttribute('data-moves') || b.querySelector('.fd-cal-resize'))).toBe(false);
+    expect(host.querySelector('.fd-cal-event-menu')).toBeNull();
     const mona = block(host, 'Mona Adel');
     expect(document.getElementById(mona.getAttribute('aria-describedby') ?? '')?.textContent).toBe('Enter opens it.');
     // No reason to give one by one: nothing on the page moves.
@@ -239,6 +243,32 @@ describe('Move to… refuses a day it cannot mean', () => {
       handle?.destroy();
       document.body.replaceChildren();
     }
+  });
+});
+
+describe('a record’s Move to… button', () => {
+  // A record's block is a button itself: its "⋯" is a button beside it, never in it (a button in a button is no button —
+  // axe's nested-interactive, 0.34 and before), and both ways reach Move to…: the "⋯" pressed, and M on the block.
+  it('is beside its block, named for it, and opens Move to… as M on the block does', async () => {
+    const host = await mount();
+    const mona = block(host, 'Mona Adel');
+    expect(mona.getAttribute('role')).toBe('button');
+    expect(mona.querySelector('button, [tabindex]:not([tabindex="-1"])')).toBeNull();
+    const menu = mona.nextElementSibling as HTMLElement;
+    expect(menu.matches('button.fd-cal-event-menu')).toBe(true);
+    expect(menu.getAttribute('aria-label')).toBe('Move Mona Adel');
+    expect(menu.hasAttribute('aria-hidden')).toBe(false);
+    // Over the block's end corner, at its top.
+    expect(menu.style.top).toBe(mona.style.top);
+    // No block holds a button anywhere, in the week, the month or all day.
+    for (const one of host.querySelectorAll('.fd-cal-event[role="button"]')) expect(one.querySelector('button')).toBeNull();
+    menu.click();
+    expect(host.querySelector('.fd-cal-move')).not.toBeNull();
+    key(host.querySelector('.fd-cal-move') as HTMLElement, 'Escape');
+    await until(() => !host.querySelector('.fd-cal-move'));
+    mona.focus();
+    key(mona, 'm');
+    expect(host.querySelector('.fd-cal-move')).not.toBeNull();
   });
 });
 

@@ -327,7 +327,9 @@ describe('moving and making from the keyboard', () => {
     const host = await mount({ dataSource: readOnly as DataSource });
     expect(host.querySelector('.fd-cal-slot')).toBeNull();
     expect((host.querySelector('.fd-cal-new') as HTMLElement).hidden).toBe(true);
-    expect(blocks(host).some((b) => b.hasAttribute('data-moves') || b.querySelector('.fd-cal-event-menu, .fd-cal-resize'))).toBe(false);
+    expect(blocks(host).some((b) => b.hasAttribute('data-moves') || b.querySelector('.fd-cal-resize'))).toBe(false);
+    // No Move to… beside any (it is beside its block, never in it).
+    expect(host.querySelector('.fd-cal-event-menu')).toBeNull();
   });
 
   it('keeps a record its source locks where it is, saying why', async () => {
