@@ -1892,6 +1892,11 @@ In plain words:
 - **A record that answers past its timeout** (the wait's, shorter than the request's deadline) is drawn as it comes,
   the failure's words taken away: the loader ended, the request did not. A record's load is said failed in its place,
   in core's words for it (`state.loadProblem`: "This customer could not be loaded: …"), with Retry.
+- **A record opened in another's place** (`openRecord`) is a first wait: the form holds none of the last record's
+  values (its boxes as its skeleton, inert) until it has loaded, and one that cannot be is named by its id
+  ("Couldn't open customer 32: …"), with Retry, which opens it.
+- **Next rows that could not come stay said**, with Retry: the list's end in sight asks nothing by itself until the
+  person presses Retry or Show more.
 - **What Retry asks** is what failed, again: the same list with the same search and page, the same record, the same
   search for the same words.
 - The memory source answers after `delayMs` (`createMemoryDataSource({ delayMs: 1500 })`), so a demo shows each wait;

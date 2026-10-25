@@ -120,4 +120,7 @@ docs/plans/wave1-contract.md §39), and carries that deadline's `signal`. The de
 `timeout` here ends the loader. Both set, the sooner ends the wait — said once, with one Retry: a loading timeout
 shorter than the deadline says "It took too long." and tells a list's request to stop; one longer never fires, the
 deadline ending the request, and its wait with it, first. A record's load that fails is said in its place in core's
-words for it (`state.loadProblem`: "This customer could not be loaded: …") with Retry, which loads it.
+words for it (`state.loadProblem`: "This customer could not be loaded: …") with Retry, which loads it; a record
+opened in another's place (`openRecord`) holds none of the other's values while it loads, and one that cannot be is
+named by its id ("Couldn't open customer 32: …"). Next rows that could not come stay said, with Retry: the list's end
+in sight asks nothing by itself until the person presses it.

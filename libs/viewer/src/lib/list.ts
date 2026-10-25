@@ -1193,18 +1193,22 @@ export function listView(context: ListContext): ListView {
    * meanwhile) never twice — its count, its grips and what is chosen with them. A list that asked again meanwhile draws
    * them itself; one that cannot be asked says so.
    */
-  async function more(): Promise<void> {
+  async function more(): Promise<boolean | void> {
     const source = context.dataSource;
     if (!endless || groupedNow || rows.length >= total || !source?.list || !endlessEnd) return;
     const mine = asking;
-    // Its wait where the rows will come (`more`): "Loading more…" unless the page says otherwise; a failure said there, with Retry.
-    const wait = startLoading(endlessEnd.element, 'more', waiting, { part: node.id, retry: () => void more() });
+    // Its wait where the rows will come (`more`): "Loading more…" unless the page says otherwise; a failure said there,
+    // with Retry — the person's ask, after which its end in sight asks by itself again (list-endless.ts).
+    const end = endlessEnd;
+    const wait = startLoading(end.element, 'more', waiting, { part: node.id, retry: () => end.retry() });
     let answer: Awaited<ReturnType<NonNullable<DataSource['list']>>>;
     try {
       answer = await source.list({ model, fields, filter: currentFilter(), sort, offset: rows.length, limit: pageSize, ...(waiting.settings.timeout ? { signal: wait.signal } : {}) });
     } catch (error) {
       if (mine !== asking || destroyed) return wait.stop();
-      return wait.fail(error);
+      wait.fail(error);
+      // Said, and left said: never asked again by itself.
+      return false;
     }
     if (mine !== asking || destroyed) return wait.stop();
     await wait.done(() => {
