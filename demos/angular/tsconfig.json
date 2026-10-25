@@ -6,6 +6,7 @@
     "lib": ["es2022", "dom", "dom.iterable"],
     "paths": {
       "@fieldia/core": ["libs/core/src/index.ts"],
+      "@fieldia/core/schema": ["libs/core/src/schema.ts"],
       "@fieldia/widgets": ["libs/widgets/src/index.ts"],
       "@fieldia/viewer": ["libs/viewer/src/index.ts"],
       "@fieldia/grid": ["libs/grid/src/index.ts"],
