@@ -1,4 +1,4 @@
-import { isEmpty, labelAt, lineKind, wordsVersion, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
+import { isEmpty, labelAt, lineKind, recomputeInFull, wordsVersion, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
 import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
@@ -288,6 +288,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
   const offeredOf = (line: Line): string[] => (optionColumns.length && form.offered ? [JSON.stringify(optionColumns.map((column) => form.offered?.(`${name}.${line.key}.${column}`) ?? null))] : []);
   /** What the table was last drawn for as a whole: its state, the lines' count against its limits, its columns hidden, the record's currency. */
   let drawnFor = '';
+  /** Made to work every change out in full (`recomputeInFull`, the plain way the quick one is held to): every line drawn again at each. */
+  const full = recomputeInFull();
   let drawnRecord: unknown = null;
   /**
    * What the record holds for each line, by its key, read once for every line: its problems, its text that does not
@@ -737,7 +739,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
       // words it is drawn in (a language's that came late: every line drawn again in them).
       const fullState = form.getState();
       const table: string = JSON.stringify([readonly, current.length <= min, current.length >= max, [...gone], parentReads.map((field) => state.values[field] ?? null), wordsVersion()]);
-      const redrawAll = table !== drawnFor || (appDrawn && state.values !== drawnRecord);
+      const redrawAll = full || table !== drawnFor || (appDrawn && state.values !== drawnRecord);
       drawnFor = table;
       drawnRecord = state.values;
       // What the record holds for each line, by its key: its problems, its text that does not read, the choices the app
