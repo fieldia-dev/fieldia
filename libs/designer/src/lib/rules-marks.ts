@@ -68,12 +68,39 @@ let tips = 0;
 /** Each page's marks, worked out once for it: a page an edit made is a new page. */
 const marksFor = new WeakMap<Page, Map<string, Mark[]>>();
 
+/** A page's marks, worked out once for it. */
+function marksNow(page: Page, designer: Designer): Map<string, Mark[]> {
+  let marks = marksFor.get(page);
+  if (!marks) marksFor.set(page, (marks = marksOf(page, designer)));
+  return marks;
+}
+
+/**
+ * Whether two pages' marks say the same, part by part — the same kinds, words and sentences — for what draws them to tell
+ * whether they are what it drew: a page an edit made says the same often.
+ */
+export function sameMarks(one: Page, other: Page, designer: Designer): boolean {
+  if (one === other) return true;
+  const [a, b] = [marksNow(one, designer), marksNow(other, designer)];
+  if (a.size !== b.size) return false;
+  const others = [...b];
+  let i = 0;
+  for (const [id, marks] of a) {
+    const [otherId, otherMarks] = others[i++];
+    if (id !== otherId || marks.length !== otherMarks.length) return false;
+    for (let k = 0; k < marks.length; k++) {
+      const [m, n] = [marks[k], otherMarks[k]];
+      if (m.kind !== n.kind || m.rule !== n.rule || m.words !== n.words || m.sentences.length !== n.sentences.length || m.sentences.some((sentence, j) => sentence !== n.sentences[j])) return false;
+    }
+  }
+  return true;
+}
+
 /** Draw the marks of every part with a rule in `container`, and take away those of parts that have none now. */
 export function ruleMarks(container: HTMLElement, page: Page, designer: Designer): void {
   const doc = container.ownerDocument;
   const el = elementFactory(doc);
-  let marks = marksFor.get(page);
-  if (!marks) marksFor.set(page, (marks = marksOf(page, designer)));
+  const marks = marksNow(page, designer);
   const root = (container.closest('.fd-designer') as HTMLElement | null) ?? container;
   for (const place of PLACES) {
     for (const part of container.querySelectorAll<HTMLElement>(place.parts)) {

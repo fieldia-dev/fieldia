@@ -21,7 +21,7 @@ import { barsPlaced, stopWatchingBars } from './bar-place';
 import { designerIcon } from './icons';
 import { inlineSettings, type InlineSettings } from './inline-settings';
 import { locate, rowsOf } from './layout-tree';
-import { ruleMarks } from './rules-marks';
+import { ruleMarks, sameMarks } from './rules-marks';
 import { pressMarks } from './steps-marks';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
@@ -189,7 +189,15 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     columns: number;
   }
 
+  /**
+   * Counted as a part's view is made or taken away — a card, a group, tabs: the marks drawn on the parts are drawn
+   * again only once this or what they say changed (`marked`), never for a key typed in a label that changes neither.
+   */
+  let built = 0;
+  let marked: { built: number; page: Page } | null = null;
+
   function dropCard(card: Card) {
+    built++;
     card.widget?.destroy?.();
     card.element.remove();
   }
@@ -198,6 +206,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   const gripOf = () => el('span', { class: 'fd-card-grip', 'data-grip': '', 'aria-hidden': 'true', title: words.options.grip }, designerIcon(doc, 'grip'));
 
   function buildCard(id: string, editing: boolean, ownChoice: boolean): Card {
+    built++;
     const widgetBox = el('div', { class: 'fd-canvas-widget', inert: '' });
     if (!editing) {
       const label = el('label', { class: 'fd-label' });
@@ -324,7 +333,11 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const def = page.fields[node.field];
     // Its own words in the page's language, as the form will have them.
     const said = widgetWords(designer.getPage());
-    const key = JSON.stringify([node, def, sample, said.locale]);
+    // Drawn again as what it draws changes: never for its label or help, which the card draws round it — a key typed in
+    // a label makes no form of the whole page to draw the widget it leaves as it was.
+    const { label: _label, help: _help, ...drawn } = node;
+    const { label: _name, help: _words, ...kind } = def as Field & { help?: string };
+    const key = JSON.stringify([drawn, kind, sample, said.locale]);
     if (card.painted === key && card.widget) return;
     card.painted = key;
     card.widget?.destroy?.();
@@ -390,7 +403,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       view.element.remove();
       view = undefined;
     }
-    if (!view) sections.set(section.id, (view = makeSection(section.id, tag)));
+    if (!view) {
+      built++;
+      sections.set(section.id, (view = makeSection(section.id, tag)));
+    }
     visible.push(section.id);
     const element = view.element;
     setData(element, 'style', plan.style);
@@ -532,7 +548,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
 
   function drawTabs(node: TabsNode, place: Place): HTMLElement {
     let view = tabsViews.get(node.id);
-    if (!view) tabsViews.set(node.id, (view = makeTabs(node.id)));
+    if (!view) {
+      built++;
+      tabsViews.set(node.id, (view = makeTabs(node.id)));
+    }
     const holding = node.children.find((tab) => tabHolds(tab, selected));
     if (holding) view.active = holding.id;
     if (!node.children.some((tab) => tab.id === view?.active)) view.active = node.children[0]?.id ?? null;
@@ -628,9 +647,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const card = cards.get(id);
     if (!card?.editing) return;
     const input = (part === 'label' ? card.label : card.help) as HTMLInputElement;
-    input.focus(seen ? { preventScroll: true } : undefined);
-    if (selectAll) input.select();
+    // The cursor placed before the focus comes, which keeps it: one layout for the two, not one for each.
+    if (selectAll) input.setSelectionRange(0, input.value.length);
     else input.setSelectionRange(input.value.length, input.value.length);
+    input.focus(seen ? { preventScroll: true } : undefined);
   }
 
   // Simple carries fields among fields, as before; Advanced drops any part beside, under, into or between others.
@@ -753,11 +773,14 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
         cards.delete(id);
       }
       for (const [id, view] of tabsViews) if (!drawnIds.has(id)) {
+        built++;
         view.element.remove();
         tabsViews.delete(id);
       }
+      const shownNow = new Set(visible);
       for (const [id, view] of sections) {
-        if (visible.includes(id)) continue;
+        if (shownNow.has(id)) continue;
+        built++;
         view.element.remove();
         sections.delete(id);
       }
@@ -775,7 +798,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       guides.update(state, mode === 'advanced');
       nextFrame(state);
       multi.update(state, mode === 'advanced');
-      ruleMarks(element, page, designer);
+      // The parts' marks: drawn again where a part's view was made or taken away, or what they say changed.
+      if (marked?.built !== built || !sameMarks(marked.page, page, designer)) ruleMarks(element, page, designer);
+      marked = { built, page };
       // steps lane: a button that does something wears a mark.
       pressMarks(element, page, designer);
     },
