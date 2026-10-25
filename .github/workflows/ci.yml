@@ -154,6 +154,65 @@ jobs:
           path: test-results/
           retention-days: 14
 
+  perf:
+    name: Perf gates (an app's first load, counts at scale, leaks, timings alone)
+    needs: scope
+    if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
+    runs-on: ubuntu-latest
+    # The audit's M6: the perf gates in a job of their own, one worker, never beside other specs (a shard runs four at a
+    # time, which timed their load as much as Fieldia). What they hold is counted wherever it can be — bytes, requests,
+    # layouts and the objects laid out, DOM written and kept, listeners — so a slow runner changes nothing of it; the
+    # timings that stay (perf.spec.ts) keep their slack, now on a runner of their own, and go to the artifact as a trend.
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # Chromium, with the same guard against a stalled apt mirror as the browser gates'.
+      - name: Install Chromium for Playwright
+        run: |
+          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "3";\n' | sudo tee /etc/apt/apt.conf.d/99fieldia-timeouts > /dev/null
+          for try in 1 2 3; do
+            if [ "$try" -gt 1 ]; then
+              sudo pkill -9 -x apt-get || true
+              sudo pkill -9 -x dpkg || true
+              sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+              sudo dpkg --configure -a || true
+            fi
+            timeout 420 npx playwright install --with-deps chromium && exit 0
+            echo "Install try $try stalled or failed."
+          done
+          exit 1
+      - run: npx nx run-many -t build -p angular viewer designer
+        env:
+          NX_DAEMON: 'false'
+      # An app's first load from the npm packages, bundled by esbuild and opened in Chromium — a record form, the same in
+      # Arabic (its first paint in its words), a list and the screen designer — in KB gzipped and scripts fetched, each
+      # against its budget (tools/npm-first-load.mjs).
+      - run: node tools/npm-first-load.mjs --json test-results/perf/first-load.json
+      - run: node tools/build-demos.mjs
+      - run: node tools/build-site.mjs
+      # Desktop and a mid-range phone (412 px, 4× slower CPU): the counts at scale (500 fields, 200 lines, 5,000 rows), the
+      # leak gate, a long list's layouts, and the timings — one worker.
+      - run: npx playwright test --project=perf --project=perf-phone --workers=1
+        env:
+          FIELDIA_PERF_LABEL: ${{ github.sha }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: perf
+          path: test-results/
+          retention-days: 30
+
   engines:
     name: Browser smoke in ${{ matrix.engine }} (${{ matrix.shard }} of 2)
     needs: scope

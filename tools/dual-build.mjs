@@ -35,6 +35,7 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { minifyStylesheet, STYLE_MODULE, STYLED_PACKAGES } from './minified-styles.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const SCOPE = '@fieldia';
@@ -231,6 +232,96 @@ function checkNoBareSpecifiers(distRoot) {
   return problems;
 }
 
+/**
+ * Entries whose ESM build is one file of their own, carrying the modules that would otherwise drag a library into every
+ * page: `[package, the entry's module, what it carries]` — the package's exports map names the `.bundle.mjs` made of it.
+ *
+ * `@fieldia/core/schema` — zod and every schema of the format, with `validatePage` — is what the designer fetches as it
+ * opens (its `pageSchemaPart`). Fetched as the package's own ESM files, those are the very modules core's entry
+ * re-exports, and esbuild puts a module that any static import reaches — a re-export no one reads included — in a
+ * chunk the page loads at once: zod came with the designer's first paint anyway. So the entry is bundled here (esbuild,
+ * tree-shaken) with zod and every module that imports it inside — `carries` — and every other module of core imported
+ * from its own file as before: one chunk, reached by nothing static, loaded when asked for. An app that also imports
+ * `validatePage` from @fieldia/core itself carries the schemas twice: once at once, once in that chunk. zod's notice is
+ * in THIRD_PARTY_NOTICES.md beside the package.
+ */
+const OWN_FILE = [['core', 'src/lib/format/schema-part.mjs', /node_modules\/zod\/|\/src\/lib\/format\/(validate|jitless|schema-part)\.mjs$/]];
+
+/** Each entry of OWN_FILE bundled into a file of its own: a problem where it cannot be. */
+async function entriesInFilesOfTheirOwn(distRoot, pkgDir) {
+  const problems = [];
+  for (const [pkgName, entry, carries] of OWN_FILE.filter(([name]) => name === pkgDir)) {
+    const from = join(distRoot, entry);
+    const own = from.replace(/\.mjs$/, '.bundle.mjs');
+    if (!existsSync(from)) {
+      problems.push(`${pkgName}: ${entry} is not built: OWN_FILE (tools/dual-build.mjs)`);
+      continue;
+    }
+    const { build } = await import('esbuild');
+    const result = await build({
+      entryPoints: [from],
+      bundle: true,
+      format: 'esm',
+      platform: 'neutral',
+      target: 'es2022',
+      outfile: own,
+      write: false,
+      logLevel: 'warning',
+      nodePaths: [join(WORKSPACE, 'node_modules')],
+      mainFields: ['module', 'main'],
+      legalComments: 'inline',
+      // Whitespace and syntax made small, names kept, so a stack trace through it still reads (an app's own bundler
+      // minifies it the rest of the way): about half its size in the package.
+      minifyWhitespace: true,
+      minifySyntax: true,
+      banner: { js: `// @fieldia/${pkgName}: ${entry} with zod (MIT, Colin McDonnell: THIRD_PARTY_NOTICES.md) and the schemas inside — tools/dual-build.mjs, OWN_FILE.` },
+      plugins: [
+        {
+          name: 'own-file',
+          setup(builder) {
+            // zod, and a module that imports it (a schema), carried; any other module of the package imported from its file.
+            builder.onResolve({ filter: /.*/ }, async (args) => {
+              if (args.pluginData?.inner || args.kind === 'entry-point') return undefined;
+              const found = await builder.resolve(args.path, { kind: args.kind, importer: args.importer, resolveDir: args.resolveDir, pluginData: { inner: true } });
+              if (found.errors.length) return { errors: found.errors };
+              if (carries.test(found.path) || /\bfrom ["']zod/.test(existsSync(found.path) ? readFileSync(found.path, 'utf8') : '')) return { path: found.path };
+              if (!found.path.startsWith(distRoot)) return { errors: [{ text: `${args.path} (from ${args.importer}) is neither zod, a schema, nor a module of @fieldia/${pkgName}` }] };
+              const path = relative(dirname(own), found.path).split('\\').join('/');
+              return { path: path.startsWith('.') ? path : `./${path}`, external: true };
+            });
+          },
+        },
+      ],
+    });
+    writeFileSync(own, result.outputFiles[0].text);
+  }
+  return problems;
+}
+
+/**
+ * The stylesheets the widgets, the viewer and the designer ship as text inside their code, minified as CSS in the built
+ * package as the one-tag script and the demos minify them (tools/minified-styles.mjs: the same modules, the same literal,
+ * the same minifier), so an app's bundle carries them small: its minifier leaves a string alone (0.35: about 13 KB
+ * gzipped of every app's first load). Each line the stylesheet took is kept as a line break at its end, so the source
+ * maps of the code after it still point where they did.
+ */
+async function minifyStyles(distRoot, pkgDir) {
+  if (!STYLED_PACKAGES.includes(pkgDir)) return { problems: [], minified: 0 };
+  const problems = [];
+  let minified = 0;
+  const lib = join(distRoot, 'src/lib');
+  for (const name of readdirSync(lib).filter((file) => STYLE_MODULE.test(file) && !file.endsWith('.ts'))) {
+    const path = join(lib, name);
+    try {
+      writeFileSync(path, await minifyStylesheet(readFileSync(path, 'utf8'), relative(distRoot, path), { lines: true }));
+      minified++;
+    } catch (error) {
+      problems.push(`${(error instanceof Error ? error.message : String(error))} (tools/minified-styles.mjs)`);
+    }
+  }
+  return { problems, minified };
+}
+
 const pkgDir = process.argv[2];
 if (!pkgDir) {
   console.error('usage: node tools/dual-build.mjs <package-directory-name>');
@@ -248,10 +339,14 @@ for (const [label, dir] of [['CommonJS', distRoot], ['ESM', esmRoot]]) {
 }
 
 const written = foldEsmIntoDist(esmRoot, distRoot);
+const ownFiles = await entriesInFilesOfTheirOwn(distRoot, pkgDir);
+const styles = await minifyStyles(distRoot, pkgDir);
 const repaired = repairWorkspaceSpecifiers(distRoot);
 const pkg = JSON.parse(readFileSync(join(distRoot, 'package.json'), 'utf8'));
 const { problems: exportProblems, seen } = checkExports(pkg, distRoot);
 const problems = [
+  ...ownFiles,
+  ...styles.problems,
   ...exportProblems,
   ...checkSideEffects(pkg, distRoot),
   ...checkNoBareSpecifiers(distRoot),
@@ -270,5 +365,6 @@ console.log(
   `${pkg.name}: ${written} ESM files folded in, ${entries.length} export ` +
     `${entries.length === 1 ? 'entry' : 'entries'} (${entries.join(', ')}), ` +
     `${seen.length} resolved paths checked` +
-    (repaired ? `, ${repaired} workspace path${repaired === 1 ? '' : 's'} repaired` : '')
+    (repaired ? `, ${repaired} workspace path${repaired === 1 ? '' : 's'} repaired` : '') +
+    (styles.minified ? `, ${styles.minified} stylesheets minified` : '')
 );

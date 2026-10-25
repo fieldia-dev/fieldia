@@ -284,9 +284,20 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   }
 
   /**
+   * Each record's block's Move to… button (its "⋯"), beside the block, never inside it: the block is a button itself,
+   * and a button in a button is no button (axe: nested-interactive). Where it goes: `inColumn`, `inFlow`.
+   */
+  const menus = new WeakMap<HTMLElement, HTMLElement>();
+  /** A block in the flow of a day's cell (all day, the month) with its "⋯" beside it, over its end corner. */
+  const inFlow = (block: HTMLElement): HTMLElement => {
+    const menu = menus.get(block);
+    return menu ? make('div', { class: 'fd-cal-visit' }, block, menu) : block;
+  };
+
+  /**
    * A record's block: its time, its words, its person; what it says to a screen reader; what a press does. In the day,
-   * the week and the month the block itself is the press; in the agenda and a crowded slot's list (`row`), a row with
-   * its own Move to… button beside it, which a phone has no keys for.
+   * the week and the month the block itself is the press, its Move to… button beside it (`menus`); in the agenda and a
+   * crowded slot's list (`row`), a row with its own Move to… button beside it, which a phone has no keys for.
    */
   function eventBlock(event: CalendarEvent, day: Date, compact: boolean, inOwnColumn = false, row = state.view === 'agenda'): HTMLElement {
     const can = event.record.can;
@@ -320,17 +331,17 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     if (event.resourceLabel && !compact && !inOwnColumn) words.append(make('span', { class: 'fd-cal-event-who' }, make('bdi', {}, event.resourceLabel)));
     block.append(row ? target : words);
     if (movable) {
-      // In a block, for a pointer alone: the keys reach Move to… by M, as the block tells a screen reader, and a
-      // button inside a button is no button. Beside an agenda's row, a button of its own, for a phone too.
-      const menu = row
-        ? make('button', { type: 'button', class: 'fd-cal-event-menu', tabindex: '-1', 'aria-label': fill(labels.moveTitle, { name: event.title }), title: labels.moveTo }, '⋯')
-        : make('button', { type: 'button', class: 'fd-cal-event-menu', tabindex: '-1', 'aria-hidden': 'true', title: labels.moveTo }, '⋯');
+      // A button of its own beside the block, or beside an agenda's row: for a pointer and a phone's finger, and named
+      // for a screen reader; the keys reach Move to… by M on the block, as the block says. Never inside the block, which
+      // is a button itself (a button in a button is no button): `inFlow` and `inColumn` put it beside it.
+      const menu = make('button', { type: 'button', class: 'fd-cal-event-menu', tabindex: '-1', 'aria-label': fill(labels.moveTitle, { name: event.title }), title: labels.moveTo }, '⋯');
       menu.addEventListener('pointerdown', (e) => e.stopPropagation());
       menu.addEventListener('click', (e) => {
         e.stopPropagation();
         mover.open(event, target);
       });
-      block.append(menu);
+      if (row) block.append(menu);
+      else menus.set(block, menu);
     }
     target.addEventListener('keydown', (e) => onEventKey(cal, e, event, target));
     if (!row) {
@@ -396,7 +407,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       grid.append(make('div', { class: 'fd-cal-corner' }, labels.allDay));
       columns.forEach((column, i) => {
         const cell = make('div', { class: 'fd-cal-allday', 'data-day': dayKey(column.day), 'data-column': String(i), 'data-alone': daysOnly ? '' : undefined });
-        for (const event of allDay) if (covers(event, column.day) && inColumn(event, column)) cell.append(eventBlock(event, column.day, true));
+        for (const event of allDay) if (covers(event, column.day) && inColumn(event, column)) cell.append(inFlow(eventBlock(event, column.day, true)));
         cell.addEventListener('pointerdown', (e) => {
           if (e.target !== cell || !canCreate || e.button !== 0) return;
           void createAt(column.day, null, column, true);
@@ -470,7 +481,13 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
           grip.addEventListener('pointerdown', (e) => stretch(cal, e, event, block, col));
           block.append(grip);
         }
-        col.append(block);
+        // Its "⋯" beside it in the column, over its end corner: top, and its lane's end less its own 24 pixels.
+        const menu = menus.get(block);
+        if (menu) {
+          menu.style.top = `${top}px`;
+          menu.style.insetInlineStart = `calc(${((lane + 1) / of) * 100}% - 26px)`;
+        }
+        col.append(...(menu ? [block, menu] : [block]));
       };
       for (const m of mine) {
         const place = placed.get(m.event.id) ?? { column: 0, columns: 1 };
@@ -589,7 +606,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       number.addEventListener('keydown', (e) => onDayKey(cal, e, day));
       number.addEventListener('focus', () => (state.cursor = { ...state.cursor, day }));
       cell.append(number);
-      for (const event of mine.slice(0, IN_A_DAY)) cell.append(eventBlock(event, day, true));
+      for (const event of mine.slice(0, IN_A_DAY)) cell.append(inFlow(eventBlock(event, day, true)));
       if (mine.length > IN_A_DAY) {
         const n = mine.length - IN_A_DAY;
         const more = make('button', { type: 'button', class: 'fd-cal-more', 'data-holds': mine.slice(IN_A_DAY).map((event) => String(event.id)).join(' '), 'aria-label': fill(labels.moreOn, { n, when: longDay(day) }) }, fill(labels.more, { n }));

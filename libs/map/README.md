@@ -3,7 +3,16 @@
 [Fieldia](https://fieldia.dev)'s maps: a **place** and an **area** as fields of a
 form, a **list's records on a map**, and a **map on a form** with its layers,
 places that move and routes along the roads, on the map provider you choose.
-Built on [Leaflet](https://leafletjs.com), loaded only when a map is shown.
+Built on [Leaflet](https://leafletjs.com), loaded only when a map is shown. Its
+own code is loaded the same way (0.35), in a chunk of its own for each thing it
+draws — a list's map, a form's map, the place, area and address fields — each
+fetched the first time a page shows one, with Leaflet asked for beside it: a page
+of an app that imports `@fieldia/map` carries about 11–13 KB gzipped of it (its
+providers, the designer's kinds and its words), where 0.34 carried 27–48. A page
+with a place field is drawn once its part has come, as with any part; a list's
+map and a form's map hold their place meanwhile, waiting as the page says it
+waits the first time, and `mountListMap` hands back its map at once and draws it
+once its code has come.
 
 ```sh
 npm install @fieldia/map
@@ -201,10 +210,10 @@ map.destroy();
 ```
 
 Its words come in English, Arabic, German and French, and in Turkish, Persian,
-Urdu and Spanish — machine-assisted, not yet reviewed by a native speaker — each
-of those four in a chunk of its own, fetched where it is spoken: a viewer's maps
-are drawn once the page's language's words have come, and `mountListMap` waits
-for them too.
+Urdu and Spanish — the last four machine-assisted, not yet reviewed by a native
+speaker — each but English in a chunk of its own, fetched where it is spoken: a
+viewer's maps are drawn once the page's language's words have come, and
+`mountListMap` waits for them too.
 Also `locale` (a tag; the document's language unless said), `sort`, `icons`,
 `isChosen` and `onChoose`, `actions` and `onAction`, `onSort` (Nearest first),
 and every setting `mapListViews` takes. Without `onSearch` the map offers no

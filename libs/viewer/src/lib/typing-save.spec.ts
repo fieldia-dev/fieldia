@@ -108,8 +108,13 @@ describe.each(['en', 'ar', 'fr'] as const)('%s: Enter in a one-line box', (local
 });
 
 describe.each(['en', 'ar', 'fr'] as const)('%s: Ctrl+Enter with a box still typed in', (locale) => {
-  const words = WIDGET_LABELS[locale];
-  const messages = MESSAGES[locale] ?? MESSAGES.en;
+  // Read once the language's words have come (test-parts.ts: each but English's comes in a chunk of its own).
+  let words = WIDGET_LABELS.en;
+  let messages = MESSAGES.en;
+  beforeAll(() => {
+    words = WIDGET_LABELS[locale];
+    messages = MESSAGES[locale] ?? MESSAGES.en;
+  });
   it.each([
     ['Workstations "1.5"', 'f-seats', 'seats', '1.5', () => integerWords(locale)],
     ['Workstations "1e5", its keys held', 'f-seats', 'seats', '1e5', () => fill(words.notANumber, { label: 'Workstations', text: '⁨1e5⁩' })],

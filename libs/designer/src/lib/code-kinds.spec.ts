@@ -1,7 +1,7 @@
 import { validatePage, type Field, type FieldNode } from '@fieldia/core';
 import { CODE_LANGUAGES } from '../../../code/src/lib/languages';
 import { blankPage, createDesigner, kindOfField, type Designer } from './designer';
-import { DESIGNER_WORDS } from './designer-words';
+import { wordsIn } from './designer-words';
 import { inputChanges } from './input-changes';
 import { findNode } from './page-tree';
 import { choose, mount } from './test-editor';
@@ -87,7 +87,7 @@ describe('code as a kind of field', () => {
   });
 
   it('is named in Arabic', () => {
-    const names: Record<string, string> = DESIGNER_WORDS.ar.kinds.names;
+    const names: Record<string, string> = wordsIn('ar').kinds.names;
     expect(names['code']).toBe('شيفرة برمجية');
     expect(names['vscode']).toContain('VS Code');
   });
@@ -141,6 +141,6 @@ describe('the language code is written in', () => {
     const now = { field, node: { ...was.node, options: { language: 'python' } } };
     expect(inputChanges('Script', was, now).lines).toEqual(['“Script”: written in Python']);
     expect(inputChanges('Script', now, was).lines).toEqual(['“Script”: plain text']);
-    expect(inputChanges('Script', was, now, DESIGNER_WORDS.ar).lines[0]).toContain('Python');
+    expect(inputChanges('Script', was, now, wordsIn('ar')).lines[0]).toContain('Python');
   });
 });

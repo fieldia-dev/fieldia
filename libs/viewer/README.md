@@ -1422,17 +1422,20 @@ script per language the page is shown in:
  A page set to a language whose script is
 missing shows Fieldia's words in English, and the console names the script to
 add. Installed from npm, `@fieldia/viewer` (and `@fieldia/core`,
-`@fieldia/widgets` and the React, Vue and Angular bindings) has English,
-Arabic, German and French with no extra import, and Turkish, Persian, Urdu and
-Spanish each in a chunk of its own (about 18–23 KB gzipped, with @fieldia/map's
-and @fieldia/chatter's words in it where the app uses them), which your bundler
-splits off and the page fetches only where it is spoken: `mountViewer` asks for
-the page's language's first and draws once they have come, so its first paint
-is in them — nothing to do. What does not wait (a widget drawn on its own)
+`@fieldia/widgets` and the React, Vue and Angular bindings) has English with no
+extra import, and every other language — Arabic, German and French (since
+0.35), Turkish, Persian, Urdu and Spanish — each in a chunk of its own (about
+18–23 KB gzipped, with @fieldia/map's and @fieldia/chatter's words in it where
+the app uses them), which your bundler splits off and the page fetches only
+where it is spoken: `mountViewer` asks for the page's language's first and
+draws once they have come, so its first paint is in them — nothing to do. What
+does not wait (a widget drawn on its own, `createForm`'s messages on a server)
 shows English till they come, and the console says once to
-`await wordsReady('tr')` (from `@fieldia/core`) first. An app never carries the
-words of a language it does not show. `addLanguage(locale, { messages, widgets,
-viewer })` replaces a language's words in either.
+`await wordsReady('ar')` (from `@fieldia/core`) first. A server's first paint
+(`@fieldia/viewer/server`) holds no word of Fieldia's own, and needs no wait. An
+app never carries the words of a language it does not show: an English one is
+about 50 KB gzipped smaller for it than before 0.35. `addLanguage(locale, {
+messages, widgets, viewer })` replaces a language's words in either.
 
 Turkish (`tr`), Persian (`fa`), Urdu (`ur`) and Spanish (`es`) are
 **machine-assisted, not yet reviewed by a native speaker**: every word English

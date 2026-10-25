@@ -2,10 +2,11 @@ import { checkPage, localizePage, wordsComing, wordsReady, type DataSource, type
 import type { ListViewPart } from '@fieldia/viewer';
 import type { IconSet } from '@fieldia/widgets';
 import type { LatLng } from './geo';
-import { listMap, type MapSearch, type MapViewChange } from './list-view';
+import type { MapSearch, MapViewChange } from './list-view';
+import { loadLeaflet } from './leaflet';
+import { mapViewPart } from './map-parts';
 import type { MapRecord } from './pins';
 import type { MapSettings } from './settings';
-import { installEmbedStyles } from './styles';
 
 /**
  * A list's map in a page of the app's own, outside the viewer: the page's
@@ -84,15 +85,20 @@ const OWN: readonly Locale[] = ['en', 'ar', 'fr', 'de', 'tr', 'fa', 'ur', 'es'];
 /** Puts a list's map into `host`, loads its records, and hands it back. Throws when the page cannot be shown, saying why. */
 export function mountListMap(host: HTMLElement, options: ListMapOptions): ListMapHandle {
   const tag = options.locale ?? (host.ownerDocument.documentElement.lang || options.page.language || 'en');
-  if (!wordsComing(tag)) return drawListMap(host, options);
-  // Its language's words come in a chunk of their own (Turkish, Persian, Urdu, Spanish): drawn once they have, so its
-  // first paint is in them. A page that cannot be shown says so at once, as ever.
+  const code = mapViewPart.loaded;
+  if (!wordsComing(tag) && code) return drawListMap(host, options, code);
+  // Its code (`mapViewPart`, with Leaflet asked for beside it) and its language's words (every language but English) come
+  // in chunks of their own: drawn once they have, so its first paint is in them. A page that cannot be shown says so at
+  // once, as ever.
   const checked = checkPage(options.page);
   if (!checked.ok) throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
+  if (host.ownerDocument.defaultView) void loadLeaflet().catch(() => undefined);
   let part: ListMapHandle | null = null;
   let gone = false;
-  const ready = wordsReady(tag).then(() => {
-    if (!gone) part = drawListMap(host, options);
+  // Its own words too, which come with its code (labels.ts): asked for as it came.
+  const ready = Promise.all([wordsReady(tag), mapViewPart.load()]).then(async ([, loaded]) => {
+    await wordsReady(tag);
+    if (!gone) part = drawListMap(host, options, loaded);
   });
   return {
     get element() {
@@ -109,7 +115,7 @@ export function mountListMap(host: HTMLElement, options: ListMapOptions): ListMa
   };
 }
 
-function drawListMap(host: HTMLElement, options: ListMapOptions): ListMapHandle {
+function drawListMap(host: HTMLElement, options: ListMapOptions, { listMap, installEmbedStyles }: NonNullable<typeof mapViewPart.loaded>): ListMapHandle {
   const doc = host.ownerDocument;
   const checked = checkPage(options.page);
   if (!checked.ok) throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);

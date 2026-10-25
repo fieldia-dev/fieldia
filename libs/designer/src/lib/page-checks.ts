@@ -1,4 +1,4 @@
-import { pageWarnings, validatePage, type Field, type FieldNode, type FunctionsKnown, type Page, type SheetNode } from '@fieldia/core';
+import { pageWarnings, type Field, type FieldNode, type FunctionsKnown, type Page, type SheetNode } from '@fieldia/core';
 import { wordsOf, type HeaderPart } from './header-commands';
 import { readCondition, type Condition } from './conditions';
 import { kindById, kindOfField } from './kinds';
@@ -14,6 +14,7 @@ import { isDefaultOption, isUntitled, type DesignerWords } from './designer-word
 import { en } from './locales/en';
 import { kindName } from './kinds';
 import { formChecks, SAID_BY_FORM_CHECKS, type SavedFormsCache } from './saved-forms';
+import { checkWhole } from './whole-check';
 import { fixStepCheck, stepChanges, stepChecks, type StepFix, type StepFixer } from './steps-checks';
 
 /**
@@ -86,7 +87,7 @@ export function pageChecks(page: Page, options: { valid?: boolean; words?: Desig
   const words = options.words ?? en;
   const w = words.checks;
   const found: PageCheck[] = [];
-  const checked = options.valid ? null : validatePage(page, { functions: options.functions });
+  const checked = options.valid ? null : checkWhole(page, options.functions);
   const rules = ruleChecks(page, words, options.functions);
   // steps lane: what the page's parts do — on a page written by hand, the page's own check said by part and step.
   const doing = stepChecks(page, checked && !checked.ok ? checked.issues : [], words);

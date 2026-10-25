@@ -43,6 +43,9 @@
  * 0.34.1 (the owner's walk of 0.33.0): the timeline's place waits as the list says while its code comes — its skeleton,
  * never an empty space under the list's search — the timeline's first wait going on from it (list-view.ts): with the
  * page 816 bytes measured before, 865 after, to 0.9; the timeline 15,799, 15,834, inside its 15.5.
+ * 0.35 (perf-bytes): its Arabic, German and French words in chunks of their own, as every package's other languages are
+ * (`LANGUAGE_BUDGET`: Arabic 866 bytes, German 705, French 708 measured): with the page 865 bytes measured before, 765
+ * after, to 0.8; the timeline 15,834, 14,194, to 13.9.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -51,8 +54,8 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.9, gantt: 15.5 };
-const LANGUAGE_BUDGET = { tr: 0.8, fa: 1.0, ur: 0.9, es: 0.7 };
+const BUDGET = { page: 0.8, gantt: 13.9 };
+const LANGUAGE_BUDGET = { ar: 0.9, de: 0.7, fr: 0.7, tr: 0.8, fa: 1.0, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });

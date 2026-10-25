@@ -25,8 +25,8 @@ const page: Page = {
   layout: { type: 'sections', id: 'root', children: [{ type: 'section', id: 's', children: [{ type: 'field', id: 'n', field: 'name' }] }] },
 };
 
-/** The modules that hold every language besides English: the script bundle builds each as an empty one. */
-const OTHER_LANGUAGES = ['../../../core/src/lib/record/locales/all', '../../../widgets/src/lib/locales/all', './locales/all'];
+/** The modules that fetch every language besides English: the script bundle builds each as an empty one. */
+const OTHER_LANGUAGES = ['../../../core/src/lib/record/locales/later', '../../../widgets/src/lib/locales/later', './locales/later'];
 
 type Fieldia = typeof packaged & Pick<typeof import('@fieldia/core'), 'MESSAGES'> & Pick<typeof import('@fieldia/widgets'), 'WIDGET_LABELS'>;
 
@@ -34,7 +34,7 @@ type Fieldia = typeof packaged & Pick<typeof import('@fieldia/core'), 'MESSAGES'
 async function englishOnly(): Promise<Fieldia> {
   let fieldia!: Fieldia;
   await jest.isolateModulesAsync(async () => {
-    for (const path of OTHER_LANGUAGES) jest.doMock(path, () => ({ LANGUAGES: {} }));
+    for (const path of OTHER_LANGUAGES) jest.doMock(path, () => ({ LATER: {} }));
     const [viewer, core, widgets] = await Promise.all([import('../index'), import('@fieldia/core'), import('@fieldia/widgets')]);
     fieldia = { ...viewer, MESSAGES: core.MESSAGES, WIDGET_LABELS: widgets.WIDGET_LABELS };
   });

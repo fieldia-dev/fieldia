@@ -1,8 +1,9 @@
-import { checkPage, FORMAT_VERSION, validatePage, type Field, type FieldNode, type JsonValue, type Page } from '@fieldia/core';
+import { checkPage, FORMAT_VERSION, type Field, type FieldNode, type JsonValue, type Page } from '@fieldia/core';
 import { kindById } from './kinds';
 import { wordsIn, type DesignerLocale, type DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { Refusal } from './refusal';
+import { checkWhole } from './whole-check';
 
 /**
  * Pages to start from: a blank survey or screen offers a few sensible ones,
@@ -248,7 +249,7 @@ export function pageProblem(page: Page, next: unknown, words: DesignerWords = en
   const issues = (found: { path: string; message: string }[]) => found.map((i) => `${i.path}: ${i.message}`).join('; ');
   const checked = checkPage(next);
   if (!checked.ok) return w.notAPage(issues(checked.issues));
-  const full = validatePage(next);
+  const full = checkWhole(next);
   if (!full.ok) return w.notAPage(issues(full.issues));
   const survey = page.layout.type === 'wizard';
   if (survey && checked.page.layout.type !== 'wizard') return w.surveyNotScreen;

@@ -1,7 +1,8 @@
 import { inTime, PART_WAIT_MS } from '../parts';
 /**
- * Languages whose words come in chunks of their own: in the packages, Turkish, Persian, Urdu and Spanish (machine-
- * assisted, not yet reviewed by a native speaker), so an app never carries the words of a language it does not show.
+ * Languages whose words come in chunks of their own: in the packages, every language but English — Arabic, German,
+ * French, and Turkish, Persian, Urdu and Spanish (machine-assisted, not yet reviewed by a native speaker) — so an app
+ * never carries the words of a language it does not show (0.35; Arabic, German and French were carried at once before).
  * Each package says how it fetches its words in one (`wordsInChunks`); `wordsReady(tag)` fetches every package's for a
  * language, once, and what draws in it — `mountViewer`, a map's widgets, `mountChatter` — waits for them before it
  * draws, as it waits for its parts. The one-tag script has none: its languages are its add-on scripts.

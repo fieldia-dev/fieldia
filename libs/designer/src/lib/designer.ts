@@ -4,7 +4,6 @@ import {
   optionsField,
   optionsList,
   limitInstant,
-  validatePage,
   type FunctionsKnown,
   wideColumns,
   type AnswerRule,
@@ -81,6 +80,7 @@ import { LOOK_PRESETS, wholeLook, type LookValues } from './look-presets';
 import { browserLooks } from './look-store';
 import { setFold, type Fold } from './group-fold';
 import { editChecker } from './validate-edit';
+import { pageSchemaPart } from './schema-part';
 import { designerLocale, designerWordsReady, isDefaultOption, wordsIn, type DesignerLocale, type DesignerWords } from './designer-words';
 import { answersName, formParts, freeFieldName, refuseCycle, savedFormsCache, updateFormPart, type FormPartPatch, type SavedFormRef } from './saved-forms';
 import { settingRefusal } from './setting-refusals';
@@ -744,7 +744,7 @@ const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 /** How many edits Undo takes back: the last 200 (each a whole page kept). */
 export const UNDO_STEPS = 200;
 
-/** Whether the designer's words in a language are at hand: English's and Arabic's always, the others' once fetched. */
+/** Whether the designer's words in a language are at hand: English's always, the others' once fetched. */
 const wordsAtHand = (locale: DesignerLocale) => wordsIn(locale) !== wordsIn('en') || locale === 'en';
 const toldNotYet = new Set<DesignerLocale>();
 /** A designer asked for in a language whose words have not been fetched: it speaks English, and says once how to fix it. */
@@ -778,8 +778,10 @@ export function createDesigner(options: {
   looks?: LookStore;
   /**
    * The designer's own language, as a language tag (`ar`, `en`): its buttons,
-   * menus, messages and checks in it — English and Arabic; English for any
-   * other — and its editors running that language's way. The page's own
+   * menus, messages and checks in it — English at once; Arabic, Turkish,
+   * Persian, Urdu and Spanish once fetched (`designerWordsReady`, which
+   * `createDesigner.open` awaits); English for any other — and its editors
+   * running that language's way. The page's own
    * words are never translated: they are the page's. English, taking the
    * direction of the page around it, unless said.
    */
@@ -854,6 +856,17 @@ export function createDesigner(options: {
     formsCame++;
     notify();
   });
+  // The format's schemas and its whole check come in a part of their own, with zod (`pageSchemaPart`, 0.35), asked for
+  // as the designer opens: what is kept before they come is held to the quick check (validate-edit.ts, whole-check.ts),
+  // and the page's checks are worked out again once they have come.
+  if (!pageSchemaPart.loaded)
+    pageSchemaPart.load().then(
+      () => {
+        checksOf = null;
+        notify();
+      },
+      () => undefined
+    );
   const state = (): DesignerState => ({
     page,
     selected,
@@ -2127,9 +2140,11 @@ export function createDesigner(options: {
     },
 
     async publish() {
+      // Never published but checked whole: the format's schemas fetched first, where they have not come yet.
+      const schema = pageSchemaPart.loaded ?? (await pageSchemaPart.load());
       // A setting still typed is read first, as leaving its box reads it: what is published is what the boxes show.
       for (const read of [...readers]) read();
-      const checked = validatePage(page, { functions });
+      const checked = schema.validatePage(page, { functions });
       if (!checked.ok) throw new Error(words.refusals.cannotPublish);
       const version = store ? await store.publish(clone(page)) : versions.length + 1;
       versions = [...versions, { version, publishedAt: new Date().toISOString(), page: clone(page) }];

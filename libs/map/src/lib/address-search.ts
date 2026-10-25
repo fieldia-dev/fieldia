@@ -1,3 +1,4 @@
+import { wordsReady } from '@fieldia/core';
 import { createWidget, type WidgetFactory } from '@fieldia/widgets';
 import { addressLine, directionOf } from './address-line';
 import { searchBox } from './search-box';
@@ -42,9 +43,13 @@ export function addressSearchWidget(settings: MapSettings): WidgetFactory {
     input.addEventListener('input', align);
     let shown: ReturnType<typeof import('./address-suggest').suggest> | null | undefined;
     // The place search's own combobox and line are handed over, as the page has them already: the suggestions' chunk carries neither.
-    import('./address-suggest').then(({ suggest }) => {
-      if (shown === undefined) shown = suggest({ settings, context, search, element, input, searchBox, addressLine });
-    });
+    // Its words come with it (address-labels.ts), in the page's language once they have come: every language but English
+    // comes in a chunk of its own (0.35), asked for as the suggestions' code came.
+    import('./address-suggest')
+      .then((module) => wordsReady(context.locale).then(() => module))
+      .then(({ suggest }) => {
+        if (shown === undefined) shown = suggest({ settings, context, search, element, input, searchBox, addressLine });
+      });
     return {
       ...plain,
       element,

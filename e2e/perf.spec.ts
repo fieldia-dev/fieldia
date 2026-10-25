@@ -2,6 +2,7 @@ import { appendFileSync, mkdirSync } from 'node:fs';
 import { loadavg } from 'node:os';
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+import { asAPhone } from './perf-counts';
 
 /**
  * How quick Fieldia stays on a page of 500 fields (examples/pages/big.page.json,
@@ -23,12 +24,20 @@ import { expect, test } from './fixtures';
  * and CI times each action 5 times (FIELDIA_PERF_RUNS), to keep its run
  * short. Each run's numbers and the load average go to
  * test-results/perf/results.jsonl, marked with FIELDIA_PERF_LABEL.
+ *
+ * Run alone (0.35): CI's own perf job, one worker, never beside other specs — the Chromium project of the browser
+ * shards leaves it out (playwright.config.ts, PERF), so a shard's load no longer times it. On a mid-range phone too
+ * (`perf-phone`: 412 px, its CPU four times slower), the viewer alone — the editors are drawn for a desktop — each
+ * budget four times a desktop's, as its CPU is.
  */
 
 /** How many times each action is timed: 7 at most, the fields the drags and picks are scripted for. */
 const RUNS = Math.min(7, Number(process.env['FIELDIA_PERF_RUNS'] ?? (process.env['CI'] ? 5 : 7)));
 const SLACK = Number(process.env['FIELDIA_PERF_SLACK'] ?? (process.env['CI'] ? 3 : 1));
 const LABEL = process.env['FIELDIA_PERF_LABEL'] ?? 'this build';
+/** A mid-range phone's CPU: four times slower, its budgets four times a desktop's. */
+const phone = () => test.info().project.name === 'perf-phone';
+const CPU = () => (phone() ? 4 : 1);
 
 /** Milliseconds, before the slack. */
 const BUDGET = {
@@ -124,11 +133,11 @@ async function timeIt(page: Page, scenario: string, action: string, budget: numb
 /** Note a timing, and hold its median to the budget, softly: the other timings are still taken. */
 function record(scenario: string, action: string, budget: number, runs: Timing[]) {
   const work = runs.map((r) => round(r.work));
-  const row = { build: LABEL, scenario, action, budget, median: median(work), runs: work, longest: round(Math.max(...runs.map((r) => r.longest))), load: round(loadavg()[0]), at: new Date().toISOString() };
+  const row = { build: LABEL, scenario: phone() ? `${scenario} (phone)` : scenario, action, budget: budget * CPU(), median: median(work), runs: work, longest: round(Math.max(...runs.map((r) => r.longest))), load: round(loadavg()[0]), at: new Date().toISOString() };
   results.push(row);
   mkdirSync('test-results/perf', { recursive: true });
   appendFileSync('test-results/perf/results.jsonl', `${JSON.stringify(row)}\n`);
-  expect.soft(row.median, `${scenario}: ${action} — runs ${work.join(', ')} ms`).toBeLessThanOrEqual(budget * SLACK);
+  expect.soft(row.median, `${row.scenario}: ${action} — runs ${work.join(', ')} ms`).toBeLessThanOrEqual(row.budget * SLACK);
 }
 
 /** Let what the last action put off finish, so it is not timed with the next. */
@@ -154,7 +163,8 @@ test.use({ trace: 'off' });
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(harness);
-  await page.setViewportSize({ width: 1440, height: 900 });
+  if (phone()) await asAPhone(page);
+  else await page.setViewportSize({ width: 1440, height: 900 });
 });
 
 test.afterAll(() => {
@@ -166,7 +176,7 @@ test.afterAll(() => {
 test('the viewer fills in 500 fields without a frame dropped', async ({ page }) => {
   const scenario = 'viewer';
   const url = '/plain/?page=big&skin=outlined';
-  test.setTimeout(180_000);
+  test.setTimeout(phone() ? 400_000 : 180_000);
   await timeOpening(page, scenario, url, 'viewer', BUDGET.viewerMount);
   await expect(page.locator('.fd-field[data-field]')).toHaveCount(500);
 
@@ -197,7 +207,7 @@ test('the viewer fills in 500 fields without a frame dropped', async ({ page }) 
     await send.click();
   });
   await expect(page.locator('.fd-error:not([hidden])')).toHaveCount(24);
-  await page.screenshot({ path: 'test-results/screens/perf-viewer.png', fullPage: false });
+  await page.screenshot({ path: `test-results/screens/perf-viewer${phone() ? '-phone' : ''}.png`, fullPage: false });
 });
 
 /** The editors, and how each picks, types in, adds, drags and moves its fields. */
@@ -209,6 +219,7 @@ const EDITORS = [
 
 for (const editor of EDITORS) {
   test(`the ${editor.scenario} edits 500 fields at the speed of typing`, async ({ page }) => {
+    test.skip(phone(), 'the editors are drawn for a desktop: the phone times the viewer');
     test.setTimeout(240_000);
     const { scenario } = editor;
     const survey = editor.timing === 'designer';

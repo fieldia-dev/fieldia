@@ -1,6 +1,6 @@
 import type { Field, FieldNode, Page, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner, type Designer } from './designer';
-import { DESIGNER_WORDS } from './designer-words';
+import { DESIGNER_WORDS, wordsIn } from './designer-words';
 import { settingDate, type SettingDateOptions } from './date-setting';
 import { findNode } from './page-tree';
 import { button, choose, field, mount, openTab, typeAndLeave } from './test-editor';
@@ -58,7 +58,7 @@ describe('the designer’s date box', () => {
     let saved: string | null = options.saved ? (options.saved() ?? null) : '2026-03-02';
     const commits: (string | null)[] = [];
     const page = { ...blankPage('screen', 'Visit'), ...(options.order ? { look: { dateOrder: options.order } } : {}) } as Page;
-    const made = settingDate(el, { words: DESIGNER_WORDS[locale], locale, getPage: () => page }, {
+    const made = settingDate(el, { words: wordsIn(locale), locale, getPage: () => page }, {
       kind: 'date',
       label: locale === 'ar' ? 'أول يوم' : 'Earliest day',
       ...options,
@@ -287,7 +287,7 @@ describe('a date the designer does not take', () => {
   it.each(['en', 'ar'] as const)('%s: is never refused in silence, even when the designer names no reason', (locale) => {
     const page = blankPage('screen', 'Visit');
     const label = locale === 'ar' ? 'أول يوم' : 'Earliest day';
-    const made = settingDate(el, { words: DESIGNER_WORDS[locale], locale, getPage: () => page, getState: () => ({ issues: [] }) }, {
+    const made = settingDate(el, { words: wordsIn(locale), locale, getPage: () => page, getState: () => ({ issues: [] }) }, {
       kind: 'date',
       label,
       saved: () => null,
@@ -298,6 +298,6 @@ describe('a date the designer does not take', () => {
     document.body.replaceChildren(holder);
     retype(made.input, '15/10/2026');
     expect(made.input.value).toBe('');
-    expect(hintOf(made.input)?.textContent).toBe(DESIGNER_WORDS[locale].inputs.settingDateRefused(label));
+    expect(hintOf(made.input)?.textContent).toBe(wordsIn(locale).inputs.settingDateRefused(label));
   });
 });

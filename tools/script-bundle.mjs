@@ -22,7 +22,7 @@
  * own and define the global with the viewer in it, and each add-on must give
  * it that language's words.
  */
-import { build, transform } from 'esbuild';
+import { build } from 'esbuild';
 import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -31,6 +31,7 @@ import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { gzipSync } from 'node:zlib';
 import { englishKeys, PART_WORDS, partWordsProblems, readerSource, withoutWords, WORD_TABLES } from './part-words.mjs';
+import { minifiedStyles as minifiedStylesPlugin } from './minified-styles.mjs';
 import { machinePathIn } from './release-guards.mjs';
 import { hashesOf, tagProblems, writeTags } from './script-tags.mjs';
 
@@ -55,23 +56,10 @@ const { version } = JSON.parse(readFileSync(join(WORKSPACE, 'libs/viewer/package
 
 /**
  * The stylesheets ship as text inside the code, which the code's minifier
- * leaves alone: minify that text as CSS, with esbuild's own CSS minifier.
+ * leaves alone: minify that text as CSS, with esbuild's own CSS minifier
+ * (tools/minified-styles.mjs, as the packages and the demos are built).
  */
-const minifiedStyles = {
-  name: 'minified-styles',
-  setup(builder) {
-    builder.onLoad({ filter: /libs\/(widgets|viewer)\/src\/lib\/(([a-z-]+-)?styles|styles-[a-z-]+)\.ts$/ }, async ({ path }) => {
-      const source = readFileSync(path, 'utf8');
-      const literal = /(= (?:\/\* css \*\/ )?`)([^`]*)(`;)/;
-      const found = literal.exec(source);
-      if (!found) throw new Error(`no stylesheet found in ${path}`);
-      const { code: css } = await transform(found[2], { loader: 'css', minify: true, charset: 'utf8', logLevel: 'error' });
-      // Text that could end the literal, or be read as part of it, would break the code.
-      if (/[`\\]|\$\{/.test(css)) throw new Error(`the minified stylesheet of ${path} cannot sit in a template literal`);
-      return { contents: source.replace(literal, (_, open, _css, close) => open + css.trim() + close), loader: 'ts' };
-    });
-  },
-};
+const minifiedStyles = minifiedStylesPlugin(['widgets', 'viewer']);
 
 /**
  * A server's first paint (@fieldia/viewer/server) is the packages': an app that draws one mounts the packages' viewer
@@ -88,16 +76,19 @@ const noFirstPaint = {
 };
 
 /**
- * English alone in the main script: each package's module of the other
- * languages (`locales/all.ts`) is built as an empty one, so their words stay
- * out; the add-ons bring them.
+ * English alone in the main script: each package's module that fetches the
+ * other languages (`locales/later.ts`) is built as an empty one, so their
+ * words stay out; the add-ons bring them.
  */
 const englishOnly = {
   name: 'english-only',
   setup(builder) {
-    builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/all\.ts$/ }, () => ({ contents: 'export const LANGUAGES = {};', loader: 'ts' }));
-    // Turkish, Persian, Urdu and Spanish, which the packages fetch in chunks of their own: the add-on scripts here.
+    // Every language but English, which the packages fetch in chunks of their own (Arabic, German and French too since
+    // 0.35; carried at once in the packages before, and built here from an empty `locales/all.ts`): the add-on scripts here.
     builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/later\.ts$/ }, () => ({ contents: 'export const LATER = {};', loader: 'ts' }));
+    // Yes and no in every language, for a file brought in (the packages'): here, a file reads in the languages whose
+    // add-ons are in, from their own words.
+    builder.onLoad({ filter: /libs\/viewer\/src\/lib\/locales\/yes-no\.ts$/ }, () => ({ contents: 'export const FILE_YES_NO = { yes: [], no: [] };', loader: 'ts' }));
     // With no language in a chunk, the packages' way of fetching them and of putting a mount's early words in theirs has
     // nothing to do here: what every caller reads of it, and no more.
     builder.onLoad({ filter: /libs\/core\/src\/lib\/record\/words-chunks\.ts$/ }, () => ({
@@ -1534,7 +1525,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // pressed, a failed save said under the buttons; a placeholder read in its own direction (styles.ts); the loading part
 // asked for as a page whose parts are in already mounts, and loaded by `loadParts` (viewer-parts.ts); a reload's
 // failure said once (viewer.ts): 558.27 measured before, 560.05 after, to 560.1.
-const BUDGET_KB = 560.1;
+// 0.35 (perf-bytes), a host's tick boxes (NexiBI's request), on every page that draws a radio or a tick box: the tick,
+// the dot and the dash in proportion to the box at any --fd-tick-size, its press target 24px at the least, a corner of
+// its own (--fd-tick-radius), and the four tick tokens taken by the viewer's `tokens` (styles.ts, look.ts) — 573,495
+// bytes measured before, 573,824 after (+329: 560.05 to 560.38); and a part's own word tables' words (a map's fields',
+// fetched as their part comes) waited for before a page is drawn in their language (viewer.ts), 19 more, 573,843; and a
+// dialog opened in a language whose words come in a chunk of their own waiting for them as its viewer does, its ⤢, grip
+// and foot named in them (dialog.ts), 54 more, 573,897 — to 560.5 (gzipped 186.68, inside its 186.7).
+const BUDGET_KB = 560.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1872,7 +1870,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // record's failed load, one pattern checker. The walk's two mended (listed with the raw budget above): 185.93 measured
 // before, 186.02 after, to 186.1.
 // 0.34.1, the walk's waits (listed with the raw budget above): 186.06 measured before, 186.54 after, to 186.6.
-const GZIP_BUDGET_KB = 186.6;
+// 0.35, a host's tick boxes (listed with the raw budget above): 186.54 measured before, 186.64 after, to 186.7.
+const GZIP_BUDGET_KB = 186.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

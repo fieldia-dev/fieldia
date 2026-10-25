@@ -337,7 +337,7 @@ test.describe("a list's calendar", () => {
     const lostStarts = () =>
       page.locator('.fd-cal').evaluate((root) => {
         const lost: string[] = [];
-        for (const title of root.querySelectorAll<HTMLElement>('.fd-cal-col > .fd-cal-event[data-short] .fd-cal-event-title, .fd-cal-day > .fd-cal-event .fd-cal-event-title, .fd-cal-allday > .fd-cal-event .fd-cal-event-title')) {
+        for (const title of root.querySelectorAll<HTMLElement>('.fd-cal-col > .fd-cal-event[data-short] .fd-cal-event-title, .fd-cal-day .fd-cal-event .fd-cal-event-title, .fd-cal-allday .fd-cal-event .fd-cal-event-title')) {
           const block = title.closest('.fd-cal-event') as HTMLElement;
           const text = document.createTreeWalker(title, NodeFilter.SHOW_TEXT).nextNode();
           if (!text?.textContent) continue;

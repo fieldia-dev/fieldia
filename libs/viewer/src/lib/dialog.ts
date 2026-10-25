@@ -1,4 +1,4 @@
-import type { LeaveHow, PageLook, PanelSide, RecordId, RelatedRecord, Theme, Values } from '@fieldia/core';
+import { wordsComing, wordsReady, type LeaveHow, type PageLook, type PanelSide, type RecordId, type RelatedRecord, type Theme, type Values } from '@fieldia/core';
 import { drawIcon, settleParts, WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale, viewerWords } from './labels';
 import { keepTabIn } from './focus-trap';
@@ -131,8 +131,11 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   // once they are in, drawn whole — at once when they are already.
   const windowed = !side && (options.size === 'inset' || options.backdrop === 'clear' || !!options.maximise || !!options.resizable);
   const parts = [...partsFor(options.page, options.widgets, options.slots), ...(windowed ? [headPart] : [])].filter((part) => !part.loaded);
-  if (!parts.length) return openNow(options, shape, side, opener);
-  return settleParts(parts).then(() => openNow(options, shape, side, opener));
+  // And its language's words where they come in a chunk of their own (every language but English, 0.35): its ⤢, its
+  // grip and its foot are named in them from the start, as the viewer inside it draws in them.
+  const words = wordsComing(options.locale) ? wordsReady(options.locale) : null;
+  if (!parts.length && !words) return openNow(options, shape, side, opener);
+  return Promise.all([settleParts(parts), words]).then(() => openNow(options, shape, side, opener));
 }
 
 function openNow(options: FormDialogOptions, shape: string, side: PanelSide | undefined, opener: HTMLElement | null): Promise<FormDialogResult> {

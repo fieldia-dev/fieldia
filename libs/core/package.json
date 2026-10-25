@@ -18,6 +18,15 @@
       "require": "./src/index.js",
       "default": "./src/index.js"
     },
+    "./schema": {
+      "types": {
+        "import": "./src/schema.d.mts",
+        "require": "./src/schema.d.ts"
+      },
+      "import": "./src/lib/format/schema-part.bundle.mjs",
+      "require": "./src/schema.js",
+      "default": "./src/schema.js"
+    },
     "./page.schema.json": "./schema/page.schema.json",
     "./package.json": "./package.json"
   },
@@ -35,6 +44,7 @@
     "src",
     "schema",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ]
 }

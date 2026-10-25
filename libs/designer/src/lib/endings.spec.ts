@@ -2,7 +2,7 @@ import { validatePage, type Page } from '@fieldia/core';
 import { answerButton, withAnswers } from './answer-picker';
 import { elementFactory, optionsEditor } from './chrome';
 import { createDesigner } from './designer';
-import { DESIGNER_WORDS } from './designer-words';
+import { wordsIn } from './designer-words';
 import { endingsEditor } from './endings-editor';
 import { pageChanges } from './page-checks';
 import { pageProperties } from './panel-page';
@@ -58,7 +58,7 @@ describe('a form’s endings, as the designer sets them', () => {
     expect(designer.getPage().endings).toEqual([{ title: 'See you in Zamalek', when: "branch == 'zamalek'" }, { title: 'Thank you, {name}' }]);
     expect(validatePage(designer.getPage()).ok).toBe(true);
     expect(pageChanges(before, designer.getPage())).toEqual(['What it says once sent changed: 2 endings']);
-    expect(DESIGNER_WORDS.ar.endings.changed(2)).toBe('تغيّر ما يقوله بعد الإرسال: نهايتان');
+    expect(wordsIn('ar').endings.changed(2)).toBe('تغيّر ما يقوله بعد الإرسال: نهايتان');
   });
 
   it('changes an ending’s words and button, empties taking them away, and false for no button', () => {
@@ -225,7 +225,7 @@ describe('the button that puts an answer in words', () => {
     empty.value = ' this {branch} ';
     (document.querySelector('[data-answer="branch"]') as HTMLButtonElement).click();
     expect(box.value).toBe('How was your visit to {branch|this branch}?');
-    expect(DESIGNER_WORDS.ar.endings.whenEmpty).toBe('عندما تكون فارغة');
+    expect(wordsIn('ar').endings.whenEmpty).toBe('عندما تكون فارغة');
   });
 
   it('is on each option’s row, putting the answer in its words', () => {

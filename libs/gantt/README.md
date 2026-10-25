@@ -8,8 +8,8 @@ the keyboard. A move is written through the data source's `save`, with
 **Undo**. It shares the list's search, filters and favourites, is on the
 page's clock, reads right to left, prints the whole plan on the page's width,
 speaks English, Arabic, French and German — and Turkish, Persian, Urdu and
-Spanish, machine-assisted, not yet reviewed by a native speaker — and its code
-loads only when a timeline is first shown. It draws with plain DOM and SVG: no chart library.
+Spanish, machine-assisted, not yet reviewed by a native speaker — and its code,
+and its words in each language but English, load only when a timeline is first shown. It draws with plain DOM and SVG: no chart library.
 
 ```sh
 npm install @fieldia/gantt

@@ -189,16 +189,17 @@ const EXPECT = {
   '@fieldia/testing': ['fieldia', 'matchFields', 'readField', 'labelsOf'],
 };
 /** A package's other entries, by name, and what each must export. */
-const SUBPATHS = { '@fieldia/testing/playwright': ['fieldia'], '@fieldia/testing/pages': ['checkPageFiles', 'pageFiles', 'resultLines', 'runCheck'], '@fieldia/viewer/server': ['firstPaint', 'firstPaintStyles'] };
+const SUBPATHS = { '@fieldia/testing/playwright': ['fieldia'], '@fieldia/testing/pages': ['checkPageFiles', 'pageFiles', 'resultLines', 'runCheck'], '@fieldia/viewer/server': ['firstPaint', 'firstPaintStyles'], '@fieldia/core/schema': ['validatePage', 'PageSchema', 'FieldSchema'] };
 const names = packages.map((p) => p.manifest.name);
 const esmOnly = new Set(['@fieldia/angular']);
-// English, Arabic, German and French in the packages with no extra import, and Turkish, Persian, Urdu and Spanish each in a
-// chunk of its own, fetched once asked for (@fieldia/core's wordsReady): only the script bundle leaves them to add-ons.
+// English in the packages with no extra import, and every other language — Arabic, German and French (0.35), Turkish,
+// Persian, Urdu and Spanish — each in a chunk of its own, fetched once asked for (@fieldia/core's wordsReady); the script
+// bundle leaves them to add-ons.
 const languagesCheck = (load) => `for (const [name, table] of [['@fieldia/core', 'MESSAGES'], ['@fieldia/widgets', 'WIDGET_LABELS'], ['@fieldia/viewer', 'VIEWER_LABELS']]) {
   const held = Object.keys((${load})[table]).sort().join(',');
-  if (held !== 'ar,de,en,fr') throw new Error(name + ' has ' + table + ' in ' + held + ', not English, Arabic, German and French alone');
+  if (held !== 'en') throw new Error(name + ' has ' + table + ' in ' + held + ', not English alone');
 }
-Promise.all(['tr', 'fa', 'ur', 'es'].map(async (locale) => (${load.replace('name', "'@fieldia/core'")}).wordsReady(locale))).then(async () => {
+Promise.all(['ar', 'de', 'fr', 'tr', 'fa', 'ur', 'es'].map(async (locale) => (${load.replace('name', "'@fieldia/core'")}).wordsReady(locale))).then(async () => {
   for (const [name, table] of [['@fieldia/core', 'MESSAGES'], ['@fieldia/widgets', 'WIDGET_LABELS'], ['@fieldia/viewer', 'VIEWER_LABELS']]) {
     const held = Object.keys((${load})[table]).sort().join(',');
     if (held !== 'ar,de,en,es,fa,fr,tr,ur') throw new Error(name + ' has ' + table + ' in ' + held + ' once its chunks came, not all eight languages');
@@ -443,6 +444,13 @@ for (const notice of ['@fieldia/widgets/THIRD_PARTY_NOTICES.md', '@fieldia/viewe
 }
 for (const part of ['phone', 'decode']) {
   if (!readFileSync(join(SMOKE, `node_modules/@fieldia/viewer/bundle/fieldia.${part}.js`), 'utf8').split('\n')[0].includes('THIRD_PARTY_NOTICES.md')) fail(`the packed fieldia.${part}.js does not name its third-party notice`);
+}
+// `@fieldia/core/schema`'s ESM file carries zod (MIT) inside (tools/dual-build.mjs, OWN_FILE): its notice ships with core,
+// and the file names it in its first line.
+{
+  const notice = join(SMOKE, 'node_modules/@fieldia/core/THIRD_PARTY_NOTICES.md');
+  if (!(existsSync(notice) && /zod/.test(readFileSync(notice, 'utf8')) && /MIT License/.test(readFileSync(notice, 'utf8')))) fail('@fieldia/core/THIRD_PARTY_NOTICES.md is not packed, or does not name zod and its licence');
+  if (!readFileSync(join(SMOKE, 'node_modules/@fieldia/core/src/lib/format/schema-part.bundle.mjs'), 'utf8').split('\n')[0].includes('THIRD_PARTY_NOTICES.md')) fail("the packed @fieldia/core/schema does not name zod's notice");
 }
 
 // The README @fieldia/viewer ships: its script tags name this version, each with the hash of the file beside it in the

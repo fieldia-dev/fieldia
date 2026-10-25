@@ -77,8 +77,9 @@ export const COUNTS = {
   stepKinds: new Set([...text('libs/core/src/lib/format/actions.ts').matchAll(/^\s+do: '([a-zA-Z]+)';/gm)].map((m) => m[1])).size,
   themes: listed('libs/core/src/lib/format/themes.ts', 'THEMES').length,
   skins: listed('libs/core/src/lib/format/themes.ts', 'SKINS').length,
-  // English, and each language the packages bring besides.
-  languages: 1 + (/LANGUAGES[^=]*= \{([^}]*)\}/.exec(text('libs/core/src/lib/record/locales/all.ts'))?.[1].split(',').filter((s) => s.trim()).length ?? 0),
+  // English, and each language the packages bring besides, each in a chunk of its own: counted from the module that
+  // fetches them (0.35; it counted the three once carried at once, leaving out the four in chunks since 0.31).
+  languages: 1 + (text('libs/core/src/lib/record/locales/later.ts').match(/^ {2}[a-z]{2}: \(\) => import\(/gm) ?? []).length,
   codeLanguages: (text('libs/code/src/lib/languages.ts').match(/^ {2}language\(/gm) ?? []).length,
   realScreens: REAL_DEMOS.length,
   templates: templates.length,

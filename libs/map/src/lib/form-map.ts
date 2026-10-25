@@ -1,6 +1,6 @@
 import type * as Leaflet from 'leaflet';
 import { ANY_FUNCTION, compileModifier, expressionContext, type FormState, type Line, type MapLayer, type Page, type Value, type Values, intlFormat } from '@fieldia/core';
-import type { MapPart, MapPartContext, MapPartFactory } from '@fieldia/viewer';
+import type { MapPart, MapPartContext } from '@fieldia/viewer';
 import { startLoading, stillShown } from '@fieldia/widgets';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
@@ -15,25 +15,6 @@ import { leftRoute, nearestOnLine, OFF_ROUTE_M, pointAlong, routeLine, splitLine
 import type { MapSettings } from './settings';
 import { installFormMapStyles } from './styles';
 
-/**
- * A map on a form (`type: "map"`), for the viewer's `maps`: the record's
- * places as layers. A layer is the record's own place (a kitchen, a door, a
- * courier), a place for each of its lines (a round's stops), a route along
- * the roads between them, or the reader's own place. Pins are drawn as a
- * list's map draws them, and gathered as it gathers them when they crowd. A
- * place that moves glides to each new position —
- * along its route when it is on one — says when it was last seen once its
- * news is old, and is followed until the person moves the map. A route's
- * part already travelled fades, and its time and distance left are written
- * into the record's fields the page names. Areas are shaded by colour, one
- * chosen by a press; a reachable area follows its place; a fence runs the
- * page's steps when a place that moves goes into an area or out of it.
- *
- *     mountViewer(host, { page, maps: mapParts({ provider }) })
- */
-export function mapParts(settings: MapSettings): MapPartFactory {
-  return (context) => formMap(settings, context);
-}
 
 /** How long a pin takes to glide to its new place, in milliseconds. */
 const GLIDE_MS = 900;
@@ -86,7 +67,11 @@ interface RouteState {
   written?: number;
 }
 
-function formMap(settings: MapSettings, context: MapPartContext): MapPart {
+/**
+ * A map on a form (`mapParts` in map-parts.ts, which fetches this code the first time one is shown). `now`: its wait
+ * drawn at once, going on from its place's own, already in sight.
+ */
+export function formMap(settings: MapSettings, context: MapPartContext, now = false): MapPart {
   const { node, page, form, document: doc, locale } = context;
   installFormMapStyles(doc);
   const labels = formMapLabels(locale, settings.labels?.[locale]);
@@ -114,6 +99,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
   // Its wait (loading.ts in @fieldia/widgets, `first`): a skeleton as big as the map until its map is there.
   const coming = startLoading(box.element, 'first', context.loading, {
     part: node.id,
+    now,
     shape: {
       show: () => box.element.append(Object.assign(doc.createElement('span'), { className: 'fd-sk fd-sk-block' })),
       hide: () => box.element.querySelector(':scope > .fd-sk-block')?.remove(),

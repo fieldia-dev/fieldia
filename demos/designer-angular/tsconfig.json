@@ -12,6 +12,9 @@
       "@fieldia/core": [
         "libs/core/src/index.ts"
       ],
+      "@fieldia/core/schema": [
+        "libs/core/src/schema.ts"
+      ],
       "@fieldia/widgets": [
         "libs/widgets/src/index.ts"
       ],

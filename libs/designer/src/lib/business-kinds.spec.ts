@@ -2,7 +2,7 @@ import { validatePage, type Field, type FieldNode } from '@fieldia/core';
 import { blankPage, createDesigner, kindOfField, type Designer } from './designer';
 import { findNode } from './page-tree';
 import { inputChanges } from './input-changes';
-import { DESIGNER_WORDS } from './designer-words';
+import { wordsIn } from './designer-words';
 import { choose, mount } from './test-editor';
 
 /** The business widgets as kinds: offered where they suit what a field holds, with their own settings, in English and Arabic. */
@@ -102,6 +102,6 @@ describe('their own settings', () => {
     const was = { field, node: { type: 'field', id: 'f', field: 'request_date_from', widget: 'daterange' } as FieldNode };
     const now = { field, node: { ...was.node, options: { endField: 'request_date_to' } } };
     expect(inputChanges('From', was, now).lines).toEqual(['“From”: ends on “request_date_to”']);
-    expect(inputChanges('From', was, now, DESIGNER_WORDS.ar).lines[0]).toContain('ينتهي في');
+    expect(inputChanges('From', was, now, wordsIn('ar')).lines[0]).toContain('ينتهي في');
   });
 });

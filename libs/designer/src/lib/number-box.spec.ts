@@ -1,6 +1,6 @@
 import { validatePage, type FieldNode, type SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner, type Designer } from './designer';
-import { DESIGNER_WORDS } from './designer-words';
+import { DESIGNER_WORDS, wordsIn } from './designer-words';
 import { trackProblem, tracksFrom } from './head-commands';
 import { plainNumber, settingNumber, type SettingNumberOptions } from './number-box';
 import { findNode } from './page-tree';
@@ -61,7 +61,7 @@ describe('the designer’s number box', () => {
   function box(options: Partial<SettingNumberOptions> = {}, locale: 'en' | 'ar' = 'en') {
     let saved: number | null = options.saved?.() ?? 600;
     const commits: (number | null)[] = [];
-    const made = settingNumber(el, { words: DESIGNER_WORDS[locale], locale }, {
+    const made = settingNumber(el, { words: wordsIn(locale), locale }, {
       label: locale === 'ar' ? 'الارتفاع' : 'Height',
       integer: true,
       min: 120,
@@ -311,7 +311,7 @@ describe('the number settings of a field', () => {
 describe('a refusal of the page’s format for a number setting', () => {
   it('is said in the setting’s own words, in the designer’s language, never a raw path', () => {
     expect(settingRefusal('layout.children[0].children[4].layers[0].live.staleAfter', DESIGNER_WORDS.en)).toBe('Seconds before it says when it was last seen is a whole number from 5 to 86400');
-    expect(settingRefusal('layout.children[0].layers[2].reachable.minutes', DESIGNER_WORDS.ar)).toMatch(/: عدد صحيح من 1 إلى 120$/);
+    expect(settingRefusal('layout.children[0].layers[2].reachable.minutes', wordsIn('ar'))).toMatch(/: عدد صحيح من 1 إلى 120$/);
     expect(settingRefusal('layout.pageSize', DESIGNER_WORDS.en)).toBe('Rows on a page is a whole number from 1 to 500');
     expect(settingRefusal('layout.children[0].label', DESIGNER_WORDS.en)).toBeNull();
   });

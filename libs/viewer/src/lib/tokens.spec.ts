@@ -38,6 +38,13 @@ describe('tokens', () => {
     expect(options.tokens).toEqual({ text: '#111111', accent: '#0f766e' });
   });
 
+  it('size and draw its radios and tick boxes: their box, their edge’s width and colour, a tick box’s corners', () => {
+    const host = document.body.appendChild(document.createElement('div'));
+    const tokens = { 'tick-size': '14px', 'tick-line': '1.5px', 'tick-edge': '#1f2328', 'tick-radius': '3px' } as const;
+    const handle = mountViewer(host, { page: page('signup'), dataSource: createMemoryDataSource(), tokens });
+    for (const [name, value] of Object.entries(tokens)) expect(worn(handle.element, name)).toBe(value);
+  });
+
   it('only names Fieldia knows: anything else is not set', () => {
     const host = document.body.appendChild(document.createElement('div'));
     const handle = mountViewer(host, { page: page('signup'), dataSource: createMemoryDataSource(), tokens: { accent: '#0f766e', colour: 'red' } as never });

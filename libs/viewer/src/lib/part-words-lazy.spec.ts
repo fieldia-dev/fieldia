@@ -12,8 +12,8 @@ import type { ViewerLabels } from './labels';
  * The packages keep every word; nothing here changes them.
  */
 
-/** The modules that hold every language besides English: the script bundle builds each as an empty one. */
-const OTHER_LANGUAGES = ['../../../core/src/lib/record/locales/all', '../../../widgets/src/lib/locales/all', './locales/all'];
+/** The modules that fetch every language besides English: the script bundle builds each as an empty one. */
+const OTHER_LANGUAGES = ['../../../core/src/lib/record/locales/later', '../../../widgets/src/lib/locales/later', './locales/later'];
 
 /** Some of the list part's own words, and a widget's. */
 const LIST_WORDS = ['nextPage', 'previousPage', 'importReady', 'importReadyOne', 'importTitle'] as const;
@@ -28,7 +28,7 @@ type OneTag = Viewer &
 async function oneTag(): Promise<OneTag> {
   let fieldia!: OneTag;
   await jest.isolateModulesAsync(async () => {
-    for (const path of OTHER_LANGUAGES) jest.doMock(path, () => ({ LANGUAGES: {} }));
+    for (const path of OTHER_LANGUAGES) jest.doMock(path, () => ({ LATER: {} }));
     const [viewer, core, widgets, added] = await Promise.all([import('../index'), import('@fieldia/core'), import('@fieldia/widgets'), import('./add-language')]);
     const english: LanguageWords = { viewer: Object.fromEntries(LIST_WORDS.map((key) => [key, viewer.VIEWER_LABELS.en[key]])), widgets: { phoneCall: widgets.WIDGET_LABELS.en.phoneCall } };
     for (const key of LIST_WORDS) delete (viewer.VIEWER_LABELS.en as Partial<ViewerLabels>)[key];
@@ -174,7 +174,8 @@ describe('the viewer’s words for a page (viewerWords)', () => {
     words.next = 'Onward';
     expect(words.next).toBe('Onward');
     expect(VIEWER_LABELS.en.next).toBe('Next');
-    // Another language: its own, as the packages have it.
+    // Another language: its own, as the packages have it once its words have come (a chunk of its own).
+    await (await import('@fieldia/core')).wordsReady('ar');
     expect(viewerWords('ar').submit).toBe(VIEWER_LABELS.ar.submit);
   });
 });

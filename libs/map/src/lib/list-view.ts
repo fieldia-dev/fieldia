@@ -1,6 +1,6 @@
 import type * as Leaflet from 'leaflet';
 import { cardLineFields, recordSentence, type DataSource, type JsonValue, type ListMap, type ListRequest, type ListResult, type MapCluster, type RecordId, type ResolvedFilter, type Values, intlFormat } from '@fieldia/core';
-import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
+import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
 import { startLoading, type Wait } from '@fieldia/widgets';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
@@ -15,22 +15,6 @@ import { installListMapStyles } from './styles';
 import { makePins, withCurrency, type MapRecord } from './pins';
 import type { MapSettings } from './settings';
 import { boxFilter, boxOf, type Box } from './view-box';
-
-/**
- * A list's records on a map, for the viewer's `listViews`: the list's own
- * search and its chosen records, shared with the table. A pin lights its row
- * and a row its pin; a pin opens a card with the record's picture, a few of
- * its fields, a box to choose it and a button to open it. Pins that crowd
- * become a bubble with their count. After the map is moved, "Search this
- * area" puts the area into the search bar, as the person's own search. A
- * source that gathers them itself (`clusters`) is asked for the view's
- * bubbles instead of loading the records: every record a search finds.
- *
- *     mountViewer(host, { page, listViews: mapListViews({ provider }) })
- */
-export function mapListViews(settings: MapSettings): Record<string, ListViewFactory> {
-  return { map: (context) => listMap(settings, context) };
-}
 
 /** A search the map asks for: its view ("Search this area"), an area drawn, or a shaded area pressed. */
 export interface MapSearch {
@@ -82,7 +66,11 @@ interface Drawn {
   ids: RecordId[];
 }
 
-export function listMap(settings: MapSettings, context: ListMapContext): ListViewPart {
+/**
+ * A list's records on a map (`mapListViews` in map-parts.ts, which fetches this code the first time one is shown).
+ * `now`: its first wait drawn at once, going on from its place's own, already in sight.
+ */
+export function listMap(settings: MapSettings, context: ListMapContext, now = false): ListViewPart {
   const { page, node, document: doc, locale } = context;
   // The viewer asks for a map only for a list with `map`.
   const spec = node.map as ListMap;
@@ -114,6 +102,7 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
   element.className = 'fd-map-list';
   // As tall as the page says: pixels, or the room it is put in; as the window allows unless said.
   const height = spec.height === 'fill' ? '100%' : typeof spec.height === 'number' ? spec.height : 'clamp(320px, 64vh, 640px)';
+  let first = now;
   if (height !== 'clamp(320px, 64vh, 640px)') element.dataset['height'] = String(spec.height);
   const takesAll = spec.gestures === 'all';
   const { start } = context;
@@ -817,6 +806,8 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
   const waitFor = (): Wait =>
     startLoading(box.element, drew ? 'refresh' : 'first', context.loading, {
       part: `${node.id}-map`,
+      // The first going on from its place's own, in sight already: drawn at once.
+      now: !drew && first && !(first = false),
       shape: {
         show: () => box.element.append(Object.assign(doc.createElement('span'), { className: 'fd-sk fd-sk-block' })),
         hide: () => box.element.querySelector(':scope > .fd-sk-block')?.remove(),

@@ -1,4 +1,4 @@
-import type { Page } from '@fieldia/core';
+import { wordsComing, wordsReady, type Page } from '@fieldia/core';
 import { partsFor } from '@fieldia/viewer';
 import { decodePart, evidencePart, filesPart, photosPart, scanPart, type WidgetFactory } from '@fieldia/widgets';
 
@@ -14,6 +14,9 @@ const BY_INTERACTION = new Set<unknown>([filesPart, evidencePart, photosPart, sc
  * needs them: asked too, they only slowed the rest (on 4G, the canvas whole 90 ms later). One that cannot come is drawn
  * plainly, as ever.
  */
-export function askCanvasParts(page: Page, widgets?: Record<string, WidgetFactory>): void {
+export function askCanvasParts(page: Page, widgets?: Record<string, WidgetFactory>): Promise<void> | null {
   for (const part of partsFor(page, widgets)) if (!BY_INTERACTION.has(part)) part.load().catch(() => undefined);
+  // The page's own language's words, as its form will speak (0.35: every language but English in a chunk of its own):
+  // asked with the parts, settled once they are in — the editor draws the canvas again then. Null when nothing comes.
+  return wordsComing(page.language) ? wordsReady(page.language) : null;
 }

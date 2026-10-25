@@ -1,4 +1,3 @@
-import { LANGUAGES } from './locales/all';
 import { LATER } from './locales/later';
 import { tableInChunks, wordsInChunks } from './words-chunks';
 import { labelAt } from './record-words';
@@ -383,14 +382,12 @@ const en: Messages = {
 };
 
 /**
- * The messages in every language Fieldia has. This package holds all eight
- * (Turkish, Persian, Urdu and Spanish machine-assisted, not yet reviewed by a
- * native speaker); the one-tag script holds English alone, and a page adds another language
- * with that language's script (fieldia.ar.js, …), through the viewer's
- * `addLanguage`.
+ * The messages in every language Fieldia has. This package holds all eight — English at once, each other in a chunk
+ * of its own, there once asked for (`wordsReady`), English till it came (Turkish, Persian, Urdu and Spanish
+ * machine-assisted, not yet reviewed by a native speaker); the one-tag script holds English alone, and a page adds
+ * another language with that language's script (fieldia.ar.js, …), through the viewer's `addLanguage`.
  */
-export const MESSAGES = { en, ...LANGUAGES } as Record<Locale, Messages>;
-// Turkish, Persian, Urdu and Spanish: each in a chunk of its own, there once asked for (`wordsReady`), English till it came.
+export const MESSAGES = { en } as Record<Locale, Messages>;
 wordsInChunks(tableInChunks(MESSAGES, LATER));
 
 /** The blanks of a message a field's label fills: its own, a table's column, a range's start and end. */

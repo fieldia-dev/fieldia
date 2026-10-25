@@ -440,7 +440,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const own = tag ? localizePage(other, tag) : other;
     return zonedPage(options.translate ? translatePage(own, options.translate) : own);
   };
-  // The page's language's words where they come in a chunk of their own (Turkish, Persian, Urdu, Spanish): asked for
+  // The page's language's words where they come in a chunk of their own (every language but English): asked for
   // first — each table there at once, English's words till they come — and the page drawn once they have, as it waits for
   // its parts, so its first paint is in its language.
   const words = wordsComing(tag) ? wordsReady(tag) : null;
@@ -2767,7 +2767,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // A record that opened meanwhile: its focused field takes the focus now, as it would have then.
       if (opened) focusAsOpened(true);
     };
-    drawn = Promise.all([settleParts(awaited), words]).then(() => (checked.later?.length ? checkedWhole().then(drawWaited) : drawWaited()));
+    // A part may bring word tables of its own (a map's fields'): their words in the page's language, asked for as it came,
+    // waited for too.
+    drawn = Promise.all([settleParts(awaited), words])
+      .then(() => words && wordsReady(tag))
+      .then(() => (checked.later?.length ? checkedWhole().then(drawWaited) : drawWaited()));
   }
   // A theme or the quiet skin the app gives, not the page, is worn as its part comes, the page drawn meanwhile
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.
