@@ -241,6 +241,14 @@ expect(form.valueOf('Email')).toBe('mona@example.com');`
 )}
 <p>Each step sends the events a person's would — a key at a time, so a box that refuses a letter refuses it in your test too — and leaves the box, where Fieldia says a problem. And one line of CI keeps the pages your app stores valid after an upgrade: ${c('npx fieldia-check pages/')} checks each as Fieldia reads it, says what is wrong with each, and fails the build when one is refused. See the package's README for every helper.</p>
 
+<h2 id="speed">How fast, measured</h2>
+<p>Measured on each release on a desktop and on a mid-range phone profile (412 px, a CPU four times slower), in Chromium, as medians; the counts — parts brought up to date, rows and elements in the page, cells written, bytes — are held by CI's perf job against budgets that fail the build.</p>
+<ul>
+  <li><strong>Typing keeps up at 500 fields on a desktop.</strong> A key works out only what reads the field typed in: on a page of 500 fields it brings 16 of its parts up to date and reads no condition again, in 3.9–6.9 ms on a desktop — under the 16 ms of a frame. <em>Not yet on a mid-range phone on the biggest page:</em> 17–21 ms on a 500-field form, up to 36 ms on the 500-field example page, most of it the browser's paint.</li>
+  <li><strong>Lists stay flat to 5,000 rows.</strong> Past 100 rows a list keeps only the rows near the view in the page — 5,000 rows hold about 1,600 DOM nodes, over 100,000 before 0.35 — and a tick, a Tab, a reload or a fold costs about the same at 5,000 rows as at 100. A table of 200 lines draws again only the lines a change touches.</li>
+  <li><strong>Small from npm.</strong> An app's first load from the packages, bundled by esbuild: a record form 237.5 KB gzipped with the page and 310 KB to usable, a list 236.7 and 305, the screen designer 583 and 796 (${c('tools/npm-first-load.mjs')}, a CI budget). The one-tag ${c('fieldia.js')} is ${SIZES.script} KB gzipped; its larger parts come as a page first uses them.</li>
+</ul>
+
 <h2 id="next">Next</h2>
 <p>The memory data source keeps everything in the browser — right for trying things, not for keeping them. <a href="/data/">Data sources</a> shows how to connect your own backend; <a href="/fields/">Fields</a> lists every field type and how it can be shown.</p>
 <p>Moving to a newer Fieldia? The <a href="https://github.com/fieldia-dev/fieldia/blob/main/CHANGELOG.md">changelog</a> says what changed in each release, in plain words, with what to change in your app under <strong>Upgrading</strong>; pages your app keeps are brought up to date as they are read (<a href="/pages/#versions">versions</a>).</p>

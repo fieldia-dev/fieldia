@@ -48,6 +48,30 @@ const designer = createDesigner({
 mountScreenEditor(document.getElementById('app')!, { designer });
 ```
 
+## How fast, measured
+
+Measured on each release on a desktop and on a mid-range phone profile (412 px,
+CPU four times slower), Chromium, medians; CI's perf job holds the counts —
+parts brought up to date, rows and elements in the page, cells written, bytes —
+against budgets that fail the build.
+
+- **Typing keeps up at 500 fields on a desktop.** A key works out only what
+  reads the field typed in: on a page of 500 fields it brings 16 of its parts up
+  to date and reads no condition again, and costs 3.9–6.9 ms on a desktop, under
+  the 16 ms of a frame. *Not yet on a mid-range phone on the biggest page*: 17–21
+  ms on a 500-field form, up to 36 ms on the 500-field example page, most of it
+  the browser's paint.
+- **Lists stay flat to 5,000 rows.** Past 100 rows a list keeps only the rows
+  near the view in the page: 5,000 rows hold about 1,600 DOM nodes (over
+  100,000 in 0.34), and a tick, a Tab, a reload or a fold costs about the same at
+  5,000 rows as at 100. A table of 200 lines draws again only the lines a change
+  touches.
+- **Small from npm.** An app's first load from the packages, bundled by esbuild:
+  a record form 237.5 KB gzipped with the page and 310 KB to usable, a list
+  236.7 and 305, the screen designer 583 and 796 (`tools/npm-first-load.mjs`,
+  a CI budget). The one-tag `fieldia.js` is 189.8 KB gzipped; its larger parts
+  come as a page first uses them.
+
 ## Four rules
 
 **1. `core` never touches the DOM.** Its tsconfig omits the `DOM` lib, so a
