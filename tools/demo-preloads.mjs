@@ -6,13 +6,16 @@
  * into it (0.34: `partFiles` / `Fieldia.partTags` for the one-tag script); a static site knows the page only from its
  * address, so a small script in the page reads it, from a table written here when the demos are built.
  *
- * Which parts a page draws with is the viewer's own answer (`partsFor`), asked in Node of every page the demos serve;
+ * Which parts a page draws with is the viewer's own answer (`partFiles`, 0.34: the parts it waits for, and the loading
+ * part where it asks for that with them), asked in Node of every page the demos serve, with the memory source's part
+ * every demo of them draws its records from;
  * which file each part is, the build's own (its metafile), by the module each part imports (`lazyPart(name, () =>
  * import('./x-part'))`).
  */
 import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 /** Every part by its name: the modules it imports (a name may stand for a core part and a viewer part alike). */
@@ -50,7 +53,7 @@ globalThis.dispatchEvent = () => true;
 
 /**
  * Every page the demos serve by name, with the parts it draws with (by their names) and the JSON file it is kept in
- * (workspace-relative), where it is one: the viewer's `partsFor`, asked in Node of each, with the demos' own widgets.
+ * (workspace-relative), where it is one: the viewer's `partFiles`, asked in Node of each, with the demos' own widgets.
  */
 export async function pageParts(workspace, files = []) {
   const dir = join(workspace, 'tmp/demo-preloads');
@@ -60,14 +63,15 @@ export async function pageParts(workspace, files = []) {
   await build({
     stdin: {
       contents: `
-        import { partsFor } from './libs/viewer/src/lib/viewer-parts';
+        import { partFiles } from '@fieldia/viewer/server';
         import { pages } from './demos/shared/sample-data';
         import { pageOf } from './demos/shared/lazy-page';
         import { codeWidgets, gridWidgets } from './demos/shared/lazy-widgets';
         import { fileOf } from 'demo-preloads:files';
         ${files.map((file, i) => `import file${i} from './${file}';`).join('\n')}
         const found = {};
-        const partsOf = (page) => [...new Set(partsFor(page, { ...gridWidgets, ...codeWidgets }).map((part) => part.name))].sort();
+        // fieldia.list.js → list: a part's name, as its module's lazyPart names it.
+        const partsOf = (page) => [...new Set(partFiles(page, { ...gridWidgets, ...codeWidgets }).map((file) => file.slice('fieldia.'.length, -'.js'.length)))].sort();
         for (const [name, source] of Object.entries(pages)) {
           const page = await pageOf(source);
           found[name] = { parts: partsOf(page), file: fileOf(page) };
@@ -147,7 +151,7 @@ export function partFiles(build, pages, more = []) {
  * each asked for at once as a module preload (with the page's nonce where it has one). `already`: what the page
  * preloads anyway (main.js's static imports).
  */
-export function preloadScript({ workspace, metafile, outdir, pages, parts, already, nonce }) {
+export function preloadScript({ workspace, metafile, outdir, pages, parts, already, nonce, more = [] }) {
   const files = [];
   const index = new Map();
   const numbered = (file) => {
@@ -159,7 +163,7 @@ export function preloadScript({ workspace, metafile, outdir, pages, parts, alrea
   };
   const table = {};
   for (const [name, { parts: names, file }] of Object.entries(pages)) {
-    const needed = filesFor({ workspace, metafile, outdir, parts, already }, file, names);
+    const needed = filesFor({ workspace, metafile, outdir, parts, already }, file, [...names, ...more]);
     if (needed.length) table[name] = needed.map(numbered);
   }
   // A page named by no address is the sign-up, as the demos show it (demos/shared/sample-data.ts).
@@ -179,4 +183,17 @@ export function preloadScript({ workspace, metafile, outdir, pages, parts, alrea
         });
       })();
     </script>`;
+}
+
+/**
+ * A one-tag page's parts written before fieldia.js, as 0.34 says a server that knows its page writes them (`partFiles`,
+ * `Fieldia.partTags`): each `<script async>` with what fieldia.js's own tag for it carries — its address beside
+ * fieldia.js, `crossorigin="anonymous"` and its file's sha256, the hash fieldia.js checks it by (`partTag`) — so it comes
+ * beside fieldia.js and fieldia.js, finding it on its way, never asks for it again. `dir` holds the built parts.
+ */
+export function partScriptTags(dir, names) {
+  return [...new Set(names)]
+    .map((name) => `fieldia.${name}.js`)
+    .filter((file) => existsSync(join(dir, file)))
+    .map((file) => `<script async src="${file}" integrity="sha256-${createHash('sha256').update(readFileSync(join(dir, file))).digest('base64')}" crossorigin="anonymous"></script>`);
 }

@@ -14,7 +14,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, readdirSync, write
 import { pathToFileURL } from 'node:url';
 import { dirname, join, relative, resolve } from 'node:path';
 import { checkDemos } from './demo-sizes.mjs';
-import { pageParts, partFiles, partModules, preloadScript } from './demo-preloads.mjs';
+import { pageParts, partFiles, partModules, partScriptTags, preloadScript } from './demo-preloads.mjs';
 import { openTag, readReleased } from './script-tags.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
@@ -71,6 +71,14 @@ const BY_NAME = new Set(['plain', 'react', 'vue', 'angular', 'csp']);
  * bring — the loading demo's `loading` (its ways of waiting) and its twins' themes.
  */
 const FIXED = { loading: { pages: ['examples/pages/loading-customers.page.json', 'examples/pages/loading-customer.page.json'], more: ['loading', 'themes'] } };
+/**
+ * A one-tag demo whose page is known, whose HTML writes its parts' tags before fieldia.js (0.34's `partFiles`): the
+ * embed's enquiry, on the partner's page and in its frame — with the parts its `<fieldia-form>` itself draws from, the
+ * element's own and the wait it draws while it fetches its page. The script tag demo's page draws from none.
+ */
+const ONE_TAG = { embed: { pages: ['examples/pages/unit-enquiry.page.json'], more: ['element', 'loading'], html: ['index.html', 'form.html'] } };
+/** Every page whose parts are asked for by its file, as `pageParts` takes them. */
+const PAGE_FILES = [...Object.values(FIXED), ...Object.values(ONE_TAG)].flatMap((fixed) => fixed.pages);
 /** Each page's parts and file, and each part's modules: asked once, of the first demo that needs them. */
 let demoPages;
 
@@ -101,6 +109,16 @@ for (const variant of variants) {
     const shown = readFileSync(index, 'utf8').replace(/__FIELDIA_TAG:([\w.-]+)__/g, (_, file) => JSON.stringify(openTag(file, released)).slice(1, -1));
     if (!/integrity=/.test(shown) || /__FIELDIA_TAG/.test(shown)) throw new Error('demos/embed shows a script tag not written from the release (tools/script-tags.mjs)');
     writeFileSync(index, shown);
+    // The parts its page draws from, written before fieldia.js with what fieldia.js's own tags carry.
+    demoPages ??= { pages: await pageParts(WORKSPACE, PAGE_FILES), parts: partModules(WORKSPACE) };
+    const names = [...ONE_TAG.embed.pages.flatMap((file) => demoPages.pages[file].parts), ...ONE_TAG.embed.more];
+    const tags = partScriptTags(join(OUT, 'embed'), names);
+    for (const file of ONE_TAG.embed.html) {
+      const page = join(OUT, 'embed', file);
+      const html = readFileSync(page, 'utf8');
+      if (!html.includes('<script src="fieldia.js"></script>')) throw new Error(`demos/embed/${file}: its parts' tags go before its <script src="fieldia.js">`);
+      writeFileSync(page, html.replace('<script src="fieldia.js"></script>', `<!-- The parts its page draws from, before fieldia.js, as fieldia.js asks for them (tools/demo-preloads.mjs). -->\n    ${tags.join('\n    ')}\n    <script src="fieldia.js"></script>`));
+    }
     console.log(`demo embed: ${join('dist/demos', 'embed')}`);
     continue;
   }
@@ -171,14 +189,15 @@ for (const variant of variants) {
   let html = withPreloads(readFileSync(join(WORKSPACE, 'demos', variant, 'index.html'), 'utf8'), preloads, nonce);
   // A demo that shows any of the demos' pages by its name: the page's own file and its parts, asked for with main.js.
   if (BY_NAME.has(variant)) {
-    demoPages ??= { pages: await pageParts(WORKSPACE, Object.values(FIXED).flatMap((fixed) => fixed.pages)), parts: partModules(WORKSPACE) };
+    demoPages ??= { pages: await pageParts(WORKSPACE, PAGE_FILES), parts: partModules(WORKSPACE) };
     // Before the page's stylesheets: a script after one waits for it to come before it runs.
     const at = html.indexOf('<link');
     if (at < 0 || at > html.indexOf('</head>')) throw new Error(`demos/${variant}/index.html: its early tags go before its first <link>, in its head`);
-    html = `${html.slice(0, at)}${preloadScript({ workspace: WORKSPACE, metafile, outdir, ...demoPages, already: preloads, nonce })}\n    ${html.slice(at)}`;
+    // Every one of them draws its records from the memory source, whose part comes with the page's.
+    html = `${html.slice(0, at)}${preloadScript({ workspace: WORKSPACE, metafile, outdir, ...demoPages, already: preloads, nonce, more: ['memory'] })}\n    ${html.slice(at)}`;
   }
   if (FIXED[variant]) {
-    demoPages ??= { pages: await pageParts(WORKSPACE, Object.values(FIXED).flatMap((fixed) => fixed.pages)), parts: partModules(WORKSPACE) };
+    demoPages ??= { pages: await pageParts(WORKSPACE, PAGE_FILES), parts: partModules(WORKSPACE) };
     const build = { workspace: WORKSPACE, metafile, outdir, parts: demoPages.parts, already: preloads };
     html = withPreloads(html, partFiles(build, FIXED[variant].pages.map((file) => demoPages.pages[file]), FIXED[variant].more), nonce, 'The parts its pages draw with, asked for with main.js (tools/demo-preloads.mjs).');
   }

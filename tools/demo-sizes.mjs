@@ -14,30 +14,31 @@ import { gzipSync } from 'node:zlib';
 
 /**
  * Each demo page's budget: KB gzipped (level 9) of the scripts it fetches before it can draw — its frame's (shell.mjs,
- * 56 KB) and, where its HTML names them, its parts — about 8% over what the first minified, split build measured (25 Oct
- * 2026, in brackets). Before it, every page fetched its whole app unminified, every part of Fieldia's in it but the plain
- * demo's: the plain demo 1,569 KB, the loading demo 1,219, React 2,743, Vue 2,683, Angular 3,060, the survey designer
- * 2,472, the screen designer 3,079. A demo that grows past its budget says so here, with why. What the designers still
- * fetch is the designer's own (its words in every language, zod), the library's to make smaller, not the site's.
+ * 56 KB) and, where its HTML names them, its parts — about 8% over what the minified, split build measured on 0.34.0
+ * (25 Oct 2026, in brackets; 0.34's own growth added about 10 KB to each). Before that build every page fetched its whole
+ * app unminified, every part of Fieldia's in it but the plain demo's (0.33.0): the plain demo 1,569 KB, the loading demo
+ * 1,219, React 2,743, Vue 2,683, Angular 3,060, the survey designer 2,472, the screen designer 3,079. A demo that grows
+ * past its budget says so here, with why. What the designers still fetch is the designer's own (its words in every
+ * language, zod), the library's to make smaller, not the site's.
  */
 export const DEMO_BUDGET_KB = {
-  plain: 650, // (598.6)
-  react: 710, // (654)
-  vue: 665, // (612.8)
-  angular: 955, // (883.1)
-  designer: 1090, // (1006.5)
-  screen: 1185, // (1095.6)
-  'designer-react': 970, // (895.5)
-  'designer-vue': 925, // (853)
-  'designer-angular': 1215, // (1123.3)
-  script: 250, // (230.6): fieldia.js and the frame
-  embed: 250, // (230.6)
-  'map-embed': 260, // (239.7)
-  backlog: 430, // (396.9)
-  'save-safety': 375, // (347.3)
-  loading: 510, // (469.8): its pages' parts named in its HTML, which it draws with
-  csp: 700, // (644.4)
-  ssr: 315, // (288.7)
+  plain: 660, // (609.4)
+  react: 720, // (664.9)
+  vue: 675, // (623.6)
+  angular: 965, // (894)
+  designer: 1100, // (1018.9)
+  screen: 1200, // (1111.1)
+  'designer-react': 980, // (906.8)
+  'designer-vue': 935, // (864.2)
+  'designer-angular': 1225, // (1134.4)
+  script: 260, // (240.7): fieldia.js and the frame; its page draws from no part
+  embed: 300, // (277.6): fieldia.js, the frame and the seven parts its enquiry draws from, their tags before fieldia.js
+  'map-embed': 265, // (245.1)
+  backlog: 440, // (407.6)
+  'save-safety': 385, // (357.3)
+  loading: 520, // (480.6): its pages' parts named in its HTML, which it draws with
+  csp: 710, // (655.2)
+  ssr: 325, // (298.6)
 };
 
 /** The scripts a page's HTML names, by their address as written: its script tags' and its module preloads'. */
