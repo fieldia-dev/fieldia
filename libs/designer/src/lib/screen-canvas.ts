@@ -648,10 +648,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const card = cards.get(id);
     if (!card?.editing) return;
     const input = (part === 'label' ? card.label : card.help) as HTMLInputElement;
-    // The cursor placed before the focus comes, which keeps it: one layout for the two, not one for each.
-    if (selectAll) input.setSelectionRange(0, input.value.length);
-    else input.setSelectionRange(input.value.length, input.value.length);
     input.focus(seen ? { preventScroll: true } : undefined);
+    if (selectAll) input.select();
+    else input.setSelectionRange(input.value.length, input.value.length);
   }
 
   // Simple carries fields among fields, as before; Advanced drops any part beside, under, into or between others.
