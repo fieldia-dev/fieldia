@@ -2232,7 +2232,14 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The walk's "Couldn't open … {id}" in every add-on, measured once more — to 134.1 and 21.5 Arabic, 60.2 and 18.5
 // German, 61.1 and 18.5 French, 68.2 and 18.8 Turkish, 166.9 and 23.2 Persian, 169.6 and 23.2 Urdu, 58.3 and 18.3
 // Spanish.
-const ADD_ON_BUDGET_KB = { ar: [134.1, 21.5], de: [60.2, 18.5], fr: [61.1, 18.5], tr: [68.2, 18.8], fa: [166.9, 23.2], ur: [169.6, 23.2], es: [58.3, 18.3] };
+// 0.35's speed (perf-lists): a long list's words under its search as Ctrl or ⌘ and F take the person there ("Find in
+// page sees only the rows on screen…", list.ts) in every add-on — Arabic's 134.05 and 21.49 measured before, 134.34 and
+// 21.54 after, to 134.4 and 21.6; German's 60.13 and 18.42, 60.23 and 18.46, to 60.3, inside 18.5; French's 61.04 and
+// 18.41, 61.17 and 18.46, to 61.2, inside 18.5; Turkish's 68.13 and 18.75, 68.25 and 18.80, to 68.3 and 18.9; Persian's
+// 166.85 and 23.11, 167.26 and 23.17, to 167.3, inside 23.2; Urdu's 169.60 and 23.19, 169.98 and 23.24, to 170.0 and
+// 23.3; Spanish's 58.29 and 18.21, 58.39 and 18.26, to 58.4, inside 18.3. Its English is the list part's alone
+// (tools/part-words.mjs): fieldia.js the same.
+const ADD_ON_BUDGET_KB = { ar: [134.4, 21.6], de: [60.3, 18.5], fr: [61.2, 18.5], tr: [68.3, 18.9], fa: [167.3, 23.2], ur: [170.0, 23.3], es: [58.4, 18.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -2974,7 +2981,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // to 142.6 and 46.0; a box's "nothing is called…" goes with its record — choice 11.89 and 4.71, 11.96 and 4.75, to 12.0;
 // a phone's country sheet headed "Country" — phone 45.03 and 19.22, 45.12 and 19.25, to 45.2 (path and relations
 // inside theirs).
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [142.6, 46.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.3, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [44.0, 15.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.3, 3.0] };
+// 0.35's speed (perf-lists): past a hundred rows shown, a list keeps only those near the view in the page, the rest as
+// data, a gap as tall as them in their place — counted for a screen reader, drawn as the keys reach them, the focus and
+// the person's work kept, every row for paper; a tree in a page folded on its rows' data; Ctrl or ⌘ and F to its search
+// (list-window.ts, list.ts, list-editable.ts) — list 142.54 and 45.99 measured before, 153.23 and 49.88 after, to 153.3
+// and 49.9; what a row opened to put back as its row comes back into view (list-detail.ts) — rows 19.25 and 7.30, 19.42
+// and 7.35, to 19.5. A table of lines draws again only the lines whose inputs changed, numbered once a change
+// (lines-table.ts) — lines 43.95 and 15.08, 46.19 and 16.02, to 46.2 and 16.1. Editable inside its 35.2 and 12.7.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [153.3, 49.9], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.2, 16.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.3, 3.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

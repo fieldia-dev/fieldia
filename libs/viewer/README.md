@@ -870,11 +870,27 @@ its box is pressed or typed in — its suggestions in the menu's place — and a
 filter bar's list as another of its parts takes the focus. See
 [lists and search](https://fieldia.dev/lists/).
 
-A long list keeps the browser's work to what changed: a key typed in a cell
-lays out that cell's box alone. Rows out of sight are still drawn (no browser
-skips a table row with `content-visibility`), so until rows are windowed keep
-an `endless` or `editable` list under about 1,000 loaded rows for smooth
-scrolling on phones, and page through more.
+A long list keeps only the rows near the view in the page: past a hundred
+rows shown, a view's height of rows above the view and below it, the rest kept
+as data, a gap as tall as they are in their place. An endless list scrolled to
+5,000 rows, an editable list of 1,000 or a tree of 10,000 in one page holds as
+many elements as a page of 60, and a key, a tick, a Tab or a fold costs as
+little; a key typed in a cell lays out that cell's box alone. What a person and
+a screen reader rely on is kept: the table says how many rows it has
+(`aria-rowcount`) and each row its place (`aria-rowindex`); ↓ past the last row
+drawn draws the next, and Tab past a row's last cell opens the next row's
+first; the row with the focus, and a row being changed, stay in the page
+wherever the view goes; Select all chooses every row loaded; a block pasted
+goes down the rows not drawn yet; what the person reads stays in place as rows
+of differing heights come and go above it (in WebKit, which keeps nothing in
+place itself, the list does); paper prints every row loaded. Two things differ
+from a page of rows. The browser's find in page sees only the rows in the page:
+Ctrl or ⌘ and F in such a list take the person to the list's own search, which
+finds any record, and say so under it; pressed again there, they are the
+browser's own find. And Tab goes through the rows in the page, the arrows
+through every row. An app's test that looks for a row among all of them
+scrolls to it, or searches for it: rows out of view are not in the DOM. Cards
+(a list on a phone, a gallery) draw every card.
 
 Other ways of showing a list's records come from `listViews`, by name: a
 list's `map` (`mapListViews` from `@fieldia/map`), its `calendar`

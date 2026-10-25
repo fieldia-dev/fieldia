@@ -103,6 +103,7 @@ export const ur: ViewerLabels = {
   noRecordsNoun: 'کوئی مماثل {record} نہیں۔',
   loadFailed: 'ریکارڈ لوڈ نہیں ہو سکے۔',
   selectAllMatching: 'تمام {n} مماثل ریکارڈ منتخب کریں',
+  findInList: 'صفحے کی تلاش صرف اسکرین کی قطاریں دیکھتی ہے: کوئی بھی ریکارڈ یہاں تلاش کریں۔',
   selectAllMatchingNoun: 'تمام {n} مماثل {records} منتخب کریں',
   selectingAll: 'تمام مماثل ریکارڈ منتخب کیے جا رہے ہیں…',
   selectedOf: '{total} میں سے {n} منتخب کیے جا سکے',

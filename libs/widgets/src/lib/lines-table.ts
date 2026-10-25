@@ -1,4 +1,4 @@
-import { isEmpty, labelAt, lineKind, type Field, type FieldNode, type Line, type LineField, type Value } from '@fieldia/core';
+import { isEmpty, labelAt, lineKind, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
 import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
@@ -59,7 +59,23 @@ interface Row {
   pick: HTMLInputElement | null;
   /** The button that puts a copy of the line right after it (`options.copy`). */
   copy: HTMLButtonElement | null;
+  /** The line's values it was last drawn with, and what else it was drawn from: drawn again only when one changes. */
+  values?: Readonly<Values>;
+  inputs?: readonly unknown[];
+  /** Its number as people count lines, as its tick and copy say it. */
+  number?: number;
 }
+
+/** Two values the same, a link's or a list's by what they hold. */
+const sameValue = (a: unknown, b: unknown) => a === b || (typeof a === 'object' && typeof b === 'object' && a !== null && b !== null && JSON.stringify(a) === JSON.stringify(b));
+/** A line's values the same as those it was drawn with: the same object, or the same fields holding the same values. */
+function sameValues(a: Readonly<Values>, b: Readonly<Values>): boolean {
+  if (a === b) return true;
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  return keys.every((key) => key in b && sameValue(a[key], b[key]));
+}
+const sameInputs = (a: readonly unknown[] | undefined, b: readonly unknown[]) => !!a && a.length === b.length && a.every((one, i) => one === b[i]);
 
 const count = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined);
 
@@ -240,8 +256,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     pickAll.disabled = readonly || !items.length;
     for (const [key, row] of rows) {
       if (!row.pick) continue;
-      row.pick.checked = chosen.has(key);
-      row.pick.disabled = readonly;
+      if (row.pick.checked !== chosen.has(key)) row.pick.checked = chosen.has(key);
+      if (row.pick.disabled !== readonly) row.pick.disabled = readonly;
     }
   }
   pickAll?.addEventListener('change', () => {
@@ -252,6 +268,68 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
   });
 
   const rows = new Map<string, Row>();
+  /** The record's fields a line's money takes its currency from (`parent.currency_id`): every line is drawn again as one changes. */
+  const parentReads = [...new Set(Object.values(def.fields).flatMap((sub) => (sub.type === 'monetary' && sub.currencyField?.startsWith('parent.') ? [sub.currencyField.slice('parent.'.length)] : [])))];
+  /**
+   * A column drawn by a widget of the app's own (the viewer's `widgets`): it may show anything of the record its line is
+   * on, so every line is drawn again as the record changes, as every line always was.
+   */
+  const appDrawn = !!widgets && Object.entries(def.fields).some(([column, sub]) => {
+    const look = node.cells?.[column];
+    const widget = look?.badge ? 'badge' : look?.widget;
+    return [widget ? `${sub.type}.${widget}` : '', sub.type === 'selection' && (sub as { multiple?: boolean }).multiple ? 'selection.checkboxes' : '', sub.type].some((key) => !!key && key in (widgets as object));
+  });
+  /** The columns whose options follow the line or the record (their conditions, a field's options): read for each line as it is drawn. */
+  const optionColumns = columns.filter((column) => {
+    // As core's `changesOptions` has it: a condition on one of its options, or its options carried from another field.
+    const sub = def.fields[column];
+    return sub.type === 'selection' && ((!!sub.optionsFrom && 'field' in sub.optionsFrom) || sub.options.some((option) => option.invisible !== undefined && option.invisible !== false));
+  });
+  const offeredOf = (line: Line): string[] => (optionColumns.length && form.offered ? [JSON.stringify(optionColumns.map((column) => form.offered?.(`${name}.${line.key}.${column}`) ?? null))] : []);
+  /** What the table was last drawn for as a whole: its state, the lines' count against its limits, its columns hidden, the record's currency. */
+  let drawnFor = '';
+  let drawnRecord: unknown = null;
+  /**
+   * What the record holds for each line, by its key, read once for every line: its problems, its text that does not
+   * read and the options taken out of its choices (`said`, in words), the choices the app gave it and its uploads (`held`).
+   */
+  function linesOwn(now: FormState): Map<string, { said: Record<string, Record<string, unknown>>; held: unknown[] }> {
+    const prefix = `${name}.`;
+    const out = new Map<string, { said: Record<string, Record<string, unknown>>; held: unknown[] }>();
+    const of = (key: string) => {
+      let one = out.get(key);
+      if (!one) out.set(key, (one = { said: {}, held: [] }));
+      return one;
+    };
+    const cellAt = (path: string): [string, string] | null => {
+      if (!path.startsWith(prefix)) return null;
+      const rest = path.slice(prefix.length);
+      const dot = rest.lastIndexOf('.');
+      return dot > 0 ? [rest.slice(0, dot), rest.slice(dot + 1)] : null;
+    };
+    for (const [kind, map] of [['errors', now.errors], ['unread', now.unread], ['takenOut', now.takenOut]] as const) {
+      for (const [path, value] of Object.entries(map ?? {})) {
+        const cell = cellAt(path);
+        if (cell) (of(cell[0]).said[kind] ??= {})[cell[1]] = value;
+      }
+    }
+    for (const [path, value] of Object.entries(now.choices ?? {})) {
+      const cell = cellAt(path);
+      if (cell) of(cell[0]).held.push(cell[1], value);
+    }
+    for (const upload of now.uploads ?? []) if (upload.line?.field === name) of(upload.line.key).held.push(upload);
+    return out;
+  }
+  /** A line's tick and copy named by its number, as people count lines (sections and notes are not lines): it moves. */
+  function named(row: Row, number: number) {
+    row.number = number;
+    const lineName = fillIn(labels.lineN, { n: number });
+    row.pick?.setAttribute('aria-label', fillIn(labels.chooseLine, { name: lineName }));
+    if (row.copy) {
+      row.copy.setAttribute('aria-label', fillIn(labels.copy, { name: lineName }));
+      row.copy.title = row.copy.getAttribute('aria-label') as string;
+    }
+  }
   /** The cell being left now, by its path: a problem leaving it finds is said by its message. */
   let leaving: string | null = null;
   let focusNew: string | null = null;
@@ -650,6 +728,20 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
           for (const cell of row.cells) cell.widget.destroy?.();
         }
       }
+      // Each line's number as people count lines, worked out once for all of them (0.34 counted the lines before each
+      // line again for every line: 20,000 steps a change at 200 lines).
+      const numbers = new Map<string, number>();
+      let items = 0;
+      for (const line of current) numbers.set(line.key, isItem(line) ? ++items : 0);
+      // What every line is drawn with: the table's state, and the record's fields its money reads its currency from.
+      const fullState = form.getState();
+      const table: string = JSON.stringify([readonly, current.length <= min, current.length >= max, [...gone], parentReads.map((field) => state.values[field] ?? null)]);
+      const redrawAll = table !== drawnFor || (appDrawn && state.values !== drawnRecord);
+      drawnFor = table;
+      drawnRecord = state.values;
+      // What the record holds for each line, by its key: its problems, its text that does not read, the choices the app
+      // gave it, the options taken out of them and its uploads — each line's own, read once for every line.
+      const perLine = linesOwn(fullState);
       current.forEach((line, index) => {
         let row = rows.get(line.key);
         // A line that changed kind is drawn afresh.
@@ -664,17 +756,25 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
         }
         if (body.children[index] !== row.element) body.insertBefore(row.element, body.children[index] ?? null);
         const now = ruled ? form.lineState(node.id, line.key) : null;
+        // Drawn again only where something it is drawn from changed: its values, its rules, what the record holds for it,
+        // its options where they follow the record — or the table's own state. A key anywhere in the form drew every cell
+        // of every line again before (1,000 cells a key at 200 lines).
+        const own = perLine.get(line.key);
+        const inputs = [now ? JSON.stringify(now) : '', own ? JSON.stringify(own.said) : '', ...(own?.held ?? []), ...offeredOf(line), leaving?.startsWith(`${name}.${line.key}.`) ? leaving : ''];
+        const number = numbers.get(line.key) ?? 0;
+        if (!redrawAll && row.values && sameValues(row.values, line.values) && sameInputs(row.inputs, inputs)) {
+          // Its cells as they were: only its number, where a line before it came or went, said again.
+          if (row.number !== number) named(row, number);
+          return;
+        }
+        row.values = line.values;
+        row.inputs = inputs;
         // A line the table keeps (lineDelete) shows no ×.
         row.remove.hidden = readonly || current.length <= min || now?.deletable === false;
         row.grip.hidden = readonly;
         // Named by its number now, as people count lines (sections and notes are not lines): it moves.
-        const lineName = fillIn(labels.lineN, { n: itemNumber(current, line.key, isItem) });
-        row.pick?.setAttribute('aria-label', fillIn(labels.chooseLine, { name: lineName }));
-        if (row.copy) {
-          row.copy.setAttribute('aria-label', fillIn(labels.copy, { name: lineName }));
-          row.copy.title = row.copy.getAttribute('aria-label') as string;
-          row.copy.hidden = readonly || current.length >= max;
-        }
+        named(row, number);
+        if (row.copy) row.copy.hidden = readonly || current.length >= max;
         if (readonly) row.remove.remove();
         else if (!row.remove.isConnected) row.element.lastElementChild?.append(row.remove);
         setData(row.element, 'tone', now?.tone);
@@ -703,7 +803,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
           // Raised by leaving the cell, it is said once, politely; a refused Save's announcer says the rest, once.
           if (leaving === path && message && message !== cell.error.textContent) cell.error.setAttribute('aria-live', 'polite');
           cell.error.hidden = !message;
-          cell.error.textContent = message ?? '';
+          if (cell.error.textContent !== (message ?? '')) cell.error.textContent = message ?? '';
           cell.widget.update({
             value: line.values[cell.name],
             values: line.values,
@@ -726,7 +826,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
         }
         td.removeAttribute('title');
         delete td.dataset['waits'];
-        td.textContent = cellText(def.fields[column], total.sum, current[0]?.values ?? {}, locale, state.values, node.cells?.[column]);
+        const words = cellText(def.fields[column], total.sum, current[0]?.values ?? {}, locale, state.values, node.cells?.[column]);
+        if (td.textContent !== words || td.childElementCount) td.textContent = words;
       }
       for (const { id, button } of controls) button.hidden = form.node(id).invisible;
       showChosen();

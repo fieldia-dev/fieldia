@@ -102,6 +102,7 @@ export const tr: ViewerLabels = {
   noRecordsNoun: 'Eşleşen {record} yok.',
   loadFailed: 'Kayıtlar yüklenemedi.',
   selectAllMatching: 'Eşleşen {n} kaydın tümünü seç',
+  findInList: 'Sayfada bul yalnızca ekrandaki satırları görür: herhangi bir kaydı burada arayın.',
   selectingAll: 'Eşleşen kayıtların tümü seçiliyor…',
   selectedOf: '{total} kayıttan {n} tanesi seçilebildi',
   selectAllFailed: 'Eşleşen kayıtların tümü seçilemedi.',

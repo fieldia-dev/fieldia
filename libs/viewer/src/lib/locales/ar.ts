@@ -94,6 +94,7 @@ export const ar: ViewerLabels = {
   noRecords: 'لا توجد سجلات مطابقة.',
   loadFailed: 'تعذّر تحميل السجلات.',
   selectAllMatching: 'تحديد كل السجلات المطابقة ({n})',
+  findInList: 'البحث في الصفحة يرى الصفوف الظاهرة فقط: ابحث هنا عن أي سجل.',
   selectingAll: 'جارٍ تحديد كل السجلات المطابقة…',
   selectedOf: 'أمكن تحديد {n} من {total}',
   selectAllFailed: 'تعذّر تحديد كل السجلات المطابقة.',

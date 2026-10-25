@@ -121,7 +121,7 @@ export const PART_WORDS = {
       'opIs', 'opIsNot', 'opContains', 'opGreater', 'opLess', 'opBetween', 'opSet', 'opNotSet', 'opPeriod',
       'rangeFrom', 'rangeTo', 'rangeBetween', 'rangeOrMore', 'rangeUpTo', 'rangeSince', 'rangeUntil', 'rangeOrder', 'rangeOrderDate', 'periodChip', 'periodToday', 'periodYesterday', 'periodThisWeek', 'periodLastWeek', 'periodThisMonth', 'periodLastMonth', 'periodThisYear', 'periodLast7Days', 'periodLast30Days', 'periodOverdue',
       'groupByYear', 'groupByQuarter', 'groupByMonth', 'groupByWeek', 'groupByDay', 'groupWeek', 'groupQuarter', 'totalAvg', 'totalMin', 'totalMax', 'totalCount', 'totalMixed', 'totalMixedShort', 'loadMore', 'sortKeyUp', 'sortKeyDown', 'groupCount', 'groupCountOne', 'expandAll', 'collapseAll',
-      'relatedAll', 'relatedAllOf', 'relatedNew', 'relatedNewOf', 'relatedUnsaved', 'relatedNone', 'relatedShown', 'rowsKey',
+      'relatedAll', 'relatedAllOf', 'relatedNew', 'relatedNewOf', 'relatedUnsaved', 'relatedNone', 'relatedShown', 'rowsKey', 'findInList',
       'rangeNoun', 'noRecordsNoun', 'selectAllMatchingNoun', 'selectAllFailedNoun', 'exportAllNoun', 'exportAllNounOne', 'exportCutNoun', 'exportFailedNoun', 'exportedNoun', 'exportedNounOne', 'printCutNoun', 'printFailedNoun',
       'printCountNoun', 'printCountNounOne', 'bulkTitleNoun', 'bulkTitleNounOne', 'bulkAskNoun', 'bulkAskNounOne', 'bulkDoneNoun', 'bulkDoneNounOne', 'bulkSomeNoun', 'importDoneNoun', 'importDoneNounOne', 'importStoppedNoun', 'importSomeNoun',
       'importFailedNoun', 'importUndoAskNoun', 'importUndoAskNounOne', 'importUndoneNoun', 'importUndoneNounOne', 'importUndoSomeNoun', 'relatedAllNoun', 'relatedNewNoun', 'relatedUnsavedNoun', 'relatedNoneNoun', 'relatedShownNoun', 'groupCountNoun', 'groupCountNounOne',

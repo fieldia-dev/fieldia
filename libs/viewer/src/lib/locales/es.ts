@@ -103,6 +103,7 @@ export const es: ViewerLabels = {
   loadFailed: 'No se pudieron cargar los registros.',
   loadFailedNoun: 'No se pudieron cargar {records}.',
   selectAllMatching: 'Seleccionar los {n} que coinciden',
+  findInList: 'Buscar en la página solo ve las filas en pantalla: busque aquí cualquier registro.',
   selectAllMatchingNoun: 'Seleccionar {n} {records} que coinciden',
   selectingAll: 'Seleccionando todos los que coinciden…',
   selectedOf: 'Se pudieron seleccionar {n} de {total}',

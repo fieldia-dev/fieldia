@@ -7,9 +7,9 @@ import { expect, test } from './fixtures';
  * box typed in alone — a few objects, never the table's 27,000 (0.32 laid them all out on every key: 27 ms a key on a
  * desktop, 290 ms on a phone). A table's rows cannot be skipped by content-visibility: no browser applies it to a table
  * row (CSS Containment: internal table boxes), so a long table repaints the rows round the view each time the view
- * moves far enough (every 800 px or so in Chromium) — kept small only by drawing fewer rows (windowing, a later step).
- * Cards could be, but measured on a phone, wheeling through 3,000 of them drew each frame 3 to 6 times slower so: left
- * as 0.32 has them.
+ * moves far enough (every 800 px or so in Chromium) — kept small by drawing fewer rows: past a hundred, only those near
+ * the view are in the page (list-window.ts, e2e/list-window.spec.ts). Cards could be, but measured on a phone, wheeling
+ * through 3,000 of them drew each frame 3 to 6 times slower so: left as 0.32 has them.
  */
 
 test.skip(({ browserName }) => browserName !== 'chromium', 'the layouts are counted by Chromium’s trace');
@@ -30,7 +30,8 @@ async function mountList(page: Page, layout: Record<string, unknown>) {
     },
     [FIELDS, PEOPLE, layout] as const
   );
-  await expect(page.locator('#app .fd-list-row')).toHaveCount(1000, { timeout: 30000 });
+  // Its 1,000 rows counted; those near the view in the page.
+  await expect(page.locator('#app .fd-list-table')).toHaveAttribute('aria-rowcount', '1001', { timeout: 30000 });
 }
 
 test('a key typed in a cell of 1,000 rows lays out the box alone, never the table', async ({ page, browser }) => {

@@ -64,6 +64,8 @@ interface Drawn {
   marker: Leaflet.Marker;
   face: HTMLElement;
   ids: RecordId[];
+  /** Raised over the others, as its lit row's pin is: set on the marker only as it changes (each set moves the marker). */
+  raised?: boolean;
 }
 
 /**
@@ -606,14 +608,20 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
   /** Each pin as it stands: lit when its row is, ticked when its record is chosen. */
   function restyle() {
     for (const entry of drawn) {
-      const lit = hot !== null && entry.ids.includes(hot);
-      entry.face.toggleAttribute('data-hot', lit);
+      lightUp(entry);
       entry.face.toggleAttribute(
         'data-chosen',
         entry.ids.some((id) => context.isChosen(id))
       );
-      entry.marker.setZIndexOffset(lit ? 1000 : 0);
     }
+  }
+  /** A pin lit when its row is, and raised over the others: its marker moved only where that changed. */
+  function lightUp(entry: Drawn) {
+    const lit = hot !== null && entry.ids.includes(hot);
+    entry.face.toggleAttribute('data-hot', lit);
+    if ((entry.raised ?? false) === lit) return;
+    entry.raised = lit;
+    entry.marker.setZIndexOffset(lit ? 1000 : 0);
   }
 
   /** What the map says under its pins: how many it shows of how many, those with no place, and a heat map's way in. */
@@ -823,8 +831,14 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
     element,
     reload,
     highlight(id) {
+      // The pins of the record lit before and of the one lit now, alone: 0.34 drew every pin again for each row pointed
+      // at (500 marker moves a hover at the map's most).
+      const before = hot;
       hot = id;
-      restyle();
+      for (const one of new Set([before, id])) {
+        const entry = one === null ? undefined : drawnOf.get(one);
+        if (entry) lightUp(entry);
+      }
       box.ready((map, L) => light(map, L));
     },
     chosenChanged() {

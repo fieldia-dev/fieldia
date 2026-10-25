@@ -48,6 +48,27 @@ import { CELL_BOXES } from './viewer-parts';
  * phone, where the rows are cards, a card's fields are changed in a sheet over the list.
  */
 
+/**
+ * A list's rows as its cells are changed in place, drawn or not: past a hundred, only those near the view are in the page
+ * (list-window.ts), and a row the keys, a paste or an Undo reach is drawn as it is reached.
+ */
+export interface ListRows {
+  /** The row shown next to this one, down or up, drawn where it was not; null past the ends. */
+  beside(tr: HTMLTableRowElement, down: boolean): HTMLTableRowElement | null;
+  /** This row's place among those shown, the rows shown from it on (`n` at most, drawn where they were not), and how many are shown from it to the end. */
+  from(tr: HTMLTableRowElement, n: number): { at: number; rows: HTMLTableRowElement[]; left: number };
+  /** Every row shown, drawn or not: its key and its record (a paste's lines). */
+  lines(): { key: string; record: Row }[];
+  /** The row shown of this key, drawn where it was not; null where none is. */
+  of(key: string): HTMLTableRowElement | null;
+  /** A row put after the last: a row added (`added`, its key), the work kept on a record the list no longer holds (`kept`). */
+  append(tr: HTMLTableRowElement, record: Row, how: { added?: string; kept?: boolean }): void;
+  /** A row taken away. */
+  remove(tr: HTMLTableRowElement): void;
+  /** A row drawn again in place of another, or the same row now of this record (a row added, saved). */
+  replace(old: HTMLTableRowElement, fresh: HTMLTableRowElement, record: Row, added?: string): void;
+}
+
 /** The form a row is edited through, as the viewer makes one: its words, its clock, the person, the app's functions. */
 export type NewForm = (options: { page: Page; dataSource: DataSource; recordId: RecordId | null; values?: Values }) => Form;
 
@@ -82,6 +103,8 @@ export interface EditableContext {
   grouped(): boolean;
   /** Open a record as a row's press does, where the app opens records. */
   open?: ((id: RecordId, lit: boolean, name: string) => Promise<void>) | undefined;
+  /** The rows, drawn or not, as the keys, a paste and an Undo go through them. */
+  rows: ListRows;
 }
 
 /** Whether a list's rows each carry an Open button: the page asks for one (`editable.open`), and the app opens records. */
@@ -104,6 +127,10 @@ export interface EditableRows {
   settle(): Promise<void>;
   /** The rows drawn anew: work kept on a row drawn on it, and kept in sight where its row is not among them. */
   drawn(): void;
+  /** The rows the person has work on, by key: kept in the page wherever the view goes. */
+  working(): string[];
+  /** A row put back in the page as the view came to it: its note under it again. */
+  placed(tr: HTMLTableRowElement): void;
   destroy(): void;
 }
 
@@ -284,7 +311,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     tr.hidden = old.hidden;
     const twisty = old.querySelector(':scope > td[data-name] > :is(.fd-list-twisty, .fd-list-twisty-room)');
     if (twisty) tr.querySelector(':scope > td[data-name]')?.prepend(twisty);
-    old.replaceWith(tr);
+    context.rows.replace(old, tr, record);
     return tr;
   }
 
@@ -729,30 +756,27 @@ export function editableRows(context: EditableContext): EditableRows | null {
 
   /** The cells of a row the person can change, as they stand: in the person's order, those hidden left out. */
   const cellsOf = (tr: HTMLTableRowElement) => [...tr.querySelectorAll<HTMLTableCellElement>(':scope > td[data-edit]:not([hidden])')];
-  const rowsShown = () => [...body.querySelectorAll<HTMLTableRowElement>(':scope > tr.fd-list-row:not([hidden])')];
 
-  /** Tab and Shift+Tab: the next cell to change, along the row then on to the next; past the last, a row added. */
+  /** Tab and Shift+Tab: the next cell to change, along the row then on to the next — drawn as it is reached; past the last, a row added. */
   function step(edit: RowEdit, td: HTMLTableCellElement, forward: boolean) {
     const tr = td.parentElement as HTMLTableRowElement;
     const here = cellsOf(tr);
     const beside = here[here.indexOf(td) + (forward ? 1 : -1)];
     if (beside) return editCell(beside);
-    const rows = rowsShown();
-    for (let at = rows.indexOf(tr) + (forward ? 1 : -1); rows[at]; at += forward ? 1 : -1) {
-      const cells = cellsOf(rows[at]);
+    for (let next = context.rows.beside(tr, forward); next; next = context.rows.beside(next, forward)) {
+      const cells = cellsOf(next);
       if (cells.length) return editCell(forward ? cells[0] : cells[cells.length - 1]);
     }
     if (forward && canAdd()) return void addRow();
     closeEditor(edit, true);
   }
 
-  /** The cell in the same column, a row down or up, past rows that have no such cell. */
+  /** The cell in the same column, a row down or up, past rows that have no such cell: drawn as it is reached. */
   function cellBelow(td: HTMLTableCellElement, down: boolean): HTMLTableCellElement | null {
     const tr = td.parentElement as HTMLTableRowElement;
     const column = td.getAttribute('data-col');
-    const rows = rowsShown();
-    for (let at = rows.indexOf(tr) + (down ? 1 : -1); rows[at]; at += down ? 1 : -1) {
-      const found = rows[at].querySelector<HTMLTableCellElement>(`:scope > td[data-edit][data-col="${column}"]:not([hidden])`);
+    for (let next = context.rows.beside(tr, down); next; next = context.rows.beside(next, down)) {
+      const found = next.querySelector<HTMLTableCellElement>(`:scope > td[data-edit][data-col="${column}"]:not([hidden])`);
       if (found) return found;
     }
     return null;
@@ -965,6 +989,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
       edit.key = String(record.id);
       edits.set(edit.key, edit);
       rowOf.set(edit.tr, record);
+      // The list's row now of the record made, by its id.
+      context.rows.replace(edit.tr, edit.tr, record);
     }
     edit.putBack.textContent = labels.putBack;
     context.saved(record, made);
@@ -1013,13 +1039,12 @@ export function editableRows(context: EditableContext): EditableRows | null {
   /** A row added and not saved, taken away: the focus to the row before it, else Add a line. */
   function drop(edit: RowEdit, focus = false) {
     const tr = edit.tr;
-    const before = tr?.previousElementSibling;
+    const before = focus && tr?.isConnected ? context.rows.beside(tr, false) : null;
     release(edit);
-    tr?.remove();
+    if (tr) context.rows.remove(tr);
     context.changed();
     if (!focus) return;
-    const row = before?.closest('tr.fd-list-row') ? (before as HTMLElement) : before?.previousElementSibling instanceof HTMLElement ? before.previousElementSibling : null;
-    (row?.classList.contains('fd-list-row') ? row : addButton.hidden ? context.element : addButton).focus();
+    (before ?? (addButton.hidden ? context.element : addButton)).focus();
   }
 
   /** Put back: the row as the record holds it (as listed, or as last saved), the person's changes let go; a row added, taken away. */
@@ -1043,8 +1068,9 @@ export function editableRows(context: EditableContext): EditableRows | null {
   function addRow(): RowEdit | null {
     if (!canAdd()) return null;
     const key = `new-${++added}`;
-    const tr = blank(key, startValues());
-    body.append(tr);
+    const values = startValues();
+    const tr = blank(key, values);
+    context.rows.append(tr, { id: key, values }, { added: key });
     const edit = start(tr, null, key);
     context.changed();
     if (cards()) void sheet(edit);
@@ -1197,7 +1223,8 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const touched: RowEdit[] = [];
     for (const [old, before] of undo.changed) {
       const id = String(old.record?.id);
-      const tr = [...body.querySelectorAll<HTMLTableRowElement>(':scope > tr.fd-list-row[data-id]')].find((one) => one.getAttribute('data-id') === id);
+      // Its row, drawn where the view had left it.
+      const tr = edits.has(id) ? null : context.rows.of(id);
       const edit = edits.get(id) ?? (tr ? editOf(tr) : null);
       if (!edit) continue;
       await edit.ready;
@@ -1284,10 +1311,9 @@ export function editableRows(context: EditableContext): EditableRows | null {
     if (!tr.isConnected || destroyed) return;
     const block = part.blockOf(text);
     const at = drawings;
-    const from = rowsShown().indexOf(tr);
-    if (from < 0) return;
+    const { at: from, rows: here, left: there } = context.rows.from(tr, 1);
+    if (!here.length) return;
     // A paste that changes or adds more than one row is asked first: "Paste 40 rows: change 7 and add 33?".
-    const there = rowsShown().length - from;
     const changes = Math.min(block.length, there);
     const adds = canAdd() ? block.slice(there).filter((cells) => cells.some((one) => one.trim())).length : 0;
     endUndo();
@@ -1298,10 +1324,9 @@ export function editableRows(context: EditableContext): EditableRows | null {
       if (!(await list.ask(asked, { yes: fill(labels.pasteYes, { n: count(changes + adds) }) })) || at !== drawings || destroyed || !tr.isConnected) return;
     }
     const undo: PasteUndo = { changed: new Map(), made: [], from: td, timer: null };
-    // The rows it lands on, each with its form ready to take its cells.
-    const landing = rowsShown()
-      .slice(from, from + block.length)
-      .map((row) => editOf(row));
+    // The rows it lands on, each with its form ready to take its cells: drawn where the view had left them, then kept in
+    // the page while the person's work is on them.
+    const landing = context.rows.from(tr, block.length).rows.map((row) => editOf(row));
     await Promise.all(landing.map((edit) => edit?.ready));
     if (at !== drawings || destroyed) return;
     const touched = new Set<RowEdit>();
@@ -1309,11 +1334,10 @@ export function editableRows(context: EditableContext): EditableRows | null {
     /** For a name looked up on a row not added yet: a new record's form, made once. */
     let scratch: Form | null = null;
     const blankForm = () => (scratch ??= newForm({ page: rowPage, dataSource: rowSource(null), recordId: null }));
-    const valuesOf = (tr: HTMLTableRowElement) => (rowEdit(keyOf(tr))?.form.getState().values as Values | undefined) ?? rowOf.get(tr)?.values ?? {};
     const table: Parameters<LinesPart['pasteRows']>[0] = {
       fields: rowPage.fields as Record<string, LineField>,
       columns: context.columns().filter((name) => name in rowPage.fields),
-      lines: () => rowsShown().map((row): Line => ({ key: keyOf(row), values: valuesOf(row) })),
+      lines: () => context.rows.lines().map(({ key, record }): Line => ({ key, values: (rowEdit(key)?.form.getState().values as Values | undefined) ?? record.values ?? {} })),
       add: () => {
         const key = addRowQuietly();
         const made = key ? edits.get(key) : undefined;
@@ -1321,7 +1345,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
         return key;
       },
       typable: (line, name) => {
-        const row = rowsShown().find((one) => keyOf(one) === line.key);
+        const row = context.rows.of(line.key);
         const edit = rowEdit(line.key);
         return !!row && !!row.querySelector(`:scope > td[data-edit][data-col="${name}"]`) && changeable(edit?.record ?? rowOf.get(row) ?? null, name, edit?.form);
       },
@@ -1375,8 +1399,9 @@ export function editableRows(context: EditableContext): EditableRows | null {
   function addRowQuietly(): string | null {
     if (!canAdd()) return null;
     const key = `new-${++added}`;
-    const tr = blank(key, startValues());
-    body.append(tr);
+    const values = startValues();
+    const tr = blank(key, values);
+    context.rows.append(tr, { id: key, values }, { added: key });
     start(tr, null, key);
     context.changed();
     return key;
@@ -1441,7 +1466,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     const at = active?.closest?.('tr.fd-list-row[data-id] > td[data-col]');
     const back = at ? [at.parentElement?.getAttribute('data-id'), at.getAttribute('data-col')] : null;
     await context.reload();
-    if (back && (doc.activeElement === doc.body || !doc.activeElement)) body.querySelector<HTMLElement>(`:scope > tr.fd-list-row[data-id="${back[0]}"] > td[data-col="${back[1]}"]`)?.focus({ preventScroll: true });
+    if (back && (doc.activeElement === doc.body || !doc.activeElement)) context.rows.of(back[0] ?? '')?.querySelector<HTMLElement>(`:scope > td[data-col="${back[1]}"]`)?.focus({ preventScroll: true });
   }
 
   // ---- the list's own ---------------------------------------------------------------------------------------------
@@ -1529,12 +1554,18 @@ export function editableRows(context: EditableContext): EditableRows | null {
           release(edit);
           continue;
         }
-        const tr = edit.record ? redraw(el('tr'), edit.record) : blank(edit.key, edit.form.getState().values as Values);
+        const values = edit.form.getState().values as Values;
+        const tr = edit.record ? redraw(el('tr'), edit.record) : blank(edit.key, values);
         tr.setAttribute('data-kept', '');
-        body.append(tr);
+        context.rows.append(tr, edit.record ?? { id: edit.key, values }, edit.record ? { kept: true } : { kept: true, added: edit.key });
         attach(edit, tr);
       }
       context.changed();
+    },
+    working: () => [...edits.values()].flatMap((edit) => (edit.gone ? [] : [edit.key])),
+    placed(tr) {
+      const edit = edits.get(keyOf(tr));
+      if (edit && !edit.gone && edit.tr === tr) placeNote(edit);
     },
     destroy() {
       destroyed = true;
