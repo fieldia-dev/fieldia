@@ -180,7 +180,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     options: OptionsEditor | null;
     settings: InlineSettings | null;
     /** What a card not being edited was drawn from: while all of it is the same, the card stays as it is. */
-    drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null; language: string | undefined } | null;
+    drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null; language: string | undefined; quiet: boolean } | null;
   }
   const cards = new Map<string, Card>();
   /** Where a part sits in its grid: its place in it, and the grid's columns. */
@@ -272,16 +272,17 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     // The quiet look as the form will wear it: the field's own word, else its group's, else the page's skin.
     const skin = page.look?.skin ?? (page.look?.theme ? THEME_SKINS[page.look.theme] : (options.skin ?? 'outlined'));
     const quietPlace = node.quiet ?? quietAround ?? skin === 'quiet';
+    // A card not being edited, drawn from the same field, picked or not as before, for the same record, in the same
+    // look: as it is — nothing of it read or written, so a key typed in another card costs it nothing.
+    const isPicked = picked.includes(node.id) && picked.length > 1;
+    const was = card.drawn;
+    if (!editing && was?.node === node && was.def === def && was.labels === labels && was.picked === isPicked && was.sample === sample && was.language === page.language && was.quiet === quietPlace) return element;
     // Its sheet comes in a part of its own: the card is boxed until it has (look-parts.ts in @fieldia/widgets).
     if (quietPlace) wearQuiet(element.ownerDocument);
     element.toggleAttribute('data-in-quiet', quietPlace);
     element.toggleAttribute('data-quiet', !!def && wearsQuiet(def, node) && quietPlace);
     hint(card, node);
-    // A card not being edited, drawn from the same field, picked or not as before, for the same record: as it is.
-    const isPicked = picked.includes(node.id) && picked.length > 1;
-    const was = card.drawn;
-    if (!editing && was?.node === node && was.def === def && was.labels === labels && was.picked === isPicked && was.sample === sample && was.language === page.language) return element;
-    card.drawn = editing ? null : { node, def, labels, picked: isPicked, sample, language: page.language };
+    card.drawn = editing ? null : { node, def, labels, picked: isPicked, sample, language: page.language, quiet: quietPlace };
     element.dataset['type'] = def.type;
     const labelsAt = labelPlace(node, def.type, labels);
     if (labelsAt) element.dataset['labels'] = labelsAt;
