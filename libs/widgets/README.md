@@ -32,6 +32,15 @@ lays a page out with these widgets. Import it to write your own widget — a
 `WidgetFactory` returns `{ element, update(state), focus() }` — and register it
 with the viewer's `widgets` option under `type` or `type.widget`.
 
+A widget that draws from its own state alone — its value, read-only, required,
+invalid, what describes it, and of the form only its field's text left unread,
+its choices and their places — says so with `reads`: the other fields whose
+values it shows besides (a money box its currency's field), `[]` for none. The
+viewer then leaves it alone while none of that changed, so a key typed elsewhere
+on a page of 500 fields costs it nothing. Left out, it is brought up to date at
+every change, as before; a widget that reads `values` whole, `parent` or anything
+else of the form leaves it out.
+
 A widget that throws — as it is drawn, brought up to date, focused or taken away —
 never takes the page with it: `createWidget` puts a small box in its place ("This
 field could not be shown: Price", in the page's language, said to a screen reader

@@ -1052,6 +1052,31 @@ language's chunk that does not come within 30 s settles as failed: the page is
 drawn without it (one that guards a send then refuses it), the language in
 English until its words come.
 
+## A change costs what reads it
+
+A form works out only what reads what changed (0.35): a condition is read again
+once a value it reads changed, a value worked out again once one it is worked
+out from did, a field checked again once its answer or what its rules read did —
+and the viewer brings a part up to date only once what it shows changed. A key
+typed on a page of 500 fields reads no condition again where nothing reads that
+field, and brings a handful of parts up to date, not 560. `form.node(id)` gives
+the same object while nothing of a part's state changed, and `form.nodeReads(id)`
+the fields that state is worked out from (null where it cannot say: a condition
+calling `today()` or the app's own function).
+
+`workCounts` counts that work since the page opened — `conditions`, `computes`,
+`checks`, `updaters` — the same on any machine, for tests that bound it.
+`recomputeInFull(true)` makes the forms and viewers made after it work every
+change out in full, as before 0.35: the oracle Fieldia's own tests compare the
+quick way with on pages made at random. An app never needs it; its tests may.
+
+```js
+import { recomputeInFull, workCounts } from '@fieldia/core';
+const before = workCounts.updaters;
+input.dispatchEvent(new Event('input', { bubbles: true }));
+expect(workCounts.updaters - before).toBeLessThan(20);
+```
+
 ## What Fieldia keeps in the browser
 
 Everything Fieldia keeps on a device is a person's, kept by whose it is — the
