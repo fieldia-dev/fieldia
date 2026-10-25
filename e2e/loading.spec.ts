@@ -409,7 +409,8 @@ test.describe('Loading, as you like it', () => {
     const shown = await rows(page).count();
     await demo(page, '(d.net.failNext = true, d.list.reload(), 0)');
     const toast = pane(page, 'Customers').locator('.fd-say');
-    await expect(toast).toContainText('Couldn’t load. The server did not answer this once.');
+    // Away from its place, it names what failed: one of the page's four forms (the owner's walk of 0.33.0).
+    await expect(toast).toContainText('Could not load the customers. The server did not answer this once.');
     // Nothing taken away: the rows shown stay.
     await expect(rows(page)).toHaveCount(shown);
     await toast.getByRole('button', { name: 'Retry' }).click();
