@@ -1,7 +1,7 @@
 import type { Page, Route } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { axeFindings } from './a11y-support';
-import { expectNoSidewaysScroll, screen } from './support';
+import { expectNoSidewaysScroll, screen, unhurried } from './support';
 
 /**
  * Waits seen where a person looks, as the owner's walk of 0.33.0 met them (walk-0.33, findings 4–9, 11, 15, 19 and the
@@ -23,7 +23,7 @@ const go = async (page: Page, query = '') => {
   page.on('console', (message) => {
     if (message.type() === 'error') problems.push(`console: ${message.text()}`);
   });
-  await page.goto(`/loading/?${query}`);
+  await page.goto(unhurried(query));
   return problems;
 };
 const pane = (page: Page, name: string) => page.locator(`section.ld-pane[aria-label="${name}"]`);

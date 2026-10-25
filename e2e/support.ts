@@ -62,3 +62,10 @@ export async function expectNoSidewaysScroll(page: Page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow, 'page scrolls sideways').toBeLessThanOrEqual(0);
 }
+
+/**
+ * The loading demo's address (`/loading/?…`) for a test that holds its answers: a held wait is looked at for as long as
+ * the test takes — its screenshot, axe, a slow runner (WebKit on CI) — so its words stay its first ("Loading…",
+ * "Searching…", "Loading more…"), never "Still loading…" past the 5 s of `slowAfter`, unless the test names its own.
+ */
+export const unhurried = (query: string) => `/loading/?${/(^|&)slowAfter=/.test(query) ? query : `${query}${query ? '&' : ''}slowAfter=600000`}`;

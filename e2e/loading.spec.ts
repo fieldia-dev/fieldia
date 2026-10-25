@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { axeFindings } from './a11y-support';
-import { expectNoSidewaysScroll, screen } from './support';
+import { expectNoSidewaysScroll, screen, unhurried } from './support';
 
 /**
  * Waiting, the one way (docs/plans/loading.md), as a person sees it in "Loading, as you like it": a wholesaler's
@@ -18,7 +18,7 @@ const go = async (page: Page, query = '') => {
   page.on('console', (message) => {
     if (message.type() === 'error') problems.push(`console: ${message.text()}`);
   });
-  await page.goto(`/loading/?${query}`);
+  await page.goto(unhurried(query));
   return problems;
 };
 const pane = (page: Page, name: string) => page.locator(`section.ld-pane[aria-label="${name}"]`);

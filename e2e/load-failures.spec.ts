@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+import { unhurried } from './support';
 
 /**
  * Two failures as the owner's walk of 0.33.0 met them (walk-0.33, findings 2 and 3), in "Loading, as you like it", every
@@ -13,7 +14,7 @@ import { expect, test } from './fixtures';
 const go = async (page: Page, query: string) => {
   const problems: string[] = [];
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
-  await page.goto(`/loading/?${query}`);
+  await page.goto(unhurried(query));
   return problems;
 };
 const pane = (page: Page, name: string) => page.locator(`section.ld-pane[aria-label="${name}"]`);
