@@ -234,11 +234,12 @@ export function dateBox(options: DateBoxOptions): DateBox {
   const precision = kind === 'date' ? precisionOf(field) : 'day';
   const grain = precision !== 'day' ? monthsPartIn()?.grainBox(precision, { kind, order, locale, label, labels }) : undefined;
   const reader: DateReader = { kind, order, locale, label, labels, ...(zone ? { zone } : {}), ...(grain ? { grain } : {}) };
-  // The zone beside a date and time on another clock than the browser's: its short name, for the instant held or now.
+  // The zone beside a date and time on another clock than the browser's: its short name, for the instant held or now —
+  // now by the form's clock (`now`), as its today is: the computer's own where the app gave none.
   const mark = kind === 'datetime' && zone && !isOwnZone(zone) ? make('span', { class: 'fd-zone', ...(options.id ? { id: `${options.id}-zone` } : {}) }) : undefined;
   const showMark = (value: Value | undefined) => {
     if (!mark || !zone) return;
-    const at = typeof value === 'string' && !Number.isNaN(Date.parse(value)) ? Date.parse(value) : Date.now();
+    const at = typeof value === 'string' && !Number.isNaN(Date.parse(value)) ? Date.parse(value) : form.now().getTime();
     const short = zoneName(at, zone, locale);
     if (mark.textContent !== short) mark.textContent = short;
     setAttr(mark, 'title', zoneName(at, zone, locale, 'longGeneric'));
