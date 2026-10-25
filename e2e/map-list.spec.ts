@@ -93,6 +93,19 @@ async function closer(page: Page, steps: number) {
 /** A record's row, by the record's id. */
 const rowOf = (page: Page, id: string) => page.locator(`.fd-list-row[data-id="${id}"]`);
 
+test('asks for its images once its homes have placed it, never a screenful at its starting view first', async ({ page }) => {
+  // 0.35's list map, its code a part of its own, asked for nine images at its starting view, then moved to its homes.
+  const zooms: number[] = [];
+  page.on('request', (request) => {
+    const asked = /^https:\/\/tile\.openstreetmap\.org\/(\d+)\//.exec(request.url());
+    if (asked) zooms.push(Number(asked[1]));
+  });
+  await openList(page);
+  await expect.poll(() => onTheMap(page)).toBe(62);
+  expect(zooms.length).toBeGreaterThan(0);
+  expect([...new Set(zooms)]).toEqual([await zoomOf(theMap(page))]);
+});
+
 test('the homes beside their map: each placed home a price or in a bubble, the two without a place said, nothing sideways', async ({ page }) => {
   const { problems } = await openList(page);
   await expect(view(page, 'List and map')).toHaveAttribute('aria-pressed', 'true');

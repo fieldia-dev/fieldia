@@ -35,6 +35,11 @@ export interface MapBoxOptions {
   tools?: readonly MapTool[];
   /** `all`: one finger pans and the wheel zooms, nothing held; the page's own scroll passes by the map unless said. */
   gestures?: 'shared' | 'all';
+  /**
+   * The map's first images asked for once this settles: a list's map once its records first place it — never a
+   * screenful of images at the starting view that its records then move it away from.
+   */
+  imagesAfter?: Promise<unknown>;
 }
 
 /** A tool a map can have under its zoom. */
@@ -227,6 +232,10 @@ export function createMapBox(options: MapBoxOptions): MapBox {
 
   async function setBaseMap(kind: BaseMap) {
     if (!map || !L || kind === baseMap) return;
+    if (!baseLayer && options.imagesAfter) {
+      await options.imagesAfter.catch(() => undefined);
+      if (destroyed || !map) return;
+    }
     const refused = (error: Error) => {
       warnOnce(`The ${provider.id} map images could not be drawn: ${error.message}`);
       return null;

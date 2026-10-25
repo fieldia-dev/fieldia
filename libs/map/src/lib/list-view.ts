@@ -108,6 +108,11 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
   if (height !== 'clamp(320px, 64vh, 640px)') element.dataset['height'] = String(spec.height);
   const takesAll = spec.gestures === 'all';
   const { start } = context;
+  // Its images asked for once its records first place it (`imagesAfter`), never at the starting view first: its code a
+  // part of its own since 0.35, the map was drawn before its records came and asked for a screenful at the starting view
+  // its records then moved it away from (nine images of a tile server's, thrown away, at every list's map opened).
+  let placedFirst: (() => void) | null = null;
+  const placed = start ? undefined : new Promise<void>((resolve) => (placedFirst = resolve));
   const box = createMapBox({
     document: doc,
     provider: settings.provider,
@@ -120,6 +125,7 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
     height,
     tools: (spec.tools ?? []).filter((tool): tool is MapTool => tool !== 'nearest'),
     gestures: takesAll ? 'all' : 'shared',
+    ...(placed ? { imagesAfter: placed } : {}),
   });
   element.append(box.element);
   const here = doc.createElement('button');
@@ -739,6 +745,14 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
   }
 
   async function reload() {
+    try {
+      await reloadNow();
+    } finally {
+      // Placed where its records are, or none came to place it: its images now (each fit is made before they are asked).
+      placedFirst?.();
+    }
+  }
+  async function reloadNow() {
     const source = context.dataSource;
     if (!source?.list && !gathers) return;
     const asked = ++asking;
@@ -856,6 +870,7 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
     },
     destroy() {
       destroyed = true;
+      placedFirst?.();
       stopCount();
       made?.stop();
       void regions?.then((made) => made?.destroy());
