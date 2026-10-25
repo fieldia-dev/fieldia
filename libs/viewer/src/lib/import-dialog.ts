@@ -7,6 +7,7 @@ import { matchColumns } from './import-match';
 import { installImportStyles } from './import-styles';
 import { canWrite, deleteRecords, writeRows, type Written } from './import-write';
 import { VIEWER_LABELS, type ViewerLabels } from './labels';
+import { FILE_YES_NO } from './locales/yes-no';
 
 /**
  * A list's Import, in a dialog of three steps: a file chosen or dropped and
@@ -80,13 +81,12 @@ export type ImportEnd =
     };
 
 /**
- * Every word for yes and no a page may hold, in every language the viewer has — English, and each whose words have come
- * (the page's own; 0.35: Arabic, German and French come in chunks of their own too, as in the one-tag script) — and as
- * spreadsheets write them.
+ * Every word for yes and no a page may hold, in every language the viewer has — each Fieldia speaks (`FILE_YES_NO`), and
+ * each whose words have come with an app's own over them — and as spreadsheets write them.
  */
 function yesAndNo(): { yes: string[]; no: string[] } {
-  const yes = new Set(['yes', 'y', 'true', '1', 'x', '✓', '✔', 'on']);
-  const no = new Set(['no', 'n', 'false', '0', 'off', '✗', '✘', '-']);
+  const yes = new Set(['yes', 'y', 'true', '1', 'x', '✓', '✔', 'on', ...FILE_YES_NO.yes]);
+  const no = new Set(['no', 'n', 'false', '0', 'off', '✗', '✘', '-', ...FILE_YES_NO.no]);
   for (const words of [...Object.values(VIEWER_LABELS), ...Object.values(WIDGET_LABELS)]) {
     yes.add(words.yes);
     no.add(words.no);

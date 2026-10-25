@@ -86,6 +86,9 @@ const englishOnly = {
     // Every language but English, which the packages fetch in chunks of their own (Arabic, German and French too since
     // 0.35; carried at once in the packages before, and built here from an empty `locales/all.ts`): the add-on scripts here.
     builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/later\.ts$/ }, () => ({ contents: 'export const LATER = {};', loader: 'ts' }));
+    // Yes and no in every language, for a file brought in (the packages'): here, a file reads in the languages whose
+    // add-ons are in, from their own words.
+    builder.onLoad({ filter: /libs\/viewer\/src\/lib\/locales\/yes-no\.ts$/ }, () => ({ contents: 'export const FILE_YES_NO = { yes: [], no: [] };', loader: 'ts' }));
     // With no language in a chunk, the packages' way of fetching them and of putting a mount's early words in theirs has
     // nothing to do here: what every caller reads of it, and no more.
     builder.onLoad({ filter: /libs\/core\/src\/lib\/record\/words-chunks\.ts$/ }, () => ({
@@ -1526,9 +1529,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // the dot and the dash in proportion to the box at any --fd-tick-size, its press target 24px at the least, a corner of
 // its own (--fd-tick-radius), and the four tick tokens taken by the viewer's `tokens` (styles.ts, look.ts) — 573,495
 // bytes measured before, 573,824 after (+329: 560.05 to 560.38); and a part's own word tables' words (a map's fields',
-// fetched as their part comes) waited for before a page is drawn in their language (viewer.ts), 19 more, 573,843 — to
-// 560.4.
-const BUDGET_KB = 560.4;
+// fetched as their part comes) waited for before a page is drawn in their language (viewer.ts), 19 more, 573,843; and a
+// dialog opened in a language whose words come in a chunk of their own waiting for them as its viewer does, its ⤢, grip
+// and foot named in them (dialog.ts), 54 more, 573,897 — to 560.5 (gzipped 186.68, inside its 186.7).
+const BUDGET_KB = 560.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
