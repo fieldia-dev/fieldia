@@ -47,7 +47,11 @@ jobs:
     needs: scope
     if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 0.33 took 19 m 48 s of its 20; 0.35 ran out of them in `release.mjs check`, every task of `nx run-many` passed in
+    # about 18 m before it. What grew are the oracles holding each quick way to the plain one, kept whole (timed on a
+    # 3-worker machine): a list's window (list-window.spec.ts, 52 s alone), a table's lines (lines-incremental.spec.ts,
+    # 21 s), the viewer's (incremental-oracle.spec.ts, 17 s), the form's (incremental.spec.ts, 4 s). Room above that.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
