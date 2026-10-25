@@ -322,6 +322,38 @@ test.describe('a wait seen where a person looks', () => {
   });
 });
 
+test.describe('Fieldia’s own words on a page right to left, left in English', () => {
+  test('read the way they are written: “1–24 of 60 customers”, “Search…”, never “of 60 customers 24–1”, “…Search”', async ({ page, browserName }) => {
+    const problems = await go(page, 'slow=0&dir=rtl');
+    await expect(rows(page).first()).toContainText('Delta Foods');
+    const range = pane(page, 'Customers').locator('.fd-pager-text').first();
+    await expect(range).toHaveText(/^1–\d+ of 60 customers$/);
+    // Where each of its words is drawn: "1" first, at the left, "customers" last, at the right.
+    const at = await range.evaluate((element) => {
+      const text = element.firstChild as Text;
+      const place = (from: number, to: number) => {
+        const words = document.createRange();
+        words.setStart(text, from);
+        words.setEnd(text, to);
+        return words.getBoundingClientRect().left;
+      };
+      const all = text.data;
+      return { one: place(0, 1), customers: place(all.indexOf('customers'), all.length) };
+    });
+    expect(at.one).toBeLessThan(at.customers);
+    // The search's placeholder read in its own direction, set at the form's start (the box's own placeholder in Firefox).
+    const search = pane(page, 'Customers').getByRole('combobox').first();
+    const reading = await search.evaluate((box, engine) => {
+      const style = getComputedStyle(box, engine === 'firefox' ? null : '::placeholder');
+      return { bidi: style.unicodeBidi, align: getComputedStyle(box, engine === 'firefox' ? null : '::placeholder').textAlign, dir: getComputedStyle(box).direction };
+    }, browserName);
+    expect(reading.bidi).toBe('plaintext');
+    expect(reading.dir).toBe('rtl');
+    await screen(page, 'waits-seen-rtl-english', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+});
+
 test.describe('a part’s wait drawn one way, as its code comes', () => {
   test('a map drawn the first time: its skeleton, never “Loading…” in words first', async ({ page }) => {
     const leaflet = await holdScript(page, /leaflet-src[-\w]*\.js$/);
