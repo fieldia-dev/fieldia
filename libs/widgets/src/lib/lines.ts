@@ -79,23 +79,8 @@ const listedOf = (form: Form, field: string): string[] => {
  * The form a cell sees: the line's values, written back into the line; its choices', and what was taken out of them,
  * the line's own (`offered`, `takenOut`), by its column. Shared with @fieldia/grid.
  */
-/** Each table's lines by their keys, made once for each list of lines the record holds: a cell finds its own at once. */
-const byKey = new WeakMap<readonly Line[], Map<string, Line>>();
-/** A table's line by its key: from the lines by their keys, made once for the lines as they are (0.34 looked through them all for each cell). */
-function lineByKey(lines: readonly Line[], key: string): Line | undefined {
-  let index = byKey.get(lines);
-  // A list of lines changed in place since (never the form's own, which makes a new one): looked through again.
-  if (!index || index.size !== lines.length) {
-    index = new Map();
-    // The first of two lines with one key, as a search through them finds it.
-    for (const line of lines) if (!index.has(line.key)) index.set(line.key, line);
-    byKey.set(lines, index);
-  }
-  return index.get(key);
-}
-
 export function lineForm(form: Form, field: string, key: string): Form {
-  const line = () => lineByKey((form.getState().values[field] as Line[] | null) ?? [], key);
+  const line = () => ((form.getState().values[field] as Line[] | null) ?? []).find((l) => l.key === key);
   const values = () => line()?.values ?? {};
   // A cell's unread text is kept by its path in the record's form (`field.key.column`): the cell sees its own by its column.
   const at = `${field}.${key}.`;

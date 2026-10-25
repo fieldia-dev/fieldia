@@ -1,4 +1,4 @@
-import { changesOptions, isEmpty, labelAt, lineKind, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
+import { isEmpty, labelAt, lineKind, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
 import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
@@ -280,7 +280,11 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     return [widget ? `${sub.type}.${widget}` : '', sub.type === 'selection' && (sub as { multiple?: boolean }).multiple ? 'selection.checkboxes' : '', sub.type].some((key) => !!key && key in (widgets as object));
   });
   /** The columns whose options follow the line or the record (their conditions, a field's options): read for each line as it is drawn. */
-  const optionColumns = columns.filter((column) => changesOptions(def.fields[column]));
+  const optionColumns = columns.filter((column) => {
+    // As core's `changesOptions` has it: a condition on one of its options, or its options carried from another field.
+    const sub = def.fields[column];
+    return sub.type === 'selection' && ((!!sub.optionsFrom && 'field' in sub.optionsFrom) || sub.options.some((option) => option.invisible !== undefined && option.invisible !== false));
+  });
   const offeredOf = (line: Line): string[] => (optionColumns.length && form.offered ? [JSON.stringify(optionColumns.map((column) => form.offered?.(`${name}.${line.key}.${column}`) ?? null))] : []);
   /** What the table was last drawn for as a whole: its state, the lines' count against its limits, its columns hidden, the record's currency. */
   let drawnFor = '';
