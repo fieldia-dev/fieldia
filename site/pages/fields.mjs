@@ -254,7 +254,7 @@ ${code(
     <tr><td>${c('timer')}</td><td>On a ${c('float')}: the time logged, ${c('unit')} ${c('"minutes"')} when kept in minutes, and ${c('startField')}, a ${c('datetime')} it runs from while set. On a ${c('datetime')}: the time since it</td></tr>
     <tr><td>${c('color')}</td><td>On an ${c('integer')}, Flectra's twelve tag colours from a palette (0 none); on a ${c('char')}, a colour as ${c('#rrggbb')}</td></tr>
     <tr><td>${c('copy')}</td><td>The value and a Copy button</td></tr>
-    <tr><td>${c('pdf')} on a ${c('binary')}, ${c('embed')} on a ${c('char')}</td><td>${c('height')} in pixels (480): the browser's own viewer of a PDF, or of the web page at the address, beside a link to open it in a tab</td></tr>
+    <tr><td>${c('pdf')} on a ${c('binary')}, ${c('embed')} on a ${c('char')}</td><td>${c('height')} in pixels (480): the browser's own viewer of a PDF, or of the web page at the address, beside a link to open it in a tab — another site's page in its own origin, a page of yours in none (it never reaches the form's page), so its scripts need ${c('Access-Control-Allow-Origin')} from your server, as GitHub Pages and most CDNs send</td></tr>
     <tr><td>${c('distribution')} on a ${c('json')}</td><td>${c('model')}: the accounts' (${c('"account.analytic.account"')})</td></tr>
     <tr><td>${c('tax-totals')} on a ${c('json')}</td><td>${c('currencyField')} or ${c('currency')}; ${c('editable')}: ${c('true')} lets the tax amounts be typed while the field is not read-only</td></tr>
     <tr><td>${c('payments')} on a ${c('json')}</td><td>${c('currencyField')}, ${c('dueField')} (the amount still due), ${c('model')} of a payment's page (${c('"account.payment"')})</td></tr>

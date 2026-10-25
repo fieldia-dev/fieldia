@@ -149,8 +149,12 @@ as it is.
 - A date and time box on another zone's clock names the zone as it is now by
   the form's clock (`now`), as its today is — not the computer's (a test pinned
   to 16 October said CET on the day the clocks went back).
+- An embed field asks its frame only for the sandbox tokens the browser knows
+  (WebKit has no `allow-presentation`, and said so in the console for every
+  frame).
 - The demos: a record page opened without `record=` opens its model's first
-  sample record, never "Couldn't load".
+  sample record, never "Couldn't load"; a demo page shown in an embed field
+  draws in its opaque origin.
 
 **New:**
 
@@ -247,6 +251,11 @@ as it is.
     every tag from this release's README.
   - A PDF preview at your own address needs `connect-src 'self'`; the embed
     script frames only http(s) addresses.
+  - A page of your own site shown in an embed field runs in an opaque origin
+    (framed without `allow-same-origin`), so its scripts are fetched from origin
+    `null` and need `Access-Control-Allow-Origin` from your server — as GitHub
+    Pages and most CDNs send. Its own code must not assume it can read
+    `localStorage` or `sessionStorage` there.
   - Maintainers: a release is tagged locally first, published, then its tag is
     pushed (docs/maintainers/publishing.md). A patch holds fixes alone, with no
     Upgrading part; `release.mjs` refuses one.
