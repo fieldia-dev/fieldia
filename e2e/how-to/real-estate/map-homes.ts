@@ -97,13 +97,16 @@ export const replay: DemoReplay = {
         await see(listRows(page)).toHaveCount(6);
         await expect.poll(() => onTheMap(page)).toBe(6);
         await mapStill(theMap(page));
-        // Its six homes fitted, some crowding in a bubble: clicked, the map zooms in until its pins part.
+        // Its six homes fitted, some crowding in a bubble (on a phone's narrower map, in two): each clicked, the map zooms
+        // in until its pins part.
         const map = theMap(page);
-        await see(bubbles(page)).toHaveCount(1);
-        const before = await zoomOf(map);
-        await press(bubbles(page).first());
-        await expect.poll(() => zoomOf(map)).toBeGreaterThan(before);
-        await mapStill(map);
+        await expect.poll(() => bubbles(page).count()).toBeGreaterThan(0);
+        for (let bubble = 0; bubble < 3 && (await bubbles(page).count()); bubble++) {
+          const before = await zoomOf(map);
+          await press(bubbles(page).first());
+          await expect.poll(() => zoomOf(map)).toBeGreaterThan(before);
+          await mapStill(map);
+        }
         await see(pins(page)).toHaveCount(6);
         await see(bubbles(page)).toHaveCount(0);
         // The two prices, each on its own pin; the dollars' one a villa, as its row says.
