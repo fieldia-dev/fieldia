@@ -69,7 +69,7 @@ against budgets that fail the build.
 - **Small from npm.** An app's first load from the packages, bundled by esbuild:
   a record form 237.5 KB gzipped with the page and 310 KB to usable, a list
   236.7 and 305, the screen designer 583 and 796 (`tools/npm-first-load.mjs`,
-  a CI budget). The one-tag `fieldia.js` is 189.8 KB gzipped; its larger parts
+  a CI budget). The one-tag `fieldia.js` is 190.9 KB gzipped; its larger parts
   come as a page first uses them.
 
 ## Four rules
