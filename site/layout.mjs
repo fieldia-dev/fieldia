@@ -4,6 +4,7 @@ import { highlight } from '../demos/highlight.mjs';
 export const DOCS = [
   { path: '/start/', title: 'Get started' },
   { path: '/pages/', title: 'The page format' },
+  { path: '/agents/', title: 'For AI agents' },
   { path: '/fields/', title: 'Fields' },
   { path: '/data/', title: 'Data sources' },
   { path: '/behaviour/', title: 'Behaviour' },

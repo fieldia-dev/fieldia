@@ -10,10 +10,12 @@ A page — a form, a survey, a record screen with tabs and a status bar — is a
 JSON document. It contains data only, never code, so it can be stored,
 generated, versioned and edited.
 
-Pages come from two places:
+Pages come from three places:
 
 - **Generated** by your app — for example from an ERP's own view definitions.
 - **Built** in a designer — a question-by-question editor for surveys, a canvas for app screens.
+- **Written** by an AI agent — [the guide for agents](docs/agents.md) says what a page is, how to check one
+  before it is stored, and the mistakes the checks catch.
 
 Either way, the same viewer renders it. Fieldia knows no backend: records load
 and save through a small data-source interface that your app implements.
@@ -67,10 +69,11 @@ against budgets that fail the build.
   5,000 rows as at 100. A table of 200 lines draws again only the lines a change
   touches.
 - **Small from npm.** An app's first load from the packages, bundled by esbuild:
-  a record form 237.5 KB gzipped with the page and 310 KB to usable, a list
-  236.7 and 305, the screen designer 583 and 796 (`tools/npm-first-load.mjs`,
-  a CI budget). The one-tag `fieldia.js` is 189.8 KB gzipped; its larger parts
-  come as a page first uses them.
+  a record form 254.3 KB gzipped with the page and 327 KB to usable, a list
+  253.5 and 322, the screen designer 600 and 811 (`tools/npm-first-load.mjs`,
+  a CI budget). The one-tag `fieldia.js` is 206.7 KB gzipped; its larger parts
+  come as a page first uses them. Of that, 0.36 added about 17 KB: every page
+  checked whole before it is drawn, as `validatePage` checks it.
 
 ## Four rules
 

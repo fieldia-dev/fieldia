@@ -77,6 +77,26 @@ mountViewer(host, {
 A slot's renderer is given `fail(error)` too, for content that fails after it was
 drawn: the slot then shows its box.
 
+## A page it refuses
+
+`mountViewer` checks the page as `validatePage` does — one verdict, without the
+validation library (`checkPage`) — and draws none of a page it refuses. Its form's
+place says so instead, never a blank area: "This form cannot be shown: its page has
+mistakes", with each problem under "What is wrong" for whoever made the page.
+`onError` hears it (`{ stage: 'draw', part: 'page' }`), and `mountViewer` throws the
+error, its `issues` on it (`PageRefused`):
+
+```ts
+try {
+  mountViewer(host, { page, dataSource, onError: (error, where) => report(error, where) });
+} catch (error) {
+  // (error as PageRefused).issues: [{ path: 'fields.name.required', message: 'Invalid input: expected boolean, …' }]
+}
+```
+
+The React, Vue and Angular bindings catch it: the words stay in the form's place,
+`onError` (`(partError)` in Angular) is told, and the app around it stays mounted.
+
 ## While it waits: skeletons, spinners, bars — as you like
 
 Everything that waits for an answer waits the same way: a record and a list

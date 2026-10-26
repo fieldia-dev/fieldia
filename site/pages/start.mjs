@@ -246,7 +246,7 @@ expect(form.valueOf('Email')).toBe('mona@example.com');`
 <ul>
   <li><strong>Typing keeps up at 500 fields on a desktop.</strong> A key works out only what reads the field typed in: on a page of 500 fields it brings 16 of its parts up to date and reads no condition again, in 3.9–6.9 ms on a desktop — under the 16 ms of a frame. <em>Not yet on a mid-range phone on the biggest page:</em> 17–21 ms on a 500-field form, up to 36 ms on the 500-field example page, most of it the browser's paint.</li>
   <li><strong>Lists stay flat to 5,000 rows.</strong> Past 100 rows a list keeps only the rows near the view in the page — 5,000 rows hold about 1,600 DOM nodes, over 100,000 before 0.35 — and a tick, a Tab, a reload or a fold costs about the same at 5,000 rows as at 100. A table of 200 lines draws again only the lines a change touches.</li>
-  <li><strong>Small from npm.</strong> An app's first load from the packages, bundled by esbuild: a record form 237.5 KB gzipped with the page and 310 KB to usable, a list 236.7 and 305, the screen designer 583 and 796 (${c('tools/npm-first-load.mjs')}, a CI budget). The one-tag ${c('fieldia.js')} is ${SIZES.script} KB gzipped; its larger parts come as a page first uses them.</li>
+  <li><strong>Small from npm.</strong> An app's first load from the packages, bundled by esbuild: a record form 254.3 KB gzipped with the page and 327 KB to usable, a list 253.5 and 322, the screen designer 600 and 811 (${c('tools/npm-first-load.mjs')}, a CI budget). The one-tag ${c('fieldia.js')} is ${SIZES.script} KB gzipped; its larger parts come as a page first uses them.</li>
 </ul>
 
 <h2 id="next">Next</h2>
