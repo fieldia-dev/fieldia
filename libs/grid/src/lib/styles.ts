@@ -52,14 +52,15 @@ export const GRID_CSS = /* css */ `
 .fd-grid-choice > .fd-grid-taken-out:first-child { margin-block-start: 8px; }
 /* On paper, every line in a plain table as wide as the sheet, in the grid's place (and its cards'). */
 .fd-grid-lines > .fd-print-table { display: none; }
-/* So too while the room a heading over it keeps on paper is measured, as printing begins (@fieldia/viewer's print.ts). */
-.fd-form[data-fd-measure] .fd-grid-lines:has(> .fd-print-table) > :not(.fd-print-table) { display: none !important; }
+/* So too while the room a heading over it keeps on paper is measured, as printing begins (@fieldia/viewer's print.ts).
+   The grid says it holds its paper table (data-fd-printing): a :has() here made every change in a form lay it all out. */
+.fd-form[data-fd-measure] .fd-grid-lines[data-fd-printing] > :not(.fd-print-table) { display: none !important; }
 .fd-form[data-fd-measure] .fd-grid-lines > .fd-print-table { display: table; width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .fd-form[data-fd-measure] .fd-print-table :is(th, td) { padding: 5px 6px; vertical-align: top; overflow-wrap: break-word; }
 @media print {
   /* A block round it, which every engine breaks between the table's rows: Firefox moved a grid's part whole. */
-  .fd-grid-lines:has(> .fd-print-table) { display: block; }
-  .fd-grid-lines:has(> .fd-print-table) > :not(.fd-print-table) { display: none !important; }
+  .fd-grid-lines[data-fd-printing] { display: block; }
+  .fd-grid-lines[data-fd-printing] > :not(.fd-print-table) { display: none !important; }
   .fd-grid-lines > .fd-print-table { display: table; width: 100%; border-collapse: collapse; font-size: 12.5px; }
   .fd-print-table :is(th, td) { padding: 5px 6px; text-align: start; vertical-align: top; border-block-end: 1px solid var(--fd-border); overflow-wrap: break-word; }
   .fd-print-table th { font-weight: 600; border-block-end-color: var(--fd-border-strong); }

@@ -115,25 +115,38 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
     area.setAttribute('aria-labelledby', `${id}-label`);
     element.append(toolbar.bar, toolbar.linkRow, area);
   }
+  /** An attribute written only once it changes: a contenteditable box's, rewritten, made the browser restyle the page (0.35.1). */
+  const put = (name: string, value: string) => {
+    if (area.getAttribute(name) !== value) area.setAttribute(name, value);
+  };
+  /** The value last drawn, as given, and its clean words: a value given again is not cleaned again. */
+  let given: unknown = undefined;
+  let cleaned = '';
   return {
     element,
+    // It shows its own value alone: drawn again only once what it shows changed.
+    reads: [],
     focus: () => area.focus(),
     destroy: () => toolbar?.destroy(),
     update(state) {
       if (toolbar) {
-        toolbar.bar.hidden = state.readonly;
-        if (state.readonly) toolbar.linkRow.hidden = true;
+        if (toolbar.bar.hidden !== state.readonly) toolbar.bar.hidden = state.readonly;
+        if (state.readonly && !toolbar.linkRow.hidden) toolbar.linkRow.hidden = true;
       }
-      const clean = sanitizeHtml(typeof state.value === 'string' ? state.value : '', document);
+      if (state.value !== given || !cleaned) {
+        given = state.value;
+        cleaned = sanitizeHtml(typeof state.value === 'string' ? state.value : '', document);
+      }
+      const clean = cleaned;
       if (clean !== last || document.activeElement !== area) {
         if (area.innerHTML !== clean) showHtml(area, clean);
         last = clean;
       }
-      area.setAttribute('contenteditable', String(!state.readonly));
-      area.classList.toggle('fd-blank', !clean.trim());
-      area.setAttribute('aria-readonly', String(state.readonly));
-      area.setAttribute('aria-invalid', String(state.invalid));
-      if (state.describedBy) area.setAttribute('aria-describedby', state.describedBy);
+      put('contenteditable', String(!state.readonly));
+      if (area.classList.contains('fd-blank') !== !clean.trim()) area.classList.toggle('fd-blank', !clean.trim());
+      put('aria-readonly', String(state.readonly));
+      put('aria-invalid', String(state.invalid));
+      if (state.describedBy) put('aria-describedby', state.describedBy);
     },
   };
 };

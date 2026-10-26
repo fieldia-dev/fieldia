@@ -1234,6 +1234,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const why = !mayNot && !fixed && signedNow(state.values).has(node.field) ? labels.signedAnswer : (awaiting ?? reason ?? (mayNot ? (can?.reason ?? labels.fieldNotYours) : undefined));
         const showsLock = lockedNow && (!!why || (wrapper.hasAttribute('data-in-quiet') && !fixed));
         if (showsLock || lockMark) setHidden(lockFor(why), !showsLock);
+        // A lock at the value's start says so on its field, which the stylesheet lays out by (styles-head.ts).
+        if (lockMark && page.look?.lockAt === 'value') setAttr(wrapper, 'data-lock-shown', showsLock ? '' : null);
         if (!lockedNow) point(false);
         setAttr(wrapper, 'data-locked', quiet && showsLock ? '' : null);
         setAttr(wrapper, 'data-empty', quiet && isBlank(state.values[node.field]) ? '' : null);
@@ -2444,19 +2446,19 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       progressText.textContent = fill(labels.stepOf, { n: index + 1, total: steps.length });
       bar.style.width = `${((index + 1) / Math.max(1, steps.length)) * 100}%`;
       for (const { step, panel } of panels) {
-        panel.hidden = step.id !== state.step;
+        setHidden(panel, step.id !== state.step);
         // A step its answers pass over is left off the paper too.
         setAttr(panel, 'data-off', steps.includes(step.id) ? null : '');
       }
       const last = index === steps.length - 1;
-      back.hidden = index === 0;
-      skip.hidden = last || !node.children.find((step) => step.id === state.step)?.optional;
+      setHidden(back, index === 0);
+      setHidden(skip, last || !node.children.find((step) => step.id === state.step)?.optional);
       // Its words as they read now: a page's own may name the answers given ("Send to {branch}").
       const words = last ? flowKit?.finishWords() ?? node.finishLabel ?? labels.submit : node.nextLabel ?? labels.next;
       forward.textContent = words.includes('{') ? form.words(words) : words;
       for (const [id, go] of stepButtons) {
         const at = steps.indexOf(id);
-        (go.parentElement as HTMLElement).hidden = at === -1;
+        setHidden(go.parentElement as HTMLElement, at === -1);
         go.classList.toggle('fd-step-done', at !== -1 && at < index);
         go.classList.toggle('fd-step-skipped', state.skipped.includes(id));
         if (id === state.step) go.setAttribute('aria-current', 'step');
@@ -2491,8 +2493,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const saving = state.status === 'saving';
       const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && !saving && !locked && state.can?.edit !== false;
       // While it saves, Save stays where it was pressed, busy (`action`); Discard steps aside.
-      save.hidden = saving ? save.hidden : !dirty;
-      discard.hidden = !dirty;
+      setHidden(save, saving ? save.hidden : !dirty);
+      setHidden(discard, !dirty);
     });
     const header = el('div', { class: 'fd-header' }, actions);
     const underTitle = node.statusbar?.position === 'title';
@@ -2542,7 +2544,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         if (helpId) stats.append(el('span', { class: 'fd-sr-only', id: helpId }, stat.help as string));
         button.addEventListener('click', () => void press(button, () => form.runAction(stat.id)));
         updaters.push((state) => {
-          button.hidden = form.node(stat.id).invisible;
+          setHidden(button, form.node(stat.id).invisible);
           const values = state.values as Values;
           const unit = shownValue(stat.unitField, values) || stat.unit || '';
           const first = shownValue(stat.field, values);
@@ -2557,7 +2559,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       }
       // No empty row while every button is hidden, as with the badges.
       updaters.push(() => {
-        stats.hidden = [...stats.querySelectorAll<HTMLElement>(':scope > .fd-stat')].every((stat) => stat.hidden);
+        setHidden(stats, [...stats.querySelectorAll<HTMLElement>(':scope > .fd-stat')].every((stat) => stat.hidden));
       });
       card.append(stats);
     }
@@ -2609,7 +2611,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (atFoot && options.showActions !== false) {
       card.append(foot);
       updaters.push((state) => {
-        foot.hidden = state.dirty.length === 0 && !statusText.textContent;
+        setHidden(foot, state.dirty.length === 0 && !statusText.textContent);
       });
     }
 
@@ -2660,7 +2662,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         });
         box.append(close);
         updaters.push(() => {
-          box.hidden = dismissed || form.node(alert.id).invisible;
+          setHidden(box, dismissed || form.node(alert.id).invisible);
         });
       } else hideWhen(box, alert.id);
       return box;

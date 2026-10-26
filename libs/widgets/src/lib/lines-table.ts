@@ -3,7 +3,7 @@ import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
 import { drawIcon } from './icons';
-import { askFirst, fillIn, maker } from './kind-parts';
+import { askFirst, fillIn, maker, setHidden } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
 import { columnTotal, itemNumber, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
@@ -248,9 +248,9 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     if (!bar || !pickAll) return;
     const items = current().filter((line) => !lineKind(def, line.values));
     for (const key of [...chosen]) if (!items.some((line) => line.key === key)) chosen.delete(key);
-    bar.hidden = readonly || chosen.size === 0;
+    setHidden(bar, readonly || chosen.size === 0);
     chosenCount.textContent = fillIn(labels.linesChosen, { n: chosen.size });
-    for (const { id, button } of chosenButtons) button.hidden = form.node(id).invisible;
+    for (const { id, button } of chosenButtons) setHidden(button, form.node(id).invisible);
     pickAll.checked = items.length > 0 && chosen.size === items.length;
     pickAll.indeterminate = chosen.size > 0 && chosen.size < items.length;
     pickAll.disabled = readonly || !items.length;
@@ -685,14 +685,15 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     update(state) {
       readonly = state.readonly;
       const current = (state.value as Line[] | null) ?? [];
-      adds.hidden = readonly || current.length >= max;
-      if (readonly) confirm.element.hidden = true;
-      if (empty) empty.hidden = current.length > 0;
+      // Each written only once it changes: a key in the record's header writes none of them (0.35.1).
+      setHidden(adds, readonly || current.length >= max);
+      if (readonly) setHidden(confirm.element, true);
+      if (empty) setHidden(empty, current.length > 0);
       const { errors, unread } = form.getState();
       // Columns the record hides now: their head, cells and total go with them.
       const gone = new Set(ruled ? columns.filter((column) => form.columnHidden(node.id, column)) : []);
-      for (const [column, th] of heads) th.hidden = gone.has(column);
-      for (const [column, td] of footCells) td.hidden = gone.has(column);
+      for (const [column, th] of heads) setHidden(th, gone.has(column));
+      for (const [column, td] of footCells) setHidden(td, gone.has(column));
       // A column of words or links as wide as its longest value, as a list of words is: a long name has the room a code does not need.
       // Measured as lines come and go, not as a cell is typed in: the columns never move under the person's hands.
       const sizedFor = current.map((line) => line.key).join(' ');
@@ -773,23 +774,23 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
         row.values = line.values;
         row.inputs = inputs;
         // A line the table keeps (lineDelete) shows no ×.
-        row.remove.hidden = readonly || current.length <= min || now?.deletable === false;
-        row.grip.hidden = readonly;
+        setHidden(row.remove, readonly || current.length <= min || now?.deletable === false);
+        setHidden(row.grip, readonly);
         // Named by its number now, as people count lines (sections and notes are not lines): it moves.
         named(row, number);
-        if (row.copy) row.copy.hidden = readonly || current.length >= max;
+        if (row.copy) setHidden(row.copy, readonly || current.length >= max);
         if (readonly) row.remove.remove();
         else if (!row.remove.isConnected) row.element.lastElementChild?.append(row.remove);
         setData(row.element, 'tone', now?.tone);
         row.element.classList.toggle('fd-line-bold', !!now?.bold);
         // A line's buttons act on the saved line, so a read-only table keeps them, as the grid and Flectra's lists do.
-        for (const [id, button] of row.buttons) button.hidden = !now?.buttons[id];
+        for (const [id, button] of row.buttons) setHidden(button, !now?.buttons[id]);
         // A section's or note's one cell spans the columns shown.
-        if (row.kind) row.cells[0].td.colSpan = columns.length - gone.size;
+        if (row.kind && row.cells[0].td.colSpan !== columns.length - gone.size) row.cells[0].td.colSpan = columns.length - gone.size;
         for (const cell of row.cells) {
           const message = errors[`${name}.${line.key}.${cell.name}`];
           const rules = row.kind ? undefined : now?.cells[cell.name];
-          if (!row.kind) cell.td.hidden = gone.has(cell.name);
+          if (!row.kind) setHidden(cell.td, gone.has(cell.name));
           // A number worked out on a line where a cell holds text that does not read waits for it, as the totals do: a dash
           // with its words, never the amount worked out before that text was typed.
           const waits = row.kind ? null : waitsOn(line, cell.name, unread);

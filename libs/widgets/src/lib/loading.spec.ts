@@ -222,8 +222,40 @@ describe('a wait, on its clock', () => {
     expect(LOADING_CSS).toContain(`[data-fd-way="skeleton"]):not([data-fd-shaped]) > :not(.fd-loader, ${open}) { visibility: hidden; }`);
     expect(LOADING_CSS).toContain(`[data-fd-way="dim"] > :not(.fd-loader, ${open}) { opacity`);
     expect(LOADING_PART_CSS).toContain(`[data-fd-way="spinner"] > :not(.fd-loader, ${open}) { opacity`);
-    expect(LOADING_PART_CSS).toContain(`[data-fd-shaped] .fd-field:not(${open}) > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size`);
+    // A field holding one is marked so by the wait (`data-fd-open`, below): a :has() asked of every field made each change
+    // in a form lay it all out again (0.35.1).
+    expect(LOADING_PART_CSS).toContain('[data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size');
+    expect(LOADING_CSS).toContain('[data-fd-coming="boxes"] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label))');
     expect(LOADING_PART_CSS).toContain('.fd-loader[data-moment="refresh"][data-way="spinner"] { pointer-events: none; }');
+  });
+
+  it('marks the fields of its place holding an open popup while it waits, as they open and close, and lets go with it', async () => {
+    const { region } = form();
+    const field = (open: boolean) => {
+      const one = document.createElement('div');
+      one.className = 'fd-field';
+      const box = Object.assign(document.createElement('input'), { className: 'fd-input' });
+      box.setAttribute('role', 'combobox');
+      box.setAttribute('aria-expanded', String(open));
+      one.append(Object.assign(document.createElement('label'), { className: 'fd-label', textContent: 'Partner' }), box);
+      region.append(one);
+      return { one, box };
+    };
+    const opened = field(true);
+    const closed = field(false);
+    const wait = startLoading(region, 'refresh', loading({ set: { refresh: 'skeleton', delay: 0 } }));
+    expect(opened.one.hasAttribute('data-fd-open')).toBe(true);
+    expect(closed.one.hasAttribute('data-fd-open')).toBe(false);
+    // Opened meanwhile, and closed: said as it happens (a MutationObserver's records come in a microtask).
+    closed.box.setAttribute('aria-expanded', 'true');
+    opened.box.setAttribute('aria-expanded', 'false');
+    await Promise.resolve();
+    expect(closed.one.hasAttribute('data-fd-open')).toBe(true);
+    expect(opened.one.hasAttribute('data-fd-open')).toBe(false);
+    void wait.done();
+    jest.advanceTimersByTime(1000);
+    await Promise.resolve();
+    expect(region.querySelectorAll('[data-fd-open]')).toHaveLength(0);
   });
 
   it('says "Still loading…" past slowAfter, once, and ends as failed past its timeout — the request’s signal aborted, Retry asking again', () => {

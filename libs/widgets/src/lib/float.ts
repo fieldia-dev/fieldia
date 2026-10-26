@@ -77,7 +77,8 @@ export function floatUnder(anchor: HTMLElement, box: HTMLElement, look: FloatPla
     place: follow,
     hide() {
       if (topLayer && box.matches(':popover-open')) box.hidePopover();
-      box.hidden = true;
+      // Hidden already, nothing is written: a closed list closed again at each change of its form writes nothing.
+      if (!box.hidden) box.hidden = true;
       if (shown) {
         doc.removeEventListener('scroll', follow, true);
         win?.removeEventListener('resize', follow);

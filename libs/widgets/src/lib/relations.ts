@@ -227,8 +227,9 @@ function combobox(options: {
     clearTimeout(timer);
     seq++;
     floating.hide();
-    input.setAttribute('aria-expanded', 'false');
-    input.removeAttribute('aria-activedescendant');
+    // Closed already (a box made read-only at each change of its form closes it), nothing is written.
+    if (input.getAttribute('aria-expanded') !== 'false') input.setAttribute('aria-expanded', 'false');
+    if (input.hasAttribute('aria-activedescendant')) input.removeAttribute('aria-activedescendant');
     active = -1;
   }
 

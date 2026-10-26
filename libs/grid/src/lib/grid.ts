@@ -669,8 +669,19 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       if (!pointing && input instanceof HTMLInputElement && input.type !== 'checkbox' && input.type !== 'radio') selectFromStart(input);
       pointing = false;
     });
-    // A value longer than its cell has room for takes the cell's padding too.
-    this.box.addEventListener('input', () => this.fit());
+    // A value longer than its cell has room for takes the cell's padding too: measured in the frame the key is drawn in,
+    // once the form has drawn what it changed — measured in the key's own event, it laid the whole page out once more
+    // for every key (0.35.1).
+    let fitting = 0;
+    this.box.addEventListener('input', () => {
+      const view = this.box.ownerDocument.defaultView;
+      if (!view?.requestAnimationFrame) return this.fit();
+      if (fitting) return;
+      fitting = view.requestAnimationFrame(() => {
+        fitting = 0;
+        if (this.box.isConnected) this.fit();
+      });
+    });
     const show = () => {
       const line = this.line();
       // A cell the form found wrong stays marked while it is fixed.
@@ -1112,6 +1123,14 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const clearedAt = (line: Line | undefined, column: string) => (line ? form.getState().takenOut?.[`${name}.${line.key}.${column}`] : undefined);
   /** Every line problem, in the order the lines and columns are shown. */
   const lineProblems = () => {
+    // None said under any of the lines: none looked for, cell by cell (0.35.1).
+    const errors = form.getState().errors;
+    let any = false;
+    for (const path in errors) if (path.startsWith(`${name}.`)) {
+      any = true;
+      break;
+    }
+    if (!any) return [];
     const shown = api.getAllDisplayedColumns().map((c) => c.getColId()).filter((id) => !isTool(id));
     const found: { index: number; number: number; column: string; message: string }[] = [];
     lines().forEach((line, index) => {
@@ -1311,7 +1330,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
               if (api.isDestroyed()) return;
               api.refreshCells({ columns: [column], force: true, suppressFlash: true });
               // The cards say the accounts by their names too.
-              cardsDrawn = '';
+              cardsKept.clear();
               drawCards();
             },
             () => undefined
@@ -1976,10 +1995,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     paper?.remove();
     paper = paperTable();
     element.append(paper);
+    element.setAttribute('data-fd-printing', '');
   };
   const printed = () => {
     paper?.remove();
     paper = null;
+    element.removeAttribute('data-fd-printing');
   };
   const view = document.defaultView;
   view?.addEventListener('beforeprint', printing);
@@ -1989,100 +2010,147 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   element.setAttribute('data-fd-paper', '');
   element.addEventListener('fd-paper', () => !paper && printing());
 
-  /** What the cards were last drawn from: drawn again only when it changes. */
-  let cardsDrawn = '';
+  /**
+   * Each line's card as last drawn, by its key, and what it was drawn from — the line, its rules' state, its number, the
+   * text left unread in it, what its change took out of it and the choices its cells show — drawn again only once one
+   * of them changed (0.35.1): a key in the record's header draws no card, a key in a line its own. `cardsSetting`, what
+   * every card is drawn by — the columns shown, read-only, the record's currency its money is in — draws them all again.
+   */
+  const cardsKept = new Map<string, { inputs: unknown[]; card: HTMLElement }>();
+  let cardsSetting = '';
+  /** The cards' foot as last drawn: its totals' words, or that there are no lines. */
+  let cardsFoot = '';
+  /** What of the form a line's card shows besides the line itself, by its paths (`lines.key.column`): their words, joined. */
+  const ownOf = (held: Readonly<Record<string, unknown>> | undefined, key: string) => {
+    if (!held) return '';
+    const at = `${name}.${key}.`;
+    let out = '';
+    for (const path in held) if (path.startsWith(at)) out += `${path}\u0000${JSON.stringify(held[path])}\u0001`;
+    return out;
+  };
   /** Each line as a card: its first column as its title, the rest by their labels, its tone, its buttons, ↗ and ×. */
   function drawCards() {
     if (!cardsShape) return;
     const current = lines();
     const hidden = new Set(columns.filter((column) => ruleHidden.has(column) || api.getColumn(column)?.isVisible() === false));
     const shownColumns = columns.filter((column) => !hidden.has(column));
-    const signature = JSON.stringify([current, [...lineStates], shownColumns, readonly, form.getState().values, form.getState().unread ?? {}, [...choicesShown.values()].map((choices) => choices.options), form.getState().takenOut ?? {}]);
-    if (signature === cardsDrawn) return;
-    cardsDrawn = signature;
     const parent = form.getState().values;
+    const setting = JSON.stringify([shownColumns, readonly, parentCurrencies.map((field) => parent[field] ?? null)]);
+    if (setting !== cardsSetting) {
+      cardsSetting = setting;
+      cardsKept.clear();
+    }
+    const { unread, takenOut } = form.getState();
+    let n = 0;
+    let drawn = false;
     const cards = current.map((line) => {
-      const card = document.createElement('div');
-      card.className = 'fd-line-card';
-      card.dataset['line'] = line.key;
-      const kind = kindOf(line);
-      if (kind && kinds) {
-        card.classList.add(`fd-line-card-${kind}`);
-        // A section's or a note's words, changed in a form of their own, as its cell is in the grid.
-        const words = String(line.values[kinds.text] ?? '');
-        if (!dialogs || readonly) card.append(Object.assign(document.createElement('div'), { className: 'fd-grid-words', textContent: words }));
-        else {
-          const open = document.createElement('button');
-          open.type = 'button';
-          open.className = 'fd-line-card-title fd-grid-words';
-          open.textContent = words || (def.fields[kinds.text]?.label ?? '');
-          open.addEventListener('click', () => void openCard(line.key));
-          card.append(open);
-        }
-        return card;
-      }
-      const state = lineStates.get(line.key);
-      if (state?.tone) card.dataset['tone'] = state.tone;
-      card.classList.toggle('fd-line-bold', !!state?.bold);
-      const shownHere = shownColumns.filter((column) => !state?.cells[column]?.invisible);
-      const first = titleColumn(shownHere);
-      const rest = shownHere.filter((column) => column !== first);
-      const text = (column: string) => cellWords(line, column, parent);
-      const title = document.createElement(dialogs ? 'button' : 'div');
-      /** Words a person typed, in their own direction (`fd-grid-words`). */
-      const typed = (column: string | undefined) => !!column && (def.fields[column]?.type === 'char' || def.fields[column]?.type === 'text');
-      title.className = typed(first) ? 'fd-line-card-title fd-grid-words' : 'fd-line-card-title';
-      title.textContent = first ? text(first) || placeName(numberOf(line)) : '';
-      if (dialogs && title instanceof HTMLButtonElement) {
-        title.type = 'button';
-        title.addEventListener('click', () => void openLine(line));
-      }
-      const list = document.createElement('dl');
-      for (const column of rest) {
-        const dt = document.createElement('dt');
-        dt.textContent = def.fields[column].label;
-        const dd = document.createElement('dd');
-        dd.textContent = text(column);
-        if (typed(column)) dd.className = 'fd-grid-words';
-        // What its line's change took out of it, under its value, as on a plain table's card.
-        const taken = clearedAt(line, column);
-        if (taken) dd.append(Object.assign(document.createElement('div'), { className: 'fd-warning fd-grid-taken-out', textContent: taken }));
-        const tone = state?.cells[column]?.tone;
-        if (tone) dd.dataset['tone'] = tone;
-        list.append(dt, dd);
-      }
-      const tools = document.createElement('div');
-      tools.className = 'fd-line-card-tools';
-      for (const own of node.rowButtons ?? []) {
-        if (!state?.buttons[own.id]) continue;
-        const button = ownButton(own, 'fd-button fd-button-link fd-line-button');
-        button.dataset['rowButton'] = own.id;
-        delete button.dataset['node'];
-        button.addEventListener('click', () => void pressed(button, () => form.runRowAction(node.id, own.id, line.key)));
-        tools.append(button);
-      }
-      if (!readonly && deletable(line.key)) {
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.className = 'fd-line-delete';
-        remove.textContent = '×';
-        remove.setAttribute('aria-label', labels.deleteLine);
-        remove.addEventListener('click', () => form.removeLine(name, line.key));
-        tools.append(remove);
-      }
-      card.append(title, list, tools);
+      const number = kindOf(line) ? 0 : ++n;
+      const inputs = [line, lineStates.get(line.key), number, ownOf(unread, line.key), ownOf(takenOut, line.key), ...listedColumns.map((column) => choicesShown.get(`${name}.${line.key}.${column}`))];
+      const kept = cardsKept.get(line.key);
+      if (kept && kept.inputs.length === inputs.length && kept.inputs.every((input, at) => input === inputs[at])) return kept.card;
+      drawn = true;
+      const card = drawCard(line, shownColumns, parent);
+      cardsKept.set(line.key, { inputs, card });
       return card;
     });
+    for (const key of [...cardsKept.keys()]) if (!current.some((line) => line.key === key)) cardsKept.delete(key);
     const items = current.filter((line) => !kindOf(line));
     const sums = totals.filter((column) => !hidden.has(column)).map((column) => {
       const total = totalOf(current, column);
       const said = 'waits' in total ? fill(labels.totalWaits, { n: total.waits }) : cellText(def.fields[column], total.sum, items[0]?.values ?? {}, locale, parent, node.cells?.[column]);
       return `${def.fields[column].label}: ${said}`;
     });
+    const foot = current.length ? sums.join(' · ') : `\u0000${words('emptyLabel') ?? labels.noLines}`;
+    const before = [...cardList.children].filter((child) => child.classList.contains('fd-line-card'));
+    // The same cards in the same order, and the same foot: nothing written; the same lines, each card drawn again put in
+    // its own place, the rest left where they are.
+    const inPlace = before.length === cards.length && !!cards.length && before.every((card, at) => card === cards[at] || (card as HTMLElement).dataset['line'] === cards[at].dataset['line']);
+    const shownTotal = cardList.querySelector<HTMLElement>(':scope > .fd-line-cards-total');
+    if (inPlace && (foot === cardsFoot || (!!shownTotal && sums.length > 0))) {
+      if (drawn) before.forEach((card, at) => card !== cards[at] && card.replaceWith(cards[at]));
+      cardsFoot = foot;
+      if (shownTotal && shownTotal.textContent !== sums.join(' · ')) shownTotal.textContent = sums.join(' · ');
+      return;
+    }
+    cardsFoot = foot;
     const total = sums.length ? Object.assign(document.createElement('div'), { className: 'fd-line-cards-total', textContent: sums.join(' · ') }) : null;
     // No lines yet: said in the cards' place, as the grid says it in its body.
     const none = current.length ? null : Object.assign(document.createElement('p'), { className: 'fd-help fd-line-cards-empty', textContent: words('emptyLabel') ?? labels.noLines });
     cardList.replaceChildren(...(none ? [none] : cards), ...(total && !none ? [total] : []));
+  }
+
+  /** A line's card, drawn: its first column as its title, the rest by their labels, its tone, its buttons, ↗ and ×. */
+  function drawCard(line: Line, shownColumns: readonly string[], parent: Values): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'fd-line-card';
+    card.dataset['line'] = line.key;
+    const kind = kindOf(line);
+    if (kind && kinds) {
+      card.classList.add(`fd-line-card-${kind}`);
+      // A section's or a note's words, changed in a form of their own, as its cell is in the grid.
+      const words = String(line.values[kinds.text] ?? '');
+      if (!dialogs || readonly) card.append(Object.assign(document.createElement('div'), { className: 'fd-grid-words', textContent: words }));
+      else {
+        const open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'fd-line-card-title fd-grid-words';
+        open.textContent = words || (def.fields[kinds.text]?.label ?? '');
+        open.addEventListener('click', () => void openCard(line.key));
+        card.append(open);
+      }
+      return card;
+    }
+    const state = lineStates.get(line.key);
+    if (state?.tone) card.dataset['tone'] = state.tone;
+    card.classList.toggle('fd-line-bold', !!state?.bold);
+    const shownHere = shownColumns.filter((column) => !state?.cells[column]?.invisible);
+    const first = titleColumn(shownHere);
+    const rest = shownHere.filter((column) => column !== first);
+    const text = (column: string) => cellWords(line, column, parent);
+    const title = document.createElement(dialogs ? 'button' : 'div');
+    /** Words a person typed, in their own direction (`fd-grid-words`). */
+    const typed = (column: string | undefined) => !!column && (def.fields[column]?.type === 'char' || def.fields[column]?.type === 'text');
+    title.className = typed(first) ? 'fd-line-card-title fd-grid-words' : 'fd-line-card-title';
+    title.textContent = first ? text(first) || placeName(numberOf(line)) : '';
+    if (dialogs && title instanceof HTMLButtonElement) {
+      title.type = 'button';
+      title.addEventListener('click', () => void openLine(line));
+    }
+    const list = document.createElement('dl');
+    for (const column of rest) {
+      const dt = document.createElement('dt');
+      dt.textContent = def.fields[column].label;
+      const dd = document.createElement('dd');
+      dd.textContent = text(column);
+      if (typed(column)) dd.className = 'fd-grid-words';
+      // What its line's change took out of it, under its value, as on a plain table's card.
+      const taken = clearedAt(line, column);
+      if (taken) dd.append(Object.assign(document.createElement('div'), { className: 'fd-warning fd-grid-taken-out', textContent: taken }));
+      const tone = state?.cells[column]?.tone;
+      if (tone) dd.dataset['tone'] = tone;
+      list.append(dt, dd);
+    }
+    const tools = document.createElement('div');
+    tools.className = 'fd-line-card-tools';
+    for (const own of node.rowButtons ?? []) {
+      if (!state?.buttons[own.id]) continue;
+      const button = ownButton(own, 'fd-button fd-button-link fd-line-button');
+      button.dataset['rowButton'] = own.id;
+      delete button.dataset['node'];
+      button.addEventListener('click', () => void pressed(button, () => form.runRowAction(node.id, own.id, line.key)));
+      tools.append(button);
+    }
+    if (!readonly && deletable(line.key)) {
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'fd-line-delete';
+      remove.textContent = '×';
+      remove.setAttribute('aria-label', labels.deleteLine);
+      remove.addEventListener('click', () => form.removeLine(name, line.key));
+      tools.append(remove);
+    }
+    card.append(title, list, tools);
+    return card;
   }
 
   /** The bar and the ticks, as the lines chosen are now; `redraw` draws the lines' ticks again. */
@@ -2333,15 +2401,21 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         readonly = state.readonly;
         api.setGridOption('columnDefs', columnDefs.filter((c) => !(readonly && ['__delete', '__handle', '__copy', '__pick'].includes(c.colId as string))));
       }
-      adds.hidden = readonly || full();
-      for (const { id, button } of controls) button.hidden = form.node(id).invisible;
+      // Each written only once it changes: a key writes none of them.
+      if (adds.hidden !== (readonly || full())) adds.hidden = readonly || full();
+      for (const { id, button } of controls) if (button.hidden !== form.node(id).invisible) button.hidden = form.node(id).invisible;
       const current = (state.value as Line[] | null) ?? [];
       const unreadNow = JSON.stringify(Object.entries(form.getState().unread ?? {}).filter(([path]) => path.startsWith(`${name}.`)));
       const unreadChanged = unreadNow !== unreadShown;
       unreadShown = unreadNow;
       if (current !== shown) {
+        // The same lines in the same order, some of them changed (a key in a line, the server's answer to it): only those
+        // given to the grid — never the 200 for it to compare one by one (0.35.1).
+        const before = shown;
+        const changed = before && before.length === current.length && current.every((line, at) => line.key === before[at].key) ? current.filter((line, at) => line !== before[at]) : null;
         shown = current;
-        api.setGridOption('rowData', current);
+        if (changed) api.applyTransaction({ update: changed });
+        else api.setGridOption('rowData', current);
         fitHeight(current.length);
         if (totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
         // Columns as wide as what they hold, once more as the lines change.
@@ -2362,11 +2436,23 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       }
       // The table's own rules as the form has them now: redrawn only when they changed.
       if (ruled) {
-        const states = new Map(current.filter((line) => !kindOf(line)).map((line) => [line.key, form.lineState(node.id, line.key)] as const));
+        // A line's state the same as before stays the same object (the form keeps it while what its rules read stands): a
+        // key in the header compares 200 lines by what they are, never by their words (0.35.1).
+        let changed = false;
+        const states = new Map<string, LineState>();
+        for (const line of current) {
+          if (kindOf(line)) continue;
+          const now = form.lineState(node.id, line.key);
+          const was = lineStates.get(line.key);
+          const same = was === now || (!!was && JSON.stringify(was) === JSON.stringify(now));
+          if (!same) changed = true;
+          states.set(line.key, same && was ? was : now);
+        }
+        if (states.size !== lineStates.size) changed = true;
         const hidden = new Set(columns.filter((column) => form.columnHidden(node.id, column)));
-        const before = JSON.stringify([[...lineStates], [...ruleHidden]]);
+        if (hidden.size !== ruleHidden.size || [...hidden].some((column) => !ruleHidden.has(column))) changed = true;
         lineStates = states;
-        if (JSON.stringify([[...states], [...hidden]]) !== before) {
+        if (changed) {
           const turned = columns.filter((column) => hidden.has(column) !== ruleHidden.has(column));
           ruleHidden = hidden;
           for (const column of turned) api.setColumnsVisible([column], !hidden.has(column) && !hiddenByPerson(column));
@@ -2387,7 +2473,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       }
       showChosen(false);
       drawCards();
-      element.setAttribute('aria-invalid', String(state.invalid || found.length > 0));
+      const invalid = String(state.invalid || found.length > 0);
+      if (element.getAttribute('aria-invalid') !== invalid) element.setAttribute('aria-invalid', invalid);
     },
     destroy() {
       destroyed = true;

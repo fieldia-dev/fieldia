@@ -69,17 +69,23 @@ export function workedOutFrom(page: Page, appWorksOut: boolean, asLine = false, 
   return found;
 }
 
+/** A cell's path's line key: what is between its table's name and its column (`lines.l1.qty` → `l1`; a key may hold dots). */
+const keyOfCell = (field: string, path: string) => path.slice(field.length + 1, path.lastIndexOf('.'));
+
 /**
  * The first of `from` holding text that does not read, or an answer the form refuses (`refused`: a value its checks
  * would not take — under its least, past today, not a whole number), in the page's order: a field's own, or a table's
- * line's cell (the first line holding one, as people count lines). Null when none does.
+ * line's cell (the first line holding one, as people count lines). Null when none does. `refusedIn`, where the form
+ * can say them, the paths of a table's cells it refuses — so a table of 200 lines is read once through, never asked
+ * of cell by cell (0.35.1); the same answer.
  */
 export function waitingOn(
   page: Page,
   from: readonly string[],
   values: Readonly<Values>,
   unread: Readonly<Record<string, UnreadText>>,
-  refused: (path: string) => boolean = () => false
+  refused: (path: string) => boolean = () => false,
+  refusedIn?: (field: string) => readonly string[]
 ): WaitsFor | null {
   const paths = Object.keys(unread);
   for (const field of from) {
@@ -90,10 +96,14 @@ export function waitingOn(
       continue;
     }
     const held = paths.filter((path) => path.startsWith(`${field}.`));
+    // The lines holding a refused cell, where the form says them: only those are asked which of their cells it is.
+    const refusing = refusedIn ? new Set(refusedIn(field).map((path) => keyOfCell(field, path))) : null;
+    if (refusing && !refusing.size && !held.length) continue;
     let n = 0;
     for (const line of (values[field] as Line[] | null | undefined) ?? []) {
       if (lineKind(def, line.values) !== null) continue;
       n++;
+      if (refusing && !refusing.has(line.key) && !held.some((path) => path.startsWith(`${field}.${line.key}.`))) continue;
       const cell = held.find((path) => path.startsWith(`${field}.${line.key}.`))?.slice(field.length + line.key.length + 2).split('.')[0] ?? Object.keys(def.fields).find((column) => refused(`${field}.${line.key}.${column}`));
       if (cell) return { field, line: n, column: cell };
     }

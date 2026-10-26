@@ -44,6 +44,8 @@ export interface CompiledTable {
   /** Whether a column is hidden now: by its condition, read on the record, or by its roles, which the person holds none of. */
   hidden(column: string, record: Record<string, unknown>, env: ExpressionEnv, roles: readonly string[]): boolean;
   buttons: readonly ButtonNode[];
+  /** Every condition a line's state is read by (`line`): what they read says when a line's state can change. */
+  readonly lineConditions: readonly CompiledModifier[];
 }
 
 /** A field's own value as its tones have it now: Flectra's decoration-* on a field. */
@@ -81,8 +83,16 @@ export function compileTable(node: FieldNode, functions?: FunctionTable): Compil
   const lineDelete = node.lineDelete === undefined ? null : read(node.lineDelete);
   const buttons = node.rowButtons ?? [];
   const shown = buttons.map((button) => ({ id: button.id, roles: button.roles, invisible: read(button.invisible) }));
+  const lineConditions = [
+    ...rowTones.map((item) => item.when),
+    rowBold,
+    ...(lineDelete ? [lineDelete] : []),
+    ...[...cells.values()].flatMap((cell) => [cell.invisible, cell.readonly, cell.required, cell.bold, ...cell.tones.map((item) => item.when)]),
+    ...shown.map((button) => button.invisible),
+  ];
   return {
     buttons,
+    lineConditions,
     line(context, env, roles) {
       const state: LineState = { tone: toneNow(rowTones, context, env), bold: rowBold.evaluate(context, env), cells: {}, buttons: {}, deletable: lineDelete?.evaluate(context, env) ?? true };
       for (const [column, cell] of cells) {
