@@ -89,13 +89,19 @@ test('a demo’s place under its frame holds a quiet shape while its own script 
   const shape = () =>
     place.evaluate((app) => {
       const drawn = getComputedStyle(app, '::before');
-      return { content: drawn.content, visibility: drawn.visibility, height: parseFloat(drawn.height), shows: `${drawn.animationName} ${drawn.animationDelay} ${drawn.animationFillMode}` };
+      return { content: drawn.content, visibility: drawn.visibility, height: parseFloat(drawn.height) };
     });
-  // Never at once — shown past half a second, so a quick page never shows it — and there once it is past.
-  await expect.poll(async () => (await shape()).shows).toBe('dh-place-shows 0.5s both');
-  await expect.poll(async () => (await shape()).visibility).toBe('visible');
-  expect((await shape()).height).toBeGreaterThan(100);
+  // There once the page has waited half a second (the frame marks it), so a quick page never shows it.
+  await expect.poll(async () => (await shape()).height).toBeGreaterThan(100);
+  expect((await shape()).visibility).toBe('visible');
+  expect(await page.evaluate(() => document.documentElement.hasAttribute('data-place-waits'))).toBe(true);
+  expect(await page.evaluate(() => performance.now())).toBeGreaterThanOrEqual(500);
+  // Never without the mark: the shape is the mark's alone.
+  expect(await place.evaluate((app) => (document.documentElement.removeAttribute('data-place-waits'), getComputedStyle(app, '::before').content))).toBe('none');
+  await page.evaluate(() => document.documentElement.setAttribute('data-place-waits', ''));
   release();
   await expect(page.locator('.fd-list-row').first()).toBeVisible();
+  // Gone as the demo drew, in every engine: the form where it was, nothing kept above it.
   expect((await shape()).content).toBe('none');
+  expect(Math.round((await page.locator('#app > *').first().boundingBox())!.y)).toBeLessThan(200);
 });

@@ -31,6 +31,9 @@ const systemDark = matchMedia('(prefers-color-scheme: dark)');
 const wearDark = () => document.documentElement.toggleAttribute('data-dark', scheme === 'dark' || (scheme === 'auto' && systemDark.matches));
 wearDark();
 systemDark.addEventListener('change', wearDark);
+// The demo's place, still empty half a second after the page began, holds a quiet shape until the demo draws into it
+// (shell.css, `data-place-waits`): on a slow network the frame comes before the demo's own script (the walk of 0.35).
+setTimeout(() => document.documentElement.toggleAttribute('data-place-waits', true), Math.max(0, 500 - performance.now()));
 const esc = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const remember = (key, value) => {
   try {
