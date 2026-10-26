@@ -160,8 +160,10 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
 // lights the note that says so (list-view.ts) — with a list's map and a form's 13,584 bytes measured before, 13,630
 // after, to 13.4; a list's map 22,174, 22,342, to 21.9; a form's 19,852, 19,964, inside its 19.5; the fields' 18,442,
 // 18,556, to 18.2.
+// 0.35.2, a brace a page's words quote: a card's labels read by the one reader, once (card.ts) — a form's 19,964 bytes
+// measured before, 19,973 after, to 19.6; a list's map 22,342, 22,351, inside its 21.9.
 const BUDGET = { fields: 11.7, all: 13.4, embed: 10.7, leaflet: 47, routes: 2 };
-const PART_BUDGET = { 'view-part': 21.9, 'form-part': 19.5, 'widgets-part': 18.2 };
+const PART_BUDGET = { 'view-part': 21.9, 'form-part': 19.6, 'widgets-part': 18.2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
