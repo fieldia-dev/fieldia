@@ -135,7 +135,7 @@ describe('the designer before the format’s schemas have come', () => {
   });
 });
 
-describe('a page the quick check lets by and the format refuses', () => {
+describe('a page the format refuses, before its schemas came', () => {
   /** The designer in a module registry of its own: the format's schemas not fetched yet. */
   async function fresh(): Promise<{ createDesigner: typeof createDesigner; pageSchemaPart: typeof pageSchemaPart }> {
     let made!: { createDesigner: typeof createDesigner; pageSchemaPart: typeof pageSchemaPart };
@@ -145,7 +145,8 @@ describe('a page the quick check lets by and the format refuses', () => {
     });
     return made;
   }
-  // A size the format takes as a whole number, written as words: every viewer draws the page, the format refuses it.
+  // A size the format takes as a whole number, written as words: the format refuses it — and, from 0.36, the quick
+  // check every viewer draws a page with refuses it too.
   const page = (): Page => ({ ...blankPage('screen', 'Visit'), fields: { name: { type: 'char', label: 'Name', size: 'big' as unknown as number } } });
 
   it('is said once the schemas have come, its checks told again, and never published', async () => {
@@ -155,8 +156,8 @@ describe('a page the quick check lets by and the format refuses', () => {
     expect(part.loaded).toBeUndefined();
     const told = jest.fn();
     designer.subscribe(told);
-    // Before they came: the quick check's checks, which do not read a size.
-    expect(designer.checks().some((check) => /size/.test(check.text))).toBe(false);
+    // Before they came: the quick check — the viewer's, one check with validatePage's — says it already.
+    expect(designer.checks().some((check) => /size/.test(check.text))).toBe(true);
     // Publishing waits for them, and refuses.
     await expect(designer.publish()).rejects.toThrow('This page has problems and cannot be published');
     expect(part.loaded).toBeDefined();

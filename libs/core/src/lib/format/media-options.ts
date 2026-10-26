@@ -23,13 +23,6 @@ export const RecordOptionsSchema = z
 
 export type RecordOptions = z.infer<typeof RecordOptionsSchema>;
 
-/** The issues of a file field's recording settings, each at its path under `options`: none where it records nothing. */
-export function recordOptionIssues(node: { options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  const options = node.options ?? {};
-  if (options['record'] === undefined && options['maxSeconds'] === undefined) return [];
-  return (RecordOptionsSchema.safeParse({ record: options['record'], maxSeconds: options['maxSeconds'] }).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] }));
-}
-
 /**
  * A value shown as a code on the screen: `"widget": "qrcode"` (a char or text field) or `"widget": "barcode"` (a char or
  * integer field, Code 128), its settings in the node's `options` — a QR code's error correction `level` ("L", "M", "Q"
@@ -48,14 +41,6 @@ export const CodeOptionsSchema = z
   .meta({ id: 'CodeOptions' });
 
 export type CodeOptions = z.infer<typeof CodeOptionsSchema>;
-
-/** The issues of a code's settings (`qrcode`, `barcode`), each at its path under `options`; a barcode has no level. */
-export function codeOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  if (node.widget !== 'qrcode' && node.widget !== 'barcode') return [];
-  const issues = (CodeOptionsSchema.safeParse(node.options ?? {}).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] }));
-  if (node.widget === 'barcode' && node.options?.['level'] !== undefined) issues.push({ message: 'level is a QR code\'s error correction: a barcode has none', path: ['options', 'level'] });
-  return issues;
-}
 
 /**
  * Pins with notes on a picture (`"widget": "pins"` on a json field): a face chart, a floor plan, a car's damage. The
@@ -78,12 +63,3 @@ export const PinsOptionsSchema = z
   .meta({ id: 'PinsOptions' });
 
 export type PinsOptions = z.infer<typeof PinsOptionsSchema>;
-
-/** The issues of pins' settings, each at its path under `options`: one picture to place them on, the page's or a field's. */
-export function pinsOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  if (node.widget !== 'pins') return [];
-  const issues = (PinsOptionsSchema.safeParse(node.options ?? {}).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] }));
-  // A picture of its own or a field's, never both: with neither, the field says it has no picture yet.
-  if (node.options?.['image'] !== undefined && node.options?.['imageField'] !== undefined) issues.push({ message: 'pins are placed on one picture: its address (image) or the field holding it (imageField), not both', path: ['options', 'imageField'] });
-  return issues;
-}

@@ -1,8 +1,8 @@
 import * as z from 'zod';
+import { ruled } from './ruled';
 
 /** A shape as people write it: its width and its height, "4:3", "16:9", "1:1". */
 const ASPECT = /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/;
-const SHAPE = 'aspect is a shape, its width and its height: "4:3", "16:9", "1:1" — no longer than five to one either way';
 
 /**
  * A photo set (`"widget": "photos"` on a picture field of several photos, `multiple`): its settings in the node's
@@ -27,22 +27,9 @@ export const PhotosOptionsSchema = z
     /** The photo as it was kept beside one cropped or turned, to crop again from and to put back: true unless said. */
     keepOriginal: z.boolean().optional(),
     /** The shape every crop keeps; left out, the person picks one, or none. */
-    aspect: z
-      .string()
-      .refine((text) => {
-        const [, width, height] = ASPECT.exec(text) ?? [];
-        const ratio = Number(width) / Number(height);
-        return ratio >= 0.2 && ratio <= 5;
-      }, SHAPE)
-      .meta({ pattern: ASPECT.source })
-      .optional(),
+    // No longer than five to one either way (rules.ts) — and its pattern for tools that read only the JSON Schema.
+    aspect: ruled(z.string(), 'aspect').meta({ pattern: ASPECT.source }).optional(),
   })
   .meta({ id: 'PhotosOptions' });
 
 export type PhotosOptions = z.infer<typeof PhotosOptionsSchema>;
-
-/** The issues of a photo set's settings, each at its path under `options`. */
-export function photosOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  if (node.widget !== 'photos') return [];
-  return (PhotosOptionsSchema.safeParse(node.options ?? {}).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] }));
-}

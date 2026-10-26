@@ -47,9 +47,3 @@ export const PhoneOptionsSchema = z
   .meta({ id: 'PhoneOptions' });
 
 export type PhoneOptions = z.infer<typeof PhoneOptionsSchema>;
-
-/** The issues of a phone field's settings, each at its path under `options`. */
-export function phoneOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  if (node.widget !== 'phone') return [];
-  return (PhoneOptionsSchema.safeParse(node.options ?? {}).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] }));
-}

@@ -33,7 +33,13 @@ export function validatePage(input: unknown, options: { functions?: FunctionsKno
   }
   const page: Page = parsed.data;
   const check = kindCheck(page, options.functions);
-  const issues = check.run();
+  let issues;
+  try {
+    issues = check.run();
+  } catch (error) {
+    // As the viewer's check says it (checkPage): a part it cannot read is a problem of the page, never a throw.
+    return { ok: false, issues: [{ path: '(page)', message: `a part of this page cannot be read: ${(error as Error).message}` }] };
+  }
   const warned = check.warnings.length ? { warnings: check.warnings } : {};
   return issues.length ? { ok: false, issues, ...warned } : { ok: true, page, ...warned };
 }

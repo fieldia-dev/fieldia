@@ -52,12 +52,3 @@ export const ScanOptionSchema = z.union([z.boolean(), ScanSettingsSchema], { err
 export type ScanFill = z.infer<typeof ScanFillSchema>;
 export type ScanSettings = z.infer<typeof ScanSettingsSchema>;
 export type ScanOption = z.infer<typeof ScanOptionSchema>;
-
-/** The issues of a field's or a cell's `options.scan`, each at its path under `options`. */
-export function scanOptionIssues(node: { options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  const scan = node.options?.['scan'];
-  if (scan === undefined) return [];
-  // Its settings checked as settings, so what is wrong in them is said where it is: never as "true or its settings".
-  const schema = scan && typeof scan === 'object' && !Array.isArray(scan) ? ScanSettingsSchema : ScanOptionSchema;
-  return (schema.safeParse(scan).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', 'scan', ...issue.path] as (string | number)[] }));
-}

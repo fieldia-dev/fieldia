@@ -6,16 +6,9 @@ import { JsonValueSchema, type JsonValue } from './json';
 import { HOTKEY } from './hotkeys';
 import { AUTOFILL } from './autofill';
 import { INPUT_MODES, type InputMode } from './autofill-group';
-import { AddressSearchOptionsSchema } from './address-search';
-import { pickerOptionIssues } from './picker-options';
-import { phoneOptionIssues } from './phone';
-import { slotsOptionIssues } from './slots-options';
-import { signatureOptionIssues } from './signature-options';
-import { photosOptionIssues } from './photos-options';
-import { scanOptionIssues } from './scan-options';
-import { typedOptionIssues } from './typed-options';
-import { codeOptionIssues, pinsOptionIssues, recordOptionIssues } from './media-options';
-import { loadingOptionIssues, PageLoadingSchema } from './loading-schema';
+import { OPTION_SCHEMAS } from './option-schemas';
+import { ruled } from './ruled';
+import { PageLoadingSchema } from './loading-schema';
 import type { PageLoading } from './loading';
 import { SECTION_TRACK } from './section-checks';
 import { DATE_PERIODS, type DatePeriod } from '../record/periods';
@@ -1771,8 +1764,8 @@ const labelPlace = z.enum(['above', 'beside', 'hidden']);
 export const ToneWhenSchema = z.strictObject({ tone, when: ModifierSchema, label: z.string().min(1).optional() }).meta({ id: 'ToneWhen' });
 export const PlaceholderWhenSchema = z.strictObject({ when: ModifierSchema, text: z.string() }).meta({ id: 'PlaceholderWhen' });
 
-export const CellRulesSchema = z
-  .strictObject({
+export const CellRulesSchema = ruled(
+  z.strictObject({
     invisible: ModifierSchema.optional(),
     readonly: ModifierSchema.optional(),
     required: ModifierSchema.optional(),
@@ -1784,15 +1777,14 @@ export const CellRulesSchema = z
     options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
     width: z.int().min(1).max(200).optional(),
     roles,
-  })
-  // A column scanned into (`options.scan`): its settings' shape, as a field's.
-  .superRefine((rules, context) => {
-    for (const issue of scanOptionIssues(rules)) context.addIssue({ code: 'custom', ...issue });
-  })
-  .meta({ id: 'CellRules' });
+  }),
+  // A column scanned into (`options.scan`): its settings' shape, as a field's (rules.ts).
+  'cellRules',
+  OPTION_SCHEMAS
+).meta({ id: 'CellRules' });
 
-export const AnswerRuleSchema = z
-  .strictObject({
+export const AnswerRuleSchema = ruled(
+  z.strictObject({
     minLength: z.int().min(0).optional(),
     maxLength: z.int().min(1).optional(),
     pattern: z.string().min(1).optional(),
@@ -1807,14 +1799,12 @@ export const AnswerRuleSchema = z
     when: ModifierSchema.optional(),
     message: z.string().optional(),
     level: z.enum(['error', 'warning']).optional(),
-  })
-  .refine(
-    (r) => ['minLength', 'maxLength', 'pattern', 'endsWith', 'min', 'max', 'atLeast', 'atMost', 'date', 'distinct', 'holds'].some((k) => r[k as keyof typeof r] !== undefined),
-    { message: 'an answer rule asks for something: a length, a pattern, an ending, a range, a count, a date, a column with no value twice or an expression that holds' }
-  )
-  .meta({ id: 'AnswerRule' });
+  }),
+  // It asks for something (rules.ts).
+  'answerRule'
+).meta({ id: 'AnswerRule' });
 
-export const FieldNodeSchema = z.strictObject({
+export const FieldNodeSchema = ruled(z.strictObject({
   type: z.literal('field'),
   id,
   field: fieldName,
@@ -1865,13 +1855,11 @@ export const FieldNodeSchema = z.strictObject({
   quiet: z.boolean().optional(),
   readonlyReason: z.string().min(1).optional(),
   hotkey: z.string().regex(/^[a-z0-9]$/, 'an access key is one letter or digit of the label, in small letters: "e"').optional(),
-}).superRefine((node, context) => {
-  // A widget's own options, where the format knows them: an address with suggestions.
-  for (const issue of [...pickerOptionIssues(node), ...phoneOptionIssues(node), ...slotsOptionIssues(node), ...signatureOptionIssues(node), ...photosOptionIssues(node), ...scanOptionIssues(node), ...typedOptionIssues(node), ...recordOptionIssues(node), ...codeOptionIssues(node), ...pinsOptionIssues(node), ...loadingOptionIssues(node)]) context.addIssue({ code: 'custom', ...issue });
-  if (node.widget !== 'address-search') return;
-  const checked = AddressSearchOptionsSchema.safeParse(node.options ?? {});
-  for (const issue of checked.error?.issues ?? []) context.addIssue({ code: 'custom', message: issue.message, path: ['options', ...issue.path] });
-});
+}),
+  // A widget's own options, where the format knows them: an address with suggestions, a mask, a scan (rules.ts).
+  'fieldNode',
+  OPTION_SCHEMAS
+);
 
 export const LineFormSchema = z
   .strictObject({
@@ -2009,10 +1997,11 @@ export const MapReachSchema = z
   .meta({ id: 'MapReach' });
 
 /** Steps run when a layer's place goes into an area, or comes out of it. */
-export const MapFenceSchema = z
-  .strictObject({ layer: id, area: fieldName.optional(), within: id.optional(), when: z.enum(['enter', 'leave']), steps: ActionStepsSchema })
-  .refine((fence) => (fence.area === undefined) !== (fence.within === undefined), { message: 'a fence is an area field (`area`) or a reachable area of the map (`within`), one of the two' })
-  .meta({ id: 'MapFence' });
+export const MapFenceSchema = ruled(
+  z.strictObject({ layer: id, area: fieldName.optional(), within: id.optional(), when: z.enum(['enter', 'leave']), steps: ActionStepsSchema }),
+  // An area field or a reachable area, one of the two (rules.ts).
+  'mapFence'
+).meta({ id: 'MapFence' });
 
 /** One layer of a form's map: the record's own place, a place for each of its lines, a route, or the reader's own place. */
 export const MapLayerSchema = z
@@ -2103,8 +2092,8 @@ export const FilterRangeSchema = z
   .meta({ id: 'FilterRange' });
 
 /** A list's gallery: whether the list opens on it, and how wide a card is at least. */
-export const ListDetailSchema = z
-  .strictObject({
+export const ListDetailSchema = ruled(
+  z.strictObject({
     title: z.string().min(1).optional(),
     lines: fieldName.optional(),
     model: z.string().min(1).optional(),
@@ -2114,14 +2103,10 @@ export const ListDetailSchema = z
     cells: z.record(fieldName, ListCellSchema).optional(),
     sort: z.array(z.strictObject({ field: fieldName, desc: z.boolean().optional() })).optional(),
     limit: z.int().min(1).max(100).optional(),
-  })
-  .refine((detail) => (detail.lines !== undefined) !== (detail.model !== undefined || detail.field !== undefined || detail.fields !== undefined), {
-    message: 'a row opens to its lines (lines), or to the records pointing at it (model, field and fields): one of them',
-  })
-  .refine((detail) => detail.lines !== undefined || (detail.model !== undefined && detail.field !== undefined && detail.fields !== undefined), {
-    message: 'the records a row opens to need their model, their link to it (field) and their fields',
-  })
-  .meta({ id: 'ListDetail' });
+  }),
+  // Its lines, or the records pointing at it with their model, link and fields (rules.ts).
+  'listDetail'
+).meta({ id: 'ListDetail' });
 
 export const ListGallerySchema = z
   .strictObject({
@@ -2519,10 +2504,8 @@ export const ListNodeSchema = z.strictObject({
   searchFields: z.array(fieldName).optional(),
   filters: z
     .array(
-      z
-        .strictObject({ id, label: z.string(), filter: z.array(FilterItemSchema).min(1).optional(), period: FilterPeriodSchema.optional() })
-        .refine((named) => named.filter !== undefined || named.period !== undefined, { message: 'a filter holds conditions (filter), a period (period) or both' })
-        .meta({ anyOf: [{ required: ['filter'] }, { required: ['period'] }] })
+      // Conditions, a period or both (rules.ts) — and the same for tools that read only the JSON Schema.
+      ruled(z.strictObject({ id, label: z.string(), filter: z.array(FilterItemSchema).min(1).optional(), period: FilterPeriodSchema.optional() }), 'namedFilter').meta({ anyOf: [{ required: ['filter'] }, { required: ['period'] }] })
     )
     .optional(),
   defaultFilters: z.array(id).optional(),

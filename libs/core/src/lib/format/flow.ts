@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { ruled } from './ruled';
 
 /**
  * A review before a page of responses is sent (`review` on a page): every answer shown — by step on a wizard, by
@@ -42,11 +43,12 @@ export interface TimeLimit {
   then?: 'send' | 'lock';
 }
 
-export const TimeLimitSchema = z
-  .strictObject({
+export const TimeLimitSchema = ruled(
+  z.strictObject({
     minutes: z.number().positive().max(24 * 60),
     warn: z.number().positive().max(24 * 60).optional(),
     then: z.enum(['send', 'lock']).optional(),
-  })
-  .refine((limit) => limit.warn === undefined || limit.warn < limit.minutes, { message: 'warn comes before the end: fewer minutes than the limit', path: ['warn'] })
-  .meta({ id: 'TimeLimit' });
+  }),
+  // Its warning before its end (rules.ts).
+  'timeLimit'
+).meta({ id: 'TimeLimit' });

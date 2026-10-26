@@ -334,7 +334,10 @@ const PICTURES: ReadonlySet<string> = new Set(['image', 'binary', 'char']);
  * the lowest and the highest of a number column (any column's count), a lead's icon by a field's values.
  */
 function checkListed(list: Pick<ListNode, 'columns' | 'sort' | 'searchFields' | 'cells'>, fields: Record<string, Field | LineField>, path: string, tools: ListTools): void {
-  list.columns.forEach((name, i) => tools.need(name, `${path}.columns[${i}]`, fields));
+  list.columns.forEach((name, i) => {
+    if (list.columns.indexOf(name) !== i) tools.report(`${path}.columns[${i}]`, `"${name}" is a column before it: each column once`);
+    else tools.need(name, `${path}.columns[${i}]`, fields);
+  });
   list.sort?.forEach((order, i) => tools.need(order.field, `${path}.sort[${i}].field`, fields));
   list.searchFields?.forEach((name, i) => tools.need(name, `${path}.searchFields[${i}]`, fields));
   for (const [column, cell] of Object.entries(list.cells ?? {})) {

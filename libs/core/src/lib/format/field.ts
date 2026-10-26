@@ -1,7 +1,7 @@
 import * as z from 'zod';
 import { JsonValueSchema } from './json';
-import { isTimeZone } from '../record/zones';
 import { QuizQuestionSchema } from './quiz';
+import { ruled } from './ruled';
 
 /**
  * Field definitions: what a page knows about each value it shows or collects.
@@ -89,37 +89,19 @@ export type SelectionOption = z.infer<typeof SelectionOptionSchema>;
 /** What a filter's `valueFrom` may name: a field, `parent.` and a field of the record a line is on, `user.` and a part of the person, or `context.` and a value the app passes in. */
 const VALUE_FROM = /^((parent|user|context)\.)?[A-Za-z_][A-Za-z0-9_]*$/;
 
-export const FilterConditionSchema = z
-  .object({
-    field: z.string().min(1),
-    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between', 'contains', 'not contains', '=?', 'within']),
-    value: JsonValueSchema.optional(),
-    valueFrom: z.string().regex(VALUE_FROM).optional(),
-  })
-  .strict()
-  .refine((c) => (c.op === 'set' || c.op === 'notset' ? c.value === undefined && c.valueFrom === undefined : (c.value === undefined) !== (c.valueFrom === undefined)), {
-    message: 'set exactly one of value or valueFrom; set and notset take neither',
-  })
-  .refine((c) => c.op !== 'between' || c.valueFrom !== undefined || (Array.isArray(c.value) && c.value.length === 2), {
-    message: 'between takes value: [low, high]',
-  })
-  // A place (a GeoJSON point in a json field) inside a box on the map, as a map's "In this area" asks.
-  .refine(
-    (c) => {
-      if (c.op !== 'within' || c.valueFrom !== undefined) return true;
-      const area = c.value as Record<string, unknown> | undefined;
-      if (!area || typeof area !== 'object' || Array.isArray(area)) return false;
-      if (area['longitude'] !== undefined && typeof area['longitude'] !== 'string') return false;
-      const pair = (p: unknown) => Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number');
-      if (area['polygon'] !== undefined) return Array.isArray(area['polygon']) && area['polygon'].length >= 3 && area['polygon'].every(pair);
-      if (area['center'] !== undefined) return pair(area['center']) && typeof area['radius'] === 'number' && area['radius'] > 0;
-      return ['south', 'west', 'north', 'east'].every((side) => typeof area[side] === 'number');
-    },
-    {
-      message:
-        'within takes value: a box { south, west, north, east }, a { polygon: [[longitude, latitude], …] } or a { center: [longitude, latitude], radius } in metres, all in degrees; with longitude: "a field" when the field is a latitude',
-    }
-  )
+export const FilterConditionSchema = ruled(
+  z
+    .object({
+      field: z.string().min(1),
+      op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between', 'contains', 'not contains', '=?', 'within']),
+      value: JsonValueSchema.optional(),
+      valueFrom: z.string().regex(VALUE_FROM).optional(),
+    })
+    .strict(),
+  // One value or a field to read it from, none for set and notset; between's two; a place (a GeoJSON point in a json
+  // field) inside a box on the map, as a map's "In this area" asks (rules.ts).
+  'filterCondition'
+)
   .meta({ id: 'FilterCondition' });
 
 export type FilterCondition = z.infer<typeof FilterConditionSchema>;
@@ -145,22 +127,22 @@ export const FilterAllSchema = z.strictObject({
 
 export const FilterItemSchema = z.union([FilterConditionSchema, FilterAnySchema, FilterAllSchema]).meta({ id: 'FilterItem' });
 
-/**
- * A value set when a condition starts to hold: `when` is a condition, `value`
- * an expression. People may still change it. With `on`, it is set when one of
- * those fields changes instead — while `when` holds, if it has one — as
- * Flectra's onchange: "ticking Certification sets the scoring".
- */
-export const SetWhenSchema = z
+const SetWhenShape = z
   .object({
     when: z.string().min(1).optional(),
     value: z.string().min(1),
     /** The fields whose change sets it: set as one of them changes, never as `when` alone starts to hold. */
     on: z.array(z.string().regex(FIELD_NAME)).min(1).optional(),
   })
-  .strict()
-  .refine((rule) => rule.when !== undefined || rule.on !== undefined, { message: 'a value is set when a condition starts to hold, or when a field it is on changes: give when, on or both' })
-  .meta({ id: 'SetWhen', anyOf: [{ required: ['when'] }, { required: ['on'] }] });
+  .strict();
+/**
+ * A value set when a condition starts to hold: `when` is a condition, `value`
+ * an expression. People may still change it. With `on`, it is set when one of
+ * those fields changes instead — while `when` holds, if it has one — as
+ * Flectra's onchange: "ticking Certification sets the scoring". When, on or
+ * both (rules.ts) — and the same for tools that read only the JSON Schema.
+ */
+export const SetWhenSchema = ruled(SetWhenShape, 'setWhen').meta({ id: 'SetWhen', anyOf: [{ required: ['when'] }, { required: ['on'] }] });
 
 export type SetWhen = z.infer<typeof SetWhenSchema>;
 
@@ -226,20 +208,7 @@ const oneLanguage = {
 };
 type LanguageRules = { translate?: string[]; requiredIn?: string[] };
 /** Each language once; `requiredIn` only with `translate`, each of its own — and for tools that read only the JSON Schema, the first. */
-const withLanguages = <T extends z.ZodType<LanguageRules>>(schema: T) =>
-  schema
-    .superRefine((field, context) => {
-      const same = (tags: string[]) => tags.find((tag, i) => tags.findIndex((other) => other.toLowerCase() === tag.toLowerCase()) !== i);
-      const twice = same(field.translate ?? []);
-      if (twice) context.addIssue({ code: 'custom', message: `"${twice}" is named twice: each language once`, path: ['translate'] });
-      if (field.requiredIn === undefined) return;
-      if (field.translate === undefined) context.addIssue({ code: 'custom', message: 'requiredIn says which of a text’s languages are required: name them in translate', path: ['requiredIn'] });
-      else
-        field.requiredIn.forEach((tag, i) => {
-          if (!field.translate?.some((own) => own.toLowerCase() === tag.toLowerCase())) context.addIssue({ code: 'custom', message: `"${tag}" is not one of the languages it is kept in (translate)`, path: ['requiredIn', i] });
-        });
-    })
-    .meta({ dependentSchemas: { requiredIn: { required: ['translate'] } } });
+const withLanguages = <T extends z.ZodType<LanguageRules>>(schema: T) => ruled(schema, 'languages').meta({ dependentSchemas: { requiredIn: { required: ['translate'] } } });
 
 const charShape = {
   type: z.literal('char'),
@@ -327,22 +296,13 @@ const days = { min: dayLimit, max: dayLimit, days: z.array(z.int().min(1).max(7)
  * "2026-01-01"), its limits kept by the month or the year. A date with `hijri` is shown and typed in the Hijri calendar
  * (Umm al-Qura) beside the Gregorian day it keeps: "13 Oct 2026 · 1 Rabiʻ II 1448 AH".
  */
-const DateField = z
-  .object({ type: z.literal('date'), ...common, ...days, precision: z.enum(['month', 'year']).optional(), hijri: z.boolean().optional() })
-  .strict()
-  .superRefine((field, context) => {
-    if (field.precision && field.days) context.addIssue({ code: 'custom', message: 'the days of the week a date may fall on are a day’s: a month or a year has them all', path: ['days'] });
-    if (field.precision && field.hijri) context.addIssue({ code: 'custom', message: 'a Hijri date is a day: a month or a year alone is the Gregorian calendar’s', path: ['hijri'] });
-  });
+const DateField = ruled(z.object({ type: z.literal('date'), ...common, ...days, precision: z.enum(['month', 'year']).optional(), hijri: z.boolean().optional() }).strict(), 'dateField');
 
 /**
  * A time zone by its IANA name: "Africa/Cairo", "Europe/Berlin", "UTC". A page's (`timeZone`) is the zone its dates
  * and times are in; a date and time field may name its own — a flight's departure, in its airport's zone.
  */
-export const TimeZoneSchema = z
-  .string()
-  .regex(/^[A-Za-z][\w+-]*(\/[\w+-]+)*$/, { error: 'a time zone is named as the IANA names it: "Africa/Cairo", "Europe/Berlin", "UTC"', abort: true })
-  .refine(isTimeZone, { message: 'not a time zone the IANA names: "Africa/Cairo", "Europe/Berlin", "UTC"' })
+export const TimeZoneSchema = ruled(z.string().regex(/^[A-Za-z][\w+-]*(\/[\w+-]+)*$/, { error: 'a time zone is named as the IANA names it: "Africa/Cairo", "Europe/Berlin", "UTC"', abort: true }), 'timeZone')
   .meta({ id: 'TimeZone', description: 'A time zone by its IANA name: its dates and times are shown and typed on that zone\'s clock.', examples: ['Africa/Cairo', 'Europe/Berlin', 'America/New_York', 'UTC'] });
 /**
  * A date and time, kept as an instant. With `timeZone`, it is shown and typed on that zone's clock, and its limits
@@ -411,7 +371,7 @@ const selection = {
   /** People may add answers of their own, as many as they like: tags typed beside the options. */
   ownAnswers: z.boolean().optional(),
 };
-const Selection = z
+const SelectionShape = z
   .object({
     ...selection,
     options: z.array(SelectionOptionSchema),
@@ -419,25 +379,14 @@ const Selection = z
     /** A quiz's question (`quiz` on the page): its points and its feedback; its right answers are its options marked `correct`. */
     quiz: QuizQuestionSchema.optional(),
   })
-  .strict()
-  .refine((field) => field.options.length > 0 || field.optionsFrom !== undefined, {
-    message: 'a choice needs its options, a list of the app’s to take them from, or an earlier question to carry them from',
-    path: ['options'],
-  })
-  // The same rule for tools that read only the JSON Schema.
-  .meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
+  .strict();
+// Options, a list of the app's or an earlier question's (rules.ts) — and the same rule for tools that read only the JSON Schema.
+const Selection = ruled(SelectionShape, 'choiceOptions').meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
 /**
  * A choice in a table's lines: its options written in the page — each may show or hide by a condition on the line's
  * values (`options[].invisible`, `parent.` the record's) — or from one of the app's lists for each line.
  */
-const LineSelection = z
-  .object({ ...selection, options: z.array(SelectionOptionSchema), optionsFrom: OptionsFromSchema.optional() })
-  .strict()
-  .refine((field) => field.options.length > 0 || field.optionsFrom !== undefined, {
-    message: 'a choice needs its options, or a list of the app’s to take them from',
-    path: ['options'],
-  })
-  .meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
+const LineSelection = ruled(z.object({ ...selection, options: z.array(SelectionOptionSchema), optionsFrom: OptionsFromSchema.optional() }).strict(), 'lineChoiceOptions').meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
 /** A choice of a linked record's, shown in a table of them: its options written in the page. */
 const LinkedSelection = z.object({ ...selection, options: z.array(OptionSchema).min(1), optionsFrom: z.never({ error: 'choices from the app’s lists are for the page’s own fields and a table’s lines, not a linked record’s' }).optional() }).strict();
 /**
@@ -473,15 +422,9 @@ const files = {
   maxFiles: z.int().positive().optional(),
 };
 type FileRules = { multiple?: boolean; minFiles?: number; maxFiles?: number };
-const SEVERAL = 'the fewest and the most files are for a field of several files: set multiple';
 /** The fewest and the most only with several files, the fewest no more than the most — and the same for tools that read only the JSON Schema. */
 const withFileRules = <T extends z.ZodType<FileRules>>(schema: T) =>
-  schema
-    .superRefine((field, context) => {
-      for (const key of ['minFiles', 'maxFiles'] as const) if (field[key] !== undefined && field.multiple !== true) context.addIssue({ code: 'custom', message: SEVERAL, path: [key] });
-      if (field.minFiles !== undefined && field.maxFiles !== undefined && field.minFiles > field.maxFiles) context.addIssue({ code: 'custom', message: 'the fewest files cannot be more than the most', path: ['minFiles'] });
-    })
-    .meta({ dependentSchemas: Object.fromEntries(['minFiles', 'maxFiles'].map((key) => [key, { properties: { multiple: { const: true } }, required: ['multiple'] }])) });
+  ruled(schema, 'fileRules').meta({ dependentSchemas: Object.fromEntries(['minFiles', 'maxFiles'].map((key) => [key, { properties: { multiple: { const: true } }, required: ['multiple'] }])) });
 const Binary = withFileRules(
   z
     .object({

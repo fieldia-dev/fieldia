@@ -40,7 +40,8 @@ export function editChecker(functions?: FunctionsKnown): EditChecker {
       changed &&
       changed.fields.every((name) => schema.FieldSchema.safeParse(next.fields[name]).success) &&
       changed.parts.every((key) => partsOf(schema)[key]?.safeParse(next[key as keyof Page]).success === true) &&
-      checkPage(next, { functions }).ok
+      // The parts it changed checked against the format's schemas just now: the page's references alone are left.
+      checkPage(next, { functions, shape: false }).ok
     ) {
       passed.add(next);
       return { ok: true, page: next };

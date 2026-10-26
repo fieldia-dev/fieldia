@@ -54,9 +54,10 @@ describe('a box’s autocomplete purpose', () => {
     expect(checkPage(pageWith({ autocomplete: 'shipping', widget: 'address' }, 'json')).ok).toBe(true);
     expect(validatePage(pageWith({ autocomplete: 'billing', widget: 'address' }, 'json')).ok).toBe(true);
     expect(checkPage(pageWith({ autocomplete: 'country', widget: 'address' }, 'json'))).toEqual({ ok: false, issues: [{ path: 'layout.children[0].autocomplete', message: expect.stringContaining('an address in parts') }] });
-    // One the standard does not list is the format's to refuse, where pages are made; a browser passes over it.
+    // One the standard does not list is the format's to refuse, where pages are made and — from 0.36, one check — as one
+    // is shown.
     expect(validatePage(pageWith({ autocomplete: 'telephone' }))).toEqual({ ok: false, issues: [{ path: 'layout.children[0].autocomplete', message: expect.stringContaining('from the HTML standard') }] });
-    expect(checkPage(pageWith({ autocomplete: 'telephone' })).ok).toBe(true);
+    expect(checkPage(pageWith({ autocomplete: 'telephone' }))).toEqual({ ok: false, issues: [{ path: 'layout.children[0].autocomplete', message: 'Invalid string: "telephone" is not in the form this setting takes' }] });
   });
 
   it('takes the keyboards a phone shows, and refuses another', () => {
