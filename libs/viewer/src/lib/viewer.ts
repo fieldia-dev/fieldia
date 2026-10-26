@@ -2197,18 +2197,17 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const at = hushed;
     setTimeout(() => at === hushed && (announcer.textContent = text), 0);
   }
-  // Once nothing is wrong — no problem the source said, no words under a field: put right, the send gone through,
-  // another response begun — a refusal's words leave the alert. One still saying "Not sent. Check: Full name, Email"
-  // is read again to whoever comes to it later.
-  updaters.push((state) => {
-    if (!refusal || state.saveProblem || Object.keys(state.errors).length) return;
-    refusal = false;
-    hushed++;
-    announcer.textContent = '';
-  });
-  // Each new reason a save was refused, from Save or from autosave, is shown where it belongs.
+  // Each new reason a save was refused, from Save or from autosave, is shown where it belongs. And once nothing is
+  // wrong — no problem the source said, no words under a field: put right, the send gone through, another response
+  // begun — a refusal's words leave the alert: one still saying "Not sent. Check: Full name, Email" is read again to
+  // whoever comes to it later. (One updater for both: each runs at every key, 0.35's perf-scale counts them.)
   let seenProblem: FormState['saveProblem'] = null;
   updaters.push((state) => {
+    if (refusal && !state.saveProblem && !Object.keys(state.errors).length) {
+      refusal = false;
+      hushed++;
+      announcer.textContent = '';
+    }
     if (state.saveProblem === seenProblem) return;
     seenProblem = state.saveProblem;
     banner.hidden = seenProblem?.kind !== 'network';
