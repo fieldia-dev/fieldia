@@ -48,8 +48,10 @@ function problemsOf(page: Page) {
   const problems: string[] = [];
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   page.on('console', (message) => {
-    // What the policy refused is in the violations, each one, read by `refused` — its own sentinel's among them.
-    if (message.type() === 'error' && !/Refused to |Content-Security-Policy/.test(message.text())) problems.push(`console: ${message.text()}`);
+    // What the policy refused is in the violations, each one, read by `refused` — its own sentinel's among them. Each
+    // engine says it its own way: "Refused to apply inline style…", Chromium 156 "Applying inline style violates the
+    // following Content Security Policy directive…".
+    if (message.type() === 'error' && !/Refused to |Content[- ]Security[- ]Policy/.test(message.text())) problems.push(`console: ${message.text()}`);
   });
   return problems;
 }

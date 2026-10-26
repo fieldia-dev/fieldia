@@ -106,7 +106,8 @@ test.describe("a list's calendar", () => {
 
   test('a booking moved from the keyboard with Move to…: its day, its time, its agent; Escape, and the arrows between slots', async ({ page }) => {
     const { problems } = await openCalendar(page, DESK);
-    await expect(page.locator('.fd-cal-title')).toHaveText('10–16 Oct 2026');
+    // The week as the engine's Intl writes a range of days: "10–16 Oct 2026", spaced round its dash in Chromium 156.
+    await expect(page.locator('.fd-cal-title')).toHaveText(/^10 ?– ?16 Oct 2026$/);
     // Today's first booking, reached by Tab from the slots' one stop, which stands on today.
     const first = page.locator('.fd-cal-col[data-day="2026-10-14"] .fd-cal-event[tabindex="0"]').first();
     const id = Number(await first.getAttribute('data-id'));

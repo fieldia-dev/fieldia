@@ -124,6 +124,12 @@ async function devices(page: Page, how: 'allow' | 'refuse') {
   }, how === 'refuse');
 }
 const records = (page: Page) => page.evaluate(() => typeof (window as any).MediaRecorder === 'function');
+/**
+ * What went wrong on a page that played a recording back from its blob: Chromium 156 reads past the end of the WebM
+ * MediaRecorder made — it carries no duration — and says the range failed ("Failed to load resource:
+ * net::ERR_REQUEST_RANGE_NOT_SATISFIABLE", the blob's address its location); the recording plays and is kept all the same.
+ */
+const problemsBesidesPlayback = (problems: string[]) => problems.filter((problem) => problem !== 'console: Failed to load resource: net::ERR_REQUEST_RANGE_NOT_SATISFIABLE');
 
 test.describe('a voice note and a short film recorded on the page', () => {
   test('a voice note recorded, played back, used, and stored with the visit; a film recorded from the camera', async ({ page }) => {
@@ -176,7 +182,7 @@ test.describe('a voice note and a short film recorded on the page', () => {
     await film.getByRole('button', { name: 'Use this recording' }).click();
     await expect(node(page, 'f-clips').locator('.fd-file-item')).toHaveCount(1);
     await screen(page, 'media-site-visit-recorded');
-    expect(problems).toEqual([]);
+    expect(problemsBesidesPlayback(problems)).toEqual([]);
   });
 
   test('a refused microphone said with Try again; a recording let go only once the person says so', async ({ page }) => {
@@ -213,6 +219,6 @@ test.describe('a voice note and a short film recorded on the page', () => {
     await dialog.getByRole('button', { name: 'Discard' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(voice(page).locator('.fd-file-item')).toHaveCount(1);
-    expect(problems).toEqual([]);
+    expect(problemsBesidesPlayback(problems)).toEqual([]);
   });
 });
