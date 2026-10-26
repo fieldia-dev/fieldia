@@ -3373,9 +3373,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (before) await before;
       // Asked again while one was on its way, nothing changed between — a double press, an app's own Submit pressed
       // twice — and that one went: the same save, never a second send. Stopped or refused, this one is asked anew.
-      // Nothing changed is every field as it was, not the same object: an onchange's answer that changed nothing lands
-      // as a new one.
-      if (ahead && sameValues(ahead.values, values) && (await ahead.mine) === null) return null;
+      // Nothing changed is every field as it was, not the same object: an onchange's answer that changed nothing lands as
+      // a new one. A save a page's own moment asks for — its afterSave saving again — goes as before.
+      if (ahead && (chain.length ? ahead.values === values : sameValues(ahead.values, values)) && (await ahead.mine) === null) return null;
       return savingNow(chain, yes).catch(broken);
     })();
     const asked = (running = { values, mine });
