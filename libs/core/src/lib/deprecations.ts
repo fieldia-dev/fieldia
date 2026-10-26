@@ -41,6 +41,14 @@ export const DEPRECATIONS: readonly Deprecation[] = [
     words: 'A page that says an older format than a setting it uses came in is read as it is in 0.36, and refused from 0.37 — an older Fieldia believing its stamp would read it without that setting. Stamp it with stampPage(page), or write the format lowestFormat(page) gives.',
     warns: 'console',
   },
+  {
+    id: 'page.invalid',
+    since: '0.36',
+    changesIn: '0.37',
+    who: 'page authors',
+    words: 'A page validatePage refuses that the 0.35 viewer drew — a list\'s pageSize past 500, a key the format does not have, a value of another kind, its least more than its most, a first value outside its choices, an option or a column twice — is drawn in 0.36, its mistakes said once in the console and to onError (stage "check"), and refused from 0.37 as a page the check before the draw refuses is: its words where the form would be. Check pages with validatePage or npx fieldia-check before they are stored, and fix what they say.',
+    warns: 'console',
+  },
 ];
 
 /** The ids warned of in this page so far: one set however many copies of Fieldia the page carries. */

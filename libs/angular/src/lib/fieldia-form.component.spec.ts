@@ -225,7 +225,8 @@ class FunctionsHostComponent {
 })
 class RefusedHostComponent {
   static readonly good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
-  readonly page = signal<Page>({ ...RefusedHostComponent.good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page);
+  // Refused before the draw, as 0.35 refused it: a part naming a field the page lacks.
+  readonly page = signal<Page>({ ...RefusedHostComponent.good, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'notes' }] } } as Page);
   readonly told: unknown[] = [];
 }
 
@@ -248,7 +249,7 @@ describe('<fieldia-form> for Angular', () => {
     // The app round it is still there: the viewer's refusal never tears it down.
     expect(el.querySelector('h1')?.textContent).toBe('The app');
     expect(el.querySelector('[role="alert"]')?.textContent).toMatch(/^This form cannot be shown: its page has mistakes/);
-    expect([...el.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['fields.note.required']);
+    expect([...el.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['layout.children[0].field']);
     expect(fixture.componentInstance.told).toEqual([{ stage: 'draw', part: 'page' }]);
     // A page that passes, given next, is drawn in the words' place.
     fixture.componentInstance.page.set(RefusedHostComponent.good);

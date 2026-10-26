@@ -1,5 +1,6 @@
 import { validatePage } from '../format/validate';
 import { checkPage } from '../format/check-page';
+import { wholeCheck } from '../format/check-whole';
 import { translatePage, pageWords } from '../format/translate';
 import type { Page } from '../format/page';
 import { createForm } from './form';
@@ -74,11 +75,13 @@ describe('form.run — print', () => {
   it('is a step a page may give its own button, checked as every step is', () => {
     const page = orderPage({ buttons: [{ type: 'button', id: 'b-print', label: 'Print', steps: [{ do: 'print' }] }] });
     expect(validatePage(page).ok).toBe(true);
-    // A setting a print step does not have: refused where pages are made and, from 0.36, as one is shown.
+    // A setting a print step does not have: refused where pages are made and by the whole check after the first draw
+    // (0.36: said, refused from 0.37); drawn, as 0.35 drew it.
     const wrong = JSON.parse(JSON.stringify(page));
     wrong.layout.buttons[0].steps[0].copies = 2;
     expect(validatePage(wrong).ok).toBe(false);
-    expect(checkPage(wrong).ok).toBe(false);
+    expect(wholeCheck(wrong).ok).toBe(false);
+    expect(checkPage(wrong).ok).toBe(true);
   });
 });
 

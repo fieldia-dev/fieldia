@@ -138,8 +138,6 @@ export type {
   PrintStep,
 } from './lib/format/actions';
 export { FORMAT_VERSION, FORMAT_VERSIONS, compareFormats, formatProblem, type FormatVersion } from './lib/format/version';
-// A page stamped with the lowest format its settings need, so every Fieldia that reads that format reads it (stamp.ts).
-export { lowestFormat, stampPage } from './lib/format/stamp';
 // What will change, said a minor before it does: the list, and a use of it said once in a page (docs/maintainers/release-train.md).
 export { DEPRECATIONS, deprecated, type Deprecation, type DeprecationWho } from './lib/deprecations';
 export { upgradePage, PAGE_UPGRADES, type FormatHistory, type PageJson, type PageUpgrade } from './lib/format/upgrade';
@@ -149,7 +147,9 @@ export { INPUT_MODES, type InputMode } from './lib/format/autofill-group';
 export { THEMES, type Theme } from './lib/format/themes';
 export { SKINS, type Skin } from './lib/format/themes';
 export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';
-export { checkPage } from './lib/format/check-page';
+export { checkPage, type PageCheckOptions } from './lib/format/check-page';
+// The whole check — `validatePage`'s verdict without zod — in a part of its own, fetched after a page's first draw (0.36).
+export { checkPageWhole, pageCheckPart, pageInvalid, type PageCheckPart, type PageInvalid } from './lib/format/page-check';
 export { fillValues, splitValues, valuesIn } from './lib/format/words';
 export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';

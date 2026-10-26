@@ -85,7 +85,8 @@ describe('<FieldiaForm> for Vue', () => {
     const quiet = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const told: unknown[] = [];
     const good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
-    const broken = { ...good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page;
+    // Refused before the draw, as 0.35 refused it: a part naming a field the page lacks.
+    const broken = { ...good, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'notes' }] } } as Page;
     const shown = ref<Page>(broken);
     const onError = (_: unknown, where: unknown) => void told.push(where);
     const form = FieldiaForm as unknown as Parameters<typeof h>[0];
@@ -95,7 +96,7 @@ describe('<FieldiaForm> for Vue', () => {
     // The app round it is still there: the viewer's refusal never unmounts it.
     expect(wrapper.find('h1').text()).toBe('The app');
     expect(wrapper.find('[role="alert"]').text()).toMatch(/^This form cannot be shown: its page has mistakes/);
-    expect(wrapper.findAll('.fd-unshown li code').map((code) => code.text())).toEqual(['fields.note.required']);
+    expect(wrapper.findAll('.fd-unshown li code').map((code) => code.text())).toEqual(['layout.children[0].field']);
     expect(told).toEqual([{ stage: 'draw', part: 'page' }]);
     // A page that passes, given next, is drawn in the words' place.
     shown.value = good;

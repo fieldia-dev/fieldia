@@ -5,6 +5,8 @@ import {
   createForm,
   callsPartFunctions,
   checkPage,
+  checkPageWhole,
+  pageInvalid,
   functionsPart,
   isRightToLeft,
   localizePage,
@@ -163,7 +165,9 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * Told when a part of the page throws as it is drawn, brought up to date, focused or taken away: a field's widget
    * (the app's own or Fieldia's), a slot, a map, any other part. The part is then a small box that names it ("This
    * field could not be shown: Price"), and the rest of the form goes on working, saving included. The console is told
-   * either way. `where` says which part, its field, and what was being done.
+   * either way. `where` says which part, its field, and what was being done. Told too of a page drawn whose whole check
+   * found mistakes `validatePage` refuses (`stage: "check"`, `part: "page"`, `warning: true`; the error a `PageInvalid`,
+   * its `issues` on it): drawn in 0.36, refused from 0.37 (`page.invalid`).
    */
   onError?: (error: unknown, where: PartFailure) => void;
   /**
@@ -473,12 +477,22 @@ function typeBack(box: HTMLInputElement | HTMLTextAreaElement, text: string) {
   box.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+/** Once the browser has nothing else to do (a moment at the most where it cannot say: WebKit has no requestIdleCallback). */
+function whenIdle(doc: Document): Promise<void> {
+  const view = doc.defaultView as (Window & { requestIdleCallback?(run: () => void, options?: { timeout: number }): number }) | null;
+  return new Promise((resolve) => (view?.requestIdleCallback ? view.requestIdleCallback(() => resolve(), { timeout: 2000 }) : setTimeout(resolve, 0)));
+}
+
 /**
  * Render a page into `host` and keep it in step with its form. Plain DOM: the
  * React, Angular and Vue bindings are thin shells around this function.
- * Refuses a page `validatePage` refuses (one check: `checkPage`): says so where
- * the form would be, its problems under "What is wrong", tells `onError`
- * (`part: "page"`), and throws the error, its `issues` on it (`PageRefused`).
+ * Refuses a page the check before the draw refuses (`checkPage`, as 0.35's viewer
+ * refused it): says so where the form would be, its problems under "What is
+ * wrong", tells `onError` (`part: "page"`), and throws the error, its `issues` on
+ * it (`PageRefused`). After the first draw, the whole check (`checkPageWhole`,
+ * `validatePage`'s verdict, a part of its own asked for once the browser is idle):
+ * what it finds is said once in the console and to `onError` as a warning
+ * (`stage: "check"`), the page left drawn — refused from 0.37 (`page.invalid`).
  */
 export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHandle {
   // Its own copy: setTokens changes what the dialogs it opens later wear, never the app's object.
@@ -2941,6 +2955,23 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.
   const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
   const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => undefined) : drawn;
+  // The whole check after the first draw, never before it (page-check.ts): its part asked for once the browser is idle,
+  // what it finds said — once in the console, to onError as a warning — and the page left drawn, as 0.35 drew it.
+  // A part that cannot come says nothing: the page was checked as 0.35 checked it.
+  drawn.then(() => whenIdle(doc)).then(
+    async () => {
+      if (gone) return;
+      const whole = await checkPageWhole(options.page, checks);
+      if (whole.ok || gone) return;
+      const error = pageInvalid(whole.issues);
+      try {
+        options.onError?.(error, { stage: 'check', part: 'page', warning: true });
+      } catch (thrown) {
+        console.error('[Fieldia] onError threw', thrown);
+      }
+    },
+    () => undefined
+  ).catch(() => undefined);
   // On paper, the app's logo and words, the record's title and the day over the page, its footer under it — its look
   // the print part's, as a person shows they mean to print (print.ts).
   const paper = paperFor({

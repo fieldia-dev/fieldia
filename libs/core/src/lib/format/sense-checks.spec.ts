@@ -1,10 +1,13 @@
 import { checkPage } from './check-page';
+import { wholeCheck } from './check-whole';
 import { validatePage } from './validate';
 import type { Page } from './page';
 
 /**
  * What a field says it may hold, held to itself (the audit's R-M5): pages `validatePage` passed and a form could then
- * never take — refused now by both checks, in words, at the path; and a required field nothing shows, a warning.
+ * never take — refused now by it and by the whole check, in words, at the path; and a required field nothing shows, a
+ * warning. The check before the draw passes them, as 0.35's viewer drew them: in 0.36 the viewer draws such a page and
+ * says what the whole check found (`page.invalid`), refusing it from 0.37.
  */
 const page = (fields: Record<string, unknown>, more: Record<string, unknown> = {}): Page =>
   ({
@@ -17,13 +20,15 @@ const page = (fields: Record<string, unknown>, more: Record<string, unknown> = {
   }) as unknown as Page;
 const refused = (given: Page) => {
   const validated = validatePage(given);
-  const checked = checkPage(given);
+  const checked = wholeCheck(given);
   return { validated: validated.ok ? [] : validated.issues, checked: checked.ok ? [] : checked.issues };
 };
 const both = (given: Page, path: string, words: RegExp) => {
   const { validated, checked } = refused(given);
   expect(validated).toEqual([{ path, message: expect.stringMatching(words) }]);
   expect(checked).toEqual(validated);
+  // Drawn by 0.36's viewer, as 0.35's drew it: said after the first draw, refused from 0.37.
+  expect(checkPage(given).ok).toBe(true);
 };
 
 describe('what a field says it may hold, held to itself', () => {

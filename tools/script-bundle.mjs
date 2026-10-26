@@ -1546,18 +1546,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // out and of each part drawn, so a problem kept and a part left alone are said again in them (form.ts, viewer.ts and
 // lines-table.ts: `wordsVersion`; the packages' redraw as they come is left out of this script, whose languages are
 // its add-ons), 283 more — 582,019, to 568.4 (gzipped 189.79, inside its 189.8).
-// 0.36's one check (p3-promises, the audit's R-M5 and R-M6): the viewer refuses what validatePage refuses, so every
-// page is checked whole before it is drawn — the format's schema read without zod (page-shape.ts, made from the zod
-// definitions: 44,348 bytes, its keywords short, every part it holds twice written once), its reader (shape-check.ts,
-// 7,300), the format's rules a schema cannot say, the same functions zod runs (rules.ts, 6,610), a field's settings
-// held to themselves (sense-checks.ts, 2,971), a refused page's words where its form would be (refused.ts, 1,250) and
-// what will change said once in the console (deprecations.ts, 306): 582,019 measured before, 645,008 after, to 629.9.
-// And a page read by its stamp (p3-promises, the audit's R-M7): the format each place, value and older limit came in,
-// written into that schema from the format's history (tools/format-since.json), walked as the page is checked, and
-// a page stamped lower than it needs said once in the console (stamp.ts) — 645,008 measured before, 649,260 after,
-// to 634.1; a field a part's widget shows beside its own (a date range's end) not said to be shown by no part, 649,391,
-// to 634.2.
-const BUDGET_KB = 634.2;
+// 0.36's checks (p3-promises, the audit's R-M5, R-M6 and R-M7): the check before the draw as 0.35's, a page it refuses
+// said where its form would be (refused.ts, 1,250 bytes); the whole check — the format's schema read without zod, its
+// rules, a field's settings held to themselves, the format each place came in — in a part of its own (fieldia.check.js),
+// asked for after a page's first draw, what it finds said once in the console (page-check.ts, deprecations.ts): 582,019
+// measured before, 586,035 after, to 572.4.
+const BUDGET_KB = 572.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1900,14 +1894,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // types: 186.54 measured before, 189.48 after, to 189.5.
 // 0.35's merge, set once from the merged build (listed with the raw budget above): 186.54 at 0.34.1; perf-bytes +0.14,
 // perf-lists 0, perf-form +2.95 (189.64), the words that come late +0.16 — 189.79, to 189.8.
-// 0.36's one check (listed with the raw budget above) — what every page needs, checked whole before it is drawn: the
-// format's schema 9.3 KB of it, its reader and the format's rules 5.4, a field's settings held to themselves 1.3, a
-// refused page's words 0.7, what will change 0.3 (each gzipped alone): 189.79 measured before, 205.14 after, to 205.2;
-// a page read by its stamp (listed with the raw budget above), 205.14 measured before, 206.69 after, to 206.7; a field
-// a part's widget shows beside its own seen as shown (listed above), 206.71, to 206.8.
-// Over the 200 the owner accepted at 0.34: the alternative, the check in a part of its own every page asks for (main
-// 191.0, the part 14.5), makes a page that uses no part wait for a fetch before it is drawn — not taken.
-const GZIP_BUDGET_KB = 206.8;
+// 0.36's checks (listed with the raw budget above): the whole check in a part of its own, asked for after the first draw
+// (the coordinator's 26 Oct: at or under ~200, the owner's guardrail) — a refused page's words 0.7 of what came, what
+// will change 0.3, the whole check's handle and its words 0.4: 189.79 measured before, 191.19 after, to 191.2. (Carried
+// in this script, the whole check made it 206.71.)
+const GZIP_BUDGET_KB = 191.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -3031,9 +3022,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 46.3, inside 16.1. A ring or words over a tall place kept in the middle of what of it is in view as the place takes its
 // size under them, a form's parts coming after its wait began (loading-part.ts) — loading 9.21 and 2.98, 9.43 and 3.06,
 // to 9.5 and 3.1.
-// 0.36: a list's or a related list's column named twice refused, as validatePage refuses it (list-checks.ts) — list
-// 153.30 to 153.34 and 49.91, to 153.4 and 50.0.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [153.4, 50.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1] };
+// 0.36: a list's or a related list's column named twice refused by the whole check, as validatePage refuses it
+// (list-checks.ts) — list 153.30 to 153.34 and 49.91, to 153.4 and 50.0. The whole check (check-whole.ts, a part of its
+// own, asked for after a page's first draw): the format's schema read without zod (page-shape.ts) and the format each
+// place came in, its reader (shape-check.ts), the format's rules (rules.ts), a field's settings held to themselves
+// (sense-checks.ts), a page read by its stamp (stamp.ts), and a page stamped where it is saved (`stampPage`, the
+// designer's publish) — check 65.21 and 17.24, to 65.3 and 17.3.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [153.4, 50.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -3081,6 +3076,7 @@ const PART_GIVES = {
   functions: ['functionBody', 'appCall'],
   options: ['optionRules'],
   mapchecks: ['checkMap', 'checkPlace'],
+  check: ['wholeCheck', 'stampPage', 'lowestFormat'],
   languages: ['languagesWidget', 'languageWords', 'languageText', 'installLanguagesStyles', 'checkTranslated', 'languagesAtFault', 'languageName', 'textIn'],
   scan: ['scanning', 'openScanSheet', 'useCodeReader', 'codeReaderFor', 'readGs1', 'installScanStyles'],
   decode: ['codeReader'],
@@ -3091,7 +3087,7 @@ const PART_GIVES = {
   outbox: ['join', 'draw', 'watchOutbox', 'installOutboxStyles', 'memoryOutbox', 'indexedOutbox'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', record: 'recordPart', codes: 'codesPart', pins: 'pinsPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart', element: 'elementPart', loading: 'loadingPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', record: 'recordPart', codes: 'codesPart', pins: 'pinsPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', check: 'pageCheckPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart', element: 'elementPart', loading: 'loadingPart' };
 /**
  * A part's handle in a page's `Fieldia`: its own export (PART_OF) — or, for the parts that join a form (the fields a
  * link fills, proof by a code, a payment, an outbox: 0.30), named on no export of their own, the one of that name among
@@ -3266,8 +3262,9 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   });
   await new Promise((done) => dom.window.addEventListener('load', done));
   const { Fieldia: inPage, document: doc } = dom.window;
-  // The memory part is a data source's, never a page's: said apart below.
-  const loaded = () => PARTS.filter((part) => part !== 'memory' && handleIn(inPage, part).loaded).join(', ');
+  // The memory part is a data source's, never a page's, and the whole check every page drawn asks for once the browser
+  // idles: each said apart below.
+  const loaded = () => PARTS.filter((part) => part !== 'memory' && part !== 'check' && handleIn(inPage, part).loaded).join(', ');
   /** The parts in after a step, every one so far — as one run of this check found them, each part's first use clear. */
   const hasIn = (step, want) => {
     const now = loaded();
@@ -3307,11 +3304,27 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const plain = inPage.mountViewer(host, { page: read('delivery.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
   await plain.drawn;
+  // The whole check (0.36): never asked for before a page is drawn — it waits for the browser to idle after the draw.
+  if (inPage.pageCheckPart.loaded || inPage.pageCheckPart.coming) throw new Error('in a page, the whole check was asked for before its page was drawn');
   hasIn('a page of plain parts', '');
   // On paper, its printout's head: in every form, hidden, its rules for paper in this script's sheet.
   if (!host.querySelector('.fd-form .fd-print-head[aria-hidden="true"]')) throw new Error("in a page, a form carries no printout's head");
   plain.destroy();
   gone('plain');
+  // A page 0.35 drew whose whole check finds a mistake validatePage refuses: drawn, then — its part come, after the draw —
+  // said to onError as a warning, the page left drawn (`page.invalid`, refused from 0.37).
+  {
+    const page = read('delivery.page.json');
+    const [name] = Object.keys(page.fields);
+    const told = [];
+    const invalid = inPage.mountViewer(host, { page: { ...page, fields: { ...page.fields, [name]: { ...page.fields[name], required: 'yes' } } }, dataSource: inPage.createMemoryDataSource(), onError: (error, where) => told.push({ error, where }) });
+    if (!host.querySelector('.fd-field')) throw new Error('in a page, a page 0.35 drew that validatePage refuses is not drawn');
+    await invalid.drawn;
+    if (!(await until(() => told.length > 0)) || told[0].where.stage !== 'check' || told[0].where.warning !== true || told[0].error.issues?.[0]?.path !== `fields.${name}.required`) throw new Error(`in a page, the whole check did not say a page's mistake after its draw: ${JSON.stringify(told.map((one) => one.where))}`);
+    if (!inPage.pageCheckPart.loaded || !host.querySelector('.fd-field') || host.querySelector('.fd-unshown')) throw new Error('in a page, a page the whole check found a mistake in was not left drawn');
+    invalid.destroy();
+    gone('invalid');
+  }
   // A form whose phones are read the world over (its page's phone): the phone part, the page drawn once it came,
   // its phone's country before the number (a button opening the countries found by typing), its sheet in — and its
   // customer's country, a link to another record: the relations part.

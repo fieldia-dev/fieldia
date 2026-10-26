@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { deprecated, DEPRECATIONS } from './deprecations';
 import { checkPage } from './format/check-page';
+import { wholeCheck } from './format/check-whole';
 import { validatePage } from './format/validate';
 import { createForm } from './record/form';
 import type { Page } from './format/page';
@@ -52,6 +53,8 @@ describe('deprecated', () => {
       validatePage(page);
       // A page whose formulas call an app's own functions is made a form by that app alone.
       if (!checkPage(page).ok) continue;
+      // The whole check a viewer runs after the first draw, which says what it finds (`page.invalid`): nothing here.
+      wholeCheck(page);
       createForm({ page }).dispose();
       made++;
     }

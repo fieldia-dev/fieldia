@@ -1,13 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkPage } from './check-page';
+import { wholeCheck } from './check-whole';
 import { validatePage } from './validate';
 import { stampPage } from './stamp';
 
 /**
  * docs/agents.md, the guide for AI agents writing pages, says what the checks say: each mistake of its table refused
- * by `validatePage` and `checkPage` alike, in the very words the guide quotes, and its worked example answered as it
- * shows — the first page's four problems, the second page passing, stamped "0.3".
+ * by `validatePage` and the whole check alike, in the very words the guide quotes; what a 0.36 viewer does with it —
+ * refuses it before the draw (`checkPage`), or draws it and says it — as its table says; and its worked example answered
+ * as it shows: the first page's four problems, the one a viewer refuses it for, the second page passing, stamped "0.3".
  */
 const GUIDE = readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'docs', 'agents.md'), 'utf8');
 const base = () => ({
@@ -66,14 +68,18 @@ const MISTAKES: [string, Page][] = [
 ];
 
 describe('docs/agents.md says what the checks say', () => {
-  it.each(MISTAKES)('"%s": quoted in the guide, said by validatePage, refused by checkPage too', (words, page) => {
+  it.each(MISTAKES)('"%s": quoted in the guide, said by validatePage, refused by the whole check, a 0.36 viewer as it says', (words, page) => {
     expect(GUIDE).toContain(`\`${words}\``);
     const validated = validatePage(page);
     expect(validated.ok).toBe(false);
     const said = validated.ok ? '' : validated.issues.map((issue) => `${issue.path}: ${issue.message}`).join('\n');
     // The guide may end a long one with "…": what it quotes is the start of what the check says.
     expect(said).toContain(words.replace(/, …$/, ''));
-    expect(checkPage(page).ok).toBe(false);
+    expect(wholeCheck(page).ok).toBe(false);
+    // Its row says what a 0.36 viewer does: refuses it before the draw, or draws it and says it (refused from 0.37).
+    const row = GUIDE.split('\n').find((line) => line.startsWith('| ') && line.includes(`\`${words}\``)) ?? '';
+    const viewer = row.split(/(?<!\\)\|/)[3]?.trim();
+    expect(viewer).toBe(checkPage(page).ok ? 'draws it, says it' : 'refuses it');
   });
 
   it('every row of its table is one of these', () => {
@@ -89,7 +95,14 @@ describe('docs/agents.md says what the checks say', () => {
     expect(blocks.length).toBeGreaterThan(3);
     const refused = validatePage(JSON.parse(first));
     expect(refused.ok ? [] : refused.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual(answer.split('\n'));
-    expect(checkPage(JSON.parse(first)).ok).toBe(false);
+    // A viewer refuses it before the draw, for the one mistake the guide names; fixed alone, it draws it and says the rest.
+    const before = checkPage(JSON.parse(first));
+    expect(before.ok ? [] : before.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual(['fields.email: a field needs a type Fieldia knows and a label']);
+    expect(example).toContain('`fields.email: a field needs a type Fieldia knows and a label`');
+    const emailFixed = JSON.parse(first);
+    emailFixed.fields.email.type = 'char';
+    expect(checkPage(emailFixed).ok).toBe(true);
+    expect(wholeCheck(emailFixed).ok).toBe(false);
     const passed = validatePage(JSON.parse(fixed));
     expect(passed).toMatchObject({ ok: true });
     expect(passed.warnings).toBeUndefined();

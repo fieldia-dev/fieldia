@@ -1,16 +1,18 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkPage } from './check-page';
+import { wholeCheck } from './check-whole';
 import { validatePage } from './validate';
 import { shapeIssues, type ShapeData } from './shape-check';
 import { PAGE_SHAPE } from './page-shape';
 
 /**
- * One check, not a weaker copy (the audit's R-M5): the viewer refuses what `validatePage` refuses. `checkPage` — the
- * check every viewer draws a page with, no validation library in it — and `validatePage` give one verdict on every
- * example page, on thousands of mistakes made in them one at a time, and on the mistakes an AI agent writing a page
- * makes most. And the mistakes are enough to tell: a check without its rules, or one that lets keys it does not know
- * through, disagrees with `validatePage` on hundreds of them.
+ * One check, not a weaker copy (the audit's R-M5): the whole check every viewer runs after a page's first draw
+ * (`checkPageWhole`, check-whole.ts, no validation library in it) and `validatePage` give one verdict on every example
+ * page, on thousands of mistakes made in them one at a time, and on the mistakes an AI agent writing a page makes most.
+ * And the mistakes are enough to tell: a check without its rules, or one that lets keys it does not know through,
+ * disagrees with `validatePage` on hundreds of them. The check before the draw (`checkPage`, 0.35's) refuses a part of
+ * what they refuse, never more: in 0.36 the rest is drawn and said, refused from 0.37 (`page.invalid`).
  */
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages');
 const NAMES = readdirSync(EXAMPLES).filter((name) => name.endsWith('.page.json'));
@@ -98,7 +100,7 @@ function disagreements(check: (page: Json, i: number) => boolean, step = 1) {
     if (i % step === 0 && check(page, i) !== VALIDATED[i]) at.push(i);
   });
   const said = (i: number) => {
-    const refused = VALIDATED[i] ? checkPage(MADE[i]) : validatePage(MADE[i]);
+    const refused = VALIDATED[i] ? wholeCheck(MADE[i]) : validatePage(MADE[i]);
     return { validate: VALIDATED[i], said: refused.ok ? '' : refused.issues.map((issue) => `${issue.path}: ${issue.message}`).join(' | ').slice(0, 300) };
   };
   return { count: at.length, first: at.slice(0, 5).map(said) };
@@ -118,9 +120,9 @@ function weakened(change: (node: Record<string, unknown>) => void): ShapeData {
   return copy;
 }
 
-const verdict = (page: Json) => ({ check: checkPage(page).ok, validate: validatePage(page).ok });
+const verdict = (page: Json) => ({ check: wholeCheck(page).ok, validate: validatePage(page).ok });
 
-describe('checkPage refuses what validatePage refuses', () => {
+describe('the whole check refuses what validatePage refuses', () => {
   it('every example page: one verdict', () => {
     expect(PAGES.length).toBeGreaterThan(100);
     expect(PAGES.filter(({ page }) => {
@@ -135,12 +137,23 @@ describe('checkPage refuses what validatePage refuses', () => {
     const refused = VALIDATED.filter((ok) => !ok).length;
     expect(refused / MADE.length).toBeGreaterThan(0.6);
     expect(refused / MADE.length).toBeLessThan(0.98);
-    expect(disagreements((page) => checkPage(page).ok)).toEqual({ count: 0, first: [] });
+    expect(disagreements((page) => wholeCheck(page).ok)).toEqual({ count: 0, first: [] });
+  });
+
+  it('the check before the draw refuses a part of what they refuse, never a page they pass: the rest is drawn and said in 0.36', () => {
+    const before = MADE.map((page) => checkPage(page).ok);
+    // Nothing the whole check passes is refused before the draw.
+    expect(MADE.filter((_, i) => VALIDATED[i] && !before[i]).length).toBe(0);
+    // What 0.35's viewer refused stays refused; much of the rest it drew, which 0.36 draws and says (`page.invalid`).
+    const refusedBefore = MADE.filter((_, i) => !before[i]).length;
+    const drawnAndSaid = MADE.filter((_, i) => before[i] && !VALIDATED[i]).length;
+    expect(refusedBefore).toBeGreaterThan(200);
+    expect(drawnAndSaid).toBeGreaterThan(700);
   });
 
   it('the mistakes tell a weaker check apart: without its rules, or letting keys it does not know through', () => {
-    // The check as it was before 0.36: the outline and the names alone.
-    const named = MADE.map((page) => checkPage(page, { shape: false }).ok);
+    // The whole check without the shape: the outline, the names and the settings held to themselves.
+    const named = MADE.map((page) => wholeCheck(page, { shape: false }).ok);
     const quick = (data: ShapeData) => (page: Json, i: number) => named[i] && !shapeIssues(page, data).length;
     // Each weaker check tried on every third mistake: enough to tell it, in a third of the time.
     const counts = {

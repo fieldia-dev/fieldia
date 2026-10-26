@@ -1,4 +1,5 @@
-import { FORMAT_VERSION, lowestFormat, validatePage, type FieldNode, type Page, type SectionNode, type StepNode, type WizardNode } from '@fieldia/core';
+import { lowestFormat } from '@fieldia/core/schema';
+import { FORMAT_VERSION, validatePage, type FieldNode, type Page, type SectionNode, type StepNode, type WizardNode } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, QUESTION_KINDS } from './designer';
 
 const wizard = (page: Page) => page.layout as WizardNode;

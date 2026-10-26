@@ -81,7 +81,8 @@ describe('<FieldiaForm>', () => {
     const quiet = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const told: unknown[] = [];
     const good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
-    const broken = { ...good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page;
+    // Refused before the draw, as 0.35 refused it: a part naming a field the page lacks.
+    const broken = { ...good, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'notes' }] } } as Page;
     const app = (shown: Page) => (
       <main>
         <h1>The app</h1>
@@ -92,7 +93,7 @@ describe('<FieldiaForm>', () => {
     // The app round it is still there: the viewer's refusal never unmounts it.
     expect(screen.getByRole('heading', { name: 'The app' })).toBeTruthy();
     expect(screen.getByRole('alert').textContent).toMatch(/^This form cannot be shown: its page has mistakes/);
-    expect([...document.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['fields.note.required']);
+    expect([...document.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['layout.children[0].field']);
     expect(told).toEqual([{ stage: 'draw', part: 'page' }]);
     // A page that passes, given next, is drawn in the words' place.
     rerender(app(good));

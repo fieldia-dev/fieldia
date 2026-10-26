@@ -4,8 +4,10 @@ import type { Field, LineField } from './field';
  * What a field says it may hold, held to itself (the audit's R-M5: what `validatePage` passed and a form then could not
  * take): its least no more than its most, its first value one it could hold — of its kind, inside its bounds, one of
  * its choices — and each choice's value once. A page with any of these can never be filled in as written: a form that
- * refuses every value, opens refusing its own default, or shows two choices that send the same. Both checks run these
- * (references.ts), so the viewer refuses them as `validatePage` does.
+ * refuses every value, opens refusing its own default, or shows two choices that send the same. The whole check runs
+ * these (`SENSE`, handed to references.ts): `validatePage`, and the viewer's check after the first draw (check-whole.ts),
+ * which says them in 0.36 and refuses them from 0.37 (`page.invalid`). The check before the draw leaves them out: the
+ * 0.35 viewer drew such a page.
  */
 export function checkSense(def: Field | LineField, path: string, report: (path: string, message: string) => void): void {
   const own = def as { type: string; min?: unknown; max?: unknown; default?: unknown; multiple?: boolean; other?: boolean; ownAnswers?: boolean; options?: { value?: unknown }[]; optionsFrom?: unknown; translate?: unknown; precision?: unknown };
@@ -90,3 +92,7 @@ export function unseenRequired(page: { fields?: unknown; layout?: unknown; prefi
   }
   return found;
 }
+
+/** The whole check's own checks of a page's settings, handed to the reference check (`CheckOptions.sense`). */
+export const SENSE = { checkSense, unseenRequired };
+export type SenseChecks = typeof SENSE;

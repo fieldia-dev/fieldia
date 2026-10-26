@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { lowestFormat, needOf, stampPage } from './stamp';
 import { checkPage } from './check-page';
+import { wholeCheck } from './check-whole';
 import { validatePage } from './validate';
 import { upgradePage } from './upgrade';
 import { FORMAT_VERSION, FORMAT_VERSIONS } from './version';
@@ -72,7 +73,7 @@ describe('a page stamped with the lowest format it needs', () => {
 
 describe('a page read by its stamp', () => {
   const SAID = Symbol.for('fieldia.deprecations.said');
-  it('says an older format than a setting it uses came in: in 0.36 warned of by both checks, at the setting, with the format to write — refused from 0.37', () => {
+  it('says an older format than a setting it uses came in: in 0.36 warned of by validatePage and the whole check, at the setting, with the format to write — refused from 0.37', () => {
     delete (globalThis as { [SAID]?: Set<string> })[SAID];
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     const wrong = { ...page({ pin: { type: 'char', label: 'PIN', secret: true } }), fieldia: '0.10' };
@@ -80,18 +81,25 @@ describe('a page read by its stamp', () => {
     expect(validatePage(wrong)).toMatchObject({ ok: true, warnings: [{ path: 'fields.pin.secret', message: words }] });
     expect(checkPage(wrong).ok).toBe(true);
     // Said once in the page, as a deprecation is: format.under-stamped, refused from 0.37.
-    expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([`Fieldia: fields.pin.secret: ${words} — read as it is now, refused from 0.37 — deprecated, it changes in 0.37 (format.under-stamped; https://fieldia.dev/promises/#deprecations).`]);
+    const said = `Fieldia: fields.pin.secret: ${words} — read as it is now, refused from 0.37 — deprecated, it changes in 0.37 (format.under-stamped; https://fieldia.dev/promises/#deprecations).`;
+    expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([said]);
+    // The whole check a viewer runs after the first draw says it too, in a page not told yet; the check before the draw,
+    // which reads no setting's format, says nothing.
+    delete (globalThis as { [SAID]?: Set<string> })[SAID];
+    warn.mockClear();
+    expect(wholeCheck(wrong).ok).toBe(true);
+    expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([said]);
     // Stamped with what it needs, or later: nothing said.
     for (const fieldia of ['0.13', FORMAT_VERSION]) expect(validatePage({ ...wrong, fieldia }).warnings).toBeUndefined();
     expect(validatePage(stampPage(wrong)).warnings).toBeUndefined();
     warn.mockRestore();
   });
 
-  it('every example page, stamped with the lowest format it needs, passes both checks', () => {
+  it('every example page, stamped with the lowest format it needs, passes every check', () => {
     for (const name of readdirSync(EXAMPLES).filter((file) => file.endsWith('.page.json'))) {
       const given = JSON.parse(readFileSync(join(EXAMPLES, name), 'utf8')) as Page;
       const stamped = stampPage(given);
-      expect({ name, check: checkPage(stamped).ok, validate: validatePage(stamped).ok }).toEqual({ name, check: checkPage(given).ok, validate: validatePage(given).ok });
+      expect({ name, check: checkPage(stamped).ok, whole: wholeCheck(stamped).ok, validate: validatePage(stamped).ok }).toEqual({ name, check: checkPage(given).ok, whole: wholeCheck(given).ok, validate: validatePage(given).ok });
     }
   });
 });

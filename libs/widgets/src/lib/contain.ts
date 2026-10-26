@@ -14,8 +14,8 @@ import type { Widget, WidgetContext, WidgetState } from './widgets';
  * value. The focus that was in the widget goes to the box, which can take it: it says what failed.
  */
 
-/** What was being done when a part failed. */
-export type FailureStage = 'draw' | 'update' | 'focus' | 'remove';
+/** What was being done when a part failed: `check`, a page's whole check after its first draw (a warning, 0.36). */
+export type FailureStage = 'draw' | 'update' | 'focus' | 'remove' | 'check';
 
 /** Where a part of a page failed, as `onError` is told. */
 export interface PartFailure {
@@ -30,6 +30,8 @@ export interface PartFailure {
   widget?: string;
   /** A slot's name. */
   name?: string;
+  /** Not a failure: the page was drawn, and what was found is said (`stage: "check"`: refused from 0.37, `page.invalid`). */
+  warning?: true;
 }
 
 /** Told of each part that failed: once for each, with the error it threw. */
@@ -53,6 +55,7 @@ export function reportFailure(error: unknown, where: PartFailure, onError: Error
 
 /** A failure in words, for the console: `The field "price" (widget float.fancy) could not be drawn.` */
 export function describeFailure(where: PartFailure): string {
+  if (where.stage === 'check') return `The page was drawn, but it has mistakes validatePage refuses: refused from 0.37.`;
   const doing = { draw: 'drawn', update: 'brought up to date', focus: 'focused', remove: 'taken away' }[where.stage];
   const what =
     where.part === 'field' ? `The field "${where.field}"${where.widget ? ` (widget ${where.widget})` : ''}`

@@ -19,11 +19,11 @@ const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const require = createRequire(import.meta.url);
 const Ajv2020 = require('ajv/dist/2020').default;
 
-/** @fieldia/core from its source, as a page's maker uses it: `lowestFormat`, the checks. */
+/** @fieldia/core/schema from its source, as a page's maker uses it: `lowestFormat`, `validatePage`. */
 async function core() {
   const dir = mkdtempSync(join(tmpdir(), 'fieldia-since-'));
   const file = join(dir, 'core.cjs');
-  await build({ entryPoints: [join(WORKSPACE, 'libs/core/src/index.ts')], bundle: true, platform: 'node', format: 'cjs', outfile: file, logLevel: 'error', tsconfig: join(WORKSPACE, 'tsconfig.base.json') });
+  await build({ entryPoints: [join(WORKSPACE, 'libs/core/src/schema.ts')], bundle: true, platform: 'node', format: 'cjs', outfile: file, logLevel: 'error', tsconfig: join(WORKSPACE, 'tsconfig.base.json') });
   const loaded = require(file);
   rmSync(dir, { recursive: true, force: true });
   return loaded;

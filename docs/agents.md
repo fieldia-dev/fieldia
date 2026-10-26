@@ -44,18 +44,18 @@ model can read each setting's words there.
 
 ## How to check a page
 
-Check every page before it is stored. One check decides, wherever it runs:
+Check every page before it is stored. `validatePage` decides; a viewer gives its verdict in two steps:
 
 | Where | What to call | What it does |
 | --- | --- | --- |
 | Where pages are made | `validatePage(page)` from `@fieldia/core/schema` | The whole check: every key and value, every name a part or a condition uses, every expression. Its answer lists each problem by its path, and warnings beside it. |
 | In CI | `npx fieldia-check pages/` from `@fieldia/testing` | `validatePage` over every `.json` file, one line per problem; `--strict` fails on warnings too. |
-| In the browser | `checkPage(page)`, as every viewer runs it | The same verdict as `validatePage`, without the validation library. A page it refuses is never drawn: the form's place says "This form cannot be shown", with what is wrong under it. |
+| In the browser, before the draw | `checkPage(page)`, as every viewer runs it | What 0.35's viewer refused: the outline, every name a part or a condition uses, every expression. A page it refuses is never drawn: the form's place says "This form cannot be shown", with what is wrong under it. |
+| In the browser, after the draw | `await checkPageWhole(page)`, as every viewer runs it once the page is drawn | The same verdict as `validatePage`, without the validation library, fetched as a part of its own. In 0.36 what only it finds is drawn and said, once in the console and to the app's `onError`; from 0.37 it is refused (`page.invalid`). |
 | Before storing | `stampPage(page)` | The page stamped with the lowest format its settings need, so a viewer of an older Fieldia reads it. |
 
 ```ts
-import { validatePage } from '@fieldia/core/schema';
-import { stampPage } from '@fieldia/core';
+import { stampPage, validatePage } from '@fieldia/core/schema';
 
 const checked = validatePage(page);
 if (!checked.ok) for (const issue of checked.issues) console.log(`${issue.path}: ${issue.message}`);
@@ -71,31 +71,32 @@ what it is sent again, with `checkSubmission(page, values)` (see [What Fieldia p
 
 ## The mistakes the checks catch
 
-Each row is a mistake agents make, with the words `validatePage` says and how to fix it. `checkPage`, and so every
-viewer, refuses the same pages.
+Each row is a mistake agents make, with the words `validatePage` says, what a 0.36 viewer does with it, and how to fix
+it. `checkPageWhole` refuses every one, as `validatePage` does. A viewer refuses some before it draws the page, as 0.35's
+did. The rest it draws in 0.36, saying them in the console and to `onError`, and refuses them from 0.37.
 
-| Mistake | What the check says | Write instead |
-| --- | --- | --- |
-| A field typed `email` | `fields.email.type: "type" is not one of the kinds allowed here` | `"type": "char"`, with `"pattern"` or a node's `"widget": "email"` |
-| `"required": "yes"` | `fields.name.required: Invalid input: expected boolean, received string` | `"required": true` |
-| Options as plain words | `fields.topic.options[0]: Invalid input: expected object, received string` | `[{ "value": "sales", "label": "Sales" }]` |
-| A step `setValue` | `on.change.topic[0].do: "do" is not one of the kinds allowed here` | `{ "do": "set", "field": "seats", "value": "1" }` |
-| A key the format does not have | `fields.name: Unrecognized key: "read-only"` | `"readonly": true` |
-| A part with no `id` | `layout.children[0].id: Invalid input: expected string, received undefined` | an `id` on every part, unique in the page |
-| One `id` twice | `layout.children[1]: duplicate id "f-name", also used at layout.children[0]` | another id |
-| A part naming a field the page lacks | `layout.children[4].field: no field "phone"` | the field in `fields` first |
-| A condition reading a field the page lacks | `layout.children[3].invisible: "kind != 'sales'" reads "kind", which is not a field of this page` | a field of the page |
-| `===` or `&&` in a condition | `cannot read "topic === 'sales'": Unexpected "=" at character 9` | `==`, `and`, `or` |
-| Words in a value not quoted | `on.change.topic[0].value: cannot read "hello world": Unexpected token at position 1` | `"value": "'hello world'"` |
-| A function that is not one | `fields.seats.compute: cannot read "lenght(name)": no function "lenght": the functions are round, abs, min, max, len, …` | one of the functions listed |
-| Its least more than its most | `fields.seats.min: the least (10) is more than the most (5): no value could be given` | `min` no more than `max` |
-| A first value of another kind | `fields.seats.default: "five" is not a whole number: an integer field's first value is one, written as a number` | `"default": 5` |
-| A first value that is not a choice | `fields.topic.default: "billing" is not one of the field's options: its first value is one of "sales", "support"` | one of the option values |
-| An option's value twice | `fields.topic.options[2].value: "sales" is the value of an option before it: each option's value once` | each value once |
-| A list's column twice | `layout.columns[1]: "name" is a column before it: each column once` | each column once |
-| A widget's option the format refuses | `layout.children[1].options.countries: countries is "list" (Fieldia’s own, found by typing) or "native" (the browser’s own list)` | one of the values listed |
-| No `fieldia` | `fieldia: "fieldia" says which format the page is written in: "0.13" for this Fieldia` | `"fieldia": "0.13"`, or `stampPage(page)` |
-| A format newer than the reader | `fieldia: this page is in format 0.99, newer than this Fieldia reads (0.13): update Fieldia to show it` | a format Fieldia has had |
+| Mistake | What the check says | A 0.36 viewer | Write instead |
+| --- | --- | --- | --- |
+| A field typed `email` | `fields.email.type: "type" is not one of the kinds allowed here` | refuses it | `"type": "char"`, with `"pattern"` or a node's `"widget": "email"` |
+| `"required": "yes"` | `fields.name.required: Invalid input: expected boolean, received string` | draws it, says it | `"required": true` |
+| Options as plain words | `fields.topic.options[0]: Invalid input: expected object, received string` | draws it, says it | `[{ "value": "sales", "label": "Sales" }]` |
+| A step `setValue` | `on.change.topic[0].do: "do" is not one of the kinds allowed here` | draws it, says it | `{ "do": "set", "field": "seats", "value": "1" }` |
+| A key the format does not have | `fields.name: Unrecognized key: "read-only"` | draws it, says it | `"readonly": true` |
+| A part with no `id` | `layout.children[0].id: Invalid input: expected string, received undefined` | draws it, says it | an `id` on every part, unique in the page |
+| One `id` twice | `layout.children[1]: duplicate id "f-name", also used at layout.children[0]` | refuses it | another id |
+| A part naming a field the page lacks | `layout.children[4].field: no field "phone"` | refuses it | the field in `fields` first |
+| A condition reading a field the page lacks | `layout.children[3].invisible: "kind != 'sales'" reads "kind", which is not a field of this page` | refuses it | a field of the page |
+| `===` or `&&` in a condition | `cannot read "topic === 'sales'": Unexpected "=" at character 9` | refuses it | `==`, `and`, `or` |
+| Words in a value not quoted | `on.change.topic[0].value: cannot read "hello world": Unexpected token at position 1` | refuses it | `"value": "'hello world'"` |
+| A function that is not one | `fields.seats.compute: cannot read "lenght(name)": no function "lenght": the functions are round, abs, min, max, len, …` | refuses it | one of the functions listed |
+| Its least more than its most | `fields.seats.min: the least (10) is more than the most (5): no value could be given` | draws it, says it | `min` no more than `max` |
+| A first value of another kind | `fields.seats.default: "five" is not a whole number: an integer field's first value is one, written as a number` | draws it, says it | `"default": 5` |
+| A first value that is not a choice | `fields.topic.default: "billing" is not one of the field's options: its first value is one of "sales", "support"` | draws it, says it | one of the option values |
+| An option's value twice | `fields.topic.options[2].value: "sales" is the value of an option before it: each option's value once` | draws it, says it | each value once |
+| A list's column twice | `layout.columns[1]: "name" is a column before it: each column once` | draws it, says it | each column once |
+| A widget's option the format refuses | `layout.children[1].options.countries: countries is "list" (Fieldia’s own, found by typing) or "native" (the browser’s own list)` | draws it, says it | one of the values listed |
+| No `fieldia` | `fieldia: "fieldia" says which format the page is written in: "0.13" for this Fieldia` | refuses it | `"fieldia": "0.13"`, or `stampPage(page)` |
+| A format newer than the reader | `fieldia: this page is in format 0.99, newer than this Fieldia reads (0.13): update Fieldia to show it` | refuses it | a format Fieldia has had |
 
 Two more are warnings: `validatePage` says them, the page is still drawn.
 
@@ -187,9 +188,11 @@ import { mountViewer } from '@fieldia/viewer';
 mountViewer(document.getElementById('form')!, { page, dataSource, onError: (error) => report(error) });
 ```
 
-Had the agent stored the first page, the viewer would have refused it the same way. The form's place would say
-"This form cannot be shown: its page has mistakes", with the four problems under "What is wrong", and the app's
-`onError` would hear them. In React, Vue and Angular the app around it stays.
+Had the agent stored the first page, the viewer would have refused it before drawing it: its email field is of no
+kind Fieldia knows. The form's place would say "This form cannot be shown: its page has mistakes", with
+`fields.email: a field needs a type Fieldia knows and a label` under "What is wrong", and the app's `onError` would hear
+it. In React, Vue and Angular the app around it stays. Had the agent fixed that alone, a 0.36 viewer would draw the
+page and say its other three mistakes, once in the console and to `onError`; a 0.37 viewer refuses it.
 
 ## Where to read more
 

@@ -45,17 +45,19 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * 0.35's merge, set once from the merged build: perf-lists' window in the list's part and its lines' in theirs, and
  * perf-form's quick way in every form and viewer (and the designer's drafts): a record form 237.5 / 310.3 (57 / 64); in
  * Arabic 237.5 / 332.5 (57 / 67); a list 236.7 / 305.2 (57 / 61); the designer 583.2 / 796.0 (74 / 83).
- * 0.36's one check (p3-promises): every page checked whole before it is drawn, as validatePage checks it, without zod —
- * the format's schema (page-shape.ts), its reader and the format's rules, a field's settings held to themselves, a
- * page read by its stamp, a refused page's words: about 16.8 KB more with the page, in every app that draws a form (a
- * record form 254.3 / 327.2, 57 / 64; in Arabic 254.3 / 349.5; a list 253.5 / 322.0; the designer 599.7 / 810.8, 74 /
- * 83 — the designer's zod stays in its chunk: tools/dual-build.mjs carries ruled.ts and option-schemas.ts in it).
+ * 0.36's checks (p3-promises; the coordinator's 26 Oct): the check before the draw as 0.35's, a refused page's words
+ * where its form would be, what will change; the whole check — the format's schema read without zod, its rules, the
+ * format each place came in, `stampPage` — a chunk of its own, asked for after the first draw (so "to usable" carries
+ * it, never the first paint): a record form 240.0 / 330.2 (63 / 71); in Arabic 240.0 / 352.5 (63 / 74); a list
+ * 239.2 / 324.9 (63 / 68); the designer 586.1 / 812.8 (76 / 86; its stamp at publish, from that chunk). Re-exported by
+ * @fieldia/core's index, `stampPage` kept the whole check in every page's chunks (the designer's first paint 601.1):
+ * it is `@fieldia/core/schema`'s.
  */
 const BUDGET = {
-  record: { page: 259.4, usable: 333.7, files: 70 },
-  'record-ar': { page: 259.4, usable: 356.5, files: 73 },
-  list: { page: 258.6, usable: 328.4, files: 67 },
-  designer: { page: 611.7, usable: 827.0, files: 90 },
+  record: { page: 244.8, usable: 336.8, files: 72 },
+  'record-ar': { page: 244.8, usable: 359.6, files: 75 },
+  list: { page: 244.0, usable: 331.4, files: 69 },
+  designer: { page: 597.8, usable: 829.1, files: 90 },
 };
 
 /** A record of the customer page's, with the fields it shows. */

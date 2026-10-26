@@ -66,10 +66,13 @@ A page is data. Fieldia draws it and never runs code from a page, a record's val
   search and a list's options end at their deadline (30 s unless the app says) as the network's problem, with Retry.
   A request the app makes itself outside these calls has the deadline the app gives it. **Gate:**
   `libs/core/src/lib/record/deadline.spec.ts` ("ends at its deadline as the network’s problem").
-- **A page the checks refuse is never drawn.** Every viewer runs `checkPage`, which refuses what `validatePage`
-  refuses. The form's place says why, and React, Vue and Angular apps stay up. **Gates:**
-  `libs/core/src/lib/format/shape-parity.spec.ts` ("one verdict on each"), `libs/viewer/src/lib/refused.spec.ts`
-  ("says why where the form would be").
+- **A page the check before the draw refuses is never drawn.** Every viewer runs `checkPage` first: what 0.35's
+  viewer refused — the outline, every name a part or a condition uses, every expression. The form's place says why,
+  and React, Vue and Angular apps stay up. After the first draw it runs the whole check (`checkPageWhole`,
+  `validatePage`'s verdict without zod). In 0.36 what only the whole check finds is said once in the console and to
+  `onError` as a warning, and the page stays drawn; from 0.37 it is refused (`page.invalid`). **Gates:**
+  `libs/viewer/src/lib/refused.spec.ts` ("says why where the form would be", "then says it once in the console and
+  to onError"), `libs/core/src/lib/format/shape-parity.spec.ts` ("one verdict on each", "never a page they pass").
 
 ### Bounded work
 
@@ -137,7 +140,8 @@ What is deprecated now, and the minor it changes in. The console's warning links
 
 | Id | Since | Changes in | Who | What changes, and what to write instead |
 | --- | --- | --- | --- | --- |
-| `format.under-stamped` | 0.36 | 0.37 | page authors | A page that says an older format than a setting it uses came in is warned of by `checkPage` and `validatePage`, and refused from 0.37. Stamp the page with `stampPage(page)`, or write the format the warning names. |
+| `format.under-stamped` | 0.36 | 0.37 | page authors | A page that says an older format than a setting it uses came in is warned of by the whole check a viewer runs after the first draw and by `validatePage`, and refused from 0.37. Stamp the page with `stampPage(page)`, or write the format the warning names. |
+| `page.invalid` | 0.36 | 0.37 | page authors | A page `validatePage` refuses that 0.35's viewer drew — a list's `pageSize` past 500, a key the format does not have, a value of another kind, its least more than its most, a first value outside its choices, an option or a column twice — is drawn in 0.36, its mistakes said once in the console and to `onError` (`stage: "check"`), and refused from 0.37 as the check before the draw refuses a page. Check pages with `validatePage` or `npx fieldia-check` before they are stored. |
 
 **Gate:** `tools/promises.test.mjs` ("every deprecation is in the table") holds this table to the list in
 `libs/core/src/lib/deprecations.ts`.
@@ -183,12 +187,13 @@ An app's first load from the npm packages, bundled by esbuild, KB gzipped — th
 
 | App | First paint | Usable | Gate |
 | --- | --- | --- | --- |
-| A record form | 259.4 KB | 333.7 KB | `tools/npm-first-load.mjs` |
-| A list | 258.6 KB | 328.4 KB | `tools/npm-first-load.mjs` |
-| The screen designer | 611.7 KB | 827.0 KB | `tools/npm-first-load.mjs` |
+| A record form | 244.8 KB | 336.8 KB | `tools/npm-first-load.mjs` |
+| A list | 244.0 KB | 331.4 KB | `tools/npm-first-load.mjs` |
+| The screen designer | 597.8 KB | 829.1 KB | `tools/npm-first-load.mjs` |
 
-The one-tag script, `fieldia.js`, is held to 206.8 KB gzipped, and each part it loads later to its own budget.
-**Gate:** `tools/script-bundle.mjs`.
+Usable counts the whole check, which a page asks for once it is drawn. The one-tag script, `fieldia.js`, is held to
+191.2 KB gzipped, the whole check it asks for after the first draw (`fieldia.check.js`) to 17.3 KB, and each other part
+it loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
 
 These are budgets, not measurements. A count's budget is what the release counted, with a little room; a timing's is
 a frame for a key and a tenth of a second for a click. Each run's measurements are kept with CI's perf job.
@@ -201,8 +206,8 @@ an iPhone runs Safari's engine); and Chrome on Android. The npm packages are ES2
 | Browser | Checked in CI | Not checked in CI |
 | --- | --- | --- |
 | Chrome, Edge | Chromium 141, Playwright's build: every browser spec, in every framework's demo, and the perf gates | Chrome's and Edge's own builds; the major before |
-| Firefox | Firefox 142, Playwright's build: the smoke set (103 specs) in the plain demo | The rest of the specs; the major before |
-| Safari | WebKit 26.0, Safari's engine as Playwright builds it: the smoke set (103 specs) in the plain demo | Safari itself; the major before |
+| Firefox | Firefox 142, Playwright's build: the smoke set (104 specs) in the plain demo | The rest of the specs; the major before |
+| Safari | WebKit 26.0, Safari's engine as Playwright builds it: the smoke set (104 specs) in the plain demo | Safari itself; the major before |
 | Safari on iOS | WebKit at a phone's size with touch, in the smoke set's phone specs | A real iPhone |
 | Chrome on Android | Chromium at a phone's size with touch; the perf gates on a phone's CPU | A real Android phone |
 

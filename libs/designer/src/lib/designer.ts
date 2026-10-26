@@ -39,7 +39,7 @@ import {
   type TabsNode,
   type PageLoading,
 } from '@fieldia/core';
-import { comparable, FIELD_NAME, FORMAT_VERSION, stampPage, upgradePage } from '@fieldia/core';
+import { comparable, FIELD_NAME, FORMAT_VERSION, pageCheckPart, upgradePage } from '@fieldia/core';
 import { produce, sameJson } from './draft';
 import { keepUnchanged } from './keep-unchanged';
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
@@ -2194,8 +2194,11 @@ export function createDesigner(options: {
       for (const read of [...readers]) read();
       const checked = schema.validatePage(page, { functions });
       if (!checked.ok) throw new Error(words.refusals.cannotPublish);
-      // Stored stamped with the lowest format its settings need: every Fieldia that reads that format reads it.
-      const version = store ? await store.publish(stampPage(clone(page))) : versions.length + 1;
+      // Stored stamped with the lowest format its settings need: every Fieldia that reads that format reads it. Its
+      // schema is the whole check's, a part of its own (`pageCheckPart`): fetched as a page is published, never before
+      // the designer's first paint.
+      const stamping = store ? (pageCheckPart.loaded ?? (await pageCheckPart.load())) : null;
+      const version = store && stamping ? await store.publish(stamping.stampPage(clone(page))) : versions.length + 1;
       // The page itself, as it is never written: the draft shares it until it is edited.
       versions = [...versions, { version, publishedAt: new Date().toISOString(), page }];
       notify();

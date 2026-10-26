@@ -67,7 +67,7 @@ test('a number the code does not hold is refused: the page written otherwise, or
     };
     edit('e2e/perf.spec.ts', '  viewerKey: 16,', '  viewerKey: 24,');
     edit('libs/viewer/src/lib/import-dialog.ts', 'export const IMPORT_MOST = 50000;', 'export const IMPORT_MOST = 20000;');
-    edit('tools/script-bundle.mjs', 'const GZIP_BUDGET_KB = 206.8;', 'const GZIP_BUDGET_KB = 230.0;');
+    edit('tools/script-bundle.mjs', 'const GZIP_BUDGET_KB = 191.2;', 'const GZIP_BUDGET_KB = 230.0;');
     const moved = numberProblems(doc, copy).map((one) => one.replace(/ \(its row: .*\)$/, ''));
     assert.deepEqual(moved, [
       'the bounds: an import: the code holds "20,000 rows", which the page does not say',
@@ -88,7 +88,7 @@ test('every deprecation is in the table, as the list says it — and the table h
   assert.deepEqual(deprecationProblems(doc, more), ['viewer.mount-throws is deprecated (libs/core/src/lib/deprecations.ts) and not in the table']);
   const later = deprecationProblems(changed('| `format.under-stamped` | 0.36 | 0.37 |', '| `format.under-stamped` | 0.36 | 0.38 |'), list);
   assert.deepEqual(later, ['format.under-stamped: the table says 0.36, 0.38, page authors; the list 0.36, 0.37, page authors']);
-  assert.deepEqual(deprecationProblems(doc, []), ['format.under-stamped is in the table and not in the list']);
+  assert.deepEqual(deprecationProblems(doc, list.filter((one) => one.id !== 'page.invalid')), ['page.invalid is in the table and not in the list']);
 });
 
 test('the browsers CI runs are the ones this page names: Playwright\'s engines and versions, the smoke set, the jobs, the targets', () => {

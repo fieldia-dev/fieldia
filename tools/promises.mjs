@@ -171,6 +171,7 @@ export function numbersHeld(workspace = WORKSPACE) {
     ['first load: a list', 'A list', first('list')],
     ['first load: the designer', 'The screen designer', first('designer')],
     ['the one-tag script', null, [`held to ${c('tools/script-bundle.mjs', /^const GZIP_BUDGET_KB = ([\d.]+);/m).toFixed(1)} KB gzipped`]],
+    ['the whole check\'s part', null, [`(\`fieldia.check.js\`) to ${c('tools/script-bundle.mjs', /^const PART_BUDGET_KB = \{.*\bcheck: \[[\d.]+, ([\d.]+)\]/m).toFixed(1)} KB`]],
   ];
 }
 
