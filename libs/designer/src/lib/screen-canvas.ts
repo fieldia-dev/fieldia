@@ -616,8 +616,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       if (selected === id && picked.length <= 1) return;
       // Clicking a field's words opens it with the cursor in those words — in sight already, where it was clicked.
       const part = target.closest('.fd-label') ? 'label' : target.closest('.fd-help') ? 'help' : null;
+      letGo(id);
       designer.select(id);
-      if (part) focusIn(id, part, false, true);
+      if (part) focusSoon(id, part);
       return;
     }
     // A block, a group, an arrangement or tabs: the nearest part round what was clicked.
@@ -636,9 +637,46 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     if ((event.key !== 'Enter' && event.key !== ' ') || !card.matches('.fd-canvas-field[data-node]:not(.fd-editing)')) return;
     event.preventDefault();
     const id = card.dataset['node'] as string;
+    letGo(id);
     designer.select(id);
-    focusIn(id, 'label', false, true);
+    focusSoon(id, 'label');
   });
+
+  /**
+   * The focus let go from a card about to be drawn anew — the one picked, a card at rest until now, or the one picked
+   * before, its words typed in — before anything is written: taken away with its card, the browser lays the whole
+   * canvas out to move the focus (0.32: on each pick); let go once the page is written, it lays it out to blur (0.36).
+   */
+  function letGo(next: string | null) {
+    const focused = doc.activeElement;
+    const card = focused instanceof HTMLElement && body.contains(focused) ? focused.closest<HTMLElement>('.fd-canvas-field[data-node]') : null;
+    if (card && card.classList.contains('fd-editing') !== (card.dataset['node'] === next)) (focused as HTMLElement).blur();
+  }
+
+  /**
+   * The cursor put in a field's words as a press picks it (its words clicked, Enter or Space on its card): at the end
+   * of the frame that draws it open, the page laid out — not at once, when the browser laid the whole canvas out a
+   * second time to move the focus (0.36). A key pressed before then puts it there first, so what is typed lands in the
+   * words; a press elsewhere first puts it where that press does.
+   */
+  let owed: { id: string; part: 'label' | 'help' } | null = null;
+  function focusSoon(id: string, part: 'label' | 'help') {
+    const view = doc.defaultView;
+    owed = { id, part };
+    if (!view?.requestAnimationFrame) return focusOwed();
+    view.requestAnimationFrame(() => view.setTimeout(focusOwed, 0));
+  }
+  function focusOwed() {
+    if (!owed || gone) return;
+    const { id, part } = owed;
+    owed = null;
+    // Still the field picked, and open.
+    if (selected === id) focusIn(id, part, false, true);
+  }
+  const keyFirst = () => owed && focusOwed();
+  const pressFirst = () => (owed = null);
+  doc.addEventListener('keydown', keyFirst, true);
+  doc.addEventListener('pointerdown', pressFirst, true);
 
   /**
    * The cursor in a field's words. `seen`, the card was in sight as it was picked (pressed, or picked by the keys on
@@ -737,12 +775,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       advanced.setEnabled(next === 'advanced');
     },
     update(state) {
-      // The focus in a card about to be drawn anew — the one picked, a card at rest until now, or the one picked before,
-      // its words typed in: let go before anything is written. Taken away with its card, the browser lays the whole
-      // canvas out to move the focus (0.32: on each pick); the card picked takes it again as it is drawn.
-      const focused = doc.activeElement;
-      const card = focused instanceof HTMLElement && body.contains(focused) ? focused.closest<HTMLElement>('.fd-canvas-field[data-node]') : null;
-      if (card && card.classList.contains('fd-editing') !== (card.dataset['node'] === state.selected)) (focused as HTMLElement).blur();
+      // The focus in a card about to be drawn anew let go before the canvas is written (a pick on the canvas let it go
+      // before anything was); the card picked takes it again once drawn.
+      letGo(state.selected);
       setData(element, 'size', shownSize());
       ownWidth();
       page = state.page;
@@ -814,6 +849,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     },
     destroy() {
       gone = true;
+      doc.removeEventListener('keydown', keyFirst, true);
+      doc.removeEventListener('pointerdown', pressFirst, true);
       drag.destroy();
       widths.destroy();
       resize.destroy();
