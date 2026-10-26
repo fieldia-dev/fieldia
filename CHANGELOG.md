@@ -17,6 +17,67 @@ Each release's section is written in the commit that sets its version.
 A patch (0.34.**1**) holds fixes alone, with no Upgrading part: `release.mjs`
 refuses one that has.
 
+## 0.35.2 — 2026-10-26
+
+**A page's words can quote a brace.** Since 0.27 a `{name}` in any of a page's
+words shows that field's value, and the page check refuses a name that is no
+field. Words that quote braces — a step studio's help, "{list} is a setting in
+words", a template's `{{customer}}` — could not be written. Now a backslash
+before a brace keeps it as written, everywhere a page's words are shown, through
+one reader.
+
+**Fixes:**
+
+- **A page's words can show a literal `{name}`: write `\{name}`** (in JSON,
+  `"\\{name}"`). `\{method:value}` shows "{method:value}", `\{\{customer}}`
+  shows "{{customer}}", and the page check refuses none of them. A run of
+  backslashes before a brace shows half of them, and an odd run leaves the
+  brace as written: `\\{name}` is a backslash, then the value. A backslash
+  anywhere else is as written, and words with no backslash before a brace read
+  as they did in 0.35.1. One reader reads every word a page shows, value or
+  none: a label and its help, a box's placeholder, a choice, a page's, a
+  section's and a tab's title, a counter, a ribbon, a badge, an alert, a button,
+  its menu and its question, a toast, an ending, a quiz's feedback, a review, a
+  payment, the page on paper, a list, its filters and its cards, a related list,
+  a map, the designer's previews. A page's translations find their words as
+  written.
+- **`literalWords(text)` writes any text so that every reader shows it exactly**
+  as it is, with no value and nothing for the page check to refuse: each brace
+  escaped, each run of backslashes before one doubled. An app that puts words it
+  did not write into a page calls it at one place. It is on `window.Fieldia` too.
+  **`literalPage(page)`** writes every word a person reads in a page so — the
+  words `translatePage` goes through, and the page's translations — and leaves
+  names, ids, choice values, conditions, addresses and data as they are.
+- Fieldia's sentences that name a page's records ("12 customers selected") fill
+  in their numbers and the page's words for its records in one pass: a brace in
+  those words is kept. 0.35.1 dropped any `{word}` from them.
+- A quiz question's `feedback` and a picture's `alt` in a pins widget's settings
+  are words `translatePage` and `pageWords` go through, translated with the rest.
+
+Behaviour you may notice in an app's own tests:
+
+- A backslash already right before a brace now escapes it: `C:\files\{name}`
+  shows "C:\files{name}". Write `C:\files\\{name}` for a backslash, then the
+  value. No example page or template has one.
+- A widget is given its field and its part (`context.field`, `context.node`)
+  with their words read: where a word escapes a brace, a copy with the brace in
+  its place; otherwise the very objects, as before. An app's own widget too.
+- A `say` step's and an `ask` step's words, a press's question (`confirm`) and
+  its Yes reach the host's `say` and `ask` read: an escaped brace a brace.
+- `WidgetDialogs.editValues` is given its `title` as a person reads it, and its
+  fields and layout as the page writes them.
+- `recordSentence` takes a sentence's own values as a fifth argument and fills
+  them in the same pass as the page's words for its records.
+- New in `@fieldia/core`: `literalWords`, `literalPage`, and the reader's parts
+  the packages draw with — `plainWords`, `plainPart`, `wordsRead`, `writtenPart`,
+  `READ_WORDS`.
+
+**Size:** `fieldia.js` 578.2 KB, 193.6 gzipped (0.35.1: 576.6, 192.9): the one
+reader, and every word read once where it is drawn, +1.6 KB, +0.62 gzipped. Of
+the parts, raw: answers 4.41 (4.35), head 42.42 (42.35), import 38.94 (38.89),
+pay 7.83 (7.80), print 16.52 (16.49), evidence 9.21 (9.18); the rest within
+0.05 KB.
+
 ## 0.35.1 — 2026-10-26
 
 **The owner's walk of 0.35.0.** A business owner walked fieldia.dev's 0.35
