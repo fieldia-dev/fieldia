@@ -724,7 +724,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     try {
       const { reason } = await run();
       if (reason === 'check' || reason === 'save') {
-        if (!form.getState().saveProblem) announce(checkText(form.getState()));
+        if (!form.getState().saveProblem) announce(checkText(form.getState()), true);
         focusFirstProblem();
       }
     } finally {
@@ -1991,7 +1991,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if (saving) {
         const saved = await form.save();
         if (!saved) {
-          if (!form.getState().saveProblem) announce(checkText(form.getState()));
+          if (!form.getState().saveProblem) announce(checkText(form.getState()), true);
           focusFirstProblem();
           return;
         }
@@ -2100,10 +2100,26 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   });
   /** Said at once to a screen reader: why a save or send did not go through. */
   const announcer = el('div', { class: 'fd-announce', role: 'alert', 'aria-live': 'assertive' });
-  function announce(text: string) {
+  /** Whether the alert says why a send was refused: its words go once nothing stops it. */
+  let refusal = false;
+  /** Counted each time the alert is emptied so: words still on their way into it then never come. */
+  let hushed = 0;
+  function announce(text: string, refused = false) {
     announcer.textContent = '';
-    setTimeout(() => (announcer.textContent = text), 0);
+    refusal = refused;
+    // Put in after a moment, so a screen reader hears them as new.
+    const at = hushed;
+    setTimeout(() => at === hushed && (announcer.textContent = text), 0);
   }
+  // Once nothing is wrong — no problem the source said, no words under a field: put right, the send gone through,
+  // another response begun — a refusal's words leave the alert. One still saying "Not sent. Check: Full name, Email"
+  // is read again to whoever comes to it later.
+  updaters.push((state) => {
+    if (!refusal || state.saveProblem || Object.keys(state.errors).length) return;
+    refusal = false;
+    hushed++;
+    announcer.textContent = '';
+  });
   // Each new reason a save was refused, from Save or from autosave, is shown where it belongs.
   let seenProblem: FormState['saveProblem'] = null;
   updaters.push((state) => {
@@ -2112,8 +2128,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     banner.hidden = seenProblem?.kind !== 'network';
     if (!seenProblem) return;
     if (seenProblem.kind === 'rule') void dialogConfirm(seenProblem.message, { alone: true });
-    else if (seenProblem.kind === 'fields') announce(checkText(state));
-    else if (seenProblem.kind === 'other') announce(seenProblem.message);
+    else if (seenProblem.kind === 'fields') announce(checkText(state), true);
+    else if (seenProblem.kind === 'other') announce(seenProblem.message, true);
   });
 
   // Save safety, over the record: someone else's save first (Reload, Keep mine), the changes Reload set aside, a record only to read.
@@ -2236,7 +2252,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (!saved) {
       flowKit?.refused();
       // Stopped by the page's own checks: say which fields; a refused save says so above.
-      if (!form.getState().saveProblem) announce(checkText(form.getState()));
+      if (!form.getState().saveProblem) announce(checkText(form.getState()), true);
       focusFirstProblem();
       return;
     }
@@ -2309,7 +2325,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         if (!locked && (state.dirty.length || Object.keys(state.unread).length || state.uploads.some(uploadGoing))) {
           const saved = await form.save();
           if (!saved) {
-            if (!form.getState().saveProblem) announce(checkText(form.getState()));
+            if (!form.getState().saveProblem) announce(checkText(form.getState()), true);
             focusFirstProblem();
             return false;
           }

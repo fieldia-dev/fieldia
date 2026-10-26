@@ -478,6 +478,38 @@ describe('a refused save', () => {
     expect(announced(host)).toBe('Not sent. Check: Full name, Email, Your role');
   });
 
+  it('lets a refusal’s words go from the alert once nothing is wrong: put right, sent, another response begun', async () => {
+    const { host, form } = mount('signup', { dataSource: createMemoryDataSource() });
+    button(host, 'Submit').click();
+    await form.settled();
+    await flush();
+    expect(announced(host)).toBe('Not sent. Check: Full name, Email, Your role');
+    // Put right one by one: said while something still stops the send, gone from the alert once nothing does.
+    type(input(host, 'f-name'), 'Sara Hassan');
+    type(input(host, 'f-email'), 'sara@example.com');
+    await flush();
+    expect(announced(host)).toBe('Not sent. Check: Full name, Email, Your role');
+    form.setValue('role', 'developer');
+    await flush();
+    expect(announced(host)).toBe('');
+    // Refused again, then sent: the alert says nothing once the send has gone through, nor after another is begun.
+    form.setValue('role', null);
+    button(host, 'Submit').click();
+    await form.settled();
+    await flush();
+    expect(announced(host)).toBe('Not sent. Check: Your role');
+    form.setValue('role', 'developer');
+    button(host, 'Submit').click();
+    await form.settled();
+    await flush();
+    expect(form.getState().status).toBe('saved');
+    expect(announced(host)).toBe('');
+    button(host, 'Submit another response').click();
+    await form.settled();
+    await flush();
+    expect(announced(host)).toBe('');
+  });
+
   it('shows the status as a toast or as a bar when asked', async () => {
     const toast = sheet({ saveStatus: 'toast' });
     await toast.form.settled();
