@@ -64,6 +64,17 @@ cpSync(join(WORKSPACE, 'demos/thumbs'), join(OUT, 'thumbs'), { recursive: true }
 // Files a demo is tried with (an import's workbook and CSV file), offered from its how-to.
 cpSync(join(WORKSPACE, 'demos/samples'), join(OUT, 'samples'), { recursive: true });
 
+/**
+ * The Angular demos on another install's Angular: `FIELDIA_ANGULAR=tools/angular-newest` builds angular/ and
+ * designer-angular/ on the newest major the bindings support (tools/angular-newest.mjs), against the packages as the
+ * workspace builds them — what an app on that Angular meets. Every @angular/* comes from there, or the build fails.
+ */
+const ANGULAR_FROM = process.env['FIELDIA_ANGULAR'] ? resolve(WORKSPACE, process.env['FIELDIA_ANGULAR']) : null;
+const angularFrom = (dir) => ({
+  name: 'angular-from',
+  setup: (builder) =>
+    builder.onResolve({ filter: /^@angular\// }, (args) => (args.pluginData?.angularFrom ? undefined : builder.resolve(args.path, { kind: args.kind, resolveDir: dir, pluginData: { angularFrom: true } }))),
+});
 const SCRIPT_BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle/fieldia.js');
 /** The demos that show any of the demos' pages by its name (`?page=`), whose pages carry early tags for it. */
 const BY_NAME = new Set(['plain', 'react', 'vue', 'angular', 'csp']);
@@ -163,7 +174,11 @@ for (const variant of variants) {
     // The decode part's readers of codes alone, as the one-tag script carries them (tools/zxing-readers.mjs): the
     // library's index would bring every reader it has, about three times the code, to a phone that presses Scan.
     // And the stylesheets minified as the packages ship them (tools/minified-styles.mjs): the gates test what npm serves.
-    plugins: [{ name: 'zxing-readers', setup: (builder) => builder.onResolve({ filter: /^@zxing\/library$/ }, () => ({ path: join(WORKSPACE, 'tools/zxing-readers.mjs') })) }, minifiedStyles(STYLED_PACKAGES)],
+    plugins: [
+      { name: 'zxing-readers', setup: (builder) => builder.onResolve({ filter: /^@zxing\/library$/ }, () => ({ path: join(WORKSPACE, 'tools/zxing-readers.mjs') })) },
+      minifiedStyles(STYLED_PACKAGES),
+      ...(ANGULAR_FROM && variant.endsWith('angular') ? [angularFrom(ANGULAR_FROM)] : []),
+    ],
     define: {
       'process.env.NODE_ENV': '"production"',
       // Vue's bundler build reads these compile-time flags.
@@ -172,6 +187,12 @@ for (const variant of variants) {
       __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
     },
   });
+  if (ANGULAR_FROM && variant.endsWith('angular')) {
+    const angular = Object.keys(metafile.inputs).filter((file) => file.includes('node_modules/@angular/'));
+    const stray = angular.find((file) => !resolve(WORKSPACE, file).startsWith(join(ANGULAR_FROM, 'node_modules/')));
+    if (!angular.length || stray) throw new Error(`demos/${variant}: Angular from ${relative(WORKSPACE, ANGULAR_FROM)} alone, and it bundled ${stray ?? 'none'}`);
+    console.log(`demo ${variant}: on Angular ${JSON.parse(readFileSync(join(ANGULAR_FROM, 'node_modules/@angular/core/package.json'), 'utf8')).version}, from ${relative(WORKSPACE, ANGULAR_FROM)}`);
+  }
   if (variant === 'plain') {
     // Monaco's workers, for the code page with ?workers=1: the editor's own and JSON's, each a module.
     const monaco = join(WORKSPACE, 'node_modules/monaco-editor/esm/vs');

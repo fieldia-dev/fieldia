@@ -1,5 +1,6 @@
-# Dependabot: a pull request a week for npm and one for the workflows' actions, each update grouped, so the gates run
-# once over them (CI's pull_request gates, as any change). It never merges: a person reads and merges, after CI.
+# Dependabot: a pull request a week for npm (the workspace's, and the newest Angular's in tools/angular-newest) and one
+# for the workflows' actions, each update grouped, so the gates run once over them (CI's pull_request gates, as any
+# change). It never merges: a person reads and merges, after CI.
 #
 # An update waits a week after its release before it is offered (cooldown): a malicious version is most often caught
 # and pulled within days. Security updates come at once, outside the schedule. The actions' updates move the commit
@@ -37,9 +38,26 @@ updates:
         patterns:
           - '*'
     ignore:
+      # The workspace builds the Angular bindings with the OLDEST Angular they support: an app's linker refuses a
+      # declaration from a compiler newer than itself (tools/angular-newest.mjs). A new major goes to
+      # tools/angular-newest, below; the oldest moves by hand, with the bindings' peer range.
+      - dependency-name: '@angular/*'
+        update-types: ['version-update:semver-major']
       # The Node the tools run on is .nvmrc's: @types/node's major moves with it, by hand (tools/workflows.test.mjs).
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+  # The newest Angular the bindings support, and the TypeScript it asks for: CI's angular-newest job runs them on it.
+  - package-ecosystem: npm
+    directory: /tools/angular-newest
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      angular-newest:
+        patterns:
+          - '*'
   - package-ecosystem: github-actions
     directory: /
     schedule:

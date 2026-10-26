@@ -275,6 +275,68 @@ jobs:
           path: test-results/
           retention-days: 14
 
+  # @fieldia/angular and @fieldia/designer/angular support two Angular majors. The workspace builds them with the oldest,
+  # as an Angular library is built (an app's linker refuses a declaration from a compiler newer than itself), and every
+  # job above runs it; this one runs the newest, from tools/angular-newest's own install (tools/angular-newest.mjs): the
+  # peer range names both, the sources build with its ngc, the packages as built link with its linker, an app on it
+  # compiles against them, the bindings' specs run on it — and the browser gates of the Angular demos, built on it.
+  angular-newest:
+    name: The Angular bindings on Angular's newest major
+    needs: scope
+    if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
+    runs-on: ubuntu-latest
+    # 226 browser specs, a quarter of a browser shard's, and the build, the installs and the checks before them.
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            tools/angular-newest/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix tools/angular-newest
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # Chromium, with the same guard against a stalled apt mirror as the browser gates'.
+      - name: Install Chromium for Playwright
+        run: |
+          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "3";\n' | sudo tee /etc/apt/apt.conf.d/99fieldia-timeouts > /dev/null
+          for try in 1 2 3; do
+            if [ "$try" -gt 1 ]; then
+              sudo pkill -9 -x apt-get || true
+              sudo pkill -9 -x dpkg || true
+              sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+              sudo dpkg --configure -a || true
+            fi
+            timeout 420 npx playwright install --with-deps chromium && exit 0
+            echo "Install try $try stalled or failed."
+          done
+          exit 1
+      - run: npx nx run-many -t build -p angular viewer designer
+        env:
+          NX_DAEMON: 'false'
+      - run: node tools/angular-newest.mjs
+      # The demos as the browser gates' jobs build them, the Angular ones on the newest Angular (it fails if any of
+      # their @angular/* came from elsewhere), and their specs.
+      - run: node tools/build-demos.mjs
+        env:
+          FIELDIA_ANGULAR: tools/angular-newest
+      - run: node tools/build-site.mjs
+      - run: npx playwright test --project=chromium --grep "(^|\s)angular(:|\s)"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: screens-angular-newest
+          path: test-results/
+          retention-days: 14
+
   site:
     name: fieldia.dev alone
     needs: scope
