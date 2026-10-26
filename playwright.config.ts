@@ -49,13 +49,23 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env['CI'],
   retries: 0,
-  reporter: process.env['CI'] ? [['list'], ['github']] : 'list',
+  // In CI a JSON report too, where each job's PLAYWRIGHT_JSON_OUTPUT_NAME says: what the flake log reads (tools/flake-log.mjs).
+  reporter: process.env['CI'] ? [['list'], ['github'], ['json']] : 'list',
   use: {
     baseURL: `http://127.0.0.1:${demoPort}`,
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: PERF },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: [...PERF, 'screens.spec.ts'] },
+    // The key screens against their stored images (e2e/screens.spec.ts), in the Playwright container alone — the same
+    // browser build and fonts wherever it runs (docs/maintainers/screens.md; CI's own `screens` job).
+    {
+      name: 'screens',
+      use: { ...devices['Desktop Chrome'], locale: 'en-US', timezoneId: 'Africa/Cairo' },
+      testMatch: ['screens.spec.ts'],
+      snapshotPathTemplate: '{testDir}/screens-baseline/{arg}{ext}',
+      expect: { toHaveScreenshot: { maxDiffPixelRatio: 0.002, animations: 'disabled', caret: 'hide', scale: 'css' } },
+    },
     { name: 'perf', use: { ...devices['Desktop Chrome'] }, testMatch: PERF },
     {
       name: 'perf-phone',
@@ -71,6 +81,8 @@ export default defineConfig({
       ...smoke,
     },
     { name: 'webkit', use: { ...devices['Desktop Safari'] }, ...smoke },
+    // Every demo's how-to replayed on a phone (e2e/how-to.spec.ts): WebKit, an iPhone's 390 px, a finger. Chromium runs it at a desktop.
+    { name: 'how-to-phone', use: { ...devices['iPhone 14'] }, testMatch: ['how-to.spec.ts'] },
   ],
   webServer: [
     {
@@ -78,11 +90,15 @@ export default defineConfig({
       url: `http://127.0.0.1:${demoPort}/plain/`,
       reuseExistingServer: !process.env['CI'],
     },
-    {
-      // fieldia.dev, built by tools/build-site.mjs.
-      command: `node tools/serve.mjs dist/site ${sitePort}`,
-      url: `http://127.0.0.1:${sitePort}/`,
-      reuseExistingServer: !process.env['CI'],
-    },
+    // fieldia.dev, built by tools/build-site.mjs — unless a run has no use for it (FIELDIA_SITE=off: the key screens).
+    ...(process.env['FIELDIA_SITE'] === 'off'
+      ? []
+      : [
+          {
+            command: `node tools/serve.mjs dist/site ${sitePort}`,
+            url: `http://127.0.0.1:${sitePort}/`,
+            reuseExistingServer: !process.env['CI'],
+          },
+        ]),
   ],
 });
