@@ -36,6 +36,10 @@ updates:
       tools:
         patterns:
           - '*'
+    ignore:
+      # The Node the tools run on is .nvmrc's: @types/node's major moves with it, by hand (tools/workflows.test.mjs).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:

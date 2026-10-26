@@ -174,6 +174,20 @@ test('Dependabot keeps npm and the actions up to date, weekly, grouped', () => {
   }
 });
 
+/** The workspace's npm block in .github/dependabot.yml: what it leaves to a person. */
+const workspaceIgnores = () => {
+  const text = readFileSync(join(WORKSPACE, '.github/dependabot.yml'), 'utf8');
+  const npm = text.split(/^ {2}- package-ecosystem:\s*/m).find((block) => /^npm\n\s+directory: \/\n/.test(block)) ?? '';
+  return [...npm.matchAll(/- dependency-name: '([^']+)'\n\s+update-types: \['version-update:semver-major'\]/g)].map(([, name]) => name);
+};
+
+test("@types/node is the Node the tools run on: .nvmrc's major", () => {
+  const node = readFileSync(join(WORKSPACE, '.nvmrc'), 'utf8').trim();
+  const types = JSON.parse(readFileSync(join(WORKSPACE, 'package.json'), 'utf8')).devDependencies['@types/node'];
+  assert.equal(/^[~^]?(\d+)\./.exec(types)?.[1], /^v?(\d+)/.exec(node)?.[1], `@types/node ${types} types another Node than .nvmrc's ${node}, which CI and the tools run on`);
+  assert.ok(workspaceIgnores().includes('@types/node'), "Dependabot would move @types/node past .nvmrc's Node");
+});
+
 test('SECURITY.md says how to report privately, the disclosure window and the versions supported', () => {
   const file = join(WORKSPACE, 'SECURITY.md');
   assert.ok(existsSync(file), 'SECURITY.md is missing');
