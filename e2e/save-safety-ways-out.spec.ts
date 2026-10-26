@@ -1,5 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+import { holdSaves } from './hold-support';
 import { node, open } from './support';
 
 /**
@@ -29,28 +30,6 @@ async function openDemo(page: Page, path = DEMO) {
   await page.goto(path);
   await expect(yours(page).locator('.fd-title textarea')).toHaveValue(/Villa/);
   return problems;
-}
-
-/**
- * The source's saves held until the test lets them go, so a change can be made while one is on its way: resolves
- * once a save is asked for. `release()` lets every held one answer.
- */
-async function holdSaves(page: Page, method: 'save' | 'submit' = 'save') {
-  await page.evaluate((name) => {
-    const demo = (window as any).fieldiaDemo;
-    const source = demo.dataSource;
-    const real = source[name].bind(source);
-    demo.held = [];
-    demo.release = () => demo.held.splice(0).forEach((go: () => void) => go());
-    source[name] = async (request: unknown) => {
-      await new Promise<void>((go) => demo.held.push(go));
-      return real(request);
-    };
-  }, method);
-  return {
-    asked: () => expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.held.length)).toBeGreaterThan(0),
-    release: () => page.evaluate(() => (window as any).fieldiaDemo.release()),
-  };
 }
 
 /** A button reached by the keyboard and pressed with Enter. */
