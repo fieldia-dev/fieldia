@@ -33,7 +33,8 @@ describe('a list page, in Arabic', () => {
     expect(designer.getPage().language).toBe('ar');
     designer.select(null);
     const search = host.querySelector('.fd-canvas-search') as HTMLElement;
-    expect(search.getAttribute('aria-label')).toBe('البحث وعوامل التصفية');
+    // Named in the designer's words, holding the viewer's it shows (WCAG 2.5.3).
+    expect(search.getAttribute('aria-label')).toBe('البحث وعوامل التصفية، بحث…');
     expect(host.querySelector('.fd-search-placeholder')?.textContent).toBe('بحث…');
     expect(host.querySelector('.fd-list-count')?.textContent).toBe('تم تحديد 2');
     expect(host.querySelector('.fd-pager-text')?.textContent).toBe('1–40 من 128');
@@ -47,7 +48,7 @@ describe('a list page, in Arabic', () => {
     designer.select(null);
     expect(host.querySelector('.fd-search-placeholder')?.textContent).toBe('Search…');
     expect(host.querySelector('.fd-list-count')?.textContent).toBe('2 selected');
-    expect(host.querySelector('.fd-canvas-search')?.getAttribute('aria-label')).toBe('البحث وعوامل التصفية');
+    expect(host.querySelector('.fd-canvas-search')?.getAttribute('aria-label')).toBe('البحث وعوامل التصفية، Search…');
   });
 
   it('puts the list’s panel in Arabic, its filters and their tests too', () => {

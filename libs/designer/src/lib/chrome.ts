@@ -1,4 +1,4 @@
-import type { Field, FieldNode } from '@fieldia/core';
+import { nameShowing, type Field, type FieldNode } from '@fieldia/core';
 import type { Designer, DesignerState } from './designer';
 import { openFind, type FindItem } from './find-anything';
 import { kindOfField } from './kinds';
@@ -118,7 +118,8 @@ export function designerBar(
   };
   const mac = /Mac|iPhone|iPad/.test(doc.defaultView?.navigator.platform ?? '');
   const keys = mac ? '⌘K' : 'Ctrl K';
-  const find = el('button', { type: 'button', class: 'fd-button fd-find-button', 'aria-label': w.findAnything, title: w.findTitle(keys) }, designerIcon(doc, 'search'), el('kbd', { class: 'fd-find-keys', 'aria-hidden': 'true' }, keys));
+  // Named by what it does, holding the keys it shows: "Find anything, Ctrl K" (WCAG 2.5.3).
+  const find = el('button', { type: 'button', class: 'fd-button fd-find-button', 'aria-label': nameShowing(w.findAnything, keys, designer.locale ?? 'en'), title: w.findTitle(keys) }, designerIcon(doc, 'search'), el('kbd', { class: 'fd-find-keys', 'aria-hidden': 'true' }, keys));
   find.addEventListener('click', () => openFind(el, root, findItems(), designer.words));
   // Where the bar breaks when it has less room than its parts: the ways to look at the page go under the rest.
   const lineBreak = el('span', { class: 'fd-bar-break', 'aria-hidden': 'true' });

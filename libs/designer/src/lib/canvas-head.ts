@@ -124,8 +124,9 @@ export function canvasHead(options: { el: ElementFactory; doc: Document; designe
               { class: 'fd-tablist' },
               ...tabs.children.map((tab, i) => {
                 const face = tab.iconOnly ? [icon(tab.icon)] : [icon(tab.icon), el('bdi', {}, tab.label)];
-                const pill = tab.count ? [el('span', { class: 'fd-tab-count', 'aria-hidden': 'true' }, '0')] : [];
-                return el('button', { type: 'button', class: `fd-tab${tab.iconOnly ? ' fd-tab-icon-only' : ''}`, 'data-pick': tab.id, 'aria-label': tab.label, 'aria-selected': String(i === 0) }, ...face, ...pill);
+                // Its count's pill apart from its words, and in its name, as the viewer's tab has them: "Links, 0".
+                const pill = tab.count ? [' ', el('span', { class: 'fd-tab-count', 'aria-hidden': 'true' }, '0')] : [];
+                return el('button', { type: 'button', class: `fd-tab${tab.iconOnly ? ' fd-tab-icon-only' : ''}`, 'data-pick': tab.id, 'aria-label': tab.count ? `${tab.label}, 0` : tab.label, 'aria-selected': String(i === 0) }, ...face, ...pill);
               })
             )
           )

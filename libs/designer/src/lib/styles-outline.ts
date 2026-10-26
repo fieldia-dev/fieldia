@@ -28,6 +28,8 @@ export const DESIGNER_OUTLINE_CSS = /* css */ `
 .fd-outline-row .fd-outline-required .fd-dicon { width: 11px; height: 11px; }
 .fd-outline-required, .fd-outline-badge { flex: none; display: inline-flex; color: var(--fd-muted); }
 .fd-outline-badge { font-size: 11px; font-variant-numeric: tabular-nums; }
+/* A section's columns at a glance, drawn: the row's name says them in words (WCAG 2.5.3 holds a name to its words). */
+.fd-outline-badge::before { content: attr(data-badge); }
 .fd-outline-help { margin: 6px 4px 2px; color: var(--fd-muted); font-size: 12px; line-height: 1.5; }
 .fd-outline-help kbd { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; padding: 0 4px; border: 1px solid var(--fd-border); border-radius: 4px; background: var(--fd-page); color: var(--fd-text); }
 .fd-outline-said { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

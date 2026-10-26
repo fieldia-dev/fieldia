@@ -136,7 +136,7 @@ export function severalProperties(el: ElementFactory, designer: Designer, ids: r
           cols > 1
             ? segmented(el, w.width, Array.from({ length: cols }, (_, i) => ({ value: i + 1, words: i + 1 === cols ? w.all(cols) : String(i + 1), label: i + 1 === cols ? w.allColumns(cols) : w.columnCount(i + 1) })), (n) => {
                 if (n !== null) designer.setEach([...ids], { span: n });
-              })
+              }, { locale: designer.locale ?? 'en' })
             : null;
         widthBox.replaceChildren(...(width ? [width.element] : []));
       }

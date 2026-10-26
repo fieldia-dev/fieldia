@@ -1,3 +1,4 @@
+import { nameShowing } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { PanelTab } from './panel-tabs';
 
@@ -58,13 +59,14 @@ export function segmented<T extends string | number>(
   name: string,
   choices: Choice<T>[],
   choose: (value: T | null) => void,
-  options: { toggle?: boolean; className?: string } = {}
+  options: { toggle?: boolean; className?: string; locale?: string } = {}
 ): Segmented<T> {
   const element = el('div', { class: `fd-seg fd-insp-seg ${options.className ?? ''}`.trim(), role: 'group', 'aria-label': name });
   const buttons = choices.map((choice) => {
     const button = el(
       'button',
-      { type: 'button', class: 'fd-seg-button', 'data-choice': String(choice.value), 'aria-pressed': 'false', title: choice.title ?? choice.label, 'aria-label': choice.label },
+      // Its name in full, holding the words it shows wherever its language words it otherwise (WCAG 2.5.3): "عمود واحد، 1".
+      { type: 'button', class: 'fd-seg-button', 'data-choice': String(choice.value), 'aria-pressed': 'false', title: choice.title ?? choice.label, 'aria-label': choice.label ? nameShowing(choice.label, choice.words, options.locale ?? 'en') : undefined },
       ...(choice.picture ? [choice.picture] : []),
       el('span', { class: 'fd-seg-words' }, choice.words)
     );

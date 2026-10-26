@@ -55,10 +55,13 @@ describe('a blank survey', () => {
     expect(heading?.textContent).toBe('Start from a template');
     expect(cards(root).map((c) => c.querySelector('.fd-start-card-title')?.textContent)).toEqual(['Feedback', 'Event registration', 'Job application']);
     const feedback = card(root, 'Feedback');
-    expect(document.getElementById(feedback.getAttribute('aria-labelledby') ?? '')?.textContent).toBe('Feedback');
+    // Its button its title alone, named by what it shows (WCAG 2.5.3); what it is for and its first questions beside it,
+    // on the card the button's box covers.
+    expect(feedback.textContent).toBe('Feedback');
+    expect(feedback.hasAttribute('aria-labelledby')).toBe(false);
     expect(document.getElementById(feedback.getAttribute('aria-describedby') ?? '')?.textContent).toBe('How it went, and what to do better, in two minutes.');
     // Its first questions, each with its kind's picture, and how many more.
-    const preview = feedback.querySelector('.fd-start-preview') as HTMLElement;
+    const preview = feedback.closest('.fd-start-item')?.querySelector('.fd-start-preview') as HTMLElement;
     expect(preview.getAttribute('aria-hidden')).toBe('true');
     expect([...preview.querySelectorAll('.fd-start-preview-row')].map((r) => r.textContent)).toEqual(['How was it overall?', 'What did you like most?', 'What could we do better?']);
     expect(preview.querySelectorAll('.fd-start-preview-row svg')).toHaveLength(3);

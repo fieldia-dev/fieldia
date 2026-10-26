@@ -54,7 +54,7 @@ export function columnsSetting(el: ElementFactory, designer: Designer, id: strin
       ...(screen === 'wide' ? [] : [{ value: AUTO, words: w.auto, title: w.autoTitle }]),
       ...COUNTS.map((n) => (n === TWELVE ? { value: n, words: w.twelfths, title: w.twelfthsTitle } : { value: n, words: String(n), label: w.columnCount(n) })),
     ];
-    return segmented(el, w.columnsOn[screen], choices, (value) => value !== null && choose(screen, value));
+    return segmented(el, w.columnsOn[screen], choices, (value) => value !== null && choose(screen, value), { locale: designer.locale ?? 'en' });
   });
   const screens = el(
     'div',
@@ -144,7 +144,7 @@ export function widthSetting(el: ElementFactory, designer: Designer, id: string)
       const cols = across(page, at.parent);
       if (String(cols) !== drawn) {
         drawn = String(cols);
-        seg = cols > 1 ? segmented(el, w.width, Array.from({ length: cols }, (_, i) => ({ value: i + 1, words: i + 1 === cols ? w.all(cols) : String(i + 1), label: i + 1 === cols ? w.allColumns(cols) : w.columnCount(i + 1) })), (n) => n !== null && designer.setColspan(id, n)) : null;
+        seg = cols > 1 ? segmented(el, w.width, Array.from({ length: cols }, (_, i) => ({ value: i + 1, words: i + 1 === cols ? w.all(cols) : String(i + 1), label: i + 1 === cols ? w.allColumns(cols) : w.columnCount(i + 1) })), (n) => n !== null && designer.setColspan(id, n), { locale: designer.locale ?? 'en' }) : null;
         box.replaceChildren(...(seg ? [seg.element] : []));
       }
       const span = Math.min((at.node as { colspan?: number }).colspan ?? 1, cols);
@@ -163,7 +163,7 @@ export function widthSetting(el: ElementFactory, designer: Designer, id: string)
       drawn = `t${odd}`;
       const choices: Choice<number>[] = rowParts(words).map((p) => ({ value: p.span, words: p.words, label: p.label }));
       if (odd) choices.push({ value: odd, words: w.percent(percent(odd)), label: w.percentOfRow(percent(odd)) });
-      seg = segmented(el, w.width, choices, (n) => n !== null && designer.setColspan(id, n));
+      seg = segmented(el, w.width, choices, (n) => n !== null && designer.setColspan(id, n), { locale: designer.locale ?? 'en' });
       box.replaceChildren(seg.element);
     }
     const fits = widthsFor(page, group, part);
