@@ -30,6 +30,34 @@ test.describe('plain · a repeat field', () => {
     expect(await sessionsOf(page)).toMatch(/INTERVAL=2/);
   });
 
+  /**
+   * Its boxes cleared as a person clears one, key by key, and a new number typed: an emptied Every was put back to 1 at
+   * once, so the 1 typed after read "11" ("Every 11 weeks"); an emptied count took the count away, Ends flipped to
+   * Never, the box went from under the caret and the 6 typed after was lost. (`fill` never empties a box: it misses it.)
+   */
+  test('a box emptied key by key stays empty while typed in, and takes the number typed after', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=treatment-course&record=1&skin=outlined');
+    const field = node(page, 'f-sessions');
+    const words = field.locator('.fd-repeat-words');
+    await expect(words).toHaveText('Every 2 weeks on Tuesday, 3 times');
+    const every = field.getByRole('textbox', { name: 'Every' });
+    const times = field.getByRole('textbox', { name: 'times', exact: true });
+    for (const [box, typed] of [[every, '1'], [times, '6']] as const) {
+      await box.click();
+      await page.keyboard.press('End');
+      for (const _ of await box.inputValue()) await page.keyboard.press('Backspace');
+      await expect(box).toHaveValue('');
+      await expect(box).toBeFocused();
+      await page.keyboard.type(typed);
+      await expect(box).toHaveValue(typed);
+      await page.keyboard.press('Tab');
+    }
+    await expect(field.getByRole('combobox', { name: 'Ends' })).toHaveValue('count');
+    await expect(words).toHaveText('Every week on Tuesday, 6 times');
+    expect(await sessionsOf(page)).toBe('FREQ=WEEKLY;BYDAY=TU;COUNT=6');
+    expect(problems).toEqual([]);
+  });
+
   test('a month on its first weekday, until a day', async ({ page }) => {
     await open(page, 'plain', 'page=treatment-course&record=2&skin=outlined');
     const field = node(page, 'f-sessions');

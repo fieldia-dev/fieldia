@@ -80,9 +80,18 @@ export const repeatWidget = (widgetFor: (context: WidgetContext) => Widget): Wid
     for (const [path, item] of Object.entries(kept ?? {})) if (path.startsWith(`${name}.`)) found[path.slice(name.length + 1)] = item;
     return found;
   };
+  /**
+   * The parts whose box was emptied while it is typed in: each says nothing to the rule until its box is left — the
+   * rule keeps what it held, and the box stays empty under the keys. An emptied Every put back to 1 at once read "11"
+   * once 1 was typed; an emptied count took the count away, Ends flipped to Never, and its box went from under the
+   * caret with the focus. Left empty, a box means what it always did: every 1, no count, no last day.
+   */
+  const emptied = new Set<string>();
+  const typedIn = (part: string) => (part === 'interval' ? every : part === 'count' ? count : until).element.contains(document.activeElement);
+  const shownEmpty = (part: string) => emptied.has(part) && typedIn(part);
   const partsNow = (): Record<string, Value> => {
     const rule = held().rule;
-    return { interval: rule?.interval ?? 1, count: rule?.count ?? null, until: rule?.until ?? null };
+    return { interval: shownEmpty('interval') ? null : (rule?.interval ?? 1), count: shownEmpty('count') ? null : (rule?.count ?? null), until: shownEmpty('until') ? null : (rule?.until ?? null) };
   };
   /** A number refused, by its part: kept unread with why, whatever its box says of it after (it reads it as a number). */
   const refused = new Map<string, { text: string; message: string }>();
@@ -102,6 +111,8 @@ export const repeatWidget = (widgetFor: (context: WidgetContext) => Widget): Wid
       }
       refused.delete(part);
       form.setUnread(pathOf(part), null);
+      if (value === null && typedIn(part)) return void emptied.add(part);
+      emptied.delete(part);
       change((rule) => {
         if (part === 'interval') rule.interval = (value as number | null) ?? 1;
         if (part === 'count') {
