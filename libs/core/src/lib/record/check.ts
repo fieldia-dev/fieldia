@@ -1,5 +1,6 @@
 import type { Field, LineField, PropertyDefinition } from '../format/field';
 import { fieldPattern, PATTERN_MOST } from '../format/pattern';
+import { fillNamed } from '../format/words';
 import { checkDay } from './limits';
 import { fill, fillMessage, MESSAGES, type MessageKey, type Messages } from './messages';
 import { charCount, foldDigits, MOST_DIGITS, placesOf, stripMarks } from './input-rules';
@@ -54,7 +55,7 @@ export function checkValue(
       // person; an answer longer than a pattern is tried on is not of it.
       const pattern = field.type === 'char' && field.pattern !== undefined ? fieldPattern(field.pattern) : null;
       if (field.type === 'char' && pattern instanceof RegExp && (value.length > PATTERN_MOST || !pattern.test(foldDigits(stripMarks(value)).trim()))) {
-        return field.patternHint ? fill(field.patternHint, { label }) : say('pattern');
+        return field.patternHint ? fillNamed(field.patternHint, { label }) : say('pattern');
       }
       return undefined;
     }

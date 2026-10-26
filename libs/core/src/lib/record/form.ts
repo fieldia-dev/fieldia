@@ -5,7 +5,7 @@ import type { OptionRules, TakenOption } from './option-rules';
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, PressUndo, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { PageEnding } from '../format/endings';
-import { fillValues } from '../format/words';
+import { fillValues, plainWords, READ_WORDS } from '../format/words';
 import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
 import { zonedPage } from '../format/zoned';
@@ -1256,8 +1256,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const storeKey = () => `fieldia:draft:${ownerOf(options.user)}:${page.id}:${state.recordId ?? 'new'}`;
   /** Today, on the clock of the page's time zone (the browser's own when it names none). */
   const today = () => dayIn(options.now?.() ?? new Date(), page.timeZone);
-  /** Whether a field's own words — a label, a choice's — show a value: found once, so a page with none checks as before. */
-  const worded = /\{[A-Za-z_]\w*(\|[^{}]*)?\}/.test(JSON.stringify(page.fields));
+  /** Whether a field's own words — a label, a choice's — show a value or a brace escaped: found once, so a page with none checks as before. */
+  const worded = READ_WORDS.test(JSON.stringify(page.fields));
   const clock = () => (options.now?.() ?? new Date()).getTime();
   /** What a page's bot check saw — its hidden box filled, the captcha's token — and when the page was shown or started again. */
   let bot = { honeypot: false, captcha: null as string | null, since: clock() };
@@ -4328,10 +4328,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Undo after it, in place of asking first: a built-in with `undo` asks nothing unless it says so.
     const offers = 'undo' in source ? source.undo : undefined;
     const asked = offers !== undefined ? undefined : builtin === 'archive' ? named(messages.archiveConfirmNoun, messages.archiveConfirm) : builtin === 'delete' ? named(messages.deleteConfirmNoun, messages.deleteConfirm) : undefined;
-    const confirm = 'confirm' in source && source.confirm !== undefined ? source.confirm : asked;
+    // The page's own question and the press's words, as a person reads them; Fieldia's own as they are.
+    const confirm = 'confirm' in source && source.confirm !== undefined ? plainWords(source.confirm) : asked;
     if (offers !== undefined) scope.taken = takenNow(state.values);
     // Its question's Yes, and its ask steps', say what it does: its own words, else Archive or Delete.
-    scope.yes ??= source.label || (builtin === 'archive' ? messages.archiveYes : builtin === 'delete' ? messages.deleteYes : undefined);
+    scope.yes ??= plainWords(source.label) || (builtin === 'archive' ? messages.archiveYes : builtin === 'delete' ? messages.deleteYes : undefined);
     // On the record it was pressed on: another shown while its question is asked, it does nothing to that one.
     scope.generation ??= generation;
     // Pressed by the person: what is typed is read before a step reads the form or hands its values on.

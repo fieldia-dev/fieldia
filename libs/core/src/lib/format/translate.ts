@@ -1,4 +1,5 @@
 import type { Page } from './page';
+import { literalWords, plainWords } from './words';
 
 /**
  * Keys whose text a person reads: titles, labels, help, prompts, messages, a printout's header and footer, why a
@@ -9,12 +10,8 @@ import type { Page } from './page';
  */
 const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'header', 'footer', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip', 'unit', 'readonlyReason', 'patternHint', 'again']);
 
-/** In a widget's settings, words besides those ending in `Label`: a links box's help and its empty box's link. */
-const WIDGET_TEXT_KEYS = new Set(['help', 'emptyLink']);
-
-/** A formatted text's kinds of record to link (`references`): each one's name is words; its key, model and icon stay. */
-const wordsOfReference = (text: (words: string) => string) => (reference: unknown) =>
-  reference !== null && typeof reference === 'object' && typeof (reference as { label?: unknown }).label === 'string' ? { ...reference, label: text((reference as { label: string }).label) } : reference;
+/** In a widget's settings, words besides those ending in `Label`: a links box's help and its empty box's link, a picture's words for who cannot see it. */
+const WIDGET_TEXT_KEYS = new Set(['help', 'emptyLink', 'alt']);
 
 /**
  * Parts that hold names or data, never words to translate: which line fields
@@ -28,6 +25,13 @@ const wordsOfReference = (text: (words: string) => string) => (reference: unknow
  * `subtitle` name fields, as its map card's do.
  */
 const NOT_TEXT = new Set(['lineKinds', 'filter', 'default', 'data', 'translations', 'optionalColumns', 'values', 'into', 'params', 'map', 'calendar', 'gantt']);
+
+/** Parts whose every value is words, by a name of their own: plural forms, a list's filters' names, what records are called. */
+const WORDS_BY_NAME = new Set(['words', 'filterLabels', 'records']);
+
+/** A formatted text's kinds of record to link (`references`): each one's name is words; its key, model and icon stay. */
+const wordsOfReference = (text: (words: string) => string) => (reference: unknown) =>
+  reference !== null && typeof reference === 'object' && typeof (reference as { label?: unknown }).label === 'string' ? { ...reference, label: text((reference as { label: string }).label) } : reference;
 
 /** A part of a card's line: the words after its value are words ("m²", "beds", each plural form); its field stays. */
 const wordsOfPart = (text: (words: string) => string) => (part: unknown) => {
@@ -56,26 +60,31 @@ const wordsOfLayer = (text: (words: string) => string) => (layer: unknown) => {
 /**
  * Every word a person reads in `value` passed through `text`, the rest copied
  * as it is. `enter` sees each object before its parts. In a widget's settings
- * (`widget`) only the keys ending in `Label`, and a few that are always words (`WIDGET_TEXT_KEYS`), are words.
+ * (`widget`) only the keys ending in `Label`, and a few that are always words (`WIDGET_TEXT_KEYS`), are words. The
+ * one list of a page's words: what is translated, what a translator works through, what `literalPage` writes to show
+ * as it is and `plainPart` reads. A part `kept` says to keep is copied as it is.
  */
-function walk(value: unknown, key: string | null, text: (words: string) => string, enter?: (node: Record<string, unknown>) => void, widget = false): unknown {
+function walk(value: unknown, key: string | null, text: (words: string) => string, enter?: (node: Record<string, unknown>) => void, widget = false, kept?: (part: object) => boolean): unknown {
   if (typeof value === 'string') return key !== null && (key.endsWith('Label') || (widget ? WIDGET_TEXT_KEYS : TEXT_KEYS).has(key)) ? text(value) : value;
-  if (Array.isArray(value)) return value.map((item) => walk(item, null, text, enter, widget));
-  if (value === null || typeof value !== 'object') return value;
+  if (value === null || typeof value !== 'object' || kept?.(value)) return value;
+  if (Array.isArray(value)) return value.map((item) => walk(item, null, text, enter, widget, kept));
   enter?.(value as Record<string, unknown>);
   const out: Record<string, unknown> = {};
   for (const [name, inner] of Object.entries(value)) {
+    const object = inner !== null && typeof inner === 'object' && !Array.isArray(inner);
+    if (inner !== null && typeof inner === 'object' && kept?.(inner)) out[name] = inner;
     // A field node's `options` are its widget's settings, not a list of choices.
-    if (name === 'layers' && Array.isArray(inner)) out[name] = inner.map(wordsOfLayer(text));
+    else if (name === 'layers' && Array.isArray(inner)) out[name] = inner.map(wordsOfLayer(text));
     else if (widget && name === 'references' && Array.isArray(inner)) out[name] = inner.map(wordsOfReference(text));
     // A list's map names fields, but for the words after its card's values.
-    else if (name === 'map' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = wordsOfCard(text)(inner);
+    else if (name === 'map' && object) out[name] = wordsOfCard(text)(inner);
     // A list's card names fields too, but for the words after its lines' values.
-    else if (name === 'card' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = (wordsOfCard(text)({ card: inner }) as { card: unknown }).card;
+    else if (name === 'card' && object) out[name] = (wordsOfCard(text)({ card: inner }) as { card: unknown }).card;
     // A head's link: the words after its number, each plural form ("Comment", "Comments"); a list's filters' own names, by
-    // field; what a page's records are called ("customer", "customers", "a customer").
-    else if ((name === 'words' || name === 'filterLabels' || name === 'records') && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = Object.fromEntries(Object.entries(inner).map(([form, words]) => [form, typeof words === 'string' ? text(words) : words]));
-    else out[name] = NOT_TEXT.has(name) ? inner : walk(inner, name, text, enter, widget || (name === 'options' && !Array.isArray(inner)));
+    // field; what a page's records are called ("customer", "customers", "a customer"); a quiz question's feedback, when its
+    // answer is right and when it is wrong.
+    else if ((WORDS_BY_NAME.has(name) || (name === 'feedback' && key === 'quiz')) && object) out[name] = Object.fromEntries(Object.entries(inner).map(([form, words]) => [form, typeof words === 'string' ? text(words) : words]));
+    else out[name] = NOT_TEXT.has(name) ? inner : walk(inner, name, text, enter, widget || (name === 'options' && !Array.isArray(inner)), kept);
   }
   return out;
 }
@@ -88,6 +97,67 @@ function walk(value: unknown, key: string | null, text: (words: string) => strin
  */
 export function translatePage(page: Page, translate: (text: string) => string): Page {
   return walk(page, null, translate) as Page;
+}
+
+/**
+ * The page with every word a person reads written to show exactly as it is, with no value and nothing for the page check
+ * to refuse (`literalWords`) — for a page an app fills with words it did not write. Its translations are written so too,
+ * so each still finds its words. Names, ids, choice values, conditions, addresses and data stay as they are.
+ */
+export function literalPage(page: Page): Page {
+  const literal = walk(page, null, literalWords) as Page;
+  if (!page.translations) return literal;
+  const translations = Object.fromEntries(Object.entries(page.translations).map(([locale, words]) => [locale, Object.fromEntries(Object.entries(words).map(([from, to]) => [literalWords(from), literalWords(to)]))]));
+  return { ...literal, translations };
+}
+
+/** Each part `plainPart` made, and every part inside it: its words read already, never read again. */
+const READ = new WeakSet<object>();
+
+/** Every object and array in a value `plainPart` made: read already. */
+function readAlready(value: unknown) {
+  if (value === null || typeof value !== 'object' || READ.has(value)) return;
+  READ.add(value);
+  for (const inner of Object.values(value)) readAlready(inner);
+}
+
+/**
+ * A part of a page — a field, a layout node, the page — with every word a person reads in it as it shows where it shows
+ * no value (`plainWords`: `\{list}` reads "{list}"): for what draws a part's words as they are. The part itself where
+ * none of its words escapes a brace. Read once: a part it gave, or one inside it, is given back as it is.
+ */
+export function plainPart<T>(part: T): T {
+  if (part === null || typeof part !== 'object' || READ.has(part)) return part;
+  let changed = false;
+  const plain = walk(
+    part,
+    null,
+    (words) => {
+      const shown = plainWords(words);
+      changed ||= shown !== words;
+      return shown;
+    },
+    undefined,
+    false,
+    (inner) => READ.has(inner)
+  );
+  if (!changed) return part;
+  readAlready(plain);
+  return plain as T;
+}
+
+/**
+ * A part as a page writes it, for what reads its words again — a dialog's own page of fields: one `plainPart` made has
+ * its words written back with `literalWords`, so they show as they did; any other part as it is.
+ */
+export function writtenPart<T>(part: T): T {
+  return part !== null && typeof part === 'object' && READ.has(part) ? (walk(part, null, literalWords) as T) : part;
+}
+
+/** A part whose words were read already — a choice's options with their answers filled in: `plainPart` gives it as it is. */
+export function wordsRead<T>(part: T): T {
+  readAlready(part);
+  return part;
 }
 
 /**
