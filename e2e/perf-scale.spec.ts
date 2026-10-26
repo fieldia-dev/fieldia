@@ -38,8 +38,11 @@ const BUDGET: Record<string, Record<'desktop' | 'phone', Held>> = {
   'a key in a field a rule reads, 500 fields': { desktop: { layouts: 2, layoutObjects: 5200, mutations: 0, scripts: 0 }, phone: { layouts: 2, layoutObjects: 5100, mutations: 0, scripts: 0 } },
   'the work of a key in a field nothing reads, 500 fields': { desktop: { conditions: 0, computes: 0, checks: 0, updaters: 17 }, phone: { conditions: 0, computes: 0, checks: 0, updaters: 17 } },
   'the work of a key in a field a rule reads, 500 fields': { desktop: { conditions: 1, computes: 0, checks: 0, updaters: 17 }, phone: { conditions: 1, computes: 0, checks: 0, updaters: 17 } },
-  'a key in the header of a 200-line table': { desktop: { layouts: 2, layoutObjects: 6400, mutations: 0, scripts: 0 }, phone: { layouts: 2, layoutObjects: 8700, mutations: 0, scripts: 0 } },
-  'a key in a line of a 200-line table': { desktop: { layouts: 2, layoutObjects: 6400, mutations: 5, scripts: 0 }, phone: { layouts: 2, layoutObjects: 8700, mutations: 5, scripts: 0 } },
+  // On a phone the 200 lines are cards, and 0.36 gives each card its ↑ and ↓ (a line moved by a tap, the how-to
+  // replays' finding): 400 buttons, 796 objects more laid out — 8,260 without them, 9,056 with, on 0.36's merged
+  // build, to 9,500.
+  'a key in the header of a 200-line table': { desktop: { layouts: 2, layoutObjects: 6400, mutations: 0, scripts: 0 }, phone: { layouts: 2, layoutObjects: 9500, mutations: 0, scripts: 0 } },
+  'a key in a line of a 200-line table': { desktop: { layouts: 2, layoutObjects: 6400, mutations: 5, scripts: 0 }, phone: { layouts: 2, layoutObjects: 9500, mutations: 5, scripts: 0 } },
   'a list of 5,000 rows drawn': { desktop: { nodes: 1700, listeners: 500, rowsInPage: 60 }, phone: { nodes: 2000, listeners: 590, rowsInPage: 75 } },
   'a row of 5,000 ticked': { desktop: { layouts: 2, layoutObjects: 1400, mutations: 6, scripts: 0 }, phone: { layouts: 2, layoutObjects: 1700, mutations: 6, scripts: 0 } },
   'a list of 3,000 rows, wherever the view is': { desktop: { rows: 66, elements: 1020 }, phone: { rows: 84, elements: 1250 } },
