@@ -10,7 +10,7 @@ import { code } from './layout.mjs';
  */
 const REPO = 'https://github.com/fieldia-dev/fieldia/blob/main/';
 /** The docs that are pages of the site, by their file: the page each is. */
-export const DOC_PAGES = { 'docs/agents.md': '/agents/' };
+export const DOC_PAGES = { 'docs/agents.md': '/agents/', 'docs/promises.md': '/promises/' };
 
 const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const slug = (text) =>

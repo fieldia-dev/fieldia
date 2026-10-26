@@ -12,8 +12,12 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 
-/** Files that only fieldia.dev is made of, or that nothing is built from. A spec here tests the site alone. */
-const SITE_ONLY = [/^site\//, /^docs\//, /^tools\/build-site\.mjs$/, /^e2e\/site\.spec\.ts$/, /^e2e\/site-pages\.ts$/];
+/**
+ * Files that only fieldia.dev is made of, or that nothing is built from. A spec here tests the site alone. Not the page of
+ * promises nor the guide for agents: what holds them is the packages' tests and the tools' (tools/promises.test.mjs,
+ * agents-guide.spec.ts), which run with every gate.
+ */
+const SITE_ONLY = [/^site\//, /^docs\/(?!promises\.md$|agents\.md$)/, /^tools\/build-site\.mjs$/, /^e2e\/site\.spec\.ts$/, /^e2e\/site-pages\.ts$/];
 
 /** Whether every file changed is the site's own; an empty list is not (nothing known, so everything runs). */
 export function siteOnly(files) {

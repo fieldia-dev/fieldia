@@ -14,6 +14,7 @@ export const DOCS = [
   { path: '/maps/', title: 'Maps' },
   { path: '/chatter/', title: 'Chatter' },
   { path: '/look/', title: 'Themes and languages' },
+  { path: '/promises/', title: 'What Fieldia promises' },
 ];
 
 const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

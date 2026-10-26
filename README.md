@@ -104,6 +104,10 @@ Fieldia that knows every setting it uses reads it — and every later Fieldia
 reads it. How it works, and the check that holds each rule:
 [the release train](docs/maintainers/release-train.md).
 
+What Fieldia guarantees in the browser and what your server must still check,
+the budgets that hold its speed, and the browsers it supports — each promise
+with the test that holds it: [What Fieldia promises](docs/promises.md).
+
 ## Develop
 
 ```sh
