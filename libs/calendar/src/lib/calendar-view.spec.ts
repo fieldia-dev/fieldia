@@ -49,7 +49,8 @@ describe("a list's calendar", () => {
     expect(host.querySelector('.fd-list')?.getAttribute('data-view')).toBe('calendar');
     expect(title(host)).toBe('12–18 Oct 2026');
     const heads = [...host.querySelectorAll('.fd-cal-head-day')].map((h) => h.getAttribute('aria-label'));
-    expect(heads[0]).toBe('Monday 12 October');
+    // Each day named whole, holding the short day it shows (WCAG 2.5.3).
+    expect(heads[0]).toBe('Monday 12 October, Mon 12');
     expect(heads).toHaveLength(7);
     expect(host.querySelector('.fd-cal-head[aria-current="date"]')?.textContent).toContain('14');
     // Wednesday's column holds Mona at 10:00: two hours under 8:00, half an hour long.
@@ -58,7 +59,8 @@ describe("a list's calendar", () => {
     expect(mona.style.top).toBe('96px');
     // Half an hour is 24 pixels: a slot or a record never smaller than a finger's target.
     expect(mona.style.height).toBe('24px');
-    expect(mona.getAttribute('aria-label')).toBe('Mona Adel, Wednesday 14 October, 10:00 to 10:30, with Dr Karim');
+    // Named first by what it shows, in its order (WCAG 2.5.3), then its day and hours whole.
+    expect(mona.getAttribute('aria-label')).toBe('10:00 Mona Adel Dr Karim, Wednesday 14 October, 10:00 to 10:30');
     expect(block(host, 'Laila Hany') && columnOf(block(host, 'Laila Hany'))?.dataset['day']).toBe('2026-10-15');
     // Next week's is not in this one.
     expect(block(host, 'Next week')).toBeUndefined();
@@ -103,7 +105,7 @@ describe("a list's calendar", () => {
     ]);
     button(host, 'Today').click();
     await until(() => title(host) === '12–18 Oct 2026');
-    (host.querySelector('.fd-cal-head-day[aria-label="Thursday 15 October"]') as HTMLButtonElement).click();
+    (host.querySelector('.fd-cal-head-day[aria-label^="Thursday 15 October"]') as HTMLButtonElement).click();
     await until(() => title(host) === 'Thursday, 15 October 2026');
     expect(host.querySelector('.fd-cal-ranges [data-range="day"]')?.getAttribute('aria-pressed')).toBe('true');
   });

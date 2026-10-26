@@ -32,6 +32,8 @@ const bar = (host: Element, name: string) => [...host.querySelectorAll<HTMLEleme
 const said = (host: Element) => host.querySelector('.fd-gantt-said')?.textContent ?? '';
 const saves = (source: MemoryDataSource) => source.calls.filter((call) => call.method === 'save').map((call) => call.request as SaveRequest);
 const button = (root: Element, words: string) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent?.trim()) === words) as HTMLButtonElement;
+/** A group's toggle by what a press does, its description ("Hide Finishes"): its name is what it shows. */
+const toggle = (root: Element, words: string) => root.querySelector<HTMLButtonElement>(`.fd-gantt-toggle[aria-description="${words}"]`) as HTMLButtonElement;
 const settle = () => until(() => !document.querySelector('.fd-gantt-body[aria-busy]'));
 const pointer = (target: EventTarget, type: string, clientX: number) => target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX, clientY: 10 }));
 
@@ -75,11 +77,12 @@ describe("a list's Gantt timeline", () => {
     button(host, 'Months').click();
     expect(parseFloat(bar(host, 'Wiring').style.width)).toBe(15);
     // Closed: its rows gone, and the arrows into them.
-    button(host, 'Hide Finishes').click();
+    expect(toggle(host, 'Hide Finishes').getAttribute('aria-label')).toBe('Finishes, 3 records');
+    toggle(host, 'Hide Finishes').click();
     expect(bar(host, 'Painting')).toBeUndefined();
     expect(host.querySelectorAll('.fd-gantt-link')).toHaveLength(1);
-    expect(button(host, 'Show Finishes').getAttribute('aria-expanded')).toBe('false');
-    button(host, 'Show Finishes').click();
+    expect(toggle(host, 'Show Finishes').getAttribute('aria-expanded')).toBe('false');
+    toggle(host, 'Show Finishes').click();
     expect(bar(host, 'Painting')).toBeDefined();
   });
 

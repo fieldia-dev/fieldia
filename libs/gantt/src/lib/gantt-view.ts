@@ -1,4 +1,4 @@
-import { intlFormat, isOwnZone, recordSentence, saveProblemOf, type Fields, type GanttZoom, type ListGantt, type ListedRecord, type RecordId, type RecordVersion, type SaveRequest, type Values } from '@fieldia/core';
+import { intlFormat, isOwnZone, nameShowing, recordSentence, saveProblemOf, type Fields, type GanttZoom, type ListGantt, type ListedRecord, type RecordId, type RecordVersion, type SaveRequest, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
 import { moneyReads, startLoading, zoneName } from '@fieldia/widgets';
 import { addDays, comma, daysFrom, firstDayOf, format, toWall, zoneOfGantt } from './dates';
@@ -396,12 +396,22 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       if (spec.group) {
         const chevron = svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' });
         chevron.innerHTML = CHEVRON;
+        // Named by what it shows, "Strip-out 2", its count said whole: "Strip-out, 2 tasks" (WCAG 2.5.3); open or closed
+        // is its aria-expanded, and what a press does its description: "Hide Strip-out".
+        const n = String(group.tasks.length);
         const toggle = make(
           'button',
-          { type: 'button', class: 'fd-gantt-toggle', 'aria-expanded': String(open), 'aria-label': fill(open ? labels.collapse : labels.expand, { name: group.label }) },
+          {
+            type: 'button',
+            class: 'fd-gantt-toggle',
+            'aria-expanded': String(open),
+            'aria-label': nameShowing(`${group.label}${joined}${holds(group.tasks.length)}`, `${group.label} ${n}`, locale),
+            'aria-description': fill(open ? labels.collapse : labels.expand, { name: group.label }),
+          },
           chevron,
           make('bdi', {}, group.label),
-          make('span', { class: 'fd-gantt-count' }, String(group.tasks.length))
+          ' ',
+          make('span', { class: 'fd-gantt-count' }, n)
         );
         toggle.addEventListener('click', () => {
           if (closed.has(group.key)) closed.delete(group.key);
