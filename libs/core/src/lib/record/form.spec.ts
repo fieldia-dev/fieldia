@@ -537,6 +537,111 @@ describe('createForm — onchange', () => {
     await form.settled();
     expect(form.getState().values['website']).toBe('https://second.example');
   });
+
+  /**
+   * An order's rule, as the demo's server and Flectra's stock moves have it: an empty quantity becomes 1, an empty price
+   * the product's, and each line's subtotal follows. Run at each key, its answer for the box the person is still typing
+   * in was written into that box: emptied, the Quantity showed 1.00 again at once, and "20" typed after read "1.002".
+   */
+  describe('never writes over the box the person is still typing in', () => {
+    const orderPage = page('order');
+    const orderSource = () =>
+      createMemoryDataSource({
+        records: {
+          'sale.order': {
+            1: { name: 'S00118', partner_id: { id: 1, label: 'Nile Traders' }, line_ids: [{ key: 'l1', id: 101, values: { product_id: { id: 1, label: 'Office chair' }, name: 'Office chair', qty: 12, price: 100, subtotal: 1200 } }] },
+          },
+        },
+        onchange: {
+          'sale.order': {
+            line_ids: (values) => ({
+              line_ids: (values['line_ids'] as Line[]).map((l) => {
+                const v = { ...l.values };
+                v['qty'] ??= 1;
+                v['price'] ??= 100;
+                return { ...l, values: { ...v, subtotal: Number(v['qty']) * Number(v['price']) } };
+              }),
+            }),
+            note: (values) => ({ note: values['note'] ?? 'None', name: `${values['name']} (noted)` }),
+          },
+        },
+      });
+    const line = (form: ReturnType<typeof createForm>) => (form.getState().values['line_ids'] as Line[])[0].values;
+    async function typing() {
+      const source = orderSource();
+      const form = createForm({ page: { ...orderPage, fields: { ...orderPage.fields, note: { type: 'char', label: 'Note' } } }, dataSource: source, recordId: 1 });
+      await form.load();
+      // A box with the focus, typed in since it last read, as the viewer says of it.
+      let typed = true;
+      form.settling(() => undefined, () => typed);
+      return { form, source, leave: () => (typed = false) };
+    }
+
+    it('a line’s cell emptied keeps empty while typed in, the rest of the answer laid; what it makes of the cell, once left', async () => {
+      const { form, leave } = await typing();
+      form.updateLine('line_ids', 'l1', 'qty', null);
+      await form.settled();
+      // The box under the keys stays as the person has it; the line's subtotal is worked out all the same.
+      expect(line(form)).toMatchObject({ qty: null, subtotal: 100 });
+      form.updateLine('line_ids', 'l1', 'qty', 2);
+      await form.settled();
+      form.updateLine('line_ids', 'l1', 'qty', 20);
+      await form.settled();
+      expect(line(form)).toMatchObject({ qty: 20, subtotal: 2000 });
+      // Emptied again and left so: the rule's 1 is laid as the box is left.
+      form.updateLine('line_ids', 'l1', 'price', null);
+      await form.settled();
+      expect(line(form)).toMatchObject({ price: null, subtotal: 2000 });
+      leave();
+      form.boxLeft('line_ids.l1.price');
+      await form.settled();
+      expect(line(form)).toMatchObject({ qty: 20, price: 100, subtotal: 2000 });
+    });
+
+    it('a field of its own: kept as typed, the other fields its answer sets laid at once', async () => {
+      const { form, source, leave } = await typing();
+      form.setValue('note', null);
+      await form.settled();
+      expect(form.getState().values).toMatchObject({ note: null, name: 'S00118 (noted)' });
+      // A save reads every box as if left: what was held back is saved with the rest.
+      leave();
+      expect(await form.save()).toBe(true);
+      expect(form.getState().values['note']).toBe('None');
+      expect(source.records['sale.order'][1]['note']).toBe('None');
+    });
+
+    it('nothing is held back once the box is left before the answer comes, nor laid over a change made since', async () => {
+      const { form, leave } = await typing();
+      leave();
+      form.updateLine('line_ids', 'l1', 'qty', null);
+      await form.settled();
+      expect(line(form)).toMatchObject({ qty: 1, subtotal: 100 });
+      const again = await typing();
+      again.form.updateLine('line_ids', 'l1', 'qty', null);
+      await again.form.settled();
+      // Changed by something else meanwhile (a block pasted): the rule's answer for the old text is let go.
+      again.form.setValue('line_ids', (again.form.getState().values['line_ids'] as Line[]).map((l) => ({ ...l, values: { ...l.values, qty: 7 } })));
+      again.leave();
+      again.form.boxLeft('line_ids.l1.qty');
+      await again.form.settled();
+      expect(line(again.form)).toMatchObject({ qty: 7 });
+    });
+
+    it('the app’s own rule written while the box is typed in waits as the source’s does; a person’s write goes in at once', async () => {
+      const { form, leave } = await typing();
+      form.setValue('note', '');
+      form.setValues({ note: 'Set by the app' });
+      expect(form.getState().values['note']).toBe('');
+      // A block pasted over it, a pick: the person's own, written at once.
+      form.setValue('note', 'Pasted');
+      expect(form.getState().values['note']).toBe('Pasted');
+      form.setValues({ note: 'Again by the app' });
+      leave();
+      form.boxLeft('note');
+      await form.settled();
+      expect(form.getState().values['note']).toBe('Again by the app');
+    });
+  });
 });
 
 describe('createForm — relations', () => {

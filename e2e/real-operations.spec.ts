@@ -1,6 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { expectNoSidewaysScroll, node, open, screen } from './support';
+import { expectNoSidewaysScroll, node, open, screen, watchOnchange } from './support';
 import { VARIANTS } from './variants';
 
 /**
@@ -392,6 +392,56 @@ test('the receipt at a phone’s width: nothing scrolls sideways, and the button
   await screen(page, 'real-transfer-phone');
   expect(problems).toEqual([]);
 });
+
+/**
+ * The receipt's own rule, as Flectra's stock moves have it (demos/shared/real/operations.ts: `quantity ??= 0`), asked at
+ * each key: its 0 for an emptied Quantity was written into the box being typed in — "0.00" put back at once, so "12"
+ * typed after read "0.0012" and was refused — in the grid's cell, the line's dialog, and the dialog a phone's card opens.
+ */
+for (const [where, size] of [['its cell and its dialog', WIDE], ['a phone’s dialog', PHONE]] as const) {
+  test(`a Quantity emptied stays empty while typed in, and takes the 12 typed after: ${where}`, async ({ page }) => {
+    await page.setViewportSize(size);
+    const { problems } = await open(page, 'plain', TRANSFER);
+    await expect.poll(() => value(page, 'name')).toBe('WH/IN/00042');
+    await page.getByRole('button', { name: 'Mark as ready' }).click();
+    await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Ready');
+    await settled(page);
+    const onchange = await watchOnchange(page);
+    const moves = node(page, 'f-moves');
+    if (size === WIDE) {
+      // In its cell, emptied key by key.
+      await cell(page, 'f-moves', 2, 'quantity').click();
+      const box = moves.locator('.fd-grid-editor input').first();
+      await expect(box).toBeFocused();
+      const before = await onchange.asked();
+      await page.keyboard.press('End');
+      for (let n = 0; n < 5; n++) await page.keyboard.press('Backspace');
+      await onchange.answered(before);
+      await expect(box).toHaveValue('');
+      await page.keyboard.type('12');
+      await expect(box).toHaveValue('12');
+      await page.keyboard.press('Enter');
+      await expect(cell(page, 'f-moves', 2, 'quantity')).toHaveText('12.00');
+      await moves.locator('.ag-row[row-index="1"]:not(.fd-grid-totals) .fd-line-open').first().click();
+    } else await moves.getByRole('button', { name: 'Table leg, beech, 72 cm' }).click();
+    const row = size === WIDE ? 1 : 2;
+    const dialog = page.getByRole('dialog', { name: 'Operations' });
+    const quantity = dialog.getByRole('textbox', { name: 'Quantity' });
+    await quantity.click();
+    const before = await onchange.asked();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('Backspace');
+    await onchange.answered(before);
+    await expect(quantity).toHaveValue('');
+    await page.keyboard.type('12');
+    await expect(quantity).toHaveValue('12');
+    await expect(dialog.locator('.fd-refusal-hint:not([hidden])')).toHaveCount(0);
+    await dialog.getByRole('button', { name: 'Save & Close' }).click();
+    await expect(dialog).toBeHidden();
+    await expect.poll(async () => (await lineValues(page, 'move_ids_without_package'))[row]?.['quantity']).toBe(12);
+    expect(problems).toEqual([]);
+  });
+}
 
 test('a quantity typed past its places or with a second decimal mark is refused as it is typed, saying why, and nothing is worked out from it', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

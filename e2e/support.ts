@@ -69,3 +69,38 @@ export async function expectNoSidewaysScroll(page: Page) {
  * "Searching…", "Loading more…"), never "Still loading…" past the 5 s of `slowAfter`, unless the test names its own.
  */
 export const unhurried = (query: string) => `/loading/?${/(^|&)slowAfter=/.test(query) ? query : `${query}${query ? '&' : ''}slowAfter=600000`}`;
+
+/**
+ * The demo's data source's onchange watched: `asked()` counts the times it was asked, and `answered(since)` waits until
+ * it was asked since and every one asked has answered — each answer laid as it comes, before the page runs anything
+ * else. What a box typed in waits for before it is looked at, never a guessed pause.
+ */
+export async function watchOnchange(page: Page) {
+  type Watched = { fieldiaDemo: { dataSource: { onchange(request: unknown): Promise<unknown> } }; onchanges: { asked: number; open: number } };
+  await page.evaluate(() => {
+    const at = window as unknown as Watched;
+    const source = at.fieldiaDemo.dataSource;
+    const ask = source.onchange.bind(source);
+    const seen = (at.onchanges = { asked: 0, open: 0 });
+    source.onchange = async (request: unknown) => {
+      seen.asked++;
+      seen.open++;
+      try {
+        return await ask(request);
+      } finally {
+        seen.open--;
+      }
+    };
+  });
+  const seen = () => page.evaluate(() => (window as unknown as Watched).onchanges);
+  return {
+    asked: async () => (await seen()).asked,
+    answered: (since: number) =>
+      expect
+        .poll(async () => {
+          const now = await seen();
+          return now.asked > since && now.open === 0;
+        })
+        .toBe(true),
+  };
+}

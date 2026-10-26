@@ -1550,8 +1550,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // the undo part, undo-history.ts), and the record's keys kept from the browser's own (undo-keys.ts): 582,019 measured
 // before, 582,108 after, to 568.5 (gzipped 189.80, inside its 189.8).
 // 0.36 (p3-real-tests, F1): a refused send's words let go from the screen reader's alert once nothing is wrong
-// (viewer.ts) — 582,019 bytes measured before, 582,227 after (+208), to 568.6 (gzipped 189.87, inside its 189.9).
-const BUDGET_KB = 568.6;
+// (viewer.ts) — 582,019 bytes measured before, 582,227 after (+208); and, on every page that types, the box under the
+// person's keys never written over by what an onchange, a step, the app or a line's dialog makes of their change —
+// held back and laid once the box is left (form.ts: `keepTyped`, `layHeldBack`) — 657 more, 582,884, to 569.3
+// (gzipped 190.13, inside its 190.2).
+const BUDGET_KB = 569.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1895,8 +1898,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.35's merge, set once from the merged build (listed with the raw budget above): 186.54 at 0.34.1; perf-bytes +0.14,
 // perf-lists 0, perf-form +2.95 (189.64), the words that come late +0.16 — 189.79, to 189.8.
 // 0.36 (p3-real-tests, F1), listed with the raw budget above: a refusal's words let go from the alert, 189.79 measured
-// before, 189.87 after, to 189.9.
-const GZIP_BUDGET_KB = 189.9;
+// before, 189.87 after; the box under the keys never written over, 190.13 — to 190.2.
+const GZIP_BUDGET_KB = 190.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

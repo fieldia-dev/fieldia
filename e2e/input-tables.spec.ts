@@ -1,7 +1,7 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { stubMaps } from './map-support';
-import { node, open, screen } from './support';
+import { node, open, screen, watchOnchange } from './support';
 
 /**
  * The input rules in tables, lists and the designer (0.21), typed and pasted as
@@ -204,6 +204,82 @@ test.describe('the order grid', () => {
       await screen(page, `input-tables-paste-${locale}`, { viewport: true });
     });
   }
+
+  /**
+   * The order's own rule, as its server's onchange has it (demos/shared/sample-data.ts): an empty quantity becomes 1, an
+   * empty price the product's. Asked at each key, its answer for the box being typed in was written into that box:
+   * emptied, the Quantity showed 1.00 again at once, and "20" typed after read "1.002", refused for its places; the Unit
+   * price snapped back to the product's. The box under the keys keeps what is typed; the rule fills it once it is left.
+   */
+  const subtotal = (page: Page) => page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values['line_ids'][1].values['subtotal'] as number);
+  const hint = (page: Page) => page.locator('.fd-refusal-hint:not([hidden])');
+  /** A box emptied with every character chosen and Backspace, or key by key from its end. */
+  const EMPTIED = [['ControlOrMeta+a', 'Backspace'], ['End', 'Backspace', 'Backspace', 'Backspace', 'Backspace', 'Backspace']];
+
+  test('a cell emptied stays empty while typed in, and takes the 20 typed after; its rule fills it once left', async ({ page }) => {
+    ({ problems } = await open(page, 'plain', 'page=order&skin=underline'));
+    const onchange = await watchOnchange(page);
+    for (const keys of EMPTIED) {
+      await cell(page, 1, 'qty').click();
+      await expect(editor(page)).toBeFocused();
+      const before = await onchange.asked();
+      for (const key of keys) await page.keyboard.press(key);
+      // The rule has answered for the empty box: the line's subtotal is its price once, less its 5%, and the box is
+      // still empty.
+      await onchange.answered(before);
+      expect(await subtotal(page)).toBe(1795.5);
+      await expect(editor(page)).toHaveValue('');
+      await page.keyboard.type('20');
+      await expect(editor(page)).toHaveValue('20');
+      await expect(hint(page)).toHaveCount(0);
+      await page.keyboard.press('Enter');
+      await expect.poll(async () => (await pairs(page))[1]).toEqual([20, 1890]);
+      await expect(cell(page, 1, 'qty')).toHaveText('20.00');
+    }
+    // The Unit price emptied and left so: the product's price once the cell is left, never while it is typed in.
+    await cell(page, 1, 'price').click();
+    const before = await onchange.asked();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('Backspace');
+    await onchange.answered(before);
+    await expect(editor(page)).toHaveValue('');
+    await page.keyboard.press('Enter');
+    await expect.poll(async () => (await pairs(page))[1]).toEqual([20, 1890]);
+    await expect(cell(page, 1, 'price')).toContainText('1,890.00');
+  });
+
+  test('a line’s dialog: Quantity emptied stays empty and takes 20; Unit price emptied is the product’s once left', async ({ page }) => {
+    ({ problems } = await open(page, 'plain', 'page=order&skin=underline'));
+    const onchange = await watchOnchange(page);
+    await grid(page).locator('.ag-row[row-index="1"] .fd-line-open').first().click();
+    const dialog = page.locator('.fd-form-dialog');
+    await expect(dialog).toBeVisible();
+    const quantity = dialog.getByRole('textbox', { name: 'Quantity' });
+    const price = dialog.getByRole('textbox', { name: 'Unit price' });
+    for (const keys of EMPTIED) {
+      await quantity.click();
+      const before = await onchange.asked();
+      for (const key of keys) await page.keyboard.press(key);
+      await onchange.answered(before);
+      await expect(quantity).toHaveValue('');
+      await page.keyboard.type('20');
+      await expect(quantity).toHaveValue('20');
+      await expect(hint(page)).toHaveCount(0);
+    }
+    await price.click();
+    const before = await onchange.asked();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('Backspace');
+    await onchange.answered(before);
+    await expect(price).toHaveValue('');
+    // Left: the product's price, as the rule has it.
+    await page.keyboard.press('Tab');
+    await expect(price).toHaveValue('1,890.00');
+    await expect(quantity).toHaveValue('20.00');
+    await dialog.getByRole('button', { name: /Save & Close/ }).click();
+    await expect(dialog).toBeHidden();
+    await expect.poll(async () => (await pairs(page))[1]).toEqual([20, 1890]);
+  });
 });
 
 test.describe('a plain table’s cells', () => {
