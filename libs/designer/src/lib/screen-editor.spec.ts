@@ -75,6 +75,40 @@ describe('screen editor — adding from the toolbox', () => {
     expect(document.activeElement).toBe(title);
     expect([title.selectionStart, title.selectionEnd]).toEqual([0, title.value.length]);
   });
+
+  it('carries a tile out of the toolbox’s sheet with a mouse, the sheet stepping aside as the drag begins; a finger there only picks', async () => {
+    // The toolbox in its sheet: where it cannot sit beside the screen — a phone, or a laptop's window beside an app's menu.
+    const { designer } = visitReport();
+    const { host } = mount(designer, { mode: 'simple' });
+    const sheet = () => host.querySelector('.fd-tools-sheet');
+    const pointer = (type: string, target: EventTarget, x: number, y: number, pointerType = 'mouse') => {
+      const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0 });
+      Object.defineProperty(event, 'pointerType', { value: pointerType });
+      target.dispatchEvent(event);
+    };
+    const count = () => sectionsOf(designer.getPage()).reduce((n, section) => n + section.children.length, 0);
+    const before = count();
+    button(host, 'Open the toolbox')?.click();
+    expect(sheet()?.contains(tile(host, 'kind:email'))).toBe(true);
+    // A finger moving in the sheet is looking through it: nothing is carried, and the sheet stays.
+    pointer('pointerdown', tile(host, 'kind:email'), 10, 10, 'touch');
+    pointer('pointermove', document, 0, 0, 'touch');
+    pointer('pointerup', document, 0, 0, 'touch');
+    expect(sheet()).not.toBeNull();
+    expect(count()).toBe(before);
+    // A mouse: the sheet steps aside as the press becomes a drag, the toolbox back in its place, and the tile carried
+    // onto the screen it covered lands where it is let go.
+    pointer('pointerdown', tile(host, 'kind:email'), 10, 10);
+    expect(sheet()).not.toBeNull();
+    pointer('pointermove', document, 0, 0);
+    expect(sheet()).toBeNull();
+    expect(host.querySelector('.fd-screen-body > .fd-rail .fd-toolbox')).not.toBeNull();
+    expect(host.querySelector('.fd-canvas.fd-dragging')).not.toBeNull();
+    pointer('pointerup', document, 0, 0);
+    expect(count()).toBe(before + 1);
+    // The click a drag ends with is swallowed until the next task: the next test's clicks are its own.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
 });
 
 describe('screen editor — the panel', () => {

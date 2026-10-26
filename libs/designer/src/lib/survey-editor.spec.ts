@@ -245,6 +245,36 @@ describe('survey editor — questions as people see them, the one picked open', 
     expect((steps[0].children[3] as FieldNode).widget).toBe('buttons');
   });
 
+  it('carries a tile out of the toolbox’s sheet with a mouse, the sheet stepping aside as the drag begins; a finger there only picks', async () => {
+    // The toolbox in its sheet, behind the + beside the question picked: where it cannot sit beside the page.
+    const { host, designer } = mount();
+    button(host, 'Add question').click();
+    const sheet = () => host.querySelector('.fd-tools-sheet');
+    const pointer = (type: string, target: EventTarget, x: number, y: number, pointerType = 'mouse') => {
+      const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0 });
+      Object.defineProperty(event, 'pointerType', { value: pointerType });
+      target.dispatchEvent(event);
+    };
+    button(host, 'Open the toolbox').click();
+    expect(sheet()?.contains(tile(host, 'kind:rating'))).toBe(true);
+    // A finger moving in the sheet is looking through it: nothing is carried, and the sheet stays.
+    pointer('pointerdown', tile(host, 'kind:rating'), 10, 10, 'touch');
+    pointer('pointermove', document, 0, 0, 'touch');
+    pointer('pointerup', document, 0, 0, 'touch');
+    expect(sheet()).not.toBeNull();
+    expect(nodes(designer.getPage())).toHaveLength(1);
+    // A mouse: the sheet steps aside as the press becomes a drag, and the tile carried onto the page lands there.
+    pointer('pointerdown', tile(host, 'kind:rating'), 10, 10);
+    pointer('pointermove', document, 0, 0);
+    expect(sheet()).toBeNull();
+    expect(host.querySelector('.fd-survey-body > .fd-rail .fd-toolbox')).not.toBeNull();
+    pointer('pointerup', document, 0, 0);
+    expect(nodes(designer.getPage()).map((n) => n.widget ?? '')).toContain('rating');
+    expect(nodes(designer.getPage())).toHaveLength(2);
+    // The click a drag ends with is swallowed until the next task: the next test's clicks are its own.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
   it('moves the question picked with Alt and an arrow, deletes it with Delete, and puts it down with Escape', () => {
     const { host, designer } = mount();
     button(host, 'Add question').click();

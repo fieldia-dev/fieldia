@@ -61,8 +61,11 @@ export interface CanvasDragOptions {
 }
 
 export interface CanvasDrag {
-  /** A toolbox tile was pressed: carry it if the pointer moves. */
-  press(source: DragSource, event: PointerEvent, element: HTMLElement): void;
+  /**
+   * A toolbox tile was pressed: carry it if the pointer moves. `lifted` runs as the press becomes a drag, before
+   * anything is drawn: the toolbox's sheet put away (tools-sheet.ts), so the page it covered takes the drop.
+   */
+  press(source: DragSource, event: PointerEvent, element: HTMLElement, lifted?: () => void): void;
   destroy(): void;
 }
 
@@ -106,6 +109,8 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     slot: HTMLElement | null;
     /** Where the gap is: the section, and how many of its other fields come before it. */
     target: { section: string; index: number } | null;
+    /** What the press asked done as it becomes a drag. */
+    lifted?: () => void;
   }
   let drag: Drag | null = null;
   let tabTimer: ReturnType<typeof setTimeout> | undefined;
@@ -141,8 +146,8 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   const closedTabAt = (x: number, y: number) =>
     [...canvas.querySelectorAll<HTMLElement>('.fd-tab')].find((t) => t.getAttribute('aria-selected') !== 'true' && inside(rectOf(t), x, y)) ?? null;
 
-  function begin(source: DragSource, element: HTMLElement, x: number, y: number) {
-    drag = { source, element, start: { x, y }, started: false, ghost: null, marker: null, slot: null, target: null };
+  function begin(source: DragSource, element: HTMLElement, x: number, y: number, lifted?: () => void) {
+    drag = { source, element, start: { x, y }, started: false, ghost: null, marker: null, slot: null, target: null, lifted };
   }
 
   /** A press on a field: anywhere on one not being edited, or on the grip of the one being edited. */
@@ -162,6 +167,8 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
 
   function lift(current: Drag) {
     current.started = true;
+    // First what the press asked: a sheet over the page put away, before the gap is placed by what is under it.
+    current.lifted?.();
     // While something is carried, nothing on the page is selected.
     canvas.classList.add('fd-dragging');
     doc.getSelection()?.removeAllRanges();
@@ -337,16 +344,21 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
       end(false);
     }
   };
+  // The browser's own drag never starts while a press is held here: it looks for something to drag where the press
+  // began, which is no longer the tile once the toolbox's sheet has stepped aside — a link of an app's menu the sheet
+  // covered — and would take the pointer away (pointercancel) as it went.
+  const onNativeDrag = (event: Event) => void (drag && event.preventDefault());
   canvas.addEventListener('pointerdown', onDown);
   doc.addEventListener('pointermove', onMove);
   doc.addEventListener('pointerup', onUp);
   doc.addEventListener('pointercancel', onCancel);
   doc.addEventListener('keydown', onKey, true);
+  doc.addEventListener('dragstart', onNativeDrag, true);
 
   return {
-    press(source, event, element) {
+    press(source, event, element, lifted) {
       if (!on() || event.button !== 0 || drag) return;
-      begin(source, element, event.clientX, event.clientY);
+      begin(source, element, event.clientX, event.clientY, lifted);
     },
     destroy() {
       end(false);
@@ -355,6 +367,7 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
       doc.removeEventListener('pointerup', onUp);
       doc.removeEventListener('pointercancel', onCancel);
       doc.removeEventListener('keydown', onKey, true);
+      doc.removeEventListener('dragstart', onNativeDrag, true);
     },
   };
 }

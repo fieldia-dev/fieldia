@@ -147,8 +147,10 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     // Picked in the sheet, the sheet goes first: the field added takes the focus. A saved form is picked from a menu
     // under its tile, which the sheet keeps until one is picked.
     onPick: (spec) => (spec === 'form:saved' ? add(spec, null) : sheet.closeFor(() => add(spec, null))),
-    // A tile is carried onto the screen from beside it; in the sheet over the screen it is only picked.
-    onPress: (spec, event, tile) => !sheet.open && (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile),
+    // A tile is carried onto the screen from beside it, or by a mouse or a pen from the sheet over the screen, which
+    // steps aside as the drag begins so the screen it covered takes the drop. A finger in the sheet only picks, by a
+    // tap: moving there, it is looking through the tiles, not carrying one off across a phone's whole screen.
+    onPress: (spec, event, tile) => (!sheet.open || event.pointerType !== 'touch') && (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile, () => sheet.stepAside()),
   });
   const side = rail({
     el,
