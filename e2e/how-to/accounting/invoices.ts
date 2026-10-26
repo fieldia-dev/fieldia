@@ -175,7 +175,9 @@ export const replay: DemoReplay = {
         await print.paper();
         await see(sheet).toBeVisible();
         // Over them, the filters in words and the day.
-        await see(sheet.locator('.fd-print-when')).toHaveText(new RegExp(`^Printed ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}, \\d\\d:\\d\\d$`));
+        // The day the browser prints on, read from its own clock.
+        const printedOn = await page.evaluate(() => new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
+        await see(sheet.locator('.fd-print-when')).toHaveText(new RegExp(`^Printed ${printedOn}, \\d\\d:\\d\\d$`));
         await see(sheet.locator('.fd-print-about > div').first()).toHaveText(/^Filters: .*City.*Cairo/);
         await see(sheet.locator('.fd-print-about > div').nth(1)).toHaveText(/^Grouped by Customer$/);
         await see(sheet.locator('.fd-print-about > div').last()).toHaveText(`${found.length} invoices`);

@@ -44,7 +44,8 @@ export const replay: DemoReplay = {
       async run({ page, press, see, demo }) {
         const mine = await invoicesOf(demo, 1);
         const invoices = page.locator('[data-node="invoices"]');
-        const today = new Date().toISOString().slice(0, 10);
+        // Today on the demo's own clock, held by its address (`now=`, demos/catalog.mjs): what its invoices are dated from.
+        const today = new URL(page.url()).searchParams.get('now')?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
         const late = mine.slice(0, 5).find((invoice) => invoice.state === 'sent' && invoice.due_date < today);
         expect(late, 'a sent invoice past its due date among the five').toBeTruthy();
         const lateRow = invoices.locator(`.fd-list-row[data-id="${late!.id}"]`);

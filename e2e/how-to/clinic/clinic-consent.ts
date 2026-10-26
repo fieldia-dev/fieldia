@@ -3,7 +3,8 @@ import type { DemoReplay, Hand } from '../hand';
 import { choose } from './support';
 
 /** Today as the page writes a day: "26 Oct 2026". */
-const today = (page: Page) => page.evaluate(() => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date()));
+/** Today on the clinic's clock (the page's `timeZone`, Africa/Cairo), as the browser's clock has it: what the evidence writes. */
+const today = (page: Page) => page.evaluate(() => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Cairo' }).format(new Date()));
 
 /** The consent's signature, and what is said under it. */
 const consentSign = (page: Page) => page.locator('[data-node="f-signature"]');
