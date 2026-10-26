@@ -86,10 +86,14 @@ test('a demo’s place under its frame holds a quiet shape while its own script 
   await page.goto('/plain/?page=customers&skin=underline', { waitUntil: 'commit' });
   const place = page.locator('#app');
   await expect(place).toBeAttached();
-  const shape = () => place.evaluate((app) => ({ content: getComputedStyle(app, '::before').content, visibility: getComputedStyle(app, '::before').visibility, height: parseFloat(getComputedStyle(app, '::before').height) }));
-  // Never at once — a quick page never shows it — and there past half a second.
-  expect((await shape()).visibility).toBe('hidden');
-  await expect.poll(async () => (await shape()).visibility, { timeout: 5000 }).toBe('visible');
+  const shape = () =>
+    place.evaluate((app) => {
+      const drawn = getComputedStyle(app, '::before');
+      return { content: drawn.content, visibility: drawn.visibility, height: parseFloat(drawn.height), shows: `${drawn.animationName} ${drawn.animationDelay} ${drawn.animationFillMode}` };
+    });
+  // Never at once — shown past half a second, so a quick page never shows it — and there once it is past.
+  await expect.poll(async () => (await shape()).shows).toBe('dh-place-shows 0.5s both');
+  await expect.poll(async () => (await shape()).visibility).toBe('visible');
   expect((await shape()).height).toBeGreaterThan(100);
   release();
   await expect(page.locator('.fd-list-row').first()).toBeVisible();
