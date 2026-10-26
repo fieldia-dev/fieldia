@@ -70,14 +70,20 @@ export function bubbleFace(doc: Document, n: number, locale: Locale): HTMLElemen
 }
 
 /**
- * A bubble pressed: the map closer, until its pins part. Pins on one spot,
- * that no zoom parts (a tower's flats), are not zoomed to: false, and the
- * bubble lists them instead.
+ * A bubble pressed: the map closer, until its pins part — fitted to them,
+ * or, where they spread wider than the map shows (a source's bubbles
+ * gathered again, a phone's small map), a fit that would come no closer, one
+ * step closer on the bubble's own spot (`middle`), as a person zooms in on
+ * it: never a fit that only pans or backs away, the bubble whole. Pins on one
+ * spot, that no zoom parts (a tower's flats), and a map already as close as
+ * it comes are not zoomed: false, and the bubble lists them instead.
  */
-export function zoomToPart(map: Leaflet.Map, L: LeafletModule, spots: LatLng[], room: number): boolean {
+export function zoomToPart(map: Leaflet.Map, L: LeafletModule, spots: LatLng[], room: number, middle: LatLng): boolean {
   const most = Math.min(map.getMaxZoom(), 19);
+  const now = map.getZoom();
   const bounds = L.latLngBounds(spots.map((p) => [p.lat, p.lng] as [number, number]));
-  if (map.getZoom() >= most || bounds.getNorthEast().equals(bounds.getSouthWest(), 1e-7)) return false;
-  map.fitBounds(bounds, { padding: [room, room], maxZoom: most });
+  if (now >= most || bounds.getNorthEast().equals(bounds.getSouthWest(), 1e-7)) return false;
+  if (map.getBoundsZoom(bounds, false, L.point(room * 2, room * 2)) > now) map.fitBounds(bounds, { padding: [room, room], maxZoom: most });
+  else map.setView([middle.lat, middle.lng], now + 1);
   return true;
 }

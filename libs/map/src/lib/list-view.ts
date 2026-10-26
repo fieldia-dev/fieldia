@@ -551,7 +551,7 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
       const fromKeys = byKeys(event);
       // Closer, until they part (the person's own move); on one spot (a tower's flats), a list of them.
       moving = true;
-      if (zoomToPart(map, L, spots, ROOM) || theirs?.closer(map, gathered, centre)) {
+      if (zoomToPart(map, L, spots, ROOM, centre) || theirs?.closer(map, gathered, centre)) {
         if (fromKeys) box.element.focus();
         return;
       }
