@@ -193,14 +193,18 @@ test.describe('a tile dragged out of the toolbox’s sheet at a laptop’s width
   test.beforeEach(async ({ page }) => page.setViewportSize({ width: 960, height: 720 }));
   const sheetOf = (page: Page) => page.getByRole('dialog', { name: 'Add, outline and data' });
 
-  test('the screen designer, as a visitor opens its demo at 1280px, the menu open beside it: the sheet steps aside, a gap opens where it will land, and it lands there', async ({ page }) => {
+  test('the screen designer, as a visitor opens its demo at 1280px and opens the menu beside it: the sheet steps aside, a gap opens where it will land, and it lands there', async ({ page }) => {
     const problems = watch(page);
     // A person, not a test browser: the demos' frame draws its menu — its links under the sheet, where a tile is pressed.
     await page.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => false }));
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto('/screen/');
     await expect(page.locator('.fd-canvas-field')).toHaveCount(7);
-    await expect(page.getByRole('button', { name: 'All demos' })).toHaveAttribute('aria-expanded', 'true');
+    // The frame leaves its menu folded beside a designer at 1280px (demos/shell.mjs, DEMO_ROOM): the person opens it.
+    const menu = page.getByRole('button', { name: 'All demos' });
+    await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    await menu.click();
+    await expect(menu).toHaveAttribute('aria-expanded', 'true');
     // Under 1,000px beside the menu: the toolbox behind the + at the foot.
     await expect(page.locator('.fd-screen-body > .fd-rail')).toBeHidden();
     const plus = page.locator('.fd-foot-bar').getByRole('button', { name: 'Open the toolbox' });
