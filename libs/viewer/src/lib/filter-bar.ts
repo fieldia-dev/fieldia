@@ -287,7 +287,8 @@ export function filterBar(context: FilterBarContext) {
       { role: 'menuitemcheckbox', class: 'fd-filter-option', tabindex: '-1', 'aria-checked': String(checked), 'aria-label': counted?.named(text) },
       el('span', { class: 'fd-filter-box', 'aria-hidden': 'true' }, ...icon('check')),
       el('span', { class: 'fd-filter-option-text' }, text),
-      ...(counted ? [counted.mark] : [])
+      // Apart from its words in its text too, as on screen: "Villa 12", which its name holds ("Villa, 12 homes").
+      ...(counted ? [' ', counted.mark] : [])
     );
     row.addEventListener('click', onClick);
     return row;

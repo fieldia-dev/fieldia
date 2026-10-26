@@ -270,7 +270,8 @@ export function searchBar(context: SearchContext) {
       const draw = (n: number | null) => {
         if (mine !== counting) return;
         const counted = n === null ? null : countMark(el, n, page, labels, fill, context.locale);
-        slot.replaceChildren(...(counted ? [counted.mark] : []));
+        // Apart from its words in its text too, as on screen: "Late 5", which its name holds ("Late, 5 leads").
+        slot.replaceChildren(...(counted ? [' ', counted.mark] : []));
         if (counted) owner.setAttribute('aria-label', counted.named(words));
         else owner.removeAttribute('aria-label');
       };

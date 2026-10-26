@@ -133,7 +133,7 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
           else state.picks.delete(field);
           changed(field);
         });
-        return el('label', { class: 'fd-filter-sheet-option' }, input, el('span', { class: 'fd-filter-option-text' }, option.label), ...(counted ? [counted.mark] : []));
+        return el('label', { class: 'fd-filter-sheet-option' }, input, el('span', { class: 'fd-filter-option-text' }, option.label), ...(counted ? [' ', counted.mark] : []));
       })
     );
     if (focused !== undefined) [...list.element.querySelectorAll<HTMLInputElement>('input')].find((input) => input.dataset['value'] === focused)?.focus();

@@ -125,7 +125,8 @@ describe('a page that asks for its labels small inside sentences', () => {
       waits: 'Fix quantity to see total',
       clear: 'Clear country',
       adder: 'Add tags',
-      country: 'Country of mobile',
+      // Holding the code it shows (WCAG 2.5.3).
+      country: 'Country of mobile, +20',
       cell: 'Fix quantity to see this line’s subtotal',
       broken: 'This field could not be shown: price',
     });
@@ -144,7 +145,7 @@ describe('a page that asks for its labels small inside sentences', () => {
         waits: 'Fix Quantity to see Total',
         clear: 'Clear Country',
         adder: 'Add Tags',
-        country: 'Country of Mobile',
+        country: 'Country of Mobile, +20',
         cell: 'Fix Quantity to see this line’s Subtotal',
         broken: 'This field could not be shown: Price',
       });

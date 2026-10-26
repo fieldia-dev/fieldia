@@ -114,7 +114,9 @@ export function groupWords(context: Pick<GroupContext, 'page' | 'labels' | 'loca
     one ? recordSentence(page.records, labels.groupCountNounOne, labels.groupCountOne, locale) : recordSentence(page.records, labels.groupCountNoun, labels.groupCount, locale),
     { n: formatNumber(group.count, 0, locale) }
   );
-  return [name, count, ...(group.sums ? [group.sums.replace(/^·\s*/, '')] : [])].join(', ');
+  // Its sums before its count: the row shows "Café Amsel (1) · € 12.5", and its name holds what it shows, one after
+  // another (WCAG 2.5.3) — "Café Amsel, € 12.5, 1 record".
+  return [name, ...(group.sums ? [group.sums.replace(/^·\s*/, '')] : []), count].join(', ');
 }
 
 /**
