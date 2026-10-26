@@ -1991,7 +1991,37 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
 
   /** What the cards were last drawn from: drawn again only when it changes. */
   let cardsDrawn = '';
-  /** Each line as a card: its first column as its title, the rest by their labels, its tone, its buttons, ↗ and ×. */
+  /**
+   * A card's ↑ and ↓, where its lines keep an order a person may change, as the grid's handle and Alt+↑/↓ change it: a
+   * phone has no handle to drag and no Alt key, so a card moves a place with a tap. Each names the line it moves; the one
+   * that would take it past an end is hidden, never disabled.
+   */
+  function moveButtons(line: Line, index: number, count: number, named: string): HTMLButtonElement[] {
+    if (!sequence || readonly) return [];
+    return (['up', 'down'] as const).map((way) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'fd-line-move';
+      button.dataset['move'] = way;
+      button.textContent = way === 'up' ? '↑' : '↓';
+      const said = fill(way === 'up' ? labels.moveUp : labels.moveDown, { label: named });
+      button.setAttribute('aria-label', said);
+      button.title = said;
+      button.hidden = way === 'up' ? index === 0 : index === count - 1;
+      button.addEventListener('click', () => moveCard(line.key, way, named));
+      return button;
+    });
+  }
+  /** A card a place up or down, where it went said aloud; the cards drawn again keep the focus on it (below). */
+  function moveCard(key: string, way: 'up' | 'down', named: string) {
+    const count = lines().length;
+    const from = lines().findIndex((line) => line.key === key);
+    const to = from + (way === 'up' ? -1 : 1);
+    if (readonly || !sequence || from < 0 || to < 0 || to >= count) return;
+    form.moveLine(name, key, to);
+    voice.textContent = fill(labels.movedTo, { label: named, n: to + 1, total: count });
+  }
+  /** Each line as a card: its first column as its title, the rest by their labels, its tone, its buttons, ↑ ↓, ↗ and ×. */
   function drawCards() {
     if (!cardsShape) return;
     const current = lines();
@@ -2001,7 +2031,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     if (signature === cardsDrawn) return;
     cardsDrawn = signature;
     const parent = form.getState().values;
-    const cards = current.map((line) => {
+    const cards = current.map((line, index) => {
       const card = document.createElement('div');
       card.className = 'fd-line-card';
       card.dataset['line'] = line.key;
@@ -2018,6 +2048,14 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
           open.textContent = words || (def.fields[kinds.text]?.label ?? '');
           open.addEventListener('click', () => void openCard(line.key));
           card.append(open);
+        }
+        // Moved among the lines too, as its row is by its handle.
+        const moves = moveButtons(line, index, current.length, words.trim() || placeName(index + 1));
+        if (moves.length) {
+          const tools = document.createElement('div');
+          tools.className = 'fd-line-card-tools';
+          tools.append(...moves);
+          card.append(tools);
         }
         return card;
       }
@@ -2053,6 +2091,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       }
       const tools = document.createElement('div');
       tools.className = 'fd-line-card-tools';
+      tools.append(...moveButtons(line, index, current.length, title.textContent || placeName(numberOf(line))));
       for (const own of node.rowButtons ?? []) {
         if (!state?.buttons[own.id]) continue;
         const button = ownButton(own, 'fd-button fd-button-link fd-line-button');
@@ -2082,7 +2121,15 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const total = sums.length ? Object.assign(document.createElement('div'), { className: 'fd-line-cards-total', textContent: sums.join(' · ') }) : null;
     // No lines yet: said in the cards' place, as the grid says it in its body.
     const none = current.length ? null : Object.assign(document.createElement('p'), { className: 'fd-help fd-line-cards-empty', textContent: words('emptyLabel') ?? labels.noLines });
+    // A card's ↑ or ↓ that had the focus keeps it, on its card wherever that went — the other one where the card has
+    // reached an end, as the button pressed is hidden there.
+    const focused = document.activeElement instanceof HTMLElement && cardList.contains(document.activeElement) ? document.activeElement : null;
+    const held = focused?.dataset['move'] ? { key: focused.closest<HTMLElement>('.fd-line-card')?.dataset['line'], way: focused.dataset['move'] } : null;
     cardList.replaceChildren(...(none ? [none] : cards), ...(total && !none ? [total] : []));
+    if (held) {
+      const moves = [...(cards.find((card) => card.dataset['line'] === held.key)?.querySelectorAll<HTMLElement>('[data-move]') ?? [])].filter((button) => !button.hidden);
+      (moves.find((button) => button.dataset['move'] === held.way) ?? moves[0])?.focus();
+    }
   }
 
   /** The bar and the ticks, as the lines chosen are now; `redraw` draws the lines' ticks again. */

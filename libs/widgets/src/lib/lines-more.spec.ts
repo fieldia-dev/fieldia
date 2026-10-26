@@ -10,7 +10,7 @@ import { press } from './test-kinds';
  * a line with something in it removed only once the person says so.
  */
 
-function mount(options: FieldNode['options'] = {}, extra: { sequence?: boolean; readonly?: boolean } = {}) {
+function mount(options: FieldNode['options'] = {}, extra: { sequence?: boolean; readonly?: boolean; cards?: 'never' } = {}) {
   const page = {
     fieldia: '0.1',
     id: 'p',
@@ -24,7 +24,7 @@ function mount(options: FieldNode['options'] = {}, extra: { sequence?: boolean; 
         fields: { ...(extra.sequence ? { sequence: { type: 'integer', label: 'Sequence' } } : {}), name: { type: 'char', label: 'Milestone' }, done: { type: 'boolean', label: 'Done' } },
       },
     },
-    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'steps', options }] },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'steps', options, ...(extra.cards ? { cards: extra.cards } : {}) }] },
   } as unknown as Page;
   const form = createForm({ page });
   const node = (page.layout as { children: FieldNode[] }).children[0];
@@ -110,10 +110,40 @@ describe('moving a table’s lines', () => {
     expect(names()).toEqual(['Design', 'Build', 'Survey']);
   });
 
+  it('moves a line drawn as a card by its ↑ and ↓ — a phone has no grip there, and no Alt key — each naming it, the focus kept', () => {
+    const { form, names, rows, el } = mount();
+    fill(form, 'Survey', 'Design', 'Build');
+    const moves = (i: number) => [...rows()[i].querySelectorAll<HTMLButtonElement>('.fd-line-move')];
+    // Each names its line; the one that would take it past an end is hidden.
+    expect(moves(1).map((b) => b.getAttribute('aria-label'))).toEqual(['Move Design up', 'Move Design down']);
+    expect(moves(0).map((b) => b.hidden)).toEqual([true, false]);
+    expect(moves(1).map((b) => b.hidden)).toEqual([false, false]);
+    expect(moves(2).map((b) => b.hidden)).toEqual([false, true]);
+    const [up, down] = moves(1);
+    up.focus();
+    up.click();
+    expect(names()).toEqual(['Design', 'Survey', 'Build']);
+    expect(el.querySelector('.fd-sr-only[role=status]')?.textContent).toBe('Design moved to place 1 of 3');
+    // At the top now: its ↑ hidden, its ↓ takes the focus.
+    expect([up.hidden, down.hidden]).toEqual([true, false]);
+    expect(document.activeElement).toBe(down);
+    down.click();
+    expect(names()).toEqual(['Survey', 'Design', 'Build']);
+    expect(document.activeElement).toBe(down);
+    // A line with no words yet is named by its number.
+    form.addLine('steps');
+    expect(moves(3)[0].getAttribute('aria-label')).toBe('Move line 4 up');
+    // A table the page never draws as cards has none: its grip and Alt+↑/↓ move its lines.
+    const never = mount({}, { cards: 'never' });
+    fill(never.form, 'Survey', 'Design');
+    expect(never.el.querySelectorAll('.fd-line-move')).toHaveLength(0);
+  });
+
   it('has no grips and moves nothing when read-only', () => {
     const { form, names, rows } = mount({}, { readonly: true });
     fill(form, 'Survey', 'Design');
     expect((rows()[0].querySelector('.fd-line-grip') as HTMLElement).hidden).toBe(true);
+    expect([...rows()[1].querySelectorAll<HTMLButtonElement>('.fd-line-move')].map((b) => b.hidden)).toEqual([true, true]);
     press(rows()[1].querySelector('input') as HTMLInputElement, 'ArrowUp', { altKey: true });
     expect(names()).toEqual(['Survey', 'Design']);
   });

@@ -100,6 +100,9 @@ button.fd-line-card-title { color: var(--fd-accent); }
 .fd-line-card-tools { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .fd-line-card-tools:empty { display: none; }
 .fd-line-card-tools .fd-line-delete { position: absolute; inset-block-start: 6px; inset-inline-end: 6px; }
+/* A card's ↑ and ↓, where its lines keep an order: a phone has no handle to drag, so a card moves a place with a tap. */
+.fd-line-card .fd-line-move { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 8px; border-radius: 4px; min-width: 32px; min-height: 32px; }
+.fd-line-card .fd-line-move:hover { color: var(--fd-accent); background: var(--fd-accent-soft); }
 .fd-line-cards-total { font-weight: 600; padding: 4px 12px; font-variant-numeric: tabular-nums; }
 .fd-grid-row-buttons .fd-line-button { padding: 2px 6px; font-size: 12.5px; }
 .fd-grid-row-buttons .fd-line-button-icon { padding: 4px; color: var(--fd-muted); }
