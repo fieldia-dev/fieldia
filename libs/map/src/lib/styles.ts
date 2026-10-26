@@ -210,9 +210,10 @@ span.fd-map-face-photo svg { width: 22px; height: 22px; }
 .fd-map-card-popup .leaflet-popup-content-wrapper { padding: 0; border-radius: 10px; overflow: hidden; background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24); }
 .fd-map-card-popup .leaflet-popup-content { margin: 0; font: inherit; font-size: 14px; line-height: 1.4; }
 .fd-map-card-popup .leaflet-popup-tip { background: var(--fd-surface); }
-.fd-map-card { display: grid; }
-.fd-map-card-image { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--fd-fill); }
-.fd-map-card-body { display: grid; gap: 8px; padding: 10px 12px 12px; }
+/* As tall as the map has room for (popCard): its buttons kept at its foot. */
+.fd-map-card { display: grid; max-height: var(--fd-map-card-room); overflow-y: auto; }
+.fd-map-card-image { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--fd-fill); max-height: max(72px, calc(var(--fd-map-card-room) - 160px)); }
+.fd-map-card-body { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px; }
 .fd-map-card-head { display: flex; align-items: flex-start; gap: 8px; }
 .fd-map-card-title { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.3; overflow-wrap: anywhere; }
 .fd-map-card-close {
@@ -234,13 +235,16 @@ span.fd-map-face-photo svg { width: 22px; height: 22px; }
 .fd-map-card-fields[data-labels] dd { text-align: start; font-weight: 400; }
 .fd-map-card-fields[data-lead] > div:first-child dd { font-size: 15.5px; font-weight: 700; color: var(--fd-text); }
 .fd-map-card-fields[data-lead][data-labels] > div + div dd { color: var(--fd-muted); }
-.fd-map-card-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.fd-map-card-actions {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;
+  position: sticky; bottom: 0; margin-block: -8px -12px; padding-block: 8px 12px; background: var(--fd-surface);
+}
 .fd-map-card-choose { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; margin-inline-end: auto; }
 /* Its tick box: in a form, drawn as the form's (Fieldia's own); on a page of its own, the browser's in the accent. */
 .fd-map-card-choose input { width: var(--fd-tick-size, 18px); height: var(--fd-tick-size, 18px); margin: 0; accent-color: var(--fd-accent); }
 .fd-map-card .fd-button { min-height: 30px; padding-inline: 14px; }
 .fd-map-card :focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
-.fd-map-crowd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 220px; overflow: auto; }
+.fd-map-crowd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: min(220px, calc(var(--fd-map-card-room, 280px) - 60px)); overflow: auto; }
 .fd-map-crowd-item { width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; text-align: start; background: transparent; color: var(--fd-text); font: inherit; font-size: 13px; cursor: pointer; }
 button.fd-map-crowd-item:hover { background: var(--fd-accent-soft); }
 span.fd-map-crowd-item { display: block; cursor: default; }
@@ -250,7 +254,8 @@ span.fd-map-crowd-item { display: block; cursor: default; }
 }
 .fd-map-here:hover { color: var(--fd-accent); border-color: var(--fd-accent); }
 .fd-map-here:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
-.fd-map-box[data-card] > .fd-map-here { visibility: hidden; }
+/* A card open: the words over the map step aside. */
+.fd-map-box[data-card] > :is(.fd-map-here, .fd-map-list-note, .fd-map-legend) { visibility: hidden; }
 /* The map over the table when the list is too narrow for both side by side: shorter, so the table is in reach (unless the page says how tall). */
 @container fd-list (max-width: 860px) { .fd-list[data-view="both"] .fd-map-list:not([data-height]) .fd-map-box { height: clamp(260px, 46vh, 420px); } }
 .fd-map-ghost .fd-map-face { pointer-events: none; }

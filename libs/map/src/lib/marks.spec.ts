@@ -1,6 +1,7 @@
 import type * as Leaflet from 'leaflet';
 import { loadLeaflet, type LeafletModule } from './leaflet';
-import { zoomToPart } from './marks';
+import type { Card } from './card';
+import { popCard, zoomToPart } from './marks';
 
 /**
  * A bubble pressed comes closer until its pins part (`zoomToPart`, a list's map's and a form's). 0.35 fitted the map
@@ -13,13 +14,13 @@ let L: LeafletModule;
 beforeAll(async () => ({ L } = await loadLeaflet()));
 afterEach(() => document.body.replaceChildren());
 
-/** A map 358 by 300 pixels (a phone's, in the many homes' demo), at `zoom` over Cairo. */
-function phoneMap(zoom: number): Leaflet.Map {
+/** A map 358 by 300 pixels (a phone's, in the many homes' demo), or as big as said, at `zoom` over Cairo. */
+function phoneMap(zoom: number, width = 358, height = 300): Leaflet.Map {
   const element = document.createElement('div');
   document.body.append(element);
   const map = L.map(element, { zoomAnimation: false, fadeAnimation: false, maxZoom: 19 });
   // A new point each time, as Leaflet's own: its code halves the one it is given in place.
-  jest.spyOn(map, 'getSize').mockImplementation(() => L.point(358, 300));
+  jest.spyOn(map, 'getSize').mockImplementation(() => L.point(width, height));
   return map.setView([30.05, 31.23], zoom);
 }
 const ROOM = 48;
@@ -61,5 +62,39 @@ describe('a bubble pressed', () => {
     map.setZoom(19);
     expect(zoomToPart(map, L, [spot, { lat: 30.051, lng: 31.231 }], ROOM, spot)).toBe(false);
     expect(map.getZoom()).toBe(19);
+  });
+});
+
+/**
+ * A card a map opens (`popCard`, a list's map's and a form's) stays inside the map, clear of what is drawn over it. 0.35
+ * opened a card 320 pixels tall on a phone's map of 305, as wide as the map left by 16: its Choose under the map's note
+ * ("2 without a place"), its Open past the map's foot (the homes demo on a phone). Now no wider than the columns of
+ * buttons at the map's sides leave, no taller than the map leaves room for (its picture and lines scrolling under its
+ * buttons, styles.ts), and the map marked while one is open, so the words over it step aside. How it looks, and the
+ * taps on its buttons, in e2e/map-card-phone.spec.ts.
+ */
+describe('a card over the map', () => {
+  const cardOf = (): Card => ({ element: document.createElement('div'), setChosen: () => undefined, focus: () => undefined });
+
+  it('on a phone’s map: between the columns of buttons, as tall as the map leaves room for, the map marked while it is open', () => {
+    const map = phoneMap(14, 358, 305);
+    const card = cardOf();
+    const popup = popCard(map, L, { at: { lat: 30.05, lng: 31.23 }, height: 40, card, focus: false, escape: () => undefined });
+    expect(popup.options).toMatchObject({ maxWidth: 262, minWidth: 220, autoPanPaddingTopLeft: [48, 8], autoPanPaddingBottomRight: [48, 4] });
+    expect(card.element.style.getPropertyValue('--fd-map-card-room')).toBe('253px');
+    expect(map.getContainer().hasAttribute('data-card')).toBe(true);
+    map.closePopup(popup);
+    expect(map.getContainer().hasAttribute('data-card')).toBe(false);
+  });
+
+  it('on a desktop’s map: as wide as a card is, and the room the map has', () => {
+    const map = phoneMap(14, 900, 440);
+    const card = cardOf();
+    const popup = popCard(map, L, { at: { lat: 30.05, lng: 31.23 }, height: 40, card, focus: false, escape: () => undefined });
+    expect(popup.options).toMatchObject({ maxWidth: 280, minWidth: 220 });
+    expect(card.element.style.getPropertyValue('--fd-map-card-room')).toBe('388px');
+    // The next card, opened over it: the map still marked.
+    popCard(map, L, { at: { lat: 30.06, lng: 31.22 }, height: 40, card: cardOf(), focus: false, escape: () => undefined });
+    expect(map.getContainer().hasAttribute('data-card')).toBe(true);
   });
 });

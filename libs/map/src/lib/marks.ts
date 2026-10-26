@@ -44,6 +44,14 @@ export const byKeys = (event: Event | undefined) => !!event && event.type.starts
 /**
  * A card over the map, its tip on a mark `height` pixels tall: Escape closes
  * it (back to its mark), and the arrows stay with the card, not the map.
+ *
+ * Every card stays inside the map and clear of what is drawn over it: the
+ * map pans it between the columns of buttons at the map's sides (48 pixels
+ * each) and above the credits at its foot, no wider than that leaves, and
+ * no taller than the map leaves room for (`--fd-map-card-room`): a phone's
+ * map is shorter than a card, whose picture and lines then scroll under its
+ * buttons (styles.ts). The map says it has one open (`data-card`), and the
+ * words over it step out of its way.
  */
 export function popCard(map: Leaflet.Map, L: LeafletModule, options: { at: LatLng; height: number; card: Card; focus: boolean; escape(): void }): Leaflet.Popup {
   options.card.element.addEventListener('keydown', (event) => {
@@ -52,9 +60,24 @@ export function popCard(map: Leaflet.Map, L: LeafletModule, options: { at: LatLn
       options.escape();
     } else if (MOVE_KEYS.has(event.key)) event.stopPropagation();
   });
-  const popup = L.popup({ closeButton: false, autoPanPadding: [16, 16], className: 'fd-map-card-popup', minWidth: 220, maxWidth: 280, offset: [0, 4 - options.height] })
+  const size = map.getSize();
+  const width = Math.min(280, Math.max(200, size.x - 96));
+  // Its tip and the room under it (40), and the room above and below it (8 and 4).
+  options.card.element.style.setProperty('--fd-map-card-room', `${size.y - 52}px`);
+  const box = map.getContainer();
+  const popup = L.popup({
+    closeButton: false,
+    autoPanPaddingTopLeft: [48, 8],
+    autoPanPaddingBottomRight: [48, 4],
+    className: 'fd-map-card-popup',
+    minWidth: Math.min(220, width),
+    maxWidth: width,
+    offset: [0, 4 - options.height],
+  })
     .setLatLng([options.at.lat, options.at.lng])
-    .setContent(options.card.element);
+    .setContent(options.card.element)
+    .on('add', () => box.toggleAttribute('data-card', true))
+    .on('remove', () => box.removeAttribute('data-card'));
   popup.openOn(map);
   if (options.focus) options.card.focus();
   return popup;

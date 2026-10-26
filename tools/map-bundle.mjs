@@ -164,9 +164,13 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
 // a place and an area 11,929 bytes measured before, 12,017 after, to 11.8; with a list's map 13,584, 13,671, to 13.4;
 // a list's map in a page of its own 10,859, 10,945, inside its 10.7. The parts: a list's map 22,174, 22,483, to 22.0; a
 // form's 19,852, 20,042, to 19.6; the fields' 18,442, 18,726, to 18.3. (The legend folded on a phone is the areas'
-// chunk's, loaded with the first map that has them.)
+// chunk's, loaded with the first map that has them.) Then every card a map opens kept inside it on a phone (popCard,
+// marks.ts): between the columns of buttons, no taller than the map has room for, its picture shorter and its buttons
+// kept at its foot, the words over the map stepping aside while it is open (styles.ts, in the chunk the parts share) —
+// a list's map 22,483 bytes, 22,752, to 22.3; a form's 20,042, 20,339, to 19.9; the fields' 18,726, 18,892, to 18.5;
+// with the page as it was.
 const BUDGET = { fields: 11.8, all: 13.4, embed: 10.7, leaflet: 47, routes: 2 };
-const PART_BUDGET = { 'view-part': 22.0, 'form-part': 19.6, 'widgets-part': 18.3 };
+const PART_BUDGET = { 'view-part': 22.3, 'form-part': 19.9, 'widgets-part': 18.5 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
