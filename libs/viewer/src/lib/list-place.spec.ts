@@ -80,6 +80,38 @@ describe('a list’s place in the page’s history entry', () => {
     expect(placeKept(document, 'people:people-list')).toBeNull();
   });
 
+  it('is merged into the state a router put in the entry, its own keys kept as they were, and never adds an entry', async () => {
+    // React Router's own: `usr` (the app's state), `key` and `idx` (where the entry stands in its history).
+    const router = { usr: { from: 'dashboard', filters: ['open'] }, key: 'x7k2pq', idx: 3 };
+    history.replaceState(router, '');
+    const entries = history.length;
+    const pushed = jest.spyOn(history, 'pushState');
+    const replaced = jest.spyOn(history, 'replaceState');
+    try {
+      const host = document.body.appendChild(document.createElement('div'));
+      handle = mountViewer(host, { page: people, dataSource: createMemoryDataSource({ records }), onOpenRecord: () => undefined });
+      await settled();
+      (host.querySelectorAll<HTMLElement>('.fd-list-row')[3].querySelector('td:not(.fd-list-check)') as HTMLElement).click();
+      await settled();
+      // The list's place written beside the router's keys, each as the router left it.
+      expect(history.state).toEqual({ ...router, 'fieldia:lists': { 'people:people-list': expect.objectContaining({ open: '4' }) } });
+      // Come back to (the router's popstate) and drawn again: its place let go, the router's keys still as they were.
+      handle.destroy();
+      host.replaceChildren();
+      window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
+      handle = mountViewer(host, { page: people, dataSource: createMemoryDataSource({ records }), onOpenRecord: () => undefined });
+      await settled();
+      expect(history.state).toEqual({ ...router, 'fieldia:lists': {} });
+      // Written in place, every time: never an entry of its own, which Back would have to pass through.
+      expect(pushed).not.toHaveBeenCalled();
+      expect(replaced).toHaveBeenCalled();
+      expect(history.length).toBe(entries);
+    } finally {
+      pushed.mockRestore();
+      replaced.mockRestore();
+    }
+  });
+
   it('is let go where the record opens over the list, which stays (the app answers with a promise)', async () => {
     const host = document.body.appendChild(document.createElement('div'));
     handle = mountViewer(host, { page: people, dataSource: createMemoryDataSource({ records }), onOpenRecord: () => Promise.resolve() });
