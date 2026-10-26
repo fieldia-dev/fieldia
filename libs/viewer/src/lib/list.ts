@@ -1438,6 +1438,18 @@ export function listView(context: ListContext): ListView {
   /** Each view once made: the first time it is shown. */
   const parts = new Map<string, ListViewPart>();
   const holders = new Map(offered.map(([name]) => [name, el('div', { class: name === 'map' ? 'fd-list-addon fd-list-map' : 'fd-list-addon', 'data-addon': name })]));
+  /**
+   * Whether the pointer on a view presses: a finger's, or a mouse's held down. A pin a finger taps lights its row by
+   * the tap — a finger has no hover, the browser sends its mouseover with the tap, before its click — and a pin a mouse
+   * presses by its focus; were the row brought into view then, the page would scroll under the press, and its click
+   * land on what came there (a column's header, sorting the list; another record's link). So a press's light lights
+   * the row where it is; the mouse resting on a pin, or the keys on it, bring its row into view.
+   */
+  let pressing = false;
+  const track = (event: PointerEvent) => {
+    pressing = event.pointerType === 'touch' || event.type === 'pointerdown' || (event.type === 'pointerover' && event.buttons !== 0);
+  };
+  for (const holder of holders.values()) for (const type of ['pointerover', 'pointerdown', 'pointerup'] as const) holder.addEventListener(type, track);
   /** What the table tells a view, it tells each one made. */
   const viewParts = {
     reload: () => Promise.all([...parts.values()].map((part) => part.reload())).then(() => undefined),
@@ -1484,12 +1496,13 @@ export function listView(context: ListContext): ListView {
       ...(context.onOpenRecord ? { open: (id: RecordId) => openRow(id) } : {}),
       highlight(id) {
         litId = id;
-        // Beside the map, its row brought into view: drawn first where the window had left it out.
-        const own = id !== null && view === 'both' && win && windowing() ? win.reveal(String(id)) : null;
+        // Beside the map, its row brought into view — never by a press (`pressing`): drawn first where the window had left it out.
+        const reveal = id !== null && view === 'both' && !pressing;
+        const own = reveal && win && windowing() ? win.reveal(String(id)) : null;
         for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
           const hot = id !== null && tr.dataset['id'] === String(id);
           if (tr.classList.contains('fd-list-hot') !== hot) tr.classList.toggle('fd-list-hot', hot);
-          if (hot && view === 'both' && (!own || tr === own)) tr.scrollIntoView({ block: 'nearest' });
+          if (hot && reveal && (!own || tr === own)) tr.scrollIntoView({ block: 'nearest' });
         }
       },
       addSearch: ({ label, filter }) => search.add({ kind: 'custom', label, filter }),
