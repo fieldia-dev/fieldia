@@ -237,8 +237,17 @@ describe('a list whose cells are changed in place', () => {
     expect(said()?.hidden).toBe(false);
     expect(said()?.textContent).toBe('Kept by the manager.');
     expect(host.querySelector('.fd-list-adds span[role="status"]')?.textContent).toBe('Kept by the manager.');
-    // A press elsewhere: it goes.
+    // A press elsewhere: it goes once the press is over, its click handled — as it goes down, nothing under it moves.
     document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(said()?.hidden).toBe(false);
+    document.body.click();
+    expect(said()?.hidden).toBe(true);
+    // A press on it again says it again; one given up (a finger that scrolled) takes it away, as its click would.
+    cell(host, 3, 'price').dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    cell(host, 3, 'price').click();
+    expect(said()?.hidden).toBe(false);
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    document.body.dispatchEvent(new Event('pointercancel', { bubbles: true }));
     expect(said()?.hidden).toBe(true);
     handle?.destroy();
     document.body.replaceChildren();
