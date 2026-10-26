@@ -189,6 +189,8 @@ function drawMenu() {
   const setOpen = (open, keep = true) => {
     document.body.classList.toggle('dn-open', open);
     toggle?.setAttribute('aria-expanded', String(open));
+    // Folded, it is only slid off the window: out of the keys' way and a screen reader's too, never Tab stops unseen.
+    nav.inert = !open;
     if (keep) remember('fieldia-demos-menu', open ? '1' : '0');
   };
   // Open by itself only where it takes room of its own beside the demo (1,100 px, shell.css) and leaves the demo the room

@@ -646,6 +646,13 @@ test.describe('the demo frame', () => {
     await page.setViewportSize({ width: 900, height: 900 });
     await expect(menu(page)).not.toBeInViewport();
     await expect(page.locator('#demo-head .dh-menu')).toHaveAttribute('aria-expanded', 'false');
+    // Folded off the window, it is out of the keys' way: no Tab stop lands in it unseen.
+    await expect(menu(page)).toHaveJSProperty('inert', true);
+    await page.locator('.dh-title').click();
+    for (let stop = 0; stop < 12; stop++) {
+      await page.keyboard.press('Tab');
+      expect(await page.evaluate(() => !!document.activeElement?.closest('#demo-nav')), `Tab stop ${stop + 1}`).toBe(false);
+    }
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(menu(page)).toBeInViewport();
     // The panel, opened by a press beside the demo, folds as the window narrows to where it would lie over it.
